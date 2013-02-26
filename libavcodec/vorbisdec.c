@@ -124,7 +124,7 @@ typedef struct {
 } vorbis_mode;
 
 typedef struct vorbis_context_s {
-    AVCodecContext *avccontext;
+    AVCodecContext *avctx;
     GetBitContext gb;
     VorbisDSPContext dsp;
     AVFloatDSPContext fdsp;
@@ -164,7 +164,7 @@ typedef struct vorbis_context_s {
 static const char idx_err_str[] = "Index value %d out of range (0 - %d) for %s at %s:%i\n";
 #define VALIDATE_INDEX(idx, limit) \
     if (idx >= limit) {\
-        av_log(vc->avccontext, AV_LOG_ERROR,\
+        av_log(vc->avctx, AV_LOG_ERROR,\
                idx_err_str,\
                (int)(idx), (int)(limit - 1), #idx, __FILE__, __LINE__);\
         return AVERROR_INVALIDDATA;\
@@ -261,7 +261,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
         av_dlog(NULL, " %u. Codebook\n", cb);
 
         if (get_bits(gb, 24) != 0x564342) {
-            av_log(vc->avccontext, AV_LOG_ERROR,
+            av_log(vc->avctx, AV_LOG_ERROR,
                    " %u. Codebook setup data corrupt.\n", cb);
             ret = AVERROR_INVALIDDATA;
             goto error;
@@ -269,7 +269,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
 
         codebook_setup->dimensions=get_bits(gb, 16);
         if (codebook_setup->dimensions > 16 || codebook_setup->dimensions == 0) {
-            av_log(vc->avccontext, AV_LOG_ERROR,
+            av_log(vc->avctx, AV_LOG_ERROR,
                    " %u. Codebook's dimension is invalid (%d).\n",
                    cb, codebook_setup->dimensions);
             ret = AVERROR_INVALIDDATA;
@@ -277,7 +277,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
         }
         entries = get_bits(gb, 24);
         if (entries > V_MAX_VLCS) {
-            av_log(vc->avccontext, AV_LOG_ERROR,
+            av_log(vc->avctx, AV_LOG_ERROR,
                    " %u. Codebook has too many entries (%u).\n",
                    cb, entries);
             ret = AVERROR_INVALIDDATA;
@@ -337,7 +337,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                 current_entry+=number;
             }
             if (current_entry>used_entries) {
-                av_log(vc->avccontext, AV_LOG_ERROR, " More codelengths than codes in codebook. \n");
+                av_log(vc->avctx, AV_LOG_ERROR, " More codelengths than codes in codebook. \n");
                 ret = AVERROR_INVALIDDATA;
                 goto error;
             }
@@ -384,7 +384,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                     float last = 0.0;
                     unsigned lookup_offset = i;
 
-                    av_dlog(vc->avccontext, "Lookup offset %u ,", i);
+                    av_dlog(vc->avctx, "Lookup offset %u ,", i);
 
                     for (k = 0; k < dim; ++k) {
                         unsigned multiplicand_offset = lookup_offset % codebook_lookup_values;
@@ -395,30 +395,30 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                     }
                     tmp_vlc_bits[j] = tmp_vlc_bits[i];
 
-                    av_dlog(vc->avccontext, "real lookup offset %u, vector: ", j);
+                    av_dlog(vc->avctx, "real lookup offset %u, vector: ", j);
                     for (k = 0; k < dim; ++k)
-                        av_dlog(vc->avccontext, " %f ",
+                        av_dlog(vc->avctx, " %f ",
                                 codebook_setup->codevectors[j * dim + k]);
-                    av_dlog(vc->avccontext, "\n");
+                    av_dlog(vc->avctx, "\n");
 
                     ++j;
                 }
             }
             if (j != used_entries) {
-                av_log(vc->avccontext, AV_LOG_ERROR, "Bug in codevector vector building code. \n");
+                av_log(vc->avctx, AV_LOG_ERROR, "Bug in codevector vector building code. \n");
                 ret = AVERROR_INVALIDDATA;
                 goto error;
             }
             entries = used_entries;
         } else if (codebook_setup->lookup_type >= 2) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Codebook lookup type not supported. \n");
+            av_log(vc->avctx, AV_LOG_ERROR, "Codebook lookup type not supported. \n");
             ret = AVERROR_INVALIDDATA;
             goto error;
         }
 
 // Initialize VLC table
         if (ff_vorbis_len2vlc(tmp_vlc_bits, tmp_vlc_codes, entries)) {
-            av_log(vc->avccontext, AV_LOG_ERROR, " Invalid code lengths while generating vlcs. \n");
+            av_log(vc->avctx, AV_LOG_ERROR, " Invalid code lengths while generating vlcs. \n");
             ret = AVERROR_INVALIDDATA;
             goto error;
         }
@@ -439,7 +439,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                             sizeof(*tmp_vlc_bits), tmp_vlc_codes,
                             sizeof(*tmp_vlc_codes), sizeof(*tmp_vlc_codes),
                             INIT_VLC_LE))) {
-            av_log(vc->avccontext, AV_LOG_ERROR, " Error generating vlc tables. \n");
+            av_log(vc->avctx, AV_LOG_ERROR, " Error generating vlc tables. \n");
             goto error;
         }
     }
@@ -471,7 +471,7 @@ static int vorbis_parse_setup_hdr_tdtransforms(vorbis_context *vc)
                 vorbis_time_count, vorbis_tdtransform);
 
         if (vorbis_tdtransform) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Vorbis time domain transform data nonzero. \n");
+            av_log(vc->avctx, AV_LOG_ERROR, "Vorbis time domain transform data nonzero. \n");
             return AVERROR_INVALIDDATA;
         }
     }
@@ -561,7 +561,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             rangebits = get_bits(gb, 4);
             rangemax = (1 << rangebits);
             if (rangemax > vc->blocksize[1] / 2) {
-                av_log(vc->avccontext, AV_LOG_ERROR,
+                av_log(vc->avctx, AV_LOG_ERROR,
                        "Floor value is too large for blocksize: %u (%"PRIu32")\n",
                        rangemax, vc->blocksize[1] / 2);
                 return AVERROR_INVALIDDATA;
@@ -579,7 +579,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             }
 
 // Precalculate order of x coordinates - needed for decode
-            if (ff_vorbis_ready_floor1_list(vc->avccontext,
+            if (ff_vorbis_ready_floor1_list(vc->avctx,
                                             floor_setup->data.t1.list,
                                             floor_setup->data.t1.x_list_dim)) {
                 return AVERROR_INVALIDDATA;
@@ -591,19 +591,17 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
 
             floor_setup->data.t0.order          = get_bits(gb,  8);
             if (!floor_setup->data.t0.order) {
-                av_log(vc->avccontext, AV_LOG_ERROR,
-                       "Floor 0 order is 0.\n");
+                av_log(vc->avctx, AV_LOG_ERROR, "Floor 0 order is 0.\n");
                 return AVERROR_INVALIDDATA;
             }
             floor_setup->data.t0.rate           = get_bits(gb, 16);
             if (!floor_setup->data.t0.rate) {
-                av_log(vc->avccontext, AV_LOG_ERROR,
-                       "Floor 0 rate is 0.\n");
+                av_log(vc->avctx, AV_LOG_ERROR, "Floor 0 rate is 0.\n");
                 return AVERROR_INVALIDDATA;
             }
             floor_setup->data.t0.bark_map_size  = get_bits(gb, 16);
             if (!floor_setup->data.t0.bark_map_size) {
-                av_log(vc->avccontext, AV_LOG_ERROR,
+                av_log(vc->avctx, AV_LOG_ERROR,
                        "Floor 0 bark map size is 0.\n");
                 return AVERROR_INVALIDDATA;
             }
@@ -659,7 +657,7 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                 }
             }
         } else {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Invalid floor type!\n");
+            av_log(vc->avctx, AV_LOG_ERROR, "Invalid floor type!\n");
             return AVERROR_INVALIDDATA;
         }
     }
@@ -694,7 +692,7 @@ static int vorbis_parse_setup_hdr_residues(vorbis_context *vc)
         if (res_setup->begin>res_setup->end ||
             res_setup->end > (res_setup->type == 2 ? vc->audio_channels : 1) * vc->blocksize[1] / 2 ||
             (res_setup->end-res_setup->begin) / res_setup->partition_size > V_MAX_PARTITIONS) {
-            av_log(vc->avccontext, AV_LOG_ERROR,
+            av_log(vc->avctx, AV_LOG_ERROR,
                    "partition out of bounds: type, begin, end, size, blocksize: %"PRIu16", %"PRIu32", %"PRIu32", %u, %"PRIu32"\n",
                    res_setup->type, res_setup->begin, res_setup->end,
                    res_setup->partition_size, vc->blocksize[1] / 2);
@@ -762,7 +760,7 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
         vorbis_mapping *mapping_setup = &vc->mappings[i];
 
         if (get_bits(gb, 16)) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Other mappings than type 0 are not compliant with the Vorbis I specification. \n");
+            av_log(vc->avctx, AV_LOG_ERROR, "Other mappings than type 0 are not compliant with the Vorbis I specification. \n");
             return AVERROR_INVALIDDATA;
         }
         if (get_bits1(gb)) {
@@ -789,7 +787,7 @@ static int vorbis_parse_setup_hdr_mappings(vorbis_context *vc)
                 i, mapping_setup->coupling_steps);
 
         if (get_bits(gb, 2)) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "%u. mapping setup data invalid.\n", i);
+            av_log(vc->avctx, AV_LOG_ERROR, "%u. mapping setup data invalid.\n", i);
             return AVERROR_INVALIDDATA; // following spec.
         }
 
@@ -881,36 +879,36 @@ static int vorbis_parse_setup_hdr(vorbis_context *vc)
     if ((get_bits(gb, 8) != 'v') || (get_bits(gb, 8) != 'o') ||
         (get_bits(gb, 8) != 'r') || (get_bits(gb, 8) != 'b') ||
         (get_bits(gb, 8) != 'i') || (get_bits(gb, 8) != 's')) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (no vorbis signature). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (no vorbis signature). \n");
         return AVERROR_INVALIDDATA;
     }
 
     if ((ret = vorbis_parse_setup_hdr_codebooks(vc))) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (codebooks). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (codebooks). \n");
         return ret;
     }
     if ((ret = vorbis_parse_setup_hdr_tdtransforms(vc))) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (time domain transforms). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (time domain transforms). \n");
         return ret;
     }
     if ((ret = vorbis_parse_setup_hdr_floors(vc))) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (floors). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (floors). \n");
         return ret;
     }
     if ((ret = vorbis_parse_setup_hdr_residues(vc))) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (residues). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (residues). \n");
         return ret;
     }
     if ((ret = vorbis_parse_setup_hdr_mappings(vc))) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (mappings). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (mappings). \n");
         return ret;
     }
     if ((ret = vorbis_parse_setup_hdr_modes(vc))) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (modes). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (modes). \n");
         return ret;
     }
     if (!get_bits1(gb)) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis setup header packet corrupt (framing flag). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis setup header packet corrupt (framing flag). \n");
         return AVERROR_INVALIDDATA; // framing flag bit unset error
     }
 
@@ -927,19 +925,19 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
     if ((get_bits(gb, 8) != 'v') || (get_bits(gb, 8) != 'o') ||
         (get_bits(gb, 8) != 'r') || (get_bits(gb, 8) != 'b') ||
         (get_bits(gb, 8) != 'i') || (get_bits(gb, 8) != 's')) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (no vorbis signature). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis id header packet corrupt (no vorbis signature). \n");
         return AVERROR_INVALIDDATA;
     }
 
     vc->version        = get_bits_long(gb, 32);    //FIXME check 0
     vc->audio_channels = get_bits(gb, 8);
     if (vc->audio_channels <= 0) {
-        av_log(vc->avccontext, AV_LOG_ERROR, "Invalid number of channels\n");
+        av_log(vc->avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
     vc->audio_samplerate = get_bits_long(gb, 32);
     if (vc->audio_samplerate <= 0) {
-        av_log(vc->avccontext, AV_LOG_ERROR, "Invalid samplerate\n");
+        av_log(vc->avctx, AV_LOG_ERROR, "Invalid samplerate\n");
         return AVERROR_INVALIDDATA;
     }
     vc->bitrate_maximum = get_bits_long(gb, 32);
@@ -948,7 +946,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
     bl0 = get_bits(gb, 4);
     bl1 = get_bits(gb, 4);
     if (bl0 > 13 || bl0 < 6 || bl1 > 13 || bl1 < 6 || bl1 < bl0) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (illegal blocksize). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis id header packet corrupt (illegal blocksize). \n");
         return AVERROR_INVALIDDATA;
     }
     vc->blocksize[0] = (1 << bl0);
@@ -957,7 +955,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
     vc->win[1] = ff_vorbis_vwin[bl1 - 6];
 
     if ((get_bits1(gb)) == 0) {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (framing flag not set). \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Vorbis id header packet corrupt (framing flag not set). \n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -983,41 +981,41 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
 
 // Process the extradata using the functions above (identification header, setup header)
 
-static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
+static av_cold int vorbis_decode_init(AVCodecContext *avctx)
 {
-    vorbis_context *vc = avccontext->priv_data;
-    uint8_t *headers   = avccontext->extradata;
-    int headers_len    = avccontext->extradata_size;
+    vorbis_context *vc = avctx->priv_data;
+    uint8_t *headers   = avctx->extradata;
+    int headers_len    = avctx->extradata_size;
     uint8_t *header_start[3];
     int header_len[3];
     GetBitContext *gb = &vc->gb;
     int hdr_type, ret;
 
-    vc->avccontext = avccontext;
+    vc->avctx = avctx;
     ff_vorbisdsp_init(&vc->dsp);
-    avpriv_float_dsp_init(&vc->fdsp, avccontext->flags & CODEC_FLAG_BITEXACT);
-    ff_fmt_convert_init(&vc->fmt_conv, avccontext);
+    avpriv_float_dsp_init(&vc->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    ff_fmt_convert_init(&vc->fmt_conv, avctx);
 
-    avccontext->sample_fmt = AV_SAMPLE_FMT_FLTP;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     if (!headers_len) {
-        av_log(avccontext, AV_LOG_ERROR, "Extradata missing.\n");
+        av_log(avctx, AV_LOG_ERROR, "Extradata missing.\n");
         return AVERROR_INVALIDDATA;
     }
 
     if ((ret = avpriv_split_xiph_headers(headers, headers_len, 30, header_start, header_len)) < 0) {
-        av_log(avccontext, AV_LOG_ERROR, "Extradata corrupt.\n");
+        av_log(avctx, AV_LOG_ERROR, "Extradata corrupt.\n");
         return ret;
     }
 
     init_get_bits(gb, header_start[0], header_len[0]*8);
     hdr_type = get_bits(gb, 8);
     if (hdr_type != 1) {
-        av_log(avccontext, AV_LOG_ERROR, "First header is not the id header.\n");
+        av_log(avctx, AV_LOG_ERROR, "First header is not the id header.\n");
         return AVERROR_INVALIDDATA;
     }
     if ((ret = vorbis_parse_id_hdr(vc))) {
-        av_log(avccontext, AV_LOG_ERROR, "Id header corrupt.\n");
+        av_log(avctx, AV_LOG_ERROR, "Id header corrupt.\n");
         vorbis_free(vc);
         return ret;
     }
@@ -1025,23 +1023,23 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     init_get_bits(gb, header_start[2], header_len[2]*8);
     hdr_type = get_bits(gb, 8);
     if (hdr_type != 5) {
-        av_log(avccontext, AV_LOG_ERROR, "Third header is not the setup header.\n");
+        av_log(avctx, AV_LOG_ERROR, "Third header is not the setup header.\n");
         vorbis_free(vc);
         return AVERROR_INVALIDDATA;
     }
     if ((ret = vorbis_parse_setup_hdr(vc))) {
-        av_log(avccontext, AV_LOG_ERROR, "Setup header corrupt.\n");
+        av_log(avctx, AV_LOG_ERROR, "Setup header corrupt.\n");
         vorbis_free(vc);
         return ret;
     }
 
     if (vc->audio_channels > 8)
-        avccontext->channel_layout = 0;
+        avctx->channel_layout = 0;
     else
-        avccontext->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
+        avctx->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
 
-    avccontext->channels    = vc->audio_channels;
-    avccontext->sample_rate = vc->audio_samplerate;
+    avctx->channels    = vc->audio_channels;
+    avctx->sample_rate = vc->audio_samplerate;
 
     return 0;
 }
@@ -1069,8 +1067,7 @@ static int vorbis_floor0_decode(vorbis_context *vc,
 
         book_idx = get_bits(&vc->gb, ilog(vf->num_books));
         if (book_idx >= vf->num_books) {
-            av_log(vc->avccontext, AV_LOG_ERROR,
-                    "floor0 dec: booknumber too high!\n");
+            av_log(vc->avctx, AV_LOG_ERROR, "floor0 dec: booknumber too high!\n");
             book_idx =  0;
         }
         av_dlog(NULL, "floor0 dec: booknumber: %u\n", book_idx);
@@ -1314,7 +1311,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
     }
 
     if (max_output > ch_left * vlen) {
-        av_log(vc->avccontext, AV_LOG_ERROR, "Insufficient output buffer\n");
+        av_log(vc->avctx, AV_LOG_ERROR, "Insufficient output buffer\n");
         return -1;
     }
 
@@ -1458,7 +1455,7 @@ static inline int vorbis_residue_decode(vorbis_context *vc, vorbis_residue *vr,
     else if (vr->type == 0)
         return vorbis_residue_decode_internal(vc, vr, ch, do_not_decode, vec, vlen, ch_left, 0);
     else {
-        av_log(vc->avccontext, AV_LOG_ERROR, " Invalid residue type while residue decode?! \n");
+        av_log(vc->avctx, AV_LOG_ERROR, " Invalid residue type while residue decode?! \n");
         return AVERROR_INVALIDDATA;
     }
 }
@@ -1507,7 +1504,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
     unsigned vlen;
 
     if (get_bits1(gb)) {
-        av_log(vc->avccontext, AV_LOG_ERROR, "Not a Vorbis I audio packet.\n");
+        av_log(vc->avctx, AV_LOG_ERROR, "Not a Vorbis I audio packet.\n");
         return AVERROR_INVALIDDATA; // packet type not audio
     }
 
@@ -1548,7 +1545,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
         ret = floor->decode(vc, &floor->data, floor_ptr[i]);
 
         if (ret < 0) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Invalid codebook in vorbis_floor_decode.\n");
+            av_log(vc->avctx, AV_LOG_ERROR, "Invalid codebook in vorbis_floor_decode.\n");
             return AVERROR_INVALIDDATA;
         }
         no_residue[i] = ret;
@@ -1584,7 +1581,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
         }
         residue = &vc->residues[mapping->submap_residue[i]];
         if (ch_left < ch) {
-            av_log(vc->avccontext, AV_LOG_ERROR, "Too many channels in vorbis_floor_decode.\n");
+            av_log(vc->avctx, AV_LOG_ERROR, "Too many channels in vorbis_floor_decode.\n");
             return -1;
         }
         if (ch) {
@@ -1650,12 +1647,12 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
 
 // Return the decoded audio packet through the standard api
 
-static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
+static int vorbis_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    vorbis_context *vc = avccontext->priv_data;
+    vorbis_context *vc = avctx->priv_data;
     AVFrame *frame     = data;
     GetBitContext *gb = &vc->gb;
     float *channel_ptrs[255];
@@ -1667,30 +1664,30 @@ static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
         init_get_bits(gb, buf+1, buf_size*8 - 8);
         vorbis_free(vc);
         if ((ret = vorbis_parse_id_hdr(vc))) {
-            av_log(avccontext, AV_LOG_ERROR, "Id header corrupt.\n");
+            av_log(avctx, AV_LOG_ERROR, "Id header corrupt.\n");
             vorbis_free(vc);
             return ret;
         }
 
         if (vc->audio_channels > 8)
-            avccontext->channel_layout = 0;
+            avctx->channel_layout = 0;
         else
-            avccontext->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
+            avctx->channel_layout = ff_vorbis_channel_layouts[vc->audio_channels - 1];
 
-        avccontext->channels    = vc->audio_channels;
-        avccontext->sample_rate = vc->audio_samplerate;
+        avctx->channels    = vc->audio_channels;
+        avctx->sample_rate = vc->audio_samplerate;
         return buf_size;
     }
 
     if (*buf == 3 && buf_size > 7) {
-        av_log(avccontext, AV_LOG_DEBUG, "Ignoring comment header\n");
+        av_log(avctx, AV_LOG_DEBUG, "Ignoring comment header\n");
         return buf_size;
     }
 
     if (*buf == 5 && buf_size > 7 && vc->channel_residues && !vc->modes) {
         init_get_bits(gb, buf+1, buf_size*8 - 8);
         if ((ret = vorbis_parse_setup_hdr(vc))) {
-            av_log(avccontext, AV_LOG_ERROR, "Setup header corrupt.\n");
+            av_log(avctx, AV_LOG_ERROR, "Setup header corrupt.\n");
             vorbis_free(vc);
             return ret;
         }
@@ -1698,14 +1695,14 @@ static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     if (!vc->channel_residues || !vc->modes) {
-        av_log(avccontext, AV_LOG_ERROR, "Data packet before valid headers\n");
+        av_log(avctx, AV_LOG_ERROR, "Data packet before valid headers\n");
         return AVERROR_INVALIDDATA;
     }
 
     /* get output buffer */
     frame->nb_samples = vc->blocksize[1] / 2;
-    if ((ret = ff_get_buffer(avccontext, frame)) < 0) {
-        av_log(avccontext, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
 
@@ -1741,18 +1738,18 @@ static int vorbis_decode_frame(AVCodecContext *avccontext, void *data,
 
 // Close decoder
 
-static av_cold int vorbis_decode_close(AVCodecContext *avccontext)
+static av_cold int vorbis_decode_close(AVCodecContext *avctx)
 {
-    vorbis_context *vc = avccontext->priv_data;
+    vorbis_context *vc = avctx->priv_data;
 
     vorbis_free(vc);
 
     return 0;
 }
 
-static av_cold void vorbis_decode_flush(AVCodecContext *avccontext)
+static av_cold void vorbis_decode_flush(AVCodecContext *avctx)
 {
-    vorbis_context *vc = avccontext->priv_data;
+    vorbis_context *vc = avctx->priv_data;
 
     if (vc->saved) {
         memset(vc->saved, 0, (vc->blocksize[1] / 4) * vc->audio_channels *

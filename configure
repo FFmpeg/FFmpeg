@@ -2636,7 +2636,7 @@ probe_cc(){
         fi
         _cflags_speed='-O3'
         _cflags_size='-Os'
-    elif $_cc --version 2>/dev/null | grep -q Intel; then
+    elif $_cc --version 2>/dev/null | grep -q ^icc; then
         _type=icc
         _ident=$($_cc --version | head -n1)
         _depflags='-MMD'

@@ -36,7 +36,7 @@ typedef struct vorbis_floor1_entry {
     uint16_t high;
 } vorbis_floor1_entry;
 
-int ff_vorbis_ready_floor1_list(AVCodecContext *avccontext,
+int ff_vorbis_ready_floor1_list(AVCodecContext *avctx,
                                 vorbis_floor1_entry *list, int values);
 unsigned int ff_vorbis_nth_root(unsigned int x, unsigned int n); // x^(1/n)
 int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num);

@@ -121,7 +121,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
     return 0;
 }
 
-int ff_vorbis_ready_floor1_list(AVCodecContext *avccontext,
+int ff_vorbis_ready_floor1_list(AVCodecContext *avctx,
                                 vorbis_floor1_entry *list, int values)
 {
     int i;
@@ -147,7 +147,7 @@ int ff_vorbis_ready_floor1_list(AVCodecContext *avccontext,
         int j;
         for (j = i + 1; j < values; j++) {
             if (list[i].x == list[j].x) {
-                av_log(avccontext, AV_LOG_ERROR,
+                av_log(avctx, AV_LOG_ERROR,
                        "Duplicate value found in floor 1 X coordinates\n");
                 return AVERROR_INVALIDDATA;
             }
