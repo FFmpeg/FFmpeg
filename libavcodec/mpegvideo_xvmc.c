@@ -23,7 +23,6 @@
 #include <X11/extensions/XvMC.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 
 #undef NDEBUG

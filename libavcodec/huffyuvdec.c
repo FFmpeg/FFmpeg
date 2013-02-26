@@ -29,7 +29,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
 #include "huffyuv.h"
 #include "thread.h"

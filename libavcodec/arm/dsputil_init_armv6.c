@@ -21,7 +21,6 @@
 #include <stdint.h>
 
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_arm.h"
 
 void ff_simple_idct_armv6(int16_t *data);

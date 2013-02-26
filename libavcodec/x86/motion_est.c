@@ -26,7 +26,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_mmx.h"
 
 #if HAVE_INLINE_ASM

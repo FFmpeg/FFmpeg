@@ -31,7 +31,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"

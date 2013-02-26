@@ -32,7 +32,6 @@
 
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "mpeg4audio.h"
 #include "sbr.h"

@@ -26,7 +26,6 @@
  */
 
 #include "libavutil/avassert.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263.h"

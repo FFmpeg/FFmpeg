@@ -30,7 +30,6 @@
 #include "libavutil/cpu.h"
 #include "internal.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h263_parser.h"

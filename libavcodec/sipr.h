@@ -25,7 +25,6 @@
 #define AVCODEC_SIPR_H
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "acelp_pitch_delay.h"
 #include "libavutil/mem.h"
 

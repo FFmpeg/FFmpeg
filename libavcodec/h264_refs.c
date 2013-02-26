@@ -27,7 +27,6 @@
 
 #include "libavutil/avassert.h"
 #include "internal.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "h264.h"
 #include "golomb.h"

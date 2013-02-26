@@ -22,7 +22,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/h264dsp.h"
 
 void ff_h264_v_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,

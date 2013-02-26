@@ -21,7 +21,6 @@
  *@brief IntraX8 frame subdecoder image manipulation routines
  */
 
-#include "dsputil.h"
 #include "intrax8dsp.h"
 #include "libavutil/common.h"
 

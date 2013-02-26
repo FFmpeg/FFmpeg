@@ -35,7 +35,6 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "copy_block.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"

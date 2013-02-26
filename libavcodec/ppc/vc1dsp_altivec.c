@@ -22,7 +22,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/vc1dsp.h"
 
 // main steps of 8x8 transform

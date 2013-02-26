@@ -26,7 +26,6 @@
  */
 
 #include "internal.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h264.h"

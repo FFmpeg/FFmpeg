@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 #include "libavutil/avassert.h"
-#include "dsputil.h"
 
 #define ORDER_METHOD_EST     0
 #define ORDER_METHOD_2LEVEL  1

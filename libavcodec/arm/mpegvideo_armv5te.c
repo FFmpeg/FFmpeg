@@ -22,7 +22,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "mpegvideo_arm.h"
 

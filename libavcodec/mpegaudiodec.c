@@ -33,7 +33,6 @@
 #include "internal.h"
 #include "mathops.h"
 #include "mpegaudiodsp.h"
-#include "dsputil.h"
 
 /*
  * TODO:

@@ -26,7 +26,6 @@
 #include "libavutil/file.h"
 #include "avcodec.h"
 #include "libxvid.h"
-//#include "dsputil.h"
 #include "mpegvideo.h"
 
 #undef NDEBUG

@@ -29,7 +29,6 @@
 
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
 static const vec_s16 constants =

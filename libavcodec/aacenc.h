@@ -25,7 +25,6 @@
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "put_bits.h"
-#include "dsputil.h"
 
 #include "aac.h"
 #include "audio_frame_queue.h"

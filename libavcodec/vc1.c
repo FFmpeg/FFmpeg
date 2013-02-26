@@ -28,7 +28,6 @@
  */
 
 #include "internal.h"
-#include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "vc1.h"

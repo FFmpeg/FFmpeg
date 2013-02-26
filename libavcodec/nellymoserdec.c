@@ -36,7 +36,6 @@
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
 #include "internal.h"

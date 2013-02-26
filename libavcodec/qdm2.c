@@ -39,7 +39,6 @@
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "rdft.h"
 #include "mpegaudiodsp.h"

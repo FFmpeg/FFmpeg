@@ -33,7 +33,6 @@
 #include "libavutil/timer.h"
 #include "avcodec.h"
 #include "internal.h"
-#include "dsputil.h"
 #include "rangecoder.h"
 #include "golomb.h"
 #include "mathops.h"

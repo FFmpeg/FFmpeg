@@ -21,7 +21,6 @@
  */
 
 #include "vaapi_internal.h"
-#include "dsputil.h"
 
 /** Reconstruct bitstream f_code */
 static inline int mpeg2_get_f_code(MpegEncContext *s)

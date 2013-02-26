@@ -28,7 +28,6 @@
 #define AVCODEC_RV34_H
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 
 #include "h264pred.h"

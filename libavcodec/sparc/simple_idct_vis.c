@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 
-#include "libavcodec/dsputil.h"
 #include "dsputil_vis.h"
 #include "libavutil/mem.h"
 

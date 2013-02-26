@@ -27,7 +27,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "ivi_common.h"
 #include "ivi_dsp.h"
 

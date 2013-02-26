@@ -28,7 +28,7 @@
  */
 
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "avcodec.h"
 #include "bethsoftvideo.h"
 #include "bytestream.h"
 

@@ -32,7 +32,6 @@
 #include "avcodec.h"
 #define BITSTREAM_READER_LE
 #include "get_bits.h"
-#include "dsputil.h"
 #include "dct.h"
 #include "rdft.h"
 #include "fmtconvert.h"

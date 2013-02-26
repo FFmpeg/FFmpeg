@@ -27,7 +27,6 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/fmtconvert.h"
-#include "libavcodec/dsputil.h"
 
 #if HAVE_YASM
 
