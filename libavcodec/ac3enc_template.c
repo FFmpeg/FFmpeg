@@ -133,7 +133,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
 #else
     int32_t (*fixed_cpl_coords)[AC3_MAX_CHANNELS][16] = cpl_coords;
 #endif
-    int blk, ch, bnd, i, j;
+    int av_uninit(blk), ch, bnd, i, j;
     CoefSumType energy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
     int cpl_start, num_cpl_coefs;
 
