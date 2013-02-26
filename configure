@@ -2120,7 +2120,7 @@ cxx_default="g++"
 host_cc_default="gcc"
 cp_f="cp -f"
 install="install"
-ln_s="ln -sf"
+ln_s="ln -s -f"
 nm_default="nm -g"
 objformat="elf"
 pkg_config_default=pkg-config
@@ -3391,7 +3391,6 @@ case $target_os in
         network_extralibs='-lbsd'
         exeobjs=compat/plan9/main.o
         disable ffserver
-        ln_s='ln -s -f'
         cp_f='cp'
         ;;
     none)
