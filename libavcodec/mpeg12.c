@@ -1821,6 +1821,15 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                              && s->intra_dc_precision == 2 && s->q_scale_type == 1 && s->alternate_scan == 0
                              && s->progressive_frame == 0 /* vbv_delay == 0xBBB || 0xE10*/;
 
+                if (left >= 32 && !is_d10) {
+                    GetBitContext gb = s->gb;
+                    align_get_bits(&gb);
+                    if (show_bits(&gb, 24) == 0x060E2B) {
+                        av_log(avctx, AV_LOG_DEBUG, "Invalid MXF data found in video stream\n");
+                        is_d10 = 1;
+                    }
+                }
+
                 if (left < 0 || (left && show_bits(&s->gb, FFMIN(left, 23)) && !is_d10)
                     || ((avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) && left > 8)) {
                     av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d %0X\n", left, show_bits(&s->gb, FFMIN(left, 23)));
