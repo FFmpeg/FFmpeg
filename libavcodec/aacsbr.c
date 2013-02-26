@@ -399,6 +399,8 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
         max_qmf_subbands = 35;
     } else if (sbr->sample_rate >= 48000)
         max_qmf_subbands = 32;
+    else
+        av_assert0(0);
 
     if (sbr->k[2] - sbr->k[0] > max_qmf_subbands) {
         av_log(ac->avctx, AV_LOG_ERROR,
