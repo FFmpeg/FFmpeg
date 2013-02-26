@@ -160,7 +160,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base = (AVRational) {1, out_rate};
 
     av_assert0(outlink->sample_rate == out_rate);
-    av_assert0(outlink->channel_layout == out_layout);
+    av_assert0(outlink->channel_layout == out_layout || !outlink->channel_layout);
     av_assert0(outlink->format == out_format);
 
     aresample->ratio = (double)outlink->sample_rate / inlink->sample_rate;
