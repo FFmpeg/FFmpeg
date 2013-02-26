@@ -128,8 +128,6 @@ void ff_put_no_rnd_pixels8_y2_exact_mmxext(uint8_t *block,
 void ff_put_no_rnd_pixels8_y2_exact_3dnow(uint8_t *block,
                                           const uint8_t *pixels,
                                           ptrdiff_t line_size, int h);
-void ff_avg_pixels8_mmxext(uint8_t *block, const uint8_t *pixels,
-                           ptrdiff_t line_size, int h);
 void ff_avg_pixels8_3dnow(uint8_t *block, const uint8_t *pixels,
                           ptrdiff_t line_size, int h);
 void ff_avg_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
@@ -1313,12 +1311,6 @@ void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
                                int stride, int rnd)
 {
     ff_put_pixels8_mmx(dst, src, stride, 8);
-}
-
-void ff_avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src,
-                                  int stride, int rnd)
-{
-    ff_avg_pixels8_mmxext(dst, src, stride, 8);
 }
 #endif /* HAVE_YASM */
 

@@ -27,6 +27,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/vc1dsp.h"
+#include "dsputil_mmx.h"
 #include "vc1dsp.h"
 #include "config.h"
 
@@ -59,6 +60,12 @@ static void vc1_h_loop_filter16_sse4(uint8_t *src, int stride, int pq)
 {
     ff_vc1_h_loop_filter8_sse4(src,          stride, pq);
     ff_vc1_h_loop_filter8_sse4(src+8*stride, stride, pq);
+}
+
+static void avg_vc1_mspel_mc00_mmxext(uint8_t *dst, const uint8_t *src,
+                                      int stride, int rnd)
+{
+    ff_avg_pixels8_mmxext(dst, src, stride, 8);
 }
 #endif /* HAVE_YASM */
 
@@ -100,6 +107,8 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
     if (mm_flags & AV_CPU_FLAG_MMXEXT) {
         ASSIGN_LF(mmxext);
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_mmxext;
+
+        dsp->avg_vc1_mspel_pixels_tab[0]         = avg_vc1_mspel_mc00_mmxext;
     } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_3dnow;
     }

@@ -31,7 +31,6 @@
 void ff_put_pixels4_mmxext(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 void ff_avg_pixels4_mmxext(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void ff_avg_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
                                    int line_size, int h)
 {
