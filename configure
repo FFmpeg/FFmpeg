@@ -3917,7 +3917,9 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
+enabled avisynth   && { { check_lib2 "windows.h" LoadLibrary; } ||
+                        { check_lib2 "dlfcn.h" dlopen -ldl; } ||
+                        die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
 enabled fontconfig && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
