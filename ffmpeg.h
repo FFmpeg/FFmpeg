@@ -114,6 +114,7 @@ typedef struct OptionsContext {
     int chapters_input_file;
 
     int64_t recording_time;
+    int64_t stop_time;
     uint64_t limit_filesize;
     float mux_preload;
     float mux_max_delay;

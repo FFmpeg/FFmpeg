@@ -145,6 +145,7 @@ static void init_options(OptionsContext *o, int is_input)
                 " consider fixing your command line.\n");
     } else
         o->recording_time = INT64_MAX;
+    o->stop_time = INT64_MAX;
     o->mux_max_delay  = 0.7;
     o->limit_filesize = UINT64_MAX;
     o->chapters_input_file = INT_MAX;
@@ -1656,6 +1657,20 @@ loop_end:
                 exit(1);
     }
 
+    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
+        o->stop_time = INT64_MAX;
+        av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
+    }
+
+    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
+        if (o->stop_time <= o->start_time) {
+            av_log(NULL, AV_LOG_WARNING, "-to value smaller than -ss; ignoring -to.\n");
+            o->stop_time = INT64_MAX;
+        } else {
+            o->recording_time = o->stop_time - o->start_time;
+        }
+    }
+
     GROW_ARRAY(output_files, nb_output_files);
     if (!(output_files[nb_output_files - 1] = av_mallocz(sizeof(*output_files[0]))))
         exit(1);
@@ -2389,6 +2404,8 @@ const OptionDef options[] = {
     { "t",              HAS_ARG | OPT_TIME | OPT_OFFSET,             { .off = OFFSET(recording_time) },
         "record or transcode \"duration\" seconds of audio/video",
         "duration" },
+    { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET,             { .off = OFFSET(stop_time) },
+        "record or transcode stop time", "time_stop" },
     { "fs",             HAS_ARG | OPT_INT64 | OPT_OFFSET,            { .off = OFFSET(limit_filesize) },
         "set the limit file size in bytes", "limit_size" },
     { "ss",             HAS_ARG | OPT_TIME | OPT_OFFSET,             { .off = OFFSET(start_time) },
