@@ -2,9 +2,65 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- loco: check that there is data left after decoding a plane.
+- mov: use the format context for logging.
+- lagarith: avoid infinite loop in lag_rac_refill() with corrupted files
+- flicvideo: avoid an infinite loop in byte run compression
+- av_memcpy_backptr: avoid an infinite loop for back = 0
+- mlpdec: do not try to allocate a zero-sized output buffer.
+- qtrle: add more checks against pixel_ptr being negative.
+- 4xm: check the return value of read_huffman_tables().
+- cavs: initialize various context tables, avoids crashes with corrupted files
+- x86/H.264: Don't use redzone in AVX h264_deblock on Win64
+- VQA video: check chunk sizes before reading chunks
+- RoQ video decoder: check dimensions validity
+- QDM2: check array index before use, fix out of array accesses
+- mpegvideo: Do REBASE_PICTURE with byte pointers
+- SVQ3: unbreak decoding
+- libopencore-amrwb: Make AMR-WB ifdeffery more precise
+- libopencore-amr: Conditionally compile decoder and encoder bits
+- arm: Fall back to runtime cpu feature detection via /proc/cpuinfo
+- xxan: properly handle odd heights
+- msrledec: check bounds before constructing a possibly invalid pointer,
+- qtrle: fix the topmost line for 1bit
+- aasc: fix output for msrle compression
+- yop: check for input overreads
+- yop: check that extradata is large enough
+- fraps: fix off-by one bug for version 1
+- vf_delogo: fix copying the input frame
+- vf_delogo: fix an uninitialized read
+- dnxhdenc: fix invalid reads in dnxhd_mb_var_thread()
+- ATRAC3: use correct loop variable in add_tonal_components()
+- MLP: store the channel layout for each substream
+- MLP decoder: TrueHD: use Libav channel order
+- x86: ac3: Fix HAVE_MMXEXT condition to only refer to external assembly
+- arm: vp8: Fix the plain-armv6 version of vp8_luma_dc_wht
+- lavr: call mix_function_init() in ff_audio_mix_set_matrix()
+- rtpenc_chain: Use the original AVFormatContext for getting payload type
+- rtp: Make sure the output format pointer is set
+- rtp: Make sure priv_data is set before reading it
+- videodsp_armv5te: remove #if HAVE_ARMV5TE_EXTERNAL
+- get_bits: change the failure condition in init_get_bits
+- mpegvideo: fix loop condition in draw_line()
+- fate: update ref after rv30_loop_filter fix
+- RV30: fix masking in rv30_loop_filter()
+- libcdio: support recent cdio-paranoia
+- Theora: Skip zero-sized headers
+- H.264: add 3 pixels below for subpixel filter wait position
+- H.264: fix ff_generate_sliding_window_mmcos() prototype
+- H.264: don't clobber mmco opcode tables for non-first slice headers
+- libx264: use the library specific default rc_initial_buffer_occupancy
+- lavc: set the default rc_initial_buffer_occupancy
+- lavc: introduce the convenience function init_get_bits8
+- lavc: check for overflow in init_get_bits
+- configure: enable pic for shared libs on AArch64
+- zmbv: Reset the decoder on keyframe errors
+- VC1 decoder: prevent a crash due missing pred_flag parameter
+- matroska: Fix use after free
+- VP3: Fix double free in vp3_decode_end()
 - Fix a crash on windows platforms related to automatic stack alignment
   in libavresample
-- Fix memleaks in the ogg demuxer. Related to CVE-2012-2882
+- Fix memleaks in the Ogg demuxer. Related to CVE-2012-2882
 
 
 version 1.1:

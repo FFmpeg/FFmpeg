@@ -835,7 +835,7 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     version = avio_r8(pb);
     if (version > 1) {
-        av_log_ask_for_sample(c, "unsupported version %d\n", version);
+        av_log_ask_for_sample(c->fc, "unsupported version %d\n", version);
         return AVERROR_PATCHWELCOME;
     }
     avio_rb24(pb); /* flags */
