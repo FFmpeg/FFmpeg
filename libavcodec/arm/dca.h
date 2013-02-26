@@ -22,8 +22,9 @@
 #define AVCODEC_ARM_DCA_H
 
 #include <stdint.h>
+
 #include "config.h"
-#include "libavutil/intmath.h"
+#include "libavcodec/mathops.h"
 
 #if HAVE_ARMV6_INLINE && AV_GCC_VERSION_AT_LEAST(4,4) && !CONFIG_THUMB
 
