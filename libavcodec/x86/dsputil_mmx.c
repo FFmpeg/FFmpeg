@@ -298,7 +298,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 
 
 #if HAVE_YASM
-#define ff_put_pixels8_mmx ff_put_pixels8_mmxext
 
 /***********************************/
 /* 3Dnow specific */
@@ -1371,16 +1370,13 @@ void ff_avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
 {
     avg_pixels16_mmx(dst, src, stride, 16);
 }
-#endif /* HAVE_INLINE_ASM */
 
-#if HAVE_YASM
 /* VC-1-specific */
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
                                int stride, int rnd)
 {
-    ff_put_pixels8_mmx(dst, src, stride, 8);
+    put_pixels8_mmx(dst, src, stride, 8);
 }
-#endif /* HAVE_YASM */
 
 #if CONFIG_DIRAC_DECODER
 #define DIRAC_PIXOP(OPNAME2, OPNAME, EXT)\
@@ -1483,7 +1479,6 @@ static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size,
 }
 #endif
 
-#if HAVE_INLINE_ASM
 static void vector_clipf_sse(float *dst, const float *src,
                              float min, float max, int len)
 {
