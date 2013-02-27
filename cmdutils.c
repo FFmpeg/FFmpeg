@@ -1462,10 +1462,8 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
     if (!codec)
         codec            = s->oformat ? avcodec_find_encoder(codec_id)
                                       : avcodec_find_decoder(codec_id);
-    if (!codec)
-        return NULL;
 
-    switch (codec->type) {
+    switch (st->codec->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         prefix  = 'v';
         flags  |= AV_OPT_FLAG_VIDEO_PARAM;
