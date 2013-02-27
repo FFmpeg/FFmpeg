@@ -375,4 +375,6 @@ enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
  */
 enum AVCodecID ff_get_pcm_codec_id(int bps, int flt, int be, int sflags);
 
+int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
+
 #endif /* AVFORMAT_INTERNAL_H */

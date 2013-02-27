@@ -116,10 +116,6 @@ static int tls_open(URLContext *h, const char *uri, int flags)
 
     ff_tls_init();
 
-    proxy_path = getenv("http_proxy");
-    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
-        av_strstart(proxy_path, "http://", NULL);
-
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
     ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, NULL);
 
@@ -128,6 +124,10 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         numerichost = 1;
         freeaddrinfo(ai);
     }
+
+    proxy_path = getenv("http_proxy");
+    use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), host) &&
+                proxy_path != NULL && av_strstart(proxy_path, "http://", NULL);
 
     if (use_proxy) {
         char proxy_host[200], proxy_auth[200], dest[200];
