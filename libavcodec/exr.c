@@ -37,6 +37,7 @@
 #include "mathops.h"
 #include "thread.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 
 enum ExrCompr {
     EXR_RAW   = 0,
@@ -44,6 +45,7 @@ enum ExrCompr {
     EXR_ZIP1  = 2,
     EXR_ZIP16 = 3,
     EXR_PIZ   = 4,
+    EXR_PXR24 = 5,
     EXR_B44   = 6,
     EXR_B44A  = 7,
 };
@@ -77,6 +79,8 @@ typedef struct EXRContext {
     uint32_t xmax, xmin;
     uint32_t ymax, ymin;
     uint32_t xdelta, ydelta;
+
+    int ysize;
 
     uint64_t scan_line_size;
     int scan_lines_per_block;
@@ -273,6 +277,61 @@ static int rle_uncompress(const uint8_t *src, int compressed_size,
     return 0;
 }
 
+static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
+                            int compressed_size, int uncompressed_size,
+                            EXRThreadData *td)
+{
+    unsigned long dest_len = uncompressed_size;
+    const uint8_t *in = td->tmp;
+    uint8_t *out;
+    int c, i, j;
+
+    if (uncompress(td->tmp, &dest_len, src, compressed_size) != Z_OK ||
+        dest_len != uncompressed_size)
+        return AVERROR(EINVAL);
+
+    out = td->uncompressed_data;
+    for (i = 0; i < s->ysize; i++) {
+        for (c = 0; c < s->nb_channels; c++) {
+            EXRChannel *channel = &s->channels[c];
+            const uint8_t *ptr[4];
+            uint32_t pixel = 0;
+
+            switch (channel->pixel_type) {
+            case EXR_FLOAT:
+                ptr[0] = in;
+                ptr[1] = ptr[0] + s->xdelta;
+                ptr[2] = ptr[1] + s->xdelta;
+                in = ptr[2] + s->xdelta;
+
+                for (j = 0; j < s->xdelta; ++j) {
+                    uint32_t diff = (*(ptr[0]++) << 24) |
+                                    (*(ptr[1]++) << 16) |
+                                    (*(ptr[2]++) <<  8);
+                    pixel += diff;
+                    AV_WL32(out, pixel);
+                }
+                break;
+            case EXR_HALF:
+                ptr[0] = in;
+                ptr[1] = ptr[0] + s->xdelta;
+                in = ptr[1] + s->xdelta;
+                for (j = 0; j < s->xdelta; j++, out += 2) {
+                    uint32_t diff = (*(ptr[0]++) << 8) | *(ptr[1]++);
+
+                    pixel += diff;
+                    AV_WL16(out, pixel);
+                }
+                break;
+            default:
+                av_assert1(0);
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int decode_block(AVCodecContext *avctx, void *tdata,
                         int jobnr, int threadnr)
 {
@@ -305,7 +364,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     if (data_size <= 0 || data_size > buf_size)
         return AVERROR_INVALIDDATA;
 
-    uncompressed_size = s->scan_line_size * FFMIN(s->scan_lines_per_block, s->ymax - line + 1);
+    s->ysize = FFMIN(s->scan_lines_per_block, s->ymax - line + 1);
+    uncompressed_size = s->scan_line_size * s->ysize;
     if ((s->compr == EXR_RAW && (data_size != uncompressed_size ||
                                  line_offset > buf_size - uncompressed_size)) ||
         (s->compr != EXR_RAW && (data_size > uncompressed_size ||
@@ -323,6 +383,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         case EXR_ZIP1:
         case EXR_ZIP16:
             ret = zip_uncompress(src, data_size, uncompressed_size, td);
+            break;
+        case EXR_PXR24:
+            ret = pxr24_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_RLE:
             ret = rle_uncompress(src, data_size, uncompressed_size, td);
@@ -646,6 +709,7 @@ static int decode_frame(AVCodecContext *avctx,
     case EXR_ZIP1:
         s->scan_lines_per_block = 1;
         break;
+    case EXR_PXR24:
     case EXR_ZIP16:
         s->scan_lines_per_block = 16;
         break;
