@@ -199,10 +199,28 @@ static void reorder_pixels(uint8_t *src, uint8_t *dst, int size)
     }
 }
 
-static int rle_uncompress(const uint8_t *src, int ssize, uint8_t *dst, int dsize)
+static int zip_uncompress(const uint8_t *src, int compressed_size,
+                          int uncompressed_size, EXRThreadData *td)
 {
-    int8_t *d = (int8_t *)dst;
+    unsigned long dest_len = uncompressed_size;
+
+    if (uncompress(td->tmp, &dest_len, src, compressed_size) != Z_OK ||
+        dest_len != uncompressed_size)
+        return AVERROR(EINVAL);
+
+    predictor(td->tmp, uncompressed_size);
+    reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+
+    return 0;
+}
+
+static int rle_uncompress(const uint8_t *src, int compressed_size,
+                          int uncompressed_size, EXRThreadData *td)
+{
+    int8_t *d = (int8_t *)td->tmp;
     const int8_t *s = (const int8_t *)src;
+    int ssize = compressed_size;
+    int dsize = uncompressed_size;
     int8_t *dend = d + dsize;
     int count;
 
@@ -232,7 +250,13 @@ static int rle_uncompress(const uint8_t *src, int ssize, uint8_t *dst, int dsize
         }
     }
 
-    return dend != d;
+    if (dend != d)
+        return AVERROR_INVALIDDATA;
+
+    predictor(td->tmp, uncompressed_size);
+    reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+
+    return 0;
 }
 
 static int decode_block(AVCodecContext *avctx, void *tdata,
@@ -251,7 +275,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     const uint8_t *src;
     int axmax = (avctx->width - (s->xmax + 1)) * 2 * s->desc->nb_components;
     int bxmin = s->xmin * 2 * s->desc->nb_components;
-    int i, x, buf_size = s->buf_size;
+    int ret, i, x, buf_size = s->buf_size;
 
     line_offset = AV_RL64(s->table + jobnr * 8);
     // Check if the buffer has the required bytes needed from the offset
@@ -280,25 +304,16 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         av_fast_padded_malloc(&td->tmp, &td->tmp_size, uncompressed_size);
         if (!td->uncompressed_data || !td->tmp)
             return AVERROR(ENOMEM);
-    }
-    if ((s->compr == EXR_ZIP1 || s->compr == EXR_ZIP16) && data_size < uncompressed_size) {
-        unsigned long dest_len = uncompressed_size;
 
-        if (uncompress(td->tmp, &dest_len, src, data_size) != Z_OK ||
-            dest_len != uncompressed_size) {
-            av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");
-            return AVERROR(EINVAL);
+        switch (s->compr) {
+        case EXR_ZIP1:
+        case EXR_ZIP16:
+            ret = zip_uncompress(src, data_size, uncompressed_size, td);
+            break;
+        case EXR_RLE:
+            ret = rle_uncompress(src, data_size, uncompressed_size, td);
         }
-    } else if (s->compr == EXR_RLE && data_size < uncompressed_size) {
-        if (rle_uncompress(src, data_size, td->tmp, uncompressed_size)) {
-            av_log(avctx, AV_LOG_ERROR, "error during rle decompression\n");
-            return AVERROR(EINVAL);
-        }
-    }
 
-    if (data_size < uncompressed_size) {
-        predictor(td->tmp, uncompressed_size);
-        reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
         src = td->uncompressed_data;
     }
 
