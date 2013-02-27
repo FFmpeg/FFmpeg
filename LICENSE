@@ -23,6 +23,11 @@ Specifically, the GPL parts of Libav are
     - vf_hqdn3d.c
     - vf_yadif.c
 
+Should you, for whatever reason, prefer to use version 3 of the (L)GPL, then
+the configure parameter --enable-version3 will activate this licensing option
+for you. Read the file COPYING.LGPLv3 or, if you have enabled GPL parts,
+COPYING.GPLv3 to learn the exact legal terms that apply in this case.
+
 There are a handful of files under other licensing terms, namely:
 
 * The files libavcodec/jfdctfst.c, libavcodec/jfdctint_template.c and
@@ -31,11 +36,6 @@ There are a handful of files under other licensing terms, namely:
   documentation accompanying your program if you only distribute executables.
   You must also indicate any changes including additions and deletions to
   those three files in the documentation.
-
-Should you, for whatever reason, prefer to use version 3 of the (L)GPL, then
-the configure parameter --enable-version3 will activate this licensing option
-for you. Read the file COPYING.LGPLv3 or, if you have enabled GPL parts,
-COPYING.GPLv3 to learn the exact legal terms that apply in this case.
 
 
 external libraries
