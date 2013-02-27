@@ -178,7 +178,7 @@ static int config_props(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     uint8_t rgba_map[4]; /* component index -> RGBA color index map */
     int min[4], max[4];
-    int val, comp, ret;
+    int val, color, ret;
 
     lut->hsub = desc->log2_chroma_w;
     lut->vsub = desc->log2_chroma_h;
@@ -213,9 +213,9 @@ static int config_props(AVFilterLink *inlink)
         lut->step = av_get_bits_per_pixel(desc) >> 3;
     }
 
-    for (comp = 0; comp < desc->nb_components; comp++) {
+    for (color = 0; color < desc->nb_components; color++) {
         double res;
-        int color = lut->is_rgb ? rgba_map[comp] : comp;
+        int comp = lut->is_rgb ? rgba_map[color] : color;
 
         /* create the parsed expression */
         ret = av_expr_parse(&lut->comp_expr[color], lut->comp_expr_str[color],
