@@ -1766,6 +1766,8 @@ static int transcode_init(void)
 
             if (ost->st->codec->me_threshold)
                 input_streams[ost->source_index]->st->codec->debug |= FF_DEBUG_MV;
+        } else {
+            av_opt_set_dict(ost->st->codec, &ost->opts);
         }
     }
 

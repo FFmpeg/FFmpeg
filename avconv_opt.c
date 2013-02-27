@@ -800,6 +800,8 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
                    preset, ost->file_index, ost->index);
             exit(1);
         }
+    } else {
+        ost->opts = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st, NULL);
     }
 
     avcodec_get_context_defaults3(st->codec, ost->enc);
