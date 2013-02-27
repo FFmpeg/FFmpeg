@@ -2156,6 +2156,12 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         s->block_last_index[5] = 0;
         s->block[4][0] =
         s->block[5][0] = (1024 + s->c_dc_scale / 2) / s->c_dc_scale;
+        if (!s->chroma_y_shift) { /* 422 / 444 */
+            for (i=6; i<12; i++) {
+                s->block_last_index[i] = 0;
+                s->block[i][0] = s->block[4][0];
+            }
+        }
     }
 
     // non c quantize code returns incorrect block_last_index FIXME
