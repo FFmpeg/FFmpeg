@@ -169,6 +169,8 @@ typedef struct OptionsContext {
     int        nb_reinit_filters;
     SpecifierOpt *fix_sub_duration;
     int        nb_fix_sub_duration;
+    SpecifierOpt *canvas_sizes;
+    int        nb_canvas_sizes;
     SpecifierOpt *pass;
     int        nb_pass;
     SpecifierOpt *passlogfiles;

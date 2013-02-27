@@ -617,11 +617,19 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
             break;
         case AVMEDIA_TYPE_DATA:
-        case AVMEDIA_TYPE_SUBTITLE:
+        case AVMEDIA_TYPE_SUBTITLE: {
+            char *canvas_size = NULL;
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(dec->codec_id);
             MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
+            MATCH_PER_STREAM_OPT(canvas_sizes, str, canvas_size, ic, st);
+            if (canvas_size &&
+                av_parse_video_size(&dec->width, &dec->height, canvas_size) < 0) {
+                av_log(NULL, AV_LOG_FATAL, "Invalid canvas size: %s.\n", canvas_size);
+                exit(1);
+            }
             break;
+        }
         case AVMEDIA_TYPE_ATTACHMENT:
         case AVMEDIA_TYPE_UNKNOWN:
             break;
@@ -2593,6 +2601,8 @@ const OptionDef options[] = {
         , "force subtitle tag/fourcc", "fourcc/tag" },
     { "fix_sub_duration", OPT_BOOL | OPT_EXPERT | OPT_SUBTITLE | OPT_SPEC, { .off = OFFSET(fix_sub_duration) },
         "fix subtitles duration" },
+    { "canvas_size", OPT_SUBTITLE | HAS_ARG | OPT_STRING | OPT_SPEC, { .off = OFFSET(canvas_sizes) },
+        "set canvas size (WxH or abbreviation)", "size" },
 
     /* grab options */
     { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_video_channel },

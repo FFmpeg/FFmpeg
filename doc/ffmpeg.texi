@@ -681,6 +681,9 @@ Note that this option will delay the output of all data until the next
 subtitle packet is decoded: it may increase memory consumption and latency a
 lot.
 
+@item -canvas_size @var{size}
+Set the size of the canvas used to render subtitles.
+
 @end table
 
 @section Advanced options
