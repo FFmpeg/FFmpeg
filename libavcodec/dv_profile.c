@@ -298,7 +298,11 @@ const DVprofile* avpriv_dv_frame_profile2(AVCodecContext* codec, const DVprofile
         return &dv_profiles[2];
     }
 
-    if(stype == 0 && codec && codec->codec_tag==AV_RL32("dvsd") && codec->coded_width==720 && codec->coded_height==576)
+    if(   stype == 0
+       && codec
+       && (codec->codec_tag==AV_RL32("dvsd") || codec->codec_tag==AV_RL32("CDVC"))
+       && codec->coded_width ==720
+       && codec->coded_height==576)
         return &dv_profiles[1];
 
     for (i = 0; i < FF_ARRAY_ELEMS(dv_profiles); i++)
