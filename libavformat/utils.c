@@ -3967,6 +3967,10 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
         local_pkt.dts = av_rescale_q(pkt->dts,
                                      src->streams[pkt->stream_index]->time_base,
                                      dst->streams[dst_stream]->time_base);
+    if (pkt->duration)
+        local_pkt.duration = av_rescale_q(pkt->duration,
+                                          src->streams[pkt->stream_index]->time_base,
+                                          dst->streams[dst_stream]->time_base);
     return av_write_frame(dst, &local_pkt);
 }
 
