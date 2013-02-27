@@ -777,7 +777,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
 
 
 #if HAVE_YASM
-#define QPEL_OP(OPNAME, ROUNDER, RND, OP, MMX)                          \
+#define QPEL_OP(OPNAME, ROUNDER, RND, MMX)                              \
 static void OPNAME ## qpel8_mc00_ ## MMX (uint8_t *dst, uint8_t *src,   \
                                           int stride)                   \
 {                                                                       \
@@ -1158,17 +1158,9 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst, uint8_t *src,   \
                                                     stride, 16);        \
 }
 
-#define PUT_OP(a, b, temp, size)                \
-    "mov"#size"        "#a", "#b"       \n\t"
-
-#define AVG_MMXEXT_OP(a, b, temp, size)         \
-    "mov"#size"        "#b", "#temp"    \n\t"   \
-    "pavgb          "#temp", "#a"       \n\t"   \
-    "mov"#size"        "#a", "#b"       \n\t"
-
-QPEL_OP(put_,          ff_pw_16, _,        PUT_OP,        mmxext)
-QPEL_OP(avg_,          ff_pw_16, _,        AVG_MMXEXT_OP, mmxext)
-QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, PUT_OP,        mmxext)
+QPEL_OP(put_,          ff_pw_16, _,        mmxext)
+QPEL_OP(avg_,          ff_pw_16, _,        mmxext)
+QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, mmxext)
 #endif /* HAVE_YASM */
 
 
