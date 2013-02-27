@@ -655,7 +655,7 @@ static int decode_frame(AVCodecContext *avctx,
     scan_line_blocks = (s->ydelta + s->scan_lines_per_block - 1) / s->scan_lines_per_block;
 
     if (s->compr != EXR_RAW) {
-        int thread_data_size, prev_size;
+        size_t thread_data_size, prev_size;
         EXRThreadData *m;
 
         prev_size = s->thread_data_size;
