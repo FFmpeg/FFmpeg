@@ -48,7 +48,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <float.h>
-#if HAVE_ICONV
+#if CONFIG_ICONV
 # include <iconv.h>
 #endif
 
@@ -1116,7 +1116,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 if (avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_AUTOMATIC)
                     avctx->sub_charenc_mode = FF_SUB_CHARENC_MODE_PRE_DECODER;
 
-                if (!HAVE_ICONV && avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_PRE_DECODER) {
+                if (!CONFIG_ICONV && avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_PRE_DECODER) {
                     av_log(avctx, AV_LOG_ERROR, "Character encoding subtitles "
                            "conversion needs a libavcodec built with iconv support "
                            "for this codec\n");
@@ -1887,7 +1887,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
 static int recode_subtitle(AVCodecContext *avctx,
                            AVPacket *outpkt, const AVPacket *inpkt)
 {
-#if HAVE_ICONV
+#if CONFIG_ICONV
     iconv_t cd = (iconv_t)-1;
     int ret = 0;
     char *inb, *outb;
@@ -1898,7 +1898,7 @@ static int recode_subtitle(AVCodecContext *avctx,
     if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_PRE_DECODER)
         return 0;
 
-#if HAVE_ICONV
+#if CONFIG_ICONV
     cd = iconv_open("UTF-8", avctx->sub_charenc);
     if (cd == (iconv_t)-1) {
         av_log(avctx, AV_LOG_ERROR, "Unable to open iconv context "

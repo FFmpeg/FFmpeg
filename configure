@@ -188,6 +188,7 @@ External library support:
   --enable-fontconfig      enable fontconfig
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
+  --enable-iconv           enable iconv [autodetect]
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -1122,6 +1123,7 @@ EXTERNAL_LIBRARY_LIST="
     fontconfig
     frei0r
     gnutls
+    iconv
     libaacplus
     libass
     libbluray
@@ -1406,7 +1408,6 @@ HAVE_LIST="
     gnu_as
     gsm_h
     ibm_asm
-    iconv
     inet_aton
     io_h
     isatty
@@ -3765,7 +3766,6 @@ check_func  getopt
 check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  gettimeofday
-check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv
 check_func  inet_aton $network_extralibs
 check_func  isatty
 check_func  localtime_r
@@ -3821,6 +3821,7 @@ check_header asm/types.h
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
 
 if ! disabled w32threads && ! enabled pthreads; then
     check_func_headers "windows.h process.h" _beginthreadex && enable w32threads
