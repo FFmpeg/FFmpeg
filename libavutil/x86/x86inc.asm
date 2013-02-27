@@ -1459,3 +1459,14 @@ FMA4_INSTR fnmsubpd, fnmsub132pd, fnmsub213pd, fnmsub231pd
 FMA4_INSTR fnmsubps, fnmsub132ps, fnmsub213ps, fnmsub231ps
 FMA4_INSTR fnmsubsd, fnmsub132sd, fnmsub213sd, fnmsub231sd
 FMA4_INSTR fnmsubss, fnmsub132ss, fnmsub213ss, fnmsub231ss
+
+; workaround: vpbroadcastq is broken in x86_32 due to a yasm bug
+%if ARCH_X86_64 == 0
+%macro vpbroadcastq 2
+%if sizeof%1 == 16
+    movddup %1, %2
+%else
+    vbroadcastsd %1, %2
+%endif
+%endmacro
+%endif
