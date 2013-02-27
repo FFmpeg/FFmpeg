@@ -40,6 +40,8 @@
 #define mkdir(a, b) _mkdir(a)
 #endif
 
+#include "cmdutils.h"
+
 #include "libavformat/avformat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
