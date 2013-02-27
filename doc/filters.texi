@@ -3458,7 +3458,7 @@ Tile several successive frames together.
 It accepts as argument the tile size (i.e. the number of lines and columns)
 in the form "@var{w}x@var{h}".
 
-For example, produce 8×8 PNG tiles of all keyframes (@option{-skip_frame
+For example, produce 8x8 PNG tiles of all keyframes (@option{-skip_frame
 nokey}) in a movie:
 @example
 ffmpeg -skip_frame nokey -i file.avi -vf 'scale=128:72,tile=8x8' -an -vsync 0 keyframes%03d.png
@@ -4554,7 +4554,7 @@ streams in each segment. Default is 0.
 The filter has @var{v}+@var{a} outputs: first @var{v} video outputs, then
 @var{a} audio outputs.
 
-There are @var{n}×(@var{v}+@var{a}) inputs: first the inputs for the first
+There are @var{n}x(@var{v}+@var{a}) inputs: first the inputs for the first
 segment, in the same order as the outputs, then the inputs for the second
 segment, etc.
 
