@@ -238,6 +238,8 @@ static int decode_frame(AVCodecContext *avctx,
         decoded = loco_decode_plane(l, p->data[0] + p->linesize[0]*(avctx->height-1) + 3, avctx->width, avctx->height,
                                     -p->linesize[0], buf, buf_size, 4);
         break;
+    default:
+        av_assert0(0);
     }
 
     if (decoded < 0 || decoded > buf_size)
