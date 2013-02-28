@@ -1004,6 +1004,10 @@ require_pkg_config(){
     add_extralibs $(get_safe ${pkg}_libs)
 }
 
+hostcc_e(){
+    eval printf '%s\\n' $HOSTCC_E
+}
+
 hostcc_o(){
     eval printf '%s\\n' $HOSTCC_O
 }
@@ -1013,6 +1017,13 @@ check_host_cc(){
     cat > $TMPC
     log_file $TMPC
     check_cmd $host_cc $host_cflags "$@" $HOSTCC_C $(hostcc_o $TMPO) $TMPC
+}
+
+check_host_cpp(){
+    log check_host_cpp "$@"
+    cat > $TMPC
+    log_file $TMPC
+    check_cmd $host_cc $HOSTCPPFLAGS $HOSTCFLAGS "$@" $(hostcc_e $TMPO) $TMPC
 }
 
 check_host_cppflags(){
@@ -1027,6 +1038,19 @@ check_host_cflags(){
     set -- $($host_cflags_filter "$@")
     check_host_cc "$@" <<EOF && append host_cflags "$@"
 int x;
+EOF
+}
+
+check_host_cpp_condition(){
+    log check_host_cpp_condition "$@"
+    header=$1
+    condition=$2
+    shift 2
+    check_host_cpp "$@" <<EOF
+#include <$header>
+#if !($condition)
+#error "unsatisfied condition: $condition"
+#endif
 EOF
 }
 
@@ -2073,11 +2097,12 @@ LD_O='-o $@'
 LD_LIB='-l%'
 LD_PATH='-L'
 HOSTCC_C='-c'
+HOSTCC_E='-E -o $@'
 HOSTCC_O='-o $@'
 HOSTLD_O='-o $@'
 
 host_cflags='-O3 -g'
-host_cppflags='-D_ISOC99_SOURCE -D_XOPEN_SOURCE=600'
+host_cppflags='-D_ISOC99_SOURCE'
 host_libs='-lm'
 host_cflags_filter=echo
 host_ldflags_filter=echo
@@ -3371,46 +3396,53 @@ esac
 
 # determine libc flavour
 
-# uclibc defines __GLIBC__, so it needs to be checked before glibc.
-if check_cpp_condition features.h "defined __UCLIBC__"; then
-    libc_type=uclibc
-    add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
-elif check_cpp_condition features.h "defined __GLIBC__"; then
-    libc_type=glibc
-    add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
-# MinGW headers can be installed on Cygwin, so check for newlib first.
-elif check_cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
-    libc_type=newlib
-    add_cppflags -U__STRICT_ANSI__
-# MinGW64 is backwards compatible with MinGW32, so check for it first.
-elif check_cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
-    libc_type=mingw64
-    add_cppflags -U__STRICT_ANSI__
-elif check_cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
-    libc_type=mingw32
-    check_cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
-        (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
-        die "ERROR: MinGW32 runtime version must be >= 3.15."
-    add_cppflags -U__STRICT_ANSI__
-elif check_cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
-    libc_type=msvcrt
-    # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
-    # 0x601 by default unless something else is set by the user.
-    # This can easily lead to us detecting functions only present
-    # in such new versions and producing binaries requiring windows 7.0.
-    # Therefore explicitly set the default to XP unless the user has
-    # set something else on the command line.
-    check_cpp_condition stdlib.h "defined(_WIN32_WINNT)" || add_cppflags -D_WIN32_WINNT=0x0502
-elif check_cpp_condition stddef.h "defined __KLIBC__"; then
-    libc_type=klibc
-elif check_cpp_condition sys/cdefs.h "defined __BIONIC__"; then
-    libc_type=bionic
-elif check_cpp_condition sys/brand.h "defined SOLARIS_BRAND_NAME"; then
-    libc_type=solaris
-    add_cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
-fi
+probe_libc(){
+    pfx=$1
+    # uclibc defines __GLIBC__, so it needs to be checked before glibc.
+    if check_${pfx}cpp_condition features.h "defined __UCLIBC__"; then
+        eval ${pfx}libc_type=uclibc
+        add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
+    elif check_${pfx}cpp_condition features.h "defined __GLIBC__"; then
+        eval ${pfx}libc_type=glibc
+        add_${pfx}cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
+    # MinGW headers can be installed on Cygwin, so check for newlib first.
+    elif check_${pfx}cpp_condition newlib.h "defined _NEWLIB_VERSION"; then
+        eval ${pfx}libc_type=newlib
+        add_${pfx}cppflags -U__STRICT_ANSI__
+    # MinGW64 is backwards compatible with MinGW32, so check for it first.
+    elif check_${pfx}cpp_condition _mingw.h "defined __MINGW64_VERSION_MAJOR"; then
+        eval ${pfx}libc_type=mingw64
+        add_${pfx}cppflags -U__STRICT_ANSI__
+    elif check_${pfx}cpp_condition _mingw.h "defined __MINGW32_VERSION"; then
+        eval ${pfx}libc_type=mingw32
+        check_${pfx}cpp_condition _mingw.h "__MINGW32_MAJOR_VERSION > 3 || \
+            (__MINGW32_MAJOR_VERSION == 3 && __MINGW32_MINOR_VERSION >= 15)" ||
+            die "ERROR: MinGW32 runtime version must be >= 3.15."
+        add_${pfx}cppflags -U__STRICT_ANSI__
+    elif check_${pfx}cpp_condition crtversion.h "defined _VC_CRT_MAJOR_VERSION"; then
+        eval ${pfx}libc_type=msvcrt
+        # The MSVC 2010 headers (Win 7.0 SDK) set _WIN32_WINNT to
+        # 0x601 by default unless something else is set by the user.
+        # This can easily lead to us detecting functions only present
+        # in such new versions and producing binaries requiring windows 7.0.
+        # Therefore explicitly set the default to XP unless the user has
+        # set something else on the command line.
+        check_${pfx}cpp_condition stdlib.h "defined(_WIN32_WINNT)" ||
+            add_${pfx}cppflags -D_WIN32_WINNT=0x0502
+    elif check_${pfx}cpp_condition stddef.h "defined __KLIBC__"; then
+        eval ${pfx}libc_type=klibc
+    elif check_${pfx}cpp_condition sys/cdefs.h "defined __BIONIC__"; then
+        eval ${pfx}libc_type=bionic
+    elif check_${pfx}cpp_condition sys/brand.h "defined SOLARIS_BRAND_NAME"; then
+        eval ${pfx}libc_type=solaris
+        add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
+    fi
+}
 
+probe_libc
 test -n "$libc_type" && enable libc_$libc_type
+probe_libc host_
+test -n "$host_libc_type" && enable host_libc_$host_libc_type
 
 case $libc_type in
     bionic)
@@ -4154,10 +4186,11 @@ check_deps $CONFIG_LIST       \
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
+echo "C library                 $libc_type"
 if test "$host_cc" != "$cc"; then
     echo "host C compiler           $host_cc"
+    echo "host C library            $host_libc_type"
 fi
-echo "C library                 $libc_type"
 echo "ARCH                      $arch ($cpu)"
 if test "$build_suffix" != ""; then
     echo "build suffix              $build_suffix"
