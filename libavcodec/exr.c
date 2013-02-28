@@ -48,6 +48,17 @@ enum ExrCompr {
     EXR_B44A  = 7,
 };
 
+enum ExrPixelType {
+    EXR_UINT,
+    EXR_HALF,
+    EXR_FLOAT
+};
+
+typedef struct EXRChannel {
+    int               xsub, ysub;
+    enum ExrPixelType pixel_type;
+} EXRChannel;
+
 typedef struct EXRThreadData {
     uint8_t *uncompressed_data;
     int uncompressed_size;
@@ -72,6 +83,9 @@ typedef struct EXRContext {
 
     const uint8_t *buf, *table;
     int buf_size;
+
+    EXRChannel *channels;
+    int nb_channels;
 
     EXRThreadData *thread_data;
     int thread_data_size;
@@ -405,6 +419,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->channel_offsets[2] = -1;
     s->channel_offsets[3] = -1;
     s->bits_per_color_id = -1;
+    s->nb_channels = 0;
     s->compr = -1;
     s->buf = buf;
     s->buf_size = buf_size;
@@ -443,6 +458,7 @@ static int decode_frame(AVCodecContext *avctx,
 
             channel_list_end = buf + variable_buffer_data_size;
             while (channel_list_end - buf >= 19) {
+                EXRChannel *channel;
                 int current_bits_per_color_id = -1;
                 int channel_index = -1;
                 int xsub, ysub;
@@ -488,6 +504,14 @@ static int decode_frame(AVCodecContext *avctx,
                     s->bits_per_color_id  = current_bits_per_color_id;
                     s->channel_offsets[channel_index] = current_channel_offset;
                 }
+
+                s->channels = av_realloc_f(s->channels, ++s->nb_channels, sizeof(EXRChannel));
+                if (!s->channels)
+                    return AVERROR(ENOMEM);
+                channel = &s->channels[s->nb_channels - 1];
+                channel->pixel_type = current_bits_per_color_id;
+                channel->xsub = xsub;
+                channel->ysub = ysub;
 
                 current_channel_offset += 1 << current_bits_per_color_id;
             }
@@ -725,6 +749,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     av_freep(&s->thread_data);
     s->thread_data_size = 0;
+    av_freep(&s->channels);
 
     return 0;
 }
