@@ -636,7 +636,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log_missing_feature(avctx, "32-bit unsigned int", 1);
         return AVERROR_PATCHWELCOME;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown pixel type : %d\n", s->pixel_type);
+        av_log(avctx, AV_LOG_ERROR, "Missing channel list\n");
         return AVERROR_INVALIDDATA;
     }
 
