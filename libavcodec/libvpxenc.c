@@ -48,6 +48,9 @@ struct FrameListData {
     unsigned long duration;          /**< duration to show frame
                                           (in timebase units) */
     uint32_t flags;                  /**< flags for this frame */
+    uint64_t sse[4];
+    int have_sse;                    /**< true if we have pending sse[] */
+    uint64_t frame_number;
     struct FrameListData *next;
 };
 
@@ -57,6 +60,9 @@ typedef struct VP8EncoderContext {
     struct vpx_image rawimg;
     struct vpx_fixed_buf twopass_stats;
     int deadline; //i.e., RT/GOOD/BEST
+    uint64_t sse[4];
+    int have_sse; /**< true if we have pending sse[] */
+    uint64_t frame_number;
     struct FrameListData *coded_frame_list;
 
     int cpu_used;
@@ -232,6 +238,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 {
     VP8Context *ctx = avctx->priv_data;
     struct vpx_codec_enc_cfg enccfg;
+    vpx_codec_flags_t flags = (avctx->flags & CODEC_FLAG_PSNR) ? VPX_CODEC_USE_PSNR : 0;
     int res;
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
@@ -364,7 +371,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
-    res = vpx_codec_enc_init(&ctx->encoder, iface, &enccfg, 0);
+    res = vpx_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
     if (res != VPX_CODEC_OK) {
         log_encoder_error(avctx, "Failed to initialize encoder");
         return AVERROR(EINVAL);
@@ -397,6 +404,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     vpx_img_wrap(&ctx->rawimg, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
 
+    ctx->have_sse     = 0;
+    ctx->frame_number = 0;
+
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
@@ -407,13 +417,30 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 }
 
 static inline void cx_pktcpy(struct FrameListData *dst,
-                             const struct vpx_codec_cx_pkt *src)
+                             const struct vpx_codec_cx_pkt *src,
+                             VP8Context *ctx)
 {
     dst->pts      = src->data.frame.pts;
     dst->duration = src->data.frame.duration;
     dst->flags    = src->data.frame.flags;
     dst->sz       = src->data.frame.sz;
     dst->buf      = src->data.frame.buf;
+    dst->have_sse = 0;
+    /* For alt-ref frame, don't store PSNR or increment frame_number */
+    if (!(dst->flags & VPX_FRAME_IS_INVISIBLE)) {
+        dst->frame_number = ++ctx->frame_number;
+        dst->have_sse = ctx->have_sse;
+        if (ctx->have_sse) {
+            /* associate last-seen SSE to the frame. */
+            /* Transfers ownership from ctx to dst. */
+            /* WARNING! This makes the assumption that PSNR_PKT comes
+               just before the frame it refers to! */
+            memcpy(dst->sse, ctx->sse, sizeof(dst->sse));
+            ctx->have_sse = 0;
+        }
+    } else {
+        dst->frame_number = -1;   /* sanity marker */
+    }
 }
 
 /**
@@ -438,6 +465,19 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
             pkt->flags            |= AV_PKT_FLAG_KEY;
         } else
             coded_frame->pict_type = AV_PICTURE_TYPE_P;
+
+        if (cx_frame->have_sse) {
+            int i;
+            /* Beware of the Y/U/V/all order! */
+            coded_frame->error[0] = cx_frame->sse[1];
+            coded_frame->error[1] = cx_frame->sse[2];
+            coded_frame->error[2] = cx_frame->sse[3];
+            coded_frame->error[3] = 0;    // alpha
+            for (i = 0; i < 4; ++i) {
+                avctx->error[i] += coded_frame->error[i];
+            }
+            cx_frame->have_sse = 0;
+        }
     } else {
         return ret;
     }
@@ -481,7 +521,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                 /* avoid storing the frame when the list is empty and we haven't yet
                    provided a frame for output */
                 av_assert0(!ctx->coded_frame_list);
-                cx_pktcpy(&cx_frame, pkt);
+                cx_pktcpy(&cx_frame, pkt, ctx);
                 size = storeframe(avctx, &cx_frame, pkt_out, coded_frame);
                 if (size < 0)
                     return size;
@@ -494,7 +534,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                            "Frame queue element alloc failed\n");
                     return AVERROR(ENOMEM);
                 }
-                cx_pktcpy(cx_frame, pkt);
+                cx_pktcpy(cx_frame, pkt, ctx);
                 cx_frame->buf = av_malloc(cx_frame->sz);
 
                 if (!cx_frame->buf) {
@@ -521,7 +561,14 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
             stats->sz += pkt->data.twopass_stats.sz;
             break;
         }
-        case VPX_CODEC_PSNR_PKT: //FIXME add support for CODEC_FLAG_PSNR
+        case VPX_CODEC_PSNR_PKT:
+            av_assert0(!ctx->have_sse);
+            ctx->sse[0] = pkt->data.psnr.sse[0];
+            ctx->sse[1] = pkt->data.psnr.sse[1];
+            ctx->sse[2] = pkt->data.psnr.sse[2];
+            ctx->sse[3] = pkt->data.psnr.sse[3];
+            ctx->have_sse = 1;
+            break;
         case VPX_CODEC_CUSTOM_PKT:
             //ignore unsupported/unrecognized packet types
             break;
