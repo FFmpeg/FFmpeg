@@ -70,7 +70,7 @@ typedef struct EXRThreadData {
 typedef struct EXRContext {
     AVFrame picture;
     int compr;
-    int bits_per_color_id;
+    enum ExrPixelType pixel_type;
     int channel_offsets[4]; // 0 = red, 1 = green, 2 = blue and 3 = alpha
     const AVPixFmtDescriptor *desc;
 
@@ -352,7 +352,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         // Zero out the start if xmin is not 0
         memset(ptr_x, 0, bxmin);
         ptr_x += s->xmin * s->desc->nb_components;
-        if (s->bits_per_color_id == 2) {
+        if (s->pixel_type == EXR_FLOAT) {
             // 32-bit
             for (x = 0; x < xdelta; x++) {
                 *ptr_x++ = exr_flt2uint(bytestream_get_le32(&r));
@@ -418,7 +418,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->channel_offsets[1] = -1;
     s->channel_offsets[2] = -1;
     s->channel_offsets[3] = -1;
-    s->bits_per_color_id = -1;
+    s->pixel_type = -1;
     s->nb_channels = 0;
     s->compr = -1;
     s->buf = buf;
@@ -459,7 +459,7 @@ static int decode_frame(AVCodecContext *avctx,
             channel_list_end = buf + variable_buffer_data_size;
             while (channel_list_end - buf >= 19) {
                 EXRChannel *channel;
-                int current_bits_per_color_id = -1;
+                int current_pixel_type = -1;
                 int channel_index = -1;
                 int xsub, ysub;
 
@@ -482,9 +482,9 @@ static int decode_frame(AVCodecContext *avctx,
                     return AVERROR_INVALIDDATA;
                 }
 
-                current_bits_per_color_id = bytestream_get_le32(&buf);
-                if (current_bits_per_color_id > 2) {
-                    av_log(avctx, AV_LOG_ERROR, "Unknown color format\n");
+                current_pixel_type = bytestream_get_le32(&buf);
+                if (current_pixel_type > 2) {
+                    av_log(avctx, AV_LOG_ERROR, "Unknown pixel type\n");
                     return AVERROR_INVALIDDATA;
                 }
 
@@ -497,11 +497,11 @@ static int decode_frame(AVCodecContext *avctx,
                 }
 
                 if (channel_index >= 0) {
-                    if (s->bits_per_color_id != -1 && s->bits_per_color_id != current_bits_per_color_id) {
+                    if (s->pixel_type != -1 && s->pixel_type != current_pixel_type) {
                         av_log(avctx, AV_LOG_ERROR, "RGB channels not of the same depth\n");
                         return AVERROR_INVALIDDATA;
                     }
-                    s->bits_per_color_id  = current_bits_per_color_id;
+                    s->pixel_type = current_pixel_type;
                     s->channel_offsets[channel_index] = current_channel_offset;
                 }
 
@@ -509,11 +509,11 @@ static int decode_frame(AVCodecContext *avctx,
                 if (!s->channels)
                     return AVERROR(ENOMEM);
                 channel = &s->channels[s->nb_channels - 1];
-                channel->pixel_type = current_bits_per_color_id;
+                channel->pixel_type = current_pixel_type;
                 channel->xsub = xsub;
                 channel->ysub = ysub;
 
-                current_channel_offset += 1 << current_bits_per_color_id;
+                current_channel_offset += 1 << current_pixel_type;
             }
 
             /* Check if all channels are set with an offset or if the channels
@@ -624,20 +624,19 @@ static int decode_frame(AVCodecContext *avctx,
     }
     buf++;
 
-    switch (s->bits_per_color_id) {
-    case 2: // 32-bit
-    case 1: // 16-bit
+    switch (s->pixel_type) {
+    case EXR_FLOAT:
+    case EXR_HALF:
         if (s->channel_offsets[3] >= 0)
             avctx->pix_fmt = AV_PIX_FMT_RGBA64;
         else
             avctx->pix_fmt = AV_PIX_FMT_RGB48;
         break;
-    // 8-bit
-    case 0:
-        av_log_missing_feature(avctx, "8-bit OpenEXR", 1);
+    case EXR_UINT:
+        av_log_missing_feature(avctx, "32-bit unsigned int", 1);
         return AVERROR_PATCHWELCOME;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown color format : %d\n", s->bits_per_color_id);
+        av_log(avctx, AV_LOG_ERROR, "Unknown pixel type : %d\n", s->pixel_type);
         return AVERROR_INVALIDDATA;
     }
 
