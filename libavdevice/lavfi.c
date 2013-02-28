@@ -282,6 +282,10 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             st->codec->height     = link->h;
             st       ->sample_aspect_ratio =
             st->codec->sample_aspect_ratio = link->sample_aspect_ratio;
+            avctx->probesize = FFMAX(avctx->probesize,
+                                     link->w * link->h *
+                                     av_get_padded_bits_per_pixel(av_pix_fmt_desc_get(link->format)) *
+                                     30);
         } else if (link->type == AVMEDIA_TYPE_AUDIO) {
             st->codec->codec_id    = av_get_pcm_codec(link->format, -1);
             st->codec->channels    = av_get_channel_layout_nb_channels(link->channel_layout);
