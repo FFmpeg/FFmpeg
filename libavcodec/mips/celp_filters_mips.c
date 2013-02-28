@@ -111,7 +111,7 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
             : [old_out0]"f"(old_out0), [old_out1]"f"(old_out1),
               [old_out2]"f"(old_out2), [old_out3]"f"(old_out3),
               [filter_coeffs]"r"(filter_coeffs)
-            : "$f0", "$f1", "$f2", "$f3", "$f4"
+            : "$f0", "$f1", "$f2", "$f3", "$f4", "memory"
         );
 
         for (i = 5; i <= filter_length; i += 2) {
@@ -138,7 +138,7 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
                   [old_out3]"+f"(old_out3),[p_filter_coeffs]"+r"(p_filter_coeffs),
                   [p_out]"+r"(p_out)
                 :
-                : "$f4", "$f5"
+                : "$f4", "$f5", "memory"
             );
             FFSWAP(float, old_out0, old_out2);
         }
@@ -188,6 +188,8 @@ static void ff_celp_lp_synthesis_filterf_mips(float *out,
                 : [fc_val]"=&f"(fc_val), [out_val]"+f"(out_val),
                   [out_val_i]"=&f"(out_val_i), [p_out]"+r"(p_out),
                   [p_filter_coeffs]"+r"(p_filter_coeffs)
+                :
+                : "memory"
             );
         }
         out[n] = out_val;
@@ -262,7 +264,7 @@ static void ff_celp_lp_zero_synthesis_filterf_mips(float *out,
               [fc_val]"=&f"(fc_val), [p_filter_coeffs]"+r"(p_filter_coeffs),
               [p_in]"+r"(p_in), [i]"+r"(i)
             :
-            : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5", "$f6", "$f7"
+            : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5", "$f6", "$f7", "memory"
         );
 
         out[n+7] = sum_out8;

@@ -178,7 +178,7 @@ void hb_fir_filter_mips(float *out, const float fir_coef[HB_FIR_SIZE + 1],
 
             : [output]"=&f"(output)
             : [fir_coef]"r"(fir_coef), [p_data]"r"(p_data)
-            : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5"
+            : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5", "memory"
         );
         out[i] = output;
     }

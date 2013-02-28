@@ -75,7 +75,7 @@ static float ff_dot_productf_mips(const float* a, const float* b,
 
         : [sum] "=&f" (sum), [a] "+r" (a), [b] "+r" (b)
         : [a_end]"r"(a_end), [length] "r" (length)
-        : "$f1", "$f2"
+        : "$f1", "$f2", "memory"
     );
     return sum;
 }

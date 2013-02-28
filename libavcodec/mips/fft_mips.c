@@ -408,6 +408,8 @@ static void ff_imdct_half_mips(FFTContext *s, FFTSample *output, const FFTSample
               [tsin1]"+r"(tsin1), [tcos1]"+r"(tcos1),
               [in1]"+r"(in1), [in2]"+r"(in2),
               [in3]"+r"(in3), [in4]"+r"(in4)
+            :
+            : "memory"
         );
 
         z[j ].re = temp9;
@@ -472,6 +474,7 @@ static void ff_imdct_half_mips(FFTContext *s, FFTSample *output, const FFTSample
             : [z1]"r"(z1), [z2]"r"(z2),
               [tsin1]"r"(tsin1), [tcos1]"r"(tcos1),
               [tsin2]"r"(tsin2), [tcos2]"r"(tcos2)
+            : "memory"
         );
 
         z1[1].re = temp9;

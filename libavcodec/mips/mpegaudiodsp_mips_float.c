@@ -273,6 +273,7 @@ static void ff_mpadsp_apply_window_mips_float(float *synth_buf, float *window,
           [t_sample] "=&r" (t_sample)
         : [synth_buf] "r" (synth_buf), [window] "r" (window),
           [dither_state] "r" (dither_state), [incr1] "r" (incr1)
+        : "memory"
     );
 }
 
@@ -348,6 +349,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
           [val16] "=f" (val16), [val23] "=f" (val23),
           [val24] "=f" (val24), [val31] "=f" (val31)
         : [tab] "r" (tab)
+        : "memory"
     );
 
     __asm__ volatile (
@@ -410,6 +412,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
           [val19] "=f" (val19), [val20] "=f" (val20),
           [val27] "=f" (val27), [val28] "=f" (val28)
         : [tab] "r" (tab)
+        : "memory"
     );
 
     __asm__ volatile (
@@ -517,6 +520,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
           [val17] "=f" (val17), [val22] "=f" (val22),
           [val25] "=f" (val25), [val30] "=f" (val30)
         : [tab] "r" (tab)
+        : "memory"
     );
 
     __asm__ volatile (
@@ -579,6 +583,7 @@ static void ff_dct32_mips_float(float *out, const float *tab)
           [val18] "=f" (val18), [val21] "=f" (val21),
           [val26] "=f" (val26), [val29] "=f" (val29)
         : [tab] "r" (tab)
+        : "memory"
     );
 
     __asm__ volatile (
@@ -868,6 +873,7 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
           [out3] "=&f" (out3), [out4] "=&f" (out4),
           [out5] "=&f" (out5)
         : [in] "r" (in)
+        : "memory"
     );
 
     /* loop 3 */
@@ -999,6 +1005,7 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
           [c7] "=&f" (c7), [c8] "=&f" (c8),
           [c9] "=&f" (c9)
         : [in] "r" (in), [tmp] "r" (tmp)
+        : "memory"
     );
 
     /* loop 4 */
@@ -1212,6 +1219,7 @@ static void imdct36_mips_float(float *out, float *buf, float *in, float *win)
           [s2] "=&f" (s2), [s3] "=&f" (s3)
         : [tmp] "r" (tmp), [win] "r" (win),
           [buf] "r" (buf), [out] "r" (out)
+        : "memory"
     );
 }
 

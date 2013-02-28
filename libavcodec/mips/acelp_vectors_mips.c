@@ -88,7 +88,7 @@ static void ff_weighted_vector_sumf_mips(
         : [weight_coeff_a] "f" (weight_coeff_a),
           [weight_coeff_b] "f" (weight_coeff_b),
           [length] "r" (length), [a_end]"r"(a_end)
-        : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5"
+        : "$f0", "$f1", "$f2", "$f3", "$f4", "$f5", "memory"
     );
 }
 #endif /* HAVE_INLINE_ASM */

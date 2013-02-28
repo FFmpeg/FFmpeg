@@ -176,6 +176,7 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
           [out1] "=&f" (out1), [out2] "=&f" (out2),
           [out3] "=&f" (out3), [out4] "=&f" (out4)
         : [csa] "r" (csa), [ptr_end] "r" (ptr_end)
+        : "memory"
     );
 }
 #define compute_antialias compute_antialias_mips_float

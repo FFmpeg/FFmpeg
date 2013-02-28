@@ -237,6 +237,8 @@ static void compute_antialias_mips_fixed(MPADecodeContext *s,
               [temp_reg5] "=&r" (temp_reg5), [temp_reg6] "=&r" (temp_reg6)
             : [csa] "r" (csa), [ptr] "r" (ptr),
               [MAX_lo] "r" (MAX_lo)
+            : "memory", "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo",
+              "$ac3hi", "$ac3lo"
          );
 
         ptr += 18;

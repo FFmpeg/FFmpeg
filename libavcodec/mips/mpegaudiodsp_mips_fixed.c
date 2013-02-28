@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright (c) 2012
  *      MIPS Technologies, Inc., California.
  *
@@ -166,7 +166,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
           [sum1] "+r" (sum1), [w] "+r" (w), [temp3] "+r" (temp3)
         : [p] "r" (p), [samples] "r" (samples), [min_asm] "r" (min_asm),
           [max_asm] "r" (max_asm)
-        : "hi","lo"
+        : "memory", "hi","lo"
      );
 
      samples += incr;
@@ -290,7 +290,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
               [w] "+r" (w), [w2] "+r" (w2), [samples] "+r" (samples),
               [samples2] "+r" (samples2), [temp3] "+r" (temp3)
             : [min_asm] "r" (min_asm), [max_asm] "r" (max_asm)
-            : "hi", "lo"
+            : "memory", "hi", "lo", "$ac1hi", "$ac1lo"
         );
 
         samples += incr;
@@ -340,7 +340,7 @@ static void ff_mpadsp_apply_window_mips_fixed(int32_t *synth_buf, int32_t *windo
           [w_asm2] "=&r" (w_asm2), [p_asm2] "=&r" (p_asm2), [sum1] "+r" (sum1)
         : [w] "r" (w), [p] "r" (p), [samples] "r" (samples), [min_asm] "r" (min_asm),
           [max_asm] "r" (max_asm)
-        : "hi", "lo"
+        : "memory", "hi", "lo", "$ac1hi", "$ac1lo"
      );
 
     *dither_state= temp1;
@@ -437,6 +437,8 @@ static void imdct36_mips_fixed(int *out, int *buf, int *in, int *win)
         : [in] "+r" (in), [t1] "=&r" (t1), [t2] "=&r" (t2), [t3] "=&r" (t3),
           [t4] "=&r" (t4), [t5] "=&r" (t5), [t6] "=&r" (t6),
           [t7] "=&r" (t7), [t8] "=&r" (t8)
+        :
+        : "memory"
     );
 
     for(j = 0; j < 2; j++) {
@@ -573,7 +575,8 @@ static void imdct36_mips_fixed(int *out, int *buf, int *in, int *win)
             : [C_2] "r" (C_2), [in1] "r" (in1), [tmp1] "r" (tmp1), [C_8] "r" (C_8),
               [C_4] "r" (C_4), [C_3] "r" (C_3), [C_1] "r" (C_1), [C_7] "r" (C_7),
               [C_3A] "r" (C_3A), [C_5] "r" (C_5)
-            : "hi", "lo"
+            : "memory", "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo",
+              "$ac3hi", "$ac3lo"
          );
     }
 
@@ -873,7 +876,8 @@ static void imdct36_mips_fixed(int *out, int *buf, int *in, int *win)
           [temp_reg5] "=&r" (temp_reg5), [temp_reg6] "=&r" (temp_reg6),
           [out] "+r" (out)
         : [tmp] "r" (tmp), [win] "r" (win), [buf] "r" (buf)
-        : "hi", "lo"
+        : "memory", "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo",
+          "$ac3hi", "$ac3lo"
     );
 }
 
