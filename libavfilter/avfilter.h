@@ -33,6 +33,7 @@
  * @{
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
@@ -563,14 +564,14 @@ struct AVFilterContext {
     AVFilterPad   *input_pads;      ///< array of input pads
     AVFilterLink **inputs;          ///< array of pointers to input links
 #if FF_API_FOO_COUNT
-    unsigned input_count;           ///< @deprecated use nb_inputs
+    attribute_deprecated unsigned input_count; ///< @deprecated use nb_inputs
 #endif
     unsigned    nb_inputs;          ///< number of input pads
 
     AVFilterPad   *output_pads;     ///< array of output pads
     AVFilterLink **outputs;         ///< array of pointers to output links
 #if FF_API_FOO_COUNT
-    unsigned output_count;          ///< @deprecated use nb_outputs
+    attribute_deprecated unsigned output_count; ///< @deprecated use nb_outputs
 #endif
     unsigned    nb_outputs;         ///< number of output pads
 
