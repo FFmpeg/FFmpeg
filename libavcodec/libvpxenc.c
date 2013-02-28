@@ -404,9 +404,6 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     vpx_img_wrap(&ctx->rawimg, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
 
-    ctx->have_sse     = 0;
-    ctx->frame_number = 0;
-
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
