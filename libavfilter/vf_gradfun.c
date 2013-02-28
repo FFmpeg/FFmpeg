@@ -193,6 +193,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         direct = 1;
         out = in;
     } else {
+        direct = 0;
         out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         if (!out) {
             avfilter_unref_bufferp(&in);
