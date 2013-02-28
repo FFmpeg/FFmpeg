@@ -773,10 +773,10 @@ the options values contain a special character or the ':' separator, they
 must be escaped; note that this is a second level escaping.
 
 Example: encode something and both archive it in a WebM file and stream it
-as MPEG-TS over UDP:
+as MPEG-TS over UDP (the streams need to be explicitly mapped):
 
 @example
-ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee
+ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
 @end example
 
