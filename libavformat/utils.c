@@ -3767,50 +3767,6 @@ void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
     pkt_dump_internal(avcl, NULL, level, pkt, dump_payload, st->time_base);
 }
 
-/**
- * Percent encode part of an URL string according to RFC 3986.
- *
- * @param component      portion of an URL (e.g. protocol, hostname, path) to
- *                       percent-encode. This will be percent-encoded in place.
- * @param allowed        string containing the allowed characters which must not be
- *                       encoded. It may be NULL if there are no such characters.
- * @param component_size size in bytes of the component buffer
- */
-static void percent_encode_url(char *component, size_t component_size,
-                               const char *allowed)
-{
-    char enc[MAX_URL_SIZE], c;
-    int enc_len = 0;
-    char *src = component;
-
-    while (c = *src) {
-        if (isalnum(c) || strchr("-._~%", c) ||
-            (allowed && strchr(allowed, c))) {
-            if (enc_len+1 < MAX_URL_SIZE)
-                enc[enc_len] = c;
-            else
-                break;
-            enc_len++;
-        } else {
-            if (enc_len+3 < MAX_URL_SIZE)
-                snprintf(&enc[enc_len], 4, "%%%02x", c);
-            else
-                break;
-            enc_len += 3;
-        }
-        src++;
-    }
-
-    enc[enc_len++] = '\0';
-    if (enc_len <= component_size) {
-        av_strlcpy(component, enc, component_size);
-    } else {
-        av_log(NULL, AV_LOG_ERROR,
-               "Skipping percent-encoding for string '%s' since buffer is too small\n",
-               component);
-    }
-}
-
 void av_url_split(char *proto, int proto_size,
                   char *authorization, int authorization_size,
                   char *hostname, int hostname_size,
@@ -3874,9 +3830,6 @@ void av_url_split(char *proto, int proto_size,
             av_strlcpy(hostname, p,
                        FFMIN(ls + 1 - p, hostname_size));
     }
-
-    percent_encode_url(hostname, hostname_size, NULL);
-    percent_encode_url(path, path_size, "/?");
 }
 
 char *ff_data_to_hex(char *buff, const uint8_t *src, int s, int lowercase)
