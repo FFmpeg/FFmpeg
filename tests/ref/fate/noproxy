@@ -1,0 +1,9 @@
+The pattern "(null)" does not match the hostname domain.com
+The pattern "example.com domain.com" matches the hostname domain.com
+The pattern "example.com other.com" does not match the hostname domain.com
+The pattern "example.com,domain.com" matches the hostname domain.com
+The pattern "example.com,domain.com" does not match the hostname otherdomain.com
+The pattern "example.com, *.domain.com" matches the hostname sub.domain.com
+The pattern "example.com, *.domain.com" matches the hostname domain.com
+The pattern "example.com, .domain.com" matches the hostname domain.com
+The pattern "*" matches the hostname domain.com

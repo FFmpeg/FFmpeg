@@ -120,10 +120,6 @@ static int http_open_cnx(URLContext *h)
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
 
-    proxy_path = getenv("http_proxy");
-    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
-        av_strstart(proxy_path, "http://", NULL);
-
     /* fill the dest addr */
  redo:
     /* needed in any case to build the host string */
@@ -131,6 +127,10 @@ static int http_open_cnx(URLContext *h)
                  hostname, sizeof(hostname), &port,
                  path1, sizeof(path1), s->location);
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
+
+    proxy_path = getenv("http_proxy");
+    use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), hostname) &&
+                proxy_path != NULL && av_strstart(proxy_path, "http://", NULL);
 
     if (!strcmp(proto, "https")) {
         lower_proto = "tls";

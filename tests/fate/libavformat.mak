@@ -1,3 +1,7 @@
+FATE_LIBAVFORMAT += fate-noproxy
+fate-noproxy: libavformat/noproxy-test$(EXESUF)
+fate-noproxy: CMD = run libavformat/noproxy-test
+
 FATE_LIBAVFORMAT += fate-srtp
 fate-srtp: libavformat/srtp-test$(EXESUF)
 fate-srtp: CMD = run libavformat/srtp-test
