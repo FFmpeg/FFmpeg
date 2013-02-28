@@ -4141,6 +4141,10 @@ check_deps $CONFIG_LIST       \
 echo "install prefix            $prefix"
 echo "source path               $source_path"
 echo "C compiler                $cc"
+if test "$host_cc" != "$cc"; then
+    echo "host C compiler           $host_cc"
+fi
+echo "C library                 $libc_type"
 echo "ARCH                      $arch ($cpu)"
 if test "$build_suffix" != ""; then
     echo "build suffix              $build_suffix"
