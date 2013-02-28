@@ -411,11 +411,11 @@ will be used.
 
 E.g. to extract the first attachment to a file named 'out.ttf':
 @example
-ffmpeg -dump_attachment:t:0 out.ttf INPUT
+ffmpeg -dump_attachment:t:0 out.ttf -i INPUT
 @end example
 To extract all attachments to files determined by the @code{filename} tag:
 @example
-ffmpeg -dump_attachment:t "" INPUT
+ffmpeg -dump_attachment:t "" -i INPUT
 @end example
 
 Technical note -- attachments are implemented as codec extradata, so this
