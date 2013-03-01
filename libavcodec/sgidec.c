@@ -169,17 +169,17 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     /* Test for SGI magic. */
-    if (bytestream2_get_be16(&s->g) != SGI_MAGIC) {
+    if (bytestream2_get_be16u(&s->g) != SGI_MAGIC) {
         av_log(avctx, AV_LOG_ERROR, "bad magic number\n");
         return AVERROR_INVALIDDATA;
     }
 
-    rle                  = bytestream2_get_byte(&s->g);
-    s->bytes_per_channel = bytestream2_get_byte(&s->g);
-    dimension            = bytestream2_get_be16(&s->g);
-    s->width             = bytestream2_get_be16(&s->g);
-    s->height            = bytestream2_get_be16(&s->g);
-    s->depth             = bytestream2_get_be16(&s->g);
+    rle                  = bytestream2_get_byteu(&s->g);
+    s->bytes_per_channel = bytestream2_get_byteu(&s->g);
+    dimension            = bytestream2_get_be16u(&s->g);
+    s->width             = bytestream2_get_be16u(&s->g);
+    s->height            = bytestream2_get_be16u(&s->g);
+    s->depth             = bytestream2_get_be16u(&s->g);
 
     if (s->bytes_per_channel != 1 && (s->bytes_per_channel != 2 || rle)) {
         av_log(avctx, AV_LOG_ERROR, "wrong channel number\n");
