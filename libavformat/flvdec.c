@@ -213,10 +213,14 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
                 vcodec->codec_id = AV_CODEC_ID_VP6A;
             if (read) {
                 if (vcodec->extradata_size != 1) {
-                    vcodec->extradata_size = 1;
                     vcodec->extradata = av_malloc(1);
+                    if (vcodec->extradata)
+                        vcodec->extradata_size = 1;
                 }
-                vcodec->extradata[0] = avio_r8(s->pb);
+                if (vcodec->extradata)
+                    vcodec->extradata[0] = avio_r8(s->pb);
+                else
+                    avio_skip(s->pb, 1);
             }
             return 1; // 1 byte body size adjustment for flv_read_packet()
         case FLV_CODECID_H264:
