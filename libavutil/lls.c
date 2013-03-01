@@ -120,15 +120,15 @@ double avpriv_evaluate_lls(LLSModel *m, double *param, int order)
 #if FF_API_LLS_PRIVATE
 void av_init_lls(LLSModel *m, int indep_count)
 {
-    return avpriv_init_lls(m, indep_count);
+    avpriv_init_lls(m, indep_count);
 }
 void av_update_lls(LLSModel *m, double *param, double decay)
 {
-    return avpriv_update_lls(m, param, decay);
+    avpriv_update_lls(m, param, decay);
 }
 void av_solve_lls(LLSModel *m, double threshold, int min_order)
 {
-    return avpriv_solve_lls(m, threshold, min_order);
+    avpriv_solve_lls(m, threshold, min_order);
 }
 double av_evaluate_lls(LLSModel *m, double *param, int order)
 {
