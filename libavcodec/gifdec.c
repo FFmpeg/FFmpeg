@@ -451,7 +451,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
     s->picture.pts          = avpkt->pts;
     s->picture.pkt_pts      = avpkt->pts;
     s->picture.pkt_dts      = avpkt->dts;
-    s->picture.pkt_duration = avpkt->duration;
+    av_frame_set_pkt_duration(&s->picture, avpkt->duration);
 
     if (avpkt->size >= 6) {
         s->keyframe = memcmp(avpkt->data, gif87a_sig, 6) == 0 ||
