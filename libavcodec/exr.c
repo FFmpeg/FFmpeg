@@ -309,18 +309,18 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                                     (*(ptr[1]++) << 16) |
                                     (*(ptr[2]++) <<  8);
                     pixel += diff;
-                    AV_WL32(out, pixel);
+                    bytestream_put_le32(&out, pixel);
                 }
                 break;
             case EXR_HALF:
                 ptr[0] = in;
                 ptr[1] = ptr[0] + s->xdelta;
                 in = ptr[1] + s->xdelta;
-                for (j = 0; j < s->xdelta; j++, out += 2) {
+                for (j = 0; j < s->xdelta; j++) {
                     uint32_t diff = (*(ptr[0]++) << 8) | *(ptr[1]++);
 
                     pixel += diff;
-                    AV_WL16(out, pixel);
+                    bytestream_put_le16(&out, pixel);
                 }
                 break;
             default:
