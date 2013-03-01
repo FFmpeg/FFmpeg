@@ -23,6 +23,7 @@ version <next>:
 - noise filter ported from libmpcodecs
 - Subtitles character encoding conversion
 - blend filter
+- stereo3d filter ported from libmpcodecs
 
 
 version 1.1:

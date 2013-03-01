@@ -154,6 +154,7 @@ OBJS-$(CONFIG_SETTB_FILTER)                  += f_settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
 OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
+OBJS-$(CONFIG_STEREO3D_FILTER)               += vf_stereo3d.o
 OBJS-$(CONFIG_SUBTITLES_FILTER)              += vf_subtitles.o
 OBJS-$(CONFIG_SUPER2XSAI_FILTER)             += vf_super2xsai.o
 OBJS-$(CONFIG_SWAPUV_FILTER)                 += vf_swapuv.o

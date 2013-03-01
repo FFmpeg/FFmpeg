@@ -4832,6 +4832,127 @@ a pixel should be blurred or not. A value of 0 will filter all the
 image, a value included in [0,30] will filter flat areas and a value
 included in [-30,0] will filter edges.
 
+@section stereo3d
+
+Convert between different stereoscopic image formats.
+
+This filter accepts the following named options, expressed as a
+sequence of @var{key}=@var{value} pairs, separated by ":".
+
+@table @option
+@item in
+Set stereoscopic image format of input.
+
+Available values for input image formats are:
+@table @samp
+@item sbsl
+side by side parallel (left eye left, right eye right)
+
+@item sbsr
+side by side crosseye (right eye left, left eye right)
+
+@item sbs2l
+side by side parallel with half width resolution
+(left eye left, right eye right)
+
+@item sbs2r
+side by side crosseye with half width resolution
+(right eye left, left eye right)
+
+@item abl
+above-below (left eye above, right eye below)
+
+@item abr
+above-below (right eye above, left eye below)
+
+@item ab2l
+above-below with half height resolution
+(left eye above, right eye below)
+
+@item ab2r
+above-below with half height resolution
+(right eye above, left eye below)
+
+Default value is @samp{sbsl}.
+@end table
+
+@item out
+Set stereoscopic image format of output.
+
+Available values for output image formats are all the input formats as well as:
+@table @samp
+@item arbg
+anaglyph red/blue gray
+(red filter on left eye, blue filter on right eye)
+
+@item argg
+anaglyph red/green gray
+(red filter on left eye, green filter on right eye)
+
+@item arcg
+anaglyph red/cyan gray
+(red filter on left eye, cyan filter on right eye)
+
+@item arch
+anaglyph red/cyan half colored
+(red filter on left eye, cyan filter on right eye)
+
+@item arcc
+anaglyph red/cyan color
+(red filter on left eye, cyan filter on right eye)
+
+@item arcd
+anaglyph red/cyan color optimized with the least squares projection of dubois
+(red filter on left eye, cyan filter on right eye)
+
+@item agmg
+anaglyph green/magenta gray
+(green filter on left eye, magenta filter on right eye)
+
+@item agmh
+anaglyph green/magenta half colored
+(green filter on left eye, magenta filter on right eye)
+
+@item agmc
+anaglyph green/magenta colored
+(green filter on left eye, magenta filter on right eye)
+
+@item agmd
+anaglyph green/magenta color optimized with the least squares projection of dubois
+(green filter on left eye, magenta filter on right eye)
+
+@item aybg
+anaglyph yellow/blue gray
+(yellow filter on left eye, blue filter on right eye)
+
+@item aybh
+anaglyph yellow/blue half colored
+(yellow filter on left eye, blue filter on right eye)
+
+@item aybc
+anaglyph yellow/blue colored
+(yellow filter on left eye, blue filter on right eye)
+
+@item aybd
+anaglyph yellow/blue color optimized with the least squares projection of dubois
+(yellow filter on left eye, blue filter on right eye)
+
+@item irl
+interleaved rows (left eye has top row, right eye starts on next row)
+
+@item irr
+interleaved rows (right eye has top row, left eye starts on next row)
+
+@item ml
+mono output (left eye only)
+
+@item mr
+mono output (right eye only)
+@end table
+
+Default value is @samp{arcd}.
+@end table
+
 @anchor{subtitles}
 @section subtitles
 
