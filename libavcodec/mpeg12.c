@@ -2269,6 +2269,7 @@ static int decode_chunks(AVCodecContext *avctx,
     const uint8_t *buf_end = buf + buf_size;
     int ret, input_size;
     int last_code = 0;
+    int picture_start_code_seen = 0;
 
     for (;;) {
         /* find next start code */
@@ -2319,6 +2320,14 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
+            if (picture_start_code_seen && s2->picture_structure == PICT_FRAME) {
+               /* If it's a frame picture, there can't be more than one picture header.
+                  Yet, it does happen and we need to handle it. */
+               av_log(avctx, AV_LOG_WARNING, "ignoring extra picture following a frame-picture\n");
+               break;
+            }
+            picture_start_code_seen = 1;
+
             if (s2->width <= 0 || s2->height <= 0) {
                 av_log(avctx, AV_LOG_ERROR, "%dx%d is invalid\n", s2->width, s2->height);
                 return AVERROR_INVALIDDATA;
