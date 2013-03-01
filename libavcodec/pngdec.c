@@ -853,7 +853,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    s->current_picture->metadata = metadata;
+    av_frame_set_metadata(&s->current_picture, metadata);
     metadata   = NULL;
     *picture   = *s->current_picture;
     *got_frame = 1;
