@@ -2131,13 +2131,13 @@ static int audio_decode_frame(VideoState *is)
                     flush_complete = 1;
                 continue;
             }
-            data_size = av_samples_get_buffer_size(NULL, is->frame->channels,
+            data_size = av_samples_get_buffer_size(NULL, av_frame_get_channels(is->frame),
                                                    is->frame->nb_samples,
                                                    is->frame->format, 1);
 
             dec_channel_layout =
-                (is->frame->channel_layout && is->frame->channels == av_get_channel_layout_nb_channels(is->frame->channel_layout)) ?
-                is->frame->channel_layout : av_get_default_channel_layout(is->frame->channels);
+                (is->frame->channel_layout && av_frame_get_channels(is->frame) == av_get_channel_layout_nb_channels(is->frame->channel_layout)) ?
+                is->frame->channel_layout : av_get_default_channel_layout(av_frame_get_channels(is->frame));
             wanted_nb_samples = synchronize_audio(is, is->frame->nb_samples);
 
             if (is->frame->format        != is->audio_src.fmt            ||
@@ -2151,12 +2151,12 @@ static int audio_decode_frame(VideoState *is)
                                                  0, NULL);
                 if (!is->swr_ctx || swr_init(is->swr_ctx) < 0) {
                     fprintf(stderr, "Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!\n",
-                            is->frame->sample_rate, av_get_sample_fmt_name(is->frame->format), is->frame->channels,
+                            is->frame->sample_rate, av_get_sample_fmt_name(is->frame->format), av_frame_get_channels(is->frame),
                             is->audio_tgt.freq, av_get_sample_fmt_name(is->audio_tgt.fmt), is->audio_tgt.channels);
                     break;
                 }
                 is->audio_src.channel_layout = dec_channel_layout;
-                is->audio_src.channels = is->frame->channels;
+                is->audio_src.channels       = av_frame_get_channels(is->frame);
                 is->audio_src.freq = is->frame->sample_rate;
                 is->audio_src.fmt = is->frame->format;
             }
@@ -2194,7 +2194,7 @@ static int audio_decode_frame(VideoState *is)
 
             audio_clock0 = is->audio_clock;
             is->audio_clock += (double)data_size /
-                (is->frame->channels * is->frame->sample_rate * av_get_bytes_per_sample(is->frame->format));
+                (av_frame_get_channels(is->frame) * is->frame->sample_rate * av_get_bytes_per_sample(is->frame->format));
 #ifdef DEBUG
             {
                 static double last_clock;
