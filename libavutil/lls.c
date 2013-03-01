@@ -48,7 +48,7 @@ void avpriv_update_lls(LLSModel *m, double *var, double decay)
     }
 }
 
-void avpriv_solve_lls(LLSModel *m, double threshold, int min_order)
+void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order)
 {
     int i, j, k;
     double (*factor)[MAX_VARS + 1] = (void *) &m->covariance[1][0];
