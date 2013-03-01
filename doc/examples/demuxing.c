@@ -98,7 +98,7 @@ static int decode_packet(int *got_frame, int cached)
                    audio_frame_count++, frame->nb_samples,
                    av_ts2timestr(frame->pts, &audio_dec_ctx->time_base));
 
-            ret = av_samples_alloc(audio_dst_data, &audio_dst_linesize, frame->channels,
+            ret = av_samples_alloc(audio_dst_data, &audio_dst_linesize, av_frame_get_channels(frame),
                                    frame->nb_samples, frame->format, 1);
             if (ret < 0) {
                 fprintf(stderr, "Could not allocate audio buffer\n");
@@ -107,13 +107,13 @@ static int decode_packet(int *got_frame, int cached)
 
             /* TODO: extend return code of the av_samples_* functions so that this call is not needed */
             audio_dst_bufsize =
-                av_samples_get_buffer_size(NULL, frame->channels,
+                av_samples_get_buffer_size(NULL, av_frame_get_channels(frame),
                                            frame->nb_samples, frame->format, 1);
 
             /* copy audio data to destination buffer:
              * this is required since rawaudio expects non aligned data */
             av_samples_copy(audio_dst_data, frame->data, 0, 0,
-                            frame->nb_samples, frame->channels, frame->format);
+                            frame->nb_samples, av_frame_get_channels(frame), frame->format);
 
             /* write to rawaudio file */
             fwrite(audio_dst_data[0], 1, audio_dst_bufsize, audio_dst_file);
