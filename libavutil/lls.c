@@ -28,6 +28,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "version.h"
 #include "lls.h"
 
 void avpriv_init_lls(LLSModel *m, int indep_count)
@@ -116,7 +117,7 @@ double avpriv_evaluate_lls(LLSModel *m, double *param, int order)
     return out;
 }
 
-#ifndef FF_API_LLS_PRIVATE
+#if FF_API_LLS_PRIVATE
 void av_init_lls(LLSModel *m, int indep_count)
 {
     return avpriv_init_lls(m, indep_count);
@@ -133,7 +134,7 @@ double av_evaluate_lls(LLSModel *m, double *param, int order)
 {
     return avpriv_evaluate_lls(m, param, order);
 }
-#endif
+#endif /* FF_API_LLS_PRIVATE */
 
 #ifdef TEST
 
