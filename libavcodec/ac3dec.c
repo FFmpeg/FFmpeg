@@ -1406,7 +1406,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
-    frame->decode_error_flags = err ? FF_DECODE_ERROR_INVALID_BITSTREAM : 0;
+    av_frame_set_decode_error_flags(frame, err ? FF_DECODE_ERROR_INVALID_BITSTREAM : 0);
 
     /* keep last block for error concealment in next frame */
     for (ch = 0; ch < s->out_channels; ch++)
