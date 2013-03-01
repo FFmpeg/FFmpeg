@@ -1472,11 +1472,11 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
     print_time("pkt_pts_time",          frame->pkt_pts, &stream->time_base);
     print_ts  ("pkt_dts",               frame->pkt_dts);
     print_time("pkt_dts_time",          frame->pkt_dts, &stream->time_base);
-    print_duration_ts  ("pkt_duration",      frame->pkt_duration);
-    print_duration_time("pkt_duration_time", frame->pkt_duration, &stream->time_base);
-    if (frame->pkt_pos != -1) print_fmt    ("pkt_pos", "%"PRId64, frame->pkt_pos);
+    print_duration_ts  ("pkt_duration",      av_frame_get_pkt_duration(frame));
+    print_duration_time("pkt_duration_time", av_frame_get_pkt_duration(frame), &stream->time_base);
+    if (av_frame_get_pkt_pos (frame) != -1) print_fmt    ("pkt_pos", "%"PRId64, av_frame_get_pkt_pos(frame));
     else                      print_str_opt("pkt_pos", "N/A");
-    if (frame->pkt_size != -1) print_fmt    ("pkt_size", "%d", av_frame_get_pkt_size(frame));
+    if (av_frame_get_pkt_size(frame) != -1) print_fmt    ("pkt_size", "%d", av_frame_get_pkt_size(frame));
     else                       print_str_opt("pkt_size", "N/A");
 
     switch (stream->codec->codec_type) {
