@@ -767,6 +767,8 @@ MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
 MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
 
+AVDictionary **ff_frame_get_metadatap(AVFrame *frame) {return &frame->metadata;};
+
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
 
