@@ -37,9 +37,15 @@ typedef struct LLSModel {
     int indep_count;
 } LLSModel;
 
+void avpriv_init_lls(LLSModel *m, int indep_count);
+void avpriv_update_lls(LLSModel *m, double *param, double decay);
+void avpriv_solve_lls(LLSModel *m, double threshold, int min_order);
+double avpriv_evaluate_lls(LLSModel *m, double *param, int order);
+
+#ifndef FF_API_LLS_PRIVATE
 void av_init_lls(LLSModel *m, int indep_count);
 void av_update_lls(LLSModel *m, double *param, double decay);
 void av_solve_lls(LLSModel *m, double threshold, int min_order);
 double av_evaluate_lls(LLSModel *m, double *param, int order);
-
+#endif
 #endif /* AVUTIL_LLS_H */

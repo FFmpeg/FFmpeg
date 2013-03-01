@@ -207,7 +207,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
             lpc_passes = 2;
 
         for(pass=0; pass<lpc_passes; pass++){
-            av_init_lls(&m[pass&1], max_order);
+            avpriv_init_lls(&m[pass&1], max_order);
 
             weight=0;
             for(i=max_order; i<blocksize; i++){
@@ -216,7 +216,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
 
                 if(pass){
                     double eval, inv, rinv;
-                    eval= av_evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
+                    eval= avpriv_evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
                     eval= (512>>pass) + fabs(eval - var[0]);
                     inv = 1/eval;
                     rinv = sqrt(inv);
@@ -226,9 +226,9 @@ int ff_lpc_calc_coefs(LPCContext *s,
                 }else
                     weight++;
 
-                av_update_lls(&m[pass&1], var, 1.0);
+                avpriv_update_lls(&m[pass&1], var, 1.0);
             }
-            av_solve_lls(&m[pass&1], 0.001, 0);
+            avpriv_solve_lls(&m[pass&1], 0.001, 0);
         }
 
         for(i=0; i<max_order; i++){
