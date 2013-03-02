@@ -3533,8 +3533,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             h->list_count = 2;
         else
             h->list_count = 1;
-    } else
-        h->ref_count[1]= h->ref_count[0]= h->list_count= 0;
+    } else {
+        h->list_count = 0;
+        h->ref_count[0] = h->ref_count[1] = 0;
+    }
 
     if (!default_ref_list_done)
         ff_h264_fill_default_ref_list(h);
