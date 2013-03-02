@@ -2049,7 +2049,7 @@ static int audio_decode_frame(VideoState *is)
     AVPacket *pkt_temp = &is->audio_pkt_temp;
     AVPacket *pkt = &is->audio_pkt;
     AVCodecContext *dec = is->audio_st->codec;
-    int len1, len2, data_size, resampled_data_size;
+    int len1, data_size, resampled_data_size;
     int64_t dec_channel_layout;
     int got_frame;
     av_unused double audio_clock0;
@@ -2126,6 +2126,7 @@ static int audio_decode_frame(VideoState *is)
                 uint8_t **out = &is->audio_buf1;
                 int out_count = (int64_t)wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate + 256;
                 int out_size  = av_samples_get_buffer_size(NULL, is->audio_tgt.channels, out_count, is->audio_tgt.fmt, 0);
+                int len2;
                 if (wanted_nb_samples != is->frame->nb_samples) {
                     if (swr_set_compensation(is->swr_ctx, (wanted_nb_samples - is->frame->nb_samples) * is->audio_tgt.freq / is->frame->sample_rate,
                                                 wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate) < 0) {
@@ -2302,6 +2303,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     const char *forced_codec_name = NULL;
     AVDictionary *opts;
     AVDictionaryEntry *t = NULL;
+    int ret;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
@@ -2353,20 +2355,14 @@ static int stream_component_open(VideoState *is, int stream_index)
         return AVERROR_OPTION_NOT_FOUND;
     }
 
-    /* prepare audio output */
-    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int audio_hw_buf_size = audio_open(is, avctx->channel_layout, avctx->channels, avctx->sample_rate, &is->audio_src);
-        if (audio_hw_buf_size < 0)
-            return -1;
-        is->audio_hw_buf_size = audio_hw_buf_size;
-        is->audio_tgt = is->audio_src;
-    }
-
     ic->streams[stream_index]->discard = AVDISCARD_DEFAULT;
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        is->audio_stream = stream_index;
-        is->audio_st = ic->streams[stream_index];
+        /* prepare audio output */
+        if ((ret = audio_open(is, avctx->channel_layout, avctx->channels, avctx->sample_rate, &is->audio_tgt)) < 0)
+            return ret;
+        is->audio_hw_buf_size = ret;
+        is->audio_src = is->audio_tgt;
         is->audio_buf_size  = 0;
         is->audio_buf_index = 0;
 
@@ -2379,6 +2375,10 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
         memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
+
+        is->audio_stream = stream_index;
+        is->audio_st = ic->streams[stream_index];
+
         packet_queue_start(&is->audioq);
         SDL_PauseAudio(0);
         break;
