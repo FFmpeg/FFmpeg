@@ -82,7 +82,7 @@ static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
         keyidx_present = 0;
     int pictureid = -1, pictureid_mask = 0;
     int returned_old_frame = 0;
-    uint32_t old_timestamp;
+    uint32_t old_timestamp = 0;
 
     if (!buf) {
         if (vp8->data) {

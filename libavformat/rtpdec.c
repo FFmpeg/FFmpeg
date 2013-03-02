@@ -424,7 +424,7 @@ int ff_rtp_send_rtcp_feedback(RTPDemuxContext *s, URLContext *fd,
     AVIOContext *pb;
     uint8_t *buf;
     int64_t now;
-    uint16_t first_missing, missing_mask;
+    uint16_t first_missing = 0, missing_mask = 0;
 
     if (!fd && !avio)
         return -1;
