@@ -739,8 +739,8 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
 
     av_freep(&avctx->extradata);
     if( x->twopassbuffer != NULL ) {
-        av_free(x->twopassbuffer);
-        av_free(x->old_twopassbuffer);
+        av_freep(&x->twopassbuffer);
+        av_freep(&x->old_twopassbuffer);
         avctx->stats_out = NULL;
     }
     if (x->twopassfd>=0) {
@@ -748,9 +748,9 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
         close(x->twopassfd);
         x->twopassfd = -1;
     }
-    av_free(x->twopassfile);
-    av_free(x->intra_matrix);
-    av_free(x->inter_matrix);
+    av_freep(&x->twopassfile);
+    av_freep(&x->intra_matrix);
+    av_freep(&x->inter_matrix);
 
     return 0;
 }
