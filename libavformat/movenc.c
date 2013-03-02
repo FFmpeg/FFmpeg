@@ -1602,7 +1602,7 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     (version == 1) ? avio_wb32(pb, 104) : avio_wb32(pb, 92); /* size */
     ffio_wfourcc(pb, "tkhd");
     avio_w8(pb, version);
-    avio_wb24(pb, 0xf); /* flags (track enabled) */
+    avio_wb24(pb, track->secondary ? 0x2 : 0xf); /* flags (first track enabled) */
     if (version == 1) {
         avio_wb64(pb, track->time);
         avio_wb64(pb, track->time);
@@ -2315,6 +2315,7 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
 {
     int i;
     int64_t pos = avio_tell(pb);
+    int not_first[AVMEDIA_TYPE_NB]={0};
     avio_wb32(pb, 0); /* size placeholder*/
     ffio_wfourcc(pb, "moov");
 
@@ -2355,6 +2356,13 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
         mov_write_iods_tag(pb, mov);
     for (i=0; i<mov->nb_streams; i++) {
         if (mov->tracks[i].entry > 0 || mov->flags & FF_MOV_FLAG_FRAGMENT) {
+            if(i < s->nb_streams){
+                int codec_type= s->streams[i]->codec->codec_type;
+                if(codec_type==AVMEDIA_TYPE_AUDIO || codec_type==AVMEDIA_TYPE_SUBTITLE){
+                    mov->tracks[i].secondary= not_first[codec_type];
+                    not_first[codec_type]= 1;
+                }
+            }
             mov_write_trak_tag(pb, mov, &(mov->tracks[i]), i < s->nb_streams ? s->streams[i] : NULL);
         }
     }
