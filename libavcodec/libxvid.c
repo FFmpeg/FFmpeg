@@ -60,6 +60,7 @@ struct xvid_context {
     char *twopassbuffer;           /**< Character buffer for two-pass */
     char *old_twopassbuffer;       /**< Old character buffer (two-pass) */
     char *twopassfile;             /**< second pass temp file name */
+    int twopassfd;
     unsigned char *intra_matrix;   /**< P-Frame Quant Matrix */
     unsigned char *inter_matrix;   /**< I-Frame Quant Matrix */
 };
@@ -356,6 +357,8 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_enc_create_t xvid_enc_create = { 0 };
     xvid_enc_plugin_t plugins[7];
 
+    x->twopassfd = -1;
+
     /* Bring in VOP flags from ffmpeg command-line */
     x->vop_flags = XVID_VOP_HALFPEL; /* Bare minimum quality */
     if( xvid_flags & CODEC_FLAG_4MV )
@@ -491,6 +494,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
                 "Xvid: Cannot write 2-pass pipe\n");
             return -1;
         }
+        x->twopassfd = fd;
 
         if( avctx->stats_in == NULL ) {
             av_log(avctx, AV_LOG_ERROR,
@@ -500,13 +504,11 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
 
         if( strlen(avctx->stats_in) >
               write(fd, avctx->stats_in, strlen(avctx->stats_in)) ) {
-            close(fd);
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write to 2-pass pipe\n");
             return -1;
         }
 
-        close(fd);
         rc2pass2.filename = x->twopassfile;
         plugins[xvid_enc_create.num_plugins].func = xvid_plugin_2pass2;
         plugins[xvid_enc_create.num_plugins].param = &rc2pass2;
@@ -740,6 +742,11 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
         av_free(x->twopassbuffer);
         av_free(x->old_twopassbuffer);
         avctx->stats_out = NULL;
+    }
+    if (x->twopassfd>=0) {
+        unlink(x->twopassfile);
+        close(x->twopassfd);
+        x->twopassfd = -1;
     }
     av_free(x->twopassfile);
     av_free(x->intra_matrix);
