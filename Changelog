@@ -1,6 +1,13 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.3:
+- h264: fix deadlocks with broken/fuzzed files
+- flvdec: make decoder more robust
+- vorbisdec: fix buffer overflow (CVE-2013-0894)
+- ac3dec: validate channel output mode against channel count
+- doc: minor improvements
+
 version 9.2:
 - loco: check that there is data left after decoding a plane.
 - mov: use the format context for logging.
