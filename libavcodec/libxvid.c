@@ -73,6 +73,8 @@ struct xvid_ff_pass1 {
     struct xvid_context *context;   /**< Pointer to private context */
 };
 
+static int xvid_encode_close(AVCodecContext *avctx);
+
 /*
  * Xvid 2-Pass Kludge Section
  *
@@ -477,7 +479,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         if( x->twopassbuffer == NULL || x->old_twopassbuffer == NULL ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot allocate 2-pass log buffers\n");
-            return -1;
+            goto fail;
         }
         x->twopassbuffer[0] = x->old_twopassbuffer[0] = 0;
 
@@ -492,21 +494,21 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write 2-pass pipe\n");
-            return -1;
+            goto fail;
         }
         x->twopassfd = fd;
 
         if( avctx->stats_in == NULL ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: No 2-pass information loaded for second pass\n");
-            return -1;
+            goto fail;
         }
 
         if( strlen(avctx->stats_in) >
               write(fd, avctx->stats_in, strlen(avctx->stats_in)) ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write to 2-pass pipe\n");
-            return -1;
+            goto fail;
         }
 
         rc2pass2.filename = x->twopassfile;
@@ -606,13 +608,16 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
     if( xerr ) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Could not create encoder reference\n");
-        return -1;
+        goto fail;
     }
 
     x->encoder_handle = xvid_enc_create.handle;
     avctx->coded_frame = &x->encoded_picture;
 
     return 0;
+fail:
+    xvid_encode_close(avctx);
+    return -1;
 }
 
 static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
