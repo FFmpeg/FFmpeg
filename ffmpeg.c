@@ -120,6 +120,7 @@ const char *const forced_keyframes_const_names[] = {
 
 static void do_video_stats(OutputStream *ost, int frame_size);
 static int64_t getutime(void);
+static int64_t getmaxrss(void);
 
 static int run_as_daemon  = 0;
 static int64_t video_size = 0;
@@ -407,6 +408,11 @@ const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 static void exit_program(void)
 {
     int i, j;
+
+    if (do_benchmark) {
+        int maxrss = getmaxrss() / 1024;
+        printf("bench: maxrss=%ikB\n", maxrss);
+    }
 
     for (i = 0; i < nb_filtergraphs; i++) {
         avfilter_graph_free(&filtergraphs[i]->graph);
@@ -3322,8 +3328,7 @@ int main(int argc, char **argv)
         exit(1);
     ti = getutime() - ti;
     if (do_benchmark) {
-        int maxrss = getmaxrss() / 1024;
-        printf("bench: utime=%0.3fs maxrss=%ikB\n", ti / 1000000.0, maxrss);
+        printf("bench: utime=%0.3fs\n", ti / 1000000.0);
     }
 
     exit(received_nb_signals ? 255 : 0);
