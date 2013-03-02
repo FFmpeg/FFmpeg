@@ -735,7 +735,9 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     struct xvid_context *x = avctx->priv_data;
 
-    xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
+    if(x->encoder_handle)
+        xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
+    x->encoder_handle = NULL;
 
     av_freep(&avctx->extradata);
     if( x->twopassbuffer != NULL ) {
