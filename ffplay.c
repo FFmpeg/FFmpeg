@@ -2091,6 +2091,12 @@ static int audio_decode_frame(VideoState *is)
                     flush_complete = 1;
                 continue;
             }
+
+            if (is->frame->pts == AV_NOPTS_VALUE && pkt_temp->pts != AV_NOPTS_VALUE)
+                is->frame->pts = av_rescale_q(pkt_temp->pts, is->audio_st->time_base, dec->time_base);
+            if (pkt_temp->pts != AV_NOPTS_VALUE)
+                pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
+
             data_size = av_samples_get_buffer_size(NULL, av_frame_get_channels(is->frame),
                                                    is->frame->nb_samples,
                                                    is->frame->format, 1);
@@ -2154,8 +2160,11 @@ static int audio_decode_frame(VideoState *is)
             }
 
             audio_clock0 = is->audio_clock;
-            is->audio_clock += (double)data_size /
-                (av_frame_get_channels(is->frame) * is->frame->sample_rate * av_get_bytes_per_sample(is->frame->format));
+            /* update the audio clock with the pts */
+            if (is->frame->pts != AV_NOPTS_VALUE) {
+                is->audio_clock = is->frame->pts * av_q2d(dec->time_base) + (double) is->frame->nb_samples / is->frame->sample_rate;
+                is->audio_clock_serial = is->audio_pkt_temp_serial;
+            }
 #ifdef DEBUG
             {
                 static double last_clock;
@@ -2190,12 +2199,6 @@ static int audio_decode_frame(VideoState *is)
         }
 
         *pkt_temp = *pkt;
-
-        /* if update the audio clock with the pts */
-        if (pkt->pts != AV_NOPTS_VALUE) {
-            is->audio_clock = av_q2d(is->audio_st->time_base)*pkt->pts;
-            is->audio_clock_serial = is->audio_pkt_temp_serial;
-        }
     }
 }
 
