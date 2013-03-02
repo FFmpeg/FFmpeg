@@ -1011,6 +1011,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
         asf->packet_obj_size = avio_rl32(pb);
         if (asf->packet_obj_size >= (1 << 24) || asf->packet_obj_size <= 0) {
             av_log(s, AV_LOG_ERROR, "packet_obj_size invalid\n");
+            asf->packet_obj_size = 0;
             return AVERROR_INVALIDDATA;
         }
         asf->packet_frag_timestamp = avio_rl32(pb); // timestamp
