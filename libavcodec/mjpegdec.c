@@ -1356,7 +1356,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         return AVERROR_INVALIDDATA;
 
     id   = get_bits_long(&s->gb, 32);
-    id   = av_be2ne32(id);
     len -= 6;
 
     if (s->avctx->debug & FF_DEBUG_STARTCODE)
@@ -1365,7 +1364,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     /* Buggy AVID, it puts EOI only at every 10th frame. */
     /* Also, this fourcc is used by non-avid files too, it holds some
        information, but it's always present in AVID-created files. */
-    if (id == AV_RL32("AVI1")) {
+    if (id == AV_RB32("AVI1")) {
         /* structure:
             4bytes      AVI1
             1bytes      polarity
@@ -1387,7 +1386,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
 //    len -= 2;
 
-    if (id == AV_RL32("JFIF")) {
+    if (id == AV_RB32("JFIF")) {
         int t_w, t_h, v1, v2;
         skip_bits(&s->gb, 8); /* the trailing zero-byte */
         v1 = get_bits(&s->gb, 8);
@@ -1415,7 +1414,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         goto out;
     }
 
-    if (id == AV_RL32("Adob") && (get_bits(&s->gb, 8) == 'e')) {
+    if (id == AV_RB32("Adob") && (get_bits(&s->gb, 8) == 'e')) {
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO, "mjpeg: Adobe header found\n");
         skip_bits(&s->gb, 16); /* version */
@@ -1426,7 +1425,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         goto out;
     }
 
-    if (id == AV_RL32("LJIF")) {
+    if (id == AV_RB32("LJIF")) {
         if (s->avctx->debug & FF_DEBUG_PICT_INFO)
             av_log(s->avctx, AV_LOG_INFO,
                    "Pegasus lossless jpeg header found\n");
@@ -1453,10 +1452,9 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     /* Apple MJPEG-A */
     if ((s->start_code == APP1) && (len > (0x28 - 8))) {
         id   = get_bits_long(&s->gb, 32);
-        id   = av_be2ne32(id);
         len -= 4;
         /* Apple MJPEG-A */
-        if (id == AV_RL32("mjpg")) {
+        if (id == AV_RB32("mjpg")) {
 #if 0
             skip_bits(&s->gb, 32); /* field size */
             skip_bits(&s->gb, 32); /* pad field size */
