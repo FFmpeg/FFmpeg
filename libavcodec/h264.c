@@ -143,12 +143,54 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     ff_h264_hl_decode_mb(h);
 }
 
+static void draw_horiz_band(AVCodecContext *avctx, Picture *cur,
+                            Picture *last, int y, int h, int picture_structure,
+                            int first_field, int low_delay)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    int vshift = desc->log2_chroma_h;
+    const int field_pic = picture_structure != PICT_FRAME;
+    if(field_pic){
+        h <<= 1;
+        y <<= 1;
+    }
+
+    h = FFMIN(h, avctx->height - y);
+
+    if(field_pic && first_field && !(avctx->slice_flags&SLICE_FLAG_ALLOW_FIELD)) return;
+
+    if (avctx->draw_horiz_band) {
+        AVFrame *src;
+        int offset[AV_NUM_DATA_POINTERS];
+        int i;
+
+        if(cur->f.pict_type == AV_PICTURE_TYPE_B || low_delay ||
+           (avctx->slice_flags & SLICE_FLAG_CODED_ORDER))
+            src = &cur->f;
+        else if (last)
+            src = &last->f;
+        else
+            return;
+
+        offset[0]= y * src->linesize[0];
+        offset[1]=
+        offset[2]= (y >> vshift) * src->linesize[1];
+        for (i = 3; i < AV_NUM_DATA_POINTERS; i++)
+            offset[i] = 0;
+
+        emms_c();
+
+        avctx->draw_horiz_band(avctx, src, offset,
+                               y, picture_structure, h);
+    }
+}
+
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height)
 {
-    ff_draw_horiz_band(h->avctx, NULL, &h->cur_pic,
-                       h->ref_list[0][0].f.data[0] ? &h->ref_list[0][0] : NULL,
-                       y, height, h->picture_structure, h->first_field, 0,
-                       h->low_delay, h->mb_height * 16, h->mb_width * 16);
+    draw_horiz_band(h->avctx, &h->cur_pic,
+                    h->ref_list[0][0].f.data[0] ? &h->ref_list[0][0] : NULL,
+                    y, height, h->picture_structure, h->first_field,
+                    h->low_delay);
 }
 
 static void free_frame_buffer(H264Context *h, Picture *pic)
