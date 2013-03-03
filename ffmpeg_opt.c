@@ -2128,12 +2128,14 @@ static int opt_vsync(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
+#if FF_API_DEINTERLACE
 static int opt_deinterlace(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -filter:v yadif instead\n", opt);
     do_deinterlace = 1;
     return 0;
 }
+#endif
 
 static int opt_timecode(void *optctx, const char *opt, const char *arg)
 {
@@ -2521,8 +2523,10 @@ const OptionDef options[] = {
         "select the pass number (1 to 3)", "n" },
     { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT | OPT_SPEC,  { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
+#if FF_API_DEINTERLACE
     { "deinterlace",  OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_deinterlace },
         "this option is deprecated, use the yadif filter instead" },
+#endif
     { "psnr",         OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &do_psnr },
         "calculate PSNR of compressed frames" },
     { "vstats",       OPT_VIDEO | OPT_EXPERT ,                                   { &opt_vstats },

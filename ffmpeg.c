@@ -691,7 +691,7 @@ static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void *
     dec = ist->st->codec;
 
     /* deinterlace : must be done before any resize */
-    if (do_deinterlace) {
+    if (FF_API_DEINTERLACE && do_deinterlace) {
         int size;
 
         /* create temporary picture */
@@ -1956,7 +1956,7 @@ static int init_input_stream(int ist_index, char *error, int error_len)
             return AVERROR(EINVAL);
         }
 
-        ist->dr1 = (codec->capabilities & CODEC_CAP_DR1) && !do_deinterlace;
+        ist->dr1 = (codec->capabilities & CODEC_CAP_DR1) && !(FF_API_DEINTERLACE && do_deinterlace);
         if (codec->type == AVMEDIA_TYPE_VIDEO && ist->dr1) {
             ist->st->codec->get_buffer     = codec_get_buffer;
             ist->st->codec->release_buffer = codec_release_buffer;

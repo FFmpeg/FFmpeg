@@ -4618,7 +4618,10 @@ int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
  *  deinterlace - if not supported return -1
+ *
+ * @deprecated - use yadif (in lavfilter) instead
  */
+attribute_deprecated
 int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                           enum AVPixelFormat pix_fmt, int width, int height);
 /**
