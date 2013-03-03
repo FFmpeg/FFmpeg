@@ -426,7 +426,7 @@ static int date_get_num(const char **pp,
     val = 0;
     for(i = 0; i < len_max; i++) {
         c = *p;
-        if (!isdigit(c))
+        if (!av_isdigit(c))
             break;
         val = (val * 10) + c - '0';
         p++;
@@ -446,8 +446,8 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 
     for(;;) {
         /* consume time string until a non whitespace char is found */
-        while (isspace(*fmt)) {
-            while (isspace(*p))
+        while (av_isspace(*fmt)) {
+            while (av_isspace(*p))
                 p++;
             fmt++;
         }
@@ -611,11 +611,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         int n;
         q++;
         for (n = 100000; n >= 1; n /= 10, q++) {
-            if (!isdigit(*q))
+            if (!av_isdigit(*q))
                 break;
             microseconds += n * (*q - '0');
         }
-        while (isdigit(*q))
+        while (av_isdigit(*q))
             q++;
     }
 

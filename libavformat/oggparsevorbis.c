@@ -122,7 +122,7 @@ ff_vorbis_comment(AVFormatContext * as, AVDictionary **m, const uint8_t *buf, in
             }
 
             for (j = 0; j < tl; j++)
-                tt[j] = toupper(t[j]);
+                tt[j] = av_toupper(t[j]);
             tt[tl] = 0;
 
             memcpy(ct, v, vl);

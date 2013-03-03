@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -212,7 +213,7 @@ static int init_pattern_from_file(AVFilterContext *ctx)
             if (*p == '\n') {
                 p++; break;
             } else
-                life->buf[0][i*life->w + j] = isgraph(*(p++)) ? ALIVE_CELL : 0;
+                life->buf[0][i*life->w + j] = av_isgraph(*(p++)) ? ALIVE_CELL : 0;
         }
     }
     life->buf_idx = 0;

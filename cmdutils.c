@@ -1628,7 +1628,7 @@ int show_help(void *optctx, const char *opt, const char *arg)
 int read_yesno(void)
 {
     int c = getchar();
-    int yesno = (toupper(c) == 'Y');
+    int yesno = (av_toupper(c) == 'Y');
 
     while (c != '\n' && c != EOF)
         c = getchar();

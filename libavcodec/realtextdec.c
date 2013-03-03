@@ -35,11 +35,11 @@ static int rt_event_to_ass(AVBPrint *buf, const char *p)
 
     while (*p) {
         if (*p != '<') {
-            if (!isspace(*p))
+            if (!av_isspace(*p))
                 av_bprint_chars(buf, *p, 1);
             else if (!prev_chr_is_space)
                 av_bprint_chars(buf, ' ', 1);
-            prev_chr_is_space = isspace(*p);
+            prev_chr_is_space = av_isspace(*p);
         } else {
             const char *end = strchr(p, '>');
             if (!end)

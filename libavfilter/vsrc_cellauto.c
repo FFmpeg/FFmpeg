@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -133,7 +134,7 @@ static int init_pattern_from_string(AVFilterContext *ctx)
         if (*p == '\n' || !*p)
             break;
         else
-            cellauto->buf[i] = !!isgraph(*(p++));
+            cellauto->buf[i] = !!av_isgraph(*(p++));
     }
 
     return 0;

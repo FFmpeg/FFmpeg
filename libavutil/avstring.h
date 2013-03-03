@@ -186,6 +186,30 @@ char *av_get_token(const char **buf, const char *term);
 char *av_strtok(char *s, const char *delim, char **saveptr);
 
 /**
+ * Locale-independent conversion of ASCII isdigit.
+ */
+static inline int av_isdigit(int c)
+{
+    return c >= '0' && c <= '9';
+}
+
+/**
+ * Locale-independent conversion of ASCII isgraph.
+ */
+static inline int av_isgraph(int c)
+{
+    return c > 32 && c < 127;
+}
+
+/**
+ * Locale-independent conversion of ASCII isspace.
+ */
+static inline int av_isspace(int c)
+{
+    return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v';
+}
+
+/**
  * Locale-independent conversion of ASCII characters to uppercase.
  */
 static inline int av_toupper(int c)
@@ -203,6 +227,15 @@ static inline int av_tolower(int c)
     if (c >= 'A' && c <= 'Z')
         c ^= 0x20;
     return c;
+}
+
+/**
+ * Locale-independent conversion of ASCII isxdigit.
+ */
+static inline int av_isxdigit(int c)
+{
+    c = av_tolower(c);
+    return av_isdigit(c) || (c >= 'a' && c <= 'z');
 }
 
 /**

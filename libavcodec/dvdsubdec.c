@@ -24,6 +24,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/avstring.h"
 
 //#define DEBUG
 
@@ -523,7 +524,7 @@ static void parse_palette(DVDSubContext *ctx, char *p)
     ctx->has_palette = 1;
     for(i=0;i<16;i++) {
         ctx->palette[i] = strtoul(p, &p, 16);
-        while(*p == ',' || isspace(*p))
+        while(*p == ',' || av_isspace(*p))
             p++;
     }
 }

@@ -1125,7 +1125,7 @@ static int extract_rates(char *rates, int ratelen, const char *request)
         if (av_strncasecmp(p, "Pragma:", 7) == 0) {
             const char *q = p + 7;
 
-            while (*q && *q != '\n' && isspace(*q))
+            while (*q && *q != '\n' && av_isspace(*q))
                 q++;
 
             if (av_strncasecmp(q, "stream-switch-entry=", 20) == 0) {
@@ -1147,7 +1147,7 @@ static int extract_rates(char *rates, int ratelen, const char *request)
                     if (stream_no < ratelen && stream_no >= 0)
                         rates[stream_no] = rate_no;
 
-                    while (*q && *q != '\n' && !isspace(*q))
+                    while (*q && *q != '\n' && !av_isspace(*q))
                         q++;
                 }
 
@@ -1258,7 +1258,7 @@ static void get_word(char *buf, int buf_size, const char **pp)
     p = *pp;
     skip_spaces(&p);
     q = buf;
-    while (!isspace(*p) && *p != '\0') {
+    while (!av_isspace(*p) && *p != '\0') {
         if ((q - buf) < buf_size - 1)
             *q++ = *p;
         p++;
@@ -1275,7 +1275,7 @@ static void get_arg(char *buf, int buf_size, const char **pp)
     int quote;
 
     p = *pp;
-    while (isspace(*p)) p++;
+    while (av_isspace(*p)) p++;
     q = buf;
     quote = 0;
     if (*p == '\"' || *p == '\'')
@@ -1285,7 +1285,7 @@ static void get_arg(char *buf, int buf_size, const char **pp)
             if (*p == quote)
                 break;
         } else {
-            if (isspace(*p))
+            if (av_isspace(*p))
                 break;
         }
         if (*p == '\0')
@@ -1389,7 +1389,7 @@ static IPAddressACL* parse_dynamic_acl(FFStream *stream, HTTPContext *c)
             break;
         line_num++;
         p = line;
-        while (isspace(*p))
+        while (av_isspace(*p))
             p++;
         if (*p == '\0' || *p == '#')
             continue;
@@ -1540,7 +1540,7 @@ static int http_parse_request(HTTPContext *c)
     for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
         if (av_strncasecmp(p, "User-Agent:", 11) == 0) {
             useragent = p + 11;
-            if (*useragent && *useragent != '\n' && isspace(*useragent))
+            if (*useragent && *useragent != '\n' && av_isspace(*useragent))
                 useragent++;
             break;
         }
@@ -1668,7 +1668,7 @@ static int http_parse_request(HTTPContext *c)
             char *eoh;
             char hostbuf[260];
 
-            while (isspace(*hostinfo))
+            while (av_isspace(*hostinfo))
                 hostinfo++;
 
             eoh = strchr(hostinfo, '\n');
@@ -4100,7 +4100,7 @@ static int parse_ffconfig(const char *filename)
             break;
         line_num++;
         p = line;
-        while (isspace(*p))
+        while (av_isspace(*p))
             p++;
         if (*p == '\0' || *p == '#')
             continue;
@@ -4237,7 +4237,7 @@ static int parse_ffconfig(const char *filename)
                 get_arg(arg, sizeof(arg), &p);
                 p1 = arg;
                 fsize = strtod(p1, &p1);
-                switch(toupper(*p1)) {
+                switch(av_toupper(*p1)) {
                 case 'K':
                     fsize *= 1024;
                     break;

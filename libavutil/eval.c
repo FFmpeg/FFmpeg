@@ -33,6 +33,7 @@
 #include "log.h"
 #include "mathematics.h"
 #include "time.h"
+#include "avstring.h"
 
 typedef struct Parser {
     const AVClass *class;
@@ -637,7 +638,7 @@ int av_expr_parse(AVExpr **expr, const char *s,
         return AVERROR(ENOMEM);
 
     while (*s)
-        if (!isspace(*s++)) *wp++ = s[-1];
+        if (!av_isspace(*s++)) *wp++ = s[-1];
     *wp++ = 0;
 
     p.class      = &class;

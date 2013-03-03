@@ -52,7 +52,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
         p = av_stristr(p, "<P");
         if (!p)
             break;
-        if (p[2] != '>' && !isspace(p[2])) { // avoid confusion with tags such as <PRE>
+        if (p[2] != '>' && !av_isspace(p[2])) { // avoid confusion with tags such as <PRE>
             p++;
             continue;
         }
@@ -70,7 +70,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
         }
 
         /* if empty event -> skip subtitle */
-        while (isspace(*p))
+        while (av_isspace(*p))
             p++;
         if (!strncmp(p, "&nbsp;", 6)) {
             ret = -1;
@@ -80,7 +80,7 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
         /* extract the text, stripping most of the tags */
         while (*p) {
             if (*p == '<') {
-                if (!av_strncasecmp(p, "<P", 2) && (p[2] == '>' || isspace(p[2])))
+                if (!av_strncasecmp(p, "<P", 2) && (p[2] == '>' || av_isspace(p[2])))
                     break;
                 if (!av_strncasecmp(p, "<BR", 3))
                     av_bprintf(dst, "\\N");
@@ -92,11 +92,11 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
                 if (*p == '>')
                     p++;
             }
-            if (!isspace(*p))
+            if (!av_isspace(*p))
                 av_bprint_chars(dst, *p, 1);
             else if (!prev_chr_is_space)
                 av_bprint_chars(dst, ' ', 1);
-            prev_chr_is_space = isspace(*p);
+            prev_chr_is_space = av_isspace(*p);
             p++;
         }
     }

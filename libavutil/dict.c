@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <ctype.h>
 #include <string.h>
 
 #include "avstring.h"
@@ -50,7 +49,7 @@ av_dict_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int
     for(; i<m->count; i++){
         const char *s= m->elems[i].key;
         if(flags & AV_DICT_MATCH_CASE) for(j=0;         s[j]  ==         key[j]  && key[j]; j++);
-        else                               for(j=0; toupper(s[j]) == toupper(key[j]) && key[j]; j++);
+        else                               for(j=0; av_toupper(s[j]) == av_toupper(key[j]) && key[j]; j++);
         if(key[j])
             continue;
         if(s[j] && !(flags & AV_DICT_IGNORE_SUFFIX))

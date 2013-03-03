@@ -170,12 +170,12 @@ const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
 
     while (*s) {
         while (*s) {
-            if (!in_quotes && isspace(*s))
+            if (!in_quotes && av_isspace(*s))
                 break;
             in_quotes ^= *s == '"'; // XXX: support escaping?
             s++;
         }
-        while (isspace(*s))
+        while (av_isspace(*s))
             s++;
         if (!av_strncasecmp(s, attr, len) && s[len] == '=')
             return s + len + 1 + (s[len + 1] == '"');
