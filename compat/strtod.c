@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
 
@@ -49,7 +48,7 @@ double avpriv_strtod(const char *nptr, char **endptr)
     double res;
 
     /* Skip leading spaces */
-    while (isspace(*nptr))
+    while (av_isspace(*nptr))
         nptr++;
 
     if (!av_strncasecmp(nptr, "infinity", 8)) {

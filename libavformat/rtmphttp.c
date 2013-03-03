@@ -236,7 +236,7 @@ static int rtmp_http_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
     }
-    while (off > 0 && isspace(rt->client_id[off - 1]))
+    while (off > 0 && av_isspace(rt->client_id[off - 1]))
         off--;
     rt->client_id[off] = '\0';
 

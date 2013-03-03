@@ -23,6 +23,7 @@
 #include "dsputil.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/avstring.h"
 
 //#define DEBUG
 
@@ -522,7 +523,7 @@ static int dvdsub_init(AVCodecContext *avctx)
             ctx->has_palette = 1;
             for (i = 0; i < 16; i++) {
                 ctx->palette[i] = strtoul(p, &p, 16);
-                while (*p == ',' || isspace(*p))
+                while (*p == ',' || av_isspace(*p))
                     p++;
             }
         } else if (!strncmp("size:", cur, 5)) {

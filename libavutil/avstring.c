@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 
 #include "config.h"
 #include "common.h"
@@ -43,7 +42,7 @@ int av_strstart(const char *str, const char *pfx, const char **ptr)
 
 int av_stristart(const char *str, const char *pfx, const char **ptr)
 {
-    while (*pfx && toupper((unsigned)*pfx) == toupper((unsigned)*str)) {
+    while (*pfx && av_toupper((unsigned)*pfx) == av_toupper((unsigned)*str)) {
         pfx++;
         str++;
     }

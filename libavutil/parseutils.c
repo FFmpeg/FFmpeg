@@ -385,7 +385,7 @@ static int date_get_num(const char **pp,
     val = 0;
     for(i = 0; i < len_max; i++) {
         c = *p;
-        if (!isdigit(c))
+        if (!av_isdigit(c))
             break;
         val = (val * 10) + c - '0';
         p++;
@@ -591,7 +591,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         int val, n;
         q++;
         for (val = 0, n = 100000; n >= 1; n /= 10, q++) {
-            if (!isdigit(*q))
+            if (!av_isdigit(*q))
                 break;
             val += n * (*q - '0');
         }

@@ -177,7 +177,7 @@ static int read_shape_from_file(int *cols, int *rows, int **values, const char *
                 p++;
                 break;
             } else
-                (*values)[*cols*i + j] = !!isgraph(*(p++));
+                (*values)[*cols*i + j] = !!av_isgraph(*(p++));
         }
     }
     av_file_unmap(buf, size);

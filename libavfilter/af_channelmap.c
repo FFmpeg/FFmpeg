@@ -150,17 +150,17 @@ static av_cold int channelmap_init(AVFilterContext *ctx, const char *args)
     } else {
         char *dash = strchr(mapping, '-');
         if (!dash) {  // short mapping
-            if (isdigit(*mapping))
+            if (av_isdigit(*mapping))
                 mode = MAP_ONE_INT;
             else
                 mode = MAP_ONE_STR;
-        } else if (isdigit(*mapping)) {
-            if (isdigit(*(dash+1)))
+        } else if (av_isdigit(*mapping)) {
+            if (av_isdigit(*(dash+1)))
                 mode = MAP_PAIR_INT_INT;
             else
                 mode = MAP_PAIR_INT_STR;
         } else {
-            if (isdigit(*(dash+1)))
+            if (av_isdigit(*(dash+1)))
                 mode = MAP_PAIR_STR_INT;
             else
                 mode = MAP_PAIR_STR_STR;

@@ -23,6 +23,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
@@ -302,7 +303,7 @@ static void old_print_object_header(const char *name)
 
     str = p = av_strdup(name);
     while (*p) {
-        *p = toupper(*p);
+        *p = av_toupper(*p);
         p++;
     }
 
@@ -319,7 +320,7 @@ static void old_print_object_footer(const char *name)
 
     str = p = av_strdup(name);
     while (*p) {
-        *p = toupper(*p);
+        *p = av_toupper(*p);
         p++;
     }
 

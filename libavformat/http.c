@@ -278,9 +278,9 @@ static int process_line(URLContext *h, char *line, int line_count,
 
     p = line;
     if (line_count == 0) {
-        while (!isspace(*p) && *p != '\0')
+        while (!av_isspace(*p) && *p != '\0')
             p++;
-        while (isspace(*p))
+        while (av_isspace(*p))
             p++;
         s->http_code = strtol(p, &end, 10);
 
@@ -305,7 +305,7 @@ static int process_line(URLContext *h, char *line, int line_count,
         *p = '\0';
         tag = line;
         p++;
-        while (isspace(*p))
+        while (av_isspace(*p))
             p++;
         if (!av_strcasecmp(tag, "Location")) {
             av_strlcpy(s->location, p, sizeof(s->location));
