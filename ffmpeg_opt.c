@@ -1706,7 +1706,8 @@ loop_end:
             print_error(filename, err);
             exit(1);
         }
-    }
+    } else if (strcmp(oc->oformat->name, "image2")==0 && !av_filename_number_test(filename))
+        assert_file_overwrite(filename);
 
     if (o->mux_preload) {
         uint8_t buf[64];
