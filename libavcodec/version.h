@@ -97,5 +97,8 @@
 #ifndef FF_API_IDCT
 #define FF_API_IDCT              (LIBAVCODEC_VERSION_MAJOR < 55)
 #endif
+#ifndef FF_API_DEINTERLACE
+#define FF_API_DEINTERLACE       (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

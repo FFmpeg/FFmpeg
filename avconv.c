@@ -404,6 +404,7 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     }
 }
 
+#if FF_API_DEINTERLACE
 static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void **bufp)
 {
     AVCodecContext *dec;
@@ -442,6 +443,7 @@ static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void *
         *picture = *picture2;
     *bufp = buf;
 }
+#endif
 
 static void do_subtitle_out(AVFormatContext *s,
                             OutputStream *ost,
@@ -1181,7 +1183,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     decoded_frame->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
                                            decoded_frame->pkt_dts);
     pkt->size = 0;
+#if FF_API_DEINTERLACE
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
+#endif
 
     rate_emu_sleep(ist);
 
