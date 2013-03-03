@@ -1269,7 +1269,10 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     av_bprintf(&buf_script, "drop_frames=%d\n", nb_frames_drop);
 
     if (print_stats || is_last_report) {
-    av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
+        if (print_stats==1 && AV_LOG_INFO > av_log_get_level()) {
+            fprintf(stderr, "%s    \r", buf);
+        } else
+            av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
 
     fflush(stderr);
     }
