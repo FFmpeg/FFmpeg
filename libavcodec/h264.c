@@ -4842,8 +4842,10 @@ not_extra:
 
     assert(pict->data[0] || !*got_frame);
 
-    ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table, h->visualization_buffer, &h->low_delay,
-                         h->mb_width, h->mb_height, h->mb_stride, 1);
+    if (CONFIG_MPEGVIDEO) {
+        ff_print_debug_info2(h->avctx, pict, h->er.mbskip_table, h->visualization_buffer, &h->low_delay,
+                             h->mb_width, h->mb_height, h->mb_stride, 1);
+    }
 
     return get_consumed_bytes(buf_index, buf_size);
 }
