@@ -256,7 +256,6 @@ typedef struct MMCO {
  */
 typedef struct H264Context {
     AVCodecContext *avctx;
-    DSPContext       dsp;
     VideoDSPContext vdsp;
     H264DSPContext h264dsp;
     H264ChromaContext h264chroma;
@@ -264,6 +263,7 @@ typedef struct H264Context {
     MotionEstContext me;
     ParseContext parse_context;
     GetBitContext gb;
+    DSPContext       dsp;
     ERContext er;
 
     Picture *DPB;
