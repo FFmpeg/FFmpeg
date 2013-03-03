@@ -3389,7 +3389,7 @@ Specify the hue angle as a number of degrees. It accepts a float
 number or an expression, and defaults to 0.0.
 
 @item H
-Specify the hue angle as a number of degrees. It accepts a float
+Specify the hue angle as a number of radians. It accepts a float
 number or an expression, and defaults to 0.0.
 
 @item s
