@@ -1314,45 +1314,47 @@ static int context_init(H264Context *h)
     h->ref_cache[1][scan8[7]  + 1] =
     h->ref_cache[1][scan8[13] + 1] = PART_NOT_AVAILABLE;
 
-    /* init ER */
-    er->avctx          = h->avctx;
-    er->dsp            = &h->dsp;
-    er->decode_mb      = h264_er_decode_mb;
-    er->opaque         = h;
-    er->quarter_sample = 1;
+    if (CONFIG_ERROR_RESILIENCE) {
+        /* init ER */
+        er->avctx          = h->avctx;
+        er->dsp            = &h->dsp;
+        er->decode_mb      = h264_er_decode_mb;
+        er->opaque         = h;
+        er->quarter_sample = 1;
 
-    er->mb_num      = h->mb_num;
-    er->mb_width    = h->mb_width;
-    er->mb_height   = h->mb_height;
-    er->mb_stride   = h->mb_stride;
-    er->b8_stride   = h->mb_width * 2 + 1;
+        er->mb_num      = h->mb_num;
+        er->mb_width    = h->mb_width;
+        er->mb_height   = h->mb_height;
+        er->mb_stride   = h->mb_stride;
+        er->b8_stride   = h->mb_width * 2 + 1;
 
-    FF_ALLOCZ_OR_GOTO(h->avctx, er->mb_index2xy, (h->mb_num + 1) * sizeof(int),
-                      fail); // error ressilience code looks cleaner with this
-    for (y = 0; y < h->mb_height; y++)
-        for (x = 0; x < h->mb_width; x++)
-            er->mb_index2xy[x + y * h->mb_width] = x + y * h->mb_stride;
+        FF_ALLOCZ_OR_GOTO(h->avctx, er->mb_index2xy, (h->mb_num + 1) * sizeof(int),
+                          fail); // error ressilience code looks cleaner with this
+        for (y = 0; y < h->mb_height; y++)
+            for (x = 0; x < h->mb_width; x++)
+                er->mb_index2xy[x + y * h->mb_width] = x + y * h->mb_stride;
 
-    er->mb_index2xy[h->mb_height * h->mb_width] = (h->mb_height - 1) *
-                                                   h->mb_stride + h->mb_width;
+        er->mb_index2xy[h->mb_height * h->mb_width] = (h->mb_height - 1) *
+                                                       h->mb_stride + h->mb_width;
 
-    FF_ALLOCZ_OR_GOTO(h->avctx, er->error_status_table,
-                      mb_array_size * sizeof(uint8_t), fail);
+        FF_ALLOCZ_OR_GOTO(h->avctx, er->error_status_table,
+                          mb_array_size * sizeof(uint8_t), fail);
 
-    FF_ALLOC_OR_GOTO(h->avctx, er->mbintra_table, mb_array_size, fail);
-    memset(er->mbintra_table, 1, mb_array_size);
+        FF_ALLOC_OR_GOTO(h->avctx, er->mbintra_table, mb_array_size, fail);
+        memset(er->mbintra_table, 1, mb_array_size);
 
-    FF_ALLOCZ_OR_GOTO(h->avctx, er->mbskip_table, mb_array_size + 2, fail);
+        FF_ALLOCZ_OR_GOTO(h->avctx, er->mbskip_table, mb_array_size + 2, fail);
 
-    FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer, h->mb_height * h->mb_stride,
-                     fail);
+        FF_ALLOC_OR_GOTO(h->avctx, er->er_temp_buffer, h->mb_height * h->mb_stride,
+                         fail);
 
-    FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base, yc_size * sizeof(int16_t), fail);
-    er->dc_val[0] = h->dc_val_base + h->mb_width * 2 + 2;
-    er->dc_val[1] = h->dc_val_base + y_size + h->mb_stride + 1;
-    er->dc_val[2] = er->dc_val[1] + c_size;
-    for (i = 0; i < yc_size; i++)
-        h->dc_val_base[i] = 1024;
+        FF_ALLOCZ_OR_GOTO(h->avctx, h->dc_val_base, yc_size * sizeof(int16_t), fail);
+        er->dc_val[0] = h->dc_val_base + h->mb_width * 2 + 2;
+        er->dc_val[1] = h->dc_val_base + y_size + h->mb_stride + 1;
+        er->dc_val[2] = er->dc_val[1] + c_size;
+        for (i = 0; i < yc_size; i++)
+            h->dc_val_base[i] = 1024;
+    }
 
     return 0;
 
@@ -1768,7 +1770,8 @@ static int h264_frame_start(H264Context *h)
     if ((ret = ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
-    ff_er_frame_start(&h->er);
+    if (CONFIG_ERROR_RESILIENCE)
+        ff_er_frame_start(&h->er);
 
     assert(h->linesize && h->uvlinesize);
 
@@ -2801,7 +2804,7 @@ static int field_end(H264Context *h, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (!FIELD_PICTURE(h)) {
+    if (CONFIG_ERROR_RESILIENCE && !FIELD_PICTURE(h)) {
         h->er.cur_pic  = h->cur_pic_ptr;
         h->er.last_pic = h->ref_count[0] ? &h->ref_list[0][0] : NULL;
         h->er.next_pic = h->ref_count[1] ? &h->ref_list[1][0] : NULL;
@@ -4090,10 +4093,12 @@ static void decode_finish_row(H264Context *h)
 static void er_add_slice(H264Context *h, int startx, int starty,
                          int endx, int endy, int status)
 {
+#if CONFIG_ERROR_RESILIENCE
     ERContext *er = &h->er;
 
     er->ref_count = h->ref_count[0];
     ff_er_add_slice(er, startx, starty, endx, endy, status);
+#endif
 }
 
 static int decode_slice(struct AVCodecContext *avctx, void *arg)
