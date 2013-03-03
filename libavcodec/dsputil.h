@@ -47,7 +47,7 @@ extern const uint8_t ff_zigzag248_direct[64];
 
 /* temporary */
 extern uint32_t ff_squareTbl[512];
-extern uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
+extern const uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
 #define PUTAVG_PIXELS(depth)\
 void ff_put_pixels8x8_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\

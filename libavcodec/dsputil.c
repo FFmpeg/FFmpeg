@@ -42,7 +42,6 @@
 #include "config.h"
 #include "diracdsp.h"
 
-uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
 #define BIT_DEPTH 9
@@ -67,17 +66,6 @@ uint32_t ff_squareTbl[512] = {0, };
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~0UL/255 * 0x7f)
 #define pb_80 (~0UL/255 * 0x80)
-
-const uint8_t ff_zigzag_direct[64] = {
-    0,   1,  8, 16,  9,  2,  3, 10,
-    17, 24, 32, 25, 18, 11,  4,  5,
-    12, 19, 26, 33, 40, 48, 41, 34,
-    27, 20, 13,  6,  7, 14, 21, 28,
-    35, 42, 49, 56, 57, 50, 43, 36,
-    29, 22, 15, 23, 30, 37, 44, 51,
-    58, 59, 52, 45, 38, 31, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63
-};
 
 /* Specific zigzag scan for 248 idct. NOTE that unlike the
    specification, we interleave the fields */
@@ -2625,12 +2613,6 @@ static void ff_jref_idct1_add(uint8_t *dest, int line_size, int16_t *block)
 av_cold void ff_dsputil_static_init(void)
 {
     int i;
-
-    for(i=0;i<256;i++) ff_cropTbl[i + MAX_NEG_CROP] = i;
-    for(i=0;i<MAX_NEG_CROP;i++) {
-        ff_cropTbl[i] = 0;
-        ff_cropTbl[i + MAX_NEG_CROP + 256] = 255;
-    }
 
     for(i=0;i<512;i++) {
         ff_squareTbl[i] = (i - 256) * (i - 256);
