@@ -1589,6 +1589,16 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
     return got_picture;
 }
 
+static AVRational update_sar(int old_w, int old_h, AVRational sar, int new_w, int new_h)
+{
+    // attempt to keep aspect during typical resolution switches
+    if (!sar.num)
+        sar = (AVRational){1, 1};
+
+    sar = av_mul_q(sar, (AVRational){new_h * old_w, new_w * old_h});
+    return sar;
+}
+
 int ff_rv34_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_picture_ptr,
                             AVPacket *avpkt)
@@ -1664,6 +1674,9 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             if (av_image_check_size(si.width, si.height, 0, s->avctx))
                 return AVERROR_INVALIDDATA;
 
+            s->avctx->sample_aspect_ratio = update_sar(
+                s->width, s->height, s->avctx->sample_aspect_ratio,
+                si.width, si.height);
             s->width  = si.width;
             s->height = si.height;
             avcodec_set_dimensions(s->avctx, s->width, s->height);
