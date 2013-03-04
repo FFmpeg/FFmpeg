@@ -557,14 +557,14 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
     tmp       = ffio_read_varlen(bc);
     *back_ptr = nut->last_syncpoint_pos - 16 * ffio_read_varlen(bc);
     if (*back_ptr < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     ff_nut_reset_ts(nut, nut->time_base[tmp % nut->time_base_count],
                     tmp / nut->time_base_count);
 
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     *ts = tmp / nut->time_base_count *
