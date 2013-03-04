@@ -2342,8 +2342,10 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
                 else
                     duration -= st->first_dts;
                 if (duration > 0) {
-                    if (st->duration == AV_NOPTS_VALUE || st->duration < duration)
+                    if (st->duration == AV_NOPTS_VALUE || st->info->last_duration<=0 ||
+                        (st->duration < duration && FFABS(duration - st->info->last_duration) < 60LL*st->time_base.den / st->time_base.num))
                         st->duration = duration;
+                    st->info->last_duration = duration;
                 }
             }
             av_free_packet(pkt);

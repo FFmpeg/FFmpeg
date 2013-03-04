@@ -759,6 +759,8 @@ typedef struct AVStream {
         int64_t codec_info_duration_fields;
         int found_decoder;
 
+        int64_t last_duration;
+
         /**
          * Those are used for average framerate estimation.
          */
