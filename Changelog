@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- curves filter
+
+
+version 1.2:
 
 - VDPAU hardware acceleration through normal hwaccel
 - SRTP support

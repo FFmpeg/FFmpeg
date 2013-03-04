@@ -2217,6 +2217,73 @@ indicates never reset and return the largest area encountered during
 playback.
 @end table
 
+@section curves
+
+Apply color adjustments using curves.
+
+This filter is similar to the Adobe Photoshop and GIMP curves tools. Each
+component (red, green and blue) has its values defined by @var{N} key points
+tied from each other using a smooth curve. The x-axis represents the pixel
+values from the input frame, and the y-axis the new pixel values to be set for
+the output frame.
+
+By default, a component curve is defined by the two points @var{(0;0)} and
+@var{(1;1)}. This creates a straight line where each original pixel value is
+"adjusted" to its own value, which means no change to the image.
+
+The filter allows you to redefine these two points and add some more. A new
+curve (using a natural cubic spline interpolation) will be define to pass
+smoothly through all these new coordinates. The new defined points needs to be
+strictly increasing over the x-axis, and their @var{x} and @var{y} values must
+be in the @var{[0;1]} interval.  If the computed curves happened to go outside
+the vector spaces, the values will be clipped accordingly.
+
+If there is no key point defined in @code{x=0}, the filter will automatically
+insert a @var{(0;0)} point. In the same way, if there is no key point defined
+in @code{x=1}, the filter will automatically insert a @var{(1;1)} point.
+
+The filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item red, r
+Set the key points for the red component.
+@item green, g
+Set the key points for the green component.
+@item blue, b
+Set the key points for the blue component.
+@end table
+
+To avoid some filtergraph syntax conflicts, each key points list need to be
+defined using the following syntax: @code{x0/y0 x1/y1 x2/y2 ...}.
+
+@subsection Examples
+
+@itemize
+@item
+Increase slightly the middle level of blue:
+@example
+curves=blue='0.5/0.58'
+@end example
+
+@item
+Vintage effect:
+@example
+curves=r='0/0.11 .42/.51 1/0.95':g='0.50/0.48':b='0/0.22 .49/.44 1/0.8'
+@end example
+Here we obtain the following coordinates for each components:
+@table @var
+@item red
+@code{(0;0.11) (0.42;0.51) (1;0.95)}
+@item green
+@code{(0;0) (0.50;0.48) (1;1)}
+@item blue
+@code{(0;0.22) (0.49;0.44) (1;0.80)}
+@end table
+@end itemize
+
 @section decimate
 
 Drop frames that do not differ greatly from the previous frame in
