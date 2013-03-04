@@ -48,7 +48,7 @@ double avpriv_strtod(const char *nptr, char **endptr)
     double res;
 
     /* Skip leading spaces */
-    while (isspace(*nptr))
+    while (av_isspace(*nptr))
         nptr++;
 
     if (!av_strncasecmp(nptr, "infinity", 8)) {
