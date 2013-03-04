@@ -406,7 +406,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     *picture = ctx->picture;
     *got_frame = 1;
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
