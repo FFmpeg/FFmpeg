@@ -2230,8 +2230,10 @@ static void update_stream_timings(AVFormatContext *ic)
     }
         if (ic->pb && (filesize = avio_size(ic->pb)) > 0 && ic->duration != AV_NOPTS_VALUE) {
             /* compute the bitrate */
-            ic->bit_rate = (double)filesize * 8.0 * AV_TIME_BASE /
+            double bitrate = (double)filesize * 8.0 * AV_TIME_BASE /
                 (double)ic->duration;
+            if (bitrate >= 0 && bitrate <= INT_MAX)
+                ic->bit_rate = bitrate;
         }
 }
 
