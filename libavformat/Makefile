@@ -13,7 +13,6 @@ OBJS = allformats.o         \
        cutils.o             \
        id3v1.o              \
        id3v2.o              \
-       log2_tab.o           \
        metadata.o           \
        mux.o                \
        options.o            \
@@ -45,6 +44,7 @@ OBJS-$(CONFIG_RTPDEC)                    += rdt.o                       \
                                             rtpdec_vp8.o                \
                                             rtpdec_xiph.o
 OBJS-$(CONFIG_RTPENC_CHAIN)              += rtpenc_chain.o rtp.o
+OBJS-$(CONFIG_SHARED)                    += log2_tab.o
 
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o rawenc.o

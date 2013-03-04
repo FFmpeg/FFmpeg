@@ -8,11 +8,11 @@ HEADERS = swresample.h                       \
 
 OBJS = audioconvert.o                        \
        dither.o                              \
-       log2_tab.o                            \
        rematrix.o                            \
        resample.o                            \
        swresample.o                          \
 
 OBJS-$(CONFIG_LIBSOXR) += soxr_resample.o
+OBJS-$(CONFIG_SHARED)  += log2_tab.o
 
 TESTPROGS = swresample
