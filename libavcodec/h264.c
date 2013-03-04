@@ -2421,6 +2421,12 @@ static int h264_set_parameter_from_sps(H264Context *h)
     if (s->avctx->has_b_frames < 2)
         s->avctx->has_b_frames = !s->low_delay;
 
+    if (h->sps.bit_depth_luma != h->sps.bit_depth_chroma) {
+        av_log_missing_feature(s->avctx,
+            "Different bit depth between chroma and luma", 1);
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
         h->cur_chroma_format_idc      != h->sps.chroma_format_idc) {
         if (s->avctx->codec &&
