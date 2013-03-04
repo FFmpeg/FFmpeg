@@ -73,8 +73,10 @@ static uint64_t get_fourcc(AVIOContext *bc)
         return avio_rl16(bc);
     else if (len == 4)
         return avio_rl32(bc);
-    else
+    else {
+        av_log(NULL, AV_LOG_ERROR, "Unsupported fourcc length %d\n", len);
         return -1;
+    }
 }
 
 #ifdef TRACE
