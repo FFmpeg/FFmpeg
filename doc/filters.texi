@@ -2320,8 +2320,10 @@ Attempt to fix small changes in horizontal and/or vertical shift. This
 filter helps remove camera shake from hand-holding a camera, bumping a
 tripod, moving on a vehicle, etc.
 
-The filter accepts parameters as a string of the form
-"@var{x}:@var{y}:@var{w}:@var{h}:@var{rx}:@var{ry}:@var{edge}:@var{blocksize}:@var{contrast}:@var{search}:@var{filename}"
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+@var{x}:@var{y}:@var{w}:@var{h}:@var{rx}:@var{ry}:@var{edge}:@var{blocksize}:@var{contrast}:@var{search}:@var{filename}.
 
 A description of the accepted parameters follows.
 
@@ -2351,19 +2353,18 @@ range 0-64 pixels. Default 16.
 
 @item edge
 Specify how to generate pixels to fill blanks at the edge of the
-frame. An integer from 0 to 3 as follows:
-@table @option
-@item 0
+frame. Available values are:
+@table @samp
+@item blank, 0
 Fill zeroes at blank locations
-@item 1
+@item original, 1
 Original image at blank locations
-@item 2
+@item clamp, 2
 Extruded edge value at blank locations
-@item 3
+@item mirror, 3
 Mirrored edge at blank locations
 @end table
-
-The default setting is mirror edge at blank locations.
+Default value is @samp{mirror}.
 
 @item blocksize
 Specify the blocksize to use for motion search. Range 4-128 pixels,
@@ -2375,8 +2376,14 @@ the specified contrast (difference between darkest and lightest
 pixels) will be considered. Range 1-255, default 125.
 
 @item search
-Specify the search strategy 0 = exhaustive search, 1 = less exhaustive
-search. Default - exhaustive search.
+Specify the search strategy. Available values are:
+@table @samp
+@item exhaustive, 0
+Set exhaustive search
+@item less, 1
+Set less exhaustive search.
+@end table
+Default value is @samp{exhaustive}.
 
 @item filename
 If set then a detailed log of the motion search is written to the

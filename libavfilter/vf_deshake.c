@@ -55,6 +55,7 @@
 #include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/dsputil.h"
 
@@ -86,7 +87,7 @@ typedef struct {
 } Transform;
 
 typedef struct {
-    AVClass av_class;
+    const AVClass *class;
     AVFilterBufferRef *ref;    ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
@@ -104,7 +105,34 @@ typedef struct {
     int ch;
     int cx;
     int cy;
+    char *filename;            ///< Motion search detailed log filename
 } DeshakeContext;
+
+#define OFFSET(x) offsetof(DeshakeContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption deshake_options[] = {
+    { "x", "set x for the rectangular search area",      OFFSET(cx), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
+    { "y", "set y for the rectangular search area",      OFFSET(cy), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
+    { "w", "set width for the rectangular search area",  OFFSET(cw), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
+    { "h", "set height for the rectangular search area", OFFSET(ch), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
+    { "rx", "set x for the rectangular search area",     OFFSET(rx), AV_OPT_TYPE_INT, {.i64=16}, 0, 64, .flags = FLAGS },
+    { "ry", "set y for the rectangular search area",     OFFSET(ry), AV_OPT_TYPE_INT, {.i64=16}, 0, 64, .flags = FLAGS },
+    { "edge", "set edge mode", OFFSET(edge), AV_OPT_TYPE_INT, {.i64=FILL_MIRROR}, FILL_BLANK, FILL_COUNT-1, FLAGS, "edge"},
+        { "blank",    "fill zeroes at blank locations",         0, AV_OPT_TYPE_CONST, {.i64=FILL_BLANK},    INT_MIN, INT_MAX, FLAGS, "edge" },
+        { "original", "original image at blank locations",      0, AV_OPT_TYPE_CONST, {.i64=FILL_ORIGINAL}, INT_MIN, INT_MAX, FLAGS, "edge" },
+        { "clamp",    "extruded edge value at blank locations", 0, AV_OPT_TYPE_CONST, {.i64=FILL_CLAMP},    INT_MIN, INT_MAX, FLAGS, "edge" },
+        { "mirror",   "mirrored edge at blank locations",       0, AV_OPT_TYPE_CONST, {.i64=FILL_MIRROR},   INT_MIN, INT_MAX, FLAGS, "edge" },
+    { "blocksize", "set motion search blocksize",       OFFSET(blocksize), AV_OPT_TYPE_INT, {.i64=8},   4, 128, .flags = FLAGS },
+    { "contrast",  "set contrast threshold for blocks", OFFSET(contrast),  AV_OPT_TYPE_INT, {.i64=125}, 1, 255, .flags = FLAGS },
+    { "search",  "set search strategy", OFFSET(search), AV_OPT_TYPE_INT, {.i64=EXHAUSTIVE}, EXHAUSTIVE, SEARCH_COUNT-1, FLAGS, "smode" },
+        { "exhaustive", "exhaustive search",      0, AV_OPT_TYPE_CONST, {.i64=EXHAUSTIVE},       INT_MIN, INT_MAX, FLAGS, "smode" },
+        { "less",       "less exhaustive search", 0, AV_OPT_TYPE_CONST, {.i64=SMART_EXHAUSTIVE}, INT_MIN, INT_MAX, FLAGS, "smode" },
+    { "filename", "set motion search detailed log file name", OFFSET(filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(deshake);
 
 static int cmp(const double *a, const double *b)
 {
@@ -334,40 +362,28 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
+    int ret;
     DeshakeContext *deshake = ctx->priv;
-    char filename[256] = {0};
+    static const char *shorthand[] = {
+        "x", "y", "w", "h", "rx", "ry", "edge",
+        "blocksize", "contrast", "search", "filename",
+        NULL
+    };
 
-    deshake->rx = 16;
-    deshake->ry = 16;
-    deshake->edge = FILL_MIRROR;
-    deshake->blocksize = 8;
-    deshake->contrast = 125;
-    deshake->search = EXHAUSTIVE;
-    deshake->refcount = 20;
+    deshake->refcount = 20; // XXX: add to options?
 
-    deshake->cw = -1;
-    deshake->ch = -1;
-    deshake->cx = -1;
-    deshake->cy = -1;
+    deshake->class = &deshake_class;
+    av_opt_set_defaults(deshake);
 
-    if (args) {
-        sscanf(args, "%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%255s",
-               &deshake->cx, &deshake->cy, &deshake->cw, &deshake->ch,
-               &deshake->rx, &deshake->ry, &deshake->edge,
-               &deshake->blocksize, &deshake->contrast, &deshake->search, filename);
+    ret = av_opt_set_from_string(deshake, args, shorthand, "=", ":");
+    if (ret < 0)
+        return ret;
 
-        deshake->blocksize /= 2;
+    deshake->blocksize /= 2;
+    deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
 
-        deshake->rx = av_clip(deshake->rx, 0, 64);
-        deshake->ry = av_clip(deshake->ry, 0, 64);
-        deshake->edge = av_clip(deshake->edge, FILL_BLANK, FILL_COUNT - 1);
-        deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
-        deshake->contrast = av_clip(deshake->contrast, 1, 255);
-        deshake->search = av_clip(deshake->search, EXHAUSTIVE, SEARCH_COUNT - 1);
-
-    }
-    if (*filename)
-        deshake->fp = fopen(filename, "w");
+    if (deshake->filename)
+        deshake->fp = fopen(deshake->filename, "w");
     if (deshake->fp)
         fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
 
@@ -424,6 +440,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (deshake->avctx)
         avcodec_close(deshake->avctx);
     av_freep(&deshake->avctx);
+    av_opt_free(deshake);
 }
 
 static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
@@ -565,4 +582,5 @@ AVFilter avfilter_vf_deshake = {
     .query_formats = query_formats,
     .inputs        = deshake_inputs,
     .outputs       = deshake_outputs,
+    .priv_class    = &deshake_class,
 };
