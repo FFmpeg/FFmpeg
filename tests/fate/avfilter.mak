@@ -14,7 +14,9 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-il                                              \
              fate-lavfi-life                                            \
              fate-lavfi-null                                            \
-             fate-lavfi-overlay                                         \
+             fate-lavfi-overlay_rgb                                     \
+             fate-lavfi-overlay_yuv420                                  \
+             fate-lavfi-overlay_yuv444                                  \
              fate-lavfi-pad                                             \
              fate-lavfi-pixfmts_copy                                    \
              fate-lavfi-pixfmts_crop                                    \
