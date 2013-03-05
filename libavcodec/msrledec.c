@@ -138,7 +138,8 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
     unsigned int width= FFABS(pic->linesize[0]) / (depth >> 3);
 
     output     = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
-    output_end = pic->data[0] +  avctx->height      * pic->linesize[0];
+    output_end = output + FFABS(pic->linesize[0]);
+
     while (bytestream2_get_bytes_left(gb) > 0) {
         p1 = bytestream2_get_byteu(gb);
         if(p1 == 0) { //Escape code
@@ -155,6 +156,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
                     }
                 }
                 output = pic->data[0] + line * pic->linesize[0];
+                output_end = output + FFABS(pic->linesize[0]);
                 pos = 0;
                 continue;
             } else if(p2 == 1) { //End-of-picture
@@ -169,11 +171,11 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
                     return -1;
                 }
                 output = pic->data[0] + line * pic->linesize[0] + pos * (depth >> 3);
+                output_end = pic->data[0] + line * pic->linesize[0] + FFABS(pic->linesize[0]);
                 continue;
             }
             // Copy data
-            if ((pic->linesize[0] > 0 && output + p2 * (depth >> 3) > output_end) ||
-                (pic->linesize[0] < 0 && output + p2 * (depth >> 3) < output_end)) {
+            if (output + p2 * (depth >> 3) > output_end) {
                 bytestream2_skip(gb, 2 * (depth >> 3));
                 continue;
             } else if (bytestream2_get_bytes_left(gb) < p2 * (depth >> 3)) {
@@ -203,8 +205,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             pos += p2;
         } else { //run of pixels
             uint8_t pix[3]; //original pixel
-            if ((pic->linesize[0] > 0 && output + p1 * (depth >> 3) > output_end) ||
-                (pic->linesize[0] < 0 && output + p1 * (depth >> 3) < output_end))
+            if (output + p1 * (depth >> 3) > output_end)
                 continue;
 
             switch(depth){
