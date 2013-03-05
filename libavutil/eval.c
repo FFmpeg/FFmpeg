@@ -141,7 +141,7 @@ struct AVExpr {
     enum {
         e_value, e_const, e_func0, e_func1, e_func2,
         e_squish, e_gauss, e_ld, e_isnan, e_isinf,
-        e_mod, e_max, e_min, e_eq, e_gt, e_gte,
+        e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
@@ -275,6 +275,8 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_eq:  return e->value * (d == d2 ? 1.0 : 0.0);
                 case e_gt:  return e->value * (d >  d2 ? 1.0 : 0.0);
                 case e_gte: return e->value * (d >= d2 ? 1.0 : 0.0);
+                case e_lt:  return e->value * (d <  d2 ? 1.0 : 0.0);
+                case e_lte: return e->value * (d <= d2 ? 1.0 : 0.0);
                 case e_pow: return e->value * pow(d, d2);
                 case e_mul: return e->value * (d * d2);
                 case e_div: return e->value * ((!CONFIG_FTRAPV || d2 ) ? (d / d2) : d * INFINITY);
@@ -401,8 +403,8 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "eq"    )) d->type = e_eq;
     else if (strmatch(next, "gte"   )) d->type = e_gte;
     else if (strmatch(next, "gt"    )) d->type = e_gt;
-    else if (strmatch(next, "lte"   )) { AVExpr *tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gte; }
-    else if (strmatch(next, "lt"    )) { AVExpr *tmp = d->param[1]; d->param[1] = d->param[0]; d->param[0] = tmp; d->type = e_gt; }
+    else if (strmatch(next, "lte"   )) d->type = e_lte;
+    else if (strmatch(next, "lt"    )) d->type = e_lt;
     else if (strmatch(next, "ld"    )) d->type = e_ld;
     else if (strmatch(next, "isnan" )) d->type = e_isnan;
     else if (strmatch(next, "isinf" )) d->type = e_isinf;
