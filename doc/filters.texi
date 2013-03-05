@@ -3840,7 +3840,7 @@ pairs separated by ":". A description of the accepted options follows.
 Set noise seed for specific pixel component or all pixel components in case
 of @var{all_seed}. Default value is @code{123457}.
 
-@item all_strength, as
+@item all_strength, alls
 @item c0_strength, c0s
 @item c1_strength, c1s
 @item c2_strength, c2s
@@ -3848,7 +3848,7 @@ of @var{all_seed}. Default value is @code{123457}.
 Set noise strength for specific pixel component or all pixel components in case
 @var{all_strength}. Default value is @code{0}. Allowed range is [0, 100].
 
-@item all_flags, af
+@item all_flags, allf
 @item c0_flags, c0f
 @item c1_flags, c1f
 @item c2_flags, c2f
