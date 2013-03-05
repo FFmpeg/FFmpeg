@@ -266,7 +266,7 @@ or the corresponding number value defined in @file{libavutil/channel_layout.h}.
 The special parameter "auto", signifies that the filter will
 automatically select the output format depending on the output filter.
 
-Some examples follow.
+@subsection Examples
 
 @itemize
 @item
@@ -647,6 +647,7 @@ select cubic root
 @end table
 
 @subsection Examples
+
 @itemize
 @item
 Fade in first 15 seconds of audio:
@@ -722,12 +723,17 @@ All inputs must have the same sample rate, and format.
 If inputs do not have the same duration, the output will stop with the
 shortest.
 
-Example: merge two mono files into a stereo stream:
+@subsection Examples
+
+@itemize
+@item
+Merge two mono files into a stereo stream:
 @example
 amovie=left.wav [l] ; amovie=right.mp3 [r] ; [l] [r] amerge
 @end example
 
-Example: multiple merges:
+@item
+Multiple merges:
 @example
 ffmpeg -f lavfi -i "
 amovie=input.mkv:si=0 [a0];
@@ -738,6 +744,7 @@ amovie=input.mkv:si=4 [a4];
 amovie=input.mkv:si=5 [a5];
 [a0][a1][a2][a3][a4][a5] amerge=inputs=6" -c:a pcm_s16le output.mkv
 @end example
+@end itemize
 
 @section amix
 
@@ -803,16 +810,22 @@ expresses a sample rate and @var{resampler_options} is a list of
 @var{key}=@var{value} pairs, separated by ":". See the
 ffmpeg-resampler manual for the complete list of supported options.
 
-For example, to resample the input audio to 44100Hz:
+@subsection Examples
+
+@itemize
+@item
+Resample the input audio to 44100Hz:
 @example
 aresample=44100
 @end example
 
-To stretch/squeeze samples to the given timestamps, with a maximum of 1000
+@item
+Stretch/squeeze samples to the given timestamps, with a maximum of 1000
 samples per second compensation:
 @example
 aresample=async=1000
 @end example
+@end itemize
 
 @section asetnsamples
 
@@ -952,15 +965,21 @@ The filter accepts exactly one parameter, the audio tempo. If not
 specified then the filter will assume nominal 1.0 tempo. Tempo must
 be in the [0.5, 2.0] range.
 
-For example, to slow down audio to 80% tempo:
+@subsection Examples
+
+@itemize
+@item
+Slow down audio to 80% tempo:
 @example
 atempo=0.8
 @end example
 
-For example, to speed up audio to 125% tempo:
+@item
+To speed up audio to 125% tempo:
 @example
 atempo=1.25
 @end example
+@end itemize
 
 @section earwax
 
@@ -1082,16 +1101,22 @@ Set noise tolerance. Can be specified in dB (in case "dB" is appended to the
 specified value) or amplitude ratio. Default is -60dB, or 0.001.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
 Detect 5 seconds of silence with -50dB noise tolerance:
 @example
 silencedetect=n=-50dB:d=5
 @end example
 
+@item
 Complete example with @command{ffmpeg} to detect silence with 0.0001 noise
 tolerance in @file{silence.mp3}:
 @example
 ffmpeg -f lavfi -i amovie=silence.mp3,silencedetect=noise=0.0001 -f null -
 @end example
+@end itemize
 
 @section asyncts
 Synchronize audio data with timestamps by squeezing/stretching it and/or
@@ -1303,6 +1328,8 @@ the samples).
 
 All volumes are in decibels relative to the maximum PCM value.
 
+@subsection Examples
+
 Here is an excerpt of the output:
 @example
 [Parsed_volumedetect_0 @ 0xa23120] mean_volume: -27 dB
@@ -1369,7 +1396,8 @@ must be consistent.
 
 @end table
 
-For example:
+@subsection Examples
+
 @example
 abuffer=44100:s16p:stereo
 @end example
@@ -1442,7 +1470,6 @@ sample rate
 @subsection Examples
 
 @itemize
-
 @item
 Generate silence:
 @example
@@ -1450,7 +1477,6 @@ aevalsrc=0
 @end example
 
 @item
-
 Generate a sin signal with frequency of 440 Hz, set sample rate to
 8000 Hz:
 @example
@@ -1516,14 +1542,21 @@ Set the number of samples per requested frames.
 
 @end table
 
-Follow some examples:
-@example
-#  set the sample rate to 48000 Hz and the channel layout to AV_CH_LAYOUT_MONO.
-anullsrc=r=48000:cl=4
+@subsection Examples
 
-# same as
+@itemize
+@item
+Set the sample rate to 48000 Hz and the channel layout to AV_CH_LAYOUT_MONO.
+@example
+anullsrc=r=48000:cl=4
+@end example
+
+@item
+Do the same operation with a more obvious syntax:
+@example
 anullsrc=r=48000:cl=mono
 @end example
+@end itemize
 
 @section abuffer
 Buffer audio frames, and make them available to the filter chain.
@@ -1871,10 +1904,9 @@ Value of pixel component at current location for second video frame (bottom laye
 @end table
 @end table
 
-Some examples follow.
+@subsection Examples
 
 @itemize
-
 @item
 Apply transition from bottom layer to top layer in first 10 seconds:
 @example
@@ -1941,7 +1973,7 @@ corresponding value set for @option{luma_power}.
 A value of 0 will disable the effect.
 @end table
 
-Some examples follow.
+@subsection Examples
 
 @itemize
 @item
@@ -2076,6 +2108,7 @@ The expression for @var{x} may depend on @var{y}, and the expression
 for @var{y} may depend on @var{x}.
 
 @subsection Examples
+
 @itemize
 @item
 Crop area with size 100x100 at position (12,34).
@@ -2263,10 +2296,9 @@ finding the right @var{x}, @var{y}, @var{w}, @var{h} parameters, and
 
 @end table
 
-Some examples follow.
+@subsection Examples
 
 @itemize
-
 @item
 Set a rectangle covering the area with top left corner coordinates 0,0
 and size 100x77, setting a band of size 10:
@@ -2382,7 +2414,8 @@ video with inverted luma.
 Set the thickness of the box edge. Default value is @code{4}.
 @end table
 
-Some examples follow:
+@subsection Examples
+
 @itemize
 @item
 Draw a black box around the edge of the input image:
@@ -2680,10 +2713,7 @@ The timestamp of the current frame, in seconds, with microsecond accuracy.
 
 @subsection Examples
 
-Some examples follow.
-
 @itemize
-
 @item
 Draw "Test Text" with font FreeSerif, using the default values for the
 optional parameters.
@@ -2818,6 +2848,7 @@ Default value is 0.
 @end table
 
 @subsection Examples
+
 @itemize
 @item
 Fade in first 30 frames of video:
@@ -2931,14 +2962,20 @@ the next filter.
 The filter accepts a list of pixel format names, separated by ":",
 for example "yuv420p:monow:rgb24".
 
-Some examples follow:
-@example
-# convert the input video to the format "yuv420p"
-format=yuv420p
+@subsection Examples
 
-# convert the input video to any of the formats in the list
+@itemize
+@item
+Convert the input video to the format @var{yuv420p}
+@example
+format=yuv420p
+@end example
+
+Convert the input video to any of the formats in the list
+@example
 format=yuv420p:yuv444p:yuv410p
 @end example
+@end itemize
 
 @section fps
 
@@ -3017,7 +3054,7 @@ description), a position (specified by the syntax @var{X}/@var{Y},
 The number and kind of parameters depend on the loaded effect. If an
 effect parameter is not specified the default value is set.
 
-Some examples follow:
+@subsection Examples
 
 @itemize
 @item
@@ -3114,7 +3151,7 @@ plane. Returns 0 if there is no such plane.
 For functions, if @var{x} and @var{y} are outside the area, the value will be
 automatically clipped to the closer edge.
 
-Some examples follow:
+@subsection Examples
 
 @itemize
 @item
@@ -3421,7 +3458,8 @@ The options can also be set using the syntax: @var{hue}:@var{saturation}
 
 In this case @var{hue} is expressed in degrees.
 
-Some examples follow:
+@subsection Examples
+
 @itemize
 @item
 Set the hue to 90 degrees and the saturation to 1.0:
@@ -3788,7 +3826,8 @@ The parameter syntax and behavior for the listed filters are the same
 of the corresponding MPlayer filters. For detailed instructions check
 the "VIDEO FILTERS" section in the MPlayer manual.
 
-Some examples follow:
+@subsection Examples
+
 @itemize
 @item
 Adjust gamma, brightness, contrast:
@@ -3814,15 +3853,22 @@ input to the next filter.
 The filter accepts a list of pixel format names, separated by ":",
 for example "yuv420p:monow:rgb24".
 
-Some examples follow:
-@example
-# force libavfilter to use a format different from "yuv420p" for the
-# input to the vflip filter
-noformat=yuv420p,vflip
+@subsection Examples
 
-# convert the input video to any of the formats not contained in the list
+@itemize
+@item
+Force libavfilter to use a format different from @var{yuv420p} for the
+input to the vflip filter:
+@example
+noformat=yuv420p,vflip
+@end example
+
+@item
+Convert the input video to any of the formats not contained in the list:
+@example
 noformat=yuv420p:yuv444p:yuv410p
 @end example
+@end itemize
 
 @section noise
 
@@ -3869,9 +3915,10 @@ uniform noise (gaussian otherwise)
 @end table
 @end table
 
-Some examples follow:
-@example
+@subsection Examples
+
 Add temporal and uniform noise to input video:
+@example
 noise=alls=20:allf=t+u
 @end example
 
@@ -5288,7 +5335,8 @@ Default value is 1.0 for @option{luma_amount}, 0.0 for
 @option{chroma_amount}.
 @end table
 
-Some examples follow:
+@subsection Examples
+
 @itemize
 @item
 Apply strong luma sharpen effect:
@@ -6400,15 +6448,21 @@ other integer value between this range is allowed.
 
 @end table
 
-Example of real-time graph using @command{ffplay}, with a EBU scale meter +18:
+@subsection Examples
+
+@itemize
+@item
+Real-time graph using @command{ffplay}, with a EBU scale meter +18:
 @example
 ffplay -f lavfi -i "amovie=input.mp3,ebur128=video=1:meter=18 [out0][out1]"
 @end example
 
+@item
 Run an analysis with @command{ffmpeg}:
 @example
 ffmpeg -nostats -i input.mp3 -filter_complex ebur128 -f null -
 @end example
+@end itemize
 
 @section settb, asettb
 
@@ -6509,7 +6563,8 @@ explicitly by the user.
 Different frame rates are acceptable but will result in variable frame rate
 at output; be sure to configure the output file to handle it.
 
-Examples:
+@subsection Examples
+
 @itemize
 @item
 Concatenate an opening, an episode and an ending, all in bilingual version
@@ -6652,7 +6707,8 @@ option @var{n}. Default value is "25".
 Specify the video size for the output. Default value is "600x240".
 @end table
 
-Some examples follow.
+@subsection Examples
+
 @itemize
 @item
 Output the input file audio and the corresponding video representation
@@ -6739,7 +6795,7 @@ input -----------> deltapts0 --> overlay --> output
 movie --> scale--> deltapts1 -------+
 @end example
 
-Some examples follow.
+@subsection Examples
 
 @itemize
 @item
