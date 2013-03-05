@@ -93,8 +93,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             out[outcnt++] = code; // rgb555 pixel coded directly
         } else {
             int count;
-            int inp_off;
-            uint16_t *inp;
 
             if ((code & 0x6000) == 0x6000) {
                 // copy from previous frame
@@ -112,7 +110,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
                 start = (outcnt + offsets[oidx]) % maxcnt;
 
-                if (maxcnt - start < count)
+                if (maxcnt - start < count || maxcnt - outcnt < count)
                     break;
 
                 if (!prev) {
@@ -121,8 +119,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     break;
                 }
 
-                inp = prev;
-                inp_off = start;
+                memcpy(out + outcnt, prev + start, 2 * count);
             } else {
                 // copy from earlier in this frame
                 int offset = (code & 0x1FFF) + 1;
@@ -137,19 +134,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                     count = 4 + *buf++;
                 }
 
-                if (outcnt < offset)
+                if (outcnt < offset || maxcnt - outcnt < count)
                     break;
 
-                inp = out;
-                inp_off = outcnt - offset;
+                av_memcpy_backptr((uint8_t *)out + 2 * outcnt, 2 * offset, 2 * count);
             }
-
-            if (maxcnt - outcnt < count)
-                break;
-
-            for (i = inp_off; i < count + inp_off; i++) {
-                out[outcnt++] = inp[i];
-            }
+            outcnt += count;
         }
     }
 
