@@ -1034,6 +1034,16 @@ check_struct(){
         enable_safe "${struct}_${member}"
 }
 
+check_builtin(){
+    log check_builtin "$@"
+    name=$1
+    headers=$2
+    builtin=$3
+    shift 3
+    disable "$name"
+    check_code ld "$headers" "$builtin" "$@" && enable "$name"
+}
+
 require(){
     name="$1"
     header="$2"
