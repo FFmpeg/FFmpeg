@@ -1041,7 +1041,7 @@ check_builtin(){
     builtin=$3
     shift 3
     disable "$name"
-    check_code ld "$headers" "$builtin" "$@" && enable "$name"
+    check_code ld "$headers" "$builtin" "cc" "$@" && enable "$name"
 }
 
 require(){
@@ -3654,9 +3654,8 @@ elif enabled sparc; then
 
 elif enabled x86; then
 
-    check_code ld intrin.h "__rdtsc()" "cc" && enable rdtsc
-
-    check_code ld mmintrin.h "_mm_empty()" "cc" && enable mm_empty
+    check_builtin rdtsc    intrin.h   "__rdtsc()"
+    check_builtin mm_empty mmintrin.h "_mm_empty()"
 
     enable local_aligned_8 local_aligned_16
 
