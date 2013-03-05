@@ -479,7 +479,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             c->bpp = 32;
             decode_intra = zmbv_decode_intra;
             c->decode_xor = zmbv_decode_xor_32;
-            avctx->pix_fmt = AV_PIX_FMT_BGRA;
+            avctx->pix_fmt = AV_PIX_FMT_BGR0;
             c->stride = c->width * 4;
             break;
         default:
