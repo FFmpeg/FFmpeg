@@ -5292,6 +5292,11 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
             v->sprite_height > 1 << 14 ||
             v->output_width  > 1 << 14 ||
             v->output_height > 1 << 14) return -1;
+
+        if ((v->sprite_width&1) || (v->sprite_height&1)) {
+            av_log(avctx, AV_LOG_ERROR, "odd sprite\n");
+            return AVERROR_PATCHWELCOME;
+        }
     }
     return 0;
 }
