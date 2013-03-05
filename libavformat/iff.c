@@ -250,6 +250,8 @@ static int iff_read_header(AVFormatContext *s)
             break;
 
         case ID_CMAP:
+            if (data_size > INT_MAX - IFF_EXTRA_VIDEO_SIZE - FF_INPUT_BUFFER_PADDING_SIZE)
+                return AVERROR_INVALIDDATA;
             st->codec->extradata_size = data_size + IFF_EXTRA_VIDEO_SIZE;
             st->codec->extradata      = av_malloc(data_size + IFF_EXTRA_VIDEO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
@@ -410,6 +412,7 @@ static int iff_read_header(AVFormatContext *s)
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
         }
+        av_assert0(st->codec->extradata_size >= IFF_EXTRA_VIDEO_SIZE);
         buf = st->codec->extradata;
         bytestream_put_be16(&buf, IFF_EXTRA_VIDEO_SIZE);
         bytestream_put_byte(&buf, iff->bitmap_compression);
