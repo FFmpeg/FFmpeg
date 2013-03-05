@@ -86,7 +86,6 @@ static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
         break;
 
     case AVMEDIA_TYPE_VIDEO:
-        avcodec_get_context_defaults3(c, *codec);
         c->codec_id = codec_id;
 
         c->bit_rate = 400000;
@@ -396,7 +395,7 @@ int main(int argc, char **argv)
     AVStream *audio_st, *video_st;
     AVCodec *audio_codec, *video_codec;
     double audio_pts, video_pts;
-    int ret, i;
+    int ret;
 
     /* Initialize libavcodec, and register all codecs and formats. */
     av_register_all();
@@ -504,18 +503,12 @@ int main(int argc, char **argv)
     if (audio_st)
         close_audio(oc, audio_st);
 
-    /* Free the streams. */
-    for (i = 0; i < oc->nb_streams; i++) {
-        av_freep(&oc->streams[i]->codec);
-        av_freep(&oc->streams[i]);
-    }
-
     if (!(fmt->flags & AVFMT_NOFILE))
         /* Close the output file. */
         avio_close(oc->pb);
 
     /* free the stream */
-    av_free(oc);
+    avformat_free_context(oc);
 
     return 0;
 }
