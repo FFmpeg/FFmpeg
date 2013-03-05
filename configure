@@ -456,14 +456,18 @@ set_weak(){
     done
 }
 
+sanitize_var_name(){
+    echo $@ | sed 's/[^A-Za-z0-9_]/_/g'
+}
+
 set_safe(){
     var=$1
     shift
-    eval $(echo "$var" | sed 's/[^A-Za-z0-9_]/_/g')='$*'
+    eval $(sanitize_var_name "$var")='$*'
 }
 
 get_safe(){
-    eval echo \$$(echo "$1" | sed 's/[^A-Za-z0-9_]/_/g')
+    eval echo \$$(sanitize_var_name "$1")
 }
 
 pushvar(){
