@@ -44,6 +44,12 @@ length.
 
 All files must have the same streams (same codecs, same time base, etc.).
 
+The duration of each file is used to adjust the timestamps of the next file:
+if the duration is incorrect (because it was computed using the bit-rate or
+because the file is truncated, for example), it can cause artifacts. The
+@code{duration} directive can be used to override the duration stored in
+each file.
+
 @subsection Syntax
 
 The script is a text file in extended-ASCII, with one directive per line.
