@@ -6601,6 +6601,23 @@ Default value is @code{1}.
 The usage is very similar to the showwaves filter; see the examples in that
 section.
 
+@subsection Examples
+
+@itemize
+@item
+Large window with logarithmic color scaling:
+@example
+showspectrum=s=1280x480:scale=log
+@end example
+
+@item
+Complete example for a colored and sliding spectrum per channel using @command{ffplay}:
+@example
+ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
+             [a] showspectrum=mode=separate:color=intensity:slide=1:scale=cbrt [out0]'
+@end example
+@end itemize
+
 @section showwaves
 
 Convert input audio to a video output, representing the samples waves.
