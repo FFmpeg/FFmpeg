@@ -462,7 +462,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     return 0;
 }
 
-static AVExpr *new_eval_expr(int type, int value, AVExpr *p0, AVExpr *p1)
+static AVExpr *make_eval_expr(int type, int value, AVExpr *p0, AVExpr *p1)
 {
     AVExpr *e = av_mallocz(sizeof(AVExpr));
     if (!e)
@@ -509,7 +509,7 @@ static int parse_factor(AVExpr **e, Parser *p)
             av_expr_free(e1);
             return ret;
         }
-        e0 = new_eval_expr(e_pow, 1, e1, e2);
+        e0 = make_eval_expr(e_pow, 1, e1, e2);
         if (!e0) {
             av_expr_free(e1);
             av_expr_free(e2);
@@ -536,7 +536,7 @@ static int parse_term(AVExpr **e, Parser *p)
             av_expr_free(e1);
             return ret;
         }
-        e0 = new_eval_expr(c == '*' ? e_mul : e_div, 1, e1, e2);
+        e0 = make_eval_expr(c == '*' ? e_mul : e_div, 1, e1, e2);
         if (!e0) {
             av_expr_free(e1);
             av_expr_free(e2);
@@ -559,7 +559,7 @@ static int parse_subexpr(AVExpr **e, Parser *p)
             av_expr_free(e1);
             return ret;
         }
-        e0 = new_eval_expr(e_add, 1, e1, e2);
+        e0 = make_eval_expr(e_add, 1, e1, e2);
         if (!e0) {
             av_expr_free(e1);
             av_expr_free(e2);
@@ -588,7 +588,7 @@ static int parse_expr(AVExpr **e, Parser *p)
             av_expr_free(e1);
             return ret;
         }
-        e0 = new_eval_expr(e_last, 1, e1, e2);
+        e0 = make_eval_expr(e_last, 1, e1, e2);
         if (!e0) {
             av_expr_free(e1);
             av_expr_free(e2);
