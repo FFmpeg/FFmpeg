@@ -78,7 +78,7 @@ typedef struct ShortenContext {
     GetBitContext gb;
 
     int min_framesize, max_framesize;
-    int channels;
+    unsigned channels;
 
     int32_t *decoded[MAX_CHANNELS];
     int32_t *decoded_base[MAX_CHANNELS];
@@ -342,6 +342,10 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         s->internal_ftype = get_uint(s, TYPESIZE);
 
         s->channels = get_uint(s, CHANSIZE);
+        if (!s->channels) {
+            av_log(s->avctx, AV_LOG_ERROR, "No channels reported\n");
+            return AVERROR_INVALIDDATA;
+        }
         if (s->channels <= 0 || s->channels > MAX_CHANNELS) {
             av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
             s->channels = 0;
@@ -501,7 +505,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                 s->bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
                 break;
             case FN_BLOCKSIZE: {
-                int blocksize = get_uint(s, av_log2(s->blocksize));
+                unsigned blocksize = get_uint(s, av_log2(s->blocksize));
                 if (blocksize > s->blocksize) {
                     av_log(avctx, AV_LOG_ERROR, "Increasing block size is not supported\n");
                     return AVERROR_PATCHWELCOME;
