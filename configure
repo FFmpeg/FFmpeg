@@ -1020,7 +1020,7 @@ check_type(){
 }
 
 check_struct(){
-    log check_type "$@"
+    log check_struct "$@"
     headers=$1
     struct=$2
     member=$3
