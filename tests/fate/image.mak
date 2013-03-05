@@ -76,7 +76,7 @@ FATE_TIFF-$(call DEMDEC, IMAGE2, TIFF) += $(FATE_TIFF)
 FATE_IMAGE += $(FATE_TIFF-yes)
 fate-tiff: $(FATE_TIFF-yes)
 
-FATE_IMAGE += fate-xface
+FATE_IMAGE-$(call DEMDEC, IMAGE2, XFACE) += fate-xface
 fate-xface: CMD = framecrc -i $(SAMPLES)/xface/lena.xface
 
 FATE_IMAGE += $(FATE_IMAGE-yes)
