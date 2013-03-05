@@ -289,5 +289,4 @@ AVInputFormat ff_concat_demuxer = {
     .read_packet    = concat_read_packet,
     .read_close     = concat_read_close,
     .priv_class     = &concat_class,
-    .extensions     = "ffconcat,ffcat",
 };
