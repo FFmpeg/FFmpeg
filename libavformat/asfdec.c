@@ -278,11 +278,12 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
 {
     char *value;
     int64_t off = avio_tell(s->pb);
+#define LEN 22
 
-    if ((unsigned)len >= (UINT_MAX - 1) / 2)
+    if ((unsigned)len >= (UINT_MAX - LEN) / 2)
         return;
 
-    value = av_malloc(2 * len + 1);
+    value = av_malloc(2 * len + LEN);
     if (!value)
         goto finish;
 
@@ -302,7 +303,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len, int 
         goto finish;
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type, type2_size);
-        snprintf(value, len, "%"PRIu64, num);
+        snprintf(value, LEN, "%"PRIu64, num);
     } else if (type == 6) { // (don't) handle GUID
         av_log(s, AV_LOG_DEBUG, "Unsupported GUID value in tag %s.\n", key);
         goto finish;
