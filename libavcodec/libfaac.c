@@ -184,10 +184,8 @@ static int Faac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int num_samples  = frame ? frame->nb_samples : 0;
     void *samples    = frame ? frame->data[0]    : NULL;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, (7 + 768) * avctx->channels))) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
+    if ((ret = ff_alloc_packet2(avctx, avpkt, (7 + 768) * avctx->channels)) < 0)
         return ret;
-    }
 
     bytes_written = faacEncEncode(s->faac_handle, samples,
                                   num_samples * avctx->channels,

@@ -161,7 +161,7 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             return ret;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels))))
+    if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels))) < 0)
         return ret;
 
     input.Buffer  = samples;

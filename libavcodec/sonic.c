@@ -632,7 +632,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int ret;
     const short *samples = (const int16_t*)frame->data[0];
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000)))
+    if ((ret = ff_alloc_packet2(avctx, avpkt, s->frame_size * 5 + 1000)) < 0)
         return ret;
 
     init_put_bits(&pb, avpkt->data, avpkt->size);

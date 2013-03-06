@@ -497,7 +497,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const int16_t *samples;
     int ret, real_channel = 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, DCA_MAX_FRAME_SIZE + DCA_HEADER_SIZE)))
+    if ((ret = ff_alloc_packet2(avctx, avpkt, DCA_MAX_FRAME_SIZE + DCA_HEADER_SIZE)) < 0)
         return ret;
 
     samples = (const int16_t *)frame->data[0];
