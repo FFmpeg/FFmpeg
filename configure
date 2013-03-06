@@ -1301,7 +1301,6 @@ HAVE_LIST="
     rdtsc
     sched_getaffinity
     sdl
-    sdl_video_size
     SetConsoleTextAttribute
     setmode
     setrlimit
@@ -3596,8 +3595,8 @@ fi
 
 if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-    enable sdl &&
-    check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+    enable sdl
 fi
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html

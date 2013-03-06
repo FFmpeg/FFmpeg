@@ -2967,11 +2967,9 @@ int main(int argc, char **argv)
     }
 
     if (!display_disable) {
-#if HAVE_SDL_VIDEO_SIZE
         const SDL_VideoInfo *vi = SDL_GetVideoInfo();
         fs_screen_width = vi->current_w;
         fs_screen_height = vi->current_h;
-#endif
     }
 
     SDL_EventState(SDL_ACTIVEEVENT, SDL_IGNORE);
