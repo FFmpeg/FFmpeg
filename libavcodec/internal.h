@@ -62,7 +62,7 @@ typedef struct AVCodecInternal {
      */
     int is_copy;
 
-#if FF_API_OLD_DECODE_AUDIO
+#if FF_API_OLD_ENCODE_AUDIO
     /**
      * Internal sample count used by avcodec_encode_audio() to fabricate pts.
      * Can be removed along with avcodec_encode_audio().
