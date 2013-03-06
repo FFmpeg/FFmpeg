@@ -541,8 +541,10 @@ static float calc_reduced_thr_3gpp(AacPsyBand *band, float min_snr,
     float thr = band->thr;
 
     if (band->energy > thr) {
-        thr = powf(thr, 0.25f) + reduction;
-        thr = powf(thr, 4.0f);
+        thr = sqrtf(thr);
+        thr = sqrtf(thr) + reduction;
+        thr *= thr;
+        thr *= thr;
 
         /* This deviates from the 3GPP spec to match the reference encoder.
          * It performs min(thr_reduced, max(thr, energy/min_snr)) only for bands
@@ -582,13 +584,15 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
             AacPsyBand *band = &pch->band[w+g];
 
             float form_factor = 0.0f;
+            float Temp;
             band->energy = 0.0f;
             for (i = 0; i < band_sizes[g]; i++) {
                 band->energy += coefs[start+i] * coefs[start+i];
                 form_factor  += sqrtf(fabs(coefs[start+i]));
             }
+            Temp = band->energy > 0 ? sqrtf((float)band_sizes[g] / band->energy) : 0;
             band->thr      = band->energy * 0.001258925f;
-            band->nz_lines = band->energy>0 ? form_factor / powf(band->energy / band_sizes[g], 0.25f) : 0;
+            band->nz_lines = form_factor * sqrtf(Temp);
 
             start += band_sizes[g];
         }
