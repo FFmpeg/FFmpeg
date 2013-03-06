@@ -78,7 +78,7 @@ static const enum AVPixelFormat h264_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
-static const enum AVPixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
+static const enum AVPixelFormat h264_hwaccel_pixfmt_list_jpeg_420[] = {
 #if CONFIG_H264_DXVA2_HWACCEL
     AV_PIX_FMT_DXVA2_VLD,
 #endif
@@ -2839,7 +2839,7 @@ static enum PixelFormat get_pixel_format(H264Context *h)
             return h->avctx->get_format(h->avctx, h->avctx->codec->pix_fmts ?
                                         h->avctx->codec->pix_fmts :
                                         h->avctx->color_range == AVCOL_RANGE_JPEG ?
-                                        hwaccel_pixfmt_list_h264_jpeg_420 :
+                                        h264_hwaccel_pixfmt_list_jpeg_420 :
                                         h264_hwaccel_pixfmt_list_420);
         }
         break;
