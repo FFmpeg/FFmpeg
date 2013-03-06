@@ -277,6 +277,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
+
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
