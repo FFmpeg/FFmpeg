@@ -64,5 +64,6 @@ Files that have MIPS copyright notice in them:
       fft_table.h
       fft_init_table.c
       fmtconvert_mips.c
+      iirfilter_mips.c
       mpegaudiodsp_mips_fixed.c
       mpegaudiodsp_mips_float.c

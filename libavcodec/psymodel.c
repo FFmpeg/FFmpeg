@@ -88,6 +88,7 @@ typedef struct FFPsyPreprocessContext{
     float stereo_att;
     struct FFIIRFilterCoeffs *fcoeffs;
     struct FFIIRFilterState **fstate;
+    struct FFIIRFilterContext fiir;
 }FFPsyPreprocessContext;
 
 #define FILT_ORDER 4
@@ -115,6 +116,9 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
         for (i = 0; i < avctx->channels; i++)
             ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
     }
+
+    ff_iir_filter_init(&ctx->fiir);
+
     return ctx;
 }
 
@@ -122,11 +126,12 @@ void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, float **audio, int ch
 {
     int ch;
     int frame_size = ctx->avctx->frame_size;
+    FFIIRFilterContext *iir = &ctx->fiir;
 
     if (ctx->fstate) {
         for (ch = 0; ch < channels; ch++)
-            ff_iir_filter_flt(ctx->fcoeffs, ctx->fstate[ch], frame_size,
-                              &audio[ch][frame_size], 1, &audio[ch][frame_size], 1);
+            iir->filter_flt(ctx->fcoeffs, ctx->fstate[ch], frame_size,
+                            &audio[ch][frame_size], 1, &audio[ch][frame_size], 1);
     }
 }
 
