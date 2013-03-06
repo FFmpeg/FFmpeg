@@ -1793,9 +1793,10 @@ static void show_error(WriterContext *w, int err)
 
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 {
-    int err, i;
+    int err, i, orig_nb_streams;
     AVFormatContext *fmt_ctx = NULL;
     AVDictionaryEntry *t;
+    AVDictionary **opts;
 
     if ((err = avformat_open_input(&fmt_ctx, filename,
                                    iformat, &format_opts)) < 0) {
@@ -1807,12 +1808,17 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         return AVERROR_OPTION_NOT_FOUND;
     }
 
-
     /* fill the streams in the format context */
-    if ((err = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
+    opts = setup_find_stream_info_opts(fmt_ctx, codec_opts);
+    orig_nb_streams = fmt_ctx->nb_streams;
+
+    if ((err = avformat_find_stream_info(fmt_ctx, opts)) < 0) {
         print_error(filename, err);
         return err;
     }
+    for (i = 0; i < orig_nb_streams; i++)
+        av_dict_free(&opts[i]);
+    av_freep(&opts);
 
     av_dump_format(fmt_ctx, 0, filename, 0);
 
@@ -1829,9 +1835,18 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
             av_log(NULL, AV_LOG_ERROR,
                     "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);
-        } else if (avcodec_open2(stream->codec, codec, NULL) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error while opening codec for input stream %d\n",
-                   stream->index);
+        } else {
+            AVDictionary *opts = filter_codec_opts(codec_opts, stream->codec->codec_id,
+                                                   fmt_ctx, stream, codec);
+            if (avcodec_open2(stream->codec, codec, &opts) < 0) {
+                av_log(NULL, AV_LOG_ERROR, "Error while opening codec for input stream %d\n",
+                       stream->index);
+            }
+            if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+                av_log(NULL, AV_LOG_ERROR, "Option %s for input stream %d not found\n",
+                       t->key, stream->index);
+                return AVERROR_OPTION_NOT_FOUND;
+            }
         }
     }
 
