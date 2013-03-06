@@ -49,6 +49,7 @@ Files that have MIPS copyright notice in them:
       libm_mips.h
 * libavcodec/mips/
       aaccoder_mips.c
+      aacpsy_mips.h
       ac3dsp_mips.c
       acelp_filters_mips.c
       acelp_vectors_mips.c

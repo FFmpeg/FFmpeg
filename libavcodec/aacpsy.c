@@ -217,6 +217,10 @@ static const float psy_fir_coeffs[] = {
     -5.52212e-17 * 2, -0.313819 * 2
 };
 
+#if ARCH_MIPS
+#   include "mips/aacpsy_mips.h"
+#endif /* ARCH_MIPS */
+
 /**
  * Calculate the ABR attack threshold from the above LAME psymodel table.
  */
@@ -560,25 +564,12 @@ static float calc_reduced_thr_3gpp(AacPsyBand *band, float min_snr,
     return thr;
 }
 
-/**
- * Calculate band thresholds as suggested in 3GPP TS26.403
- */
-static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
-                                     const float *coefs, const FFPsyWindowInfo *wi)
+#ifndef calc_thr_3gpp
+static void calc_thr_3gpp(const FFPsyWindowInfo *wi, const int num_bands, AacPsyChannel *pch,
+                          const uint8_t *band_sizes, const float *coefs)
 {
-    AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
-    AacPsyChannel *pch  = &pctx->ch[channel];
-    int start = 0;
     int i, w, g;
-    float desired_bits, desired_pe, delta_pe, reduction= NAN, spread_en[128] = {0};
-    float a = 0.0f, active_lines = 0.0f, norm_fac = 0.0f;
-    float pe = pctx->chan_bitrate > 32000 ? 0.0f : FFMAX(50.0f, 100.0f - pctx->chan_bitrate * 100.0f / 32000.0f);
-    const int      num_bands   = ctx->num_bands[wi->num_windows == 8];
-    const uint8_t *band_sizes  = ctx->bands[wi->num_windows == 8];
-    AacPsyCoeffs  *coeffs      = pctx->psy_coef[wi->num_windows == 8];
-    const float avoid_hole_thr = wi->num_windows == 8 ? PSY_3GPP_AH_THR_SHORT : PSY_3GPP_AH_THR_LONG;
-
-    //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
+    int start = 0;
     for (w = 0; w < wi->num_windows*16; w += 16) {
         for (g = 0; g < num_bands; g++) {
             AacPsyBand *band = &pch->band[w+g];
@@ -597,6 +588,47 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
             start += band_sizes[g];
         }
     }
+}
+#endif /* calc_thr_3gpp */
+
+#ifndef psy_hp_filter
+static void psy_hp_filter(const float *firbuf, float *hpfsmpl, const float *psy_fir_coeffs)
+{
+    int i, j;
+    for (i = 0; i < AAC_BLOCK_SIZE_LONG; i++) {
+        float sum1, sum2;
+        sum1 = firbuf[i + (PSY_LAME_FIR_LEN - 1) / 2];
+        sum2 = 0.0;
+        for (j = 0; j < ((PSY_LAME_FIR_LEN - 1) / 2) - 1; j += 2) {
+            sum1 += psy_fir_coeffs[j] * (firbuf[i + j] + firbuf[i + PSY_LAME_FIR_LEN - j]);
+            sum2 += psy_fir_coeffs[j + 1] * (firbuf[i + j + 1] + firbuf[i + PSY_LAME_FIR_LEN - j - 1]);
+        }
+        /* NOTE: The LAME psymodel expects it's input in the range -32768 to 32768. Tuning this for normalized floats would be difficult. */
+        hpfsmpl[i] = (sum1 + sum2) * 32768.0f;
+    }
+}
+#endif /* psy_hp_filter */
+
+/**
+ * Calculate band thresholds as suggested in 3GPP TS26.403
+ */
+static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
+                                     const float *coefs, const FFPsyWindowInfo *wi)
+{
+    AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
+    AacPsyChannel *pch  = &pctx->ch[channel];
+    int i, w, g;
+    float desired_bits, desired_pe, delta_pe, reduction= NAN, spread_en[128] = {0};
+    float a = 0.0f, active_lines = 0.0f, norm_fac = 0.0f;
+    float pe = pctx->chan_bitrate > 32000 ? 0.0f : FFMAX(50.0f, 100.0f - pctx->chan_bitrate * 100.0f / 32000.0f);
+    const int      num_bands   = ctx->num_bands[wi->num_windows == 8];
+    const uint8_t *band_sizes  = ctx->bands[wi->num_windows == 8];
+    AacPsyCoeffs  *coeffs      = pctx->psy_coef[wi->num_windows == 8];
+    const float avoid_hole_thr = wi->num_windows == 8 ? PSY_3GPP_AH_THR_SHORT : PSY_3GPP_AH_THR_LONG;
+
+    //calculate energies, initial thresholds and related values - 5.4.2 "Threshold Calculation"
+    calc_thr_3gpp(wi, num_bands, pch, band_sizes, coefs);
+
     //modify thresholds and energies - spread, threshold in quiet, pre-echo control
     for (w = 0; w < wi->num_windows*16; w += 16) {
         AacPsyBand *bands = &pch->band[w];
@@ -802,20 +834,10 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         float energy_subshort[(AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS];
         float energy_short[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
         const float *firbuf = la + (AAC_BLOCK_SIZE_SHORT/4 - PSY_LAME_FIR_LEN);
-        int j, att_sum = 0;
+        int att_sum = 0;
 
         /* LAME comment: apply high pass filter of fs/4 */
-        for (i = 0; i < AAC_BLOCK_SIZE_LONG; i++) {
-            float sum1, sum2;
-            sum1 = firbuf[i + (PSY_LAME_FIR_LEN - 1) / 2];
-            sum2 = 0.0;
-            for (j = 0; j < ((PSY_LAME_FIR_LEN - 1) / 2) - 1; j += 2) {
-                sum1 += psy_fir_coeffs[j] * (firbuf[i + j] + firbuf[i + PSY_LAME_FIR_LEN - j]);
-                sum2 += psy_fir_coeffs[j + 1] * (firbuf[i + j + 1] + firbuf[i + PSY_LAME_FIR_LEN - j - 1]);
-            }
-            /* NOTE: The LAME psymodel expects it's input in the range -32768 to 32768. Tuning this for normalized floats would be difficult. */
-            hpfsmpl[i] = (sum1 + sum2) * 32768.0f;
-        }
+        psy_hp_filter(firbuf, hpfsmpl, psy_fir_coeffs);
 
         /* Calculate the energies of each sub-shortblock */
         for (i = 0; i < PSY_LAME_NUM_SUBBLOCKS; i++) {
