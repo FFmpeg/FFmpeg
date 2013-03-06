@@ -824,6 +824,11 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
                                 }
                             } else {
                                 n = get_bits(gb, 8);
+                                if (n >= 243) {
+                                    av_log(NULL, AV_LOG_ERROR, "Invalid 8bit codeword\n");
+                                    return AVERROR_INVALIDDATA;
+                                }
+
                                 for (k = 0; k < 5; k++)
                                     samples[2 * k] = dequant_1bit[joined_stereo][random_dequant_index[n][k]];
                             }
@@ -860,6 +865,11 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
                                 }
                             } else {
                                 n = get_bits (gb, 8);
+                                if (n >= 243) {
+                                    av_log(NULL, AV_LOG_ERROR, "Invalid 8bit codeword\n");
+                                    return AVERROR_INVALIDDATA;
+                                }
+
                                 for (k = 0; k < 5; k++)
                                     samples[k] = dequant_1bit[joined_stereo][random_dequant_index[n][k]];
                             }
@@ -873,6 +883,11 @@ static int synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int le
                     case 24:
                         if (get_bits_left(gb) >= 7) {
                             n = get_bits(gb, 7);
+                            if (n >= 125) {
+                                av_log(NULL, AV_LOG_ERROR, "Invalid 7bit codeword\n");
+                                return AVERROR_INVALIDDATA;
+                            }
+
                             for (k = 0; k < 3; k++)
                                 samples[k] = (random_dequant_type24[n][k] - 2.0) * 0.5;
                         } else {
