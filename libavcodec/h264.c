@@ -30,6 +30,7 @@
 #include "cabac.h"
 #include "cabac_functions.h"
 #include "dsputil.h"
+#include "error_resilience.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h264.h"

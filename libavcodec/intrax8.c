@@ -22,6 +22,7 @@
  */
 
 #include "avcodec.h"
+#include "error_resilience.h"
 #include "get_bits.h"
 #include "mpegvideo.h"
 #include "msmpeg4data.h"

@@ -30,7 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-
+#include "error_resilience.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpeg12decdata.h"

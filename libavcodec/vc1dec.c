@@ -28,6 +28,7 @@
 
 #include "internal.h"
 #include "avcodec.h"
+#include "error_resilience.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h264chroma.h"
