@@ -106,6 +106,9 @@ static void upsample_plane_c(uint8_t *plane, int plane_stride, int w, int h)
     uint8_t *src1, *src2, *dst1, *dst2, *p, a, b;
     int i, j;
 
+    if(!w || !h)
+        return;
+
     w += (w & 1);
     h += (h & 1);
 
