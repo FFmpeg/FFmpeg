@@ -152,6 +152,21 @@ char *av_d2str(double d);
 char *av_get_token(const char **buf, const char *term);
 
 /**
+ * Locale-independent conversion of ASCII isdigit.
+ */
+int av_isdigit(int c);
+
+/**
+ * Locale-independent conversion of ASCII isgraph.
+ */
+int av_isgraph(int c);
+
+/**
+ * Locale-independent conversion of ASCII isspace.
+ */
+int av_isspace(int c);
+
+/**
  * Locale-independent conversion of ASCII characters to uppercase.
  */
 static inline int av_toupper(int c)
@@ -170,6 +185,11 @@ static inline int av_tolower(int c)
         c ^= 0x20;
     return c;
 }
+
+/**
+ * Locale-independent conversion of ASCII isxdigit.
+ */
+int av_isxdigit(int c);
 
 /*
  * Locale-independent case-insensitive compare.

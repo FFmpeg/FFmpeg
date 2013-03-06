@@ -213,6 +213,28 @@ const char *av_dirname(char *path)
     return path;
 }
 
+int av_isdigit(int c)
+{
+    return c >= '0' && c <= '9';
+}
+
+int av_isgraph(int c)
+{
+    return c > 32 && c < 127;
+}
+
+int av_isspace(int c)
+{
+    return c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' ||
+           c == '\v';
+}
+
+int av_isxdigit(int c)
+{
+    c = av_tolower(c);
+    return av_isdigit(c) || (c >= 'a' && c <= 'z');
+}
+
 #ifdef TEST
 
 int main(void)
