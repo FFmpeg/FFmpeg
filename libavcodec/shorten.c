@@ -243,7 +243,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "unsupported wave format\n");
-        return AVERROR_PATCHWELCOME;
+        return AVERROR(ENOSYS);
     }
 
     header += 2;        // skip channels    (already got from shorten header)
@@ -255,7 +255,7 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
 
     if (bps != 16 && bps != 8) {
         av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample: %d\n", bps);
-        return AVERROR_INVALIDDATA;
+        return AVERROR(ENOSYS);
     }
 
     len -= 16;
