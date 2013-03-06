@@ -419,7 +419,8 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     if (s->pict_type==AV_PICTURE_TYPE_B) {
         if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
             av_log(s->avctx, AV_LOG_DEBUG, "messed up order, possible from seeking? skipping current b frame\n");
-            return FRAME_SKIPPED;
+#define ERROR_SKIP_FRAME -123
+            return ERROR_SKIP_FRAME;
         }
         ff_mpeg4_init_direct_mv(s);
     }
@@ -542,7 +543,8 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     else
         mb_count = rv20_decode_picture_header(rv);
     if (mb_count < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
+        if (mb_count != ERROR_SKIP_FRAME)
+            av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
         return -1;
     }
 
