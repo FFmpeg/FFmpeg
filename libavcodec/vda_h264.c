@@ -199,9 +199,10 @@ static int vda_sync_decode(struct vda_context *vda_ctx)
     return status;
 }
 
-static int start_frame(AVCodecContext *avctx,
-                       av_unused const uint8_t *buffer,
-                       av_unused uint32_t size)
+
+static int vda_h264_start_frame(AVCodecContext *avctx,
+                                av_unused const uint8_t *buffer,
+                                av_unused uint32_t size)
 {
     struct vda_context *vda_ctx = avctx->hwaccel_context;
 
@@ -213,9 +214,9 @@ static int start_frame(AVCodecContext *avctx,
     return 0;
 }
 
-static int decode_slice(AVCodecContext *avctx,
-                        const uint8_t *buffer,
-                        uint32_t size)
+static int vda_h264_decode_slice(AVCodecContext *avctx,
+                                 const uint8_t *buffer,
+                                 uint32_t size)
 {
     struct vda_context *vda_ctx = avctx->hwaccel_context;
     void *tmp;
@@ -239,7 +240,7 @@ static int decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
-static int end_frame(AVCodecContext *avctx)
+static int vda_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h                      = avctx->priv_data;
     struct vda_context *vda_ctx         = avctx->hwaccel_context;
@@ -376,7 +377,7 @@ AVHWAccel ff_h264_vda_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .pix_fmt        = AV_PIX_FMT_VDA_VLD,
-    .start_frame    = start_frame,
-    .decode_slice   = decode_slice,
-    .end_frame      = end_frame,
+    .start_frame    = vda_h264_start_frame,
+    .decode_slice   = vda_h264_decode_slice,
+    .end_frame      = vda_h264_end_frame,
 };
