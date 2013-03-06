@@ -141,7 +141,7 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
     if (ost->st->codec->var != none) {                                         \
         get_name(ost->st->codec->var);                                         \
         return av_strdup(name);                                                \
-    } else if (ost->enc->supported_list) {                                     \
+    } else if (ost->enc && ost->enc->supported_list) {                         \
         const type *p;                                                         \
         AVIOContext *s = NULL;                                                 \
         uint8_t *ret;                                                          \
