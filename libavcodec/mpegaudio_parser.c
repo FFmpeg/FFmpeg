@@ -75,6 +75,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     if((state&SAME_HEADER_MASK) != (s->header&SAME_HEADER_MASK) && s->header)
                         s->header_count= -3;
                     s->header= state;
+                    s->header_count++;
                     s->frame_size = ret-4;
 
                     if (s->header_count > 0) {
@@ -86,7 +87,6 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                             avctx->bit_rate += (bit_rate - avctx->bit_rate) / s->header_count;
                         }
                     }
-                    s->header_count++;
                     break;
                 }
             }
