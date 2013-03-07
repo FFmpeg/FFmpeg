@@ -1029,7 +1029,7 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
 
     if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
-    else if (s->codec_id != AV_CODEC_ID_H264)
+    else
         s->mb_height = (s->height + 15) / 16;
 
     if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
@@ -1235,7 +1235,7 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
     // init
     if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
-    else if (s->codec_id != AV_CODEC_ID_H264)
+    else
         s->mb_height = (s->height + 15) / 16;
 
     if ((s->width || s->height) &&
@@ -1515,7 +1515,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     s->mb_skipped = 0;
 
     /* mark & release old frames */
-    if (s->out_format != FMT_H264 || s->codec_id == AV_CODEC_ID_SVQ3) {
         if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr &&
             s->last_picture_ptr != s->next_picture_ptr &&
             s->last_picture_ptr->f.data[0]) {
@@ -1536,7 +1535,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 }
             }
         }
-    }
 
     if (!s->encoding) {
         ff_release_unused_pictures(s, 1);
@@ -1557,9 +1555,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
         pic->reference = 0;
         if (!s->droppable) {
-            if (s->codec_id == AV_CODEC_ID_H264)
-                pic->reference = s->picture_structure;
-            else if (s->pict_type != AV_PICTURE_TYPE_B)
+            if (s->pict_type != AV_PICTURE_TYPE_B)
                 pic->reference = 3;
         }
 
@@ -1592,7 +1588,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                                    s->current_picture_ptr)) < 0)
         return ret;
 
-    if (s->codec_id != AV_CODEC_ID_H264 && s->pict_type != AV_PICTURE_TYPE_B) {
+    if (s->pict_type != AV_PICTURE_TYPE_B) {
         s->last_picture_ptr = s->next_picture_ptr;
         if (!s->droppable)
             s->next_picture_ptr = s->current_picture_ptr;
@@ -1604,7 +1600,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->current_picture_ptr ? s->current_picture_ptr->f.data[0] : NULL,
             s->pict_type, s->droppable);
 
-    if (s->codec_id != AV_CODEC_ID_H264) {
         if ((s->last_picture_ptr == NULL ||
              s->last_picture_ptr->f.data[0] == NULL) &&
             (s->pict_type != AV_PICTURE_TYPE_I ||
@@ -1660,9 +1655,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             ff_thread_report_progress(&s->next_picture_ptr->tf, INT_MAX, 0);
             ff_thread_report_progress(&s->next_picture_ptr->tf, INT_MAX, 1);
         }
-    }
 
-    if (s->codec_id != AV_CODEC_ID_H264) {
         if (s->last_picture_ptr) {
             ff_mpeg_unref_picture(s, &s->last_picture);
             if (s->last_picture_ptr->f.data[0] &&
@@ -1680,9 +1673,8 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
         assert(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
                                                      s->last_picture_ptr->f.data[0]));
-    }
 
-    if (s->picture_structure!= PICT_FRAME && s->out_format != FMT_H264) {
+    if (s->picture_structure!= PICT_FRAME) {
         int i;
         for (i = 0; i < 4; i++) {
             if (s->picture_structure == PICT_BOTTOM_FIELD) {
@@ -1788,7 +1780,7 @@ void ff_MPV_frame_end(MpegEncContext *s)
 #endif
     s->avctx->coded_frame = &s->current_picture_ptr->f;
 
-    if (s->codec_id != AV_CODEC_ID_H264 && s->current_picture.reference)
+    if (s->current_picture.reference)
         ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
 }
 
@@ -2298,8 +2290,7 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
             return;
 
         if (cur->f.pict_type == AV_PICTURE_TYPE_B &&
-            picture_structure == PICT_FRAME    &&
-            avctx->codec_id != AV_CODEC_ID_H264  &&
+            picture_structure == PICT_FRAME &&
             avctx->codec_id != AV_CODEC_ID_SVQ3) {
             for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
                 offset[i] = 0;
