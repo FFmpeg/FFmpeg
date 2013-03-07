@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "audioconvert.h"
+#include "channel_layout.h"
 #include "buffer.h"
 #include "common.h"
 #include "dict.h"
