@@ -590,12 +590,14 @@ static int hls_read_header(AVFormatContext *s)
         /* Create new AVStreams for each stream in this variant */
         for (j = 0; j < v->ctx->nb_streams; j++) {
             AVStream *st = avformat_new_stream(s, NULL);
+            AVStream *ist = v->ctx->streams[j];
             if (!st) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
             ff_program_add_stream_index(s, i, stream_offset + j);
             st->id = i;
+            avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
             avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
             if (v->bandwidth)
                 av_dict_set(&st->metadata, "variant_bitrate", bitrate_str,
