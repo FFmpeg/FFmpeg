@@ -231,7 +231,7 @@ int av_isspace(int c)
 int av_isxdigit(int c)
 {
     c = av_tolower(c);
-    return av_isdigit(c) || (c >= 'a' && c <= 'z');
+    return av_isdigit(c) || (c >= 'a' && c <= 'f');
 }
 
 #ifdef TEST
