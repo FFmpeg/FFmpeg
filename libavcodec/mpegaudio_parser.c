@@ -30,6 +30,7 @@ typedef struct MpegAudioParseContext {
     int frame_size;
     uint32_t header;
     int header_count;
+    int no_bitrate;
 } MpegAudioParseContext;
 
 #define MPA_HEADER_SIZE 4
@@ -80,7 +81,10 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                         avctx->sample_rate= sr;
                         avctx->channels   = channels;
                         s1->duration      = frame_size;
-                        avctx->bit_rate   = bit_rate;
+                        if (s->no_bitrate || !avctx->bit_rate) {
+                            s->no_bitrate = 1;
+                            avctx->bit_rate += (bit_rate - avctx->bit_rate) / s->header_count;
+                        }
                     }
                     break;
                 }
