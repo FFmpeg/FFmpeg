@@ -39,6 +39,7 @@
 #include "matroska.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavutil/base64.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
@@ -102,9 +103,15 @@ typedef struct {
 } MatroskaTrackCompression;
 
 typedef struct {
+    uint64_t algo;
+    EbmlBin  key_id;
+} MatroskaTrackEncryption;
+
+typedef struct {
     uint64_t scope;
     uint64_t type;
     MatroskaTrackCompression compression;
+    MatroskaTrackEncryption encryption;
 } MatroskaTrackEncoding;
 
 typedef struct {
@@ -345,10 +352,21 @@ static EbmlSyntax matroska_track_encoding_compression[] = {
     { 0 }
 };
 
+static EbmlSyntax matroska_track_encoding_encryption[] = {
+    { MATROSKA_ID_ENCODINGENCALGO,        EBML_UINT, 0, offsetof(MatroskaTrackEncryption,algo), {.u=0} },
+    { MATROSKA_ID_ENCODINGENCKEYID,       EBML_BIN, 0, offsetof(MatroskaTrackEncryption,key_id) },
+    { MATROSKA_ID_ENCODINGENCAESSETTINGS, EBML_NONE },
+    { MATROSKA_ID_ENCODINGSIGALGO,        EBML_NONE },
+    { MATROSKA_ID_ENCODINGSIGHASHALGO,    EBML_NONE },
+    { MATROSKA_ID_ENCODINGSIGKEYID,       EBML_NONE },
+    { MATROSKA_ID_ENCODINGSIGNATURE,      EBML_NONE },
+    { 0 }
+};
 static EbmlSyntax matroska_track_encoding[] = {
     { MATROSKA_ID_ENCODINGSCOPE,      EBML_UINT, 0, offsetof(MatroskaTrackEncoding,scope), {.u=1} },
     { MATROSKA_ID_ENCODINGTYPE,       EBML_UINT, 0, offsetof(MatroskaTrackEncoding,type), {.u=0} },
     { MATROSKA_ID_ENCODINGCOMPRESSION,EBML_NEST, 0, offsetof(MatroskaTrackEncoding,compression), {.n=matroska_track_encoding_compression} },
+    { MATROSKA_ID_ENCODINGENCRYPTION, EBML_NEST, 0, offsetof(MatroskaTrackEncoding,encryption), {.n=matroska_track_encoding_encryption} },
     { MATROSKA_ID_ENCODINGORDER,      EBML_NONE },
     { 0 }
 };
@@ -1541,6 +1559,7 @@ static int matroska_read_header(AVFormatContext *s)
         int extradata_offset = 0;
         uint32_t fourcc = 0;
         AVIOContext b;
+        char* key_id_base64 = NULL;
 
         /* Apply some sanity checks. */
         if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
@@ -1571,8 +1590,24 @@ static int matroska_read_header(AVFormatContext *s)
             av_log(matroska->ctx, AV_LOG_ERROR,
                    "Multiple combined encodings not supported");
         } else if (encodings_list->nb_elem == 1) {
-            if (encodings[0].type ||
-                (
+            if (encodings[0].type) {
+                if (encodings[0].encryption.key_id.size > 0) {
+                    /* Save the encryption key id to be stored later as a
+                       metadata tag. */
+                    const int b64_size = AV_BASE64_SIZE(encodings[0].encryption.key_id.size);
+                    key_id_base64 = av_malloc(b64_size);
+                    if (key_id_base64 == NULL)
+                        return AVERROR(ENOMEM);
+
+                    av_base64_encode(key_id_base64, b64_size,
+                                     encodings[0].encryption.key_id.data,
+                                     encodings[0].encryption.key_id.size);
+                } else {
+                    encodings[0].scope = 0;
+                    av_log(matroska->ctx, AV_LOG_ERROR,
+                           "Unsupported encoding type");
+                }
+            } else if (
 #if CONFIG_ZLIB
                  encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_ZLIB &&
 #endif
@@ -1582,7 +1617,7 @@ static int matroska_read_header(AVFormatContext *s)
 #if CONFIG_LZO
                  encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_LZO &&
 #endif
-                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP)) {
+                 encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP) {
                 encodings[0].scope = 0;
                 av_log(matroska->ctx, AV_LOG_ERROR,
                        "Unsupported encoding type");
@@ -1612,8 +1647,16 @@ static int matroska_read_header(AVFormatContext *s)
         }
 
         st = track->stream = avformat_new_stream(s, NULL);
-        if (st == NULL)
+        if (st == NULL) {
+            av_free(key_id_base64);
             return AVERROR(ENOMEM);
+        }
+
+        if (key_id_base64) {
+            /* export encryption key id as base64 metadata tag */
+            av_dict_set(&st->metadata, "enc_key_id", key_id_base64, 0);
+            av_freep(&key_id_base64);
+        }
 
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC")
             && track->codec_priv.size >= 40
@@ -2105,7 +2148,7 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
     int offset = 0, res;
     AVPacket *pkt;
 
-    if (encodings && encodings->scope & 1) {
+    if (encodings && !encodings->type && encodings->scope & 1) {
         res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
         if (res < 0)
             return res;
