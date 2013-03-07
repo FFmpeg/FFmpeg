@@ -72,7 +72,7 @@ OBJS-$(CONFIG_VDPAU)                   += vdpau.o
 OBJS-$(CONFIG_VIDEODSP)                += videodsp.o
 OBJS-$(CONFIG_VP3DSP)                  += vp3dsp.o
 
-# decoders/encoders/hardware accelerators
+# decoders/encoders
 OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
 OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o aacsbr.o aacps.o \
@@ -190,18 +190,12 @@ OBJS-$(CONFIG_H261_ENCODER)            += h261enc.o h261.o
 OBJS-$(CONFIG_H263_DECODER)            += h263dec.o h263.o ituh263dec.o        \
                                           mpeg4video.o mpeg4videodec.o flvdec.o\
                                           intelh263dec.o
-OBJS-$(CONFIG_H263_VAAPI_HWACCEL)      += vaapi_mpeg4.o
-OBJS-$(CONFIG_H263_VDPAU_HWACCEL)      += vdpau_mpeg4.o
 OBJS-$(CONFIG_H263_ENCODER)            += mpeg4videoenc.o mpeg4video.o  \
                                           h263.o ituh263enc.o flvenc.o
 OBJS-$(CONFIG_H264_DECODER)            += h264.o                               \
                                           h264_loopfilter.o h264_direct.o      \
                                           cabac.o h264_sei.o h264_ps.o         \
                                           h264_refs.o h264_cavlc.o h264_cabac.o
-OBJS-$(CONFIG_H264_DXVA2_HWACCEL)      += dxva2_h264.o
-OBJS-$(CONFIG_H264_VAAPI_HWACCEL)      += vaapi_h264.o
-OBJS-$(CONFIG_H264_VDA_HWACCEL)        += vda_h264.o
-OBJS-$(CONFIG_H264_VDPAU_HWACCEL)      += vdpau_h264.o
 OBJS-$(CONFIG_HUFFYUV_DECODER)         += huffyuv.o huffyuvdec.o
 OBJS-$(CONFIG_HUFFYUV_ENCODER)         += huffyuv.o huffyuvenc.o
 OBJS-$(CONFIG_IAC_DECODER)             += imc.o
@@ -249,16 +243,10 @@ OBJS-$(CONFIG_MP3ON4FLOAT_DECODER)     += mpegaudiodec_float.o mpeg4audio.o
 OBJS-$(CONFIG_MPC7_DECODER)            += mpc7.o mpc.o
 OBJS-$(CONFIG_MPC8_DECODER)            += mpc8.o mpc.o
 OBJS-$(CONFIG_MPEG_XVMC_DECODER)       += mpegvideo_xvmc.o
-OBJS-$(CONFIG_MPEG1_VDPAU_HWACCEL)     += vdpau_mpeg12.o
 OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
-OBJS-$(CONFIG_MPEG2_DXVA2_HWACCEL)     += dxva2_mpeg2.o
-OBJS-$(CONFIG_MPEG2_VAAPI_HWACCEL)     += vaapi_mpeg2.o
-OBJS-$(CONFIG_MPEG2_VDPAU_HWACCEL)     += vdpau_mpeg12.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
-OBJS-$(CONFIG_MPEG4_VAAPI_HWACCEL)     += vaapi_mpeg4.o
-OBJS-$(CONFIG_MPEG4_VDPAU_HWACCEL)     += vdpau_mpeg4.o
 OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
                                           h263.o ituh263dec.o mpeg4videodec.o
@@ -381,9 +369,6 @@ OBJS-$(CONFIG_VBLE_DECODER)            += vble.o
 OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1.o vc1data.o vc1dsp.o \
                                           msmpeg4.o msmpeg4data.o           \
                                           intrax8.o intrax8dsp.o
-OBJS-$(CONFIG_VC1_DXVA2_HWACCEL)       += dxva2_vc1.o
-OBJS-$(CONFIG_VC1_VAAPI_HWACCEL)       += vaapi_vc1.o
-OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)       += vdpau_vc1.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdav.o
 OBJS-$(CONFIG_VMDVIDEO_DECODER)        += vmdav.o
@@ -522,6 +507,23 @@ OBJS-$(CONFIG_ADPCM_THP_DECODER)          += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_XA_DECODER)           += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_DECODER)       += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
+
+# hardware accelerators
+OBJS-$(CONFIG_H263_VAAPI_HWACCEL)         += vaapi_mpeg4.o
+OBJS-$(CONFIG_H263_VDPAU_HWACCEL)         += vdpau_mpeg4.o
+OBJS-$(CONFIG_H264_DXVA2_HWACCEL)         += dxva2_h264.o
+OBJS-$(CONFIG_H264_VAAPI_HWACCEL)         += vaapi_h264.o
+OBJS-$(CONFIG_H264_VDA_HWACCEL)           += vda_h264.o
+OBJS-$(CONFIG_H264_VDPAU_HWACCEL)         += vdpau_h264.o
+OBJS-$(CONFIG_MPEG1_VDPAU_HWACCEL)        += vdpau_mpeg12.o
+OBJS-$(CONFIG_MPEG2_DXVA2_HWACCEL)        += dxva2_mpeg2.o
+OBJS-$(CONFIG_MPEG2_VAAPI_HWACCEL)        += vaapi_mpeg2.o
+OBJS-$(CONFIG_MPEG2_VDPAU_HWACCEL)        += vdpau_mpeg12.o
+OBJS-$(CONFIG_MPEG4_VAAPI_HWACCEL)        += vaapi_mpeg4.o
+OBJS-$(CONFIG_MPEG4_VDPAU_HWACCEL)        += vdpau_mpeg4.o
+OBJS-$(CONFIG_VC1_DXVA2_HWACCEL)          += dxva2_vc1.o
+OBJS-$(CONFIG_VC1_VAAPI_HWACCEL)          += vaapi_vc1.o
+OBJS-$(CONFIG_VC1_VDPAU_HWACCEL)          += vdpau_vc1.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
