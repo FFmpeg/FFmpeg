@@ -627,7 +627,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
             goto fail;
 
     if (id3v2_extra_meta) {
-        if (!strcmp(s->iformat->name, "mp3")) {
+        if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac")) {
             if((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
                 goto fail;
         } else
