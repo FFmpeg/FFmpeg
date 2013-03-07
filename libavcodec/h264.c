@@ -1802,11 +1802,8 @@ int ff_h264_frame_start(H264Context *h)
     /* We mark the current picture as non-reference after allocating it, so
      * that if we break out due to an error it can be released automatically
      * in the next ff_MPV_frame_start().
-     * SVQ3 as well as most other codecs have only last/next/current and thus
-     * get released even with set reference, besides SVQ3 and others do not
-     * mark frames as reference later "naturally". */
-    if (h->avctx->codec_id != AV_CODEC_ID_SVQ3)
-        h->cur_pic_ptr->reference = 0;
+     */
+    h->cur_pic_ptr->reference = 0;
 
     h->cur_pic_ptr->field_poc[0] = h->cur_pic_ptr->field_poc[1] = INT_MAX;
 
