@@ -1437,10 +1437,12 @@ HAVE_LIST="
     lzo1x_999_compress
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
+    machine_rw_barrier
     makeinfo
     malloc_h
     MapViewOfFile
     memalign
+    MemoryBarrier
     mkstemp
     mm_empty
     mmap
@@ -1480,6 +1482,7 @@ HAVE_LIST="
     struct_v4l2_frmivalenum_discrete
     symver_asm_label
     symver_gnu_asm
+    sync_synchronize
     sysconf
     sysctl
     sys_mman_h
@@ -3792,6 +3795,9 @@ check_func_headers malloc.h _aligned_malloc     && enable aligned_malloc
 check_func  setrlimit
 check_func  strerror_r
 check_func  sched_getaffinity
+check_builtin sync_synchronize "" "__sync_synchronize()"
+check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
+check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_func  sysconf
 check_func  sysctl
 check_func  usleep
