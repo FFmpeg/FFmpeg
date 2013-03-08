@@ -61,11 +61,11 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
         break;
     case MKTAG('U', 'L', 'R', 'G'):
         avctx->pix_fmt = AV_PIX_FMT_BGR24;
-        format = UTVF_RGB24_WIN;
+        format = UTVF_NFCC_BGR_BU;
         break;
     case MKTAG('U', 'L', 'R', 'A'):
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
-        format = UTVF_RGB32_WIN;
+        format = UTVF_NFCC_BGRA_BU;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,

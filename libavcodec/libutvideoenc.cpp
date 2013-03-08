@@ -51,12 +51,12 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
         avctx->codec_tag = MKTAG('U', 'L', 'Y', '2');
         break;
     case AV_PIX_FMT_BGR24:
-        in_format = UTVF_RGB24_WIN;
+        in_format = UTVF_NFCC_BGR_BU;
         avctx->bits_per_coded_sample = 24;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'G');
         break;
     case AV_PIX_FMT_RGB32:
-        in_format = UTVF_RGB32_WIN;
+        in_format = UTVF_NFCC_BGRA_BU;
         avctx->bits_per_coded_sample = 32;
         avctx->codec_tag = MKTAG('U', 'L', 'R', 'A');
         break;
