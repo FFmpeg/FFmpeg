@@ -14,6 +14,7 @@ HEADERS = adler32.h                                                     \
           blowfish.h                                                    \
           bprint.h                                                      \
           bswap.h                                                       \
+          buffer.h                                                      \
           channel_layout.h                                              \
           common.h                                                      \
           cpu.h                                                         \
@@ -65,6 +66,7 @@ OBJS = adler32.o                                                        \
        base64.o                                                         \
        blowfish.o                                                       \
        bprint.o                                                         \
+       buffer.o                                                         \
        channel_layout.o                                                 \
        cpu.o                                                            \
        crc.o                                                            \
