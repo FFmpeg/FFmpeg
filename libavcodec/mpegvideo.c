@@ -3237,6 +3237,7 @@ void ff_MPV_report_decode_progress(MpegEncContext *s)
         ff_thread_report_progress(&s->current_picture_ptr->f, s->mb_y, 0);
 }
 
+#if CONFIG_ERROR_RESILIENCE
 void ff_mpeg_er_frame_start(MpegEncContext *s)
 {
     ERContext *er = &s->er;
@@ -3252,3 +3253,4 @@ void ff_mpeg_er_frame_start(MpegEncContext *s)
 
     ff_er_frame_start(er);
 }
+#endif /* CONFIG_ERROR_RESILIENCE */
