@@ -1106,12 +1106,23 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
                 if (avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_AUTOMATIC)
                     avctx->sub_charenc_mode = FF_SUB_CHARENC_MODE_PRE_DECODER;
 
-                if (!CONFIG_ICONV && avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_PRE_DECODER) {
+                if (avctx->sub_charenc_mode == FF_SUB_CHARENC_MODE_PRE_DECODER) {
+#if CONFIG_ICONV
+                    iconv_t cd = iconv_open("UTF-8", avctx->sub_charenc);
+                    if (cd == (iconv_t)-1) {
+                        av_log(avctx, AV_LOG_ERROR, "Unable to open iconv context "
+                               "with input character encoding \"%s\"\n", avctx->sub_charenc);
+                        ret = AVERROR(errno);
+                        goto free_and_end;
+                    }
+                    iconv_close(cd);
+#else
                     av_log(avctx, AV_LOG_ERROR, "Character encoding subtitles "
                            "conversion needs a libavcodec built with iconv support "
                            "for this codec\n");
                     ret = AVERROR(ENOSYS);
                     goto free_and_end;
+#endif
                 }
             }
         }
@@ -1899,12 +1910,7 @@ static int recode_subtitle(AVCodecContext *avctx,
 
 #if CONFIG_ICONV
     cd = iconv_open("UTF-8", avctx->sub_charenc);
-    if (cd == (iconv_t)-1) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to open iconv context "
-               "with input character encoding \"%s\"\n", avctx->sub_charenc);
-        ret = AVERROR(errno);
-        goto end;
-    }
+    av_assert0(cd != (iconv_t)-1);
 
     inb = inpkt->data;
     inl = inpkt->size;
