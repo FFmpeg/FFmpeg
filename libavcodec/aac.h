@@ -328,11 +328,6 @@ struct AACContext {
 
 };
 
-int ff_aac_output_configure(AACContext *ac,
-                            uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
-                            enum OCStatus oc_type, int get_new_frame);
-
-
 void ff_aacdec_init_mips(AACContext *c);
 
 #endif /* AVCODEC_AAC_H */

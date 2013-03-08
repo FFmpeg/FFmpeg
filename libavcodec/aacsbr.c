@@ -925,13 +925,11 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
 {
     switch (bs_extension_id) {
     case EXTENSION_ID_PS:
-        if (ac->oc[1].m4ac.ps != 1) {
-            av_log(ac->avctx, AV_LOG_DEBUG, "Parametric Stereo was found in the bitstream.\n");
-            ac->oc[1].m4ac.ps = 1;
-            ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
-                                    ac->oc[1].status, 1);
-        }
-        av_assert0(ac->oc[1].m4ac.ps);
+        if (!ac->oc[1].m4ac.ps) {
+            av_log(ac->avctx, AV_LOG_ERROR, "Parametric Stereo signaled to be not-present but was found in the bitstream.\n");
+            skip_bits_long(gb, *num_bits_left); // bs_fill_bits
+            *num_bits_left = 0;
+        } else {
 #if 1
             *num_bits_left -= ff_ps_read_data(ac->avctx, gb, &sbr->ps, *num_bits_left);
 #else
@@ -939,6 +937,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
             skip_bits_long(gb, *num_bits_left); // bs_fill_bits
             *num_bits_left = 0;
 #endif
+        }
         break;
     default:
         // some files contain 0-padding
