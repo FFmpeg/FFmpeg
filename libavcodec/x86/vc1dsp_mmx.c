@@ -463,12 +463,17 @@ VC1_MSPEL_MC(avg_)
 
 /** Macro to ease bicubic filter interpolation functions declarations */
 #define DECLARE_FUNCTION(a, b)                                          \
-static void put_vc1_mspel_mc ## a ## b ## _mmx(uint8_t *dst, const uint8_t *src, int stride, int rnd) { \
+static void put_vc1_mspel_mc ## a ## b ## _mmx(uint8_t *dst,            \
+                                               const uint8_t *src,      \
+                                               ptrdiff_t stride,        \
+                                               int rnd)                 \
+{                                                                       \
      put_vc1_mspel_mc(dst, src, stride, a, b, rnd);                     \
 }\
 static void avg_vc1_mspel_mc ## a ## b ## _mmxext(uint8_t *dst,         \
                                                   const uint8_t *src,   \
-                                                  int stride, int rnd)  \
+                                                  ptrdiff_t stride,     \
+                                                  int rnd)              \
 {                                                                       \
      avg_vc1_mspel_mc(dst, src, stride, a, b, rnd);                     \
 }

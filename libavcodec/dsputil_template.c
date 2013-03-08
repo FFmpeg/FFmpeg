@@ -421,15 +421,19 @@ PIXOP2(put, op_put)
 #undef op_avg
 #undef op_put
 
-void FUNCC(ff_put_pixels8x8)(uint8_t *dst, uint8_t *src, int stride) {
+void FUNCC(ff_put_pixels8x8)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+{
     FUNCC(put_pixels8)(dst, src, stride, 8);
 }
-void FUNCC(ff_avg_pixels8x8)(uint8_t *dst, uint8_t *src, int stride) {
+void FUNCC(ff_avg_pixels8x8)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+{
     FUNCC(avg_pixels8)(dst, src, stride, 8);
 }
-void FUNCC(ff_put_pixels16x16)(uint8_t *dst, uint8_t *src, int stride) {
+void FUNCC(ff_put_pixels16x16)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+{
     FUNCC(put_pixels16)(dst, src, stride, 16);
 }
-void FUNCC(ff_avg_pixels16x16)(uint8_t *dst, uint8_t *src, int stride) {
+void FUNCC(ff_avg_pixels16x16)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
+{
     FUNCC(avg_pixels16)(dst, src, stride, 16);
 }

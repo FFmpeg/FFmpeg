@@ -375,27 +375,32 @@ static void FUNC(OPNAME ## h264_qpel16_hv_lowpass)(uint8_t *dst, int16_t *tmp, u
 }\
 
 #define H264_MC(OPNAME, SIZE) \
-static av_unused void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc00)(uint8_t *dst, uint8_t *src, int stride){\
+static av_unused void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc00)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     FUNCC(OPNAME ## pixels ## SIZE)(dst, src, stride, SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc10)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc10)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t half[SIZE*SIZE*sizeof(pixel)];\
     FUNC(put_h264_qpel ## SIZE ## _h_lowpass)(half, src, SIZE*sizeof(pixel), stride);\
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, src, half, stride, stride, SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc20)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc20)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     FUNC(OPNAME ## h264_qpel ## SIZE ## _h_lowpass)(dst, src, stride, stride);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc30)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc30)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t half[SIZE*SIZE*sizeof(pixel)];\
     FUNC(put_h264_qpel ## SIZE ## _h_lowpass)(half, src, SIZE*sizeof(pixel), stride);\
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, src+sizeof(pixel), half, stride, stride, SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc01)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc01)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     uint8_t half[SIZE*SIZE*sizeof(pixel)];\
@@ -404,14 +409,16 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc01)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, full_mid, half, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc02)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc02)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     FUNC(copy_block ## SIZE )(full, src - stride*2, SIZE*sizeof(pixel),  stride, SIZE + 5);\
     FUNC(OPNAME ## h264_qpel ## SIZE ## _v_lowpass)(dst, full_mid, stride, SIZE*sizeof(pixel));\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc03)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc03)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     uint8_t half[SIZE*SIZE*sizeof(pixel)];\
@@ -420,7 +427,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc03)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, full_mid+SIZE*sizeof(pixel), half, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc11)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc11)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     uint8_t halfH[SIZE*SIZE*sizeof(pixel)];\
@@ -431,7 +439,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc11)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfH, halfV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc31)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc31)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     uint8_t halfH[SIZE*SIZE*sizeof(pixel)];\
@@ -442,7 +451,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc31)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfH, halfV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc13)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc13)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     uint8_t halfH[SIZE*SIZE*sizeof(pixel)];\
@@ -453,7 +463,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc13)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfH, halfV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc33)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc33)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     uint8_t halfH[SIZE*SIZE*sizeof(pixel)];\
@@ -464,12 +475,14 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc33)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfH, halfV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc22)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc22)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     int16_t tmp[SIZE*(SIZE+5)*sizeof(pixel)];\
     FUNC(OPNAME ## h264_qpel ## SIZE ## _hv_lowpass)(dst, tmp, src, stride, SIZE*sizeof(pixel), stride);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc21)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc21)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     int16_t tmp[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t halfH[SIZE*SIZE*sizeof(pixel)];\
     uint8_t halfHV[SIZE*SIZE*sizeof(pixel)];\
@@ -478,7 +491,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc21)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfH, halfHV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc23)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc23)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     int16_t tmp[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t halfH[SIZE*SIZE*sizeof(pixel)];\
     uint8_t halfHV[SIZE*SIZE*sizeof(pixel)];\
@@ -487,7 +501,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc23)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfH, halfHV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc12)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc12)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     int16_t tmp[SIZE*(SIZE+5)*sizeof(pixel)];\
@@ -499,7 +514,8 @@ static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc12)(uint8_t *dst, uint8_t *s
     FUNC(OPNAME ## pixels ## SIZE ## _l2)(dst, halfV, halfHV, stride, SIZE*sizeof(pixel), SIZE*sizeof(pixel), SIZE);\
 }\
 \
-static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc32)(uint8_t *dst, uint8_t *src, int stride){\
+static void FUNCC(OPNAME ## h264_qpel ## SIZE ## _mc32)(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     uint8_t full[SIZE*(SIZE+5)*sizeof(pixel)];\
     uint8_t * const full_mid= full + SIZE*2*sizeof(pixel);\
     int16_t tmp[SIZE*(SIZE+5)*sizeof(pixel)];\
