@@ -26,9 +26,23 @@
 
 #include "avutil.h"
 #include "buffer.h"
+#include "dict.h"
 #include "rational.h"
 #include "samplefmt.h"
 
+enum AVFrameSideDataType {
+    /**
+     * The data is the AVPanScan struct defined in libavcodec.
+     */
+    AV_FRAME_DATA_PANSCAN,
+};
+
+typedef struct AVFrameSideData {
+    enum AVFrameSideDataType type;
+    uint8_t *data;
+    int      size;
+    AVDictionary *metadata;
+} AVFrameSideData;
 
 /**
  * This structure describes decoded (raw) audio or video data.
@@ -310,6 +324,9 @@ typedef struct AVFrame {
      */
     int        nb_extended_buf;
 
+    AVFrameSideData **side_data;
+    int            nb_side_data;
+
     /**
      * frame timestamp estimated using various heuristics, in stream time base
      * Code outside libavcodec should access this field using:
@@ -510,6 +527,7 @@ int av_frame_make_writable(AVFrame *frame);
  * Metadata for the purpose of this function are those fields that do not affect
  * the data layout in the buffers.  E.g. pts, sample rate (for audio) or sample
  * aspect ratio (for video), but not width/height or channel layout.
+ * Side data is also copied.
  */
 int av_frame_copy_props(AVFrame *dst, const AVFrame *src);
 
@@ -522,5 +540,25 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src);
  * frame is not valid.
  */
 AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane);
+
+/**
+ * Add a new side data to a frame.
+ *
+ * @param frame a frame to which the side data should be added
+ * @param type type of the added side data
+ * @param size size of the side data
+ *
+ * @return newly added side data on success, NULL on error
+ */
+AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
+                                        enum AVFrameSideDataType type,
+                                        int size);
+
+/**
+ * @return a pointer to the side data of a given type on success, NULL if there
+ * is no side data with such type in this frame.
+ */
+AVFrameSideData *av_frame_get_side_data(AVFrame *frame,
+                                        enum AVFrameSideDataType type);
 
 #endif /* AVUTIL_FRAME_H */
