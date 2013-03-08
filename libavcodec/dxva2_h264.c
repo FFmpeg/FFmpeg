@@ -278,7 +278,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const unsigned mb_count = h->mb_width * h->mb_height;
     struct dxva_context *ctx = avctx->hwaccel_context;
     const Picture *current_picture = h->cur_pic_ptr;
-    struct dxva2_picture_context *ctx_pic = current_picture->f.hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_H264_Short *slice = NULL;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
@@ -373,7 +373,7 @@ static int dxva2_h264_start_frame(AVCodecContext *avctx,
 {
     const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    struct dxva2_picture_context *ctx_pic = h->cur_pic_ptr->f.hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = h->cur_pic_ptr->hwaccel_picture_private;
 
     if (!ctx->decoder || !ctx->cfg || ctx->surface_count <= 0)
         return -1;
@@ -398,7 +398,7 @@ static int dxva2_h264_decode_slice(AVCodecContext *avctx,
     const H264Context *h = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
     const Picture *current_picture = h->cur_pic_ptr;
-    struct dxva2_picture_context *ctx_pic = current_picture->f.hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     unsigned position;
 
     if (ctx_pic->slice_count >= MAX_SLICES)
@@ -426,7 +426,7 @@ static int dxva2_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h = avctx->priv_data;
     struct dxva2_picture_context *ctx_pic =
-        h->cur_pic_ptr->f.hwaccel_picture_private;
+        h->cur_pic_ptr->hwaccel_picture_private;
     int ret;
 
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
