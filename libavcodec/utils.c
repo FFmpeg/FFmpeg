@@ -2315,26 +2315,26 @@ int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
 
 #if !HAVE_THREADS
 
-int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags)
+int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
 {
     f->owner = avctx;
-    return ff_get_buffer(avctx, f, flags);
+    return ff_get_buffer(avctx, f->f, flags);
 }
 
-void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
+void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)
 {
-    av_frame_unref(f);
+    av_frame_unref(f->f);
 }
 
 void ff_thread_finish_setup(AVCodecContext *avctx)
 {
 }
 
-void ff_thread_report_progress(AVFrame *f, int progress, int field)
+void ff_thread_report_progress(ThreadFrame *f, int progress, int field)
 {
 }
 
-void ff_thread_await_progress(AVFrame *f, int progress, int field)
+void ff_thread_await_progress(ThreadFrame *f, int progress, int field)
 {
 }
 
