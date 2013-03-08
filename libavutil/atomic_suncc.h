@@ -17,6 +17,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_ATOMIC_SUNCC_H
+#define AVUTIL_ATOMIC_SUNCC_H
+
 #include <atomic.h>
 #include <mbarrier.h>
 
@@ -49,3 +52,4 @@ static inline void *atomic_ptr_cas_suncc(void * volatile *ptr,
     return atomic_cas_ptr(ptr, oldval, newval);
 }
 
+#endif /* AVUTIL_ATOMIC_SUNCC_H */

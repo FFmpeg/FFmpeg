@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_ATOMIC_WIN32_H
+#define AVUTIL_ATOMIC_WIN32_H
+
 #include <windows.h>
 
 #include "atomic.h"
@@ -48,3 +51,5 @@ static inline void *atomic_ptr_cas_win32(void * volatile *ptr,
 {
     return InterlockedCompareExchangePointer(ptr, newval, oldval);
 }
+
+#endif /* AVUTIL_ATOMIC_WIN32_H */
