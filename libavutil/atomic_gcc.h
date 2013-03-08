@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_ATOMIC_GCC_H
+#define AVUTIL_ATOMIC_GCC_H
+
 #include "atomic.h"
 
 #define avpriv_atomic_int_get atomic_int_get_gcc
@@ -46,3 +49,5 @@ static inline void *atomic_ptr_cas_gcc(void * volatile *ptr,
 {
     return __sync_val_compare_and_swap(ptr, oldval, newval);
 }
+
+#endif /* AVUTIL_ATOMIC_GCC_H */
