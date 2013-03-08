@@ -1324,7 +1324,7 @@ HAVE_LIST="
     struct_v4l2_frmivalenum_discrete
     symver_asm_label
     symver_gnu_asm
-    sync_synchronize
+    sync_val_compare_and_swap
     sysconf
     sysctl
     sys_mman_h
@@ -3456,7 +3456,7 @@ check_func  strerror_r
 check_func  strptime
 check_func  strtok_r
 check_func  sched_getaffinity
-check_builtin sync_synchronize "" "__sync_synchronize()"
+check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_func  sysconf

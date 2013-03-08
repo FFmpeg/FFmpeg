@@ -25,7 +25,7 @@
 
 #if HAVE_MEMORYBARRIER
 #include "atomic_win32.h"
-#elif HAVE_SYNC_SYNCHRONIZE
+#elif HAVE_SYNC_VAL_COMPARE_AND_SWAP
 #include "atomic_gcc.h"
 #elif HAVE_MACHINE_RW_BARRIER
 #include "atomic_suncc.h"
