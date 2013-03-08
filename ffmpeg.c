@@ -2444,8 +2444,13 @@ static int transcode_init(void)
 
     /* init input streams */
     for (i = 0; i < nb_input_streams; i++)
-        if ((ret = init_input_stream(i, error, sizeof(error))) < 0)
+        if ((ret = init_input_stream(i, error, sizeof(error))) < 0) {
+            for (i = 0; i < nb_output_streams; i++) {
+                ost = output_streams[i];
+                avcodec_close(ost->st->codec);
+            }
             goto dump_format;
+        }
 
     /* discard unused programs */
     for (i = 0; i < nb_input_files; i++) {
