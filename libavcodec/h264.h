@@ -30,6 +30,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "cabac.h"
+#include "error_resilience.h"
 #include "get_bits.h"
 #include "mpegvideo.h"
 #include "h264chroma.h"

@@ -28,6 +28,7 @@
 #include "libavutil/internal.h"
 
 #include "avcodec.h"
+#include "error_resilience.h"
 #include "mpegvideo.h"
 #include "golomb.h"
 #include "internal.h"

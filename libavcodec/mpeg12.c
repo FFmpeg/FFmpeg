@@ -28,13 +28,14 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 //#define DEBUG
+#include "libavutil/avassert.h"
+#include "libavutil/timecode.h"
+
 #include "internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "libavutil/avassert.h"
-#include "libavutil/timecode.h"
-
+#include "error_resilience.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "mpeg12decdata.h"

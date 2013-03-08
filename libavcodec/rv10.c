@@ -27,6 +27,7 @@
 
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "error_resilience.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"
 #include "h263.h"

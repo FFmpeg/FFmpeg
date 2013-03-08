@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "error_resilience.h"
 #include "internal.h"
 #include "msmpeg4data.h"
 #include "vc1.h"
