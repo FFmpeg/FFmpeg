@@ -177,8 +177,7 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 /* video output */
 
 static AVFrame *picture, *tmp_picture;
-static uint8_t *video_outbuf;
-static int frame_count, video_outbuf_size;
+static int frame_count;
 
 /* Add a video output stream. */
 static AVStream *add_video_stream(AVFormatContext *oc, enum AVCodecID codec_id)
@@ -264,18 +263,6 @@ static void open_video(AVFormatContext *oc, AVStream *st)
         exit(1);
     }
 
-    video_outbuf = NULL;
-    if (!(oc->oformat->flags & AVFMT_RAWPICTURE)) {
-        /* Allocate output buffer. */
-        /* XXX: API change will be done. */
-        /* Buffers passed into lav* can be allocated any way you prefer,
-         * as long as they're aligned enough for the architecture, and
-         * they're freed appropriately (such as using av_free for buffers
-         * allocated with av_malloc). */
-        video_outbuf_size = 200000;
-        video_outbuf      = av_malloc(video_outbuf_size);
-    }
-
     /* Allocate the encoded raw picture. */
     picture = alloc_picture(c->pix_fmt, c->width, c->height);
     if (!picture) {
@@ -320,7 +307,7 @@ static void fill_yuv_image(AVFrame *pict, int frame_index,
 
 static void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
-    int out_size, ret;
+    int ret;
     AVCodecContext *c;
     static struct SwsContext *img_convert_ctx;
 
@@ -367,22 +354,23 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         ret = av_interleaved_write_frame(oc, &pkt);
     } else {
-        /* encode the image */
-        out_size = avcodec_encode_video(c, video_outbuf,
-                                        video_outbuf_size, picture);
-        /* If size is zero, it means the image was buffered. */
-        if (out_size > 0) {
-            AVPacket pkt;
-            av_init_packet(&pkt);
+        AVPacket pkt = { 0 };
+        int got_packet;
+        av_init_packet(&pkt);
 
-            if (c->coded_frame->pts != AV_NOPTS_VALUE)
-                pkt.pts = av_rescale_q(c->coded_frame->pts,
+        /* encode the image */
+        ret = avcodec_encode_video2(c, &pkt, picture, &got_packet);
+        /* If size is zero, it means the image was buffered. */
+        if (!ret && got_packet && pkt.size) {
+            if (pkt.pts != AV_NOPTS_VALUE) {
+                pkt.pts = av_rescale_q(pkt.pts,
                                        c->time_base, st->time_base);
-            if (c->coded_frame->key_frame)
-                pkt.flags |= AV_PKT_FLAG_KEY;
+            }
+            if (pkt.dts != AV_NOPTS_VALUE) {
+                pkt.dts = av_rescale_q(pkt.dts,
+                                       c->time_base, st->time_base);
+            }
             pkt.stream_index = st->index;
-            pkt.data         = video_outbuf;
-            pkt.size         = out_size;
 
             /* Write the compressed frame to the media file. */
             ret = av_interleaved_write_frame(oc, &pkt);
@@ -406,7 +394,6 @@ static void close_video(AVFormatContext *oc, AVStream *st)
         av_free(tmp_picture->data[0]);
         av_free(tmp_picture);
     }
-    av_free(video_outbuf);
 }
 
 /**************************************************************/
