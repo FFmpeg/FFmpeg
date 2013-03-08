@@ -757,18 +757,6 @@ void avcodec_free_frame(AVFrame **frame)
     type av_##name##_get_##field(const str *s) { return s->field; } \
     void av_##name##_set_##field(str *s, type v) { s->field = v; }
 
-MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
-MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
-MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_pos)
-MAKE_ACCESSORS(AVFrame, frame, int64_t, channel_layout)
-MAKE_ACCESSORS(AVFrame, frame, int,     channels)
-MAKE_ACCESSORS(AVFrame, frame, int,     sample_rate)
-MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
-MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
-MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
-
-AVDictionary **ff_frame_get_metadatap(AVFrame *frame) {return &frame->metadata;};
-
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
 
@@ -1657,7 +1645,7 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
     while (side_metadata < end) {
         const uint8_t *key = side_metadata;
         const uint8_t *val = side_metadata + strlen(key) + 1;
-        int ret = av_dict_set(ff_frame_get_metadatap(frame), key, val, 0);
+        int ret = av_dict_set(avpriv_frame_get_metadatap(frame), key, val, 0);
         if (ret < 0)
             break;
         side_metadata = val + strlen(val) + 1;

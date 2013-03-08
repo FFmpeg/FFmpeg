@@ -213,6 +213,4 @@ int ff_codec_close_recursive(AVCodecContext *avctx);
  */
 int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf);
 
-AVDictionary **ff_frame_get_metadatap(AVFrame *frame);
-
 #endif /* AVCODEC_INTERNAL_H */

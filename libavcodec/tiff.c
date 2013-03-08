@@ -289,7 +289,7 @@ static int add_doubles_metadata(int count,
     av_freep(&dp);
     if (!ap)
         return AVERROR(ENOMEM);
-    av_dict_set(ff_frame_get_metadatap(&s->picture), name, ap, AV_DICT_DONT_STRDUP_VAL);
+    av_dict_set(avpriv_frame_get_metadatap(&s->picture), name, ap, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
@@ -315,7 +315,7 @@ static int add_shorts_metadata(int count, const char *name,
     av_freep(&sp);
     if (!ap)
         return AVERROR(ENOMEM);
-    av_dict_set(ff_frame_get_metadatap(&s->picture), name, ap, AV_DICT_DONT_STRDUP_VAL);
+    av_dict_set(avpriv_frame_get_metadatap(&s->picture), name, ap, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
@@ -334,7 +334,7 @@ static int add_string_metadata(int count, const char *name,
     bytestream2_get_bufferu(&s->gb, value, count);
     value[count] = 0;
 
-    av_dict_set(ff_frame_get_metadatap(&s->picture), name, value, AV_DICT_DONT_STRDUP_VAL);
+    av_dict_set(avpriv_frame_get_metadatap(&s->picture), name, value, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
@@ -1111,7 +1111,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_WARNING, "Type of GeoTIFF key %d is wrong\n", s->geotags[i].key);
             continue;
         }
-        ret = av_dict_set(ff_frame_get_metadatap(&s->picture), keyname, s->geotags[i].val, 0);
+        ret = av_dict_set(avpriv_frame_get_metadatap(&s->picture), keyname, s->geotags[i].val, 0);
         if (ret<0) {
             av_log(avctx, AV_LOG_ERROR, "Writing metadata with key '%s' failed\n", keyname);
             return ret;
