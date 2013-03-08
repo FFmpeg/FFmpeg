@@ -884,6 +884,12 @@ static int v4l2_read_header(AVFormatContext *s1)
     if (!st)
         return AVERROR(ENOMEM);
 
+#if CONFIG_LIBV4L2
+    /* silence libv4l2 logging. if fopen() fails v4l2_log_file will be NULL
+       and errors will get sent to stderr */
+    v4l2_log_file = fopen("/dev/null", "w");
+#endif
+
     s->fd = device_open(s1);
     if (s->fd < 0)
         return s->fd;
