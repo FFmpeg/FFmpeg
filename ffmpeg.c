@@ -570,6 +570,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
                 memcpy(t, new_pkt.data, new_pkt.size);
                 memset(t + new_pkt.size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
                 new_pkt.data = t;
+                new_pkt.buf = NULL;
                 a = 1;
             } else
                 a = AVERROR(ENOMEM);

@@ -92,7 +92,6 @@ typedef struct MatroskaMuxContext {
     mkv_cues        *cues;
     mkv_track       *tracks;
 
-    unsigned int    audio_buffer_size;
     AVPacket        cur_audio_pkt;
 
     int have_attachments;
@@ -1043,7 +1042,6 @@ static int mkv_write_header(AVFormatContext *s)
 
     av_init_packet(&mkv->cur_audio_pkt);
     mkv->cur_audio_pkt.size = 0;
-    mkv->audio_buffer_size  = 0;
     mkv->cluster_pos = -1;
 
     avio_flush(pb);
@@ -1262,19 +1260,6 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int mkv_copy_packet(MatroskaMuxContext *mkv, const AVPacket *pkt)
-{
-    uint8_t *data           = mkv->cur_audio_pkt.data;
-    mkv->cur_audio_pkt      = *pkt;
-    mkv->cur_audio_pkt.data = av_fast_realloc(data, &mkv->audio_buffer_size, pkt->size);
-    if (!mkv->cur_audio_pkt.data)
-        return AVERROR(ENOMEM);
-
-    memcpy(mkv->cur_audio_pkt.data, pkt->data, pkt->size);
-    mkv->cur_audio_pkt.size = pkt->size;
-    return 0;
-}
-
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -1301,7 +1286,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
         ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
-        mkv->cur_audio_pkt.size = 0;
+        av_free_packet(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Could not write cached audio packet ret:%d\n", ret);
             return ret;
@@ -1310,9 +1295,11 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // buffer an audio packet to ensure the packet containing the video
     // keyframe's timecode is contained in the same cluster for WebM
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        ret = mkv_copy_packet(mkv, pkt);
-    else
+    if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        mkv->cur_audio_pkt = *pkt;
+        mkv->cur_audio_pkt.buf = av_buffer_ref(pkt->buf);
+        ret = mkv->cur_audio_pkt.buf ? 0 : AVERROR(ENOMEM);
+    } else
         ret = mkv_write_packet_internal(s, pkt);
     return ret;
 }
@@ -1327,7 +1314,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     // check if we have an audio packet cached
     if (mkv->cur_audio_pkt.size > 0) {
         ret = mkv_write_packet_internal(s, &mkv->cur_audio_pkt);
-        mkv->cur_audio_pkt.size = 0;
+        av_free_packet(&mkv->cur_audio_pkt);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Could not write cached audio packet ret:%d\n", ret);
             return ret;
@@ -1364,7 +1351,6 @@ static int mkv_write_trailer(AVFormatContext *s)
     av_free(mkv->tracks);
     av_freep(&mkv->cues->entries);
     av_freep(&mkv->cues);
-    av_destruct_packet(&mkv->cur_audio_pkt);
 
     return 0;
 }

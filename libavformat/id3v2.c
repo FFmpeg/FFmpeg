@@ -433,7 +433,7 @@ finish:
 static void free_apic(void *obj)
 {
     ID3v2ExtraMetaAPIC *apic = obj;
-    av_freep(&apic->data);
+    av_buffer_unref(&apic->buf);
     av_freep(&apic->description);
     av_freep(&apic);
 }
@@ -489,9 +489,8 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag
         goto fail;
     }
 
-    apic->len   = taglen;
-    apic->data  = av_malloc(taglen);
-    if (!apic->data || !apic->len || avio_read(pb, apic->data, taglen) != taglen)
+    apic->buf = av_buffer_alloc(taglen);
+    if (!apic->buf || !taglen || avio_read(pb, apic->buf->data, taglen) != taglen)
         goto fail;
 
     new_extra->tag    = "APIC";
@@ -846,14 +845,13 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         av_dict_set(&st->metadata, "comment", apic->type, 0);
 
         av_init_packet(&st->attached_pic);
-        st->attached_pic.data         = apic->data;
-        st->attached_pic.size         = apic->len;
-        st->attached_pic.destruct     = av_destruct_packet;
+        st->attached_pic.buf          = apic->buf;
+        st->attached_pic.data         = apic->buf->data;
+        st->attached_pic.size         = apic->buf->size;
         st->attached_pic.stream_index = st->index;
         st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
-        apic->data = NULL;
-        apic->len  = 0;
+        apic->buf = NULL;
     }
 
     return 0;

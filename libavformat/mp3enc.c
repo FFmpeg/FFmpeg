@@ -422,7 +422,11 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
                 return AVERROR(ENOMEM);
 
             pktl->pkt     = *pkt;
-            pkt->destruct = NULL;
+            pktl->pkt.buf = av_buffer_ref(pkt->buf);
+            if (!pktl->pkt.buf) {
+                av_freep(&pktl);
+                return AVERROR(ENOMEM);
+            }
 
             if (mp3->queue_end)
                 mp3->queue_end->next = pktl;

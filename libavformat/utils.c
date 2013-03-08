@@ -555,16 +555,20 @@ static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
     return &pktl->pkt;
 }
 
-void avformat_queue_attached_pictures(AVFormatContext *s)
+int avformat_queue_attached_pictures(AVFormatContext *s)
 {
     int i;
     for (i = 0; i < s->nb_streams; i++)
         if (s->streams[i]->disposition & AV_DISPOSITION_ATTACHED_PIC &&
             s->streams[i]->discard < AVDISCARD_ALL) {
             AVPacket copy = s->streams[i]->attached_pic;
-            copy.destruct = NULL;
+            copy.buf      = av_buffer_ref(copy.buf);
+            if (!copy.buf)
+                return AVERROR(ENOMEM);
+
             add_to_pktbuf(&s->raw_packet_buffer, &copy, &s->raw_packet_buffer_end);
         }
+    return 0;
 }
 
 int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options)
@@ -635,7 +639,8 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
     }
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
 
-    avformat_queue_attached_pictures(s);
+    if ((ret = avformat_queue_attached_pictures(s)) < 0)
+        goto fail;
 
     if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->pb && !s->data_offset)
         s->data_offset = avio_tell(s->pb);
@@ -1333,8 +1338,12 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         compute_pkt_fields(s, st, st->parser, &out_pkt);
 
         if (out_pkt.data == pkt->data && out_pkt.size == pkt->size) {
+            out_pkt.buf   = pkt->buf;
+            pkt->buf      = NULL;
+#if FF_API_DESTRUCT_PACKET
             out_pkt.destruct = pkt->destruct;
             pkt->destruct = NULL;
+#endif
         }
         if ((ret = av_dup_packet(&out_pkt)) < 0)
             goto fail;
@@ -2085,7 +2094,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
     int ret = seek_frame_internal(s, stream_index, timestamp, flags);
 
     if (ret >= 0)
-        avformat_queue_attached_pictures(s);
+        ret = avformat_queue_attached_pictures(s);
 
     return ret;
 }
@@ -2116,7 +2125,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
         ret = s->iformat->read_seek2(s, stream_index, min_ts, ts, max_ts, flags);
 
         if (ret >= 0)
-            avformat_queue_attached_pictures(s);
+            ret = avformat_queue_attached_pictures(s);
         return ret;
     }
 

@@ -1162,7 +1162,10 @@ int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size)
     }
 
     if (avpkt->data) {
+        AVBufferRef *buf = avpkt->buf;
+#if FF_API_DESTRUCT_PACKET
         void *destruct = avpkt->destruct;
+#endif
 
         if (avpkt->size < size) {
             av_log(avctx, AV_LOG_ERROR, "User packet is too small (%d < %d)\n", avpkt->size, size);
@@ -1170,7 +1173,10 @@ int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size)
         }
 
         av_init_packet(avpkt);
+#if FF_API_DESTRUCT_PACKET
         avpkt->destruct = destruct;
+#endif
+        avpkt->buf      = buf;
         avpkt->size     = size;
         return 0;
     } else {
@@ -1318,6 +1324,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                 avpkt->size = user_pkt.size;
                 ret = -1;
             }
+            avpkt->buf      = user_pkt.buf;
             avpkt->data     = user_pkt.data;
             avpkt->destruct = user_pkt.destruct;
         } else {
@@ -1329,9 +1336,9 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
 
     if (!ret) {
         if (needs_realloc && avpkt->data) {
-            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (new_data)
-                avpkt->data = new_data;
+            ret = av_buffer_realloc(&avpkt->buf, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (ret >= 0)
+                avpkt->data = avpkt->buf->data;
         }
 
         avctx->frame_number++;
@@ -1515,6 +1522,7 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
                 avpkt->size = user_pkt.size;
                 ret = -1;
             }
+            avpkt->buf      = user_pkt.buf;
             avpkt->data     = user_pkt.data;
             avpkt->destruct = user_pkt.destruct;
         } else {
@@ -1530,11 +1538,10 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
         else if (!(avctx->codec->capabilities & CODEC_CAP_DELAY))
             avpkt->pts = avpkt->dts = frame->pts;
 
-        if (needs_realloc && avpkt->data &&
-            avpkt->destruct == av_destruct_packet) {
-            uint8_t *new_data = av_realloc(avpkt->data, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (new_data)
-                avpkt->data = new_data;
+        if (needs_realloc && avpkt->data) {
+            ret = av_buffer_realloc(&avpkt->buf, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (ret >= 0)
+                avpkt->data = avpkt->buf->data;
         }
 
         avctx->frame_number++;
