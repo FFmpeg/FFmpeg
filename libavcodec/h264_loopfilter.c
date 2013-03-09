@@ -271,7 +271,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
     if( IS_INTRA(mb_type) ) {
         static const int16_t bS4[4] = {4,4,4,4};
         static const int16_t bS3[4] = {3,3,3,3};
-        const int16_t *bSH = FIELD_PICTURE ? bS3 : bS4;
+        const int16_t *bSH = FIELD_PICTURE(h) ? bS3 : bS4;
         if(left_type)
             filter_mb_edgev( &img_y[4*0<<pixel_shift], linesize, bS4, qp0, a, b, h, 1);
         if( IS_8x8DCT(mb_type) ) {
@@ -372,12 +372,12 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
             int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
             edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             h->h264dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
-                                              h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE);
+                                              h->list_count==2, edges, step, mask_edge0, mask_edge1, FIELD_PICTURE(h));
         }
         if( IS_INTRA(left_type) )
             AV_WN64A(bS[0][0], 0x0004000400040004ULL);
         if( IS_INTRA(top_type) )
-            AV_WN64A(bS[1][0], FIELD_PICTURE ? 0x0003000300030003ULL : 0x0004000400040004ULL);
+            AV_WN64A(bS[1][0], FIELD_PICTURE(h) ? 0x0003000300030003ULL : 0x0004000400040004ULL);
 
 #define FILTER(hv,dir,edge,intra)\
         if(AV_RN64A(bS[dir][edge])) {                                   \

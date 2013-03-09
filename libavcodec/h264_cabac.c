@@ -1341,7 +1341,7 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
     }else{
         int mb_xy = h->mb_xy;
         mba_xy = mb_xy - 1;
-        mbb_xy = mb_xy - (h->mb_stride << FIELD_PICTURE);
+        mbb_xy = mb_xy - (h->mb_stride << FIELD_PICTURE(h));
     }
 
     if( h->slice_table[mba_xy] == h->slice_num && !IS_SKIP(h->cur_pic.mb_type[mba_xy] ))

@@ -751,7 +751,7 @@ static void await_references(H264Context *h)
                 row <<= MB_MBAFF(h);
                 nrefs[list]--;
 
-                if (!FIELD_PICTURE && ref_field_picture) { // frame referencing two fields
+                if (!FIELD_PICTURE(h) && ref_field_picture) { // frame referencing two fields
                     ff_thread_await_progress(&ref_pic->tf,
                                              FFMIN((row >> 1) - !(row & 1),
                                                    pic_height - 1),
@@ -759,12 +759,12 @@ static void await_references(H264Context *h)
                     ff_thread_await_progress(&ref_pic->tf,
                                              FFMIN((row >> 1), pic_height - 1),
                                              0);
-                } else if (FIELD_PICTURE && !ref_field_picture) { // field referencing one field of a frame
+                } else if (FIELD_PICTURE(h) && !ref_field_picture) { // field referencing one field of a frame
                     ff_thread_await_progress(&ref_pic->tf,
                                              FFMIN(row * 2 + ref_field,
                                                    pic_height - 1),
                                              0);
-                } else if (FIELD_PICTURE) {
+                } else if (FIELD_PICTURE(h)) {
                     ff_thread_await_progress(&ref_pic->tf,
                                              FFMIN(row, pic_height - 1),
                                              ref_field);
@@ -2801,7 +2801,7 @@ static int field_end(H264Context *h, int in_setup)
      * past end by one (callers fault) and resync_mb_y != 0
      * causes problems for the first MB line, too.
      */
-    if (!FIELD_PICTURE) {
+    if (!FIELD_PICTURE(h)) {
         h->er.cur_pic  = h->cur_pic_ptr;
         h->er.last_pic = h->ref_count[0] ? &h->ref_list[0][0] : NULL;
         h->er.next_pic = h->ref_count[1] ? &h->ref_list[1][0] : NULL;
@@ -3098,7 +3098,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     first_mb_in_slice = get_ue_golomb(&h->gb);
 
     if (first_mb_in_slice == 0) { // FIXME better field boundary detection
-        if (h0->current_slice && FIELD_PICTURE) {
+        if (h0->current_slice && FIELD_PICTURE(h)) {
             field_end(h, 1);
         }
 
@@ -3327,7 +3327,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             assert(h0->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
-            if (!FIELD_PICTURE || h->picture_structure == last_pic_structure) {
+            if (!FIELD_PICTURE(h) || h->picture_structure == last_pic_structure) {
                 /* Previous field is unmatched. Don't display it, but let it
                  * remain for reference if marked as such. */
                 if (!last_pic_droppable && last_pic_structure != PICT_FRAME) {
@@ -3411,11 +3411,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             assert(h0->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
-            if (!FIELD_PICTURE || h->picture_structure == last_pic_structure) {
+            if (!FIELD_PICTURE(h) || h->picture_structure == last_pic_structure) {
                 /* Previous field is unmatched. Don't display it, but let it
                  * remain for reference if marked as such. */
                 h0->cur_pic_ptr = NULL;
-                h0->first_field = FIELD_PICTURE;
+                h0->first_field = FIELD_PICTURE(h);
             } else {
                 if (h0->cur_pic_ptr->frame_num != h->frame_num) {
                     /* This and the previous field had different frame_nums.
@@ -3430,10 +3430,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             }
         } else {
             /* Frame or first field in a potentially complementary pair */
-            h0->first_field = FIELD_PICTURE;
+            h0->first_field = FIELD_PICTURE(h);
         }
 
-        if (!FIELD_PICTURE || h0->first_field) {
+        if (!FIELD_PICTURE(h) || h0->first_field) {
             if (h264_frame_start(h) < 0) {
                 h0->first_field = 0;
                 return -1;
@@ -4058,8 +4058,8 @@ static void predict_field_decoding_flag(H264Context *h)
  */
 static void decode_finish_row(H264Context *h)
 {
-    int top            = 16 * (h->mb_y      >> FIELD_PICTURE);
-    int pic_height     = 16 *  h->mb_height >> FIELD_PICTURE;
+    int top            = 16 * (h->mb_y      >> FIELD_PICTURE(h));
+    int pic_height     = 16 *  h->mb_height >> FIELD_PICTURE(h);
     int height         =  16      << FRAME_MBAFF(h);
     int deblock_border = (16 + 4) << FRAME_MBAFF(h);
 
