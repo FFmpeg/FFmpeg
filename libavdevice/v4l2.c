@@ -125,7 +125,6 @@ struct video_data {
 struct buff_data {
     struct video_data *s;
     int index;
-    int fd;
 };
 
 struct fmt_map {
@@ -483,17 +482,16 @@ static void dummy_release_buffer(AVPacket *pkt)
 static void mmap_release_buffer(void *opaque, uint8_t *data)
 {
     struct v4l2_buffer buf = { 0 };
-    int res, fd;
+    int res;
     struct buff_data *buf_descriptor = opaque;
     struct video_data *s = buf_descriptor->s;
 
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = buf_descriptor->index;
-    fd = buf_descriptor->fd;
     av_free(buf_descriptor);
 
-    if (v4l2_ioctl(fd, VIDIOC_QBUF, &buf) < 0) {
+    if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
         res = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
                av_err2str(res));
@@ -643,7 +641,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
             return AVERROR(ENOMEM);
         }
-        buf_descriptor->fd    = s->fd;
         buf_descriptor->index = buf.index;
         buf_descriptor->s     = s;
 
