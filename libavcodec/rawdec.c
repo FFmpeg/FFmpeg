@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "raw.h"
 #include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
@@ -34,11 +35,11 @@
 
 typedef struct RawVideoContext {
     AVClass *av_class;
-    uint32_t palette[AVPALETTE_COUNT];
-    unsigned char *buffer;  /* block of memory for holding one frame */
-    int            length;  /* number of bytes in buffer */
+    AVBufferRef *palette;
+    int frame_size;  /* size of the frame in bytes */
     int flip;
-    AVFrame pic;             ///< AVCodecContext.coded_frame
+    int is_2_4_bpp; // 2 or 4 bpp raw in avi/mov
+    int is_yuv2;
     int tff;
 } RawVideoContext;
 
@@ -101,6 +102,7 @@ enum AVPixelFormat ff_find_pix_fmt(const PixelFormatTag *tags, unsigned int four
 static av_cold int raw_init_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
+    const AVPixFmtDescriptor *desc;
 
     if (   avctx->codec_tag == MKTAG('r','a','w',' ')
         || avctx->codec_tag == MKTAG('N','O','1','6'))
@@ -115,32 +117,28 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->pix_fmt = avpriv_find_pix_fmt(pix_fmt_bps_avi,
                                       avctx->bits_per_coded_sample);
 
-    if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Pixel format was not specified and cannot be detected\n");
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
+    if (!desc) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid pixel format.\n");
         return AVERROR(EINVAL);
     }
 
-    avpriv_set_systematic_pal2(context->palette, avctx->pix_fmt);
+    if (desc->flags & (PIX_FMT_PAL | PIX_FMT_PSEUDOPAL)) {
+        context->palette = av_buffer_alloc(AVPALETTE_SIZE);
+        if (!context->palette)
+            return AVERROR(ENOMEM);
+        if (desc->flags & PIX_FMT_PSEUDOPAL)
+            avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
+        else
+            memset(context->palette->data, 0, AVPALETTE_SIZE);
+    }
+
+    context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
+                                             avctx->height);
     if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
-       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
-        context->length = avpicture_get_size(avctx->pix_fmt,
-                                             FFALIGN(avctx->width, 16),
-                                             avctx->height);
-        if (context->length < 0)
-            return context->length;
-        context->buffer = av_malloc(context->length);
-        if (!context->buffer)
-            return AVERROR(ENOMEM);
-    } else {
-        context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-        if (context->length < 0)
-            return context->length;
-    }
-    context->pic.pict_type = AV_PICTURE_TYPE_I;
-    context->pic.key_frame = 1;
-
-    avctx->coded_frame = &context->pic;
+       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' ')))
+        context->is_2_4_bpp = 1;
 
     if ((avctx->extradata_size >= 9 &&
          !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9)) ||
@@ -155,6 +153,9 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             avctx->coded_frame->top_field_first = 1;
     }
 
+    if (avctx->codec_tag == AV_RL32("yuv2") &&
+        avctx->pix_fmt   == AV_PIX_FMT_YUYV422)
+        context->is_yuv2 = 1;
 
     return 0;
 }
@@ -174,13 +175,13 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size                   = avpkt->size;
     int linesize_align             = 4;
     int res, len;
+    int need_copy                  = !avpkt->buf || context->is_2_4_bpp || context->is_yuv2;
 
     AVFrame   *frame   = data;
     AVPicture *picture = data;
 
-    frame->pict_type        = avctx->coded_frame->pict_type;
-    frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
-    frame->top_field_first  = avctx->coded_frame->top_field_first;
+    frame->pict_type        = AV_PICTURE_TYPE_I;
+    frame->key_frame        = 1;
     frame->reordered_opaque = avctx->reordered_opaque;
     frame->pkt_pts          = avctx->pkt->pts;
     av_frame_set_pkt_pos     (frame, avctx->pkt->pos);
@@ -194,11 +195,18 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if ((res = av_image_check_size(avctx->width, avctx->height, 0, avctx)) < 0)
         return res;
 
+    if (need_copy)
+        frame->buf[0] = av_buffer_alloc(context->frame_size);
+    else
+        frame->buf[0] = av_buffer_ref(avpkt->buf);
+    if (!frame->buf[0])
+        return AVERROR(ENOMEM);
+
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
-    if (context->buffer) {
+    if (context->is_2_4_bpp) {
         int i;
-        uint8_t *dst = context->buffer;
-        buf_size = context->length - AVPALETTE_SIZE;
+        uint8_t *dst = frame->buf[0]->data;
+        buf_size = context->frame_size - AVPALETTE_SIZE;
         if (avctx->bits_per_coded_sample == 4) {
             for (i = 0; 2 * i + 1 < buf_size && i<avpkt->size; i++) {
                 dst[2 * i + 0] = buf[i] >> 4;
@@ -216,31 +224,39 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             linesize_align = 16;
         }
         buf = dst;
+    } else if (need_copy) {
+        memcpy(frame->buf[0]->data, buf, FFMIN(buf_size, context->frame_size));
+        buf = frame->buf[0]->data;
     }
 
     if (avctx->codec_tag == MKTAG('A', 'V', '1', 'x') ||
         avctx->codec_tag == MKTAG('A', 'V', 'u', 'p'))
-        buf += buf_size - context->length;
+        buf += buf_size - context->frame_size;
 
-    len = context->length - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
+    len = context->frame_size - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
     if (buf_size < len) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected length %d\n", buf_size, len);
+        av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected frame_size %d\n", buf_size, len);
         return AVERROR(EINVAL);
     }
 
     if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
                               avctx->width, avctx->height)) < 0)
         return res;
-    if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->length) ||
+    if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) ||
         (desc->flags & PIX_FMT_PSEUDOPAL)) {
         frame->data[1] = (uint8_t*)context->palette;
     }
+
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE,
                                                      NULL);
 
         if (pal) {
-            memcpy(frame->data[1], pal, AVPALETTE_SIZE);
+            av_buffer_unref(&context->palette);
+            context->palette = av_buffer_alloc(AVPALETTE_SIZE);
+            if (!context->palette)
+                return AVERROR(ENOMEM);
+            memcpy(context->palette->data, pal, AVPALETTE_SIZE);
             frame->palette_has_changed = 1;
         }
     }
@@ -262,6 +278,17 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         frame->linesize[0] = la0;
         frame->linesize[1] = FFALIGN(frame->linesize[1], linesize_align);
     }
+
+    if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) ||
+        (desc->flags & PIX_FMT_PSEUDOPAL)) {
+        frame->buf[1]  = av_buffer_ref(context->palette);
+        if (!frame->buf[1])
+            return AVERROR(ENOMEM);
+        frame->data[1] = frame->buf[1]->data;
+    }
+    if (avctx->pix_fmt == AV_PIX_FMT_BGR24 &&
+        ((frame->linesize[0] + 3) & ~3) * avctx->height <= buf_size)
+        frame->linesize[0] = (frame->linesize[0] + 3) & ~3;
 
     if (context->flip)
         flip(avctx, picture);
@@ -306,7 +333,7 @@ static av_cold int raw_close_decoder(AVCodecContext *avctx)
 {
     RawVideoContext *context = avctx->priv_data;
 
-    av_freep(&context->buffer);
+    av_buffer_unref(&context->palette);
     return 0;
 }
 
