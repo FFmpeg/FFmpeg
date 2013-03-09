@@ -188,7 +188,7 @@ External library support:
   --enable-fontconfig      enable fontconfig
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
-  --enable-iconv           enable iconv [no]
+  --enable-iconv           enable iconv [autodetect]
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -4053,7 +4053,7 @@ enabled vdpau &&
     disable vdpau
 
 # Funny iconv installations are not unusual, so check it after all flags have been set
-enabled iconv && { check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || die "ERROR: iconv not found"; }
+disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 enabled coverage && add_cflags "-fprofile-arcs -ftest-coverage" && add_ldflags "-fprofile-arcs -ftest-coverage"
