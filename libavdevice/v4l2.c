@@ -610,15 +610,17 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         res = av_new_packet(pkt, buf.bytesused);
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "Error allocating a packet.\n");
+            if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) == 0)
+                avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
             return res;
         }
         memcpy(pkt->data, s->buf_start[buf.index], buf.bytesused);
 
-        res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
-        if (res < 0) {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF)\n");
+        if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
             av_free_packet(pkt);
-            return AVERROR(errno);
+            return res;
         }
         avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
     } else {
@@ -636,7 +638,8 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
              * allocate a buffer for memcpying into it
              */
             av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
-            res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
+            if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) == 0)
+                avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
 
             return AVERROR(ENOMEM);
         }
@@ -647,6 +650,9 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         pkt->buf = av_buffer_create(pkt->data, pkt->size, mmap_release_buffer,
                                     buf_descriptor, 0);
         if (!pkt->buf) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to create a buffer\n");
+            if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) == 0)
+                avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
             av_freep(&buf_descriptor);
             return AVERROR(ENOMEM);
         }
