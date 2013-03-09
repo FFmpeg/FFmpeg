@@ -139,6 +139,7 @@ typedef struct Vp3DecodeContext {
     AVFrame last_frame;
     AVFrame current_frame;
     int keyframe;
+    uint8_t idct_permutation[64];
     DSPContext dsp;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
@@ -384,7 +385,7 @@ static void init_dequantizer(Vp3DecodeContext *s, int qpi)
                 int qmin= 8<<(inter + !i);
                 int qscale= i ? ac_scale_factor : dc_scale_factor;
 
-                s->qmat[qpi][inter][plane][s->dsp.idct_permutation[i]]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
+                s->qmat[qpi][inter][plane][s->idct_permutation[i]]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
             }
             // all DC coefficients use the same quant so as not to interfere with DC prediction
             s->qmat[qpi][inter][plane][0] = s->qmat[0][inter][plane][0];
@@ -1680,8 +1681,8 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
 
-    ff_init_scantable_permutation(s->dsp.idct_permutation, s->vp3dsp.idct_perm);
-    ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
+    ff_init_scantable_permutation(s->idct_permutation, s->vp3dsp.idct_perm);
+    ff_init_scantable(s->idct_permutation, &s->scantable, ff_zigzag_direct);
 
     /* initialize to an impossible value which will force a recalculation
      * in the first frame decode */
@@ -1886,7 +1887,7 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
         }
 
         // copy previous frame data
-        copy_fields(s, s1, golden_frame, dsp);
+        copy_fields(s, s1, golden_frame, idct_permutation);
 
         // copy qscale data if necessary
         for (i = 0; i < 3; i++) {
