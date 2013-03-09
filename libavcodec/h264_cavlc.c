@@ -1113,7 +1113,7 @@ decode_intra_mb:
             if( decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 2) < 0 ){
                 return -1;
             }
-        } else if (CHROMA422) {
+        } else if (CHROMA422(h)) {
             if(cbp&0x30){
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
                     if (decode_residual(h, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift),

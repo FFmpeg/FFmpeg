@@ -2042,7 +2042,7 @@ static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y,
     int top_idx = 1;
     const int pixel_shift = h->pixel_shift;
     int chroma444 = CHROMA444;
-    int chroma422 = CHROMA422;
+    int chroma422 = CHROMA422(h);
 
     src_y  -= linesize;
     src_cb -= uvlinesize;
@@ -2931,7 +2931,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
                 return AV_PIX_FMT_GBRP9;
             } else
                 return AV_PIX_FMT_YUV444P9;
-        } else if (CHROMA422)
+        } else if (CHROMA422(h))
             return AV_PIX_FMT_YUV422P9;
         else
             return AV_PIX_FMT_YUV420P9;
@@ -2942,7 +2942,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
                 return AV_PIX_FMT_GBRP10;
             } else
                 return AV_PIX_FMT_YUV444P10;
-        } else if (CHROMA422)
+        } else if (CHROMA422(h))
             return AV_PIX_FMT_YUV422P10;
         else
             return AV_PIX_FMT_YUV420P10;
@@ -2954,7 +2954,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
             } else
                 return h->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ444P
                                                                  : AV_PIX_FMT_YUV444P;
-        } else if (CHROMA422) {
+        } else if (CHROMA422(h)) {
             return h->avctx->color_range == AVCOL_RANGE_JPEG ? AV_PIX_FMT_YUVJ422P
                                                              : AV_PIX_FMT_YUV422P;
         } else {

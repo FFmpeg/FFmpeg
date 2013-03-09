@@ -2357,7 +2357,7 @@ decode_intra_mb:
         if(CHROMA444){
             decode_cabac_luma_residual(h, scan, scan8x8, pixel_shift, mb_type, cbp, 1);
             decode_cabac_luma_residual(h, scan, scan8x8, pixel_shift, mb_type, cbp, 2);
-        } else if (CHROMA422) {
+        } else if (CHROMA422(h)) {
             if( cbp&0x30 ){
                 int c;
                 for (c = 0; c < 2; c++)
