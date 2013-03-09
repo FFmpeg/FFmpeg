@@ -82,7 +82,7 @@
 #define FIELD_OR_MBAFF_PICTURE(h) (FRAME_MBAFF(h) || FIELD_PICTURE(h))
 
 #ifndef CABAC
-#define CABAC h->pps.cabac
+#define CABAC(h) h->pps.cabac
 #endif
 
 #define CHROMA422 (h->sps.chroma_format_idc == 2)
@@ -884,7 +884,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     AV_COPY128(mv_dst + 1 * b_stride, mv_src + 8 * 1);
     AV_COPY128(mv_dst + 2 * b_stride, mv_src + 8 * 2);
     AV_COPY128(mv_dst + 3 * b_stride, mv_src + 8 * 3);
-    if (CABAC) {
+    if (CABAC(h)) {
         uint8_t (*mvd_dst)[2] = &h->mvd_table[list][FMO ? 8 * h->mb_xy
                                                         : h->mb2br_xy[h->mb_xy]];
         uint8_t(*mvd_src)[2]  = &h->mvd_cache[list][scan8[0]];
@@ -923,7 +923,7 @@ static av_always_inline void write_back_motion(H264Context *h, int mb_type)
     if (USES_LIST(mb_type, 1))
         write_back_motion_list(h, b_stride, b_xy, b8_xy, mb_type, 1);
 
-    if (h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC) {
+    if (h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC(h)) {
         if (IS_8X8(mb_type)) {
             uint8_t *direct_table = &h->direct_table[4 * h->mb_xy];
             direct_table[1] = h->sub_mb_type[1] >> 1;

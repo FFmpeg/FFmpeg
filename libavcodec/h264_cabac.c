@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#define CABAC 1
+#define CABAC(h) 1
 
 #include "config.h"
 #include "cabac.h"
@@ -2303,7 +2303,7 @@ decode_intra_mb:
             }
         }
         if (h->top_type && !IS_8x8DCT(h->top_type)){
-            uint32_t top_empty = CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
+            uint32_t top_empty = CABAC(h) && !IS_INTRA(mb_type) ? 0 : 0x40404040;
             AV_WN32A(&nnz_cache[4+8* 0], top_empty);
             AV_WN32A(&nnz_cache[4+8* 5], top_empty);
             AV_WN32A(&nnz_cache[4+8*10], top_empty);
