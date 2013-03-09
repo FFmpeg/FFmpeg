@@ -632,7 +632,7 @@ static inline void get_lowest_part_y(H264Context *h, int refs[2][48], int n,
 {
     int my;
 
-    y_offset += 16 * (h->mb_y >> MB_FIELD);
+    y_offset += 16 * (h->mb_y >> MB_FIELD(h));
 
     if (list0) {
         int ref_n    = h->ref_cache[0][scan8[n]];
@@ -799,7 +799,7 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
     const int full_mx    = mx >> 2;
     const int full_my    = my >> 2;
     const int pic_width  = 16 * h->mb_width;
-    const int pic_height = 16 * h->mb_height >> MB_FIELD;
+    const int pic_height = 16 * h->mb_height >> MB_FIELD(h);
     int ysh;
 
     if (mx & 7)
@@ -859,7 +859,7 @@ static av_always_inline void mc_dir_part(H264Context *h, Picture *pic,
     }
 
     ysh = 3 - (chroma_idc == 2 /* yuv422 */);
-    if (chroma_idc == 1 /* yuv420 */ && MB_FIELD) {
+    if (chroma_idc == 1 /* yuv420 */ && MB_FIELD(h)) {
         // chroma offset when predicting from a field of opposite parity
         my  += 2 * ((h->mb_y & 1) - (pic->reference - 1));
         emu |= (my >> 3) < 0 || (my >> 3) + 8 >= (pic_height >> 1);
@@ -917,7 +917,7 @@ static av_always_inline void mc_part_std(H264Context *h, int n, int square,
         dest_cr += (x_offset << pixel_shift) + y_offset * h->mb_uvlinesize;
     }
     x_offset += 8 * h->mb_x;
-    y_offset += 8 * (h->mb_y >> MB_FIELD);
+    y_offset += 8 * (h->mb_y >> MB_FIELD(h));
 
     if (list0) {
         Picture *ref = &h->ref_list[0][h->ref_cache[0][scan8[n]]];
@@ -970,7 +970,7 @@ static av_always_inline void mc_part_weighted(H264Context *h, int n, int square,
         dest_cr      += (x_offset << pixel_shift) + y_offset * h->mb_uvlinesize;
     }
     x_offset += 8 * h->mb_x;
-    y_offset += 8 * (h->mb_y >> MB_FIELD);
+    y_offset += 8 * (h->mb_y >> MB_FIELD(h));
 
     if (list0 && list1) {
         /* don't optimize for luma-only case, since B-frames usually
@@ -2155,7 +2155,7 @@ static av_always_inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
         deblock_top     = h->top_type;
     } else {
         deblock_topleft = (h->mb_x > 0);
-        deblock_top     = (h->mb_y > !!MB_FIELD);
+        deblock_top     = (h->mb_y > !!MB_FIELD(h));
     }
 
     src_y  -= linesize   + 1 + pixel_shift;
@@ -3837,7 +3837,7 @@ static int fill_filter_caches(H264Context *h, int mb_type)
     uint8_t *nnz;
     uint8_t *nnz_cache;
 
-    top_xy = mb_xy - (h->mb_stride << MB_FIELD);
+    top_xy = mb_xy - (h->mb_stride << MB_FIELD(h));
 
     /* Wow, what a mess, why didn't they simplify the interlacing & intra
      * stuff, I can't imagine that these complex rules are worth it. */
@@ -4008,7 +4008,7 @@ static void loop_filter(H264Context *h, int start_x, int end_x)
                           mb_y * h->uvlinesize * block_h;
                 // FIXME simplify above
 
-                if (MB_FIELD) {
+                if (MB_FIELD(h)) {
                     linesize   = h->mb_linesize   = h->linesize   * 2;
                     uvlinesize = h->mb_uvlinesize = h->uvlinesize * 2;
                     if (mb_y & 1) { // FIXME move out of this function?
