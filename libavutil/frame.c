@@ -49,7 +49,13 @@ static void get_frame_defaults(AVFrame *frame)
 
     memset(frame, 0, sizeof(*frame));
 
-    frame->pts                 = AV_NOPTS_VALUE;
+    frame->pts                   =
+    frame->pkt_dts               =
+    frame->pkt_pts               = AV_NOPTS_VALUE;
+    av_frame_set_best_effort_timestamp(frame, AV_NOPTS_VALUE);
+    av_frame_set_pkt_duration         (frame, 0);
+    av_frame_set_pkt_pos              (frame, -1);
+    av_frame_set_pkt_size             (frame, -1);
     frame->key_frame           = 1;
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
@@ -63,6 +69,7 @@ AVFrame *av_frame_alloc(void)
     if (!frame)
         return NULL;
 
+    frame->extended_data = NULL;
     get_frame_defaults(frame);
 
     return frame;
