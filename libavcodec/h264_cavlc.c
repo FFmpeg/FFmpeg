@@ -708,7 +708,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             h->mb_skip_run= get_ue_golomb(&h->gb);
 
         if (h->mb_skip_run--) {
-            if(FRAME_MBAFF && (h->mb_y&1) == 0){
+            if(FRAME_MBAFF(h) && (h->mb_y&1) == 0){
                 if(h->mb_skip_run==0)
                     h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
             }
@@ -716,7 +716,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             return 0;
         }
     }
-    if(FRAME_MBAFF){
+    if (FRAME_MBAFF(h)) {
         if( (h->mb_y&1) == 0 )
             h->mb_mbaff = h->mb_field_decoding_flag = get_bits1(&h->gb);
     }

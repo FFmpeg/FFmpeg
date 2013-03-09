@@ -417,7 +417,7 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
 }
 
 void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize) {
-    assert(!FRAME_MBAFF);
+    assert(!FRAME_MBAFF(h));
     if(!h->h264dsp.h264_loop_filter_strength || h->pps.chroma_qp_diff) {
         ff_h264_filter_mb(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize);
         return;
@@ -482,7 +482,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
 
     if(mbm_type && !first_vertical_edge_done){
 
-        if (FRAME_MBAFF && (dir == 1) && ((mb_y&1) == 0)
+        if (FRAME_MBAFF(h) && (dir == 1) && ((mb_y&1) == 0)
             && IS_INTERLACED(mbm_type&~mb_type)
             ) {
             // This is a special case in the norm where the filtering must
@@ -538,14 +538,14 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
             if( IS_INTRA(mb_type|mbm_type)) {
                 AV_WN64A(bS, 0x0003000300030003ULL);
                 if (   (!IS_INTERLACED(mb_type|mbm_type))
-                    || ((FRAME_MBAFF || (h->picture_structure != PICT_FRAME)) && (dir == 0))
+                    || ((FRAME_MBAFF(h) || (h->picture_structure != PICT_FRAME)) && (dir == 0))
                 )
                     AV_WN64A(bS, 0x0004000400040004ULL);
             } else {
                 int i;
                 int mv_done;
 
-                if( dir && FRAME_MBAFF && IS_INTERLACED(mb_type ^ mbm_type)) {
+                if( dir && FRAME_MBAFF(h) && IS_INTERLACED(mb_type ^ mbm_type)) {
                     AV_WN64A(bS, 0x0001000100010001ULL);
                     mv_done = 1;
                 }
@@ -711,7 +711,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     int a = h->slice_alpha_c0_offset - qp_bd_offset;
     int b = h->slice_beta_offset - qp_bd_offset;
 
-    if (FRAME_MBAFF
+    if (FRAME_MBAFF(h)
             // and current and left pair do not have the same interlaced type
             && IS_INTERLACED(mb_type^h->left_type[LTOP])
             // and left mb is in available to us

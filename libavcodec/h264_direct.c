@@ -53,7 +53,7 @@ void ff_h264_direct_dist_scale_factor(H264Context * const h){
     const int poc1 = h->ref_list[1][0].poc;
     int i, field;
 
-    if (FRAME_MBAFF)
+    if (FRAME_MBAFF(h))
         for (field = 0; field < 2; field++){
             const int poc  = h->cur_pic_ptr->field_poc[field];
             const int poc1 = h->ref_list[1][0].field_poc[field];
@@ -118,7 +118,7 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
         memcpy(cur->ref_poc  [1], cur->ref_poc  [0], sizeof(cur->ref_poc  [0]));
     }
 
-    cur->mbaff= FRAME_MBAFF;
+    cur->mbaff = FRAME_MBAFF(h);
 
     h->col_fieldoff= 0;
     if(h->picture_structure == PICT_FRAME){
@@ -135,7 +135,7 @@ void ff_h264_direct_ref_list_init(H264Context * const h){
 
     for(list=0; list<2; list++){
         fill_colmap(h, h->map_col_to_list0, list, sidx, ref1sidx, 0);
-        if(FRAME_MBAFF)
+        if (FRAME_MBAFF(h))
         for(field=0; field<2; field++)
             fill_colmap(h, h->map_col_to_list0_field[field], list, field, field, 1);
     }
@@ -496,7 +496,7 @@ single_col:
         const int *dist_scale_factor = h->dist_scale_factor;
         int ref_offset;
 
-        if(FRAME_MBAFF && IS_INTERLACED(*mb_type)){
+        if (FRAME_MBAFF(h) && IS_INTERLACED(*mb_type)) {
             map_col_to_list0[0] = h->map_col_to_list0_field[h->mb_y&1][0];
             map_col_to_list0[1] = h->map_col_to_list0_field[h->mb_y&1][1];
             dist_scale_factor   =h->dist_scale_factor_field[h->mb_y&1];

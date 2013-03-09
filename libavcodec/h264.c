@@ -118,7 +118,7 @@ static void h264_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, ref, 1);
     fill_rectangle(h->mv_cache[0][scan8[0]], 4, 4, 8,
                    pack16to32((*mv)[0][0][0], (*mv)[0][0][1]), 4);
-    assert(!FRAME_MBAFF);
+    assert(!FRAME_MBAFF(h));
     ff_h264_hl_decode_mb(h);
 }
 
@@ -2048,7 +2048,7 @@ static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y,
     src_cb -= uvlinesize;
     src_cr -= uvlinesize;
 
-    if (!simple && FRAME_MBAFF) {
+    if (!simple && FRAME_MBAFF(h)) {
         if (h->mb_y & 1) {
             if (!MB_MBAFF(h)) {
                 top_border = h->top_borders[0][h->mb_x];
@@ -2141,7 +2141,7 @@ static av_always_inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
     uint8_t *top_border_m1;
     uint8_t *top_border;
 
-    if (!simple && FRAME_MBAFF) {
+    if (!simple && FRAME_MBAFF(h)) {
         if (h->mb_y & 1) {
             if (!MB_MBAFF(h))
                 return;
@@ -2533,7 +2533,7 @@ static void implicit_weight_table(H264Context *h, int field)
         } else {
             cur_poc = h->cur_pic_ptr->field_poc[h->picture_structure - 1];
         }
-        if (h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF &&
+        if (h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF(h) &&
             h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2 * cur_poc) {
             h->use_weight = 0;
             h->use_weight_chroma = 0;
@@ -3563,7 +3563,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         (h->avctx->err_recognition & AV_EF_EXPLODE))
         return AVERROR_INVALIDDATA;
 
-    if (FRAME_MBAFF) {
+    if (FRAME_MBAFF(h)) {
         ff_h264_fill_mbaff_ref_list(h);
 
         if (h->pps.weighted_bipred_idc == 2 && h->slice_type_nos == AV_PICTURE_TYPE_B) {
@@ -3843,7 +3843,7 @@ static int fill_filter_caches(H264Context *h, int mb_type)
      * stuff, I can't imagine that these complex rules are worth it. */
 
     left_xy[LBOT] = left_xy[LTOP] = mb_xy - 1;
-    if (FRAME_MBAFF) {
+    if (FRAME_MBAFF(h)) {
         const int left_mb_field_flag = IS_INTERLACED(h->cur_pic.mb_type[mb_xy - 1]);
         const int curr_mb_field_flag = IS_INTERLACED(mb_type);
         if (h->mb_y & 1) {
@@ -3872,7 +3872,7 @@ static int fill_filter_caches(H264Context *h, int mb_type)
              ((qp + h->cur_pic.qscale_table[left_xy[LTOP]] + 1) >> 1) <= qp_thresh) &&
             (top_xy < 0 ||
              ((qp + h->cur_pic.qscale_table[top_xy] + 1) >> 1) <= qp_thresh)) {
-            if (!FRAME_MBAFF)
+            if (!FRAME_MBAFF(h))
                 return 1;
             if ((left_xy[LTOP] < 0 ||
                  ((qp + h->cur_pic.qscale_table[left_xy[LBOT]] + 1) >> 1) <= qp_thresh) &&
@@ -3978,21 +3978,21 @@ static void loop_filter(H264Context *h, int start_x, int end_x)
 {
     uint8_t *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize, mb_x, mb_y;
-    const int end_mb_y       = h->mb_y + FRAME_MBAFF;
+    const int end_mb_y       = h->mb_y + FRAME_MBAFF(h);
     const int old_slice_type = h->slice_type;
     const int pixel_shift    = h->pixel_shift;
     const int block_h        = 16 >> h->chroma_y_shift;
 
     if (h->deblocking_filter) {
         for (mb_x = start_x; mb_x < end_x; mb_x++)
-            for (mb_y = end_mb_y - FRAME_MBAFF; mb_y <= end_mb_y; mb_y++) {
+            for (mb_y = end_mb_y - FRAME_MBAFF(h); mb_y <= end_mb_y; mb_y++) {
                 int mb_xy, mb_type;
                 mb_xy         = h->mb_xy = mb_x + mb_y * h->mb_stride;
                 h->slice_num  = h->slice_table[mb_xy];
                 mb_type       = h->cur_pic.mb_type[mb_xy];
                 h->list_count = h->list_counts[mb_xy];
 
-                if (FRAME_MBAFF)
+                if (FRAME_MBAFF(h))
                     h->mb_mbaff               =
                     h->mb_field_decoding_flag = !!IS_INTERLACED(mb_type);
 
@@ -4027,7 +4027,7 @@ static void loop_filter(H264Context *h, int start_x, int end_x)
                 h->chroma_qp[0] = get_chroma_qp(h, 0, h->cur_pic.qscale_table[mb_xy]);
                 h->chroma_qp[1] = get_chroma_qp(h, 1, h->cur_pic.qscale_table[mb_xy]);
 
-                if (FRAME_MBAFF) {
+                if (FRAME_MBAFF(h)) {
                     ff_h264_filter_mb(h, mb_x, mb_y, dest_y, dest_cb, dest_cr,
                                       linesize, uvlinesize);
                 } else {
@@ -4038,7 +4038,7 @@ static void loop_filter(H264Context *h, int start_x, int end_x)
     }
     h->slice_type   = old_slice_type;
     h->mb_x         = end_x;
-    h->mb_y         = end_mb_y - FRAME_MBAFF;
+    h->mb_y         = end_mb_y - FRAME_MBAFF(h);
     h->chroma_qp[0] = get_chroma_qp(h, 0, h->qscale);
     h->chroma_qp[1] = get_chroma_qp(h, 1, h->qscale);
 }
@@ -4060,8 +4060,8 @@ static void decode_finish_row(H264Context *h)
 {
     int top            = 16 * (h->mb_y      >> FIELD_PICTURE);
     int pic_height     = 16 *  h->mb_height >> FIELD_PICTURE;
-    int height         =  16      << FRAME_MBAFF;
-    int deblock_border = (16 + 4) << FRAME_MBAFF;
+    int height         =  16      << FRAME_MBAFF(h);
+    int deblock_border = (16 + 4) << FRAME_MBAFF(h);
 
     if (h->deblocking_filter) {
         if ((top + height) >= pic_height)
@@ -4103,7 +4103,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
 
     h->mb_skip_run = -1;
 
-    h->is_complex = FRAME_MBAFF || h->picture_structure != PICT_FRAME ||
+    h->is_complex = FRAME_MBAFF(h) || h->picture_structure != PICT_FRAME ||
                     avctx->codec_id != AV_CODEC_ID_H264 ||
                     (CONFIG_GRAY && (h->flags & CODEC_FLAG_GRAY));
 
@@ -4129,7 +4129,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 ff_h264_hl_decode_mb(h);
 
             // FIXME optimal? or let mb_decode decode 16x32 ?
-            if (ret >= 0 && FRAME_MBAFF) {
+            if (ret >= 0 && FRAME_MBAFF(h)) {
                 h->mb_y++;
 
                 ret = ff_h264_decode_mb_cabac(h);
@@ -4165,7 +4165,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 ++h->mb_y;
                 if (FIELD_OR_MBAFF_PICTURE) {
                     ++h->mb_y;
-                    if (FRAME_MBAFF && h->mb_y < h->mb_height)
+                    if (FRAME_MBAFF(h) && h->mb_y < h->mb_height)
                         predict_field_decoding_flag(h);
                 }
             }
@@ -4188,7 +4188,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 ff_h264_hl_decode_mb(h);
 
             // FIXME optimal? or let mb_decode decode 16x32 ?
-            if (ret >= 0 && FRAME_MBAFF) {
+            if (ret >= 0 && FRAME_MBAFF(h)) {
                 h->mb_y++;
                 ret = ff_h264_decode_mb_cavlc(h);
 
@@ -4212,7 +4212,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg)
                 ++h->mb_y;
                 if (FIELD_OR_MBAFF_PICTURE) {
                     ++h->mb_y;
-                    if (FRAME_MBAFF && h->mb_y < h->mb_height)
+                    if (FRAME_MBAFF(h) && h->mb_y < h->mb_height)
                         predict_field_decoding_flag(h);
                 }
                 if (h->mb_y >= h->mb_height) {
