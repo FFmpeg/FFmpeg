@@ -98,7 +98,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (desc->flags & (PIX_FMT_PAL || PIX_FMT_PSEUDOPAL)) {
+    if (desc->flags & (PIX_FMT_PAL | PIX_FMT_PSEUDOPAL)) {
         context->palette = av_buffer_alloc(AVPALETTE_SIZE);
         if (!context->palette)
             return AVERROR(ENOMEM);
