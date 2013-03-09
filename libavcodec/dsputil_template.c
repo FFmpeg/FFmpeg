@@ -107,7 +107,9 @@ DCTELEM_FUNCS(int16_t, _16)
 DCTELEM_FUNCS(dctcoef, _32)
 #endif
 
+#if BIT_DEPTH == 8
 #include "hpel_template.c"
+#endif
 
 #define PIXOP2(OPNAME, OP) \
 static inline void FUNC(OPNAME ## _no_rnd_pixels8_l2)(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, \
@@ -420,17 +422,3 @@ PIXOP2(put, op_put)
 #endif
 #undef op_avg
 #undef op_put
-
-void FUNCC(ff_put_pixels8x8)(uint8_t *dst, uint8_t *src, int stride) {
-    FUNCC(put_pixels8)(dst, src, stride, 8);
-}
-void FUNCC(ff_avg_pixels8x8)(uint8_t *dst, uint8_t *src, int stride) {
-    FUNCC(avg_pixels8)(dst, src, stride, 8);
-}
-void FUNCC(ff_put_pixels16x16)(uint8_t *dst, uint8_t *src, int stride) {
-    FUNCC(put_pixels16)(dst, src, stride, 16);
-}
-void FUNCC(ff_avg_pixels16x16)(uint8_t *dst, uint8_t *src, int stride) {
-    FUNCC(avg_pixels16)(dst, src, stride, 16);
-}
-

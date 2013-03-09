@@ -1297,12 +1297,25 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #undef op_put
 #undef op_put_no_rnd
 
+void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride) {
+  put_pixels8_8_c(dst, src, stride, 8);
+}
+void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride) {
+  avg_pixels8_8_c(dst, src, stride, 8);
+}
+void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride) {
+  put_pixels16_8_c(dst, src, stride, 16);
+}
+void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride) {
+  avg_pixels16_8_c(dst, src, stride, 16);
+}
+
 #define put_qpel8_mc00_c  ff_put_pixels8x8_c
 #define avg_qpel8_mc00_c  ff_avg_pixels8x8_c
 #define put_qpel16_mc00_c ff_put_pixels16x16_c
 #define avg_qpel16_mc00_c ff_avg_pixels16x16_c
 #define put_no_rnd_qpel8_mc00_c  ff_put_pixels8x8_c
-#define put_no_rnd_qpel16_mc00_c ff_put_pixels16x16_8_c
+#define put_no_rnd_qpel16_mc00_c ff_put_pixels16x16_c
 
 static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;

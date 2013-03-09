@@ -49,22 +49,10 @@ extern const uint8_t ff_zigzag248_direct[64];
 extern uint32_t ff_squareTbl[512];
 extern const uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
-#define PUTAVG_PIXELS(depth)\
-void ff_put_pixels8x8_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\
-void ff_avg_pixels8x8_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\
-void ff_put_pixels16x16_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);\
-void ff_avg_pixels16x16_ ## depth ## _c(uint8_t *dst, uint8_t *src, int stride);
-
-PUTAVG_PIXELS( 8)
-PUTAVG_PIXELS( 9)
-PUTAVG_PIXELS(10)
-PUTAVG_PIXELS(12)
-PUTAVG_PIXELS(14)
-
-#define ff_put_pixels8x8_c ff_put_pixels8x8_8_c
-#define ff_avg_pixels8x8_c ff_avg_pixels8x8_8_c
-#define ff_put_pixels16x16_c ff_put_pixels16x16_8_c
-#define ff_avg_pixels16x16_c ff_avg_pixels16x16_8_c
+void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
 
 /* RV40 functions */
 void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);

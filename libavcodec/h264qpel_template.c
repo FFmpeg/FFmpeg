@@ -531,30 +531,3 @@ H264_MC(avg_, 16)
 #undef op_put
 #undef op2_avg
 #undef op2_put
-
-#if BIT_DEPTH == 8
-#   define put_h264_qpel8_mc00_8_c  ff_put_pixels8x8_8_c
-#   define avg_h264_qpel8_mc00_8_c  ff_avg_pixels8x8_8_c
-#   define put_h264_qpel16_mc00_8_c ff_put_pixels16x16_8_c
-#   define avg_h264_qpel16_mc00_8_c ff_avg_pixels16x16_8_c
-#elif BIT_DEPTH == 9
-#   define put_h264_qpel8_mc00_9_c  ff_put_pixels8x8_9_c
-#   define avg_h264_qpel8_mc00_9_c  ff_avg_pixels8x8_9_c
-#   define put_h264_qpel16_mc00_9_c ff_put_pixels16x16_9_c
-#   define avg_h264_qpel16_mc00_9_c ff_avg_pixels16x16_9_c
-#elif BIT_DEPTH == 10
-#   define put_h264_qpel8_mc00_10_c  ff_put_pixels8x8_10_c
-#   define avg_h264_qpel8_mc00_10_c  ff_avg_pixels8x8_10_c
-#   define put_h264_qpel16_mc00_10_c ff_put_pixels16x16_10_c
-#   define avg_h264_qpel16_mc00_10_c ff_avg_pixels16x16_10_c
-#elif BIT_DEPTH == 12
-#   define put_h264_qpel8_mc00_12_c  ff_put_pixels8x8_12_c
-#   define avg_h264_qpel8_mc00_12_c  ff_avg_pixels8x8_12_c
-#   define put_h264_qpel16_mc00_12_c ff_put_pixels16x16_12_c
-#   define avg_h264_qpel16_mc00_12_c ff_avg_pixels16x16_12_c
-#elif BIT_DEPTH == 14
-#   define put_h264_qpel8_mc00_14_c  ff_put_pixels8x8_14_c
-#   define avg_h264_qpel8_mc00_14_c  ff_avg_pixels8x8_14_c
-#   define put_h264_qpel16_mc00_14_c ff_put_pixels16x16_14_c
-#   define avg_h264_qpel16_mc00_14_c ff_avg_pixels16x16_14_c
-#endif
