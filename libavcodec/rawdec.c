@@ -147,12 +147,6 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         avctx->codec_tag == MKTAG('W','R','A','W'))
         context->flip = 1;
 
-    if (avctx->field_order > AV_FIELD_PROGRESSIVE) { /*we have interlaced material flagged in container */
-        avctx->coded_frame->interlaced_frame = 1;
-        if (avctx->field_order == AV_FIELD_TT  || avctx->field_order == AV_FIELD_TB)
-            avctx->coded_frame->top_field_first = 1;
-    }
-
     if (avctx->codec_tag == AV_RL32("yuv2") &&
         avctx->pix_fmt   == AV_PIX_FMT_YUYV422)
         context->is_yuv2 = 1;
@@ -323,6 +317,12 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 FFSWAP(uint8_t, line[2*x + 1], line[2*x + 3]);
             line += picture->linesize[0];
         }
+    }
+
+    if (avctx->field_order > AV_FIELD_PROGRESSIVE) { /* we have interlaced material flagged in container */
+        frame->interlaced_frame = 1;
+        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
+            frame->top_field_first = 1;
     }
 
     *got_frame = 1;
