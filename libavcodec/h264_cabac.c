@@ -2088,7 +2088,7 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     if(IS_DIRECT(h->sub_mb_type[i])) continue;
                     if(IS_DIR(h->sub_mb_type[i], 0, list)){
-                        int rc = h->ref_count[list] << MB_MBAFF;
+                        int rc = h->ref_count[list] << MB_MBAFF(h);
                         if (rc > 1) {
                             ref[list][i] = decode_cabac_mb_ref( h, list, 4*i );
                             if (ref[list][i] >= (unsigned) rc) {
@@ -2174,7 +2174,7 @@ decode_intra_mb:
         if(IS_16X16(mb_type)){
             for(list=0; list<h->list_count; list++){
                 if(IS_DIR(mb_type, 0, list)){
-                    int ref, rc = h->ref_count[list] << MB_MBAFF;
+                    int ref, rc = h->ref_count[list] << MB_MBAFF(h);
                     if (rc > 1) {
                         ref= decode_cabac_mb_ref(h, list, 0);
                         if (ref >= (unsigned) rc) {
@@ -2202,7 +2202,7 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){
-                            int ref, rc = h->ref_count[list] << MB_MBAFF;
+                            int ref, rc = h->ref_count[list] << MB_MBAFF(h);
                             if (rc > 1) {
                                 ref= decode_cabac_mb_ref( h, list, 8*i );
                                 if (ref >= (unsigned) rc) {
@@ -2237,7 +2237,7 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     for(i=0; i<2; i++){
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            int ref, rc = h->ref_count[list] << MB_MBAFF;
+                            int ref, rc = h->ref_count[list] << MB_MBAFF(h);
                             if (rc > 1) {
                                 ref= decode_cabac_mb_ref( h, list, 4*i );
                                 if (ref >= (unsigned) rc) {

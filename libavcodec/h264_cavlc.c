@@ -856,7 +856,7 @@ decode_intra_mb:
         }
 
         for(list=0; list<h->list_count; list++){
-            int ref_count = IS_REF0(mb_type) ? 1 : h->ref_count[list] << MB_MBAFF;
+            int ref_count = IS_REF0(mb_type) ? 1 : h->ref_count[list] << MB_MBAFF(h);
             for(i=0; i<4; i++){
                 if(IS_DIRECT(h->sub_mb_type[i])) continue;
                 if(IS_DIR(h->sub_mb_type[i], 0, list)){
@@ -936,7 +936,7 @@ decode_intra_mb:
             for(list=0; list<h->list_count; list++){
                     unsigned int val;
                     if(IS_DIR(mb_type, 0, list)){
-                        int rc = h->ref_count[list] << MB_MBAFF;
+                        int rc = h->ref_count[list] << MB_MBAFF(h);
                         if (rc == 1) {
                             val= 0;
                         } else if (rc == 2) {
@@ -967,7 +967,7 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){
-                            int rc = h->ref_count[list] << MB_MBAFF;
+                            int rc = h->ref_count[list] << MB_MBAFF(h);
                             if (rc == 1) {
                                 val= 0;
                             } else if (rc == 2) {
@@ -1005,7 +1005,7 @@ decode_intra_mb:
                     for(i=0; i<2; i++){
                         unsigned int val;
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
-                            int rc = h->ref_count[list] << MB_MBAFF;
+                            int rc = h->ref_count[list] << MB_MBAFF(h);
                             if (rc == 1) {
                                 val= 0;
                             } else if (rc == 2) {

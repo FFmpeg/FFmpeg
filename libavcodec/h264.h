@@ -59,7 +59,7 @@
 #define MAX_SLICES 16
 
 #ifdef ALLOW_INTERLACE
-#define MB_MBAFF    h->mb_mbaff
+#define MB_MBAFF(h)    h->mb_mbaff
 #define MB_FIELD    h->mb_field_decoding_flag
 #define FRAME_MBAFF h->mb_aff_frame
 #define FIELD_PICTURE (h->picture_structure != PICT_FRAME)
@@ -68,7 +68,7 @@
 #define LBOT     1
 #define LEFT(i)  (i)
 #else
-#define MB_MBAFF      0
+#define MB_MBAFF(h)      0
 #define MB_FIELD      0
 #define FRAME_MBAFF   0
 #define FIELD_PICTURE 0
