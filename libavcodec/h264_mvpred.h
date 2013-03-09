@@ -556,7 +556,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 nnz = h->non_zero_count[left_xy[LEFT(i)]];
                 nnz_cache[3 + 8 * 1 + 2 * 8 * i] = nnz[left_block[8 + 0 + 2 * i]];
                 nnz_cache[3 + 8 * 2 + 2 * 8 * i] = nnz[left_block[8 + 1 + 2 * i]];
-                if (CHROMA444) {
+                if (CHROMA444(h)) {
                     nnz_cache[3 + 8 *  6 + 2 * 8 * i] = nnz[left_block[8 + 0 + 2 * i] + 4 * 4];
                     nnz_cache[3 + 8 *  7 + 2 * 8 * i] = nnz[left_block[8 + 1 + 2 * i] + 4 * 4];
                     nnz_cache[3 + 8 * 11 + 2 * 8 * i] = nnz[left_block[8 + 0 + 2 * i] + 8 * 4];

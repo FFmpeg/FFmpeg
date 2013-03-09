@@ -2041,7 +2041,7 @@ static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y,
     uint8_t *top_border;
     int top_idx = 1;
     const int pixel_shift = h->pixel_shift;
-    int chroma444 = CHROMA444;
+    int chroma444 = CHROMA444(h);
     int chroma422 = CHROMA422(h);
 
     src_y  -= linesize;
@@ -2438,7 +2438,7 @@ void ff_h264_hl_decode_mb(H264Context *h)
     const int mb_type = h->cur_pic.mb_type[mb_xy];
     int is_complex    = CONFIG_SMALL || h->is_complex || IS_INTRA_PCM(mb_type) || h->qscale == 0;
 
-    if (CHROMA444) {
+    if (CHROMA444(h)) {
         if (is_complex || h->pixel_shift)
             hl_decode_mb_444_complex(h);
         else
@@ -2926,7 +2926,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
 {
     switch (h->sps.bit_depth_luma) {
     case 9:
-        if (CHROMA444) {
+        if (CHROMA444(h)) {
             if (h->avctx->colorspace == AVCOL_SPC_RGB) {
                 return AV_PIX_FMT_GBRP9;
             } else
@@ -2937,7 +2937,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
             return AV_PIX_FMT_YUV420P9;
         break;
     case 10:
-        if (CHROMA444) {
+        if (CHROMA444(h)) {
             if (h->avctx->colorspace == AVCOL_SPC_RGB) {
                 return AV_PIX_FMT_GBRP10;
             } else
@@ -2948,7 +2948,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h)
             return AV_PIX_FMT_YUV420P10;
         break;
     case 8:
-        if (CHROMA444) {
+        if (CHROMA444(h)) {
             if (h->avctx->colorspace == AVCOL_SPC_RGB) {
                 return AV_PIX_FMT_GBRP;
             } else
@@ -3190,7 +3190,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     h->chroma_y_shift = h->sps.chroma_format_idc <= 1; // 400 uses yuv420p
 
-    h->width = 16 * h->mb_width - (2 >> CHROMA444) * FFMIN(h->sps.crop_right, (8 << CHROMA444) - 1);
+    h->width = 16 * h->mb_width - (2 >> CHROMA444(h)) * FFMIN(h->sps.crop_right, (8 << CHROMA444(h)) - 1);
     if (h->sps.frame_mbs_only_flag)
         h->height = 16 * h->mb_height - (1 << h->chroma_y_shift) * FFMIN(h->sps.crop_bottom, (16 >> h->chroma_y_shift) - 1);
     else
@@ -4001,10 +4001,10 @@ static void loop_filter(H264Context *h, int start_x, int end_x)
                 dest_y  = h->cur_pic.f.data[0] +
                           ((mb_x << pixel_shift) + mb_y * h->linesize) * 16;
                 dest_cb = h->cur_pic.f.data[1] +
-                          (mb_x << pixel_shift) * (8 << CHROMA444) +
+                          (mb_x << pixel_shift) * (8 << CHROMA444(h)) +
                           mb_y * h->uvlinesize * block_h;
                 dest_cr = h->cur_pic.f.data[2] +
-                          (mb_x << pixel_shift) * (8 << CHROMA444) +
+                          (mb_x << pixel_shift) * (8 << CHROMA444(h)) +
                           mb_y * h->uvlinesize * block_h;
                 // FIXME simplify above
 

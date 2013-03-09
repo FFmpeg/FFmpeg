@@ -1812,7 +1812,7 @@ static av_always_inline void decode_cabac_residual_nondc(H264Context *h,
                                                          int max_coeff)
 {
     /* read coded block flag */
-    if( (cat != 5 || CHROMA444) && get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx( h, cat, n, max_coeff, 0 ) ] ) == 0 ) {
+    if( (cat != 5 || CHROMA444(h)) && get_cabac( &h->cabac, &h->cabac_state[get_cabac_cbf_ctx( h, cat, n, max_coeff, 0 ) ] ) == 0 ) {
         if( max_coeff == 64 ) {
             fill_rectangle(&h->non_zero_count_cache[scan8[n]], 2, 2, 8, 0, 1);
         } else {
@@ -2289,7 +2289,7 @@ decode_intra_mb:
 
     /* It would be better to do this in fill_decode_caches, but we don't know
      * the transform mode of the current macroblock there. */
-    if (CHROMA444 && IS_8x8DCT(mb_type)){
+    if (CHROMA444(h) && IS_8x8DCT(mb_type)){
         int i;
         uint8_t *nnz_cache = h->non_zero_count_cache;
         for (i = 0; i < 2; i++){
@@ -2354,7 +2354,7 @@ decode_intra_mb:
             h->last_qscale_diff=0;
 
         decode_cabac_luma_residual(h, scan, scan8x8, pixel_shift, mb_type, cbp, 0);
-        if(CHROMA444){
+        if (CHROMA444(h)) {
             decode_cabac_luma_residual(h, scan, scan8x8, pixel_shift, mb_type, cbp, 1);
             decode_cabac_luma_residual(h, scan, scan8x8, pixel_shift, mb_type, cbp, 2);
         } else if (CHROMA422(h)) {
