@@ -1,4 +1,4 @@
-FATE_SAMPLES_DEMUX += fate-avio-direct
+FATE_SAMPLES_DEMUX-$(call DEMDEC, AVI, FRAPS) += fate-avio-direct
 fate-avio-direct: CMD = framecrc -avioflags direct -i $(SAMPLES)/fraps/fraps-v5-bouncing-balls-partial.avi -avioflags direct
 
 FATE_SAMPLES_DEMUX-$(CONFIG_AAC_DEMUXER) += fate-adts-demux

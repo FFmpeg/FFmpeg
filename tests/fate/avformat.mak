@@ -52,7 +52,8 @@ FATE_LAVF-$(call ENCDEC,  XWD,                   IMAGE2)             += xwd
 FATE_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                               += yuv4mpeg
 
 FATE_LAVF += $(FATE_LAVF-yes:%=fate-lavf-%)
-FATE_LAVF += fate-lavf-pixfmt
+FATE_LAVF_PIXFMT-$(CONFIG_SCALE_FILTER) += fate-lavf-pixfmt
+FATE_LAVF += $(FATE_LAVF_PIXFMT-yes)
 
 $(FATE_LAVF): $(AREF) $(VREF)
 $(FATE_LAVF): CMD = lavftest
