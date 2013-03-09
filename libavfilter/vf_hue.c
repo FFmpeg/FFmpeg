@@ -287,12 +287,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
         direct = 1;
         outpic = inpic;
     } else {
-    outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!outpic) {
-        av_frame_free(&inpic);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(outpic, inpic);
+        outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!outpic) {
+            av_frame_free(&inpic);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(outpic, inpic);
     }
 
     if (!hue->flat_syntax) {
@@ -328,9 +328,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     hue->var_values[VAR_N] += 1;
 
     if (!direct)
-    av_image_copy_plane(outpic->data[0], outpic->linesize[0],
-                        inpic->data[0],  inpic->linesize[0],
-                        inlink->w, inlink->h);
+        av_image_copy_plane(outpic->data[0], outpic->linesize[0],
+                            inpic->data[0],  inpic->linesize[0],
+                            inlink->w, inlink->h);
 
     process_chrominance(outpic->data[1], outpic->data[2], outpic->linesize[1],
                         inpic->data[1],  inpic->data[2],  inpic->linesize[1],
@@ -338,7 +338,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
                         hue->hue_cos, hue->hue_sin);
 
     if (!direct)
-    av_frame_free(&inpic);
+        av_frame_free(&inpic);
     return ff_filter_frame(outlink, outpic);
 }
 
