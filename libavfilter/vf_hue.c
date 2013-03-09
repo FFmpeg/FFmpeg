@@ -281,13 +281,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     HueContext *hue = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outpic;
+    int direct = 0;
 
+    if (av_frame_is_writable(inpic)) {
+        direct = 1;
+        outpic = inpic;
+    } else {
     outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {
         av_frame_free(&inpic);
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(outpic, inpic);
+    }
 
     if (!hue->flat_syntax) {
         hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
@@ -321,6 +327,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     hue->var_values[VAR_N] += 1;
 
+    if (!direct)
     av_image_copy_plane(outpic->data[0], outpic->linesize[0],
                         inpic->data[0],  inpic->linesize[0],
                         inlink->w, inlink->h);
@@ -330,6 +337,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
                         inlink->w >> hue->hsub, inlink->h >> hue->vsub,
                         hue->hue_cos, hue->hue_sin);
 
+    if (!direct)
     av_frame_free(&inpic);
     return ff_filter_frame(outlink, outpic);
 }
