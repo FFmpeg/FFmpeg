@@ -194,6 +194,7 @@ int av_frame_ref(AVFrame *dst, AVFrame *src)
     dst->format         = src->format;
     dst->width          = src->width;
     dst->height         = src->height;
+    dst->channels       = src->channels;
     dst->channel_layout = src->channel_layout;
     dst->nb_samples     = src->nb_samples;
 
