@@ -76,3 +76,4 @@ YASM-OBJS                              += x86/dsputil.o                 \
                                           x86/fmtconvert.o              \
                                           x86/hpeldsp.o                 \
                                           x86/mpeg4qpel.o               \
+                                          x86/qpel.o                    \
