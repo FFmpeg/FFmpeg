@@ -79,7 +79,7 @@
 #define LBOT     0
 #define LEFT(i)  0
 #endif
-#define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF(h) || FIELD_PICTURE(h))
+#define FIELD_OR_MBAFF_PICTURE(h) (FRAME_MBAFF(h) || FIELD_PICTURE(h))
 
 #ifndef CABAC
 #define CABAC h->pps.cabac
