@@ -1707,6 +1707,7 @@ static int vorbis_decode_frame(AVCodecContext *avctx, void *data,
     if (!vc->first_frame) {
         vc->first_frame = 1;
         *got_frame_ptr = 0;
+        av_frame_unref(frame);
         return buf_size;
     }
 
