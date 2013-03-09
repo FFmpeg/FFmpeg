@@ -85,7 +85,8 @@ int av_audio_fifo_realloc(AVAudioFifo *af, int nb_samples);
  * @param data        audio data plane pointers
  * @param nb_samples  number of samples to write
  * @return            number of samples actually written, or negative AVERROR
- *                    code on failure.
+ *                    code on failure. If successful, the number of samples
+ *                    actually written will always be nb_samples.
  */
 int av_audio_fifo_write(AVAudioFifo *af, void **data, int nb_samples);
 
@@ -99,7 +100,9 @@ int av_audio_fifo_write(AVAudioFifo *af, void **data, int nb_samples);
  * @param data        audio data plane pointers
  * @param nb_samples  number of samples to read
  * @return            number of samples actually read, or negative AVERROR code
- *                    on failure.
+ *                    on failure. The number of samples actually read will not
+ *                    be greater than nb_samples, and will only be less than
+ *                    nb_samples if av_audio_fifo_size is less than nb_samples.
  */
 int av_audio_fifo_read(AVAudioFifo *af, void **data, int nb_samples);
 
