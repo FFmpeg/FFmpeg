@@ -163,7 +163,7 @@ static int read_header(AVFormatContext *s)
     return 0;
 
 invalid:
-    av_log_ask_for_sample(s, NULL);
+    av_log_ask_for_sample(s, "Invalid header element encountered.\n");
     return AVERROR_PATCHWELCOME;
 }
 

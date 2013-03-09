@@ -3356,9 +3356,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                         h->droppable         = last_pic_droppable;
                         return AVERROR_INVALIDDATA;
                     } else if (last_pic_droppable != h->droppable) {
-                        av_log(h->avctx, AV_LOG_ERROR,
-                               "Cannot combine reference and non-reference fields in the same frame\n");
-                        av_log_ask_for_sample(h->avctx, NULL);
+                        av_log_ask_for_sample(h->avctx,
+                                              "Found reference and non-reference fields in the same frame.\n");
                         h->picture_structure = last_pic_structure;
                         h->droppable         = last_pic_droppable;
                         return AVERROR_PATCHWELCOME;

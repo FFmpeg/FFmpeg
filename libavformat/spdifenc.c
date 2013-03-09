@@ -412,8 +412,7 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
     if (pkt->size > TRUEHD_FRAME_OFFSET - mat_code_length) {
         /* if such frames exist, we'd need some more complex logic to
          * distribute the TrueHD frames in the MAT frame */
-        av_log(s, AV_LOG_ERROR, "TrueHD frame too big, %d bytes\n", pkt->size);
-        av_log_ask_for_sample(s, NULL);
+        av_log_ask_for_sample(s, "TrueHD frame too big, %d bytes\n", pkt->size);
         return AVERROR_PATCHWELCOME;
     }
 
