@@ -226,7 +226,9 @@ static int config_output(AVFilterLink *outlink)
         if (!outpicref)
             return AVERROR(ENOMEM);
         outlink->sample_aspect_ratio = (AVRational){1,1};
-        memset(outpicref->data[0], 0, outlink->h * outpicref->linesize[0]);
+        memset(outpicref->data[0],   0, outlink->h * outpicref->linesize[0]);
+        memset(outpicref->data[1], 128, outlink->h * outpicref->linesize[1]);
+        memset(outpicref->data[2], 128, outlink->h * outpicref->linesize[2]);
     }
 
     if (showspectrum->xpos >= outlink->w)
