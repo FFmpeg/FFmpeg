@@ -1595,7 +1595,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
         context_reinitialized = 1;
 
         /* update linesize on resize. The decoder doesn't
-         * necessarily call ff_h264_frame_start in the new thread */
+         * necessarily call h264_frame_start in the new thread */
         h->linesize   = h1->linesize;
         h->uvlinesize = h1->uvlinesize;
 
@@ -1738,7 +1738,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
     return err;
 }
 
-int ff_h264_frame_start(H264Context *h)
+static int h264_frame_start(H264Context *h)
 {
     Picture *pic;
     int i, ret;
@@ -3377,7 +3377,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             Picture *prev = h->short_ref_count ? h->short_ref[0] : NULL;
             av_log(h->avctx, AV_LOG_DEBUG, "Frame num gap %d %d\n",
                    h->frame_num, h->prev_frame_num);
-            if (ff_h264_frame_start(h) < 0)
+            if (h264_frame_start(h) < 0)
                 return -1;
             h->prev_frame_num++;
             h->prev_frame_num %= 1 << h->sps.log2_max_frame_num;
@@ -3439,7 +3439,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         }
 
         if (!FIELD_PICTURE || h0->first_field) {
-            if (ff_h264_frame_start(h) < 0) {
+            if (h264_frame_start(h) < 0) {
                 h0->first_field = 0;
                 return -1;
             }
