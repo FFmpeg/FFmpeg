@@ -65,7 +65,8 @@ YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
 YASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o          \
                                           x86/h264_intrapred_10bit.o
 YASM-OBJS-$(CONFIG_H264QPEL)           += x86/h264_qpel_8bit.o          \
-                                          x86/h264_qpel_10bit.o
+                                          x86/h264_qpel_10bit.o         \
+                                          x86/qpelbase.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36.o
 YASM-OBJS-$(CONFIG_PNG_DECODER)        += x86/pngdsp.o
 YASM-OBJS-$(CONFIG_PRORES_DECODER)     += x86/proresdsp.o
@@ -86,3 +87,4 @@ YASM-OBJS                              += x86/dsputil.o                 \
                                           x86/fmtconvert.o              \
                                           x86/hpeldsp.o                 \
                                           x86/mpeg4qpel.o               \
+                                          x86/qpelbase.o
