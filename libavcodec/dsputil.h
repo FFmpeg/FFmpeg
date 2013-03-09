@@ -32,6 +32,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "rnd_avg.h"
 
 
 //#define DEBUG
@@ -102,12 +103,6 @@ DEF_OLD_QPEL(qpel8_mc12_old_c)
 DEF_OLD_QPEL(qpel8_mc32_old_c)
 DEF_OLD_QPEL(qpel8_mc13_old_c)
 DEF_OLD_QPEL(qpel8_mc33_old_c)
-
-#define CALL_2X_PIXELS(a, b, n)\
-static void a(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){\
-    b(block  , pixels  , line_size, h);\
-    b(block+n, pixels+n, line_size, h);\
-}
 
 /* motion estimation */
 // h is limited to {width/2, width, 2*width} but never larger than 16 and never smaller than 2

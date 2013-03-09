@@ -1518,6 +1518,7 @@ CONFIG_EXTRA="
     h264dsp
     h264pred
     h264qpel
+    hpeldsp
     huffman
     lgplv3
     lpc
