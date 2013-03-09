@@ -213,7 +213,7 @@ int main(int argc, char **argv)
                 frame->pts = av_frame_get_best_effort_timestamp(frame);
 
                 /* push the decoded frame into the filtergraph */
-                if (av_buffersrc_add_frame(buffersrc_ctx, frame, 0) < 0) {
+                if (av_buffersrc_add_frame(buffersrc_ctx, frame) < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
                     break;
                 }
