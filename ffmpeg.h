@@ -255,7 +255,7 @@ typedef struct InputStream {
     struct sub2video {
         int64_t last_pts;
         int64_t end_pts;
-        AVFilterBufferRef *ref;
+        AVFrame *frame;
         int w, h;
     } sub2video;
 

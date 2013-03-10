@@ -501,9 +501,7 @@ int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOu
 static int sub2video_prepare(InputStream *ist)
 {
     AVFormatContext *avf = input_files[ist->file_index]->ctx;
-    int i, ret, w, h;
-    uint8_t *image[4];
-    int linesize[4];
+    int i, w, h;
 
     /* Compute the size of the canvas for the subtitles stream.
        If the subtitles codec has set a size, use it. Otherwise use the
@@ -530,17 +528,9 @@ static int sub2video_prepare(InputStream *ist)
        palettes for all rectangles are identical or compatible */
     ist->resample_pix_fmt = ist->st->codec->pix_fmt = AV_PIX_FMT_RGB32;
 
-    ret = av_image_alloc(image, linesize, w, h, AV_PIX_FMT_RGB32, 32);
-    if (ret < 0)
-        return ret;
-    memset(image[0], 0, h * linesize[0]);
-    ist->sub2video.ref = avfilter_get_video_buffer_ref_from_arrays(
-            image, linesize, AV_PERM_READ | AV_PERM_PRESERVE,
-            w, h, AV_PIX_FMT_RGB32);
-    if (!ist->sub2video.ref) {
-        av_free(image[0]);
+    ist->sub2video.frame = av_frame_alloc();
+    if (!ist->sub2video.frame)
         return AVERROR(ENOMEM);
-    }
     return 0;
 }
 

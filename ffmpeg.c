@@ -168,7 +168,20 @@ static int restore_tty;
    This is a temporary solution until libavfilter gets real subtitles support.
  */
 
+static int sub2video_get_blank_frame(InputStream *ist)
+{
+    int ret;
+    AVFrame *frame = ist->sub2video.frame;
 
+    av_frame_unref(frame);
+    ist->sub2video.frame->width  = ist->sub2video.w;
+    ist->sub2video.frame->height = ist->sub2video.h;
+    ist->sub2video.frame->format = AV_PIX_FMT_RGB32;
+    if ((ret = av_frame_get_buffer(frame, 32)) < 0)
+        return ret;
+    memset(frame->data[0], 0, frame->height * frame->linesize[0]);
+    return 0;
+}
 
 static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
                                 AVSubtitleRect *r)
@@ -201,28 +214,25 @@ static void sub2video_copy_rect(uint8_t *dst, int dst_linesize, int w, int h,
 
 static void sub2video_push_ref(InputStream *ist, int64_t pts)
 {
-    AVFilterBufferRef *ref = ist->sub2video.ref;
+    AVFrame *frame = ist->sub2video.frame;
     int i;
 
-    ist->sub2video.last_pts = ref->pts = pts;
+    av_assert1(frame->data[0]);
+    ist->sub2video.last_pts = frame->pts = pts;
     for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_add_ref(ist->filters[i]->filter,
-                             avfilter_ref_buffer(ref, ~0),
-                             AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT |
-                             AV_BUFFERSRC_FLAG_NO_COPY |
-                             AV_BUFFERSRC_FLAG_PUSH);
+        av_buffersrc_write_frame(ist->filters[i]->filter, frame);
 }
 
 static void sub2video_update(InputStream *ist, AVSubtitle *sub)
 {
     int w = ist->sub2video.w, h = ist->sub2video.h;
-    AVFilterBufferRef *ref = ist->sub2video.ref;
+    AVFrame *frame = ist->sub2video.frame;
     int8_t *dst;
     int     dst_linesize;
     int num_rects, i;
     int64_t pts, end_pts;
 
-    if (!ref)
+    if (!frame)
         return;
     if (sub) {
         pts       = av_rescale_q(sub->pts + sub->start_display_time * 1000,
@@ -235,9 +245,13 @@ static void sub2video_update(InputStream *ist, AVSubtitle *sub)
         end_pts   = INT64_MAX;
         num_rects = 0;
     }
-    dst          = ref->data    [0];
-    dst_linesize = ref->linesize[0];
-    memset(dst, 0, h * dst_linesize);
+    if (sub2video_get_blank_frame(ist) < 0) {
+        av_log(ist->st->codec, AV_LOG_ERROR,
+               "Impossible to get a blank canvas.\n");
+        return;
+    }
+    dst          = frame->data    [0];
+    dst_linesize = frame->linesize[0];
     for (i = 0; i < num_rects; i++)
         sub2video_copy_rect(dst, dst_linesize, w, h, sub->rects[i]);
     sub2video_push_ref(ist, pts);
@@ -256,7 +270,7 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
        (possibly overlay) is desperately waiting for a subtitle frame. */
     for (i = 0; i < infile->nb_streams; i++) {
         InputStream *ist2 = input_streams[infile->ist_index + i];
-        if (!ist2->sub2video.ref)
+        if (!ist2->sub2video.frame)
             continue;
         /* subtitles seem to be usually muxed ahead of other streams;
            if not, substracting a larger time here is necessary */
@@ -264,7 +278,7 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
         /* do not send the heartbeat frame if the subtitle is already ahead */
         if (pts2 <= ist2->sub2video.last_pts)
             continue;
-        if (pts2 >= ist2->sub2video.end_pts)
+        if (pts2 >= ist2->sub2video.end_pts || !ist2->sub2video.frame->data[0])
             sub2video_update(ist2, NULL);
         for (j = 0, nb_reqs = 0; j < ist2->nb_filters; j++)
             nb_reqs += av_buffersrc_get_nb_failed_requests(ist2->filters[j]->filter);
@@ -466,7 +480,7 @@ static void exit_program(void)
         av_dict_free(&input_streams[i]->opts);
         free_buffer_pool(&input_streams[i]->buffer_pool);
         avsubtitle_free(&input_streams[i]->prev_sub.subtitle);
-        avfilter_unref_bufferp(&input_streams[i]->sub2video.ref);
+        avcodec_free_frame(&input_streams[i]->sub2video.frame);
         av_freep(&input_streams[i]->filters);
         av_freep(&input_streams[i]);
     }
