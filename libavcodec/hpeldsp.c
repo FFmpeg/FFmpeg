@@ -55,8 +55,8 @@ av_cold void ff_hpeldsp_init(HpelDSPContext* c, int flags)
 
     if (ARCH_X86)        ff_hpeldsp_init_x86   (c, flags);
     if (ARCH_ARM)        ff_hpeldsp_init_arm   (c, flags);
-#if 0
     if (HAVE_VIS)        ff_hpeldsp_init_vis   (c, flags);
+#if 0
     if (ARCH_ALPHA)      ff_hpeldsp_init_alpha (c, flags);
 #endif
     if (ARCH_PPC)        ff_hpeldsp_init_ppc   (c, flags);
