@@ -47,7 +47,7 @@ typedef struct AVFrameSideData {
 /**
  * This structure describes decoded (raw) audio or video data.
  *
- * AVFrame must be allocated using av_frame_alloc(). Not that this only
+ * AVFrame must be allocated using av_frame_alloc(). Note that this only
  * allocates the AVFrame itself, the buffers for the data must be managed
  * through other means (see below).
  * AVFrame must be freed with av_frame_free().
