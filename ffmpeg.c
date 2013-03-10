@@ -220,7 +220,9 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
     av_assert1(frame->data[0]);
     ist->sub2video.last_pts = frame->pts = pts;
     for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_write_frame(ist->filters[i]->filter, frame);
+        av_buffersrc_add_frame_flags(ist->filters[i]->filter, frame,
+                                     AV_BUFFERSRC_FLAG_KEEP_REF |
+                                     AV_BUFFERSRC_FLAG_PUSH);
 }
 
 static void sub2video_update(InputStream *ist, AVSubtitle *sub)
@@ -1641,8 +1643,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
                                               (AVRational){1, ist->st->codec->sample_rate}, decoded_frame->nb_samples, &ist->filter_in_rescale_delta_last,
                                               (AVRational){1, ist->st->codec->sample_rate});
     for (i = 0; i < ist->nb_filters; i++)
-        av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame);
-        /* TODO re-add AV_BUFFERSRC_FLAG_PUSH */
+        av_buffersrc_add_frame_flags(ist->filters[i]->filter, decoded_frame,
+                                     AV_BUFFERSRC_FLAG_KEEP_REF |
+                                     AV_BUFFERSRC_FLAG_PUSH);
 
     decoded_frame->pts = AV_NOPTS_VALUE;
 
@@ -1751,8 +1754,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
                                  AV_BUFFERSRC_FLAG_NO_COPY |
                                  AV_BUFFERSRC_FLAG_PUSH);
         } else
-        if(av_buffersrc_write_frame(ist->filters[i]->filter, decoded_frame)<0) {
-            /* TODO add back AV_BUFFERSRC_FLAG_PUSH */
+        if(av_buffersrc_add_frame_flags(ist->filters[i]->filter, decoded_frame,
+                                        AV_BUFFERSRC_FLAG_KEEP_REF |
+                                        AV_BUFFERSRC_FLAG_PUSH)<0) {
             av_log(NULL, AV_LOG_FATAL, "Failed to inject frame into filter network\n");
             exit(1);
         }
