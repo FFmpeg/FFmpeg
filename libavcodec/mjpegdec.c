@@ -89,6 +89,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         s->picture_ptr = &s->picture;
 
     s->avctx = avctx;
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_dsputil_init(&s->dsp, avctx);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
     s->buffer_size   = 0;
@@ -858,7 +859,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                     ptr = data[c] + block_offset;
                     if (!s->progressive) {
                         if (copy_mb)
-                            s->dsp.put_pixels_tab[1][0](ptr,
+                            s->hdsp.put_pixels_tab[1][0](ptr,
                                 reference_data[c] + block_offset,
                                 linesize[c], 8);
                         else {
@@ -974,9 +975,9 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
 
             if (last_scan) {
                 if (copy_mb) {
-                    s->dsp.put_pixels_tab[1][0](ptr,
-                                                reference_data + block_offset,
-                                                linesize, 8);
+                    s->hdsp.put_pixels_tab[1][0](ptr,
+                                                 reference_data + block_offset,
+                                                 linesize, 8);
                 } else {
                     s->dsp.idct_put(ptr, linesize, *block);
                     ptr += 8;
