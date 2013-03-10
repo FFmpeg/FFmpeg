@@ -2623,8 +2623,9 @@ static void flush_dpb(AVCodecContext *avctx)
 
     flush_change(h);
 
-    for (i = 0; i < MAX_PICTURE_COUNT; i++)
-        unref_picture(h, &h->DPB[i]);
+    if (h->DPB)
+        for (i = 0; i < MAX_PICTURE_COUNT; i++)
+            unref_picture(h, &h->DPB[i]);
     h->cur_pic_ptr = NULL;
     unref_picture(h, &h->cur_pic);
 
