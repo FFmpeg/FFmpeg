@@ -33,6 +33,7 @@
 #include <io.h>
 #include <windows.h>
 #include <share.h>
+#include <errno.h>
 
 int ff_win32_open(const char *filename_utf8, int oflag, int pmode)
 {
@@ -41,20 +42,25 @@ int ff_win32_open(const char *filename_utf8, int oflag, int pmode)
     wchar_t *filename_w;
 
     /* convert UTF-8 to wide chars */
-    num_chars = MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, NULL, 0);
+    num_chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename_utf8, -1, NULL, 0);
     if (num_chars <= 0)
-        return -1;
+        goto fallback;
     filename_w = av_mallocz(sizeof(wchar_t) * num_chars);
+    if (!filename_w) {
+        errno = ENOMEM;
+        return -1;
+    }
     MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, filename_w, num_chars);
 
     fd = _wsopen(filename_w, oflag, SH_DENYNO, pmode);
     av_freep(&filename_w);
 
-    /* filename maybe be in CP_ACP */
-    if (fd == -1 && !(oflag & O_CREAT))
-        return _sopen(filename_utf8, oflag, SH_DENYNO, pmode);
+    if (fd != -1 || (oflag & O_CREAT))
+        return fd;
 
-    return fd;
+fallback:
+    /* filename may be be in CP_ACP */
+    return _sopen(filename_utf8, oflag, SH_DENYNO, pmode);
 }
 #endif
 
