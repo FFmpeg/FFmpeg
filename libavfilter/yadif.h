@@ -55,13 +55,11 @@ typedef struct YADIFContext {
     /**
      * Required alignment for filter_line
      */
-    int req_align;
     void (*filter_line)(void *dst,
                         void *prev, void *cur, void *next,
                         int w, int prefs, int mrefs, int parity, int mode);
     void (*filter_edges)(void *dst, void *prev, void *cur, void *next,
-                         int w, int prefs, int mrefs, int parity, int mode,
-                         int l_edge);
+                         int w, int prefs, int mrefs, int parity, int mode);
 
     const AVPixFmtDescriptor *csp;
     int eof;
