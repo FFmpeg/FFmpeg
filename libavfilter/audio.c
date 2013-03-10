@@ -69,7 +69,7 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
 
     frame->nb_samples     = nb_samples;
     frame->format         = link->format;
-    frame->channels       = link->channels;
+    av_frame_set_channels(frame, link->channels);
     frame->channel_layout = link->channel_layout;
     frame->sample_rate    = link->sample_rate;
 

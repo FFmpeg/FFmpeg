@@ -698,7 +698,7 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
 {
     int insamples = frame->nb_samples, inpos = 0, nb_samples;
     AVFrame *pbuf = link->partial_buf;
-    int nb_channels = frame->channels;
+    int nb_channels = av_frame_get_channels(frame);
     int ret = 0;
 
     /* Handle framing (min_samples, max_samples) */
@@ -747,7 +747,7 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
         }
     } else {
         av_assert1(frame->format                == link->format);
-        av_assert1(frame->channels              == link->channels);
+        av_assert1(av_frame_get_channels(frame) == link->channels);
         av_assert1(frame->channel_layout        == link->channel_layout);
         av_assert1(frame->sample_rate           == link->sample_rate);
     }
