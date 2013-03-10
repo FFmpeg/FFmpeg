@@ -35,9 +35,9 @@
 // blocksizes for op_pixels_func are 8x4,8x8 16x8 16x16
 // h for op_pixels_func is limited to {width/2, width} but never larger
 // than 16 and never smaller than 4
-typedef void (*hpel_pixels_func)(uint8_t *block /*align width (8 or 16)*/,
-                                 const uint8_t *pixels /*align 1*/,
-                                 ptrdiff_t line_size, int h);
+typedef void (*op_pixels_func)(uint8_t *block /*align width (8 or 16)*/,
+                               const uint8_t *pixels /*align 1*/,
+                               ptrdiff_t line_size, int h);
 
 /**
  * Half-pel DSP context.
@@ -53,7 +53,7 @@ typedef struct HpelDSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    hpel_pixels_func put_pixels_tab[4][4];
+    op_pixels_func put_pixels_tab[4][4];
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
@@ -65,7 +65,7 @@ typedef struct HpelDSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    hpel_pixels_func avg_pixels_tab[4][4];
+    op_pixels_func avg_pixels_tab[4][4];
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
@@ -77,7 +77,7 @@ typedef struct HpelDSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    hpel_pixels_func put_no_rnd_pixels_tab[2][4];
+    op_pixels_func put_no_rnd_pixels_tab[2][4];
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
@@ -89,7 +89,7 @@ typedef struct HpelDSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    hpel_pixels_func avg_no_rnd_pixels_tab[4];
+    op_pixels_func avg_no_rnd_pixels_tab[4];
 } HpelDSPContext;
 
 void ff_hpeldsp_init(HpelDSPContext* p, int flags);
