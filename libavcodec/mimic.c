@@ -28,6 +28,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "dsputil.h"
+#include "hpeldsp.h"
 #include "thread.h"
 
 #define MIMIC_HEADER_SIZE   20
@@ -52,6 +53,7 @@ typedef struct {
     GetBitContext   gb;
     ScanTable       scantable;
     DSPContext      dsp;
+    HpelDSPContext  hdsp;
     VLC             vlc;
 
     /* Kept in the context so multithreading can have a constant to read from */
@@ -144,6 +146,7 @@ static av_cold int mimic_decode_init(AVCodecContext *avctx)
         return ret;
     }
     ff_dsputil_init(&ctx->dsp, avctx);
+    ff_hpeldsp_init(&ctx->hdsp, avctx->flags);
     ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, col_zag);
 
     for (i = 0; i < FF_ARRAY_ELEMS(ctx->frames); i++) {
@@ -304,7 +307,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                                                      cur_row, 0);
                             p += src -
                                  ctx->flipped_ptrs[ctx->prev_index].data[plane];
-                            ctx->dsp.put_pixels_tab[1][0](dst, p, stride, 8);
+                            ctx->hdsp.put_pixels_tab[1][0](dst, p, stride, 8);
                         } else {
                             av_log(ctx->avctx, AV_LOG_ERROR,
                                      "No such backreference! Buggy sample.\n");
@@ -313,7 +316,7 @@ static int decode(MimicContext *ctx, int quality, int num_coeffs,
                 } else {
                     ff_thread_await_progress(&ctx->frames[ctx->prev_index],
                                              cur_row, 0);
-                    ctx->dsp.put_pixels_tab[1][0](dst, src, stride, 8);
+                    ctx->hdsp.put_pixels_tab[1][0](dst, src, stride, 8);
                 }
                 src += 8;
                 dst += 8;
