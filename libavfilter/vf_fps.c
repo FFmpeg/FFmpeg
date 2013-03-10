@@ -273,7 +273,6 @@ static const AVFilterPad avfilter_vf_fps_inputs[] = {
     {
         .name        = "default",
         .type        = AVMEDIA_TYPE_VIDEO,
-        .min_perms   = AV_PERM_READ | AV_PERM_PRESERVE,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -283,7 +282,6 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .rej_perms     = AV_PERM_WRITE,
         .request_frame = request_frame,
         .config_props  = config_props
     },

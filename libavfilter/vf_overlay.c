@@ -654,7 +654,6 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .rej_perms     = AV_PERM_WRITE,
         .config_props  = config_output,
         .request_frame = request_frame,
     },

@@ -176,12 +176,11 @@ static const AVFilterPad alphamerge_inputs[] = {
         .config_props     = config_input_main,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE,
+        .needs_writable   = 1,
     },{
         .name             = "alpha",
         .type             = AVMEDIA_TYPE_VIDEO,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
 };

@@ -299,7 +299,6 @@ static const AVFilterPad idet_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_PRESERVE,
     },
     { NULL }
 };
@@ -308,7 +307,6 @@ static const AVFilterPad idet_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .rej_perms     = AV_PERM_WRITE,
         .request_frame = request_frame,
     },
     { NULL }

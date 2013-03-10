@@ -388,9 +388,9 @@ static const AVFilterPad avfilter_af_channelmap_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .min_perms      = AV_PERM_READ | AV_PERM_WRITE,
         .filter_frame   = channelmap_filter_frame,
-        .config_props   = channelmap_config_input
+        .config_props   = channelmap_config_input,
+        .needs_writable = 1,
     },
     { NULL }
 };

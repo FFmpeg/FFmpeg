@@ -479,7 +479,6 @@ static const AVFilterPad avfilter_vf_yadif_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_PRESERVE,
     },
     { NULL }
 };

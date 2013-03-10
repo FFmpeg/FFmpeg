@@ -343,7 +343,6 @@ static const AVFilterPad noise_inputs[] = {
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
         .config_props     = config_input,
-        .min_perms        = AV_PERM_READ,
     },
     { NULL }
 };

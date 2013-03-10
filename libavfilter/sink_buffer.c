@@ -331,7 +331,6 @@ static const AVFilterPad ffbuffersink_inputs[] = {
         .name      = "default",
         .type      = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .min_perms = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL },
 };
@@ -353,7 +352,6 @@ static const AVFilterPad buffersink_inputs[] = {
         .name      = "default",
         .type      = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .min_perms = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL },
 };
@@ -467,7 +465,6 @@ static const AVFilterPad ffabuffersink_inputs[] = {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
-        .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL },
 };
@@ -488,7 +485,6 @@ static const AVFilterPad abuffersink_inputs[] = {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
-        .min_perms      = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL },
 };
