@@ -294,7 +294,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         int ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR,
-                   "Failed to set value '%s' for option '%s'\n", arg, opt);
+                   "Failed to set value '%s' for option '%s': %s\n",
+                   arg, opt, av_err2str(ret));
             return ret;
         }
     }
@@ -546,6 +547,8 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 
     if (consumed)
         return 0;
+    av_log(NULL, AV_LOG_ERROR, "Could not find option '%s' in any of the FFmpeg subsystems "
+           "(codec, format, scaler, resampler contexts)\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
 }
 
