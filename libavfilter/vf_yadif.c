@@ -32,14 +32,17 @@
 #include <assert.h>
 
 #define CHECK(j)\
-    {   int score = FFABS(cur[mrefs + off_left + (j)] - cur[prefs + off_left - (j)])\
+    {   int score = FFABS(cur[mrefs - 1 + (j)] - cur[prefs - 1 - (j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
-                  + FFABS(cur[mrefs + off_right + (j)] - cur[prefs + off_right - (j)]);\
+                  + FFABS(cur[mrefs + 1 + (j)] - cur[prefs + 1 - (j)]);\
         if (score < spatial_score) {\
             spatial_score= score;\
             spatial_pred= (cur[mrefs  +(j)] + cur[prefs  -(j)])>>1;\
 
-#define FILTER(start, end) \
+/* The is_not_edge argument here controls when the code will enter a branch
+ * which reads up to and including x-3 and x+3. */
+
+#define FILTER(start, end, is_not_edge) \
     for (x = start;  x < end; x++) { \
         int c = cur[mrefs]; \
         int d = (prev2[0] + next2[0])>>1; \
@@ -49,12 +52,10 @@
         int temporal_diff2 =(FFABS(next[mrefs] - c) + FFABS(next[prefs] - e) )>>1; \
         int diff = FFMAX3(temporal_diff0 >> 1, temporal_diff1, temporal_diff2); \
         int spatial_pred = (c+e) >> 1; \
-        int off_right = (x < w - 1) ? 1 : -1;\
-        int off_left  = x ? -1 : 1;\
-        int spatial_score = FFABS(cur[mrefs + off_left]  - cur[prefs + off_left]) + FFABS(c-e) \
-                          + FFABS(cur[mrefs + off_right] - cur[prefs + off_right]) - 1; \
  \
-        if (x > 2 && x < w - 3) {\
+        if (is_not_edge) {\
+            int spatial_score = FFABS(cur[mrefs - 1] - cur[prefs - 1]) + FFABS(c-e) \
+                              + FFABS(cur[mrefs + 1] - cur[prefs + 1]) - 1; \
             CHECK(-1) CHECK(-2) }} }} \
             CHECK( 1) CHECK( 2) }} }} \
         }\
@@ -95,12 +96,15 @@ static void filter_line_c(void *dst1,
     uint8_t *prev2 = parity ? prev : cur ;
     uint8_t *next2 = parity ? cur  : next;
 
-    FILTER(0, w)
+    /* The function is called with the pointers already pointing to data[3] and
+     * with 6 subtracted from the width.  This allows the FILTER macro to be
+     * called so that it processes all the pixels normally.  A constant value of
+     * true for is_not_edge lets the compiler ignore the if statement. */
+    FILTER(0, w, 1)
 }
 
 static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
-                         int w, int prefs, int mrefs, int parity, int mode,
-                         int l_edge)
+                         int w, int prefs, int mrefs, int parity, int mode)
 {
     uint8_t *dst  = dst1;
     uint8_t *prev = prev1;
@@ -110,7 +114,9 @@ static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
     uint8_t *prev2 = parity ? prev : cur ;
     uint8_t *next2 = parity ? cur  : next;
 
-    FILTER(0, l_edge)
+    /* Only edge pixels need to be processed here.  A constant value of false
+     * for is_not_edge should let the compiler ignore the whole branch. */
+    FILTER(0, 3, 0)
 
     dst  = (uint8_t*)dst1  + w - 3;
     prev = (uint8_t*)prev1 + w - 3;
@@ -119,7 +125,7 @@ static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
     prev2 = (uint8_t*)(parity ? prev : cur);
     next2 = (uint8_t*)(parity ? cur  : next);
 
-    FILTER(w - 3, w)
+    FILTER(w - 3, w, 0)
 }
 
 
@@ -138,12 +144,11 @@ static void filter_line_c_16bit(void *dst1,
     mrefs /= 2;
     prefs /= 2;
 
-    FILTER(0, w)
+    FILTER(0, w, 1)
 }
 
 static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
-                               int w, int prefs, int mrefs, int parity, int mode,
-                               int l_edge)
+                               int w, int prefs, int mrefs, int parity, int mode)
 {
     uint16_t *dst  = dst1;
     uint16_t *prev = prev1;
@@ -153,7 +158,7 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     uint16_t *prev2 = parity ? prev : cur ;
     uint16_t *next2 = parity ? cur  : next;
 
-    FILTER(0, l_edge)
+    FILTER(0, 3, 0)
 
     dst   = (uint16_t*)dst1  + w - 3;
     prev  = (uint16_t*)prev1 + w - 3;
@@ -162,7 +167,7 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     prev2 = (uint16_t*)(parity ? prev : cur);
     next2 = (uint16_t*)(parity ? cur  : next);
 
-    FILTER(w - 3, w)
+    FILTER(w - 3, w, 0)
 }
 
 static void filter(AVFilterContext *ctx, AVFrame *dstpic,
@@ -176,7 +181,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         int h = dstpic->height;
         int refs = yadif->cur->linesize[i];
         int df = (yadif->csp->comp[i].depth_minus1 + 8) / 8;
-        int l_edge, l_edge_pix;
+        int pix_3 = 3 * df;
 
         if (i == 1 || i == 2) {
         /* Why is this not part of the per-plane description thing? */
@@ -187,8 +192,6 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
          * we need to call the c variant which avoids this for border pixels
          */
-        l_edge     = yadif->req_align;
-        l_edge_pix = l_edge / df;
 
         for (y = 0; y < h; y++) {
             if ((y ^ parity) & 1) {
@@ -197,22 +200,15 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
                 uint8_t *next = &yadif->next->data[i][y * refs];
                 uint8_t *dst  = &dstpic->data[i][y * dstpic->linesize[i]];
                 int     mode  = y == 1 || y + 2 == h ? 2 : yadif->mode;
-                if (yadif->req_align) {
-                    yadif->filter_line(dst + l_edge, prev + l_edge, cur + l_edge,
-                                       next + l_edge, w - l_edge_pix - 3,
-                                       y + 1 < h ? refs : -refs,
-                                       y ? -refs : refs,
-                                       parity ^ tff, mode);
-                    yadif->filter_edges(dst, prev, cur, next, w,
-                                         y + 1 < h ? refs : -refs,
-                                         y ? -refs : refs,
-                                         parity ^ tff, mode, l_edge_pix);
-                } else {
-                    yadif->filter_line(dst, prev, cur, next + l_edge, w,
-                                       y + 1 < h ? refs : -refs,
-                                       y ? -refs : refs,
-                                       parity ^ tff, mode);
-                }
+                yadif->filter_line(dst + pix_3, prev + pix_3, cur + pix_3,
+                                   next + pix_3, w - 6,
+                                   y + 1 < h ? refs : -refs,
+                                   y ? -refs : refs,
+                                   parity ^ tff, mode);
+                yadif->filter_edges(dst, prev, cur, next, w,
+                                    y + 1 < h ? refs : -refs,
+                                    y ? -refs : refs,
+                                    parity ^ tff, mode);
             } else {
                 memcpy(&dstpic->data[i][y * dstpic->linesize[i]],
                        &yadif->cur->data[i][y * refs], w * df);
