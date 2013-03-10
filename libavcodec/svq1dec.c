@@ -33,8 +33,8 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
+#include "hpeldsp.h"
 #include "internal.h"
 #include "mathops.h"
 #include "svq1.h"
@@ -58,7 +58,7 @@ typedef struct svq1_pmv_s {
 } svq1_pmv;
 
 typedef struct SVQ1Context {
-    DSPContext dsp;
+    HpelDSPContext hdsp;
     GetBitContext gb;
     AVFrame *prev;
     int width;
@@ -320,7 +320,7 @@ static void svq1_skip_block(uint8_t *current, uint8_t *previous,
     }
 }
 
-static int svq1_motion_inter_block(DSPContext *dsp, GetBitContext *bitbuf,
+static int svq1_motion_inter_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
                                    int pitch, svq1_pmv *motion, int x, int y,
                                    int width, int height)
@@ -359,12 +359,12 @@ static int svq1_motion_inter_block(DSPContext *dsp, GetBitContext *bitbuf,
     src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1)) * pitch];
     dst = current;
 
-    dsp->put_pixels_tab[0][(mv.y & 1) << 1 | (mv.x & 1)](dst, src, pitch, 16);
+    hdsp->put_pixels_tab[0][(mv.y & 1) << 1 | (mv.x & 1)](dst, src, pitch, 16);
 
     return 0;
 }
 
-static int svq1_motion_inter_4v_block(DSPContext *dsp, GetBitContext *bitbuf,
+static int svq1_motion_inter_4v_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
                                       uint8_t *current, uint8_t *previous,
                                       int pitch, svq1_pmv *motion, int x, int y,
                                       int width, int height)
@@ -433,7 +433,7 @@ static int svq1_motion_inter_4v_block(DSPContext *dsp, GetBitContext *bitbuf,
         src = &previous[(x + (mvx >> 1)) + (y + (mvy >> 1)) * pitch];
         dst = current;
 
-        dsp->put_pixels_tab[1][((mvy & 1) << 1) | (mvx & 1)](dst, src, pitch, 8);
+        hdsp->put_pixels_tab[1][((mvy & 1) << 1) | (mvx & 1)](dst, src, pitch, 8);
 
         /* select next block */
         if (i & 1)
@@ -445,7 +445,7 @@ static int svq1_motion_inter_4v_block(DSPContext *dsp, GetBitContext *bitbuf,
     return 0;
 }
 
-static int svq1_decode_delta_block(AVCodecContext *avctx, DSPContext *dsp,
+static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
                                    GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
                                    int pitch, svq1_pmv *motion, int x, int y,
@@ -473,7 +473,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, DSPContext *dsp,
         break;
 
     case SVQ1_BLOCK_INTER:
-        result = svq1_motion_inter_block(dsp, bitbuf, current, previous,
+        result = svq1_motion_inter_block(hdsp, bitbuf, current, previous,
                                          pitch, motion, x, y, width, height);
 
         if (result != 0) {
@@ -484,7 +484,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, DSPContext *dsp,
         break;
 
     case SVQ1_BLOCK_INTER_4V:
-        result = svq1_motion_inter_4v_block(dsp, bitbuf, current, previous,
+        result = svq1_motion_inter_4v_block(hdsp, bitbuf, current, previous,
                                             pitch, motion, x, y, width, height);
 
         if (result != 0) {
@@ -699,7 +699,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
 
             for (y = 0; y < height; y += 16) {
                 for (x = 0; x < width; x += 16) {
-                    result = svq1_decode_delta_block(avctx, &s->dsp,
+                    result = svq1_decode_delta_block(avctx, &s->hdsp,
                                                      &s->gb, &current[x],
                                                      previous, linesize,
                                                      pmv, x, y, width, height);
@@ -748,7 +748,7 @@ static av_cold int svq1_decode_init(AVCodecContext *avctx)
     s->height           = avctx->height + 3 & ~3;
     avctx->pix_fmt      = AV_PIX_FMT_YUV410P;
 
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
 
     INIT_VLC_STATIC(&svq1_block_type, 2, 4,
                     &ff_svq1_block_type_vlc[0][1], 2, 1,
