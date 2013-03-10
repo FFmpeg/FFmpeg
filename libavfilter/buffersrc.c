@@ -75,14 +75,23 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
-{
-    return av_buffersrc_add_frame(ctx, frame);
-}
-
 int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
 {
-    AVFrame *copy;
+    return av_buffersrc_add_frame_flags(ctx, (AVFrame *)frame,
+                                        AV_BUFFERSRC_FLAG_KEEP_REF);
+}
+
+int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
+{
+    return av_buffersrc_add_frame_flags(ctx, frame, 0);
+}
+
+static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
+                                           AVFrame *frame, int flags);
+
+int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
+{
+    AVFrame *copy = NULL;
     int ret = 0;
     int64_t layout = frame->channel_layout;
 
@@ -91,28 +100,33 @@ int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
         return AVERROR(EINVAL);
     }
 
+    if (!(flags & AV_BUFFERSRC_FLAG_KEEP_REF) || !frame)
+        return av_buffersrc_add_frame_internal(ctx, frame, flags);
+
     if (!(copy = av_frame_alloc()))
         return AVERROR(ENOMEM);
     ret = av_frame_ref(copy, frame);
     if (ret >= 0)
-        ret = av_buffersrc_add_frame(ctx, copy);
+        ret = av_buffersrc_add_frame_internal(ctx, copy, flags);
 
     av_frame_free(&copy);
     return ret;
 }
 
-int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
+static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
+                                           AVFrame *frame, int flags)
 {
     BufferSourceContext *s = ctx->priv;
     AVFrame *copy;
     int ret;
-    int64_t layout;
 
     if (!frame) {
         s->eof = 1;
         return 0;
     } else if (s->eof)
         return AVERROR(EINVAL);
+
+    if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
 
     switch (ctx->outputs[0]->type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -122,15 +136,11 @@ int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
     case AVMEDIA_TYPE_AUDIO:
         CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
                                  frame->format);
-
-        layout = frame->channel_layout;
-        if (layout && av_get_channel_layout_nb_channels(layout) != av_frame_get_channels(frame)) {
-            av_log(0, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
-            return AVERROR(EINVAL);
-        }
         break;
     default:
         return AVERROR(EINVAL);
+    }
+
     }
 
     if (!av_fifo_space(s->fifo) &&
@@ -147,6 +157,10 @@ int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
         av_frame_free(&copy);
         return ret;
     }
+
+    if ((flags & AV_BUFFERSRC_FLAG_PUSH))
+        if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
+            return ret;
 
     return 0;
 }
