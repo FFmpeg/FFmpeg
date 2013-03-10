@@ -26,8 +26,6 @@ void ff_simple_idct_axp(int16_t *block);
 void ff_simple_idct_put_axp(uint8_t *dest, int line_size, int16_t *block);
 void ff_simple_idct_add_axp(uint8_t *dest, int line_size, int16_t *block);
 
-void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
-                        ptrdiff_t line_size, int h);
 void put_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
                                 int line_size);
 void add_pixels_clamped_mvi_asm(const int16_t *block, uint8_t *pixels,
