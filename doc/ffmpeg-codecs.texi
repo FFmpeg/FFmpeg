@@ -944,58 +944,37 @@ Set max macroblock lagrange factor (VBR).
 Set motion estimation bitrate penalty compensation (1.0 = 256).
 
 @item skip_loop_filter @var{integer} (@emph{decoding,video})
+@item skip_idct        @var{integer} (@emph{decoding,video})
+@item skip_frame       @var{integer} (@emph{decoding,video})
+
+Make decoder discard processing depending on the frame type selected
+by the option value.
+
+@option{skip_loop_filter} skips frame loop filtering, @option{skip_idct}
+skips frame IDCT/dequantization, @option{skip_frame} skips decoding.
 
 Possible values:
 @table @samp
 @item none
+Discard no frame.
 
 @item default
+Discard useless frames like 0-sized frames.
 
 @item noref
+Discard all non-reference frames.
 
 @item bidir
+Discard all bidirectional frames.
 
 @item nokey
+Discard all frames excepts keyframes.
 
 @item all
-
+Discard all frames.
 @end table
 
-@item skip_idct @var{integer} (@emph{decoding,video})
-
-Possible values:
-@table @samp
-@item none
-
-@item default
-
-@item noref
-
-@item bidir
-
-@item nokey
-
-@item all
-
-@end table
-
-@item skip_frame @var{integer} (@emph{decoding,video})
-
-Possible values:
-@table @samp
-@item none
-
-@item default
-
-@item noref
-
-@item bidir
-
-@item nokey
-
-@item all
-
-@end table
+Default value is @samp{default}.
 
 @item bidir_refine @var{integer} (@emph{encoding,video})
 Refine the two motion vectors used in bidirectional macroblocks.
