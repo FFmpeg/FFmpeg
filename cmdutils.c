@@ -994,9 +994,7 @@ static void print_all_libs_info(int flags, int level)
     PRINT_LIB_INFO(avresample, AVRESAMPLE, flags, level);
     PRINT_LIB_INFO(swscale,  SWSCALE,  flags, level);
     PRINT_LIB_INFO(swresample,SWRESAMPLE,  flags, level);
-#if CONFIG_POSTPROC
     PRINT_LIB_INFO(postproc, POSTPROC, flags, level);
-#endif
 }
 
 static void print_program_info(int flags, int level)
