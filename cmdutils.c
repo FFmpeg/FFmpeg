@@ -497,7 +497,7 @@ int opt_default(void *optctx, const char *opt, const char *arg)
                          AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         av_dict_set(&format_opts, opt, arg, FLAGS);
         if (consumed)
-            av_log(NULL, AV_LOG_VERBOSE, "Routing %s to codec and muxer layer\n", opt);
+            av_log(NULL, AV_LOG_VERBOSE, "Routing option %s to both codec and muxer layer\n", opt);
         consumed = 1;
     }
 #if CONFIG_SWSCALE
