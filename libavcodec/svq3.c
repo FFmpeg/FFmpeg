@@ -48,6 +48,7 @@
 
 #include "h264_mvpred.h"
 #include "golomb.h"
+#include "hpeldsp.h"
 #include "rectangle.h"
 #include "vdpau_internal.h"
 
@@ -65,6 +66,7 @@
 
 typedef struct {
     H264Context h;
+    HpelDSPContext hdsp;
     Picture *cur_pic;
     Picture *next_pic;
     Picture *last_pic;
@@ -316,9 +318,9 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
              : h->dsp.put_tpel_pixels_tab)[dxy](dest, src, h->linesize,
                                                 width, height);
     else
-        (avg ? h->dsp.avg_pixels_tab
-             : h->dsp.put_pixels_tab)[blocksize][dxy](dest, src, h->linesize,
-                                                      height);
+        (avg ? s->hdsp.avg_pixels_tab
+             : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src, h->linesize,
+                                                       height);
 
     if (!(h->flags & CODEC_FLAG_GRAY)) {
         mx     = mx + (mx < (int) x) >> 1;
@@ -344,10 +346,10 @@ static inline void svq3_mc_dir_part(SVQ3Context *s,
                                                         h->uvlinesize,
                                                         width, height);
             else
-                (avg ? h->dsp.avg_pixels_tab
-                     : h->dsp.put_pixels_tab)[blocksize][dxy](dest, src,
-                                                              h->uvlinesize,
-                                                              height);
+                (avg ? s->hdsp.avg_pixels_tab
+                     : s->hdsp.put_pixels_tab)[blocksize][dxy](dest, src,
+                                                               h->uvlinesize,
+                                                               height);
         }
     }
 }
@@ -869,6 +871,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     if (ff_h264_decode_init(avctx) < 0)
         return -1;
 
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     h->flags           = avctx->flags;
     h->is_complex      = 1;
     h->sps.chroma_format_idc = 1;
