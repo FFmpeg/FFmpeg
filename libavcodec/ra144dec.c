@@ -76,6 +76,13 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
+    if (buf_size < FRAMESIZE) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Frame too small (%d bytes). Truncated file?\n", buf_size);
+        *got_frame_ptr = 0;
+        return AVERROR_INVALIDDATA;
+    }
+
     /* get output buffer */
     frame->nb_samples = NBLOCKS * BLOCKSIZE;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
@@ -84,12 +91,6 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     }
     samples = (int16_t *)frame->data[0];
 
-    if(buf_size < FRAMESIZE) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        *got_frame_ptr = 0;
-        return buf_size;
-    }
     init_get_bits(&gb, buf, FRAMESIZE * 8);
 
     for (i = 0; i < LPC_ORDER; i++)
