@@ -74,21 +74,22 @@ typedef struct {
 } UnsharpContext;
 
 #define OFFSET(x) offsetof(UnsharpContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption unsharp_options[] = {
-    { "luma_msize_x",    "set luma matrix x size",     OFFSET(luma_msize_x),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "lx",              "set luma matrix x size",     OFFSET(luma_msize_x),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "luma_msize_y",    "set luma matrix y size",     OFFSET(luma_msize_y),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "ly",              "set luma matrix y size",     OFFSET(luma_msize_y),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "luma_amount",     "set luma effect amount",     OFFSET(luma_amount),     AV_OPT_TYPE_DOUBLE, {.dbl=1.0}, -DBL_MAX, DBL_MAX },
-    { "la",              "set luma effect amount",     OFFSET(luma_amount),     AV_OPT_TYPE_DOUBLE, {.dbl=1.0}, -DBL_MAX, DBL_MAX },
+    { "luma_msize_x",    "set luma matrix x size",     OFFSET(luma_msize_x),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "lx",              "set luma matrix x size",     OFFSET(luma_msize_x),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "luma_msize_y",    "set luma matrix y size",     OFFSET(luma_msize_y),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "ly",              "set luma matrix y size",     OFFSET(luma_msize_y),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "luma_amount",     "set luma effect amount",     OFFSET(luma_amount),     AV_OPT_TYPE_DOUBLE, {.dbl=1.0}, -DBL_MAX, DBL_MAX, .flags=FLAGS },
+    { "la",              "set luma effect amount",     OFFSET(luma_amount),     AV_OPT_TYPE_DOUBLE, {.dbl=1.0}, -DBL_MAX, DBL_MAX, .flags=FLAGS },
 
-    { "chroma_msize_x",  "set chroma matrix x size",   OFFSET(chroma_msize_x), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "cx",              "set chroma matrix x size",   OFFSET(chroma_msize_x), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "chroma_msize_y",  "set chroma matrix y size",   OFFSET(chroma_msize_y), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "cy"          ,    "set chroma matrix y size",   OFFSET(chroma_msize_y), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
-    { "chroma_amount",   "set chroma effect strenght", OFFSET(chroma_amount),  AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -DBL_MAX, DBL_MAX },
-    { "ca",              "set chroma effect strenght", OFFSET(chroma_amount),  AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -DBL_MAX, DBL_MAX },
+    { "chroma_msize_x",  "set chroma matrix x size",   OFFSET(chroma_msize_x), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "cx",              "set chroma matrix x size",   OFFSET(chroma_msize_x), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "chroma_msize_y",  "set chroma matrix y size",   OFFSET(chroma_msize_y), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "cy"          ,    "set chroma matrix y size",   OFFSET(chroma_msize_y), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63, .flags=FLAGS },
+    { "chroma_amount",   "set chroma effect strenght", OFFSET(chroma_amount),  AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -DBL_MAX, DBL_MAX, .flags=FLAGS },
+    { "ca",              "set chroma effect strenght", OFFSET(chroma_amount),  AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -DBL_MAX, DBL_MAX, .flags=FLAGS },
 
     { NULL }
 };
