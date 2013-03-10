@@ -23,11 +23,6 @@
  * video field order filter, heavily influenced by vf_pad.c
  */
 
-/* #define DEBUG */
-
-#include <stdio.h>
-#include <string.h>
-
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/pixdesc.h"
