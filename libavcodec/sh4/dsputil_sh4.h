@@ -25,4 +25,13 @@
 void ff_idct_sh4(int16_t *block);
 void ff_dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
 
+void ff_put_rnd_pixels8_o(uint8_t *dest, const uint8_t *ref,
+                          const ptrdiff_t stride, int height);
+void ff_put_rnd_pixels16_o(uint8_t *dest, const uint8_t *ref,
+                           const ptrdiff_t stride, int height);
+void ff_avg_rnd_pixels8_o (uint8_t *dest, const uint8_t *ref,
+                           const ptrdiff_t stride, int height);
+void ff_avg_rnd_pixels16_o(uint8_t *dest, const uint8_t *ref,
+                           const ptrdiff_t stride, int height);
+
 #endif /* AVCODEC_SH4_DSPUTIL_SH4_H */
