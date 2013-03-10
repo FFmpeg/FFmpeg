@@ -494,9 +494,9 @@ int opt_default(void *optctx, const char *opt, const char *arg)
         consumed = 1;
     }
     if ((o = av_opt_find(&fc, opt, NULL, 0,
-                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
+                         AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         av_dict_set(&format_opts, opt, arg, FLAGS);
-        if(consumed)
+        if (consumed)
             av_log(NULL, AV_LOG_VERBOSE, "Routing %s to codec and muxer layer\n", opt);
         consumed = 1;
     }
