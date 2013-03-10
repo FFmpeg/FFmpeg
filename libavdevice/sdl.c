@@ -152,8 +152,6 @@ static int sdl_write_header(AVFormatContext *s)
 
     SDL_WM_SetCaption(sdl->window_title, sdl->icon_title);
    
-    av_log(s, AV_LOG_ERROR, "Fullscreen mode: %d\n", sdl->window_fullscreen);
-
     int flags=SDL_SWSURFACE | sdl->window_fullscreen ? SDL_FULLSCREEN : 0;
     sdl->surface = SDL_SetVideoMode(sdl->window_width, sdl->window_height,
                                     24, flags);
@@ -214,7 +212,7 @@ static const AVOption options[] = {
     { "window_title", "set SDL window title",           OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "icon_title",   "set SDL iconified window title", OFFSET(icon_title)  , AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size",  "set SDL window forced size",     OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE,{.str=NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_fullscreen",  "set SDL window fullscreen",     OFFSET(window_fullscreen), AV_OPT_TYPE_INT,{.i64=0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_fullscreen", "set SDL window fullscreen", OFFSET(window_fullscreen), AV_OPT_TYPE_INT,{.i64=0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
