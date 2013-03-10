@@ -4925,30 +4925,40 @@ expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]"
 
 Blur the input video without impacting the outlines.
 
-The filter accepts the following parameters:
+This filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+If the key of the first options is omitted, the arguments are
+interpreted according to the syntax:
 @var{luma_radius}:@var{luma_strength}:@var{luma_threshold}[:@var{chroma_radius}:@var{chroma_strength}:@var{chroma_threshold}]
 
-Parameters prefixed by @var{luma} indicate that they work on the
-luminance of the pixels whereas parameters prefixed by @var{chroma}
-refer to the chrominance of the pixels.
+A description of the accepted options follows.
 
-If the chroma parameters are not set, the luma parameters are used for
-either the luminance and the chrominance of the pixels.
+@table @option
+@item luma_radius, lr
+@item chroma_radius, cr
+Set the luma/chroma radius. The option value must be a float number in
+the range [0.1,5.0] that specifies the variance of the gaussian filter
+used to blur the image (slower if larger). Default value is 1.0.
 
-@var{luma_radius} or @var{chroma_radius} must be a float number in the
-range [0.1,5.0] that specifies the variance of the gaussian filter
-used to blur the image (slower if larger).
+@item luma_strength, ls
+@item chroma_strength, cs
+Set the luma/chroma strength. The option value must be a float number
+in the range [-1.0,1.0] that configures the blurring. A value included
+in [0.0,1.0] will blur the image whereas a value included in
+[-1.0,0.0] will sharpen the image. Default value is 1.0.
 
-@var{luma_strength} or @var{chroma_strength} must be a float number in
-the range [-1.0,1.0] that configures the blurring. A value included in
-[0.0,1.0] will blur the image whereas a value included in [-1.0,0.0]
-will sharpen the image.
+@item luma_threshold, lt
+@item chroma_threshold, ct
+Set the luma/chroma threshold used as a coefficient to determine
+whether a pixel should be blurred or not. The option value must be an
+integer in the range [-30,30]. A value of 0 will filter all the image,
+a value included in [0,30] will filter flat areas and a value included
+in [-30,0] will filter edges. Default value is 0.
+@end table
 
-@var{luma_threshold} or @var{chroma_threshold} must be an integer in
-the range [-30,30] that is used as a coefficient to determine whether
-a pixel should be blurred or not. A value of 0 will filter all the
-image, a value included in [0,30] will filter flat areas and a value
-included in [-30,0] will filter edges.
+If a chroma option is not explicitly set, the corresponding luma value
+is set.
 
 @section stereo3d
 
