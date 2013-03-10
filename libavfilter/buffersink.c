@@ -23,7 +23,7 @@
  * buffer sink
  */
 
-#include "libavutil/fifo.h"
+#include "libavutil/audio_fifo.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
@@ -46,12 +46,19 @@ typedef struct {
     int64_t *channel_layouts;               ///< list of accepted channel layouts, terminated by -1
     int all_channel_counts;
     int *sample_rates;                      ///< list of accepted sample rates, terminated by -1
+
+    /* only used for compat API */
+    AVAudioFifo  *audio_fifo;    ///< FIFO for audio samples
+    int64_t next_pts;            ///< interpolating audio pts
 } BufferSinkContext;
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSinkContext *sink = ctx->priv;
     AVFrame *frame;
+
+    if (sink->audio_fifo)
+        av_audio_fifo_free(sink->audio_fifo);
 
     if (sink->fifo) {
         while (av_fifo_size(sink->fifo) >= sizeof(AVFilterBufferRef *)) {
@@ -140,9 +147,70 @@ int av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flag
     return 0;
 }
 
+static int read_from_fifo(AVFilterContext *ctx, AVFrame *frame,
+                          int nb_samples)
+{
+    BufferSinkContext *s = ctx->priv;
+    AVFilterLink   *link = ctx->inputs[0];
+    AVFrame *tmp;
+
+    if (!(tmp = ff_get_audio_buffer(link, nb_samples)))
+        return AVERROR(ENOMEM);
+    av_audio_fifo_read(s->audio_fifo, (void**)tmp->extended_data, nb_samples);
+
+    tmp->pts = s->next_pts;
+    s->next_pts += av_rescale_q(nb_samples, (AVRational){1, link->sample_rate},
+                                link->time_base);
+
+    av_frame_move_ref(frame, tmp);
+    av_frame_free(&tmp);
+
+    return 0;
+
+}
+
 int av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples)
 {
-    av_assert0(!"TODO");
+    BufferSinkContext *s = ctx->priv;
+    AVFilterLink   *link = ctx->inputs[0];
+    AVFrame *cur_frame;
+    int ret = 0;
+
+    if (!s->audio_fifo) {
+        int nb_channels = link->channels;
+        if (!(s->audio_fifo = av_audio_fifo_alloc(link->format, nb_channels, nb_samples)))
+            return AVERROR(ENOMEM);
+    }
+
+    while (ret >= 0) {
+        if (av_audio_fifo_size(s->audio_fifo) >= nb_samples)
+            return read_from_fifo(ctx, frame, nb_samples);
+
+        if (!(cur_frame = av_frame_alloc()))
+            return AVERROR(ENOMEM);
+        ret = av_buffersink_get_frame_flags(ctx, cur_frame, 0);
+        if (ret == AVERROR_EOF && av_audio_fifo_size(s->audio_fifo)) {
+            av_frame_free(&cur_frame);
+            return read_from_fifo(ctx, frame, av_audio_fifo_size(s->audio_fifo));
+        } else if (ret < 0) {
+            av_frame_free(&cur_frame);
+            return ret;
+        }
+
+        if (cur_frame->pts != AV_NOPTS_VALUE) {
+            s->next_pts = cur_frame->pts -
+                          av_rescale_q(av_audio_fifo_size(s->audio_fifo),
+                                       (AVRational){ 1, link->sample_rate },
+                                       link->time_base);
+        }
+
+        ret = av_audio_fifo_write(s->audio_fifo, (void**)cur_frame->extended_data,
+                                  cur_frame->nb_samples);
+        av_frame_free(&cur_frame);
+    }
+
+    return ret;
+
 }
 
 AVBufferSinkParams *av_buffersink_params_alloc(void)
