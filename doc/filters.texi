@@ -2986,18 +2986,19 @@ field=type=bottom
 
 Transform the field order of the input video.
 
-It accepts one parameter which specifies the required field order that
-the input interlaced video will be transformed to. The parameter can
-assume one of the following values:
+This filter accepts the named option @option{order} which
+specifies the required field order that the input interlaced video
+will be transformed to. The option name can be omitted.
 
-@table @option
-@item 0 or bff
+The option @option{order} can assume one of the following values:
+@table @samp
+@item bff
 output bottom field first
-@item 1 or tff
+@item tff
 output top field first
 @end table
 
-Default value is "tff".
+Default value is @samp{tff}.
 
 Transformation is achieved by shifting the picture content up or down
 by one line, and filling the remaining line with appropriate picture content.
