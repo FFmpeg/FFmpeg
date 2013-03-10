@@ -27,6 +27,8 @@
  */
 
 #include "avcodec.h"
+#include "dsputil.h"
+#include "hpeldsp.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "internal.h"
@@ -43,6 +45,7 @@ typedef struct SVQ1Context {
     MpegEncContext m;
     AVCodecContext *avctx;
     DSPContext dsp;
+    HpelDSPContext hdsp;
     AVFrame picture;
     AVFrame current_picture;
     AVFrame last_picture;
@@ -444,10 +447,10 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
 
                     dxy = (mx & 1) + 2 * (my & 1);
 
-                    s->dsp.put_pixels_tab[0][dxy](temp + 16,
-                                                  ref + (mx >> 1) +
-                                                  stride * (my >> 1),
-                                                  stride, 16);
+                    s->hdsp.put_pixels_tab[0][dxy](temp + 16,
+                                                   ref + (mx >> 1) +
+                                                   stride * (my >> 1),
+                                                   stride, 16);
 
                     score[1] += encode_block(s, src + 16 * x, temp + 16,
                                              decoded, stride, 5, 64, lambda, 0);
@@ -459,7 +462,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
                     score[2] += vlc[1] * lambda;
                     if (score[2] < score[best] && mx == 0 && my == 0) {
                         best = 2;
-                        s->dsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
+                        s->hdsp.put_pixels_tab[0][0](decoded, ref, stride, 16);
                         for (i = 0; i < 6; i++)
                             count[2][i] = 0;
                         put_bits(&s->pb, vlc[1], vlc[0]);
@@ -489,7 +492,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
                 avpriv_copy_bits(&s->pb, reorder_buffer[best][i],
                                  count[best][i]);
             if (best == 0)
-                s->dsp.put_pixels_tab[0][0](decoded, temp, stride, 16);
+                s->hdsp.put_pixels_tab[0][0](decoded, temp, stride, 16);
         }
         s->m.first_slice_line = 0;
     }
@@ -501,6 +504,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     SVQ1Context *const s = avctx->priv_data;
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     avctx->coded_frame = &s->picture;
 
     s->frame_width  = avctx->width;
