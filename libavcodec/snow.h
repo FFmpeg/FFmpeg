@@ -114,12 +114,12 @@ typedef struct SnowContext{
     VideoDSPContext vdsp;
     H264QpelContext h264qpel;
     SnowDWTContext dwt;
-    AVFrame new_picture;
-    AVFrame input_picture;              ///< new_picture with the internal linesizes
-    AVFrame current_picture;
-    AVFrame last_picture[MAX_REF_FRAMES];
+    AVFrame *new_picture;
+    AVFrame *input_picture;              ///< new_picture with the internal linesizes
+    AVFrame *current_picture;
+    AVFrame *last_picture[MAX_REF_FRAMES];
     uint8_t *halfpel_plane[MAX_REF_FRAMES][4][4];
-    AVFrame mconly_picture;
+    AVFrame *mconly_picture;
 //     uint8_t q_context[16];
     uint8_t header_state[32];
     uint8_t block_state[128 + 32*128];
@@ -414,8 +414,8 @@ static av_always_inline void predict_slice(SnowContext *s, IDWTELEM *buf, int pl
     int block_h    = plane_index ? block_size>>s->chroma_v_shift : block_size;
     const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+s->chroma_h_shift] : ff_obmc_tab[s->block_max_depth];
     const int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
-    int ref_stride= s->current_picture.linesize[plane_index];
-    uint8_t *dst8= s->current_picture.data[plane_index];
+    int ref_stride= s->current_picture->linesize[plane_index];
+    uint8_t *dst8= s->current_picture->data[plane_index];
     int w= p->width;
     int h= p->height;
     av_assert2(s->chroma_h_shift == s->chroma_v_shift); // obmc params assume squares

@@ -43,8 +43,8 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
     int block_h    = plane_index ? block_size>>s->chroma_v_shift : block_size;
     const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+s->chroma_h_shift] : ff_obmc_tab[s->block_max_depth];
     int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
-    int ref_stride= s->current_picture.linesize[plane_index];
-    uint8_t *dst8= s->current_picture.data[plane_index];
+    int ref_stride= s->current_picture->linesize[plane_index];
+    uint8_t *dst8= s->current_picture->data[plane_index];
     int w= p->width;
     int h= p->height;
 
@@ -403,7 +403,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
-    s->current_picture.pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
+    s->current_picture->pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
     if(decode_header(s)<0)
         return -1;
     if ((res=ff_snow_common_init_after_header(avctx)) < 0)
@@ -449,8 +449,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
-                    int v= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x];
-                    s->mconly_picture.data[plane_index][y*s->mconly_picture.linesize[plane_index] + x]= v;
+                    int v= s->current_picture->data[plane_index][y*s->current_picture->linesize[plane_index] + x];
+                    s->mconly_picture->data[plane_index][y*s->mconly_picture->linesize[plane_index] + x]= v;
                 }
             }
         }
@@ -548,9 +548,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ff_snow_release_buffer(avctx);
 
     if(!(s->avctx->debug&2048))
-        av_frame_ref(picture, &s->current_picture);
+        av_frame_ref(picture, s->current_picture);
     else
-        av_frame_ref(picture, &s->mconly_picture);
+        av_frame_ref(picture, s->mconly_picture);
 
     *got_frame = 1;
 
