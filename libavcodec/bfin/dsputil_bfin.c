@@ -54,79 +54,6 @@ static void bfin_clear_blocks (int16_t *blocks)
         ::"a" (blocks):"P0","I0","R0");
 }
 
-
-
-static void bfin_put_pixels8 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc (block, pixels, pixels, line_size, line_size, h);
-}
-
-static void bfin_put_pixels8_x2(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc (block, pixels, pixels+1, line_size, line_size, h);
-}
-
-static void bfin_put_pixels8_y2 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc (block, pixels, pixels+line_size, line_size, line_size, h);
-}
-
-static void bfin_put_pixels8_xy2 (uint8_t *block, const uint8_t *s0, ptrdiff_t line_size, int h)
-{
-    ff_bfin_z_put_pixels8_xy2 (block,s0,line_size, line_size, h);
-}
-
-static void bfin_put_pixels16 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels16uc (block, pixels, pixels, line_size, line_size, h);
-}
-
-static void bfin_put_pixels16_x2 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels16uc (block, pixels, pixels+1, line_size, line_size, h);
-}
-
-static void bfin_put_pixels16_y2 (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels16uc (block, pixels, pixels+line_size, line_size, line_size, h);
-}
-
-static void bfin_put_pixels16_xy2 (uint8_t *block, const uint8_t *s0, ptrdiff_t line_size, int h)
-{
-    ff_bfin_z_put_pixels16_xy2 (block,s0,line_size, line_size, h);
-}
-
-static void bfin_put_pixels8_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc_nornd (block, pixels, pixels, line_size, h);
-}
-
-static void bfin_put_pixels8_x2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc_nornd (block, pixels, pixels+1, line_size, h);
-}
-
-static void bfin_put_pixels8_y2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels8uc_nornd (block, pixels, pixels+line_size, line_size, h);
-}
-
-
-static void bfin_put_pixels16_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels16uc_nornd (block, pixels, pixels, line_size, h);
-}
-
-static void bfin_put_pixels16_x2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels16uc_nornd (block, pixels, pixels+1, line_size, h);
-}
-
-static void bfin_put_pixels16_y2_nornd (uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    ff_bfin_put_pixels16uc_nornd (block, pixels, pixels+line_size, line_size, h);
-}
-
 static int bfin_pix_abs16 (void *c, uint8_t *blk1, uint8_t *blk2, int line_size, int h)
 {
     return ff_bfin_z_sad16x16 (blk1,blk2,line_size,line_size,h);
@@ -231,28 +158,6 @@ av_cold void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx)
     c->sse[0] = ff_bfin_sse16;
     c->sse[1] = ff_bfin_sse8;
     c->sse[2] = ff_bfin_sse4;
-
-    if (!high_bit_depth) {
-    c->put_pixels_tab[0][0] = bfin_put_pixels16;
-    c->put_pixels_tab[0][1] = bfin_put_pixels16_x2;
-    c->put_pixels_tab[0][2] = bfin_put_pixels16_y2;
-    c->put_pixels_tab[0][3] = bfin_put_pixels16_xy2;
-
-    c->put_pixels_tab[1][0] = bfin_put_pixels8;
-    c->put_pixels_tab[1][1] = bfin_put_pixels8_x2;
-    c->put_pixels_tab[1][2] = bfin_put_pixels8_y2;
-    c->put_pixels_tab[1][3] = bfin_put_pixels8_xy2;
-
-    c->put_no_rnd_pixels_tab[1][0] = bfin_put_pixels8_nornd;
-    c->put_no_rnd_pixels_tab[1][1] = bfin_put_pixels8_x2_nornd;
-    c->put_no_rnd_pixels_tab[1][2] = bfin_put_pixels8_y2_nornd;
-/*     c->put_no_rnd_pixels_tab[1][3] = ff_bfin_put_pixels8_xy2_nornd; */
-
-    c->put_no_rnd_pixels_tab[0][0] = bfin_put_pixels16_nornd;
-    c->put_no_rnd_pixels_tab[0][1] = bfin_put_pixels16_x2_nornd;
-    c->put_no_rnd_pixels_tab[0][2] = bfin_put_pixels16_y2_nornd;
-/*     c->put_no_rnd_pixels_tab[0][3] = ff_bfin_put_pixels16_xy2_nornd; */
-    }
 
     if (avctx->bits_per_raw_sample <= 8) {
         if (avctx->dct_algo == FF_DCT_AUTO)
