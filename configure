@@ -1511,7 +1511,7 @@ mdct_select="fft"
 rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
-mpegvideo_select="dsputil videodsp"
+mpegvideo_select="dsputil hpeldsp videodsp"
 mpegvideoenc_select="mpegvideo"
 
 # decoders / encoders

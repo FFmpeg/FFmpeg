@@ -1771,10 +1771,10 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         dest_cr = s->dest[2];
 
         if ((!s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
-            op_pix  = s->dsp.put_pixels_tab;
+            op_pix  = s->hdsp.put_pixels_tab;
             op_qpix = s->dsp.put_qpel_pixels_tab;
         } else {
-            op_pix  = s->dsp.put_no_rnd_pixels_tab;
+            op_pix  = s->hdsp.put_no_rnd_pixels_tab;
             op_qpix = s->dsp.put_no_rnd_qpel_pixels_tab;
         }
 
@@ -1782,7 +1782,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             ff_MPV_motion(s, dest_y, dest_cb, dest_cr, 0,
                           s->last_picture.f.data,
                           op_pix, op_qpix);
-            op_pix  = s->dsp.avg_pixels_tab;
+            op_pix  = s->hdsp.avg_pixels_tab;
             op_qpix = s->dsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
@@ -2759,9 +2759,9 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     ff_h263_update_motion_val(s);
 
                 if(next_block==0){ //FIXME 16 vs linesize16
-                    s->dsp.put_pixels_tab[0][0](s->dest[0], s->rd_scratchpad                     , s->linesize  ,16);
-                    s->dsp.put_pixels_tab[1][0](s->dest[1], s->rd_scratchpad + 16*s->linesize    , s->uvlinesize, 8);
-                    s->dsp.put_pixels_tab[1][0](s->dest[2], s->rd_scratchpad + 16*s->linesize + 8, s->uvlinesize, 8);
+                    s->hdsp.put_pixels_tab[0][0](s->dest[0], s->rd_scratchpad                     , s->linesize  ,16);
+                    s->hdsp.put_pixels_tab[1][0](s->dest[1], s->rd_scratchpad + 16*s->linesize    , s->uvlinesize, 8);
+                    s->hdsp.put_pixels_tab[1][0](s->dest[2], s->rd_scratchpad + 16*s->linesize + 8, s->uvlinesize, 8);
                 }
 
                 if(s->avctx->mb_decision == FF_MB_DECISION_BITS)

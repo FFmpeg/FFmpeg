@@ -32,6 +32,7 @@
 #include "dsputil.h"
 #include "error_resilience.h"
 #include "get_bits.h"
+#include "hpeldsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
 #include "parser.h"
@@ -380,6 +381,7 @@ typedef struct MpegEncContext {
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode
 
     DSPContext dsp;             ///< pointers for accelerated dsp functions
+    HpelDSPContext hdsp;
     VideoDSPContext vdsp;
     int f_code;                 ///< forward MV resolution
     int b_code;                 ///< backward MV resolution for B Frames (mpeg4)
