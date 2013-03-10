@@ -401,6 +401,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     s->max_ref_frames=1; //just make sure it's not an invalid value in case of no initial keyframe
 
     ff_dsputil_init(&s->dsp, avctx);
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_videodsp_init(&s->vdsp, 8);
     ff_dwt_init(&s->dwt);
     ff_h264qpel_init(&s->h264qpel, 8);
@@ -431,11 +432,11 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     mcf(12,12)
 
 #define mcfh(dx,dy)\
-    s->dsp.put_pixels_tab       [0][dy/4+dx/8]=\
-    s->dsp.put_no_rnd_pixels_tab[0][dy/4+dx/8]=\
+    s->hdsp.put_pixels_tab       [0][dy/4+dx/8]=\
+    s->hdsp.put_no_rnd_pixels_tab[0][dy/4+dx/8]=\
         mc_block_hpel ## dx ## dy ## 16;\
-    s->dsp.put_pixels_tab       [1][dy/4+dx/8]=\
-    s->dsp.put_no_rnd_pixels_tab[1][dy/4+dx/8]=\
+    s->hdsp.put_pixels_tab       [1][dy/4+dx/8]=\
+    s->hdsp.put_no_rnd_pixels_tab[1][dy/4+dx/8]=\
         mc_block_hpel ## dx ## dy ## 8;
 
     mcfh(0, 0)

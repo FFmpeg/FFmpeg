@@ -23,6 +23,7 @@
 #define AVCODEC_SNOW_H
 
 #include "dsputil.h"
+#include "hpeldsp.h"
 #include "snow_dwt.h"
 
 #include "rangecoder.h"
@@ -109,6 +110,7 @@ typedef struct SnowContext{
     AVCodecContext *avctx;
     RangeCoder c;
     DSPContext dsp;
+    HpelDSPContext hdsp;
     VideoDSPContext vdsp;
     H264QpelContext h264qpel;
     SnowDWTContext dwt;

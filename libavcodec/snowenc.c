@@ -1748,7 +1748,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->lambda2= s->m.lambda2= (s->m.lambda*s->m.lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
 
         s->m.dsp= s->dsp; //move
+        s->m.hdsp = s->hdsp;
         ff_init_me(&s->m);
+        s->hdsp = s->m.hdsp;
         s->dsp= s->m.dsp;
     }
 
