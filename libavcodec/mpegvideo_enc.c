@@ -188,8 +188,6 @@ void ff_init_qscale_tab(MpegEncContext *s)
 static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst,
                                     const AVFrame *src)
 {
-    int i;
-
     dst->pict_type              = src->pict_type;
     dst->quality                = src->quality;
     dst->coded_picture_number   = src->coded_picture_number;
@@ -198,38 +196,6 @@ static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst,
     dst->pts                    = src->pts;
     dst->interlaced_frame       = src->interlaced_frame;
     dst->top_field_first        = src->top_field_first;
-
-    if (s->avctx->me_threshold) {
-        if (!src->motion_val[0])
-            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.motion_val not set!\n");
-        if (!src->mb_type)
-            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.mb_type not set!\n");
-        if (!src->ref_index[0])
-            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.ref_index not set!\n");
-        if (src->motion_subsample_log2 != dst->motion_subsample_log2)
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "AVFrame.motion_subsample_log2 doesn't match! (%d!=%d)\n",
-                   src->motion_subsample_log2, dst->motion_subsample_log2);
-
-        memcpy(dst->mb_type, src->mb_type,
-               s->mb_stride * s->mb_height * sizeof(dst->mb_type[0]));
-
-        for (i = 0; i < 2; i++) {
-            int stride = ((16 * s->mb_width ) >>
-                          src->motion_subsample_log2) + 1;
-            int height = ((16 * s->mb_height) >> src->motion_subsample_log2);
-
-            if (src->motion_val[i] &&
-                src->motion_val[i] != dst->motion_val[i]) {
-                memcpy(dst->motion_val[i], src->motion_val[i],
-                       2 * stride * height * sizeof(int16_t));
-            }
-            if (src->ref_index[i] && src->ref_index[i] != dst->ref_index[i]) {
-                memcpy(dst->ref_index[i], src->ref_index[i],
-                       s->mb_stride * 4 * s->mb_height * sizeof(int8_t));
-            }
-        }
-    }
 }
 
 static void update_duplicate_context_after_me(MpegEncContext *dst,
@@ -664,11 +630,6 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
 
     i = (INT_MAX / 2 + 128) >> 8;
-    if (avctx->me_threshold >= i) {
-        av_log(avctx, AV_LOG_ERROR, "me_threshold too large, max is %d\n",
-               i - 1);
-        return -1;
-    }
     if (avctx->mb_threshold >= i) {
         av_log(avctx, AV_LOG_ERROR, "mb_threshold too large, max is %d\n",
                i - 1);
@@ -3312,7 +3273,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
     if(s->pict_type != AV_PICTURE_TYPE_I){
         s->lambda = (s->lambda * s->avctx->me_penalty_compensation + 128)>>8;
         s->lambda2= (s->lambda2* (int64_t)s->avctx->me_penalty_compensation + 128)>>8;
-        if(s->pict_type != AV_PICTURE_TYPE_B && s->avctx->me_threshold==0){
+        if (s->pict_type != AV_PICTURE_TYPE_B) {
             if((s->avctx->pre_me && s->last_non_b_pict_type==AV_PICTURE_TYPE_I) || s->avctx->pre_me==2){
                 s->avctx->execute(s->avctx, pre_estimate_motion_thread, &s->thread_context[0], NULL, context_count, sizeof(void*));
             }
