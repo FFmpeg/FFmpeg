@@ -389,48 +389,6 @@ static int vsink_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVFilterPad ffbuffersink_inputs[] = {
-    {
-        .name      = "default",
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
-    },
-    { NULL },
-};
-
-AVFilter avfilter_vsink_ffbuffersink = {
-    .name      = "ffbuffersink",
-    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
-    .priv_size = sizeof(BufferSinkContext),
-    .init_opaque = vsink_init,
-    .uninit    = uninit,
-
-    .query_formats = vsink_query_formats,
-    .inputs        = ffbuffersink_inputs,
-    .outputs       = NULL,
-};
-
-static const AVFilterPad buffersink_inputs[] = {
-    {
-        .name      = "default",
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
-    },
-    { NULL },
-};
-
-AVFilter avfilter_vsink_buffersink = {
-    .name      = "buffersink",
-    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
-    .priv_size = sizeof(BufferSinkContext),
-    .init_opaque = vsink_init,
-    .uninit    = uninit,
-
-    .query_formats = vsink_query_formats,
-    .inputs        = buffersink_inputs,
-    .outputs       = NULL,
-};
-
 static int64_t *concat_channels_lists(const int64_t *layouts, const int *counts)
 {
     int nb_layouts = 0, nb_counts = 0, i;
@@ -513,6 +471,27 @@ static int asink_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVFilterPad ffbuffersink_inputs[] = {
+    {
+        .name      = "default",
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+    },
+    { NULL },
+};
+
+AVFilter avfilter_vsink_ffbuffersink = {
+    .name      = "ffbuffersink",
+    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
+    .priv_size = sizeof(BufferSinkContext),
+    .init_opaque = vsink_init,
+    .uninit    = uninit,
+
+    .query_formats = vsink_query_formats,
+    .inputs        = ffbuffersink_inputs,
+    .outputs       = NULL,
+};
+
 static const AVFilterPad ffabuffersink_inputs[] = {
     {
         .name           = "default",
@@ -533,22 +512,44 @@ AVFilter avfilter_asink_ffabuffersink = {
     .outputs       = NULL,
 };
 
+static const AVFilterPad buffersink_inputs[] = {
+    {
+        .name        = "default",
+        .type        = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+    },
+    { NULL }
+};
+
+AVFilter avfilter_vsink_buffersink = {
+    .name      = "buffersink",
+    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
+    .priv_size = sizeof(BufferSinkContext),
+    .init_opaque = vsink_init,
+    .uninit    = uninit,
+
+    .query_formats = vsink_query_formats,
+    .inputs    = buffersink_inputs,
+    .outputs   = NULL,
+};
+
 static const AVFilterPad abuffersink_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_asink_abuffersink = {
     .name      = "abuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
+    .priv_size = sizeof(BufferSinkContext),
     .init_opaque = asink_init,
     .uninit    = uninit,
-    .priv_size = sizeof(BufferSinkContext),
+
     .query_formats = asink_query_formats,
-    .inputs        = abuffersink_inputs,
-    .outputs       = NULL,
+    .inputs    = abuffersink_inputs,
+    .outputs   = NULL,
 };
