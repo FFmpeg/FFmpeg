@@ -349,7 +349,7 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
     } else if (deblock_filtering) {
         /* only need a 12x12 block, but there is no such dsp function, */
         /* so copy a 16x12 block */
-        s->dsp.put_pixels_tab[0][0](s->edge_emu_buffer,
+        s->hdsp.put_pixels_tab[0][0](s->edge_emu_buffer,
                                     src + s->block_offset[b] + (dy-2)*stride + (dx-2),
                                     stride, 12);
         src_block = s->edge_emu_buffer;
@@ -376,7 +376,7 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
                                            src_block+src_offset+overlap_offset,
                                            stride, 8);
     } else {
-        s->dsp.put_pixels_tab[1][0](dst, src_block+src_offset, stride, 8);
+        s->hdsp.put_pixels_tab[1][0](dst, src_block+src_offset, stride, 8);
     }
 }
 
@@ -419,7 +419,7 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
             for (b=0; b<b_max; b++) {
                 plane = ff_vp56_b2p[b+ab];
                 off = s->block_offset[b];
-                s->dsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
+                s->hdsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
                                             frame_ref->data[plane] + off,
                                             s->stride[plane], 8);
                 s->vp3dsp.idct_add(frame_current->data[plane] + off,
@@ -687,8 +687,8 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     s->avctx = avctx;
     avctx->pix_fmt = has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
 
-    ff_dsputil_init(&s->dsp, avctx);
     ff_h264chroma_init(&s->h264chroma, 8);
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
