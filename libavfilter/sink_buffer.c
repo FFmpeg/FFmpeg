@@ -256,9 +256,6 @@ int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
 int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
                                   AVFilterBufferRef **bufref, int flags)
 {
-    BufferSinkContext *buf = ctx->priv;
-    AVFilterLink *inlink = ctx->inputs[0];
-    int ret;
     *bufref = NULL;
 
     av_assert0(    !strcmp(ctx->filter->name, "buffersink")
