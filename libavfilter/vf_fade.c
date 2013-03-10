@@ -178,7 +178,7 @@ static void fade_plane(int y, int h, int w,
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     FadeContext *fade = inlink->dst->priv;
     uint8_t *p;
@@ -189,21 +189,21 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
             // alpha only
             plane = fade->is_packed_rgb ? 0 : A; // alpha is on plane 0 for packed formats
                                                  // or plane 3 for planar formats
-            fade_plane(0, frame->video->h, inlink->w,
+            fade_plane(0, frame->height, inlink->w,
                        fade->factor, fade->black_level, fade->black_level_scaled,
                        fade->is_packed_rgb ? fade->rgba_map[A] : 0, // alpha offset for packed formats
                        fade->is_packed_rgb ? 4 : 1,                 // pixstep for 8 bit packed formats
                        1, frame->data[plane], frame->linesize[plane]);
         } else {
             /* luma or rgb plane */
-            fade_plane(0, frame->video->h, inlink->w,
+            fade_plane(0, frame->height, inlink->w,
                        fade->factor, fade->black_level, fade->black_level_scaled,
                        0, 1, // offset & pixstep for Y plane or RGB packed format
                        fade->bpp, frame->data[0], frame->linesize[0]);
             if (frame->data[1] && frame->data[2]) {
                 /* chroma planes */
                 for (plane = 1; plane < 3; plane++) {
-                    for (i = 0; i < frame->video->h; i++) {
+                    for (i = 0; i < frame->height; i++) {
                         p = frame->data[plane] + (i >> fade->vsub) * frame->linesize[plane];
                         for (j = 0; j < inlink->w >> fade->hsub; j++) {
                             /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
@@ -234,7 +234,7 @@ static const AVFilterPad avfilter_vf_fade_inputs[] = {
         .config_props     = config_props,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
+        .needs_writable   = 1,
     },
     { NULL }
 };

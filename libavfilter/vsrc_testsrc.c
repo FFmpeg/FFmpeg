@@ -58,9 +58,9 @@ typedef struct {
     AVRational sar;             ///< sample aspect ratio
     int nb_decimals;
     int draw_once;              ///< draw only the first frame, always put out the same picture
-    AVFilterBufferRef *picref;  ///< cached reference containing the painted picture
+    AVFrame *picref;            ///< cached reference containing the painted picture
 
-    void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
+    void (* fill_picture_fn)(AVFilterContext *ctx, AVFrame *frame);
 
     /* only used by color */
     char *color_str;
@@ -150,7 +150,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     TestSourceContext *test = ctx->priv;
 
     av_opt_free(test);
-    avfilter_unref_bufferp(&test->picref);
+    av_frame_free(&test->picref);
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -169,7 +169,7 @@ static int config_props(AVFilterLink *outlink)
 static int request_frame(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
-    AVFilterBufferRef *outpicref;
+    AVFrame *frame;
 
     if (test->duration >= 0 &&
         av_rescale_q(test->pts, test->time_base, AV_TIME_BASE_Q) >= test->duration)
@@ -178,31 +178,29 @@ static int request_frame(AVFilterLink *outlink)
     if (test->draw_once) {
         if (!test->picref) {
             test->picref =
-                ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_PRESERVE|AV_PERM_REUSE,
-                                    test->w, test->h);
+                ff_get_video_buffer(outlink, test->w, test->h);
             if (!test->picref)
                 return AVERROR(ENOMEM);
             test->fill_picture_fn(outlink->src, test->picref);
         }
-        outpicref = avfilter_ref_buffer(test->picref, ~AV_PERM_WRITE);
+        frame = av_frame_clone(test->picref);
     } else
-        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, test->w, test->h);
+        frame = ff_get_video_buffer(outlink, test->w, test->h);
 
-    if (!outpicref)
+    if (!frame)
         return AVERROR(ENOMEM);
-    outpicref->pts = test->pts;
-    outpicref->pos = -1;
-    outpicref->video->key_frame = 1;
-    outpicref->video->interlaced = 0;
-    outpicref->video->pict_type = AV_PICTURE_TYPE_I;
-    outpicref->video->sample_aspect_ratio = test->sar;
+    frame->pts                 = test->pts;
+    frame->key_frame           = 1;
+    frame->interlaced_frame    = 0;
+    frame->pict_type           = AV_PICTURE_TYPE_I;
+    frame->sample_aspect_ratio = test->sar;
     if (!test->draw_once)
-        test->fill_picture_fn(outlink->src, outpicref);
+        test->fill_picture_fn(outlink->src, frame);
 
     test->pts++;
     test->nb_frame++;
 
-    return ff_filter_frame(outlink, outpicref);
+    return ff_filter_frame(outlink, frame);
 }
 
 #if CONFIG_COLOR_FILTER
@@ -210,7 +208,7 @@ static int request_frame(AVFilterLink *outlink)
 #define color_options options
 AVFILTER_DEFINE_CLASS(color);
 
-static void color_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void color_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
     TestSourceContext *test = ctx->priv;
     ff_fill_rectangle(&test->draw, &test->color,
@@ -287,7 +285,7 @@ AVFilter avfilter_vsrc_color = {
 #define nullsrc_options options
 AVFILTER_DEFINE_CLASS(nullsrc);
 
-static void nullsrc_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref) { }
+static void nullsrc_fill_picture(AVFilterContext *ctx, AVFrame *picref) { }
 
 static av_cold int nullsrc_init(AVFilterContext *ctx, const char *args)
 {
@@ -398,7 +396,7 @@ static void draw_digit(int digit, uint8_t *dst, unsigned dst_linesize,
 
 #define GRADIENT_SIZE (6 * 256)
 
-static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     TestSourceContext *test = ctx->priv;
     uint8_t *p, *p0;
@@ -412,9 +410,9 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
     int seg_size;
     int second;
     int i;
-    uint8_t *data = picref->data[0];
-    int width  = picref->video->w;
-    int height = picref->video->h;
+    uint8_t *data = frame->data[0];
+    int width  = frame->width;
+    int height = frame->height;
 
     /* draw colored bars and circle */
     radius = (width + height) / 4;
@@ -444,11 +442,11 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
         }
         quad0 += dquad_y;
         dquad_y += 2;
-        p0 += picref->linesize[0];
+        p0 += frame->linesize[0];
     }
 
     /* draw sliding color line */
-    p0 = p = data + picref->linesize[0] * height * 3/4;
+    p0 = p = data + frame->linesize[0] * height * 3/4;
     grad = (256 * test->nb_frame * test->time_base.num / test->time_base.den) %
         GRADIENT_SIZE;
     rgrad = 0;
@@ -478,8 +476,8 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
     }
     p = p0;
     for (y = height / 8; y > 0; y--) {
-        memcpy(p+picref->linesize[0], p, 3 * width);
-        p += picref->linesize[0];
+        memcpy(p+frame->linesize[0], p, 3 * width);
+        p += frame->linesize[0];
     }
 
     /* draw digits */
@@ -492,10 +490,10 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
         second = (int)time;
         x = width - (width - seg_size * 64) / 2;
         y = (height - seg_size * 13) / 2;
-        p = data + (x*3 + y * picref->linesize[0]);
+        p = data + (x*3 + y * frame->linesize[0]);
         for (i = 0; i < 8; i++) {
             p -= 3 * 8 * seg_size;
-            draw_digit(second % 10, p, picref->linesize[0], seg_size);
+            draw_digit(second % 10, p, frame->linesize[0], seg_size);
             second /= 10;
             if (second == 0)
                 break;
@@ -588,13 +586,13 @@ static void rgbtest_put_pixel(uint8_t *dst, int dst_linesize,
     }
 }
 
-static void rgbtest_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void rgbtest_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     TestSourceContext *test = ctx->priv;
-    int x, y, w = picref->video->w, h = picref->video->h;
+    int x, y, w = frame->width, h = frame->height;
 
     for (y = 0; y < h; y++) {
-         for (x = 0; x < picref->video->w; x++) {
+         for (x = 0; x < w; x++) {
              int c = 256*x/w;
              int r = 0, g = 0, b = 0;
 
@@ -602,7 +600,7 @@ static void rgbtest_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref
              else if (3*y < 2*h) g = c;
              else                b = c;
 
-             rgbtest_put_pixel(picref->data[0], picref->linesize[0], x, y, r, g, b,
+             rgbtest_put_pixel(frame->data[0], frame->linesize[0], x, y, r, g, b,
                                ctx->outputs[0]->format, test->rgba_map);
          }
      }
@@ -703,7 +701,7 @@ static const uint8_t pos4ire[4] = {  29,  29,  29, 255 }; /* 11.5% intensity bla
 static const uint8_t i_pixel[4] = {   0,  68, 130, 255 };
 static const uint8_t q_pixel[4] = {  67,   0, 130, 255 };
 
-static void smptebars_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
     TestSourceContext *test = ctx->priv;
     FFDrawColor color;

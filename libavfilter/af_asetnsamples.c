@@ -93,7 +93,7 @@ static int config_props_output(AVFilterLink *outlink)
 static int push_samples(AVFilterLink *outlink)
 {
     ASNSContext *asns = outlink->src->priv;
-    AVFilterBufferRef *outsamples = NULL;
+    AVFrame *outsamples = NULL;
     int nb_out_samples, nb_pad_samples;
 
     if (asns->pad) {
@@ -107,7 +107,7 @@ static int push_samples(AVFilterLink *outlink)
     if (!nb_out_samples)
         return 0;
 
-    outsamples = ff_get_audio_buffer(outlink, AV_PERM_WRITE, nb_out_samples);
+    outsamples = ff_get_audio_buffer(outlink, nb_out_samples);
     av_assert0(outsamples);
 
     av_audio_fifo_read(asns->fifo,
@@ -117,9 +117,9 @@ static int push_samples(AVFilterLink *outlink)
         av_samples_set_silence(outsamples->extended_data, nb_out_samples - nb_pad_samples,
                                nb_pad_samples, av_get_channel_layout_nb_channels(outlink->channel_layout),
                                outlink->format);
-    outsamples->audio->nb_samples     = nb_out_samples;
-    outsamples->audio->channel_layout = outlink->channel_layout;
-    outsamples->audio->sample_rate    = outlink->sample_rate;
+    outsamples->nb_samples     = nb_out_samples;
+    outsamples->channel_layout = outlink->channel_layout;
+    outsamples->sample_rate    = outlink->sample_rate;
     outsamples->pts = asns->next_out_pts;
 
     if (asns->next_out_pts != AV_NOPTS_VALUE)
@@ -130,13 +130,13 @@ static int push_samples(AVFilterLink *outlink)
     return nb_out_samples;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ASNSContext *asns = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     int ret;
-    int nb_samples = insamples->audio->nb_samples;
+    int nb_samples = insamples->nb_samples;
 
     if (av_audio_fifo_space(asns->fifo) < nb_samples) {
         av_log(ctx, AV_LOG_DEBUG, "No space for %d samples, stretching audio fifo\n", nb_samples);
@@ -150,7 +150,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     av_audio_fifo_write(asns->fifo, (void **)insamples->extended_data, nb_samples);
     if (asns->next_out_pts == AV_NOPTS_VALUE)
         asns->next_out_pts = insamples->pts;
-    avfilter_unref_buffer(insamples);
+    av_frame_free(&insamples);
 
     while (av_audio_fifo_size(asns->fifo) >= asns->nb_out_samples)
         push_samples(outlink);
@@ -177,10 +177,10 @@ static int request_frame(AVFilterLink *outlink)
 
 static const AVFilterPad asetnsamples_inputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ | AV_PERM_WRITE,
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = filter_frame,
+        .needs_writable = 1,
     },
     {  NULL }
 };

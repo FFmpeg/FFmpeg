@@ -212,14 +212,14 @@ static int query_formats(AVFilterContext *ctx)
 static int request_frame(AVFilterLink *outlink)
 {
     EvalContext *eval = outlink->src->priv;
-    AVFilterBufferRef *samplesref;
+    AVFrame *samplesref;
     int i, j;
     double t = eval->n * (double)1/eval->sample_rate;
 
     if (eval->duration >= 0 && t >= eval->duration)
         return AVERROR_EOF;
 
-    samplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, eval->nb_samples);
+    samplesref = ff_get_audio_buffer(outlink, eval->nb_samples);
 
     /* evaluate expression for each single sample and for each channel */
     for (i = 0; i < eval->nb_samples; i++, eval->n++) {
@@ -233,8 +233,7 @@ static int request_frame(AVFilterLink *outlink)
     }
 
     samplesref->pts = eval->pts;
-    samplesref->pos = -1;
-    samplesref->audio->sample_rate = eval->sample_rate;
+    samplesref->sample_rate = eval->sample_rate;
     eval->pts += eval->nb_samples;
 
     ff_filter_frame(outlink, samplesref);

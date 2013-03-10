@@ -73,7 +73,7 @@ typedef struct {
     uint8_t death_color[4];
     uint8_t  mold_color[4];
     AVLFG lfg;
-    void (*draw)(AVFilterContext*, AVFilterBufferRef*);
+    void (*draw)(AVFilterContext*, AVFrame*);
 } LifeContext;
 
 #define ALIVE_CELL 0xFF
@@ -375,7 +375,7 @@ static void evolve(AVFilterContext *ctx)
     life->buf_idx = !life->buf_idx;
 }
 
-static void fill_picture_monoblack(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void fill_picture_monoblack(AVFilterContext *ctx, AVFrame *picref)
 {
     LifeContext *life = ctx->priv;
     uint8_t *buf = life->buf[life->buf_idx];
@@ -400,7 +400,7 @@ static void fill_picture_monoblack(AVFilterContext *ctx, AVFilterBufferRef *picr
 // apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
 #define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
 
-static void fill_picture_rgb(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void fill_picture_rgb(AVFilterContext *ctx, AVFrame *picref)
 {
     LifeContext *life = ctx->priv;
     uint8_t *buf = life->buf[life->buf_idx];
@@ -430,10 +430,9 @@ static void fill_picture_rgb(AVFilterContext *ctx, AVFilterBufferRef *picref)
 static int request_frame(AVFilterLink *outlink)
 {
     LifeContext *life = outlink->src->priv;
-    AVFilterBufferRef *picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, life->w, life->h);
-    picref->video->sample_aspect_ratio = (AVRational) {1, 1};
+    AVFrame *picref = ff_get_video_buffer(outlink, life->w, life->h);
+    picref->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts = life->pts++;
-    picref->pos = -1;
 
     life->draw(outlink->src, picref);
     evolve(outlink->src);

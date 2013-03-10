@@ -70,20 +70,20 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static char *get_metadata_val(AVFilterBufferRef *insamples, const char *key)
+static char *get_metadata_val(AVFrame *insamples, const char *key)
 {
     AVDictionaryEntry *e = av_dict_get(insamples->metadata, key, NULL, 0);
     return e && e->value ? e->value : NULL;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int i;
     SilenceDetectContext *silence = inlink->dst->priv;
     const int nb_channels           = av_get_channel_layout_nb_channels(inlink->channel_layout);
     const int srate                 = inlink->sample_rate;
-    const int nb_samples            = insamples->audio->nb_samples * nb_channels;
-    const int64_t nb_samples_notify = srate * silence->duration    * nb_channels;
+    const int nb_samples            = insamples->nb_samples     * nb_channels;
+    const int64_t nb_samples_notify = srate * silence->duration * nb_channels;
 
     // scale number of null samples to the new sample rate
     if (silence->last_sample_rate && silence->last_sample_rate != srate)

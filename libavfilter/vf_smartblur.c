@@ -246,20 +246,20 @@ static void blur(uint8_t       *dst, const int dst_linesize,
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
     SmartblurContext  *sblur  = inlink->dst->priv;
     AVFilterLink *outlink     = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpic;
+    AVFrame *outpic;
     int cw = inlink->w >> sblur->hsub;
     int ch = inlink->h >> sblur->vsub;
 
-    outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {
-        avfilter_unref_bufferp(&inpic);
+        av_frame_free(&inpic);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(outpic, inpic);
+    av_frame_copy_props(outpic, inpic);
 
     blur(outpic->data[0], outpic->linesize[0],
          inpic->data[0],  inpic->linesize[0],
@@ -277,7 +277,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
              sblur->chroma.filter_context);
     }
 
-    avfilter_unref_bufferp(&inpic);
+    av_frame_free(&inpic);
     return ff_filter_frame(outlink, outpic);
 }
 

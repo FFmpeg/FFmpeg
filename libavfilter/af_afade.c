@@ -232,22 +232,22 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AudioFadeContext *afade = inlink->dst->priv;
     AVFilterLink *outlink   = inlink->dst->outputs[0];
-    int nb_samples          = buf->audio->nb_samples;
-    AVFilterBufferRef *out_buf;
+    int nb_samples          = buf->nb_samples;
+    AVFrame *out_buf;
     int64_t cur_sample = av_rescale_q(buf->pts, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     if ((!afade->type && (afade->start_sample + afade->nb_samples < cur_sample)) ||
         ( afade->type && (cur_sample + afade->nb_samples < afade->start_sample)))
         return ff_filter_frame(outlink, buf);
 
-    if (buf->perms & AV_PERM_WRITE) {
+    if (av_frame_is_writable(buf)) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(inlink, AV_PERM_WRITE, nb_samples);
+        out_buf = ff_get_audio_buffer(inlink, nb_samples);
         if (!out_buf)
             return AVERROR(ENOMEM);
         out_buf->pts = buf->pts;
@@ -256,7 +256,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     if ((!afade->type && (cur_sample + nb_samples < afade->start_sample)) ||
         ( afade->type && (afade->start_sample + afade->nb_samples < cur_sample))) {
         av_samples_set_silence(out_buf->extended_data, 0, nb_samples,
-                               out_buf->audio->channels, out_buf->format);
+                               out_buf->channels, out_buf->format);
     } else {
         int64_t start;
 
@@ -266,13 +266,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
             start = afade->start_sample + afade->nb_samples - cur_sample;
 
         afade->fade_samples(out_buf->extended_data, buf->extended_data,
-                            nb_samples, buf->audio->channels,
+                            nb_samples, buf->channels,
                             afade->type ? -1 : 1, start,
                             afade->nb_samples, afade->curve);
     }
 
     if (buf != out_buf)
-        avfilter_unref_buffer(buf);
+        av_frame_free(&buf);
 
     return ff_filter_frame(outlink, out_buf);
 }

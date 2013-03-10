@@ -48,8 +48,8 @@ typedef struct {
     int flags;                  ///< flags affecting interlacing algorithm
     int frame;                  ///< number of the output frame
     int vsub;                   ///< chroma vertical subsampling
-    AVFilterBufferRef *cur;
-    AVFilterBufferRef *next;
+    AVFrame *cur;
+    AVFrame *next;
     uint8_t *black_data[4];     ///< buffer used to fill padded lines
     int black_linesize[4];
 } TInterlaceContext;
@@ -112,8 +112,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     TInterlaceContext *tinterlace = ctx->priv;
 
-    avfilter_unref_bufferp(&tinterlace->cur );
-    avfilter_unref_bufferp(&tinterlace->next);
+    av_frame_free(&tinterlace->cur );
+    av_frame_free(&tinterlace->next);
 
     av_opt_free(tinterlace);
     av_freep(&tinterlace->black_data[0]);
@@ -228,15 +228,15 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     TInterlaceContext *tinterlace = ctx->priv;
-    AVFilterBufferRef *cur, *next, *out;
+    AVFrame *cur, *next, *out;
     int field, tff, ret;
 
-    avfilter_unref_buffer(tinterlace->cur);
+    av_frame_free(&tinterlace->cur);
     tinterlace->cur  = tinterlace->next;
     tinterlace->next = picref;
 
@@ -249,13 +249,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     switch (tinterlace->mode) {
     case MODE_MERGE: /* move the odd frame into the upper field of the new image, even into
              * the lower field, generating a double-height video at half framerate */
-        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
-        avfilter_copy_buffer_ref_props(out, cur);
-        out->video->h = outlink->h;
-        out->video->interlaced = 1;
-        out->video->top_field_first = 1;
+        av_frame_copy_props(out, cur);
+        out->height = outlink->h;
+        out->interlaced_frame = 1;
+        out->top_field_first = 1;
 
         /* write odd frame lines into the upper field of the new frame */
         copy_picture_field(out->data, out->linesize,
@@ -267,20 +267,20 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                            (const uint8_t **)next->data, next->linesize,
                            inlink->format, inlink->w, inlink->h,
                            FIELD_UPPER_AND_LOWER, 1, FIELD_LOWER, tinterlace->flags);
-        avfilter_unref_bufferp(&tinterlace->next);
+        av_frame_free(&tinterlace->next);
         break;
 
     case MODE_DROP_ODD:  /* only output even frames, odd  frames are dropped; height unchanged, half framerate */
     case MODE_DROP_EVEN: /* only output odd  frames, even frames are dropped; height unchanged, half framerate */
-        out = avfilter_ref_buffer(tinterlace->mode == MODE_DROP_EVEN ? cur : next, AV_PERM_READ);
-        avfilter_unref_bufferp(&tinterlace->next);
+        out = av_frame_clone(tinterlace->mode == MODE_DROP_EVEN ? cur : next);
+        av_frame_free(&tinterlace->next);
         break;
 
     case MODE_PAD: /* expand each frame to double height, but pad alternate
                     * lines with black; framerate unchanged */
-        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-        avfilter_copy_buffer_ref_props(out, cur);
-        out->video->h = outlink->h;
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        av_frame_copy_props(out, cur);
+        out->height = outlink->h;
 
         field = (1 + tinterlace->frame) & 1 ? FIELD_UPPER : FIELD_LOWER;
         /* copy upper and lower fields */
@@ -300,12 +300,12 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     case MODE_INTERLEAVE_TOP:    /* top    field first */
     case MODE_INTERLEAVE_BOTTOM: /* bottom field first */
         tff = tinterlace->mode == MODE_INTERLEAVE_TOP;
-        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
-        avfilter_copy_buffer_ref_props(out, cur);
-        out->video->interlaced = 1;
-        out->video->top_field_first = tff;
+        av_frame_copy_props(out, cur);
+        out->interlaced_frame = 1;
+        out->top_field_first = tff;
 
         /* copy upper/lower field from cur */
         copy_picture_field(out->data, out->linesize,
@@ -319,25 +319,25 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                            inlink->format, inlink->w, inlink->h,
                            tff ? FIELD_LOWER : FIELD_UPPER, 1, tff ? FIELD_LOWER : FIELD_UPPER,
                            tinterlace->flags);
-        avfilter_unref_bufferp(&tinterlace->next);
+        av_frame_free(&tinterlace->next);
         break;
     case MODE_INTERLACEX2: /* re-interlace preserving image height, double frame rate */
         /* output current frame first */
-        out = avfilter_ref_buffer(cur, ~AV_PERM_WRITE);
+        out = av_frame_clone(cur);
         if (!out)
             return AVERROR(ENOMEM);
-        out->video->interlaced = 1;
+        out->interlaced_frame = 1;
 
         if ((ret = ff_filter_frame(outlink, out)) < 0)
             return ret;
 
         /* output mix of current and next frame */
-        tff = next->video->top_field_first;
-        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        tff = next->top_field_first;
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
-        avfilter_copy_buffer_ref_props(out, next);
-        out->video->interlaced = 1;
+        av_frame_copy_props(out, next);
+        out->interlaced_frame = 1;
 
         /* write current frame second field lines into the second field of the new frame */
         copy_picture_field(out->data, out->linesize,

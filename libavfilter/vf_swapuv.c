@@ -29,23 +29,25 @@
 #include "internal.h"
 #include "video.h"
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *link, int perms,
-                                           int w, int h)
+static void do_swap(AVFrame *frame)
 {
-    AVFilterBufferRef *picref =
-        ff_default_get_video_buffer(link, perms, w, h);
+    FFSWAP(uint8_t*,     frame->data[1],     frame->data[2]);
+    FFSWAP(int,          frame->linesize[1], frame->linesize[2]);
+    FFSWAP(uint8_t*,     frame->base[1],     frame->base[2]);
+    FFSWAP(uint64_t,     frame->error[1],    frame->error[2]);
+    FFSWAP(AVBufferRef*, frame->buf[1],      frame->buf[2]);
+}
 
-    FFSWAP(uint8_t*, picref->data[1], picref->data[2]);
-    FFSWAP(int, picref->linesize[1], picref->linesize[2]);
-
+static AVFrame *get_video_buffer(AVFilterLink *link, int w, int h)
+{
+    AVFrame *picref = ff_default_get_video_buffer(link, w, h);
+    do_swap(picref);
     return picref;
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *link, AVFrame *inpicref)
 {
-    FFSWAP(uint8_t*, inpicref->data[1], inpicref->data[2]);
-    FFSWAP(int, inpicref->linesize[1], inpicref->linesize[2]);
-
+    do_swap(inpicref);
     return ff_filter_frame(link->dst->outputs[0], inpicref);
 }
 

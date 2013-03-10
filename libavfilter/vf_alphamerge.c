@@ -96,11 +96,11 @@ static int config_output(AVFilterLink *outlink)
 }
 
 static void draw_frame(AVFilterContext *ctx,
-                       AVFilterBufferRef *main_buf,
-                       AVFilterBufferRef *alpha_buf)
+                       AVFrame *main_buf,
+                       AVFrame *alpha_buf)
 {
     AlphaMergeContext *merge = ctx->priv;
-    int h = main_buf->video->h;
+    int h = main_buf->height;
 
     if (merge->is_packed_rgb) {
         int x, y;
@@ -108,7 +108,7 @@ static void draw_frame(AVFilterContext *ctx,
         for (y = 0; y < h; y++) {
             pin = alpha_buf->data[0] + y * alpha_buf->linesize[0];
             pout = main_buf->data[0] + y * main_buf->linesize[0] + merge->rgba_map[A];
-            for (x = 0; x < main_buf->video->w; x++) {
+            for (x = 0; x < main_buf->width; x++) {
                 *pout = *pin;
                 pin += 1;
                 pout += 4;
@@ -118,7 +118,7 @@ static void draw_frame(AVFilterContext *ctx,
         int y;
         const int main_linesize = main_buf->linesize[A];
         const int alpha_linesize = alpha_buf->linesize[Y];
-        for (y = 0; y < h && y < alpha_buf->video->h; y++) {
+        for (y = 0; y < h && y < alpha_buf->height; y++) {
             memcpy(main_buf->data[A] + y * main_linesize,
                    alpha_buf->data[Y] + y * alpha_linesize,
                    FFMIN(main_linesize, alpha_linesize));
@@ -126,7 +126,7 @@ static void draw_frame(AVFilterContext *ctx,
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     AlphaMergeContext *merge = ctx->priv;
@@ -137,7 +137,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     ff_bufqueue_add(ctx, queue, buf);
 
     while (1) {
-        AVFilterBufferRef *main_buf, *alpha_buf;
+        AVFrame *main_buf, *alpha_buf;
 
         if (!ff_bufqueue_peek(&merge->queue_main, 0) ||
             !ff_bufqueue_peek(&merge->queue_alpha, 0)) break;
@@ -148,7 +148,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         merge->frame_requested = 0;
         draw_frame(ctx, main_buf, alpha_buf);
         ff_filter_frame(ctx->outputs[0], main_buf);
-        avfilter_unref_buffer(alpha_buf);
+        av_frame_free(&alpha_buf);
     }
     return 0;
 }

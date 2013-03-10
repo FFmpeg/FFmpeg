@@ -253,28 +253,28 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     LutContext *lut = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     uint8_t *inrow, *outrow, *inrow0, *outrow0;
     int i, j, plane;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
     if (lut->is_rgb) {
         /* packed */
         inrow0  = in ->data[0];
         outrow0 = out->data[0];
 
-        for (i = 0; i < in->video->h; i ++) {
+        for (i = 0; i < in->height; i ++) {
             int w = inlink->w;
             const uint8_t (*tab)[256] = (const uint8_t (*)[256])lut->lut;
             inrow  = inrow0;
@@ -305,7 +305,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
             inrow  = in ->data[plane];
             outrow = out->data[plane];
 
-            for (i = 0; i < (in->video->h + (1<<vsub) - 1)>>vsub; i ++) {
+            for (i = 0; i < (in->height + (1<<vsub) - 1)>>vsub; i ++) {
                 const uint8_t *tab = lut->lut[plane];
                 int w = (inlink->w + (1<<hsub) - 1)>>hsub;
                 for (j = 0; j < w; j++)
@@ -316,7 +316,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         }
     }
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
@@ -325,7 +325,7 @@ static const AVFilterPad inputs[] = {
       .type            = AVMEDIA_TYPE_VIDEO,
       .filter_frame    = filter_frame,
       .config_props    = config_props,
-      .min_perms       = AV_PERM_READ, },
+    },
     { .name = NULL}
 };
 static const AVFilterPad outputs[] = {

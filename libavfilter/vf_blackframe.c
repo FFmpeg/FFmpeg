@@ -81,7 +81,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackFrameContext *blackframe = ctx->priv;
@@ -89,22 +89,22 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     int pblack = 0;
     uint8_t *p = frame->data[0];
 
-    for (i = 0; i < frame->video->h; i++) {
+    for (i = 0; i < frame->height; i++) {
         for (x = 0; x < inlink->w; x++)
             blackframe->nblack += p[x] < blackframe->bthresh;
         p += frame->linesize[0];
     }
 
-    if (frame->video->key_frame)
+    if (frame->key_frame)
         blackframe->last_keyframe = blackframe->frame;
 
     pblack = blackframe->nblack * 100 / (inlink->w * inlink->h);
     if (pblack >= blackframe->bamount)
-        av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pos:%"PRId64" pts:%"PRId64" t:%f "
+        av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pts:%"PRId64" t:%f "
                "type:%c last_keyframe:%d\n",
-               blackframe->frame, pblack, frame->pos, frame->pts,
+               blackframe->frame, pblack, frame->pts,
                frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base),
-               av_get_picture_type_char(frame->video->pict_type), blackframe->last_keyframe);
+               av_get_picture_type_char(frame->pict_type), blackframe->last_keyframe);
 
     blackframe->frame++;
     blackframe->nblack = 0;

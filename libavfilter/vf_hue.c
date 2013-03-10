@@ -276,18 +276,18 @@ static void process_chrominance(uint8_t *udst, uint8_t *vdst, const int dst_line
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
     HueContext *hue = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpic;
+    AVFrame *outpic;
 
-    outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {
-        avfilter_unref_bufferp(&inpic);
+        av_frame_free(&inpic);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(outpic, inpic);
+    av_frame_copy_props(outpic, inpic);
 
     if (!hue->flat_syntax) {
         hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
@@ -330,7 +330,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
                         inlink->w >> hue->hsub, inlink->h >> hue->vsub,
                         hue->hue_cos, hue->hue_sin);
 
-    avfilter_unref_bufferp(&inpic);
+    av_frame_free(&inpic);
     return ff_filter_frame(outlink, outpic);
 }
 
@@ -349,7 +349,6 @@ static const AVFilterPad hue_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
         .config_props = config_props,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

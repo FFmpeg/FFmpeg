@@ -157,7 +157,7 @@ static int config_output(AVFilterLink *outlink)
 }
 
 static void push_frame(AVFilterContext *ctx, unsigned in_no,
-                       AVFilterBufferRef *buf)
+                       AVFrame *buf)
 {
     ConcatContext *cat = ctx->priv;
     unsigned out_no = in_no % ctx->nb_outputs;
@@ -171,7 +171,7 @@ static void push_frame(AVFilterContext *ctx, unsigned in_no,
     /* add duration to input PTS */
     if (inlink->sample_rate)
         /* use number of audio samples */
-        in->pts += av_rescale_q(buf->audio->nb_samples,
+        in->pts += av_rescale_q(buf->nb_samples,
                                 (AVRational){ 1, inlink->sample_rate },
                                 outlink->time_base);
     else if (in->nb_frames >= 2)
@@ -182,7 +182,7 @@ static void push_frame(AVFilterContext *ctx, unsigned in_no,
     ff_filter_frame(outlink, buf);
 }
 
-static void process_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static void process_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx  = inlink->dst;
     ConcatContext *cat    = ctx->priv;
@@ -191,7 +191,7 @@ static void process_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     if (in_no < cat->cur_idx) {
         av_log(ctx, AV_LOG_ERROR, "Frame after EOF on input %s\n",
                ctx->input_pads[in_no].name);
-        avfilter_unref_buffer(buf);
+        av_frame_free(&buf);
     } else if (in_no >= cat->cur_idx + ctx->nb_outputs) {
         ff_bufqueue_add(ctx, &cat->in[in_no].queue, buf);
     } else {
@@ -199,27 +199,25 @@ static void process_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     }
 }
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms,
-                                           int w, int h)
+static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     AVFilterContext *ctx = inlink->dst;
     unsigned in_no = FF_INLINK_IDX(inlink);
     AVFilterLink *outlink = ctx->outputs[in_no % ctx->nb_outputs];
 
-    return ff_get_video_buffer(outlink, perms, w, h);
+    return ff_get_video_buffer(outlink, w, h);
 }
 
-static AVFilterBufferRef *get_audio_buffer(AVFilterLink *inlink, int perms,
-                                           int nb_samples)
+static AVFrame *get_audio_buffer(AVFilterLink *inlink, int nb_samples)
 {
     AVFilterContext *ctx = inlink->dst;
     unsigned in_no = FF_INLINK_IDX(inlink);
     AVFilterLink *outlink = ctx->outputs[in_no % ctx->nb_outputs];
 
-    return ff_get_audio_buffer(outlink, perms, nb_samples);
+    return ff_get_audio_buffer(outlink, nb_samples);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     process_frame(inlink, buf);
     return 0; /* enhancement: handle error return */
@@ -256,7 +254,7 @@ static void send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no)
     int64_t nb_samples, sent = 0;
     int frame_nb_samples;
     AVRational rate_tb = { 1, ctx->inputs[in_no]->sample_rate };
-    AVFilterBufferRef *buf;
+    AVFrame *buf;
     int nb_channels = av_get_channel_layout_nb_channels(outlink->channel_layout);
 
     if (!rate_tb.den)
@@ -266,7 +264,7 @@ static void send_silence(AVFilterContext *ctx, unsigned in_no, unsigned out_no)
     frame_nb_samples = FFMAX(9600, rate_tb.den / 5); /* arbitrary */
     while (nb_samples) {
         frame_nb_samples = FFMIN(frame_nb_samples, nb_samples);
-        buf = ff_get_audio_buffer(outlink, AV_PERM_WRITE, frame_nb_samples);
+        buf = ff_get_audio_buffer(outlink, frame_nb_samples);
         if (!buf)
             return;
         av_samples_set_silence(buf->extended_data, 0, frame_nb_samples,
@@ -360,7 +358,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
             for (str = 0; str < cat->nb_streams[type]; str++) {
                 AVFilterPad pad = {
                     .type             = type,
-                    .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
                     .get_video_buffer = get_video_buffer,
                     .get_audio_buffer = get_audio_buffer,
                     .filter_frame     = filter_frame,

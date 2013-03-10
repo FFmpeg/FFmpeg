@@ -100,32 +100,32 @@ static int pp_config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int pp_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inbuf)
+static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
 {
     AVFilterContext *ctx = inlink->dst;
     PPFilterContext *pp = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     const int aligned_w = FFALIGN(outlink->w, 8);
     const int aligned_h = FFALIGN(outlink->h, 8);
-    AVFilterBufferRef *outbuf;
+    AVFrame *outbuf;
 
-    outbuf = ff_get_video_buffer(outlink, AV_PERM_WRITE, aligned_w, aligned_h);
+    outbuf = ff_get_video_buffer(outlink, aligned_w, aligned_h);
     if (!outbuf) {
-        avfilter_unref_buffer(inbuf);
+        av_frame_free(&inbuf);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(outbuf, inbuf);
+    av_frame_copy_props(outbuf, inbuf);
 
     pp_postprocess((const uint8_t **)inbuf->data, inbuf->linesize,
                    outbuf->data,                 outbuf->linesize,
                    aligned_w, outlink->h,
-                   outbuf->video->qp_table,
-                   outbuf->video->qp_table_linesize,
+                   outbuf->qscale_table,
+                   outbuf->qstride,
                    pp->modes[pp->mode_id],
                    pp->pp_ctx,
-                   outbuf->video->pict_type);
+                   outbuf->pict_type);
 
-    avfilter_unref_buffer(inbuf);
+    av_frame_free(&inbuf);
     return ff_filter_frame(outlink, outbuf);
 }
 
@@ -146,7 +146,6 @@ static const AVFilterPad pp_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = pp_config_props,
         .filter_frame = pp_filter_frame,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

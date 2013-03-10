@@ -42,7 +42,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
@@ -51,7 +51,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     int i, plane, vsub = desc->log2_chroma_h;
 
     for (plane = 0; plane < 4 && frame->data[plane]; plane++) {
-        int64_t linesize = av_image_get_linesize(frame->format, frame->video->w, plane);
+        int64_t linesize = av_image_get_linesize(frame->format, frame->width, plane);
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? inlink->h >> vsub : inlink->h;
 
@@ -70,14 +70,14 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%08X plane_checksum:[%08X",
            showinfo->frame,
-           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), frame->pos,
+           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), av_frame_get_pkt_pos(frame),
            desc->name,
-           frame->video->sample_aspect_ratio.num, frame->video->sample_aspect_ratio.den,
-           frame->video->w, frame->video->h,
-           !frame->video->interlaced     ? 'P' :         /* Progressive  */
-           frame->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */
-           frame->video->key_frame,
-           av_get_picture_type_char(frame->video->pict_type),
+           frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
+           frame->width, frame->height,
+           !frame->interlaced_frame ? 'P' :         /* Progressive  */
+           frame->top_field_first   ? 'T' : 'B',    /* Top / Bottom */
+           frame->key_frame,
+           av_get_picture_type_char(frame->pict_type),
            checksum, plane_checksum[0]);
 
     for (plane = 1; plane < 4 && frame->data[plane]; plane++)
@@ -94,7 +94,6 @@ static const AVFilterPad avfilter_vf_showinfo_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ,
     },
     { NULL }
 };

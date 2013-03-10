@@ -158,7 +158,7 @@ static int config_input(AVFilterLink *inlink)
 #define AB(c)  (((c)>>8) &0xFF)
 #define AA(c)  ((0xFF-c) &0xFF)
 
-static void overlay_ass_image(AssContext *ass, AVFilterBufferRef *picref,
+static void overlay_ass_image(AssContext *ass, AVFrame *picref,
                               const ASS_Image *image)
 {
     for (; image; image = image->next) {
@@ -167,13 +167,13 @@ static void overlay_ass_image(AssContext *ass, AVFilterBufferRef *picref,
         ff_draw_color(&ass->draw, &color, rgba_color);
         ff_blend_mask(&ass->draw, &color,
                       picref->data, picref->linesize,
-                      picref->video->w, picref->video->h,
+                      picref->width, picref->height,
                       image->bitmap, image->stride, image->w, image->h,
                       3, 0, image->dst_x, image->dst_y);
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -197,7 +197,7 @@ static const AVFilterPad ass_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .filter_frame     = filter_frame,
         .config_props     = config_input,
-        .min_perms        = AV_PERM_READ | AV_PERM_WRITE,
+        .needs_writable   = 1,
     },
     { NULL }
 };

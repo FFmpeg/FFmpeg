@@ -2086,9 +2086,6 @@ pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @item n
 the number of input frame, starting from 0
 
-@item pos
-the position in the file of the input frame, NAN if unknown
-
 @item t
 timestamp expressed in seconds, NAN if the input timestamp is unknown
 

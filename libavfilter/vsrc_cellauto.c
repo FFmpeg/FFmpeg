@@ -272,7 +272,7 @@ static void evolve(AVFilterContext *ctx)
     cellauto->generation++;
 }
 
-static void fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
     CellAutoContext *cellauto = ctx->priv;
     int i, j, k, row_idx = 0;
@@ -303,9 +303,8 @@ static void fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
 static int request_frame(AVFilterLink *outlink)
 {
     CellAutoContext *cellauto = outlink->src->priv;
-    AVFilterBufferRef *picref =
-        ff_get_video_buffer(outlink, AV_PERM_WRITE, cellauto->w, cellauto->h);
-    picref->video->sample_aspect_ratio = (AVRational) {1, 1};
+    AVFrame *picref = ff_get_video_buffer(outlink, cellauto->w, cellauto->h);
+    picref->sample_aspect_ratio = (AVRational) {1, 1};
     if (cellauto->generation == 0 && cellauto->start_full) {
         int i;
         for (i = 0; i < cellauto->h-1; i++)
@@ -315,7 +314,6 @@ static int request_frame(AVFilterLink *outlink)
     evolve(outlink->src);
 
     picref->pts = cellauto->pts++;
-    picref->pos = -1;
 
 #ifdef DEBUG
     show_cellauto_row(outlink->src);

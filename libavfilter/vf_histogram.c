@@ -174,24 +174,23 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     HistogramContext *h   = inlink->dst->priv;
     AVFilterContext *ctx  = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     const uint8_t *src;
     uint8_t *dst;
     int i, j, k, l, ret;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
 
     out->pts = in->pts;
-    out->pos = in->pos;
 
     for (k = 0; k < h->ncomp; k++)
         for (i = 0; i < outlink->h; i++)
@@ -202,9 +201,9 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         for (k = 0; k < h->ncomp; k++) {
             int start = k * (h->level_height + h->scale_height) * h->display_mode;
 
-            for (i = 0; i < in->video->h; i++) {
+            for (i = 0; i < in->height; i++) {
                 src = in->data[k] + i * in->linesize[k];
-                for (j = 0; j < in->video->w; j++)
+                for (j = 0; j < in->width; j++)
                     h->histogram[src[j]]++;
             }
 
@@ -301,7 +300,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     }
 
     ret = ff_filter_frame(outlink, out);
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
     if (ret < 0)
         return ret;
     return 0;
@@ -320,7 +319,6 @@ static const AVFilterPad inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
         .config_props = config_input,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

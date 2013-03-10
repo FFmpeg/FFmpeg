@@ -27,52 +27,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 
-int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
-{
-    dst->pts    = src->pts;
-    dst->pos    = av_frame_get_pkt_pos(src);
-    dst->format = src->format;
-
-    av_dict_free(&dst->metadata);
-    av_dict_copy(&dst->metadata, av_frame_get_metadata(src), 0);
-
-    switch (dst->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        dst->video->w                   = src->width;
-        dst->video->h                   = src->height;
-        dst->video->sample_aspect_ratio = src->sample_aspect_ratio;
-        dst->video->interlaced          = src->interlaced_frame;
-        dst->video->top_field_first     = src->top_field_first;
-        dst->video->key_frame           = src->key_frame;
-        dst->video->pict_type           = src->pict_type;
-        av_freep(&dst->video->qp_table);
-        dst->video->qp_table_linesize = 0;
-        if (src->qscale_table) {
-            int qsize = src->qstride ? src->qstride * ((src->height+15)/16) : (src->width+15)/16;
-            dst->video->qp_table = av_malloc(qsize);
-            if (!dst->video->qp_table)
-                return AVERROR(ENOMEM);
-            dst->video->qp_table_linesize = src->qstride;
-            dst->video->qp_table_size     = qsize;
-            memcpy(dst->video->qp_table, src->qscale_table, qsize);
-        }
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        dst->audio->sample_rate         = src->sample_rate;
-        dst->audio->channel_layout      = src->channel_layout;
-        dst->audio->channels            = src->channels;
-        if(src->channels < av_get_channel_layout_nb_channels(src->channel_layout)) {
-            av_log(NULL, AV_LOG_ERROR, "libavfilter does not support this channel layout\n");
-            return AVERROR(EINVAL);
-        }
-        break;
-    default:
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
-
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms)
 {

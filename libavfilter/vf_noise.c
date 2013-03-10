@@ -298,22 +298,22 @@ static void noise(uint8_t *dst, const uint8_t *src,
         n->param[comp].shiftptr = 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     NoiseContext *n = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     int ret, i;
 
-    if (inpicref->perms & AV_PERM_WRITE) {
+    if (av_frame_is_writable(inpicref)) {
         out = inpicref;
     } else {
-        out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
-            avfilter_unref_bufferp(&inpicref);
+            av_frame_free(&inpicref);
             return AVERROR(ENOMEM);
         }
-        avfilter_copy_buffer_ref_props(out, inpicref);
+        av_frame_copy_props(out, inpicref);
     }
 
     for (i = 0; i < n->nb_planes; i++)
@@ -322,7 +322,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 
     ret = ff_filter_frame(outlink, out);
     if (inpicref != out)
-        avfilter_unref_buffer(inpicref);
+        av_frame_free(&inpicref);
     return ret;
 }
 

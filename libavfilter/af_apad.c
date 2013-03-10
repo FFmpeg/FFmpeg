@@ -77,15 +77,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     APadContext *apad = ctx->priv;
 
     if (apad->whole_len)
-        apad->whole_len -= frame->audio->nb_samples;
+        apad->whole_len -= frame->nb_samples;
 
-    apad->next_pts = frame->pts + av_rescale_q(frame->audio->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
+    apad->next_pts = frame->pts + av_rescale_q(frame->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 
@@ -99,7 +99,7 @@ static int request_frame(AVFilterLink *outlink)
 
     if (ret == AVERROR_EOF) {
         int n_out = apad->packet_size;
-        AVFilterBufferRef *outsamplesref;
+        AVFrame *outsamplesref;
 
         if (apad->whole_len > 0) {
             apad->pad_len = apad->whole_len;
@@ -113,16 +113,16 @@ static int request_frame(AVFilterLink *outlink)
         if(!n_out)
             return AVERROR_EOF;
 
-        outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n_out);
+        outsamplesref = ff_get_audio_buffer(outlink, n_out);
         if (!outsamplesref)
             return AVERROR(ENOMEM);
 
-        av_assert0(outsamplesref->audio->sample_rate == outlink->sample_rate);
-        av_assert0(outsamplesref->audio->nb_samples  == n_out);
+        av_assert0(outsamplesref->sample_rate == outlink->sample_rate);
+        av_assert0(outsamplesref->nb_samples  == n_out);
 
         av_samples_set_silence(outsamplesref->extended_data, 0,
                                n_out,
-                               outsamplesref->audio->channels,
+                               outsamplesref->channels,
                                outsamplesref->format);
 
         outsamplesref->pts = apad->next_pts;

@@ -49,10 +49,10 @@ typedef struct YADIFContext {
 
     int frame_pending;
 
-    AVFilterBufferRef *cur;
-    AVFilterBufferRef *next;
-    AVFilterBufferRef *prev;
-    AVFilterBufferRef *out;
+    AVFrame *cur;
+    AVFrame *next;
+    AVFrame *prev;
+    AVFrame *out;
 
     /**
      * Required alignment for filter_line

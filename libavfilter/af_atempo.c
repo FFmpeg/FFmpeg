@@ -140,7 +140,7 @@ typedef struct {
 
     // for managing AVFilterPad.request_frame and AVFilterPad.filter_frame
     int request_fulfilled;
-    AVFilterBufferRef *dst_buffer;
+    AVFrame *dst_buffer;
     uint8_t *dst;
     uint8_t *dst_end;
     uint64_t nsamples_in;
@@ -177,7 +177,7 @@ static void yae_clear(ATempoContext *atempo)
     atempo->frag[0].position[0] = -(int64_t)(atempo->window / 2);
     atempo->frag[0].position[1] = -(int64_t)(atempo->window / 2);
 
-    avfilter_unref_bufferp(&atempo->dst_buffer);
+    av_frame_free(&atempo->dst_buffer);
     atempo->dst     = NULL;
     atempo->dst_end = NULL;
 
@@ -1024,8 +1024,8 @@ static void push_samples(ATempoContext *atempo,
                          AVFilterLink *outlink,
                          int n_out)
 {
-    atempo->dst_buffer->audio->sample_rate = outlink->sample_rate;
-    atempo->dst_buffer->audio->nb_samples  = n_out;
+    atempo->dst_buffer->sample_rate = outlink->sample_rate;
+    atempo->dst_buffer->nb_samples  = n_out;
 
     // adjust the PTS:
     atempo->dst_buffer->pts =
@@ -1041,14 +1041,13 @@ static void push_samples(ATempoContext *atempo,
     atempo->nsamples_out += n_out;
 }
 
-static int filter_frame(AVFilterLink *inlink,
-                           AVFilterBufferRef *src_buffer)
+static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
 {
     AVFilterContext  *ctx = inlink->dst;
     ATempoContext *atempo = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
-    int n_in = src_buffer->audio->nb_samples;
+    int n_in = src_buffer->nb_samples;
     int n_out = (int)(0.5 + ((double)n_in) / atempo->tempo);
 
     const uint8_t *src = src_buffer->data[0];
@@ -1056,10 +1055,8 @@ static int filter_frame(AVFilterLink *inlink,
 
     while (src < src_end) {
         if (!atempo->dst_buffer) {
-            atempo->dst_buffer = ff_get_audio_buffer(outlink,
-                                                     AV_PERM_WRITE,
-                                                     n_out);
-            avfilter_copy_buffer_ref_props(atempo->dst_buffer, src_buffer);
+            atempo->dst_buffer = ff_get_audio_buffer(outlink, n_out);
+            av_frame_copy_props(atempo->dst_buffer, src_buffer);
 
             atempo->dst = atempo->dst_buffer->data[0];
             atempo->dst_end = atempo->dst + n_out * atempo->stride;
@@ -1074,7 +1071,7 @@ static int filter_frame(AVFilterLink *inlink,
     }
 
     atempo->nsamples_in += n_in;
-    avfilter_unref_bufferp(&src_buffer);
+    av_frame_free(&src_buffer);
     return 0;
 }
 
@@ -1098,9 +1095,7 @@ static int request_frame(AVFilterLink *outlink)
 
         while (err == AVERROR(EAGAIN)) {
             if (!atempo->dst_buffer) {
-                atempo->dst_buffer = ff_get_audio_buffer(outlink,
-                                                         AV_PERM_WRITE,
-                                                         n_max);
+                atempo->dst_buffer = ff_get_audio_buffer(outlink, n_max);
 
                 atempo->dst = atempo->dst_buffer->data[0];
                 atempo->dst_end = atempo->dst + n_max * atempo->stride;
@@ -1116,7 +1111,7 @@ static int request_frame(AVFilterLink *outlink)
             }
         }
 
-        avfilter_unref_bufferp(&atempo->dst_buffer);
+        av_frame_free(&atempo->dst_buffer);
         atempo->dst     = NULL;
         atempo->dst_end = NULL;
 
@@ -1142,7 +1137,6 @@ static const AVFilterPad atempo_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
         .config_props = config_props,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

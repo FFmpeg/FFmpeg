@@ -97,7 +97,7 @@ typedef struct {
     struct rect text;               ///< rectangle for the LU legend on the left
     struct rect graph;              ///< rectangle for the main graph in the center
     struct rect gauge;              ///< rectangle for the gauge on the right
-    AVFilterBufferRef *outpicref;   ///< output picture reference, updated regularly
+    AVFrame *outpicref;             ///< output picture reference, updated regularly
     int meter;                      ///< select a EBU mode between +9 and +18
     int scale_range;                ///< the range of LU values according to the meter
     int y_zero_lu;                  ///< the y value (pixel position) for 0 LU
@@ -174,7 +174,7 @@ static const uint8_t font_colors[] = {
     0x00, 0x96, 0x96,
 };
 
-static void drawtext(AVFilterBufferRef *pic, int x, int y, int ftid, const uint8_t *color, const char *fmt, ...)
+static void drawtext(AVFrame *pic, int x, int y, int ftid, const uint8_t *color, const char *fmt, ...)
 {
     int i;
     char buf[128] = {0};
@@ -207,7 +207,7 @@ static void drawtext(AVFilterBufferRef *pic, int x, int y, int ftid, const uint8
     }
 }
 
-static void drawline(AVFilterBufferRef *pic, int x, int y, int len, int step)
+static void drawline(AVFrame *pic, int x, int y, int len, int step)
 {
     int i;
     uint8_t *p = pic->data[0] + y*pic->linesize[0] + x*3;
@@ -224,7 +224,7 @@ static int config_video_output(AVFilterLink *outlink)
     uint8_t *p;
     AVFilterContext *ctx = outlink->src;
     EBUR128Context *ebur128 = ctx->priv;
-    AVFilterBufferRef *outpicref;
+    AVFrame *outpicref;
 
     /* check if there is enough space to represent everything decently */
     if (ebur128->w < 640 || ebur128->h < 480) {
@@ -259,10 +259,9 @@ static int config_video_output(AVFilterLink *outlink)
     av_assert0(ebur128->graph.h == ebur128->gauge.h);
 
     /* prepare the initial picref buffer */
-    avfilter_unref_bufferp(&ebur128->outpicref);
+    av_frame_free(&ebur128->outpicref);
     ebur128->outpicref = outpicref =
-        ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_PRESERVE|AV_PERM_REUSE2,
-                            outlink->w, outlink->h);
+        ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpicref)
         return AVERROR(ENOMEM);
     outlink->sample_aspect_ratio = (AVRational){1,1};
@@ -450,15 +449,15 @@ static int gate_update(struct integrator *integ, double power,
     return gate_hist_pos;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int i, ch, idx_insample;
     AVFilterContext *ctx = inlink->dst;
     EBUR128Context *ebur128 = ctx->priv;
     const int nb_channels = ebur128->nb_channels;
-    const int nb_samples  = insamples->audio->nb_samples;
+    const int nb_samples  = insamples->nb_samples;
     const double *samples = (double *)insamples->data[0];
-    AVFilterBufferRef *pic = ebur128->outpicref;
+    AVFrame *pic = ebur128->outpicref;
 
     for (idx_insample = 0; idx_insample < nb_samples; idx_insample++) {
         const int bin_id_400  = ebur128->i400.cache_pos;
@@ -639,7 +638,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
 
                 /* set pts and push frame */
                 pic->pts = pts;
-                ret = ff_filter_frame(outlink, avfilter_ref_buffer(pic, ~AV_PERM_WRITE));
+                ret = ff_filter_frame(outlink, av_frame_clone(pic));
                 if (ret < 0)
                     return ret;
             }
@@ -738,7 +737,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
-    avfilter_unref_bufferp(&ebur128->outpicref);
+    av_frame_free(&ebur128->outpicref);
 }
 
 static const AVFilterPad ebur128_inputs[] = {

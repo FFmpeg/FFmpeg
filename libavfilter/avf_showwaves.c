@@ -44,7 +44,7 @@ typedef struct {
     char *rate_str;
     AVRational rate;
     int buf_idx;
-    AVFilterBufferRef *outpicref;
+    AVFrame *outpicref;
     int req_fullfilled;
     int n;
     int sample_count_mod;
@@ -89,7 +89,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     ShowWavesContext *showwaves = ctx->priv;
 
     av_freep(&showwaves->rate_str);
-    avfilter_unref_bufferp(&showwaves->outpicref);
+    av_frame_free(&showwaves->outpicref);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -190,16 +190,16 @@ static int request_frame(AVFilterLink *outlink)
 
 #define MAX_INT16 ((1<<15) -1)
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     ShowWavesContext *showwaves = ctx->priv;
-    const int nb_samples = insamples->audio->nb_samples;
-    AVFilterBufferRef *outpicref = showwaves->outpicref;
+    const int nb_samples = insamples->nb_samples;
+    AVFrame *outpicref = showwaves->outpicref;
     int linesize = outpicref ? outpicref->linesize[0] : 0;
     int16_t *p = (int16_t *)insamples->data[0];
-    int nb_channels = av_get_channel_layout_nb_channels(insamples->audio->channel_layout);
+    int nb_channels = av_get_channel_layout_nb_channels(insamples->channel_layout);
     int i, j, k, h, ret = 0;
     const int n = showwaves->n;
     const int x = 255 / (nb_channels * n); /* multiplication factor, pre-computed to avoid in-loop divisions */
@@ -208,12 +208,11 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     for (i = 0; i < nb_samples; i++) {
         if (!showwaves->outpicref) {
             showwaves->outpicref = outpicref =
-                ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN,
-                                    outlink->w, outlink->h);
+                ff_get_video_buffer(outlink, outlink->w, outlink->h);
             if (!outpicref)
                 return AVERROR(ENOMEM);
-            outpicref->video->w = outlink->w;
-            outpicref->video->h = outlink->h;
+            outpicref->width  = outlink->w;
+            outpicref->height = outlink->h;
             outpicref->pts = insamples->pts +
                              av_rescale_q((p - (int16_t *)insamples->data[0]) / nb_channels,
                                           (AVRational){ 1, inlink->sample_rate },
@@ -251,7 +250,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         outpicref = showwaves->outpicref;
     }
 
-    avfilter_unref_buffer(insamples);
+    av_frame_free(&insamples);
     return ret;
 }
 
@@ -260,7 +259,6 @@ static const AVFilterPad showwaves_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

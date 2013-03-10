@@ -183,12 +183,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 }
 
 static void process_frame_uyvy422(ColorMatrixContext *color,
-                                  AVFilterBufferRef *dst, AVFilterBufferRef *src)
+                                  AVFrame *dst, AVFrame *src)
 {
     const unsigned char *srcp = src->data[0];
     const int src_pitch = src->linesize[0];
-    const int height = src->video->h;
-    const int width = src->video->w*2;
+    const int height = src->height;
+    const int width = src->width*2;
     unsigned char *dstp = dst->data[0];
     const int dst_pitch = dst->linesize[0];
     const int c2 = color->yuv_convert[color->mode][0][1];
@@ -215,15 +215,15 @@ static void process_frame_uyvy422(ColorMatrixContext *color,
 }
 
 static void process_frame_yuv422p(ColorMatrixContext *color,
-                                  AVFilterBufferRef *dst, AVFilterBufferRef *src)
+                                  AVFrame *dst, AVFrame *src)
 {
     const unsigned char *srcpU = src->data[1];
     const unsigned char *srcpV = src->data[2];
     const unsigned char *srcpY = src->data[0];
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
-    const int height = src->video->h;
-    const int width = src->video->w;
+    const int height = src->height;
+    const int width = src->width;
     unsigned char *dstpU = dst->data[1];
     unsigned char *dstpV = dst->data[2];
     unsigned char *dstpY = dst->data[0];
@@ -257,7 +257,7 @@ static void process_frame_yuv422p(ColorMatrixContext *color,
 }
 
 static void process_frame_yuv420p(ColorMatrixContext *color,
-                                  AVFilterBufferRef *dst, AVFilterBufferRef *src)
+                                  AVFrame *dst, AVFrame *src)
 {
     const unsigned char *srcpU = src->data[1];
     const unsigned char *srcpV = src->data[2];
@@ -265,8 +265,8 @@ static void process_frame_yuv420p(ColorMatrixContext *color,
     const unsigned char *srcpN = src->data[0] + src->linesize[0];
     const int src_pitchY  = src->linesize[0];
     const int src_pitchUV = src->linesize[1];
-    const int height = src->video->h;
-    const int width = src->video->w;
+    const int height = src->height;
+    const int width = src->width;
     unsigned char *dstpU = dst->data[1];
     unsigned char *dstpV = dst->data[2];
     unsigned char *dstpY = dst->data[0];
@@ -332,19 +332,19 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext *ctx = link->dst;
     ColorMatrixContext *color = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
     if (in->format == AV_PIX_FMT_YUV422P)
         process_frame_yuv422p(color, out, in);
@@ -353,7 +353,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
     else
         process_frame_uyvy422(color, out, in);
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
@@ -362,7 +362,6 @@ static const AVFilterPad colormatrix_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input,
-        .min_perms        = AV_PERM_READ,
         .filter_frame     = filter_frame,
     },
     { NULL }

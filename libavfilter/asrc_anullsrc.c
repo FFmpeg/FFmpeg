@@ -102,17 +102,15 @@ static int config_props(AVFilterLink *outlink)
 static int request_frame(AVFilterLink *outlink)
 {
     ANullContext *null = outlink->src->priv;
-    AVFilterBufferRef *samplesref;
+    AVFrame *samplesref;
 
-    samplesref =
-        ff_get_audio_buffer(outlink, AV_PERM_WRITE, null->nb_samples);
+    samplesref = ff_get_audio_buffer(outlink, null->nb_samples);
     samplesref->pts = null->pts;
-    samplesref->pos = -1;
-    samplesref->audio->channel_layout = null->channel_layout;
-    samplesref->audio->sample_rate = outlink->sample_rate;
+    samplesref->channel_layout = null->channel_layout;
+    samplesref->sample_rate = outlink->sample_rate;
 
-    ff_filter_frame(outlink, avfilter_ref_buffer(samplesref, ~0));
-    avfilter_unref_buffer(samplesref);
+    ff_filter_frame(outlink, av_frame_clone(samplesref));
+    av_frame_free(&samplesref);
 
     null->pts += null->nb_samples;
     return 0;

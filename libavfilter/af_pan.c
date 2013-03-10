@@ -353,21 +353,21 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int ret;
-    int n = insamples->audio->nb_samples;
+    int n = insamples->nb_samples;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outsamples = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n);
+    AVFrame *outsamples = ff_get_audio_buffer(outlink, n);
     PanContext *pan = inlink->dst->priv;
 
     swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
-    avfilter_copy_buffer_ref_props(outsamples, insamples);
-    outsamples->audio->channel_layout = outlink->channel_layout;
-    outsamples->audio->channels       = outlink->channels;
+    av_frame_copy_props(outsamples, insamples);
+    outsamples->channel_layout = outlink->channel_layout;
+    outsamples->channels       = outlink->channels;
 
     ret = ff_filter_frame(outlink, outsamples);
-    avfilter_unref_buffer(insamples);
+    av_frame_free(&insamples);
     return ret;
 }
 
@@ -383,7 +383,6 @@ static const AVFilterPad pan_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_props,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

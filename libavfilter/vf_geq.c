@@ -37,7 +37,7 @@ typedef struct {
     AVExpr *e[4];               ///< expressions for each plane
     char *expr_str[4];          ///< expression strings for each plane
     int framenum;               ///< frame counter
-    AVFilterBufferRef *picref;  ///< current input buffer
+    AVFrame *picref;            ///< current input buffer
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
 } GEQContext;
@@ -59,11 +59,11 @@ static inline double getpix(void *priv, double x, double y, int plane)
 {
     int xi, yi;
     GEQContext *geq = priv;
-    AVFilterBufferRef *picref = geq->picref;
+    AVFrame *picref = geq->picref;
     const uint8_t *src = picref->data[plane];
     const int linesize = picref->linesize[plane];
-    const int w = picref->video->w >> ((plane == 1 || plane == 2) ? geq->hsub : 0);
-    const int h = picref->video->h >> ((plane == 1 || plane == 2) ? geq->vsub : 0);
+    const int w = picref->width  >> ((plane == 1 || plane == 2) ? geq->hsub : 0);
+    const int h = picref->height >> ((plane == 1 || plane == 2) ? geq->vsub : 0);
 
     if (!src)
         return 0;
@@ -163,24 +163,24 @@ static int geq_config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int geq_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     int plane;
     GEQContext *geq = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     double values[VAR_VARS_NB] = {
         [VAR_N] = geq->framenum++,
         [VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
     };
 
     geq->picref = in;
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
     for (plane = 0; plane < geq->planes && out->data[plane]; plane++) {
         int x, y;
@@ -204,7 +204,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         }
     }
 
-    avfilter_unref_bufferp(&geq->picref);
+    av_frame_free(&geq->picref);
     return ff_filter_frame(outlink, out);
 }
 
@@ -224,7 +224,6 @@ static const AVFilterPad geq_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = geq_config_props,
         .filter_frame = geq_filter_frame,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

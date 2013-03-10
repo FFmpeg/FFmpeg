@@ -116,11 +116,11 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
     KerndeintContext *kerndeint = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpic;
+    AVFrame *outpic;
     const uint8_t *prvp;   ///< Previous field's pixel line number n
     const uint8_t *prvpp;  ///< Previous field's pixel line number (n - 1)
     const uint8_t *prvpn;  ///< Previous field's pixel line number (n + 1)
@@ -154,13 +154,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 
     const int is_packed_rgb = kerndeint->is_packed_rgb;
 
-    outpic = ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN, outlink->w, outlink->h);
+    outpic = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!outpic) {
-        avfilter_unref_bufferp(&inpic);
+        av_frame_free(&inpic);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(outpic, inpic);
-    outpic->video->interlaced = 0;
+    av_frame_copy_props(outpic, inpic);
+    outpic->interlaced_frame = 0;
 
     for (plane = 0; inpic->data[plane] && plane < 4; plane++) {
         h = plane == 0 ? inlink->h : inlink->h >> kerndeint->vsub;
@@ -295,7 +295,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
         av_image_copy_plane(dstp, psrc_linesize, srcp, src_linesize, bwidth, h);
     }
 
-    avfilter_unref_buffer(inpic);
+    av_frame_free(&inpic);
     return ff_filter_frame(outlink, outpic);
 }
 
@@ -305,7 +305,6 @@ static const AVFilterPad kerndeint_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
         .config_props = config_props,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

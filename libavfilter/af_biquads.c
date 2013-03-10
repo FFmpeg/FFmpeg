@@ -392,24 +392,24 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     BiquadsContext *p       = inlink->dst->priv;
     AVFilterLink *outlink   = inlink->dst->outputs[0];
-    AVFilterBufferRef *out_buf;
-    int nb_samples = buf->audio->nb_samples;
+    AVFrame *out_buf;
+    int nb_samples = buf->nb_samples;
     int ch;
 
-    if (buf->perms & AV_PERM_WRITE) {
+    if (av_frame_is_writable(buf)) {
         out_buf = buf;
     } else {
-        out_buf = ff_get_audio_buffer(inlink, AV_PERM_WRITE, nb_samples);
+        out_buf = ff_get_audio_buffer(inlink, nb_samples);
         if (!out_buf)
             return AVERROR(ENOMEM);
         out_buf->pts = buf->pts;
     }
 
-    for (ch = 0; ch < buf->audio->channels; ch++)
+    for (ch = 0; ch < buf->channels; ch++)
         p->filter(buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
                   &p->cache[ch].i1, &p->cache[ch].i2,
@@ -417,7 +417,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
                   p->b0, p->b1, p->b2, p->a1, p->a2);
 
     if (buf != out_buf)
-        avfilter_unref_buffer(buf);
+        av_frame_free(&buf);
 
     return ff_filter_frame(outlink, out_buf);
 }

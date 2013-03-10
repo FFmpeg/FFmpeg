@@ -536,45 +536,38 @@ mp_image_t* ff_vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgty
   return mpi;
 }
 
+static void dummy_free(void *opaque, uint8_t *data){}
 
 int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     MPContext *m= (void*)vf;
     AVFilterLink *outlink     = m->avfctx->outputs[0];
-    AVFilterBuffer    *pic    = av_mallocz(sizeof(AVFilterBuffer));
-    AVFilterBufferRef *picref = av_mallocz(sizeof(AVFilterBufferRef));
+    AVFrame *picref = av_frame_alloc();
     int i;
 
     av_assert0(vf->next);
 
     av_log(m->avfctx, AV_LOG_DEBUG, "ff_vf_next_put_image\n");
 
-    if (!pic || !picref)
+    if (!picref)
         goto fail;
 
-    picref->buf = pic;
-    picref->buf->free= (void*)av_free;
-    if (!(picref->video = av_mallocz(sizeof(AVFilterBufferRefVideoProps))))
-        goto fail;
+    picref->width  = mpi->w;
+    picref->height = mpi->h;
 
-    pic->w = picref->video->w = mpi->w;
-    pic->h = picref->video->h = mpi->h;
-
-    /* make sure the buffer gets read permission or it's useless for output */
-    picref->perms = AV_PERM_READ | AV_PERM_REUSE2;
-//    av_assert0(mpi->flags&MP_IMGFLAG_READABLE);
-    if(!(mpi->flags&MP_IMGFLAG_PRESERVE))
-        picref->perms |= AV_PERM_WRITE;
-
-    pic->refcount = 1;
     picref->type = AVMEDIA_TYPE_VIDEO;
 
     for(i=0; conversion_map[i].fmt && mpi->imgfmt != conversion_map[i].fmt; i++);
-    pic->format = picref->format = conversion_map[i].pix_fmt;
+    picref->format = conversion_map[i].pix_fmt;
 
-    memcpy(pic->data,        mpi->planes,   FFMIN(sizeof(pic->data)    , sizeof(mpi->planes)));
-    memcpy(pic->linesize,    mpi->stride,   FFMIN(sizeof(pic->linesize), sizeof(mpi->stride)));
-    memcpy(picref->data,     pic->data,     sizeof(picref->data));
-    memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
+    memcpy(picref->linesize, mpi->stride, FFMIN(sizeof(picref->linesize), sizeof(mpi->stride)));
+
+    for(i=0; i<4 && mpi->stride[i]; i++){
+        picref->buf[i] = av_buffer_create(mpi->planes[i], mpi->stride[i], dummy_free, NULL,
+                                          (mpi->flags & MP_IMGFLAG_PRESERVE) ? AV_BUFFER_FLAG_READONLY : 0);
+        if (!picref->buf[i])
+            goto fail;
+        picref->data[i] = picref->buf[i]->data;
+    }
 
     if(pts != MP_NOPTS_VALUE)
         picref->pts= pts * av_q2d(outlink->time_base);
@@ -584,10 +577,7 @@ int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
 
     return 1;
 fail:
-    if (picref && picref->video)
-        av_free(picref->video);
-    av_free(picref);
-    av_free(pic);
+    av_frame_free(&picref);
     return 0;
 }
 
@@ -793,12 +783,12 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
     MPContext *m = inlink->dst->priv;
     int i;
     double pts= MP_NOPTS_VALUE;
-    mp_image_t* mpi = ff_new_mp_image(inpic->video->w, inpic->video->h);
+    mp_image_t* mpi = ff_new_mp_image(inpic->width, inpic->height);
 
     if(inpic->pts != AV_NOPTS_VALUE)
         pts= inpic->pts / av_q2d(inlink->time_base);
@@ -813,12 +803,12 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
 
     // mpi->flags|=MP_IMGFLAG_ALLOCATED; ?
     mpi->flags |= MP_IMGFLAG_READABLE;
-    if(!(inpic->perms & AV_PERM_WRITE))
+    if(!av_frame_is_writable(inpic))
         mpi->flags |= MP_IMGFLAG_PRESERVE;
     if(m->vf.put_image(&m->vf, mpi, pts) == 0){
         av_log(m->avfctx, AV_LOG_DEBUG, "put_image() says skip\n");
     }else{
-        avfilter_unref_buffer(inpic);
+        av_frame_free(&inpic);
     }
     ff_free_mp_image(mpi);
     return 0;
@@ -830,7 +820,6 @@ static const AVFilterPad mp_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
         .config_props = config_inprops,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

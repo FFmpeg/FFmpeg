@@ -323,14 +323,14 @@ static int query_formats(AVFilterContext *ctx)
 static int request_frame(AVFilterLink *outlink)
 {
     MPTestContext *test = outlink->src->priv;
-    AVFilterBufferRef *picref;
+    AVFrame *picref;
     int w = WIDTH, h = HEIGHT, ch = h>>test->vsub;
     unsigned int frame = test->frame_nb;
     enum test_type tt = test->test;
 
     if (test->max_pts >= 0 && test->pts > test->max_pts)
         return AVERROR_EOF;
-    picref = ff_get_video_buffer(outlink, AV_PERM_WRITE, w, h);
+    picref = ff_get_video_buffer(outlink, w, h);
     picref->pts = test->pts++;
 
     // clean image

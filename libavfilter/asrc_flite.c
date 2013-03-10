@@ -245,22 +245,22 @@ static int config_props(AVFilterLink *outlink)
 
 static int request_frame(AVFilterLink *outlink)
 {
-    AVFilterBufferRef *samplesref;
+    AVFrame *samplesref;
     FliteContext *flite = outlink->src->priv;
     int nb_samples = FFMIN(flite->wave_nb_samples, flite->frame_nb_samples);
 
     if (!nb_samples)
         return AVERROR_EOF;
 
-    samplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, nb_samples);
+    samplesref = ff_get_audio_buffer(outlink, nb_samples);
     if (!samplesref)
         return AVERROR(ENOMEM);
 
     memcpy(samplesref->data[0], flite->wave_samples,
            nb_samples * flite->wave->num_channels * 2);
     samplesref->pts = flite->pts;
-    samplesref->pos = -1;
-    samplesref->audio->sample_rate = flite->wave->sample_rate;
+    av_frame_set_pkt_pos(samplesref, -1);
+    av_frame_set_sample_rate(samplesref, flite->wave->sample_rate);
     flite->pts += nb_samples;
     flite->wave_samples += nb_samples * flite->wave->num_channels;
     flite->wave_nb_samples -= nb_samples;

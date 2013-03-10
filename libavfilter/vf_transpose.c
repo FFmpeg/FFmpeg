@@ -148,47 +148,47 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
-static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
+static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     TransContext *trans = inlink->dst->priv;
 
     return trans->passthrough ?
-        ff_null_get_video_buffer   (inlink, perms, w, h) :
-        ff_default_get_video_buffer(inlink, perms, w, h);
+        ff_null_get_video_buffer   (inlink, w, h) :
+        ff_default_get_video_buffer(inlink, w, h);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     TransContext *trans = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     int plane;
 
     if (trans->passthrough)
         return ff_filter_frame(outlink, in);
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
 
     out->pts = in->pts;
 
-    if (in->video->sample_aspect_ratio.num == 0) {
-        out->video->sample_aspect_ratio = in->video->sample_aspect_ratio;
+    if (in->sample_aspect_ratio.num == 0) {
+        out->sample_aspect_ratio = in->sample_aspect_ratio;
     } else {
-        out->video->sample_aspect_ratio.num = in->video->sample_aspect_ratio.den;
-        out->video->sample_aspect_ratio.den = in->video->sample_aspect_ratio.num;
+        out->sample_aspect_ratio.num = in->sample_aspect_ratio.den;
+        out->sample_aspect_ratio.den = in->sample_aspect_ratio.num;
     }
 
     for (plane = 0; out->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? trans->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? trans->vsub : 0;
         int pixstep = trans->pixsteps[plane];
-        int inh  = in->video->h>>vsub;
-        int outw = out->video->w>>hsub;
-        int outh = out->video->h>>vsub;
+        int inh  = in->height  >> vsub;
+        int outw = out->width  >> hsub;
+        int outh = out->height >> vsub;
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;
@@ -243,7 +243,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         }
     }
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
@@ -253,7 +253,6 @@ static const AVFilterPad avfilter_vf_transpose_inputs[] = {
         .type        = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer= get_video_buffer,
         .filter_frame = filter_frame,
-        .min_perms   = AV_PERM_READ,
     },
     { NULL }
 };

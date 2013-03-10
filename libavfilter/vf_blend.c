@@ -368,9 +368,9 @@ static int request_frame(AVFilterLink *outlink)
 }
 
 static void blend_frame(AVFilterContext *ctx,
-                        AVFilterBufferRef *top_buf,
-                        AVFilterBufferRef *bottom_buf,
-                        AVFilterBufferRef *dst_buf)
+                        AVFrame *top_buf,
+                        AVFrame *bottom_buf,
+                        AVFrame *dst_buf)
 {
     BlendContext *b = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
@@ -380,8 +380,8 @@ static void blend_frame(AVFilterContext *ctx,
     for (plane = 0; dst_buf->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? b->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? b->vsub : 0;
-        int outw = dst_buf->video->w >> hsub;
-        int outh = dst_buf->video->h >> vsub;
+        int outw = dst_buf->width  >> hsub;
+        int outh = dst_buf->height >> vsub;
         uint8_t *dst    = dst_buf->data[plane];
         uint8_t *top    = top_buf->data[plane];
         uint8_t *bottom = bottom_buf->data[plane];
@@ -390,15 +390,15 @@ static void blend_frame(AVFilterContext *ctx,
         param->values[VAR_T]  = dst_buf->pts == AV_NOPTS_VALUE ? NAN : dst_buf->pts * av_q2d(inlink->time_base);
         param->values[VAR_W]  = outw;
         param->values[VAR_H]  = outh;
-        param->values[VAR_SW] = outw / dst_buf->video->w;
-        param->values[VAR_SH] = outh / dst_buf->video->h;
+        param->values[VAR_SW] = outw / dst_buf->width;
+        param->values[VAR_SH] = outh / dst_buf->height;
         param->blend(top, top_buf->linesize[plane],
                      bottom, bottom_buf->linesize[plane],
                      dst, dst_buf->linesize[plane], outw, outh, param);
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -411,7 +411,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
     ff_bufqueue_add(ctx, queue, buf);
 
     while (1) {
-        AVFilterBufferRef *top_buf, *bottom_buf, *out_buf;
+        AVFrame *top_buf, *bottom_buf, *out_buf;
 
         if (!ff_bufqueue_peek(&b->queue_top, TOP) ||
             !ff_bufqueue_peek(&b->queue_bottom, BOTTOM)) break;
@@ -419,18 +419,17 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         top_buf = ff_bufqueue_get(&b->queue_top);
         bottom_buf = ff_bufqueue_get(&b->queue_bottom);
 
-        out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                      outlink->w, outlink->h);
+        out_buf = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out_buf) {
             return AVERROR(ENOMEM);
         }
-        avfilter_copy_buffer_ref_props(out_buf, top_buf);
+        av_frame_copy_props(out_buf, top_buf);
 
         b->frame_requested = 0;
         blend_frame(ctx, top_buf, bottom_buf, out_buf);
         ret = ff_filter_frame(ctx->outputs[0], out_buf);
-        avfilter_unref_buffer(top_buf);
-        avfilter_unref_buffer(bottom_buf);
+        av_frame_free(&top_buf);
+        av_frame_free(&bottom_buf);
     }
     return ret;
 }
@@ -441,12 +440,10 @@ static const AVFilterPad blend_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input_top,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
     },{
         .name             = "bottom",
         .type             = AVMEDIA_TYPE_VIDEO,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
 };

@@ -33,7 +33,6 @@ OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
        avfiltergraph.o                                                  \
        buffer.o                                                         \
-       buffersink.o                                                     \
        buffersrc.o                                                      \
        drawutils.o                                                      \
        fifo.o                                                           \
@@ -41,7 +40,6 @@ OBJS = allfilters.o                                                     \
        graphdump.o                                                      \
        graphparser.o                                                    \
        sink_buffer.o                                                    \
-       src_buffer.o                                                     \
        transform.o                                                      \
        video.o                                                          \
 

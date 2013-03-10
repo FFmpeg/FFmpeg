@@ -329,7 +329,7 @@ fail:
     return ret;
 }
 
-static int scale_slice(AVFilterLink *link, AVFilterBufferRef *out_buf, AVFilterBufferRef *cur_pic, struct SwsContext *sws, int y, int h, int mul, int field)
+static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, struct SwsContext *sws, int y, int h, int mul, int field)
 {
     ScaleContext *scale = link->dst->priv;
     const uint8_t *in[4];
@@ -353,17 +353,17 @@ static int scale_slice(AVFilterLink *link, AVFilterBufferRef *out_buf, AVFilterB
                          out,out_stride);
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     char buf[32];
 
-    if(   in->video->w != link->w
-       || in->video->h != link->h
-       || in->format   != link->format) {
+    if(   in->width  != link->w
+       || in->height != link->h
+       || in->format != link->format) {
         int ret;
         snprintf(buf, sizeof(buf)-1, "%d", outlink->w);
         av_opt_set(scale, "w", buf, 0);
@@ -371,8 +371,8 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
         av_opt_set(scale, "h", buf, 0);
 
         link->dst->inputs[0]->format = in->format;
-        link->dst->inputs[0]->w      = in->video->w;
-        link->dst->inputs[0]->h      = in->video->h;
+        link->dst->inputs[0]->w      = in->width;
+        link->dst->inputs[0]->h      = in->height;
 
         if ((ret = config_props(outlink)) < 0)
             return ret;
@@ -384,32 +384,32 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
     scale->hsub = desc->log2_chroma_w;
     scale->vsub = desc->log2_chroma_h;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE|AV_PERM_ALIGN, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
 
-    avfilter_copy_buffer_ref_props(out, in);
-    out->video->w = outlink->w;
-    out->video->h = outlink->h;
+    av_frame_copy_props(out, in);
+    out->width  = outlink->w;
+    out->height = outlink->h;
 
     if(scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
-    av_reduce(&out->video->sample_aspect_ratio.num, &out->video->sample_aspect_ratio.den,
-              (int64_t)in->video->sample_aspect_ratio.num * outlink->h * link->w,
-              (int64_t)in->video->sample_aspect_ratio.den * outlink->w * link->h,
+    av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
+              (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
+              (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
               INT_MAX);
 
-    if(scale->interlaced>0 || (scale->interlaced<0 && in->video->interlaced)){
+    if(scale->interlaced>0 || (scale->interlaced<0 && in->interlaced_frame)){
         scale_slice(link, out, in, scale->isws[0], 0, (link->h+1)/2, 2, 0);
         scale_slice(link, out, in, scale->isws[1], 0,  link->h   /2, 2, 1);
     }else{
         scale_slice(link, out, in, scale->sws, 0, link->h, 1, 0);
     }
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
@@ -418,7 +418,6 @@ static const AVFilterPad avfilter_vf_scale_inputs[] = {
         .name        = "default",
         .type        = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .min_perms   = AV_PERM_READ,
     },
     { NULL }
 };

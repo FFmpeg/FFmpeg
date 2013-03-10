@@ -249,21 +249,21 @@ static void double_threshold(AVFilterContext *ctx, int w, int h,
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     EdgeDetectContext *edgedetect = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     uint8_t  *tmpbuf    = edgedetect->tmpbuf;
     uint16_t *gradients = edgedetect->gradients;
-    AVFilterBufferRef *out;
+    AVFrame *out;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
     /* gaussian filter to reduce noise  */
     gaussian_blur(ctx, inlink->w, inlink->h,
@@ -287,7 +287,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
                      out->data[0], out->linesize[0],
                      tmpbuf,       inlink->w);
 
-    avfilter_unref_bufferp(&in);
+    av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
@@ -305,7 +305,6 @@ static const AVFilterPad edgedetect_inputs[] = {
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_props,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ,
      },
      { NULL }
 };

@@ -448,7 +448,7 @@ static void av_cold uninit(AVFilterContext *ctx)
     av_freep(&sendcmd->intervals);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 {
     AVFilterContext *ctx = inlink->dst;
     SendCmdContext *sendcmd = ctx->priv;

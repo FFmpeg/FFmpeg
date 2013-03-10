@@ -473,23 +473,23 @@ static void blur_image(int ***mask,
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     RemovelogoContext *removelogo = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
+    AVFrame *outpicref;
     int direct = 0;
 
-    if (inpicref->perms & AV_PERM_WRITE) {
+    if (av_frame_is_writable(inpicref)) {
         direct = 1;
         outpicref = inpicref;
     } else {
-        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+        outpicref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!outpicref) {
-            avfilter_unref_bufferp(&inpicref);
+            av_frame_free(&inpicref);
             return AVERROR(ENOMEM);
         }
-        avfilter_copy_buffer_ref_props(outpicref, inpicref);
+        av_frame_copy_props(outpicref, inpicref);
     }
 
     blur_image(removelogo->mask,
@@ -509,7 +509,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
                inlink->w/2, inlink->h/2, direct, &removelogo->half_mask_bbox);
 
     if (!direct)
-        avfilter_unref_bufferp(&inpicref);
+        av_frame_free(&inpicref);
 
     return ff_filter_frame(outlink, outpicref);
 }
@@ -543,7 +543,6 @@ static const AVFilterPad removelogo_inputs[] = {
         .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_props_input,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ,
     },
     { NULL }
 };

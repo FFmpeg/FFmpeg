@@ -88,7 +88,7 @@ typedef struct {
 
 typedef struct {
     const AVClass *class;
-    AVFilterBufferRef *ref;    ///< Previous frame
+    AVFrame *ref;              ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
     int edge;                  ///< Edge fill method
@@ -434,7 +434,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     DeshakeContext *deshake = ctx->priv;
 
-    avfilter_unref_buffer(deshake->ref);
+    av_frame_free(&deshake->ref);
     if (deshake->fp)
         fclose(deshake->fp);
     if (deshake->avctx)
@@ -443,22 +443,22 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_opt_free(deshake);
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
+static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     DeshakeContext *deshake = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     Transform t = {{0},0}, orig = {{0},0};
     float matrix[9];
     float alpha = 2.0 / deshake->refcount;
     char tmp[256];
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&in);
+        av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, in);
+    av_frame_copy_props(out, in);
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame
@@ -545,7 +545,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
     avfilter_transform(in->data[2], out->data[2], in->linesize[2], out->linesize[2], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), matrix, INTERPOLATE_BILINEAR, deshake->edge);
 
     // Cleanup the old reference frame
-    avfilter_unref_buffer(deshake->ref);
+    av_frame_free(&deshake->ref);
 
     // Store the current frame as the reference frame for calculating the
     // motion of the next frame

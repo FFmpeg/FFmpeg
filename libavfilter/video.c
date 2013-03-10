@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/buffer.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 
@@ -31,23 +32,21 @@
 #include "internal.h"
 #include "video.h"
 
-AVFilterBufferRef *ff_null_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h)
 {
-    return ff_get_video_buffer(link->dst->outputs[0], perms, w, h);
+    return ff_get_video_buffer(link->dst->outputs[0], w, h);
 }
 
-AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+/* TODO: set the buffer's priv member to a context structure for the whole
+ * filter chain.  This will allow for a buffer pool instead of the constant
+ * alloc & free cycle currently implemented. */
+AVFrame *ff_default_get_video_buffer(AVFilterLink *link, int w, int h)
 {
-    int linesize[4];
-    uint8_t *data[4];
-    int i;
-    AVFilterBufferRef *picref = NULL;
+    AVFrame *frame = av_frame_alloc();
+    int ret;
+
+#if 0 //POOL
     AVFilterPool *pool = link->pool;
-    int full_perms = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE |
-                     AV_PERM_REUSE | AV_PERM_REUSE2 | AV_PERM_ALIGN;
-
-    av_assert1(!(perms & ~(full_perms | AV_PERM_NEG_LINESIZES)));
-
     if (pool) {
         for (i = 0; i < POOL_SIZE; i++) {
             picref = pool->pic[i];
@@ -71,27 +70,30 @@ AVFilterBufferRef *ff_default_get_video_buffer(AVFilterLink *link, int perms, in
         pool = link->pool = av_mallocz(sizeof(AVFilterPool));
         pool->refcount = 1;
     }
-
-    // align: +2 is needed for swscaler, +16 to be SIMD-friendly
-    if ((i = av_image_alloc(data, linesize, w, h, link->format, 32)) < 0)
+#endif
+    if (!frame)
         return NULL;
 
-    picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
-                                                       full_perms, w, h, link->format);
-    if (!picref) {
-        av_free(data[0]);
-        return NULL;
-    }
+    frame->width  = w;
+    frame->height = h;
+    frame->format = link->format;
 
+    ret = av_frame_get_buffer(frame, 32);
+    if (ret < 0)
+        av_frame_free(&frame);
+
+#if 0 //POOL
     memset(data[0], 128, i);
 
     picref->buf->priv = pool;
     picref->buf->free = NULL;
     pool->refcount++;
+#endif
 
-    return picref;
+    return frame;
 }
 
+#if FF_API_AVFILTERBUFFER
 AVFilterBufferRef *
 avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int linesize[4], int perms,
                                           int w, int h, enum AVPixelFormat format)
@@ -136,25 +138,20 @@ fail:
     av_free(pic);
     return NULL;
 }
+#endif
 
-AVFilterBufferRef *ff_get_video_buffer(AVFilterLink *link, int perms, int w, int h)
+AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h)
 {
-    AVFilterBufferRef *ret = NULL;
+    AVFrame *ret = NULL;
 
     av_unused char buf[16];
     FF_TPRINTF_START(NULL, get_video_buffer); ff_tlog_link(NULL, link, 0);
-    ff_tlog(NULL, " perms:%s w:%d h:%d\n", ff_get_ref_perms_string(buf, sizeof(buf), perms), w, h);
 
     if (link->dstpad->get_video_buffer)
-        ret = link->dstpad->get_video_buffer(link, perms, w, h);
+        ret = link->dstpad->get_video_buffer(link, w, h);
 
     if (!ret)
-        ret = ff_default_get_video_buffer(link, perms, w, h);
-
-    if (ret)
-        ret->type = AVMEDIA_TYPE_VIDEO;
-
-    FF_TPRINTF_START(NULL, get_video_buffer); ff_tlog_link(NULL, link, 0); ff_tlog(NULL, " returning "); ff_tlog_ref(NULL, ret, 1);
+        ret = ff_default_get_video_buffer(link, w, h);
 
     return ret;
 }

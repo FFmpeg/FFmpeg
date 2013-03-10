@@ -134,7 +134,7 @@ typedef struct {
     DSPContext c;                   ///< context providing optimized SAD methods   (scene detect only)
     double prev_mafd;               ///< previous MAFD                             (scene detect only)
 #endif
-    AVFilterBufferRef *prev_picref; ///< previous frame                            (scene detect only)
+    AVFrame *prev_picref; ///< previous frame                            (scene detect only)
     double select;
 } SelectContext;
 
@@ -219,25 +219,25 @@ static int config_input(AVFilterLink *inlink)
 }
 
 #if CONFIG_AVCODEC
-static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
 {
     double ret = 0;
     SelectContext *select = ctx->priv;
-    AVFilterBufferRef *prev_picref = select->prev_picref;
+    AVFrame *prev_picref = select->prev_picref;
 
     if (prev_picref &&
-        picref->video->h    == prev_picref->video->h &&
-        picref->video->w    == prev_picref->video->w &&
-        picref->linesize[0] == prev_picref->linesize[0]) {
+        frame->height    == prev_picref->height &&
+        frame->width    == prev_picref->width &&
+        frame->linesize[0] == prev_picref->linesize[0]) {
         int x, y, nb_sad = 0;
         int64_t sad = 0;
         double mafd, diff;
-        uint8_t *p1 =      picref->data[0];
+        uint8_t *p1 =      frame->data[0];
         uint8_t *p2 = prev_picref->data[0];
-        const int linesize = picref->linesize[0];
+        const int linesize = frame->linesize[0];
 
-        for (y = 0; y < picref->video->h - 8; y += 8) {
-            for (x = 0; x < picref->video->w*3 - 8; x += 8) {
+        for (y = 0; y < frame->height - 8; y += 8) {
+            for (x = 0; x < frame->width*3 - 8; x += 8) {
                 sad += select->c.sad[1](select, p1 + x, p2 + x,
                                         linesize, 8);
                 nb_sad += 8 * 8;
@@ -250,9 +250,9 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
         diff = fabs(mafd - select->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);
         select->prev_mafd = mafd;
-        avfilter_unref_buffer(prev_picref);
+        av_frame_free(&prev_picref);
     }
-    select->prev_picref = avfilter_ref_buffer(picref, ~0);
+    select->prev_picref = av_frame_clone(frame);
     return ret;
 }
 #endif
@@ -260,38 +260,38 @@ static double get_scene_score(AVFilterContext *ctx, AVFilterBufferRef *picref)
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 
-static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
+static int select_frame(AVFilterContext *ctx, AVFrame *frame)
 {
     SelectContext *select = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     double res;
 
     if (isnan(select->var_values[VAR_START_PTS]))
-        select->var_values[VAR_START_PTS] = TS2D(ref->pts);
+        select->var_values[VAR_START_PTS] = TS2D(frame->pts);
     if (isnan(select->var_values[VAR_START_T]))
-        select->var_values[VAR_START_T] = TS2D(ref->pts) * av_q2d(inlink->time_base);
+        select->var_values[VAR_START_T] = TS2D(frame->pts) * av_q2d(inlink->time_base);
 
-    select->var_values[VAR_PTS] = TS2D(ref->pts);
-    select->var_values[VAR_T  ] = TS2D(ref->pts) * av_q2d(inlink->time_base);
-    select->var_values[VAR_POS] = ref->pos == -1 ? NAN : ref->pos;
+    select->var_values[VAR_PTS] = TS2D(frame->pts);
+    select->var_values[VAR_T  ] = TS2D(frame->pts) * av_q2d(inlink->time_base);
+    select->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
 
     switch (inlink->type) {
     case AVMEDIA_TYPE_AUDIO:
-        select->var_values[VAR_SAMPLES_N] = ref->audio->nb_samples;
+        select->var_values[VAR_SAMPLES_N] = frame->nb_samples;
         break;
 
     case AVMEDIA_TYPE_VIDEO:
         select->var_values[VAR_INTERLACE_TYPE] =
-            !ref->video->interlaced ? INTERLACE_TYPE_P :
-        ref->video->top_field_first ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
-        select->var_values[VAR_PICT_TYPE] = ref->video->pict_type;
+            !frame->interlaced_frame ? INTERLACE_TYPE_P :
+        frame->top_field_first ? INTERLACE_TYPE_T : INTERLACE_TYPE_B;
+        select->var_values[VAR_PICT_TYPE] = frame->pict_type;
 #if CONFIG_AVCODEC
         if (select->do_scene_detect) {
             char buf[32];
-            select->var_values[VAR_SCENE] = get_scene_score(ctx, ref);
+            select->var_values[VAR_SCENE] = get_scene_score(ctx, frame);
             // TODO: document metadata
             snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
-            av_dict_set(&ref->metadata, "lavfi.scene_score", buf, 0);
+            av_dict_set(&frame->metadata, "lavfi.scene_score", buf, 0);
         }
 #endif
         break;
@@ -299,11 +299,10 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
 
     res = av_expr_eval(select->expr, select->var_values, NULL);
     av_log(inlink->dst, AV_LOG_DEBUG,
-           "n:%f pts:%f t:%f pos:%f key:%d",
+           "n:%f pts:%f t:%f key:%d",
            select->var_values[VAR_N],
            select->var_values[VAR_PTS],
            select->var_values[VAR_T],
-           select->var_values[VAR_POS],
            (int)select->var_values[VAR_KEY]);
 
     switch (inlink->type) {
@@ -330,7 +329,7 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
         select->var_values[VAR_PREV_SELECTED_T]   = select->var_values[VAR_T];
         select->var_values[VAR_SELECTED_N] += 1.0;
         if (inlink->type == AVMEDIA_TYPE_AUDIO)
-            select->var_values[VAR_CONSUMED_SAMPLES_N] += ref->audio->nb_samples;
+            select->var_values[VAR_CONSUMED_SAMPLES_N] += frame->nb_samples;
     }
 
     select->var_values[VAR_N] += 1.0;
@@ -340,7 +339,7 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *ref)
     return res;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     SelectContext *select = inlink->dst->priv;
 
@@ -348,7 +347,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
     if (select->select)
         return ff_filter_frame(inlink->dst->outputs[0], frame);
 
-    avfilter_unref_bufferp(&frame);
+    av_frame_free(&frame);
     return 0;
 }
 
@@ -378,7 +377,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 #if CONFIG_AVCODEC
     if (select->do_scene_detect) {
-        avfilter_unref_bufferp(&select->prev_picref);
+        av_frame_free(&select->prev_picref);
         if (select->avctx) {
             avcodec_close(select->avctx);
             av_freep(&select->avctx);

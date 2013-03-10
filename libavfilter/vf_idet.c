@@ -47,9 +47,9 @@ typedef struct {
 
     uint8_t history[HIST_SIZE];
 
-    AVFilterBufferRef *cur;
-    AVFilterBufferRef *next;
-    AVFilterBufferRef *prev;
+    AVFrame *cur;
+    AVFrame *next;
+    AVFrame *prev;
     int (*filter_line)(const uint8_t *prev, const uint8_t *cur, const uint8_t *next, int w);
 
     const AVPixFmtDescriptor *csp;
@@ -113,8 +113,8 @@ static void filter(AVFilterContext *ctx)
     int match = 0;
 
     for (i = 0; i < idet->csp->nb_components; i++) {
-        int w = idet->cur->video->w;
-        int h = idet->cur->video->h;
+        int w = idet->cur->width;
+        int h = idet->cur->height;
         int refs = idet->cur->linesize[i];
 
         if (i && i<3) {
@@ -165,13 +165,13 @@ static void filter(AVFilterContext *ctx)
     }
 
     if      (idet->last_type == TFF){
-        idet->cur->video->top_field_first = 1;
-        idet->cur->video->interlaced = 1;
+        idet->cur->top_field_first = 1;
+        idet->cur->interlaced_frame = 1;
     }else if(idet->last_type == BFF){
-        idet->cur->video->top_field_first = 0;
-        idet->cur->video->interlaced = 1;
+        idet->cur->top_field_first = 0;
+        idet->cur->interlaced_frame = 1;
     }else if(idet->last_type == PROGRSSIVE){
-        idet->cur->video->interlaced = 0;
+        idet->cur->interlaced_frame = 0;
     }
 
     idet->prestat [           type] ++;
@@ -179,13 +179,13 @@ static void filter(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_DEBUG, "Single frame:%s, Multi frame:%s\n", type2str(type), type2str(idet->last_type));
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *link, AVFrame *picref)
 {
     AVFilterContext *ctx = link->dst;
     IDETContext *idet = ctx->priv;
 
     if (idet->prev)
-        avfilter_unref_buffer(idet->prev);
+        av_frame_free(&idet->prev);
     idet->prev = idet->cur;
     idet->cur  = idet->next;
     idet->next = picref;
@@ -194,7 +194,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
         return 0;
 
     if (!idet->prev)
-        idet->prev = avfilter_ref_buffer(idet->cur, ~0);
+        idet->prev = av_frame_clone(idet->cur);
 
     if (!idet->csp)
         idet->csp = av_pix_fmt_desc_get(link->format);
@@ -203,7 +203,7 @@ static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     filter(ctx);
 
-    return ff_filter_frame(ctx->outputs[0], avfilter_ref_buffer(idet->cur, ~0));
+    return ff_filter_frame(ctx->outputs[0], av_frame_clone(idet->cur));
 }
 
 static int request_frame(AVFilterLink *link)
@@ -238,9 +238,9 @@ static av_cold void uninit(AVFilterContext *ctx)
            idet->poststat[UNDETERMINED]
     );
 
-    avfilter_unref_bufferp(&idet->prev);
-    avfilter_unref_bufferp(&idet->cur );
-    avfilter_unref_bufferp(&idet->next);
+    av_frame_free(&idet->prev);
+    av_frame_free(&idet->cur );
+    av_frame_free(&idet->next);
 }
 
 static int query_formats(AVFilterContext *ctx)

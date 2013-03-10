@@ -339,24 +339,22 @@ static inline uint8_t ana_convert(const int *coeff, uint8_t *left, uint8_t *righ
     return av_clip_uint8(sum >> 16);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx  = inlink->dst;
     Stereo3DContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     int out_off_left, out_off_right;
     int in_off_left, in_off_right;
     int ret;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&inpicref);
+        av_frame_free(&inpicref);
         return AVERROR(ENOMEM);
     }
-
-    out->pts = inpicref->pts;
-    out->pos = inpicref->pos;
+    av_frame_copy_props(out, inpicref);
 
     in_off_left   = s->in.row_left  * inpicref->linesize[0] + s->in.off_left;
     in_off_right  = s->in.row_right * inpicref->linesize[0] + s->in.off_right;
@@ -432,7 +430,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     }
 
     ret = ff_filter_frame(outlink, out);
-    avfilter_unref_bufferp(&inpicref);
+    av_frame_free(&inpicref);
     if (ret < 0)
         return ret;
     return 0;
@@ -451,7 +449,6 @@ static const AVFilterPad stereo3d_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ,
     },
     { NULL }
 };
@@ -461,7 +458,6 @@ static const AVFilterPad stereo3d_outputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_output,
-        .min_perms    = AV_PERM_WRITE,
     },
     { NULL }
 };

@@ -56,7 +56,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     BBoxContext *bbox = ctx->priv;
@@ -65,14 +65,14 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
 
     has_bbox =
         ff_calculate_bounding_box(&box,
-                                  picref->data[0], picref->linesize[0],
+                                  frame->data[0], frame->linesize[0],
                                   inlink->w, inlink->h, 16);
     w = box.x2 - box.x1 + 1;
     h = box.y2 - box.y1 + 1;
 
     av_log(ctx, AV_LOG_INFO,
            "n:%d pts:%s pts_time:%s", bbox->frame,
-           av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base));
+           av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
         av_log(ctx, AV_LOG_INFO,
@@ -85,7 +85,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     av_log(ctx, AV_LOG_INFO, "\n");
 
     bbox->frame++;
-    return ff_filter_frame(inlink->dst->outputs[0], picref);
+    return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
 static const AVFilterPad bbox_inputs[] = {

@@ -31,8 +31,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-#define PERM_RWP AV_PERM_WRITE | AV_PERM_PRESERVE | AV_PERM_REUSE
-
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs + off_left + (j)] - cur[prefs + off_left - (j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
@@ -167,15 +165,15 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     FILTER(w - 3, w)
 }
 
-static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
+static void filter(AVFilterContext *ctx, AVFrame *dstpic,
                    int parity, int tff)
 {
     YADIFContext *yadif = ctx->priv;
     int y, i;
 
     for (i = 0; i < yadif->csp->nb_components; i++) {
-        int w = dstpic->video->w;
-        int h = dstpic->video->h;
+        int w = dstpic->width;
+        int h = dstpic->height;
         int refs = yadif->cur->linesize[i];
         int df = (yadif->csp->comp[i].depth_minus1 + 8) / 8;
         int l_edge, l_edge_pix;
@@ -232,19 +230,19 @@ static int return_frame(AVFilterContext *ctx, int is_second)
     int tff, ret;
 
     if (yadif->parity == -1) {
-        tff = yadif->cur->video->interlaced ?
-              yadif->cur->video->top_field_first : 1;
+        tff = yadif->cur->interlaced_frame ?
+              yadif->cur->top_field_first : 1;
     } else {
         tff = yadif->parity ^ 1;
     }
 
     if (is_second) {
-        yadif->out = ff_get_video_buffer(link, PERM_RWP, link->w, link->h);
+        yadif->out = ff_get_video_buffer(link, link->w, link->h);
         if (!yadif->out)
             return AVERROR(ENOMEM);
 
-        avfilter_copy_buffer_ref_props(yadif->out, yadif->cur);
-        yadif->out->video->interlaced = 0;
+        av_frame_copy_props(yadif->out, yadif->cur);
+        yadif->out->interlaced_frame = 0;
     }
 
     filter(ctx, yadif->out, tff ^ !is_second, tff);
@@ -265,47 +263,46 @@ static int return_frame(AVFilterContext *ctx, int is_second)
     return ret;
 }
 
-static int filter_frame(AVFilterLink *link, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     YADIFContext *yadif = ctx->priv;
 
-    av_assert0(picref);
+    av_assert0(frame);
 
     if (yadif->frame_pending)
         return_frame(ctx, 1);
 
     if (yadif->prev)
-        avfilter_unref_buffer(yadif->prev);
+        av_frame_free(&yadif->prev);
     yadif->prev = yadif->cur;
     yadif->cur  = yadif->next;
-    yadif->next = picref;
+    yadif->next = frame;
 
     if (!yadif->cur)
         return 0;
 
-    if (yadif->deint && !yadif->cur->video->interlaced) {
-        yadif->out  = avfilter_ref_buffer(yadif->cur, ~AV_PERM_WRITE);
+    if (yadif->deint && !yadif->cur->interlaced_frame) {
+        yadif->out  = av_frame_clone(yadif->cur);
         if (!yadif->out)
             return AVERROR(ENOMEM);
 
-        avfilter_unref_bufferp(&yadif->prev);
+        av_frame_free(&yadif->prev);
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
         return ff_filter_frame(ctx->outputs[0], yadif->out);
     }
 
     if (!yadif->prev &&
-        !(yadif->prev = avfilter_ref_buffer(yadif->cur, ~AV_PERM_WRITE)))
+        !(yadif->prev = av_frame_clone(yadif->cur)))
         return AVERROR(ENOMEM);
 
-    yadif->out = ff_get_video_buffer(ctx->outputs[0], PERM_RWP,
-                                     link->w, link->h);
+    yadif->out = ff_get_video_buffer(ctx->outputs[0], link->w, link->h);
     if (!yadif->out)
         return AVERROR(ENOMEM);
 
-    avfilter_copy_buffer_ref_props(yadif->out, yadif->cur);
-    yadif->out->video->interlaced = 0;
+    av_frame_copy_props(yadif->out, yadif->cur);
+    yadif->out->interlaced_frame = 0;
 
     if (yadif->out->pts != AV_NOPTS_VALUE)
         yadif->out->pts *= 2;
@@ -332,7 +329,7 @@ static int request_frame(AVFilterLink *link)
         ret  = ff_request_frame(link->src->inputs[0]);
 
         if (ret == AVERROR_EOF && yadif->cur) {
-            AVFilterBufferRef *next = avfilter_ref_buffer(yadif->next, ~AV_PERM_WRITE);
+            AVFrame *next = av_frame_clone(yadif->next);
 
             if (!next)
                 return AVERROR(ENOMEM);
@@ -379,9 +376,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     YADIFContext *yadif = ctx->priv;
 
-    avfilter_unref_bufferp(&yadif->prev);
-    avfilter_unref_bufferp(&yadif->cur );
-    avfilter_unref_bufferp(&yadif->next);
+    av_frame_free(&yadif->prev);
+    av_frame_free(&yadif->cur );
+    av_frame_free(&yadif->next);
     av_opt_free(yadif);
 }
 

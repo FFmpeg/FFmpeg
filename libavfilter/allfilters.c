@@ -193,8 +193,8 @@ void avfilter_register_all(void)
      * unconditionally */
     REGISTER_FILTER_UNCONDITIONAL(asrc_abuffer);
     REGISTER_FILTER_UNCONDITIONAL(vsrc_buffer);
-    REGISTER_FILTER_UNCONDITIONAL(asink_abuffer);
-    REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
+    //REGISTER_FILTER_UNCONDITIONAL(asink_abuffer);
+    //REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
     REGISTER_FILTER_UNCONDITIONAL(af_afifo);
     REGISTER_FILTER_UNCONDITIONAL(vf_fifo);
 }

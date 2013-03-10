@@ -48,7 +48,7 @@ typedef struct {
     AVExpr *expr;
     double var_values[VAR_NB];
     struct buf_queue {
-        AVFilterBufferRef *buf[QUEUE_SIZE];
+        AVFrame *buf[QUEUE_SIZE];
         unsigned tail, nb;
         /* buf[tail] is the oldest,
            buf[(tail + nb) % QUEUE_SIZE] is where the next is added */
@@ -111,16 +111,16 @@ static int send_out(AVFilterContext *ctx, int out_id)
 {
     AStreamSyncContext *as = ctx->priv;
     struct buf_queue *queue = &as->queue[out_id];
-    AVFilterBufferRef *buf = queue->buf[queue->tail];
+    AVFrame *buf = queue->buf[queue->tail];
     int ret;
 
     queue->buf[queue->tail] = NULL;
     as->var_values[VAR_B1 + out_id]++;
-    as->var_values[VAR_S1 + out_id] += buf->audio->nb_samples;
+    as->var_values[VAR_S1 + out_id] += buf->nb_samples;
     if (buf->pts != AV_NOPTS_VALUE)
         as->var_values[VAR_T1 + out_id] =
             av_q2d(ctx->outputs[out_id]->time_base) * buf->pts;
-    as->var_values[VAR_T1 + out_id] += buf->audio->nb_samples /
+    as->var_values[VAR_T1 + out_id] += buf->nb_samples /
                                    (double)ctx->inputs[out_id]->sample_rate;
     ret = ff_filter_frame(ctx->outputs[out_id], buf);
     queue->nb--;
@@ -167,7 +167,7 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AStreamSyncContext *as = ctx->priv;
@@ -185,12 +185,10 @@ static const AVFilterPad astreamsync_inputs[] = {
         .name         = "in1",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
     },{
         .name         = "in2",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
 };

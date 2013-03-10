@@ -33,7 +33,7 @@
 #define HIST_SIZE (3*256)
 
 struct thumb_frame {
-    AVFilterBufferRef *buf;     ///< cached frame
+    AVFrame *buf;               ///< cached frame
     int histogram[HIST_SIZE];   ///< RGB color distribution histogram of the frame
 };
 
@@ -86,14 +86,14 @@ static double frame_sum_square_err(const int *hist, const double *median)
     return sum_sq_err;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     int i, j, best_frame_idx = 0;
     double avg_hist[HIST_SIZE] = {0}, sq_err, min_sq_err = -1;
     AVFilterContext *ctx  = inlink->dst;
     ThumbContext *thumb   = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *picref;
+    AVFrame *picref;
     int *hist = thumb->frames[thumb->n].histogram;
     const uint8_t *p = frame->data[0];
 
@@ -135,7 +135,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
         memset(thumb->frames[i].histogram, 0, sizeof(thumb->frames[i].histogram));
         if (i == best_frame_idx)
             continue;
-        avfilter_unref_bufferp(&thumb->frames[i].buf);
+        av_frame_unref(thumb->frames[i].buf);
     }
     thumb->n = 0;
 
@@ -152,7 +152,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
     ThumbContext *thumb = ctx->priv;
     for (i = 0; i < thumb->n_frames && thumb->frames[i].buf; i++)
-        avfilter_unref_bufferp(&thumb->frames[i].buf);
+        av_frame_unref(thumb->frames[i].buf);
     av_freep(&thumb->frames);
 }
 
@@ -207,7 +207,6 @@ static const AVFilterPad thumbnail_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .get_video_buffer = ff_null_get_video_buffer,
-        .min_perms        = AV_PERM_PRESERVE,
         .filter_frame     = filter_frame,
     },
     { NULL }

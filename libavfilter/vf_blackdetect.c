@@ -146,7 +146,7 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     BlackDetectContext *blackdetect = ctx->priv;
@@ -163,10 +163,10 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
     picture_black_ratio = (double)blackdetect->nb_black_pixels / (inlink->w * inlink->h);
 
     av_log(ctx, AV_LOG_DEBUG,
-           "frame:%u picture_black_ratio:%f pos:%"PRId64" pts:%s t:%s type:%c\n",
+           "frame:%u picture_black_ratio:%f pts:%s t:%s type:%c\n",
            blackdetect->frame_count, picture_black_ratio,
-           picref->pos, av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base),
-           av_get_picture_type_char(picref->video->pict_type));
+           av_ts2str(picref->pts), av_ts2timestr(picref->pts, &inlink->time_base),
+           av_get_picture_type_char(picref->pict_type));
 
     if (picture_black_ratio >= blackdetect->picture_black_ratio_th) {
         if (!blackdetect->black_started) {

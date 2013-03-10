@@ -135,23 +135,23 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int  filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamplesref)
+static int  filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 {
     AConvertContext *aconvert = inlink->dst->priv;
-    const int n = insamplesref->audio->nb_samples;
+    const int n = insamplesref->nb_samples;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outsamplesref = ff_get_audio_buffer(outlink, AV_PERM_WRITE, n);
+    AVFrame *outsamplesref = ff_get_audio_buffer(outlink, n);
     int ret;
 
-    swr_convert(aconvert->swr, outsamplesref->data, n,
-                        (void *)insamplesref->data, n);
+    swr_convert(aconvert->swr, outsamplesref->extended_data, n,
+                        (void *)insamplesref->extended_data, n);
 
-    avfilter_copy_buffer_ref_props(outsamplesref, insamplesref);
-    outsamplesref->audio->channels       = outlink->channels;
-    outsamplesref->audio->channel_layout = outlink->channel_layout;
+    av_frame_copy_props(outsamplesref, insamplesref);
+    outsamplesref->channels       = outlink->channels;
+    outsamplesref->channel_layout = outlink->channel_layout;
 
     ret = ff_filter_frame(outlink, outsamplesref);
-    avfilter_unref_buffer(insamplesref);
+    av_frame_free(&insamplesref);
     return ret;
 }
 
@@ -160,7 +160,6 @@ static const AVFilterPad aconvert_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
-        .min_perms    = AV_PERM_READ,
     },
     { NULL }
 };

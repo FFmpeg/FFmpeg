@@ -47,7 +47,7 @@ typedef struct {
                                    ///< if negative: number of sequential frames which were not dropped
 
     int hsub, vsub;                ///< chroma subsampling values
-    AVFilterBufferRef *ref;        ///< reference picture
+    AVFrame *ref;                  ///< reference picture
     DSPContext dspctx;             ///< context providing optimized diff routines
     AVCodecContext *avctx;         ///< codec context required for the DSPContext
 } DecimateContext;
@@ -105,7 +105,7 @@ static int diff_planes(AVFilterContext *ctx,
  * different with respect to the reference frame ref.
  */
 static int decimate_frame(AVFilterContext *ctx,
-                          AVFilterBufferRef *cur, AVFilterBufferRef *ref)
+                          AVFrame *cur, AVFrame *ref)
 {
     DecimateContext *decimate = ctx->priv;
     int plane;
@@ -122,7 +122,7 @@ static int decimate_frame(AVFilterContext *ctx,
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
         if (diff_planes(ctx,
                         cur->data[plane], ref->data[plane], ref->linesize[plane],
-                        ref->video->w>>hsub, ref->video->h>>vsub))
+                        ref->width>>hsub, ref->height>>vsub))
             return 0;
     }
 
@@ -155,7 +155,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DecimateContext *decimate = ctx->priv;
-    avfilter_unref_bufferp(&decimate->ref);
+    av_frame_free(&decimate->ref);
     avcodec_close(decimate->avctx);
     av_opt_free(decimate);
     av_freep(&decimate->avctx);
@@ -189,7 +189,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur)
+static int filter_frame(AVFilterLink *inlink, AVFrame *cur)
 {
     DecimateContext *decimate = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -198,11 +198,11 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur)
     if (decimate->ref && decimate_frame(inlink->dst, cur, decimate->ref)) {
         decimate->drop_count = FFMAX(1, decimate->drop_count+1);
     } else {
-        avfilter_unref_buffer(decimate->ref);
+        av_frame_free(&decimate->ref);
         decimate->ref = cur;
         decimate->drop_count = FFMIN(-1, decimate->drop_count-1);
 
-        if (ret = ff_filter_frame(outlink, avfilter_ref_buffer(cur, ~AV_PERM_WRITE)) < 0)
+        if (ret = ff_filter_frame(outlink, av_frame_clone(cur)) < 0)
             return ret;
     }
 
@@ -213,7 +213,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *cur)
            decimate->drop_count);
 
     if (decimate->drop_count > 0)
-        avfilter_unref_buffer(cur);
+        av_frame_free(&cur);
 
     return 0;
 }
@@ -238,7 +238,6 @@ static const AVFilterPad decimate_inputs[] = {
         .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_input,
         .filter_frame     = filter_frame,
-        .min_perms        = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
 };

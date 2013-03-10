@@ -66,7 +66,7 @@ static int config_output_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 {
     FrameStepContext *framestep = inlink->dst->priv;
 
@@ -75,7 +75,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *ref)
         return ff_filter_frame(inlink->dst->outputs[0], ref);
     } else {
         framestep->frame_selected = 0;
-        avfilter_unref_buffer(ref);
+        av_frame_free(&ref);
         return 0;
     }
 }

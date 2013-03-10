@@ -82,14 +82,14 @@ static int config_props_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     FieldContext *field = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int i;
 
-    inpicref->video->h = outlink->h;
-    inpicref->video->interlaced = 0;
+    inpicref->height = outlink->h;
+    inpicref->interlaced_frame = 0;
 
     for (i = 0; i < field->nb_planes; i++) {
         if (field->type == FIELD_TYPE_BOTTOM)

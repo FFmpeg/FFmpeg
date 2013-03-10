@@ -85,7 +85,7 @@ typedef struct {
     uint8_t overlay_has_alpha;
     enum OverlayFormat { OVERLAY_FORMAT_YUV420, OVERLAY_FORMAT_YUV444, OVERLAY_FORMAT_RGB, OVERLAY_FORMAT_NB} format;
 
-    AVFilterBufferRef *overpicref;
+    AVFrame *overpicref;
     struct FFBufQueue queue_main;
     struct FFBufQueue queue_over;
 
@@ -143,7 +143,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_opt_free(over);
 
-    avfilter_unref_bufferp(&over->overpicref);
+    av_frame_free(&over->overpicref);
     ff_bufqueue_discard_all(&over->queue_main);
     ff_bufqueue_discard_all(&over->queue_over);
 }
@@ -316,15 +316,15 @@ static int config_output(AVFilterLink *outlink)
  * Blend image in src to destination buffer dst at position (x, y).
  */
 static void blend_image(AVFilterContext *ctx,
-                        AVFilterBufferRef *dst, AVFilterBufferRef *src,
+                        AVFrame *dst, AVFrame *src,
                         int x, int y)
 {
     OverlayContext *over = ctx->priv;
     int i, imax, j, jmax, k, kmax;
-    const int src_w = src->video->w;
-    const int src_h = src->video->h;
-    const int dst_w = dst->video->w;
-    const int dst_h = dst->video->h;
+    const int src_w = src->width;
+    const int src_h = src->height;
+    const int dst_w = dst->width;
+    const int dst_h = dst->height;
 
     if (x >= dst_w || x+dst_w  < 0 ||
         y >= dst_h || y+dst_h < 0)
@@ -503,11 +503,11 @@ static void blend_image(AVFilterContext *ctx,
     }
 }
 
-static int try_filter_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
+static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
 {
     OverlayContext *over = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFilterBufferRef *next_overpic;
+    AVFrame *next_overpic;
     int ret;
 
     /* Discard obsolete overlay frames: if there is a next overlay frame with pts
@@ -518,7 +518,7 @@ static int try_filter_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
                                            mainpic->pts     , ctx->inputs[MAIN]->time_base) > 0)
             break;
         ff_bufqueue_get(&over->queue_over);
-        avfilter_unref_buffer(over->overpicref);
+        av_frame_free(&over->overpicref);
         over->overpicref = next_overpic;
     }
 
@@ -549,7 +549,7 @@ static int try_filter_frame(AVFilterContext *ctx, AVFilterBufferRef *mainpic)
 static int try_filter_next_frame(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
-    AVFilterBufferRef *next_mainpic = ff_bufqueue_peek(&over->queue_main, 0);
+    AVFrame *next_mainpic = ff_bufqueue_peek(&over->queue_main, 0);
     int ret;
 
     if (!next_mainpic)
@@ -568,7 +568,7 @@ static int flush_frames(AVFilterContext *ctx)
     return ret == AVERROR(EAGAIN) ? 0 : ret;
 }
 
-static int filter_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
@@ -589,7 +589,7 @@ static int filter_frame_main(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     return 0;
 }
 
-static int filter_frame_over(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame_over(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     OverlayContext *over = ctx->priv;
@@ -639,14 +639,13 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
         .get_video_buffer = ff_null_get_video_buffer,
         .config_props = config_input_main,
         .filter_frame = filter_frame_main,
-        .min_perms    = AV_PERM_READ | AV_PERM_WRITE | AV_PERM_PRESERVE,
+        .needs_writable = 1,
     },
     {
         .name         = "overlay",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_overlay,
         .filter_frame = filter_frame_over,
-        .min_perms    = AV_PERM_READ | AV_PERM_PRESERVE,
     },
     { NULL }
 };

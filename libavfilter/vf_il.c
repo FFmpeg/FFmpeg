@@ -160,19 +160,19 @@ static void interleave(uint8_t *dst, uint8_t *src, int w, int h,
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     IlContext *il = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *out;
+    AVFrame *out;
     int ret, comp;
 
-    out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        avfilter_unref_bufferp(&inpicref);
+        av_frame_free(&inpicref);
         return AVERROR(ENOMEM);
     }
-    avfilter_copy_buffer_ref_props(out, inpicref);
+    av_frame_copy_props(out, inpicref);
 
     interleave(out->data[0], inpicref->data[0],
                il->linesize[0], inlink->h,
@@ -195,7 +195,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     }
 
     ret = ff_filter_frame(outlink, out);
-    avfilter_unref_bufferp(&inpicref);
+    av_frame_free(&inpicref);
     return ret;
 }
 
