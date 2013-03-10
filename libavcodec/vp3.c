@@ -38,6 +38,7 @@
 #include "internal.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "hpeldsp.h"
 #include "videodsp.h"
 #include "vp3data.h"
 #include "vp3dsp.h"
@@ -141,7 +142,7 @@ typedef struct Vp3DecodeContext {
     int keyframe;
     uint8_t idct_permutation[64];
     uint8_t idct_scantable[64];
-    DSPContext dsp;
+    HpelDSPContext hdsp;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
     DECLARE_ALIGNED(16, int16_t, block)[64];
@@ -1561,7 +1562,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                            VP3 source but this would be slower as
                            put_no_rnd_pixels_tab is better optimzed */
                         if(motion_halfpel_index != 3){
-                            s->dsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
+                            s->hdsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
                                 output_plane + first_pixel,
                                 motion_source, stride, 8);
                         }else{
@@ -1595,7 +1596,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                 } else {
 
                     /* copy directly from the previous frame */
-                    s->dsp.put_pixels_tab[1][0](
+                    s->hdsp.put_pixels_tab[1][0](
                         output_plane + first_pixel,
                         last_plane + first_pixel,
                         stride, 8);
@@ -1694,7 +1695,7 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     if (avctx->codec_id != AV_CODEC_ID_THEORA)
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_hpeldsp_init(&s->hdsp, avctx->flags | CODEC_FLAG_BITEXACT);
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
 
