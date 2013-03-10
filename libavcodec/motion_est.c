@@ -338,9 +338,9 @@ int ff_init_me(MpegEncContext *s){
         else
             c->sub_motion_search= hpel_motion_search;
     }
-    c->hpel_avg= s->dsp.avg_pixels_tab;
-    if(s->no_rounding) c->hpel_put= s->dsp.put_no_rnd_pixels_tab;
-    else               c->hpel_put= s->dsp.put_pixels_tab;
+    c->hpel_avg= s->hdsp.avg_pixels_tab;
+    if(s->no_rounding) c->hpel_put= s->hdsp.put_no_rnd_pixels_tab;
+    else               c->hpel_put= s->hdsp.put_pixels_tab;
 
     if(s->linesize){
         c->stride  = s->linesize;
@@ -640,9 +640,9 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
                 dxy = ((my4 & 1) << 1) | (mx4 & 1);
 
                 if(s->no_rounding)
-                    s->dsp.put_no_rnd_pixels_tab[1][dxy](dest_y    , ref    , stride, h);
+                    s->hdsp.put_no_rnd_pixels_tab[1][dxy](dest_y    , ref    , stride, h);
                 else
-                    s->dsp.put_pixels_tab       [1][dxy](dest_y    , ref    , stride, h);
+                    s->hdsp.put_pixels_tab       [1][dxy](dest_y    , ref    , stride, h);
             }
             dmin_sum+= (mv_penalty[mx4-pred_x4] + mv_penalty[my4-pred_y4])*c->mb_penalty_factor;
         }else
@@ -681,11 +681,11 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
         offset= (s->mb_x*8 + (mx>>1)) + (s->mb_y*8 + (my>>1))*s->uvlinesize;
 
         if(s->no_rounding){
-            s->dsp.put_no_rnd_pixels_tab[1][dxy](c->scratchpad    , s->last_picture.f.data[1] + offset, s->uvlinesize, 8);
-            s->dsp.put_no_rnd_pixels_tab[1][dxy](c->scratchpad + 8, s->last_picture.f.data[2] + offset, s->uvlinesize, 8);
+            s->hdsp.put_no_rnd_pixels_tab[1][dxy](c->scratchpad    , s->last_picture.f.data[1] + offset, s->uvlinesize, 8);
+            s->hdsp.put_no_rnd_pixels_tab[1][dxy](c->scratchpad + 8, s->last_picture.f.data[2] + offset, s->uvlinesize, 8);
         }else{
-            s->dsp.put_pixels_tab       [1][dxy](c->scratchpad    , s->last_picture.f.data[1] + offset, s->uvlinesize, 8);
-            s->dsp.put_pixels_tab       [1][dxy](c->scratchpad + 8, s->last_picture.f.data[2] + offset, s->uvlinesize, 8);
+            s->hdsp.put_pixels_tab       [1][dxy](c->scratchpad    , s->last_picture.f.data[1] + offset, s->uvlinesize, 8);
+            s->hdsp.put_pixels_tab       [1][dxy](c->scratchpad + 8, s->last_picture.f.data[2] + offset, s->uvlinesize, 8);
         }
 
         dmin_sum += s->dsp.mb_cmp[1](s, s->new_picture.f.data[1] + s->mb_x*8 + s->mb_y*8*s->uvlinesize, c->scratchpad  , s->uvlinesize, 8);
@@ -793,9 +793,9 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
                 dxy = ((my_i & 1) << 1) | (mx_i & 1);
 
                 if(s->no_rounding){
-                    s->dsp.put_no_rnd_pixels_tab[size][dxy](c->scratchpad, ref    , stride, h);
+                    s->hdsp.put_no_rnd_pixels_tab[size][dxy](c->scratchpad, ref    , stride, h);
                 }else{
-                    s->dsp.put_pixels_tab       [size][dxy](c->scratchpad, ref    , stride, h);
+                    s->hdsp.put_pixels_tab       [size][dxy](c->scratchpad, ref    , stride, h);
                 }
                 dmin= s->dsp.mb_cmp[size](s, c->src[block][0], c->scratchpad, stride, h);
                 dmin+= (mv_penalty[mx_i-c->pred_x] + mv_penalty[my_i-c->pred_y] + 1)*c->mb_penalty_factor;
@@ -1236,14 +1236,14 @@ static inline int check_bidir_mv(MpegEncContext * s,
         src_y = motion_fy >> 1;
 
         ptr = ref_data[0] + (src_y * stride) + src_x;
-        s->dsp.put_pixels_tab[size][dxy](dest_y    , ptr    , stride, h);
+        s->hdsp.put_pixels_tab[size][dxy](dest_y    , ptr    , stride, h);
 
         dxy = ((motion_by & 1) << 1) | (motion_bx & 1);
         src_x = motion_bx >> 1;
         src_y = motion_by >> 1;
 
         ptr = ref2_data[0] + (src_y * stride) + src_x;
-        s->dsp.avg_pixels_tab[size][dxy](dest_y    , ptr    , stride, h);
+        s->hdsp.avg_pixels_tab[size][dxy](dest_y    , ptr    , stride, h);
     }
 
     fbmin = (mv_penalty_f[motion_fx-pred_fx] + mv_penalty_f[motion_fy-pred_fy])*c->mb_penalty_factor
