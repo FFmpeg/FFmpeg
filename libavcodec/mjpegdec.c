@@ -89,6 +89,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     avcodec_get_frame_defaults(&s->picture);
 
     s->avctx = avctx;
+    ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_dsputil_init(&s->dsp, avctx);
     ff_init_scantable(s->dsp.idct_permutation, &s->scantable, ff_zigzag_direct);
     s->buffer_size   = 0;
@@ -992,7 +993,7 @@ static av_always_inline void mjpeg_copy_block(MJpegDecodeContext *s,
                                               int linesize, int lowres)
 {
     switch (lowres) {
-    case 0: s->dsp.put_pixels_tab[1][0](dst, src, linesize, 8);
+    case 0: s->hdsp.put_pixels_tab[1][0](dst, src, linesize, 8);
         break;
     case 1: copy_block4(dst, src, linesize, linesize, 4);
         break;
