@@ -793,7 +793,7 @@ static av_cold int svq1_decode_end(AVCodecContext *avctx)
 {
     SVQ1Context *s = avctx->priv_data;
 
-    avcodec_free_frame(&s->prev);
+    av_frame_free(&s->prev);
 
     return 0;
 }
