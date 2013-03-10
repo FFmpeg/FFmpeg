@@ -316,7 +316,7 @@ static int buffer_needs_copy(PadContext *s, AVFrame *frame, AVBufferRef *buf)
             return 1;
 
 #define SIGN(x) ((x) > 0 ? 1 : -1)
-        for (j = 0; j < FF_ARRAY_ELEMS(planes) & planes[j] >= 0; j++) {
+        for (j = 0; j < FF_ARRAY_ELEMS(planes) && planes[j] >= 0; j++) {
             int hsub1 = (planes[j] == 1 || planes[j] == 2) ? s->hsub : 0;
             uint8_t *start1 = frame->data[planes[j]];
             uint8_t *end1   = start1 + (frame->height >> hsub1) *
