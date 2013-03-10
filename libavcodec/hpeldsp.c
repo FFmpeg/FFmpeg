@@ -54,6 +54,8 @@ av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
     hpel_funcs(avg, [3],  2);
     hpel_funcs(avg_no_rnd,, 16);
 
+    if (ARCH_PPC)
+        ff_hpeldsp_init_ppc(c, flags);
     if (ARCH_X86)
         ff_hpeldsp_init_x86(c, flags);
 }
