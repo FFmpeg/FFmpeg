@@ -3,6 +3,7 @@ OBJS                                   += ppc/dsputil_ppc.o             \
 
 OBJS-$(CONFIG_H264CHROMA)              += ppc/h264chroma_init.o
 OBJS-$(CONFIG_H264QPEL)                += ppc/h264_qpel.o
+OBJS-$(CONFIG_HPELDSP)                 += ppc/hpeldsp_altivec.o
 OBJS-$(CONFIG_VORBIS_DECODER)          += ppc/vorbisdsp_altivec.o
 OBJS-$(CONFIG_VP3DSP)                  += ppc/vp3dsp_altivec.o
 
