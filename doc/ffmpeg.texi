@@ -361,7 +361,8 @@ want to create filter graphs with multiple inputs and/or outputs.
 Specify the preset for matching stream(s).
 
 @item -stats (@emph{global})
-Print encoding progress/statistics. On by default.
+Print encoding progress/statistics. It is on by default, to explicitly
+disable it you need to specify @code{-nostats}.
 
 @item -progress @var{url} (@emph{global})
 Send program-friendly progress information to @var{url}.

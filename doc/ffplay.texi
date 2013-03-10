@@ -93,9 +93,13 @@ Read @var{input_file}.
 @item -pix_fmt @var{format}
 Set pixel format.
 This option has been deprecated in favor of private options, try -pixel_format.
+
 @item -stats
-Show the stream duration, the codec parameters, the current position in
-the stream and the audio/video synchronisation drift.
+Print several playback statistics, in particular show the stream
+duration, the codec parameters, the current position in the stream and
+the audio/video synchronisation drift. It is on by default, to
+explicitly disable it you need to specify @code{-nostats}.
+
 @item -bug
 Work around bugs.
 @item -fast
