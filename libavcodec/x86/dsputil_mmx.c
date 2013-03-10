@@ -60,10 +60,6 @@ DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 
 #if HAVE_YASM
-void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_put_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h);
 void ff_put_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                               int dstStride, int src1Stride, int h);
 void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1,
@@ -71,54 +67,14 @@ void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1,
                                      int src1Stride, int h);
 void ff_avg_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                               int dstStride, int src1Stride, int h);
-void ff_put_pixels16_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
-void ff_put_pixels16_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
 void ff_put_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                int dstStride, int src1Stride, int h);
 void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                int dstStride, int src1Stride, int h);
 void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                       int dstStride, int src1Stride, int h);
-void ff_put_no_rnd_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                                     ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                                    ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_exact_mmxext(uint8_t *block,
-                                           const uint8_t *pixels,
-                                           ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_x2_exact_3dnow(uint8_t *block,
-                                          const uint8_t *pixels,
-                                          ptrdiff_t line_size, int h);
-void ff_put_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_put_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                                     ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
-                                    ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_exact_mmxext(uint8_t *block,
-                                           const uint8_t *pixels,
-                                           ptrdiff_t line_size, int h);
-void ff_put_no_rnd_pixels8_y2_exact_3dnow(uint8_t *block,
-                                          const uint8_t *pixels,
-                                          ptrdiff_t line_size, int h);
-void ff_avg_pixels8_3dnow(uint8_t *block, const uint8_t *pixels,
-                          ptrdiff_t line_size, int h);
-void ff_avg_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h);
-void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
-void ff_avg_pixels8_y2_3dnow(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
-                               ptrdiff_t line_size, int h);
-void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
-                              ptrdiff_t line_size, int h);
+void ff_avg_pixels8_mmxext(uint8_t *block, const uint8_t *pixels,
+                           ptrdiff_t line_size, int h);
 
 void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
@@ -192,14 +148,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 // using regr as temporary and for the output result
 // first argument is unmodifed and second is trashed
 // regfe is supposed to contain 0xfefefefefefefefe
-#define PAVGB_MMX_NO_RND(rega, regb, regr, regfe)                \
-    "movq   "#rega", "#regr"            \n\t"                    \
-    "pand   "#regb", "#regr"            \n\t"                    \
-    "pxor   "#rega", "#regb"            \n\t"                    \
-    "pand  "#regfe", "#regb"            \n\t"                    \
-    "psrlq       $1, "#regb"            \n\t"                    \
-    "paddb  "#regb", "#regr"            \n\t"
-
 #define PAVGB_MMX(rega, regb, regr, regfe)                       \
     "movq   "#rega", "#regr"            \n\t"                    \
     "por    "#regb", "#regr"            \n\t"                    \
@@ -209,20 +157,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
     "psubb  "#regb", "#regr"            \n\t"
 
 // mm6 is supposed to contain 0xfefefefefefefefe
-#define PAVGBP_MMX_NO_RND(rega, regb, regr,  regc, regd, regp)   \
-    "movq  "#rega", "#regr"             \n\t"                    \
-    "movq  "#regc", "#regp"             \n\t"                    \
-    "pand  "#regb", "#regr"             \n\t"                    \
-    "pand  "#regd", "#regp"             \n\t"                    \
-    "pxor  "#rega", "#regb"             \n\t"                    \
-    "pxor  "#regc", "#regd"             \n\t"                    \
-    "pand    %%mm6, "#regb"             \n\t"                    \
-    "pand    %%mm6, "#regd"             \n\t"                    \
-    "psrlq      $1, "#regb"             \n\t"                    \
-    "psrlq      $1, "#regd"             \n\t"                    \
-    "paddb "#regb", "#regr"             \n\t"                    \
-    "paddb "#regd", "#regp"             \n\t"
-
 #define PAVGBP_MMX(rega, regb, regr, regc, regd, regp)           \
     "movq  "#rega", "#regr"             \n\t"                    \
     "movq  "#regc", "#regp"             \n\t"                    \
@@ -238,28 +172,13 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
     "psubb "#regd", "#regp"             \n\t"
 
 /***********************************/
-/* MMX no rounding */
-#define NO_RND 1
-#define DEF(x, y) x ## _no_rnd_ ## y ## _mmx
-#define SET_RND  MOVQ_WONE
-#define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
-#define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
-#define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
-
-#include "dsputil_rnd_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef PAVGBP
-#undef PAVGB
-#undef NO_RND
-/***********************************/
 /* MMX rounding */
 
 #define DEF(x, y) x ## _ ## y ## _mmx
 #define SET_RND  MOVQ_WTWO
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
+#define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
 #include "dsputil_rnd_template.c"
 
@@ -275,30 +194,20 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #if HAVE_YASM
 
 /***********************************/
-/* 3Dnow specific */
-
-#define DEF(x) x ## _3dnow
-
-#include "dsputil_avg_template.c"
-
-#undef DEF
-
-/***********************************/
 /* MMXEXT specific */
 
-#define DEF(x) x ## _mmxext
-
-#include "dsputil_avg_template.c"
-
-#undef DEF
+//FIXME the following could be optimized too ...
+static void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
+                                   int line_size, int h)
+{
+    ff_avg_pixels8_mmxext(block,     pixels,     line_size, h);
+    ff_avg_pixels8_mmxext(block + 8, pixels + 8, line_size, h);
+}
 
 #endif /* HAVE_YASM */
 
 
 #if HAVE_INLINE_ASM
-#define put_no_rnd_pixels16_mmx put_pixels16_mmx
-#define put_no_rnd_pixels8_mmx put_pixels8_mmx
-
 /***********************************/
 /* standard MMX */
 
@@ -1520,14 +1429,6 @@ void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src,
     c->PFX ## _pixels_tab[IDX][15] = PREFIX ## PFX ## SIZE ## _mc33_ ## CPU; \
     } while (0)
 
-#define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
-    do {                                                                        \
-        c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _     ## CPU; \
-        c->PFX ## _pixels_tab IDX [1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
-        c->PFX ## _pixels_tab IDX [2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
-        c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
-    } while (0)
-
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int mm_flags)
 {
@@ -1542,14 +1443,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
         c->clear_block  = clear_block_mmx;
         c->clear_blocks = clear_blocks_mmx;
         c->draw_edges   = draw_edges_mmx;
-
-        SET_HPEL_FUNCS(put,        [0], 16, mmx);
-        SET_HPEL_FUNCS(put_no_rnd, [0], 16, mmx);
-        SET_HPEL_FUNCS(avg,        [0], 16, mmx);
-        SET_HPEL_FUNCS(avg_no_rnd,    , 16, mmx);
-        SET_HPEL_FUNCS(put,        [1],  8, mmx);
-        SET_HPEL_FUNCS(put_no_rnd, [1],  8, mmx);
-        SET_HPEL_FUNCS(avg,        [1],  8, mmx);
     }
 
 #if CONFIG_VIDEODSP && (ARCH_X86_32 || !HAVE_YASM)
@@ -1584,43 +1477,9 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
-
-    if (!high_bit_depth) {
-        c->put_pixels_tab[0][1] = ff_put_pixels16_x2_mmxext;
-        c->put_pixels_tab[0][2] = ff_put_pixels16_y2_mmxext;
-
-        c->avg_pixels_tab[0][0] = ff_avg_pixels16_mmxext;
-        c->avg_pixels_tab[0][1] = ff_avg_pixels16_x2_mmxext;
-        c->avg_pixels_tab[0][2] = ff_avg_pixels16_y2_mmxext;
-
-        c->put_pixels_tab[1][1] = ff_put_pixels8_x2_mmxext;
-        c->put_pixels_tab[1][2] = ff_put_pixels8_y2_mmxext;
-
-        c->avg_pixels_tab[1][0] = ff_avg_pixels8_mmxext;
-        c->avg_pixels_tab[1][1] = ff_avg_pixels8_x2_mmxext;
-        c->avg_pixels_tab[1][2] = ff_avg_pixels8_y2_mmxext;
-    }
-
-    if (!(avctx->flags & CODEC_FLAG_BITEXACT)) {
-        if (!high_bit_depth) {
-            c->put_no_rnd_pixels_tab[0][1] = ff_put_no_rnd_pixels16_x2_mmxext;
-            c->put_no_rnd_pixels_tab[0][2] = ff_put_no_rnd_pixels16_y2_mmxext;
-            c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_mmxext;
-            c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_mmxext;
-
-            c->avg_pixels_tab[0][3] = ff_avg_pixels16_xy2_mmxext;
-            c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_mmxext;
-        }
-    }
 #endif /* HAVE_YASM */
 
 #if HAVE_MMXEXT_EXTERNAL
-    if (CONFIG_VP3_DECODER && (avctx->codec_id == AV_CODEC_ID_VP3 ||
-                               avctx->codec_id == AV_CODEC_ID_THEORA)) {
-        c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_mmxext;
-        c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
-    }
-
     /* slower than cmov version on AMD */
     if (!(mm_flags & AV_CPU_FLAG_3DNOW))
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmxext;
@@ -1634,46 +1493,6 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
         c->apply_window_int16 = ff_apply_window_int16_round_mmxext;
     }
 #endif /* HAVE_MMXEXT_EXTERNAL */
-}
-
-static av_cold void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
-                                       int mm_flags)
-{
-    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-#if HAVE_YASM
-    if (!high_bit_depth) {
-        c->put_pixels_tab[0][1] = ff_put_pixels16_x2_3dnow;
-        c->put_pixels_tab[0][2] = ff_put_pixels16_y2_3dnow;
-
-        c->avg_pixels_tab[0][0] = ff_avg_pixels16_3dnow;
-        c->avg_pixels_tab[0][1] = ff_avg_pixels16_x2_3dnow;
-        c->avg_pixels_tab[0][2] = ff_avg_pixels16_y2_3dnow;
-
-        c->put_pixels_tab[1][1] = ff_put_pixels8_x2_3dnow;
-        c->put_pixels_tab[1][2] = ff_put_pixels8_y2_3dnow;
-
-        c->avg_pixels_tab[1][0] = ff_avg_pixels8_3dnow;
-        c->avg_pixels_tab[1][1] = ff_avg_pixels8_x2_3dnow;
-        c->avg_pixels_tab[1][2] = ff_avg_pixels8_y2_3dnow;
-
-        if (!(avctx->flags & CODEC_FLAG_BITEXACT)){
-            c->put_no_rnd_pixels_tab[0][1] = ff_put_no_rnd_pixels16_x2_3dnow;
-            c->put_no_rnd_pixels_tab[0][2] = ff_put_no_rnd_pixels16_y2_3dnow;
-            c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_3dnow;
-            c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_3dnow;
-
-            c->avg_pixels_tab[0][3] = ff_avg_pixels16_xy2_3dnow;
-            c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_3dnow;
-        }
-    }
-
-    if (CONFIG_VP3_DECODER && (avctx->codec_id == AV_CODEC_ID_VP3 ||
-                               avctx->codec_id == AV_CODEC_ID_THEORA)) {
-        c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_3dnow;
-        c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_3dnow;
-    }
-#endif /* HAVE_YASM */
 }
 
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
@@ -1716,15 +1535,6 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_SSE2_EXTERNAL
-    if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
-        // these functions are slower than mmx on AMD, but faster on Intel
-        if (!high_bit_depth) {
-            c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
-            c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_sse2;
-            c->avg_pixels_tab[0][0]        = ff_avg_pixels16_sse2;
-        }
-    }
-
     c->scalarproduct_int16          = ff_scalarproduct_int16_sse2;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
     if (mm_flags & AV_CPU_FLAG_ATOM) {
@@ -1810,9 +1620,6 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 
     if (mm_flags & AV_CPU_FLAG_MMXEXT)
         dsputil_init_mmxext(c, avctx, mm_flags);
-
-    if (mm_flags & AV_CPU_FLAG_3DNOW)
-        dsputil_init_3dnow(c, avctx, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_SSE)
         dsputil_init_sse(c, avctx, mm_flags);
