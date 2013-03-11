@@ -420,7 +420,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         break;
         }
     case AVMEDIA_TYPE_AUDIO: {
-        int ch     = av_get_channel_layout_nb_channels(frame->channel_layout);
+        int ch     = av_frame_get_channels(frame); //av_get_channel_layout_nb_channels(frame->channel_layout);
         int planar = av_sample_fmt_is_planar(frame->format);
         int planes = planar ? ch : 1;
 
