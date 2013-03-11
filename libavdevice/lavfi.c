@@ -103,8 +103,8 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
 
     avfilter_register_all();
 
-    buffersink = avfilter_get_by_name("ffbuffersink");
-    abuffersink = avfilter_get_by_name("ffabuffersink");
+    buffersink = avfilter_get_by_name("buffersink");
+    abuffersink = avfilter_get_by_name("abuffersink");
 
     if (lavfi->graph_filename && lavfi->graph_str) {
         av_log(avctx, AV_LOG_ERROR,
