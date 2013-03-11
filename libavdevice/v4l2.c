@@ -527,8 +527,8 @@ static int init_convert_timestamp(AVFormatContext *ctx, int64_t ts)
     now = av_gettime_monotonic();
     if (s->ts_mode == V4L_TS_MONO2ABS ||
         (ts <= now + 1 * AV_TIME_BASE && ts >= now - 10 * AV_TIME_BASE)) {
-        int64_t period = av_rescale_q(1, AV_TIME_BASE_Q,
-                                      ctx->streams[0]->avg_frame_rate);
+        AVRational tb = {AV_TIME_BASE, 1};
+        int64_t period = av_rescale_q(1, tb, ctx->streams[0]->avg_frame_rate);
         av_log(ctx, AV_LOG_INFO, "Detected monotonic timestamps, converting\n");
         /* microseconds instead of seconds, MHz instead of Hz */
         s->timefilter = ff_timefilter_new(1, period, 1.0E-6);
