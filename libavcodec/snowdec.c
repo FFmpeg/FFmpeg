@@ -345,7 +345,7 @@ static int decode_header(SnowContext *s){
         return -1;
     }
     if(FFMIN(s->avctx-> width>>s->chroma_h_shift,
-             s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 0){
+             s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 1){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
         return -1;
     }
