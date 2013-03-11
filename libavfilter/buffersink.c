@@ -471,6 +471,7 @@ static int asink_query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+#if FF_API_AVFILTERBUFFER
 static const AVFilterPad ffbuffersink_inputs[] = {
     {
         .name      = "default",
@@ -511,6 +512,7 @@ AVFilter avfilter_asink_ffabuffersink = {
     .inputs        = ffabuffersink_inputs,
     .outputs       = NULL,
 };
+#endif /* FF_API_AVFILTERBUFFER */
 
 static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
     {
