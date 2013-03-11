@@ -1434,6 +1434,8 @@ static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
         && pic->f.qscale_table //check if the frame has anything allocated
         && pic->period_since_free < s->avctx->thread_count)
         return 0;
+    if (pic == s->last_picture_ptr)
+        return 0;
     if (pic->f.data[0] == NULL)
         return 1;
     if (pic->needs_realloc && !(pic->reference & DELAYED_PIC_REF))
@@ -1447,7 +1449,7 @@ static int find_unused_picture(MpegEncContext *s, int shared)
 
     if (shared) {
         for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (s->picture[i].f.data[0] == NULL)
+            if (s->picture[i].f.data[0] == NULL && &s->picture[i] != s->last_picture_ptr)
                 return i;
         }
     } else {
