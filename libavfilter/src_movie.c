@@ -153,6 +153,8 @@ static int open_stream(void *log, MovieStream *st)
         return AVERROR(EINVAL);
     }
 
+    st->st->codec->refcounted_frames = 1;
+
     if ((ret = avcodec_open2(st->st->codec, codec, NULL)) < 0) {
         av_log(log, AV_LOG_ERROR, "Failed to open codec\n");
         return ret;
