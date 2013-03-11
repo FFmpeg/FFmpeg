@@ -185,17 +185,13 @@ void avfilter_register_all(void)
 
     REGISTER_FILTER_UNCONDITIONAL(vsink_ffbuffersink);
     REGISTER_FILTER_UNCONDITIONAL(asink_ffabuffersink);
-#if !AV_HAVE_INCOMPATIBLE_FORK_ABI
-    REGISTER_FILTER_UNCONDITIONAL(vsink_buffersink);
-    REGISTER_FILTER_UNCONDITIONAL(asink_abuffersink);
-#endif
 
     /* those filters are part of public or internal API => registered
      * unconditionally */
     REGISTER_FILTER_UNCONDITIONAL(asrc_abuffer);
     REGISTER_FILTER_UNCONDITIONAL(vsrc_buffer);
-    //REGISTER_FILTER_UNCONDITIONAL(asink_abuffer);
-    //REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
+    REGISTER_FILTER_UNCONDITIONAL(asink_abuffer);
+    REGISTER_FILTER_UNCONDITIONAL(vsink_buffer);
     REGISTER_FILTER_UNCONDITIONAL(af_afifo);
     REGISTER_FILTER_UNCONDITIONAL(vf_fifo);
 }
