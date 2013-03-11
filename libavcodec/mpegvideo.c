@@ -411,6 +411,11 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
 {
     int i, ret;
 
+    if (pic->qscale_table_buf)
+        if (pic->mbskip_table_buf->size < s->mb_stride * s->mb_height + 2 ||
+            pic->qscale_table_buf->size < s->mb_stride * (s->mb_height + 1) + 1 + s->mb_stride)
+            free_picture_tables(pic);
+
     if (shared) {
         assert(pic->f.data[0]);
         pic->shared = 1;
