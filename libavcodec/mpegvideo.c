@@ -1913,15 +1913,13 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
 /**
  * Print debugging info for the given picture.
  */
-void ff_print_debug_info2(AVCodecContext *avctx, Picture *p, uint8_t *mbskip_table,
+void ff_print_debug_info2(AVCodecContext *avctx, Picture *p, AVFrame *pict, uint8_t *mbskip_table,
                          uint8_t *visualization_buffer[3], int *low_delay,
                          int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
-    AVFrame *pict;
     if (avctx->hwaccel || !p || !p->mb_type
         || (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU))
         return;
-    pict = &p->f;
 
 
     if (avctx->debug & (FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
@@ -2207,7 +2205,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, Picture *p, uint8_t *mbskip_tab
 
 void ff_print_debug_info(MpegEncContext *s, Picture *p)
 {
-    ff_print_debug_info2(s->avctx, p, s->mbskip_table, s->visualization_buffer, &s->low_delay,
+    ff_print_debug_info2(s->avctx, p, &p->f, s->mbskip_table, s->visualization_buffer, &s->low_delay,
                          s->mb_width, s->mb_height, s->mb_stride, s->quarter_sample);
 }
 
