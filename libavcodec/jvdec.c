@@ -43,6 +43,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     JvContext *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
     ff_dsputil_init(&s->dsp, avctx);
+    avcodec_get_frame_defaults(&s->frame);
     return 0;
 }
 
