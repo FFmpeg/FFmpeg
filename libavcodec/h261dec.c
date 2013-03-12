@@ -634,7 +634,7 @@ retry:
 
     if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
         return ret;
-    ff_print_debug_info(s, s->current_picture_ptr);
+    ff_print_debug_info(s, s->current_picture_ptr, pict);
 
     *got_frame = 1;
 

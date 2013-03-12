@@ -4920,7 +4920,7 @@ not_extra:
             *got_frame = 1;
             if (CONFIG_MPEGVIDEO) {
                 ff_print_debug_info2(h->avctx, h->next_output_pic, pict, h->er.mbskip_table,
-                                    h->visualization_buffer, &h->low_delay,
+                                    &h->low_delay,
                                     h->mb_width, h->mb_height, h->mb_stride, 1);
             }
         }

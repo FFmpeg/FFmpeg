@@ -741,11 +741,11 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
             if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
                 return ret;
-            ff_print_debug_info(s, s->current_picture_ptr);
+            ff_print_debug_info(s, s->current_picture_ptr, pict);
         } else if (s->last_picture_ptr != NULL) {
             if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
                 return ret;
-            ff_print_debug_info(s, s->last_picture_ptr);
+            ff_print_debug_info(s, s->last_picture_ptr, pict);
         }
 
         if(s->last_picture_ptr || s->low_delay){

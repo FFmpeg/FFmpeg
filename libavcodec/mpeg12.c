@@ -1989,7 +1989,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
             int ret = av_frame_ref(pict, &s->current_picture_ptr->f);
             if (ret < 0)
                 return ret;
-            ff_print_debug_info(s, s->current_picture_ptr);
+            ff_print_debug_info(s, s->current_picture_ptr, pict);
         } else {
             if (avctx->active_thread_type & FF_THREAD_FRAME)
                 s->picture_number++;
@@ -1999,7 +1999,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
                 int ret = av_frame_ref(pict, &s->last_picture_ptr->f);
                 if (ret < 0)
                     return ret;
-                ff_print_debug_info(s, s->last_picture_ptr);
+                ff_print_debug_info(s, s->last_picture_ptr, pict);
             }
         }
 

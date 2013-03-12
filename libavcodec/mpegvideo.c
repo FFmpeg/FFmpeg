@@ -1914,7 +1914,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex,
  * Print debugging info for the given picture.
  */
 void ff_print_debug_info2(AVCodecContext *avctx, Picture *p, AVFrame *pict, uint8_t *mbskip_table,
-                         uint8_t *visualization_buffer[3], int *low_delay,
+                         int *low_delay,
                          int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
     if (avctx->hwaccel || !p || !p->mb_type
@@ -2001,20 +2001,16 @@ void ff_print_debug_info2(AVCodecContext *avctx, Picture *p, AVFrame *pict, uint
         int h_chroma_shift, v_chroma_shift, block_height;
         const int width          = avctx->width;
         const int height         = avctx->height;
-        const int mv_sample_log2 = 4 - pict->motion_subsample_log2;
+        const int mv_sample_log2 = avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_SVQ3 ? 2 : 1;
         const int mv_stride      = (mb_width << mv_sample_log2) +
                                    (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
+
         *low_delay = 0; // needed to see the vectors without trashing the buffers
 
         avcodec_get_chroma_sub_sample(avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
 
-        for (i = 0; i < 3; i++) {
-            size_t size= (i == 0) ? pict->linesize[i] * FFALIGN(height, 16):
-                         pict->linesize[i] * FFALIGN(height, 16) >> v_chroma_shift;
-            visualization_buffer[i]= av_realloc(visualization_buffer[i], size);
-            memcpy(visualization_buffer[i], pict->data[i], size);
-            pict->data[i] = visualization_buffer[i];
-        }
+        av_frame_make_writable(pict);
+
         pict->opaque = NULL;
         ptr          = pict->data[0];
         block_height = 16 >> v_chroma_shift;
@@ -2203,9 +2199,9 @@ void ff_print_debug_info2(AVCodecContext *avctx, Picture *p, AVFrame *pict, uint
     }
 }
 
-void ff_print_debug_info(MpegEncContext *s, Picture *p)
+void ff_print_debug_info(MpegEncContext *s, Picture *p, AVFrame *pict)
 {
-    ff_print_debug_info2(s->avctx, p, &p->f, s->mbskip_table, s->visualization_buffer, &s->low_delay,
+    ff_print_debug_info2(s->avctx, p, pict, s->mbskip_table, &s->low_delay,
                          s->mb_width, s->mb_height, s->mb_stride, s->quarter_sample);
 }
 
