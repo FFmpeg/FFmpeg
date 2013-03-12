@@ -54,6 +54,7 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     avctx->coded_frame = &s->frame;
     avctx->coded_frame = (AVFrame*) &s->frame;
     s->ulti_codebook = ulti_codebook;
+    avcodec_get_frame_defaults(&s->frame);
 
     return 0;
 }

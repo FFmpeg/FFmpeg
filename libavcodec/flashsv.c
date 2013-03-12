@@ -116,7 +116,6 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
     }
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
     avcodec_get_frame_defaults(&s->frame);
-    s->frame.data[0] = NULL;
 
     return 0;
 }

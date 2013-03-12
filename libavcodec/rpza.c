@@ -240,7 +240,6 @@ static av_cold int rpza_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_RGB555;
 
     avcodec_get_frame_defaults(&s->frame);
-    s->frame.data[0] = NULL;
 
     return 0;
 }

@@ -324,6 +324,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     decode_flush(avctx);
 
+    avcodec_get_frame_defaults(&a->pic);
+
     return 0;
 }
 

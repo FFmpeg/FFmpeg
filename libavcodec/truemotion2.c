@@ -918,9 +918,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     l->avctx       = avctx;
-    l->pic.data[0] = NULL;
-    avctx->pix_fmt = AV_PIX_FMT_BGR24;
     avcodec_get_frame_defaults(&l->pic);
+    avctx->pix_fmt = AV_PIX_FMT_BGR24;
 
     ff_dsputil_init(&l->dsp, avctx);
 

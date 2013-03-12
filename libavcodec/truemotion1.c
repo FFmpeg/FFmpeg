@@ -469,7 +469,6 @@ static av_cold int truemotion1_decode_init(AVCodecContext *avctx)
 //        avctx->pix_fmt = AV_PIX_FMT_RGB555;
 
     avcodec_get_frame_defaults(&s->frame);
-    s->frame.data[0] = NULL;
 
     /* there is a vertical predictor for each pixel in a line; each vertical
      * predictor is 0 to start with */
