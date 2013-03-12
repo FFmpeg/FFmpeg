@@ -161,7 +161,23 @@ typedef struct APEContext {
     const uint8_t *ptr;                      ///< current position in frame data
 
     int error;
+
+    void (*entropy_decode_mono)(struct APEContext *ctx, int blockstodecode);
+    void (*entropy_decode_stereo)(struct APEContext *ctx, int blockstodecode);
+    void (*predictor_decode_mono)(struct APEContext *ctx, int count);
+    void (*predictor_decode_stereo)(struct APEContext *ctx, int count);
 } APEContext;
+
+static void ape_apply_filters(APEContext *ctx, int32_t *decoded0,
+                              int32_t *decoded1, int count);
+
+static void entropy_decode_mono_3900(APEContext *ctx, int blockstodecode);
+static void entropy_decode_stereo_3900(APEContext *ctx, int blockstodecode);
+static void entropy_decode_mono_3990(APEContext *ctx, int blockstodecode);
+static void entropy_decode_stereo_3990(APEContext *ctx, int blockstodecode);
+
+static void predictor_decode_mono_3950(APEContext *ctx, int count);
+static void predictor_decode_stereo_3950(APEContext *ctx, int count);
 
 // TODO: dsputilize
 
@@ -230,6 +246,17 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
                          (ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4,
                          filter_alloc_fail);
     }
+
+    if (s->fileversion < 3990) {
+        s->entropy_decode_mono   = entropy_decode_mono_3900;
+        s->entropy_decode_stereo = entropy_decode_stereo_3900;
+    } else {
+        s->entropy_decode_mono   = entropy_decode_mono_3990;
+        s->entropy_decode_stereo = entropy_decode_stereo_3990;
+    }
+
+    s->predictor_decode_mono   = predictor_decode_mono_3950;
+    s->predictor_decode_stereo = predictor_decode_stereo_3950;
 
     ff_dsputil_init(&s->dsp, avctx);
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
@@ -401,66 +428,29 @@ static inline void update_rice(APERice *rice, unsigned int x)
         rice->k++;
 }
 
-static inline int ape_decode_value(APEContext *ctx, APERice *rice)
+static inline int ape_decode_value_3900(APEContext *ctx, APERice *rice)
 {
     unsigned int x, overflow;
+    int tmpk;
 
-    if (ctx->fileversion < 3990) {
-        int tmpk;
+    overflow = range_get_symbol(ctx, counts_3970, counts_diff_3970);
 
-        overflow = range_get_symbol(ctx, counts_3970, counts_diff_3970);
+    if (overflow == (MODEL_ELEMENTS - 1)) {
+        tmpk = range_decode_bits(ctx, 5);
+        overflow = 0;
+    } else
+        tmpk = (rice->k < 1) ? 0 : rice->k - 1;
 
-        if (overflow == (MODEL_ELEMENTS - 1)) {
-            tmpk = range_decode_bits(ctx, 5);
-            overflow = 0;
-        } else
-            tmpk = (rice->k < 1) ? 0 : rice->k - 1;
-
-        if (tmpk <= 16)
-            x = range_decode_bits(ctx, tmpk);
-        else if (tmpk <= 32) {
-            x = range_decode_bits(ctx, 16);
-            x |= (range_decode_bits(ctx, tmpk - 16) << 16);
-        } else {
-            av_log(ctx->avctx, AV_LOG_ERROR, "Too many bits: %d\n", tmpk);
-            return AVERROR_INVALIDDATA;
-        }
-        x += overflow << tmpk;
+    if (tmpk <= 16)
+        x = range_decode_bits(ctx, tmpk);
+    else if (tmpk <= 32) {
+        x = range_decode_bits(ctx, 16);
+        x |= (range_decode_bits(ctx, tmpk - 16) << 16);
     } else {
-        int base, pivot;
-
-        pivot = rice->ksum >> 5;
-        if (pivot == 0)
-            pivot = 1;
-
-        overflow = range_get_symbol(ctx, counts_3980, counts_diff_3980);
-
-        if (overflow == (MODEL_ELEMENTS - 1)) {
-            overflow  = range_decode_bits(ctx, 16) << 16;
-            overflow |= range_decode_bits(ctx, 16);
-        }
-
-        if (pivot < 0x10000) {
-            base = range_decode_culfreq(ctx, pivot);
-            range_decode_update(ctx, 1, base);
-        } else {
-            int base_hi = pivot, base_lo;
-            int bbits = 0;
-
-            while (base_hi & ~0xFFFF) {
-                base_hi >>= 1;
-                bbits++;
-            }
-            base_hi = range_decode_culfreq(ctx, base_hi + 1);
-            range_decode_update(ctx, 1, base_hi);
-            base_lo = range_decode_culfreq(ctx, 1 << bbits);
-            range_decode_update(ctx, 1, base_lo);
-
-            base = (base_hi << bbits) + base_lo;
-        }
-
-        x = base + overflow * pivot;
+        av_log(ctx->avctx, AV_LOG_ERROR, "Too many bits: %d\n", tmpk);
+        return AVERROR_INVALIDDATA;
     }
+    x += overflow << tmpk;
 
     update_rice(rice, x);
 
@@ -471,15 +461,87 @@ static inline int ape_decode_value(APEContext *ctx, APERice *rice)
         return -(x >> 1);
 }
 
-static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
+static inline int ape_decode_value_3990(APEContext *ctx, APERice *rice)
+{
+    unsigned int x, overflow;
+    int base, pivot;
+
+    pivot = rice->ksum >> 5;
+    if (pivot == 0)
+        pivot = 1;
+
+    overflow = range_get_symbol(ctx, counts_3980, counts_diff_3980);
+
+    if (overflow == (MODEL_ELEMENTS - 1)) {
+        overflow  = range_decode_bits(ctx, 16) << 16;
+        overflow |= range_decode_bits(ctx, 16);
+    }
+
+    if (pivot < 0x10000) {
+        base = range_decode_culfreq(ctx, pivot);
+        range_decode_update(ctx, 1, base);
+    } else {
+        int base_hi = pivot, base_lo;
+        int bbits = 0;
+
+        while (base_hi & ~0xFFFF) {
+            base_hi >>= 1;
+            bbits++;
+        }
+        base_hi = range_decode_culfreq(ctx, base_hi + 1);
+        range_decode_update(ctx, 1, base_hi);
+        base_lo = range_decode_culfreq(ctx, 1 << bbits);
+        range_decode_update(ctx, 1, base_lo);
+
+        base = (base_hi << bbits) + base_lo;
+    }
+
+    x = base + overflow * pivot;
+
+    update_rice(rice, x);
+
+    /* Convert to signed */
+    if (x & 1)
+        return (x >> 1) + 1;
+    else
+        return -(x >> 1);
+}
+
+static void entropy_decode_mono_3900(APEContext *ctx, int blockstodecode)
+{
+    int32_t *decoded0 = ctx->decoded[0];
+
+    while (blockstodecode--)
+        *decoded0++ = ape_decode_value_3900(ctx, &ctx->riceY);
+}
+
+static void entropy_decode_stereo_3900(APEContext *ctx, int blockstodecode)
 {
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
 
     while (blockstodecode--) {
-        *decoded0++ = ape_decode_value(ctx, &ctx->riceY);
-        if (stereo)
-            *decoded1++ = ape_decode_value(ctx, &ctx->riceX);
+        *decoded0++ = ape_decode_value_3900(ctx, &ctx->riceY);
+        *decoded1++ = ape_decode_value_3900(ctx, &ctx->riceX);
+    }
+}
+
+static void entropy_decode_mono_3990(APEContext *ctx, int blockstodecode)
+{
+    int32_t *decoded0 = ctx->decoded[0];
+
+    while (blockstodecode--)
+        *decoded0++ = ape_decode_value_3990(ctx, &ctx->riceY);
+}
+
+static void entropy_decode_stereo_3990(APEContext *ctx, int blockstodecode)
+{
+    int32_t *decoded0 = ctx->decoded[0];
+    int32_t *decoded1 = ctx->decoded[1];
+
+    while (blockstodecode--) {
+        *decoded0++ = ape_decode_value_3990(ctx, &ctx->riceY);
+        *decoded1++ = ape_decode_value_3990(ctx, &ctx->riceX);
     }
 }
 
@@ -588,11 +650,13 @@ static av_always_inline int predictor_update_filter(APEPredictor *p,
     return p->filterA[filter];
 }
 
-static void predictor_decode_stereo(APEContext *ctx, int count)
+static void predictor_decode_stereo_3950(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
+
+    ape_apply_filters(ctx, ctx->decoded[0], ctx->decoded[1], count);
 
     while (count--) {
         /* Predictor Y */
@@ -615,11 +679,13 @@ static void predictor_decode_stereo(APEContext *ctx, int count)
     }
 }
 
-static void predictor_decode_mono(APEContext *ctx, int count)
+static void predictor_decode_mono_3950(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded[0];
     int32_t predictionA, currentA, A, sign;
+
+    ape_apply_filters(ctx, ctx->decoded[0], NULL, count);
 
     currentA = p->lastA[0];
 
@@ -779,11 +845,10 @@ static void ape_unpack_mono(APEContext *ctx, int count)
         return;
     }
 
-    entropy_decode(ctx, count, 0);
-    ape_apply_filters(ctx, ctx->decoded[0], NULL, count);
+    ctx->entropy_decode_mono(ctx, count);
 
     /* Now apply the predictor decoding */
-    predictor_decode_mono(ctx, count);
+    ctx->predictor_decode_mono(ctx, count);
 
     /* Pseudo-stereo - just copy left channel to right channel */
     if (ctx->channels == 2) {
@@ -803,11 +868,10 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
         return;
     }
 
-    entropy_decode(ctx, count, 1);
-    ape_apply_filters(ctx, decoded0, decoded1, count);
+    ctx->entropy_decode_stereo(ctx, count);
 
     /* Now apply the predictor decoding */
-    predictor_decode_stereo(ctx, count);
+    ctx->predictor_decode_stereo(ctx, count);
 
     /* Decorrelate and scale to output depth */
     while (count--) {
