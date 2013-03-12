@@ -216,6 +216,7 @@ typedef struct InputStream {
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     AVCodec *dec;
     AVFrame *decoded_frame;
+    AVFrame *filter_frame; /* a ref of decoded_frame, to be sent to filters */
 
     int64_t       start;     /* time when read started */
     /* predicted dts of the next packet read for this stream or (when there are
@@ -261,8 +262,6 @@ typedef struct InputStream {
         int w, h;
     } sub2video;
 
-    /* a pool of free buffers for decoded data */
-    FrameBuffer *buffer_pool;
     int dr1;
 
     /* decoded data from this stream goes into all those filters
