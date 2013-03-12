@@ -371,7 +371,6 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
     pthread_mutex_lock(&p->mutex);
     while (1) {
-        int i;
             while (p->state == STATE_INPUT_READY && !fctx->die)
                 pthread_cond_wait(&p->input_cond, &p->mutex);
 
