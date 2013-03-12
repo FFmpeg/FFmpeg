@@ -55,6 +55,7 @@
 #include "timefilter.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/time.h"
 #include "libavutil/avstring.h"
 
 #if CONFIG_LIBV4L2
