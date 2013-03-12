@@ -1063,7 +1063,6 @@ static int get_buffer(AVCodecContext *avctx, Picture *pic)
             pic->ref_index[i]  = pic->ref_index_buf[i]->data;
         }
     }
-    pic->f.motion_subsample_log2 = 2;
     pic->reference = !(h->pict_type == AV_PICTURE_TYPE_B);
 
     ret = ff_get_buffer(avctx, &pic->f,

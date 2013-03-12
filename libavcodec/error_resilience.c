@@ -895,7 +895,6 @@ void ff_er_frame_end(ERContext *s)
             }
             return;
         }
-        s->cur_pic->f.motion_subsample_log2 = 3;
     }
 
     if (s->avctx->debug & FF_DEBUG_ER) {

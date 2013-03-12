@@ -4545,14 +4545,6 @@ static int parse_ffconfig(const char *filename)
                     ERROR("VideoQMin out of range\n");
                 }
             }
-        } else if (!av_strcasecmp(cmd, "LumaElim")) {
-            get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                video_enc.luma_elim_threshold = atoi(arg);
-        } else if (!av_strcasecmp(cmd, "ChromaElim")) {
-            get_arg(arg, sizeof(arg), &p);
-            if (stream)
-                video_enc.chroma_elim_threshold = atoi(arg);
         } else if (!av_strcasecmp(cmd, "LumiMask")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream)
