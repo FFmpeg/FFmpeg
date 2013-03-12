@@ -218,7 +218,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
     } else {
         lame_result = lame_encode_flush(s->gfp, s->buffer + s->buffer_index,
-                                        BUFFER_SIZE - s->buffer_index);
+                                        s->buffer_size - s->buffer_index);
     }
     if (lame_result < 0) {
         if (lame_result == -1) {
