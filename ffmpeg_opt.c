@@ -698,6 +698,7 @@ static void dump_attachment(AVStream *st, const char *filename)
 
 static int open_input_file(OptionsContext *o, const char *filename)
 {
+    InputFile *f;
     AVFormatContext *ic;
     AVInputFormat *file_iformat = NULL;
     int err, i, ret;
@@ -819,14 +820,16 @@ static int open_input_file(OptionsContext *o, const char *filename)
     av_dump_format(ic, nb_input_files, filename, 0);
 
     GROW_ARRAY(input_files, nb_input_files);
-    if (!(input_files[nb_input_files - 1] = av_mallocz(sizeof(*input_files[0]))))
+    f = av_mallocz(sizeof(*f));
+    if (!f)
         exit(1);
+    input_files[nb_input_files - 1] = f;
 
-    input_files[nb_input_files - 1]->ctx        = ic;
-    input_files[nb_input_files - 1]->ist_index  = nb_input_streams - ic->nb_streams;
-    input_files[nb_input_files - 1]->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
-    input_files[nb_input_files - 1]->nb_streams = ic->nb_streams;
-    input_files[nb_input_files - 1]->rate_emu   = o->rate_emu;
+    f->ctx        = ic;
+    f->ist_index  = nb_input_streams - ic->nb_streams;
+    f->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
+    f->nb_streams = ic->nb_streams;
+    f->rate_emu   = o->rate_emu;
 
     for (i = 0; i < o->nb_dump_attachment; i++) {
         int j;
