@@ -4706,13 +4706,6 @@ static av_cold int h264_decode_end(AVCodecContext *avctx)
 
     ff_h264_free_context(h);
 
-    if (h->DPB) {
-        for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            unref_picture(h, &h->DPB[i]);
-        }
-    }
-    av_freep(&h->DPB);
-
     unref_picture(h, &h->cur_pic);
 
     return 0;
