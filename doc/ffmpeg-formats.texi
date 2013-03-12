@@ -151,6 +151,11 @@ been without shifting.
 
 Also note that this affects only leading negative timestamps, and not
 non-monotonic negative timestamps.
+
+@item flush_packets @var{integer} (@emph{output})
+Flush the underlying I/O stream after each packet. Default 1 enables it, and
+has the effect of reducing the latency; 0 disables it and may slightly
+increase performance in some cases.
 @end table
 
 @c man end FORMAT OPTIONS
