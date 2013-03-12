@@ -1446,6 +1446,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
     AVFormatContext *oc;
     int i, j, err;
     AVOutputFormat *file_oformat;
+    OutputFile *of;
     OutputStream *ost;
     InputStream  *ist;
 
@@ -1682,18 +1683,20 @@ loop_end:
     }
 
     GROW_ARRAY(output_files, nb_output_files);
-    if (!(output_files[nb_output_files - 1] = av_mallocz(sizeof(*output_files[0]))))
+    of = av_mallocz(sizeof(*of));
+    if (!of)
         exit(1);
+    output_files[nb_output_files - 1] = of;
 
-    output_files[nb_output_files - 1]->ctx            = oc;
-    output_files[nb_output_files - 1]->ost_index      = nb_output_streams - oc->nb_streams;
-    output_files[nb_output_files - 1]->recording_time = o->recording_time;
+    of->ctx            = oc;
+    of->ost_index      = nb_output_streams - oc->nb_streams;
+    of->recording_time = o->recording_time;
     if (o->recording_time != INT64_MAX)
         oc->duration = o->recording_time;
-    output_files[nb_output_files - 1]->start_time     = o->start_time;
-    output_files[nb_output_files - 1]->limit_filesize = o->limit_filesize;
-    output_files[nb_output_files - 1]->shortest       = o->shortest;
-    av_dict_copy(&output_files[nb_output_files - 1]->opts, o->g->format_opts, 0);
+    of->start_time     = o->start_time;
+    of->limit_filesize = o->limit_filesize;
+    of->shortest       = o->shortest;
+    av_dict_copy(&of->opts, o->g->format_opts, 0);
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
@@ -1710,7 +1713,7 @@ loop_end:
         /* open the file */
         if ((err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
                               &oc->interrupt_callback,
-                              &output_files[nb_output_files - 1]->opts)) < 0) {
+                              &of->opts)) < 0) {
             print_error(filename, err);
             exit(1);
         }
@@ -1720,7 +1723,7 @@ loop_end:
     if (o->mux_preload) {
         uint8_t buf[64];
         snprintf(buf, sizeof(buf), "%d", (int)(o->mux_preload*AV_TIME_BASE));
-        av_dict_set(&output_files[nb_output_files - 1]->opts, "preload", buf, 0);
+        av_dict_set(&of->opts, "preload", buf, 0);
     }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
 
@@ -1755,7 +1758,7 @@ loop_end:
         }
     }
     if (o->chapters_input_file >= 0)
-        copy_chapters(input_files[o->chapters_input_file], output_files[nb_output_files - 1],
+        copy_chapters(input_files[o->chapters_input_file], of,
                       !o->metadata_chapters_manual);
 
     /* copy global metadata by default */
@@ -1767,7 +1770,7 @@ loop_end:
         av_dict_set(&oc->metadata, "creation_time", NULL, 0);
     }
     if (!o->metadata_streams_manual)
-        for (i = output_files[nb_output_files - 1]->ost_index; i < nb_output_streams; i++) {
+        for (i = of->ost_index; i < nb_output_streams; i++) {
             InputStream *ist;
             if (output_streams[i]->source_index < 0)         /* this is true e.g. for attached files */
                 continue;
