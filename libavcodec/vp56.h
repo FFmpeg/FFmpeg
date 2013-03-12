@@ -100,7 +100,7 @@ struct vp56_context {
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
     VP56DSPContext vp56dsp;
-    ScanTable scantable;
+    uint8_t idct_scantable[64];
     AVFrame *frames[4];
     uint8_t *edge_emu_buffer_alloc;
     uint8_t *edge_emu_buffer;

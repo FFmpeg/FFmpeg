@@ -61,6 +61,5 @@ av_cold void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
     if (!(flags & CODEC_FLAG_BITEXACT)) {
         c->idct_add = bfin_vp3_idct_add;
         c->idct_put = bfin_vp3_idct_put;
-        c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
     }
 }

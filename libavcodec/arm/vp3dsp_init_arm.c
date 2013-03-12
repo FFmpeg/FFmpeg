@@ -41,6 +41,5 @@ av_cold void ff_vp3dsp_init_arm(VP3DSPContext *c, int flags)
         c->idct_dc_add   = ff_vp3_idct_dc_add_neon;
         c->v_loop_filter = ff_vp3_v_loop_filter_neon;
         c->h_loop_filter = ff_vp3_h_loop_filter_neon;
-        c->idct_perm     = FF_TRANSPOSE_IDCT_PERM;
     }
 }

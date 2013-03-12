@@ -54,7 +54,58 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
     /* Inverse DCT on the rows now */
     for (i = 0; i < 8; i++) {
         /* Check for non-zero values */
-        if ( ip[0] | ip[1] | ip[2] | ip[3] | ip[4] | ip[5] | ip[6] | ip[7] ) {
+        if ( ip[0 * 8] | ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
+             ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8] ) {
+            A = M(xC1S7, ip[1 * 8]) + M(xC7S1, ip[7 * 8]);
+            B = M(xC7S1, ip[1 * 8]) - M(xC1S7, ip[7 * 8]);
+            C = M(xC3S5, ip[3 * 8]) + M(xC5S3, ip[5 * 8]);
+            D = M(xC3S5, ip[5 * 8]) - M(xC5S3, ip[3 * 8]);
+
+            Ad = M(xC4S4, (A - C));
+            Bd = M(xC4S4, (B - D));
+
+            Cd = A + C;
+            Dd = B + D;
+
+            E = M(xC4S4, (ip[0 * 8] + ip[4 * 8]));
+            F = M(xC4S4, (ip[0 * 8] - ip[4 * 8]));
+
+            G = M(xC2S6, ip[2 * 8]) + M(xC6S2, ip[6 * 8]);
+            H = M(xC6S2, ip[2 * 8]) - M(xC2S6, ip[6 * 8]);
+
+            Ed = E - G;
+            Gd = E + G;
+
+            Add = F + Ad;
+            Bdd = Bd - H;
+
+            Fd = F - Ad;
+            Hd = Bd + H;
+
+            /*  Final sequence of operations over-write original inputs. */
+            ip[0 * 8] = Gd + Cd ;
+            ip[7 * 8] = Gd - Cd ;
+
+            ip[1 * 8] = Add + Hd;
+            ip[2 * 8] = Add - Hd;
+
+            ip[3 * 8] = Ed + Dd ;
+            ip[4 * 8] = Ed - Dd ;
+
+            ip[5 * 8] = Fd + Bdd;
+            ip[6 * 8] = Fd - Bdd;
+        }
+
+        ip += 1;            /* next row */
+    }
+
+    ip = input;
+
+    for ( i = 0; i < 8; i++) {
+        /* Check for non-zero values (bitwise or faster than ||) */
+        if ( ip[1] | ip[2] | ip[3] |
+             ip[4] | ip[5] | ip[6] | ip[7] ) {
+
             A = M(xC1S7, ip[1]) + M(xC7S1, ip[7]);
             B = M(xC7S1, ip[1]) - M(xC1S7, ip[7]);
             C = M(xC3S5, ip[3]) + M(xC5S3, ip[5]);
@@ -66,8 +117,13 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             Cd = A + C;
             Dd = B + D;
 
-            E = M(xC4S4, (ip[0] + ip[4]));
-            F = M(xC4S4, (ip[0] - ip[4]));
+            E = M(xC4S4, (ip[0] + ip[4])) + 8;
+            F = M(xC4S4, (ip[0] - ip[4])) + 8;
+
+            if(type==1){  //HACK
+                E += 16*128;
+                F += 16*128;
+            }
 
             G = M(xC2S6, ip[2]) + M(xC6S2, ip[6]);
             H = M(xC6S2, ip[2]) - M(xC2S6, ip[6]);
@@ -81,75 +137,8 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             Fd = F - Ad;
             Hd = Bd + H;
 
-            /*  Final sequence of operations over-write original inputs. */
-            ip[0] = Gd + Cd ;
-            ip[7] = Gd - Cd ;
-
-            ip[1] = Add + Hd;
-            ip[2] = Add - Hd;
-
-            ip[3] = Ed + Dd ;
-            ip[4] = Ed - Dd ;
-
-            ip[5] = Fd + Bdd;
-            ip[6] = Fd - Bdd;
-        }
-
-        ip += 8;            /* next row */
-    }
-
-    ip = input;
-
-    for ( i = 0; i < 8; i++) {
-        /* Check for non-zero values (bitwise or faster than ||) */
-        if ( ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
-             ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8] ) {
-
-            A = M(xC1S7, ip[1*8]) + M(xC7S1, ip[7*8]);
-            B = M(xC7S1, ip[1*8]) - M(xC1S7, ip[7*8]);
-            C = M(xC3S5, ip[3*8]) + M(xC5S3, ip[5*8]);
-            D = M(xC3S5, ip[5*8]) - M(xC5S3, ip[3*8]);
-
-            Ad = M(xC4S4, (A - C));
-            Bd = M(xC4S4, (B - D));
-
-            Cd = A + C;
-            Dd = B + D;
-
-            E = M(xC4S4, (ip[0*8] + ip[4*8])) + 8;
-            F = M(xC4S4, (ip[0*8] - ip[4*8])) + 8;
-
-            if(type==1){  //HACK
-                E += 16*128;
-                F += 16*128;
-            }
-
-            G = M(xC2S6, ip[2*8]) + M(xC6S2, ip[6*8]);
-            H = M(xC6S2, ip[2*8]) - M(xC2S6, ip[6*8]);
-
-            Ed = E - G;
-            Gd = E + G;
-
-            Add = F + Ad;
-            Bdd = Bd - H;
-
-            Fd = F - Ad;
-            Hd = Bd + H;
-
             /* Final sequence of operations over-write original inputs. */
-            if(type==0){
-                ip[0*8] = (Gd + Cd )  >> 4;
-                ip[7*8] = (Gd - Cd )  >> 4;
-
-                ip[1*8] = (Add + Hd ) >> 4;
-                ip[2*8] = (Add - Hd ) >> 4;
-
-                ip[3*8] = (Ed + Dd )  >> 4;
-                ip[4*8] = (Ed - Dd )  >> 4;
-
-                ip[5*8] = (Fd + Bdd ) >> 4;
-                ip[6*8] = (Fd - Bdd ) >> 4;
-            }else if(type==1){
+            if (type == 1) {
                 dst[0*stride] = av_clip_uint8((Gd + Cd )  >> 4);
                 dst[7*stride] = av_clip_uint8((Gd - Cd )  >> 4);
 
@@ -176,16 +165,7 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             }
 
         } else {
-            if(type==0){
-                ip[0*8] =
-                ip[1*8] =
-                ip[2*8] =
-                ip[3*8] =
-                ip[4*8] =
-                ip[5*8] =
-                ip[6*8] =
-                ip[7*8] = ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
-            }else if(type==1){
+            if (type == 1) {
                 dst[0*stride]=
                 dst[1*stride]=
                 dst[2*stride]=
@@ -193,10 +173,10 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
                 dst[4*stride]=
                 dst[5*stride]=
                 dst[6*stride]=
-                dst[7*stride]= av_clip_uint8(128 + ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20));
+                dst[7*stride]= av_clip_uint8(128 + ((xC4S4 * ip[0] + (IdctAdjustBeforeShift<<16))>>20));
             }else{
-                if(ip[0*8]){
-                    int v= ((xC4S4 * ip[0*8] + (IdctAdjustBeforeShift<<16))>>20);
+                if(ip[0]){
+                    int v= ((xC4S4 * ip[0] + (IdctAdjustBeforeShift<<16))>>20);
                     dst[0*stride] = av_clip_uint8(dst[0*stride] + v);
                     dst[1*stride] = av_clip_uint8(dst[1*stride] + v);
                     dst[2*stride] = av_clip_uint8(dst[2*stride] + v);
@@ -209,7 +189,7 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             }
         }
 
-        ip++;            /* next column */
+        ip += 8;            /* next column */
         dst++;
     }
 }
@@ -306,8 +286,6 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
     c->idct_dc_add   = vp3_idct_dc_add_c;
     c->v_loop_filter = vp3_v_loop_filter_c;
     c->h_loop_filter = vp3_h_loop_filter_c;
-
-    c->idct_perm = FF_NO_IDCT_PERM;
 
     if (ARCH_ARM)
         ff_vp3dsp_init_arm(c, flags);
