@@ -626,7 +626,6 @@ static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 {
     int (*filter_frame)(AVFilterLink *, AVFrame *);
-    AVFilterPad *src = link->srcpad;
     AVFilterPad *dst = link->dstpad;
     AVFrame *out;
     int ret;
