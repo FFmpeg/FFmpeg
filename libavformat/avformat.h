@@ -663,17 +663,6 @@ typedef struct AVStream {
      *             not actually used for encoding.
      */
     AVCodecContext *codec;
-#if FF_API_R_FRAME_RATE
-    /**
-     * Real base framerate of the stream.
-     * This is the lowest framerate with which all timestamps can be
-     * represented accurately (it is the least common multiple of all
-     * framerates in the stream). Note, this value is just a guess!
-     * For example, if the time base is 1/90000 and all frames have either
-     * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
-     */
-    AVRational r_frame_rate;
-#endif
     void *priv_data;
 
     /**
@@ -737,6 +726,19 @@ typedef struct AVStream {
      * encoding: unused
      */
     AVPacket attached_pic;
+
+    /**
+     * Real base framerate of the stream.
+     * This is the lowest framerate with which all timestamps can be
+     * represented accurately (it is the least common multiple of all
+     * framerates in the stream). Note, this value is just a guess!
+     * For example, if the time base is 1/90000 and all frames have either
+     * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
+     *
+     * Code outside avformat should access this field using:
+     * av_stream_get/set_r_frame_rate(stream)
+     */
+    AVRational r_frame_rate;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They
@@ -874,6 +876,9 @@ typedef struct AVStream {
     int pts_wrap_behavior;
 
 } AVStream;
+
+AVRational av_stream_get_r_frame_rate(const AVStream *s);
+void       av_stream_set_r_frame_rate(AVStream *s, AVRational r);
 
 #define AV_PROGRAM_RUNNING 1
 
