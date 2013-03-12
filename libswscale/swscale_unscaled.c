@@ -532,23 +532,23 @@ static int rgbToPlanarRgbWrapper(SwsContext *c, const uint8_t *src[],
                           dst[1] + srcSliceY * dstStride[1] };
 
     switch (c->srcFormat) {
-    case PIX_FMT_RGB24:
+    case AV_PIX_FMT_RGB24:
         packedtogbr24p((const uint8_t *) src[0], srcStride[0], dst201,
                        stride201, srcSliceH, alpha_first, 3, c->srcW);
         break;
-    case PIX_FMT_BGR24:
+    case AV_PIX_FMT_BGR24:
         packedtogbr24p((const uint8_t *) src[0], srcStride[0], dst102,
                        stride102, srcSliceH, alpha_first, 3, c->srcW);
         break;
-    case PIX_FMT_ARGB:
+    case AV_PIX_FMT_ARGB:
         alpha_first = 1;
-    case PIX_FMT_RGBA:
+    case AV_PIX_FMT_RGBA:
         packedtogbr24p((const uint8_t *) src[0], srcStride[0], dst201,
                        stride201, srcSliceH, alpha_first, 4, c->srcW);
         break;
-    case PIX_FMT_ABGR:
+    case AV_PIX_FMT_ABGR:
         alpha_first = 1;
-    case PIX_FMT_BGRA:
+    case AV_PIX_FMT_BGRA:
         packedtogbr24p((const uint8_t *) src[0], srcStride[0], dst102,
                        stride102, srcSliceH, alpha_first, 4, c->srcW);
         break;

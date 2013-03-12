@@ -271,6 +271,19 @@ static int decode_frame(AVCodecContext *avctx,
         return ret;
     }
 
+    if (inter && !s->last_frame.data[0]) {
+        av_log(avctx, AV_LOG_WARNING, "Missing reference frame.\n");
+        ret = ff_get_buffer(avctx, &s->last_frame, AV_GET_BUFFER_FLAG_REF);
+        if (ret < 0)
+            return ret;
+        memset(s->last_frame.data[0], 0, s->last_frame.height *
+               s->last_frame.linesize[0]);
+        memset(s->last_frame.data[1], 0x80, s->last_frame.height / 2 *
+               s->last_frame.linesize[1]);
+        memset(s->last_frame.data[2], 0x80, s->last_frame.height / 2 *
+               s->last_frame.linesize[2]);
+    }
+
     av_fast_padded_malloc(&s->bitstream_buf, &s->bitstream_buf_size,
                           buf_end - buf);
     if (!s->bitstream_buf)

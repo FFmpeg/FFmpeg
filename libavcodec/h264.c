@@ -2988,7 +2988,7 @@ static int h264_set_parameter_from_sps(H264Context *h)
     return 0;
 }
 
-static enum PixelFormat get_pixel_format(H264Context *h, int force_callback)
+static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
 {
     switch (h->sps.bit_depth_luma) {
     case 9:
