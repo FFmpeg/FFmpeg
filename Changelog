@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - curves filter
+- reference-counting for AVFrame and AVPacket data
 
 
 version 1.2:

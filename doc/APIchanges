@@ -2,10 +2,10 @@ Never assume the API of libav* to be stable unless at least 1 month has passed
 since the last major version increase or the API was added.
 
 The last version increases were:
-libavcodec:    2012-01-27
-libavdevice:   2011-04-18
+libavcodec:    2013-03-xx
+libavdevice:   2013-03-xx
 libavfilter:   2012-06-22
-libavformat:   2012-01-27
+libavformat:   2013-03-xx
 libavresample: 2012-10-05
 libpostproc:   2011-04-18
 libswresample: 2011-09-19
@@ -143,6 +143,40 @@ API changes, most recent first:
 
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
+
+2013-03-xx - Reference counted buffers - lavu 52.8.0, lavc 55.0.0, lavf 55.0.0,
+lavd 54.0.0, lavfi 3.5.0
+  xxxxxxx, xxxxxxx - add a new API for reference counted buffers and buffer
+                     pools (new header libavutil/buffer.h).
+  xxxxxxx - add AVPacket.buf to allow reference counting for the AVPacket data.
+            Add av_packet_from_data() function for constructing packets from
+            av_malloc()ed data.
+  xxxxxxx - move AVFrame from lavc to lavu (new header libavutil/frame.h), add
+            AVFrame.buf/extended_buf to allow reference counting for the AVFrame
+            data. Add new API for working with reference-counted AVFrames.
+  xxxxxxx - add the refcounted_frames field to AVCodecContext to make audio and
+            video decoders return reference-counted frames. Add get_buffer2()
+            callback to AVCodecContext which allocates reference-counted frames.
+            Add avcodec_default_get_buffer2() as the default get_buffer2()
+            implementation.
+            Deprecate AVCodecContext.get_buffer() / release_buffer() /
+            reget_buffer(), avcodec_default_get_buffer(),
+            avcodec_default_reget_buffer(), avcodec_default_release_buffer().
+            Remove avcodec_default_free_buffers(), which should not have ever
+            been called from outside of lavc.
+            Deprecate the following AVFrame fields:
+                * base -- is now stored in AVBufferRef
+                * reference, type, buffer_hints -- are unnecessary in the new API
+                * hwaccel_picture_private, owner, thread_opaque -- should not
+                  have been acessed from outside of lavc
+                * qscale_table, qstride, qscale_type, mbskip_table, motion_val,
+                  mb_type, dct_coeff, ref_index -- mpegvideo-specific tables,
+                  which are not exported anymore.
+  xxxxxxx - switch libavfilter to use AVFrame instead of AVFilterBufferRef. Add
+            av_buffersrc_add_frame(), deprecate av_buffersrc_buffer().
+            Add av_buffersink_get_frame() and av_buffersink_get_samples(),
+            deprecate av_buffersink_read() and av_buffersink_read_samples().
+            Deprecate AVFilterBufferRef and all functions for working with it.
 
 2013-xx-xx - xxxxxxx - lavu 52.8.0 - avstring.h
   Add av_isdigit, av_isgraph, av_isspace, av_isxdigit.
