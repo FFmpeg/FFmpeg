@@ -1746,10 +1746,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     frame_sample_aspect= av_opt_ptr(avcodec_get_frame_class(), decoded_frame, "sample_aspect_ratio");
     for (i = 0; i < ist->nb_filters; i++) {
-        int changed =      ist->st->codec->width   != ist->filters[i]->filter->outputs[0]->w
-                        || ist->st->codec->height  != ist->filters[i]->filter->outputs[0]->h
-                        || ist->st->codec->pix_fmt != ist->filters[i]->filter->outputs[0]->format;
-
         if (!frame_sample_aspect->num)
             *frame_sample_aspect = ist->st->sample_aspect_ratio;
 
