@@ -99,7 +99,7 @@ do_lavf swf "" "-an"
 fi
 
 if [ -n "$do_ffm" ] ; then
-do_lavf ffm "-ab 64k"
+do_lavf ffm
 fi
 
 if [ -n "$do_flm" ] ; then
