@@ -4,7 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - curves filter
 - reference-counting for AVFrame and AVPacket data
-- avconv now fails when input options are used for output file
+- ffmpeg now fails when input options are used for output file
   or vice versa
 
 
