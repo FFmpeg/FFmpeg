@@ -31,7 +31,7 @@
 
 static int request_frame(AVFilterLink *link)
 {
-    return -1;
+    return AVERROR_EOF;
 }
 
 static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
