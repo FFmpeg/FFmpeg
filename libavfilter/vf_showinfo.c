@@ -34,13 +34,6 @@ typedef struct {
     unsigned int frame;
 } ShowInfoContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    ShowInfoContext *showinfo = ctx->priv;
-    showinfo->frame = 0;
-    return 0;
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -103,7 +96,6 @@ AVFilter avfilter_vf_showinfo = {
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
 
     .priv_size = sizeof(ShowInfoContext),
-    .init      = init,
 
     .inputs    = avfilter_vf_showinfo_inputs,
 
