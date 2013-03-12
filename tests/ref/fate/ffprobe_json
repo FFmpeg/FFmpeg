@@ -28,7 +28,8 @@
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
-            "channels": 1
+            "channels": 1,
+            "channel_layout": "mono"
         },
         {
             "type": "packet",
@@ -132,7 +133,8 @@
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
-            "channels": 1
+            "channels": 1,
+            "channel_layout": "mono"
         },
         {
             "type": "packet",
@@ -236,7 +238,8 @@
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
-            "channels": 1
+            "channels": 1,
+            "channel_layout": "mono"
         },
         {
             "type": "packet",
@@ -266,7 +269,8 @@
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
-            "channels": 1
+            "channels": 1,
+            "channel_layout": "mono"
         },
         {
             "type": "packet",
@@ -370,7 +374,8 @@
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
-            "channels": 1
+            "channels": 1,
+            "channel_layout": "mono"
         },
         {
             "type": "packet",
@@ -400,7 +405,8 @@
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
-            "channels": 1
+            "channels": 1,
+            "channel_layout": "mono"
         },
         {
             "type": "packet",

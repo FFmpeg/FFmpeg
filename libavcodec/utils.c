@@ -597,7 +597,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
     }
 }
 
-void ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
+int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
     if (avctx->pkt) {
         frame->pkt_pts = avctx->pkt->pts;
@@ -628,11 +628,32 @@ void ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
             frame->sample_rate    = avctx->sample_rate;
         if (frame->format < 0)
             frame->format         = avctx->sample_fmt;
-        if (!frame->channel_layout)
-            frame->channel_layout = avctx->channel_layout;
+        if (!frame->channel_layout) {
+            if (avctx->channel_layout) {
+                 if (av_get_channel_layout_nb_channels(avctx->channel_layout) !=
+                     avctx->channels) {
+                     av_log(avctx, AV_LOG_ERROR, "Inconsistent channel "
+                            "configuration.\n");
+                     return AVERROR(EINVAL);
+                 }
+
+                frame->channel_layout = avctx->channel_layout;
+            } else {
+                if (avctx->channels > FF_SANE_NB_CHANNELS) {
+                    av_log(avctx, AV_LOG_ERROR, "Too many channels: %d.\n",
+                           avctx->channels);
+                    return AVERROR(ENOSYS);
+                }
+
+                frame->channel_layout = av_get_default_channel_layout(avctx->channels);
+                if (!frame->channel_layout)
+                    frame->channel_layout = (1ULL << avctx->channels) - 1;
+            }
+        }
         av_frame_set_channels(frame, avctx->channels);
         break;
     }
+    return 0;
 }
 
 #if FF_API_GET_BUFFER
@@ -670,7 +691,8 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
             return AVERROR(EINVAL);
         }
     }
-    ff_init_buffer_info(avctx, frame);
+    if ((ret = ff_init_buffer_info(avctx, frame)) < 0)
+        return ret;
 
 #if FF_API_GET_BUFFER
     /*

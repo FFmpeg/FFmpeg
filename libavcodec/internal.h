@@ -134,7 +134,7 @@ unsigned int avpriv_toupper4(unsigned int x);
 /**
  * does needed setup of pkt_pts/pos and such for (re)get_buffer();
  */
-void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
+int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
 
 
 void avpriv_color_frame(AVFrame *frame, const int color[4]);

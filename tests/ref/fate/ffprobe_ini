@@ -29,7 +29,7 @@ pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
 channels=1
-channel_layout=unknown
+channel_layout=mono
 
 [packets_and_frames.packet.1]
 codec_type=video
@@ -136,7 +136,7 @@ pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
 channels=1
-channel_layout=unknown
+channel_layout=mono
 
 [packets_and_frames.packet.4]
 codec_type=video
@@ -243,7 +243,7 @@ pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
 channels=1
-channel_layout=unknown
+channel_layout=mono
 
 [packets_and_frames.packet.7]
 codec_type=audio
@@ -274,7 +274,7 @@ pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
 channels=1
-channel_layout=unknown
+channel_layout=mono
 
 [packets_and_frames.packet.8]
 codec_type=video
@@ -381,7 +381,7 @@ pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
 channels=1
-channel_layout=unknown
+channel_layout=mono
 
 [packets_and_frames.packet.11]
 codec_type=audio
@@ -412,7 +412,7 @@ pkt_size=2048
 sample_fmt=s16
 nb_samples=1024
 channels=1
-channel_layout=unknown
+channel_layout=mono
 
 [packets_and_frames.packet.12]
 codec_type=video
