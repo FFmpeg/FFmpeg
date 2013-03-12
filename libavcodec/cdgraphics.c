@@ -278,11 +278,8 @@ static int cdg_decode_frame(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    ret = ff_reget_buffer(avctx, cc->frame);
-    if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, cc->frame)) < 0)
         return ret;
-    }
     if (!avctx->frame_number) {
         memset(cc->frame->data[0], 0, cc->frame->linesize[0] * avctx->height);
         memset(cc->frame->data[1], 0, AVPALETTE_SIZE);
@@ -333,11 +330,8 @@ static int cdg_decode_frame(AVCodecContext *avctx,
                 return AVERROR(EINVAL);
             }
 
-            ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
-            if (ret) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
-            }
 
             cdg_scroll(cc, cdg_data, frame, inst == CDG_INST_SCROLL_COPY);
             av_frame_unref(cc->frame);

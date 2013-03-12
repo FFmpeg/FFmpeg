@@ -523,10 +523,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer,
                      (const uint32_t*)buf, buf_size / 4);
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
-    }
 
     if (s->context) {
         table_size = read_huffman_tables(s, s->bitstream_buffer, buf_size);

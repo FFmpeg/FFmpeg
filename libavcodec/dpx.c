@@ -179,10 +179,8 @@ static int decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    }
 
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;

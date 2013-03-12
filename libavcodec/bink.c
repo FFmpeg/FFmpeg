@@ -1186,15 +1186,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int bits_count = pkt->size << 3;
 
     if (c->version > 'b') {
-        if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
             return ret;
-        }
     } else {
-        if ((ret = ff_reget_buffer(avctx, c->last)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+        if ((ret = ff_reget_buffer(avctx, c->last)) < 0)
             return ret;
-        }
         if ((ret = av_frame_ref(frame, c->last)) < 0)
             return ret;
     }

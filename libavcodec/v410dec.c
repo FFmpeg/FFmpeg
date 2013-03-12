@@ -49,17 +49,15 @@ static int v410_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *src = avpkt->data;
     uint16_t *y, *u, *v;
     uint32_t val;
-    int i, j;
+    int i, j, ret;
 
     if (avpkt->size < 4 * avctx->height * avctx->width) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
 
-    if (ff_get_buffer(avctx, pic, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
-        return AVERROR(ENOMEM);
-    }
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
 
     pic->key_frame = 1;
     pic->pict_type = AV_PICTURE_TYPE_I;

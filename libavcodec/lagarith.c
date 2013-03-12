@@ -539,10 +539,8 @@ static int lag_decode_frame(AVCodecContext *avctx,
                 planes = 4;
             }
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
-        }
 
         dst = p->data[0];
         if (frametype == FRAME_SOLID_RGBA) {
@@ -568,10 +566,8 @@ static int lag_decode_frame(AVCodecContext *avctx,
         if (frametype == FRAME_ARITH_RGB24 || frametype == FRAME_U_RGB24)
             avctx->pix_fmt = AV_PIX_FMT_RGB24;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
-        }
 
         offs[0] = offset_bv;
         offs[1] = offset_gu;
@@ -627,10 +623,8 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_ARITH_YUY2:
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
-        }
 
         if (offset_ry >= buf_size ||
             offset_gu >= buf_size ||
@@ -653,10 +647,8 @@ static int lag_decode_frame(AVCodecContext *avctx,
     case FRAME_ARITH_YV12:
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
-        }
         if (buf_size <= offset_ry || buf_size <= offset_gu || buf_size <= offset_bv) {
             return AVERROR_INVALIDDATA;
         }

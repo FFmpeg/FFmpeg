@@ -695,10 +695,8 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = 160;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     outbuffer = (float *)frame->data[0];
 
     if ((q->bitrate = determine_bitrate(avctx, buf_size, &buf)) == I_F_Q) {

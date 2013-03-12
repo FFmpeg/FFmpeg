@@ -246,11 +246,8 @@ retry:
         init_frame = 1;
     }
 
-    result = ff_reget_buffer(avctx, &c->pic);
-    if (result < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((result = ff_reget_buffer(avctx, &c->pic)) < 0)
         return result;
-    }
     if (init_frame) {
         memset(c->pic.data[0], 0,    avctx->height * c->pic.linesize[0]);
         memset(c->pic.data[1], 0x80, avctx->height * c->pic.linesize[1] / 2);

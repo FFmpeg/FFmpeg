@@ -296,10 +296,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *src = buf;
     int dx, dy, w, h, depth, enc, chunks, res, size_left, ret;
 
-    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0)
         return ret;
-    }
 
     c->pic.key_frame = 0;
     c->pic.pict_type = AV_PICTURE_TYPE_P;

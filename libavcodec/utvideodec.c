@@ -333,10 +333,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     GetByteContext gb;
     ThreadFrame frame = { .f = data };
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
-    }
 
     /* parse plane structure to get frame flags and validate slice offsets */
     bytestream2_init(&gb, buf, buf_size);

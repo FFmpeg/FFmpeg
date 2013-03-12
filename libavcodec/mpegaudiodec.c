@@ -1628,10 +1628,8 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT **samples,
     if (!samples) {
         av_assert0(s->frame != NULL);
         s->frame->nb_samples = s->avctx->frame_size;
-        if ((ret = ff_get_buffer(s->avctx, s->frame, 0)) < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(s->avctx, s->frame, 0)) < 0)
             return ret;
-        }
         samples = (OUT_INT **)s->frame->extended_data;
     }
 
@@ -1935,10 +1933,8 @@ static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = MPA_FRAME_SIZE;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     out_samples = (OUT_INT **)frame->extended_data;
 
     // Discard too short frames

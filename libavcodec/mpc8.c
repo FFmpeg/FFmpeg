@@ -254,10 +254,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = MPC_FRAME_SIZE;
-    if ((res = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
         return res;
-    }
 
     keyframe = c->cur_frame == 0;
 

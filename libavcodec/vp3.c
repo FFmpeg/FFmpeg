@@ -2028,10 +2028,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     s->current_frame.f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     s->current_frame.f->key_frame = s->keyframe;
-    if (ff_thread_get_buffer(avctx, &s->current_frame, AV_GET_BUFFER_FLAG_REF) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if (ff_thread_get_buffer(avctx, &s->current_frame, AV_GET_BUFFER_FLAG_REF) < 0)
         goto error;
-    }
 
     if (!s->edge_emu_buffer)
         s->edge_emu_buffer = av_malloc(9*FFABS(s->current_frame.f->linesize[0]));
@@ -2059,10 +2057,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
             av_log(s->avctx, AV_LOG_WARNING, "vp3: first frame not a keyframe\n");
 
             s->golden_frame.f->pict_type = AV_PICTURE_TYPE_I;
-            if (ff_thread_get_buffer(avctx, &s->golden_frame, AV_GET_BUFFER_FLAG_REF) < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            if (ff_thread_get_buffer(avctx, &s->golden_frame, AV_GET_BUFFER_FLAG_REF) < 0)
                 goto error;
-            }
             ff_thread_release_buffer(avctx, &s->last_frame);
             if ((ret = ff_thread_ref_frame(&s->last_frame, &s->golden_frame)) < 0)
                 goto error;

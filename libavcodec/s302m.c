@@ -106,10 +106,8 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     block_size = (avctx->bits_per_coded_sample + 4) / 4;
     frame->nb_samples = 2 * (buf_size / block_size) / avctx->channels;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     buf_size = (frame->nb_samples * avctx->channels / 2) * block_size;
 

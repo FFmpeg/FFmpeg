@@ -115,11 +115,8 @@ static int sgirle_decode_frame(AVCodecContext *avctx,
     SGIRLEContext *s = avctx->priv_data;
     int ret;
 
-    ret = ff_reget_buffer(avctx, s->frame);
-    if (ret < 0) {
-        av_log (avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
-    }
 
     ret = decode_sgirle8(avctx, s->frame->data[0], avpkt->data, avpkt->size, avctx->width, avctx->height, s->frame->linesize[0]);
     if (ret < 0)

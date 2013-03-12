@@ -35,17 +35,15 @@ static int v408_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
     uint8_t *y, *u, *v, *a;
-    int i, j;
+    int i, j, ret;
 
     if (avpkt->size < 4 * avctx->height * avctx->width) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
 
-    if (ff_get_buffer(avctx, pic, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
-        return AVERROR(ENOMEM);
-    }
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
 
     pic->key_frame = 1;
     pic->pict_type = AV_PICTURE_TYPE_I;

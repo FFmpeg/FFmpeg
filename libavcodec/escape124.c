@@ -271,10 +271,8 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
 
     new_frame_data = (uint16_t*)frame->data[0];
     new_stride = frame->linesize[0] / 2;

@@ -642,10 +642,8 @@ static int init_image(TiffContext *s, AVFrame *frame)
             return ret;
         avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
-    if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
-    }
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (s->palette_is_set) {
             memcpy(frame->data[1], s->palette, sizeof(s->palette));

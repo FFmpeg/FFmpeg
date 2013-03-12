@@ -211,10 +211,8 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = (out + avctx->channels - 1) / avctx->channels;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     output_samples = (int16_t *)frame->data[0];
     samples_end = output_samples + out;
 

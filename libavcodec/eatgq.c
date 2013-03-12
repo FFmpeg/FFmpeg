@@ -225,10 +225,8 @@ static int tgq_decode_frame(AVCodecContext *avctx,
     tgq_calculate_qtable(s, bytestream2_get_byteu(&s->gb));
     bytestream2_skip(&s->gb, 3);
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     frame->key_frame = 1;
     frame->pict_type = AV_PICTURE_TYPE_I;
 

@@ -310,10 +310,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         if (image->comps[i].prec > avctx->bits_per_raw_sample)
             avctx->bits_per_raw_sample = image->comps[i].prec;
 
-    if (ff_thread_get_buffer(avctx, &frame, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed\n");
+    if (ff_thread_get_buffer(avctx, &frame, 0) < 0)
         goto done;
-    }
 
     ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
     ctx->dec_params.cp_reduce = avctx->lowres;

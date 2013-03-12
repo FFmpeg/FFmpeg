@@ -1909,10 +1909,8 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     curframe->tf.f->key_frame = s->keyframe;
     curframe->tf.f->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
-    if ((ret = vp8_alloc_frame(s, curframe, referenced))) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed!\n");
+    if ((ret = vp8_alloc_frame(s, curframe, referenced)) < 0)
         goto err;
-    }
 
     // check if golden and altref are swapped
     if (s->update_altref != VP56_FRAME_NONE) {

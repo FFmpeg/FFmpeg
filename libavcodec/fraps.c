@@ -201,10 +201,8 @@ static int decode_frame(AVCodecContext *avctx,
 
     avctx->pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0))) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
-    }
 
     switch (version) {
     case 0:

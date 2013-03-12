@@ -663,10 +663,8 @@ static int decode_frame(AVCodecContext *avctx,
 
     if ((res = extract_header(avctx, avpkt)) < 0)
         return res;
-    if ((res = ff_reget_buffer(avctx, s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((res = ff_reget_buffer(avctx, s->frame)) < 0)
         return res;
-    }
     if (!s->init && avctx->bits_per_coded_sample <= 8 &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if ((res = cmap_read_palette(avctx, (uint32_t*)s->frame->data[1])) < 0)

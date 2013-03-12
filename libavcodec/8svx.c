@@ -136,10 +136,8 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = buf_size * 2;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     for (ch = 0; ch < avctx->channels; ch++) {
         delta_decode(frame->data[ch], &esc->data[ch][esc->data_idx],

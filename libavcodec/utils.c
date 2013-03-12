@@ -681,7 +681,7 @@ static void compat_release_buffer(void *opaque, uint8_t *data)
 }
 #endif
 
-int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
+static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
     int ret;
 
@@ -804,7 +804,15 @@ fail:
     return avctx->get_buffer2(avctx, frame, flags);
 }
 
-int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
+int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
+{
+    int ret = get_buffer_internal(avctx, frame, flags);
+    if (ret < 0)
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    return ret;
+}
+
+static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
 {
     AVFrame tmp;
     int ret;
@@ -839,6 +847,14 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
     av_frame_unref(&tmp);
 
     return 0;
+}
+
+int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
+{
+    int ret = reget_buffer_internal(avctx, frame);
+    if (ret < 0)
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    return ret;
 }
 
 #if FF_API_GET_BUFFER

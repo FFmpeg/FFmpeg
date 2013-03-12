@@ -256,10 +256,8 @@ static int rpza_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
         return ret;
-    }
 
     rpza_decode_stream(s);
 

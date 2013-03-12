@@ -979,10 +979,8 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     bytestream2_init(&s->stream_ptr, buf + s->decoding_map_size,
                      buf_size - s->decoding_map_size);
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
 
     if (!s->is_16bpp) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);

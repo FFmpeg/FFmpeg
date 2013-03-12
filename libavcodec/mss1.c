@@ -151,10 +151,8 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     init_get_bits(&gb, buf, buf_size * 8);
     arith_init(&acoder, &gb);
 
-    if ((ret = ff_reget_buffer(avctx, &ctx->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &ctx->pic)) < 0)
         return ret;
-    }
 
     c->pal_pic    =  ctx->pic.data[0] + ctx->pic.linesize[0] * (avctx->height - 1);
     c->pal_stride = -ctx->pic.linesize[0];

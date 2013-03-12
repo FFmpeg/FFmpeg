@@ -43,10 +43,8 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_pnm_decode_header(avctx, s)) < 0)
         return ret;
 
-    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    }
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 

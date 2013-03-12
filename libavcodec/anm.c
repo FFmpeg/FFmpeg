@@ -117,10 +117,8 @@ static int decode_frame(AVCodecContext *avctx,
     uint8_t *dst, *dst_end;
     int count, ret;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
-    }
     dst     = s->frame->data[0];
     dst_end = s->frame->data[0] + s->frame->linesize[0]*avctx->height;
 

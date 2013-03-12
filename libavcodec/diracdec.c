@@ -1747,7 +1747,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 {
     DiracContext *s   = avctx->priv_data;
     DiracFrame *pic   = NULL;
-    int i, parse_code = buf[4];
+    int ret, i, parse_code = buf[4];
     unsigned tmp;
 
     if (size < DATA_UNIT_HEADER_SIZE)
@@ -1811,10 +1811,8 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         pic->avframe.key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
         pic->avframe.pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
 
-        if (ff_get_buffer(avctx, &pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-            return -1;
-        }
+        if ((ret = ff_get_buffer(avctx, &pic->avframe, (parse_code & 0x0C) == 0x0C ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
+            return ret;
         s->current_picture = pic;
         s->plane[0].stride = pic->avframe.linesize[0];
         s->plane[1].stride = pic->avframe.linesize[1];

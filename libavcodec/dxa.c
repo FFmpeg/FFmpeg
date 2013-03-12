@@ -212,10 +212,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         pc = 1;
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
     memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     frame->palette_has_changed = pc;
 

@@ -188,10 +188,8 @@ static int cmv_decode_frame(AVCodecContext *avctx,
     if (av_image_check_size(s->width, s->height, 0, s->avctx))
         return -1;
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
 
     memcpy(frame->data[1], s->palette, AVPALETTE_SIZE);
 

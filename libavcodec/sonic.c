@@ -877,10 +877,8 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) return 0;
 
     s->frame.nb_samples = s->frame_size;
-    if ((ret = ff_get_buffer(avctx, &s->frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, &s->frame, 0)) < 0)
         return ret;
-    }
     samples = (int16_t *)s->frame.data[0];
 
 //    av_log(NULL, AV_LOG_INFO, "buf_size: %d\n", buf_size);

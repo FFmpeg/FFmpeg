@@ -230,10 +230,8 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0)
         return ret;
-    }
 
     if (frame_type == 0) {
         *got_frame      = 1;

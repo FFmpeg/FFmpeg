@@ -940,7 +940,7 @@ int ff_thread_can_start_frame(AVCodecContext *avctx)
     return 1;
 }
 
-int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
+static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int flags)
 {
     PerThreadContext *p = avctx->thread_opaque;
     int err;
@@ -1002,6 +1002,14 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     pthread_mutex_unlock(&p->parent->buffer_mutex);
 
     return err;
+}
+
+int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
+{
+    int ret = thread_get_buffer_internal(avctx, f, flags);
+    if (ret < 0)
+        av_log(avctx, AV_LOG_ERROR, "thread_get_buffer() failed\n");
+    return ret;
 }
 
 void ff_thread_release_buffer(AVCodecContext *avctx, ThreadFrame *f)

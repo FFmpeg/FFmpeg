@@ -963,10 +963,8 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = AMR_BLOCK_SIZE;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     buf_out = (float *)frame->data[0];
 
     p->cur_frame_mode = unpack_bitstream(p, buf, buf_size);

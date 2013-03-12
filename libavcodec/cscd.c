@@ -74,10 +74,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
         return ret;
-    }
 
     // decompress data
     switch ((buf[0] >> 1) & 7) {

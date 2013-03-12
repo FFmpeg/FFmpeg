@@ -75,10 +75,8 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     int code, ret;
     int yoffset;
 
-    if ((ret = ff_reget_buffer(avctx, &vid->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &vid->frame)) < 0)
         return ret;
-    }
     wrap_to_next_line = vid->frame.linesize[0] - avctx->width;
 
     if (avpkt->side_data_elems > 0 &&

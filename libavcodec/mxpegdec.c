@@ -248,11 +248,9 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
                     }
                     /* use stored SOF data to allocate current picture */
                     av_frame_unref(jpg->picture_ptr);
-                    if (ff_get_buffer(avctx, jpg->picture_ptr,
-                                      AV_GET_BUFFER_FLAG_REF) < 0) {
-                        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-                        return AVERROR(ENOMEM);
-                    }
+                    if ((ret = ff_get_buffer(avctx, jpg->picture_ptr,
+                                             AV_GET_BUFFER_FLAG_REF)) < 0)
+                        return ret;
                     jpg->picture_ptr->pict_type = AV_PICTURE_TYPE_P;
                     jpg->picture_ptr->key_frame = 0;
                     jpg->got_picture = 1;
@@ -268,11 +266,9 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
 
                     /* allocate dummy reference picture if needed */
                     if (!reference_ptr->data[0] &&
-                        ff_get_buffer(avctx, reference_ptr,
-                                      AV_GET_BUFFER_FLAG_REF) < 0) {
-                        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-                        return AVERROR(ENOMEM);
-                    }
+                        (ret = ff_get_buffer(avctx, reference_ptr,
+                                             AV_GET_BUFFER_FLAG_REF)) < 0)
+                        return ret;
 
                     ret = ff_mjpeg_decode_sos(jpg, s->mxm_bitmask, reference_ptr);
                     if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))

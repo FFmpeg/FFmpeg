@@ -153,10 +153,8 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = samples;
-    if ((retval = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((retval = ff_get_buffer(avctx, frame, 0)) < 0)
         return retval;
-    }
     dst16 = (int16_t *)frame->data[0];
     dst32 = (int32_t *)frame->data[0];
 

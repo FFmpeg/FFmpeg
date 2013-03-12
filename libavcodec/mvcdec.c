@@ -230,11 +230,8 @@ static int mvc_decode_frame(AVCodecContext *avctx,
     GetByteContext gb;
     int ret;
 
-    ret = ff_reget_buffer(avctx, s->frame);
-    if (ret < 0) {
-        av_log (avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return AVERROR(ENOMEM);
-    }
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+        return ret;
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     if (avctx->codec_id == AV_CODEC_ID_MVC1)

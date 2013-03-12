@@ -508,10 +508,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     if (c->comp == 0) { //Uncompressed data
         if (c->decomp_size < len) {

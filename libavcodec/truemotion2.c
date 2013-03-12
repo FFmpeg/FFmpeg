@@ -868,10 +868,8 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     }
 
-    if ((ret = ff_reget_buffer(avctx, p)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
-    }
 
     l->dsp.bswap_buf((uint32_t*)l->buffer, (const uint32_t*)buf, buf_size >> 2);
 

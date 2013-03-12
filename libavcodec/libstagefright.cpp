@@ -187,7 +187,6 @@ void* decode_thread(void *arg)
             }
             ret = ff_get_buffer(avctx, frame->vframe);
             if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 frame->status = ret;
                 decode_done   = 1;
                 buffer->release();

@@ -305,10 +305,8 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
         break;
     }
 
-    if ((res = ff_reget_buffer(avctx, &cin->frame)) < 0) {
-        av_log(cin->avctx, AV_LOG_ERROR, "failed to allocate a frame\n");
+    if ((res = ff_reget_buffer(avctx, &cin->frame)) < 0)
         return res;
-    }
 
     memcpy(cin->frame.data[1], cin->palette, sizeof(cin->palette));
     cin->frame.palette_has_changed = 1;
@@ -363,10 +361,8 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = avpkt->size - cin->initial_decode_frame;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     samples = (int16_t *)frame->data[0];
 
     delta = cin->delta;

@@ -1144,10 +1144,8 @@ static int copy_output(SANMVideoContext *ctx, SANMFrameHeader *hdr)
     int ret, dstpitch, height = ctx->height;
     int srcpitch = ctx->pitch * (hdr ? sizeof(ctx->frm0[0]) : 1);
 
-    if ((ret = ff_get_buffer(ctx->avctx, ctx->frame, 0)) < 0) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(ctx->avctx, ctx->frame, 0)) < 0)
         return ret;
-    }
 
     dst      = ctx->frame->data[0];
     dstpitch = ctx->frame->linesize[0];

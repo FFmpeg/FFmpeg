@@ -149,10 +149,8 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     AVFrame * const p    = &s->picture;
     int start, ret;
 
-    if ((ret = ff_reget_buffer(avctx, p)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
-    }
 
     start = 48; /* hardcoded for now */
 

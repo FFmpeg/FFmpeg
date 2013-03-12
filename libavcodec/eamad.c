@@ -266,10 +266,8 @@ static int decode_frame(AVCodecContext *avctx,
         av_frame_unref(&s->last_frame);
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
 
     if (inter && !s->last_frame.data[0]) {
         av_log(avctx, AV_LOG_WARNING, "Missing reference frame.\n");

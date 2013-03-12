@@ -121,6 +121,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int version;
     int offset = 0;
     int width_uv = avctx->width / 2, height_uv = avctx->height / 2;
+    int ret;
 
     if (avpkt->size < 4 || avpkt->size - 4 > INT_MAX/8) {
         av_log(avctx, AV_LOG_ERROR, "Invalid packet size\n");
@@ -128,10 +129,8 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     /* Allocate buffer */
-    if (ff_get_buffer(avctx, pic, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
-        return AVERROR(ENOMEM);
-    }
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
 
     /* Set flags */
     pic->key_frame = 1;

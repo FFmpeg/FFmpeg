@@ -443,10 +443,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     }
 
     av_frame_unref(s->picture_ptr);
-    if (ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if (ff_get_buffer(s->avctx, s->picture_ptr, AV_GET_BUFFER_FLAG_REF) < 0)
         return -1;
-    }
     s->picture_ptr->pict_type = AV_PICTURE_TYPE_I;
     s->picture_ptr->key_frame = 1;
     s->got_picture            = 1;

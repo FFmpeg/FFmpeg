@@ -1799,10 +1799,8 @@ static int synth_superframe(AVCodecContext *ctx, AVFrame *frame,
 
     /* get output buffer */
     frame->nb_samples = 480;
-    if ((res = ff_get_buffer(ctx, frame, 0)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((res = ff_get_buffer(ctx, frame, 0)) < 0)
         return res;
-    }
     frame->nb_samples = n_samples;
     samples = (float *)frame->data[0];
 

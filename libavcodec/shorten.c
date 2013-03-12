@@ -596,10 +596,8 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
 
                 /* get output buffer */
                 frame->nb_samples = s->blocksize;
-                if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
                     return ret;
-                }
 
                 for (chan = 0; chan < s->channels; chan++) {
                     samples_u8  = ((uint8_t **)frame->extended_data)[chan];

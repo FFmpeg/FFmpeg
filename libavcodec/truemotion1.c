@@ -868,10 +868,8 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
     if ((ret = truemotion1_decode_header(s)) < 0)
         return ret;
 
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
         return ret;
-    }
 
     if (compression_types[s->compression].algorithm == ALGO_RGB24H) {
         truemotion1_decode_24bit(s);

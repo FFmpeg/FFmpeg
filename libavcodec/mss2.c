@@ -598,10 +598,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (c->mvX < 0 || c->mvY < 0) {
         FFSWAP(uint8_t *, c->pal_pic, c->last_pal_pic);
 
-        if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
             return ret;
-        }
 
         if (ctx->last_pic.data[0]) {
             av_assert0(frame->linesize[0] == ctx->last_pic.linesize[0]);
@@ -612,10 +610,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if ((ret = ff_reget_buffer(avctx, &ctx->last_pic)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+        if ((ret = ff_reget_buffer(avctx, &ctx->last_pic)) < 0)
             return ret;
-        }
         if ((ret = av_frame_ref(frame, &ctx->last_pic)) < 0)
             return ret;
 

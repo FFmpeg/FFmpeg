@@ -46,10 +46,8 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
     unsigned x, y, fg, bg, c;
     int ret;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     if (avpkt->size < 2*char_rows*char_cols) {
         av_log(avctx, AV_LOG_ERROR,

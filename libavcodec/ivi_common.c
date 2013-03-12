@@ -905,10 +905,8 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return buf_size;
 
     avcodec_set_dimensions(avctx, ctx->planes[0].width, ctx->planes[0].height);
-    if ((result = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((result = ff_get_buffer(avctx, frame, 0)) < 0)
         return result;
-    }
 
     if (ctx->is_scalable) {
         if (avctx->codec_id == AV_CODEC_ID_INDEO4)

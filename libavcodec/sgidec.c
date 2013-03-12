@@ -205,10 +205,8 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     avcodec_set_dimensions(avctx, s->width, s->height);
 
-    if (ff_get_buffer(avctx, p, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed.\n");
-        return -1;
-    }
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
+        return ret;
 
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;

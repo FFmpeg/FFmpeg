@@ -642,10 +642,8 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     priv->pic->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                               FF_BUFFER_HINTS_REUSABLE;
     if (!priv->pic->data[0]) {
-        if (ff_get_buffer(avctx, priv->pic, AV_GET_BUFFER_FLAG_REF) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if (ff_get_buffer(avctx, priv->pic, AV_GET_BUFFER_FLAG_REF) < 0)
             return RET_ERROR;
-        }
     }
 
     bwidth = av_image_get_linesize(avctx->pix_fmt, width, 0);

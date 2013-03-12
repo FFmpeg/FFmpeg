@@ -94,10 +94,8 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = avpkt->size * 2;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     out_buf = (int16_t *)frame->data[0];
 
     init_get_bits(&gb, avpkt->data, avpkt->size * 8);

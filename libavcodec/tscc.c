@@ -73,10 +73,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int zret; // Zlib return code
     int ret, len = buf_size;
 
-    if ((ret = ff_reget_buffer(avctx, frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
         return ret;
-    }
 
     zret = inflateReset(&c->zstream);
     if (zret != Z_OK) {

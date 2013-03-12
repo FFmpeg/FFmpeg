@@ -170,10 +170,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 
     frame->nb_samples = samples;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     for (chan = 0; chan < channels; chan++) {
         uint16_t *dest = (uint16_t*)frame->data[0] + chan;

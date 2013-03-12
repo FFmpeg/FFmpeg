@@ -232,10 +232,8 @@ static int seqvideo_decode_frame(AVCodecContext *avctx,
 
     SeqVideoContext *seq = avctx->priv_data;
 
-    if ((ret = ff_reget_buffer(avctx, &seq->frame)) < 0) {
-        av_log(seq->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &seq->frame)) < 0)
         return ret;
-    }
 
     if (seqvideo_decode(seq, buf, buf_size))
         return AVERROR_INVALIDDATA;

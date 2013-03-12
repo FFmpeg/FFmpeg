@@ -181,10 +181,8 @@ static int rl2_decode_frame(AVCodecContext *avctx,
     int ret, buf_size  = avpkt->size;
     Rl2Context *s = avctx->priv_data;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     /** run length decode */
     rl2_rle_decode(s, buf, buf_size, frame->data[0], frame->linesize[0],

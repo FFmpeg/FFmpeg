@@ -100,10 +100,8 @@ static int cpia_decode_frame(AVCodecContext *avctx,
     }
 
     // Get buffer filled with previous frame
-    if ((ret = ff_reget_buffer(avctx, frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed!\n");
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
         return ret;
-    }
 
 
     for ( i = 0;

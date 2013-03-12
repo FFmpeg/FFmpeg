@@ -412,10 +412,8 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     int ret;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
-        av_log (s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
         return ret;
-    }
 
     /* check if this frame is even supposed to change */
     if (avpkt->size < 8)

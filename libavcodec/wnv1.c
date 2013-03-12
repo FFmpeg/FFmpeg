@@ -82,7 +82,6 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         av_free(rbuf);
         return ret;
     }

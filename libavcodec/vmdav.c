@@ -425,10 +425,8 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     if (buf_size < 16)
         return buf_size;
 
-    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
 
     vmd_decode(s, frame);
 
@@ -597,10 +595,8 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     frame->nb_samples = ((silent_chunks + audio_chunks) * avctx->block_align) /
                         avctx->channels;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     output_samples_u8  =            frame->data[0];
     output_samples_s16 = (int16_t *)frame->data[0];
 

@@ -948,10 +948,8 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = COEFFS;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     for (i = 0; i < avctx->channels; i++) {
         q->out_samples = (float *)frame->extended_data[i];

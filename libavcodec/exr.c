@@ -755,10 +755,8 @@ static int decode_frame(AVCodecContext *avctx,
         memset(s->thread_data + prev_size, 0, s->thread_data_size - prev_size);
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
-    }
 
     if (buf_end - buf < scan_line_blocks * 8)
         return AVERROR_INVALIDDATA;

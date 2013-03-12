@@ -134,10 +134,8 @@ static int brpix_decode_frame(AVCodecContext *avctx,
     if (hdr.width != avctx->width || hdr.height != avctx->height)
         avcodec_set_dimensions(avctx, hdr.width, hdr.height);
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     chunk_type = bytestream2_get_be32(&gb);
 

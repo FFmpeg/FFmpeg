@@ -439,10 +439,8 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     s->data = buf;
     s->size = buf_size;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
-    }
 
     if (s->palette_video) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);

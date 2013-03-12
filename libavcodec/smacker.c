@@ -381,10 +381,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (avpkt->size <= 769)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_reget_buffer(avctx, &smk->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &smk->pic)) < 0)
         return ret;
-    }
 
     /* make the palette available on the way out */
     pal = (uint32_t*)smk->pic.data[1];
@@ -634,10 +632,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     samples  = (int16_t *)frame->data[0];
     samples8 =            frame->data[0];
 

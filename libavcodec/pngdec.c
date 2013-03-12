@@ -637,10 +637,8 @@ static int decode_frame(AVCodecContext *avctx,
                     goto fail;
                 }
 
-                if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0)
                     goto fail;
-                }
                 p->pict_type        = AV_PICTURE_TYPE_I;
                 p->key_frame        = 1;
                 p->interlaced_frame = !!s->interlace_type;

@@ -289,10 +289,8 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
     if (!alac->nb_samples) {
         /* get output buffer */
         frame->nb_samples = output_samples;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
-        }
     } else if (output_samples != alac->nb_samples) {
         av_log(avctx, AV_LOG_ERROR, "sample count mismatch: %u != %d\n",
                output_samples, alac->nb_samples);

@@ -33,6 +33,7 @@ static av_cold int avui_decode_init(AVCodecContext *avctx)
 static int avui_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
+    int ret;
     AVFrame *pic = data;
     const uint8_t *src = avpkt->data, *extradata = avctx->extradata;
     const uint8_t *srca;
@@ -67,10 +68,8 @@ static int avui_decode_frame(AVCodecContext *avctx, void *data,
                   avpkt->size >= opaque_length * 2 + 4;
     srca = src + opaque_length + 5;
 
-    if (ff_get_buffer(avctx, pic, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
-        return AVERROR(ENOMEM);
-    }
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
 
     pic->key_frame = 1;
     pic->pict_type = AV_PICTURE_TYPE_I;

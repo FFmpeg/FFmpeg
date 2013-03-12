@@ -246,11 +246,9 @@ static int execute_code(AVCodecContext * avctx, int c)
         if (width != avctx->width || height != avctx->height) {
             av_frame_unref(s->frame);
             avcodec_set_dimensions(avctx, width, height);
-            ret = ff_get_buffer(avctx, s->frame, AV_GET_BUFFER_FLAG_REF);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            if ((ret = ff_get_buffer(avctx, s->frame,
+                                     AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
-            }
             s->frame->pict_type           = AV_PICTURE_TYPE_I;
             s->frame->palette_has_changed = 1;
             set_palette((uint32_t *)s->frame->data[1]);
@@ -351,11 +349,8 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end   = buf+buf_size;
     int ret, i, count;
 
-    ret = ff_reget_buffer(avctx, s->frame);
-    if (ret < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
-    }
     if (!avctx->frame_number) {
         for (i=0; i<avctx->height; i++)
             memset(s->frame->data[0]+ i*s->frame->linesize[0], 0, avctx->width);

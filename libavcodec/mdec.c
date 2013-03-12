@@ -165,10 +165,8 @@ static int decode_frame(AVCodecContext *avctx,
     ThreadFrame frame     = { .f = data };
     int i, ret;
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
-    }
     frame.f->pict_type = AV_PICTURE_TYPE_I;
     frame.f->key_frame = 1;
 

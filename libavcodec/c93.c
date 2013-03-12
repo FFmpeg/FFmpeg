@@ -129,10 +129,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     c93->currentpic ^= 1;
 
-    if ((ret = ff_reget_buffer(avctx, newpic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, newpic)) < 0)
         return ret;
-    }
 
     stride = newpic->linesize[0];
 

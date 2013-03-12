@@ -1379,7 +1379,6 @@ static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
     /* get output buffer */
     frame->nb_samples = s->samples_per_frame;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         s->packet_loss = 1;
         return 0;
     }

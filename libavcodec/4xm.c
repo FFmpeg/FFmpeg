@@ -884,10 +884,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     // alternatively we would have to use our own buffer management
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
-    if ((ret = ff_reget_buffer(avctx, f->current_picture)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, f->current_picture)) < 0)
         return ret;
-    }
 
     if (frame_4cc == AV_RL32("ifr2")) {
         f->current_picture->pict_type = AV_PICTURE_TYPE_I;
@@ -904,10 +902,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     } else if (frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")) {
         if (!f->last_picture->data[0]) {
             if ((ret = ff_get_buffer(avctx, f->last_picture,
-                                     AV_GET_BUFFER_FLAG_REF)) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                                     AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
-            }
             for (i=0; i<avctx->height; i++)
                 memset(f->last_picture->data[0] + i*f->last_picture->linesize[0], 0, 2*avctx->width);
         }

@@ -477,10 +477,9 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     int ret, emu_buf_size;
 
     if(!s->scratchbuf) {
-        if ((ret = ff_get_buffer(s->avctx, &s->mconly_picture, AV_GET_BUFFER_FLAG_REF)) < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(s->avctx, &s->mconly_picture,
+                                 AV_GET_BUFFER_FLAG_REF)) < 0)
             return ret;
-        }
         FF_ALLOCZ_OR_GOTO(avctx, s->scratchbuf, FFMAX(s->mconly_picture.linesize[0], 2*avctx->width+256)*7*MB_SIZE, fail);
         emu_buf_size = FFMAX(s->mconly_picture.linesize[0], 2*avctx->width+256) * (2 * MB_SIZE + HTAPS_MAX - 1);
         FF_ALLOC_OR_GOTO(avctx, s->emu_edge_buffer, emu_buf_size, fail);
@@ -601,7 +600,7 @@ void ff_snow_release_buffer(AVCodecContext *avctx)
 
 int ff_snow_frame_start(SnowContext *s){
    AVFrame tmp;
-   int i;
+   int i, ret;
    int w= s->avctx->width; //FIXME round up to x16 ?
    int h= s->avctx->height;
 
@@ -642,10 +641,8 @@ int ff_snow_frame_start(SnowContext *s){
         }
     }
 
-    if(ff_get_buffer(s->avctx, &s->current_picture, AV_GET_BUFFER_FLAG_REF) < 0){
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_get_buffer(s->avctx, &s->current_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
 
     s->current_picture.key_frame= s->keyframe;
 

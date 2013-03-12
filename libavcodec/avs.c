@@ -60,10 +60,8 @@ avs_decode_frame(AVCodecContext * avctx,
     AvsBlockType type;
     GetBitContext change_map = {0}; //init to silence warning
 
-    if ((ret = ff_reget_buffer(avctx, p)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
-    }
     p->pict_type = AV_PICTURE_TYPE_P;
     p->key_frame = 0;
 

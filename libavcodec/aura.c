@@ -59,10 +59,8 @@ static int aura_decode_frame(AVCodecContext *avctx,
     /* pixel data starts 48 bytes in, after 3x16-byte tables */
     buf += 48;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     Y = frame->data[0];
     U = frame->data[1];

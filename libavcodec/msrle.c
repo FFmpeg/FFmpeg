@@ -92,10 +92,8 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
-    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
         return ret;
-    }
 
     if (avctx->bits_per_coded_sample > 1 && avctx->bits_per_coded_sample <= 8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);

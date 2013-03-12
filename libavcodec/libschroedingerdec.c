@@ -306,10 +306,10 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     framewithpts = ff_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
     if (framewithpts && framewithpts->frame) {
-        if (ff_get_buffer(avctx, avframe, 0) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Unable to allocate buffer\n");
-            return AVERROR(ENOMEM);
-        }
+        int ret;
+
+        if ((ret = ff_get_buffer(avctx, avframe, 0)) < 0)
+            return ret;
 
         memcpy(avframe->data[0],
                framewithpts->frame->components[0].data,

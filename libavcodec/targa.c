@@ -177,10 +177,8 @@ static int decode_frame(AVCodecContext *avctx,
         return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    }
 
     if (flags & TGA_TOPTOBOTTOM) {
         dst = p->data[0];

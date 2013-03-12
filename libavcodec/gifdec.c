@@ -469,10 +469,8 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
         avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
 
         av_frame_unref(s->frame);
-        if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)
             return ret;
-        }
 
         av_fast_malloc(&s->idx_line, &s->idx_line_size, s->screen_width);
         if (!s->idx_line)
@@ -487,10 +485,8 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
             return AVERROR_INVALIDDATA;
         }
 
-        if ((ret = ff_reget_buffer(avctx, s->frame)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+        if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
             return ret;
-        }
 
         s->frame->pict_type = AV_PICTURE_TYPE_P;
         s->frame->key_frame = 0;

@@ -181,10 +181,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     unsigned int mthread_inlen, mthread_outlen;
     unsigned int len = buf_size;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     outptr = frame->data[0]; // Output image pointer
 

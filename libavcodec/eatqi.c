@@ -114,10 +114,8 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     if (s->avctx->width!=s->width || s->avctx->height!=s->height)
         avcodec_set_dimensions(s->avctx, s->width, s->height);
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     av_fast_padded_malloc(&t->bitstream_buf, &t->bitstream_buf_size,
                           buf_end - buf);

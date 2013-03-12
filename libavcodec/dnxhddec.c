@@ -385,10 +385,8 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 
     if (first_field) {
-        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
-        }
         picture->pict_type = AV_PICTURE_TYPE_I;
         picture->key_frame = 1;
     }

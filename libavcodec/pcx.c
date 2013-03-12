@@ -131,10 +131,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return ret;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
-    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    }
 
     p->pict_type = AV_PICTURE_TYPE_I;
 

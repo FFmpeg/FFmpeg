@@ -554,10 +554,8 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0)
         return ret;
-    }
     c->pic.key_frame = (frame_type == INTRA_FRAME);
     c->pic.pict_type = (frame_type == INTRA_FRAME) ? AV_PICTURE_TYPE_I
                                                    : AV_PICTURE_TYPE_P;

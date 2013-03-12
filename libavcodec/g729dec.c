@@ -420,10 +420,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
 
     ctx->frame.nb_samples = SUBFRAME_SIZE<<1;
-    if ((ret = ff_get_buffer(avctx, &ctx->frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, &ctx->frame, 0)) < 0)
         return ret;
-    }
     out_frame = (int16_t*) ctx->frame.data[0];
 
     if (buf_size == 10) {

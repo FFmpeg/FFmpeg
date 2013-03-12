@@ -204,10 +204,8 @@ static int roq_decode_frame(AVCodecContext *avctx,
     int copy= !s->current_frame->data[0];
     int ret;
 
-    if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0)
         return ret;
-    }
 
     if(copy)
         av_picture_copy((AVPicture*)s->current_frame, (AVPicture*)s->last_frame,

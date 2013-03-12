@@ -188,10 +188,8 @@ static int mm_decode_frame(AVCodecContext *avctx,
     buf_size -= MM_PREAMBLE_SIZE;
     bytestream2_init(&s->gb, buf, buf_size);
 
-    if ((res = ff_reget_buffer(avctx, &s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((res = ff_reget_buffer(avctx, &s->frame)) < 0)
         return res;
-    }
 
     switch(type) {
     case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return avpkt->size;

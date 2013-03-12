@@ -70,10 +70,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     unsigned char *planemap = c->planemap;
     int ret;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     /* Set data pointer after line lengths */
     dp = encoded + planes * (height << 1);

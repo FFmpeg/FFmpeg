@@ -242,10 +242,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         scr_off = 0;
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     if (decode_bmv_frame(c->stream, pkt->size - (c->stream - pkt->data), c->frame, scr_off)) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding frame data\n");
@@ -320,10 +318,8 @@ static int bmv_aud_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = total_blocks * 32;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     output_samples = (int16_t *)frame->data[0];
 
     for (blocks = 0; blocks < total_blocks; blocks++) {

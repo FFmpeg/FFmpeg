@@ -392,10 +392,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
     int ftype;
     int ret;
 
-    if ((ret = ff_reget_buffer(avctx, &s->pic))) {
-        av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &s->pic)) < 0)
         return ret;
-    }
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
     ftype = bytestream2_get_le32(&s->gb);

@@ -271,10 +271,8 @@ static int decode_frame(AVCodecContext *avctx,
     av_frame_unref(ref);
     av_frame_move_ref(ref, p);
 
-    if ((ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
-    }
     outdata = a->pic.data[0];
     bytestream2_skip(&a->buffer, 4);
     bytestream2_get_buffer(&a->buffer, ctable, 128);

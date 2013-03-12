@@ -131,10 +131,8 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     // Header; no useful information in here
     skip_bits_long(&gb, 128);
 
-    if (ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
 
     new_y = frame->data[0];
     new_cb = frame->data[1];

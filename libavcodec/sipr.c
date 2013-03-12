@@ -543,10 +543,8 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     frame->nb_samples = mode_par->frames_per_packet * subframe_size *
                         mode_par->subframe_count;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     samples = (float *)frame->data[0];
 
     init_get_bits(&gb, buf, mode_par->bits_per_frame);

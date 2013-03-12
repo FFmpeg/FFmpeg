@@ -598,10 +598,8 @@ static int vqa_decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int res;
 
-    if ((res = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
         return res;
-    }
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
     if ((res = vqa_decode_chunk(s, frame)) < 0)

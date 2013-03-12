@@ -5021,6 +5021,7 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
 
 static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
 {
+    int ret;
     MpegEncContext *s     = &v->s;
     AVCodecContext *avctx = s->avctx;
     SpriteData sd;
@@ -5038,10 +5039,8 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
     }
 
     av_frame_unref(&v->sprite_output_frame);
-    if (ff_get_buffer(avctx, &v->sprite_output_frame, 0) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_get_buffer(avctx, &v->sprite_output_frame, 0)) < 0)
+        return ret;
 
     vc1_draw_sprites(v, &sd);
 

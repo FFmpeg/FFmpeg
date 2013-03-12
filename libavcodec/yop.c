@@ -188,11 +188,8 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_get_buffer(avctx, frame, 0);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     if (!avctx->frame_number)
         memset(frame->data[1], 0, AVPALETTE_SIZE);

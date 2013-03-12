@@ -324,10 +324,8 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     int ret;
     int i, pal_elems;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0))) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     while (bytestream2_get_bytes_left(&gb) > 0) {

@@ -192,10 +192,8 @@ static int frame_configure_elements(AVCodecContext *avctx)
     /* get output buffer */
     av_frame_unref(ac->frame);
     ac->frame->nb_samples = 2048;
-    if ((ret = ff_get_buffer(avctx, ac->frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, ac->frame, 0)) < 0)
         return ret;
-    }
 
     /* map output channel pointers to AVFrame data */
     for (ch = 0; ch < avctx->channels; ch++) {

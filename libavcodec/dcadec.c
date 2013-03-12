@@ -2355,10 +2355,8 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = 256 * (s->sample_blocks / 8);
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
     samples_flt = (float **)frame->extended_data;
 
     /* allocate buffer for extra channels if downmixing */

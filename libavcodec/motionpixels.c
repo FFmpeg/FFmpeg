@@ -265,10 +265,8 @@ static int mp_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     int i, count1, count2, sz, ret;
 
-    if ((ret = ff_reget_buffer(avctx, &mp->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &mp->frame)) < 0)
         return ret;
-    }
 
     /* le32 bitstream msb first */
     av_fast_malloc(&mp->bswapbuf, &mp->bswapbuf_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);

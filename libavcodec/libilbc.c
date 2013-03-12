@@ -93,10 +93,8 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     frame->nb_samples = s->decoder.blockl;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     WebRtcIlbcfix_DecodeImpl((WebRtc_Word16*) frame->data[0],
                              (const WebRtc_UWord16*) buf, &s->decoder, 1);

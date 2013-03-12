@@ -524,10 +524,8 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0)
         return -1;
-    }
 
     if (s->has_alpha) {
         av_frame_unref(s->alpha_context->frames[VP56_FRAME_CURRENT]);
