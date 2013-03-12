@@ -342,25 +342,19 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
         ret = av_interleaved_write_frame(oc, &pkt);
     } else {
-        /* encode the image */
-        AVPacket pkt;
-        int got_output;
-
+        AVPacket pkt = { 0 };
+        int got_packet;
         av_init_packet(&pkt);
-        pkt.data = NULL;    // packet data will be allocated by the encoder
-        pkt.size = 0;
 
-        ret = avcodec_encode_video2(c, &pkt, frame, &got_output);
+        /* encode the image */
+        ret = avcodec_encode_video2(c, &pkt, frame, &got_packet);
         if (ret < 0) {
             fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
             exit(1);
         }
-
         /* If size is zero, it means the image was buffered. */
-        if (got_output) {
-            if (c->coded_frame->key_frame)
-                pkt.flags |= AV_PKT_FLAG_KEY;
 
+        if (!ret && got_packet && pkt.size) {
             pkt.stream_index = st->index;
 
             /* Write the compressed frame to the media file. */
