@@ -98,6 +98,7 @@ static int read_header(AVFormatContext *avctx)
     st->codec->width  = width;
     st->codec->height = height;
     avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
+    st->avg_frame_rate = framerate;
 
     /* simulate tty display speed */
     s->chars_per_frame = FFMAX(av_q2d(st->time_base)*s->chars_per_frame, 1);
