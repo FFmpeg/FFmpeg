@@ -603,8 +603,6 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     vp6_decode_init_context(s);
 
     if (s->has_alpha) {
-        int i;
-
         s->alpha_context = av_mallocz(sizeof(VP56Context));
         ff_vp56_init_context(avctx, s->alpha_context,
                              s->flip == -1, s->has_alpha);
