@@ -143,11 +143,15 @@ filter_h6_shuf1: db 0, 5, 1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 6, 11,  7, 12
 filter_h6_shuf2: db 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,  7, 7,  8,  8,  9
 filter_h6_shuf3: db 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8,  9, 9, 10, 10, 11
 
-pw_256:  times 8 dw 256
-
+pw_27:    times 8 dw 27
+pw_63:    times 8 dw 63
+pw_256:   times 8 dw 256
 pw_20091: times 4 dw 20091
 pw_17734: times 4 dw 17734
 
+pb_4:     times 16 db 4
+pb_F8:    times 16 db 0xF8
+pb_FE:    times 16 db 0xFE
 pb_27_63: times 8 db 27, 63
 pb_18_63: times 8 db 18, 63
 pb_9_63:  times 8 db  9, 63
@@ -156,15 +160,10 @@ cextern pb_1
 cextern pw_3
 cextern pb_3
 cextern pw_4
-cextern pb_4
 cextern pw_9
 cextern pw_18
-cextern pw_27
-cextern pw_63
 cextern pw_64
 cextern pb_80
-cextern pb_F8
-cextern pb_FE
 
 SECTION .text
 

@@ -24,6 +24,8 @@
 #include <stdint.h>
 #include "config.h"
 
+typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
+
 #if ARCH_X86_64
 #    define OPSIZE "q"
 #    define REG_a "rax"

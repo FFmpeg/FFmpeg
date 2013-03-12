@@ -117,7 +117,8 @@ static void avcodec_init(void)
         return;
     initialized = 1;
 
-    ff_dsputil_static_init();
+    if (CONFIG_DSPUTIL)
+        ff_dsputil_static_init();
 }
 
 int av_codec_is_encoder(const AVCodec *codec)

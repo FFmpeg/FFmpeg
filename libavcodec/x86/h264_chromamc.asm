@@ -60,7 +60,7 @@ rnd_rv40_1d_tbl: times 4 dw  0
 cextern pw_3
 cextern pw_4
 cextern pw_8
-cextern pw_28
+pw_28: times 8 dw 28
 cextern pw_32
 cextern pw_64
 

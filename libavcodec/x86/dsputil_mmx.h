@@ -28,8 +28,6 @@
 #include "libavcodec/dsputil.h"
 #include "libavutil/x86/asm.h"
 
-typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
-
 extern const uint64_t ff_bone;
 extern const uint64_t ff_wtwo;
 
@@ -41,12 +39,9 @@ extern const uint64_t ff_pw_15;
 extern const xmm_reg  ff_pw_16;
 extern const xmm_reg  ff_pw_18;
 extern const uint64_t ff_pw_20;
-extern const xmm_reg  ff_pw_27;
-extern const xmm_reg  ff_pw_28;
 extern const xmm_reg  ff_pw_32;
 extern const uint64_t ff_pw_42;
 extern const uint64_t ff_pw_53;
-extern const xmm_reg  ff_pw_63;
 extern const xmm_reg  ff_pw_64;
 extern const uint64_t ff_pw_96;
 extern const uint64_t ff_pw_128;
@@ -58,10 +53,8 @@ extern const uint64_t ff_pb_7;
 extern const uint64_t ff_pb_1F;
 extern const uint64_t ff_pb_3F;
 extern const uint64_t ff_pb_81;
-extern const xmm_reg  ff_pb_A1;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
-extern const xmm_reg  ff_pb_FE;
 
 extern const double ff_pd_1[2];
 extern const double ff_pd_2[2];
