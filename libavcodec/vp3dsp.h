@@ -43,8 +43,6 @@ typedef struct VP3DSPContext {
     void (*idct_dc_add)(uint8_t *dest, int line_size, int16_t *block);
     void (*v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
-
-    int idct_perm;
 } VP3DSPContext;
 
 void ff_vp3dsp_init(VP3DSPContext *c, int flags);

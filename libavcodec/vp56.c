@@ -263,7 +263,7 @@ static VP56mb vp56_decode_mv(VP56Context *s, int row, int col)
 
 static void vp56_add_predictors_dc(VP56Context *s, VP56Frame ref_frame)
 {
-    int idx = s->scantable.permutated[0];
+    int idx = s->idct_scantable[0];
     int b;
 
     for (b=0; b<6; b++) {
@@ -692,8 +692,11 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
     ff_vp56dsp_init(&s->vp56dsp, avctx->codec->id);
-    ff_init_scantable_permutation(s->dsp.idct_permutation, s->vp3dsp.idct_perm);
-    ff_init_scantable(s->dsp.idct_permutation, &s->scantable,ff_zigzag_direct);
+    for (i = 0; i < 64; i++) {
+#define T(x) (x >> 3) | ((x & 7) << 3)
+        s->idct_scantable[i] = T(ff_zigzag_direct[i]);
+#undef T
+    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->frames); i++) {
         s->frames[i] = av_frame_alloc();

@@ -140,6 +140,7 @@ typedef struct Vp3DecodeContext {
     ThreadFrame current_frame;
     int keyframe;
     uint8_t idct_permutation[64];
+    uint8_t idct_scantable[64];
     DSPContext dsp;
     VideoDSPContext vdsp;
     VP3DSPContext vp3dsp;
@@ -176,8 +177,6 @@ typedef struct Vp3DecodeContext {
     int data_offset[3];
 
     int8_t (*motion_val[2])[2];
-
-    ScanTable scantable;
 
     /* tables */
     uint16_t coded_dc_scale_factor[64];
@@ -1356,7 +1355,7 @@ static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
                               int plane, int inter, int16_t block[64])
 {
     int16_t *dequantizer = s->qmat[frag->qpi][inter][plane];
-    uint8_t *perm = s->scantable.permutated;
+    uint8_t *perm = s->idct_scantable;
     int i = 0;
 
     do {
@@ -1699,8 +1698,12 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
     ff_videodsp_init(&s->vdsp, 8);
     ff_vp3dsp_init(&s->vp3dsp, avctx->flags);
 
-    ff_init_scantable_permutation(s->idct_permutation, s->vp3dsp.idct_perm);
-    ff_init_scantable(s->idct_permutation, &s->scantable, ff_zigzag_direct);
+    for (i = 0; i < 64; i++) {
+#define T(x) (x >> 3) | ((x & 7) << 3)
+        s->idct_permutation[i] = T(i);
+        s->idct_scantable[i] = T(ff_zigzag_direct[i]);
+#undef T
+    }
 
     /* initialize to an impossible value which will force a recalculation
      * in the first frame decode */

@@ -109,7 +109,6 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
     if (EXTERNAL_MMX(cpuflags)) {
         c->idct_put  = ff_vp3_idct_put_mmx;
         c->idct_add  = ff_vp3_idct_add_mmx;
-        c->idct_perm = FF_PARTTRANS_IDCT_PERM;
     }
 #endif
 
@@ -125,6 +124,5 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
     if (EXTERNAL_SSE2(cpuflags)) {
         c->idct_put  = ff_vp3_idct_put_sse2;
         c->idct_add  = ff_vp3_idct_add_sse2;
-        c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
     }
 }
