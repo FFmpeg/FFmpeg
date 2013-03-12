@@ -184,7 +184,15 @@ static int copy_packet_data(AVPacket *pkt, AVPacket *src)
 {
     pkt->data      = NULL;
     pkt->side_data = NULL;
-    DUP_DATA(pkt->data, src->data, pkt->size, 1, ALLOC_BUF);
+    if (pkt->buf) {
+        AVBufferRef *ref = av_buffer_ref(src->buf);
+        if (!ref)
+            return AVERROR(ENOMEM);
+        pkt->buf  = ref;
+        pkt->data = ref->data;
+    } else {
+        DUP_DATA(pkt->data, src->data, pkt->size, 1, ALLOC_BUF);
+    }
 #if FF_API_DESTRUCT_PACKET
     pkt->destruct = dummy_destruct_packet;
 #endif
@@ -228,7 +236,6 @@ int av_dup_packet(AVPacket *pkt)
 int av_copy_packet(AVPacket *dst, AVPacket *src)
 {
     *dst = *src;
-    dst->buf = av_buffer_ref(src->buf);
     return copy_packet_data(dst, src);
 }
 
