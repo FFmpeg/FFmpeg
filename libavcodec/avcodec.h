@@ -4353,38 +4353,6 @@ unsigned int avcodec_pix_fmt_to_codec_tag(enum AVPixelFormat pix_fmt);
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt, enum AVPixelFormat src_pix_fmt,
                              int has_alpha);
 
-#if FF_API_FIND_BEST_PIX_FMT
-/**
- * @deprecated use avcodec_find_best_pix_fmt_of_2() instead.
- *
- * Find the best pixel format to convert to given a certain source pixel
- * format.  When converting from one pixel format to another, information loss
- * may occur.  For example, when converting from RGB24 to GRAY, the color
- * information will be lost. Similarly, other losses occur when converting from
- * some formats to other formats. avcodec_find_best_pix_fmt() searches which of
- * the given pixel formats should be used to suffer the least amount of loss.
- * The pixel formats from which it chooses one, are determined by the
- * pix_fmt_mask parameter.
- *
- * Note, only the first 64 pixel formats will fit in pix_fmt_mask.
- *
- * @code
- * src_pix_fmt = AV_PIX_FMT_YUV420P;
- * pix_fmt_mask = (1 << AV_PIX_FMT_YUV422P) | (1 << AV_PIX_FMT_RGB24);
- * dst_pix_fmt = avcodec_find_best_pix_fmt(pix_fmt_mask, src_pix_fmt, alpha, &loss);
- * @endcode
- *
- * @param[in] pix_fmt_mask bitmask determining which pixel format to choose from
- * @param[in] src_pix_fmt source pixel format
- * @param[in] has_alpha Whether the source pixel format alpha channel is used.
- * @param[out] loss_ptr Combination of flags informing you what kind of losses will occur.
- * @return The best pixel format to convert to or -1 if none was found.
- */
-attribute_deprecated
-enum AVPixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum AVPixelFormat src_pix_fmt,
-                              int has_alpha, int *loss_ptr);
-#endif /* FF_API_FIND_BEST_PIX_FMT */
-
 /**
  * Find the best pixel format to convert to given a certain source pixel
  * format.  When converting from one pixel format to another, information loss

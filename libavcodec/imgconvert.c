@@ -215,25 +215,6 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
     return loss;
 }
 
-#if FF_API_FIND_BEST_PIX_FMT
-enum AVPixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum AVPixelFormat src_pix_fmt,
-                                            int has_alpha, int *loss_ptr)
-{
-    enum AVPixelFormat dst_pix_fmt;
-    int i;
-
-    if (loss_ptr) /* all losses count (for backward compatibility) */
-        *loss_ptr = 0;
-
-    dst_pix_fmt = AV_PIX_FMT_NONE; /* so first iteration doesn't have to be treated special */
-    for(i = 0; i< FFMIN(AV_PIX_FMT_NB, 64); i++){
-        if (pix_fmt_mask & (1ULL << i))
-            dst_pix_fmt = avcodec_find_best_pix_fmt_of_2(dst_pix_fmt, i, src_pix_fmt, has_alpha, loss_ptr);
-    }
-    return dst_pix_fmt;
-}
-#endif /* FF_API_FIND_BEST_PIX_FMT */
-
 enum AVPixelFormat avcodec_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt1, enum AVPixelFormat dst_pix_fmt2,
                                             enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
 {
