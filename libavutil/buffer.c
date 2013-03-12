@@ -122,7 +122,7 @@ int av_buffer_is_writable(const AVBufferRef *buf)
     if (buf->buffer->flags & AV_BUFFER_FLAG_READONLY)
         return 0;
 
-    return avpriv_atomic_int_add_and_fetch(&buf->buffer->refcount, 0) == 1;
+    return avpriv_atomic_int_get(&buf->buffer->refcount) == 1;
 }
 
 int av_buffer_make_writable(AVBufferRef **pbuf)
