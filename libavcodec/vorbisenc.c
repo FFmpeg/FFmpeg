@@ -1153,9 +1153,6 @@ static av_cold int vorbis_encode_close(AVCodecContext *avctx)
     ff_mdct_end(&venc->mdct[0]);
     ff_mdct_end(&venc->mdct[1]);
 
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     av_freep(&avctx->extradata);
 
     return 0 ;
@@ -1186,14 +1183,6 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     avctx->extradata_size = ret;
 
     avctx->frame_size = 1 << (venc->log2_blocksize[0] - 1);
-
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame) {
-        ret = AVERROR(ENOMEM);
-        goto error;
-    }
-#endif
 
     return 0;
 error:

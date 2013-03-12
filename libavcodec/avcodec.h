@@ -547,11 +547,6 @@ typedef struct AVCodecDescriptor {
  */
 #define AV_CODEC_PROP_BITMAP_SUB    (1 << 16)
 
-#if FF_API_OLD_DECODE_AUDIO
-/* in bytes */
-#define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
-#endif
-
 /**
  * @ingroup lavc_decoding
  * Required number of additionally allocated bytes at the end of the input bitstream for decoding.

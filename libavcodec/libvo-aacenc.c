@@ -47,9 +47,6 @@ static int aac_encode_close(AVCodecContext *avctx)
     AACContext *s = avctx->priv_data;
 
     s->codec_api.Uninit(s->handle);
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     av_freep(&avctx->extradata);
     ff_af_queue_close(&s->afq);
     av_freep(&s->end_buffer);
@@ -63,11 +60,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     AACENC_PARAM params = { 0 };
     int index, ret;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-#endif
     avctx->frame_size = FRAME_SIZE;
     avctx->delay      = ENC_DELAY;
     s->last_frame     = 2;

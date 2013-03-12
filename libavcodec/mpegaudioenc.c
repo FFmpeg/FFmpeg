@@ -184,12 +184,6 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
         total_quant_bits[i] = 12 * v;
     }
 
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame= avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-#endif
-
     return 0;
 }
 
@@ -769,14 +763,6 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static av_cold int MPA_encode_close(AVCodecContext *avctx)
-{
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
-    return 0;
-}
-
 static const AVCodecDefault mp2_defaults[] = {
     { "b",    "128k" },
     { NULL },
@@ -789,7 +775,6 @@ AVCodec ff_mp2_encoder = {
     .priv_data_size        = sizeof(MpegAudioContext),
     .init                  = MPA_encode_init,
     .encode2               = MPA_encode_frame,
-    .close                 = MPA_encode_close,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                             AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]){

@@ -159,20 +159,7 @@ static av_cold int ilbc_encode_init(AVCodecContext *avctx)
 
     avctx->block_align = s->encoder.no_of_bytes;
     avctx->frame_size  = s->encoder.blockl;
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-#endif
 
-    return 0;
-}
-
-static av_cold int ilbc_encode_close(AVCodecContext *avctx)
-{
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     return 0;
 }
 
@@ -204,7 +191,6 @@ AVCodec ff_libilbc_encoder = {
     .priv_data_size = sizeof(ILBCEncContext),
     .init           = ilbc_encode_init,
     .encode2        = ilbc_encode_frame,
-    .close          = ilbc_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("iLBC (Internet Low Bitrate Codec)"),

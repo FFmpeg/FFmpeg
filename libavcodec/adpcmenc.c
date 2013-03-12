@@ -144,11 +144,6 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         goto error;
     }
 
-#if FF_API_OLD_ENCODE_AUDIO
-    if (!(avctx->coded_frame = avcodec_alloc_frame()))
-        goto error;
-#endif
-
     return 0;
 error:
     adpcm_encode_close(avctx);
@@ -158,9 +153,6 @@ error:
 static av_cold int adpcm_encode_close(AVCodecContext *avctx)
 {
     ADPCMEncodeContext *s = avctx->priv_data;
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     av_freep(&s->paths);
     av_freep(&s->node_buf);
     av_freep(&s->nodep_buf);

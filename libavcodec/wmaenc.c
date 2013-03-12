@@ -50,11 +50,6 @@ static int encode_init(AVCodecContext * avctx){
         return AVERROR(EINVAL);
     }
 
-#if FF_API_OLD_ENCODE_AUDIO
-    if (!(avctx->coded_frame = avcodec_alloc_frame()))
-        return AVERROR(ENOMEM);
-#endif
-
     /* extract flag infos */
     flags1 = 0;
     flags2 = 1;
