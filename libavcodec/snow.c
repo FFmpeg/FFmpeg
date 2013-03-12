@@ -456,9 +456,14 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
     FF_ALLOCZ_OR_GOTO(avctx, s->temp_idwt_buffer,    width * sizeof(IDWTELEM), fail);
     FF_ALLOC_OR_GOTO(avctx,  s->run_buffer,          ((width + 1) >> 1) * ((height + 1) >> 1) * sizeof(*s->run_buffer), fail);
 
-    for(i=0; i<MAX_REF_FRAMES; i++)
+    for(i=0; i<MAX_REF_FRAMES; i++) {
         for(j=0; j<MAX_REF_FRAMES; j++)
             ff_scale_mv_ref[i][j] = 256*(i+1)/(j+1);
+        avcodec_get_frame_defaults(&s->last_picture[i]);
+    }
+
+    avcodec_get_frame_defaults(&s->mconly_picture);
+    avcodec_get_frame_defaults(&s->current_picture);
 
     return 0;
 fail:
