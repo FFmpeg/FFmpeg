@@ -106,7 +106,7 @@ static int get_video_buffer(AVFrame *frame, int align)
     }
 
     for (i = 0; i < 4 && frame->linesize[i]; i++) {
-        int h = frame->height;
+        int h = FFALIGN(frame->height, 32);
         if (i == 1 || i == 2)
             h = -((-h) >> desc->log2_chroma_h);
 
