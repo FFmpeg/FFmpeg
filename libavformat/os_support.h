@@ -31,7 +31,7 @@
 
 #include <sys/stat.h>
 
-#if defined(__MINGW32__) && !defined(__MINGW32CE__)
+#if defined(_WIN32) && !defined(__MINGW32CE__)
 #  include <fcntl.h>
 #  ifdef lseek
 #   undef lseek

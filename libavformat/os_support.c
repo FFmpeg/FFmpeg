@@ -29,6 +29,9 @@
 
 #if defined(_WIN32) && !defined(__MINGW32CE__)
 #undef open
+#undef lseek
+#undef stat
+#undef fstat
 #include <fcntl.h>
 #include <io.h>
 #include <windows.h>
