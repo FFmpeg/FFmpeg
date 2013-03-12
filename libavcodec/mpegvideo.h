@@ -807,7 +807,12 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
                         int v_edge_pos, int h_edge_pos);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
+
 void ff_print_debug_info(MpegEncContext *s, Picture *p);
+void ff_print_debug_info2(AVCodecContext *avctx, Picture *pict, uint8_t *mbskip_table,
+                         uint8_t *visualization_buffer[3], int *low_delay,
+                         int mb_width, int mb_height, int mb_stride, int quarter_sample);
+
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 void ff_release_unused_pictures(MpegEncContext *s, int remove_current);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
@@ -956,10 +961,6 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
 
 int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src);
 void ff_mpeg_unref_picture(MpegEncContext *s, Picture *picture);
-
-void ff_print_debug_info2(AVCodecContext *avctx, Picture *pict, uint8_t *mbskip_table,
-                         uint8_t *visualization_buffer[3], int *low_delay,
-                         int mb_width, int mb_height, int mb_stride, int quarter_sample);
 
 
 #endif /* AVCODEC_MPEGVIDEO_H */
