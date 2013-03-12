@@ -193,7 +193,8 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
     int ret;
 
     c->ctx.avctx       = avctx;
-    avctx->coded_frame = &c->pic;
+
+    avcodec_get_frame_defaults(&c->pic);
 
     ret = ff_mss12_decode_init(&c->ctx, 0, &c->sc, NULL);
 
