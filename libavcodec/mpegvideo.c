@@ -1189,9 +1189,6 @@ static int free_context_frame(MpegEncContext *s)
 
     s->linesize = s->uvlinesize = 0;
 
-    for (i = 0; i < 3; i++)
-        av_freep(&s->visualization_buffer[i]);
-
     return 0;
 }
 
