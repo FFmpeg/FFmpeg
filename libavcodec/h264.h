@@ -270,8 +270,6 @@ typedef struct H264Context {
     Picture *DPB;
     Picture *cur_pic_ptr;
     Picture cur_pic;
-    int picture_count;
-    int picture_range_start, picture_range_end;
 
     int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2];   // QPc
@@ -648,6 +646,11 @@ typedef struct H264Context {
     int16_t *dc_val_base;
 
     uint8_t *visualization_buffer[3]; ///< temporary buffer vor MV visualization
+
+    AVBufferPool *qscale_table_pool;
+    AVBufferPool *mb_type_pool;
+    AVBufferPool *motion_val_pool;
+    AVBufferPool *ref_index_pool;
 } H264Context;
 
 extern const uint8_t ff_h264_chroma_qp[7][QP_MAX_NUM + 1]; ///< One chroma qp table for each possible bit depth (8-14).
@@ -903,7 +906,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
                                                     int b_xy, int b8_xy,
                                                     int mb_type, int list)
 {
-    int16_t(*mv_dst)[2] = &h->cur_pic.f.motion_val[list][b_xy];
+    int16_t(*mv_dst)[2] = &h->cur_pic.motion_val[list][b_xy];
     int16_t(*mv_src)[2] = &h->mv_cache[list][scan8[0]];
     AV_COPY128(mv_dst + 0 * b_stride, mv_src + 8 * 0);
     AV_COPY128(mv_dst + 1 * b_stride, mv_src + 8 * 1);
@@ -924,7 +927,7 @@ static av_always_inline void write_back_motion_list(H264Context *h,
     }
 
     {
-        int8_t *ref_index = &h->cur_pic.f.ref_index[list][b8_xy];
+        int8_t *ref_index = &h->cur_pic.ref_index[list][b8_xy];
         int8_t *ref_cache = h->ref_cache[list];
         ref_index[0 + 0 * 2] = ref_cache[scan8[0]];
         ref_index[1 + 0 * 2] = ref_cache[scan8[4]];
@@ -942,7 +945,7 @@ static av_always_inline void write_back_motion(H264Context *h, int mb_type)
     if (USES_LIST(mb_type, 0)) {
         write_back_motion_list(h, b_stride, b_xy, b8_xy, mb_type, 0);
     } else {
-        fill_rectangle(&h->cur_pic.f.ref_index[0][b8_xy],
+        fill_rectangle(&h->cur_pic.ref_index[0][b8_xy],
                        2, 2, 2, (uint8_t)LIST_NOT_USED, 1);
     }
     if (USES_LIST(mb_type, 1))

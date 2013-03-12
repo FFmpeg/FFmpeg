@@ -178,7 +178,7 @@ void ff_xvmc_decode_mb(MpegEncContext *s)
 
     // Do I need to export quant when I could not perform postprocessing?
     // Anyway, it doesn't hurt.
-    s->current_picture.f.qscale_table[mb_xy] = s->qscale;
+    s->current_picture.qscale_table[mb_xy] = s->qscale;
 
     // start of XVMC-specific code
     render = (struct xvmc_pix_fmt*)s->current_picture.f.data[2];

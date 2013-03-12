@@ -643,7 +643,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     priv->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                              FF_BUFFER_HINTS_REUSABLE;
     if (!priv->pic.data[0]) {
-        if (ff_get_buffer(avctx, &priv->pic) < 0) {
+        if (ff_get_buffer(avctx, &priv->pic, 0) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return RET_ERROR;
         }

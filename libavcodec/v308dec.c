@@ -29,35 +29,23 @@ static av_cold int v308_decode_init(AVCodecContext *avctx)
     if (avctx->width & 1)
         av_log(avctx, AV_LOG_WARNING, "v308 requires width to be even.\n");
 
-    avctx->coded_frame = avcodec_alloc_frame();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
-
     return 0;
 }
 
 static int v308_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
     uint8_t *y, *u, *v;
     int i, j;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
 
     if (avpkt->size < 3 * avctx->height * avctx->width) {
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
 
-    pic->reference = 0;
-
-    if (ff_get_buffer(avctx, pic) < 0) {
+    if (ff_get_buffer(avctx, pic, 0) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
         return AVERROR(ENOMEM);
     }
@@ -89,10 +77,6 @@ static int v308_decode_frame(AVCodecContext *avctx, void *data,
 
 static av_cold int v308_decode_close(AVCodecContext *avctx)
 {
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-
-    av_freep(&avctx->coded_frame);
 
     return 0;
 }

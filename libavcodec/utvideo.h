@@ -65,7 +65,6 @@ extern const int ff_ut_rgb_order[4];
 
 typedef struct UtvideoContext {
     AVCodecContext *avctx;
-    AVFrame        pic;
     DSPContext     dsp;
 
     uint32_t frame_info_size, flags, frame_info;

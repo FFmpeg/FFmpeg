@@ -289,7 +289,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
     if (!alac->nb_samples) {
         /* get output buffer */
         frame->nb_samples = output_samples;
-        if ((ret = ff_get_buffer(avctx, frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

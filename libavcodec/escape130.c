@@ -40,6 +40,7 @@ static av_cold int escape130_decode_init(AVCodecContext *avctx)
 {
     Escape130Context *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    avcodec_get_frame_defaults(&s->frame);
 
     if((avctx->width&1) || (avctx->height&1)){
         av_log(avctx, AV_LOG_ERROR, "Dimensions are not a multiple of the block size\n");
@@ -55,8 +56,7 @@ static av_cold int escape130_decode_close(AVCodecContext *avctx)
 {
     Escape130Context *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     av_freep(&s->bases);
 
@@ -108,6 +108,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
 
     GetBitContext gb;
     unsigned i;
+    int ret;
 
     uint8_t *old_y, *old_cb, *old_cr,
             *new_y, *new_cb, *new_cr;
@@ -120,7 +121,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     unsigned y_base = 0;
     uint8_t *yb= s->bases;
 
-    AVFrame new_frame = { { 0 } };
+    AVFrame *frame = data;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -130,18 +131,17 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     // Header; no useful information in here
     skip_bits_long(&gb, 128);
 
-    new_frame.reference = 3;
-    if (ff_get_buffer(avctx, &new_frame)) {
+    if (ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
 
-    new_y = new_frame.data[0];
-    new_cb = new_frame.data[1];
-    new_cr = new_frame.data[2];
-    new_y_stride = new_frame.linesize[0];
-    new_cb_stride = new_frame.linesize[1];
-    new_cr_stride = new_frame.linesize[2];
+    new_y = frame->data[0];
+    new_cb = frame->data[1];
+    new_cr = frame->data[2];
+    new_y_stride = frame->linesize[0];
+    new_cb_stride = frame->linesize[1];
+    new_cr_stride = frame->linesize[2];
     old_y = s->frame.data[0];
     old_cb = s->frame.data[1];
     old_cr = s->frame.data[2];
@@ -298,10 +298,10 @@ static int escape130_decode_frame(AVCodecContext *avctx,
            "Escape sizes: %i, %i\n",
            buf_size, get_bits_count(&gb) / 8);
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
+    if ((ret = av_frame_ref(&s->frame, frame)) < 0)
+        return ret;
 
-    *(AVFrame*)data = s->frame = new_frame;
     *got_frame = 1;
 
     return buf_size;

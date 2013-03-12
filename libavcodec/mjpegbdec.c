@@ -45,10 +45,10 @@ static int mjpegb_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     MJpegDecodeContext *s = avctx->priv_data;
     const uint8_t *buf_end, *buf_ptr;
-    AVFrame *picture = data;
     GetBitContext hgb; /* for the header */
     uint32_t dqt_offs, dht_offs, sof_offs, sos_offs, second_field_offs;
     uint32_t field_size, sod_offs;
+    int ret;
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
@@ -141,17 +141,13 @@ read_header:
         return buf_size;
     }
 
-    *picture= *s->picture_ptr;
+    if ((ret = av_frame_ref(data, s->picture_ptr)) < 0)
+        return ret;
     *got_frame = 1;
 
-    if(!s->lossless){
-        picture->quality= FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]);
-        picture->qstride= 0;
-        picture->qscale_table= s->qscale_table;
-        memset(picture->qscale_table, picture->quality, (s->width+15)/16);
-        if(avctx->debug & FF_DEBUG_QP)
-            av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
-        picture->quality*= FF_QP2LAMBDA;
+    if (!s->lossless && avctx->debug & FF_DEBUG_QP) {
+        av_log(avctx, AV_LOG_DEBUG, "QP: %d\n",
+               FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]));
     }
 
     return buf_size;

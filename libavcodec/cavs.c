@@ -738,9 +738,9 @@ av_cold int ff_cavs_init(AVCodecContext *avctx) {
     h->avctx = avctx;
     avctx->pix_fmt= AV_PIX_FMT_YUV420P;
 
-    h->cur.f    = avcodec_alloc_frame();
-    h->DPB[0].f = avcodec_alloc_frame();
-    h->DPB[1].f = avcodec_alloc_frame();
+    h->cur.f    = av_frame_alloc();
+    h->DPB[0].f = av_frame_alloc();
+    h->DPB[1].f = av_frame_alloc();
     if (!h->cur.f || !h->DPB[0].f || !h->DPB[1].f) {
         ff_cavs_end(avctx);
         return AVERROR(ENOMEM);
@@ -771,15 +771,9 @@ av_cold int ff_cavs_init(AVCodecContext *avctx) {
 av_cold int ff_cavs_end(AVCodecContext *avctx) {
     AVSContext *h = avctx->priv_data;
 
-    if (h->cur.f->data[0])
-        avctx->release_buffer(avctx, h->cur.f);
-    if (h->DPB[0].f->data[0])
-        avctx->release_buffer(avctx, h->DPB[0].f);
-    if (h->DPB[1].f->data[0])
-        avctx->release_buffer(avctx, h->DPB[1].f);
-    avcodec_free_frame(&h->cur.f);
-    avcodec_free_frame(&h->DPB[0].f);
-    avcodec_free_frame(&h->DPB[1].f);
+    av_frame_free(&h->cur.f);
+    av_frame_free(&h->DPB[0].f);
+    av_frame_free(&h->DPB[1].f);
 
     av_free(h->top_qp);
     av_free(h->top_mv[0]);

@@ -381,9 +381,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (avpkt->size <= 769)
         return AVERROR_INVALIDDATA;
 
-    smk->pic.reference = 3;
-    smk->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if((ret = avctx->reget_buffer(avctx, &smk->pic)) < 0){
+    if ((ret = ff_reget_buffer(avctx, &smk->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -513,8 +511,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     }
 
+    if ((ret = av_frame_ref(data, &smk->pic)) < 0)
+        return ret;
+
     *got_frame = 1;
-    *(AVFrame*)data = smk->pic;
 
     /* always report that the buffer was completely consumed */
     return avpkt->size;
@@ -565,8 +565,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&smk->full_tbl);
     av_freep(&smk->type_tbl);
 
-    if (smk->pic.data[0])
-        avctx->release_buffer(avctx, &smk->pic);
+    av_frame_unref(&smk->pic);
 
     return 0;
 }
@@ -636,7 +635,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
-    if ((ret = ff_get_buffer(avctx, frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

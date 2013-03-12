@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "bethsoftvideo.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct BethsoftvidContext {
     AVFrame frame;
@@ -41,9 +42,6 @@ static av_cold int bethsoftvid_decode_init(AVCodecContext *avctx)
 {
     BethsoftvidContext *vid = avctx->priv_data;
     avcodec_get_frame_defaults(&vid->frame);
-    vid->frame.reference = 3;
-    vid->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
-        FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
     return 0;
 }
@@ -77,7 +75,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     int code, ret;
     int yoffset;
 
-    if ((ret = avctx->reget_buffer(avctx, &vid->frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, &vid->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -138,8 +136,10 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     }
     end:
 
+    if ((ret = av_frame_ref(data, &vid->frame)) < 0)
+        return ret;
+
     *got_frame = 1;
-    *(AVFrame*)data = vid->frame;
 
     return avpkt->size;
 }
@@ -147,8 +147,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
 static av_cold int bethsoftvid_decode_end(AVCodecContext *avctx)
 {
     BethsoftvidContext * vid = avctx->priv_data;
-    if(vid->frame.data[0])
-        avctx->release_buffer(avctx, &vid->frame);
+    av_frame_unref(&vid->frame);
     return 0;
 }
 

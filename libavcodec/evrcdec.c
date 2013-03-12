@@ -746,7 +746,7 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
     int   i, j, ret, error_flag = 0;
 
     frame->nb_samples = 160;
-    if ((ret = ff_get_buffer(avctx, frame)) < 0)
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     samples = (float *)frame->data[0];
 

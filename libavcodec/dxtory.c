@@ -28,9 +28,6 @@
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     avctx->pix_fmt     = AV_PIX_FMT_YUV420P;
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -39,21 +36,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     int h, w;
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic = data;
     const uint8_t *src = avpkt->data;
     uint8_t *Y1, *Y2, *U, *V;
     int ret;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
 
     if (avpkt->size < avctx->width * avctx->height * 3 / 2 + 16) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
         return AVERROR_INVALIDDATA;
     }
 
-    pic->reference = 0;
-    if ((ret = ff_get_buffer(avctx, pic)) < 0)
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
     pic->pict_type = AV_PICTURE_TYPE_I;
@@ -84,19 +77,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     *got_frame = 1;
-    *(AVFrame*)data = *pic;
 
     return avpkt->size;
-}
-
-static av_cold int decode_close(AVCodecContext *avctx)
-{
-    AVFrame *pic = avctx->coded_frame;
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-    av_freep(&avctx->coded_frame);
-
-    return 0;
 }
 
 AVCodec ff_dxtory_decoder = {
@@ -105,7 +87,6 @@ AVCodec ff_dxtory_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DXTORY,
     .init           = decode_init,
-    .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
 };

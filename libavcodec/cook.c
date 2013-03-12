@@ -970,7 +970,7 @@ static int cook_decode_frame(AVCodecContext *avctx, void *data,
     /* get output buffer */
     if (q->discarded_packets >= 2) {
         frame->nb_samples = q->samples_per_channel;
-        if ((ret = ff_get_buffer(avctx, frame)) < 0) {
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }

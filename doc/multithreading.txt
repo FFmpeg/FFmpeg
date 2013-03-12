@@ -57,6 +57,11 @@ which re-allocates them for other threads.
 Add CODEC_CAP_FRAME_THREADS to the codec capabilities. There will be very little
 speed gain at this point but it should work.
 
+If there are inter-frame dependencies, so the codec calls
+ff_thread_report/await_progress(), set AVCodecInternal.allocate_progress. The
+frames must then be freed with ff_thread_release_buffer().
+Otherwise leave it at zero and decode directly into the user-supplied frames.
+
 Call ff_thread_report_progress() after some part of the current picture has decoded.
 A good place to put this is where draw_horiz_band() is called - add this if it isn't
 called anywhere, as it's useful too and the implementation is trivial when you're

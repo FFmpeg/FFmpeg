@@ -444,7 +444,7 @@ static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
     if (duration <= 0)
         return AVERROR(EINVAL);
     ws->frame.nb_samples = duration;
-    r = ff_get_buffer(avc, &ws->frame);
+    r = ff_get_buffer(avc, &ws->frame, 0);
     if (r < 0)
         return r;
     pcm = (int16_t *)ws->frame.data[0];

@@ -31,7 +31,7 @@
 #include "libavutil/lzo.h"
 
 typedef struct {
-    AVFrame pic;
+    AVFrame *pic;
     int linelen, height, bpp;
     unsigned int decomp_size;
     unsigned char* decomp_buf;
@@ -67,7 +67,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     CamStudioContext *c = avctx->priv_data;
-    AVFrame *picture = data;
     int ret;
 
     if (buf_size < 2) {
@@ -75,10 +74,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    c->pic.reference = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
-                          FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -109,19 +105,21 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     // flip upside down, add difference frame
     if (buf[0] & 1) { // keyframe
-        c->pic.pict_type = AV_PICTURE_TYPE_I;
-        c->pic.key_frame = 1;
-              copy_frame_default(&c->pic, c->decomp_buf,
+        c->pic->pict_type = AV_PICTURE_TYPE_I;
+        c->pic->key_frame = 1;
+              copy_frame_default(c->pic, c->decomp_buf,
                                  c->linelen, c->height);
     } else {
-        c->pic.pict_type = AV_PICTURE_TYPE_P;
-        c->pic.key_frame = 0;
-              add_frame_default(&c->pic, c->decomp_buf,
+        c->pic->pict_type = AV_PICTURE_TYPE_P;
+        c->pic->key_frame = 0;
+              add_frame_default(c->pic, c->decomp_buf,
                                 c->linelen, c->height);
     }
 
-    *picture = c->pic;
     *got_frame = 1;
+    if ((ret = av_frame_ref(data, c->pic)) < 0)
+        return ret;
+
     return buf_size;
 }
 
@@ -139,8 +137,6 @@ static av_cold int decode_init(AVCodecContext *avctx) {
             return AVERROR_INVALIDDATA;
     }
     c->bpp = avctx->bits_per_coded_sample;
-    avcodec_get_frame_defaults(&c->pic);
-    c->pic.data[0] = NULL;
     c->linelen = avctx->width * avctx->bits_per_coded_sample / 8;
     c->height = avctx->height;
     stride = FFALIGN(c->linelen, 4);
@@ -150,14 +146,16 @@ static av_cold int decode_init(AVCodecContext *avctx) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
         return AVERROR(ENOMEM);
     }
+    c->pic = av_frame_alloc();
+    if (!c->pic)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx) {
     CamStudioContext *c = avctx->priv_data;
     av_freep(&c->decomp_buf);
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_free(&c->pic);
     return 0;
 }
 

@@ -251,8 +251,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
     uint8_t code, *dst, *src, *end;
     int i, frame, ret;
 
-    c->pic.reference = 3;
-    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0)
+    if ((ret =ff_reget_buffer(avctx, &c->pic)) < 0)
         return ret;
 
     bytestream2_init(&c->gb, pkt->data, pkt->size);
@@ -356,9 +355,10 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
     }
 
     c->current_frame = (c->current_frame + 1) & 3;
+    if ((ret = av_frame_ref(data, &c->pic)) < 0)
+        return ret;
 
     *got_frame       = 1;
-    *(AVFrame *)data = c->pic;
 
     return pkt->size;
 }
@@ -368,8 +368,7 @@ static av_cold int paf_vid_close(AVCodecContext *avctx)
     PAFVideoDecContext *c = avctx->priv_data;
     int i;
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_unref(&c->pic);
 
     for (i = 0; i < 4; i++)
         av_freep(&c->frame[i]);
@@ -404,7 +403,7 @@ static int paf_aud_decode(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
 
     frame->nb_samples = PAF_SOUND_SAMPLES * frames;
-    if ((ret = ff_get_buffer(avctx, frame)) < 0)
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     output_samples = (int16_t *)frame->data[0];

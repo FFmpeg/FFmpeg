@@ -36,6 +36,7 @@
 #include "huffman.h"
 #include "bytestream.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "thread.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')
@@ -45,7 +46,6 @@
  */
 typedef struct FrapsContext {
     AVCodecContext *avctx;
-    AVFrame frame;
     uint8_t *tmpbuf;
     int tmpbuf_size;
     DSPContext dsp;
@@ -60,9 +60,6 @@ typedef struct FrapsContext {
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     FrapsContext * const s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
 
     s->avctx  = avctx;
     s->tmpbuf = NULL;
@@ -134,8 +131,8 @@ static int decode_frame(AVCodecContext *avctx,
     FrapsContext * const s = avctx->priv_data;
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
-    AVFrame *frame         = data;
-    AVFrame * const f      = &s->frame;
+    ThreadFrame frame = { .f = data };
+    AVFrame * const f = data;
     uint32_t header;
     unsigned int version,header_size;
     unsigned int x, y;
@@ -145,7 +142,6 @@ static int decode_frame(AVCodecContext *avctx,
     int i, j, ret, is_chroma;
     const int planes = 3;
     uint8_t *out;
-    enum AVPixelFormat pix_fmt;
 
     header      = AV_RL32(buf);
     version     = header & 0xff;
@@ -200,20 +196,12 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (f->data[0])
-        ff_thread_release_buffer(avctx, f);
     f->pict_type = AV_PICTURE_TYPE_I;
     f->key_frame = 1;
-    f->reference = 0;
-    f->buffer_hints = FF_BUFFER_HINTS_VALID;
 
-    pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
-    if (avctx->pix_fmt != pix_fmt && f->data[0]) {
-        avctx->release_buffer(avctx, f);
-    }
-    avctx->pix_fmt = pix_fmt;
+    avctx->pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
 
-    if ((ret = ff_thread_get_buffer(avctx, f))) {
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0))) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -296,7 +284,6 @@ static int decode_frame(AVCodecContext *avctx,
         break;
     }
 
-    *frame = *f;
     *got_frame = 1;
 
     return buf_size;
@@ -311,9 +298,6 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     FrapsContext *s = (FrapsContext*)avctx->priv_data;
-
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
 
     av_freep(&s->tmpbuf);
     return 0;

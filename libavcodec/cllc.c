@@ -271,17 +271,12 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_picture_ptr, AVPacket *avpkt)
 {
     CLLCContext *ctx = avctx->priv_data;
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic = data;
     uint8_t *src = avpkt->data;
     uint32_t info_tag, info_offset;
     int data_size;
     GetBitContext gb;
     int coding_type, ret;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
-    pic->reference = 0;
 
     /* Skip the INFO header if present */
     info_offset = 0;
@@ -334,7 +329,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_RGB24;
         avctx->bits_per_raw_sample = 8;
 
-        ret = ff_get_buffer(avctx, pic);
+        ret = ff_get_buffer(avctx, pic, 0);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
             return ret;
@@ -349,7 +344,7 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_ARGB;
         avctx->bits_per_raw_sample = 8;
 
-        ret = ff_get_buffer(avctx, pic);
+        ret = ff_get_buffer(avctx, pic, 0);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
             return ret;
@@ -369,7 +364,6 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     pic->pict_type = AV_PICTURE_TYPE_I;
 
     *got_picture_ptr = 1;
-    *(AVFrame *)data = *pic;
 
     return avpkt->size;
 }
@@ -378,10 +372,6 @@ static av_cold int cllc_decode_close(AVCodecContext *avctx)
 {
     CLLCContext *ctx = avctx->priv_data;
 
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-
-    av_freep(&avctx->coded_frame);
     av_freep(&ctx->swapped_buf);
 
     return 0;
@@ -397,12 +387,6 @@ static av_cold int cllc_decode_init(AVCodecContext *avctx)
     ctx->swapped_buf_size = 0;
 
     ff_dsputil_init(&ctx->dsp, avctx);
-
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
 
     return 0;
 }

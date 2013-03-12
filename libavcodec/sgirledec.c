@@ -27,12 +27,18 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
+
+typedef struct SGIRLEContext {
+    AVFrame *frame;
+} SGIRLEContext;
 
 static av_cold int sgirle_decode_init(AVCodecContext *avctx)
 {
+    SGIRLEContext *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_BGR8;
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
+    s->frame = av_frame_alloc();
+    if (!s->frame)
         return AVERROR(ENOMEM);
     return 0;
 }
@@ -106,33 +112,32 @@ static int sgirle_decode_frame(AVCodecContext *avctx,
                             void *data, int *got_frame,
                             AVPacket *avpkt)
 {
-    AVFrame *frame = avctx->coded_frame;
+    SGIRLEContext *s = avctx->priv_data;
     int ret;
 
-    frame->reference = 3;
-    frame->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
-    ret = avctx->reget_buffer(avctx, frame);
+    ret = ff_reget_buffer(avctx, s->frame);
     if (ret < 0) {
         av_log (avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
 
-    ret = decode_sgirle8(avctx, frame->data[0], avpkt->data, avpkt->size, avctx->width, avctx->height, frame->linesize[0]);
+    ret = decode_sgirle8(avctx, s->frame->data[0], avpkt->data, avpkt->size, avctx->width, avctx->height, s->frame->linesize[0]);
     if (ret < 0)
         return ret;
 
     *got_frame      = 1;
-    *(AVFrame*)data = *frame;
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
+        return ret;
 
     return avpkt->size;
 }
 
 static av_cold int sgirle_decode_end(AVCodecContext *avctx)
 {
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-    av_freep(&avctx->coded_frame);
+    SGIRLEContext *s = avctx->priv_data;
+
+    av_frame_free(&s->frame);
+
     return 0;
 }
 
@@ -140,6 +145,7 @@ AVCodec ff_sgirle_decoder = {
     .name           = "sgirle",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGIRLE,
+    .priv_data_size = sizeof(SGIRLEContext),
     .init           = sgirle_decode_init,
     .close          = sgirle_decode_end,
     .decode         = sgirle_decode_frame,

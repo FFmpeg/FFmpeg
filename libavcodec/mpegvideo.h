@@ -38,6 +38,7 @@
 #include "parser.h"
 #include "mpeg12data.h"
 #include "rl.h"
+#include "thread.h"
 #include "videodsp.h"
 
 #include "libavutil/opt.h"
@@ -95,10 +96,38 @@ struct MpegEncContext;
  */
 typedef struct Picture{
     struct AVFrame f;
+    ThreadFrame tf;
 
-    int8_t *qscale_table_base;
-    int16_t (*motion_val_base[2])[2];
-    uint32_t *mb_type_base;
+    AVBufferRef *qscale_table_buf;
+    int8_t *qscale_table;
+
+    AVBufferRef *motion_val_buf[2];
+    int16_t (*motion_val[2])[2];
+
+    AVBufferRef *mb_type_buf;
+    uint32_t *mb_type;
+
+    AVBufferRef *mbskip_table_buf;
+    uint8_t *mbskip_table;
+
+    AVBufferRef *ref_index_buf[2];
+    int8_t *ref_index[2];
+
+    AVBufferRef *mb_var_buf;
+    uint16_t *mb_var;           ///< Table for MB variances
+
+    AVBufferRef *mc_mb_var_buf;
+    uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
+
+    AVBufferRef *mb_mean_buf;
+    uint8_t *mb_mean;           ///< Table for MB luminance
+
+    AVBufferRef *hwaccel_priv_buf;
+    /**
+     * hardware accelerator private data
+     */
+    void *hwaccel_picture_private;
+
 #define MB_TYPE_INTRA MB_TYPE_INTRA4x4 //default mb_type if there is just one type
 #define IS_INTRA4x4(a)   ((a)&MB_TYPE_INTRA4x4)
 #define IS_INTRA16x16(a) ((a)&MB_TYPE_INTRA16x16)
@@ -139,17 +168,13 @@ typedef struct Picture{
 
     int mb_var_sum;             ///< sum of MB variance for current frame
     int mc_mb_var_sum;          ///< motion compensated MB variance for current frame
-    uint16_t *mb_var;           ///< Table for MB variances
-    uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
-    uint8_t *mb_mean;           ///< Table for MB luminance
+
     int b_frame_score;          /* */
-    void *owner2;               ///< pointer to the context that allocated this picture
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
     int period_since_free;      ///< "cycles" since this Picture has been freed
-    /**
-     * hardware accelerator private data
-     */
-    void *hwaccel_picture_private;
+
+    int reference;
+    int shared;
 } Picture;
 
 /**
@@ -318,8 +343,6 @@ typedef struct MpegEncContext {
     Picture *last_picture_ptr;     ///< pointer to the previous picture.
     Picture *next_picture_ptr;     ///< pointer to the next picture (for bidir pred)
     Picture *current_picture_ptr;  ///< pointer to the current picture
-    int picture_count;             ///< number of allocated pictures (MAX_PICTURE_COUNT * avctx->thread_count)
-    int picture_range_start, picture_range_end; ///< the part of picture that this context can allocate in
     uint8_t *visualization_buffer[3]; ///< temporary buffer vor MV visualization
     int last_dc[3];                ///< last DC values for MPEG1
     int16_t *dc_val_base;
@@ -719,7 +742,7 @@ typedef struct MpegEncContext {
 
 #define REBASE_PICTURE(pic, new_ctx, old_ctx)             \
     ((pic && pic >= old_ctx->picture &&                   \
-      pic < old_ctx->picture + old_ctx->picture_count) ?  \
+      pic < old_ctx->picture + MAX_PICTURE_COUNT) ?  \
         &new_ctx->picture[pic - old_ctx->picture] : NULL)
 
 /* mpegvideo_enc common options */
@@ -784,7 +807,7 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
                         int v_edge_pos, int h_edge_pos);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
-void ff_print_debug_info(MpegEncContext *s, AVFrame *pict);
+void ff_print_debug_info(MpegEncContext *s, Picture *p);
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 void ff_release_unused_pictures(MpegEncContext *s, int remove_current);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
@@ -805,7 +828,6 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
 int ff_dct_quantize_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
 
 void ff_init_block_index(MpegEncContext *s);
-void ff_copy_picture(Picture *dst, Picture *src);
 
 void ff_MPV_motion(MpegEncContext *s,
                    uint8_t *dest_y, uint8_t *dest_cb,
@@ -931,5 +953,13 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number);
 void ff_wmv2_encode_mb(MpegEncContext * s,
                        int16_t block[6][64],
                        int motion_x, int motion_y);
+
+int ff_mpeg_ref_picture(MpegEncContext *s, Picture *dst, Picture *src);
+void ff_mpeg_unref_picture(MpegEncContext *s, Picture *picture);
+
+void ff_print_debug_info2(AVCodecContext *avctx, Picture *pict, uint8_t *mbskip_table,
+                         uint8_t *visualization_buffer[3], int *low_delay,
+                         int mb_width, int mb_height, int mb_stride, int quarter_sample);
+
 
 #endif /* AVCODEC_MPEGVIDEO_H */

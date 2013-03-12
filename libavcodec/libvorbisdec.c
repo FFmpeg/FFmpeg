@@ -143,7 +143,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     frame->nb_samples = 8192*4;
-    if ((ret = ff_get_buffer(avccontext, frame)) < 0) {
+    if ((ret = ff_get_buffer(avccontext, frame, 0)) < 0) {
         av_log(avccontext, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }

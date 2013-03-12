@@ -239,7 +239,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->dsp, s->dsp.me_cmp, s->avctx->me_cmp);
     ff_set_cmp(&s->dsp, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
 
-    if ((ret = ff_get_buffer(s->avctx, &s->input_picture)) < 0)
+    if ((ret = ff_get_buffer(s->avctx, &s->input_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
     if(s->avctx->me_method == ME_ITER){
@@ -1948,8 +1948,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     SnowContext *s = avctx->priv_data;
 
     ff_snow_common_end(s);
-    if (s->input_picture.data[0])
-        avctx->release_buffer(avctx, &s->input_picture);
+    av_frame_unref(&s->input_picture);
     av_free(avctx->stats_out);
 
     return 0;

@@ -35,7 +35,6 @@
 
 typedef struct DNXHDContext {
     AVCodecContext *avctx;
-    AVFrame picture;
     GetBitContext gb;
     int64_t cid;                        ///< compression id
     unsigned int width, height;
@@ -67,10 +66,6 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
     DNXHDContext *ctx = avctx->priv_data;
 
     ctx->avctx = avctx;
-    avctx->coded_frame = &ctx->picture;
-    avcodec_get_frame_defaults(&ctx->picture);
-    ctx->picture.type = AV_PICTURE_TYPE_I;
-    ctx->picture.key_frame = 1;
     ctx->cid = -1;
     return 0;
 }
@@ -110,7 +105,8 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, uint32_t cid)
     return 0;
 }
 
-static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_size, int first_field)
+static int dnxhd_decode_header(DNXHDContext *ctx, AVFrame *frame,
+                               const uint8_t *buf, int buf_size, int first_field)
 {
     static const uint8_t header_prefix[] = { 0x00, 0x00, 0x02, 0x80, 0x01 };
     int i, cid;
@@ -124,8 +120,8 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     }
     if (buf[5] & 2) { /* interlaced */
         ctx->cur_field = buf[5] & 1;
-        ctx->picture.interlaced_frame = 1;
-        ctx->picture.top_field_first = first_field ^ ctx->cur_field;
+        frame->interlaced_frame = 1;
+        frame->top_field_first  = first_field ^ ctx->cur_field;
         av_log(ctx->avctx, AV_LOG_DEBUG, "interlaced %d, cur field %d\n", buf[5] & 3, ctx->cur_field);
     }
 
@@ -168,11 +164,11 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
 
     av_dlog(ctx->avctx, "mb width %d, mb height %d\n", ctx->mb_width, ctx->mb_height);
 
-    if ((ctx->height+15)>>4 == ctx->mb_height && ctx->picture.interlaced_frame)
+    if ((ctx->height+15)>>4 == ctx->mb_height && frame->interlaced_frame)
         ctx->height <<= 1;
 
     if (ctx->mb_height > 68 ||
-        (ctx->mb_height<<ctx->picture.interlaced_frame) > (ctx->height+15)>>4) {
+        (ctx->mb_height << frame->interlaced_frame) > (ctx->height+15)>>4) {
         av_log(ctx->avctx, AV_LOG_ERROR, "mb height too big: %d\n", ctx->mb_height);
         return -1;
     }
@@ -284,11 +280,11 @@ static void dnxhd_decode_dct_block_10(DNXHDContext *ctx, int16_t *block,
     dnxhd_decode_dct_block(ctx, block, n, qscale, 6, 8, 4);
 }
 
-static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
+static int dnxhd_decode_macroblock(DNXHDContext *ctx, AVFrame *frame, int x, int y)
 {
     int shift1 = ctx->bit_depth == 10;
-    int dct_linesize_luma   = ctx->picture.linesize[0];
-    int dct_linesize_chroma = ctx->picture.linesize[1];
+    int dct_linesize_luma   = frame->linesize[0];
+    int dct_linesize_chroma = frame->linesize[1];
     uint8_t *dest_y, *dest_u, *dest_v;
     int dct_y_offset, dct_x_offset;
     int qscale, i;
@@ -309,19 +305,19 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
         ctx->decode_dct_block(ctx, ctx->blocks[i], i, qscale);
     }
 
-    if (ctx->picture.interlaced_frame) {
+    if (frame->interlaced_frame) {
         dct_linesize_luma   <<= 1;
         dct_linesize_chroma <<= 1;
     }
 
-    dest_y = ctx->picture.data[0] + ((y * dct_linesize_luma)   << 4) + (x << (4 + shift1));
-    dest_u = ctx->picture.data[1] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
-    dest_v = ctx->picture.data[2] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
+    dest_y = frame->data[0] + ((y * dct_linesize_luma)   << 4) + (x << (4 + shift1));
+    dest_u = frame->data[1] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
+    dest_v = frame->data[2] + ((y * dct_linesize_chroma) << 4) + (x << (3 + shift1));
 
     if (ctx->cur_field) {
-        dest_y += ctx->picture.linesize[0];
-        dest_u += ctx->picture.linesize[1];
-        dest_v += ctx->picture.linesize[2];
+        dest_y += frame->linesize[0];
+        dest_u += frame->linesize[1];
+        dest_v += frame->linesize[2];
     }
 
     dct_y_offset = dct_linesize_luma << 3;
@@ -342,7 +338,8 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
     return 0;
 }
 
-static int dnxhd_decode_macroblocks(DNXHDContext *ctx, const uint8_t *buf, int buf_size)
+static int dnxhd_decode_macroblocks(DNXHDContext *ctx, AVFrame *frame,
+                                    const uint8_t *buf, int buf_size)
 {
     int x, y;
     for (y = 0; y < ctx->mb_height; y++) {
@@ -352,7 +349,7 @@ static int dnxhd_decode_macroblocks(DNXHDContext *ctx, const uint8_t *buf, int b
         init_get_bits(&ctx->gb, buf + ctx->mb_scan_index[y], (buf_size - ctx->mb_scan_index[y]) << 3);
         for (x = 0; x < ctx->mb_width; x++) {
             //START_TIMER;
-            dnxhd_decode_macroblock(ctx, x, y);
+            dnxhd_decode_macroblock(ctx, frame, x, y);
             //STOP_TIMER("decode macroblock");
         }
     }
@@ -365,6 +362,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     DNXHDContext *ctx = avctx->priv_data;
+    ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     int first_field = 1;
     int ret;
@@ -372,7 +370,7 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     av_dlog(avctx, "frame size %d\n", buf_size);
 
  decode_coding_unit:
-    if (dnxhd_decode_header(ctx, buf, buf_size, first_field) < 0)
+    if (dnxhd_decode_header(ctx, picture, buf, buf_size, first_field) < 0)
         return -1;
 
     if ((avctx->width || avctx->height) &&
@@ -387,24 +385,23 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     avcodec_set_dimensions(avctx, ctx->width, ctx->height);
 
     if (first_field) {
-        if (ctx->picture.data[0])
-            ff_thread_release_buffer(avctx, &ctx->picture);
-        if ((ret = ff_thread_get_buffer(avctx, &ctx->picture)) < 0) {
+        if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
+        picture->pict_type = AV_PICTURE_TYPE_I;
+        picture->key_frame = 1;
     }
 
-    dnxhd_decode_macroblocks(ctx, buf + 0x280, buf_size - 0x280);
+    dnxhd_decode_macroblocks(ctx, picture, buf + 0x280, buf_size - 0x280);
 
-    if (first_field && ctx->picture.interlaced_frame) {
+    if (first_field && picture->interlaced_frame) {
         buf      += ctx->cid_table->coding_unit_size;
         buf_size -= ctx->cid_table->coding_unit_size;
         first_field = 0;
         goto decode_coding_unit;
     }
 
-    *picture = ctx->picture;
     *got_frame = 1;
     return avpkt->size;
 }
@@ -413,8 +410,6 @@ static av_cold int dnxhd_decode_close(AVCodecContext *avctx)
 {
     DNXHDContext *ctx = avctx->priv_data;
 
-    if (ctx->picture.data[0])
-        ff_thread_release_buffer(avctx, &ctx->picture);
     ff_free_vlc(&ctx->ac_vlc);
     ff_free_vlc(&ctx->dc_vlc);
     ff_free_vlc(&ctx->run_vlc);

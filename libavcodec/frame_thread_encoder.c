@@ -92,9 +92,9 @@ static void * attribute_align_arg worker(void *v){
 
         ret = avcodec_encode_video2(avctx, pkt, frame, &got_packet);
         pthread_mutex_lock(&c->buffer_mutex);
-        c->parent_avctx->release_buffer(c->parent_avctx, frame);
+        av_frame_unref(frame);
         pthread_mutex_unlock(&c->buffer_mutex);
-        av_freep(&frame);
+        av_frame_free(&frame);
         if(got_packet) {
             av_dup_packet(pkt);
         } else {
@@ -222,11 +222,11 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
 
     if(frame){
         if(!(avctx->flags & CODEC_FLAG_INPUT_PRESERVED)){
-            AVFrame *new = avcodec_alloc_frame();
+            AVFrame *new = av_frame_alloc();
             if(!new)
                 return AVERROR(ENOMEM);
             pthread_mutex_lock(&c->buffer_mutex);
-            ret = ff_get_buffer(c->parent_avctx, new);
+            ret = ff_get_buffer(c->parent_avctx, new, 0);
             pthread_mutex_unlock(&c->buffer_mutex);
             if(ret<0)
                 return ret;

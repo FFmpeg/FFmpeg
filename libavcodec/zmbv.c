@@ -54,7 +54,6 @@ enum ZmbvFormat {
  */
 typedef struct ZmbvContext {
     AVCodecContext *avctx;
-    AVFrame pic;
 
     int bpp;
     unsigned int decomp_size;
@@ -401,15 +400,13 @@ static int zmbv_decode_intra(ZmbvContext *c)
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *avpkt)
 {
+    AVFrame *frame = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ZmbvContext * const c = avctx->priv_data;
     int zret = Z_OK; // Zlib return code
     int len = buf_size;
     int hi_ver, lo_ver, ret;
-
-    if (c->pic.data[0])
-            avctx->release_buffer(avctx, &c->pic);
 
     /* parse header */
     c->flags = buf[0];
@@ -511,9 +508,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         return AVERROR_INVALIDDATA;
     }
 
-    c->pic.reference = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if ((ret = ff_get_buffer(avctx, &c->pic)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -538,12 +533,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         c->decomp_len = c->zstream.total_out;
     }
     if (c->flags & ZMBV_KEYFRAME) {
-        c->pic.key_frame = 1;
-        c->pic.pict_type = AV_PICTURE_TYPE_I;
+        frame->key_frame = 1;
+        frame->pict_type = AV_PICTURE_TYPE_I;
         c->decode_intra(c);
     } else {
-        c->pic.key_frame = 0;
-        c->pic.pict_type = AV_PICTURE_TYPE_P;
+        frame->key_frame = 0;
+        frame->pict_type = AV_PICTURE_TYPE_P;
         if (c->decomp_len)
             c->decode_xor(c);
     }
@@ -553,12 +548,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         uint8_t *out, *src;
         int j;
 
-        out = c->pic.data[0];
+        out = frame->data[0];
         src = c->cur;
         switch (c->fmt) {
         case ZMBV_FMT_8BPP:
             for (j = 0; j < 256; j++)
-                AV_WN32(&c->pic.data[1][j * 4], 0xFFU << 24 | AV_RB24(&c->pal[j * 3]));
+                AV_WN32(&frame->data[1][j * 4], 0xFFU << 24 | AV_RB24(&c->pal[j * 3]));
         case ZMBV_FMT_15BPP:
         case ZMBV_FMT_16BPP:
 #ifdef ZMBV_ENABLE_24BPP
@@ -568,7 +563,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             for (j = 0; j < c->height; j++) {
                 memcpy(out, src, c->stride);
                 src += c->stride;
-                out += c->pic.linesize[0];
+                out += frame->linesize[0];
             }
             break;
         default:
@@ -577,7 +572,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         FFSWAP(uint8_t *, c->cur, c->prev);
     }
     *got_frame = 1;
-    *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -592,7 +586,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->width = avctx->width;
     c->height = avctx->height;
-    avcodec_get_frame_defaults(&c->pic);
 
     c->bpp = avctx->bits_per_coded_sample;
 
@@ -628,8 +621,6 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     av_freep(&c->decomp_buf);
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
     inflateEnd(&c->zstream);
     av_freep(&c->cur);
     av_freep(&c->prev);

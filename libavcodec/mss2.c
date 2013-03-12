@@ -34,7 +34,6 @@
 typedef struct MSS2Context {
     VC1Context     v;
     int            split_position;
-    AVFrame        pic;
     AVFrame        last_pic;
     MSS12Context   c;
     MSS2DSPContext dsp;
@@ -470,6 +469,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size       = avpkt->size;
     MSS2Context *ctx = avctx->priv_data;
     MSS12Context *c  = &ctx->c;
+    AVFrame *frame   = data;
     GetBitContext gb;
     GetByteContext gB;
     ArithCoder acoder;
@@ -523,8 +523,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
 
     avctx->pix_fmt = is_555 ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_RGB24;
-    if (ctx->pic.data[0] && ctx->pic.format != avctx->pix_fmt)
-        avctx->release_buffer(avctx, &ctx->pic);
+    if (ctx->last_pic.format != avctx->pix_fmt)
+        av_frame_unref(&ctx->last_pic);
 
     if (has_wmv9) {
         bytestream2_init(&gB, buf, buf_size + ARITH2_PADDING);
@@ -596,25 +596,15 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (c->mvX < 0 || c->mvY < 0) {
-        FFSWAP(AVFrame, ctx->pic, ctx->last_pic);
         FFSWAP(uint8_t *, c->pal_pic, c->last_pal_pic);
 
-        if (ctx->pic.data[0])
-            avctx->release_buffer(avctx, &ctx->pic);
-
-        ctx->pic.reference    = 3;
-        ctx->pic.buffer_hints = FF_BUFFER_HINTS_VALID    |
-                                FF_BUFFER_HINTS_READABLE |
-                                FF_BUFFER_HINTS_PRESERVE |
-                                FF_BUFFER_HINTS_REUSABLE;
-
-        if ((ret = ff_get_buffer(avctx, &ctx->pic)) < 0) {
+        if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
         }
 
         if (ctx->last_pic.data[0]) {
-            av_assert0(ctx->pic.linesize[0] == ctx->last_pic.linesize[0]);
+            av_assert0(frame->linesize[0] == ctx->last_pic.linesize[0]);
             c->last_rgb_pic = ctx->last_pic.data[0] +
                               ctx->last_pic.linesize[0] * (avctx->height - 1);
         } else {
@@ -622,28 +612,21 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if (ctx->last_pic.data[0])
-            avctx->release_buffer(avctx, &ctx->last_pic);
-
-        ctx->pic.reference    = 3;
-        ctx->pic.buffer_hints = FF_BUFFER_HINTS_VALID    |
-                                FF_BUFFER_HINTS_READABLE |
-                                FF_BUFFER_HINTS_PRESERVE |
-                                FF_BUFFER_HINTS_REUSABLE;
-
-        if ((ret = avctx->reget_buffer(avctx, &ctx->pic)) < 0) {
+        if ((ret = ff_reget_buffer(avctx, &ctx->last_pic)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return ret;
         }
+        if ((ret = av_frame_ref(frame, &ctx->last_pic)) < 0)
+            return ret;
 
         c->last_rgb_pic = NULL;
     }
-    c->rgb_pic    = ctx->pic.data[0] +
-                    ctx->pic.linesize[0] * (avctx->height - 1);
-    c->rgb_stride = -ctx->pic.linesize[0];
+    c->rgb_pic    = frame->data[0] +
+                    frame->linesize[0] * (avctx->height - 1);
+    c->rgb_stride = -frame->linesize[0];
 
-    ctx->pic.key_frame = keyframe;
-    ctx->pic.pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    frame->key_frame = keyframe;
+    frame->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if (is_555) {
         bytestream2_init(&gB, buf, buf_size);
@@ -746,8 +729,14 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (buf_size)
         av_log(avctx, AV_LOG_WARNING, "buffer not fully consumed\n");
 
+    if (c->mvX < 0 || c->mvY < 0) {
+        av_frame_unref(&ctx->last_pic);
+        ret = av_frame_ref(&ctx->last_pic, frame);
+        if (ret < 0)
+            return ret;
+    }
+
     *got_frame       = 1;
-    *(AVFrame *)data = ctx->pic;
 
     return avpkt->size;
 }
@@ -817,10 +806,7 @@ static av_cold int mss2_decode_end(AVCodecContext *avctx)
 {
     MSS2Context *const ctx = avctx->priv_data;
 
-    if (ctx->pic.data[0])
-        avctx->release_buffer(avctx, &ctx->pic);
-    if (ctx->last_pic.data[0])
-        avctx->release_buffer(avctx, &ctx->last_pic);
+    av_frame_unref(&ctx->last_pic);
 
     ff_mss12_decode_end(&ctx->c);
     av_freep(&ctx->c.pal_pic);
@@ -836,7 +822,6 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     MSS12Context *c = &ctx->c;
     int ret;
     c->avctx = avctx;
-    avctx->coded_frame = &ctx->pic;
     if (ret = ff_mss12_decode_init(c, 1, &ctx->sc[0], &ctx->sc[1]))
         return ret;
     c->pal_stride   = c->mask_stride;

@@ -1015,7 +1015,7 @@ static int decode_frame(WmallDecodeCtx *s)
     int more_frames = 0, len = 0, i, ret;
 
     s->frame.nb_samples = s->samples_per_frame;
-    if ((ret = ff_get_buffer(s->avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(s->avctx, &s->frame, 0)) < 0) {
         /* return an error if no frame could be decoded at all */
         av_log(s->avctx, AV_LOG_ERROR,
                "not enough space for the output samples\n");
@@ -1264,8 +1264,9 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         save_bits(s, gb, remaining_bits(s, gb), 0);
     }
 
-    *(AVFrame *)data = s->frame;
     *got_frame_ptr   = s->frame.nb_samples > 0;
+    av_frame_move_ref(data, &s->frame);
+
     s->packet_offset = get_bits_count(gb) & 7;
 
     return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;

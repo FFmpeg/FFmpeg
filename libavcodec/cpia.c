@@ -24,6 +24,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "internal.h"
 
 
 #define FRAME_HEADER_SIZE 64
@@ -42,7 +43,7 @@
 
 
 typedef struct {
-    AVFrame frame;
+    AVFrame *frame;
 } CpiaContext;
 
 
@@ -58,7 +59,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
     uint16_t linelength;
     uint8_t skip;
 
-    AVFrame* const frame = &cpia->frame;
+    AVFrame *frame = cpia->frame;
     uint8_t *y, *u, *v, *y_end, *u_end, *v_end;
 
     // Check header
@@ -99,7 +100,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
     }
 
     // Get buffer filled with previous frame
-    if ((ret = avctx->reget_buffer(avctx, frame)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed!\n");
         return ret;
     }
@@ -184,13 +185,16 @@ static int cpia_decode_frame(AVCodecContext *avctx,
     }
 
     *got_frame = 1;
-    *(AVFrame*) data = *frame;
+    if ((ret = av_frame_ref(data, cpia->frame)) < 0)
+        return ret;
 
     return avpkt->size;
 }
 
 static av_cold int cpia_decode_init(AVCodecContext *avctx)
 {
+    CpiaContext *s = avctx->priv_data;
+
     // output pixel format
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
@@ -202,9 +206,21 @@ static av_cold int cpia_decode_init(AVCodecContext *avctx)
         avctx->time_base.den = 60;
     }
 
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
+static av_cold int cpia_decode_end(AVCodecContext *avctx)
+{
+    CpiaContext *s = avctx->priv_data;
+
+    av_frame_free(&s->frame);
+
+    return 0;
+}
 
 AVCodec ff_cpia_decoder = {
     .name           = "cpia",
@@ -212,6 +228,7 @@ AVCodec ff_cpia_decoder = {
     .id             = AV_CODEC_ID_CPIA,
     .priv_data_size = sizeof(CpiaContext),
     .init           = cpia_decode_init,
+    .close          = cpia_decode_end,
     .decode         = cpia_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("CPiA video format"),

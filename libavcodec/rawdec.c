@@ -236,10 +236,6 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
                               avctx->width, avctx->height)) < 0)
         return res;
-    if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) ||
-        (desc->flags & PIX_FMT_PSEUDOPAL)) {
-        frame->data[1] = (uint8_t*)context->palette;
-    }
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE,
@@ -254,6 +250,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             frame->palette_has_changed = 1;
         }
     }
+
     if ((avctx->pix_fmt==AV_PIX_FMT_BGR24    ||
         avctx->pix_fmt==AV_PIX_FMT_GRAY8    ||
         avctx->pix_fmt==AV_PIX_FMT_RGB555LE ||
@@ -280,6 +277,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR(ENOMEM);
         frame->data[1] = frame->buf[1]->data;
     }
+
     if (avctx->pix_fmt == AV_PIX_FMT_BGR24 &&
         ((frame->linesize[0] + 3) & ~3) * avctx->height <= buf_size)
         frame->linesize[0] = (frame->linesize[0] + 3) & ~3;

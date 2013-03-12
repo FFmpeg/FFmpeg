@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "indeo2data.h"
+#include "internal.h"
 #include "mathops.h"
 
 typedef struct Ir2Context{
@@ -148,9 +149,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     AVFrame * const p    = &s->picture;
     int start, ret;
 
-    p->reference = 3;
-    p->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, p)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, p)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
@@ -203,7 +202,9 @@ static int ir2_decode_frame(AVCodecContext *avctx,
             return ret;
     }
 
-    *picture   = s->picture;
+    if ((ret = av_frame_ref(picture, &s->picture)) < 0)
+        return ret;
+
     *got_frame = 1;
 
     return buf_size;
@@ -239,8 +240,7 @@ static av_cold int ir2_decode_end(AVCodecContext *avctx)
     Ir2Context * const ic = avctx->priv_data;
     AVFrame *pic = &ic->picture;
 
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
+    av_frame_unref(pic);
 
     return 0;
 }

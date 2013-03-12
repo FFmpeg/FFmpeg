@@ -27,9 +27,6 @@
 
 static av_cold int xbm_decode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -48,7 +45,7 @@ static int convert(uint8_t x)
 static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *p = avctx->coded_frame;
+    AVFrame *p = data;
     const uint8_t *end, *ptr = avpkt->data;
     uint8_t *dst;
     int ret, linesize, i, j;
@@ -78,11 +75,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
 
     avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference = 0;
-    if ((ret = ff_get_buffer(avctx, p)) < 0)
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     // goto start of image data
@@ -112,17 +105,12 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     p->pict_type = AV_PICTURE_TYPE_I;
 
     *got_frame       = 1;
-    *(AVFrame *)data = *p;
 
     return avpkt->size;
 }
 
 static av_cold int xbm_decode_close(AVCodecContext *avctx)
 {
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-
-    av_freep(&avctx->coded_frame);
 
     return 0;
 }

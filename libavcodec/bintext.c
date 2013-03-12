@@ -33,9 +33,10 @@
 #include "avcodec.h"
 #include "cga_data.h"
 #include "bintext.h"
+#include "internal.h"
 
 typedef struct XbinContext {
-    AVFrame frame;
+    AVFrame *frame;
     int palette[16];
     int flags;
     int font_height;
@@ -91,6 +92,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -101,10 +106,10 @@ av_unused static void hscroll(AVCodecContext *avctx)
     if (s->y < avctx->height - s->font_height) {
         s->y += s->font_height;
     } else {
-        memmove(s->frame.data[0], s->frame.data[0] + s->font_height*s->frame.linesize[0],
-            (avctx->height - s->font_height)*s->frame.linesize[0]);
-        memset(s->frame.data[0] + (avctx->height - s->font_height)*s->frame.linesize[0],
-            DEFAULT_BG_COLOR, s->font_height * s->frame.linesize[0]);
+        memmove(s->frame->data[0], s->frame->data[0] + s->font_height*s->frame->linesize[0],
+            (avctx->height - s->font_height)*s->frame->linesize[0]);
+        memset(s->frame->data[0] + (avctx->height - s->font_height)*s->frame->linesize[0],
+            DEFAULT_BG_COLOR, s->font_height * s->frame->linesize[0]);
     }
 }
 
@@ -118,8 +123,8 @@ static void draw_char(AVCodecContext *avctx, int c, int a)
     XbinContext *s = avctx->priv_data;
     if (s->y > avctx->height - s->font_height)
         return;
-    ff_draw_pc_font(s->frame.data[0] + s->y * s->frame.linesize[0] + s->x,
-                    s->frame.linesize[0], s->font, s->font_height, c,
+    ff_draw_pc_font(s->frame->data[0] + s->y * s->frame->linesize[0] + s->x,
+                    s->frame->linesize[0], s->font, s->font_height, c,
                     a & 0x0F, a >> 4);
     s->x += FONT_WIDTH;
     if (s->x > avctx->width - FONT_WIDTH) {
@@ -136,18 +141,16 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
+    int ret;
 
     s->x = s->y = 0;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
-                            FF_BUFFER_HINTS_PRESERVE |
-                            FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame)) {
+    if (ff_reget_buffer(avctx, s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    s->frame.pict_type           = AV_PICTURE_TYPE_I;
-    s->frame.palette_has_changed = 1;
-    memcpy(s->frame.data[1], s->palette, 16 * 4);
+    s->frame->pict_type           = AV_PICTURE_TYPE_I;
+    s->frame->palette_has_changed = 1;
+    memcpy(s->frame->data[1], s->palette, 16 * 4);
 
     if (avctx->codec_id == AV_CODEC_ID_XBIN) {
         while (buf + 2 < buf_end) {
@@ -201,8 +204,9 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
+        return ret;
     *got_frame      = 1;
-    *(AVFrame*)data = s->frame;
     return buf_size;
 }
 
@@ -210,8 +214,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     XbinContext *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_free(&s->frame);
 
     return 0;
 }

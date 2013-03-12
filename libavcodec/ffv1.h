@@ -89,8 +89,9 @@ typedef struct FFV1Context {
     int transparency;
     int flags;
     int picture_number;
-    AVFrame picture;
-    AVFrame last_picture;
+    AVFrame picture, last_picture;
+
+    AVFrame *cur;
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
     int ac_byte_count;                   ///< number of bytes used for AC coding

@@ -365,7 +365,8 @@ uint64_t time= rdtsc();
     if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay==0 && s->next_picture_ptr) {
-            *pict = s->next_picture_ptr->f;
+            if ((ret = av_frame_ref(pict, &s->next_picture_ptr->f)) < 0)
+                return ret;
             s->next_picture_ptr= NULL;
 
             *got_frame = 1;
@@ -746,14 +747,17 @@ intrax8_decoded:
     assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
     assert(s->current_picture.f.pict_type == s->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-        *pict = s->current_picture_ptr->f;
+        if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+            return ret;
+        ff_print_debug_info(s, s->current_picture_ptr);
     } else if (s->last_picture_ptr != NULL) {
-        *pict = s->last_picture_ptr->f;
+        if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
+            return ret;
+        ff_print_debug_info(s, s->last_picture_ptr);
     }
 
     if(s->last_picture_ptr || s->low_delay){
         *got_frame = 1;
-        ff_print_debug_info(s, pict);
     }
 
 #ifdef PRINT_FRAME_TIME

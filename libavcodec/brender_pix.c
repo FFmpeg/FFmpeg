@@ -30,24 +30,10 @@
 #include "bytestream.h"
 #include "internal.h"
 
-typedef struct BRPixContext {
-    AVFrame frame;
-} BRPixContext;
-
 typedef struct BRPixHeader {
     int format;
     unsigned int width, height;
 } BRPixHeader;
-
-static av_cold int brpix_init(AVCodecContext *avctx)
-{
-    BRPixContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
-    return 0;
-}
 
 static int brpix_decode_header(BRPixHeader *out, GetByteContext *pgb)
 {
@@ -73,8 +59,7 @@ static int brpix_decode_frame(AVCodecContext *avctx,
                               void *data, int *got_frame,
                               AVPacket *avpkt)
 {
-    BRPixContext *s = avctx->priv_data;
-    AVFrame *frame_out = data;
+    AVFrame *frame = data;
 
     int ret;
     GetByteContext gb;
@@ -143,16 +128,13 @@ static int brpix_decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
     if (av_image_check_size(hdr.width, hdr.height, 0, avctx) < 0)
         return AVERROR_INVALIDDATA;
 
     if (hdr.width != avctx->width || hdr.height != avctx->height)
         avcodec_set_dimensions(avctx, hdr.width, hdr.height);
 
-    if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -162,7 +144,7 @@ static int brpix_decode_frame(AVCodecContext *avctx,
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
         (chunk_type == 0x3 || chunk_type == 0x3d)) {
         BRPixHeader palhdr;
-        uint32_t *pal_out = (uint32_t *)s->frame.data[1];
+        uint32_t *pal_out = (uint32_t *)frame->data[1];
         int i;
 
         ret = brpix_decode_header(&palhdr, &gb);
@@ -190,17 +172,17 @@ static int brpix_decode_frame(AVCodecContext *avctx,
         }
         bytestream2_skip(&gb, 8);
 
-        s->frame.palette_has_changed = 1;
+        frame->palette_has_changed = 1;
 
         chunk_type = bytestream2_get_be32(&gb);
     } else if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        uint32_t *pal_out = (uint32_t *)s->frame.data[1];
+        uint32_t *pal_out = (uint32_t *)frame->data[1];
         int i;
 
         for (i = 0; i < 256; ++i) {
             *pal_out++ = (0xFFU << 24) | (i * 0x010101);
         }
-        s->frame.palette_has_changed = 1;
+        frame->palette_has_changed = 1;
     }
 
     data_len = bytestream2_get_be32(&gb);
@@ -218,35 +200,21 @@ static int brpix_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        av_image_copy_plane(s->frame.data[0], s->frame.linesize[0],
+        av_image_copy_plane(frame->data[0], frame->linesize[0],
                             avpkt->data + bytestream2_tell(&gb),
                             bytes_per_scanline,
                             bytes_per_scanline, hdr.height);
     }
 
-    *frame_out = s->frame;
     *got_frame = 1;
 
     return avpkt->size;
-}
-
-static av_cold int brpix_end(AVCodecContext *avctx)
-{
-    BRPixContext *s = avctx->priv_data;
-
-    if(s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    return 0;
 }
 
 AVCodec ff_brender_pix_decoder = {
     .name           = "brender_pix",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_BRENDER_PIX,
-    .priv_data_size = sizeof(BRPixContext),
-    .init           = brpix_init,
-    .close          = brpix_end,
     .decode         = brpix_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("BRender PIX image"),

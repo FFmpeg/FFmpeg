@@ -43,8 +43,8 @@
 
 typedef struct TiffContext {
     AVCodecContext *avctx;
-    AVFrame picture;
     GetByteContext gb;
+    AVFrame picture;
 
     int width, height;
     unsigned int bpp, bppcount;
@@ -597,7 +597,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     return 0;
 }
 
-static int init_image(TiffContext *s)
+static int init_image(TiffContext *s, AVFrame *frame)
 {
     int i, ret;
     uint32_t *pal;
@@ -642,18 +642,16 @@ static int init_image(TiffContext *s)
             return ret;
         avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
-    if (s->picture.data[0])
-        s->avctx->release_buffer(s->avctx, &s->picture);
-    if ((ret = ff_get_buffer(s->avctx, &s->picture)) < 0) {
+    if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (s->palette_is_set) {
-            memcpy(s->picture.data[1], s->palette, sizeof(s->palette));
+            memcpy(frame->data[1], s->palette, sizeof(s->palette));
         } else {
             /* make default grayscale pal */
-            pal = (uint32_t *) s->picture.data[1];
+            pal = (uint32_t *) frame->data[1];
             for (i = 0; i < 1<<s->bpp; i++)
                 pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
@@ -1041,8 +1039,7 @@ static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame, AVPacket *avpkt)
 {
     TiffContext *const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame *const p = &s->picture;
+    AVFrame *const p = data;
     unsigned off;
     int id, le, ret;
     int i, j, entries;
@@ -1075,7 +1072,7 @@ static int decode_frame(AVCodecContext *avctx,
     free_geotags(s);
     /* metadata has been destroyed from lavc internals, that pointer is not
      * valid anymore */
-    av_frame_set_metadata(&s->picture, NULL);
+    av_frame_set_metadata(p, NULL);
 
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
@@ -1123,7 +1120,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
     /* now we have the data and may start decoding */
-    if ((ret = init_image(s)) < 0)
+    if ((ret = init_image(s, p)) < 0)
         return ret;
 
     if (s->strips == 1 && !s->stripsize) {
@@ -1197,14 +1194,13 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (s->invert) {
-        dst = s->picture.data[0];
+        dst = p->data[0];
         for (i = 0; i < s->height; i++) {
-            for (j = 0; j < s->picture.linesize[0]; j++)
+            for (j = 0; j < p->linesize[0]; j++)
                 dst[j] = (s->avctx->pix_fmt == AV_PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - dst[j];
-            dst += s->picture.linesize[0];
+            dst += p->linesize[0];
         }
     }
-    *picture   = s->picture;
     *got_frame = 1;
 
     return avpkt->size;
@@ -1217,8 +1213,6 @@ static av_cold int tiff_init(AVCodecContext *avctx)
     s->width = 0;
     s->height = 0;
     s->avctx = avctx;
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();
 
@@ -1233,8 +1227,6 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 
     ff_lzw_decode_close(&s->lzw);
     av_freep(&s->deinvert_buf);
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
     return 0;
 }
 

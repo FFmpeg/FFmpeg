@@ -52,10 +52,10 @@ static void vdpau_h264_set_rf(VdpReferenceFrameH264 *rf, Picture *pic,
     VdpVideoSurface surface = ff_vdpau_get_surface_id(pic);
 
     if (pic_structure == 0)
-        pic_structure = pic->f.reference;
+        pic_structure = pic->reference;
 
     rf->surface             = surface;
-    rf->is_long_term        = pic->f.reference && pic->long_ref;
+    rf->is_long_term        = pic->reference && pic->long_ref;
     rf->top_is_reference    = (pic_structure & PICT_TOP_FIELD)    != 0;
     rf->bottom_is_reference = (pic_structure & PICT_BOTTOM_FIELD) != 0;
     rf->field_order_cnt[0]  = h264_foc(pic->field_poc[0]);
@@ -83,7 +83,7 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
             VdpVideoSurface surface_ref;
             int pic_frame_idx;
 
-            if (!pic || !pic->f.reference)
+            if (!pic || !pic->reference)
                 continue;
             pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
             surface_ref = ff_vdpau_get_surface_id(pic);
@@ -97,15 +97,15 @@ static void vdpau_h264_set_reference_frames(AVCodecContext *avctx)
                 ++rf2;
             }
             if (rf2 != rf) {
-                rf2->top_is_reference    |= (pic->f.reference & PICT_TOP_FIELD)    ? VDP_TRUE : VDP_FALSE;
-                rf2->bottom_is_reference |= (pic->f.reference & PICT_BOTTOM_FIELD) ? VDP_TRUE : VDP_FALSE;
+                rf2->top_is_reference    |= (pic->reference & PICT_TOP_FIELD)    ? VDP_TRUE : VDP_FALSE;
+                rf2->bottom_is_reference |= (pic->reference & PICT_BOTTOM_FIELD) ? VDP_TRUE : VDP_FALSE;
                 continue;
             }
 
             if (rf >= &info->referenceFrames[H264_RF_COUNT])
                 continue;
 
-            vdpau_h264_set_rf(rf, pic, pic->f.reference);
+            vdpau_h264_set_rf(rf, pic, pic->reference);
             ++rf;
         }
     }

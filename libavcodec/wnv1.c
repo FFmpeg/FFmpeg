@@ -32,7 +32,6 @@
 
 typedef struct WNV1Context {
     AVCodecContext *avctx;
-    AVFrame pic;
 
     int shift;
     GetBitContext gb;
@@ -65,7 +64,7 @@ static int decode_frame(AVCodecContext *avctx,
     WNV1Context * const l = avctx->priv_data;
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
-    AVFrame * const p     = &l->pic;
+    AVFrame * const p     = data;
     unsigned char *Y,*U,*V;
     int i, j, ret;
     int prev_y = 0, prev_u = 0, prev_v = 0;
@@ -82,11 +81,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     }
 
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference = 0;
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         av_free(rbuf);
         return ret;
@@ -130,7 +125,6 @@ static int decode_frame(AVCodecContext *avctx,
 
 
     *got_frame      = 1;
-    *(AVFrame*)data = l->pic;
     av_free(rbuf);
 
     return buf_size;
@@ -143,7 +137,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     l->avctx       = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV422P;
-    avcodec_get_frame_defaults(&l->pic);
 
     code_vlc.table           = code_table;
     code_vlc.table_allocated = 1 << CODE_VLC_BITS;
@@ -154,24 +147,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    WNV1Context * const l = avctx->priv_data;
-    AVFrame *pic = &l->pic;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
-    return 0;
-}
-
 AVCodec ff_wnv1_decoder = {
     .name           = "wnv1",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WNV1,
     .priv_data_size = sizeof(WNV1Context),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Winnov WNV1"),

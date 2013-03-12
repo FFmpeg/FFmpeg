@@ -53,7 +53,7 @@ typedef struct {
 
 typedef struct {
     ProresDSPContext dsp;
-    AVFrame    picture;
+    AVFrame    *frame;
     ScanTable  scantable;
     int        scantable_type;           ///< -1 = uninitialized, 0 = progressive, 1/2 = interlaced
 
@@ -87,11 +87,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = PRORES_BITS_PER_SAMPLE;
     ff_proresdsp_init(&ctx->dsp, avctx);
-
-    avctx->coded_frame = &ctx->picture;
-    avcodec_get_frame_defaults(&ctx->picture);
-    ctx->picture.type      = AV_PICTURE_TYPE_I;
-    ctx->picture.key_frame = 1;
 
     ctx->scantable_type = -1;   // set scantable type to uninitialized
     memset(ctx->qmat_luma, 4, 64);
@@ -163,10 +158,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (ctx->frame_type) {      /* if interlaced */
-        ctx->picture.interlaced_frame = 1;
-        ctx->picture.top_field_first  = ctx->frame_type & 1;
+        ctx->frame->interlaced_frame = 1;
+        ctx->frame->top_field_first  = ctx->frame_type & 1;
     } else {
-        ctx->picture.interlaced_frame = 0;
+        ctx->frame->interlaced_frame = 0;
     }
 
     avctx->color_primaries = buf[14];
@@ -247,8 +242,8 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     ctx->num_x_mbs = (avctx->width + 15) >> 4;
     ctx->num_y_mbs = (avctx->height +
-                      (1 << (4 + ctx->picture.interlaced_frame)) - 1) >>
-                     (4 + ctx->picture.interlaced_frame);
+                      (1 << (4 + ctx->frame->interlaced_frame)) - 1) >>
+                     (4 + ctx->frame->interlaced_frame);
 
     remainder    = ctx->num_x_mbs & ((1 << slice_width_factor) - 1);
     num_x_slices = (ctx->num_x_mbs >> slice_width_factor) + (remainder & 1) +
@@ -482,7 +477,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     int mbs_per_slice = td->slice_width;
     const uint8_t *buf;
     uint8_t *y_data, *u_data, *v_data;
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic = ctx->frame;
     int i, sf, slice_width_factor;
     int slice_data_size, hdr_size, y_data_size, u_data_size, v_data_size;
     int y_linesize, u_linesize, v_linesize;
@@ -606,10 +601,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     ProresContext *ctx = avctx->priv_data;
-    AVFrame *picture   = avctx->coded_frame;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int frame_hdr_size, pic_num, pic_data_size;
+
+    ctx->frame            = data;
+    ctx->frame->pict_type = AV_PICTURE_TYPE_I;
+    ctx->frame->key_frame = 1;
 
     /* check frame atom container */
     if (buf_size < 28 || buf_size < AV_RB32(buf) ||
@@ -626,14 +624,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     MOVE_DATA_PTR(frame_hdr_size);
 
-    if (picture->data[0])
-        avctx->release_buffer(avctx, picture);
-
-    picture->reference = 0;
-    if (ff_get_buffer(avctx, picture) < 0)
+    if (ff_get_buffer(avctx, ctx->frame, 0) < 0)
         return -1;
 
-    for (pic_num = 0; ctx->picture.interlaced_frame - pic_num + 1; pic_num++) {
+    for (pic_num = 0; ctx->frame->interlaced_frame - pic_num + 1; pic_num++) {
         pic_data_size = decode_picture_header(ctx, buf, buf_size, avctx);
         if (pic_data_size < 0)
             return AVERROR_INVALIDDATA;
@@ -644,8 +638,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         MOVE_DATA_PTR(pic_data_size);
     }
 
-    *got_frame       = 1;
-    *(AVFrame*) data = *avctx->coded_frame;
+    ctx->frame = NULL;
+    *got_frame = 1;
 
     return avpkt->size;
 }
@@ -654,9 +648,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     ProresContext *ctx = avctx->priv_data;
-
-    if (ctx->picture.data[0])
-        avctx->release_buffer(avctx, &ctx->picture);
 
     av_freep(&ctx->slice_data);
 

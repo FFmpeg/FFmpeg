@@ -643,8 +643,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->pic_conf.tile_height   = avctx->height;
     ctx->pic_conf.luma_bands    = ctx->pic_conf.chroma_bands = 1;
 
-    avcodec_get_frame_defaults(&ctx->frame);
-
     result = ff_ivi_init_planes(ctx->planes, &ctx->pic_conf);
     if (result) {
         av_log(avctx, AV_LOG_ERROR, "Couldn't allocate color planes!\n");

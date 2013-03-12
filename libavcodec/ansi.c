@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/frame.h"
 #include "libavutil/lfg.h"
 #include "libavutil/xga_font_data.h"
 #include "avcodec.h"
@@ -50,7 +51,7 @@ static const uint8_t ansi_to_cga[16] = {
 };
 
 typedef struct {
-    AVFrame frame;
+    AVFrame *frame;
     int x;                /**< x cursor position (pixels) */
     int y;                /**< y cursor position (pixels) */
     int sx;               /**< saved x cursor position (pixels) */
@@ -79,13 +80,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
     AnsiContext *s = avctx->priv_data;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
+
     /* defaults */
     s->font        = avpriv_vga16_font;
     s->font_height = 16;
     s->fg          = DEFAULT_FG_COLOR;
     s->bg          = DEFAULT_BG_COLOR;
 
-    avcodec_get_frame_defaults(&s->frame);
     if (!avctx->width || !avctx->height)
         avcodec_set_dimensions(avctx, 80<<3, 25<<4);
 
@@ -119,11 +123,11 @@ static void hscroll(AVCodecContext *avctx)
 
     i = 0;
     for (; i < avctx->height - s->font_height; i++)
-        memcpy(s->frame.data[0] + i * s->frame.linesize[0],
-               s->frame.data[0] + (i + s->font_height) * s->frame.linesize[0],
+        memcpy(s->frame->data[0] + i * s->frame->linesize[0],
+               s->frame->data[0] + (i + s->font_height) * s->frame->linesize[0],
                avctx->width);
     for (; i < avctx->height; i++)
-        memset(s->frame.data[0] + i * s->frame.linesize[0],
+        memset(s->frame->data[0] + i * s->frame->linesize[0],
             DEFAULT_BG_COLOR, avctx->width);
 }
 
@@ -132,7 +136,7 @@ static void erase_line(AVCodecContext * avctx, int xoffset, int xlength)
     AnsiContext *s = avctx->priv_data;
     int i;
     for (i = 0; i < s->font_height; i++)
-        memset(s->frame.data[0] + (s->y + i)*s->frame.linesize[0] + xoffset,
+        memset(s->frame->data[0] + (s->y + i)*s->frame->linesize[0] + xoffset,
             DEFAULT_BG_COLOR, xlength);
 }
 
@@ -141,7 +145,7 @@ static void erase_screen(AVCodecContext *avctx)
     AnsiContext *s = avctx->priv_data;
     int i;
     for (i = 0; i < avctx->height; i++)
-        memset(s->frame.data[0] + i * s->frame.linesize[0], DEFAULT_BG_COLOR, avctx->width);
+        memset(s->frame->data[0] + i * s->frame->linesize[0], DEFAULT_BG_COLOR, avctx->width);
     s->x = s->y = 0;
 }
 
@@ -162,8 +166,8 @@ static void draw_char(AVCodecContext *avctx, int c)
         FFSWAP(int, fg, bg);
     if ((s->attributes & ATTR_CONCEALED))
         fg = bg;
-    ff_draw_pc_font(s->frame.data[0] + s->y * s->frame.linesize[0] + s->x,
-                    s->frame.linesize[0], s->font, s->font_height, c, fg, bg);
+    ff_draw_pc_font(s->frame->data[0] + s->y * s->frame->linesize[0] + s->x,
+                    s->frame->linesize[0], s->font, s->font_height, c, fg, bg);
     s->x += FONT_WIDTH;
     if (s->x >= avctx->width) {
         s->x = 0;
@@ -240,17 +244,16 @@ static int execute_code(AVCodecContext * avctx, int c)
             av_log_ask_for_sample(avctx, "unsupported screen mode\n");
         }
         if (width != avctx->width || height != avctx->height) {
-            if (s->frame.data[0])
-                avctx->release_buffer(avctx, &s->frame);
+            av_frame_unref(s->frame);
             avcodec_set_dimensions(avctx, width, height);
-            ret = ff_get_buffer(avctx, &s->frame);
+            ret = ff_get_buffer(avctx, s->frame, AV_GET_BUFFER_FLAG_REF);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return ret;
             }
-            s->frame.pict_type           = AV_PICTURE_TYPE_I;
-            s->frame.palette_has_changed = 1;
-            set_palette((uint32_t *)s->frame.data[1]);
+            s->frame->pict_type           = AV_PICTURE_TYPE_I;
+            s->frame->palette_has_changed = 1;
+            set_palette((uint32_t *)s->frame->data[1]);
             erase_screen(avctx);
         } else if (c == 'l') {
             erase_screen(avctx);
@@ -261,13 +264,13 @@ static int execute_code(AVCodecContext * avctx, int c)
         case 0:
             erase_line(avctx, s->x, avctx->width - s->x);
             if (s->y < avctx->height - s->font_height)
-                memset(s->frame.data[0] + (s->y + s->font_height)*s->frame.linesize[0],
-                    DEFAULT_BG_COLOR, (avctx->height - s->y - s->font_height)*s->frame.linesize[0]);
+                memset(s->frame->data[0] + (s->y + s->font_height)*s->frame->linesize[0],
+                    DEFAULT_BG_COLOR, (avctx->height - s->y - s->font_height)*s->frame->linesize[0]);
             break;
         case 1:
             erase_line(avctx, 0, s->x);
             if (s->y > 0)
-                memset(s->frame.data[0], DEFAULT_BG_COLOR, s->y * s->frame.linesize[0]);
+                memset(s->frame->data[0], DEFAULT_BG_COLOR, s->y * s->frame->linesize[0]);
             break;
         case 2:
             erase_screen(avctx);
@@ -348,20 +351,20 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end   = buf+buf_size;
     int ret, i, count;
 
-    ret = avctx->reget_buffer(avctx, &s->frame);
+    ret = ff_reget_buffer(avctx, s->frame);
     if (ret < 0){
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
     if (!avctx->frame_number) {
         for (i=0; i<avctx->height; i++)
-            memset(s->frame.data[0]+ i*s->frame.linesize[0], 0, avctx->width);
-        memset(s->frame.data[1], 0, AVPALETTE_SIZE);
+            memset(s->frame->data[0]+ i*s->frame->linesize[0], 0, avctx->width);
+        memset(s->frame->data[1], 0, AVPALETTE_SIZE);
     }
 
-    s->frame.pict_type           = AV_PICTURE_TYPE_I;
-    s->frame.palette_has_changed = 1;
-    set_palette((uint32_t *)s->frame.data[1]);
+    s->frame->pict_type           = AV_PICTURE_TYPE_I;
+    s->frame->palette_has_changed = 1;
+    set_palette((uint32_t *)s->frame->data[1]);
     if (!s->first_frame) {
         erase_screen(avctx);
         s->first_frame = 1;
@@ -449,15 +452,16 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *got_frame = 1;
-    *(AVFrame*)data = s->frame;
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
+        return ret;
     return buf_size;
 }
 
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     AnsiContext *s = avctx->priv_data;
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+
+    av_frame_free(&s->frame);
     return 0;
 }
 

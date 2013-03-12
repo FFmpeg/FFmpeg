@@ -47,7 +47,7 @@
 typedef struct TsccContext {
 
     AVCodecContext *avctx;
-    AVFrame pic;
+    AVFrame *frame;
 
     // Bits per pixel
     int bpp;
@@ -69,13 +69,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size = avpkt->size;
     CamtasiaContext * const c = avctx->priv_data;
     const unsigned char *encoded = buf;
+    AVFrame *frame = c->frame;
     int zret; // Zlib return code
     int ret, len = buf_size;
 
-    c->pic.reference = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
-    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
     }
 
@@ -99,7 +98,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (zret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
                          c->decomp_size - c->zstream.avail_out);
-        ff_msrle_decode(avctx, (AVPicture*)&c->pic, c->bpp, &c->gb);
+        ff_msrle_decode(avctx, (AVPicture*)frame, c->bpp, &c->gb);
     }
 
     /* make the palette available on the way out */
@@ -107,14 +106,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
         if (pal) {
-            c->pic.palette_has_changed = 1;
+            frame->palette_has_changed = 1;
             memcpy(c->pal, pal, AVPALETTE_SIZE);
         }
-        memcpy(c->pic.data[1], c->pal, AVPALETTE_SIZE);
+        memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
 
+    if ((ret = av_frame_ref(data, frame)) < 0)
+        return ret;
     *got_frame      = 1;
-    *(AVFrame*)data = c->pic;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -129,7 +129,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->height = avctx->height;
 
-    avcodec_get_frame_defaults(&c->pic);
     // Needed if zlib unused or init aborted before inflateInit
     memset(&c->zstream, 0, sizeof(z_stream));
     switch(avctx->bits_per_coded_sample){
@@ -163,6 +162,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
+    c->frame = av_frame_alloc();
+
     return 0;
 }
 
@@ -171,9 +172,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     CamtasiaContext * const c = avctx->priv_data;
 
     av_freep(&c->decomp_buf);
+    av_frame_free(&c->frame);
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
     inflateEnd(&c->zstream);
 
     return 0;

@@ -27,8 +27,10 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct MvcContext {
+    AVFrame *frame;
     int vflip;
 } MvcContext;
 
@@ -48,8 +50,8 @@ static av_cold int mvc_decode_init(AVCodecContext *avctx)
         avcodec_set_dimensions(avctx, width, height);
 
     avctx->pix_fmt = (avctx->codec_id == AV_CODEC_ID_MVC1) ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_BGRA;
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
+    s->frame = av_frame_alloc();
+    if (!s->frame)
         return AVERROR(ENOMEM);
 
     s->vflip = avctx->extradata_size >= 9 && !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9);
@@ -228,10 +230,7 @@ static int mvc_decode_frame(AVCodecContext *avctx,
     GetByteContext gb;
     int ret;
 
-    avctx->coded_frame->reference = 3;
-    avctx->coded_frame->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                            FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
-    ret = avctx->reget_buffer(avctx, avctx->coded_frame);
+    ret = ff_reget_buffer(avctx, s->frame);
     if (ret < 0) {
         av_log (avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return AVERROR(ENOMEM);
@@ -239,22 +238,25 @@ static int mvc_decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     if (avctx->codec_id == AV_CODEC_ID_MVC1)
-        ret = decode_mvc1(avctx, &gb, avctx->coded_frame->data[0], avctx->width, avctx->height, avctx->coded_frame->linesize[0]);
+        ret = decode_mvc1(avctx, &gb, s->frame->data[0], avctx->width, avctx->height, s->frame->linesize[0]);
     else
-        ret = decode_mvc2(avctx, &gb, avctx->coded_frame->data[0], avctx->width, avctx->height, avctx->coded_frame->linesize[0], s->vflip);
+        ret = decode_mvc2(avctx, &gb, s->frame->data[0], avctx->width, avctx->height, s->frame->linesize[0], s->vflip);
     if (ret < 0)
         return ret;
 
-    *got_frame      = 1;
-    *(AVFrame*)data = *avctx->coded_frame;
+    *got_frame = 1;
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
+        return ret;
+
     return avpkt->size;
 }
 
 static av_cold int mvc_decode_end(AVCodecContext *avctx)
 {
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-    av_freep(&avctx->coded_frame);
+    MvcContext *s = avctx->priv_data;
+
+    av_frame_free(&s->frame);
+
     return 0;
 }
 

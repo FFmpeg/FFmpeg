@@ -28,6 +28,7 @@
 #include "libavutil/lzo.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "rtjpeg.h"
 
 typedef struct {
@@ -240,14 +241,12 @@ retry:
         buf_size -= RTJPEG_HEADER_SIZE;
     }
 
-    if ((size_change || keyframe) && c->pic.data[0]) {
-        avctx->release_buffer(avctx, &c->pic);
+    if (size_change || keyframe) {
+        av_frame_unref(&c->pic);
         init_frame = 1;
     }
-    c->pic.reference    = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID    | FF_BUFFER_HINTS_READABLE |
-                          FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    result = avctx->reget_buffer(avctx, &c->pic);
+
+    result = ff_reget_buffer(avctx, &c->pic);
     if (result < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return result;
@@ -290,7 +289,9 @@ retry:
         return AVERROR_INVALIDDATA;
     }
 
-    *picture   = c->pic;
+    if ((result = av_frame_ref(picture, &c->pic)) < 0)
+        return result;
+
     *got_frame = 1;
     return orig_size;
 }
@@ -325,8 +326,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     NuvContext *c = avctx->priv_data;
 
     av_freep(&c->decomp_buf);
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_unref(&c->pic);
 
     return 0;
 }

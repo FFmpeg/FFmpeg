@@ -40,10 +40,10 @@ static int vp5_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
     int rows, cols;
 
     ff_vp56_init_range_decoder(&s->c, buf, buf_size);
-    s->framep[VP56_FRAME_CURRENT]->key_frame = !vp56_rac_get(c);
+    s->frames[VP56_FRAME_CURRENT]->key_frame = !vp56_rac_get(c);
     vp56_rac_get(c);
     ff_vp56_init_dequant(s, vp56_rac_gets(c, 6));
-    if (s->framep[VP56_FRAME_CURRENT]->key_frame)
+    if (s->frames[VP56_FRAME_CURRENT]->key_frame)
     {
         vp56_rac_gets(c, 8);
         if(vp56_rac_gets(c, 5) > 5)
@@ -137,7 +137,7 @@ static int vp5_parse_coeff_models(VP56Context *s)
             if (vp56_rac_get_prob(c, vp5_dccv_pct[pt][node])) {
                 def_prob[node] = vp56_rac_gets_nn(c, 7);
                 model->coeff_dccv[pt][node] = def_prob[node];
-            } else if (s->framep[VP56_FRAME_CURRENT]->key_frame) {
+            } else if (s->frames[VP56_FRAME_CURRENT]->key_frame) {
                 model->coeff_dccv[pt][node] = def_prob[node];
             }
 
@@ -148,7 +148,7 @@ static int vp5_parse_coeff_models(VP56Context *s)
                     if (vp56_rac_get_prob(c, vp5_ract_pct[ct][pt][cg][node])) {
                         def_prob[node] = vp56_rac_gets_nn(c, 7);
                         model->coeff_ract[pt][ct][cg][node] = def_prob[node];
-                    } else if (s->framep[VP56_FRAME_CURRENT]->key_frame) {
+                    } else if (s->frames[VP56_FRAME_CURRENT]->key_frame) {
                         model->coeff_ract[pt][ct][cg][node] = def_prob[node];
                     }
 
@@ -263,8 +263,10 @@ static void vp5_default_models_init(VP56Context *s)
 static av_cold int vp5_decode_init(AVCodecContext *avctx)
 {
     VP56Context *s = avctx->priv_data;
+    int ret;
 
-    ff_vp56_init(avctx, 1, 0);
+    if ((ret = ff_vp56_init(avctx, 1, 0)) < 0)
+        return ret;
     s->vp56_coord_div = vp5_coord_div;
     s->parse_vector_adjustment = vp5_parse_vector_adjustment;
     s->parse_coeff = vp5_parse_coeff;

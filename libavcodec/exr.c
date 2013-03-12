@@ -70,7 +70,7 @@ typedef struct EXRThreadData {
 } EXRThreadData;
 
 typedef struct EXRContext {
-    AVFrame picture;
+    AVFrame *picture;
     int compr;
     enum ExrPixelType pixel_type;
     int channel_offsets[4]; // 0 = red, 1 = green, 2 = blue and 3 = alpha
@@ -336,7 +336,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
                         int jobnr, int threadnr)
 {
     EXRContext *s = avctx->priv_data;
-    AVFrame *const p = &s->picture;
+    AVFrame *const p = s->picture;
     EXRThreadData *td = &s->thread_data[threadnr];
     const uint8_t *channel_buffer[4] = { 0 };
     const uint8_t *buf = s->buf;
@@ -458,8 +458,8 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end  = buf + buf_size;
 
     EXRContext *const s = avctx->priv_data;
+    ThreadFrame frame = { .f = data };
     AVFrame *picture  = data;
-    AVFrame *const p = &s->picture;
     uint8_t *ptr;
 
     int i, y, magic_number, version, flags, ret;
@@ -718,8 +718,6 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
-    if (s->picture.data[0])
-        ff_thread_release_buffer(avctx, &s->picture);
     if (av_image_check_size(w, h, 0, avctx))
         return AVERROR_INVALIDDATA;
 
@@ -756,7 +754,7 @@ static int decode_frame(AVCodecContext *avctx,
         memset(s->thread_data + prev_size, 0, s->thread_data_size - prev_size);
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -764,45 +762,32 @@ static int decode_frame(AVCodecContext *avctx,
     if (buf_end - buf < scan_line_blocks * 8)
         return AVERROR_INVALIDDATA;
     s->table = buf;
-    ptr = p->data[0];
+    ptr = picture->data[0];
 
     // Zero out the start if ymin is not 0
     for (y = 0; y < s->ymin; y++) {
         memset(ptr, 0, out_line_size);
-        ptr += p->linesize[0];
+        ptr += picture->linesize[0];
     }
 
+    s->picture = picture;
     avctx->execute2(avctx, decode_block, s->thread_data, NULL, scan_line_blocks);
 
     // Zero out the end if ymax+1 is not h
     for (y = s->ymax + 1; y < avctx->height; y++) {
         memset(ptr, 0, out_line_size);
-        ptr += p->linesize[0];
+        ptr += picture->linesize[0];
     }
 
-    *picture   = s->picture;
     *got_frame = 1;
 
     return buf_size;
-}
-
-static av_cold int decode_init(AVCodecContext *avctx)
-{
-    EXRContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-
-    return 0;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     EXRContext *s = avctx->priv_data;
     int i;
-
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
 
     for (i = 0; i < s->thread_data_size / sizeof(EXRThreadData); i++) {
         EXRThreadData *td = &s->thread_data[i];
@@ -822,7 +807,6 @@ AVCodec ff_exr_decoder = {
     .type               = AVMEDIA_TYPE_VIDEO,
     .id                 = AV_CODEC_ID_EXR,
     .priv_data_size     = sizeof(EXRContext),
-    .init               = decode_init,
     .close              = decode_end,
     .decode             = decode_frame,
     .capabilities       = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,

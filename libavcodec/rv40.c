@@ -366,7 +366,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
 
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        int mbtype = s->current_picture_ptr->f.mb_type[mb_pos];
+        int mbtype = s->current_picture_ptr->mb_type[mb_pos];
         if(IS_INTRA(mbtype) || IS_SEPARATE_DC(mbtype))
             r->cbp_luma  [mb_pos] = r->deblock_coefs[mb_pos] = 0xFFFF;
         if(IS_INTRA(mbtype))
@@ -381,7 +381,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
         unsigned y_to_deblock;
         int c_to_deblock[2];
 
-        q = s->current_picture_ptr->f.qscale_table[mb_pos];
+        q = s->current_picture_ptr->qscale_table[mb_pos];
         alpha = rv40_alpha_tab[q];
         beta  = rv40_beta_tab [q];
         betaY = betaC = beta * 3;
@@ -396,7 +396,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
             if(avail[i]){
                 int pos = mb_pos + neighbour_offs_x[i] + neighbour_offs_y[i]*s->mb_stride;
                 mvmasks[i] = r->deblock_coefs[pos];
-                mbtype [i] = s->current_picture_ptr->f.mb_type[pos];
+                mbtype [i] = s->current_picture_ptr->mb_type[pos];
                 cbp    [i] = r->cbp_luma[pos];
                 uvcbp[i][0] = r->cbp_chroma[pos] & 0xF;
                 uvcbp[i][1] = r->cbp_chroma[pos] >> 4;

@@ -197,7 +197,6 @@ typedef struct IVIPicConfig {
 
 typedef struct IVI45DecContext {
     GetBitContext   gb;
-    AVFrame         frame;
     RVMapDesc       rvmap_tabs[9];   ///< local corrected copy of the static rvmap tables
 
     uint32_t        frame_num;

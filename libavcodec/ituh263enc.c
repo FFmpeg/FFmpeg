@@ -271,7 +271,7 @@ void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line)
  */
 void ff_clean_h263_qscales(MpegEncContext *s){
     int i;
-    int8_t * const qscale_table = s->current_picture.f.qscale_table;
+    int8_t * const qscale_table = s->current_picture.qscale_table;
 
     ff_init_qscale_tab(s);
 
@@ -525,8 +525,8 @@ void ff_h263_encode_mb(MpegEncContext * s,
                 /* motion vectors: 8x8 mode*/
                 ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
 
-                motion_x = s->current_picture.f.motion_val[0][s->block_index[i]][0];
-                motion_y = s->current_picture.f.motion_val[0][s->block_index[i]][1];
+                motion_x = s->current_picture.motion_val[0][s->block_index[i]][0];
+                motion_y = s->current_picture.motion_val[0][s->block_index[i]][1];
                 if (!s->umvplus) {
                     ff_h263_encode_motion_vector(s, motion_x - pred_x,
                                                     motion_y - pred_y, 1);

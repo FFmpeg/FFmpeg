@@ -66,9 +66,6 @@ typedef struct SchroDecoderParams {
 
     /** end of sequence pulled */
     int eos_pulled;
-
-    /** decoded picture */
-    AVFrame dec_frame;
 } SchroDecoderParams;
 
 typedef struct SchroParseUnitContext {
@@ -215,6 +212,7 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     SchroDecoder *decoder = p_schro_params->decoder;
     SchroBuffer *enc_buf;
     SchroFrame* frame;
+    AVFrame *avframe = data;
     int state;
     int go = 1;
     int outer = 1;
@@ -308,35 +306,29 @@ static int libschroedinger_decode_frame(AVCodecContext *avctx,
     framewithpts = ff_schro_queue_pop(&p_schro_params->dec_frame_queue);
 
     if (framewithpts && framewithpts->frame) {
-        if (p_schro_params->dec_frame.data[0])
-            avctx->release_buffer(avctx, &p_schro_params->dec_frame);
-        if (ff_get_buffer(avctx, &p_schro_params->dec_frame) < 0) {
+        if (ff_get_buffer(avctx, avframe, 0) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Unable to allocate buffer\n");
             return AVERROR(ENOMEM);
         }
 
-        memcpy(p_schro_params->dec_frame.data[0],
+        memcpy(avframe->data[0],
                framewithpts->frame->components[0].data,
                framewithpts->frame->components[0].length);
 
-        memcpy(p_schro_params->dec_frame.data[1],
+        memcpy(avframe->data[1],
                framewithpts->frame->components[1].data,
                framewithpts->frame->components[1].length);
 
-        memcpy(p_schro_params->dec_frame.data[2],
+        memcpy(avframe->data[2],
                framewithpts->frame->components[2].data,
                framewithpts->frame->components[2].length);
 
         /* Fill frame with current buffer data from Schroedinger. */
-        p_schro_params->dec_frame.format  = -1; /* Unknown -1 */
-        p_schro_params->dec_frame.width   = framewithpts->frame->width;
-        p_schro_params->dec_frame.height  = framewithpts->frame->height;
-        p_schro_params->dec_frame.pkt_pts = framewithpts->pts;
-        p_schro_params->dec_frame.linesize[0] = framewithpts->frame->components[0].stride;
-        p_schro_params->dec_frame.linesize[1] = framewithpts->frame->components[1].stride;
-        p_schro_params->dec_frame.linesize[2] = framewithpts->frame->components[2].stride;
+        avframe->pkt_pts = framewithpts->pts;
+        avframe->linesize[0] = framewithpts->frame->components[0].stride;
+        avframe->linesize[1] = framewithpts->frame->components[1].stride;
+        avframe->linesize[2] = framewithpts->frame->components[2].stride;
 
-        *(AVFrame*)data = p_schro_params->dec_frame;
         *got_frame      = 1;
 
         /* Now free the frame resources. */
@@ -356,9 +348,6 @@ static av_cold int libschroedinger_decode_close(AVCodecContext *avctx)
     /* Free the decoder. */
     schro_decoder_free(p_schro_params->decoder);
     av_freep(&p_schro_params->format);
-
-    if (p_schro_params->dec_frame.data[0])
-        avctx->release_buffer(avctx, &p_schro_params->dec_frame);
 
     /* Free data in the output frame queue. */
     ff_schro_queue_free(&p_schro_params->dec_frame_queue,

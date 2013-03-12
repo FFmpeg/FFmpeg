@@ -37,7 +37,7 @@ typedef struct {
 typedef struct {
     DSPContext dsp;
     ProresDSPContext prodsp;
-    AVFrame frame;
+    AVFrame *frame;
     int frame_type;              ///< 0 = progressive, 1 = tff, 2 = bff
     uint8_t qmat_luma[64];
     uint8_t qmat_chroma[64];

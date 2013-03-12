@@ -268,12 +268,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&a->buffer, avpkt->data, avpkt->size);
 
-    if(ref->data[0])
-        avctx->release_buffer(avctx, ref);
-    FFSWAP(AVFrame, *ref, *p);
+    av_frame_unref(ref);
+    av_frame_move_ref(ref, p);
 
-    p->reference= 3;
-    if ((ret = ff_get_buffer(avctx, p)) < 0) {
+    if ((ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -296,8 +294,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
     memcpy(a->pic.data[1], a->pal, AVPALETTE_SIZE);
 
+    if ((ret = av_frame_ref(data, &a->pic)) < 0)
+        return ret;
+
     *got_frame      = 1;
-    *(AVFrame*)data = a->pic;
 
     return avpkt->size;
 }
@@ -332,10 +332,8 @@ static av_cold int decode_end(AVCodecContext *avctx){
     AVFrame * const p = &a->pic;
     AVFrame * const ref= &a->ref;
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
-    if(ref->data[0])
-        avctx->release_buffer(avctx, ref);
+    av_frame_unref(p);
+    av_frame_unref(ref);
 
     return 0;
 }

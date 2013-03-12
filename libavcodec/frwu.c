@@ -38,10 +38,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
     avctx->pix_fmt = AV_PIX_FMT_UYVY422;
 
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -50,12 +46,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 {
     FRWUContext *s = avctx->priv_data;
     int field, ret;
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic = data;
     const uint8_t *buf = avpkt->data;
     const uint8_t *buf_end = buf + avpkt->size;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
 
     if (avpkt->size < avctx->width * 2 * avctx->height + 4 + 2*8) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small.\n");
@@ -66,8 +59,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    pic->reference = 0;
-    if ((ret = ff_get_buffer(avctx, pic)) < 0) {
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
@@ -108,19 +100,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     *got_frame = 1;
-    *(AVFrame*)data = *pic;
 
     return avpkt->size;
-}
-
-static av_cold int decode_close(AVCodecContext *avctx)
-{
-    AVFrame *pic = avctx->coded_frame;
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-    av_freep(&avctx->coded_frame);
-
-    return 0;
 }
 
 static const AVOption frwu_options[] = {
@@ -142,7 +123,6 @@ AVCodec ff_frwu_decoder = {
     .id             = AV_CODEC_ID_FRWU,
     .priv_data_size = sizeof(FRWUContext),
     .init           = decode_init,
-    .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Forward Uncompressed"),
