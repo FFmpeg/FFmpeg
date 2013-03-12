@@ -10,6 +10,7 @@ version 10:
 - new avconv options -filter_script and -filter_complex_script, which allow a
   filtergraph description to be read from a file
 - uniform options syntax across all filters
+- new interlace filter
 
 
 version 9:

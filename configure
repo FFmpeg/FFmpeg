@@ -1881,6 +1881,7 @@ frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen strtok_r"
 frei0r_src_filter_extralibs='$ldl'
 hqdn3d_filter_deps="gpl"
+interlace_filter_deps="gpl"
 resample_filter_deps="avresample"
 ocv_filter_deps="libopencv"
 scale_filter_deps="swscale"
