@@ -597,33 +597,40 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
     }
 }
 
-void ff_init_buffer_info(AVCodecContext *s, AVFrame *frame)
+void ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
-    if (s->pkt) {
-        frame->pkt_pts = s->pkt->pts;
-        av_frame_set_pkt_pos     (frame, s->pkt->pos);
-        av_frame_set_pkt_duration(frame, s->pkt->duration);
-        av_frame_set_pkt_size    (frame, s->pkt->size);
+    if (avctx->pkt) {
+        frame->pkt_pts = avctx->pkt->pts;
+        av_frame_set_pkt_pos     (frame, avctx->pkt->pos);
+        av_frame_set_pkt_duration(frame, avctx->pkt->duration);
+        av_frame_set_pkt_size    (frame, avctx->pkt->size);
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);
         av_frame_set_pkt_duration(frame, 0);
         av_frame_set_pkt_size    (frame, -1);
     }
-    frame->reordered_opaque = s->reordered_opaque;
+    frame->reordered_opaque = avctx->reordered_opaque;
 
-    switch (s->codec->type) {
+    switch (avctx->codec->type) {
     case AVMEDIA_TYPE_VIDEO:
-        frame->width               = s->width;
-        frame->height              = s->height;
-        frame->format              = s->pix_fmt;
-        frame->sample_aspect_ratio = s->sample_aspect_ratio;
+        if (!frame->width)
+            frame->width               = avctx->width;
+        if (!frame->height)
+            frame->height              = avctx->height;
+        if (frame->format < 0)
+            frame->format              = avctx->pix_fmt;
+        if (!frame->sample_aspect_ratio.num)
+            frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
         break;
     case AVMEDIA_TYPE_AUDIO:
-        frame->sample_rate    = s->sample_rate;
-        frame->format         = s->sample_fmt;
-        frame->channel_layout = s->channel_layout;
-        av_frame_set_channels(frame, s->channels);
+        if (!frame->sample_rate)
+            frame->sample_rate    = avctx->sample_rate;
+        if (frame->format < 0)
+            frame->format         = avctx->sample_fmt;
+        if (!frame->channel_layout)
+            frame->channel_layout = avctx->channel_layout;
+        av_frame_set_channels(frame, avctx->channels);
         break;
     }
 }
