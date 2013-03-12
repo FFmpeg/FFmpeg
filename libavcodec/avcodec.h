@@ -1159,13 +1159,6 @@ typedef struct AVCodecContext {
      */
     unsigned int stream_codec_tag;
 
-#if FF_API_SUB_ID
-    /**
-     * @deprecated this field is unused
-     */
-    attribute_deprecated int sub_id;
-#endif
-
     void *priv_data;
 
     /**
@@ -2543,14 +2536,6 @@ typedef struct AVCodecContext {
 #define FF_IDCT_WMV2          19
 #define FF_IDCT_EA            21
 #define FF_IDCT_BINK          24
-#endif
-
-#if FF_API_DSP_MASK
-    /**
-     * Unused.
-     * @deprecated use av_set_cpu_flags_mask() instead.
-     */
-    attribute_deprecated unsigned dsp_mask;
 #endif
 
     /**
