@@ -573,7 +573,7 @@ static int parse_key_value_pair(void *ctx, const char **buf,
 
     av_log(ctx, AV_LOG_DEBUG, "Setting value '%s' for key '%s'\n", val, key);
 
-    ret = av_opt_set(ctx, key, val, 0);
+    ret = av_opt_set(ctx, key, val, AV_OPT_SEARCH_CHILDREN);
     if (ret == AVERROR_OPTION_NOT_FOUND)
         av_log(ctx, AV_LOG_ERROR, "Key '%s' not found.\n", key);
 
