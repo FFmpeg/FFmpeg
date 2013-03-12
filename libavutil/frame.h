@@ -133,7 +133,10 @@ typedef struct AVFrame {
      */
     enum AVPictureType pict_type;
 
+#if FF_API_AVFRAME_LAVC
+    attribute_deprecated
     uint8_t *base[AV_NUM_DATA_POINTERS];
+#endif
 
     /**
      * Sample aspect ratio for the video frame, 0/1 if unknown/unspecified.
@@ -169,23 +172,29 @@ typedef struct AVFrame {
      */
     int quality;
 
+#if FF_API_AVFRAME_LAVC
+    attribute_deprecated
     int reference;
 
     /**
      * QP table
      */
+    attribute_deprecated
     int8_t *qscale_table;
     /**
      * QP store stride
      */
+    attribute_deprecated
     int qstride;
 
+    attribute_deprecated
     int qscale_type;
 
     /**
      * mbskip_table[mb]>=1 if MB didn't change
      * stride= mb_width = (width+15)>>4
      */
+    attribute_deprecated
     uint8_t *mbskip_table;
 
     /**
@@ -198,24 +207,29 @@ typedef struct AVFrame {
      * motion_val[direction][x + y*mv_stride][0->mv_x, 1->mv_y];
      * @endcode
      */
+    attribute_deprecated
     int16_t (*motion_val[2])[2];
 
     /**
      * macroblock type table
      * mb_type_base + mb_width + 2
      */
+    attribute_deprecated
     uint32_t *mb_type;
 
     /**
      * DCT coefficients
      */
+    attribute_deprecated
     short *dct_coeff;
 
     /**
      * motion reference frame index
      * the order in which these are stored can depend on the codec.
      */
+    attribute_deprecated
     int8_t *ref_index[2];
+#endif
 
     /**
      * for some private data of the user
@@ -227,7 +241,10 @@ typedef struct AVFrame {
      */
     uint64_t error[AV_NUM_DATA_POINTERS];
 
+#if FF_API_AVFRAME_LAVC
+    attribute_deprecated
     int type;
+#endif
 
     /**
      * When decoding, this signals how much the picture must be delayed.
@@ -250,12 +267,16 @@ typedef struct AVFrame {
      */
     int palette_has_changed;
 
+#if FF_API_AVFRAME_LAVC
+    attribute_deprecated
     int buffer_hints;
 
     /**
      * Pan scan.
      */
+    attribute_deprecated
     struct AVPanScan *pan_scan;
+#endif
 
     /**
      * reordered opaque 64bit (generally an integer or a double precision float
@@ -273,16 +294,19 @@ typedef struct AVFrame {
      * @deprecated this field is unused
      */
     attribute_deprecated void *hwaccel_picture_private;
-#endif
 
+    attribute_deprecated
     struct AVCodecContext *owner;
+    attribute_deprecated
     void *thread_opaque;
 
     /**
      * log2 of the size of the block which a single vector in motion_val represents:
      * (4->16x16, 3->8x8, 2-> 4x4, 1-> 2x2)
      */
+    attribute_deprecated
     uint8_t motion_subsample_log2;
+#endif
 
     /**
      * Sample rate of the audio data.
