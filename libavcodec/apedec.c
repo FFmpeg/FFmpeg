@@ -176,6 +176,8 @@ static void entropy_decode_stereo_3900(APEContext *ctx, int blockstodecode);
 static void entropy_decode_mono_3990(APEContext *ctx, int blockstodecode);
 static void entropy_decode_stereo_3990(APEContext *ctx, int blockstodecode);
 
+static void predictor_decode_mono_3930(APEContext *ctx, int count);
+static void predictor_decode_stereo_3930(APEContext *ctx, int count);
 static void predictor_decode_mono_3950(APEContext *ctx, int count);
 static void predictor_decode_stereo_3950(APEContext *ctx, int count);
 
@@ -255,8 +257,13 @@ static av_cold int ape_decode_init(AVCodecContext *avctx)
         s->entropy_decode_stereo = entropy_decode_stereo_3990;
     }
 
-    s->predictor_decode_mono   = predictor_decode_mono_3950;
-    s->predictor_decode_stereo = predictor_decode_stereo_3950;
+    if (s->fileversion < 3950) {
+        s->predictor_decode_mono   = predictor_decode_mono_3930;
+        s->predictor_decode_stereo = predictor_decode_stereo_3930;
+    } else {
+        s->predictor_decode_mono   = predictor_decode_mono_3950;
+        s->predictor_decode_stereo = predictor_decode_stereo_3950;
+    }
 
     ff_dsputil_init(&s->dsp, avctx);
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
@@ -601,6 +608,86 @@ static void init_predictor_decoder(APEContext *ctx)
 /** Get inverse sign of integer (-1 for positive, 1 for negative and 0 for zero) */
 static inline int APESIGN(int32_t x) {
     return (x < 0) - (x > 0);
+}
+
+static av_always_inline int predictor_update_3930(APEPredictor *p,
+                                                  const int decoded, const int filter,
+                                                  const int delayA)
+{
+    int32_t predictionA, sign;
+    int32_t d0, d1, d2, d3;
+
+    p->buf[delayA]     = p->lastA[filter];
+    d0 = p->buf[delayA    ];
+    d1 = p->buf[delayA    ] - p->buf[delayA - 1];
+    d2 = p->buf[delayA - 1] - p->buf[delayA - 2];
+    d3 = p->buf[delayA - 2] - p->buf[delayA - 3];
+
+    predictionA = d0 * p->coeffsA[filter][0] +
+                  d1 * p->coeffsA[filter][1] +
+                  d2 * p->coeffsA[filter][2] +
+                  d3 * p->coeffsA[filter][3];
+
+    p->lastA[filter] = decoded + (predictionA >> 9);
+    p->filterA[filter] = p->lastA[filter] + ((p->filterA[filter] * 31) >> 5);
+
+    sign = APESIGN(decoded);
+    p->coeffsA[filter][0] += ((d0 < 0) * 2 - 1) * sign;
+    p->coeffsA[filter][1] += ((d1 < 0) * 2 - 1) * sign;
+    p->coeffsA[filter][2] += ((d2 < 0) * 2 - 1) * sign;
+    p->coeffsA[filter][3] += ((d3 < 0) * 2 - 1) * sign;
+
+    return p->filterA[filter];
+}
+
+static void predictor_decode_stereo_3930(APEContext *ctx, int count)
+{
+    APEPredictor *p = &ctx->predictor;
+    int32_t *decoded0 = ctx->decoded[0];
+    int32_t *decoded1 = ctx->decoded[1];
+
+    ape_apply_filters(ctx, ctx->decoded[0], ctx->decoded[1], count);
+
+    while (count--) {
+        /* Predictor Y */
+        int Y = *decoded1, X = *decoded0;
+        *decoded0 = predictor_update_3930(p, Y, 0, YDELAYA);
+        decoded0++;
+        *decoded1 = predictor_update_3930(p, X, 1, XDELAYA);
+        decoded1++;
+
+        /* Combined */
+        p->buf++;
+
+        /* Have we filled the history buffer? */
+        if (p->buf == p->historybuffer + HISTORY_SIZE) {
+            memmove(p->historybuffer, p->buf,
+                    PREDICTOR_SIZE * sizeof(*p->historybuffer));
+            p->buf = p->historybuffer;
+        }
+    }
+}
+
+static void predictor_decode_mono_3930(APEContext *ctx, int count)
+{
+    APEPredictor *p = &ctx->predictor;
+    int32_t *decoded0 = ctx->decoded[0];
+
+    ape_apply_filters(ctx, ctx->decoded[0], NULL, count);
+
+    while (count--) {
+        *decoded0 = predictor_update_3930(p, *decoded0, 0, YDELAYA);
+        decoded0++;
+
+        p->buf++;
+
+        /* Have we filled the history buffer? */
+        if (p->buf == p->historybuffer + HISTORY_SIZE) {
+            memmove(p->historybuffer, p->buf,
+                    PREDICTOR_SIZE * sizeof(*p->historybuffer));
+            p->buf = p->historybuffer;
+        }
+    }
 }
 
 static av_always_inline int predictor_update_filter(APEPredictor *p,

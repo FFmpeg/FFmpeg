@@ -28,7 +28,7 @@
 #include "apetag.h"
 
 /* The earliest and latest file formats supported by this library */
-#define APE_MIN_VERSION 3950
+#define APE_MIN_VERSION 3930
 #define APE_MAX_VERSION 3990
 
 #define MAC_FORMAT_FLAG_8_BIT                 1 // is 8-bit [OBSOLETE]
