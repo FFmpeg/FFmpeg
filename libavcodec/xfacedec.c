@@ -92,8 +92,6 @@ typedef struct XFaceContext {
 
 static av_cold int xface_decode_init(AVCodecContext *avctx)
 {
-    XFaceContext *xface = avctx->priv_data;
-
     if (avctx->width || avctx->height) {
         if (avctx->width != XFACE_WIDTH || avctx->height != XFACE_HEIGHT) {
             av_log(avctx, AV_LOG_ERROR,
@@ -106,13 +104,6 @@ static av_cold int xface_decode_init(AVCodecContext *avctx)
     avctx->width   = XFACE_WIDTH;
     avctx->height  = XFACE_HEIGHT;
     avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-
-    return 0;
-}
-
-static av_cold int xface_decode_close(AVCodecContext *avctx)
-{
-    XFaceContext *xface = avctx->priv_data;
 
     return 0;
 }
@@ -191,7 +182,6 @@ AVCodec ff_xface_decoder = {
     .id             = AV_CODEC_ID_XFACE,
     .priv_data_size = sizeof(XFaceContext),
     .init           = xface_decode_init,
-    .close          = xface_decode_close,
     .decode         = xface_decode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("X-face image"),
