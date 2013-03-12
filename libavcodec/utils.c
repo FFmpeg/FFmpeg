@@ -646,8 +646,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
                 }
 
                 frame->channel_layout = av_get_default_channel_layout(avctx->channels);
-                if (!frame->channel_layout)
-                    frame->channel_layout = (1ULL << avctx->channels) - 1;
             }
         }
         av_frame_set_channels(frame, avctx->channels);
