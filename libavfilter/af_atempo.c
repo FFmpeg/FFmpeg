@@ -1020,10 +1020,12 @@ static int config_props(AVFilterLink *inlink)
     return yae_reset(atempo, format, sample_rate, channels);
 }
 
-static void push_samples(ATempoContext *atempo,
-                         AVFilterLink *outlink,
-                         int n_out)
+static int push_samples(ATempoContext *atempo,
+                        AVFilterLink *outlink,
+                        int n_out)
 {
+    int ret;
+
     atempo->dst_buffer->sample_rate = outlink->sample_rate;
     atempo->dst_buffer->nb_samples  = n_out;
 
@@ -1033,12 +1035,15 @@ static void push_samples(ATempoContext *atempo,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
 
-    ff_filter_frame(outlink, atempo->dst_buffer);
+    ret = ff_filter_frame(outlink, atempo->dst_buffer);
+    if (ret < 0)
+        return ret;
     atempo->dst_buffer = NULL;
     atempo->dst        = NULL;
     atempo->dst_end    = NULL;
 
     atempo->nsamples_out += n_out;
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
@@ -1047,6 +1052,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
     ATempoContext *atempo = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
+    int ret = 0;
     int n_in = src_buffer->nb_samples;
     int n_out = (int)(0.5 + ((double)n_in) / atempo->tempo);
 
@@ -1065,14 +1071,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
         yae_apply(atempo, &src, src_end, &atempo->dst, atempo->dst_end);
 
         if (atempo->dst == atempo->dst_end) {
-            push_samples(atempo, outlink, n_out);
+            ret = push_samples(atempo, outlink, n_out);
+            if (ret < 0)
+                goto end;
             atempo->request_fulfilled = 1;
         }
     }
 
     atempo->nsamples_in += n_in;
+end:
     av_frame_free(&src_buffer);
-    return 0;
+    return ret;
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -1107,7 +1116,7 @@ static int request_frame(AVFilterLink *outlink)
                      atempo->stride);
 
             if (n_out) {
-                push_samples(atempo, outlink, n_out);
+                ret = push_samples(atempo, outlink, n_out);
             }
         }
 
