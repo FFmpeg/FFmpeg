@@ -1399,6 +1399,7 @@ static int decode_frame(WMAProDecodeCtx *s, AVFrame *frame, int *got_frame_ptr)
     if (s->skip_frame) {
         s->skip_frame = 0;
         *got_frame_ptr = 0;
+        av_frame_unref(frame);
     } else {
         *got_frame_ptr = 1;
     }
