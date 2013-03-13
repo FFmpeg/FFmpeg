@@ -145,7 +145,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print,
+        e_if, e_ifnot, e_print, e_bitand, e_bitor,
     } type;
     double value; // is sign in other types
     union {
@@ -284,6 +284,8 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_last:return e->value * d2;
                 case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
                 case e_hypot:return e->value * (sqrt(d*d + d2*d2));
+                case e_bitand: return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d & (long int)d2);
+                case e_bitor:  return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d | (long int)d2);
             }
         }
     }
@@ -424,6 +426,8 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "gcd"   )) d->type = e_gcd;
     else if (strmatch(next, "if"    )) d->type = e_if;
     else if (strmatch(next, "ifnot" )) d->type = e_ifnot;
+    else if (strmatch(next, "bitand")) d->type = e_bitand;
+    else if (strmatch(next, "bitor" )) d->type = e_bitor;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -809,6 +813,9 @@ int main(int argc, char **argv)
         "gauss(0.1)",
         "hypot(4,3)",
         "gcd(30,55)*print(min(9,1))",
+        "bitor(42, 12)",
+        "bitand(42, 12)",
+        "bitand(NAN, 1)",
         NULL
     };
 

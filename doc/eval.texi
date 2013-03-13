@@ -32,6 +32,17 @@ Compute arcsine of @var{x}.
 @item atan(x)
 Compute arctangent of @var{x}.
 
+@item bitand(x, y)
+@item bitor(x, y)
+Compute bitwise and/or operation on @var{x} and @var{y}.
+
+The results of the evaluation of @var{x} and @var{y} are converted to
+integers before executing the bitwise operation.
+
+Note that both the conversion to integer and the conversion back to
+floating point can lose precision. Beware of unexpected results for
+large numbers (usually 2^53 and larger).
+
 @item ceil(expr)
 Round the value of expression @var{expr} upwards to the nearest
 integer. For example, "ceil(1.5)" is "2.0".
