@@ -387,9 +387,7 @@ static int request_frame(AVFilterLink *link)
     picref->pts = mb->pts++;
 
     draw_mandelbrot(link->src, (uint32_t*)picref->data[0], picref->linesize[0]/4, picref->pts);
-    ff_filter_frame(link, picref);
-
-    return 0;
+    return ff_filter_frame(link, picref);
 }
 
 static const AVFilterPad mandelbrot_outputs[] = {
