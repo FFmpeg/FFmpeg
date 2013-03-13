@@ -655,13 +655,13 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
 #if HAVE_YASM
 #define QPEL_OP(OPNAME, ROUNDER, RND, MMX)                              \
 static void OPNAME ## qpel8_mc00_ ## MMX (uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     ff_ ## OPNAME ## pixels8_ ## MMX(dst, src, stride, 8);              \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t temp[8];                                                   \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -672,14 +672,14 @@ static void OPNAME ## qpel8_mc10_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc20_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     ff_ ## OPNAME ## mpeg4_qpel8_h_lowpass_ ## MMX(dst, src, stride,    \
                                                    stride, 8);          \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc30_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t temp[8];                                                   \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -690,7 +690,7 @@ static void OPNAME ## qpel8_mc30_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc01_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t temp[8];                                                   \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -701,14 +701,14 @@ static void OPNAME ## qpel8_mc01_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc02_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     ff_ ## OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, src,            \
                                                    stride, stride);     \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc03_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t temp[8];                                                   \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -719,7 +719,7 @@ static void OPNAME ## qpel8_mc03_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc11_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH  = ((uint8_t*)half) + 64;                     \
@@ -734,7 +734,7 @@ static void OPNAME ## qpel8_mc11_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc31_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH  = ((uint8_t*)half) + 64;                     \
@@ -749,7 +749,7 @@ static void OPNAME ## qpel8_mc31_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc13_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH  = ((uint8_t*)half) + 64;                     \
@@ -764,7 +764,7 @@ static void OPNAME ## qpel8_mc13_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc33_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH  = ((uint8_t*)half) + 64;                     \
@@ -779,7 +779,7 @@ static void OPNAME ## qpel8_mc33_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc21_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH  = ((uint8_t*)half) + 64;                     \
@@ -792,7 +792,7 @@ static void OPNAME ## qpel8_mc21_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc23_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH  = ((uint8_t*)half) + 64;                     \
@@ -805,7 +805,7 @@ static void OPNAME ## qpel8_mc23_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc12_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH = ((uint8_t*)half);                           \
@@ -818,7 +818,7 @@ static void OPNAME ## qpel8_mc12_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc32_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[8 + 9];                                               \
     uint8_t * const halfH = ((uint8_t*)half);                           \
@@ -831,7 +831,7 @@ static void OPNAME ## qpel8_mc32_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel8_mc22_ ## MMX(uint8_t *dst, uint8_t *src,    \
-                                         int stride)                    \
+                                         ptrdiff_t stride)              \
 {                                                                       \
     uint64_t half[9];                                                   \
     uint8_t * const halfH = ((uint8_t*)half);                           \
@@ -842,13 +842,13 @@ static void OPNAME ## qpel8_mc22_ ## MMX(uint8_t *dst, uint8_t *src,    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc00_ ## MMX (uint8_t *dst, uint8_t *src,  \
-                                           int stride)                  \
+                                           ptrdiff_t stride)            \
 {                                                                       \
     ff_ ## OPNAME ## pixels16_ ## MMX(dst, src, stride, 16);            \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc10_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t temp[32];                                                  \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -859,14 +859,14 @@ static void OPNAME ## qpel16_mc10_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc20_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     ff_ ## OPNAME ## mpeg4_qpel16_h_lowpass_ ## MMX(dst, src,           \
                                                     stride, stride, 16);\
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc30_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t temp[32];                                                  \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -877,7 +877,7 @@ static void OPNAME ## qpel16_mc30_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc01_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t temp[32];                                                  \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -888,14 +888,14 @@ static void OPNAME ## qpel16_mc01_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc02_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     ff_ ## OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(dst, src,           \
                                                     stride, stride);    \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc03_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t temp[32];                                                  \
     uint8_t * const half = (uint8_t*)temp;                              \
@@ -906,7 +906,7 @@ static void OPNAME ## qpel16_mc03_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc11_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[16 * 2 + 17 * 2];                                     \
     uint8_t * const halfH  = ((uint8_t*)half) + 256;                    \
@@ -922,7 +922,7 @@ static void OPNAME ## qpel16_mc11_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc31_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[16 * 2 + 17 * 2];                                     \
     uint8_t * const halfH  = ((uint8_t*)half) + 256;                    \
@@ -938,7 +938,7 @@ static void OPNAME ## qpel16_mc31_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc13_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[16 * 2 + 17 * 2];                                     \
     uint8_t * const halfH  = ((uint8_t*)half) + 256;                    \
@@ -954,7 +954,7 @@ static void OPNAME ## qpel16_mc13_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc33_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[16 * 2 + 17 * 2];                                     \
     uint8_t * const halfH  = ((uint8_t*)half) + 256;                    \
@@ -970,7 +970,7 @@ static void OPNAME ## qpel16_mc33_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc21_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[16 * 2 + 17 * 2];                                     \
     uint8_t * const halfH  = ((uint8_t*)half) + 256;                    \
@@ -984,7 +984,7 @@ static void OPNAME ## qpel16_mc21_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc23_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[16 * 2 + 17 * 2];                                     \
     uint8_t * const halfH  = ((uint8_t*)half) + 256;                    \
@@ -998,7 +998,7 @@ static void OPNAME ## qpel16_mc23_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc12_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[17 * 2];                                              \
     uint8_t * const halfH = ((uint8_t*)half);                           \
@@ -1011,7 +1011,7 @@ static void OPNAME ## qpel16_mc12_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc32_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[17 * 2];                                              \
     uint8_t * const halfH = ((uint8_t*)half);                           \
@@ -1024,7 +1024,7 @@ static void OPNAME ## qpel16_mc32_ ## MMX(uint8_t *dst, uint8_t *src,   \
 }                                                                       \
                                                                         \
 static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst, uint8_t *src,   \
-                                          int stride)                   \
+                                          ptrdiff_t stride)             \
 {                                                                       \
     uint64_t half[17 * 2];                                              \
     uint8_t * const halfH = ((uint8_t*)half);                           \
@@ -1041,19 +1041,19 @@ QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, mmxext)
 
 
 #if HAVE_INLINE_ASM
-void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
+void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
   put_pixels8_xy2_mmx(dst, src, stride, 8);
 }
-void ff_put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
+void ff_put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
   put_pixels16_xy2_mmx(dst, src, stride, 16);
 }
-void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
+void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
   avg_pixels8_xy2_mmx(dst, src, stride, 8);
 }
-void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, int stride)
+void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
   avg_pixels16_xy2_mmx(dst, src, stride, 16);
 }
@@ -1230,29 +1230,29 @@ void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
 #if HAVE_INLINE_ASM
 
 /* CAVS-specific */
-void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
+void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
     put_pixels8_mmx(dst, src, stride, 8);
 }
 
-void ff_avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
+void ff_avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
     avg_pixels8_mmx(dst, src, stride, 8);
 }
 
-void ff_put_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
+void ff_put_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
     put_pixels16_mmx(dst, src, stride, 16);
 }
 
-void ff_avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, int stride)
+void ff_avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
     avg_pixels16_mmx(dst, src, stride, 16);
 }
 
 /* VC-1-specific */
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                               int stride, int rnd)
+                               ptrdiff_t stride, int rnd)
 {
     put_pixels8_mmx(dst, src, stride, 8);
 }

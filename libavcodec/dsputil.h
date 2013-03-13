@@ -50,16 +50,16 @@ extern const uint8_t ff_zigzag248_direct[64];
 extern uint32_t ff_squareTbl[512];
 extern const uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP];
 
-void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
 /* RV40 functions */
-void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride);
-void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
 void ff_gmc_c(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int oy,
               int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
@@ -81,14 +81,14 @@ could be reached easily ...
 // blocksizes for op_pixels_func are 8x4,8x8 16x8 16x16
 //h for op_pixels_func is limited to {width/2, width} but never larger than 16 and never smaller than 4
 typedef void (*tpel_mc_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int w, int h);
-typedef void (*qpel_mc_func)(uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);
+typedef void (*qpel_mc_func)(uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);
 
 typedef void (*op_fill_func)(uint8_t *block/*align width (8 or 16)*/, uint8_t value, int line_size, int h);
 
 #define DEF_OLD_QPEL(name)\
-void ff_put_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);\
-void ff_put_no_rnd_ ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);\
-void ff_avg_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);
+void ff_put_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);\
+void ff_put_no_rnd_ ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);\
+void ff_avg_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, ptrdiff_t stride);
 
 DEF_OLD_QPEL(qpel16_mc11_old_c)
 DEF_OLD_QPEL(qpel16_mc31_old_c)

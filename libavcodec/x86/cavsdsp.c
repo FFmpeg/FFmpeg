@@ -409,19 +409,23 @@ static void OPNAME ## cavs_qpel16_h_ ## MMX(uint8_t *dst, uint8_t *src, int dstS
 }\
 
 #define CAVS_MC(OPNAME, SIZE, MMX) \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc20_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
+static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc20_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     OPNAME ## cavs_qpel ## SIZE ## _h_ ## MMX(dst, src, stride, stride);\
 }\
 \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc01_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
+static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc01_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     OPNAME ## cavs_qpel ## SIZE ## _v1_ ## MMX(dst, src, stride, stride);\
 }\
 \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc02_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
+static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc02_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     OPNAME ## cavs_qpel ## SIZE ## _v2_ ## MMX(dst, src, stride, stride);\
 }\
 \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
+static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+{\
     OPNAME ## cavs_qpel ## SIZE ## _v3_ ## MMX(dst, src, stride, stride);\
 }\
 
