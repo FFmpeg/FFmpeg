@@ -1466,8 +1466,6 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
                                         int mm_flags)
 {
-    const int bit_depth      = avctx->bits_per_raw_sample;
-    const int high_bit_depth = bit_depth > 8;
 
 #if HAVE_YASM
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
