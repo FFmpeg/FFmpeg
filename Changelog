@@ -7,6 +7,8 @@ version 10:
 - reference-counting for AVFrame and AVPacket data
 - avconv now fails when input options are used for output file
   or vice versa
+- new avconv options -filter_script and -filter_complex_script, which allow a
+  filtergraph description to be read from a file
 
 
 version 9:

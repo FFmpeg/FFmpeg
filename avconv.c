@@ -160,6 +160,7 @@ static void exit_program(void)
             av_freep(&filtergraphs[i]->outputs[j]);
         }
         av_freep(&filtergraphs[i]->outputs);
+        av_freep(&filtergraphs[i]->graph_desc);
         av_freep(&filtergraphs[i]);
     }
     av_freep(&filtergraphs);

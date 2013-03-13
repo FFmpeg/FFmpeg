@@ -330,6 +330,12 @@ the stream. Use @code{-filters} to show all the available filters
 
 See also the @option{-filter_complex} option if you want to create filter graphs
 with multiple inputs and/or outputs.
+
+@item -filter_script[:@var{stream_specifier}] @var{filename} (@emph{output,per-stream})
+This option is similar to @option{-filter}, the only difference is that its
+argument is the name of the file from which a filtergraph description is to be
+read.
+
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
 
@@ -823,6 +829,12 @@ To generate 5 seconds of pure red video using lavfi @code{color} source:
 @example
 avconv -filter_complex 'color=red' -t 5 out.mkv
 @end example
+
+@item -filter_complex_script @var{filename} (@emph{global})
+This option is similar to @option{-filter_complex}, the only difference is that
+its argument is the name of the file from which a complex filtergraph
+description is to be read.
+
 @end table
 @c man end OPTIONS
 
