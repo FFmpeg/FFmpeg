@@ -40,6 +40,13 @@ fate-filter-channelmap: CMD = md5 -i $(SRC) -filter_complex_script $(SRC_PATH)/t
 fate-filter-channelmap: CMP = oneline
 fate-filter-channelmap: REF = 21f1977c4f9705e2057083f84764e685
 
+FATE_FILTER-$(call FILTERDEMDECENCMUX, CHANNELSPLIT, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-channelsplit
+fate-filter-channelsplit: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-channelsplit: tests/data/asynth-44100-2.wav
+fate-filter-channelsplit: CMD = md5 -i $(SRC) -filter_complex channelsplit -f s16le
+fate-filter-channelsplit: CMP = oneline
+fate-filter-channelsplit: REF = d92988d0fe2dd92236763f47b07ab597
+
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_FILTER-$(call FILTERDEMDEC, DELOGO, RM, RV30) += fate-filter-delogo
