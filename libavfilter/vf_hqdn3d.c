@@ -310,12 +310,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
     AVFrame *out;
-    int direct = 0, c;
+    int direct, c;
 
     if (av_frame_is_writable(in)) {
         direct = 1;
         out = in;
     } else {
+        direct = 0;
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out) {
             av_frame_free(&in);
