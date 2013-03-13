@@ -138,33 +138,33 @@ static int init_filters(const char *filters_descr)
     return 0;
 }
 
-static void display_picref(AVFilterBufferRef *picref, AVRational time_base)
+static void display_frame(AVFrame *frame, AVRational time_base)
 {
     int x, y;
     uint8_t *p0, *p;
     int64_t delay;
 
-    if (picref->pts != AV_NOPTS_VALUE) {
+    if (frame->pts != AV_NOPTS_VALUE) {
         if (last_pts != AV_NOPTS_VALUE) {
             /* sleep roughly the right amount of time;
              * usleep is in microseconds, just like AV_TIME_BASE. */
-            delay = av_rescale_q(picref->pts - last_pts,
+            delay = av_rescale_q(frame->pts - last_pts,
                                  time_base, AV_TIME_BASE_Q);
             if (delay > 0 && delay < 1000000)
                 usleep(delay);
         }
-        last_pts = picref->pts;
+        last_pts = frame->pts;
     }
 
     /* Trivial ASCII grayscale display. */
-    p0 = picref->data[0];
+    p0 = frame->data[0];
     puts("\033c");
-    for (y = 0; y < picref->video->h; y++) {
+    for (y = 0; y < frame->height; y++) {
         p = p0;
-        for (x = 0; x < picref->video->w; x++)
+        for (x = 0; x < frame->width; x++)
             putchar(" .-+#"[*(p++) / 52]);
         putchar('\n');
-        p0 += picref->linesize[0];
+        p0 += frame->linesize[0];
     }
     fflush(stdout);
 }
@@ -173,10 +173,11 @@ int main(int argc, char **argv)
 {
     int ret;
     AVPacket packet;
-    AVFrame *frame = avcodec_alloc_frame();
+    AVFrame *frame = av_frame_alloc();
+    AVFrame *filt_frame = av_frame_alloc();
     int got_frame;
 
-    if (!frame) {
+    if (!frame || !filt_frame) {
         perror("Could not allocate frame");
         exit(1);
     }
@@ -196,7 +197,6 @@ int main(int argc, char **argv)
 
     /* read all packets */
     while (1) {
-        AVFilterBufferRef *picref;
         if ((ret = av_read_frame(fmt_ctx, &packet)) < 0)
             break;
 
@@ -213,23 +213,20 @@ int main(int argc, char **argv)
                 frame->pts = av_frame_get_best_effort_timestamp(frame);
 
                 /* push the decoded frame into the filtergraph */
-                if (av_buffersrc_add_frame(buffersrc_ctx, frame) < 0) {
+                if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
                     break;
                 }
 
-                /* pull filtered pictures from the filtergraph */
+                /* pull filtered frames from the filtergraph */
                 while (1) {
-                    ret = av_buffersink_get_buffer_ref(buffersink_ctx, &picref, 0);
+                    ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
                     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                         break;
                     if (ret < 0)
                         goto end;
-
-                    if (picref) {
-                        display_picref(picref, buffersink_ctx->inputs[0]->time_base);
-                        avfilter_unref_bufferp(&picref);
-                    }
+                    display_frame(filt_frame, buffersink_ctx->inputs[0]->time_base);
+                    av_frame_unref(filt_frame);
                 }
             }
         }
@@ -240,7 +237,8 @@ end:
     if (dec_ctx)
         avcodec_close(dec_ctx);
     avformat_close_input(&fmt_ctx);
-    av_freep(&frame);
+    av_frame_free(&frame);
+    av_frame_free(&filt_frame);
 
     if (ret < 0 && ret != AVERROR_EOF) {
         char buf[1024];
