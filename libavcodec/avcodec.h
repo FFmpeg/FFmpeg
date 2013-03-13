@@ -2521,14 +2521,6 @@ typedef struct AVCodecContext {
 #define FF_IDCT_FAAN          20
 #define FF_IDCT_SIMPLENEON    22
 #define FF_IDCT_SIMPLEALPHA   23
-#if FF_API_IDCT
-#define FF_IDCT_H264          11
-#define FF_IDCT_VP3           12
-#define FF_IDCT_CAVS          15
-#define FF_IDCT_WMV2          19
-#define FF_IDCT_EA            21
-#define FF_IDCT_BINK          24
-#endif
 
     /**
      * bits per sample/pixel from the demuxer (needed for huffyuv).
