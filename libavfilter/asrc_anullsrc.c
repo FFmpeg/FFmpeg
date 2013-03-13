@@ -101,6 +101,7 @@ static int config_props(AVFilterLink *outlink)
 
 static int request_frame(AVFilterLink *outlink)
 {
+    int ret;
     ANullContext *null = outlink->src->priv;
     AVFrame *samplesref;
 
@@ -109,11 +110,11 @@ static int request_frame(AVFilterLink *outlink)
     samplesref->channel_layout = null->channel_layout;
     samplesref->sample_rate = outlink->sample_rate;
 
-    ff_filter_frame(outlink, av_frame_clone(samplesref));
+    ret = ff_filter_frame(outlink, av_frame_clone(samplesref));
     av_frame_free(&samplesref);
 
     null->pts += null->nb_samples;
-    return 0;
+    return ret;
 }
 
 static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
