@@ -353,6 +353,7 @@ int av_frame_make_writable(AVFrame *frame)
     tmp.format         = frame->format;
     tmp.width          = frame->width;
     tmp.height         = frame->height;
+    tmp.channels       = frame->channels;
     tmp.channel_layout = frame->channel_layout;
     tmp.nb_samples     = frame->nb_samples;
     ret = av_frame_get_buffer(&tmp, 32);
