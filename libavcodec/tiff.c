@@ -44,7 +44,6 @@
 typedef struct TiffContext {
     AVCodecContext *avctx;
     GetByteContext gb;
-    AVFrame picture;
 
     int width, height;
     unsigned int bpp, bppcount;
@@ -268,7 +267,7 @@ static char *shorts2str(int16_t *sp, int count, const char *sep)
 
 static int add_doubles_metadata(int count,
                                 const char *name, const char *sep,
-                                TiffContext *s)
+                                TiffContext *s, AVFrame *frame)
 {
     char *ap;
     int i;
@@ -289,12 +288,12 @@ static int add_doubles_metadata(int count,
     av_freep(&dp);
     if (!ap)
         return AVERROR(ENOMEM);
-    av_dict_set(avpriv_frame_get_metadatap(&s->picture), name, ap, AV_DICT_DONT_STRDUP_VAL);
+    av_dict_set(avpriv_frame_get_metadatap(frame), name, ap, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
 static int add_shorts_metadata(int count, const char *name,
-                               const char *sep, TiffContext *s)
+                               const char *sep, TiffContext *s, AVFrame *frame)
 {
     char *ap;
     int i;
@@ -315,12 +314,12 @@ static int add_shorts_metadata(int count, const char *name,
     av_freep(&sp);
     if (!ap)
         return AVERROR(ENOMEM);
-    av_dict_set(avpriv_frame_get_metadatap(&s->picture), name, ap, AV_DICT_DONT_STRDUP_VAL);
+    av_dict_set(avpriv_frame_get_metadatap(frame), name, ap, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
 static int add_string_metadata(int count, const char *name,
-                               TiffContext *s)
+                               TiffContext *s, AVFrame *frame)
 {
     char *value;
 
@@ -334,17 +333,17 @@ static int add_string_metadata(int count, const char *name,
     bytestream2_get_bufferu(&s->gb, value, count);
     value[count] = 0;
 
-    av_dict_set(avpriv_frame_get_metadatap(&s->picture), name, value, AV_DICT_DONT_STRDUP_VAL);
+    av_dict_set(avpriv_frame_get_metadatap(frame), name, value, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
 static int add_metadata(int count, int type,
-                        const char *name, const char *sep, TiffContext *s)
+                        const char *name, const char *sep, TiffContext *s, AVFrame *frame)
 {
     switch(type) {
-    case TIFF_DOUBLE: return add_doubles_metadata(count, name, sep, s);
-    case TIFF_SHORT : return add_shorts_metadata(count, name, sep, s);
-    case TIFF_STRING: return add_string_metadata(count, name, s);
+    case TIFF_DOUBLE: return add_doubles_metadata(count, name, sep, s, frame);
+    case TIFF_SHORT : return add_shorts_metadata(count, name, sep, s, frame);
+    case TIFF_STRING: return add_string_metadata(count, name, s, frame);
     default         : return AVERROR_INVALIDDATA;
     };
 }
@@ -657,7 +656,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
     return 0;
 }
 
-static int tiff_decode_tag(TiffContext *s)
+static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 {
     unsigned tag, type, count, off, value = 0;
     int i, j, k, pos, start;
@@ -895,7 +894,7 @@ static int tiff_decode_tag(TiffContext *s)
             s->fax_opts = value;
         break;
 #define ADD_METADATA(count, name, sep)\
-    if ((ret = add_metadata(count, type, name, sep, s)) < 0) {\
+    if ((ret = add_metadata(count, type, name, sep, s, frame)) < 0) {\
         av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");\
         return ret;\
     }
@@ -1068,9 +1067,6 @@ static int decode_frame(AVCodecContext *avctx,
     s->compr = TIFF_RAW;
     s->fill_order = 0;
     free_geotags(s);
-    /* metadata has been destroyed from lavc internals, that pointer is not
-     * valid anymore */
-    av_frame_set_metadata(p, NULL);
 
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
@@ -1092,7 +1088,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (bytestream2_get_bytes_left(&s->gb) < entries * 12)
         return AVERROR_INVALIDDATA;
     for (i = 0; i < entries; i++) {
-        if ((ret = tiff_decode_tag(s)) < 0)
+        if ((ret = tiff_decode_tag(s, p)) < 0)
             return ret;
     }
 
@@ -1106,7 +1102,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_WARNING, "Type of GeoTIFF key %d is wrong\n", s->geotags[i].key);
             continue;
         }
-        ret = av_dict_set(avpriv_frame_get_metadatap(&s->picture), keyname, s->geotags[i].val, 0);
+        ret = av_dict_set(avpriv_frame_get_metadatap(p), keyname, s->geotags[i].val, 0);
         if (ret<0) {
             av_log(avctx, AV_LOG_ERROR, "Writing metadata with key '%s' failed\n", keyname);
             return ret;
