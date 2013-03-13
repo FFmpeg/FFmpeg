@@ -782,7 +782,7 @@ do {                                                                    \
             for (i = 0; i < FFMIN(planes, FF_ARRAY_ELEMS(frame->buf)); i++)
                 WRAP_PLANE(frame->buf[i], frame->extended_data[i], frame->linesize[0]);
 
-            for (i = 0; i < planes - FF_ARRAY_ELEMS(frame->buf); i++)
+            for (i = 0; i < frame->nb_extended_buf; i++)
                 WRAP_PLANE(frame->extended_buf[i],
                            frame->extended_data[i + FF_ARRAY_ELEMS(frame->buf)],
                            frame->linesize[0]);
