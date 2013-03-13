@@ -670,7 +670,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     int tags = 0;
 
     if (get_bits1(gb)) { // frameLengthFlag
-        av_log_missing_feature(avctx, "960/120 MDCT window", 1);
+        avpriv_request_sample(avctx, "960/120 MDCT window");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -1660,7 +1660,7 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
         if ((tns->present = get_bits1(gb)) && decode_tns(ac, tns, gb, ics))
             return -1;
         if (get_bits1(gb)) {
-            av_log_missing_feature(ac->avctx, "SSR", 1);
+            avpriv_request_sample(ac->avctx, "SSR");
             return AVERROR_PATCHWELCOME;
         }
     }
@@ -2620,8 +2620,8 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         asclen         = get_bits_left(gb);
 
     if (config_start_bit % 8) {
-        av_log_missing_feature(latmctx->aac_ctx.avctx,
-                               "Non-byte-aligned audio-specific config", 1);
+        avpriv_request_sample(latmctx->aac_ctx.avctx,
+                              "Non-byte-aligned audio-specific config");
         return AVERROR_PATCHWELCOME;
     }
     if (asclen <= 0)
@@ -2675,8 +2675,7 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
         skip_bits(gb, 6);                       // numSubFrames
         // numPrograms
         if (get_bits(gb, 4)) {                  // numPrograms
-            av_log_missing_feature(latmctx->aac_ctx.avctx,
-                                   "Multiple programs", 1);
+            avpriv_request_sample(latmctx->aac_ctx.avctx, "Multiple programs");
             return AVERROR_PATCHWELCOME;
         }
 
@@ -2684,8 +2683,7 @@ static int read_stream_mux_config(struct LATMContext *latmctx,
 
         // for each layer (which there is only on in DVB)
         if (get_bits(gb, 3)) {                   // numLayer
-            av_log_missing_feature(latmctx->aac_ctx.avctx,
-                                   "Multiple layers", 1);
+            avpriv_request_sample(latmctx->aac_ctx.avctx, "Multiple layers");
             return AVERROR_PATCHWELCOME;
         }
 

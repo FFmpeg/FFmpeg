@@ -222,7 +222,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return -1;
         }
         if (s->format == FORMAT_ENCRYPTED) {
-            av_report_missing_feature(s->avctx, "Encrypted TTA");
+            avpriv_report_missing_feature(s->avctx, "Encrypted TTA");
             return AVERROR_PATCHWELCOME;
         }
         avctx->channels = s->channels = get_bits(&s->gb, 16);

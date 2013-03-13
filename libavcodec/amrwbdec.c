@@ -1117,7 +1117,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "Encountered a bad or corrupted frame\n");
 
     if (ctx->fr_cur_mode == MODE_SID) { /* Comfort noise frame */
-        av_log_missing_feature(avctx, "SID mode", 1);
+        avpriv_request_sample(avctx, "SID mode");
         return AVERROR_PATCHWELCOME;
     }
 

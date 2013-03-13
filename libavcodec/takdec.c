@@ -685,7 +685,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     if (s->ti.flags & TAK_FRAME_FLAG_HAS_METADATA) {
-        av_log_missing_feature(avctx, "frame metadata", 1);
+        avpriv_request_sample(avctx, "Frame metadata");
         return AVERROR_PATCHWELCOME;
     }
 

@@ -957,7 +957,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
     if (p->cur_frame_mode == MODE_DTX) {
-        av_log_missing_feature(avctx, "dtx mode", 1);
+        avpriv_request_sample(avctx, "dtx mode");
         return AVERROR_PATCHWELCOME;
     }
 

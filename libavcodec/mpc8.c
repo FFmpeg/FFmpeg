@@ -130,7 +130,7 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     c->maxbands = get_bits(&gb, 5) + 1;
     channels = get_bits(&gb, 4) + 1;
     if (channels > 2) {
-        av_log_missing_feature(avctx, "Multichannel MPC SV8", 1);
+        avpriv_request_sample(avctx, "Multichannel MPC SV8");
         return AVERROR_PATCHWELCOME;
     }
     c->MSS = get_bits1(&gb);
