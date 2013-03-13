@@ -1420,38 +1420,6 @@ void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride,
 #endif
 #endif
 
-/* XXX: Those functions should be suppressed ASAP when all IDCTs are
- * converted. */
-#if CONFIG_GPL
-static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size,
-                                    int16_t *block)
-{
-    ff_mmx_idct(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_libmpeg2mmx_idct_add(uint8_t *dest, int line_size,
-                                    int16_t *block)
-{
-    ff_mmx_idct(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_libmpeg2mmx2_idct_put(uint8_t *dest, int line_size,
-                                     int16_t *block)
-{
-    ff_mmxext_idct(block);
-    ff_put_pixels_clamped_mmx(block, dest, line_size);
-}
-
-static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size,
-                                     int16_t *block)
-{
-    ff_mmxext_idct(block);
-    ff_add_pixels_clamped_mmx(block, dest, line_size);
-}
-#endif
-
 static void vector_clipf_sse(float *dst, const float *src,
                              float min, float max, int len)
 {
@@ -1821,19 +1789,6 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
                 c->idct_add              = ff_simple_idct_add_mmx;
                 c->idct                  = ff_simple_idct_mmx;
                 c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
-#if CONFIG_GPL
-            } else if (idct_algo == FF_IDCT_LIBMPEG2MMX) {
-                if (mm_flags & AV_CPU_FLAG_MMX2) {
-                    c->idct_put = ff_libmpeg2mmx2_idct_put;
-                    c->idct_add = ff_libmpeg2mmx2_idct_add;
-                    c->idct     = ff_mmxext_idct;
-                } else {
-                    c->idct_put = ff_libmpeg2mmx_idct_put;
-                    c->idct_add = ff_libmpeg2mmx_idct_add;
-                    c->idct     = ff_mmx_idct;
-                }
-                c->idct_permutation_type = FF_LIBMPEG2_IDCT_PERM;
-#endif
             } else if (idct_algo == FF_IDCT_XVIDMMX) {
                 if (mm_flags & AV_CPU_FLAG_SSE2) {
                     c->idct_put              = ff_idct_xvid_sse2_put;

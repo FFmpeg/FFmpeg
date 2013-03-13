@@ -2509,7 +2509,6 @@ typedef struct AVCodecContext {
 #define FF_IDCT_INT           1
 #define FF_IDCT_SIMPLE        2
 #define FF_IDCT_SIMPLEMMX     3
-#define FF_IDCT_LIBMPEG2MMX   4
 #if FF_API_MMI
 #define FF_IDCT_MMI           5
 #endif

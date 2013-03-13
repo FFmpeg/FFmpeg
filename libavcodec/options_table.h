@@ -189,7 +189,6 @@ static const AVOption options[]={
 {"int", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_INT }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simple", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLE }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simplemmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEMMX }, INT_MIN, INT_MAX, V|E|D, "idct"},
-{"libmpeg2mmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_LIBMPEG2MMX }, INT_MIN, INT_MAX, V|E|D, "idct"},
 #if FF_API_MMI
 {"mmi", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_MMI }, INT_MIN, INT_MAX, V|E|D, "idct"},
 #endif
