@@ -44,45 +44,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
     if (vda_ctx->cv_pix_fmt_type != CVPixelBufferGetPixelFormatType(image_buffer))
         return;
 
-    if (vda_ctx->use_sync_decoding) {
-        vda_ctx->cv_buffer = CVPixelBufferRetain(image_buffer);
-    } else {
-        vda_frame *new_frame;
-        vda_frame *queue_walker;
-
-        if (!(new_frame = av_mallocz(sizeof(*new_frame))))
-            return;
-
-        new_frame->next_frame = NULL;
-        new_frame->cv_buffer = CVPixelBufferRetain(image_buffer);
-        new_frame->pts = vda_pts_from_dictionary(user_info);
-
-        pthread_mutex_lock(&vda_ctx->queue_mutex);
-
-        queue_walker = vda_ctx->queue;
-
-        if (!queue_walker || (new_frame->pts < queue_walker->pts)) {
-            /* we have an empty queue, or this frame earlier than the current queue head */
-            new_frame->next_frame = queue_walker;
-            vda_ctx->queue = new_frame;
-        } else {
-            /* walk the queue and insert this frame where it belongs in display order */
-            vda_frame *next_frame;
-
-            while (1) {
-                next_frame = queue_walker->next_frame;
-
-                if (!next_frame || (new_frame->pts < next_frame->pts)) {
-                    new_frame->next_frame = next_frame;
-                    queue_walker->next_frame = new_frame;
-                    break;
-                }
-                queue_walker = next_frame;
-            }
-        }
-
-        pthread_mutex_unlock(&vda_ctx->queue_mutex);
-    }
+    vda_ctx->cv_buffer = CVPixelBufferRetain(image_buffer);
 }
 
 static int vda_sync_decode(struct vda_context *vda_ctx)
@@ -156,14 +118,8 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
     if (!vda_ctx->decoder || !vda_ctx->priv_bitstream)
         return -1;
 
-    if (vda_ctx->use_sync_decoding) {
-        status = vda_sync_decode(vda_ctx);
-        frame->data[3] = (void*)vda_ctx->cv_buffer;
-    } else {
-        status = vda_decoder_decode(vda_ctx, vda_ctx->priv_bitstream,
-                                    vda_ctx->priv_bitstream_size,
-                                    frame->reordered_opaque);
-    }
+    status = vda_sync_decode(vda_ctx);
+    frame->data[3] = (void*)vda_ctx->cv_buffer;
 
     if (status)
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);
