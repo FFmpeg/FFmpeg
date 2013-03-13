@@ -33,6 +33,13 @@ fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 FATE_FILTER_VSYNTH-$(CONFIG_BOXBLUR_FILTER) += fate-filter-boxblur
 fate-filter-boxblur: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf boxblur=2:1
 
+FATE_FILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-channelmap
+fate-filter-channelmap: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
+fate-filter-channelmap: tests/data/asynth-44100-6.wav
+fate-filter-channelmap: CMD = md5 -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/channelmap -f wav -flags +bitexact
+fate-filter-channelmap: CMP = oneline
+fate-filter-channelmap: REF = 21f1977c4f9705e2057083f84764e685
+
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_FILTER-$(call FILTERDEMDEC, DELOGO, RM, RV30) += fate-filter-delogo
