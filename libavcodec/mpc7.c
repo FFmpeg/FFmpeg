@@ -65,8 +65,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 
     /* Musepack SV7 is always stereo */
     if (avctx->channels != 2) {
-        av_log_ask_for_sample(avctx, "Unsupported number of channels: %d\n",
-                              avctx->channels);
+        avpriv_request_sample(avctx, "%d channels", avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
 

@@ -1115,10 +1115,10 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                     offset[2] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
                     clipped_offset = av_clip(offset[2], -155, 100);
                     if (offset[2] != clipped_offset) {
-                        av_log_ask_for_sample(ac->avctx, "Intensity stereo "
-                                "position clipped (%d -> %d).\nIf you heard an "
-                                "audible artifact, there may be a bug in the "
-                                "decoder. ", offset[2], clipped_offset);
+                        avpriv_request_sample(ac->avctx,
+                                              "If you heard an audible artifact, there may be a bug in the decoder. "
+                                              "Clipped intensity stereo position (%d -> %d)",
+                                              offset[2], clipped_offset);
                     }
                     sf[idx] = ff_aac_pow2sf_tab[-clipped_offset + POW_SF2_ZERO];
                 }
@@ -1130,10 +1130,10 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                         offset[1] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
                     clipped_offset = av_clip(offset[1], -100, 155);
                     if (offset[1] != clipped_offset) {
-                        av_log_ask_for_sample(ac->avctx, "Noise gain clipped "
-                                "(%d -> %d).\nIf you heard an audible "
-                                "artifact, there may be a bug in the decoder. ",
-                                offset[1], clipped_offset);
+                        avpriv_request_sample(ac->avctx,
+                                              "If you heard an audible artifact, there may be a bug in the decoder. "
+                                              "Clipped noise gain (%d -> %d)",
+                                              offset[1], clipped_offset);
                     }
                     sf[idx] = -ff_aac_pow2sf_tab[clipped_offset + POW_SF2_ZERO];
                 }

@@ -334,7 +334,7 @@ static int cinepak_decode (CinepakContext *s)
     /* if this is the first frame, check for deviant Sega FILM data */
     if (s->sega_film_skip_bytes == -1) {
         if (!encoded_buf_size) {
-            av_log_ask_for_sample(s->avctx, "encoded_buf_size is 0");
+            avpriv_request_sample(s->avctx, "encoded_buf_size 0");
             return AVERROR_PATCHWELCOME;
         }
         if (encoded_buf_size != s->size && (s->size % encoded_buf_size) != 0) {

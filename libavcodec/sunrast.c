@@ -54,7 +54,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     buf      += 32;
 
     if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF || type == RT_EXPERIMENTAL) {
-        av_log_ask_for_sample(avctx, "unsupported (compression) type\n");
+        avpriv_request_sample(avctx, "TIFF/IFF/EXPERIMENTAL (compression) type");
         return AVERROR_PATCHWELCOME;
     }
     if (type > RT_FORMAT_IFF) {
@@ -66,7 +66,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
     if (maptype == RMT_RAW) {
-        av_log_ask_for_sample(avctx, "unsupported colormap type\n");
+        avpriv_request_sample(avctx, "Unknown colormap type");
         return AVERROR_PATCHWELCOME;
     }
     if (maptype > RMT_RAW) {

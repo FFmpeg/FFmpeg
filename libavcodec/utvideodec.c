@@ -376,7 +376,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     c->frame_pred = (c->frame_info >> 8) & 3;
 
     if (c->frame_pred == PRED_GRADIENT) {
-        av_log_ask_for_sample(avctx, "Frame uses gradient prediction\n");
+        avpriv_request_sample(avctx, "Frame with gradient prediction");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -491,7 +491,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->flags           = AV_RL32(avctx->extradata + 12);
 
     if (c->frame_info_size != 4)
-        av_log_ask_for_sample(avctx, "Frame info is not 4 bytes\n");
+        avpriv_request_sample(avctx, "Frame info not 4 bytes");
     av_log(avctx, AV_LOG_DEBUG, "Encoding parameters %08X\n", c->flags);
     c->slices      = (c->flags >> 24) + 1;
     c->compression = c->flags & 1;

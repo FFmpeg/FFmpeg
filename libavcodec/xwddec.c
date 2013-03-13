@@ -92,7 +92,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (xoffset) {
-        av_log_ask_for_sample(avctx, "unsupported xoffset %d\n", xoffset);
+        avpriv_request_sample(avctx, "xoffset %d", xoffset);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -192,7 +192,9 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (avctx->pix_fmt == AV_PIX_FMT_NONE) {
-        av_log_ask_for_sample(avctx, "unknown file: bpp %d, pixdepth %d, vclass %d\n", bpp, pixdepth, vclass);
+        avpriv_request_sample(avctx,
+                              "Unknown file: bpp %d, pixdepth %d, vclass %d",
+                              bpp, pixdepth, vclass);
         return AVERROR_PATCHWELCOME;
     }
 

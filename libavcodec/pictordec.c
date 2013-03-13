@@ -123,7 +123,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->nb_planes   = (tmp >> 4) + 1;
     bpp            = bits_per_plane * s->nb_planes;
     if (bits_per_plane > 8 || bpp < 1 || bpp > 32) {
-        av_log_ask_for_sample(s, "unsupported bit depth\n");
+        avpriv_request_sample(s, "Unsupported bit depth");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -233,7 +233,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     } else {
-        av_log_ask_for_sample(s, "uncompressed image\n");
+        avpriv_request_sample(s, "Uncompressed image");
         return avpkt->size;
     }
 

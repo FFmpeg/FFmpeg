@@ -432,18 +432,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                "Flags=%X ver=%i.%i comp=%i fmt=%i blk=%ix%i\n",
                c->flags,hi_ver,lo_ver,c->comp,c->fmt,c->bw,c->bh);
         if (hi_ver != 0 || lo_ver != 1) {
-            av_log_ask_for_sample(avctx, "Unsupported version %i.%i\n",
-                                  hi_ver, lo_ver);
+            avpriv_request_sample(avctx, "Version %i.%i", hi_ver, lo_ver);
             return AVERROR_PATCHWELCOME;
         }
         if (c->bw == 0 || c->bh == 0) {
-            av_log_ask_for_sample(avctx, "Unsupported block size %ix%i\n",
-                                  c->bw, c->bh);
+            avpriv_request_sample(avctx, "Block size %ix%i", c->bw, c->bh);
             return AVERROR_PATCHWELCOME;
         }
         if (c->comp != 0 && c->comp != 1) {
-            av_log_ask_for_sample(avctx, "Unsupported compression type %i\n",
-                                  c->comp);
+            avpriv_request_sample(avctx, "Compression type %i", c->comp);
             return AVERROR_PATCHWELCOME;
         }
 
@@ -474,8 +471,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         default:
             c->decode_intra = NULL;
             c->decode_xor = NULL;
-            av_log_ask_for_sample(avctx, "Unsupported (for now) format %i\n",
-                                  c->fmt);
+            avpriv_request_sample(avctx, "Format %i", c->fmt);
             return AVERROR_PATCHWELCOME;
         }
 

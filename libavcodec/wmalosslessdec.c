@@ -202,7 +202,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_dlog(avctx, "\n");
 
     } else {
-        av_log_ask_for_sample(avctx, "Unsupported extradata size\n");
+        avpriv_request_sample(avctx, "Unsupported extradata size");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -256,7 +256,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
                s->num_channels);
         return AVERROR_INVALIDDATA;
     } else if (s->num_channels > WMALL_MAX_CHANNELS) {
-        av_log_ask_for_sample(avctx, "unsupported number of channels\n");
+        avpriv_request_sample(avctx,
+                              "More than %d channels", WMALL_MAX_CHANNELS);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -925,8 +926,8 @@ static int decode_subframe(WmallDecodeCtx *s)
             s->do_lpc = get_bits1(&s->gb);
             if (s->do_lpc) {
                 decode_lpc(s);
-                av_log_ask_for_sample(s->avctx, "Inverse LPC filter not "
-                                      "implemented. Expect wrong output.\n");
+                avpriv_request_sample(s->avctx, "Expect wrong output since "
+                                      "inverse LPC filter");
             }
         } else
             s->do_lpc = 0;
@@ -1137,7 +1138,7 @@ static void save_bits(WmallDecodeCtx *s, GetBitContext* gb, int len,
     buflen = (s->num_saved_bits + len + 8) >> 3;
 
     if (len <= 0 || buflen > MAX_FRAMESIZE) {
-        av_log_ask_for_sample(s->avctx, "input buffer too small\n");
+        avpriv_request_sample(s->avctx, "Too small input buffer");
         s->packet_loss = 1;
         return;
     }

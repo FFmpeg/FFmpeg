@@ -1598,14 +1598,15 @@ static void dca_exss_parse_header(DCAContext *s)
 
         num_audiop = get_bits(&s->gb, 3) + 1;
         if (num_audiop > 1) {
-            av_log_ask_for_sample(s->avctx, "Multiple DTS-HD audio presentations.");
+            avpriv_request_sample(s->avctx,
+                                  "Multiple DTS-HD audio presentations");
             /* ignore such streams for now */
             return;
         }
 
         num_assets = get_bits(&s->gb, 3) + 1;
         if (num_assets > 1) {
-            av_log_ask_for_sample(s->avctx, "Multiple DTS-HD audio assets.");
+            avpriv_request_sample(s->avctx, "Multiple DTS-HD audio assets");
             /* ignore such streams for now */
             return;
         }
