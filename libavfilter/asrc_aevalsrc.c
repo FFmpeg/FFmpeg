@@ -236,9 +236,7 @@ static int request_frame(AVFilterLink *outlink)
     samplesref->sample_rate = eval->sample_rate;
     eval->pts += eval->nb_samples;
 
-    ff_filter_frame(outlink, samplesref);
-
-    return 0;
+    return ff_filter_frame(outlink, samplesref);
 }
 
 static const AVFilterPad aevalsrc_outputs[] = {
