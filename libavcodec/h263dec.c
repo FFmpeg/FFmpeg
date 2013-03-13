@@ -627,7 +627,8 @@ retry:
     if(ff_MPV_frame_start(s, avctx) < 0)
         return -1;
 
-    if (!s->divx_packed) ff_thread_finish_setup(avctx);
+    if (!s->divx_packed && !avctx->hwaccel)
+        ff_thread_finish_setup(avctx);
 
     if (CONFIG_MPEG4_VDPAU_DECODER && (s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)) {
         ff_vdpau_mpeg4_decode_picture(s, s->gb.buffer, s->gb.buffer_end - s->gb.buffer);
@@ -719,6 +720,9 @@ intrax8_decoded:
     }
 
     ff_MPV_frame_end(s);
+
+    if (!s->divx_packed && avctx->hwaccel)
+        ff_thread_finish_setup(avctx);
 
     assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
     assert(s->current_picture.f.pict_type == s->pict_type);
