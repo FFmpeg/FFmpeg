@@ -310,6 +310,7 @@ void av_frame_unref(AVFrame *frame)
     for (i = 0; i < frame->nb_extended_buf; i++)
         av_buffer_unref(&frame->extended_buf[i]);
     av_freep(&frame->extended_buf);
+    av_dict_free(&frame->metadata);
     get_frame_defaults(frame);
 }
 
