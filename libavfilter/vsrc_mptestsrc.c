@@ -355,9 +355,7 @@ static int request_frame(AVFilterLink *outlink)
     }
 
     test->frame_nb++;
-    ff_filter_frame(outlink, picref);
-
-    return 0;
+    return ff_filter_frame(outlink, picref);
 }
 
 static const AVFilterPad mptestsrc_outputs[] = {
