@@ -125,7 +125,7 @@ typedef struct {
     AVFifoBuffer *pending_frames; ///< FIFO buffer of video frames
 } SelectContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     SelectContext *select = ctx->priv;
     int ret;

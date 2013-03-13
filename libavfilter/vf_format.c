@@ -47,7 +47,7 @@ typedef struct {
 
 #define AV_PIX_FMT_NAME_MAXSIZE 32
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     FormatContext *format = ctx->priv;
     const char *cur, *sep;

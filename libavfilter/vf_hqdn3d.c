@@ -181,7 +181,7 @@ static int16_t *precalc_coefs(double dist25, int depth)
 #define PARAM2_DEFAULT 3.0
 #define PARAM3_DEFAULT 6.0
 
-static int init(AVFilterContext *ctx, const char *args)
+static int init(AVFilterContext *ctx)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
 

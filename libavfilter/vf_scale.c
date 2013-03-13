@@ -89,7 +89,7 @@ typedef struct {
     char *flags_str;
 } ScaleContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     ScaleContext *scale = ctx->priv;
 

@@ -60,7 +60,7 @@ static const AVClass volume_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     VolumeContext *vol = ctx->priv;
 

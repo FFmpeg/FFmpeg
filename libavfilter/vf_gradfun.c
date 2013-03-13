@@ -120,7 +120,7 @@ static void filter(GradFunContext *ctx, uint8_t *dst, uint8_t *src, int width, i
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     GradFunContext *gf = ctx->priv;
 

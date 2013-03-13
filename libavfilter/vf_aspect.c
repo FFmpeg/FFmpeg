@@ -42,7 +42,7 @@ typedef struct {
 } AspectContext;
 
 #if FF_API_OLD_FILTER_OPTS
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     AspectContext *s = ctx->priv;
 

@@ -328,7 +328,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     }
 }
 
-static av_cold int test_init(AVFilterContext *ctx, const char *args)
+static av_cold int test_init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
 
@@ -440,7 +440,7 @@ static void rgbtest_fill_picture(AVFilterContext *ctx, AVFrame *frame)
      }
 }
 
-static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
+static av_cold int rgbtest_init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
 

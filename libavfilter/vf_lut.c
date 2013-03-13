@@ -101,7 +101,7 @@ static const AVOption lut_options[] = {
     { NULL },
 };
 
-static int init(AVFilterContext *ctx, const char *args)
+static int init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
@@ -385,7 +385,7 @@ static const AVOption negate_options[] = {
     { NULL },
 };
 
-static int negate_init(AVFilterContext *ctx, const char *args)
+static int negate_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
     int i;
@@ -401,7 +401,7 @@ static int negate_init(AVFilterContext *ctx, const char *args)
         }
     }
 
-    return init(ctx, NULL);
+    return init(ctx);
 }
 
 DEFINE_LUT_FILTER(negate, "Negate input video.", negate_init, negate_options);

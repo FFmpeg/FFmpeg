@@ -54,7 +54,7 @@ typedef struct {
     char *framerate_str;
 } ColorContext;
 
-static av_cold int color_init(AVFilterContext *ctx, const char *args)
+static av_cold int color_init(AVFilterContext *ctx)
 {
     ColorContext *color = ctx->priv;
     AVRational frame_rate_q;

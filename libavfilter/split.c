@@ -39,7 +39,7 @@ typedef struct SplitContext {
     int nb_outputs;
 } SplitContext;
 
-static int split_init(AVFilterContext *ctx, const char *args)
+static int split_init(AVFilterContext *ctx)
 {
     SplitContext *s = ctx->priv;
     int i;

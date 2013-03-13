@@ -578,7 +578,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     }
 
     if (filter->filter->init)
-        ret = filter->filter->init(filter, args);
+        ret = filter->filter->init(filter);
     else if (filter->filter->init_dict)
         ret = filter->filter->init_dict(filter, &options);
     if (ret < 0)

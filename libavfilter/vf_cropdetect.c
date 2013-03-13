@@ -86,7 +86,7 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
     return total;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     CropDetectContext *cd = ctx->priv;
 

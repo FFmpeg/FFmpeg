@@ -64,7 +64,7 @@ static const AVClass async_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int init(AVFilterContext *ctx, const char *args)
+static int init(AVFilterContext *ctx)
 {
     ASyncContext *s = ctx->priv;
 

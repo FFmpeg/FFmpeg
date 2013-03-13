@@ -74,7 +74,7 @@ typedef struct {
     double var_values[VAR_VARS_NB];
 } SetPTSContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     SetPTSContext *setpts = ctx->priv;
     int ret;

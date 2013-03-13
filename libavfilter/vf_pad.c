@@ -112,7 +112,7 @@ typedef struct {
     int hsub, vsub;         ///< chroma subsampling values
 } PadContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     PadContext *pad = ctx->priv;
 

@@ -186,7 +186,7 @@ static int parse_maps(AVFilterContext *ctx)
     return 0;
 }
 
-static int join_init(AVFilterContext *ctx, const char *args)
+static int join_init(AVFilterContext *ctx)
 {
     JoinContext *s = ctx->priv;
     int ret, i;

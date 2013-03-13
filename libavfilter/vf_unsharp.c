@@ -136,7 +136,7 @@ static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, float am
     fp->halfscale = 1 << (fp->scalebits - 1);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     UnsharpContext *unsharp = ctx->priv;
 

@@ -403,10 +403,10 @@ typedef struct AVFilter {
      */
 
     /**
-     * Filter initialization function. Args contains the user-supplied
-     * parameters. FIXME: maybe an AVOption-based system would be better?
+     * Filter initialization function. Called when all the options have been
+     * set.
      */
-    int (*init)(AVFilterContext *ctx, const char *args);
+    int (*init)(AVFilterContext *ctx);
 
     /**
      * Should be set instead of init by the filters that want to pass a

@@ -236,7 +236,7 @@ fail:
 }
 #endif
 
-static av_cold int init_video(AVFilterContext *ctx, const char *args)
+static av_cold int init_video(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
 
@@ -304,7 +304,7 @@ static const AVClass abuffer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static av_cold int init_audio(AVFilterContext *ctx, const char *args)
+static av_cold int init_audio(AVFilterContext *ctx)
 {
     BufferSourceContext *s = ctx->priv;
     int ret = 0;
