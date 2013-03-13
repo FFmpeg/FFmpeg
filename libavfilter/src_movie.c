@@ -549,9 +549,11 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
             describe_frameref(movie->frame, outlink));
 
     movie->frame->pts = av_frame_get_best_effort_timestamp(movie->frame);
-    ff_filter_frame(outlink, movie->frame); // FIXME: raise error properly
+    ret = ff_filter_frame(outlink, movie->frame);
     movie->frame = NULL;
 
+    if (ret < 0)
+        return ret;
     return pkt_out_id == out_id;
 }
 
