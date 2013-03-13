@@ -30,12 +30,15 @@
 
 #include "avfilter.h"
 
+#if FF_API_AVFILTERBUFFER
 /**
  * Create and return a picref reference from the data and properties
  * contained in frame.
  *
  * @param perms permissions to assign to the new buffer reference
+ * @deprecated avfilter APIs work natively with AVFrame instead.
  */
+attribute_deprecated
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame, int perms);
 
 
@@ -44,7 +47,9 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
  * contained in frame.
  *
  * @param perms permissions to assign to the new buffer reference
+ * @deprecated avfilter APIs work natively with AVFrame instead.
  */
+attribute_deprecated
 AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms);
 
@@ -53,10 +58,13 @@ AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame
  * contained in frame.
  *
  * @param perms permissions to assign to the new buffer reference
+ * @deprecated avfilter APIs work natively with AVFrame instead.
  */
+attribute_deprecated
 AVFilterBufferRef *avfilter_get_buffer_ref_from_frame(enum AVMediaType type,
                                                       const AVFrame *frame,
                                                       int perms);
+#endif
 
 #if FF_API_FILL_FRAME
 /**

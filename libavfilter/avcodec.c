@@ -28,6 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 
+#if FF_API_AVFILTERBUFFER
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms)
 {
@@ -133,6 +134,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
 
     return 0;
 }
+#endif
 
 #if FF_API_FILL_FRAME
 int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
