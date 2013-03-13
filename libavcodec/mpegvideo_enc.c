@@ -3398,8 +3398,6 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         if (CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER)
             ff_mpeg1_encode_picture_header(s, picture_number);
         break;
-    case FMT_H264:
-        break;
     default:
         av_assert0(0);
     }
