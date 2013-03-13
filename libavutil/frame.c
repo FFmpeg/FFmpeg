@@ -398,6 +398,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->pkt_pts             = src->pkt_pts;
     dst->pkt_dts             = src->pkt_dts;
     dst->pkt_pos             = src->pkt_pos;
+    dst->reordered_opaque    = src->reordered_opaque;
     dst->quality             = src->quality;
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
