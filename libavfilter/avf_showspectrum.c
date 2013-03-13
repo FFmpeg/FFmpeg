@@ -242,7 +242,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-inline static void push_frame(AVFilterLink *outlink)
+inline static int push_frame(AVFilterLink *outlink)
 {
     ShowSpectrumContext *showspectrum = outlink->src->priv;
 
@@ -252,7 +252,7 @@ inline static void push_frame(AVFilterLink *outlink)
     showspectrum->filled = 0;
     showspectrum->req_fullfilled = 1;
 
-    ff_filter_frame(outlink, av_frame_clone(showspectrum->outpicref));
+    return ff_filter_frame(outlink, av_frame_clone(showspectrum->outpicref));
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -273,6 +273,7 @@ static int request_frame(AVFilterLink *outlink)
 
 static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb_samples)
 {
+    int ret;
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     ShowSpectrumContext *showspectrum = ctx->priv;
@@ -455,7 +456,9 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples, int nb
             av_rescale_q(showspectrum->consumed,
                          (AVRational){ 1, inlink->sample_rate },
                          outlink->time_base);
-        push_frame(outlink);
+        ret = push_frame(outlink);
+        if (ret < 0)
+            return ret;
     }
 
     return add_samples;
@@ -465,17 +468,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowSpectrumContext *showspectrum = ctx->priv;
-    int left_samples = insamples->nb_samples;
+    int ret = 0, left_samples = insamples->nb_samples;
 
     showspectrum->consumed = 0;
     while (left_samples) {
-        const int added_samples = plot_spectrum_column(inlink, insamples, left_samples);
-        showspectrum->consumed += added_samples;
-        left_samples -= added_samples;
+        int ret = plot_spectrum_column(inlink, insamples, left_samples);
+        if (ret < 0)
+            break;
+        showspectrum->consumed += ret;
+        left_samples -= ret;
     }
 
     av_frame_free(&insamples);
-    return 0;
+    return ret;
 }
 
 static const AVFilterPad showspectrum_inputs[] = {
