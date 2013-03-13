@@ -45,6 +45,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
 
 #define VMD_HEADER_SIZE 0x330
 #define PALETTE_COUNT 256
@@ -75,8 +76,6 @@ typedef struct VmdVideoContext {
 static void lz_unpack(const unsigned char *src, int src_len,
                       unsigned char *dest, int dest_len)
 {
-    const unsigned char *s;
-    unsigned int s_len;
     unsigned char *d;
     unsigned char *d_end;
     unsigned char queue[QUEUE_SIZE];
@@ -87,18 +86,17 @@ static void lz_unpack(const unsigned char *src, int src_len,
     unsigned int speclen;
     unsigned char tag;
     unsigned int i, j;
+    GetByteContext gb;
 
-    s = src;
-    s_len = src_len;
+    bytestream2_init(&gb, src, src_len);
     d = dest;
     d_end = d + dest_len;
-    dataleft = AV_RL32(s);
-    s += 4; s_len -= 4;
+    dataleft = bytestream2_get_le32(&gb);
     memset(queue, 0x20, QUEUE_SIZE);
-    if (s_len < 4)
+    if (bytestream2_get_bytes_left(&gb) < 4)
         return;
-    if (AV_RL32(s) == 0x56781234) {
-        s += 4; s_len -= 4;
+    if (bytestream2_peek_le32(&gb) == 0x56781234) {
+        bytestream2_get_le32(&gb);
         qpos = 0x111;
         speclen = 0xF + 3;
     } else {
@@ -106,40 +104,32 @@ static void lz_unpack(const unsigned char *src, int src_len,
         speclen = 100;  /* no speclen */
     }
 
-    while (dataleft > 0 && s_len > 0) {
-        tag = *s++; s_len--;
+    while (dataleft > 0 && bytestream2_get_bytes_left(&gb) > 0) {
+        tag = bytestream2_get_byteu(&gb);
         if ((tag == 0xFF) && (dataleft > 8)) {
-            if (d + 8 > d_end || s_len < 8)
+            if (d + 8 > d_end || bytestream2_get_bytes_left(&gb) < 8)
                 return;
             for (i = 0; i < 8; i++) {
-                queue[qpos++] = *d++ = *s++;
+                queue[qpos++] = *d++ = bytestream2_get_byteu(&gb);
                 qpos &= QUEUE_MASK;
             }
-            s_len -= 8;
             dataleft -= 8;
         } else {
             for (i = 0; i < 8; i++) {
                 if (dataleft == 0)
                     break;
                 if (tag & 0x01) {
-                    if (d + 1 > d_end || s_len < 1)
+                    if (d + 1 > d_end || bytestream2_get_bytes_left(&gb) < 1)
                         return;
-                    queue[qpos++] = *d++ = *s++;
+                    queue[qpos++] = *d++ = bytestream2_get_byte(&gb);
                     qpos &= QUEUE_MASK;
                     dataleft--;
-                    s_len--;
                 } else {
-                    if (s_len < 2)
-                        return;
-                    chainofs = *s++;
-                    chainofs |= ((*s & 0xF0) << 4);
-                    chainlen = (*s++ & 0x0F) + 3;
-                    s_len -= 2;
+                    chainofs = bytestream2_get_byte(&gb);
+                    chainofs |= ((bytestream2_peek_byte(&gb) & 0xF0) << 4);
+                    chainlen = (bytestream2_get_byte(&gb) & 0x0F) + 3;
                     if (chainlen == speclen) {
-                        if (s_len < 1)
-                            return;
-                        chainlen = *s++ + 0xF + 3;
-                        s_len--;
+                        chainlen = bytestream2_get_byte(&gb) + 0xF + 3;
                     }
                     if (d + chainlen > d_end)
                         return;
@@ -159,49 +149,44 @@ static void lz_unpack(const unsigned char *src, int src_len,
 static int rle_unpack(const unsigned char *src, unsigned char *dest,
     int src_count, int src_size, int dest_len)
 {
-    const unsigned char *ps;
     unsigned char *pd;
     int i, l;
     unsigned char *dest_end = dest + dest_len;
+    GetByteContext gb;
 
-    ps = src;
+    bytestream2_init(&gb, src, src_size);
     pd = dest;
     if (src_count & 1) {
-        if (src_size < 1)
+        if (bytestream2_get_bytes_left(&gb) < 1)
             return 0;
-        *pd++ = *ps++;
-        src_size--;
+        *pd++ = bytestream2_get_byteu(&gb);
     }
 
     src_count >>= 1;
     i = 0;
     do {
-        if (src_size < 1)
+        if (bytestream2_get_bytes_left(&gb) < 1)
             break;
-        l = *ps++;
-        src_size--;
+        l = bytestream2_get_byteu(&gb);
         if (l & 0x80) {
             l = (l & 0x7F) * 2;
-            if (pd + l > dest_end || src_size < l)
-                return ps - src;
-            memcpy(pd, ps, l);
-            ps += l;
-            src_size -= l;
+            if (pd + l > dest_end || bytestream2_get_bytes_left(&gb) < l)
+                return bytestream2_tell(&gb);
+            bytestream2_get_buffer(&gb, pd, l);
             pd += l;
         } else {
-            if (pd + i > dest_end || src_size < 2)
-                return ps - src;
+            if (pd + i > dest_end || bytestream2_get_bytes_left(&gb) < 2)
+                return bytestream2_tell(&gb);
             for (i = 0; i < l; i++) {
-                *pd++ = ps[0];
-                *pd++ = ps[1];
+                *pd++ = bytestream2_get_byteu(&gb);
+                *pd++ = bytestream2_get_byteu(&gb);
             }
-            ps += 2;
-            src_size -= 2;
+            bytestream2_skip(&gb, 2);
         }
         i += l;
     } while (i < src_count);
 
-    return ps - src;
+    return bytestream2_tell(&gb);
 }
 
 static void vmd_decode(VmdVideoContext *s)
@@ -210,11 +195,8 @@ static void vmd_decode(VmdVideoContext *s)
     unsigned int *palette32;
     unsigned char r, g, b;
 
-    /* point to the start of the encoded data */
-    const unsigned char *p = s->buf + 16;
+    GetByteContext gb;
 
-    const unsigned char *pb;
-    unsigned int pb_size;
     unsigned char meth;
     unsigned char *dp;   /* pointer to current frame */
     unsigned char *pp;   /* pointer to previous frame */
@@ -259,30 +241,31 @@ static void vmd_decode(VmdVideoContext *s)
     }
 
     /* check if there is a new palette */
+    bytestream2_init(&gb, s->buf + 16, s->size - 16);
     if (s->buf[15] & 0x02) {
-        p += 2;
+        bytestream2_skip(&gb, 2);
         palette32 = (unsigned int *)s->palette;
-        for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *p++ * 4;
-            g = *p++ * 4;
-            b = *p++ * 4;
-            palette32[i] = (r << 16) | (g << 8) | (b);
+        if (bytestream2_get_bytes_left(&gb) >= PALETTE_COUNT * 3) {
+            for (i = 0; i < PALETTE_COUNT; i++) {
+                r = bytestream2_get_byteu(&gb) * 4;
+                g = bytestream2_get_byteu(&gb) * 4;
+                b = bytestream2_get_byteu(&gb) * 4;
+                palette32[i] = (r << 16) | (g << 8) | (b);
+            }
         }
         s->size -= (256 * 3 + 2);
     }
     if (s->size > 0) {
         /* originally UnpackFrame in VAG's code */
-        pb = p;
-        pb_size = s->buf + s->size - pb;
-        if (pb_size < 1)
+        bytestream2_init(&gb, gb.buffer, s->buf + s->size - gb.buffer);
+        if (bytestream2_get_bytes_left(&gb) < 1)
             return;
-        meth = *pb++; pb_size--;
+        meth = bytestream2_get_byteu(&gb);
         if (meth & 0x80) {
-            lz_unpack(pb, pb_size,
+            lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
                       s->unpack_buffer, s->unpack_buffer_size);
             meth &= 0x7F;
-            pb = s->unpack_buffer;
-            pb_size = s->unpack_buffer_size;
+            bytestream2_init(&gb, s->unpack_buffer, s->unpack_buffer_size);
         }
 
         dp = &s->frame.data[0][frame_y * s->frame.linesize[0] + frame_x];
@@ -292,17 +275,12 @@ static void vmd_decode(VmdVideoContext *s)
             for (i = 0; i < frame_height; i++) {
                 ofs = 0;
                 do {
-                    if (pb_size < 1)
-                        return;
-                    len = *pb++;
-                    pb_size--;
+                    len = bytestream2_get_byte(&gb);
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
-                        if (ofs + len > frame_width || pb_size < len)
+                        if (ofs + len > frame_width || bytestream2_get_bytes_left(&gb) < len)
                             return;
-                        memcpy(&dp[ofs], pb, len);
-                        pb += len;
-                        pb_size -= len;
+                        bytestream2_get_buffer(&gb, &dp[ofs], len);
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
@@ -324,11 +302,7 @@ static void vmd_decode(VmdVideoContext *s)
 
         case 2:
             for (i = 0; i < frame_height; i++) {
-                if (pb_size < frame_width)
-                    return;
-                memcpy(dp, pb, frame_width);
-                pb += frame_width;
-                pb_size -= frame_width;
+                bytestream2_get_buffer(&gb, dp, frame_width);
                 dp += s->frame.linesize[0];
                 pp += s->prev_frame.linesize[0];
             }
@@ -338,24 +312,16 @@ static void vmd_decode(VmdVideoContext *s)
             for (i = 0; i < frame_height; i++) {
                 ofs = 0;
                 do {
-                    if (pb_size < 1)
-                        return;
-                    len = *pb++;
-                    pb_size--;
+                    len = bytestream2_get_byte(&gb);
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
-                        if (pb_size < 1)
-                            return;
-                        if (*pb++ == 0xFF)
-                            len = rle_unpack(pb, &dp[ofs], len, pb_size, frame_width - ofs);
-                        else {
-                            if (pb_size < len)
-                                return;
-                            memcpy(&dp[ofs], pb, len);
-                        }
-                        pb += len;
-                        pb_size -= 1 + len;
-                        ofs += len;
+                        if (bytestream2_get_byte(&gb) == 0xFF)
+                            len = rle_unpack(gb.buffer, &dp[ofs],
+                                             len, bytestream2_get_bytes_left(&gb),
+                                             frame_width - ofs);
+                        else
+                            bytestream2_get_buffer(&gb, &dp[ofs], len);
+                        bytestream2_skip(&gb, len);
                     } else {
                         /* interframe pixel copy */
                         if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
