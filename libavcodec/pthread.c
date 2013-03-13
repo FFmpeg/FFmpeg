@@ -779,6 +779,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
         avctx->codec = NULL;
 
         release_delayed_buffers(p);
+        av_frame_unref(&p->frame);
     }
 
     for (i = 0; i < thread_count; i++) {
