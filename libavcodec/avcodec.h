@@ -156,7 +156,6 @@ enum AVCodecID {
     AV_CODEC_ID_MSZH,
     AV_CODEC_ID_ZLIB,
     AV_CODEC_ID_QTRLE,
-    AV_CODEC_ID_SNOW,
     AV_CODEC_ID_TSCC,
     AV_CODEC_ID_ULTI,
     AV_CODEC_ID_QDRAW,
@@ -292,6 +291,7 @@ enum AVCodecID {
     AV_CODEC_ID_SGIRLE     = MKBETAG('S','G','I','R'),
     AV_CODEC_ID_MVC1       = MKBETAG('M','V','C','1'),
     AV_CODEC_ID_MVC2       = MKBETAG('M','V','C','2'),
+    AV_CODEC_ID_SNOW       = MKBETAG('S','N','O','W'),
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -574,8 +574,8 @@ enum Motion_Est_ID {
     ME_X1,          ///< reserved for experiments
     ME_HEX,         ///< hexagon based search
     ME_UMH,         ///< uneven multi-hexagon search
-    ME_ITER,        ///< iterative search
     ME_TESA,        ///< transformed exhaustive search algorithm
+    ME_ITER=50,     ///< iterative search
 };
 
 /**

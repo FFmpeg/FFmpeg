@@ -88,7 +88,6 @@
     CODEC_ID_MSZH,
     CODEC_ID_ZLIB,
     CODEC_ID_QTRLE,
-    CODEC_ID_SNOW,
     CODEC_ID_TSCC,
     CODEC_ID_ULTI,
     CODEC_ID_QDRAW,
@@ -213,6 +212,7 @@
     CODEC_ID_YUV4       = MKBETAG('Y','U','V','4'),
     CODEC_ID_SANM       = MKBETAG('S','A','N','M'),
     CODEC_ID_PAF_VIDEO  = MKBETAG('P','A','F','V'),
+    CODEC_ID_SNOW       = AV_CODEC_ID_SNOW,
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
