@@ -355,7 +355,6 @@
     CODEC_ID_IAC,
     CODEC_ID_ILBC,
     CODEC_ID_FFWAVESYNTH = MKBETAG('F','F','W','S'),
-    CODEC_ID_8SVX_RAW    = MKBETAG('8','S','V','X'),
     CODEC_ID_SONIC       = MKBETAG('S','O','N','C'),
     CODEC_ID_SONIC_LS    = MKBETAG('S','O','N','L'),
     CODEC_ID_PAF_AUDIO   = MKBETAG('P','A','F','A'),
