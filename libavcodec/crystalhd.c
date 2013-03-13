@@ -639,8 +639,6 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
 
     priv->need_second_field = interlaced && !priv->need_second_field;
 
-    priv->pic->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                              FF_BUFFER_HINTS_REUSABLE;
     if (!priv->pic->data[0]) {
         if (ff_get_buffer(avctx, priv->pic, AV_GET_BUFFER_FLAG_REF) < 0)
             return RET_ERROR;
