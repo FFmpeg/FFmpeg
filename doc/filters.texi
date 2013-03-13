@@ -3850,6 +3850,12 @@ Correct luminance gamma by a 0.5 factor:
 @example
 lutyuv=y=gammaval(0.5)
 @end example
+
+@item
+Discard least significant bits of luma:
+@example
+lutyuv=y='bitand(val, 128+64+32)'
+@end example
 @end itemize
 
 @section mp
