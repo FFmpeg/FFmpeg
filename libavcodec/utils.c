@@ -1862,7 +1862,6 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
     const uint8_t *side_metadata;
     const uint8_t *end;
 
-    av_dict_free(&avctx->metadata);
     side_metadata = av_packet_get_side_data(avctx->pkt,
                                             AV_PKT_DATA_STRINGS_METADATA, &size);
     if (!side_metadata)
@@ -1877,7 +1876,6 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
         side_metadata = val + strlen(val) + 1;
     }
 end:
-    avctx->metadata = av_frame_get_metadata(frame);
     return ret;
 }
 
@@ -2298,7 +2296,6 @@ av_cold int avcodec_close(AVCodecContext *avctx)
             av_buffer_pool_uninit(&pool->pools[i]);
         av_freep(&avctx->internal->pool);
         av_freep(&avctx->internal);
-        av_dict_free(&avctx->metadata);
     }
 
     if (avctx->priv_data && avctx->codec && avctx->codec->priv_class)

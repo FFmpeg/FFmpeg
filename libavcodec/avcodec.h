@@ -2793,13 +2793,6 @@ typedef struct AVCodecContext {
     int64_t pts_correction_last_dts;       /// DTS of the last frame
 
     /**
-     * Current frame metadata.
-     * - decoding: maintained and used by libavcodec, not intended to be used by user apps
-     * - encoding: unused
-     */
-    AVDictionary *metadata;
-
-    /**
      * Character encoding of the input subtitles file.
      * - decoding: set by user
      * - encoding: unused
