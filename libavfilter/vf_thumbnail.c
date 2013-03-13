@@ -170,28 +170,6 @@ static int request_frame(AVFilterLink *link)
     return 0;
 }
 
-static int poll_frame(AVFilterLink *link)
-{
-    ThumbContext *thumb  = link->src->priv;
-    AVFilterLink *inlink = link->src->inputs[0];
-    int ret, available_frames = ff_poll_frame(inlink);
-
-    /* If the input link is not able to provide any frame, we can't do anything
-     * at the moment and thus have zero thumbnail available. */
-    if (!available_frames)
-        return 0;
-
-    /* Since at least one frame is available and the next frame will allow us
-     * to compute a thumbnail, we can return 1 frame. */
-    if (thumb->n == thumb->n_frames - 1)
-        return 1;
-
-    /* we have some frame(s) available in the input link, but not yet enough to
-     * output a thumbnail, so we request more */
-    ret = ff_request_frame(inlink);
-    return ret < 0 ? ret : 0;
-}
-
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
@@ -217,7 +195,6 @@ static const AVFilterPad thumbnail_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
-        .poll_frame    = poll_frame,
     },
     { NULL }
 };
