@@ -172,17 +172,12 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DelogoContext *delogo = ctx->priv;
     int ret = 0;
+    static const char *shorthand[] = { "x", "y", "w", "h", "band" };
 
     delogo->class = &delogo_class;
     av_opt_set_defaults(delogo);
 
-    if (args)
-        ret = sscanf(args, "%d:%d:%d:%d:%d",
-                     &delogo->x, &delogo->y, &delogo->w, &delogo->h, &delogo->band);
-    if (ret == 5) {
-        if (delogo->band < 0)
-            delogo->show = 1;
-    } else if ((ret = (av_set_options_string(delogo, args, "=", ":"))) < 0)
+    if ((ret = av_opt_set_from_string(delogo, args, shorthand, "=", ":")) < 0)
         return ret;
 
 #define CHECK_UNSET_OPT(opt)                                            \
@@ -195,8 +190,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     CHECK_UNSET_OPT(w);
     CHECK_UNSET_OPT(h);
 
-    if (delogo->show)
+    if (delogo->band < 0 || delogo->show) {
+        delogo->show = 1;
         delogo->band = 4;
+    }
 
     av_log(ctx, AV_LOG_VERBOSE, "x:%d y:%d, w:%d h:%d band:%d show:%d\n",
            delogo->x, delogo->y, delogo->w, delogo->h, delogo->band, delogo->show);
