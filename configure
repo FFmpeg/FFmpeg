@@ -1460,7 +1460,6 @@ HAVE_LIST="
     rsync_contimeout
     sched_getaffinity
     sdl
-    sdl_video_size
     SetConsoleTextAttribute
     setmode
     setrlimit
@@ -4001,16 +4000,16 @@ fi
 SDL_CONFIG="${cross_prefix}sdl-config"
 if check_pkg_config sdl SDL_events.h SDL_PollEvent; then
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-    enable sdl &&
-    check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+    enable sdl
 else
   if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
     sdl_cflags=$("${SDL_CONFIG}" --cflags)
     sdl_libs=$("${SDL_CONFIG}" --libs)
     check_func_headers SDL_version.h SDL_Linked_Version $sdl_cflags $sdl_libs &&
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
-    enable sdl &&
-    check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+    check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) < 0x010300" $sdl_cflags &&
+    enable sdl
   fi
 fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
