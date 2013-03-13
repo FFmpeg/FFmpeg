@@ -23,16 +23,16 @@
  * Ported from MPlayer libmpcodecs/vf_cropdetect.c.
  */
 
-#include <stdio.h>
-
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 
 typedef struct {
+    const AVClass *class;
     int x1, y1, x2, y2;
     int limit;
     int round;
@@ -40,6 +40,18 @@ typedef struct {
     int frame_nb;
     int max_pixsteps[4];
 } CropDetectContext;
+
+#define OFFSET(x) offsetof(CropDetectContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption cropdetect_options[] = {
+    { "limit", "set black threshold", OFFSET(limit), AV_OPT_TYPE_INT, {.i64=24}, 0, 255, FLAGS },
+    { "round", "set width/height round value", OFFSET(round), AV_OPT_TYPE_INT, {.i64=16}, 0, INT_MAX, FLAGS },
+    { "reset_count", "set after how many frames to reset detected info",  OFFSET(reset_count), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(cropdetect);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -86,19 +98,26 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     CropDetectContext *cd = ctx->priv;
+    static const char *shorthand[] = { "limit", "round", "reset_count", NULL };
+    int ret;
 
-    cd->limit = 24;
-    cd->round = 0;
-    cd->reset_count = 0;
     cd->frame_nb = -2;
+    cd->class = &cropdetect_class;
+    av_opt_set_defaults(cd);
 
-    if (args)
-        sscanf(args, "%d:%d:%d", &cd->limit, &cd->round, &cd->reset_count);
+    if ((ret = av_opt_set_from_string(cd, args, shorthand, "=", ":")) < 0)
+        return ret;
 
     av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
            cd->limit, cd->round, cd->reset_count);
 
     return 0;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    CropDetectContext *cd = ctx->priv;
+    av_opt_free(cd);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -221,10 +240,9 @@ AVFilter avfilter_vf_cropdetect = {
 
     .priv_size = sizeof(CropDetectContext),
     .init      = init,
-
+    .uninit    = uninit,
     .query_formats = query_formats,
-
     .inputs    = avfilter_vf_cropdetect_inputs,
-
     .outputs   = avfilter_vf_cropdetect_outputs,
+    .priv_class = &cropdetect_class,
 };

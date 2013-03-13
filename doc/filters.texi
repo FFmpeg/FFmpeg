@@ -2190,27 +2190,30 @@ Calculate necessary cropping parameters and prints the recommended
 parameters through the logging system. The detected dimensions
 correspond to the non-black area of the input video.
 
-It accepts the syntax:
-@example
-cropdetect[=@var{limit}[:@var{round}[:@var{reset}]]]
-@end example
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+[@option{limit}[:@option{round}[:@option{reset}]]].
+
+A description of the accepted options follows.
 
 @table @option
 
 @item limit
-Threshold, which can be optionally specified from nothing (0) to
-everything (255), defaults to 24.
+Set higher black value threshold, which can be optionally specified
+from nothing (0) to everything (255). An intensity value greater
+to the set value is considered non-black. Default value is 24.
 
 @item round
-Value which the width/height should be divisible by, defaults to
-16. The offset is automatically adjusted to center the video. Use 2 to
-get only even dimensions (needed for 4:2:2 video). 16 is best when
-encoding to most video codecs.
+Set the value for which the width/height should be divisible by. The
+offset is automatically adjusted to center the video. Use 2 to get
+only even dimensions (needed for 4:2:2 video). 16 is best when
+encoding to most video codecs. Default value is 16.
 
 @item reset
-Counter that determines after how many frames cropdetect will reset
-the previously detected largest video area and start over to detect
-the current optimal crop area. Defaults to 0.
+Set the counter that determines after how many frames cropdetect will
+reset the previously detected largest video area and start over to
+detect the current optimal crop area. Default value is 0.
 
 This can be useful when channel logos distort the video area. 0
 indicates never reset and return the largest area encountered during
