@@ -2063,8 +2063,10 @@ static int audio_decode_frame(VideoState *is)
             if (!is->frame) {
                 if (!(is->frame = avcodec_alloc_frame()))
                     return AVERROR(ENOMEM);
-            } else
+            } else {
+                av_frame_unref(is->frame);
                 avcodec_get_frame_defaults(is->frame);
+            }
 
             if (is->audioq.serial != is->audio_pkt_temp_serial)
                 break;
@@ -2349,7 +2351,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
     if (!av_dict_get(opts, "threads", NULL, 0))
         av_dict_set(&opts, "threads", "auto", 0);
-    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
+    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
         av_dict_set(&opts, "refcounted_frames", "1", 0);
     if (avcodec_open2(avctx, codec, &opts) < 0)
         return -1;
@@ -2426,7 +2428,7 @@ static void stream_component_close(VideoState *is, int stream_index)
         av_freep(&is->audio_buf1);
         is->audio_buf1_size = 0;
         is->audio_buf = NULL;
-        avcodec_free_frame(&is->frame);
+        av_frame_free(&is->frame);
 
         if (is->rdft) {
             av_rdft_end(is->rdft);
