@@ -73,6 +73,9 @@
 #ifndef FF_API_CODEC_ID
 #define FF_API_CODEC_ID          (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_AVCODEC_RESAMPLE
+#define FF_API_AVCODEC_RESAMPLE  (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 #ifndef FF_API_MMI
 #define FF_API_MMI               (LIBAVCODEC_VERSION_MAJOR < 55)
 #endif
