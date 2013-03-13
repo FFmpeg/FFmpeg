@@ -134,7 +134,7 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
     return 0;
 }
 
-#ifdef FF_API_FILL_FRAME
+#if FF_API_FILL_FRAME
 int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
                                               const AVFilterBufferRef *samplesref)
 {

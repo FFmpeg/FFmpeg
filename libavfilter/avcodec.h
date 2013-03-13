@@ -58,7 +58,7 @@ AVFilterBufferRef *avfilter_get_buffer_ref_from_frame(enum AVMediaType type,
                                                       const AVFrame *frame,
                                                       int perms);
 
-#ifdef FF_API_FILL_FRAME
+#if FF_API_FILL_FRAME
 /**
  * Fill an AVFrame with the information stored in samplesref.
  *
