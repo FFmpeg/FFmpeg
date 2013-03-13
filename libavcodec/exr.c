@@ -348,7 +348,8 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     const uint8_t *src;
     int axmax = (avctx->width - (s->xmax + 1)) * 2 * s->desc->nb_components;
     int bxmin = s->xmin * 2 * s->desc->nb_components;
-    int ret, i, x, buf_size = s->buf_size;
+    int i, x, buf_size = s->buf_size;
+    int av_unused ret;
 
     line_offset = AV_RL64(s->table + jobnr * 8);
     // Check if the buffer has the required bytes needed from the offset
