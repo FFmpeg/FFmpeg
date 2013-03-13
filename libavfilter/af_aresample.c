@@ -252,8 +252,7 @@ static int request_frame(AVFilterLink *outlink)
         outsamplesref->pts = ROUNDED_DIV(outsamplesref->pts, inlink->sample_rate);
 #endif
 
-        ff_filter_frame(outlink, outsamplesref);
-        return 0;
+        return ff_filter_frame(outlink, outsamplesref);
     }
     return ret;
 }
