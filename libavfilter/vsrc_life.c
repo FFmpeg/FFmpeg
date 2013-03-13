@@ -439,9 +439,7 @@ static int request_frame(AVFilterLink *outlink)
 #ifdef DEBUG
     show_life_grid(outlink->src);
 #endif
-    ff_filter_frame(outlink, picref);
-
-    return 0;
+    return ff_filter_frame(outlink, picref);
 }
 
 static int query_formats(AVFilterContext *ctx)
