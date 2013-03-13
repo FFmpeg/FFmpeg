@@ -134,9 +134,9 @@ static int read_header(AVFormatContext *s)
     /* color cycling and palette data */
     st->codec->extradata_size = 16*8 + 4*256;
     st->codec->extradata      = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (!st->codec->extradata) {
         return AVERROR(ENOMEM);
-
+    }
     ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
     if (ret < 0)
         return ret;
@@ -155,14 +155,15 @@ static int read_header(AVFormatContext *s)
 
     /* find page of first frame */
     anm->page = find_record(anm, 0);
-    if (anm->page < 0)
+    if (anm->page < 0) {
         return anm->page;
+    }
 
     anm->record = -1;
     return 0;
 
 invalid:
-    av_log_ask_for_sample(s, NULL);
+    av_log_ask_for_sample(s, "Invalid header element encountered.\n");
     return AVERROR_PATCHWELCOME;
 }
 
