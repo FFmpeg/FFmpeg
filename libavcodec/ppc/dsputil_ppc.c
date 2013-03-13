@@ -142,13 +142,6 @@ av_cold void ff_dsputil_init_ppc(DSPContext *c, AVCodecContext *avctx)
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     int mm_flags = av_get_cpu_flags();
 
-    if (avctx->dsp_mask) {
-        if (avctx->dsp_mask & AV_CPU_FLAG_FORCE)
-            mm_flags |= (avctx->dsp_mask & 0xffff);
-        else
-            mm_flags &= ~(avctx->dsp_mask & 0xffff);
-    }
-
     // Common optimizations whether AltiVec is available or not
     if (!high_bit_depth) {
     switch (check_dcbzl_effect()) {
