@@ -740,7 +740,6 @@ av_cold int ff_vp56_free(AVCodecContext *avctx)
 
 av_cold int ff_vp56_free_context(VP56Context *s)
 {
-    AVCodecContext *avctx = s->avctx;
     int i;
 
     av_freep(&s->above_blocks);
