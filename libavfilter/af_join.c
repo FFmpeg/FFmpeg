@@ -487,7 +487,8 @@ static int join_request_frame(AVFilterLink *outlink)
 
     ret = ff_filter_frame(outlink, frame);
 
-    memset(s->input_frames, 0, sizeof(*s->input_frames) * ctx->nb_inputs);
+    for (i = 0; i < ctx->nb_inputs; i++)
+        av_frame_free(&s->input_frames[i]);
 
     return ret;
 
