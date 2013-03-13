@@ -122,7 +122,7 @@ typedef struct OpaqueList {
 typedef struct {
     AVClass *av_class;
     AVCodecContext *avctx;
-    AVFrame pic;
+    AVFrame *pic;
     HANDLE dev;
 
     uint8_t *orig_extradata;
@@ -324,8 +324,7 @@ static void flush(AVCodecContext *avctx)
     priv->skip_next_output  = 0;
     priv->decode_wait       = BASE_WAIT;
 
-    if (priv->pic.data[0])
-        avctx->release_buffer(avctx, &priv->pic);
+    av_frame_unref (priv->pic);
 
     /* Flush mode 4 flushes all software and hardware buffers. */
     DtsFlushInput(priv->dev, 4);
@@ -362,8 +361,7 @@ static av_cold int uninit(AVCodecContext *avctx)
 
     av_free(priv->sps_pps_buf);
 
-    if (priv->pic.data[0])
-        avctx->release_buffer(avctx, &priv->pic);
+    av_frame_free (&priv->pic);
 
     if (priv->head) {
        OpaqueList *node = priv->head;
@@ -411,6 +409,7 @@ static av_cold int init(AVCodecContext *avctx)
     priv->is_nal       = avctx->extradata_size > 0 && *(avctx->extradata) == 1;
     priv->last_picture = -1;
     priv->decode_wait  = BASE_WAIT;
+    priv->pic          = av_frame_alloc();
 
     subtype = id2subtype(priv, avctx->codec->id);
     switch (subtype) {
@@ -635,15 +634,15 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_VERBOSE, "Interlaced state: %d | trust_interlaced %d\n",
            interlaced, trust_interlaced);
 
-    if (priv->pic.data[0] && !priv->need_second_field)
-        avctx->release_buffer(avctx, &priv->pic);
+    if (priv->pic->data[0] && !priv->need_second_field)
+        av_frame_unref(priv->pic);
 
     priv->need_second_field = interlaced && !priv->need_second_field;
 
-    priv->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                             FF_BUFFER_HINTS_REUSABLE;
-    if (!priv->pic.data[0]) {
-        if (ff_get_buffer(avctx, &priv->pic, 0) < 0) {
+    priv->pic->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
+                              FF_BUFFER_HINTS_REUSABLE;
+    if (!priv->pic->data[0]) {
+        if (ff_get_buffer(avctx, priv->pic, AV_GET_BUFFER_FLAG_REF) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return RET_ERROR;
         }
@@ -663,8 +662,8 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         sStride = bwidth;
     }
 
-    dStride = priv->pic.linesize[0];
-    dst     = priv->pic.data[0];
+    dStride = priv->pic->linesize[0];
+    dst     = priv->pic->data[0];
 
     av_log(priv->avctx, AV_LOG_VERBOSE, "CrystalHD: Copying out frame\n");
 
@@ -689,15 +688,17 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
         av_image_copy_plane(dst, dStride, src, sStride, bwidth, height);
     }
 
-    priv->pic.interlaced_frame = interlaced;
+    priv->pic->interlaced_frame = interlaced;
     if (interlaced)
-        priv->pic.top_field_first = !bottom_first;
+        priv->pic->top_field_first = !bottom_first;
 
-    priv->pic.pkt_pts = pkt_pts;
+    priv->pic->pkt_pts = pkt_pts;
 
     if (!priv->need_second_field) {
         *got_frame       = 1;
-        *(AVFrame *)data = priv->pic;
+        if ((ret = av_frame_ref(data, priv->pic)) < 0) {
+            return ret;
+        }
     }
 
     /*
