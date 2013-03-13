@@ -28,7 +28,6 @@
  * symbols defined below will not be available.
  */
 
-#include "libavcodec/avcodec.h" // AVFrame
 #include "avfilter.h"
 
 /**
