@@ -690,4 +690,11 @@ attribute_deprecated
 int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src);
 #endif
 
+/**
+ * @return AVClass for AVFilterContext.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avfilter_get_class(void);
+
 #endif /* AVFILTER_AVFILTER_H */

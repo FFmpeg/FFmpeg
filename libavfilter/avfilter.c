@@ -693,3 +693,8 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 
     return filter_frame(link, out);
 }
+
+const AVClass *avfilter_get_class(void)
+{
+    return &avfilter_class;
+}
