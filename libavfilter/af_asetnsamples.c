@@ -94,7 +94,7 @@ static int push_samples(AVFilterLink *outlink)
 {
     ASNSContext *asns = outlink->src->priv;
     AVFrame *outsamples = NULL;
-    int nb_out_samples, nb_pad_samples;
+    int ret, nb_out_samples, nb_pad_samples;
 
     if (asns->pad) {
         nb_out_samples = av_audio_fifo_size(asns->fifo) ? asns->nb_out_samples : 0;
@@ -125,7 +125,9 @@ static int push_samples(AVFilterLink *outlink)
     if (asns->next_out_pts != AV_NOPTS_VALUE)
         asns->next_out_pts += nb_out_samples;
 
-    ff_filter_frame(outlink, outsamples);
+    ret = ff_filter_frame(outlink, outsamples);
+    if (ret < 0)
+        return ret;
     asns->req_fullfilled = 1;
     return nb_out_samples;
 }
@@ -168,9 +170,11 @@ static int request_frame(AVFilterLink *outlink)
         ret = ff_request_frame(inlink);
     } while (!asns->req_fullfilled && ret >= 0);
 
-    if (ret == AVERROR_EOF)
-        while (push_samples(outlink))
-            ;
+    if (ret == AVERROR_EOF) {
+        do {
+            ret = push_samples(outlink);
+        } while (ret > 0);
+    }
 
     return ret;
 }
