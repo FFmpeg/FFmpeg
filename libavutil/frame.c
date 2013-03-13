@@ -401,10 +401,16 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->pkt_pts             = src->pkt_pts;
     dst->pkt_dts             = src->pkt_dts;
     dst->pkt_pos             = src->pkt_pos;
+    dst->pkt_size            = src->pkt_size;
+    dst->pkt_duration        = src->pkt_duration;
     dst->reordered_opaque    = src->reordered_opaque;
     dst->quality             = src->quality;
+    dst->best_effort_timestamp = src->best_effort_timestamp;
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
+    dst->decode_error_flags  = src->decode_error_flags;
+
+    av_dict_copy(&dst->metadata, src->metadata, 0);
 
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
