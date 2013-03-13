@@ -500,7 +500,6 @@ static int request_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
     AVFrame *frame;
-    int ret = 0;
 
     if (!av_fifo_size(c->fifo)) {
         if (c->eof)
@@ -510,10 +509,7 @@ static int request_frame(AVFilterLink *link)
     }
     av_fifo_generic_read(c->fifo, &frame, sizeof(frame), NULL);
 
-    /* CIG TODO do not ignore error */
-    ff_filter_frame(link, frame);
-
-    return ret;
+    return ff_filter_frame(link, frame);
 }
 
 static int poll_frame(AVFilterLink *link)
