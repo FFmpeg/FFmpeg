@@ -3631,13 +3631,6 @@ void av_dump_format(AVFormatContext *ic,
     av_free(printed);
 }
 
-#if FF_API_AV_GETTIME && CONFIG_SHARED && HAVE_SYMVER
-FF_SYMVER(int64_t, av_gettime, (void), "LIBAVFORMAT_54")
-{
-    return av_gettime();
-}
-#endif
-
 uint64_t ff_ntp_time(void)
 {
   return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;

@@ -73,12 +73,6 @@
 #ifndef FF_API_READ_PACKET
 #define FF_API_READ_PACKET             (LIBAVFORMAT_VERSION_MAJOR < 56)
 #endif
-#ifndef FF_API_INTERLEAVE_PACKET
-#define FF_API_INTERLEAVE_PACKET       (LIBAVFORMAT_VERSION_MAJOR < 55)
-#endif
-#ifndef FF_API_AV_GETTIME
-#define FF_API_AV_GETTIME              (LIBAVFORMAT_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_R_FRAME_RATE
 #define FF_API_R_FRAME_RATE            1
 #endif

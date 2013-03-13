@@ -207,10 +207,6 @@
 #include "avio.h"
 #include "libavformat/version.h"
 
-#if FF_API_AV_GETTIME
-#include "libavutil/time.h"
-#endif
-
 struct AVFormatContext;
 
 
@@ -1798,16 +1794,6 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt);
  * @return 0 on success, a negative AVERROR on error.
  */
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
-
-#if FF_API_INTERLEAVE_PACKET
-/**
- * @deprecated this function was never meant to be called by the user
- * programs.
- */
-attribute_deprecated
-int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
-                                 AVPacket *pkt, int flush);
-#endif
 
 /**
  * Write the stream trailer to an output media file and free the
