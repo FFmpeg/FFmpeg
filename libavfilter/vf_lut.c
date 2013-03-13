@@ -354,7 +354,7 @@ static const AVFilterPad outputs[] = {
 #define lut_options options
 AVFILTER_DEFINE_CLASS(lut);
 
-static int lut_init(AVFilterContext *ctx, const char *args)
+static int lut_init(AVFilterContext *ctx)
 {
     return 0;
 }
@@ -367,7 +367,7 @@ DEFINE_LUT_FILTER(lut, "Compute and apply a lookup table to the RGB/YUV input vi
 #define lutyuv_options options
 AVFILTER_DEFINE_CLASS(lutyuv);
 
-static int lutyuv_init(AVFilterContext *ctx, const char *args)
+static int lutyuv_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
@@ -384,7 +384,7 @@ DEFINE_LUT_FILTER(lutyuv, "Compute and apply a lookup table to the YUV input vid
 #define lutrgb_options options
 AVFILTER_DEFINE_CLASS(lutrgb);
 
-static int lutrgb_init(AVFilterContext *ctx, const char *args)
+static int lutrgb_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
@@ -405,7 +405,7 @@ static const AVOption negate_options[] = {
 
 AVFILTER_DEFINE_CLASS(negate);
 
-static int negate_init(AVFilterContext *ctx, const char *args)
+static int negate_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
     int i;
@@ -421,7 +421,7 @@ static int negate_init(AVFilterContext *ctx, const char *args)
         }
     }
 
-    return lut_init(ctx, NULL);
+    return lut_init(ctx);
 }
 
 DEFINE_LUT_FILTER(negate, "Negate input video.");

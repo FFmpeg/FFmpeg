@@ -483,7 +483,7 @@ fail:
     return ret;
 }
 
-static int init(AVFilterContext *ctx, const char *args)
+static int init(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
     int i;

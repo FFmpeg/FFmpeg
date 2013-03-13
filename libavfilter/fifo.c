@@ -51,7 +51,7 @@ typedef struct {
     int allocated_samples;      ///< number of samples out was allocated for
 } FifoContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     FifoContext *fifo = ctx->priv;
     fifo->last = &fifo->root;

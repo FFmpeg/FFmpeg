@@ -56,7 +56,7 @@ static const AVOption volume_options[] = {
 
 AVFILTER_DEFINE_CLASS(volume);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     VolumeContext *vol = ctx->priv;
 

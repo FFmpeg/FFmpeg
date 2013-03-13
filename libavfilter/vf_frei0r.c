@@ -328,7 +328,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     return 0;
 }
 
-static av_cold int filter_init(AVFilterContext *ctx, const char *args)
+static av_cold int filter_init(AVFilterContext *ctx)
 {
     Frei0rContext *frei0r = ctx->priv;
 
@@ -454,7 +454,7 @@ AVFilter avfilter_vf_frei0r = {
     .outputs   = avfilter_vf_frei0r_outputs,
 };
 
-static av_cold int source_init(AVFilterContext *ctx, const char *args)
+static av_cold int source_init(AVFilterContext *ctx)
 {
     Frei0rContext *frei0r = ctx->priv;
     AVRational frame_rate_q;

@@ -317,7 +317,7 @@ static OCVFilterEntry ocv_filter_entries[] = {
     { "smooth", sizeof(SmoothContext), smooth_init, NULL, smooth_end_frame_filter },
 };
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     OCVContext *ocv = ctx->priv;
     int i;

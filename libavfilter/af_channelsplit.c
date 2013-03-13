@@ -49,7 +49,7 @@ static const AVOption channelsplit_options[] = {
 
 AVFILTER_DEFINE_CLASS(channelsplit);
 
-static int init(AVFilterContext *ctx, const char *arg)
+static int init(AVFilterContext *ctx)
 {
     ChannelSplitContext *s = ctx->priv;
     int nb_channels;
