@@ -395,6 +395,9 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->top_field_first     = src->top_field_first;
     dst->sample_rate         = src->sample_rate;
     dst->opaque              = src->opaque;
+#if FF_API_AVFRAME_LAVC
+    dst->type                = src->type;
+#endif
     dst->pkt_pts             = src->pkt_pts;
     dst->pkt_dts             = src->pkt_dts;
     dst->pkt_pos             = src->pkt_pos;
