@@ -2519,7 +2519,7 @@ const OptionDef options[] = {
     { "t",              HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT, { .off = OFFSET(recording_time) },
         "record or transcode \"duration\" seconds of audio/video",
         "duration" },
-    { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET,             { .off = OFFSET(stop_time) },
+    { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
         "record or transcode stop time", "time_stop" },
     { "fs",             HAS_ARG | OPT_INT64 | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(limit_filesize) },
         "set the limit file size in bytes", "limit_size" },
