@@ -65,46 +65,41 @@ static void FUNCC(draw_edges)(uint8_t *p_buf, int p_wrap, int width, int height,
             memcpy(last_line + (i + 1) * wrap, last_line, (width + w + w) * sizeof(pixel)); // bottom
 }
 
-#define DCTELEM_FUNCS(dctcoef, suffix)                                  \
-static void FUNCC(get_pixels ## suffix)(int16_t *av_restrict _block,    \
-                                        const uint8_t *_pixels,         \
-                                        int line_size)                  \
-{                                                                       \
-    const pixel *pixels = (const pixel *) _pixels;                      \
-    dctcoef *av_restrict block = (dctcoef *) _block;                    \
-    int i;                                                              \
-                                                                        \
-    /* read the pixels */                                               \
-    for(i=0;i<8;i++) {                                                  \
-        block[0] = pixels[0];                                           \
-        block[1] = pixels[1];                                           \
-        block[2] = pixels[2];                                           \
-        block[3] = pixels[3];                                           \
-        block[4] = pixels[4];                                           \
-        block[5] = pixels[5];                                           \
-        block[6] = pixels[6];                                           \
-        block[7] = pixels[7];                                           \
-        pixels += line_size / sizeof(pixel);                            \
-        block += 8;                                                     \
-    }                                                                   \
-}                                                                       \
-                                                                        \
-static void FUNCC(clear_block ## suffix)(int16_t *block)                \
-{                                                                       \
-    memset(block, 0, sizeof(dctcoef)*64);                               \
-}                                                                       \
-                                                                        \
-/**                                                                     \
- * memset(blocks, 0, sizeof(int16_t)*6*64)                              \
- */                                                                     \
-static void FUNCC(clear_blocks ## suffix)(int16_t *blocks)              \
-{                                                                       \
-    memset(blocks, 0, sizeof(dctcoef)*6*64);                            \
+static void FUNCC(get_pixels)(int16_t *av_restrict block,
+                              const uint8_t *_pixels,
+                              int line_size)
+{
+    const pixel *pixels = (const pixel *) _pixels;
+    int i;
+
+    /* read the pixels */
+    for(i=0;i<8;i++) {
+        block[0] = pixels[0];
+        block[1] = pixels[1];
+        block[2] = pixels[2];
+        block[3] = pixels[3];
+        block[4] = pixels[4];
+        block[5] = pixels[5];
+        block[6] = pixels[6];
+        block[7] = pixels[7];
+        pixels += line_size / sizeof(pixel);
+        block += 8;
+    }
 }
 
-DCTELEM_FUNCS(int16_t, _16)
-#if BIT_DEPTH > 8
-DCTELEM_FUNCS(dctcoef, _32)
+#if BIT_DEPTH == 8
+static void FUNCC(clear_block)(int16_t *block)
+{
+    memset(block, 0, sizeof(int16_t)*64);
+}
+
+/**
+ * memset(blocks, 0, sizeof(int16_t)*6*64)
+ */
+static void FUNCC(clear_blocks)(int16_t *blocks)
+{
+    memset(blocks, 0, sizeof(int16_t)*6*64);
+}
 #endif
 
 #if BIT_DEPTH == 8

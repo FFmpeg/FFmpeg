@@ -1421,7 +1421,6 @@ static av_cold void common_init(H264Context *h)
     h->dequant_coeff_pps = -1;
 
     if (CONFIG_ERROR_RESILIENCE) {
-        h->dsp.dct_bits = 16;
         /* needed so that IDCT permutation is known early */
         ff_dsputil_init(&h->dsp, h->avctx);
     }
@@ -2973,7 +2972,6 @@ static int h264_set_parameter_from_sps(H264Context *h)
             ff_h264_pred_init(&h->hpc, h->avctx->codec_id, h->sps.bit_depth_luma,
                               h->sps.chroma_format_idc);
             if (CONFIG_ERROR_RESILIENCE) {
-                h->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
                 ff_dsputil_init(&h->dsp, h->avctx);
             }
             ff_videodsp_init(&h->vdsp, h->sps.bit_depth_luma);

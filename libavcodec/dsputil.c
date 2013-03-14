@@ -44,19 +44,7 @@
 
 uint32_t ff_squareTbl[512] = {0, };
 
-#define BIT_DEPTH 9
-#include "dsputil_template.c"
-#undef BIT_DEPTH
-
-#define BIT_DEPTH 10
-#include "dsputil_template.c"
-#undef BIT_DEPTH
-
-#define BIT_DEPTH 12
-#include "dsputil_template.c"
-#undef BIT_DEPTH
-
-#define BIT_DEPTH 14
+#define BIT_DEPTH 16
 #include "dsputil_template.c"
 #undef BIT_DEPTH
 
@@ -2931,44 +2919,23 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #define FUNC(f, depth) f ## _ ## depth
 #define FUNCC(f, depth) f ## _ ## depth ## _c
 
-#define BIT_DEPTH_FUNCS(depth, dct)\
-    c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
-    c->draw_edges                    = FUNCC(draw_edges            , depth);\
-    c->clear_block                   = FUNCC(clear_block  ## dct   , depth);\
-    c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth);\
+#define BIT_DEPTH_FUNCS(depth) \
+    c->get_pixels                    = FUNCC(get_pixels,   depth);\
+    c->draw_edges                    = FUNCC(draw_edges,   depth);
+
+    c->clear_block                   = FUNCC(clear_block, 8);\
+    c->clear_blocks                  = FUNCC(clear_blocks, 8);\
 
     switch (avctx->bits_per_raw_sample) {
     case 9:
-        if (c->dct_bits == 32) {
-            BIT_DEPTH_FUNCS(9, _32);
-        } else {
-            BIT_DEPTH_FUNCS(9, _16);
-        }
-        break;
     case 10:
-        if (c->dct_bits == 32) {
-            BIT_DEPTH_FUNCS(10, _32);
-        } else {
-            BIT_DEPTH_FUNCS(10, _16);
-        }
-        break;
     case 12:
-        if (c->dct_bits == 32) {
-            BIT_DEPTH_FUNCS(12, _32);
-        } else {
-            BIT_DEPTH_FUNCS(12, _16);
-        }
-        break;
     case 14:
-        if (c->dct_bits == 32) {
-            BIT_DEPTH_FUNCS(14, _32);
-        } else {
-            BIT_DEPTH_FUNCS(14, _16);
-        }
+        BIT_DEPTH_FUNCS(16);
         break;
     default:
         if(avctx->bits_per_raw_sample<=8 || avctx->codec_type != AVMEDIA_TYPE_VIDEO) {
-            BIT_DEPTH_FUNCS(8, _16);
+            BIT_DEPTH_FUNCS(8);
         }
         break;
     }
