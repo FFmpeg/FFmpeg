@@ -212,7 +212,7 @@ int ff_vaapi_mpeg_end_frame(AVCodecContext *avctx)
     ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
 
 finish:
-    ff_vaapi_common_end_frame(avctx->priv_data);
+    ff_vaapi_common_end_frame(avctx);
     return ret;
 }
 
