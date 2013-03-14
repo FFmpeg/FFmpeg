@@ -184,6 +184,10 @@ AVFilterChannelLayouts *ff_merge_channel_layouts(AVFilterChannelLayouts *a,
             for (i = j = 0; i < b->nb_channel_layouts; i++)
                 if (KNOWN(b->channel_layouts[i]))
                     b->channel_layouts[j++] = b->channel_layouts[i];
+            /* Not optimal: the unknown layouts of b may become known after
+               another merge. */
+            if (!j)
+                return NULL;
             b->nb_channel_layouts = j;
         }
         MERGE_REF(b, a, channel_layouts, AVFilterChannelLayouts, fail);
