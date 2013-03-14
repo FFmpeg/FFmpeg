@@ -29,6 +29,7 @@
 
 #include "bit_depth_template.c"
 
+#if BIT_DEPTH == 8
 /* draw the edges of width 'w' of an image of size width, height */
 //FIXME check that this is ok for mpeg4 interlaced
 static void FUNCC(draw_edges)(uint8_t *p_buf, int p_wrap, int width, int height, int w, int h, int sides)
@@ -41,16 +42,8 @@ static void FUNCC(draw_edges)(uint8_t *p_buf, int p_wrap, int width, int height,
     /* left and right */
     ptr = buf;
     for(i=0;i<height;i++) {
-#if BIT_DEPTH > 8
-        int j;
-        for (j = 0; j < w; j++) {
-            ptr[j-w] = ptr[0];
-            ptr[j+width] = ptr[width-1];
-        }
-#else
         memset(ptr - w, ptr[0], w);
         memset(ptr + width, ptr[width-1], w);
-#endif
         ptr += wrap;
     }
 
@@ -64,6 +57,7 @@ static void FUNCC(draw_edges)(uint8_t *p_buf, int p_wrap, int width, int height,
         for (i = 0; i < h; i++)
             memcpy(last_line + (i + 1) * wrap, last_line, (width + w + w) * sizeof(pixel)); // bottom
 }
+#endif
 
 static void FUNCC(get_pixels)(int16_t *av_restrict block,
                               const uint8_t *_pixels,
