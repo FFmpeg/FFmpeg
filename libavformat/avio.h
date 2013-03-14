@@ -217,8 +217,8 @@ int avio_put_str16le(AVIOContext *s, const char *str);
 
 /**
  * Oring this flag as into the "whence" parameter to a seek function causes it to
- * seek by any means (like reopening and linear reading) or other normally unreasonble
- * means that can be extreemly slow.
+ * seek by any means (like reopening and linear reading) or other normally unreasonable
+ * means that can be extremely slow.
  * This may be ignored by the seek code.
  */
 #define AVSEEK_FORCE 0x20000
