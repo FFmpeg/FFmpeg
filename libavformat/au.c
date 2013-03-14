@@ -96,13 +96,13 @@ static int au_read_header(AVFormatContext *s)
     codec = ff_codec_get_id(codec_au_tags, id);
 
     if (codec == AV_CODEC_ID_NONE) {
-        av_log_ask_for_sample(s, "unknown or unsupported codec tag: %u\n", id);
+        avpriv_request_sample(s, "unknown or unsupported codec tag: %u", id);
         return AVERROR_PATCHWELCOME;
     }
 
     bps = av_get_bits_per_sample(codec);
     if (!bps) {
-        av_log_ask_for_sample(s, "could not determine bits per sample\n");
+        avpriv_request_sample(s, "Unknown bits per sample");
         return AVERROR_PATCHWELCOME;
     }
 

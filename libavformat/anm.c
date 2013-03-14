@@ -85,7 +85,7 @@ static int read_header(AVFormatContext *s)
 
     avio_skip(pb, 4); /* magic number */
     if (avio_rl16(pb) != MAX_PAGES) {
-        av_log_ask_for_sample(s, "max_pages != " AV_STRINGIFY(MAX_PAGES) "\n");
+        avpriv_request_sample(s, "max_pages != " AV_STRINGIFY(MAX_PAGES));
         return AVERROR_PATCHWELCOME;
     }
 
@@ -163,7 +163,7 @@ static int read_header(AVFormatContext *s)
     return 0;
 
 invalid:
-    av_log_ask_for_sample(s, "Invalid header element encountered.\n");
+    avpriv_request_sample(s, "Invalid header element");
     return AVERROR_PATCHWELCOME;
 }
 

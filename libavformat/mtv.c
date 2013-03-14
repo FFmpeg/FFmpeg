@@ -114,7 +114,7 @@ static int mtv_read_header(AVFormatContext *s)
     audio_subsegments = avio_rl16(pb);
 
     if (audio_subsegments == 0) {
-        av_log_ask_for_sample(s, "MTV files without audio are not supported\n");
+        avpriv_request_sample(s, "MTV files without audio");
         return AVERROR_PATCHWELCOME;
     }
 

@@ -52,7 +52,7 @@ static int smjpeg_read_header(AVFormatContext *s)
     avio_skip(pb, 8); // magic
     version = avio_rb32(pb);
     if (version)
-        av_log_ask_for_sample(s, "unknown version %d\n", version);
+        avpriv_request_sample(s, "Unknown version %d", version);
 
     duration = avio_rb32(pb); // in msec
 
@@ -77,7 +77,7 @@ static int smjpeg_read_header(AVFormatContext *s)
             break;
         case SMJPEG_SND:
             if (ast) {
-                av_log_ask_for_sample(s, "multiple audio streams not supported\n");
+                avpriv_request_sample(s, "Multiple audio streams");
                 return AVERROR_PATCHWELCOME;
             }
             hlength = avio_rb32(pb);
@@ -100,7 +100,7 @@ static int smjpeg_read_header(AVFormatContext *s)
             break;
         case SMJPEG_VID:
             if (vst) {
-                av_log_ask_for_sample(s, "multiple video streams not supported\n");
+                avpriv_request_sample(s, "Multiple video streams");
                 return AVERROR_INVALIDDATA;
             }
             hlength = avio_rb32(pb);
