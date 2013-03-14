@@ -42,7 +42,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     bytes_per_pixel = AV_RL16(buf+12) >> 3;
 
     if (bytes_per_pixel != 2) {
-        av_log_ask_for_sample(avctx, "Image format is not RGB15.\n");
+        avpriv_request_sample(avctx, "Image format not RGB15");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -51,7 +51,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (buf_end - buf < offset)
         return AVERROR_INVALIDDATA;
     if (offset != 0x2c)
-        av_log_ask_for_sample(avctx, "offset != 0x2c\n");
+        avpriv_request_sample(avctx, "offset != 0x2c");
 
     buf += offset;
 

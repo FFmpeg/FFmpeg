@@ -4863,7 +4863,7 @@ static void vc1_parse_sprites(VC1Context *v, GetBitContext* gb, SpriteData* sd)
     for (sprite = 0; sprite <= v->two_sprites; sprite++) {
         vc1_sprite_parse_transform(gb, sd->coefs[sprite]);
         if (sd->coefs[sprite][1] || sd->coefs[sprite][3])
-            av_log_ask_for_sample(avctx, "Rotation coefficients are not zero");
+            avpriv_request_sample(avctx, "Non-zero rotation coefficients");
         av_log(avctx, AV_LOG_DEBUG, sprite ? "S2:" : "S1:");
         for (i = 0; i < 7; i++)
             av_log(avctx, AV_LOG_DEBUG, " %d.%.3d",

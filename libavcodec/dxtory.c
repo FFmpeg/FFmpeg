@@ -53,7 +53,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     pic->key_frame = 1;
 
     if (AV_RL32(src) != 0x01000002) {
-        av_log_ask_for_sample(avctx, "Unknown frame header %X\n", AV_RL32(src));
+        avpriv_request_sample(avctx, "Frame header %X", AV_RL32(src));
         return AVERROR_PATCHWELCOME;
     }
     src += 16;

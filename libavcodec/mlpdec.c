@@ -332,9 +332,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         return AVERROR_INVALIDDATA;
     }
     if (mh.num_substreams > MAX_SUBSTREAMS) {
-        av_log_ask_for_sample(m->avctx,
-               "Number of substreams %d is larger than the maximum supported "
-               "by the decoder.\n", mh.num_substreams);
+        avpriv_request_sample(m->avctx,
+                              "%d substreams (more than the "
+                              "maximum supported by the decoder)",
+                              mh.num_substreams);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -442,9 +443,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     /* This should happen for TrueHD streams with >6 channels and MLP's noise
      * type. It is not yet known if this is allowed. */
     if (max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
-        av_log_ask_for_sample(m->avctx,
-               "Number of channels %d is larger than the maximum supported "
-               "by the decoder.\n", max_channel + 2);
+        avpriv_request_sample(m->avctx,
+                              "%d channels (more than the "
+                              "maximum supported by the decoder)",
+                              max_channel + 2);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -507,9 +509,9 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
                                                             channel);
         }
         if ((unsigned)ch_assign > s->max_matrix_channel) {
-            av_log_ask_for_sample(m->avctx,
-                   "Assignment of matrix channel %d to invalid output channel %d.\n",
-                   ch, ch_assign);
+            avpriv_request_sample(m->avctx,
+                                  "Assignment of matrix channel %d to invalid output channel %d",
+                                  ch, ch_assign);
             return AVERROR_PATCHWELCOME;
         }
         s->ch_assign[ch_assign] = ch;
@@ -855,8 +857,8 @@ static int read_block_data(MLPDecodeContext *m, GetBitContext *gbp,
     if (s->data_check_present) {
         expected_stream_pos  = get_bits_count(gbp);
         expected_stream_pos += get_bits(gbp, 16);
-        av_log_ask_for_sample(m->avctx, "This file contains some features "
-                              "we have not tested yet.\n");
+        avpriv_request_sample(m->avctx,
+                              "Substreams with VLC block size check info");
     }
 
     if (s->blockpos + s->blocksize > m->access_unit_size) {

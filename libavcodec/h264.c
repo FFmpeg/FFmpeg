@@ -3484,8 +3484,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                         h->droppable         = last_pic_droppable;
                         return AVERROR_INVALIDDATA;
                     } else if (last_pic_droppable != h->droppable) {
-                        av_log_ask_for_sample(h->avctx,
-                                              "Found reference and non-reference fields in the same frame.\n");
+                        avpriv_request_sample(h->avctx,
+                                              "Found reference and non-reference fields in the same frame, which");
                         h->picture_structure = last_pic_structure;
                         h->droppable         = last_pic_droppable;
                         return AVERROR_PATCHWELCOME;

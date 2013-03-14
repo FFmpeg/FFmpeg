@@ -993,12 +993,12 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     }
 
     if (ctx->frame_flags & BS_8BIT_PEL) {
-        av_log_ask_for_sample(avctx, "8-bit pixel format\n");
+        avpriv_request_sample(avctx, "8-bit pixel format");
         return AVERROR_PATCHWELCOME;
     }
 
     if (ctx->frame_flags & BS_MV_X_HALF || ctx->frame_flags & BS_MV_Y_HALF) {
-        av_log_ask_for_sample(avctx, "halfpel motion vectors\n");
+        avpriv_request_sample(avctx, "Halfpel motion vectors");
         return AVERROR_PATCHWELCOME;
     }
 

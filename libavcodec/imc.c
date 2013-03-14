@@ -182,7 +182,7 @@ static av_cold int imc_decode_init(AVCodecContext *avctx)
         avctx->channels = 1;
 
     if (avctx->channels > 2) {
-        av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
+        avpriv_request_sample(avctx, "Number of channels > 2");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -779,8 +779,7 @@ static int imc_decode_block(AVCodecContext *avctx, IMCContext *q, int ch)
     stream_format_code = get_bits(&q->gb, 3);
 
     if (stream_format_code & 1) {
-        av_log_ask_for_sample(avctx, "Stream format %X is not supported\n",
-                              stream_format_code);
+        avpriv_request_sample(avctx, "Stream format %X", stream_format_code);
         return AVERROR_PATCHWELCOME;
     }
 
