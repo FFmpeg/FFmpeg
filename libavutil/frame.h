@@ -419,6 +419,11 @@ typedef struct AVFrame {
      * - decoding: set by libavcodec, read by user.
      */
     int pkt_size;
+
+    /**
+     * Not to be accessed directly from outside libavutil
+     */
+    AVBufferRef *qp_table_buf;
 } AVFrame;
 
 /**
@@ -445,6 +450,8 @@ void    av_frame_set_decode_error_flags   (AVFrame *frame, int     val);
 int     av_frame_get_pkt_size(const AVFrame *frame);
 void    av_frame_set_pkt_size(AVFrame *frame, int val);
 AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame);
+int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type);
+int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int type);
 
 /**
  * Allocate an AVFrame and set its fields to default values.  The resulting

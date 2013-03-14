@@ -42,6 +42,30 @@ MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
 
 AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame) {return &frame->metadata;};
 
+int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int qp_type)
+{
+    av_buffer_unref(&f->qp_table_buf);
+
+    f->qp_table_buf = buf;
+
+    f->qscale_table = buf->data;
+    f->qstride      = stride;
+    f->qscale_type  = qp_type;
+
+    return 0;
+}
+
+int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type)
+{
+    *stride = f->qstride;
+    *type   = f->qscale_type;
+
+    if (!f->qp_table_buf)
+        return NULL;
+
+    return f->qp_table_buf->data;
+}
+
 static void get_frame_defaults(AVFrame *frame)
 {
     if (frame->extended_data != frame->data)
@@ -311,6 +335,8 @@ void av_frame_unref(AVFrame *frame)
         av_buffer_unref(&frame->extended_buf[i]);
     av_freep(&frame->extended_buf);
     av_dict_free(&frame->metadata);
+    av_buffer_unref(&frame->qp_table_buf);
+
     get_frame_defaults(frame);
 }
 
@@ -429,6 +455,18 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
         }
         memcpy(sd_dst->data, sd_src->data, sd_src->size);
         av_dict_copy(&sd_dst->metadata, sd_src->metadata, 0);
+    }
+
+    dst->qscale_table = NULL;
+    dst->qstride      = 0;
+    dst->qscale_type  = 0;
+    if (src->qp_table_buf) {
+        dst->qp_table_buf = av_buffer_ref(src->qp_table_buf);
+        if (dst->qp_table_buf) {
+            dst->qscale_table = dst->qp_table_buf->data;
+            dst->qstride      = src->qstride;
+            dst->qscale_type  = src->qscale_type;
+        }
     }
 
     return 0;
