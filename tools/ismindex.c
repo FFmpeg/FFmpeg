@@ -58,7 +58,7 @@ struct MoofOffset {
     int duration;
 };
 
-struct VideoFile {
+struct Track {
     const char *name;
     int64_t duration;
     int bitrate;
@@ -76,12 +76,12 @@ struct VideoFile {
     int tag;
 };
 
-struct VideoFiles {
-    int nb_files;
+struct Tracks {
+    int nb_tracks;
     int64_t duration;
-    struct VideoFile **files;
-    int video_file, audio_file;
-    int nb_video_files, nb_audio_files;
+    struct Track **tracks;
+    int video_track, audio_track;
+    int nb_video_tracks, nb_audio_tracks;
 };
 
 static int copy_tag(AVIOContext *in, AVIOContext *out, int32_t tag_name)
@@ -122,62 +122,62 @@ static int write_fragment(const char *filename, AVIOContext *in)
     return ret;
 }
 
-static int write_fragments(struct VideoFiles *files, int start_index,
+static int write_fragments(struct Tracks *tracks, int start_index,
                            AVIOContext *in)
 {
     char dirname[100], filename[500];
     int i, j;
 
-    for (i = start_index; i < files->nb_files; i++) {
-        struct VideoFile *vf = files->files[i];
-        const char *type     = vf->is_video ? "video" : "audio";
-        snprintf(dirname, sizeof(dirname), "QualityLevels(%d)", vf->bitrate);
+    for (i = start_index; i < tracks->nb_tracks; i++) {
+        struct Track *track = tracks->tracks[i];
+        const char *type    = track->is_video ? "video" : "audio";
+        snprintf(dirname, sizeof(dirname), "QualityLevels(%d)", track->bitrate);
         mkdir(dirname, 0777);
-        for (j = 0; j < vf->chunks; j++) {
+        for (j = 0; j < track->chunks; j++) {
             snprintf(filename, sizeof(filename), "%s/Fragments(%s=%"PRId64")",
-                     dirname, type, vf->offsets[j].time);
-            avio_seek(in, vf->offsets[j].offset, SEEK_SET);
+                     dirname, type, track->offsets[j].time);
+            avio_seek(in, track->offsets[j].offset, SEEK_SET);
             write_fragment(filename, in);
         }
     }
     return 0;
 }
 
-static int read_tfra(struct VideoFiles *files, int start_index, AVIOContext *f)
+static int read_tfra(struct Tracks *tracks, int start_index, AVIOContext *f)
 {
     int ret = AVERROR_EOF, track_id;
     int version, fieldlength, i, j;
     int64_t pos   = avio_tell(f);
     uint32_t size = avio_rb32(f);
-    struct VideoFile *vf = NULL;
+    struct Track *track = NULL;
 
     if (avio_rb32(f) != MKBETAG('t', 'f', 'r', 'a'))
         goto fail;
     version = avio_r8(f);
     avio_rb24(f);
     track_id = avio_rb32(f); /* track id */
-    for (i = start_index; i < files->nb_files && !vf; i++)
-        if (files->files[i]->track_id == track_id)
-            vf = files->files[i];
-    if (!vf) {
+    for (i = start_index; i < tracks->nb_tracks && !track; i++)
+        if (tracks->tracks[i]->track_id == track_id)
+            track = tracks->tracks[i];
+    if (!track) {
         /* Ok, continue parsing the next atom */
         ret = 0;
         goto fail;
     }
     fieldlength = avio_rb32(f);
-    vf->chunks  = avio_rb32(f);
-    vf->offsets = av_mallocz(sizeof(*vf->offsets) * vf->chunks);
-    if (!vf->offsets) {
+    track->chunks  = avio_rb32(f);
+    track->offsets = av_mallocz(sizeof(*track->offsets) * track->chunks);
+    if (!track->offsets) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    for (i = 0; i < vf->chunks; i++) {
+    for (i = 0; i < track->chunks; i++) {
         if (version == 1) {
-            vf->offsets[i].time   = avio_rb64(f);
-            vf->offsets[i].offset = avio_rb64(f);
+            track->offsets[i].time   = avio_rb64(f);
+            track->offsets[i].offset = avio_rb64(f);
         } else {
-            vf->offsets[i].time   = avio_rb32(f);
-            vf->offsets[i].offset = avio_rb32(f);
+            track->offsets[i].time   = avio_rb32(f);
+            track->offsets[i].offset = avio_rb32(f);
         }
         for (j = 0; j < ((fieldlength >> 4) & 3) + 1; j++)
             avio_r8(f);
@@ -186,12 +186,12 @@ static int read_tfra(struct VideoFiles *files, int start_index, AVIOContext *f)
         for (j = 0; j < ((fieldlength >> 0) & 3) + 1; j++)
             avio_r8(f);
         if (i > 0)
-            vf->offsets[i - 1].duration = vf->offsets[i].time -
-                                          vf->offsets[i - 1].time;
+            track->offsets[i - 1].duration = track->offsets[i].time -
+                                             track->offsets[i - 1].time;
     }
-    if (vf->chunks > 0)
-        vf->offsets[vf->chunks - 1].duration = vf->duration -
-                                               vf->offsets[vf->chunks - 1].time;
+    if (track->chunks > 0)
+        track->offsets[track->chunks - 1].duration = track->duration -
+                                                     track->offsets[track->chunks - 1].time;
     ret = 0;
 
 fail:
@@ -199,7 +199,7 @@ fail:
     return ret;
 }
 
-static int read_mfra(struct VideoFiles *files, int start_index,
+static int read_mfra(struct Tracks *tracks, int start_index,
                      const char *file, int split)
 {
     int err = 0;
@@ -219,12 +219,12 @@ static int read_mfra(struct VideoFiles *files, int start_index,
         err = AVERROR_INVALIDDATA;
         goto fail;
     }
-    while (!read_tfra(files, start_index, f)) {
+    while (!read_tfra(tracks, start_index, f)) {
         /* Empty */
     }
 
     if (split)
-        write_fragments(files, start_index, f);
+        write_fragments(tracks, start_index, f);
 
 fail:
     if (f)
@@ -234,24 +234,24 @@ fail:
     return err;
 }
 
-static int get_private_data(struct VideoFile *vf, AVCodecContext *codec)
+static int get_private_data(struct Track *track, AVCodecContext *codec)
 {
-    vf->codec_private_size = codec->extradata_size;
-    vf->codec_private      = av_mallocz(codec->extradata_size);
-    if (!vf->codec_private)
+    track->codec_private_size = codec->extradata_size;
+    track->codec_private      = av_mallocz(codec->extradata_size);
+    if (!track->codec_private)
         return AVERROR(ENOMEM);
-    memcpy(vf->codec_private, codec->extradata, codec->extradata_size);
+    memcpy(track->codec_private, codec->extradata, codec->extradata_size);
     return 0;
 }
 
-static int get_video_private_data(struct VideoFile *vf, AVCodecContext *codec)
+static int get_video_private_data(struct Track *track, AVCodecContext *codec)
 {
     AVIOContext *io = NULL;
     uint16_t sps_size, pps_size;
     int err = AVERROR(EINVAL);
 
     if (codec->codec_id == AV_CODEC_ID_VC1)
-        return get_private_data(vf, codec);
+        return get_private_data(track, codec);
 
     if (avio_open_dyn_buf(&io) < 0)  {
         err = AVERROR(ENOMEM);
@@ -272,16 +272,16 @@ static int get_video_private_data(struct VideoFile *vf, AVCodecContext *codec)
     err = 0;
 
 fail:
-    vf->codec_private_size = avio_close_dyn_buf(io, &vf->codec_private);
+    track->codec_private_size = avio_close_dyn_buf(io, &track->codec_private);
     return err;
 }
 
-static int handle_file(struct VideoFiles *files, const char *file, int split)
+static int handle_file(struct Tracks *tracks, const char *file, int split)
 {
     AVFormatContext *ctx = NULL;
-    int err = 0, i, orig_files = files->nb_files;
+    int err = 0, i, orig_tracks = tracks->nb_tracks;
     char errbuf[50], *ptr;
-    struct VideoFile *vf;
+    struct Track *track;
 
     err = avformat_open_input(&ctx, file, NULL, NULL);
     if (err < 0) {
@@ -301,72 +301,72 @@ static int handle_file(struct VideoFiles *files, const char *file, int split)
         fprintf(stderr, "No streams found in %s\n", file);
         goto fail;
     }
-    if (!files->duration)
-        files->duration = ctx->duration;
+    if (!tracks->duration)
+        tracks->duration = ctx->duration;
 
     for (i = 0; i < ctx->nb_streams; i++) {
         AVStream *st = ctx->streams[i];
-        vf = av_mallocz(sizeof(*vf));
-        files->files = av_realloc(files->files,
-                                  sizeof(*files->files) * (files->nb_files + 1));
-        files->files[files->nb_files] = vf;
+        track = av_mallocz(sizeof(*track));
+        tracks->tracks = av_realloc(tracks->tracks,
+                                    sizeof(*tracks->tracks) * (tracks->nb_tracks + 1));
+        tracks->tracks[tracks->nb_tracks] = track;
 
-        vf->name = file;
+        track->name = file;
         if ((ptr = strrchr(file, '/')) != NULL)
-            vf->name = ptr + 1;
+            track->name = ptr + 1;
 
-        vf->bitrate   = st->codec->bit_rate;
-        vf->track_id  = st->id;
-        vf->timescale = st->time_base.den;
-        vf->duration  = av_rescale_rnd(ctx->duration, vf->timescale,
-                                       AV_TIME_BASE, AV_ROUND_UP);
-        vf->is_audio  = st->codec->codec_type == AVMEDIA_TYPE_AUDIO;
-        vf->is_video  = st->codec->codec_type == AVMEDIA_TYPE_VIDEO;
+        track->bitrate   = st->codec->bit_rate;
+        track->track_id  = st->id;
+        track->timescale = st->time_base.den;
+        track->duration  = av_rescale_rnd(ctx->duration, track->timescale,
+                                          AV_TIME_BASE, AV_ROUND_UP);
+        track->is_audio  = st->codec->codec_type == AVMEDIA_TYPE_AUDIO;
+        track->is_video  = st->codec->codec_type == AVMEDIA_TYPE_VIDEO;
 
-        if (!vf->is_audio && !vf->is_video) {
+        if (!track->is_audio && !track->is_video) {
             fprintf(stderr,
                     "Track %d in %s is neither video nor audio, skipping\n",
-                    vf->track_id, file);
-            av_freep(&files->files[files->nb_files]);
+                    track->track_id, file);
+            av_freep(&tracks->tracks[tracks->nb_tracks]);
             continue;
         }
 
-        if (vf->is_audio) {
-            if (files->audio_file < 0)
-                files->audio_file = files->nb_files;
-            files->nb_audio_files++;
-            vf->channels    = st->codec->channels;
-            vf->sample_rate = st->codec->sample_rate;
+        if (track->is_audio) {
+            if (tracks->audio_track < 0)
+                tracks->audio_track = tracks->nb_tracks;
+            tracks->nb_audio_tracks++;
+            track->channels    = st->codec->channels;
+            track->sample_rate = st->codec->sample_rate;
             if (st->codec->codec_id == AV_CODEC_ID_AAC) {
-                vf->fourcc    = "AACL";
-                vf->tag       = 255;
-                vf->blocksize = 4;
+                track->fourcc    = "AACL";
+                track->tag       = 255;
+                track->blocksize = 4;
             } else if (st->codec->codec_id == AV_CODEC_ID_WMAPRO) {
-                vf->fourcc    = "WMAP";
-                vf->tag       = st->codec->codec_tag;
-                vf->blocksize = st->codec->block_align;
+                track->fourcc    = "WMAP";
+                track->tag       = st->codec->codec_tag;
+                track->blocksize = st->codec->block_align;
             }
-            get_private_data(vf, st->codec);
+            get_private_data(track, st->codec);
         }
-        if (vf->is_video) {
-            if (files->video_file < 0)
-                files->video_file = files->nb_files;
-            files->nb_video_files++;
-            vf->width  = st->codec->width;
-            vf->height = st->codec->height;
+        if (track->is_video) {
+            if (tracks->video_track < 0)
+                tracks->video_track = tracks->nb_tracks;
+            tracks->nb_video_tracks++;
+            track->width  = st->codec->width;
+            track->height = st->codec->height;
             if (st->codec->codec_id == AV_CODEC_ID_H264)
-                vf->fourcc = "H264";
+                track->fourcc = "H264";
             else if (st->codec->codec_id == AV_CODEC_ID_VC1)
-                vf->fourcc = "WVC1";
-            get_video_private_data(vf, st->codec);
+                track->fourcc = "WVC1";
+            get_video_private_data(track, st->codec);
         }
 
-        files->nb_files++;
+        tracks->nb_tracks++;
     }
 
     avformat_close_input(&ctx);
 
-    err = read_mfra(files, orig_files, file, split);
+    err = read_mfra(tracks, orig_tracks, file, split);
 
 fail:
     if (ctx)
@@ -374,7 +374,7 @@ fail:
     return err;
 }
 
-static void output_server_manifest(struct VideoFiles *files,
+static void output_server_manifest(struct Tracks *tracks,
                                    const char *basename)
 {
     char filename[1000];
@@ -395,13 +395,13 @@ static void output_server_manifest(struct VideoFiles *files,
     fprintf(out, "\t</head>\n");
     fprintf(out, "\t<body>\n");
     fprintf(out, "\t\t<switch>\n");
-    for (i = 0; i < files->nb_files; i++) {
-        struct VideoFile *vf = files->files[i];
-        const char *type     = vf->is_video ? "video" : "audio";
+    for (i = 0; i < tracks->nb_tracks; i++) {
+        struct Track *track = tracks->tracks[i];
+        const char *type    = track->is_video ? "video" : "audio";
         fprintf(out, "\t\t\t<%s src=\"%s\" systemBitrate=\"%d\">\n",
-                type, vf->name, vf->bitrate);
+                type, track->name, track->bitrate);
         fprintf(out, "\t\t\t\t<param name=\"trackID\" value=\"%d\" "
-                     "valueType=\"data\" />\n", vf->track_id);
+                     "valueType=\"data\" />\n", track->track_id);
         fprintf(out, "\t\t\t</%s>\n", type);
     }
     fprintf(out, "\t\t</switch>\n");
@@ -410,7 +410,7 @@ static void output_server_manifest(struct VideoFiles *files,
     fclose(out);
 }
 
-static void output_client_manifest(struct VideoFiles *files,
+static void output_client_manifest(struct Tracks *tracks,
                                    const char *basename, int split)
 {
     char filename[1000];
@@ -428,84 +428,84 @@ static void output_client_manifest(struct VideoFiles *files,
     }
     fprintf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     fprintf(out, "<SmoothStreamingMedia MajorVersion=\"2\" MinorVersion=\"0\" "
-                 "Duration=\"%"PRId64 "\">\n", files->duration * 10);
-    if (files->video_file >= 0) {
-        struct VideoFile *vf = files->files[files->video_file];
-        struct VideoFile *first_vf = vf;
+                 "Duration=\"%"PRId64 "\">\n", tracks->duration * 10);
+    if (tracks->video_track >= 0) {
+        struct Track *track = tracks->tracks[tracks->video_track];
+        struct Track *first_track = track;
         int index = 0;
         fprintf(out,
                 "\t<StreamIndex Type=\"video\" QualityLevels=\"%d\" "
                 "Chunks=\"%d\" "
                 "Url=\"QualityLevels({bitrate})/Fragments(video={start time})\">\n",
-                files->nb_video_files, vf->chunks);
-        for (i = 0; i < files->nb_files; i++) {
-            vf = files->files[i];
-            if (!vf->is_video)
+                tracks->nb_video_tracks, track->chunks);
+        for (i = 0; i < tracks->nb_tracks; i++) {
+            track = tracks->tracks[i];
+            if (!track->is_video)
                 continue;
             fprintf(out,
                     "\t\t<QualityLevel Index=\"%d\" Bitrate=\"%d\" "
                     "FourCC=\"%s\" MaxWidth=\"%d\" MaxHeight=\"%d\" "
                     "CodecPrivateData=\"",
-                    index, vf->bitrate, vf->fourcc, vf->width, vf->height);
-            for (j = 0; j < vf->codec_private_size; j++)
-                fprintf(out, "%02X", vf->codec_private[j]);
+                    index, track->bitrate, track->fourcc, track->width, track->height);
+            for (j = 0; j < track->codec_private_size; j++)
+                fprintf(out, "%02X", track->codec_private[j]);
             fprintf(out, "\" />\n");
             index++;
-            if (vf->chunks != first_vf->chunks)
+            if (track->chunks != first_track->chunks)
                 fprintf(stderr, "Mismatched number of video chunks in %s and %s\n",
-                        vf->name, first_vf->name);
+                        track->name, first_track->name);
         }
-        vf = first_vf;
-        for (i = 0; i < vf->chunks; i++) {
-            for (j = files->video_file + 1; j < files->nb_files; j++) {
-                if (files->files[j]->is_video &&
-                    vf->offsets[i].duration != files->files[j]->offsets[i].duration)
+        track = first_track;
+        for (i = 0; i < track->chunks; i++) {
+            for (j = tracks->video_track + 1; j < tracks->nb_tracks; j++) {
+                if (tracks->tracks[j]->is_video &&
+                    track->offsets[i].duration != tracks->tracks[j]->offsets[i].duration)
                     fprintf(stderr, "Mismatched duration of video chunk %d in %s and %s\n",
-                            i, vf->name, files->files[j]->name);
+                            i, track->name, tracks->tracks[j]->name);
             }
             fprintf(out, "\t\t<c n=\"%d\" d=\"%d\" />\n", i,
-                    vf->offsets[i].duration);
+                    track->offsets[i].duration);
         }
         fprintf(out, "\t</StreamIndex>\n");
     }
-    if (files->audio_file >= 0) {
-        struct VideoFile *vf = files->files[files->audio_file];
-        struct VideoFile *first_vf = vf;
+    if (tracks->audio_track >= 0) {
+        struct Track *track = tracks->tracks[tracks->audio_track];
+        struct Track *first_track = track;
         int index = 0;
         fprintf(out,
                 "\t<StreamIndex Type=\"audio\" QualityLevels=\"%d\" "
                 "Chunks=\"%d\" "
                 "Url=\"QualityLevels({bitrate})/Fragments(audio={start time})\">\n",
-                files->nb_audio_files, vf->chunks);
-        for (i = 0; i < files->nb_files; i++) {
-            vf = files->files[i];
-            if (!vf->is_audio)
+                tracks->nb_audio_tracks, track->chunks);
+        for (i = 0; i < tracks->nb_tracks; i++) {
+            track = tracks->tracks[i];
+            if (!track->is_audio)
                 continue;
             fprintf(out,
                     "\t\t<QualityLevel Index=\"%d\" Bitrate=\"%d\" "
                     "FourCC=\"%s\" SamplingRate=\"%d\" Channels=\"%d\" "
                     "BitsPerSample=\"16\" PacketSize=\"%d\" "
                     "AudioTag=\"%d\" CodecPrivateData=\"",
-                    index, vf->bitrate, vf->fourcc, vf->sample_rate,
-                    vf->channels, vf->blocksize, vf->tag);
-            for (j = 0; j < vf->codec_private_size; j++)
-                fprintf(out, "%02X", vf->codec_private[j]);
+                    index, track->bitrate, track->fourcc, track->sample_rate,
+                    track->channels, track->blocksize, track->tag);
+            for (j = 0; j < track->codec_private_size; j++)
+                fprintf(out, "%02X", track->codec_private[j]);
             fprintf(out, "\" />\n");
             index++;
-            if (vf->chunks != first_vf->chunks)
+            if (track->chunks != first_track->chunks)
                 fprintf(stderr, "Mismatched number of audio chunks in %s and %s\n",
-                        vf->name, first_vf->name);
+                        track->name, first_track->name);
         }
-        vf = first_vf;
-        for (i = 0; i < vf->chunks; i++) {
-            for (j = files->audio_file + 1; j < files->nb_files; j++) {
-                if (files->files[j]->is_audio &&
-                    vf->offsets[i].duration != files->files[j]->offsets[i].duration)
+        track = first_track;
+        for (i = 0; i < track->chunks; i++) {
+            for (j = tracks->audio_track + 1; j < tracks->nb_tracks; j++) {
+                if (tracks->tracks[j]->is_audio &&
+                    track->offsets[i].duration != tracks->tracks[j]->offsets[i].duration)
                     fprintf(stderr, "Mismatched duration of audio chunk %d in %s and %s\n",
-                            i, vf->name, files->files[j]->name);
+                            i, track->name, tracks->tracks[j]->name);
             }
             fprintf(out, "\t\t<c n=\"%d\" d=\"%d\" />\n",
-                    i, vf->offsets[i].duration);
+                    i, track->offsets[i].duration);
         }
         fprintf(out, "\t</StreamIndex>\n");
     }
@@ -513,23 +513,23 @@ static void output_client_manifest(struct VideoFiles *files,
     fclose(out);
 }
 
-static void clean_files(struct VideoFiles *files)
+static void clean_tracks(struct Tracks *tracks)
 {
     int i;
-    for (i = 0; i < files->nb_files; i++) {
-        av_freep(&files->files[i]->codec_private);
-        av_freep(&files->files[i]->offsets);
-        av_freep(&files->files[i]);
+    for (i = 0; i < tracks->nb_tracks; i++) {
+        av_freep(&tracks->tracks[i]->codec_private);
+        av_freep(&tracks->tracks[i]->offsets);
+        av_freep(&tracks->tracks[i]);
     }
-    av_freep(&files->files);
-    files->nb_files = 0;
+    av_freep(&tracks->tracks);
+    tracks->nb_tracks = 0;
 }
 
 int main(int argc, char **argv)
 {
     const char *basename = NULL;
     int split = 0, i;
-    struct VideoFiles vf = { 0, .video_file = -1, .audio_file = -1 };
+    struct Tracks tracks = { 0, .video_track = -1, .audio_track = -1 };
 
     av_register_all();
 
@@ -542,18 +542,18 @@ int main(int argc, char **argv)
         } else if (argv[i][0] == '-') {
             return usage(argv[0], 1);
         } else {
-            if (handle_file(&vf, argv[i], split))
+            if (handle_file(&tracks, argv[i], split))
                 return 1;
         }
     }
-    if (!vf.nb_files || (!basename && !split))
+    if (!tracks.nb_tracks || (!basename && !split))
         return usage(argv[0], 1);
 
     if (!split)
-        output_server_manifest(&vf, basename);
-    output_client_manifest(&vf, basename, split);
+        output_server_manifest(&tracks, basename);
+    output_client_manifest(&tracks, basename, split);
 
-    clean_files(&vf);
+    clean_tracks(&tracks);
 
     return 0;
 }
