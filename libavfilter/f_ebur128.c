@@ -665,22 +665,6 @@ static int query_formats(AVFilterContext *ctx)
     static const int input_srate[] = {48000, -1}; // ITU-R BS.1770 provides coeff only for 48kHz
     static const enum AVPixelFormat pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
 
-    /* set input audio formats */
-    formats = ff_make_format_list(sample_fmts);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_formats_ref(formats, &inlink->out_formats);
-
-    layouts = ff_all_channel_layouts();
-    if (!layouts)
-        return AVERROR(ENOMEM);
-    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
-
-    formats = ff_make_format_list(input_srate);
-    if (!formats)
-        return AVERROR(ENOMEM);
-    ff_formats_ref(formats, &inlink->out_samplerates);
-
     /* set optional output video format */
     if (ebur128->do_video) {
         formats = ff_make_format_list(pix_fmts);
@@ -690,20 +674,25 @@ static int query_formats(AVFilterContext *ctx)
         outlink = ctx->outputs[1];
     }
 
-    /* set audio output formats (same as input since it's just a passthrough) */
+    /* set input and output audio formats
+     * Note: ff_set_common_* functions are not used because they affect all the
+     * links, and thus break the video format negociation */
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
+    ff_formats_ref(formats, &inlink->out_formats);
     ff_formats_ref(formats, &outlink->in_formats);
 
     layouts = ff_all_channel_layouts();
     if (!layouts)
         return AVERROR(ENOMEM);
+    ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
     ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
 
     formats = ff_make_format_list(input_srate);
     if (!formats)
         return AVERROR(ENOMEM);
+    ff_formats_ref(formats, &inlink->out_samplerates);
     ff_formats_ref(formats, &outlink->in_samplerates);
 
     return 0;
