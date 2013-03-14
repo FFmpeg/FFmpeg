@@ -1743,12 +1743,19 @@ eoi_parser:
                 *got_frame = 1;
                 s->got_picture = 0;
 
-                if (!s->lossless &&
-                    avctx->debug & FF_DEBUG_QP) {
-                    av_log(avctx, AV_LOG_DEBUG,
-                           "QP: %d\n", FFMAX3(s->qscale[0],
-                                              s->qscale[1],
-                                              s->qscale[2]));
+                if (!s->lossless) {
+                    int qp = FFMAX3(s->qscale[0],
+                                    s->qscale[1],
+                                    s->qscale[2]);
+                    int qpw = (s->width + 15) / 16;
+                    AVBufferRef *qp_table_buf = av_buffer_alloc(qpw);
+                    if (qp_table_buf) {
+                        memset(qp_table_buf->data, qp, qpw);
+                        av_frame_set_qp_table(data, qp_table_buf, 0, FF_QSCALE_TYPE_MPEG1);
+                    }
+
+                    if(avctx->debug & FF_DEBUG_QP)
+                        av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", qp);
                 }
 
                 goto the_end;
