@@ -1101,7 +1101,8 @@ static int decode_seq_header(AVSContext *h)
     width  = get_bits(&h->gb, 14);
     height = get_bits(&h->gb, 14);
     if ((h->width || h->height) && (h->width != width || h->height != height)) {
-        av_log_missing_feature(h->avctx, "Width/height changing in CAVS", 0);
+        avpriv_report_missing_feature(h->avctx,
+                                      "Width/height changing in CAVS");
         return AVERROR_PATCHWELCOME;
     }
     if (width <= 0 || height <= 0) {

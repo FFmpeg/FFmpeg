@@ -369,7 +369,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
         bps -= wasted;
     }
     if (bps > 32) {
-        av_log_missing_feature(s->avctx, "Decorrelated bit depth > 32", 0);
+        avpriv_report_missing_feature(s->avctx, "Decorrelated bit depth > 32");
         return AVERROR_PATCHWELCOME;
     }
 

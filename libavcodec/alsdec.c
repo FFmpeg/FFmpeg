@@ -433,7 +433,8 @@ static int check_specific_config(ALSDecContext *ctx)
     #define MISSING_ERR(cond, str, errval)              \
     {                                                   \
         if (cond) {                                     \
-            av_log_missing_feature(ctx->avctx, str, 0); \
+            avpriv_report_missing_feature(ctx->avctx,   \
+                                          str);         \
             error = errval;                             \
         }                                               \
     }

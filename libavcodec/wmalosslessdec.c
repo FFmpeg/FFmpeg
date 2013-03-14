@@ -189,7 +189,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
             avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
         else if (s->bits_per_sample == 24) {
             avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
-            av_log_missing_feature(avctx, "Bit-depth higher than 16", 0);
+            avpriv_report_missing_feature(avctx, "Bit-depth higher than 16");
             return AVERROR_PATCHWELCOME;
         } else {
             av_log(avctx, AV_LOG_ERROR, "Unknown bit-depth: %d\n",
