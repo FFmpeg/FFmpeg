@@ -493,7 +493,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", rv->sub_id);
-        av_log_missing_feature(avctx, "RV1/2 version", 1);
+        avpriv_request_sample(avctx, "RV1/2 version");
         return AVERROR_PATCHWELCOME;
     }
 

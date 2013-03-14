@@ -392,7 +392,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
             ctx->num_hblocks[i] =     width   >> (3 + !!i);
         }
     } else if (width != ctx->avctx->width || height != ctx->avctx->height) {
-        av_log_missing_feature(avctx, "resolution changing", 1);
+        avpriv_request_sample(avctx, "Resolution changing");
         return AVERROR_PATCHWELCOME;
     }
 

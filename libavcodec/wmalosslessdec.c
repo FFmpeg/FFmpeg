@@ -886,7 +886,7 @@ static int decode_subframe(WmallDecodeCtx *s)
 
         s->do_arith_coding    = get_bits1(&s->gb);
         if (s->do_arith_coding) {
-            av_log_missing_feature(s->avctx, "Arithmetic coding", 1);
+            avpriv_request_sample(s->avctx, "Arithmetic coding");
             return AVERROR_PATCHWELCOME;
         }
         s->do_ac_filter       = get_bits1(&s->gb);
@@ -1189,7 +1189,7 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         skip_bits(gb, 1);   // Skip seekable_frame_in_packet, currently ununused
         spliced_packet = get_bits1(gb);
         if (spliced_packet)
-            av_log_missing_feature(avctx, "Bitstream splicing", 1);
+            avpriv_request_sample(avctx, "Bitstream splicing");
 
         /* get number of bits that need to be added to the previous frame */
         num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
