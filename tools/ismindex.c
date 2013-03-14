@@ -305,10 +305,21 @@ static int handle_file(struct Tracks *tracks, const char *file, int split)
         tracks->duration = ctx->duration;
 
     for (i = 0; i < ctx->nb_streams; i++) {
+        struct Track **temp;
         AVStream *st = ctx->streams[i];
         track = av_mallocz(sizeof(*track));
-        tracks->tracks = av_realloc(tracks->tracks,
-                                    sizeof(*tracks->tracks) * (tracks->nb_tracks + 1));
+        if (!track) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+        temp = av_realloc(tracks->tracks,
+                          sizeof(*tracks->tracks) * (tracks->nb_tracks + 1));
+        if (!temp) {
+            av_free(track);
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+        tracks->tracks = temp;
         tracks->tracks[tracks->nb_tracks] = track;
 
         track->name = file;

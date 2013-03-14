@@ -32,9 +32,11 @@
 #if HAVE_IO_H
 #include <io.h>
 #endif
+#include <stdarg.h>
 #include <stdlib.h>
 #include "avutil.h"
 #include "common.h"
+#include "internal.h"
 #include "log.h"
 
 #define LINE_SZ 1024
@@ -277,4 +279,41 @@ void av_log_set_flags(int arg)
 void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
 {
     av_log_callback = callback;
+}
+
+static void missing_feature_sample(int sample, void *avc, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+
+    av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
+    av_log(avc, AV_LOG_WARNING, " is not implemented. Update your FFmpeg "
+           "version to the newest one from Git. If the problem still "
+           "occurs, it means that your file has a feature which has not "
+           "been implemented.\n");
+    if (sample)
+        av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
+               "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
+               "and contact the ffmpeg-devel mailing list.\n");
+
+    va_end(argument_list);
+}
+
+void avpriv_request_sample(void *avc, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    missing_feature_sample(1, avc, msg, argument_list);
+    va_end(argument_list);
+}
+
+void avpriv_report_missing_feature(void *avc, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    missing_feature_sample(0, avc, msg, argument_list);
+    va_end(argument_list);
 }
