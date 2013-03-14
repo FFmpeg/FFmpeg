@@ -134,6 +134,9 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
                                  frame->format);
         break;
     case AVMEDIA_TYPE_AUDIO:
+        /* For layouts unknown on input but known on link after negotiation. */
+        if (!frame->channel_layout)
+            frame->channel_layout = s->channel_layout;
         CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
                                  frame->format);
         break;
