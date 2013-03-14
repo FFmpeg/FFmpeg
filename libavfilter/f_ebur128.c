@@ -690,6 +690,22 @@ static int query_formats(AVFilterContext *ctx)
         outlink = ctx->outputs[1];
     }
 
+    /* set audio output formats (same as input since it's just a passthrough) */
+    formats = ff_make_format_list(sample_fmts);
+    if (!formats)
+        return AVERROR(ENOMEM);
+    ff_formats_ref(formats, &outlink->in_formats);
+
+    layouts = ff_all_channel_layouts();
+    if (!layouts)
+        return AVERROR(ENOMEM);
+    ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
+
+    formats = ff_make_format_list(input_srate);
+    if (!formats)
+        return AVERROR(ENOMEM);
+    ff_formats_ref(formats, &outlink->in_samplerates);
+
     return 0;
 }
 
