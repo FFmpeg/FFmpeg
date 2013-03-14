@@ -651,8 +651,6 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
                            avctx->channels);
                     return AVERROR(ENOSYS);
                 }
-
-                frame->channel_layout = av_get_default_channel_layout(avctx->channels);
             }
         }
         av_frame_set_channels(frame, avctx->channels);
