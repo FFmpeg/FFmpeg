@@ -49,6 +49,7 @@ av_cold void ff_dsputil_init_vis(DSPContext *c, AVCodecContext *avctx)
 {
   /* VIS-specific optimizations */
   int accel = vis_level ();
+  const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
   if (accel & ACCEL_SPARC_VIS && !high_bit_depth) {
       if (avctx->idct_algo == FF_IDCT_SIMPLEVIS) {
