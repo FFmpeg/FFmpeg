@@ -1511,6 +1511,7 @@ CONFIG_EXTRA="
     audio_frame_queue
     dsputil
     error_resilience
+    frame_thread_encoder
     gcrypt
     golomb
     gplv3
@@ -1671,6 +1672,7 @@ log2_deps="!msvcrt"
 # subsystems
 dct_select="rdft"
 error_resilience_select="dsputil"
+frame_thread_encoder_deps="encoders threads"
 mdct_select="fft"
 rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
@@ -4239,6 +4241,7 @@ case $target_os in
 esac
 
 enabled_any $THREADS_LIST      && enable threads
+enable frame_thread_encoder
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
