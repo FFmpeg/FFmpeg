@@ -150,7 +150,7 @@ static int init_filters(const char *filters_descr)
     return 0;
 }
 
-static void print_frame(AVFrame *frame)
+static void print_frame(const AVFrame *frame)
 {
     const int n = frame->nb_samples * av_get_channel_layout_nb_channels(av_frame_get_channel_layout(frame));
     const uint16_t *p     = (uint16_t*)frame->data[0];

@@ -138,7 +138,7 @@ static int init_filters(const char *filters_descr)
     return 0;
 }
 
-static void display_frame(AVFrame *frame, AVRational time_base)
+static void display_frame(const AVFrame *frame, AVRational time_base)
 {
     int x, y;
     uint8_t *p0, *p;
