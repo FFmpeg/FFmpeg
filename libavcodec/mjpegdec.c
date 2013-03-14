@@ -743,18 +743,18 @@ static void handle_rstn(MJpegDecodeContext *s, int nb_components)
         i = 8 + ((-get_bits_count(&s->gb)) & 7);
         /* skip RSTn */
         if (s->restart_count == 0) {
-          if(   show_bits(&s->gb, i) == (1 << i) - 1
-             || show_bits(&s->gb, i) == 0xFF) {
-            int pos = get_bits_count(&s->gb);
-            align_get_bits(&s->gb);
-            while (get_bits_left(&s->gb) >= 8 && show_bits(&s->gb, 8) == 0xFF)
-                skip_bits(&s->gb, 8);
-            if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
-                for (i = 0; i < nb_components; i++) /* reset dc */
-                    s->last_dc[i] = 1024;
-            } else
-                skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
-          }
+            if(   show_bits(&s->gb, i) == (1 << i) - 1
+               || show_bits(&s->gb, i) == 0xFF) {
+                int pos = get_bits_count(&s->gb);
+                align_get_bits(&s->gb);
+                while (get_bits_left(&s->gb) >= 8 && show_bits(&s->gb, 8) == 0xFF)
+                    skip_bits(&s->gb, 8);
+                if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
+                    for (i = 0; i < nb_components; i++) /* reset dc */
+                        s->last_dc[i] = 1024;
+                } else
+                    skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
+            }
         }
     }
 }
