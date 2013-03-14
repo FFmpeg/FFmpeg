@@ -1990,6 +1990,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
             if (ret < 0)
                 return ret;
             ff_print_debug_info(s, s->current_picture_ptr, pict);
+            av_frame_set_qp_table(pict, av_buffer_ref(s->current_picture_ptr->qscale_table_buf), s->mb_stride, FF_QSCALE_TYPE_MPEG2);
         } else {
             if (avctx->active_thread_type & FF_THREAD_FRAME)
                 s->picture_number++;
@@ -2000,6 +2001,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
                 if (ret < 0)
                     return ret;
                 ff_print_debug_info(s, s->last_picture_ptr, pict);
+                av_frame_set_qp_table(pict, av_buffer_ref(s->last_picture_ptr->qscale_table_buf), s->mb_stride, FF_QSCALE_TYPE_MPEG2);
             }
         }
 
