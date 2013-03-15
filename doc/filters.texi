@@ -6531,6 +6531,19 @@ Set the EBU scale meter. Default is @code{9}. Common values are @code{9} and
 @code{18}, respectively for EBU scale meter +9 and EBU scale meter +18. Any
 other integer value between this range is allowed.
 
+@item framelog
+Force the frame logging level.
+
+Available values are:
+@table @samp
+@item info
+information logging level
+@item verbose
+verbose logging level
+@end table
+
+By default, the logging level is set to @var{info}. If the @option{video}
+option is set, it switches to @var{verbose}.
 @end table
 
 @subsection Examples

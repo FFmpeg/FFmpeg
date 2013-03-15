@@ -123,6 +123,9 @@ typedef struct {
     double integrated_loudness;     ///< integrated loudness in LUFS (I)
     double loudness_range;          ///< loudness range in LU (LRA)
     double lra_low, lra_high;       ///< low and high LRA values
+
+    /* misc */
+    int loglevel;                   ///< log level for frame logging
 } EBUR128Context;
 
 #define OFFSET(x) offsetof(EBUR128Context, x)
@@ -133,6 +136,9 @@ static const AVOption ebur128_options[] = {
     { "video", "set video output", OFFSET(do_video), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, V|F },
     { "size",  "set video size",   OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "640x480"}, 0, 0, V|F },
     { "meter", "set scale meter (+9 to +18)",  OFFSET(meter), AV_OPT_TYPE_INT, {.i64 = 9}, 9, 18, V|F },
+    { "framelog", "force frame logging level", OFFSET(loglevel), AV_OPT_TYPE_INT, {.i64 = -1},   INT_MIN, INT_MAX, A|V|F, "level" },
+        { "info",    "information logging level", 0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_INFO},    INT_MIN, INT_MAX, A|V|F, "level" },
+        { "verbose", "verbose logging level",     0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_VERBOSE}, INT_MIN, INT_MAX, A|V|F, "level" },
     { NULL },
 };
 
@@ -385,6 +391,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     if ((ret = av_set_options_string(ebur128, args, "=", ":")) < 0)
         return ret;
+
+    if (ebur128->loglevel != AV_LOG_INFO &&
+        ebur128->loglevel != AV_LOG_VERBOSE) {
+        if (ebur128->do_video)
+            ebur128->loglevel = AV_LOG_VERBOSE;
+        else
+            ebur128->loglevel = AV_LOG_INFO;
+    }
 
     // if meter is  +9 scale, scale range is from -18 LU to  +9 LU (or 3*9)
     // if meter is +18 scale, scale range is from -36 LU to +18 LU (or 3*18)
@@ -643,8 +657,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     return ret;
             }
 
-            av_log(ctx, ebur128->do_video ? AV_LOG_VERBOSE : AV_LOG_INFO,
-                   "t: %-10s " LOG_FMT "\n", av_ts2timestr(pts, &outlink->time_base),
+            av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT "\n",
+                   av_ts2timestr(pts, &outlink->time_base),
                    loudness_400, loudness_3000,
                    ebur128->integrated_loudness, ebur128->loudness_range);
         }
