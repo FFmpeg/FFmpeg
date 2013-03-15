@@ -118,10 +118,10 @@ static inline void memcpy_backptr(uint8_t *dst, int back, int cnt);
  * cnt > back is valid, this will copy the bytes we just copied,
  * thus creating a repeating pattern with a period length of back.
  */
-static inline void copy_backptr(LZOContext *c, int back, int cnt) {
-    register const uint8_t *src = &c->out[-back];
-    register uint8_t *dst = c->out;
-    if (src < c->out_start || src > dst) {
+static inline void copy_backptr(LZOContext *c, int back, int cnt)
+{
+    register uint8_t *dst       = c->out;
+    if (dst - c->out_start < back) {
         c->error |= AV_LZO_INVALID_BACKPTR;
         return;
     }
