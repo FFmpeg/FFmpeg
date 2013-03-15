@@ -288,6 +288,9 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         case AV_CODEC_ID_H264:
             stream_type = STREAM_TYPE_VIDEO_H264;
             break;
+        case AV_CODEC_ID_CAVS:
+            stream_type = STREAM_TYPE_VIDEO_CAVS;
+            break;
         case AV_CODEC_ID_DIRAC:
             stream_type = STREAM_TYPE_VIDEO_DIRAC;
             break;
