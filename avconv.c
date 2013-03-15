@@ -2704,6 +2704,8 @@ static int transcode(OutputFile *output_files,
             double  opts;
             ost = &output_streams[i];
             of = &output_files[ost->file_index];
+            if (ost->source_index < 0)
+                continue;
             os = output_files[ost->file_index].ctx;
             ist = &input_streams[ost->source_index];
             if (ost->is_past_recording_time || no_packet[ist->file_index] ||
