@@ -51,7 +51,7 @@ static int avr_read_header(AVFormatContext *s)
     } else if (chan == 0xFFFFu) {
         st->codec->channels = 2;
     } else {
-        av_log_ask_for_sample(s, "unknown number of channels\n");
+        avpriv_request_sample(s, "chan %d", chan);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -78,7 +78,7 @@ static int avr_read_header(AVFormatContext *s)
     } else if (sign == 0xFFFFu && bps == 16) {
         st->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
     } else {
-        av_log_ask_for_sample(s, "unknown bits per sample\n");
+        avpriv_request_sample(s, "bits per sample %d", bps);
         return AVERROR_PATCHWELCOME;
     }
 

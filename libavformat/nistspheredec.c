@@ -70,7 +70,7 @@ static int nist_read_header(AVFormatContext *s)
                        !av_strcasecmp(coding, "mu-law")) {
                 st->codec->codec_id = AV_CODEC_ID_PCM_MULAW;
             } else {
-                av_log_ask_for_sample(s, "unsupported coding: %s\n", coding);
+                avpriv_request_sample(s, "coding %s", coding);
             }
 
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
@@ -93,7 +93,7 @@ static int nist_read_header(AVFormatContext *s)
             } else if (!av_strcasecmp(format, "10")) {
                 be = 1;
             } else if (av_strcasecmp(format, "1")) {
-                av_log_ask_for_sample(s, "unsupported sample byte format: %s\n", format);
+                avpriv_request_sample(s, "sample byte format %s", format);
                 return AVERROR_PATCHWELCOME;
             }
         } else if (!memcmp(buffer, "sample_coding", 13)) {

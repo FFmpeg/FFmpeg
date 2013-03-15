@@ -172,7 +172,7 @@ static int parse_video_var(AVFormatContext *avctx, AVStream *st, const char *nam
         } else if (!strcmp(str, "MVC2")) {
             st->codec->codec_id = AV_CODEC_ID_MVC2;
         } else {
-            av_log_ask_for_sample(avctx, "unknown video compression %s\n", str);
+            avpriv_request_sample(avctx, "video compression %s", str);
         }
         av_free(str);
     } else if (!strcmp(name, "FPS")) {
@@ -214,7 +214,7 @@ static void read_table(AVFormatContext *avctx, AVStream *st, int (*parse)(AVForm
         name[sizeof(name) - 1] = 0;
         size = avio_rb32(pb);
         if (parse(avctx, st, name, size) < 0) {
-            av_log_ask_for_sample(avctx, "unknown variable %s\n", name);
+            avpriv_request_sample(avctx, "variable %s", name);
             avio_skip(pb, size);
         }
     }
@@ -274,7 +274,7 @@ static int mv_read_header(AVFormatContext *avctx)
             vst->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
             break;
         default:
-            av_log_ask_for_sample(avctx, "unknown video compression %i\n", v);
+            avpriv_request_sample(avctx, "video compression %i", v);
             break;
         }
         vst->codec->codec_tag = 0;
@@ -293,7 +293,7 @@ static int mv_read_header(AVFormatContext *avctx)
         if (v == AUDIO_FORMAT_SIGNED) {
             ast->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
         } else {
-            av_log_ask_for_sample(avctx, "unknown audio compression (format %i)\n", v);
+            avpriv_request_sample(avctx, "audio compression (format %i)", v);
         }
 
         avio_skip(pb, 12);
@@ -317,7 +317,7 @@ static int mv_read_header(AVFormatContext *avctx)
         read_table(avctx, NULL, parse_global_var);
 
         if (mv->nb_audio_tracks > 1) {
-            av_log_ask_for_sample(avctx, "multiple audio streams\n");
+            avpriv_request_sample(avctx, "multiple audio streams support");
             return AVERROR_PATCHWELCOME;
         } else if (mv->nb_audio_tracks) {
             ast = avformat_new_stream(avctx, NULL);
@@ -329,7 +329,7 @@ static int mv_read_header(AVFormatContext *avctx)
             if (ast->codec->codec_tag == 100 && ast->codec->codec_id == AUDIO_FORMAT_SIGNED && ast->codec->bits_per_coded_sample == 16) {
                 ast->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
             } else {
-                av_log_ask_for_sample(avctx, "unknown audio compression %i (format %i, width %i)\n",
+                avpriv_request_sample(avctx, "audio compression %i (format %i, width %i)",
                     ast->codec->codec_tag, ast->codec->codec_id, ast->codec->bits_per_coded_sample);
                 ast->codec->codec_id = AV_CODEC_ID_NONE;
             }
@@ -341,7 +341,7 @@ static int mv_read_header(AVFormatContext *avctx)
         }
 
         if (mv->nb_video_tracks > 1) {
-            av_log_ask_for_sample(avctx, "multiple video streams\n");
+            avpriv_request_sample(avctx, "multiple video streams support");
             return AVERROR_PATCHWELCOME;
         } else if (mv->nb_video_tracks) {
             vst = avformat_new_stream(avctx, NULL);
@@ -357,7 +357,7 @@ static int mv_read_header(AVFormatContext *avctx)
         if (mv->nb_video_tracks)
             read_index(pb, vst);
     } else {
-        av_log_ask_for_sample(avctx, "unknown version %i\n", version);
+        avpriv_request_sample(avctx, "version %i", version);
         return AVERROR_PATCHWELCOME;
     }
 

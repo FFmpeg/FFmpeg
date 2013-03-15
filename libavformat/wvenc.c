@@ -45,7 +45,7 @@ static int write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
     if (codec->extradata_size > 0) {
-        av_log_missing_feature(s, "remuxing from matroska container", 0);
+        avpriv_report_missing_feature(s, "remuxing from matroska container");
         return AVERROR_PATCHWELCOME;
     }
     avpriv_set_pts_info(s->streams[0], 64, 1, codec->sample_rate);

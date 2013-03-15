@@ -739,7 +739,7 @@ static int dca_parse_frame_header(DCAContext *s)
 
     if (s->lfe == 3) {
         s->lfe = 0;
-        av_log_ask_for_sample(s->avctx, "LFE is 3\n");
+        avpriv_request_sample(s->avctx, "LFE = 3");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -1012,7 +1012,7 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
         /* Scale factor index */
         quant7 = get_bits(&s->gb, 8);
         if (quant7 > 127) {
-            av_log_ask_for_sample(s->avctx, "LFEScaleIndex larger than 127\n");
+            avpriv_request_sample(s->avctx, "LFEScaleIndex larger than 127");
             return AVERROR_INVALIDDATA;
         }
         s->lfe_scale_factor = scale_factor_quant7[quant7];
@@ -2167,7 +2167,7 @@ static int dca_decode_frame(AVCodecContext *avctx, void *data,
                 }
 
                 if (s->xch_base_channel < 2) {
-                    av_log_ask_for_sample(avctx, "XCh with fewer than 2 base channels is not supported\n");
+                    avpriv_request_sample(avctx, "XCh with fewer than 2 base channels");
                     continue;
                 }
 

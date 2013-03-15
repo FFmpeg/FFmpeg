@@ -150,7 +150,7 @@ static int decode_mvc2(AVCodecContext *avctx, GetByteContext *gb, uint8_t *dst_s
         av_log(avctx, AV_LOG_WARNING, "dimension mismatch\n");
 
     if (bytestream2_get_byteu(gb)) {
-        av_log_ask_for_sample(avctx, "bitmap feature\n");
+        avpriv_request_sample(avctx, "bitmap feature");
         return AVERROR_PATCHWELCOME;
     }
 

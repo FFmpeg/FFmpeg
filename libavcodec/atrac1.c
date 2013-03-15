@@ -342,7 +342,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     }
 
     if (avctx->block_align <= 0) {
-        av_log_ask_for_sample(avctx, "unsupported block align\n");
+        av_log(avctx, AV_LOG_ERROR, "Unsupported block align.");
         return AVERROR_PATCHWELCOME;
     }
 

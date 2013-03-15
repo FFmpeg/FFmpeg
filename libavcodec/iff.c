@@ -345,7 +345,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
             } else if (avctx->bits_per_coded_sample == 32) {
                 avctx->pix_fmt = AV_PIX_FMT_BGR32;
             } else {
-                av_log_ask_for_sample(avctx, "unknown bits_per_coded_sample\n");
+                avpriv_request_sample(avctx, "unknown bits_per_coded_sample");
                 return AVERROR_PATCHWELCOME;
             }
         }
@@ -646,7 +646,7 @@ static void decode_deep_tvdc32(uint8_t *dst, const uint8_t *src, int src_size, i
 static int unsupported(AVCodecContext *avctx)
 {
     IffContext *s = avctx->priv_data;
-    av_log_ask_for_sample(avctx, "unsupported bitmap (compression %i, bpp %i, ham %i)\n", s->compression, s->bpp, s->ham);
+    avpriv_request_sample(avctx, "bitmap (compression %i, bpp %i, ham %i)", s->compression, s->bpp, s->ham);
     return AVERROR_INVALIDDATA;
 }
 

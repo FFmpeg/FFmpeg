@@ -77,7 +77,7 @@ static int epaf_read_header(AVFormatContext *s)
         st->codec->codec_id = AV_CODEC_ID_PCM_S8;
         break;
     case 1:
-        av_log_missing_feature(s, "24-bit Paris PCM format", 1);
+        avpriv_request_sample(s, "24-bit Paris PCM format");
     default:
         return AVERROR_INVALIDDATA;
     }

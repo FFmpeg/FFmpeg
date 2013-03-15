@@ -342,7 +342,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
         }
         break;
     default:
-        av_log_ask_for_sample(avctx, "unknown/invalid code\n");
+        avpriv_request_sample(avctx, "unknown/invalid code");
         return AVERROR_INVALIDDATA;
     }
 

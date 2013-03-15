@@ -697,7 +697,7 @@ static int decode_frame(AVCodecContext *avctx,
             avctx->pix_fmt = AV_PIX_FMT_RGB48;
         break;
     case EXR_UINT:
-        av_log_missing_feature(avctx, "32-bit unsigned int", 1);
+        avpriv_request_sample(avctx, "32-bit unsigned int");
         return AVERROR_PATCHWELCOME;
     default:
         av_log(avctx, AV_LOG_ERROR, "Missing channel list\n");

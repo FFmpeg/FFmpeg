@@ -101,7 +101,7 @@ static int decode_sgirle8(AVCodecContext *avctx, uint8_t *dst, const uint8_t *sr
                 v   -= length;
             } while (v > 0);
         } else {
-            av_log_ask_for_sample(avctx, "unknown opcode\n");
+            avpriv_request_sample(avctx, "opcode %d", v);
             return AVERROR_PATCHWELCOME;
         }
     }

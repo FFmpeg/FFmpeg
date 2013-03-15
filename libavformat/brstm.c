@@ -75,7 +75,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
     if (bom == 0xFFFE) {
-        av_log_ask_for_sample(s, "unsupported byte order\n");
+        avpriv_request_sample(s, "little endian byte order");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -110,7 +110,7 @@ static int read_header(AVFormatContext *s)
     case 1: codec = AV_CODEC_ID_PCM_S16BE_PLANAR; break;
     case 2: codec = AV_CODEC_ID_ADPCM_THP;        break;
     default:
-        av_log_ask_for_sample(s, "unsupported codec: %d\n", codec);
+        avpriv_request_sample(s, "codec %d", codec);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -220,8 +220,8 @@ static int read_header(AVFormatContext *s)
             }
             avio_skip(s->pb, start - avio_tell(s->pb));
 
-            if (major!=1 || minor)
-                av_log_ask_for_sample(s, "Version %d.%d\n", major, minor);
+            if (major != 1 || minor)
+                avpriv_request_sample(s, "Version %d.%d", major, minor);
 
             return 0;
         default:

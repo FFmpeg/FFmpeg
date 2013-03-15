@@ -184,7 +184,7 @@ static int process_audio_header_elements(AVFormatContext *s)
         case  3: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R3; break;
         case -1: break;
         default:
-            av_log_ask_for_sample(s, "unsupported stream type; revision=%i\n", revision);
+            avpriv_request_sample(s, "stream type; revision=%i", revision);
             return 0;
         }
         switch (revision2) {
@@ -195,7 +195,7 @@ static int process_audio_header_elements(AVFormatContext *s)
             case  2: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R1; break;
             case  3: ea->audio_codec = AV_CODEC_ID_ADPCM_EA_R2; break;
             default:
-                av_log_ask_for_sample(s, "unsupported stream type; revision=%i, revision2=%i\n", revision, revision2);
+                avpriv_request_sample(s, "stream type; revision=%i, revision2=%i", revision, revision2);
                 return 0;
             }
             break;
@@ -203,12 +203,12 @@ static int process_audio_header_elements(AVFormatContext *s)
         case -1: break;
         default:
             ea->audio_codec = AV_CODEC_ID_NONE;
-            av_log_ask_for_sample(s, "unsupported stream type; revision2=%i\n", revision2);
+            avpriv_request_sample(s, "stream type; revision2=%i", revision2);
             return 0;
         }
         break;
     default:
-        av_log_ask_for_sample(s, "unsupported stream type; compression_type=%i\n", compression_type);
+        avpriv_request_sample(s, "stream type; compression_type=%i", compression_type);
         return 0;
     }
 
@@ -244,7 +244,7 @@ static int process_audio_header_eacs(AVFormatContext *s)
     case 1: ea->audio_codec = AV_CODEC_ID_PCM_MULAW; ea->bytes = 1; break;
     case 2: ea->audio_codec = AV_CODEC_ID_ADPCM_IMA_EA_EACS; break;
     default:
-        av_log_ask_for_sample(s, "unsupported stream type; audio compression_type=%i\n", compression_type);
+        avpriv_request_sample(s, "stream type; audio compression_type=%i", compression_type);
     }
 
     return 1;
@@ -332,7 +332,7 @@ static int process_ea_header(AVFormatContext *s) {
         switch (blockid) {
             case ISNh_TAG:
                 if (avio_rl32(pb) != EACS_TAG) {
-                    av_log_ask_for_sample(s, "unknown 1SNh headerid\n");
+                    avpriv_request_sample(s, "unknown 1SNh headerid");
                     return 0;
                 }
                 err = process_audio_header_eacs(s);
@@ -344,7 +344,7 @@ static int process_ea_header(AVFormatContext *s) {
                 if (blockid == GSTR_TAG) {
                     avio_skip(pb, 4);
                 } else if ((blockid & 0xFFFF)!=PT00_TAG) {
-                    av_log_ask_for_sample(s, "unknown SCHl headerid\n");
+                    avpriv_request_sample(s, "unknown SCHl headerid");
                     return 0;
                 }
                 err = process_audio_header_elements(s);
@@ -531,7 +531,7 @@ static int ea_read_packet(AVFormatContext *s,
                 chunk_size -= 12;
             }
             if (partial_packet) {
-                av_log_ask_for_sample(s, "video header followed by audio packet not supported.\n");
+                avpriv_request_sample(s, "video header followed by audio packet");
                 av_free_packet(pkt);
                 partial_packet = 0;
             }
