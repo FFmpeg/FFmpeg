@@ -6,6 +6,7 @@ version <next>:
 - reference-counting for AVFrame and AVPacket data
 - ffmpeg now fails when input options are used for output file
   or vice versa
+- SMPTE 302M audio encoder
 
 
 version 1.2:
