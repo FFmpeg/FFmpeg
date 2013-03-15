@@ -2196,6 +2196,18 @@ void ff_print_debug_info(MpegEncContext *s, Picture *p, AVFrame *pict)
                          s->mb_width, s->mb_height, s->mb_stride, s->quarter_sample);
 }
 
+int ff_mpv_export_qp_table(MpegEncContext *s, AVFrame *f, Picture *p, int qp_type)
+{
+    AVBufferRef *ref = av_buffer_ref(p->qscale_table_buf);
+    int offset = 2*s->mb_stride + 1;
+    if(!ref)
+        return AVERROR(ENOMEM);
+    av_assert0(ref->size >= offset + s->mb_stride * ((f->height+15)/16));
+    ref->size -= offset;
+    ref->data += offset;
+    return av_frame_set_qp_table(f, ref, s->mb_stride, qp_type);
+}
+
 static inline int hpel_motion_lowres(MpegEncContext *s,
                                      uint8_t *dest, uint8_t *src,
                                      int field_based, int field_select,

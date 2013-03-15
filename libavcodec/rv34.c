@@ -1584,13 +1584,13 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
         if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->current_picture_ptr, pict);
-        av_frame_set_qp_table(pict, av_buffer_ref(s->current_picture_ptr->qscale_table_buf), s->mb_stride, FF_QSCALE_TYPE_MPEG1);
+        ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_QSCALE_TYPE_MPEG1);
         got_picture = 1;
     } else if (s->last_picture_ptr != NULL) {
         if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
             return ret;
         ff_print_debug_info(s, s->last_picture_ptr, pict);
-        av_frame_set_qp_table(pict, av_buffer_ref(s->last_picture_ptr->qscale_table_buf), s->mb_stride, FF_QSCALE_TYPE_MPEG1);
+        ff_mpv_export_qp_table(s, pict, s->last_picture_ptr, FF_QSCALE_TYPE_MPEG1);
         got_picture = 1;
     }
 
