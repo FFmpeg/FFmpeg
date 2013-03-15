@@ -110,9 +110,8 @@ static inline void copy(LZOContext *c, int cnt)
  */
 static inline void copy_backptr(LZOContext *c, int back, int cnt)
 {
-    register const uint8_t *src = &c->out[-back];
     register uint8_t *dst       = c->out;
-    if (src < c->out_start || src > dst) {
+    if (dst - c->out_start < back) {
         c->error |= AV_LZO_INVALID_BACKPTR;
         return;
     }
