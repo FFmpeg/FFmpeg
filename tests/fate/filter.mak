@@ -58,6 +58,7 @@ FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 # Metadata tests
 #
 FILTER_METADATA_COMMAND = ffprobe$(EXESUF) -show_frames -of compact=nk=1:p=0 -bitexact -f lavfi
+FILTER_METADATA_COMMAND2 = ffprobe$(EXESUF) -show_frames -of compact=p=0 -show_entries frame=pkt_pts,metadata -bitexact -f lavfi
 
 SCENEDETECT_DEPS = FFPROBE LAVFI_INDEV MOVIE_FILTER SELECT_FILTER SCALE_FILTER \
                    AVCODEC AVDEVICE MOV_DEMUXER SVQ3_DECODER ZLIB
@@ -69,6 +70,11 @@ SILENCEDETECT_DEPS = FFPROBE AVDEVICE LAVFI_INDEV AMOVIE_FILTER AMR_DEMUXER AMRW
 FATE_METADATA_FILTER-$(call ALLYES, $(SILENCEDETECT_DEPS)) += fate-filter-metadata-silencedetect
 fate-filter-metadata-silencedetect: SRC = $(SAMPLES)/amrwb/seed-12k65.awb
 fate-filter-metadata-silencedetect: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SRC)',silencedetect=d=-20dB"
+
+EBUR128_METADATA_DEPS = FFPROBE AVDEVICE LAVFI_INDEV AMOVIE_FILTER FLAC_DEMUXER FLAC_DECODER
+FATE_METADATA_FILTER-$(call ALLYES, $(EBUR128_METADATA_DEPS)) += fate-filter-metadata-ebur128
+fate-filter-metadata-ebur128: SRC = $(SAMPLES)/filter/seq-3341-7_seq-3342-5-24bit.flac
+fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND2) "amovie='$(SRC)',ebur128=metadata=1"
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
