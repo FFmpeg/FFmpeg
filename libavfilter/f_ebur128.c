@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/dict.h"
 #include "libavutil/xga_font_data.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
@@ -126,6 +127,8 @@ typedef struct {
 
     /* misc */
     int loglevel;                   ///< log level for frame logging
+    int metadata;                   ///< whether or not to inject loudness results in frames
+    int request_fulfilled;          ///< 1 if some audio just got pushed, 0 otherwise. FIXME: remove me
 } EBUR128Context;
 
 #define OFFSET(x) offsetof(EBUR128Context, x)
@@ -139,6 +142,7 @@ static const AVOption ebur128_options[] = {
     { "framelog", "force frame logging level", OFFSET(loglevel), AV_OPT_TYPE_INT, {.i64 = -1},   INT_MIN, INT_MAX, A|V|F, "level" },
         { "info",    "information logging level", 0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_INFO},    INT_MIN, INT_MAX, A|V|F, "level" },
         { "verbose", "verbose logging level",     0, AV_OPT_TYPE_CONST, {.i64 = AV_LOG_VERBOSE}, INT_MIN, INT_MAX, A|V|F, "level" },
+    { "metadata", "inject metadata in the filtergraph", OFFSET(metadata), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, A|V|F },
     { NULL },
 };
 
@@ -316,6 +320,20 @@ static int config_video_output(AVFilterLink *outlink)
     return 0;
 }
 
+static int config_audio_input(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->dst;
+    EBUR128Context *ebur128 = ctx->priv;
+
+    /* force 100ms framing in case of metadata injection: the frames must have
+     * a granularity of the window overlap to be accurately exploited */
+    if (ebur128->metadata)
+        inlink->min_samples =
+        inlink->max_samples =
+        inlink->partial_buf_size = inlink->sample_rate / 10;
+    return 0;
+}
+
 static int config_audio_output(AVFilterLink *outlink)
 {
     int i;
@@ -382,6 +400,21 @@ static struct hist_entry *get_histogram(void)
     return h;
 }
 
+/* This is currently necessary for the min/max samples to work properly.
+ * FIXME: remove me when possible */
+static int audio_request_frame(AVFilterLink *outlink)
+{
+    int ret;
+    AVFilterContext *ctx = outlink->src;
+    EBUR128Context *ebur128 = ctx->priv;
+
+    ebur128->request_fulfilled = 0;
+    do {
+        ret = ff_request_frame(ctx->inputs[0]);
+    } while (!ebur128->request_fulfilled && ret >= 0);
+    return ret;
+}
+
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     int ret;
@@ -396,7 +429,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     if (ebur128->loglevel != AV_LOG_INFO &&
         ebur128->loglevel != AV_LOG_VERBOSE) {
-        if (ebur128->do_video)
+        if (ebur128->do_video || ebur128->metadata)
             ebur128->loglevel = AV_LOG_VERBOSE;
         else
             ebur128->loglevel = AV_LOG_INFO;
@@ -430,6 +463,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_audio_output,
     };
+    if (ebur128->metadata)
+        pad.request_frame = audio_request_frame;
     if (!pad.name)
         return AVERROR(ENOMEM);
     ff_insert_outpad(ctx, ebur128->do_video, &pad);
@@ -661,6 +696,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     return ret;
             }
 
+            if (ebur128->metadata) { /* happens only once per filter_frame call */
+                char metabuf[128];
+#define SET_META(name, var) do {                                            \
+    snprintf(metabuf, sizeof(metabuf), "%.3f", var);                        \
+    av_dict_set(&insamples->metadata, "lavfi.r128." name, metabuf, 0);      \
+} while (0)
+                SET_META("M",        loudness_400);
+                SET_META("S",        loudness_3000);
+                SET_META("I",        ebur128->integrated_loudness);
+                SET_META("LRA",      ebur128->loudness_range);
+                SET_META("LRA.low",  ebur128->lra_low);
+                SET_META("LRA.high", ebur128->lra_high);
+            }
+
             av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT "\n",
                    av_ts2timestr(pts, &outlink->time_base),
                    loudness_400, loudness_3000,
@@ -668,6 +717,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         }
     }
 
+    ebur128->request_fulfilled = 1;
     return ff_filter_frame(ctx->outputs[ebur128->do_video], insamples);
 }
 
@@ -745,6 +795,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
     av_frame_free(&ebur128->outpicref);
+    av_opt_free(ebur128);
 }
 
 static const AVFilterPad ebur128_inputs[] = {
@@ -753,6 +804,7 @@ static const AVFilterPad ebur128_inputs[] = {
         .type             = AVMEDIA_TYPE_AUDIO,
         .get_audio_buffer = ff_null_get_audio_buffer,
         .filter_frame     = filter_frame,
+        .config_props     = config_audio_input,
     },
     { NULL }
 };

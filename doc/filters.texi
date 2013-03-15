@@ -6582,6 +6582,13 @@ Set the EBU scale meter. Default is @code{9}. Common values are @code{9} and
 @code{18}, respectively for EBU scale meter +9 and EBU scale meter +18. Any
 other integer value between this range is allowed.
 
+@item metadata
+Set metadata injection. If set to @code{1}, the audio input will be segmented
+into 100ms output frames, each of them containing various loudness information
+in metadata.  All the metadata keys are prefixed with @code{lavfi.r128.}.
+
+Default is @code{0}.
+
 @item framelog
 Force the frame logging level.
 
@@ -6593,8 +6600,8 @@ information logging level
 verbose logging level
 @end table
 
-By default, the logging level is set to @var{info}. If the @option{video}
-option is set, it switches to @var{verbose}.
+By default, the logging level is set to @var{info}. If the @option{video} or
+the @option{metadata} options are set, it switches to @var{verbose}.
 @end table
 
 @subsection Examples
