@@ -6618,12 +6618,14 @@ ffmpeg -nostats -i input.mp3 -filter_complex ebur128 -f null -
 Set the timebase to use for the output frames timestamps.
 It is mainly useful for testing timebase configuration.
 
-It accepts in input an arithmetic expression representing a rational.
-The expression can contain the constants "AVTB" (the
-default timebase), "intb" (the input timebase) and "sr" (the sample rate,
-audio only).
+This filter accepts a single option @option{tb}, which can be
+specified either by setting @option{tb}=@var{VALUE} or setting the
+value alone.
 
-The default value for the input is "intb".
+The value for @option{tb} is an arithmetic expression representing a
+rational. The expression can contain the constants "AVTB" (the default
+timebase), "intb" (the input timebase) and "sr" (the sample rate,
+audio only). Default value is "intb".
 
 @subsection Examples
 
