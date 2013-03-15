@@ -88,7 +88,8 @@ int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
     return ret;
 }
 
-int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
+int attribute_align_arg av_buffersrc_add_frame(AVFilterContext *ctx,
+                                               AVFrame *frame)
 {
     BufferSourceContext *s = ctx->priv;
     AVFrame *copy;
