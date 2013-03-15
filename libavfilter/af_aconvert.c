@@ -147,7 +147,7 @@ static int  filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
                         (void *)insamplesref->extended_data, n);
 
     av_frame_copy_props(outsamplesref, insamplesref);
-    outsamplesref->channels       = outlink->channels;
+    av_frame_set_channels(outsamplesref, outlink->channels);
     outsamplesref->channel_layout = outlink->channel_layout;
 
     ret = ff_filter_frame(outlink, outsamplesref);

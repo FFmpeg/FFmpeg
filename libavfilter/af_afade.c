@@ -256,7 +256,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if ((!afade->type && (cur_sample + nb_samples < afade->start_sample)) ||
         ( afade->type && (afade->start_sample + afade->nb_samples < cur_sample))) {
         av_samples_set_silence(out_buf->extended_data, 0, nb_samples,
-                               out_buf->channels, out_buf->format);
+                               av_frame_get_channels(out_buf), out_buf->format);
     } else {
         int64_t start;
 
@@ -266,7 +266,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             start = afade->start_sample + afade->nb_samples - cur_sample;
 
         afade->fade_samples(out_buf->extended_data, buf->extended_data,
-                            nb_samples, buf->channels,
+                            nb_samples, av_frame_get_channels(buf),
                             afade->type ? -1 : 1, start,
                             afade->nb_samples, afade->curve);
     }

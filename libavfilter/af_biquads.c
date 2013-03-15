@@ -409,7 +409,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf->pts = buf->pts;
     }
 
-    for (ch = 0; ch < buf->channels; ch++)
+    for (ch = 0; ch < av_frame_get_channels(buf); ch++)
         p->filter(buf->extended_data[ch],
                   out_buf->extended_data[ch], nb_samples,
                   &p->cache[ch].i1, &p->cache[ch].i2,
