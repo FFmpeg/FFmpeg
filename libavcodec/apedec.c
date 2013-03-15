@@ -916,11 +916,13 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_WARNING, "packet size is not a multiple of 4. "
                    "extra bytes at the end will be skipped.\n");
         }
-
+        if (s->fileversion < 3950) // previous versions overread two bytes
+            buf_size += 2;
         av_fast_malloc(&s->data, &s->data_size, buf_size);
         if (!s->data)
             return AVERROR(ENOMEM);
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
+        memset(s->data + (buf_size & ~3), 0, buf_size & 3);
         s->ptr = s->data;
         s->data_end = s->data + buf_size;
 
