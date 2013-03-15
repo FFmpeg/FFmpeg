@@ -1638,7 +1638,7 @@ static int matroska_read_header(AVFormatContext *s)
                    && (track->codec_priv.data != NULL)) {
             fourcc = AV_RL32(track->codec_priv.data);
             codec_id = ff_codec_get_id(ff_codec_movvideo_tags, fourcc);
-        } else if (codec_id == AV_CODEC_ID_ALAC && track->codec_priv.size && track->codec_priv.size < INT_MAX-12) {
+        } else if (codec_id == AV_CODEC_ID_ALAC && track->codec_priv.size && track->codec_priv.size < INT_MAX - 12 - FF_INPUT_BUFFER_PADDING_SIZE) {
             /* Only ALAC's magic cookie is stored in Matroska's track headers.
                Create the "atom size", "tag", and "tag version" fields the
                decoder expects manually. */
