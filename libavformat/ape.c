@@ -28,7 +28,7 @@
 #include "apetag.h"
 
 /* The earliest and latest file formats supported by this library */
-#define APE_MIN_VERSION 3930
+#define APE_MIN_VERSION 3800
 #define APE_MAX_VERSION 3990
 
 #define MAC_FORMAT_FLAG_8_BIT                 1 // is 8-bit [OBSOLETE]
@@ -83,6 +83,7 @@ typedef struct {
 
     /* Seektable */
     uint32_t *seektable;
+    uint8_t  *bittable;
 } APEContext;
 
 static int ape_probe(AVProbeData * p)
@@ -130,9 +131,13 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     } else {
         for (i = 0; i < ape_ctx->seektablelength / sizeof(uint32_t); i++) {
             if (i < ape_ctx->totalframes - 1) {
-                av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32" (%"PRIu32" bytes)\n",
+                av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32" (%"PRIu32" bytes)",
                        i, ape_ctx->seektable[i],
                        ape_ctx->seektable[i + 1] - ape_ctx->seektable[i]);
+                if (s->bittable)
+                    av_log(s, AV_LOG_DEBUG, " + %2d bits\n",
+                           ape_ctx->bittable[i]);
+                av_log(s, AV_LOG_DEBUG, "\n");
             } else {
                 av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32"\n", i, ape_ctx->seektable[i]);
             }
@@ -265,6 +270,8 @@ static int ape_read_header(AVFormatContext * s)
     if(!ape->frames)
         return AVERROR(ENOMEM);
     ape->firstframe   = ape->junklength + ape->descriptorlength + ape->headerlength + ape->seektablelength + ape->wavheaderlength;
+    if (ape->fileversion < 3810)
+        ape->firstframe += ape->totalframes;
     ape->currentframe = 0;
 
 
@@ -278,6 +285,13 @@ static int ape_read_header(AVFormatContext * s)
             return AVERROR(ENOMEM);
         for (i = 0; i < ape->seektablelength / sizeof(uint32_t); i++)
             ape->seektable[i] = avio_rl32(pb);
+        if (ape->fileversion < 3810) {
+            ape->bittable = av_malloc(ape->totalframes);
+            if (!ape->bittable)
+                return AVERROR(ENOMEM);
+            for (i = 0; i < ape->totalframes; i++)
+                ape->bittable[i] = avio_r8(pb);
+        }
     }
 
     ape->frames[0].pos     = ape->firstframe;
@@ -308,7 +322,14 @@ static int ape_read_header(AVFormatContext * s)
         }
         ape->frames[i].size = (ape->frames[i].size + 3) & ~3;
     }
-
+    if (ape->fileversion < 3810) {
+        for (i = 0; i < ape->totalframes; i++) {
+            if (i < ape->totalframes - 1 && ape->bittable[i + 1])
+                ape->frames[i].size += 4;
+            ape->frames[i].skip <<= 3;
+            ape->frames[i].skip  += ape->bittable[i];
+        }
+    }
 
     ape_dumpinfo(s, ape);
 
@@ -411,6 +432,7 @@ static int ape_read_close(AVFormatContext * s)
 
     av_freep(&ape->frames);
     av_freep(&ape->seektable);
+    av_freep(&ape->bittable);
     return 0;
 }
 
