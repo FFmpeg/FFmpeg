@@ -117,7 +117,7 @@ int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
     return av_buffersink_get_frame_flags(ctx, frame, 0);
 }
 
-int av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
+int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
 {
     BufferSinkContext *buf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
@@ -169,7 +169,7 @@ static int read_from_fifo(AVFilterContext *ctx, AVFrame *frame,
 
 }
 
-int av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples)
+int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples)
 {
     BufferSinkContext *s = ctx->priv;
     AVFilterLink   *link = ctx->inputs[0];
@@ -264,7 +264,7 @@ static void compat_free_buffer(AVFilterBuffer *buf)
     av_free(buf);
 }
 
-static int compat_read(AVFilterContext *ctx, AVFilterBufferRef **pbuf, int nb_samples, int flags)
+static int attribute_align_arg compat_read(AVFilterContext *ctx, AVFilterBufferRef **pbuf, int nb_samples, int flags)
 {
     AVFilterBufferRef *buf;
     AVFrame *frame;
@@ -348,7 +348,7 @@ AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx)
     return ctx->inputs[0]->frame_rate;
 }
 
-int av_buffersink_poll_frame(AVFilterContext *ctx)
+int attribute_align_arg av_buffersink_poll_frame(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];

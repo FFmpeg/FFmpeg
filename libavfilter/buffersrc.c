@@ -113,8 +113,8 @@ int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags
     return ret;
 }
 
-static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
-                                           AVFrame *frame, int flags)
+static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *ctx,
+                                                               AVFrame *frame, int flags)
 {
     BufferSourceContext *s = ctx->priv;
     AVFrame *copy;
