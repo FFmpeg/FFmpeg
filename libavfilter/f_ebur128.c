@@ -373,6 +373,8 @@ static struct hist_entry *get_histogram(void)
     int i;
     struct hist_entry *h = av_calloc(HIST_SIZE, sizeof(*h));
 
+    if (!h)
+        return NULL;
     for (i = 0; i < HIST_SIZE; i++) {
         h[i].loudness = i / (double)HIST_GRAIN + ABS_THRES;
         h[i].energy   = ENERGY(h[i].loudness);
@@ -406,6 +408,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     ebur128->i400.histogram  = get_histogram();
     ebur128->i3000.histogram = get_histogram();
+    if (!ebur128->i400.histogram || !ebur128->i3000.histogram)
+        return AVERROR(ENOMEM);
 
     ebur128->integrated_loudness = ABS_THRES;
     ebur128->loudness_range = 0;
