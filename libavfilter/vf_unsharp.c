@@ -169,18 +169,6 @@ static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, double a
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     UnsharpContext *unsharp = ctx->priv;
-    static const char *shorthand[] = {
-        "luma_msize_x", "luma_msize_y", "luma_amount",
-        "chroma_msize_x", "chroma_msize_y", "chroma_amount",
-        NULL
-    };
-    int ret;
-
-    unsharp->class = &unsharp_class;
-    av_opt_set_defaults(unsharp);
-
-    if ((ret = av_opt_set_from_string(unsharp, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     set_filter_param(&unsharp->luma,   unsharp->luma_msize_x,   unsharp->luma_msize_y,   unsharp->luma_amount);
     set_filter_param(&unsharp->chroma, unsharp->chroma_msize_x, unsharp->chroma_msize_y, unsharp->chroma_amount);
@@ -256,7 +244,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     free_filter_param(&unsharp->luma);
     free_filter_param(&unsharp->chroma);
-    av_opt_free(unsharp);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
@@ -300,6 +287,12 @@ static const AVFilterPad avfilter_vf_unsharp_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = {
+    "luma_msize_x", "luma_msize_y", "luma_amount",
+    "chroma_msize_x", "chroma_msize_y", "chroma_amount",
+    NULL
+};
+
 AVFilter avfilter_vf_unsharp = {
     .name      = "unsharp",
     .description = NULL_IF_CONFIG_SMALL("Sharpen or blur the input video."),
@@ -315,4 +308,5 @@ AVFilter avfilter_vf_unsharp = {
     .outputs   = avfilter_vf_unsharp_outputs,
 
     .priv_class = &unsharp_class,
+    .shorthand = shorthand,
 };
