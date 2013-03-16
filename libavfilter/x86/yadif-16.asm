@@ -313,8 +313,6 @@ cglobal yadif_filter_line_16bit, 4, 6, 8, 80, dst, prev, cur, next, w, \
 cglobal yadif_filter_line_16bit, 4, 7, 8, 80, dst, prev, cur, next, w, \
                                               prefs, mrefs, parity, mode
 %endif
-    cmp      DWORD wm, 0
-    jle .ret
 %if ARCH_X86_32
     mov            r4, r5mp
     mov            r5, r6mp
