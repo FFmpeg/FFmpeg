@@ -186,11 +186,11 @@ do {                                                                    \
     if (ctx->outputs[0]->type  == AVMEDIA_TYPE_VIDEO) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
 
-        if (!desc) {
+        planes = av_pix_fmt_count_planes(frame->format);
+        if (!desc || planes <= 0) {
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        planes = (desc->flags & PIX_FMT_PLANAR) ? desc->nb_components : 1;
 
         for (i = 0; i < planes; i++) {
             int v_shift    = (i == 1 || i == 2) ? desc->log2_chroma_w : 0;
