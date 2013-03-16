@@ -123,16 +123,16 @@ SECTION .text
 %endmacro
 
 %macro LOAD 2
-    movu      m%1, %2
+    movu      %1, %2
 %endmacro
 
 %macro FILTER 3
 .loop%1:
     pxor         m7, m7
-    LOAD          0, [curq+t1]
-    LOAD          1, [curq+t0]
-    LOAD          2, [%2]
-    LOAD          3, [%3]
+    LOAD         m0, [curq+t1]
+    LOAD         m1, [curq+t0]
+    LOAD         m2, [%2]
+    LOAD         m3, [%3]
     mova         m4, m3
     paddw        m3, m2
     psraw        m3, 1
@@ -141,8 +141,8 @@ SECTION .text
     mova   [rsp+32], m1
     psubw        m2, m4
     PABS         m2, m4
-    LOAD          3, [prevq+t1]
-    LOAD          4, [prevq+t0]
+    LOAD         m3, [prevq+t1]
+    LOAD         m4, [prevq+t0]
     psubw        m3, m0
     psubw        m4, m1
     PABS         m3, m5
@@ -151,8 +151,8 @@ SECTION .text
     psrlw        m2, 1
     psrlw        m3, 1
     pmaxsw       m2, m3
-    LOAD          3, [nextq+t1]
-    LOAD          4, [nextq+t0]
+    LOAD         m3, [nextq+t1]
+    LOAD         m4, [nextq+t0]
     psubw        m3, m0
     psubw        m4, m1
     PABS         m3, m5
@@ -197,10 +197,10 @@ SECTION .text
     mova         m6, [rsp+48]
     cmp   DWORD r8m, 2
     jge .end%1
-    LOAD          2, [%2+t1*2]
-    LOAD          4, [%3+t1*2]
-    LOAD          3, [%2+t0*2]
-    LOAD          5, [%3+t0*2]
+    LOAD         m2, [%2+t1*2]
+    LOAD         m4, [%3+t1*2]
+    LOAD         m3, [%2+t0*2]
+    LOAD         m5, [%3+t0*2]
     paddw        m2, m4
     paddw        m3, m5
     psrlw        m2, 1
