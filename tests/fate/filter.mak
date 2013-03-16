@@ -32,9 +32,9 @@ fate-filter-aresample: CMD = pcm -i $(SRC) -af aresample=min_comp=0.001:min_hard
 fate-filter-aresample: CMP = oneoff
 fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
-fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf delogo=show=0:x=290:y=25:w=26:h=16 -an
+fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf perms=random,delogo=show=0:x=290:y=25:w=26:h=16 -an
 
-FATE_FILTER-$(CONFIG_DELOGO_FILTER) += fate-filter-delogo
+FATE_FILTER-$(call ALLYES, PERMS_FILTER DELOGO_FILTER) += fate-filter-delogo
 
 FATE_YADIF += fate-filter-yadif-mode0
 fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=0
