@@ -107,24 +107,12 @@ static const AVOption crop_options[] = {
 
 AVFILTER_DEFINE_CLASS(crop);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    CropContext *crop = ctx->priv;
-    static const char *shorthand[] = { "w", "h", "x", "y", "keep_aspect", NULL };
-
-    crop->class = &crop_class;
-    av_opt_set_defaults(crop);
-
-    return av_opt_set_from_string(crop, args, shorthand, "=", ":");
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     CropContext *crop = ctx->priv;
 
     av_expr_free(crop->x_pexpr); crop->x_pexpr = NULL;
     av_expr_free(crop->y_pexpr); crop->y_pexpr = NULL;
-    av_opt_free(crop);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -348,6 +336,8 @@ static const AVFilterPad avfilter_vf_crop_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "w", "h", "x", "y", "keep_aspect", NULL };
+
 AVFilter avfilter_vf_crop = {
     .name      = "crop",
     .description = NULL_IF_CONFIG_SMALL("Crop the input video to width:height:x:y."),
@@ -355,10 +345,10 @@ AVFilter avfilter_vf_crop = {
     .priv_size = sizeof(CropContext),
 
     .query_formats = query_formats,
-    .init          = init,
     .uninit        = uninit,
 
     .inputs    = avfilter_vf_crop_inputs,
     .outputs   = avfilter_vf_crop_outputs,
     .priv_class = &crop_class,
+    .shorthand = shorthand,
 };
