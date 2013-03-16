@@ -358,16 +358,7 @@ static int request_frame(AVFilterLink *outlink)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ConcatContext *cat = ctx->priv;
-    int ret;
     unsigned seg, type, str;
-
-    cat->class = &concat_class;
-    av_opt_set_defaults(cat);
-    ret = av_set_options_string(cat, args, "=", ":");
-    if (ret < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options: '%s'\n", args);
-        return ret;
-    }
 
     /* create input pads */
     for (seg = 0; seg < cat->nb_segments; seg++) {
@@ -418,6 +409,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_free(cat->in);
 }
 
+static const char *const shorthand[] = { NULL };
+
 AVFilter avfilter_avf_concat = {
     .name          = "concat",
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
@@ -428,4 +421,5 @@ AVFilter avfilter_avf_concat = {
     .inputs        = NULL,
     .outputs       = NULL,
     .priv_class    = &concat_class,
+    .shorthand     = shorthand,
 };
