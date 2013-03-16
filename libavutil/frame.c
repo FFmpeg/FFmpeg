@@ -18,6 +18,7 @@
  */
 
 #include "channel_layout.h"
+#include "avassert.h"
 #include "buffer.h"
 #include "common.h"
 #include "dict.h"
@@ -39,6 +40,11 @@ MAKE_ACCESSORS(AVFrame, frame, int,     sample_rate)
 MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
 MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
+
+#define CHECK_CHANNELS_CONSISTENCY(frame) \
+    av_assert2(!(frame)->channel_layout || \
+               (frame)->channels == \
+               av_get_channel_layout_nb_channels((frame)->channel_layout))
 
 AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame) {return &frame->metadata;};
 
@@ -158,11 +164,12 @@ fail:
 
 static int get_audio_buffer(AVFrame *frame, int align)
 {
-    int channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+    int channels = frame->channels;
     int planar   = av_sample_fmt_is_planar(frame->format);
     int planes   = planar ? channels : 1;
     int ret, i;
 
+    CHECK_CHANNELS_CONSISTENCY(frame);
     if (!frame->linesize[0]) {
         ret = av_samples_get_buffer_size(&frame->linesize[0], channels,
                                          frame->nb_samples, frame->format,
@@ -240,7 +247,8 @@ int av_frame_ref(AVFrame *dst, AVFrame *src)
             return ret;
 
         if (src->nb_samples) {
-            int ch = av_get_channel_layout_nb_channels(src->channel_layout);
+            int ch = src->channels;
+            CHECK_CHANNELS_CONSISTENCY(src);
             av_samples_copy(dst->extended_data, src->extended_data, 0, 0,
                             dst->nb_samples, ch, dst->format);
         } else {
@@ -279,12 +287,13 @@ int av_frame_ref(AVFrame *dst, AVFrame *src)
 
     /* duplicate extended data */
     if (src->extended_data != src->data) {
-        int ch = av_get_channel_layout_nb_channels(src->channel_layout);
+        int ch = src->channels;
 
         if (!ch) {
             ret = AVERROR(EINVAL);
             goto fail;
         }
+        CHECK_CHANNELS_CONSISTENCY(src);
 
         dst->extended_data = av_malloc(sizeof(*dst->extended_data) * ch);
         if (!dst->extended_data) {
@@ -388,7 +397,8 @@ int av_frame_make_writable(AVFrame *frame)
         return ret;
 
     if (tmp.nb_samples) {
-        int ch = av_get_channel_layout_nb_channels(tmp.channel_layout);
+        int ch = tmp.channels;
+        CHECK_CHANNELS_CONSISTENCY(&tmp);
         av_samples_copy(tmp.extended_data, frame->extended_data, 0, 0,
                         frame->nb_samples, ch, frame->format);
     } else {
@@ -478,9 +488,10 @@ AVBufferRef *av_frame_get_plane_buffer(AVFrame *frame, int plane)
     int planes, i;
 
     if (frame->nb_samples) {
-        int channels = av_get_channel_layout_nb_channels(frame->channel_layout);
+        int channels = frame->channels;
         if (!channels)
             return NULL;
+        CHECK_CHANNELS_CONSISTENCY(frame);
         planes = av_sample_fmt_is_planar(frame->format) ? channels : 1;
     } else
         planes = 4;
