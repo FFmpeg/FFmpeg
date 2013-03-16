@@ -172,13 +172,17 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
 static void compat_free_buffer(void *opaque, uint8_t *data)
 {
     AVFilterBufferRef *buf = opaque;
+    AV_NOWARN_DEPRECATED(
     avfilter_unref_buffer(buf);
+    )
 }
 
 static void compat_unref_buffer(void *opaque, uint8_t *data)
 {
     AVBufferRef *buf = opaque;
+    AV_NOWARN_DEPRECATED(
     av_buffer_unref(&buf);
+    )
 }
 
 int av_buffersrc_add_ref(AVFilterContext *ctx, AVFilterBufferRef *buf,
@@ -206,8 +210,10 @@ int av_buffersrc_add_ref(AVFilterContext *ctx, AVFilterBufferRef *buf,
         goto fail;
     }
 
+    AV_NOWARN_DEPRECATED(
     if ((ret = avfilter_copy_buf_props(frame, buf)) < 0)
         goto fail;
+    )
 
 #define WRAP_PLANE(ref_out, data, data_size)                            \
 do {                                                                    \
