@@ -251,6 +251,9 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
+/* an arbitrarily chosen "sane" max packet size -- 50M */
+#define SANE_CHUNK_SIZE (50000000)
+
 int ffio_limit(AVIOContext *s, int size)
 {
     if(s->maxsize>=0){
@@ -271,43 +274,77 @@ int ffio_limit(AVIOContext *s, int size)
     return size;
 }
 
-int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
+/*
+ * Read the data in sane-sized chunks and append to pkt.
+ * Return the number of bytes read or an error.
+ */
+static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
 {
-    int ret;
-    int orig_size = size;
-    size= ffio_limit(s, size);
+    int64_t chunk_size = size;
+    int orig_pos       = pkt->pos; // av_grow_packet might reset pos
+    int orig_size      = pkt->size;
+    int ret = 0;
 
-    ret= av_new_packet(pkt, size);
+    do {
+        int prev_size = pkt->size;
+        int read_size;
 
-    if(ret<0)
-        return ret;
+        /*
+         * When the caller requests a lot of data, limit it to the amount left
+         * in file or SANE_CHUNK_SIZE when it is not known
+         */
+#if 0
+        if (size > SANE_CHUNK_SIZE) {
+            int64_t filesize = avio_size(s) - avio_tell(s);
+            chunk_size = FFMAX(filesize, SANE_CHUNK_SIZE);
+        }
+        read_size = FFMIN(size, chunk_size);
+#else
+        read_size = size;
+        if (read_size > SANE_CHUNK_SIZE/10) {
+            read_size = ffio_limit(s, read_size);
+            // If filesize/maxsize is unknown, limit to SANE_CHUNK_SIZE
+            if (s->maxsize < 0)
+                read_size = FFMIN(read_size, SANE_CHUNK_SIZE);
+        }
+#endif
 
-    pkt->pos= avio_tell(s);
+        ret = av_grow_packet(pkt, read_size);
+        if (ret < 0)
+            break;
 
-    ret= avio_read(s, pkt->data, size);
-    if(ret<=0)
-        av_free_packet(pkt);
-    else
-        av_shrink_packet(pkt, ret);
-    if (pkt->size < orig_size)
+        ret = avio_read(s, pkt->data + prev_size, read_size);
+        if (ret != read_size) {
+            av_shrink_packet(pkt, prev_size + FFMAX(ret, 0));
+            break;
+        }
+
+        size -= read_size;
+    } while (size > 0);
+    if (size > 0)
         pkt->flags |= AV_PKT_FLAG_CORRUPT;
 
-    return ret;
+    pkt->pos = orig_pos;
+    if (!pkt->size)
+        av_free_packet(pkt);
+    return pkt->size > orig_size ? pkt->size - orig_size : ret;
+}
+
+int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
+{
+    av_init_packet(pkt);
+    pkt->data = NULL;
+    pkt->size = 0;
+    pkt->pos  = avio_tell(s);
+
+    return append_packet_chunked(s, pkt, size);
 }
 
 int av_append_packet(AVIOContext *s, AVPacket *pkt, int size)
 {
-    int ret;
-    int old_size;
     if (!pkt->size)
         return av_get_packet(s, pkt, size);
-    old_size = pkt->size;
-    ret = av_grow_packet(pkt, size);
-    if (ret < 0)
-        return ret;
-    ret = avio_read(s, pkt->data + old_size, size);
-    av_shrink_packet(pkt, old_size + FFMAX(ret, 0));
-    return ret;
+    return append_packet_chunked(s, pkt, size);
 }
 
 
