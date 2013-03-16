@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-xx-xx - lavu 52.9.0 - pixdesc.h
+  Add av_pix_fmt_count_planes() function for counting planes in a pixel format.
+
 2013-xx-xx - lavfi 3.6.0
   Add AVFilterGraph.nb_filters, deprecate AVFilterGraph.filter_count.
 
