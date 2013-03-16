@@ -2603,6 +2603,8 @@ const OptionDef options[] = {
         "reinit filtergraph on input parameter changes", "" },
     { "filter_complex", HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
         "create a complex filtergraph", "graph_description" },
+    { "lavfi",          HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
+        "create a complex filtergraph", "graph_description" },
     { "stats",          OPT_BOOL,                                    { &print_stats },
         "print progress report during encoding", },
     { "attach",         HAS_ARG | OPT_PERFILE | OPT_EXPERT |

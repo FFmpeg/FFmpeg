@@ -167,6 +167,8 @@ Complex filtergraphs are configured with the @option{-filter_complex} option.
 Note that this option is global, since a complex filtergraph by its nature
 cannot be unambiguously associated with a single stream or file.
 
+The @option{-lavfi} option is equivalent to @option{-filter_complex}.
+
 A trivial example of a complex filtergraph is the @code{overlay} filter, which
 has two video inputs and one video output, containing one video overlaid on top
 of the other. Its audio counterpart is the @code{amix} filter.
@@ -1032,6 +1034,11 @@ To generate 5 seconds of pure red video using lavfi @code{color} source:
 @example
 ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
+
+@item -lavfi @var{filtergraph} (@emph{global})
+Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
+outputs. Equivalent to @option{-filter_complex}.
+
 @end table
 
 As a special exception, you can use a bitmap subtitle stream as input: it
