@@ -177,7 +177,7 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
                               opt->type == AV_OPT_TYPE_INT) ? \
                              opt->default_val.i64 : opt->default_val.dbl)
 
-static int set_string_number(void *obj, const AVOption *o, const char *val, void *dst)
+static int set_string_number(void *obj, void *target_obj, const AVOption *o, const char *val, void *dst)
 {
     int ret = 0, notfirst = 0;
     for (;;) {
@@ -200,7 +200,7 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
         buf[i] = 0;
 
         {
-            const AVOption *o_named = av_opt_find(obj, buf, o->unit, 0, 0);
+            const AVOption *o_named = av_opt_find(target_obj, buf, o->unit, 0, 0);
             if (o_named && o_named->type == AV_OPT_TYPE_CONST)
                 d = DEFAULT_NUMVAL(o_named);
             else if (!strcmp(buf, "default")) d = DEFAULT_NUMVAL(o);
@@ -268,7 +268,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     case AV_OPT_TYPE_INT64:
     case AV_OPT_TYPE_FLOAT:
     case AV_OPT_TYPE_DOUBLE:
-    case AV_OPT_TYPE_RATIONAL: return set_string_number(obj, o, val, dst);
+    case AV_OPT_TYPE_RATIONAL: return set_string_number(obj, target_obj, o, val, dst);
     case AV_OPT_TYPE_IMAGE_SIZE:
         if (!val || !strcmp(val, "none")) {
             *(int *)dst = *((int *)dst + 1) = 0;
@@ -321,7 +321,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     {\
         if (!o || o->type != opttype)\
             return AVERROR(EINVAL);\
-        return set_string_number(obj, o, val, name ## _out);\
+        return set_string_number(obj, obj, o, val, name ## _out);\
     }
 
 OPT_EVAL_NUMBER(flags,  AV_OPT_TYPE_FLAGS,    int)
