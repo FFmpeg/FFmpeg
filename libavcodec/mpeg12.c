@@ -1974,8 +1974,12 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     width  = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
-    if (width <= 0 || height <= 0)
-        return -1;
+    if (width == 0 || height == 0) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid horizontal or vertical size "
+               "value.\n");
+        if (avctx->err_recognition & AV_EF_BITSTREAM)
+            return AVERROR_INVALIDDATA;
+    }
     s->aspect_ratio_info = get_bits(&s->gb, 4);
     if (s->aspect_ratio_info == 0) {
         av_log(avctx, AV_LOG_ERROR, "aspect ratio has forbidden 0 value\n");
@@ -2271,6 +2275,12 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
+            if (s2->width <= 0 || s2->height <= 0) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid frame dimensions %dx%d.\n",
+                       s2->width, s2->height);
+                return AVERROR_INVALIDDATA;
+            }
+
             if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) && s->slice_count) {
                 int i;
 
