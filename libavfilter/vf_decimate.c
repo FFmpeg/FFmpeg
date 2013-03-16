@@ -132,14 +132,6 @@ static int decimate_frame(AVFilterContext *ctx,
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DecimateContext *decimate = ctx->priv;
-    static const char *shorthand[] = { "max", "hi", "lo", "frac", NULL };
-    int ret;
-
-    decimate->class = &decimate_class;
-    av_opt_set_defaults(decimate);
-
-    if ((ret = av_opt_set_from_string(decimate, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     av_log(ctx, AV_LOG_VERBOSE, "max_drop_count:%d hi:%d lo:%d frac:%f\n",
            decimate->max_drop_count, decimate->hi, decimate->lo, decimate->frac);
@@ -157,7 +149,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     DecimateContext *decimate = ctx->priv;
     av_frame_free(&decimate->ref);
     avcodec_close(decimate->avctx);
-    av_opt_free(decimate);
     av_freep(&decimate->avctx);
 }
 
@@ -251,6 +242,8 @@ static const AVFilterPad decimate_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "max", "hi", "lo", "frac", NULL };
+
 AVFilter avfilter_vf_decimate = {
     .name        = "decimate",
     .description = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
@@ -262,4 +255,5 @@ AVFilter avfilter_vf_decimate = {
     .inputs        = decimate_inputs,
     .outputs       = decimate_outputs,
     .priv_class    = &decimate_class,
+    .shorthand     = shorthand,
 };
