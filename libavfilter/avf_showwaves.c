@@ -41,7 +41,6 @@ enum ShowWavesMode {
 typedef struct {
     const AVClass *class;
     int w, h;
-    char *rate_str;
     AVRational rate;
     int buf_idx;
     AVFrame *outpicref;
@@ -55,8 +54,8 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption showwaves_options[] = {
-    { "rate", "set video rate", OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
-    { "r",    "set video rate", OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { "rate", "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "r",    "set video rate", OFFSET(rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "600x240"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str = "600x240"}, 0, 0, FLAGS },
     { "n",    "set how many samples to show in the same point", OFFSET(n), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
@@ -88,7 +87,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     ShowWavesContext *showwaves = ctx->priv;
 
-    av_freep(&showwaves->rate_str);
     av_frame_free(&showwaves->outpicref);
 }
 
@@ -131,22 +129,9 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowWavesContext *showwaves = ctx->priv;
-    int err;
 
-    if (showwaves->n && showwaves->rate_str) {
-        av_log(ctx, AV_LOG_ERROR, "Options 'n' and 'rate' cannot be set at the same time\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (!showwaves->n) {
-        if (!showwaves->rate_str)
-            showwaves->rate = (AVRational){25,1}; /* set default value */
-        else if ((err = av_parse_video_rate(&showwaves->rate, showwaves->rate_str)) < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", showwaves->rate_str);
-            return err;
-        }
+    if (!showwaves->n)
         showwaves->n = FFMAX(1, ((double)inlink->sample_rate / (showwaves->w * av_q2d(showwaves->rate))) + 0.5);
-    }
 
     outlink->w = showwaves->w;
     outlink->h = showwaves->h;
