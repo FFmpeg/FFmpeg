@@ -144,6 +144,9 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2013-xx-xx - lavfi 3.6.0
+  Add AVFilterGraph.nb_filters, deprecate AVFilterGraph.filter_count.
+
 2013-03-xx - Reference counted buffers - lavu 52.8.0, lavc 55.0.0, lavf 55.0.0,
 lavd 54.0.0, lavfi 3.5.0
   xxxxxxx, xxxxxxx - add a new API for reference counted buffers and buffer

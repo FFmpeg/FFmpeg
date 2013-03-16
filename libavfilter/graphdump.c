@@ -62,7 +62,7 @@ static void avfilter_graph_dump_to_buf(AVBPrint *buf, AVFilterGraph *graph)
 {
     unsigned i, j, x, e;
 
-    for (i = 0; i < graph->filter_count; i++) {
+    for (i = 0; i < graph->nb_filters; i++) {
         AVFilterContext *filter = graph->filters[i];
         unsigned max_src_name = 0, max_dst_name = 0;
         unsigned max_in_name  = 0, max_out_name = 0;

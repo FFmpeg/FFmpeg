@@ -27,11 +27,20 @@
 
 typedef struct AVFilterGraph {
     const AVClass *av_class;
-    unsigned filter_count;
+#if FF_API_FOO_COUNT
+    attribute_deprecated
+    unsigned filter_count_unused;
+#endif
     AVFilterContext **filters;
+#if !FF_API_FOO_COUNT
+    unsigned nb_filters;
+#endif
 
     char *scale_sws_opts; ///< sws options to use for the auto-inserted scale filters
     char *resample_lavr_opts;   ///< libavresample options to use for the auto-inserted resample filters
+#if FF_API_FOO_COUNT
+    unsigned nb_filters;
+#endif
     char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
 
     /**
