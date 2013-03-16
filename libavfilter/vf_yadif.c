@@ -464,10 +464,10 @@ static int config_props(AVFilterLink *link)
     } else {
         s->filter_line  = filter_line_c;
         s->filter_edges = filter_edges;
+    }
 
         if (ARCH_X86)
             ff_yadif_init_x86(s);
-    }
 
     return 0;
 }
