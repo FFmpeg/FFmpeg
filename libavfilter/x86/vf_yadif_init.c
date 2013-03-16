@@ -88,13 +88,13 @@ av_cold void ff_yadif_init_x86(YADIFContext *yadif)
             yadif->filter_line = ff_yadif_filter_line_10bit_ssse3;
     } else {
 #if ARCH_X86_32
-    if (EXTERNAL_MMXEXT(cpu_flags))
-        yadif->filter_line = ff_yadif_filter_line_mmxext;
+        if (EXTERNAL_MMXEXT(cpu_flags))
+            yadif->filter_line = ff_yadif_filter_line_mmxext;
 #endif /* ARCH_X86_32 */
-    if (EXTERNAL_SSE2(cpu_flags))
-        yadif->filter_line = ff_yadif_filter_line_sse2;
-    if (EXTERNAL_SSSE3(cpu_flags))
-        yadif->filter_line = ff_yadif_filter_line_ssse3;
+        if (EXTERNAL_SSE2(cpu_flags))
+            yadif->filter_line = ff_yadif_filter_line_sse2;
+        if (EXTERNAL_SSSE3(cpu_flags))
+            yadif->filter_line = ff_yadif_filter_line_ssse3;
     }
 #endif /* HAVE_YASM */
 }
