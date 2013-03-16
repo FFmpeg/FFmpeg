@@ -68,9 +68,9 @@ typedef struct {
         av_log(s, AV_LOG_INFO, "Changing frame properties on the fly is not supported by all filters.\n");\
     }
 
-#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, format)\
+#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, ch_count, format)\
     if (c->sample_fmt != format || c->sample_rate != srate ||\
-        c->channel_layout != ch_layout) {\
+        c->channel_layout != ch_layout || c->channels != ch_count) {\
         av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
@@ -138,7 +138,7 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
         if (!frame->channel_layout)
             frame->channel_layout = s->channel_layout;
         CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
-                                 frame->format);
+                                 av_frame_get_channels(frame), frame->format);
         break;
     default:
         return AVERROR(EINVAL);
