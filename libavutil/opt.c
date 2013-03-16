@@ -77,6 +77,7 @@ static int read_number(const AVOption *o, void *dst, double *num, int *den, int6
     case AV_OPT_TYPE_PIXEL_FMT:
     case AV_OPT_TYPE_SAMPLE_FMT:
     case AV_OPT_TYPE_INT:       *intnum = *(int         *)dst;return 0;
+    case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_INT64:     *intnum = *(int64_t     *)dst;return 0;
     case AV_OPT_TYPE_FLOAT:     *num    = *(float       *)dst;return 0;
     case AV_OPT_TYPE_DOUBLE:    *num    = *(double      *)dst;return 0;
@@ -101,6 +102,7 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
     case AV_OPT_TYPE_PIXEL_FMT:
     case AV_OPT_TYPE_SAMPLE_FMT:
     case AV_OPT_TYPE_INT:   *(int       *)dst= llrint(num/den)*intnum; break;
+    case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_INT64: *(int64_t   *)dst= llrint(num/den)*intnum; break;
     case AV_OPT_TYPE_FLOAT: *(float     *)dst= num*intnum/den;         break;
     case AV_OPT_TYPE_DOUBLE:*(double    *)dst= num*intnum/den;         break;
@@ -256,7 +258,8 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         return AVERROR_OPTION_NOT_FOUND;
     if (!val && (o->type != AV_OPT_TYPE_STRING &&
                  o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_SAMPLE_FMT &&
-                 o->type != AV_OPT_TYPE_IMAGE_SIZE && o->type != AV_OPT_TYPE_VIDEO_RATE))
+                 o->type != AV_OPT_TYPE_IMAGE_SIZE && o->type != AV_OPT_TYPE_VIDEO_RATE &&
+                 o->type != AV_OPT_TYPE_DURATION))
         return AVERROR(EINVAL);
 
     dst = ((uint8_t*)target_obj) + o->offset;
@@ -319,6 +322,15 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         }
         *(enum AVSampleFormat *)dst = ret;
         return 0;
+    case AV_OPT_TYPE_DURATION:
+        if (!val) {
+            *(int64_t *)dst = 0;
+            return 0;
+        } else {
+            if ((ret = av_parse_time(dst, val, 1)) < 0)
+                av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
+            return ret;
+        }
     }
 
     av_log(obj, AV_LOG_ERROR, "Invalid option type.\n");
@@ -556,6 +568,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     uint8_t *bin, buf[128];
     int len, i, ret;
+    int64_t i64;
 
     if (!o || !target_obj || (o->offset<=0 && o->type != AV_OPT_TYPE_CONST))
         return AVERROR_OPTION_NOT_FOUND;
@@ -596,6 +609,12 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         break;
     case AV_OPT_TYPE_SAMPLE_FMT:
         ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_sample_fmt_name(*(enum AVSampleFormat *)dst), "none"));
+        break;
+    case AV_OPT_TYPE_DURATION:
+        i64 = *(int64_t *)dst;
+        ret = snprintf(buf, sizeof(buf), "%"PRIi64"d:%02d:%02d.%06d",
+                       i64 / 3600000000, (int)((i64 / 60000000) % 60),
+                       (int)((i64 / 1000000) % 60), (int)(i64 % 1000000));
         break;
     default:
         return AVERROR(EINVAL);
@@ -861,6 +880,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_SAMPLE_FMT:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<sample_fmt>");
                 break;
+            case AV_OPT_TYPE_DURATION:
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<duration>");
+                break;
             case AV_OPT_TYPE_CONST:
             default:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
@@ -937,6 +959,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_FLAGS:
             case AV_OPT_TYPE_INT:
             case AV_OPT_TYPE_INT64:
+            case AV_OPT_TYPE_DURATION:
                 av_opt_set_int(s, opt->name, opt->default_val.i64, 0);
             break;
             case AV_OPT_TYPE_DOUBLE:
@@ -1300,6 +1323,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     case AV_OPT_TYPE_SAMPLE_FMT:
     case AV_OPT_TYPE_FLOAT:
     case AV_OPT_TYPE_DOUBLE:
+    case AV_OPT_TYPE_DURATION:
         break;
     case AV_OPT_TYPE_STRING:
         range->component_min = 0;
@@ -1365,6 +1389,7 @@ typedef struct TestContext
     int w, h;
     enum AVPixelFormat pix_fmt;
     enum AVSampleFormat sample_fmt;
+    int64_t duration;
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)
@@ -1386,6 +1411,7 @@ static const AVOption test_options[]= {
 {"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, AV_PIX_FMT_NB-1},
 {"sample_fmt", "set samplefmt", OFFSET(sample_fmt), AV_OPT_TYPE_SAMPLE_FMT, {.i64 = AV_SAMPLE_FMT_NONE}, -1, AV_SAMPLE_FMT_NB-1},
 {"video_rate", "set videorate", OFFSET(video_rate), AV_OPT_TYPE_VIDEO_RATE,  {.str = "25"}, 0,     0                   },
+{"duration", "set duration",   OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX},
 {NULL},
 };
 
@@ -1441,6 +1467,9 @@ int main(void)
             "video_rate=30000/1001",
             "video_rate=30/1.001",
             "video_rate=bogus",
+            "duration=bogus",
+            "duration=123.45",
+            "duration=1\\:23\\:45.67",
         };
 
         test_ctx.class = &test_class;
