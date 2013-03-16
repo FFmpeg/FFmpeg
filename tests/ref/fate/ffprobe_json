@@ -65,8 +65,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -102,8 +101,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -170,8 +168,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -207,8 +204,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -306,8 +302,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -343,8 +338,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -442,8 +436,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         },
         {
             "type": "packet",
@@ -479,8 +472,7 @@
             "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
-            "repeat_pict": 0,
-            "reference": 0
+            "repeat_pict": 0
         }
     ],
     "streams": [

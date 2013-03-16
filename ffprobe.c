@@ -1500,7 +1500,6 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
         print_int("interlaced_frame",       frame->interlaced_frame);
         print_int("top_field_first",        frame->top_field_first);
         print_int("repeat_pict",            frame->repeat_pict);
-        print_int("reference",              frame->reference);
         break;
 
     case AVMEDIA_TYPE_AUDIO:

@@ -78,7 +78,6 @@
       <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
       <xsd:attribute name="top_field_first"        type="xsd:int"   />
       <xsd:attribute name="repeat_pict"            type="xsd:int"   />
-      <xsd:attribute name="reference"              type="xsd:int"   />
     </xsd:complexType>
 
     <xsd:complexType name="streamsType">

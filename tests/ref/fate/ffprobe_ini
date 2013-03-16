@@ -67,7 +67,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.2]
 codec_type=video
@@ -105,7 +104,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.3]
 codec_type=audio
@@ -174,7 +172,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.5]
 codec_type=video
@@ -212,7 +209,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.6]
 codec_type=audio
@@ -312,7 +308,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.9]
 codec_type=video
@@ -350,7 +345,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.10]
 codec_type=audio
@@ -450,7 +444,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [packets_and_frames.packet.13]
 codec_type=video
@@ -488,7 +481,6 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
-reference=0
 
 [streams.stream.0]
 index=0
