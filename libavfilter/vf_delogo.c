@@ -172,7 +172,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DelogoContext *delogo = ctx->priv;
     int ret = 0;
-    static const char *shorthand[] = { "x", "y", "w", "h", "band" };
+    static const char *shorthand[] = { "x", "y", "w", "h", "band", NULL };
 
     delogo->class = &delogo_class;
     av_opt_set_defaults(delogo);
