@@ -174,7 +174,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
             frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
             frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
                                             X264_TYPE_AUTO;
-        if (x4->params.b_tff != frame->top_field_first) {
+        if (x4->params.b_interlaced && x4->params.b_tff != frame->top_field_first) {
             x4->params.b_tff = frame->top_field_first;
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
