@@ -250,9 +250,6 @@ Evaluating 'hypot(4,3)'
 Evaluating 'gcd(30,55)*print(min(9,1))'
 'gcd(30,55)*print(min(9,1))' -> 5.000000
 
-12.700000 == 12.7
-0.931323 == 0.931322575
-
 Evaluating 'bitor(42, 12)'
 'bitor(42, 12)' -> 46.000000
 
@@ -261,3 +258,6 @@ Evaluating 'bitand(42, 12)'
 
 Evaluating 'bitand(NAN, 1)'
 'bitand(NAN, 1)' -> nan
+
+12.700000 == 12.7
+0.931323 == 0.931322575
