@@ -577,4 +577,89 @@ message or introductionary message for the patch series that you post to
 the ffmpeg-devel mailing list, a direct link to download the sample media.
 
 
+@anchor{Release process}
+@section Release process
+
+FFmpeg maintains a set of @strong{release branches}, which are the
+recommended deliverable for system integrators and distributors (such as
+Linux distributions, etc.). At regular times, a @strong{release
+manager} prepares, tests and publishes tarballs on the
+@url{http://ffmpeg.org} website.
+
+There are two kinds of releases:
+
+@enumerate
+@item
+    @strong{Major releases} always include the latest and greatest
+    features and functionality.
+@item
+    @strong{Point releases} are cut from @strong{release} branches,
+    which are named @code{release/X}, with @code{X} being the release
+    version number.
+@end enumerate
+
+Note that we promise to our users that shared libraries from any FFmpeg
+release never break programs that have been @strong{compiled} against
+previous versions of @strong{the same release series} in any case!
+
+However, from time to time, we do make API changes that require adaptations
+in applications. Such changes are only allowed in (new) major releases and
+require further steps such as bumping library version numbers and/or
+adjustments to the symbol versioning file. Please discuss such changes
+on the @strong{ffmpeg-devel} mailing list in time to allow forward planning.
+
+@anchor{Criteria for Point Releases}
+@subsection Criteria for Point Releases
+
+Changes that match the following criteria are valid candidates for
+inclusion into a point release:
+
+@enumerate
+@item
+    Fixes a security issue, preferably identified by a @strong{CVE
+    number} issued by @url{http://cve.mitre.org/}.
+@item
+    Fixes a documented bug in @url{https://ffmpeg.org/trac/ffmpeg}.
+@item
+    Improves the included documentation.
+@item
+    Retains both source code and binary compatibility with previous
+    point releases of the same release branch.
+@end enumerate
+
+The order for checking the rules is (1 OR 2 OR 3) AND 4.
+
+
+@subsection Release Checklist
+
+The release process involves the following steps:
+
+@enumerate
+@item
+    Ensure that the @file{RELEASE} file contains the version number for
+    the upcoming release.
+@item
+    Add the release at @url{https://ffmpeg.org/trac/ffmpeg/admin/ticket/versions}.
+@item
+    Announce the intent to do a release to the mailing list.
+@item
+    Ensure that the FATE regression suite still passes in the release
+    branch on at least @strong{i386} and @strong{amd64}
+    (cf. @ref{Regression Tests}).
+@item
+    Prepare the release tarballs in @code{bz2} and @code{gz} formats, and
+    supplementing files that contain @code{gpg} signatures
+@item
+    Publish the tarballs at @url{http://ffmpeg.org/releases}. Create and
+    push an annotated tag in the form @code{nX}, with @code{X}
+    containing the version number.
+@item
+    Propose and send a patch to the @strong{ffmpeg-devel} mailing list
+    with a news entry for the website.
+@item
+    Publish the news entry.
+@item
+    Send announcement to the mailing list.
+@end enumerate
+
 @bye
