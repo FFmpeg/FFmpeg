@@ -7,30 +7,29 @@ version 0.8.6:
 - Build system fixes: Fix Altivec detection (Debian Bug#701710) and fix
   CAF demuxer dependencies
 - Various minor documentation fixes
+- atrac3: avoid oversized shifting in decode_bytes()
 - dsputil: fix invalid array indexing
+- flacdec: simplify bounds checking in flac_probe() to avoid undefined behavior.
 - h264: check for luma and chroma bit depth being equal (CVE-2013-2277)
 - indeo3: initialise pixel planes on allocation
+- ivi_common: do not call MC for intra frames when dc_transform is unset
 - lavf: fix arithmetic overflows in avformat_seek_file()
+- lzo: fix overflow checking in copy_backptr()
 - matroskadec: request a read buffer for the wav header
 - mp3: exit on parsing error in mp_decode_frame
 - oggdec: make sure the private parse data is cleaned up
 - parser: fix large overreads
+- png: use av_mallocz_array() for the zlib zalloc function, avoids accessing uninitialized memory
 - pthread: set the frame properties from the thread context, not user
-- various potentially security relevant fixes to the shorten decoder
+- roqvideodec: fix a potential infinite loop in roqvideo_decode_frame()
 - update year to 2013
+- various potentially security relevant fixes to the shorten decoder
 - vmdaudio: fix invalid reads when packet size is not a multiple of chunk size
 - vorbisdec: Error on bark_map_size equal to 0 (CVE-2013-0894)
 - wmadec: require block_align to be set
+- wmaprodec: require block_align to be set, avoids infinite loop
 - wmaprodec: return an error, not 0, when the input is too small
 - xxan: fix invalid memory access in xan_decode_frame_type0()
-- lzo: fix overflow checking in copy_backptr()
-- flacdec: simplify bounds checking in flac_probe() to avoid undefined behavior.
-- atrac3: avoid oversized shifting in decode_bytes().
-- png: use av_mallocz_array() for the zlib zalloc function, avoids accessing uninitialized memory.
-- wmaprodec: require block_align to be set, avoids infinite loop.
-- ivi_common: do not call MC for intra frames when dc_transform is unset
-- roqvideodec: fix a potential infinite loop in roqvideo_decode_frame().
-
 
 version 0.8.5:
 
