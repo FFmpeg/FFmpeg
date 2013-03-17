@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/log.h"
@@ -220,7 +221,11 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
-                    snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
+                    av_strlcpy(scale_args, "0:0", sizeof(scale_args));
+                    if (graph->scale_sws_opts) {
+                        av_strlcat(scale_args, ":", sizeof(scale_args));
+                        av_strlcat(scale_args, graph->scale_sws_opts, sizeof(scale_args));
+                    }
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
                                                             inst_name, scale_args, NULL,
                                                             graph)) < 0)
