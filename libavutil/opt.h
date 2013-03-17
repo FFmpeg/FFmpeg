@@ -230,6 +230,7 @@ enum AVOptionType{
     AV_OPT_TYPE_IMAGE_SIZE = MKBETAG('S','I','Z','E'), ///< offset must point to two consecutive integers
     AV_OPT_TYPE_PIXEL_FMT  = MKBETAG('P','F','M','T'),
     AV_OPT_TYPE_SAMPLE_FMT = MKBETAG('S','F','M','T'),
+    AV_OPT_TYPE_VIDEO_RATE = MKBETAG('V','R','A','T'), ///< offset must point to AVRational
 #if FF_API_OLD_AVOPTIONS
     FF_OPT_TYPE_FLAGS = 0,
     FF_OPT_TYPE_INT,
@@ -653,6 +654,7 @@ int av_opt_set_bin   (void *obj, const char *name, const uint8_t *val, int size,
 int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_flags);
 int av_opt_set_pixel_fmt (void *obj, const char *name, enum AVPixelFormat fmt, int search_flags);
 int av_opt_set_sample_fmt(void *obj, const char *name, enum AVSampleFormat fmt, int search_flags);
+int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int search_flags);
 /**
  * @}
  */
@@ -679,6 +681,7 @@ int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational 
 int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_out, int *h_out);
 int av_opt_get_pixel_fmt (void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt);
 int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt);
+int av_opt_get_video_rate(void *obj, const char *name, int search_flags, AVRational *out_val);
 /**
  * @}
  */

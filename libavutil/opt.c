@@ -256,7 +256,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         return AVERROR_OPTION_NOT_FOUND;
     if (!val && (o->type != AV_OPT_TYPE_STRING &&
                  o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_SAMPLE_FMT &&
-                 o->type != AV_OPT_TYPE_IMAGE_SIZE))
+                 o->type != AV_OPT_TYPE_IMAGE_SIZE && o->type != AV_OPT_TYPE_VIDEO_RATE))
         return AVERROR(EINVAL);
 
     dst = ((uint8_t*)target_obj) + o->offset;
@@ -277,6 +277,15 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         ret = av_parse_video_size(dst, ((int *)dst) + 1, val);
         if (ret < 0)
             av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as image size\n", val);
+        return ret;
+    case AV_OPT_TYPE_VIDEO_RATE:
+        if (!val) {
+            ret = AVERROR(EINVAL);
+        } else {
+            ret = av_parse_video_rate(dst, val);
+        }
+        if (ret < 0)
+            av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as video rate\n", val);
         return ret;
     case AV_OPT_TYPE_PIXEL_FMT:
         if (!val || !strcmp(val, "none")) {
@@ -436,6 +445,23 @@ int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_
     return 0;
 }
 
+int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int search_flags)
+{
+    void *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (o->type != AV_OPT_TYPE_VIDEO_RATE) {
+        av_log(obj, AV_LOG_ERROR,
+               "The value set by option '%s' is not a video rate.\n", o->name);
+        return AVERROR(EINVAL);
+    }
+    if (val.num <= 0 || val.den <= 0)
+        return AVERROR(EINVAL);
+    return set_number(obj, name, val.num, val.den, 1, search_flags);
+}
+
 static int set_format(void *obj, const char *name, int fmt, int search_flags,
                       enum AVOptionType type, const char *desc, int nb_fmts)
 {
@@ -543,6 +569,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     case AV_OPT_TYPE_INT64:     ret = snprintf(buf, sizeof(buf), "%"PRId64, *(int64_t*)dst);break;
     case AV_OPT_TYPE_FLOAT:     ret = snprintf(buf, sizeof(buf), "%f" ,     *(float  *)dst);break;
     case AV_OPT_TYPE_DOUBLE:    ret = snprintf(buf, sizeof(buf), "%f" ,     *(double *)dst);break;
+    case AV_OPT_TYPE_VIDEO_RATE:
     case AV_OPT_TYPE_RATIONAL:  ret = snprintf(buf, sizeof(buf), "%d/%d",   ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
     case AV_OPT_TYPE_CONST:     ret = snprintf(buf, sizeof(buf), "%f" ,     o->default_val.dbl);break;
     case AV_OPT_TYPE_STRING:
@@ -695,6 +722,22 @@ int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_
     return 0;
 }
 
+int av_opt_get_video_rate(void *obj, const char *name, int search_flags, AVRational *out_val)
+{
+    int64_t intnum = 1;
+    double     num = 1;
+    int   ret, den = 1;
+
+    if ((ret = get_number(obj, name, NULL, &num, &den, &intnum, search_flags)) < 0)
+        return ret;
+
+    if (num == 1.0 && (int)intnum == intnum)
+        *out_val = (AVRational){intnum, den};
+    else
+        *out_val = av_d2q(num*intnum/den, 1<<24);
+    return 0;
+}
+
 static int get_format(void *obj, const char *name, int search_flags, int *out_fmt,
                       enum AVOptionType type, const char *desc)
 {
@@ -809,6 +852,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_IMAGE_SIZE:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<image_size>");
                 break;
+            case AV_OPT_TYPE_VIDEO_RATE:
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<video_rate>");
+                break;
             case AV_OPT_TYPE_PIXEL_FMT:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<pix_fmt>");
                 break;
@@ -908,6 +954,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             break;
             case AV_OPT_TYPE_STRING:
             case AV_OPT_TYPE_IMAGE_SIZE:
+            case AV_OPT_TYPE_VIDEO_RATE:
                 av_opt_set(s, opt->name, opt->default_val.str, 0);
                 break;
             case AV_OPT_TYPE_PIXEL_FMT:
@@ -1270,6 +1317,12 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
         range->value_min = 0;
         range->value_max = INT_MAX/8;
         break;
+    case AV_OPT_TYPE_VIDEO_RATE:
+        range->component_min = 1;
+        range->component_max = INT_MAX;
+        range->value_min = 1;
+        range->value_max = INT_MAX;
+        break;
     default:
         ret = AVERROR(ENOSYS);
         goto fail;
@@ -1331,6 +1384,7 @@ static const AVOption test_options[]= {
 {"size",     "set size",       OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE,{0},             0,        0                   },
 {"pix_fmt",  "set pixfmt",     OFFSET(pix_fmt),  AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, AV_PIX_FMT_NB-1},
 {"sample_fmt", "set samplefmt", OFFSET(sample_fmt), AV_OPT_TYPE_SAMPLE_FMT, {.i64 = AV_SAMPLE_FMT_NONE}, -1, AV_SAMPLE_FMT_NB-1},
+{"video_rate", "set videorate", OFFSET(video_rate), AV_OPT_TYPE_VIDEO_RATE,  {.str = "25"}, 0,     0                   },
 {NULL},
 };
 
@@ -1381,6 +1435,11 @@ int main(void)
             "sample_fmt=s16",
             "sample_fmt=2",
             "sample_fmt=bogus",
+            "video_rate=pal",
+            "video_rate=25",
+            "video_rate=30000/1001",
+            "video_rate=30/1.001",
+            "video_rate=bogus",
         };
 
         test_ctx.class = &test_class;
