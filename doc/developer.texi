@@ -643,6 +643,9 @@ The release process involves the following steps:
 @item
     Announce the intent to do a release to the mailing list.
 @item
+    Make sure all relevant security fixes have been backported. See
+    @url{https://ffmpeg.org/security.html}.
+@item
     Ensure that the FATE regression suite still passes in the release
     branch on at least @strong{i386} and @strong{amd64}
     (cf. @ref{Regression Tests}).
