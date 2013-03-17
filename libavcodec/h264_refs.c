@@ -312,7 +312,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                 for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
                     h->last_pocs[i] = INT_MIN;
                 if (h->default_ref_list[list][0].f.data[0]
-                    && !(!FIELD_PICTURE && (h->default_ref_list[list][index].reference&3) != 3))
+                    && !(!FIELD_PICTURE && (h->default_ref_list[list][0].reference&3) != 3))
                     COPY_PICTURE(&h->ref_list[list][index], &h->default_ref_list[list][0]);
                 else
                     return -1;
