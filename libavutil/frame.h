@@ -78,6 +78,11 @@ typedef struct AVFrame {
     /**
      * pointer to the picture/channel planes.
      * This might be different from the first allocated byte
+     *
+     * Some decoders access areas outside 0,0 - width,height, please
+     * see avcodec_align_dimensions2(). Some filters and swscale can read
+     * up to 16 bytes beyond the planes, if these filters are to be used,
+     * then 16 extra bytes must be allocated.
      */
     uint8_t *data[AV_NUM_DATA_POINTERS];
 
@@ -87,6 +92,11 @@ typedef struct AVFrame {
      *
      * For audio, only linesize[0] may be set. For planar audio, each channel
      * plane must be the same size.
+     *
+     * For video the linesizes should be multiplies of the CPUs alignment
+     * preferrance, this is 16 or 32 for modern desktop CPUs.
+     * Some code requires such alignment other code can be slower without
+     * correct alignment, for yet other it makes no difference.
      */
     int linesize[AV_NUM_DATA_POINTERS];
 
