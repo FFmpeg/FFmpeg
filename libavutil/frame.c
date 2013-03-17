@@ -134,7 +134,7 @@ static int get_video_buffer(AVFrame *frame, int align)
         if (i == 1 || i == 2)
             h = -((-h) >> desc->log2_chroma_h);
 
-        frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h);
+        frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h + 16);
         if (!frame->buf[i])
             goto fail;
 
