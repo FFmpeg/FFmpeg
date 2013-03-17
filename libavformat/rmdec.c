@@ -974,6 +974,18 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
+static int rm_read_seek(AVFormatContext *s, int stream_index,
+                        int64_t pts, int flags)
+{
+    RMDemuxContext *rm = s->priv_data;
+
+    if (ff_seek_frame_binary(s, stream_index, pts, flags) < 0)
+        return -1;
+    rm->audio_pkt_cnt = 0;
+    return 0;
+}
+
+
 AVInputFormat ff_rm_demuxer = {
     .name           = "rm",
     .long_name      = NULL_IF_CONFIG_SMALL("RealMedia format"),
@@ -983,6 +995,7 @@ AVInputFormat ff_rm_demuxer = {
     .read_packet    = rm_read_packet,
     .read_close     = rm_read_close,
     .read_timestamp = rm_read_dts,
+    .read_seek      = rm_read_seek,
 };
 
 AVInputFormat ff_rdt_demuxer = {
