@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "internal.h"
@@ -163,7 +164,11 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                     /* couldn't merge format lists. auto-insert scale filter */
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
-                    snprintf(scale_args, sizeof(scale_args), "0:0:%s", graph->scale_sws_opts);
+                    av_strlcpy(scale_args, "0:0", sizeof(scale_args));
+                    if (graph->scale_sws_opts) {
+                        av_strlcat(scale_args, ":", sizeof(scale_args));
+                        av_strlcat(scale_args, graph->scale_sws_opts, sizeof(scale_args));
+                    }
                     if ((ret = avfilter_graph_create_filter(&scale, avfilter_get_by_name("scale"),
                                                             inst_name, scale_args, NULL, graph)) < 0)
                         return ret;
