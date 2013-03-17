@@ -17,6 +17,7 @@ version 0.8.6:
 - lzo: fix overflow checking in copy_backptr()
 - matroskadec: request a read buffer for the wav header
 - mp3: exit on parsing error in mp_decode_frame
+- msrledec: convert to bytestream2 API and add proper bounds checking (CVE-2013-2496)
 - oggdec: make sure the private parse data is cleaned up
 - parser: fix large overreads
 - png: use av_mallocz_array() for the zlib zalloc function, avoids accessing uninitialized memory
@@ -30,6 +31,7 @@ version 0.8.6:
 - wmaprodec: require block_align to be set, avoids infinite loop
 - wmaprodec: return an error, not 0, when the input is too small
 - xxan: fix invalid memory access in xan_decode_frame_type0()
+
 
 version 0.8.5:
 
