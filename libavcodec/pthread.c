@@ -376,7 +376,11 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         if (fctx->die) break;
 
-        if (!codec->update_thread_context && (avctx->thread_safe_callbacks || avctx->get_buffer == avcodec_default_get_buffer))
+        if (!codec->update_thread_context && (avctx->thread_safe_callbacks || (
+#if FF_API_GET_BUFFER
+            !avctx->get_buffer &&
+#endif
+            avctx->get_buffer2 == avcodec_default_get_buffer2)))
             ff_thread_finish_setup(avctx);
 
         avcodec_get_frame_defaults(&p->frame);
@@ -933,8 +937,11 @@ int ff_thread_can_start_frame(AVCodecContext *avctx)
 {
     PerThreadContext *p = avctx->thread_opaque;
     if ((avctx->active_thread_type&FF_THREAD_FRAME) && p->state != STATE_SETTING_UP &&
-        (avctx->codec->update_thread_context || (!avctx->thread_safe_callbacks &&
-                avctx->get_buffer != avcodec_default_get_buffer))) {
+        (avctx->codec->update_thread_context || (!avctx->thread_safe_callbacks && (
+#if FF_API_GET_BUFFER
+                avctx->get_buffer ||
+#endif
+                avctx->get_buffer2 != avcodec_default_get_buffer2)))) {
         return 0;
     }
     return 1;
@@ -953,8 +960,11 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
         return ff_get_buffer(avctx, f->f, flags);
 
     if (p->state != STATE_SETTING_UP &&
-        (avctx->codec->update_thread_context || (!avctx->thread_safe_callbacks &&
-                avctx->get_buffer != avcodec_default_get_buffer))) {
+        (avctx->codec->update_thread_context || (!avctx->thread_safe_callbacks && (
+#if FF_API_GET_BUFFER
+                avctx->get_buffer ||
+#endif
+                avctx->get_buffer2 != avcodec_default_get_buffer2)))) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() cannot be called after ff_thread_finish_setup()\n");
         return -1;
     }
