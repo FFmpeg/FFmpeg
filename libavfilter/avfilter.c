@@ -508,7 +508,14 @@ static int process_unnamed_options(AVFilterContext *ctx, AVDictionary **options,
     return 0;
 }
 
+#if FF_API_AVFILTER_INIT_FILTER
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
+{
+    return avfilter_init_str(filter, args);
+}
+#endif
+
+int avfilter_init_str(AVFilterContext *filter, const char *args)
 {
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;

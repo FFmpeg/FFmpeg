@@ -645,6 +645,8 @@ attribute_deprecated
 int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name);
 #endif
 
+
+#if FF_API_AVFILTER_INIT_FILTER
 /**
  * Initialize a filter.
  *
@@ -655,7 +657,21 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
  *               of this parameter varies by filter.
  * @return       zero on success
  */
+attribute_deprecated
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque);
+#endif
+
+/**
+ * Initialize a filter with the supplied parameters.
+ *
+ * @param ctx  uninitialized filter context to initialize
+ * @param args Options to initialize the filter with. This must be a
+ *             ':'-separated list of options in the 'key=value' form.
+ *             May be NULL if the options have been set directly using the
+ *             AVOptions API or there are no options that need to be set.
+ * @return 0 on success, a negative AVERROR on failure
+ */
+int avfilter_init_str(AVFilterContext *ctx, const char *args);
 
 /**
  * Free a filter context. This will also remove the filter from its

@@ -123,7 +123,8 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         args = tmp_args;
     }
 
-    if ((ret = avfilter_init_filter(*filt_ctx, args, NULL)) < 0) {
+    ret = avfilter_init_str(*filt_ctx, args);
+    if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error initializing filter '%s' with args '%s'\n", filt_name, args);
         return ret;

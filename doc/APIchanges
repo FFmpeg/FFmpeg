@@ -20,6 +20,7 @@ API changes, most recent first:
   avfilter_graph_add_filter().
   Add AVFilterContext.graph pointing to the AVFilterGraph that contains the
   filter.
+  Add avfilter_init_str(), deprecate avfilter_init_filter().
 
 2013-xx-xx - lavfi 3.7.0 - avfilter.h
   Add AVFilter.priv_class for exporting filter options through the AVOptions API

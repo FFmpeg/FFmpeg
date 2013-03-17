@@ -57,7 +57,7 @@ int main(int argc, char **argv)
                 filter_name);
         return 1;
     }
-    if (avfilter_init_filter(filter_ctx, filter_args, NULL) < 0) {
+    if (avfilter_init_str(filter_ctx, filter_args) < 0) {
         fprintf(stderr, "Impossible to init filter '%s' with arguments '%s'\n",
                 filter_name, filter_args);
         return 1;
