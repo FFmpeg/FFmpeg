@@ -239,14 +239,14 @@ void av_buffer_pool_uninit(AVBufferPool **ppool)
 /* remove the whole buffer list from the pool and return it */
 static BufferPoolEntry *get_pool(AVBufferPool *pool)
 {
-    BufferPoolEntry *cur = NULL, *last = NULL;
+    BufferPoolEntry *cur = *(void * volatile *)&pool->pool, *last = NULL;
 
-    do {
+    while (cur != last) {
         FFSWAP(BufferPoolEntry*, cur, last);
         cur = avpriv_atomic_ptr_cas((void * volatile *)&pool->pool, last, NULL);
         if (!cur)
             return NULL;
-    } while (cur != last);
+    }
 
     return cur;
 }
