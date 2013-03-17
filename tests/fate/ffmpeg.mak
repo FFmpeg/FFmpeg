@@ -15,6 +15,12 @@ FATE_MAPCHAN = $(FATE_MAPCHAN-yes)
 FATE_FFMPEG += $(FATE_MAPCHAN)
 fate-mapchan: $(FATE_MAPCHAN)
 
+FATE_FFMPEG-$(CONFIG_COLOR_FILTER) += fate-ffmpeg-filter_complex
+fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5
+
+FATE_FFMPEG-$(CONFIG_COLOR_FILTER) += fate-ffmpeg-lavfi
+fate-ffmpeg-lavfi: CMD = framecrc -lavfi color=d=1:r=5
+
 FATE_FFMPEG-$(CONFIG_RAWVIDEO_DEMUXER) += fate-force_key_frames
 fate-force_key_frames: tests/data/vsynth2.yuv
 fate-force_key_frames: CMD = enc_dec \
