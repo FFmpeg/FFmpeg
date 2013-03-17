@@ -68,9 +68,9 @@ typedef struct {
         av_log(s, AV_LOG_INFO, "Changing frame properties on the fly is not supported by all filters.\n");\
     }
 
-#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, format)\
+#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, ch_count, format)\
     if (c->sample_fmt != format || c->sample_rate != srate ||\
-        c->channel_layout != ch_layout) {\
+        c->channel_layout != ch_layout || c->channels != ch_count) {\
         av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
@@ -134,8 +134,11 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
                                  frame->format);
         break;
     case AVMEDIA_TYPE_AUDIO:
+        /* For layouts unknown on input but known on link after negotiation. */
+        if (!frame->channel_layout)
+            frame->channel_layout = s->channel_layout;
         CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
-                                 frame->format);
+                                 av_frame_get_channels(frame), frame->format);
         break;
     default:
         return AVERROR(EINVAL);
@@ -169,13 +172,17 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
 static void compat_free_buffer(void *opaque, uint8_t *data)
 {
     AVFilterBufferRef *buf = opaque;
+    AV_NOWARN_DEPRECATED(
     avfilter_unref_buffer(buf);
+    )
 }
 
 static void compat_unref_buffer(void *opaque, uint8_t *data)
 {
     AVBufferRef *buf = opaque;
+    AV_NOWARN_DEPRECATED(
     av_buffer_unref(&buf);
+    )
 }
 
 int av_buffersrc_add_ref(AVFilterContext *ctx, AVFilterBufferRef *buf,
@@ -203,8 +210,10 @@ int av_buffersrc_add_ref(AVFilterContext *ctx, AVFilterBufferRef *buf,
         goto fail;
     }
 
+    AV_NOWARN_DEPRECATED(
     if ((ret = avfilter_copy_buf_props(frame, buf)) < 0)
         goto fail;
+    )
 
 #define WRAP_PLANE(ref_out, data, data_size)                            \
 do {                                                                    \
