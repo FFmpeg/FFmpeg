@@ -1887,7 +1887,6 @@ static int video_thread(void *arg)
     int serial = 0;
 
 #if CONFIG_AVFILTER
-    AVCodecContext *codec = is->video_st->codec;
     AVFilterGraph *graph = avfilter_graph_alloc();
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
     int last_w = 0;
