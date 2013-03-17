@@ -173,6 +173,11 @@ static int iff_read_header(AVFormatContext *s,
             break;
 
         case ID_CMAP:
+            if (data_size < 3 || data_size > 768 || data_size % 3) {
+                 av_log(s, AV_LOG_ERROR, "Invalid CMAP chunk size %d\n",
+                        data_size);
+                 return AVERROR_INVALIDDATA;
+            }
             st->codec->extradata_size = data_size;
             st->codec->extradata      = av_malloc(data_size);
             if (!st->codec->extradata)
