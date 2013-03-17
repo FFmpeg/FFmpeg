@@ -98,7 +98,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur_buf)
     ret = ff_filter_frame(outlink, out_buf);
 
 end:
-    av_frame_unref(cur_buf);
+    av_frame_free(&cur_buf);
     return ret;
 }
 
