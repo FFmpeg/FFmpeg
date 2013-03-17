@@ -2162,6 +2162,7 @@ static int recode_subtitle(AVCodecContext *avctx,
     ret = av_new_packet(&tmp, inl * UTF8_MAX_BYTES);
     if (ret < 0)
         goto end;
+    outpkt->buf  = tmp.buf;
     outpkt->data = tmp.data;
     outpkt->size = tmp.size;
     outb = outpkt->data;
@@ -2221,8 +2222,13 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
             ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &pkt_recoded);
             av_assert1((ret >= 0) >= !!*got_sub_ptr &&
                        !!*got_sub_ptr >= !!sub->num_rects);
-            if (tmp.data != pkt_recoded.data)
-                av_free(pkt_recoded.data);
+            if (tmp.data != pkt_recoded.data) { // did we recode?
+                /* prevent from destroying side data from original packet */
+                pkt_recoded.side_data = NULL;
+                pkt_recoded.side_data_elems = 0;
+
+                av_free_packet(&pkt_recoded);
+            }
             sub->format = !(avctx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB);
             avctx->pkt = NULL;
         }
