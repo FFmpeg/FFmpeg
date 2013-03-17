@@ -8,6 +8,7 @@ version <next>:
   or vice versa
 - support for Monkey's Audio versions from 3.93
 - perms and aperms filters
+- audio filtering support in ffplay
 
 
 version 1.2:

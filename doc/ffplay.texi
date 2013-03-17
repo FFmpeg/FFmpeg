@@ -84,6 +84,12 @@ output. In the filter graph, the input is associated to the label
 ffmpeg-filters manual for more information about the filtergraph
 syntax.
 
+@item -af @var{filter_graph}
+@var{filter_graph} is a description of the filter graph to apply to
+the input audio.
+Use the option "-filters" to show all the available filters (including
+sources and sinks).
+
 @item -i @var{input_file}
 Read @var{input_file}.
 @end table
