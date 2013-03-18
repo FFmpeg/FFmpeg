@@ -2029,7 +2029,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     if (width == 0 || height == 0) {
         av_log(avctx, AV_LOG_WARNING, "Invalid horizontal or vertical size "
                "value.\n");
-        if (avctx->err_recognition & AV_EF_BITSTREAM)
+        if (avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_COMPLIANT))
             return AVERROR_INVALIDDATA;
     }
     s->aspect_ratio_info = get_bits(&s->gb, 4);
