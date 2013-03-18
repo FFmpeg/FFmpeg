@@ -152,6 +152,8 @@ static int sdl_write_header(AVFormatContext *s)
     sdl->overlay_y = (sdl->window_height - sdl->overlay_height) / 2;
 
     SDL_WM_SetCaption(sdl->window_title, sdl->icon_title);
+   
+    int flags=SDL_SWSURFACE | sdl->window_fullscreen ? SDL_FULLSCREEN : 0;
     sdl->surface = SDL_SetVideoMode(sdl->window_width, sdl->window_height,
                                     24, flags);
     if (!sdl->surface) {
