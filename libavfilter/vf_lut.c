@@ -245,6 +245,8 @@ static int config_props(AVFilterLink *inlink)
         double res;
 
         /* create the parsed expression */
+        av_expr_free(s->comp_expr[comp]);
+        s->comp_expr[comp] = NULL;
         ret = av_expr_parse(&s->comp_expr[comp], s->comp_expr_str[comp],
                             var_names, funcs1_names, funcs1, NULL, NULL, 0, ctx);
         if (ret < 0) {
