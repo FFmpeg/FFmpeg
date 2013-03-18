@@ -1044,10 +1044,8 @@ static int reap_filters(void)
                                                AV_BUFFERSINK_FLAG_NO_REQUEST);
             if (ret < 0) {
                 if (ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
-                    char buf[256];
-                    av_strerror(ret, buf, sizeof(buf));
                     av_log(NULL, AV_LOG_WARNING,
-                           "Error in av_buffersink_get_buffer_ref(): %s\n", buf);
+                           "Error in av_buffersink_get_frame_flags(): %s\n", av_err2str(ret));
                 }
                 break;
             }
