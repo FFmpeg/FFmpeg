@@ -225,8 +225,8 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
  * you do check the return code!
  *
  * @param[in]  pix_fmt the pixel format
- * @param[out] h_shift store log2_chroma_h
- * @param[out] v_shift store log2_chroma_w
+ * @param[out] h_shift store log2_chroma_w
+ * @param[out] v_shift store log2_chroma_h
  *
  * @return 0 on success, AVERROR(ENOSYS) on invalid or unknown pixel format
  */

@@ -4286,8 +4286,8 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
  * pix_fmts.
  *
  * @param[in]  pix_fmt the pixel format
- * @param[out] h_shift store log2_chroma_h
- * @param[out] v_shift store log2_chroma_w
+ * @param[out] h_shift store log2_chroma_w
+ * @param[out] v_shift store log2_chroma_h
  *
  * @see av_pix_fmt_get_chroma_sub_sample
  */
