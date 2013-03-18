@@ -47,21 +47,21 @@ typedef struct {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    FadeContext *fade = ctx->priv;
+    FadeContext *s = ctx->priv;
 
-    fade->fade_per_frame = (1 << 16) / fade->nb_frames;
-    if (fade->type == FADE_IN) {
-        fade->factor = 0;
-    } else if (fade->type == FADE_OUT) {
-        fade->fade_per_frame = -fade->fade_per_frame;
-        fade->factor = (1 << 16);
+    s->fade_per_frame = (1 << 16) / s->nb_frames;
+    if (s->type == FADE_IN) {
+        s->factor = 0;
+    } else if (s->type == FADE_OUT) {
+        s->fade_per_frame = -s->fade_per_frame;
+        s->factor = (1 << 16);
     }
-    fade->stop_frame = fade->start_frame + fade->nb_frames;
+    s->stop_frame = s->start_frame + s->nb_frames;
 
     av_log(ctx, AV_LOG_VERBOSE,
            "type:%s start_frame:%d nb_frames:%d\n",
-           fade->type == FADE_IN ? "in" : "out", fade->start_frame,
-           fade->nb_frames);
+           s->type == FADE_IN ? "in" : "out", s->start_frame,
+           s->nb_frames);
     return 0;
 }
 
@@ -82,31 +82,31 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_props(AVFilterLink *inlink)
 {
-    FadeContext *fade = inlink->dst->priv;
+    FadeContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
 
-    fade->hsub = pixdesc->log2_chroma_w;
-    fade->vsub = pixdesc->log2_chroma_h;
+    s->hsub = pixdesc->log2_chroma_w;
+    s->vsub = pixdesc->log2_chroma_h;
 
-    fade->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
+    s->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    FadeContext *fade = inlink->dst->priv;
+    FadeContext *s = inlink->dst->priv;
     uint8_t *p;
     int i, j, plane;
 
-    if (fade->factor < UINT16_MAX) {
+    if (s->factor < UINT16_MAX) {
         /* luma or rgb plane */
         for (i = 0; i < frame->height; i++) {
             p = frame->data[0] + i * frame->linesize[0];
-            for (j = 0; j < inlink->w * fade->bpp; j++) {
-                /* fade->factor is using 16 lower-order bits for decimal
+            for (j = 0; j < inlink->w * s->bpp; j++) {
+                /* s->factor is using 16 lower-order bits for decimal
                  * places. 32768 = 1 << 15, it is an integer representation
                  * of 0.5 and is for rounding. */
-                *p = (*p * fade->factor + 32768) >> 16;
+                *p = (*p * s->factor + 32768) >> 16;
                 p++;
             }
         }
@@ -115,12 +115,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             /* chroma planes */
             for (plane = 1; plane < 3; plane++) {
                 for (i = 0; i < frame->height; i++) {
-                    p = frame->data[plane] + (i >> fade->vsub) * frame->linesize[plane];
-                    for (j = 0; j < inlink->w >> fade->hsub; j++) {
+                    p = frame->data[plane] + (i >> s->vsub) * frame->linesize[plane];
+                    for (j = 0; j < inlink->w >> s->hsub; j++) {
                         /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
                          * representation of 128.5. The .5 is for rounding
                          * purposes. */
-                        *p = ((*p - 128) * fade->factor + 8421367) >> 16;
+                        *p = ((*p - 128) * s->factor + 8421367) >> 16;
                         p++;
                     }
                 }
@@ -128,11 +128,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
     }
 
-    if (fade->frame_index >= fade->start_frame &&
-        fade->frame_index <= fade->stop_frame)
-        fade->factor += fade->fade_per_frame;
-    fade->factor = av_clip_uint16(fade->factor);
-    fade->frame_index++;
+    if (s->frame_index >= s->start_frame &&
+        s->frame_index <= s->stop_frame)
+        s->factor += s->fade_per_frame;
+    s->factor = av_clip_uint16(s->factor);
+    s->frame_index++;
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
