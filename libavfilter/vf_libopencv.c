@@ -86,8 +86,8 @@ typedef struct {
 
 static av_cold int smooth_init(AVFilterContext *ctx, const char *args)
 {
-    OCVContext *ocv = ctx->priv;
-    SmoothContext *smooth = ocv->priv;
+    OCVContext *s = ctx->priv;
+    SmoothContext *smooth = s->priv;
     char type_str[128] = "gaussian";
 
     smooth->param1 = 3;
@@ -129,8 +129,8 @@ static av_cold int smooth_init(AVFilterContext *ctx, const char *args)
 
 static void smooth_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg)
 {
-    OCVContext *ocv = ctx->priv;
-    SmoothContext *smooth = ocv->priv;
+    OCVContext *s = ctx->priv;
+    SmoothContext *smooth = s->priv;
     cvSmooth(inimg, outimg, smooth->type, smooth->param1, smooth->param2, smooth->param3, smooth->param4);
 }
 
@@ -252,8 +252,8 @@ typedef struct {
 
 static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
 {
-    OCVContext *ocv = ctx->priv;
-    DilateContext *dilate = ocv->priv;
+    OCVContext *s = ctx->priv;
+    DilateContext *dilate = s->priv;
     char default_kernel_str[] = "3x3+0x0/rect";
     char *kernel_str;
     const char *buf = args;
@@ -281,23 +281,23 @@ static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
 
 static av_cold void dilate_uninit(AVFilterContext *ctx)
 {
-    OCVContext *ocv = ctx->priv;
-    DilateContext *dilate = ocv->priv;
+    OCVContext *s = ctx->priv;
+    DilateContext *dilate = s->priv;
 
     cvReleaseStructuringElement(&dilate->kernel);
 }
 
 static void dilate_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg)
 {
-    OCVContext *ocv = ctx->priv;
-    DilateContext *dilate = ocv->priv;
+    OCVContext *s = ctx->priv;
+    DilateContext *dilate = s->priv;
     cvDilate(inimg, outimg, dilate->kernel, dilate->nb_iterations);
 }
 
 static void erode_end_frame_filter(AVFilterContext *ctx, IplImage *inimg, IplImage *outimg)
 {
-    OCVContext *ocv = ctx->priv;
-    DilateContext *dilate = ocv->priv;
+    OCVContext *s = ctx->priv;
+    DilateContext *dilate = s->priv;
     cvErode(inimg, outimg, dilate->kernel, dilate->nb_iterations);
 }
 
@@ -317,39 +317,39 @@ static OCVFilterEntry ocv_filter_entries[] = {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    OCVContext *ocv = ctx->priv;
+    OCVContext *s = ctx->priv;
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(ocv_filter_entries); i++) {
         OCVFilterEntry *entry = &ocv_filter_entries[i];
-        if (!strcmp(ocv->name, entry->name)) {
-            ocv->init             = entry->init;
-            ocv->uninit           = entry->uninit;
-            ocv->end_frame_filter = entry->end_frame_filter;
+        if (!strcmp(s->name, entry->name)) {
+            s->init             = entry->init;
+            s->uninit           = entry->uninit;
+            s->end_frame_filter = entry->end_frame_filter;
 
-            if (!(ocv->priv = av_mallocz(entry->priv_size)))
+            if (!(s->priv = av_mallocz(entry->priv_size)))
                 return AVERROR(ENOMEM);
-            return ocv->init(ctx, ocv->params);
+            return s->init(ctx, s->params);
         }
     }
 
-    av_log(ctx, AV_LOG_ERROR, "No libopencv filter named '%s'\n", ocv->name);
+    av_log(ctx, AV_LOG_ERROR, "No libopencv filter named '%s'\n", s->name);
     return AVERROR(EINVAL);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    OCVContext *ocv = ctx->priv;
+    OCVContext *s = ctx->priv;
 
-    if (ocv->uninit)
-        ocv->uninit(ctx);
-    av_free(ocv->priv);
+    if (s->uninit)
+        s->uninit(ctx);
+    av_free(s->priv);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    OCVContext *ocv = ctx->priv;
+    OCVContext *s = ctx->priv;
     AVFilterLink *outlink= inlink->dst->outputs[0];
     AVFrame *out;
     IplImage inimg, outimg;
@@ -363,7 +363,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     fill_iplimage_from_frame(&inimg , in , inlink->format);
     fill_iplimage_from_frame(&outimg, out, inlink->format);
-    ocv->end_frame_filter(ctx, &inimg, &outimg);
+    s->end_frame_filter(ctx, &inimg, &outimg);
     fill_frame_from_iplimage(out, &outimg, inlink->format);
 
     av_frame_free(&in);
