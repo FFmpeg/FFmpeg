@@ -193,6 +193,9 @@ static int config_input(AVFilterLink *link)
     s->w &= ~((1 << s->hsub) - 1);
     s->h &= ~((1 << s->vsub) - 1);
 
+    av_expr_free(s->x_pexpr);
+    av_expr_free(s->y_pexpr);
+    s->x_pexpr = s->y_pexpr = NULL;
     if ((ret = av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
