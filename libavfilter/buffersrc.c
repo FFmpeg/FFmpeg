@@ -241,7 +241,7 @@ do {                                                                    \
         planes = (desc->flags & PIX_FMT_PLANAR) ? desc->nb_components : 1;
 
         for (i = 0; i < planes; i++) {
-            int v_shift    = (i == 1 || i == 2) ? desc->log2_chroma_w : 0;
+            int v_shift    = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
             int plane_size = (frame->height >> v_shift) * frame->linesize[i];
 
             WRAP_PLANE(frame->buf[i], frame->data[i], plane_size);
