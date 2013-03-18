@@ -231,13 +231,13 @@ static int glyph_cmp(void *key, const void *b)
  */
 static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
 {
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     Glyph *glyph;
     struct AVTreeNode *node = NULL;
     int ret;
 
-    /* load glyph into dtext->face->glyph */
-    if (FT_Load_Char(dtext->face, code, dtext->ft_load_flags))
+    /* load glyph into s->face->glyph */
+    if (FT_Load_Char(s->face, code, s->ft_load_flags))
         return AVERROR(EINVAL);
 
     /* save glyph */
@@ -248,15 +248,15 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
     }
     glyph->code  = code;
 
-    if (FT_Get_Glyph(dtext->face->glyph, glyph->glyph)) {
+    if (FT_Get_Glyph(s->face->glyph, glyph->glyph)) {
         ret = AVERROR(EINVAL);
         goto error;
     }
 
-    glyph->bitmap      = dtext->face->glyph->bitmap;
-    glyph->bitmap_left = dtext->face->glyph->bitmap_left;
-    glyph->bitmap_top  = dtext->face->glyph->bitmap_top;
-    glyph->advance     = dtext->face->glyph->advance.x >> 6;
+    glyph->bitmap      = s->face->glyph->bitmap;
+    glyph->bitmap_left = s->face->glyph->bitmap_left;
+    glyph->bitmap_top  = s->face->glyph->bitmap_top;
+    glyph->advance     = s->face->glyph->advance.x >> 6;
 
     /* measure text height to calculate text_height (or the maximum text height) */
     FT_Glyph_Get_CBox(*glyph->glyph, ft_glyph_bbox_pixels, &glyph->bbox);
@@ -266,7 +266,7 @@ static int load_glyph(AVFilterContext *ctx, Glyph **glyph_ptr, uint32_t code)
         ret = AVERROR(ENOMEM);
         goto error;
     }
-    av_tree_insert(&dtext->glyphs, glyph, glyph_cmp, &node);
+    av_tree_insert(&s->glyphs, glyph, glyph_cmp, &node);
 
     if (glyph_ptr)
         *glyph_ptr = glyph;
@@ -283,80 +283,80 @@ error:
 static av_cold int init(AVFilterContext *ctx)
 {
     int err;
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     Glyph *glyph;
 
-    if (!dtext->fontfile) {
+    if (!s->fontfile) {
         av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
         return AVERROR(EINVAL);
     }
 
-    if (dtext->textfile) {
+    if (s->textfile) {
         uint8_t *textbuf;
         size_t textbuf_size;
 
-        if (dtext->text) {
+        if (s->text) {
             av_log(ctx, AV_LOG_ERROR,
                    "Both text and text file provided. Please provide only one\n");
             return AVERROR(EINVAL);
         }
-        if ((err = av_file_map(dtext->textfile, &textbuf, &textbuf_size, 0, ctx)) < 0) {
+        if ((err = av_file_map(s->textfile, &textbuf, &textbuf_size, 0, ctx)) < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "The text file '%s' could not be read or is empty\n",
-                   dtext->textfile);
+                   s->textfile);
             return err;
         }
 
-        if (!(dtext->text = av_malloc(textbuf_size+1)))
+        if (!(s->text = av_malloc(textbuf_size+1)))
             return AVERROR(ENOMEM);
-        memcpy(dtext->text, textbuf, textbuf_size);
-        dtext->text[textbuf_size] = 0;
+        memcpy(s->text, textbuf, textbuf_size);
+        s->text[textbuf_size] = 0;
         av_file_unmap(textbuf, textbuf_size);
     }
 
-    if (!dtext->text) {
+    if (!s->text) {
         av_log(ctx, AV_LOG_ERROR,
                "Either text or a valid file must be provided\n");
         return AVERROR(EINVAL);
     }
 
-    if ((err = av_parse_color(dtext->fontcolor_rgba, dtext->fontcolor_string, -1, ctx))) {
+    if ((err = av_parse_color(s->fontcolor_rgba, s->fontcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
-               "Invalid font color '%s'\n", dtext->fontcolor_string);
+               "Invalid font color '%s'\n", s->fontcolor_string);
         return err;
     }
 
-    if ((err = av_parse_color(dtext->boxcolor_rgba, dtext->boxcolor_string, -1, ctx))) {
+    if ((err = av_parse_color(s->boxcolor_rgba, s->boxcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
-               "Invalid box color '%s'\n", dtext->boxcolor_string);
+               "Invalid box color '%s'\n", s->boxcolor_string);
         return err;
     }
 
-    if ((err = av_parse_color(dtext->shadowcolor_rgba, dtext->shadowcolor_string, -1, ctx))) {
+    if ((err = av_parse_color(s->shadowcolor_rgba, s->shadowcolor_string, -1, ctx))) {
         av_log(ctx, AV_LOG_ERROR,
-               "Invalid shadow color '%s'\n", dtext->shadowcolor_string);
+               "Invalid shadow color '%s'\n", s->shadowcolor_string);
         return err;
     }
 
-    if ((err = FT_Init_FreeType(&(dtext->library)))) {
+    if ((err = FT_Init_FreeType(&(s->library)))) {
         av_log(ctx, AV_LOG_ERROR,
                "Could not load FreeType: %s\n", FT_ERRMSG(err));
         return AVERROR(EINVAL);
     }
 
     /* load the face, and set up the encoding, which is by default UTF-8 */
-    if ((err = FT_New_Face(dtext->library, dtext->fontfile, 0, &dtext->face))) {
+    if ((err = FT_New_Face(s->library, s->fontfile, 0, &s->face))) {
         av_log(ctx, AV_LOG_ERROR, "Could not load fontface from file '%s': %s\n",
-               dtext->fontfile, FT_ERRMSG(err));
+               s->fontfile, FT_ERRMSG(err));
         return AVERROR(EINVAL);
     }
-    if ((err = FT_Set_Pixel_Sizes(dtext->face, 0, dtext->fontsize))) {
+    if ((err = FT_Set_Pixel_Sizes(s->face, 0, s->fontsize))) {
         av_log(ctx, AV_LOG_ERROR, "Could not set font size to %d pixels: %s\n",
-               dtext->fontsize, FT_ERRMSG(err));
+               s->fontsize, FT_ERRMSG(err));
         return AVERROR(EINVAL);
     }
 
-    dtext->use_kerning = FT_HAS_KERNING(dtext->face);
+    s->use_kerning = FT_HAS_KERNING(s->face);
 
     /* load the fallback glyph with code 0 */
     load_glyph(ctx, NULL, 0);
@@ -366,7 +366,7 @@ static av_cold int init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "Could not set tabsize.\n");
         return err;
     }
-    dtext->tabsize *= glyph->advance;
+    s->tabsize *= glyph->advance;
 
 #if !HAVE_LOCALTIME_R
     av_log(ctx, AV_LOG_WARNING, "strftime() expansion unavailable!\n");
@@ -399,20 +399,20 @@ static int glyph_enu_free(void *opaque, void *elem)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     int i;
 
-    av_freep(&dtext->expanded_text);
-    av_freep(&dtext->positions);
-    av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
-    av_tree_destroy(dtext->glyphs);
-    dtext->glyphs = 0;
-    FT_Done_Face(dtext->face);
-    FT_Done_FreeType(dtext->library);
+    av_freep(&s->expanded_text);
+    av_freep(&s->positions);
+    av_tree_enumerate(s->glyphs, NULL, NULL, glyph_enu_free);
+    av_tree_destroy(s->glyphs);
+    s->glyphs = 0;
+    FT_Done_Face(s->face);
+    FT_Done_FreeType(s->library);
 
     for (i = 0; i < 4; i++) {
-        av_freep(&dtext->box_line[i]);
-        dtext->pixel_step[i] = 0;
+        av_freep(&s->box_line[i]);
+        s->pixel_step[i] = 0;
     }
 
 }
@@ -424,11 +424,11 @@ static inline int is_newline(uint32_t c)
 
 static int dtext_prepare_text(AVFilterContext *ctx)
 {
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
     int text_height, baseline;
-    char *text = dtext->text;
+    char *text = s->text;
     uint8_t *p;
     int str_w = 0, len;
     int y_min = 32000, y_max = -32000;
@@ -441,37 +441,37 @@ static int dtext_prepare_text(AVFilterContext *ctx)
 #if HAVE_LOCALTIME_R
     time_t now = time(0);
     struct tm ltime;
-    uint8_t *buf = dtext->expanded_text;
-    int buf_size = dtext->expanded_text_size;
+    uint8_t *buf = s->expanded_text;
+    int buf_size = s->expanded_text_size;
 
     if (!buf)
-        buf_size = 2*strlen(dtext->text)+1;
+        buf_size = 2*strlen(s->text)+1;
 
     localtime_r(&now, &ltime);
 
     while ((buf = av_realloc(buf, buf_size))) {
         *buf = 1;
-        if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
+        if (strftime(buf, buf_size, s->text, &ltime) != 0 || *buf == 0)
             break;
         buf_size *= 2;
     }
 
     if (!buf)
         return AVERROR(ENOMEM);
-    text = dtext->expanded_text = buf;
-    dtext->expanded_text_size = buf_size;
+    text = s->expanded_text = buf;
+    s->expanded_text_size = buf_size;
 #endif
 
-    if ((len = strlen(text)) > dtext->nb_positions) {
-        FT_Vector *p = av_realloc(dtext->positions,
-                                  len * sizeof(*dtext->positions));
+    if ((len = strlen(text)) > s->nb_positions) {
+        FT_Vector *p = av_realloc(s->positions,
+                                  len * sizeof(*s->positions));
         if (!p) {
-            av_freep(dtext->positions);
-            dtext->nb_positions = 0;
+            av_freep(s->positions);
+            s->nb_positions = 0;
             return AVERROR(ENOMEM);
         } else {
-            dtext->positions = p;
-            dtext->nb_positions = len;
+            s->positions = p;
+            s->nb_positions = len;
         }
     }
 
@@ -481,7 +481,7 @@ static int dtext_prepare_text(AVFilterContext *ctx)
 
         /* get glyph */
         dummy.code = code;
-        glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
+        glyph = av_tree_find(s->glyphs, &dummy, glyph_cmp, NULL);
         if (!glyph) {
             ret = load_glyph(ctx, &glyph, code);
             if (ret)
@@ -505,7 +505,7 @@ static int dtext_prepare_text(AVFilterContext *ctx)
 
         prev_code = code;
         if (is_newline(code)) {
-            str_w = FFMAX(str_w, x - dtext->x);
+            str_w = FFMAX(str_w, x - s->x);
             y += text_height;
             x = 0;
             continue;
@@ -514,11 +514,11 @@ static int dtext_prepare_text(AVFilterContext *ctx)
         /* get glyph */
         prev_glyph = glyph;
         dummy.code = code;
-        glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
+        glyph = av_tree_find(s->glyphs, &dummy, glyph_cmp, NULL);
 
         /* kerning */
-        if (dtext->use_kerning && prev_glyph && glyph->code) {
-            FT_Get_Kerning(dtext->face, prev_glyph->code, glyph->code,
+        if (s->use_kerning && prev_glyph && glyph->code) {
+            FT_Get_Kerning(s->face, prev_glyph->code, glyph->code,
                            ft_kerning_default, &delta);
             x += delta.x >> 6;
         }
@@ -530,19 +530,19 @@ static int dtext_prepare_text(AVFilterContext *ctx)
         }
 
         /* save position */
-        dtext->positions[i].x = x + glyph->bitmap_left;
-        dtext->positions[i].y = y - glyph->bitmap_top + baseline;
-        if (code == '\t') x  = (x / dtext->tabsize + 1)*dtext->tabsize;
+        s->positions[i].x = x + glyph->bitmap_left;
+        s->positions[i].y = y - glyph->bitmap_top + baseline;
+        if (code == '\t') x  = (x / s->tabsize + 1)*s->tabsize;
         else              x += glyph->advance;
     }
 
     str_w = FFMIN(width - 1, FFMAX(str_w, x));
     y     = FFMIN(y + text_height, height - 1);
 
-    dtext->w = str_w;
-    dtext->var_values[VAR_TEXT_W] = dtext->var_values[VAR_TW] = dtext->w;
-    dtext->h = y;
-    dtext->var_values[VAR_TEXT_H] = dtext->var_values[VAR_TH] = dtext->h;
+    s->w = str_w;
+    s->var_values[VAR_TEXT_W] = s->var_values[VAR_TW] = s->w;
+    s->h = y;
+    s->var_values[VAR_TEXT_H] = s->var_values[VAR_TH] = s->h;
 
     return 0;
 }
@@ -551,58 +551,58 @@ static int dtext_prepare_text(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx  = inlink->dst;
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
-    dtext->hsub = pix_desc->log2_chroma_w;
-    dtext->vsub = pix_desc->log2_chroma_h;
+    s->hsub = pix_desc->log2_chroma_w;
+    s->vsub = pix_desc->log2_chroma_h;
 
-    dtext->var_values[VAR_E  ] = M_E;
-    dtext->var_values[VAR_PHI] = M_PHI;
-    dtext->var_values[VAR_PI ] = M_PI;
+    s->var_values[VAR_E  ] = M_E;
+    s->var_values[VAR_PHI] = M_PHI;
+    s->var_values[VAR_PI ] = M_PI;
 
-    dtext->var_values[VAR_MAIN_W] =
-        dtext->var_values[VAR_MW] = ctx->inputs[0]->w;
-    dtext->var_values[VAR_MAIN_H] =
-        dtext->var_values[VAR_MH] = ctx->inputs[0]->h;
+    s->var_values[VAR_MAIN_W] =
+        s->var_values[VAR_MW] = ctx->inputs[0]->w;
+    s->var_values[VAR_MAIN_H] =
+        s->var_values[VAR_MH] = ctx->inputs[0]->h;
 
-    dtext->var_values[VAR_X] = 0;
-    dtext->var_values[VAR_Y] = 0;
-    dtext->var_values[VAR_N] = 0;
-    dtext->var_values[VAR_T] = NAN;
+    s->var_values[VAR_X] = 0;
+    s->var_values[VAR_Y] = 0;
+    s->var_values[VAR_N] = 0;
+    s->var_values[VAR_T] = NAN;
 
-    av_lfg_init(&dtext->prng, av_get_random_seed());
+    av_lfg_init(&s->prng, av_get_random_seed());
 
-    if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
+    if ((ret = av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
-        (ret = av_expr_parse(&dtext->y_pexpr, dtext->y_expr, var_names,
+        (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
-        (ret = av_expr_parse(&dtext->d_pexpr, dtext->d_expr, var_names,
+        (ret = av_expr_parse(&s->d_pexpr, s->d_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
         return AVERROR(EINVAL);
 
     if ((ret =
-         ff_fill_line_with_color(dtext->box_line, dtext->pixel_step,
-                                 inlink->w, dtext->boxcolor,
-                                 inlink->format, dtext->boxcolor_rgba,
-                                 &dtext->is_packed_rgb, dtext->rgba_map)) < 0)
+         ff_fill_line_with_color(s->box_line, s->pixel_step,
+                                 inlink->w, s->boxcolor,
+                                 inlink->format, s->boxcolor_rgba,
+                                 &s->is_packed_rgb, s->rgba_map)) < 0)
         return ret;
 
-    if (!dtext->is_packed_rgb) {
-        uint8_t *rgba = dtext->fontcolor_rgba;
-        dtext->fontcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        dtext->fontcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->fontcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->fontcolor[3] = rgba[3];
-        rgba = dtext->shadowcolor_rgba;
-        dtext->shadowcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
-        dtext->shadowcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->shadowcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
-        dtext->shadowcolor[3] = rgba[3];
+    if (!s->is_packed_rgb) {
+        uint8_t *rgba = s->fontcolor_rgba;
+        s->fontcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
+        s->fontcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        s->fontcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        s->fontcolor[3] = rgba[3];
+        rgba = s->shadowcolor_rgba;
+        s->shadowcolor[0] = RGB_TO_Y_CCIR(rgba[0], rgba[1], rgba[2]);
+        s->shadowcolor[1] = RGB_TO_U_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        s->shadowcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
+        s->shadowcolor[3] = rgba[3];
     }
 
-    dtext->draw = 1;
+    s->draw = 1;
 
     return dtext_prepare_text(ctx);
 }
@@ -705,10 +705,10 @@ static inline void drawbox(AVFrame *frame, unsigned int x, unsigned int y,
     }
 }
 
-static int draw_glyphs(DrawTextContext *dtext, AVFrame *frame,
+static int draw_glyphs(DrawTextContext *s, AVFrame *frame,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
-    char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
+    char *text = HAVE_LOCALTIME_R ? s->expanded_text : s->text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
@@ -723,20 +723,20 @@ static int draw_glyphs(DrawTextContext *dtext, AVFrame *frame,
             continue;
 
         dummy.code = code;
-        glyph = av_tree_find(dtext->glyphs, &dummy, (void *)glyph_cmp, NULL);
+        glyph = av_tree_find(s->glyphs, &dummy, (void *)glyph_cmp, NULL);
 
         if (glyph->bitmap.pixel_mode != FT_PIXEL_MODE_MONO &&
             glyph->bitmap.pixel_mode != FT_PIXEL_MODE_GRAY)
             return AVERROR(EINVAL);
 
-        if (dtext->is_packed_rgb) {
+        if (s->is_packed_rgb) {
             draw_glyph_rgb(frame, &glyph->bitmap,
-                           dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
-                           dtext->pixel_step[0], rgbcolor, dtext->rgba_map);
+                           s->positions[i].x+x, s->positions[i].y+y, width, height,
+                           s->pixel_step[0], rgbcolor, s->rgba_map);
         } else {
             draw_glyph_yuv(frame, &glyph->bitmap,
-                           dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
-                           yuvcolor, dtext->hsub, dtext->vsub);
+                           s->positions[i].x+x, s->positions[i].y+y, width, height,
+                           yuvcolor, s->hsub, s->vsub);
         }
     }
 
@@ -746,30 +746,30 @@ static int draw_glyphs(DrawTextContext *dtext, AVFrame *frame,
 static int draw_text(AVFilterContext *ctx, AVFrame *frame,
                      int width, int height)
 {
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     int ret;
 
     /* draw box */
-    if (dtext->draw_box)
-        drawbox(frame, dtext->x, dtext->y, dtext->w, dtext->h,
-                dtext->box_line, dtext->pixel_step, dtext->boxcolor,
-                dtext->hsub, dtext->vsub, dtext->is_packed_rgb,
-                dtext->rgba_map);
+    if (s->draw_box)
+        drawbox(frame, s->x, s->y, s->w, s->h,
+                s->box_line, s->pixel_step, s->boxcolor,
+                s->hsub, s->vsub, s->is_packed_rgb,
+                s->rgba_map);
 
-    if (dtext->shadowx || dtext->shadowy) {
-        if ((ret = draw_glyphs(dtext, frame, width, height,
-                               dtext->shadowcolor_rgba,
-                               dtext->shadowcolor,
-                               dtext->x + dtext->shadowx,
-                               dtext->y + dtext->shadowy)) < 0)
+    if (s->shadowx || s->shadowy) {
+        if ((ret = draw_glyphs(s, frame, width, height,
+                               s->shadowcolor_rgba,
+                               s->shadowcolor,
+                               s->x + s->shadowx,
+                               s->y + s->shadowy)) < 0)
             return ret;
     }
 
-    if ((ret = draw_glyphs(dtext, frame, width, height,
-                           dtext->fontcolor_rgba,
-                           dtext->fontcolor,
-                           dtext->x,
-                           dtext->y)) < 0)
+    if ((ret = draw_glyphs(s, frame, width, height,
+                           s->fontcolor_rgba,
+                           s->fontcolor,
+                           s->x,
+                           s->y)) < 0)
         return ret;
 
     return 0;
@@ -793,7 +793,7 @@ static inline int normalize_double(int *n, double d)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    DrawTextContext *dtext = ctx->priv;
+    DrawTextContext *s = ctx->priv;
     int ret = 0;
 
     if ((ret = dtext_prepare_text(ctx)) < 0) {
@@ -802,40 +802,40 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         return ret;
     }
 
-    dtext->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
+    s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);
-    dtext->var_values[VAR_X] =
-        av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
-    dtext->var_values[VAR_Y] =
-        av_expr_eval(dtext->y_pexpr, dtext->var_values, &dtext->prng);
-    dtext->var_values[VAR_X] =
-        av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
+    s->var_values[VAR_X] =
+        av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
+    s->var_values[VAR_Y] =
+        av_expr_eval(s->y_pexpr, s->var_values, &s->prng);
+    s->var_values[VAR_X] =
+        av_expr_eval(s->x_pexpr, s->var_values, &s->prng);
 
-    dtext->draw = av_expr_eval(dtext->d_pexpr, dtext->var_values, &dtext->prng);
+    s->draw = av_expr_eval(s->d_pexpr, s->var_values, &s->prng);
 
-    normalize_double(&dtext->x, dtext->var_values[VAR_X]);
-    normalize_double(&dtext->y, dtext->var_values[VAR_Y]);
+    normalize_double(&s->x, s->var_values[VAR_X]);
+    normalize_double(&s->y, s->var_values[VAR_Y]);
 
-    if (dtext->fix_bounds) {
-        if (dtext->x < 0) dtext->x = 0;
-        if (dtext->y < 0) dtext->y = 0;
-        if ((unsigned)dtext->x + (unsigned)dtext->w > inlink->w)
-            dtext->x = inlink->w - dtext->w;
-        if ((unsigned)dtext->y + (unsigned)dtext->h > inlink->h)
-            dtext->y = inlink->h - dtext->h;
+    if (s->fix_bounds) {
+        if (s->x < 0) s->x = 0;
+        if (s->y < 0) s->y = 0;
+        if ((unsigned)s->x + (unsigned)s->w > inlink->w)
+            s->x = inlink->w - s->w;
+        if ((unsigned)s->y + (unsigned)s->h > inlink->h)
+            s->y = inlink->h - s->h;
     }
 
-    dtext->x &= ~((1 << dtext->hsub) - 1);
-    dtext->y &= ~((1 << dtext->vsub) - 1);
+    s->x &= ~((1 << s->hsub) - 1);
+    s->y &= ~((1 << s->vsub) - 1);
 
     av_dlog(ctx, "n:%d t:%f x:%d y:%d x+w:%d y+h:%d\n",
-            (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
-            dtext->x, dtext->y, dtext->x+dtext->w, dtext->y+dtext->h);
+            (int)s->var_values[VAR_N], s->var_values[VAR_T],
+            s->x, s->y, s->x+s->w, s->y+s->h);
 
-    if (dtext->draw)
+    if (s->draw)
         draw_text(inlink->dst, frame, frame->width, frame->height);
 
-    dtext->var_values[VAR_N] += 1.0;
+    s->var_values[VAR_N] += 1.0;
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
