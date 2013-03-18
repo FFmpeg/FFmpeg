@@ -46,6 +46,7 @@ static int config_props(AVFilterLink *inlink)
 
     priv->pix_desc = av_pix_fmt_desc_get(inlink->format);
 
+    av_freep(&priv->line);
     if (!(priv->line = av_malloc(sizeof(*priv->line) * inlink->w)))
         return AVERROR(ENOMEM);
 
