@@ -49,14 +49,14 @@ typedef struct {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    FormatContext *format = ctx->priv;
+    FormatContext *s = ctx->priv;
     const char *cur, *sep;
     char             pix_fmt_name[AV_PIX_FMT_NAME_MAXSIZE];
     int              pix_fmt_name_len;
     enum AVPixelFormat pix_fmt;
 
     /* parse the list of formats */
-    for (cur = format->pix_fmts; cur; cur = sep ? sep + 1 : NULL) {
+    for (cur = s->pix_fmts; cur; cur = sep ? sep + 1 : NULL) {
         if (!(sep = strchr(cur, '|')))
             pix_fmt_name_len = strlen(cur);
         else
@@ -75,13 +75,13 @@ static av_cold int init(AVFilterContext *ctx)
             return -1;
         }
 
-        format->listed_pix_fmt_flags[pix_fmt] = 1;
+        s->listed_pix_fmt_flags[pix_fmt] = 1;
     }
 
     return 0;
 }
 
-static AVFilterFormats *make_format_list(FormatContext *format, int flag)
+static AVFilterFormats *make_format_list(FormatContext *s, int flag)
 {
     AVFilterFormats *formats;
     enum AVPixelFormat pix_fmt;
@@ -90,7 +90,7 @@ static AVFilterFormats *make_format_list(FormatContext *format, int flag)
     formats->formats = av_malloc(sizeof(enum AVPixelFormat) * AV_PIX_FMT_NB);
 
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
-        if (format->listed_pix_fmt_flags[pix_fmt] == flag)
+        if (s->listed_pix_fmt_flags[pix_fmt] == flag)
             formats->formats[formats->format_count++] = pix_fmt;
 
     return formats;
