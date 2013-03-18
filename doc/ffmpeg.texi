@@ -902,6 +902,10 @@ Chooses between 1 and 2 depending on muxer capabilities. This is the
 default method.
 @end table
 
+Note that the timestamps may be further modified by the muxer, after this.
+For example, in the case that the format option @option{avoid_negative_ts}
+is enabled.
+
 With -map you can select from which stream the timestamps should be
 taken. You can leave either video or audio unchanged and sync the
 remaining stream(s) to the unchanged one.
@@ -911,6 +915,11 @@ Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps
 the parameter is the maximum samples per second by which the audio is changed.
 -async 1 is a special case where only the start of the audio stream is corrected
 without any later correction.
+
+Note that the timestamps may be further modified by the muxer, after this.
+For example, in the case that the format option @option{avoid_negative_ts}
+is enabled.
+
 This option has been deprecated. Use the @code{aresample} audio filter instead.
 
 @item -copyts
@@ -919,7 +928,8 @@ to sanitize them. In particular, do not remove the initial start time
 offset value.
 
 Note that, depending on the @option{vsync} option or on specific muxer
-processing, the output timestamps may mismatch with the input
+processing (e.g. in case the format option @option{avoid_negative_ts}
+is enabled) the output timestamps may mismatch with the input
 timestamps even when this option is selected.
 
 @item -copytb @var{mode}

@@ -151,11 +151,6 @@ been without shifting.
 
 Also note that this affects only leading negative timestamps, and not
 non-monotonic negative timestamps.
-
-When avoid_negative_ts is used together with copyts, vsync or async then
-avoid_negative_ts is applied last. This is neccessary so that containers
-which do not support negative timestamps wont get any and can be used
-with vsync/async and copyts.
 @end table
 
 @c man end FORMAT OPTIONS
