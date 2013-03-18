@@ -3281,11 +3281,17 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
  *
  * @param      avctx the codec context
  * @param[out] frame The AVFrame in which to store decoded audio samples.
- *                   Decoders request a buffer of a particular size by setting
- *                   AVFrame.nb_samples prior to calling get_buffer(). The
- *                   decoder may, however, only utilize part of the buffer by
- *                   setting AVFrame.nb_samples to a smaller value in the
- *                   output frame.
+ *                   The decoder will allocate a buffer for the decoded frame by
+ *                   calling the AVCodecContext.get_buffer2() callback.
+ *                   When AVCodecContext.refcounted_frames is set to 1, the frame is
+ *                   reference counted and the returned reference belongs to the
+ *                   caller. The caller must release the frame using av_frame_unref()
+ *                   when the frame is no longer needed. The caller may safely write
+ *                   to the frame if av_frame_is_writable() returns 1.
+ *                   When AVCodecContext.refcounted_frames is set to 0, the returned
+ *                   reference belongs to the decoder and is valid only until the
+ *                   next call to this function or until closing the decoder.
+ *                   The caller may not write to it.
  * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
  *                           non-zero.
  * @param[in]  avpkt The input AVPacket containing the input buffer.
@@ -3323,12 +3329,18 @@ int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
  *
  * @param avctx the codec context
  * @param[out] picture The AVFrame in which the decoded video frame will be stored.
- *             Use avcodec_alloc_frame to get an AVFrame, the codec will
- *             allocate memory for the actual bitmap.
- *             with default get/release_buffer(), the decoder frees/reuses the bitmap as it sees fit.
- *             with overridden get/release_buffer() (needs CODEC_CAP_DR1) the user decides into what buffer the decoder
- *                   decodes and the decoder tells the user once it does not need the data anymore,
- *                   the user app can at this point free/reuse/keep the memory as it sees fit.
+ *             Use av_frame_alloc() to get an AVFrame. The codec will
+ *             allocate memory for the actual bitmap by calling the
+ *             AVCodecContext.get_buffer2() callback.
+ *             When AVCodecContext.refcounted_frames is set to 1, the frame is
+ *             reference counted and the returned reference belongs to the
+ *             caller. The caller must release the frame using av_frame_unref()
+ *             when the frame is no longer needed. The caller may safely write
+ *             to the frame if av_frame_is_writable() returns 1.
+ *             When AVCodecContext.refcounted_frames is set to 0, the returned
+ *             reference belongs to the decoder and is valid only until the
+ *             next call to this function or until closing the decoder. The
+ *             caller may not write to it.
  *
  * @param[in] avpkt The input AVpacket containing the input buffer.
  *            You can create such packet with av_init_packet() and by then setting
