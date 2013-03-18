@@ -804,6 +804,14 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
         flags &= ~AV_PKT_FLAG_KEY;
 
     pts = (pkt->pts != AV_NOPTS_VALUE) ? pkt->pts : pkt->dts;
+
+    if (pts < 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Negative dts not supported stream %d, dts %"PRId64"\n",
+               pkt->stream_index, pts);
+        return AVERROR(ENOSYS);
+    }
+
     assert(pts != AV_NOPTS_VALUE);
     pts *= 10000;
     asf->duration = FFMAX(asf->duration, pts + pkt->duration * 10000);
