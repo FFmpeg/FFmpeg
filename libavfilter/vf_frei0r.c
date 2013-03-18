@@ -317,6 +317,8 @@ static int config_input_props(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     Frei0rContext *s = ctx->priv;
 
+    if (s->destruct && s->instance)
+        s->destruct(s->instance);
     if (!(s->instance = s->construct(inlink->w, inlink->h))) {
         av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance");
         return AVERROR(EINVAL);
@@ -451,6 +453,8 @@ static int source_config_props(AVFilterLink *outlink)
     outlink->h = s->h;
     outlink->time_base = s->time_base;
 
+    if (s->destruct && s->instance)
+        s->destruct(s->instance);
     if (!(s->instance = s->construct(outlink->w, outlink->h))) {
         av_log(ctx, AV_LOG_ERROR, "Impossible to load frei0r instance");
         return AVERROR(EINVAL);
