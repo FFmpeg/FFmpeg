@@ -38,7 +38,7 @@ enum { Y, U, V, A };
 
 typedef struct {
     const AVClass *class;
-    int x, y, w, h;
+    int x, y, w_opt, h_opt, w, h;
     char *color_str;
     unsigned char yuv_color[4];
     int vsub, hsub;   ///< chroma subsampling
@@ -82,8 +82,8 @@ static int config_input(AVFilterLink *inlink)
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
 
-    if (s->w == 0) s->w = inlink->w;
-    if (s->h == 0) s->h = inlink->h;
+    s->w = (s->w_opt > 0) ? s->w_opt : inlink->w;
+    s->h = (s->h_opt > 0) ? s->h_opt : inlink->h;
 
     av_log(inlink->dst, AV_LOG_VERBOSE, "x:%d y:%d w:%d h:%d color:0x%02X%02X%02X%02X\n",
            s->w, s->y, s->w, s->h,
@@ -125,8 +125,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 static const AVOption options[] = {
     { "x",      "Horizontal position of the left box edge", OFFSET(x),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
     { "y",      "Vertical position of the top box edge",    OFFSET(y),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
-    { "width",  "Width of the box",                         OFFSET(w),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "height", "Height of the box",                        OFFSET(h),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "width",  "Width of the box",                         OFFSET(w_opt),     AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "height", "Height of the box",                        OFFSET(h_opt),     AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
     { "color",  "Color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" },    .flags = FLAGS },
     { NULL },
 };
