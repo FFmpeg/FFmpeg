@@ -85,6 +85,8 @@ by default @var{slice+frame}
 Specify a mask to be applied to autodetected CPU flags.
 @item TARGET_EXEC
 Specify or override the wrapper used to run the tests.
+@item GEN
+Set to @var{1} to generate the missing or mismatched references.
 @end table
 
 @example
