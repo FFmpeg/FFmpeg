@@ -402,6 +402,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     DrawTextContext *s = ctx->priv;
     int i;
 
+    av_expr_free(s->x_pexpr);
+    av_expr_free(s->y_pexpr);
+    av_expr_free(s->d_pexpr);
+    s->x_pexpr = s->y_pexpr = s->d_pexpr = NULL;
     av_freep(&s->expanded_text);
     av_freep(&s->positions);
     av_tree_enumerate(s->glyphs, NULL, NULL, glyph_enu_free);
@@ -573,6 +577,10 @@ static int config_input(AVFilterLink *inlink)
 
     av_lfg_init(&s->prng, av_get_random_seed());
 
+    av_expr_free(s->x_pexpr);
+    av_expr_free(s->y_pexpr);
+    av_expr_free(s->d_pexpr);
+    s->x_pexpr = s->y_pexpr = s->d_pexpr = NULL;
     if ((ret = av_expr_parse(&s->x_pexpr, s->x_expr, var_names,
                              NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&s->y_pexpr, s->y_expr, var_names,
