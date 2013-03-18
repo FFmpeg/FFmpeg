@@ -282,7 +282,7 @@ static int buffer_needs_copy(PadContext *s, AVFrame *frame, AVBufferRef *buf)
         int vsub = s->draw.vsub[planes[i]];
 
         uint8_t *start = frame->data[planes[i]];
-        uint8_t *end   = start + (frame->height >> hsub) *
+        uint8_t *end   = start + (frame->height >> vsub) *
                                  frame->linesize[planes[i]];
 
         /* amount of free space needed before the start and after the end
@@ -301,9 +301,9 @@ static int buffer_needs_copy(PadContext *s, AVFrame *frame, AVBufferRef *buf)
 
 #define SIGN(x) ((x) > 0 ? 1 : -1)
         for (j = 0; j < FF_ARRAY_ELEMS(planes) && planes[j] >= 0; j++) {
-            int hsub1 = s->draw.hsub[planes[j]];
+            int vsub1 = s->draw.vsub[planes[j]];
             uint8_t *start1 = frame->data[planes[j]];
-            uint8_t *end1   = start1 + (frame->height >> hsub1) *
+            uint8_t *end1   = start1 + (frame->height >> vsub1) *
                                        frame->linesize[planes[j]];
             if (i == j)
                 continue;
