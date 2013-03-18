@@ -146,6 +146,10 @@ When timestamps are shifted, all timestamps of a output file are shifted
 together by the same amount. AV sync, subtitle sync and relative timestamp
 differences are preserved compared to how they would have been without
 shifting.
+When avoid_negative_ts is used together with copyts, vsync or async then
+avoid_negative_ts is applied last. This is neccessary so that containers
+which do not support negative timestamps wont get any and can be used
+with vsync/async and copyts.
 @end table
 
 @c man end FORMAT OPTIONS
