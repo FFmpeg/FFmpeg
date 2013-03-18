@@ -35,6 +35,9 @@ fate-tscc-32bit: CMD = framecrc -i $(SAMPLES)/tscc/2004-12-17-uebung9-partial.av
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TSCC) += $(FATE_TSCC)
 fate-tscc: $(FATE_TSCC)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, TSCC2) += fate-tscc2
+fate-tscc2: CMD = framecrc -i $(SAMPLES)/tscc/tsc2_16bpp.avi
+
 FATE_VMNC += fate-vmnc-16bit
 fate-vmnc-16bit: CMD = framecrc -i $(SAMPLES)/VMnc/test.avi -pix_fmt rgb24
 
