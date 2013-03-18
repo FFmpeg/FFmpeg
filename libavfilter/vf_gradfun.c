@@ -201,12 +201,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     GradFunContext *gf = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *out;
-    int p, direct = 0;
+    int p, direct;
 
     if (in->perms & AV_PERM_WRITE) {
         direct = 1;
         out = in;
     } else {
+        direct = 0;
         out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         if (!out) {
             avfilter_unref_bufferp(&in);
