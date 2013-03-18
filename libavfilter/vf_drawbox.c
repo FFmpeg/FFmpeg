@@ -46,16 +46,16 @@ typedef struct {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    DrawBoxContext *drawbox= ctx->priv;
+    DrawBoxContext *s = ctx->priv;
     uint8_t rgba_color[4];
 
-    if (av_parse_color(rgba_color, drawbox->color_str, -1, ctx) < 0)
+    if (av_parse_color(rgba_color, s->color_str, -1, ctx) < 0)
         return AVERROR(EINVAL);
 
-    drawbox->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
-    drawbox->yuv_color[U] = RGB_TO_U_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-    drawbox->yuv_color[V] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
-    drawbox->yuv_color[A] = rgba_color[3];
+    s->yuv_color[Y] = RGB_TO_Y_CCIR(rgba_color[0], rgba_color[1], rgba_color[2]);
+    s->yuv_color[U] = RGB_TO_U_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
+    s->yuv_color[V] = RGB_TO_V_CCIR(rgba_color[0], rgba_color[1], rgba_color[2], 0);
+    s->yuv_color[A] = rgba_color[3];
 
     return 0;
 }
@@ -76,43 +76,43 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    DrawBoxContext *drawbox = inlink->dst->priv;
+    DrawBoxContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    drawbox->hsub = desc->log2_chroma_w;
-    drawbox->vsub = desc->log2_chroma_h;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
-    if (drawbox->w == 0) drawbox->w = inlink->w;
-    if (drawbox->h == 0) drawbox->h = inlink->h;
+    if (s->w == 0) s->w = inlink->w;
+    if (s->h == 0) s->h = inlink->h;
 
     av_log(inlink->dst, AV_LOG_VERBOSE, "x:%d y:%d w:%d h:%d color:0x%02X%02X%02X%02X\n",
-           drawbox->w, drawbox->y, drawbox->w, drawbox->h,
-           drawbox->yuv_color[Y], drawbox->yuv_color[U], drawbox->yuv_color[V], drawbox->yuv_color[A]);
+           s->w, s->y, s->w, s->h,
+           s->yuv_color[Y], s->yuv_color[U], s->yuv_color[V], s->yuv_color[A]);
 
     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    DrawBoxContext *drawbox = inlink->dst->priv;
-    int plane, x, y, xb = drawbox->x, yb = drawbox->y;
+    DrawBoxContext *s = inlink->dst->priv;
+    int plane, x, y, xb = s->x, yb = s->y;
     unsigned char *row[4];
 
-    for (y = FFMAX(yb, 0); y < frame->height && y < (yb + drawbox->h); y++) {
+    for (y = FFMAX(yb, 0); y < frame->height && y < (yb + s->h); y++) {
         row[0] = frame->data[0] + y * frame->linesize[0];
 
         for (plane = 1; plane < 3; plane++)
             row[plane] = frame->data[plane] +
-                 frame->linesize[plane] * (y >> drawbox->vsub);
+                 frame->linesize[plane] * (y >> s->vsub);
 
-        for (x = FFMAX(xb, 0); x < (xb + drawbox->w) && x < frame->width; x++) {
-            double alpha = (double)drawbox->yuv_color[A] / 255;
+        for (x = FFMAX(xb, 0); x < (xb + s->w) && x < frame->width; x++) {
+            double alpha = (double)s->yuv_color[A] / 255;
 
-            if ((y - yb < 3) || (yb + drawbox->h - y < 4) ||
-                (x - xb < 3) || (xb + drawbox->w - x < 4)) {
-                row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * drawbox->yuv_color[Y];
-                row[1][x >> drawbox->hsub] = (1 - alpha) * row[1][x >> drawbox->hsub] + alpha * drawbox->yuv_color[U];
-                row[2][x >> drawbox->hsub] = (1 - alpha) * row[2][x >> drawbox->hsub] + alpha * drawbox->yuv_color[V];
+            if ((y - yb < 3) || (yb + s->h - y < 4) ||
+                (x - xb < 3) || (xb + s->w - x < 4)) {
+                row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
+                row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
+                row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
             }
         }
     }
