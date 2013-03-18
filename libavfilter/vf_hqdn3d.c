@@ -327,12 +327,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
 
     AVFilterBufferRef *out;
-    int direct = 0, c;
+    int direct, c;
 
     if (in->perms & AV_PERM_WRITE) {
         direct = 1;
         out = in;
     } else {
+        direct = 0;
         out = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
         if (!out) {
             avfilter_unref_bufferp(&in);
