@@ -101,7 +101,7 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     switch (avctx->codec_tag) {
     case MKTAG('A', 'A', 'S', '4'):
         bytestream2_init(&s->gb, buf - 4, buf_size + 4);
-        ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, &s->gb);
+        ff_msrle_decode(avctx, (AVPicture*)s->frame, 8, &s->gb);
         break;
     case MKTAG('A', 'A', 'S', 'C'):
     switch (compr) {
