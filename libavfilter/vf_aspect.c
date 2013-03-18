@@ -58,9 +58,9 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
-    AspectContext *aspect = link->dst->priv;
+    AspectContext *s = link->dst->priv;
 
-    frame->sample_aspect_ratio = aspect->aspect;
+    frame->sample_aspect_ratio = s->aspect;
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
@@ -71,14 +71,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 /* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
 static int setdar_config_props(AVFilterLink *inlink)
 {
-    AspectContext *aspect = inlink->dst->priv;
-    AVRational dar = aspect->aspect;
+    AspectContext *s = inlink->dst->priv;
+    AVRational dar = s->aspect;
 
-    if (aspect->aspect.num && aspect->aspect.den) {
-        av_reduce(&aspect->aspect.num, &aspect->aspect.den,
-                   aspect->aspect.num * inlink->h,
-                   aspect->aspect.den * inlink->w, 100);
-        inlink->sample_aspect_ratio = aspect->aspect;
+    if (s->aspect.num && s->aspect.den) {
+        av_reduce(&s->aspect.num, &s->aspect.den,
+                   s->aspect.num * inlink->h,
+                   s->aspect.den * inlink->w, 100);
+        inlink->sample_aspect_ratio = s->aspect;
     } else {
         inlink->sample_aspect_ratio = (AVRational){ 1, 1 };
         dar = (AVRational){ inlink->w, inlink->h };
@@ -147,9 +147,9 @@ AVFilter avfilter_vf_setdar = {
 /* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
 static int setsar_config_props(AVFilterLink *inlink)
 {
-    AspectContext *aspect = inlink->dst->priv;
+    AspectContext *s = inlink->dst->priv;
 
-    inlink->sample_aspect_ratio = aspect->aspect;
+    inlink->sample_aspect_ratio = s->aspect;
 
     return 0;
 }
