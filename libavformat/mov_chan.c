@@ -426,6 +426,7 @@ static const enum MovChannelLayoutTag mov_ch_layouts_wav[] = {
     MOV_CH_LAYOUT_MPEG_7_1_A,
     MOV_CH_LAYOUT_MPEG_7_1_C,
     MOV_CH_LAYOUT_SMPTE_DTV,
+    0,
 };
 
 static const struct {
