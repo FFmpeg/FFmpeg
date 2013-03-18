@@ -94,7 +94,7 @@ typedef struct AVFrame {
      * plane must be the same size.
      *
      * For video the linesizes should be multiplies of the CPUs alignment
-     * preferrance, this is 16 or 32 for modern desktop CPUs.
+     * preference, this is 16 or 32 for modern desktop CPUs.
      * Some code requires such alignment other code can be slower without
      * correct alignment, for yet other it makes no difference.
      */
