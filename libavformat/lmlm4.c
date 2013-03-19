@@ -93,8 +93,8 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
         av_log(s, AV_LOG_ERROR, "invalid or unsupported frame_type\n");
         return AVERROR(EIO);
     }
-    if (packet_size > LMLM4_MAX_PACKET_SIZE) {
-        av_log(s, AV_LOG_ERROR, "packet size exceeds maximum\n");
+    if (packet_size > LMLM4_MAX_PACKET_SIZE || packet_size<=8) {
+        av_log(s, AV_LOG_ERROR, "packet size %d is invalid\n", packet_size);
         return AVERROR(EIO);
     }
 
