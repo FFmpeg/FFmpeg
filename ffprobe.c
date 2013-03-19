@@ -300,7 +300,7 @@ static int writer_open(WriterContext **wctx, const Writer *writer, const char *a
 {
     int i, ret = 0;
 
-    if (!(*wctx = av_malloc(sizeof(WriterContext)))) {
+    if (!(*wctx = av_mallocz(sizeof(WriterContext)))) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
