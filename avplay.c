@@ -243,7 +243,6 @@ static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int64_t duration = AV_NOPTS_VALUE;
-static int debug = 0;
 static int debug_mv = 0;
 static int step = 0;
 static int workaround_bugs = 1;
@@ -2041,7 +2040,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     codec = avcodec_find_decoder(avctx->codec_id);
     avctx->debug_mv          = debug_mv;
-    avctx->debug             = debug;
     avctx->workaround_bugs   = workaround_bugs;
     avctx->idct_algo         = idct;
     avctx->skip_frame        = skip_frame;
@@ -2817,13 +2815,6 @@ static int opt_duration(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_debug(void *optctx, const char *opt, const char *arg)
-{
-    av_log_set_level(99);
-    debug = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-    return 0;
-}
-
 static int opt_vismv(void *optctx, const char *opt, const char *arg)
 {
     debug_mv = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
@@ -2848,7 +2839,6 @@ static const OptionDef options[] = {
     { "f", HAS_ARG, { .func_arg = opt_format }, "force format", "fmt" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_frame_pix_fmt }, "set pixel format", "format" },
     { "stats", OPT_BOOL | OPT_EXPERT, { &show_status }, "show status", "" },
-    { "debug", HAS_ARG | OPT_EXPERT, { .func_arg = opt_debug }, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, { &workaround_bugs }, "workaround bugs", "" },
     { "vismv", HAS_ARG | OPT_EXPERT, { .func_arg = opt_vismv }, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, { &fast }, "non spec compliant optimizations", "" },

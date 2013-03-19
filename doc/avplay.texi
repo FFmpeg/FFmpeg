@@ -76,8 +76,6 @@ the option @var{pixel_format}.
 @item -stats
 Show the stream duration, the codec parameters, the current position in
 the stream and the audio/video synchronisation drift.
-@item -debug
-Print specific debug info.
 @item -bug
 Work around bugs.
 @item -vismv
