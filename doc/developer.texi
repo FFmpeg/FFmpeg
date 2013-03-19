@@ -648,7 +648,7 @@ The release process involves the following steps:
 @item
     Ensure that the FATE regression suite still passes in the release
     branch on at least @strong{i386} and @strong{amd64}
-    (cf. @ref{Regression Tests}).
+    (cf. @ref{Regression tests}).
 @item
     Prepare the release tarballs in @code{bz2} and @code{gz} formats, and
     supplementing files that contain @code{gpg} signatures
