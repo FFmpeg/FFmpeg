@@ -1362,9 +1362,19 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @end itemize
 @c man end EXAMPLES
 
+@ifset config-all
+@include all-components.texi
+@end ifset
+
 @chapter See Also
 
 @ifhtml
+@ifset config-all
+@url{ffmpeg.html,ffmpeg}
+@end ifset
+@ifset config-not-all
+@url{ffmpeg-all.html,ffmpeg-all},
+@end ifset
 @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
@@ -1378,6 +1388,12 @@ ffmpeg -i src.ext -lmax 21*QP2LAMBDA dst.ext
 @end ifhtml
 
 @ifnothtml
+@ifset config-all
+ffmpeg(1),
+@end ifset
+@ifset config-not-all
+ffmpeg-all(1),
+@end ifset
 ffplay(1), ffprobe(1), ffserver(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),

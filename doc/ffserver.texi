@@ -246,10 +246,20 @@ messages to stdout.
 @end table
 @c man end
 
+@ifset config-all
+@include all-components.texi
+@end ifset
+
 @chapter See Also
 
 @ifhtml
-The @file{doc/ffserver.conf} example,
+@ifset config-all
+@url{ffserver.html,ffserver},
+@end ifset
+@ifset config-not-all
+@url{ffserver-all.html,ffserver-all},
+@end ifset
+the @file{doc/ffserver.conf} example,
 @url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
@@ -263,7 +273,13 @@ The @file{doc/ffserver.conf} example,
 @end ifhtml
 
 @ifnothtml
-The @file{doc/ffserver.conf} example, ffmpeg(1), ffplay(1), ffprobe(1),
+@ifset config-all
+ffserver(1),
+@end ifset
+@ifset config-not-all
+ffserver-all(1),
+@end ifset
+the @file{doc/ffserver.conf} example, ffmpeg(1), ffplay(1), ffprobe(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
 ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)

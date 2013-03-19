@@ -201,9 +201,19 @@ Seek to percentage in file corresponding to fraction of width.
 
 @c man end
 
+@ifset config-all
+@include all-components.texi
+@end ifset
+
 @chapter See Also
 
 @ifhtml
+@ifset config-all
+@url{ffplay.html,ffplay},
+@end ifset
+@ifset config-not-all
+@url{ffplay-all.html,ffmpeg-all},
+@end ifset
 @url{ffmpeg.html,ffmpeg}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
@@ -217,6 +227,12 @@ Seek to percentage in file corresponding to fraction of width.
 @end ifhtml
 
 @ifnothtml
+@ifset config-all
+ffplay(1),
+@end ifset
+@ifset config-not-all
+ffplay-all(1),
+@end ifset
 ffmpeg(1), ffprobe(1), ffserver(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
