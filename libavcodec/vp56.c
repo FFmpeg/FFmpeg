@@ -502,6 +502,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int remaining_buf_size = avpkt->size;
     int av_uninit(alpha_offset);
     int i, res;
+    int ret;
 
     if (s->has_alpha) {
         if (remaining_buf_size < 3)
@@ -529,7 +530,10 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (s->has_alpha) {
         av_frame_unref(s->alpha_context->frames[VP56_FRAME_CURRENT]);
-        av_frame_ref(s->alpha_context->frames[VP56_FRAME_CURRENT], p);
+        if ((ret = av_frame_ref(s->alpha_context->frames[VP56_FRAME_CURRENT], p)) < 0) {
+            av_frame_unref(p);
+            return ret;
+        }
     }
 
     if (res == VP56_SIZE_CHANGE) {
