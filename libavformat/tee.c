@@ -100,7 +100,7 @@ static int open_slave(AVFormatContext *avf, char *slave, AVFormatContext **ravf)
         av_dict_set(&options, "f", NULL, 0);
     }
 
-    avformat_alloc_output_context2(&avf2, NULL, format, filename);
+    ret = avformat_alloc_output_context2(&avf2, NULL, format, filename);
     if (ret < 0)
         goto fail;
     av_free(format);
