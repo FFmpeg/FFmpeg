@@ -894,14 +894,24 @@ static int v4l2_read_header(AVFormatContext *s1)
     if (s->fd < 0)
         return s->fd;
 
-    /* set tv video input */
-    av_log(s1, AV_LOG_DEBUG, "Selecting input_channel: %d\n", s->channel);
-    if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &s->channel) < 0) {
-        res = AVERROR(errno);
-        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", av_err2str(res));
-        return res;
+    if (s->channel != -1) {
+        /* set video input */
+        av_log(s1, AV_LOG_DEBUG, "Selecting input_channel: %d\n", s->channel);
+        if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &s->channel) < 0) {
+            res = AVERROR(errno);
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", av_err2str(res));
+            return res;
+        }
+    } else {
+        /* get current video input */
+        if (v4l2_ioctl(s->fd, VIDIOC_G_INPUT, &s->channel) < 0) {
+            res = AVERROR(errno);
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_INPUT): %s\n", av_err2str(res));
+            return res;
+        }
     }
 
+    /* enum input */
     input.index = s->channel;
     if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
         res = AVERROR(errno);
@@ -909,7 +919,7 @@ static int v4l2_read_header(AVFormatContext *s1)
         return res;
     }
     s->std_id = input.std;
-    av_log(s1, AV_LOG_DEBUG, "input_channel: %d, input_name: %s\n",
+    av_log(s1, AV_LOG_DEBUG, "Current input_channel: %d, input_name: %s\n",
            s->channel, input.name);
 
     if (s->list_format) {
@@ -1045,7 +1055,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 
 static const AVOption options[] = {
     { "standard",     "set TV standard, used only by analog frame grabber",       OFFSET(standard),     AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0,       DEC },
-    { "channel",      "set TV channel, used only by frame grabber",               OFFSET(channel),      AV_OPT_TYPE_INT,    {.i64 = 0 },    0, INT_MAX, DEC },
+    { "channel",      "set TV channel, used only by frame grabber",               OFFSET(channel),      AV_OPT_TYPE_INT,    {.i64 = -1 },  -1, INT_MAX, DEC },
     { "video_size",   "set frame size",                                           OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  0, 0,   DEC },
     { "pixel_format", "set preferred pixel format",                               OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
     { "input_format", "set preferred pixel format (for raw video) or codec name", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },

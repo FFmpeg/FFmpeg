@@ -640,7 +640,8 @@ list of the supported standards, use the @option{list_standards}
 option.
 
 @item channel
-Set the input channel number. Default to 0.
+Set the input channel number. Default to -1, which means using the
+previously selected channel.
 
 @item video_size
 Set the video frame size. The argument must be a string in the form
