@@ -2051,6 +2051,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         avctx->pkt = &tmp;
         ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
         if (ret >= 0 && *got_frame_ptr) {
+            add_metadata_from_side_data(avctx, frame);
             avctx->frame_number++;
             frame->pkt_dts = avpkt->dts;
             av_frame_set_best_effort_timestamp(frame,
@@ -2070,7 +2071,6 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 avci->to_free.extended_data = avci->to_free.data;
             }
         }
-        add_metadata_from_side_data(avctx, frame);
 
         side= av_packet_get_side_data(avctx->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
