@@ -207,11 +207,11 @@ static av_cold int encode_init(AVCodecContext* avc_context)
     avcodec_get_chroma_sub_sample(avc_context->pix_fmt, &h->uv_hshift, &h->uv_vshift);
 
     if (avc_context->flags & CODEC_FLAG_QSCALE) {
-        /* to be constant with the libvorbis implementation, clip global_quality to 0 - 10
-           Theora accepts a quality parameter p, which is:
-                * 0 <= p <=63
-                * an int value
-         */
+        /* Clip global_quality in QP units to the [0 - 10] range
+           to be consistent with the libvorbis implementation.
+           Theora accepts a quality parameter which is an int value in
+           the [0 - 63] range.
+        */
         t_info.quality        = av_clipf(avc_context->global_quality / (float)FF_QP2LAMBDA, 0, 10) * 6.3;
         t_info.target_bitrate = 0;
     } else {
