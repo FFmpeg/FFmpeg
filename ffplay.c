@@ -1808,7 +1808,7 @@ fail:
 
 static int configure_audio_filters(VideoState *is, const char *afilters, int force_output_format)
 {
-    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, PIX_FMT_NONE };
+    static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE };
     int sample_rates[2] = { 0, -1 };
     int64_t channel_layouts[2] = { 0, -1 };
     int channels[2] = { 0, -1 };
