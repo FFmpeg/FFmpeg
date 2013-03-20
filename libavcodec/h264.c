@@ -1573,6 +1573,11 @@ static int decode_update_thread_context(AVCodecContext *dst,
          h->sps.chroma_format_idc != h1->sps.chroma_format_idc ||
          h->sps.colorspace        != h1->sps.colorspace)) {
 
+        /* set bits_per_raw_sample to the previous value. the check for changed
+         * bit depth in h264_set_parameter_from_sps() uses it and sets it to
+         * the current value */
+        h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
+
         av_freep(&h->bipred_scratchpad);
 
         h->width     = h1->width;
