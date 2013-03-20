@@ -1690,7 +1690,7 @@ static int handle_connect_error(URLContext *s, const char *desc)
     }
 
     if (!strcmp(authmod, "adobe")) {
-        if ((ret = do_adobe_auth(rt, user, salt, challenge, opaque)) < 0)
+        if ((ret = do_adobe_auth(rt, user, salt, opaque, challenge)) < 0)
             return ret;
     } else {
         if ((ret = do_llnw_auth(rt, user, nonce)) < 0)
