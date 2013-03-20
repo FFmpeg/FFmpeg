@@ -68,14 +68,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DrawBoxContext *drawbox = ctx->priv;
     uint8_t rgba_color[4];
-    static const char *shorthand[] = { "x", "y", "w", "h", "color", "thickness", NULL };
-    int ret;
-
-    drawbox->class = &drawbox_class;
-    av_opt_set_defaults(drawbox);
-
-    if ((ret = av_opt_set_from_string(drawbox, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     if (!strcmp(drawbox->color_str, "invert"))
         drawbox->invert_color = 1;
@@ -90,12 +82,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    DrawBoxContext *drawbox = ctx->priv;
-    av_opt_free(drawbox);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -185,15 +171,17 @@ static const AVFilterPad avfilter_vf_drawbox_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "x", "y", "w", "h", "color", "thickness", NULL };
+
 AVFilter avfilter_vf_drawbox = {
     .name      = "drawbox",
     .description = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
     .priv_size = sizeof(DrawBoxContext),
     .init      = init,
-    .uninit    = uninit,
 
     .query_formats   = query_formats,
     .inputs    = avfilter_vf_drawbox_inputs,
     .outputs   = avfilter_vf_drawbox_outputs,
     .priv_class = &drawbox_class,
+    .shorthand = shorthand,
 };

@@ -65,14 +65,6 @@ AVFILTER_DEFINE_CLASS(tile);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TileContext *tile = ctx->priv;
-    static const char *shorthand[] = { "layout", "nb_frames", "margin", "padding", NULL };
-    int ret;
-
-    tile->class = &tile_class;
-    av_opt_set_defaults(tile);
-
-    if ((ret = av_opt_set_from_string(tile, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     if (tile->w > REASONABLE_SIZE || tile->h > REASONABLE_SIZE) {
         av_log(ctx, AV_LOG_ERROR, "Tile size %ux%u is insane.\n",
@@ -243,6 +235,9 @@ static const AVFilterPad tile_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] =
+    { "layout", "nb_frames", "margin", "padding", NULL };
+
 AVFilter avfilter_vf_tile = {
     .name          = "tile",
     .description   = NULL_IF_CONFIG_SMALL("Tile several successive frames together."),
@@ -252,4 +247,5 @@ AVFilter avfilter_vf_tile = {
     .inputs        = tile_inputs,
     .outputs       = tile_outputs,
     .priv_class    = &tile_class,
+    .shorthand     = shorthand,
 };

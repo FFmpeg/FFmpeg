@@ -171,14 +171,6 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     DelogoContext *delogo = ctx->priv;
-    int ret = 0;
-    static const char *shorthand[] = { "x", "y", "w", "h", "band", NULL };
-
-    delogo->class = &delogo_class;
-    av_opt_set_defaults(delogo);
-
-    if ((ret = av_opt_set_from_string(delogo, args, shorthand, "=", ":")) < 0)
-        return ret;
 
 #define CHECK_UNSET_OPT(opt)                                            \
     if (delogo->opt == -1) {                                            \
@@ -267,6 +259,8 @@ static const AVFilterPad avfilter_vf_delogo_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "x", "y", "w", "h", "band", NULL };
+
 AVFilter avfilter_vf_delogo = {
     .name          = "delogo",
     .description   = NULL_IF_CONFIG_SMALL("Remove logo from input video."),
@@ -277,4 +271,5 @@ AVFilter avfilter_vf_delogo = {
     .inputs    = avfilter_vf_delogo_inputs,
     .outputs   = avfilter_vf_delogo_outputs,
     .priv_class = &delogo_class,
+    .shorthand = shorthand,
 };

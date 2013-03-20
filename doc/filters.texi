@@ -1653,6 +1653,57 @@ ffplay -f lavfi flite=text='No more be grieved for which that thou hast done.'
 For more information about libflite, check:
 @url{http://www.speech.cs.cmu.edu/flite/}
 
+@section sine
+
+Generate an audio signal made of a sine wave with amplitude 1/8.
+
+The audio signal is bit-exact.
+
+It accepts a list of options in the form of @var{key}=@var{value} pairs
+separated by ":". If the option name is omitted, the first option is the
+frequency and the second option is the beep factor.
+
+The supported options are:
+
+@table @option
+
+@item frequency, f
+Set the carrier frequency. Default is 440 Hz.
+
+@item beep_factor, b
+Enable a periodic beep every second with frequency @var{beep_factor} times
+the carrier frequency. Default is 0, meaning the beep is disabled.
+
+@item sample_rate, s
+Specify the sample rate, default is 44100.
+
+@item duration, d
+Specify the duration of the generated audio stream.
+
+@item samples_per_frame
+Set the number of samples per output frame, default is 1024.
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Generate a simple 440 Hz sine wave:
+@example
+sine
+@end example
+
+@item
+Generate a 220 Hz sine wave with a 880 Hz beep each second, for 5 seconds:
+@example
+sine=220:4:d=5
+sine=f=220:b=4:d=5
+sine=frequency=220:beep_factor=4:duration=5
+@end example
+
+@end itemize
+
 @c man end AUDIO SOURCES
 
 @chapter Audio Sinks

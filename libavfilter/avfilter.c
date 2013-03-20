@@ -24,6 +24,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
 #include "libavutil/samplefmt.h"
@@ -556,6 +557,8 @@ void avfilter_free(AVFilterContext *filter)
 
     if (filter->filter->uninit)
         filter->filter->uninit(filter);
+    if (filter->filter->shorthand)
+        av_opt_free(filter->priv);
 
     for (i = 0; i < filter->nb_inputs; i++) {
         if ((link = filter->inputs[i])) {
@@ -600,6 +603,17 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 {
     int ret=0;
 
+    if (filter->filter->shorthand) {
+        av_assert0(filter->priv);
+        av_assert0(filter->filter->priv_class);
+        *(const AVClass **)filter->priv = filter->filter->priv_class;
+        av_opt_set_defaults(filter->priv);
+        ret = av_opt_set_from_string(filter->priv, args,
+                                     filter->filter->shorthand, "=", ":");
+        if (ret < 0)
+            return ret;
+        args = NULL;
+    }
     if (filter->filter->init_opaque)
         ret = filter->filter->init_opaque(filter, args, opaque);
     else if (filter->filter->init)

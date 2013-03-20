@@ -377,7 +377,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&yadif->prev);
     av_frame_free(&yadif->cur );
     av_frame_free(&yadif->next);
-    av_opt_free(yadif);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -424,14 +423,6 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     YADIFContext *yadif = ctx->priv;
-    static const char *shorthand[] = { "mode", "parity", "deint", NULL };
-    int ret;
-
-    yadif->class = &yadif_class;
-    av_opt_set_defaults(yadif);
-
-    if ((ret = av_opt_set_from_string(yadif, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d deint:%d\n",
            yadif->mode, yadif->parity, yadif->deint);
@@ -491,6 +482,8 @@ static const AVFilterPad avfilter_vf_yadif_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "mode", "parity", "deint", NULL };
+
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
@@ -504,4 +497,5 @@ AVFilter avfilter_vf_yadif = {
     .outputs   = avfilter_vf_yadif_outputs,
 
     .priv_class = &yadif_class,
+    .shorthand = shorthand,
 };

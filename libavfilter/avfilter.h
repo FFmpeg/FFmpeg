@@ -486,6 +486,15 @@ typedef struct AVFilter {
     int (*init_opaque)(AVFilterContext *ctx, const char *args, void *opaque);
 
     const AVClass *priv_class;      ///< private class, containing filter specific options
+
+    /**
+     * Shorthand syntax for init arguments.
+     * If this field is set (even to an empty list), just before init the
+     * private class will be set and the arguments string will be parsed
+     * using av_opt_set_from_string() with "=" and ":" delimiters, and
+     * av_opt_free() will be called just after uninit.
+     */
+    const char *const *shorthand;
 } AVFilter;
 
 /** An instance of a filter */

@@ -78,14 +78,6 @@ AVFILTER_DEFINE_CLASS(fade);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FadeContext *fade = ctx->priv;
-    static const char *shorthand[] = { "type", "start_frame", "nb_frames", NULL };
-    int ret;
-
-    fade->class = &fade_class;
-    av_opt_set_defaults(fade);
-
-    if ((ret = av_opt_set_from_string(fade, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     fade->fade_per_frame = (1 << 16) / fade->nb_frames;
     if (!strcmp(fade->type, "in"))
@@ -104,13 +96,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
            "type:%s start_frame:%d nb_frames:%d alpha:%d\n",
            fade->type, fade->start_frame, fade->nb_frames, fade->alpha);
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    FadeContext *fade = ctx->priv;
-
-    av_opt_free(fade);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -247,15 +232,17 @@ static const AVFilterPad avfilter_vf_fade_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "type", "start_frame", "nb_frames", NULL };
+
 AVFilter avfilter_vf_fade = {
     .name          = "fade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video."),
     .init          = init,
-    .uninit        = uninit,
     .priv_size     = sizeof(FadeContext),
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_fade_inputs,
     .outputs   = avfilter_vf_fade_outputs,
     .priv_class = &fade_class,
+    .shorthand = shorthand,
 };

@@ -482,7 +482,7 @@ static void exit_program(void)
         av_frame_free(&input_streams[i]->filter_frame);
         av_dict_free(&input_streams[i]->opts);
         avsubtitle_free(&input_streams[i]->prev_sub.subtitle);
-        avcodec_free_frame(&input_streams[i]->sub2video.frame);
+        av_frame_free(&input_streams[i]->sub2video.frame);
         av_freep(&input_streams[i]->filters);
         av_freep(&input_streams[i]);
     }

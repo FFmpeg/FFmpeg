@@ -231,6 +231,7 @@ enum AVOptionType{
     AV_OPT_TYPE_PIXEL_FMT  = MKBETAG('P','F','M','T'),
     AV_OPT_TYPE_SAMPLE_FMT = MKBETAG('S','F','M','T'),
     AV_OPT_TYPE_VIDEO_RATE = MKBETAG('V','R','A','T'), ///< offset must point to AVRational
+    AV_OPT_TYPE_DURATION   = MKBETAG('D','U','R',' '),
 #if FF_API_OLD_AVOPTIONS
     FF_OPT_TYPE_FLAGS = 0,
     FF_OPT_TYPE_INT,

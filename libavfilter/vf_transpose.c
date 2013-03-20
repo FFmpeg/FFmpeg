@@ -73,17 +73,6 @@ static const AVOption transpose_options[] = {
 
 AVFILTER_DEFINE_CLASS(transpose);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    TransContext *trans = ctx->priv;
-    const char *shorthand[] = { "dir", "passthrough", NULL };
-
-    trans->class = &transpose_class;
-    av_opt_set_defaults(trans);
-
-    return av_opt_set_from_string(trans, args, shorthand, "=", ":");
-}
-
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *pix_fmts = NULL;
@@ -266,11 +255,12 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "dir", "passthrough", NULL };
+
 AVFilter avfilter_vf_transpose = {
     .name      = "transpose",
     .description = NULL_IF_CONFIG_SMALL("Transpose input video."),
 
-    .init = init,
     .priv_size = sizeof(TransContext),
 
     .query_formats = query_formats,
@@ -278,4 +268,5 @@ AVFilter avfilter_vf_transpose = {
     .inputs    = avfilter_vf_transpose_inputs,
     .outputs   = avfilter_vf_transpose_outputs,
     .priv_class = &transpose_class,
+    .shorthand = shorthand,
 };

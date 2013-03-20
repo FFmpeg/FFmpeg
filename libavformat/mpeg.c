@@ -805,6 +805,8 @@ end:
     return ret;
 }
 
+#define FAIL(r) do { ret = r; goto fail; } while (0)
+
 static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MpegDemuxContext *vobsub = s->priv_data;
@@ -838,7 +840,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ret = mpegps_read_pes_header(vobsub->sub_ctx, NULL, &startcode, &pts, &dts);
         if (ret < 0)
-            return ret;
+            FAIL(ret);
         to_read = ret & 0xffff;
 
         /* this prevents reads above the current packet */
@@ -855,7 +857,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         ret = av_grow_packet(pkt, to_read);
         if (ret < 0)
-            return ret;
+            FAIL(ret);
 
         n = avio_read(pb, pkt->data + (pkt->size - to_read), to_read);
         if (n < to_read)
@@ -870,7 +872,12 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = idx_pkt.pos;
     pkt->stream_index = idx_pkt.stream_index;
 
+    av_free_packet(&idx_pkt);
     return 0;
+
+fail:
+    av_free_packet(&idx_pkt);
+    return ret;
 }
 
 static int vobsub_read_seek(AVFormatContext *s, int stream_index,

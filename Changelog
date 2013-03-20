@@ -10,6 +10,7 @@ version <next>:
 - perms and aperms filters
 - audio filtering support in ffplay
 - 10% faster aac encoding on x86 and MIPS
+- sine audio filter source
 
 
 version 1.2:
