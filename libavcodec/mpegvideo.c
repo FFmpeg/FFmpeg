@@ -266,18 +266,6 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
 {
     int r, ret;
 
-    if (s->avctx->hwaccel) {
-        assert(!pic->hwaccel_picture_private);
-        if (s->avctx->hwaccel->priv_data_size) {
-            pic->hwaccel_priv_buf = av_buffer_allocz(s->avctx->hwaccel->priv_data_size);
-            if (!pic->hwaccel_priv_buf) {
-                av_log(s->avctx, AV_LOG_ERROR, "alloc_frame_buffer() failed (hwaccel private data allocation)\n");
-                return -1;
-            }
-            pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
-        }
-    }
-
     pic->tf.f = &pic->f;
     if (s->codec_id != AV_CODEC_ID_WMV3IMAGE &&
         s->codec_id != AV_CODEC_ID_VC1IMAGE  &&
@@ -294,9 +282,19 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     if (r < 0 || !pic->f.data[0]) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %p)\n",
                r, pic->f.data[0]);
-        av_buffer_unref(&pic->hwaccel_priv_buf);
-        pic->hwaccel_picture_private = NULL;
         return -1;
+    }
+
+    if (s->avctx->hwaccel) {
+        assert(!pic->hwaccel_picture_private);
+        if (s->avctx->hwaccel->priv_data_size) {
+            pic->hwaccel_priv_buf = av_buffer_allocz(s->avctx->hwaccel->priv_data_size);
+            if (!pic->hwaccel_priv_buf) {
+                av_log(s->avctx, AV_LOG_ERROR, "alloc_frame_buffer() failed (hwaccel private data allocation)\n");
+                return -1;
+            }
+            pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
+        }
     }
 
     if (s->linesize && (s->linesize   != pic->f.linesize[0] ||

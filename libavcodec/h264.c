@@ -343,6 +343,15 @@ static int alloc_picture(H264Context *h, Picture *pic)
 
     av_assert0(!pic->f.data[0]);
 
+    pic->tf.f = &pic->f;
+    ret = ff_thread_get_buffer(h->avctx, &pic->tf, pic->reference ?
+                                                   AV_GET_BUFFER_FLAG_REF : 0);
+    if (ret < 0)
+        goto fail;
+
+    h->linesize   = pic->f.linesize[0];
+    h->uvlinesize = pic->f.linesize[1];
+
     if (h->avctx->hwaccel) {
         const AVHWAccel *hwaccel = h->avctx->hwaccel;
         av_assert0(!pic->hwaccel_picture_private);
@@ -353,14 +362,6 @@ static int alloc_picture(H264Context *h, Picture *pic)
             pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
         }
     }
-    pic->tf.f = &pic->f;
-    ret = ff_thread_get_buffer(h->avctx, &pic->tf, pic->reference ?
-                                                   AV_GET_BUFFER_FLAG_REF : 0);
-    if (ret < 0)
-        goto fail;
-
-    h->linesize   = pic->f.linesize[0];
-    h->uvlinesize = pic->f.linesize[1];
 
     if (!h->qscale_table_pool) {
         ret = init_table_pools(h);
