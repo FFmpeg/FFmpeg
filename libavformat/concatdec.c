@@ -82,25 +82,26 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
 {
     ConcatContext *cat = avf->priv_data;
     ConcatFile *file;
-    char *url;
+    char *url = NULL;
     size_t url_len;
+    int ret;
 
     if (cat->safe > 0 && !safe_filename(filename)) {
         av_log(avf, AV_LOG_ERROR, "Unsafe file name '%s'\n", filename);
-        return AVERROR(EPERM);
+        FAIL(AVERROR(EPERM));
     }
     url_len = strlen(avf->filename) + strlen(filename) + 16;
     if (!(url = av_malloc(url_len)))
-        return AVERROR(ENOMEM);
+        FAIL(AVERROR(ENOMEM));
     ff_make_absolute_url(url, url_len, avf->filename, filename);
-    av_free(filename);
+    av_freep(&filename);
 
     if (cat->nb_files >= *nb_files_alloc) {
         size_t n = FFMAX(*nb_files_alloc * 2, 16);
         ConcatFile *new_files;
         if (n <= cat->nb_files || n > SIZE_MAX / sizeof(*cat->files) ||
             !(new_files = av_realloc(cat->files, n * sizeof(*cat->files))))
-            return AVERROR(ENOMEM);
+            FAIL(AVERROR(ENOMEM));
         cat->files = new_files;
         *nb_files_alloc = n;
     }
@@ -114,6 +115,11 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     file->duration   = AV_NOPTS_VALUE;
 
     return 0;
+
+fail:
+    av_free(url);
+    av_free(filename);
+    return ret;
 }
 
 static int open_file(AVFormatContext *avf, unsigned fileno)
