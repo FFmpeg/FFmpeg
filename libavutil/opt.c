@@ -1361,6 +1361,7 @@ typedef struct TestContext
     char *string;
     int flags;
     AVRational rational;
+    AVRational video_rate;
     int w, h;
     enum AVPixelFormat pix_fmt;
     enum AVSampleFormat sample_fmt;
