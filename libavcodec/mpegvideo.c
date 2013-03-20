@@ -269,11 +269,12 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     if (s->avctx->hwaccel) {
         assert(!pic->hwaccel_picture_private);
         if (s->avctx->hwaccel->priv_data_size) {
-            pic->hwaccel_picture_private = av_mallocz(s->avctx->hwaccel->priv_data_size);
-            if (!pic->hwaccel_picture_private) {
+            pic->hwaccel_priv_buf = av_buffer_allocz(s->avctx->hwaccel->priv_data_size);
+            if (!pic->hwaccel_priv_buf) {
                 av_log(s->avctx, AV_LOG_ERROR, "alloc_frame_buffer() failed (hwaccel private data allocation)\n");
                 return -1;
             }
+            pic->hwaccel_picture_private = pic->hwaccel_priv_buf->data;
         }
     }
 
@@ -293,7 +294,8 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     if (r < 0 || !pic->f.data[0]) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %p)\n",
                r, pic->f.data[0]);
-        av_freep(&pic->hwaccel_picture_private);
+        av_buffer_unref(&pic->hwaccel_priv_buf);
+        pic->hwaccel_picture_private = NULL;
         return -1;
     }
 
