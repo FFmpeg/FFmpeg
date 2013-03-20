@@ -18,6 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -60,10 +62,10 @@ typedef struct {
     OPT_GENERIC(name, field, def, min, max, descr, DURATION, str, __VA_ARGS__)
 
 static const AVOption sine_options[] = {
-    OPT_DBL("frequency",         frequency,            440, 0, INFINITY,  "set the sine frequency"),
-    OPT_DBL("f",                 frequency,            440, 0, INFINITY,  "set the sine frequency"),
-    OPT_DBL("beep_factor",       beep_factor,            0, 0, INFINITY,  "set the beep fequency factor"),
-    OPT_DBL("b",                 beep_factor,            0, 0, INFINITY,  "set the beep fequency factor"),
+    OPT_DBL("frequency",         frequency,            440, 0, DBL_MAX,   "set the sine frequency"),
+    OPT_DBL("f",                 frequency,            440, 0, DBL_MAX,   "set the sine frequency"),
+    OPT_DBL("beep_factor",       beep_factor,            0, 0, DBL_MAX,   "set the beep fequency factor"),
+    OPT_DBL("b",                 beep_factor,            0, 0, DBL_MAX,   "set the beep fequency factor"),
     OPT_INT("sample_rate",       sample_rate,        44100, 1, INT_MAX,   "set the sample rate"),
     OPT_INT("r",                 sample_rate,        44100, 1, INT_MAX,   "set the sample rate"),
     OPT_DUR("duration",          duration,               0, 0, INT64_MAX, "set the audio duration"),
