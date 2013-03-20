@@ -233,5 +233,11 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc);
 int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
                                      int *h_shift, int *v_shift);
 
+/**
+ * @return number of planes in pix_fmt, a negative AVERROR if pix_fmt is not a
+ * valid pixel format.
+ */
+int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt);
+
 
 #endif /* AVUTIL_PIXDESC_H */
