@@ -87,7 +87,7 @@
 #define CABAC(h) h->pps.cabac
 #endif
 
-#define CHROMA    (h->sps.chroma_format_idc)
+#define CHROMA(h)    (h->sps.chroma_format_idc)
 #define CHROMA422(h) (h->sps.chroma_format_idc == 2)
 #define CHROMA444(h) (h->sps.chroma_format_idc == 3)
 
