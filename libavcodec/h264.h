@@ -63,8 +63,8 @@
 #ifdef ALLOW_INTERLACE
 #define MB_MBAFF(h)    h->mb_mbaff
 #define MB_FIELD(h)    h->mb_field_decoding_flag
-#define FRAME_MBAFF h->mb_aff_frame
-#define FIELD_PICTURE (h->picture_structure != PICT_FRAME)
+#define FRAME_MBAFF(h) h->mb_aff_frame
+#define FIELD_PICTURE(h) (h->picture_structure != PICT_FRAME)
 #define LEFT_MBS 2
 #define LTOP     0
 #define LBOT     1
@@ -72,8 +72,8 @@
 #else
 #define MB_MBAFF(h)      0
 #define MB_FIELD(h)      0
-#define FRAME_MBAFF   0
-#define FIELD_PICTURE 0
+#define FRAME_MBAFF(h)   0
+#define FIELD_PICTURE(h) 0
 #undef  IS_INTERLACED
 #define IS_INTERLACED(mb_type) 0
 #define LEFT_MBS 1
@@ -81,7 +81,7 @@
 #define LBOT     0
 #define LEFT(i)  0
 #endif
-#define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF || FIELD_PICTURE)
+#define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF(h) || FIELD_PICTURE(h))
 
 #ifndef CABAC
 #define CABAC h->pps.cabac

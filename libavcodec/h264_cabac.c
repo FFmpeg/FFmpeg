@@ -1322,7 +1322,7 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
     int mba_xy, mbb_xy;
     int ctx = 0;
 
-    if(FRAME_MBAFF){ //FIXME merge with the stuff in fill_caches?
+    if (FRAME_MBAFF(h)) { //FIXME merge with the stuff in fill_caches?
         int mb_xy = mb_x + (mb_y&~1)*h->mb_stride;
         mba_xy = mb_xy - 1;
         if( (mb_y&1)
@@ -1340,7 +1340,7 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
     }else{
         int mb_xy = h->mb_xy;
         mba_xy = mb_xy - 1;
-        mbb_xy = mb_xy - (h->mb_stride << FIELD_PICTURE);
+        mbb_xy = mb_xy - (h->mb_stride << FIELD_PICTURE(h));
     }
 
     if( h->slice_table[mba_xy] == h->slice_num && !IS_SKIP(h->cur_pic.mb_type[mba_xy] ))
@@ -1886,13 +1886,13 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
     if( h->slice_type_nos != AV_PICTURE_TYPE_I ) {
         int skip;
         /* a skipped mb needs the aff flag from the following mb */
-        if( FRAME_MBAFF && (h->mb_y&1)==1 && h->prev_mb_skipped )
+        if (FRAME_MBAFF(h) && (h->mb_y & 1) == 1 && h->prev_mb_skipped)
             skip = h->next_mb_skipped;
         else
             skip = decode_cabac_mb_skip( h, h->mb_x, h->mb_y );
         /* read skip flags */
         if( skip ) {
-            if( FRAME_MBAFF && (h->mb_y&1)==0 ){
+            if (FRAME_MBAFF(h) && (h->mb_y & 1) == 0) {
                 h->cur_pic.mb_type[mb_xy] = MB_TYPE_SKIP;
                 h->next_mb_skipped = decode_cabac_mb_skip( h, h->mb_x, h->mb_y+1 );
                 if(!h->next_mb_skipped)
@@ -1909,7 +1909,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
 
         }
     }
-    if(FRAME_MBAFF){
+    if (FRAME_MBAFF(h)) {
         if( (h->mb_y&1) == 0 )
             h->mb_mbaff =
             h->mb_field_decoding_flag = decode_cabac_field_decoding_flag(h);

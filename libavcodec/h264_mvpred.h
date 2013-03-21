@@ -41,7 +41,7 @@ static av_always_inline int fetch_diagonal_mv(H264Context *h, const int16_t **C,
 
     /* there is no consistent mapping of mvs to neighboring locations that will
      * make mbaff happy, so we can't move all this logic to fill_caches */
-    if (FRAME_MBAFF) {
+    if (FRAME_MBAFF(h)) {
 #define SET_DIAG_MV(MV_OP, REF_OP, XY, Y4)                              \
         const int xy = XY, y4 = Y4;                                     \
         const int mb_type = mb_types[xy + (y4 >> 2) * h->mb_stride];    \
@@ -230,7 +230,7 @@ static av_always_inline void pred_8x16_motion(H264Context *const h,
 }
 
 #define FIX_MV_MBAFF(type, refn, mvn, idx)      \
-    if (FRAME_MBAFF) {                          \
+    if (FRAME_MBAFF(h)) {                       \
         if (MB_FIELD(h)) {                      \
             if (!IS_INTERLACED(type)) {         \
                 refn <<= 1;                     \
@@ -368,7 +368,7 @@ static void fill_decode_neighbors(H264Context *h, int mb_type)
     topright_xy   = top_xy + 1;
     left_xy[LBOT] = left_xy[LTOP] = mb_xy - 1;
     h->left_block = left_block_options[0];
-    if (FRAME_MBAFF) {
+    if (FRAME_MBAFF(h)) {
         const int left_mb_field_flag = IS_INTERLACED(h->cur_pic.mb_type[mb_xy - 1]);
         const int curr_mb_field_flag = IS_INTERLACED(mb_type);
         if (h->mb_y & 1) {
@@ -677,7 +677,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 }
             }
 
-            if ((mb_type & (MB_TYPE_SKIP | MB_TYPE_DIRECT2)) && !FRAME_MBAFF)
+            if ((mb_type & (MB_TYPE_SKIP | MB_TYPE_DIRECT2)) && !FRAME_MBAFF(h))
                 continue;
 
             if (!(mb_type & (MB_TYPE_SKIP | MB_TYPE_DIRECT2))) {
@@ -759,7 +759,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
     MAP_F2F(scan8[0] - 1 + 2 * 8, left_type[LBOT])                      \
     MAP_F2F(scan8[0] - 1 + 3 * 8, left_type[LBOT])
 
-            if (FRAME_MBAFF) {
+            if (FRAME_MBAFF(h)) {
                 if (MB_FIELD(h)) {
 
 #define MAP_F2F(idx, mb_type)                                           \

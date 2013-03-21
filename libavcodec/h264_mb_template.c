@@ -73,7 +73,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
             dest_cb -= h->uvlinesize * (block_h - 1);
             dest_cr -= h->uvlinesize * (block_h - 1);
         }
-        if (FRAME_MBAFF) {
+        if (FRAME_MBAFF(h)) {
             int list;
             for (list = 0; list < h->list_count; list++) {
                 if (!USES_LIST(mb_type, list))
@@ -295,7 +295,7 @@ static av_noinline void FUNC(hl_decode_mb_444)(H264Context *h)
         if (mb_y & 1) // FIXME move out of this function?
             for (p = 0; p < 3; p++)
                 dest[p] -= h->linesize * 15;
-        if (FRAME_MBAFF) {
+        if (FRAME_MBAFF(h)) {
             int list;
             for (list = 0; list < h->list_count; list++) {
                 if (!USES_LIST(mb_type, list))
