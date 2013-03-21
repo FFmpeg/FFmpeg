@@ -45,7 +45,6 @@
 #define RIGHT_SIDE 2
 
 typedef struct SonicContext {
-    AVFrame frame;
     int lossless, decorrelation;
 
     int num_taps, downsampling;
@@ -767,9 +766,6 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     s->channels = avctx->channels;
     s->samplerate = avctx->sample_rate;
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     if (!avctx->extradata)
     {
         av_log(avctx, AV_LOG_ERROR, "No mandatory headers present\n");
@@ -879,13 +875,14 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     int i, quant, ch, j, ret;
     int16_t *samples;
+    AVFrame *frame = data;
 
     if (buf_size == 0) return 0;
 
-    s->frame.nb_samples = s->frame_size / avctx->channels;
-    if ((ret = ff_get_buffer(avctx, &s->frame, 0)) < 0)
+    frame->nb_samples = s->frame_size / avctx->channels;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    samples = (int16_t *)s->frame.data[0];
+    samples = (int16_t *)frame->data[0];
 
 //    av_log(NULL, AV_LOG_INFO, "buf_size: %d\n", buf_size);
 
@@ -958,7 +955,6 @@ static int sonic_decode_frame(AVCodecContext *avctx,
     align_get_bits(&gb);
 
     *got_frame_ptr = 1;
-    *(AVFrame*)data = s->frame;
 
     return (get_bits_count(&gb)+7)/8;
 }
