@@ -53,7 +53,7 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
     const int is_h264 = !CONFIG_SVQ3_DECODER || SIMPLE || h->avctx->codec_id == AV_CODEC_ID_H264;
     void (*idct_add)(uint8_t *dst, int16_t *block, int stride);
     const int block_h   = 16 >> h->chroma_y_shift;
-    const int chroma422 = CHROMA422;
+    const int chroma422 = CHROMA422(h);
 
     dest_y  = h->cur_pic.f.data[0] + ((mb_x << PIXEL_SHIFT)     + mb_y * h->linesize)  * 16;
     dest_cb = h->cur_pic.f.data[1] +  (mb_x << PIXEL_SHIFT) * 8 + mb_y * h->uvlinesize * block_h;

@@ -1112,7 +1112,7 @@ decode_intra_mb:
             return -1;
         }
         h->cbp_table[mb_xy] |= ret << 12;
-        if(CHROMA444){
+        if (CHROMA444(h)) {
             if( decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 1) < 0 ){
                 return -1;
             }
@@ -1126,7 +1126,7 @@ decode_intra_mb:
                 for(chroma_idx=0; chroma_idx<2; chroma_idx++)
                     if (decode_residual(h, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift),
                                         CHROMA_DC_BLOCK_INDEX+chroma_idx,
-                                        CHROMA422 ? chroma422_dc_scan : chroma_dc_scan,
+                                        CHROMA422(h) ? chroma422_dc_scan : chroma_dc_scan,
                                         NULL, 4*num_c8x8) < 0) {
                         return -1;
                     }

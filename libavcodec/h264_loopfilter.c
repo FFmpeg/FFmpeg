@@ -242,8 +242,8 @@ static av_always_inline void h264_filter_mb_fast_internal(H264Context *h,
                                                           int pixel_shift)
 {
     int chroma = CHROMA && !(CONFIG_GRAY && (h->flags&CODEC_FLAG_GRAY));
-    int chroma444 = CHROMA444;
-    int chroma422 = CHROMA422;
+    int chroma444 = CHROMA444(h);
+    int chroma422 = CHROMA422(h);
 
     int mb_xy = h->mb_xy;
     int left_type= h->left_type[LTOP];
@@ -463,8 +463,8 @@ static int check_mv(H264Context *h, long b_idx, long bn_idx, int mvy_limit){
 static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize, int mb_xy, int mb_type, int mvy_limit, int first_vertical_edge_done, int a, int b, int chroma, int dir) {
     int edge;
     int chroma_qp_avg[2];
-    int chroma444 = CHROMA444;
-    int chroma422 = CHROMA422;
+    int chroma444 = CHROMA444(h);
+    int chroma422 = CHROMA422(h);
     const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;
     const int mbm_type = dir == 0 ? h->left_type[LTOP] : h->top_type;
 
@@ -780,12 +780,12 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             filter_mb_mbaff_edgev ( h, img_y                ,   linesize, bS  , 1, qp [0], a, b, 1 );
             filter_mb_mbaff_edgev ( h, img_y  + 8*  linesize,   linesize, bS+4, 1, qp [1], a, b, 1 );
             if (chroma){
-                if (CHROMA444) {
+                if (CHROMA444(h)) {
                     filter_mb_mbaff_edgev ( h, img_cb,                uvlinesize, bS  , 1, bqp[0], a, b, 1 );
                     filter_mb_mbaff_edgev ( h, img_cb + 8*uvlinesize, uvlinesize, bS+4, 1, bqp[1], a, b, 1 );
                     filter_mb_mbaff_edgev ( h, img_cr,                uvlinesize, bS  , 1, rqp[0], a, b, 1 );
                     filter_mb_mbaff_edgev ( h, img_cr + 8*uvlinesize, uvlinesize, bS+4, 1, rqp[1], a, b, 1 );
-                } else if (CHROMA422) {
+                } else if (CHROMA422(h)) {
                     filter_mb_mbaff_edgecv(h, img_cb,                uvlinesize, bS  , 1, bqp[0], a, b, 1);
                     filter_mb_mbaff_edgecv(h, img_cb + 8*uvlinesize, uvlinesize, bS+4, 1, bqp[1], a, b, 1);
                     filter_mb_mbaff_edgecv(h, img_cr,                uvlinesize, bS  , 1, rqp[0], a, b, 1);
@@ -801,7 +801,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             filter_mb_mbaff_edgev ( h, img_y              , 2*  linesize, bS  , 2, qp [0], a, b, 1 );
             filter_mb_mbaff_edgev ( h, img_y  +   linesize, 2*  linesize, bS+1, 2, qp [1], a, b, 1 );
             if (chroma){
-                if (CHROMA444) {
+                if (CHROMA444(h)) {
                     filter_mb_mbaff_edgev ( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0], a, b, 1 );
                     filter_mb_mbaff_edgev ( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1], a, b, 1 );
                     filter_mb_mbaff_edgev ( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0], a, b, 1 );
