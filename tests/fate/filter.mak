@@ -55,6 +55,9 @@ FATE_GRADFUN += fate-filter-gradfun
 fate-filter-gradfun: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;format=gray,perms=random,gradfun=10:8" -an -frames:v 20
 FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER FORMAT_FILTER PERMS_FILTER GRADFUN_FILTER) += $(FATE_GRADFUN)
 
+fate-filter-concat: CMD = framecrc -lavfi "testsrc=r=5:n=1:d=2[v1];sine=440:b=2:d=1[a1];testsrc=r=5:n=1:d=1[v2];sine=622:b=2:d=2[a2];testsrc=r=5:n=1:d=1[v3];sine=880:b=2:d=1[a3];[v1][a1][v2][a2][v3][a3]concat=v=1:a=1:n=3"
+FATE_FILTER-$(call ALLYES, TESTSRC_FILTER SINE_FILTER CONCAT_FILTER) += fate-filter-concat
+
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 
 #
