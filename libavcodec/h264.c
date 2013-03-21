@@ -1806,7 +1806,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
     return err;
 }
 
-int ff_h264_frame_start(H264Context *h)
+static int h264_frame_start(H264Context *h)
 {
     Picture *pic;
     int i, ret;
@@ -3505,7 +3505,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             if (!h->sps.gaps_in_frame_num_allowed_flag)
                 for(i=0; i<FF_ARRAY_ELEMS(h->last_pocs); i++)
                     h->last_pocs[i] = INT_MIN;
-            if (ff_h264_frame_start(h) < 0)
+            if (h264_frame_start(h) < 0)
                 return -1;
             h->prev_frame_num++;
             h->prev_frame_num %= 1 << h->sps.log2_max_frame_num;
@@ -3569,7 +3569,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         }
 
         if (!FIELD_PICTURE || h0->first_field) {
-            if (ff_h264_frame_start(h) < 0) {
+            if (h264_frame_start(h) < 0) {
                 h0->first_field = 0;
                 return -1;
             }
