@@ -178,21 +178,6 @@ static const AVOption stereo3d_options[] = {
 
 AVFILTER_DEFINE_CLASS(stereo3d);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    Stereo3DContext *s = ctx->priv;
-    static const char *shorthand[] = { "in", "out", NULL };
-    int ret;
-
-    s->class = &stereo3d_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_opt_set_from_string(s, args, shorthand, "=", ":")) < 0)
-        return ret;
-
-    return 0;
-}
-
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pix_fmts[] = {
@@ -436,13 +421,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     return 0;
 }
 
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    Stereo3DContext *s = ctx->priv;
-
-    av_opt_free(s);
-}
-
 static const AVFilterPad stereo3d_inputs[] = {
     {
         .name             = "default",
@@ -462,14 +440,15 @@ static const AVFilterPad stereo3d_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "in", "out", NULL };
+
 AVFilter avfilter_vf_stereo3d = {
     .name          = "stereo3d",
     .description   = NULL_IF_CONFIG_SMALL("Convert video stereoscopic 3D view."),
     .priv_size     = sizeof(Stereo3DContext),
-    .init          = init,
-    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = stereo3d_inputs,
     .outputs       = stereo3d_outputs,
     .priv_class    = &stereo3d_class,
+    .shorthand     = shorthand,
 };
