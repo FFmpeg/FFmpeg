@@ -78,18 +78,6 @@ void fill_samples(double *dst, int nb_samples, int nb_channels, int sample_rate,
     }
 }
 
-int alloc_samples_array_and_data(uint8_t ***data, int *linesize, int nb_channels,
-                                    int nb_samples, enum AVSampleFormat sample_fmt, int align)
-{
-    int nb_planes = av_sample_fmt_is_planar(sample_fmt) ? nb_channels : 1;
-
-    *data = av_malloc(sizeof(*data) * nb_planes);
-    if (!*data)
-        return AVERROR(ENOMEM);
-    return av_samples_alloc(*data, linesize, nb_channels,
-                            nb_samples, sample_fmt, align);
-}
-
 int main(int argc, char **argv)
 {
     int64_t src_ch_layout = AV_CH_LAYOUT_STEREO, dst_ch_layout = AV_CH_LAYOUT_SURROUND;
@@ -149,8 +137,8 @@ int main(int argc, char **argv)
     /* allocate source and destination samples buffers */
 
     src_nb_channels = av_get_channel_layout_nb_channels(src_ch_layout);
-    ret = alloc_samples_array_and_data(&src_data, &src_linesize, src_nb_channels,
-                                       src_nb_samples, src_sample_fmt, 0);
+    ret = av_samples_alloc_array_and_samples(&src_data, &src_linesize, src_nb_channels,
+                                             src_nb_samples, src_sample_fmt, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate source samples\n");
         goto end;
@@ -164,8 +152,8 @@ int main(int argc, char **argv)
 
     /* buffer is going to be directly written to a rawaudio file, no alignment */
     dst_nb_channels = av_get_channel_layout_nb_channels(dst_ch_layout);
-    ret = alloc_samples_array_and_data(&dst_data, &dst_linesize, dst_nb_channels,
-                                       dst_nb_samples, dst_sample_fmt, 0);
+    ret = av_samples_alloc_array_and_samples(&dst_data, &dst_linesize, dst_nb_channels,
+                                             dst_nb_samples, dst_sample_fmt, 0);
     if (ret < 0) {
         fprintf(stderr, "Could not allocate destination samples\n");
         goto end;
