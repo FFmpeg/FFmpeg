@@ -149,7 +149,7 @@ static av_cold int check_format(AVCodecContext *avctx)
     h = parser->priv_data;
     switch (h->sps.bit_depth_luma) {
     case 8:
-        if (!CHROMA444 && !CHROMA422) {
+        if (!CHROMA444(h) && !CHROMA422(h)) {
             // only this will H.264 decoder switch to hwaccel
             ret = 0;
             break;
