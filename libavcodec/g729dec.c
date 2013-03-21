@@ -101,7 +101,6 @@ typedef struct {
 
 typedef struct {
     DSPContext dsp;
-    AVFrame frame;
 
     /// past excitation signal buffer
     int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
@@ -385,9 +384,6 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     ff_dsputil_init(&ctx->dsp, avctx);
     ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
 
-    avcodec_get_frame_defaults(&ctx->frame);
-    avctx->coded_frame = &ctx->frame;
-
     return 0;
 }
 
@@ -418,11 +414,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int j, ret;
     int gain_before, gain_after;
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
+    AVFrame *frame = data;
 
-    ctx->frame.nb_samples = SUBFRAME_SIZE<<1;
-    if ((ret = ff_get_buffer(avctx, &ctx->frame, 0)) < 0)
+    frame->nb_samples = SUBFRAME_SIZE<<1;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    out_frame = (int16_t*) ctx->frame.data[0];
+    out_frame = (int16_t*) frame->data[0];
 
     if (buf_size == 10) {
         packet_type = FORMAT_G729_8K;
@@ -714,7 +711,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
     *got_frame_ptr = 1;
-    *(AVFrame*)data = ctx->frame;
     return buf_size;
 }
 
