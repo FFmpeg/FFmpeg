@@ -417,7 +417,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                     flv_set_video_codec(s, vstream, num_val, 0);
                 } else
                 if (!strcmp(key, "audiocodecid") && acodec) {
-                    flv_set_audio_codec(s, astream, acodec, num_val);
+                    int id = ((int)num_val) << FLV_AUDIO_CODECID_OFFSET;
+                    flv_set_audio_codec(s, astream, acodec, id);
                 } else
                 if (!strcmp(key, "audiosamplerate") && acodec) {
                     acodec->sample_rate = num_val;
