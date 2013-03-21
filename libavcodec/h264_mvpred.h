@@ -544,7 +544,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 AV_COPY32(&nnz_cache[4 + 8 * 10], &nnz[4 * 9]);
             }
         } else {
-            uint32_t top_empty = CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
+            uint32_t top_empty = CABAC(h) && !IS_INTRA(mb_type) ? 0 : 0x40404040;
             AV_WN32A(&nnz_cache[4 + 8 *  0], top_empty);
             AV_WN32A(&nnz_cache[4 + 8 *  5], top_empty);
             AV_WN32A(&nnz_cache[4 + 8 * 10], top_empty);
@@ -575,11 +575,11 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 nnz_cache[3 + 8 *  6 + 2 * 8 * i] =
                 nnz_cache[3 + 8 *  7 + 2 * 8 * i] =
                 nnz_cache[3 + 8 * 11 + 2 * 8 * i] =
-                nnz_cache[3 + 8 * 12 + 2 * 8 * i] = CABAC && !IS_INTRA(mb_type) ? 0 : 64;
+                nnz_cache[3 + 8 * 12 + 2 * 8 * i] = CABAC(h) && !IS_INTRA(mb_type) ? 0 : 64;
             }
         }
 
-        if (CABAC) {
+        if (CABAC(h)) {
             // top_cbp
             if (top_type)
                 h->top_cbp = h->cbp_table[top_xy];
@@ -688,7 +688,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 AV_ZERO32(mv_cache[2 + 8 * 0]);
                 AV_ZERO32(mv_cache[2 + 8 * 2]);
 
-                if (CABAC) {
+                if (CABAC(h)) {
                     if (USES_LIST(top_type, list)) {
                         const int b_xy = h->mb2br_xy[top_xy];
                         AV_COPY64(mvd_cache[0 - 1 * 8], mvd[b_xy + 0]);

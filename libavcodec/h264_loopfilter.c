@@ -497,7 +497,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 if (IS_INTRA(mb_type | h->cur_pic.mb_type[mbn_xy])) {
                     AV_WN64A(bS, 0x0003000300030003ULL);
                 } else {
-                    if (!CABAC && IS_8x8DCT(h->cur_pic.mb_type[mbn_xy])) {
+                    if (!CABAC(h) && IS_8x8DCT(h->cur_pic.mb_type[mbn_xy])) {
                         bS[0]= 1+((h->cbp_table[mbn_xy] & 0x4000)||h->non_zero_count_cache[scan8[0]+0]);
                         bS[1]= 1+((h->cbp_table[mbn_xy] & 0x4000)||h->non_zero_count_cache[scan8[0]+1]);
                         bS[2]= 1+((h->cbp_table[mbn_xy] & 0x8000)||h->non_zero_count_cache[scan8[0]+2]);

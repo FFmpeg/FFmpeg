@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#define CABAC 0
+#define CABAC(h) 0
 #define UNCHECKED_BITSTREAM_READER 1
 
 #include "internal.h"
