@@ -23,11 +23,11 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "put_bits.h"
+#include "internal.h"
 
 #define AES3_HEADER_LEN 4
 
 typedef struct S302MContext {
-    AVFrame frame;
     /* Set for even channels on multiple of 192 samples */
     uint8_t framing_index;
 } S302MContext;
@@ -83,7 +83,6 @@ static av_cold int s302m_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size             = 0;
-    avctx->coded_frame            = &s->frame;
     avctx->coded_frame->key_frame = 1;
     avctx->bit_rate               = 48000 * avctx->channels *
                                     (avctx->bits_per_coded_sample + 4);
@@ -92,29 +91,35 @@ static av_cold int s302m_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int s302m_encode_frame(AVCodecContext *avctx, uint8_t *frame,
-                              int buf_size, void *data)
+static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt, const AVFrame *frame,
+                                int *got_packet_ptr)
 {
-    S302MContext *s = avctx->priv_data;
-    uint8_t *o = frame;
-    int num_samples,c, channels;
+    int required_buffer_size;
+    int num_samples, c, channels, buf_size;
     uint8_t vucf;
+    S302MContext *s;
+    uint8_t *o;
     PutBitContext pb;
     // compute the frame size based on the buffer size
     // N+4 bits per sample (N bit data word + VUCF) * num_samples *
     // buf-size should have an extra 4 bytes for the AES3_HEADER_LEN;
     const int frame_size = buf_size - AES3_HEADER_LEN;
-    double num_samples_test;
-    num_samples_test = ((double)frame_size * 8.0) /
-            ((double)avctx->channels * ((double)avctx->bits_per_coded_sample + 4.0));
-    if (num_samples_test != floor(num_samples_test))
+    
+    s = avctx->priv_data;
+    o = avpkt->data;
+
+    buf_size = avpkt->size;
+
+    required_buffer_size = compute_buffer_size(avctx, frame->nb_samples);
+    if (ff_alloc_packet2(avctx, avpkt, required_buffer_size) < 0)
     {
-        av_log(avctx, AV_LOG_ERROR, "Buffer size %d does not result in integer number of samples for %d channels and num_bits_per_sample %d + AES3_HEADER_LEN of 4 bytes.\n",
-               buf_size, avctx->channels, avctx->bits_per_coded_sample);
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_ERROR, "Unable to alloc packet");
+        *got_packet_ptr = 0;
+        return -1;
     }
+    
     num_samples = (frame_size * 8) /
-            (avctx->channels * (avctx->bits_per_coded_sample + 4));
+                (avctx->channels * (avctx->bits_per_coded_sample + 4));
     init_put_bits(&pb, o, buf_size * 8);
     put_bits(&pb, 16, frame_size);
     put_bits(&pb, 2, (avctx->channels - 2) >> 1);   // number of channels
@@ -124,12 +129,12 @@ static int s302m_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     put_bits(&pb, 4, 0);                            // alignments
     flush_put_bits(&pb);
     o+=AES3_HEADER_LEN;
-
+    
     if(avctx->bits_per_coded_sample == 24)
     {
-        uint32_t *samples;
-        samples = (uint32_t *)data;
-
+        const uint32_t *samples = (uint32_t *) frame->data[0];
+        samples = (uint32_t *)frame->data[0];
+        
         for (c = 0; c< num_samples; c++)
         {
             vucf = (s->framing_index == 0)  ? 0x10: 0;
@@ -154,8 +159,7 @@ static int s302m_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     }
     else if (avctx->bits_per_coded_sample == 20)
     {
-        uint32_t *samples;
-        samples = (uint32_t *)data;
+        const uint32_t *samples = (uint32_t *) frame->data[0];
         for (c = 0; c < num_samples; c++)
         {
             vucf = (s->framing_index == 0)  ? 0x80: 0;
@@ -179,7 +183,7 @@ static int s302m_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     }
     else if (avctx->bits_per_coded_sample == 16)
     {
-        const uint16_t *samples = data;
+        const uint16_t *samples = (uint16_t *) frame->data[0];
         for (c=0; c < num_samples; c++) {
             vucf = (s->framing_index == 0) ? 0x10 : 0;
             for (channels = 0; channels < avctx->channels; channels += 2) {
@@ -190,7 +194,7 @@ static int s302m_encode_frame(AVCodecContext *avctx, uint8_t *frame,
                 o[4] = ff_reverse[(samples[1] & 0xF000) >> 12];
                 o += 5;
                 samples += 2;
-
+                
             }
             s->framing_index++;
             if (s->framing_index >= 192)
@@ -199,64 +203,10 @@ static int s302m_encode_frame(AVCodecContext *avctx, uint8_t *frame,
             }
         }
     }
-    return buf_size;
-}
 
-static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt, const AVFrame *frame,
-                                int *got_packet_ptr)
-{
-    int required_buffer_size;
-    int return_val;
-    return_val = AVERROR_EXIT;
-    // Sanity checks.
-    if (frame->nb_samples == 0)
-    {
-        av_log(avctx, AV_LOG_ERROR, "Attempting to encode frame with zero samples");
-        if (got_packet_ptr)
-        {
-            *got_packet_ptr = 0;
-        }
-        return AVERROR_INVALIDDATA;
-    }
-    else if (frame->linesize[0] == 0)
-    {
-        av_log(avctx, AV_LOG_ERROR, "Attempting to encode frame with no data");
-        if (got_packet_ptr)
-        {
-            *got_packet_ptr = 0;
-        }
-        return AVERROR_INVALIDDATA;
-    }
+    *got_packet_ptr = 1;
 
-    required_buffer_size = compute_buffer_size(avctx, frame->nb_samples);
-    if (avpkt->size > 0)
-    {
-        // Ensure user provided packet size is appropriate
-        if (avpkt->size != required_buffer_size)
-        {
-            av_log(avctx, AV_LOG_ERROR, "Buffer provided to packet incorrect size.  "
-                   "For %d samples and %d channels, buffer_size should be %d",
-                   frame->nb_samples, avctx->channels, required_buffer_size);
-            if (got_packet_ptr)
-            {
-                *got_packet_ptr = 0;
-            }
-            return AVERROR_INVALIDDATA;
-        }
-    }
-    else
-    {
-        avpkt->data = (uint8_t *) av_malloc(required_buffer_size);
-        avpkt->size = required_buffer_size;
-    }
-
-    return_val = s302m_encode_frame(avctx, avpkt->data, avpkt->size, frame->data[0]);
-    if (got_packet_ptr)
-    {
-        *got_packet_ptr = (return_val > 0);
-    }
-
-    return return_val > 0 ? 0 : -1 ;
+    return 0;
 }
 
 AVCodec ff_s302m_encoder = {
