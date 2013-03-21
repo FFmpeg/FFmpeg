@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-03-30 - xxxxxxx - lavu 52.24.100 - samplefmt.h
+  Add av_samples_alloc_array_and_samples().
+
 2013-03-29 - xxxxxxx - lavf 55.1.100 - avformat.h
   Add av_guess_frame_rate()
 
