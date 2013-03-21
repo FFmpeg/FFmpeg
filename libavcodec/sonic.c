@@ -801,6 +801,10 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     if (!s->lossless)
         skip_bits(&gb, 3); // XXX FIXME
     s->decorrelation = get_bits(&gb, 2);
+    if (s->decorrelation != 3 && s->channels != 2) {
+        av_log(avctx, AV_LOG_ERROR, "invalid decorrelation %d\n", s->decorrelation);
+        return AVERROR_INVALIDDATA;
+    }
 
     s->downsampling = get_bits(&gb, 2);
     if (!s->downsampling) {
