@@ -2960,8 +2960,7 @@ static int h264_set_parameter_from_sps(H264Context *h)
             return AVERROR_INVALIDDATA;
         }
         if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 14 &&
-            h->sps.bit_depth_luma != 11 && h->sps.bit_depth_luma != 13 &&
-                (h->sps.bit_depth_luma != 9 || !CHROMA422)) {
+            h->sps.bit_depth_luma != 11 && h->sps.bit_depth_luma != 13) {
             h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
             h->cur_chroma_format_idc      = h->sps.chroma_format_idc;
             h->pixel_shift                = h->sps.bit_depth_luma > 8;
