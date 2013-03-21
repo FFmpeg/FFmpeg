@@ -701,49 +701,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     }
 }
 
-#if FF_API_DEINTERLACE
-static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void **bufp)
-{
-    AVCodecContext *dec;
-    AVPicture *picture2;
-    AVPicture picture_tmp;
-    uint8_t *buf = 0;
-
-    dec = ist->st->codec;
-
-    /* deinterlace : must be done before any resize */
-    if (FF_API_DEINTERLACE && do_deinterlace) {
-        int size;
-
-        /* create temporary picture */
-        size = avpicture_get_size(dec->pix_fmt, dec->width, dec->height);
-        if (size < 0)
-            return;
-        buf  = av_malloc(size);
-        if (!buf)
-            return;
-
-        picture2 = &picture_tmp;
-        avpicture_fill(picture2, buf, dec->pix_fmt, dec->width, dec->height);
-
-        if (avpicture_deinterlace(picture2, picture,
-                                 dec->pix_fmt, dec->width, dec->height) < 0) {
-            /* if error, do not deinterlace */
-            av_log(NULL, AV_LOG_WARNING, "Deinterlacing failed\n");
-            av_free(buf);
-            buf = NULL;
-            picture2 = picture;
-        }
-    } else {
-        picture2 = picture;
-    }
-
-    if (picture != picture2)
-        *picture = *picture2;
-    *bufp = buf;
-}
-#endif
-
 static void do_subtitle_out(AVFormatContext *s,
                             OutputStream *ost,
                             InputStream *ist,
@@ -1712,9 +1669,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     }
 
     pkt->size = 0;
-#if FF_API_DEINTERLACE
-    pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
-#endif
 
     rate_emu_sleep(ist);
 

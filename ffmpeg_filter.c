@@ -604,6 +604,24 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
         pad_idx = 0;
     }
 
+    if (do_deinterlace) {
+        AVFilterContext *yadif;
+
+        snprintf(name, sizeof(name), "deinterlace input from stream %d:%d",
+                 ist->file_index, ist->st->index);
+        if ((ret = avfilter_graph_create_filter(&yadif,
+                                                avfilter_get_by_name("yadif"),
+                                                name, "", NULL,
+                                                fg->graph)) < 0)
+            return ret;
+
+        if ((ret = avfilter_link(yadif, 0, first_filter, pad_idx)) < 0)
+            return ret;
+
+        first_filter = yadif;
+        pad_idx = 0;
+    }
+
     if ((ret = avfilter_link(ifilter->filter, 0, first_filter, pad_idx)) < 0)
         return ret;
     return 0;
