@@ -50,7 +50,7 @@ static int avs_probe(AVProbeData * p)
 
     d = p->buf;
     if (d[0] == 'w' && d[1] == 'W' && d[2] == 0x10 && d[3] == 0)
-        return 50;
+        return 55;
 
     return 0;
 }
