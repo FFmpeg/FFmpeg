@@ -182,7 +182,13 @@ FATE_H264 = aud_mw_e                                                    \
             sva_nl1_b                                                   \
             sva_nl2_e                                                   \
 
+FATE_H264_REINIT_TESTS := large_420_8-to-small_420_8                    \
+                          small_420_8-to-large_444_10                   \
+                          small_420_9-to-small_420_8                    \
+                          small_422_9-to-small_420_9                    \
+
 FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
+              $(FATE_H264_REINIT_TESTS:%=fate-h264-reinit-%)            \
               fate-h264-extreme-plane-pred                              \
               fate-h264-lossless                                        \
 
@@ -381,3 +387,5 @@ fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(SAMPLES)/h264/i
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless:                               CMD = framecrc -i $(SAMPLES)/h264/lossless.h264
+
+fate-h264-reinit-%:                               CMD = framecrc -i $(SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10,scale=352:288
