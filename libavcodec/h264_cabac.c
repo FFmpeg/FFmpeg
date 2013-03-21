@@ -1327,9 +1327,9 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
         mba_xy = mb_xy - 1;
         if( (mb_y&1)
             && h->slice_table[mba_xy] == h->slice_num
-            && MB_FIELD == !!IS_INTERLACED( h->cur_pic.mb_type[mba_xy] ) )
+            && MB_FIELD(h) == !!IS_INTERLACED( h->cur_pic.mb_type[mba_xy] ) )
             mba_xy += h->mb_stride;
-        if( MB_FIELD ){
+        if (MB_FIELD(h)) {
             mbb_xy = mb_xy - h->mb_stride;
             if( !(mb_y&1)
                 && h->slice_table[mbb_xy] == h->slice_num
@@ -1623,9 +1623,9 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
 #endif
 
     significant_coeff_ctx_base = h->cabac_state
-        + significant_coeff_flag_offset[MB_FIELD][cat];
+        + significant_coeff_flag_offset[MB_FIELD(h)][cat];
     last_coeff_ctx_base = h->cabac_state
-        + last_coeff_flag_offset[MB_FIELD][cat];
+        + last_coeff_flag_offset[MB_FIELD(h)][cat];
     abs_level_m1_ctx_base = h->cabac_state
         + coeff_abs_level_m1_offset[cat];
 
@@ -1645,7 +1645,7 @@ decode_cabac_residual_internal(H264Context *h, int16_t *block,
         if( last == max_coeff -1 ) {\
             index[coeff_count++] = last;\
         }
-        const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD];
+        const uint8_t *sig_off = significant_coeff_flag_offset_8x8[MB_FIELD(h)];
 #ifdef decode_significance
         coeff_count = decode_significance_8x8(CC, significant_coeff_ctx_base, index,
                                                  last_coeff_ctx_base, sig_off);
@@ -1917,7 +1917,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
 
     h->prev_mb_skipped = 0;
 
-    fill_decode_neighbors(h, -(MB_FIELD));
+    fill_decode_neighbors(h, -(MB_FIELD(h)));
 
     if( h->slice_type_nos == AV_PICTURE_TYPE_B ) {
         int ctx = 0;
@@ -1981,7 +1981,7 @@ decode_intra_mb:
         h->intra16x16_pred_mode= i_mb_type_info[mb_type].pred_mode;
         mb_type= i_mb_type_info[mb_type].type;
     }
-    if(MB_FIELD)
+    if(MB_FIELD(h))
         mb_type |= MB_TYPE_INTERLACED;
 
     h->slice_table[ mb_xy ]= h->slice_num;
@@ -2020,8 +2020,8 @@ decode_intra_mb:
         return 0;
     }
 
-    local_ref_count[0] = h->ref_count[0] << MB_MBAFF;
-    local_ref_count[1] = h->ref_count[1] << MB_MBAFF;
+    local_ref_count[0] = h->ref_count[0] << MB_MBAFF(h);
+    local_ref_count[1] = h->ref_count[1] << MB_MBAFF(h);
 
     fill_decode_caches(h, mb_type);
 

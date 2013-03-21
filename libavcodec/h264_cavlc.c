@@ -756,7 +756,7 @@ decode_intra_mb:
         mb_type= i_mb_type_info[mb_type].type;
     }
 
-    if(MB_FIELD)
+    if(MB_FIELD(h))
         mb_type |= MB_TYPE_INTERLACED;
 
     h->slice_table[ mb_xy ]= h->slice_num;
@@ -778,8 +778,8 @@ decode_intra_mb:
         return 0;
     }
 
-    local_ref_count[0] = h->ref_count[0] << MB_MBAFF;
-    local_ref_count[1] = h->ref_count[1] << MB_MBAFF;
+    local_ref_count[0] = h->ref_count[0] << MB_MBAFF(h);
+    local_ref_count[1] = h->ref_count[1] << MB_MBAFF(h);
 
     fill_decode_neighbors(h, mb_type);
     fill_decode_caches(h, mb_type);
