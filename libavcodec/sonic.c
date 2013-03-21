@@ -513,6 +513,8 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
 
     if (avctx->channels == 2)
         s->decorrelation = MID_SIDE;
+    else
+        s->decorrelation = 3;
 
     if (avctx->codec->id == AV_CODEC_ID_SONIC_LS)
     {
