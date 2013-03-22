@@ -359,7 +359,7 @@ static int request_frame(AVFilterLink *outlink)
 
     b->frame_requested = 1;
     while (b->frame_requested) {
-        in = ff_bufqueue_peek(&b->queue_top, TOP) ? BOTTOM : TOP;
+        in = ff_bufqueue_peek(&b->queue_top, 0) ? BOTTOM : TOP;
         ret = ff_request_frame(ctx->inputs[in]);
         if (ret < 0)
             return ret;
@@ -413,8 +413,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     while (1) {
         AVFrame *top_buf, *bottom_buf, *out_buf;
 
-        if (!ff_bufqueue_peek(&b->queue_top, TOP) ||
-            !ff_bufqueue_peek(&b->queue_bottom, BOTTOM)) break;
+        if (!ff_bufqueue_peek(&b->queue_top, 0) ||
+            !ff_bufqueue_peek(&b->queue_bottom, 0)) break;
 
         top_buf = ff_bufqueue_get(&b->queue_top);
         bottom_buf = ff_bufqueue_get(&b->queue_bottom);
