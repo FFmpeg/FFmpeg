@@ -32,6 +32,10 @@ Compute arcsine of @var{x}.
 @item atan(x)
 Compute arctangent of @var{x}.
 
+@item between(x, min, max)
+Return 1 if @var{x} is greater than or equal to @var{min} and lesser than or
+equal to @var{max}, 0 otherwise.
+
 @item bitand(x, y)
 @item bitor(x, y)
 Compute bitwise and/or operation on @var{x} and @var{y}.

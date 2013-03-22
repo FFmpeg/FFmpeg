@@ -145,7 +145,7 @@ struct AVExpr {
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor,
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between,
     } type;
     double value; // is sign in other types
     union {
@@ -185,6 +185,11 @@ static double eval_expr(Parser *p, AVExpr *e)
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
         case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
+        case e_between: {
+            double d = eval_expr(p, e->param[0]);
+            return e->value * (d >= eval_expr(p, e->param[1]) &&
+                               d <= eval_expr(p, e->param[2]));
+        }
         case e_print: {
             double x = eval_expr(p, e->param[0]);
             int level = e->param[1] ? av_clip(eval_expr(p, e->param[1]), INT_MIN, INT_MAX) : AV_LOG_INFO;
@@ -428,6 +433,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "ifnot" )) d->type = e_ifnot;
     else if (strmatch(next, "bitand")) d->type = e_bitand;
     else if (strmatch(next, "bitor" )) d->type = e_bitor;
+    else if (strmatch(next, "between"))d->type = e_between;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -623,6 +629,10 @@ static int verify_expr(AVExpr *e)
         case e_taylor:
             return verify_expr(e->param[0]) && verify_expr(e->param[1])
                    && (!e->param[2] || verify_expr(e->param[2]));
+        case e_between:
+            return verify_expr(e->param[0]) &&
+                   verify_expr(e->param[1]) &&
+                   verify_expr(e->param[2]);
         default: return verify_expr(e->param[0]) && verify_expr(e->param[1]) && !e->param[2];
     }
 }
@@ -816,6 +826,9 @@ int main(int argc, char **argv)
         "bitor(42, 12)",
         "bitand(42, 12)",
         "bitand(NAN, 1)",
+        "between(10, -3, 10)",
+        "between(-4, -2, -1)",
+        "between(1,2)",
         NULL
     };
 
