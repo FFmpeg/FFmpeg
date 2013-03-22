@@ -594,4 +594,62 @@ Override the x264 configuration using a :-separated list of key=value parameters
 Encoding avpresets for common usages are provided so they can be used with the
 general presets system (e.g. passing the @code{-pre} option).
 
+@section ProRes
+
+Apple ProRes encoder.
+
+@subsection Private Options
+
+@table @option
+@item profile @var{integer}
+Select the ProRes profile to encode
+@table @samp
+@item proxy
+@item lt
+@item standard
+@item hq
+@end table
+
+@item quant_mat @var{integer}
+Select quantization matrix.
+@table @samp
+@item auto
+@item default
+@item proxy
+@item lt
+@item standard
+@item hq
+@end table
+If set to @var{auto}, the matrix matching the profile will be picked.
+If not set, the matrix providing the highest quality, @var{default}, will be
+picked.
+
+@item bits_per_mb @var{integer}
+How many bits to allot for coding one macroblock. Different profiles use
+between 200 and 2400 bits per macroblock, the maximum is 8000.
+
+@item mbs_per_slice @var{integer}
+Number of macroblocks in each slice (1-8); the default value (8)
+should be good in almost all situations.
+
+@item vendor @var{string}
+Override the 4-byte vendor ID.
+A custom vendor ID like @var{apl0} would claim the stream was produced by
+the Apple encoder.
+
+@end table
+
+@subsection Speed considerations
+
+In the default mode of operation the encoder has to honor frame constraints
+(i.e. not produc frames with size bigger than requested) while still making
+output picture as good as possible.
+A frame containing a lot of small details is harder to compress and the encoder
+would spend more time searching for appropriate quantizers for each slice.
+
+Setting a higher @option{bits_per_mb} limit will improve the speed.
+
+For the fastest encoding speed set the @option{qscale} parameter (4 is the
+recommended value) and do not set a size constraint.
+
 @c man end VIDEO ENCODERS
