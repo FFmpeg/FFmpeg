@@ -66,15 +66,16 @@ static int64_t next_tag(AVIOContext *pb, uint32_t *tag)
 static int64_t find_tag(AVIOContext *pb, uint32_t tag1)
 {
     unsigned int tag;
-    int64_t size;
+    int64_t size, offset;
 
     for (;;) {
         if (url_feof(pb))
             return -1;
-        size = next_tag(pb, &tag);
+        size = offset = next_tag(pb, &tag);
         if (tag == tag1)
             break;
-        avio_skip(pb, size);
+        if(offset % 2) offset++;
+        avio_skip(pb, offset);
     }
     return size;
 }
@@ -269,6 +270,7 @@ static int wav_read_header(AVFormatContext *s)
         AVStream *vst;
         size = next_tag(pb, &tag);
         next_tag_ofs = avio_tell(pb) + size;
+        if(next_tag_ofs % 2) next_tag_ofs++;
 
         if (url_feof(pb))
             break;
