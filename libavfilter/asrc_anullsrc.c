@@ -67,7 +67,7 @@ static int init(AVFilterContext *ctx, const char *args)
     null->class = &anullsrc_class;
     av_opt_set_defaults(null);
 
-    if ((ret = (av_set_options_string(null, args, "=", ":"))) < 0)
+    if ((ret = av_set_options_string(null, args, "=", ":")) < 0)
         return ret;
 
     if ((ret = ff_parse_sample_rate(&null->sample_rate,
