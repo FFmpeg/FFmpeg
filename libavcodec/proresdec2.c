@@ -533,6 +533,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     ctx->frame = frame;
+    ctx->frame->pict_type = AV_PICTURE_TYPE_I;
+    ctx->frame->key_frame = 1;
     ctx->first_field = 1;
 
     buf += 8;
