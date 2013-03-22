@@ -744,8 +744,8 @@ intrax8_decoded:
 
     ff_MPV_frame_end(s);
 
-    assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
-    assert(s->current_picture.f.pict_type == s->pict_type);
+    av_assert1(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
+    av_assert1(s->current_picture.f.pict_type == s->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
         if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
             return ret;
