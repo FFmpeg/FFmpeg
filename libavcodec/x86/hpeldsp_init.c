@@ -401,7 +401,7 @@ void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX)
+    if (HAVE_MMX && mm_flags & AV_CPU_FLAG_MMX)
         hpeldsp_init_mmx(c, flags, mm_flags);
 
     if (mm_flags & AV_CPU_FLAG_MMXEXT)
