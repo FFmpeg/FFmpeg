@@ -111,7 +111,7 @@ static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
 
-    assert(s->block_last_index[n]>=0 || s->h263_aic);
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
     nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
 
