@@ -1442,7 +1442,7 @@ static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
     for (i = 0; i < seekhead_list->nb_elem; i++)
         if (seekhead[i].id == MATROSKA_ID_CUES)
             break;
-    assert(i <= seekhead_list->nb_elem);
+    av_assert1(i <= seekhead_list->nb_elem);
 
     if (matroska_parse_seekhead_entry(matroska, i) < 0)
        matroska->cues_parsing_deferred = -1;
