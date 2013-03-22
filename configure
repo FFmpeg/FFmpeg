@@ -2169,6 +2169,9 @@ enable safe_bitstream_reader
 enable static
 enable swscale_alpha
 
+# By default, enable only those hwaccels that have no external dependencies.
+enable dxva2 vdpau
+
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 FFSERVERLDFLAGS=-Wl,-E
