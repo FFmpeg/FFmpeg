@@ -367,8 +367,10 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->pict_type           = src->pict_type;
     dst->sample_aspect_ratio = src->sample_aspect_ratio;
     dst->pts                 = src->pts;
+    dst->repeat_pict         = src->repeat_pict;
     dst->interlaced_frame    = src->interlaced_frame;
     dst->top_field_first     = src->top_field_first;
+    dst->palette_has_changed = src->palette_has_changed;
     dst->sample_rate         = src->sample_rate;
     dst->opaque              = src->opaque;
     dst->pkt_pts             = src->pkt_pts;
@@ -377,6 +379,8 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->quality             = src->quality;
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
+
+    memcpy(dst->error, src->error, sizeof(dst->error));
 
     for (i = 0; i < src->nb_side_data; i++) {
         const AVFrameSideData *sd_src = src->side_data[i];
