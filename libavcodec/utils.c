@@ -905,7 +905,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if ((ret = av_opt_set_dict(avctx, &tmp)) < 0)
         goto free_and_end;
 
-    if (avctx->coded_width && avctx->coded_height)
+    if (avctx->coded_width && avctx->coded_height && !avctx->width && !avctx->height)
         avcodec_set_dimensions(avctx, avctx->coded_width, avctx->coded_height);
     else if (avctx->width && avctx->height)
         avcodec_set_dimensions(avctx, avctx->width, avctx->height);
