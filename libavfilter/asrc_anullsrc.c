@@ -81,14 +81,24 @@ static int init(AVFilterContext *ctx, const char *args)
     return 0;
 }
 
+static int query_formats(AVFilterContext *ctx)
+{
+    ANullContext *null = ctx->priv;
+    int64_t chlayouts[] = { null->channel_layout, -1 };
+    int sample_rates[] = { null->sample_rate, -1 };
+
+    ff_set_common_formats        (ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO));
+    ff_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
+    ff_set_common_samplerates    (ctx, ff_make_format_list(sample_rates));
+
+    return 0;
+}
+
 static int config_props(AVFilterLink *outlink)
 {
     ANullContext *null = outlink->src->priv;
     char buf[128];
     int chans_nb;
-
-    outlink->sample_rate = null->sample_rate;
-    outlink->channel_layout = null->channel_layout;
 
     chans_nb = av_get_channel_layout_nb_channels(null->channel_layout);
     av_get_channel_layout_string(buf, sizeof(buf), chans_nb, null->channel_layout);
@@ -132,6 +142,7 @@ AVFilter avfilter_asrc_anullsrc = {
     .description = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
 
     .init        = init,
+    .query_formats = query_formats,
     .priv_size   = sizeof(ANullContext),
 
     .inputs      = NULL,
