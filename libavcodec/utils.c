@@ -758,6 +758,8 @@ do {                                                                    \
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
 
             planes = av_pix_fmt_count_planes(frame->format);
+            if (!planes)
+                planes = 1;
             if (!desc || planes <= 0) {
                 ret = AVERROR(EINVAL);
                 goto fail;
