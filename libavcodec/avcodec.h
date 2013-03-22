@@ -292,6 +292,7 @@ enum AVCodecID {
     AV_CODEC_ID_MVC1       = MKBETAG('M','V','C','1'),
     AV_CODEC_ID_MVC2       = MKBETAG('M','V','C','2'),
     AV_CODEC_ID_SNOW       = MKBETAG('S','N','O','W'),
+    AV_CODEC_ID_WEBP       = MKBETAG('W','E','B','P'),
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
