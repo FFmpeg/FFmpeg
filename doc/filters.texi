@@ -2383,7 +2383,7 @@ curves=vintage
 @end example
 @end itemize
 
-@section decimate
+@section mpdecimate
 
 Drop frames that do not differ greatly from the previous frame in
 order to reduce frame rate.

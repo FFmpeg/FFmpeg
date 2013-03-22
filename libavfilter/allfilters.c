@@ -107,7 +107,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER(CROP,           crop,           vf);
     REGISTER_FILTER(CROPDETECT,     cropdetect,     vf);
     REGISTER_FILTER(CURVES,         curves,         vf);
-    REGISTER_FILTER(DECIMATE,       decimate,       vf);
     REGISTER_FILTER(DELOGO,         delogo,         vf);
     REGISTER_FILTER(DESHAKE,        deshake,        vf);
     REGISTER_FILTER(DRAWBOX,        drawbox,        vf);
@@ -135,6 +134,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(LUTRGB,         lutrgb,         vf);
     REGISTER_FILTER(LUTYUV,         lutyuv,         vf);
     REGISTER_FILTER(MP,             mp,             vf);
+    REGISTER_FILTER(MPDECIMATE,     mpdecimate,     vf);
     REGISTER_FILTER(NEGATE,         negate,         vf);
     REGISTER_FILTER(NOFORMAT,       noformat,       vf);
     REGISTER_FILTER(NOISE,          noise,          vf);

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file decimate filter, ported from libmpcodecs/vf_decimate.c by
+ * @file mpdecimate filter, ported from libmpcodecs/vf_decimate.c by
  * Rich Felker.
  */
 
@@ -55,7 +55,7 @@ typedef struct {
 #define OFFSET(x) offsetof(DecimateContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
-static const AVOption decimate_options[] = {
+static const AVOption mpdecimate_options[] = {
     { "max",  "set the maximum number of consecutive dropped frames (positive), or the minimum interval between dropped frames (negative)",
       OFFSET(max_drop_count), AV_OPT_TYPE_INT, {.i64=0}, INT_MIN, INT_MAX, FLAGS },
     { "hi",   "set high dropping threshold", OFFSET(hi), AV_OPT_TYPE_INT, {.i64=64*12}, INT_MIN, INT_MAX, FLAGS },
@@ -64,7 +64,7 @@ static const AVOption decimate_options[] = {
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(decimate);
+AVFILTER_DEFINE_CLASS(mpdecimate);
 
 /**
  * Return 1 if the two planes are different, 0 otherwise.
@@ -224,7 +224,7 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static const AVFilterPad decimate_inputs[] = {
+static const AVFilterPad mpdecimate_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
@@ -235,7 +235,7 @@ static const AVFilterPad decimate_inputs[] = {
     { NULL }
 };
 
-static const AVFilterPad decimate_outputs[] = {
+static const AVFilterPad mpdecimate_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
@@ -244,15 +244,15 @@ static const AVFilterPad decimate_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_decimate = {
-    .name        = "decimate",
+AVFilter avfilter_vf_mpdecimate = {
+    .name        = "mpdecimate",
     .description = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
     .init        = init,
     .uninit      = uninit,
 
     .priv_size = sizeof(DecimateContext),
     .query_formats = query_formats,
-    .inputs        = decimate_inputs,
-    .outputs       = decimate_outputs,
-    .priv_class    = &decimate_class,
+    .inputs        = mpdecimate_inputs,
+    .outputs       = mpdecimate_outputs,
+    .priv_class    = &mpdecimate_class,
 };
