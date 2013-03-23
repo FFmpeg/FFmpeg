@@ -1,6 +1,29 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.4:
+- atrac3: avoid oversized shifting in decode_bytes()
+- eamad: allocate a dummy reference frame when the real one is missing
+- ffv1: fix calculating slice dimensions for version 2
+- flacdec: simplify bounds checking in flac_probe()
+- h264: check for luma and chroma bit dept being equal (CVE-2013-2277)
+- hqdn3d: Fix out of array read in LOWPASS
+- iff: validate CMAP palette size (CVE-2013-2495)
+- ivi_common: do not call MC for intra frames when dc_transform is unset
+- libmp3lame: use the correct remaining buffer size when flushing
+- lzo: fix overflow checking in copy_backptr()
+- mp3dec: Fix VBR bit rate parsing
+- png: use av_mallocz_array() for the zlib zalloc function
+- roqvideodec: fix a potential infinite loop in roqvideo_decode_frame()
+- shorten: fix various programming mistakes
+- vf_gradfun: fix uninitialized variable use
+- vf_hqdn3d: fix uninitialized variable use
+- vmdaudio: fix invalid reads when packet size is not a multiple of chunk size
+- wmadec: require block_align to be set
+- wmaprodec: require block_align to be set
+- wmaprodec: return an error, not 0, when the input is too small
+- xxan: fix invalid memory access in xan_decode_frame_type0()
+
 version 9.3:
 - h264: fix deadlocks with broken/fuzzed files
 - flvdec: make decoder more robust
