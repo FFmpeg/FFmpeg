@@ -35,6 +35,7 @@ typedef struct ASyncContext {
     int min_delta;          ///< pad/trim min threshold in samples
     int first_frame;        ///< 1 until filter_frame() has processed at least 1 frame with a pts != AV_NOPTS_VALUE
     int64_t first_pts;      ///< user-specified first expected pts, in samples
+    int comp;               ///< current resample compensation
 
     /* options */
     int resample;
@@ -188,6 +189,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                   av_rescale_q(buf->pts, inlink->time_base, outlink->time_base);
     int out_size, ret;
     int64_t delta;
+    int64_t new_pts;
 
     /* buffer data until we get the next timestamp */
     if (s->pts == AV_NOPTS_VALUE || pts == AV_NOPTS_VALUE) {
@@ -214,10 +216,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_size = av_clipl_int32((int64_t)out_size + delta);
     } else {
         if (s->resample) {
-            int comp = av_clip(delta, -s->max_comp, s->max_comp);
-            av_log(ctx, AV_LOG_VERBOSE, "Compensating %d samples per second.\n", comp);
-            avresample_set_compensation(s->avr, comp, inlink->sample_rate);
+            // adjust the compensation if delta is non-zero
+            int delay = get_delay(s);
+            int comp = s->comp + av_clip(delta * inlink->sample_rate / delay,
+                                         -s->max_comp, s->max_comp);
+            if (comp != s->comp) {
+                av_log(ctx, AV_LOG_VERBOSE, "Compensating %d samples per second.\n", comp);
+                if (avresample_set_compensation(s->avr, comp, inlink->sample_rate) == 0) {
+                    s->comp = comp;
+                }
+            }
         }
+        // adjust PTS to avoid monotonicity errors with input PTS jitter
+        pts -= delta;
         delta = 0;
     }
 
@@ -262,9 +273,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     /* drain any remaining buffered data */
     avresample_read(s->avr, NULL, avresample_available(s->avr));
 
-    s->pts = pts - avresample_get_delay(s->avr);
-    ret = avresample_convert(s->avr, NULL, 0, 0, buf->extended_data,
-                             buf->linesize[0], buf->nb_samples);
+    new_pts = pts - avresample_get_delay(s->avr);
+    /* check for s->pts monotonicity */
+    if (new_pts > s->pts) {
+        s->pts = new_pts;
+        ret = avresample_convert(s->avr, NULL, 0, 0, buf->extended_data,
+                                 buf->linesize[0], buf->nb_samples);
+    } else {
+        av_log(ctx, AV_LOG_WARNING, "Non-monotonous timestamps, dropping "
+               "whole buffer.\n");
+        ret = 0;
+    }
 
     s->first_frame = 0;
 fail:
