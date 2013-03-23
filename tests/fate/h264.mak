@@ -368,4 +368,4 @@ fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(SAMPLES)/h
 fate-h264-interlace-crop:                         CMD = framecrc -i $(SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless:                               CMD = framecrc -i $(SAMPLES)/h264/lossless.h264
 
-fate-h264-reinit-%:                               CMD = framecrc -i $(SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10,scale=352:288
+fate-h264-reinit-%:                               CMD = framecrc -i $(SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=352:288
