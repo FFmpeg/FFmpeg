@@ -123,6 +123,19 @@ $(FATE): $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 fate-list:
 	@printf '%s\n' $(sort $(FATE))
 
+coverage.info: TAG = LCOV
+coverage.info:
+	$(M)lcov -d $(CURDIR) -b $(SRC_PATH) --capture -o $@
+
+lcov:  TAG = GENHTML
+lcov: coverage.info
+	$(M)genhtml -o $(CURDIR)/lcov $<
+
+lcov-reset: TAG = LCOV
+lcov-reset:
+	$(M)lcov -d $(CURDIR) --zerocounters
+	$(Q)$(RM) -f coverage.info
+
 clean:: testclean
 
 testclean:
@@ -132,4 +145,5 @@ testclean:
 
 -include $(wildcard tests/*.d)
 
-.PHONY: fate*
+.PHONY: fate* lcov lcov-reset
+.INTERMEDIATE: coverage.info

@@ -550,6 +550,30 @@ why the expected result changed.
 
 Please refer to @url{fate.html}.
 
+@subsection Visualizing Test Coverage
+
+The Libav build system allows visualizing the test coverage in an easy
+manner with the coverage tools @code{gcov}/@code{lcov}.  This involves
+the following steps:
+
+@enumerate
+@item
+    Configure to compile with instrumentation enabled:
+    @code{configure --toolchain=gcov}.
+@item
+    Run your test case, either manually or via FATE. This can be either
+    the full FATE regression suite, or any arbitrary invocation of any
+    front-end tool provided by Libav, in any combination.
+@item
+    Run @code{make lcov} to generate coverage data in HTML format.
+@item
+    View @code{lcov/index.html} in your preferred HTML viewer.
+@end enumerate
+
+You can use the command @code{make lcov-reset} to reset the coverage
+measurements. You will need to rerun @code{make lcov} after running a
+new test.
+
 @anchor{Release process}
 @section Release process
 

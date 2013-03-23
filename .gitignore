@@ -5,6 +5,8 @@
 *.dll
 *.exe
 *.exp
+*.gcda
+*.gcno
 *.h.c
 *.ilk
 *.lib
@@ -22,6 +24,7 @@
 /avprobe
 /avserver
 /config.*
+/coverage.info
 /version.h
 /doc/*.1
 /doc/*.html
@@ -30,6 +33,7 @@
 /doc/avoptions_format.texi
 /doc/doxy/html/
 /doc/print_options
+/lcov/
 /libavcodec/*_tablegen
 /libavcodec/*_tables.c
 /libavcodec/*_tables.h

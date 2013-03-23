@@ -188,6 +188,7 @@ clean::
 	$(RM) $(ALLPROGS)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
+	$(RM) -rf coverage.info lcov
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)

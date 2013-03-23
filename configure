@@ -2173,6 +2173,10 @@ case "$toolchain" in
         ar_default="lib"
         target_os_default="win32"
     ;;
+    gcov)
+        add_cflags  -fprofile-arcs -ftest-coverage
+        add_ldflags -fprofile-arcs -ftest-coverage
+    ;;
     ?*)
         die "Unknown toolchain $toolchain"
     ;;
