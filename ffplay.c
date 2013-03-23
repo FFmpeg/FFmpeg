@@ -1700,6 +1700,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
                     is->frame_last_dropped_pos = pkt->pos;
                     is->frame_last_dropped_pts = dpts;
                     is->frame_drops_early++;
+                    av_frame_unref(frame);
                     ret = 0;
                 }
             }
