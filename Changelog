@@ -11,6 +11,7 @@ version 0.8.6:
 - dsputil: fix invalid array indexing
 - flacdec: simplify bounds checking in flac_probe() to avoid undefined behavior.
 - h264: check for luma and chroma bit depth being equal (CVE-2013-2277)
+- iff: validate CMAP palette size (CVE-2013-2495)
 - indeo3: initialise pixel planes on allocation
 - ivi_common: do not call MC for intra frames when dc_transform is unset
 - lavf: fix arithmetic overflows in avformat_seek_file()
