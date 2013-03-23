@@ -963,10 +963,10 @@ static void do_video_out(AVFormatContext *s,
      * flush, we need to limit them here, before they go into encoder.
      */
     ost->frame_number++;
-  }
 
     if (vstats_filename && frame_size)
         do_video_stats(ost, frame_size);
+  }
 }
 
 static double psnr(double d)
