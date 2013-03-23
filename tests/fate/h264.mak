@@ -193,6 +193,7 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               fate-h264-lossless                                        \
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
+FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-interlace-crop
 FATE_H264-$(call ALLYES, MOV_DEMUXER H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb
 
@@ -384,6 +385,7 @@ fate-h264-conformance-sva_nl1_b:                  CMD = framecrc -vsync drop -i 
 fate-h264-conformance-sva_nl2_e:                  CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/SVA_NL2_E.264
 
 fate-h264-bsf-mp4toannexb:                        CMD = md5 -i $(SAMPLES)/h264/interlaced_crop.mp4 -vcodec copy -bsf h264_mp4toannexb -f h264
+fate-h264-crop-to-container:                      CMD = framemd5 -i $(SAMPLES)/h264/crop-to-container-dims-canon.mov
 fate-h264-extreme-plane-pred:                     CMD = framemd5 -i $(SAMPLES)/h264/extreme-plane-pred.h264
 fate-h264-interlace-crop:                         CMD = framecrc -i $(SAMPLES)/h264/interlaced_crop.mp4 -vframes 3
 fate-h264-lossless:                               CMD = framecrc -i $(SAMPLES)/h264/lossless.h264
