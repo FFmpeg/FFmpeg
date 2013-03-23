@@ -28,7 +28,7 @@ version 9.2:
 - libopencore-amr: Conditionally compile decoder and encoder bits
 - arm: Fall back to runtime cpu feature detection via /proc/cpuinfo
 - xxan: properly handle odd heights
-- msrledec: check bounds before constructing a possibly invalid pointer,
+- msrledec: check bounds before constructing a possibly invalid pointer (CVE-2496)
 - qtrle: fix the topmost line for 1bit
 - aasc: fix output for msrle compression
 - yop: check for input overreads
