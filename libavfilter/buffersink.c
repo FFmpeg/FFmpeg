@@ -63,7 +63,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (sink->fifo) {
         while (av_fifo_size(sink->fifo) >= sizeof(AVFilterBufferRef *)) {
             av_fifo_generic_read(sink->fifo, &frame, sizeof(frame), NULL);
-            av_frame_unref(frame);
+            av_frame_free(&frame);
         }
         av_fifo_free(sink->fifo);
         sink->fifo = NULL;
