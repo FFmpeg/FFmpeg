@@ -85,26 +85,12 @@ AVFILTER_DEFINE_CLASS(histeq);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     HisteqContext *histeq = ctx->priv;
-    const char *shorthand[] = { "strength", "intensity", "antibanding", NULL };
-    int ret;
-
-    histeq->class = &histeq_class;
-    av_opt_set_defaults(histeq);
-
-    if ((ret = av_opt_set_from_string(histeq, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     av_log(ctx, AV_LOG_VERBOSE,
            "strength:%0.3f intensity:%0.3f antibanding:%d\n",
            histeq->strength, histeq->intensity, histeq->antibanding);
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    HisteqContext *histeq = ctx->priv;
-    av_opt_free(histeq);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -283,15 +269,17 @@ static const AVFilterPad histeq_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "strength", "intensity", "antibanding", NULL };
+
 AVFilter avfilter_vf_histeq = {
     .name          = "histeq",
     .description   = NULL_IF_CONFIG_SMALL("Apply global color histogram equalization."),
     .priv_size     = sizeof(HisteqContext),
     .init          = init,
-    .uninit        = uninit,
     .query_formats = query_formats,
 
     .inputs        = histeq_inputs,
     .outputs       = histeq_outputs,
     .priv_class    = &histeq_class,
+    .shorthand     = shorthand,
 };
