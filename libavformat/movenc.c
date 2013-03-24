@@ -2189,9 +2189,11 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
 
     /* Don't set a default sample size, the silverlight player refuses
      * to play files with that set. Don't set a default sample duration,
-     * WMP freaks out if it is set. */
+     * WMP freaks out if it is set. Don't set a base data offset, PIFF
+     * file format says it MUST NOT be set. */
     if (track->mode == MODE_ISM)
-        flags &= ~(MOV_TFHD_DEFAULT_SIZE | MOV_TFHD_DEFAULT_DURATION);
+        flags &= ~(MOV_TFHD_DEFAULT_SIZE | MOV_TFHD_DEFAULT_DURATION |
+                   MOV_TFHD_BASE_DATA_OFFSET);
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "tfhd");
