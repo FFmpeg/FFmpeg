@@ -60,14 +60,6 @@ AVFILTER_DEFINE_CLASS(fieldorder);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FieldOrderContext *fieldorder = ctx->priv;
-    int ret;
-    static const char *shorthand[] = { "order", NULL };
-
-    fieldorder->class = &fieldorder_class;
-    av_opt_set_defaults(fieldorder);
-
-    if ((ret = av_opt_set_from_string(fieldorder, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     fieldorder->dst_tff = fieldorder->order == ORDER_TFF;
     av_log(ctx, AV_LOG_VERBOSE, "tff:%d\n", fieldorder->dst_tff);
@@ -204,6 +196,8 @@ static const AVFilterPad avfilter_vf_fieldorder_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "order", NULL };
+
 AVFilter avfilter_vf_fieldorder = {
     .name          = "fieldorder",
     .description   = NULL_IF_CONFIG_SMALL("Set the field order."),
@@ -213,4 +207,5 @@ AVFilter avfilter_vf_fieldorder = {
     .inputs        = avfilter_vf_fieldorder_inputs,
     .outputs       = avfilter_vf_fieldorder_outputs,
     .priv_class    = &fieldorder_class,
+    .shorthand     = shorthand,
 };
