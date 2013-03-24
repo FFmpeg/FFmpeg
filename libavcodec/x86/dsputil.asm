@@ -552,8 +552,8 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
 %if cpuflag(ssse3)
     pshufb   m0, m2
     pshufb   m1, m2
-    mova     [r0 +  0], m0
-    mova     [r0 + 16], m1
+    mov%1    [r0 +  0], m0
+    mov%1    [r0 + 16], m1
 %else
     pshuflw  m0, m0, 10110001b
     pshuflw  m1, m1, 10110001b
@@ -567,8 +567,8 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
     psrlw    m3, 8
     por      m2, m0
     por      m3, m1
-    mova     [r0 +  0], m2
-    mova     [r0 + 16], m3
+    mov%1    [r0 +  0], m2
+    mov%1    [r0 + 16], m3
 %endif
     add      r0, 32
     add      r1, 32
@@ -581,7 +581,7 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
     mov%1    m0, [r1]
 %if cpuflag(ssse3)
     pshufb   m0, m2
-    mova     [r0], m0
+    mov%1    [r0], m0
 %else
     pshuflw  m0, m0, 10110001b
     pshufhw  m0, m0, 10110001b
@@ -589,7 +589,7 @@ VECTOR_CLIP_INT32 6, 1, 0, 0
     psllw    m0, 8
     psrlw    m2, 8
     por      m2, m0
-    mova     [r0], m2
+    mov%1    [r0], m2
 %endif
     add      r1, 16
     add      r0, 16
