@@ -54,23 +54,6 @@ static const AVOption setfield_options[] = {
 
 AVFILTER_DEFINE_CLASS(setfield);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    SetFieldContext *setfield = ctx->priv;
-    static const char *shorthand[] = { "mode", NULL };
-
-    setfield->class = &setfield_class;
-    av_opt_set_defaults(setfield);
-
-    return av_opt_set_from_string(setfield, args, shorthand, "=", ":");
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    SetFieldContext *setfield = ctx->priv;
-    av_opt_free(setfield);
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     SetFieldContext *setfield = inlink->dst->priv;
@@ -102,14 +85,14 @@ static const AVFilterPad setfield_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "mode", NULL };
+
 AVFilter avfilter_vf_setfield = {
     .name      = "setfield",
     .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
-    .init      = init,
-    .uninit    = uninit,
-
     .priv_size = sizeof(SetFieldContext),
     .inputs    = setfield_inputs,
     .outputs   = setfield_outputs,
     .priv_class = &setfield_class,
+    .shorthand  = shorthand,
 };
