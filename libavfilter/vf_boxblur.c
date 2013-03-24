@@ -105,19 +105,6 @@ AVFILTER_DEFINE_CLASS(boxblur);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     BoxBlurContext *boxblur = ctx->priv;
-    static const char *shorthand[] = {
-        "luma_radius",   "luma_power",
-        "chroma_radius", "chroma_power",
-        "alpha_radius",  "alpha_power",
-        NULL
-    };
-    int ret;
-
-    boxblur->class = &boxblur_class;
-    av_opt_set_defaults(boxblur);
-
-    if ((ret = av_opt_set_from_string(boxblur, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     /* fill missing params */
     if (!boxblur->chroma_param.radius_expr) {
@@ -145,7 +132,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&boxblur->temp[0]);
     av_freep(&boxblur->temp[1]);
-    av_opt_free(boxblur);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -381,6 +367,13 @@ static const AVFilterPad avfilter_vf_boxblur_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = {
+    "luma_radius",   "luma_power",
+    "chroma_radius", "chroma_power",
+    "alpha_radius",  "alpha_power",
+    NULL
+};
+
 AVFilter avfilter_vf_boxblur = {
     .name          = "boxblur",
     .description   = NULL_IF_CONFIG_SMALL("Blur the input."),
@@ -393,4 +386,5 @@ AVFilter avfilter_vf_boxblur = {
     .outputs   = avfilter_vf_boxblur_outputs,
 
     .priv_class = &boxblur_class,
+    .shorthand  = shorthand,
 };
