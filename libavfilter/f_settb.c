@@ -65,27 +65,6 @@ static const AVOption filt_name##_options[] = {                                 
     { NULL }                                                                               \
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
-{
-    SetTBContext *settb = ctx->priv;
-    static const char *shorthand[] = { "tb", NULL };
-    int ret;
-
-    settb->class = class;
-    av_opt_set_defaults(settb);
-
-    if ((ret = av_opt_set_from_string(settb, args, shorthand, "=", ":")) < 0)
-        return ret;
-
-    return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    SetTBContext *settb = ctx->priv;
-    av_opt_free(settb);
-}
-
 static int config_output_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -139,15 +118,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(outlink, frame);
 }
 
+static const char *const shorthand[] = { "tb", NULL };
+
 #if CONFIG_SETTB_FILTER
 
 DEFINE_OPTIONS(settb, VIDEO);
 AVFILTER_DEFINE_CLASS(settb);
-
-static av_cold int settb_init(AVFilterContext *ctx, const char *args)
-{
-    return init(ctx, args, &settb_class);
-}
 
 static const AVFilterPad avfilter_vf_settb_inputs[] = {
     {
@@ -171,14 +147,13 @@ static const AVFilterPad avfilter_vf_settb_outputs[] = {
 AVFilter avfilter_vf_settb = {
     .name      = "settb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the video output link."),
-    .init      = settb_init,
-    .uninit    = uninit,
 
     .priv_size = sizeof(SetTBContext),
 
     .inputs    = avfilter_vf_settb_inputs,
     .outputs   = avfilter_vf_settb_outputs,
     .priv_class = &settb_class,
+    .shorthand  = shorthand,
 };
 #endif
 
@@ -186,11 +161,6 @@ AVFilter avfilter_vf_settb = {
 
 DEFINE_OPTIONS(asettb, AUDIO);
 AVFILTER_DEFINE_CLASS(asettb);
-
-static av_cold int asettb_init(AVFilterContext *ctx, const char *args)
-{
-    return init(ctx, args, &asettb_class);
-}
 
 static const AVFilterPad avfilter_af_asettb_inputs[] = {
     {
@@ -214,12 +184,11 @@ static const AVFilterPad avfilter_af_asettb_outputs[] = {
 AVFilter avfilter_af_asettb = {
     .name      = "asettb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the audio output link."),
-    .init      = asettb_init,
-    .uninit    = uninit,
 
     .priv_size = sizeof(SetTBContext),
     .inputs    = avfilter_af_asettb_inputs,
     .outputs   = avfilter_af_asettb_outputs,
     .priv_class = &asettb_class,
+    .shorthand  = shorthand,
 };
 #endif
