@@ -37,10 +37,10 @@ fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf perms=random,d
 FATE_FILTER-$(call ALLYES, PERMS_FILTER DELOGO_FILTER) += fate-filter-delogo
 
 FATE_YADIF += fate-filter-yadif-mode0
-fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=0
+fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf yadif=0
 
 FATE_YADIF += fate-filter-yadif-mode1
-fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vf yadif=1
+fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 59 -vf yadif=1
 
 FATE_FILTER-$(CONFIG_YADIF_FILTER) += $(FATE_YADIF)
 
