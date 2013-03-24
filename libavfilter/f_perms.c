@@ -52,21 +52,12 @@ static const AVOption options[] = {
 
 static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
-    int ret;
     PermsContext *perms = ctx->priv;
-    static const char *shorthand[] = { "mode", NULL };
-
-    perms->class = class;
-    av_opt_set_defaults(perms);
-
-    if ((ret = av_opt_set_from_string(perms, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     // TODO: add a seed option
     if (perms->mode == MODE_RANDOM)
         av_lfg_init(&perms->lfg, av_get_random_seed());
 
-    av_opt_free(perms);
     return 0;
 }
 
@@ -110,6 +101,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ret;
 }
 
+static const char *const shorthand[] = { "mode", NULL };
+
 #if CONFIG_APERMS_FILTER
 
 #define aperms_options options
@@ -145,6 +138,7 @@ AVFilter avfilter_af_aperms = {
     .inputs      = aperms_inputs,
     .outputs     = aperms_outputs,
     .priv_class  = &aperms_class,
+    .shorthand   = shorthand,
 };
 #endif /* CONFIG_APERMS_FILTER */
 
@@ -183,5 +177,6 @@ AVFilter avfilter_vf_perms = {
     .inputs      = perms_inputs,
     .outputs     = perms_outputs,
     .priv_class  = &perms_class,
+    .shorthand   = shorthand,
 };
 #endif /* CONFIG_PERMS_FILTER */
