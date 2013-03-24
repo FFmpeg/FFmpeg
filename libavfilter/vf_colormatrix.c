@@ -170,7 +170,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     if (color->source == color->dest) {
-        av_log(ctx, AV_LOG_ERROR, "source and destination color space are identical\n");
+        av_log(ctx, AV_LOG_ERROR, "Source and destination color space must not be identical\n");
         return AVERROR(EINVAL);
     }
 
