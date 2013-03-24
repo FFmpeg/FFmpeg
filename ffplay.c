@@ -233,6 +233,7 @@ typedef struct VideoState {
     double frame_last_returned_time;
     double frame_last_filter_delay;
     int64_t frame_last_dropped_pos;
+    int frame_last_dropped_serial;
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
@@ -1340,7 +1341,7 @@ retry:
         if (is->pictq_size == 0) {
             SDL_LockMutex(is->pictq_mutex);
             if (is->frame_last_dropped_pts != AV_NOPTS_VALUE && is->frame_last_dropped_pts > is->frame_last_pts) {
-                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos, 0);
+                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos, is->frame_last_dropped_serial);
                 is->frame_last_dropped_pts = AV_NOPTS_VALUE;
             }
             SDL_UnlockMutex(is->pictq_mutex);
@@ -1699,6 +1700,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
                      clockdiff + ptsdiff - is->frame_last_filter_delay < 0) {
                     is->frame_last_dropped_pos = pkt->pos;
                     is->frame_last_dropped_pts = dpts;
+                    is->frame_last_dropped_serial = *serial;
                     is->frame_drops_early++;
                     av_frame_unref(frame);
                     ret = 0;
