@@ -50,17 +50,6 @@ static const AVOption field_options[] = {
 
 AVFILTER_DEFINE_CLASS(field);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    FieldContext *field = ctx->priv;
-    static const char *shorthand[] = { "type", NULL };
-
-    field->class = &field_class;
-    av_opt_set_defaults(field);
-
-    return av_opt_set_from_string(field, args, shorthand, "=", ":");
-}
-
 static int config_props_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -118,14 +107,15 @@ static const AVFilterPad field_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "type", NULL };
+
 AVFilter avfilter_vf_field = {
     .name          = "field",
     .description   = NULL_IF_CONFIG_SMALL("Extract a field from the input video."),
 
     .priv_size     = sizeof(FieldContext),
-    .init          = init,
-
     .inputs        = field_inputs,
     .outputs       = field_outputs,
     .priv_class    = &field_class,
+    .shorthand     = shorthand,
 };
