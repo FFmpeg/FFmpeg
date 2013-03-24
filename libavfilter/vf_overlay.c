@@ -119,15 +119,6 @@ AVFILTER_DEFINE_CLASS(overlay);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     OverlayContext *over = ctx->priv;
-    static const char *shorthand[] = { "x", "y", NULL };
-    int ret;
-
-    over->class = &overlay_class;
-    av_opt_set_defaults(over);
-
-    ret = av_opt_set_from_string(over, args, shorthand, "=", ":");
-    if (ret < 0)
-        return ret;
 
     if (over->allow_packed_rgb) {
         av_log(ctx, AV_LOG_WARNING,
@@ -140,8 +131,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
-
-    av_opt_free(over);
 
     av_frame_free(&over->overpicref);
     ff_bufqueue_discard_all(&over->queue_main);
@@ -660,6 +649,8 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "x", "y", NULL };
+
 AVFilter avfilter_vf_overlay = {
     .name      = "overlay",
     .description = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
@@ -674,4 +665,5 @@ AVFilter avfilter_vf_overlay = {
     .inputs    = avfilter_vf_overlay_inputs,
     .outputs   = avfilter_vf_overlay_outputs,
     .priv_class = &overlay_class,
+    .shorthand  = shorthand,
 };
