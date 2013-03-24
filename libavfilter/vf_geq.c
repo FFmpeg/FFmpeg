@@ -92,13 +92,6 @@ static av_cold int geq_init(AVFilterContext *ctx, const char *args)
 {
     GEQContext *geq = ctx->priv;
     int plane, ret = 0;
-    static const char *shorthand[] = { "lum_expr", "cb_expr", "cr_expr", "alpha_expr", NULL };
-
-    geq->class = &geq_class;
-    av_opt_set_defaults(geq);
-
-    if ((ret = av_opt_set_from_string(geq, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     if (!geq->expr_str[0]) {
         av_log(ctx, AV_LOG_ERROR, "Luminance expression is mandatory\n");
@@ -215,7 +208,6 @@ static av_cold void geq_uninit(AVFilterContext *ctx)
 
     for (i = 0; i < FF_ARRAY_ELEMS(geq->e); i++)
         av_expr_free(geq->e[i]);
-    av_opt_free(geq);
 }
 
 static const AVFilterPad geq_inputs[] = {
@@ -236,6 +228,8 @@ static const AVFilterPad geq_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "lum_expr", "cb_expr", "cr_expr", "alpha_expr", NULL };
+
 AVFilter avfilter_vf_geq = {
     .name          = "geq",
     .description   = NULL_IF_CONFIG_SMALL("Apply generic equation to each pixel."),
@@ -246,4 +240,5 @@ AVFilter avfilter_vf_geq = {
     .inputs        = geq_inputs,
     .outputs       = geq_outputs,
     .priv_class    = &geq_class,
+    .shorthand     = shorthand,
 };
