@@ -149,14 +149,7 @@ static const AVOption options[] = {
 static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
     SelectContext *select = ctx->priv;
-    const char *shorthand[] = { "expr", NULL };
     int ret;
-
-    select->class = class;
-    av_opt_set_defaults(select);
-
-    if ((ret = av_opt_set_from_string(select, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     if ((ret = av_expr_parse(&select->expr, select->expr_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
@@ -373,7 +366,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_expr_free(select->expr);
     select->expr = NULL;
-    av_opt_free(select);
 
 #if CONFIG_AVCODEC
     if (select->do_scene_detect) {
@@ -401,6 +393,8 @@ static int query_formats(AVFilterContext *ctx)
     }
     return 0;
 }
+
+static const char *const shorthand[] = { "expr", NULL };
 
 #if CONFIG_ASELECT_FILTER
 
@@ -451,6 +445,7 @@ AVFilter avfilter_af_aselect = {
     .inputs    = avfilter_af_aselect_inputs,
     .outputs   = avfilter_af_aselect_outputs,
     .priv_class = &aselect_class,
+    .shorthand  = shorthand,
 };
 #endif /* CONFIG_ASELECT_FILTER */
 
@@ -507,5 +502,6 @@ AVFilter avfilter_vf_select = {
     .inputs    = avfilter_vf_select_inputs,
     .outputs   = avfilter_vf_select_outputs,
     .priv_class = &select_class,
+    .shorthand  = shorthand,
 };
 #endif /* CONFIG_SELECT_FILTER */
