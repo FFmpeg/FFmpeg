@@ -545,7 +545,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
                               pkt->pts + flv->delay + pkt->duration);
     }
 
-    avio_flush(pb);
     av_free(data);
 
     return pb->error;

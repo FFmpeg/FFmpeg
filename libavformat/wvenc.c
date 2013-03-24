@@ -51,7 +51,6 @@ static int wv_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     s->samples += header.samples;
 
     avio_write(ctx->pb, pkt->data, pkt->size);
-    avio_flush(ctx->pb);
 
     return 0;
 }

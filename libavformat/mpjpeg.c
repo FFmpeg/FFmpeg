@@ -44,7 +44,6 @@ static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     snprintf(buf1, sizeof(buf1), "\n--%s\n", BOUNDARY_TAG);
     avio_write(s->pb, buf1, strlen(buf1));
-    avio_flush(s->pb);
     return 0;
 }
 

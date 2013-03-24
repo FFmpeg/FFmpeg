@@ -113,7 +113,6 @@ static int flac_write_trailer(struct AVFormatContext *s)
 static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     avio_write(s->pb, pkt->data, pkt->size);
-    avio_flush(s->pb);
     return 0;
 }
 

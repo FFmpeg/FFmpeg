@@ -53,7 +53,6 @@ static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wl32(pb, pkt->size);
     avio_wl64(pb, pkt->pts);
     avio_write(pb, pkt->data, pkt->size);
-    avio_flush(pb);
 
     return 0;
 }

@@ -558,7 +558,6 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (size & 1)
         avio_w8(pb, 0);
 
-    avio_flush(pb);
     return 0;
 }
 

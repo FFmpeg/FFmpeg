@@ -329,7 +329,6 @@ static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
     gif_image_write_image(pb, 0, 0, enc->width, enc->height,
                           buf, enc->width * 3, AV_PIX_FMT_RGB24);
 
-    avio_flush(s->pb);
     return 0;
 }
 

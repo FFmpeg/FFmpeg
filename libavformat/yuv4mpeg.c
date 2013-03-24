@@ -147,7 +147,6 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
             ptr2 += picture->linesize[2];
         }
     }
-    avio_flush(pb);
     return 0;
 }
 

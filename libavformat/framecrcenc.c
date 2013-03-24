@@ -31,7 +31,6 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     snprintf(buf, sizeof(buf), "%d, %10"PRId64", %10"PRId64", %8d, %8d, 0x%08x\n",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size, crc);
     avio_write(s->pb, buf, strlen(buf));
-    avio_flush(s->pb);
     return 0;
 }
 
