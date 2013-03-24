@@ -31,6 +31,7 @@
 
 typedef struct YopDecContext {
     AVCodecContext *avctx;
+    AVFrame *frame;
 
     int num_pal_colors;
     int first_color[2];
@@ -78,6 +79,13 @@ static const int8_t motion_vector[16][2] =
      { 4, -2}, {-2,  0},
     };
 
+static av_cold void yop_decode_close(AVCodecContext *avctx)
+{
+    YopDecContext *s = avctx->priv_data;
+
+    av_frame_free(&s->frame);
+}
+
 static av_cold int yop_decode_init(AVCodecContext *avctx)
 {
     YopDecContext *s = avctx->priv_data;
@@ -106,6 +114,8 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
                "Palette parameters invalid, header probably corrupt\n");
         return AVERROR_INVALIDDATA;
     }
+
+    s->frame = av_frame_alloc();
 
     return 0;
 }
@@ -178,7 +188,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     YopDecContext *s = avctx->priv_data;
-    AVFrame *frame = data;
+    AVFrame *frame = s->frame;
     int tag, firstcolor, is_odd_frame;
     int ret, i, x, y;
     uint32_t *palette;
@@ -188,7 +198,7 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
         return ret;
 
     if (!avctx->frame_number)
@@ -242,6 +252,9 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         s->dstptr += 2*frame->linesize[0] - x;
     }
 
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
+        return ret;
+
     *got_frame = 1;
     return avpkt->size;
 }
@@ -252,6 +265,7 @@ AVCodec ff_yop_decoder = {
     .id             = AV_CODEC_ID_YOP,
     .priv_data_size = sizeof(YopDecContext),
     .init           = yop_decode_init,
+    .close          = yop_decode_close,
     .decode         = yop_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
 };
