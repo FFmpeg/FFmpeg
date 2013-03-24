@@ -98,26 +98,12 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     CropDetectContext *cd = ctx->priv;
-    static const char *shorthand[] = { "limit", "round", "reset_count", NULL };
-    int ret;
 
     cd->frame_nb = -2;
-    cd->class = &cropdetect_class;
-    av_opt_set_defaults(cd);
-
-    if ((ret = av_opt_set_from_string(cd, args, shorthand, "=", ":")) < 0)
-        return ret;
-
     av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
            cd->limit, cd->round, cd->reset_count);
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    CropDetectContext *cd = ctx->priv;
-    av_opt_free(cd);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -234,15 +220,17 @@ static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "limit", "round", "reset_count", NULL };
+
 AVFilter avfilter_vf_cropdetect = {
     .name        = "cropdetect",
     .description = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
 
     .priv_size = sizeof(CropDetectContext),
     .init      = init,
-    .uninit    = uninit,
     .query_formats = query_formats,
     .inputs    = avfilter_vf_cropdetect_inputs,
     .outputs   = avfilter_vf_cropdetect_outputs,
     .priv_class = &cropdetect_class,
+    .shorthand  = shorthand,
 };
