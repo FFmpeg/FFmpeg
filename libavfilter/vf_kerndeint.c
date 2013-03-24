@@ -59,23 +59,11 @@ static const AVOption kerndeint_options[] = {
 
 AVFILTER_DEFINE_CLASS(kerndeint);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    KerndeintContext *kerndeint = ctx->priv;
-    const char const * shorthand[] = { "thresh", "map", "order", "sharp", "twoway", NULL };
-
-    kerndeint->class = &kerndeint_class;
-    av_opt_set_defaults(kerndeint);
-
-    return av_opt_set_from_string(kerndeint, args, shorthand, "=", ":");
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     KerndeintContext *kerndeint = ctx->priv;
 
     av_free(kerndeint->tmp_data[0]);
-    av_opt_free(kerndeint);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -317,16 +305,18 @@ static const AVFilterPad kerndeint_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "thresh", "map", "order", "sharp", "twoway", NULL };
+
 AVFilter avfilter_vf_kerndeint = {
     .name          = "kerndeint",
     .description   = NULL_IF_CONFIG_SMALL("Apply kernel deinterlacing to the input."),
     .priv_size     = sizeof(KerndeintContext),
-    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
 
     .inputs        = kerndeint_inputs,
     .outputs       = kerndeint_outputs,
 
-    .priv_class = &kerndeint_class,
+    .priv_class    = &kerndeint_class,
+    .shorthand     = shorthand,
 };
