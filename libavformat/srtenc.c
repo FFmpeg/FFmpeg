@@ -98,7 +98,6 @@ static int srt_write_packet(AVFormatContext *avf, AVPacket *pkt)
     avio_write(avf->pb, pkt->data, pkt->size);
     if (write_ts)
         avio_write(avf->pb, "\n\n", 2);
-    avio_flush(avf->pb);
     srt->index++;
     return 0;
 }

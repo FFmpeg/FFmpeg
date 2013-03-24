@@ -441,8 +441,6 @@ static int swf_write_video(AVFormatContext *s,
     put_swf_tag(s, TAG_SHOWFRAME);
     put_swf_end_tag(s);
 
-    avio_flush(s->pb);
-
     return 0;
 }
 

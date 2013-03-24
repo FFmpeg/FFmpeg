@@ -457,7 +457,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     write_pad(pb, WTV_PAD8(pkt->size) - pkt->size);
 
     wctx->serial++;
-    avio_flush(pb);
     return 0;
 }
 

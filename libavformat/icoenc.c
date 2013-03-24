@@ -151,8 +151,6 @@ static int ico_write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_w8(pb, 0x00); // Write bitmask (opaque)
     }
 
-    avio_flush(pb);
-
     return 0;
 }
 

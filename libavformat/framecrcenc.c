@@ -46,7 +46,6 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     }
     av_strlcatf(buf, sizeof(buf), "\n");
     avio_write(s->pb, buf, strlen(buf));
-    avio_flush(s->pb);
     return 0;
 }
 

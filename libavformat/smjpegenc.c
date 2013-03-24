@@ -109,7 +109,6 @@ static int smjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wb32(pb, pkt->pts);
     avio_wb32(pb, pkt->size);
     avio_write(pb, pkt->data, pkt->size);
-    avio_flush(pb);
 
     smc->duration = FFMAX(smc->duration, pkt->pts + pkt->duration);
     return 0;

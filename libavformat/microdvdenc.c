@@ -52,7 +52,6 @@ static int microdvd_write_packet(AVFormatContext *avf, AVPacket *pkt)
         avio_printf(avf->pb, "{%"PRId64"}", pkt->pts + pkt->duration);
     avio_write(avf->pb, pkt->data, pkt->size);
     avio_write(avf->pb, "\n", 1);
-    avio_flush(avf->pb);
     return 0;
 }
 

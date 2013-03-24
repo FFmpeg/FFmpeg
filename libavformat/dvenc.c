@@ -390,7 +390,6 @@ static int dv_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                               pkt->data, pkt->size, &frame);
     if (fsize > 0) {
         avio_write(s->pb, frame, fsize);
-        avio_flush(s->pb);
     }
     return 0;
 }

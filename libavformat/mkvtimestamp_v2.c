@@ -37,7 +37,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_WARNING, "More than one stream unsupported\n");
     snprintf(buf, sizeof(buf), "%" PRId64 "\n", pkt->dts);
     avio_write(s->pb, buf, strlen(buf));
-    avio_flush(s->pb);
     return 0;
 }
 

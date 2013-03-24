@@ -950,8 +950,6 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
         gxf->packet_count = 0;
     }
 
-    avio_flush(pb);
-
     return 0;
 }
 

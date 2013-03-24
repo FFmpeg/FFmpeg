@@ -56,7 +56,6 @@ static int amr_write_header(AVFormatContext *s)
 static int amr_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     avio_write(s->pb, pkt->data, pkt->size);
-    avio_flush(s->pb);
     return 0;
 }
 #endif /* CONFIG_AMR_MUXER */

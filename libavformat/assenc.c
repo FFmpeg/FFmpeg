@@ -58,9 +58,6 @@ static int write_header(AVFormatContext *s)
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     avio_write(s->pb, pkt->data, pkt->size);
-
-    avio_flush(s->pb);
-
     return 0;
 }
 

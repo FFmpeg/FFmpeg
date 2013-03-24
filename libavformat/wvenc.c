@@ -110,7 +110,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_write(pb, ptr, size - 24);
         ptr += size - 24; left -= size - 24;
     }
-    avio_flush(pb);
 
     return 0;
 }
