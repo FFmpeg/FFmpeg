@@ -2056,12 +2056,37 @@ boxblur=min(h\,w)/10:1:min(cw\,ch)/10:1
 
 @section colormatrix
 
-The colormatrix filter allows conversion between any of the following color
-space: BT.709 (@var{bt709}), BT.601 (@var{bt601}), SMPTE-240M (@var{smpte240m})
-and FCC (@var{fcc}).
+Convert color matrix.
 
-The syntax of the parameters is @var{source}:@var{destination}:
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+@var{src}:@var{dst}.
 
+A description of the accepted options follows:
+@table @option
+@item src
+@item dst
+Specify the source and destination color matrix. Both values must be
+specified.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item bt601
+BT.601
+
+@item smpte240m
+SMPTE-240M
+
+@item fcc
+FCC
+@end table
+@end table
+
+For example to convert from BT.601 to SMPTE-240M, use the command:
 @example
 colormatrix=bt601:smpte240m
 @end example
