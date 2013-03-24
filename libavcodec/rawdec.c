@@ -230,12 +230,15 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     len = context->frame_size - (avctx->pix_fmt==AV_PIX_FMT_PAL8 ? AVPALETTE_SIZE : 0);
     if (buf_size < len) {
         av_log(avctx, AV_LOG_ERROR, "Invalid buffer size, packet size %d < expected frame_size %d\n", buf_size, len);
+        av_buffer_unref(&frame->buf[0]);
         return AVERROR(EINVAL);
     }
 
     if ((res = avpicture_fill(picture, buf, avctx->pix_fmt,
-                              avctx->width, avctx->height)) < 0)
+                              avctx->width, avctx->height)) < 0) {
+        av_buffer_unref(&frame->buf[0]);
         return res;
+    }
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE,
@@ -244,8 +247,10 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         if (pal) {
             av_buffer_unref(&context->palette);
             context->palette = av_buffer_alloc(AVPALETTE_SIZE);
-            if (!context->palette)
+            if (!context->palette) {
+                av_buffer_unref(&frame->buf[0]);
                 return AVERROR(ENOMEM);
+            }
             memcpy(context->palette->data, pal, AVPALETTE_SIZE);
             frame->palette_has_changed = 1;
         }
@@ -273,8 +278,10 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) ||
         (desc->flags & PIX_FMT_PSEUDOPAL)) {
         frame->buf[1]  = av_buffer_ref(context->palette);
-        if (!frame->buf[1])
+        if (!frame->buf[1]) {
+            av_buffer_unref(&frame->buf[0]);
             return AVERROR(ENOMEM);
+        }
         frame->data[1] = frame->buf[1]->data;
     }
 
