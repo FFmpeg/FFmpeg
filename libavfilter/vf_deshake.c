@@ -362,23 +362,9 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
-    int ret;
     DeshakeContext *deshake = ctx->priv;
-    static const char *shorthand[] = {
-        "x", "y", "w", "h", "rx", "ry", "edge",
-        "blocksize", "contrast", "search", "filename",
-        NULL
-    };
 
     deshake->refcount = 20; // XXX: add to options?
-
-    deshake->class = &deshake_class;
-    av_opt_set_defaults(deshake);
-
-    ret = av_opt_set_from_string(deshake, args, shorthand, "=", ":");
-    if (ret < 0)
-        return ret;
-
     deshake->blocksize /= 2;
     deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
 
@@ -440,7 +426,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (deshake->avctx)
         avcodec_close(deshake->avctx);
     av_freep(&deshake->avctx);
-    av_opt_free(deshake);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
@@ -572,6 +557,12 @@ static const AVFilterPad deshake_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = {
+    "x", "y", "w", "h", "rx", "ry", "edge",
+    "blocksize", "contrast", "search", "filename",
+    NULL
+};
+
 AVFilter avfilter_vf_deshake = {
     .name          = "deshake",
     .description   = NULL_IF_CONFIG_SMALL("Stabilize shaky video."),
@@ -582,4 +573,5 @@ AVFilter avfilter_vf_deshake = {
     .inputs        = deshake_inputs,
     .outputs       = deshake_outputs,
     .priv_class    = &deshake_class,
+    .shorthand     = shorthand,
 };
