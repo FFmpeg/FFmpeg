@@ -85,17 +85,9 @@ static void ass_log(int ass_level, const char *fmt, va_list args, void *ctx)
     av_log(ctx, level, "\n");
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AssContext *ass = ctx->priv;
-    static const char *shorthand[] = { "filename", NULL };
-    int ret;
-
-    ass->class = class;
-    av_opt_set_defaults(ass);
-
-    if ((ret = av_opt_set_from_string(ass, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     if (!ass->filename) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
@@ -123,7 +115,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AssContext *ass = ctx->priv;
 
-    av_opt_free(ass);
     if (ass->track)
         ass_free_track(ass->track);
     if (ass->renderer)
@@ -210,6 +201,8 @@ static const AVFilterPad ass_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "filename", NULL };
+
 #if CONFIG_ASS_FILTER
 
 static const AVOption ass_options[] = {
@@ -222,7 +215,7 @@ AVFILTER_DEFINE_CLASS(ass);
 static av_cold int init_ass(AVFilterContext *ctx, const char *args)
 {
     AssContext *ass = ctx->priv;
-    int ret = init(ctx, args, &ass_class);
+    int ret = init(ctx, args);
 
     if (ret < 0)
         return ret;
@@ -247,6 +240,7 @@ AVFilter avfilter_vf_ass = {
     .inputs        = ass_inputs,
     .outputs       = ass_outputs,
     .priv_class    = &ass_class,
+    .shorthand     = shorthand,
 };
 #endif
 
@@ -273,7 +267,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
     AssContext *ass = ctx->priv;
 
     /* Init libass */
-    ret = init(ctx, args, &subtitles_class);
+    ret = init(ctx, args);
     if (ret < 0)
         return ret;
     ass->track = ass_new_track(ass->library);
@@ -371,5 +365,6 @@ AVFilter avfilter_vf_subtitles = {
     .inputs        = ass_inputs,
     .outputs       = ass_outputs,
     .priv_class    = &subtitles_class,
+    .shorthand     = shorthand,
 };
 #endif
