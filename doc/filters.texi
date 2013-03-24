@@ -5251,22 +5251,36 @@ Swap U & V plane.
 @section thumbnail
 Select the most representative frame in a given sequence of consecutive frames.
 
-It accepts as argument the frames batch size to analyze (default @var{N}=100);
-in a set of @var{N} frames, the filter will pick one of them, and then handle
-the next batch of @var{N} frames until the end.
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+thumbnail[=@var{n}].
 
-Since the filter keeps track of the whole frames sequence, a bigger @var{N}
+@table @option
+@item n
+Set the frames batch size to analyze; in a set of @var{n} frames, the filter
+will pick one of them, and then handle the next batch of @var{n} frames until
+the end. Default is @code{100}.
+@end table
+
+Since the filter keeps track of the whole frames sequence, a bigger @var{n}
 value will result in a higher memory usage, so a high value is not recommended.
 
-The following example extract one picture each 50 frames:
+@subsection Examples
+
+@itemize
+@item
+Extract one picture each 50 frames:
 @example
 thumbnail=50
 @end example
 
+@item
 Complete example of a thumbnail creation with @command{ffmpeg}:
 @example
 ffmpeg -i in.avi -vf thumbnail,scale=300:200 -frames:v 1 out.png
 @end example
+@end itemize
 
 @section tile
 
