@@ -73,25 +73,11 @@ static int query_formats(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     BlackFrameContext *blackframe = ctx->priv;
-    static const char *shorthand[] = { "amount", "thresh", NULL };
-    int ret;
-
-    blackframe->class = &blackframe_class;
-    av_opt_set_defaults(blackframe);
-
-    if ((ret = av_opt_set_from_string(blackframe, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     av_log(ctx, AV_LOG_VERBOSE, "bamount:%u bthresh:%u\n",
            blackframe->bamount, blackframe->bthresh);
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    BlackFrameContext *blackframe = ctx->priv;
-    av_opt_free(blackframe);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -142,13 +128,14 @@ static const AVFilterPad avfilter_vf_blackframe_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "amount", "thresh", NULL };
+
 AVFilter avfilter_vf_blackframe = {
     .name        = "blackframe",
     .description = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
 
     .priv_size = sizeof(BlackFrameContext),
     .init      = init,
-    .uninit    = uninit,
 
     .query_formats = query_formats,
 
@@ -157,4 +144,5 @@ AVFilter avfilter_vf_blackframe = {
     .outputs   = avfilter_vf_blackframe_outputs,
 
     .priv_class = &blackframe_class,
+    .shorthand  = shorthand,
 };
