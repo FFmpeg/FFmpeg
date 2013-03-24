@@ -97,25 +97,12 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    TInterlaceContext *tinterlace = ctx->priv;
-    static const char *shorthand[] = { "mode", NULL };
-
-    tinterlace->class = &tinterlace_class;
-    av_opt_set_defaults(tinterlace);
-
-    return av_opt_set_from_string(tinterlace, args, shorthand, "=", ":");
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     TInterlaceContext *tinterlace = ctx->priv;
 
     av_frame_free(&tinterlace->cur );
     av_frame_free(&tinterlace->next);
-
-    av_opt_free(tinterlace);
     av_freep(&tinterlace->black_data[0]);
 }
 
@@ -396,14 +383,16 @@ static const AVFilterPad tinterlace_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "mode", NULL };
+
 AVFilter avfilter_vf_tinterlace = {
     .name          = "tinterlace",
     .description   = NULL_IF_CONFIG_SMALL("Perform temporal field interlacing."),
     .priv_size     = sizeof(TInterlaceContext),
-    .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = tinterlace_inputs,
     .outputs       = tinterlace_outputs,
     .priv_class    = &tinterlace_class,
+    .shorthand     = shorthand,
 };
