@@ -52,6 +52,7 @@
 /tests/data/
 /tests/rotozoom
 /tests/tiny_psnr
+/tests/tiny_ssim
 /tests/videogen
 /tests/vsynth1/
 /tools/aviocat
