@@ -133,15 +133,7 @@ static void filter(GradFunContext *ctx, uint8_t *dst, const uint8_t *src, int wi
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
-    int ret;
     GradFunContext *gf = ctx->priv;
-    static const char *shorthand[] = { "strength", "radius", NULL };
-
-    gf->class = &gradfun_class;
-    av_opt_set_defaults(gf);
-
-    if ((ret = av_opt_set_from_string(gf, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     gf->thresh = (1 << 15) / gf->strength;
     gf->radius = av_clip((gf->radius + 1) & ~1, 4, 32);
@@ -257,6 +249,8 @@ static const AVFilterPad avfilter_vf_gradfun_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { "strength", "radius", NULL };
+
 AVFilter avfilter_vf_gradfun = {
     .name          = "gradfun",
     .description   = NULL_IF_CONFIG_SMALL("Debands video quickly using gradients."),
@@ -267,4 +261,5 @@ AVFilter avfilter_vf_gradfun = {
     .inputs        = avfilter_vf_gradfun_inputs,
     .outputs       = avfilter_vf_gradfun_outputs,
     .priv_class    = &gradfun_class,
+    .shorthand     = shorthand,
 };
