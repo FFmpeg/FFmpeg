@@ -287,12 +287,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     CurvesContext *curves = ctx->priv;
     struct keypoint *comp_points[NB_COMP] = {0};
 
-    curves->class = &curves_class;
-    av_opt_set_defaults(curves);
-
-    if ((ret = av_set_options_string(curves, args, "=", ":")) < 0)
-        return ret;
-
     if (curves->preset) {
         char **pts = curves->comp_points_str;
         if (pts[0] || pts[1] || pts[2]) {
@@ -354,7 +348,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         }
     }
 
-    av_opt_free(curves);
     return 0;
 }
 
@@ -424,6 +417,8 @@ static const AVFilterPad curves_outputs[] = {
      { NULL }
 };
 
+static const char *const shorthand[] = { "preset", NULL };
+
 AVFilter avfilter_vf_curves = {
     .name          = "curves",
     .description   = NULL_IF_CONFIG_SMALL("Adjust components curves."),
@@ -433,4 +428,5 @@ AVFilter avfilter_vf_curves = {
     .inputs        = curves_inputs,
     .outputs       = curves_outputs,
     .priv_class    = &curves_class,
+    .shorthand     = shorthand,
 };

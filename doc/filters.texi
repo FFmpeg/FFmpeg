@@ -2328,8 +2328,10 @@ If there is no key point defined in @code{x=0}, the filter will automatically
 insert a @var{(0;0)} point. In the same way, if there is no key point defined
 in @code{x=1}, the filter will automatically insert a @var{(1;1)} point.
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":". If the key of the first options is omitted,
+the arguments are interpreted according to the syntax
+curves[=@var{preset}].
 
 A description of the accepted parameters follows.
 
@@ -2389,6 +2391,12 @@ Here we obtain the following coordinates for each components:
 The previous example can also be achieved with the associated built-in preset:
 @example
 curves=preset=vintage
+@end example
+
+@item
+Or simply:
+@example
+curves=vintage
 @end example
 @end itemize
 
