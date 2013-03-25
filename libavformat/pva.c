@@ -36,7 +36,7 @@ static int pva_probe(AVProbeData * pd) {
     unsigned char *buf = pd->buf;
 
     if (AV_RB16(buf) == PVA_MAGIC && buf[2] && buf[2] < 3 && buf[4] == 0x55)
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
 
     return 0;
 }

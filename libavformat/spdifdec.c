@@ -149,10 +149,10 @@ static int spdif_probe(AVProbeData *p)
 
     if (sync_codes >= 6)
         /* good amount of sync codes but with unexpected offsets */
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
 
     /* some sync codes were found */
-    return AVPROBE_SCORE_MAX / 8;
+    return AVPROBE_SCORE_EXTENSION / 4;
 }
 
 static int spdif_read_header(AVFormatContext *s)

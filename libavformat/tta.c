@@ -36,7 +36,7 @@ static int tta_probe(AVProbeData *p)
     const uint8_t *d = p->buf;
 
     if (d[0] == 'T' && d[1] == 'T' && d[2] == 'A' && d[3] == '1')
-        return 80;
+        return AVPROBE_SCORE_EXTENSION + 30;
     return 0;
 }
 

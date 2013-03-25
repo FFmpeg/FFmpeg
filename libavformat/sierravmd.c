@@ -76,7 +76,7 @@ static int vmd_probe(AVProbeData *p)
         return 0;
 
     /* only return half certainty since this check is a bit sketchy */
-    return AVPROBE_SCORE_MAX / 2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int vmd_read_header(AVFormatContext *s)

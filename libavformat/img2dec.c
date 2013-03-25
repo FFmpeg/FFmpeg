@@ -130,7 +130,7 @@ static int img_read_probe(AVProbeData *p)
         if (av_filename_number_test(p->filename))
             return AVPROBE_SCORE_MAX;
         else
-            return AVPROBE_SCORE_MAX / 2;
+            return AVPROBE_SCORE_EXTENSION;
     }
     return 0;
 }

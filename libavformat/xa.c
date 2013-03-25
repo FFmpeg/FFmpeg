@@ -59,7 +59,7 @@ static int xa_probe(AVProbeData *p)
     if (!channels || channels > 8 || !srate || srate > 192000 ||
         bits_per_sample < 4 || bits_per_sample > 32)
         return 0;
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int xa_read_header(AVFormatContext *s)

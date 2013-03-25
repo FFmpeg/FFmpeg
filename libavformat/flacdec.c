@@ -281,7 +281,7 @@ static int flac_probe(AVProbeData *p)
 {
     if (p->buf_size < 4 || memcmp(p->buf, "fLaC", 4))
         return 0;
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 AVInputFormat ff_flac_demuxer = {

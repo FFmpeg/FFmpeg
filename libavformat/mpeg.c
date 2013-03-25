@@ -82,14 +82,14 @@ static int mpegps_probe(AVProbeData *p)
     }
 
     if(vid+audio > invalid)     /* invalid VDR files nd short PES streams */
-        score= AVPROBE_SCORE_MAX/4;
+        score = AVPROBE_SCORE_EXTENSION / 2;
 
     if(sys>invalid && sys*9 <= pspack*10)
-        return pspack > 2 ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
+        return pspack > 2 ? AVPROBE_SCORE_EXTENSION + 2 : AVPROBE_SCORE_EXTENSION / 2; // 1 more than .mpg
     if(pspack > invalid && (priv1+vid+audio)*10 >= pspack*9)
-        return pspack > 2 ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
+        return pspack > 2 ? AVPROBE_SCORE_EXTENSION + 2 : AVPROBE_SCORE_EXTENSION / 2; // 1 more than .mpg
     if((!!vid ^ !!audio) && (audio > 4 || vid > 1) && !sys && !pspack && p->buf_size>2048 && vid + audio > invalid) /* PES stream */
-        return (audio > 12 || vid > 3) ? AVPROBE_SCORE_MAX/2+2 : AVPROBE_SCORE_MAX/4;
+        return (audio > 12 || vid > 3) ? AVPROBE_SCORE_EXTENSION + 2 : AVPROBE_SCORE_EXTENSION / 2;
 
     //02-Penguin.flac has sys:0 priv1:0 pspack:0 vid:0 audio:1
     //mp3_misidentified_2.mp3 has sys:0 priv1:0 pspack:0 vid:0 audio:6

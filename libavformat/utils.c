@@ -309,7 +309,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
             score = fmt1->read_probe(&lpd);
         } else if (fmt1->extensions) {
             if (av_match_ext(lpd.filename, fmt1->extensions)) {
-                score = 50;
+                score = AVPROBE_SCORE_EXTENSION;
             }
         }
         if (score > *score_max) {
@@ -320,18 +320,18 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
     }
 
     /* a hack for files with huge id3v2 tags -- try to guess by file extension. */
-    if (!fmt && is_opened && *score_max < AVPROBE_SCORE_MAX/4) {
+    if (!fmt && is_opened && *score_max < AVPROBE_SCORE_EXTENSION / 2) {
         while ((fmt = av_iformat_next(fmt)))
             if (fmt->extensions && av_match_ext(lpd.filename, fmt->extensions)) {
-                *score_max = AVPROBE_SCORE_MAX/4;
+                *score_max = AVPROBE_SCORE_EXTENSION / 2;
                 break;
             }
     }
 
-    if (!fmt && id3 && *score_max < AVPROBE_SCORE_MAX/4-1) {
+    if (!fmt && id3 && *score_max < AVPROBE_SCORE_EXTENSION / 2 - 1) {
         while ((fmt = av_iformat_next(fmt)))
             if (fmt->extensions && av_match_ext("mp3", fmt->extensions)) {
-                *score_max = AVPROBE_SCORE_MAX/4-1;
+                *score_max = AVPROBE_SCORE_EXTENSION / 2 - 1;
                 break;
             }
     }

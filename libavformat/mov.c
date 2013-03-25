@@ -2639,7 +2639,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG('p','r','f','l'):
             offset = AV_RB32(p->buf+offset) + offset;
             /* if we only find those cause probedata is too small at least rate them */
-            score = AVPROBE_SCORE_MAX - 50;
+            score = AVPROBE_SCORE_EXTENSION;
             break;
         default:
             /* unrecognized tag */
