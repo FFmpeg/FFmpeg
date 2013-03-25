@@ -39,7 +39,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
-#include "mpegvideo.h"
 #include "thread.h"
 #include "internal.h"
 #include "bytestream.h"
@@ -2199,9 +2198,9 @@ int avcodec_is_open(AVCodecContext *s)
     return !!s->internal;
 }
 
-const uint8_t *avpriv_mpv_find_start_code(const uint8_t *restrict p,
-                                          const uint8_t *end,
-                                          uint32_t * restrict state)
+const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
+                                      const uint8_t *end,
+                                      uint32_t * restrict state)
 {
     int i;
 

@@ -22,9 +22,10 @@
 #include "libavutil/bswap.h"
 #include "libavutil/crc.h"
 #include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
-#include "libavcodec/mpegvideo.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "mpegts.h"
@@ -1019,7 +1020,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         }
 
         do {
-            p = avpriv_mpv_find_start_code(p, buf_end, &state);
+            p = avpriv_find_start_code(p, buf_end, &state);
             av_dlog(s, "nal %d\n", state & 0x1f);
         } while (p < buf_end && (state & 0x1f) != 9 &&
                  (state & 0x1f) != 5 && (state & 0x1f) != 1);

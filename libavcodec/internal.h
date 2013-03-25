@@ -30,6 +30,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
+#include "config.h"
 
 #define FF_SANE_NB_CHANNELS 63U
 
@@ -160,5 +161,9 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
  * ff_get_buffer() to allocate the buffer when needed.
  */
 int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame);
+
+const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
+                                      const uint8_t *end,
+                                      uint32_t *restrict state);
 
 #endif /* AVCODEC_INTERNAL_H */
