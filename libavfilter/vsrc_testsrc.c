@@ -89,8 +89,8 @@ static const AVOption options[] = {
     { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
 
     /* only used by testsrc */
-    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  INT_MIN, INT_MAX, FLAGS },
-    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  INT_MIN, INT_MAX, FLAGS },
+    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
+    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
     { NULL },
 };
 
@@ -483,11 +483,16 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     /* draw digits */
     seg_size = width / 80;
     if (seg_size >= 1 && height >= 13 * seg_size) {
+        int64_t p10decimals = 1;
         double time = av_q2d(test->time_base) * test->nb_frame *
                       pow(10, test->nb_decimals);
-        if (time > INT_MAX)
+        if (time >= INT_MAX)
             return;
-        second = (int)time;
+
+        for(x=0; x<test->nb_decimals; x++)
+            p10decimals *= 10;
+
+        second = av_rescale_rnd(test->nb_frame * test->time_base.num, p10decimals, test->time_base.den, AV_ROUND_ZERO);
         x = width - (width - seg_size * 64) / 2;
         y = (height - seg_size * 13) / 2;
         p = data + (x*3 + y * frame->linesize[0]);
