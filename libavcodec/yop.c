@@ -79,11 +79,13 @@ static const int8_t motion_vector[16][2] =
      { 4, -2}, {-2,  0},
     };
 
-static av_cold void yop_decode_close(AVCodecContext *avctx)
+static av_cold int yop_decode_close(AVCodecContext *avctx)
 {
     YopDecContext *s = avctx->priv_data;
 
     av_frame_free(&s->frame);
+
+    return 0;
 }
 
 static av_cold int yop_decode_init(AVCodecContext *avctx)
