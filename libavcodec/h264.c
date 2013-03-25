@@ -4702,7 +4702,6 @@ av_cold void ff_h264_free_context(H264Context *h)
 static av_cold int h264_decode_end(AVCodecContext *avctx)
 {
     H264Context *h    = avctx->priv_data;
-    int i;
 
     ff_h264_free_context(h);
 
