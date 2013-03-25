@@ -35,6 +35,7 @@ struct keypoint {
 
 typedef struct {
     const AVClass *class;
+    char *preset;
     char *comp_points_str[NB_COMP];
     uint8_t graph[NB_COMP][256];
 } CurvesContext;
@@ -48,10 +49,55 @@ static const AVOption curves_options[] = {
     { "g",     "set green points coordinates", OFFSET(comp_points_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "blue",  "set blue points coordinates",  OFFSET(comp_points_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "b",     "set blue points coordinates",  OFFSET(comp_points_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { "preset", "select a color curves preset", OFFSET(preset), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(curves);
+
+static const struct {
+    const char *name;
+    const char *r;
+    const char *g;
+    const char *b;
+} curves_presets[] = { {
+        "color_negative",
+        "0/1 0.129/1 0.466/0.498 0.725/0 1/0",
+        "0/1 0.109/1 0.301/0.498 0.517/0 1/0",
+        "0/1 0.098/1 0.235/0.498 0.423/0 1/0",
+    },{
+        "cross_process",
+        "0.25/0.156 0.501/0.501 0.686/0.745",
+        "0.25/0.188 0.38/0.501 0.745/0.815 1/0.815",
+        "0.231/0.094 0.709/0.874",
+    },{
+        "darker", "0.5/0.4", "0.5/0.4", "0.5/0.4",
+    },{
+        "increase_contrast",
+        "0.149/0.066 0.831/0.905 0.905/0.98",
+        "0.149/0.066 0.831/0.905 0.905/0.98",
+        "0.149/0.066 0.831/0.905 0.905/0.98",
+    },{
+        "lighter", "0.4/0.5", "0.4/0.5", "0.4/0.5",
+    },{
+        "linear_contrast",
+        "0.305/0.286 0.694/0.713",
+        "0.305/0.286 0.694/0.713",
+        "0.305/0.286 0.694/0.713",
+    },{
+        "medium_contrast",
+        "0.286/0.219 0.639/0.643",
+        "0.286/0.219 0.639/0.643",
+        "0.286/0.219 0.639/0.643",
+    },{
+        "negative", "0/1 1/0", "0/1 1/0", "0/1 1/0",
+    },{
+        "vintage",
+        "0/0.11 0.42/0.51 1/0.95",
+        "0.50/0.48",
+        "0/0.22 0.49/0.44 1/0.8",
+    }
+};
 
 static struct keypoint *make_point(double x, double y, struct keypoint *next)
 {
@@ -246,6 +292,33 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     if ((ret = av_set_options_string(curves, args, "=", ":")) < 0)
         return ret;
+
+    if (curves->preset) {
+        char **pts = curves->comp_points_str;
+        if (pts[0] || pts[1] || pts[2]) {
+            av_log(ctx, AV_LOG_ERROR, "It is not possible to mix a preset "
+                   "with explicit points placements\n");
+            return AVERROR(EINVAL);
+        }
+        for (i = 0; i < FF_ARRAY_ELEMS(curves_presets); i++) {
+            if (!strcmp(curves->preset, curves_presets[i].name)) {
+                pts[0] = av_strdup(curves_presets[i].r);
+                pts[1] = av_strdup(curves_presets[i].g);
+                pts[2] = av_strdup(curves_presets[i].b);
+                if (!pts[0] || !pts[1] || !pts[2])
+                    return AVERROR(ENOMEM);
+                break;
+            }
+        }
+        if (i == FF_ARRAY_ELEMS(curves_presets)) {
+            av_log(ctx, AV_LOG_ERROR, "Preset '%s' not found. Available presets:",
+                   curves->preset);
+            for (i = 0; i < FF_ARRAY_ELEMS(curves_presets); i++)
+                av_log(ctx, AV_LOG_ERROR, " %s", curves_presets[i].name);
+            av_log(ctx, AV_LOG_ERROR, ".\n");
+            return AVERROR(EINVAL);
+        }
+    }
 
     for (i = 0; i < NB_COMP; i++) {
         ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i]);

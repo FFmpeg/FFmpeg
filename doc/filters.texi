@@ -2340,6 +2340,22 @@ Set the key points for the red component.
 Set the key points for the green component.
 @item blue, b
 Set the key points for the blue component.
+@item preset
+Select one of the available color presets. This option can not be used in
+addition to the @option{r}, @option{g}, @option{b} parameters.
+Available presets are:
+@table @samp
+@item color_negative
+@item cross_process
+@item darker
+@item increase_contrast
+@item lighter
+@item linear_contrast
+@item medium_contrast
+@item negative
+@item vintage
+@end table
+Default is unset.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
@@ -2368,6 +2384,12 @@ Here we obtain the following coordinates for each components:
 @item blue
 @code{(0;0.22) (0.49;0.44) (1;0.80)}
 @end table
+
+@item
+The previous example can also be achieved with the associated built-in preset:
+@example
+curves=preset=vintage
+@end example
 @end itemize
 
 @section decimate
