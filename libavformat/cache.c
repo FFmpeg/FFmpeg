@@ -36,6 +36,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
+#include "libavutil/md5.h"
 #include "avformat.h"
 #include "os_support.h"
 #include "url.h"
@@ -63,6 +64,7 @@ typedef struct Segment {
 typedef struct Context {
   URLContext *inner;
   char *cache_dir;
+  char cache_key[33];
   Segment *seg;
   int8_t cache_fill;
   pthread_t thread;
@@ -74,19 +76,19 @@ typedef struct Context {
 
 static void* cache_fill_thread(void* arg)
 {
-  char cache_path[128];
+  char seg_path[1024];
   uint8_t buf[1024];
   int r, r_;
   Context *c = (Context *)arg;
   Segment *seg = (Segment *)av_mallocz(sizeof(Segment));
 
-  snprintf(cache_path, 128, "%s/seg%p", c->cache_dir, seg);
-  seg->path = av_strdup(cache_path);
+  snprintf(seg_path, 1024, "%s/seg-%s-0", c->cache_dir, c->cache_key);
+  seg->path = av_strdup(seg_path);
   seg->begin = 0;
   seg->length = 0;
   seg->position = 0;
-  seg->fdw = open(cache_path, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
-  seg->fdr = open(cache_path, O_RDWR | O_BINARY, 0600);
+  seg->fdw = open(seg_path, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
+  seg->fdr = open(seg_path, O_RDWR | O_BINARY, 0600);
   write(seg->fdw, &(seg->begin), sizeof(uint64_t));
   write(seg->fdw, &(seg->length), sizeof(uint64_t));
   lseek(seg->fdr, HEADER, SEEK_SET);
@@ -118,17 +120,21 @@ static void* cache_fill_thread(void* arg)
 
 static int cache_open(URLContext *h, const char *arg, int flags)
 {
-  char *url;
-  int dlen, opened;
-
+  char *url, md5[16];
+  int dlen, opened, i;
   Context *c= h->priv_data;
 
-  arg = (strchr(arg, ':')) + 1;
-  url = (strchr(arg, ':')) + 1;
+  arg = strchr(arg, ':') + 1;
+  url = strchr(arg, ':') + 1;
   dlen = strlen(arg) - strlen(url);
   c->cache_dir = av_mallocz(sizeof(char) * dlen);
   av_strlcpy(c->cache_dir, arg, dlen);
-  av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s\n", c->cache_dir, url);
+
+  av_md5_sum(md5, url, strlen(url));
+  for(i = 0; i < 16; ++i) {
+    snprintf(&c->cache_key[i*2], 33, "%02x", (unsigned int)md5[i]);
+  }
+  av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %s\n", c->cache_dir, c->cache_key, url);
 
   opened = ffurl_open(&c->inner, url, flags, &h->interrupt_callback, NULL);
   if (opened == 0) {
