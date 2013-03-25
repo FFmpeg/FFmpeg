@@ -358,5 +358,5 @@ libAVMemInputPin_Destroy(libAVMemInputPin *this)
 {
     libAVPin *pin = (libAVPin *) ((uint8_t *) this - imemoffset);
     dshowdebug("libAVMemInputPin_Destroy(%p)\n", this);
-    return libAVPin_Destroy(pin);
+    libAVPin_Destroy(pin);
 }
