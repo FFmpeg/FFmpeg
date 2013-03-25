@@ -396,14 +396,14 @@ static int resolve_host(struct in_addr *sin_addr, const char *hostname)
     return 0;
 }
 
-static char *ctime1(char *buf2)
+static char *ctime1(char *buf2, int buf_size)
 {
     time_t ti;
     char *p;
 
     ti = time(NULL);
     p = ctime(&ti);
-    strcpy(buf2, p);
+    av_strlcpy(buf2, p, buf_size);
     p = buf2 + strlen(p) - 1;
     if (*p == '\n')
         *p = '\0';
@@ -416,7 +416,7 @@ static void http_vlog(const char *fmt, va_list vargs)
     if (logfile) {
         if (print_prefix) {
             char buf[32];
-            ctime1(buf);
+            ctime1(buf, sizeof(buf));
             fprintf(logfile, "%s ", buf);
         }
         print_prefix = strstr(fmt, "\n") != NULL;
