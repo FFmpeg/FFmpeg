@@ -406,7 +406,7 @@ static int gif_parse_next_image(GifState *s, AVFrame *frame)
         int code = bytestream2_get_byte(&s->gb);
         int ret;
 
-        av_dlog(s->avctx, "code=%02x '%c'\n", code, code);
+        av_log(s->avctx, AV_LOG_DEBUG, "code=%02x '%c'\n", code, code);
 
         switch (code) {
         case GIF_IMAGE_SEPARATOR:
