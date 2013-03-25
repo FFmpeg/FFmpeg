@@ -24,7 +24,7 @@ install-libs-$(CONFIG_STATIC): install-lib$(NAME)-static
 install-libs-$(CONFIG_SHARED): install-lib$(NAME)-shared
 
 define RULES
-$(TOOLS):     THISLIB = $(FULLNAME:%=$(LD_LIB))
+$(TOOLS):     THISLIB = $(NAME:%=$(LD_LIB))
 $(TESTPROGS): THISLIB = $(SUBDIR)$(LIBNAME)
 
 $(TESTPROGS) $(TOOLS): %$(EXESUF): %.o

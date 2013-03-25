@@ -283,7 +283,6 @@ Toolchain options:
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --optflags=OPTFLAGS      override optimization-related compiler flags
-  --build-suffix=SUFFIX    library name suffix []
   --enable-pic             build position-independent code
   --enable-thumb           compile for Thumb instruction set
   --enable-lto             use link-time optimization
@@ -1787,7 +1786,6 @@ CMDLINE_SET="
     ar
     arch
     as
-    build_suffix
     cc
     objcc
     cpu
@@ -2529,11 +2527,10 @@ enable d3d11va dxva2 vda vdpau
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
 LIBPREF="lib"
 LIBSUF=".a"
-FULLNAME='$(NAME)$(BUILDSUF)'
-LIBNAME='$(LIBPREF)$(FULLNAME)$(LIBSUF)'
+LIBNAME='$(LIBPREF)$(NAME)$(LIBSUF)'
 SLIBPREF="lib"
 SLIBSUF=".so"
-SLIBNAME='$(SLIBPREF)$(FULLNAME)$(SLIBSUF)'
+SLIBNAME='$(SLIBPREF)$(NAME)$(SLIBSUF)'
 SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
@@ -3843,8 +3840,8 @@ case $target_os in
         enabled x86_32 && append SHFLAGS -Wl,-read_only_relocs,suppress
         add_ldflags -Wl,-dynamic,-search_paths_first
         SLIBSUF=".dylib"
-        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
-        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
+        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME).$(LIBVERSION)$(SLIBSUF)'
+        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME).$(LIBMAJOR)$(SLIBSUF)'
         objformat="macho"
         enabled x86_64 && objformat="macho64"
         enabled_any pic shared ||
@@ -3872,8 +3869,8 @@ case $target_os in
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
-        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
-        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
+        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_EXTRA_CMD=-'sed -e "s/ @[^ ]*//" $$(@:$(SLIBSUF)=.orig.def) > $$(@:$(SLIBSUF)=.def); $(DLLTOOL) -m $(LIBTARGET) -d $$(@:$(SLIBSUF)=.def) -l $(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib) -D $(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
@@ -3897,8 +3894,8 @@ case $target_os in
         shlibdir_default="$bindir_default"
         SLIBPREF=""
         SLIBSUF=".dll"
-        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
-        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
+        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_CREATE_DEF_CMD='$(SRC_PATH)/compat/windows/makedef $(SUBDIR)lib$(NAME).ver $(OBJS) > $$(@:$(SLIBSUF)=.def)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
@@ -3914,12 +3911,12 @@ case $target_os in
         shlibdir_default="$bindir_default"
         SLIBPREF="cyg"
         SLIBSUF=".dll"
-        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
-        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
+        SLIBNAME_WITH_VERSION='$(SLIBPREF)$(NAME)-$(LIBVERSION)$(SLIBSUF)'
+        SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(NAME)-$(LIBMAJOR)$(SLIBSUF)'
         SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
         SLIB_INSTALL_LINKS=
-        SLIB_INSTALL_EXTRA_LIB='lib$(FULLNAME).dll.a'
-        SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(FULLNAME).dll.a'
+        SLIB_INSTALL_EXTRA_LIB='lib$(NAME).dll.a'
+        SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(NAME).dll.a'
         objformat="win32"
         enable dos_paths
         ;;
@@ -5113,9 +5110,6 @@ if test "$host_cc" != "$cc"; then
     echo "host C library            $host_libc_type"
 fi
 echo "ARCH                      $arch ($cpu)"
-if test "$build_suffix" != ""; then
-    echo "build suffix              $build_suffix"
-fi
 if test "$extra_version" != ""; then
     echo "version string suffix     $extra_version"
 fi
@@ -5264,8 +5258,6 @@ LDEXEFLAGS=$LDEXEFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 STRIPFLAGS=$STRIPFLAGS
 YASMFLAGS=$YASMFLAGS
-BUILDSUF=$build_suffix
-FULLNAME=$FULLNAME
 LIBPREF=$LIBPREF
 LIBSUF=$LIBSUF
 LIBNAME=$LIBNAME
@@ -5417,7 +5409,7 @@ lib_version(){
 
 pkgconfig_generate(){
     name=$1
-    shortname=${name#lib}${build_suffix}
+    shortname=${name#lib}
     comment=$2
     version=$3
     libs=$4
