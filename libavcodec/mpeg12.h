@@ -72,5 +72,7 @@ static inline int decode_dc(GetBitContext *gb, int component)
 }
 
 int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n);
+void ff_mpeg1_clean_buffers(MpegEncContext *s);
+int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
 
 #endif /* AVCODEC_MPEG12_H */
