@@ -45,7 +45,6 @@ typedef struct FPSContext {
     int64_t pts;            ///< pts of the first frame currently in the fifo
 
     AVRational framerate;   ///< target framerate
-    char *fps;              ///< a string describing target framerate
     int rounding;           ///< AVRounding method for timestamps
 
     /* statistics */
@@ -59,7 +58,7 @@ typedef struct FPSContext {
 #define V AV_OPT_FLAG_VIDEO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption fps_options[] = {
-    { "fps", "A string describing desired output framerate", OFFSET(fps), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = V|F },
+    { "fps", "A string describing desired output framerate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, .flags = V|F },
     { "round", "set rounding method for timestamps", OFFSET(rounding), AV_OPT_TYPE_INT, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
     { "zero", "round towards 0",      OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_ZERO     }, 0, 5, V|F, "round" },
     { "inf",  "round away from 0",    OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_INF      }, 0, 5, V|F, "round" },
@@ -74,12 +73,6 @@ AVFILTER_DEFINE_CLASS(fps);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     FPSContext *s = ctx->priv;
-    int ret;
-
-    if ((ret = av_parse_video_rate(&s->framerate, s->fps)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing framerate %s.\n", s->fps);
-        return ret;
-    }
 
     if (!(s->fifo = av_fifo_alloc(2*sizeof(AVFrame*))))
         return AVERROR(ENOMEM);
