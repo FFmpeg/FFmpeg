@@ -6249,6 +6249,12 @@ Make the frame read-only if writable, and writable if read-only.
 @item random
 Set each output frame read-only or writable randomly.
 @end table
+
+@item seed
+Set the seed for the @var{random} mode, must be an integer included between
+@code{0} and @code{UINT32_MAX}. If not specified, or if explicitly set to
+@code{-1}, the filter will try to use a good random seed on a best effort
+basis.
 @end table
 
 Note: in case of auto-inserted filter between the permission filter and the

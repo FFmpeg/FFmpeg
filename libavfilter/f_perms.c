@@ -34,6 +34,7 @@ enum mode {
 typedef struct {
     const AVClass *class;
     AVLFG lfg;
+    int64_t random_seed;
     enum mode mode;
 } PermsContext;
 
@@ -47,6 +48,7 @@ static const AVOption options[] = {
         { "rw",     "set all output frames writable",   0, AV_OPT_TYPE_CONST, {.i64 = MODE_RW},         INT_MIN, INT_MAX, FLAGS, "mode" },
         { "toggle", "switch permissions",               0, AV_OPT_TYPE_CONST, {.i64 = MODE_TOGGLE},     INT_MIN, INT_MAX, FLAGS, "mode" },
         { "random", "set permissions randomly",         0, AV_OPT_TYPE_CONST, {.i64 = MODE_RANDOM},     INT_MIN, INT_MAX, FLAGS, "mode" },
+    { "seed", "set the seed for the random mode", OFFSET(random_seed), AV_OPT_TYPE_INT64, {.i64 = -1}, -1, UINT32_MAX, FLAGS },
     { NULL }
 };
 
@@ -54,9 +56,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     PermsContext *perms = ctx->priv;
 
-    // TODO: add a seed option
-    if (perms->mode == MODE_RANDOM)
-        av_lfg_init(&perms->lfg, av_get_random_seed());
+    if (perms->mode == MODE_RANDOM) {
+        uint32_t seed;
+
+        if (perms->random_seed == -1)
+            perms->random_seed = av_get_random_seed();
+        seed = perms->random_seed;
+        av_log(ctx, AV_LOG_INFO, "random seed: 0x%08x\n", seed);
+        av_lfg_init(&perms->lfg, seed);
+    }
 
     return 0;
 }
