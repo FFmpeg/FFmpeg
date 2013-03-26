@@ -47,8 +47,7 @@ typedef struct {
     int buf_prev_row_idx, buf_row_idx;
     uint8_t rule;
     uint64_t pts;
-    AVRational time_base;
-    char *rate;                 ///< video frame rate
+    AVRational frame_rate;
     double   random_fill_ratio;
     uint32_t random_seed;
     int stitch, scroll, start_full;
@@ -65,8 +64,8 @@ static const AVOption cellauto_options[] = {
     { "f",        "read initial pattern from file", OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "pattern",  "set initial pattern", OFFSET(pattern), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "p",        "set initial pattern", OFFSET(pattern), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
-    { "rate",     "set video rate", OFFSET(rate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
-    { "r",        "set video rate", OFFSET(rate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "rate",     "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "r",        "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "size",     "set video size", OFFSET(w),    AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, FLAGS },
     { "s",        "set video size", OFFSET(w),    AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, FLAGS },
     { "rule",     "set rule",       OFFSET(rule), AV_OPT_TYPE_INT,    {.i64 = 110},  0, 255, FLAGS },
@@ -163,7 +162,6 @@ static int init_pattern_from_file(AVFilterContext *ctx)
 static int init(AVFilterContext *ctx, const char *args)
 {
     CellAutoContext *cellauto = ctx->priv;
-    AVRational frame_rate;
     int ret;
 
     cellauto->class = &cellauto_class;
@@ -172,16 +170,8 @@ static int init(AVFilterContext *ctx, const char *args)
     if ((ret = av_set_options_string(cellauto, args, "=", ":")) < 0)
         return ret;
 
-    if ((ret = av_parse_video_rate(&frame_rate, cellauto->rate)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", cellauto->rate);
-        return AVERROR(EINVAL);
-    }
-
     if (!cellauto->w && !cellauto->filename && !cellauto->pattern)
         av_opt_set(cellauto, "size", "320x518", 0);
-
-    cellauto->time_base.num = frame_rate.den;
-    cellauto->time_base.den = frame_rate.num;
 
     if (cellauto->filename && cellauto->pattern) {
         av_log(ctx, AV_LOG_ERROR, "Only one of the filename or pattern options can be used\n");
@@ -215,7 +205,7 @@ static int init(AVFilterContext *ctx, const char *args)
 
     av_log(ctx, AV_LOG_VERBOSE,
            "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%u\n",
-           cellauto->w, cellauto->h, frame_rate.num, frame_rate.den,
+           cellauto->w, cellauto->h, cellauto->frame_rate.num, cellauto->frame_rate.den,
            cellauto->rule, cellauto->stitch, cellauto->scroll, cellauto->start_full,
            cellauto->random_seed);
     return 0;
@@ -236,7 +226,7 @@ static int config_props(AVFilterLink *outlink)
 
     outlink->w = cellauto->w;
     outlink->h = cellauto->h;
-    outlink->time_base = cellauto->time_base;
+    outlink->time_base = av_inv_q(cellauto->frame_rate);
 
     return 0;
 }
