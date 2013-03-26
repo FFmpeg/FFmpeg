@@ -435,7 +435,6 @@ fail:
 void ff_mpeg_unref_picture(MpegEncContext *s, Picture *pic)
 {
     int off = offsetof(Picture, mb_mean) + sizeof(pic->mb_mean);
-    pic->period_since_free = 0;
 
     pic->tf.f = &pic->f;
     /* WM Image / Screen codecs allocate internal buffers with different
@@ -701,7 +700,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         if (s1->picture[i].f.data[0] &&
             (ret = ff_mpeg_ref_picture(s, &s->picture[i], &s1->picture[i])) < 0)
             return ret;
-        s->picture[i].period_since_free ++;
     }
 
 #define UPDATE_PICTURE(pic)\
@@ -1400,10 +1398,6 @@ void ff_release_unused_pictures(MpegEncContext*s, int remove_current)
 
 static inline int pic_is_unused(MpegEncContext *s, Picture *pic)
 {
-    if (   (s->avctx->active_thread_type & FF_THREAD_FRAME)
-        && pic->f.qscale_table //check if the frame has anything allocated
-        && pic->period_since_free < s->avctx->thread_count)
-        return 0;
     if (pic == s->last_picture_ptr)
         return 0;
     if (pic->f.data[0] == NULL)

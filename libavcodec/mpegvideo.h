@@ -171,7 +171,6 @@ typedef struct Picture{
 
     int b_frame_score;          /* */
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
-    int period_since_free;      ///< "cycles" since this Picture has been freed
 
     int reference;
     int shared;
