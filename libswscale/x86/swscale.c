@@ -206,7 +206,7 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
 #endif /* HAVE_INLINE_ASM */
 
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
-extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
+void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
                                                 SwsContext *c, int16_t *data, \
                                                 int dstW, const uint8_t *src, \
                                                 const int16_t *filter, \
@@ -241,9 +241,9 @@ SCALE_FUNCS_SSE(ssse3);
 SCALE_FUNCS_SSE(sse4);
 
 #define VSCALEX_FUNC(size, opt) \
-extern void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filterSize, \
-                                               const int16_t **src, uint8_t *dest, int dstW, \
-                                               const uint8_t *dither, int offset)
+void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filterSize, \
+                                        const int16_t **src, uint8_t *dest, int dstW, \
+                                        const uint8_t *dither, int offset)
 #define VSCALEX_FUNCS(opt) \
     VSCALEX_FUNC(8,  opt); \
     VSCALEX_FUNC(9,  opt); \
@@ -258,8 +258,8 @@ VSCALEX_FUNC(16, sse4);
 VSCALEX_FUNCS(avx);
 
 #define VSCALE_FUNC(size, opt) \
-extern void ff_yuv2plane1_ ## size ## _ ## opt(const int16_t *src, uint8_t *dst, int dstW, \
-                                               const uint8_t *dither, int offset)
+void ff_yuv2plane1_ ## size ## _ ## opt(const int16_t *src, uint8_t *dst, int dstW, \
+                                        const uint8_t *dither, int offset)
 #define VSCALE_FUNCS(opt1, opt2) \
     VSCALE_FUNC(8,  opt1); \
     VSCALE_FUNC(9,  opt2); \
@@ -274,12 +274,12 @@ VSCALE_FUNC(16, sse4);
 VSCALE_FUNCS(avx, avx);
 
 #define INPUT_Y_FUNC(fmt, opt) \
-extern void ff_ ## fmt ## ToY_  ## opt(uint8_t *dst, const uint8_t *src, \
-                                       int w, uint32_t *unused)
+void ff_ ## fmt ## ToY_  ## opt(uint8_t *dst, const uint8_t *src, \
+                                int w, uint32_t *unused)
 #define INPUT_UV_FUNC(fmt, opt) \
-extern void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
-                                       const uint8_t *src, const uint8_t *unused1, \
-                                       int w, uint32_t *unused2)
+void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
+                                const uint8_t *src, const uint8_t *unused1, \
+                                int w, uint32_t *unused2)
 #define INPUT_FUNC(fmt, opt) \
     INPUT_Y_FUNC(fmt, opt); \
     INPUT_UV_FUNC(fmt, opt)

@@ -23,80 +23,80 @@
 #include "libavutil/x86/cpu.h"
 #include "libavresample/audio_mix.h"
 
-extern void ff_mix_2_to_1_fltp_flt_sse(float **src, float **matrix, int len,
-                                       int out_ch, int in_ch);
-extern void ff_mix_2_to_1_fltp_flt_avx(float **src, float **matrix, int len,
-                                       int out_ch, int in_ch);
+void ff_mix_2_to_1_fltp_flt_sse(float **src, float **matrix, int len,
+                                int out_ch, int in_ch);
+void ff_mix_2_to_1_fltp_flt_avx(float **src, float **matrix, int len,
+                                int out_ch, int in_ch);
 
-extern void ff_mix_2_to_1_s16p_flt_sse2(int16_t **src, float **matrix, int len,
-                                        int out_ch, int in_ch);
-extern void ff_mix_2_to_1_s16p_flt_sse4(int16_t **src, float **matrix, int len,
-                                        int out_ch, int in_ch);
+void ff_mix_2_to_1_s16p_flt_sse2(int16_t **src, float **matrix, int len,
+                                 int out_ch, int in_ch);
+void ff_mix_2_to_1_s16p_flt_sse4(int16_t **src, float **matrix, int len,
+                                 int out_ch, int in_ch);
 
-extern void ff_mix_2_to_1_s16p_q8_sse2(int16_t **src, int16_t **matrix,
-                                       int len, int out_ch, int in_ch);
+void ff_mix_2_to_1_s16p_q8_sse2(int16_t **src, int16_t **matrix,
+                                int len, int out_ch, int in_ch);
 
-extern void ff_mix_1_to_2_fltp_flt_sse(float **src, float **matrix, int len,
-                                       int out_ch, int in_ch);
-extern void ff_mix_1_to_2_fltp_flt_avx(float **src, float **matrix, int len,
-                                       int out_ch, int in_ch);
+void ff_mix_1_to_2_fltp_flt_sse(float **src, float **matrix, int len,
+                                int out_ch, int in_ch);
+void ff_mix_1_to_2_fltp_flt_avx(float **src, float **matrix, int len,
+                                int out_ch, int in_ch);
 
-extern void ff_mix_1_to_2_s16p_flt_sse2(int16_t **src, float **matrix, int len,
-                                        int out_ch, int in_ch);
-extern void ff_mix_1_to_2_s16p_flt_sse4(int16_t **src, float **matrix, int len,
-                                        int out_ch, int in_ch);
-extern void ff_mix_1_to_2_s16p_flt_avx (int16_t **src, float **matrix, int len,
-                                        int out_ch, int in_ch);
+void ff_mix_1_to_2_s16p_flt_sse2(int16_t **src, float **matrix, int len,
+                                 int out_ch, int in_ch);
+void ff_mix_1_to_2_s16p_flt_sse4(int16_t **src, float **matrix, int len,
+                                 int out_ch, int in_ch);
+void ff_mix_1_to_2_s16p_flt_avx (int16_t **src, float **matrix, int len,
+                                 int out_ch, int in_ch);
 
-#define DEFINE_MIX_3_8_TO_1_2(chan)                                         \
-extern void ff_mix_ ## chan ## _to_1_fltp_flt_sse(float **src,              \
-                                                  float **matrix, int len,  \
-                                                  int out_ch, int in_ch);   \
-extern void ff_mix_ ## chan ## _to_2_fltp_flt_sse(float **src,              \
-                                                  float **matrix, int len,  \
-                                                  int out_ch, int in_ch);   \
-                                                                            \
-extern void ff_mix_ ## chan ## _to_1_s16p_flt_sse2(int16_t **src,           \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-extern void ff_mix_ ## chan ## _to_2_s16p_flt_sse2(int16_t **src,           \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-                                                                            \
-extern void ff_mix_ ## chan ## _to_1_s16p_flt_sse4(int16_t **src,           \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-extern void ff_mix_ ## chan ## _to_2_s16p_flt_sse4(int16_t **src,           \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-                                                                            \
-extern void ff_mix_ ## chan ## _to_1_fltp_flt_avx(float **src,              \
-                                                  float **matrix, int len,  \
-                                                  int out_ch, int in_ch);   \
-extern void ff_mix_ ## chan ## _to_2_fltp_flt_avx(float **src,              \
-                                                  float **matrix, int len,  \
-                                                  int out_ch, int in_ch);   \
-                                                                            \
-extern void ff_mix_ ## chan ## _to_1_s16p_flt_avx(int16_t **src,            \
-                                                  float **matrix, int len,  \
-                                                  int out_ch, int in_ch);   \
-extern void ff_mix_ ## chan ## _to_2_s16p_flt_avx(int16_t **src,            \
-                                                  float **matrix, int len,  \
-                                                  int out_ch, int in_ch);   \
-                                                                            \
-extern void ff_mix_ ## chan ## _to_1_fltp_flt_fma4(float **src,             \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-extern void ff_mix_ ## chan ## _to_2_fltp_flt_fma4(float **src,             \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-                                                                            \
-extern void ff_mix_ ## chan ## _to_1_s16p_flt_fma4(int16_t **src,           \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);  \
-extern void ff_mix_ ## chan ## _to_2_s16p_flt_fma4(int16_t **src,           \
-                                                   float **matrix, int len, \
-                                                   int out_ch, int in_ch);
+#define DEFINE_MIX_3_8_TO_1_2(chan)                                     \
+void ff_mix_ ## chan ## _to_1_fltp_flt_sse(float **src,                 \
+                                           float **matrix, int len,     \
+                                           int out_ch, int in_ch);      \
+void ff_mix_ ## chan ## _to_2_fltp_flt_sse(float **src,                 \
+                                           float **matrix, int len,     \
+                                           int out_ch, int in_ch);      \
+                                                                        \
+void ff_mix_ ## chan ## _to_1_s16p_flt_sse2(int16_t **src,              \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+void ff_mix_ ## chan ## _to_2_s16p_flt_sse2(int16_t **src,              \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+                                                                        \
+void ff_mix_ ## chan ## _to_1_s16p_flt_sse4(int16_t **src,              \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+void ff_mix_ ## chan ## _to_2_s16p_flt_sse4(int16_t **src,              \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+                                                                        \
+void ff_mix_ ## chan ## _to_1_fltp_flt_avx(float **src,                 \
+                                           float **matrix, int len,     \
+                                           int out_ch, int in_ch);      \
+void ff_mix_ ## chan ## _to_2_fltp_flt_avx(float **src,                 \
+                                           float **matrix, int len,     \
+                                           int out_ch, int in_ch);      \
+                                                                        \
+void ff_mix_ ## chan ## _to_1_s16p_flt_avx(int16_t **src,               \
+                                           float **matrix, int len,     \
+                                           int out_ch, int in_ch);      \
+void ff_mix_ ## chan ## _to_2_s16p_flt_avx(int16_t **src,               \
+                                           float **matrix, int len,     \
+                                           int out_ch, int in_ch);      \
+                                                                        \
+void ff_mix_ ## chan ## _to_1_fltp_flt_fma4(float **src,                \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+void ff_mix_ ## chan ## _to_2_fltp_flt_fma4(float **src,                \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+                                                                        \
+void ff_mix_ ## chan ## _to_1_s16p_flt_fma4(int16_t **src,              \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);     \
+void ff_mix_ ## chan ## _to_2_s16p_flt_fma4(int16_t **src,              \
+                                            float **matrix, int len,    \
+                                            int out_ch, int in_ch);
 
 DEFINE_MIX_3_8_TO_1_2(3)
 DEFINE_MIX_3_8_TO_1_2(4)
