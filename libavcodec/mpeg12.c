@@ -2240,7 +2240,8 @@ static int decode_chunks(AVCodecContext *avctx,
                         s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
 
-                if (CONFIG_MPEG_VDPAU_DECODER && avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+                if ((CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER)
+                    && avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
                     ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
 
                 ret = slice_end(avctx, picture);
