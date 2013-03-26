@@ -28,7 +28,7 @@ static int DEF(try_8x8basis)(int16_t rem[64], int16_t weight[64], int16_t basis[
 {
     x86_reg i=0;
 
-    assert(FFABS(scale) < MAX_ABS);
+    av_assert2(FFABS(scale) < MAX_ABS);
     scale<<= 16 + SCALE_OFFSET - BASIS_SHIFT + RECON_SHIFT;
 
     SET_RND(mm6);
