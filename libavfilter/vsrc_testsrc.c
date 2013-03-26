@@ -52,7 +52,6 @@ typedef struct {
     unsigned int nb_frame;
     AVRational time_base, frame_rate;
     int64_t pts;
-    char *frame_rate_str;       ///< video frame rate
     char *duration_str;         ///< total duration of the generated video
     int64_t duration;           ///< duration expressed in microseconds
     AVRational sar;             ///< sample aspect ratio
@@ -78,8 +77,8 @@ typedef struct {
 static const AVOption options[] = {
     { "size",     "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },
     { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },
-    { "rate",     "set video rate",     OFFSET(frame_rate_str), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
-    { "r",        "set video rate",     OFFSET(frame_rate_str), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "duration", "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },
     { "d",        "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX, FLAGS },
@@ -103,11 +102,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0)
         return ret;
-
-    if ((ret = av_parse_video_rate(&test->frame_rate, test->frame_rate_str)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", test->frame_rate_str);
-        return ret;
-    }
 
     test->duration = -1;
     if (test->duration_str &&
