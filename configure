@@ -1601,7 +1601,6 @@ rv30_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpegvi
 rv40_decoder_select="error_resilience golomb h264chroma h264pred h264qpel mpegvideo videodsp"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
-svq1_decoder_select="mpegvideo"
 svq1_encoder_select="aandcttables mpegvideoenc"
 svq3_decoder_select="golomb h264chroma h264dsp h264pred h264qpel mpegvideo videodsp"
 svq3_decoder_suggest="error_resilience zlib"
