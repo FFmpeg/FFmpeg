@@ -244,17 +244,17 @@ OBJS-$(CONFIG_MPEG1VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG1VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
 OBJS-$(CONFIG_MPEG2VIDEO_DECODER)      += mpeg12dec.o mpeg12.o mpeg12data.o
 OBJS-$(CONFIG_MPEG2VIDEO_ENCODER)      += mpeg12enc.o mpeg12.o
-OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4.o msmpeg4data.o
-OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
-                                          h263.o ituh263dec.o mpeg4videodec.o
+OBJS-$(CONFIG_MSMPEG4V1_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_MSMPEG4V2_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o \
+                                          h263dec.o h263.o ituh263dec.o \
+                                          mpeg4videodec.o
 OBJS-$(CONFIG_MSMPEG4V2_ENCODER)       += msmpeg4.o msmpeg4enc.o msmpeg4data.o \
-                                          h263dec.o h263.o ituh263dec.o        \
+                                          h263.o
+OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4dec.o msmpeg4.o msmpeg4data.o \
+                                          h263dec.o h263.o ituh263dec.o \
                                           mpeg4videodec.o
-OBJS-$(CONFIG_MSMPEG4V3_DECODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
-                                          h263.o ituh263dec.o mpeg4videodec.o
 OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4enc.o msmpeg4data.o \
-                                          h263dec.o h263.o ituh263dec.o        \
-                                          mpeg4videodec.o
+                                          h263.o
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o msrledec.o
 OBJS-$(CONFIG_MSA1_DECODER)            += mss3.o mss34dsp.o
 OBJS-$(CONFIG_MSS1_DECODER)            += mss1.o mss12.o
@@ -364,7 +364,7 @@ OBJS-$(CONFIG_V210X_DECODER)           += v210x.o
 OBJS-$(CONFIG_VB_DECODER)              += vb.o
 OBJS-$(CONFIG_VBLE_DECODER)            += vble.o
 OBJS-$(CONFIG_VC1_DECODER)             += vc1dec.o vc1.o vc1data.o vc1dsp.o \
-                                          msmpeg4.o msmpeg4data.o           \
+                                          msmpeg4dec.o msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_VCR1_DECODER)            += vcr1.o
 OBJS-$(CONFIG_VMDAUDIO_DECODER)        += vmdav.o
@@ -391,13 +391,12 @@ OBJS-$(CONFIG_WMAV2_ENCODER)           += wmaenc.o wma.o wma_common.o aactab.o
 OBJS-$(CONFIG_WMAVOICE_DECODER)        += wmavoice.o \
                                           celp_filters.o \
                                           acelp_vectors.o acelp_filters.o
-OBJS-$(CONFIG_WMV1_DECODER)            += msmpeg4.o msmpeg4data.o
+OBJS-$(CONFIG_WMV1_DECODER)            += msmpeg4dec.o msmpeg4.o msmpeg4data.o
 OBJS-$(CONFIG_WMV2_DECODER)            += wmv2dec.o wmv2.o wmv2dsp.o \
-                                          msmpeg4.o msmpeg4data.o \
+                                          msmpeg4dec.o msmpeg4.o msmpeg4data.o \
                                           intrax8.o intrax8dsp.o
 OBJS-$(CONFIG_WMV2_ENCODER)            += wmv2enc.o wmv2.o wmv2dsp.o \
-                                          msmpeg4.o msmpeg4enc.o msmpeg4data.o \
-                                          mpeg4videodec.o ituh263dec.o h263dec.o
+                                          msmpeg4.o msmpeg4enc.o msmpeg4data.o
 OBJS-$(CONFIG_WNV1_DECODER)            += wnv1.o
 OBJS-$(CONFIG_WS_SND1_DECODER)         += ws-snd1.o
 OBJS-$(CONFIG_XAN_DPCM_DECODER)        += dpcm.o
