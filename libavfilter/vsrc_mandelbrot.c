@@ -58,9 +58,8 @@ typedef struct Point {
 typedef struct {
     const AVClass *class;
     int w, h;
-    AVRational time_base;
+    AVRational frame_rate;
     uint64_t pts;
-    char *rate;
     int maxiter;
     double start_x;
     double start_y;
@@ -84,8 +83,8 @@ typedef struct {
 static const AVOption mandelbrot_options[] = {
     {"size",        "set frame size",                OFFSET(w),       AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"},  CHAR_MIN, CHAR_MAX, FLAGS },
     {"s",           "set frame size",                OFFSET(w),       AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"},  CHAR_MIN, CHAR_MAX, FLAGS },
-    {"rate",        "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX, FLAGS },
-    {"r",           "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX, FLAGS },
+    {"rate",        "set frame rate",                OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},  CHAR_MIN, CHAR_MAX, FLAGS },
+    {"r",           "set frame rate",                OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},  CHAR_MIN, CHAR_MAX, FLAGS },
     {"maxiter",     "set max iterations number",     OFFSET(maxiter), AV_OPT_TYPE_INT,        {.i64=7189},  1,        INT_MAX, FLAGS },
     {"start_x",     "set the initial x position",    OFFSET(start_x), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.743643887037158704752191506114774}, -100, 100, FLAGS },
     {"start_y",     "set the initial y position",    OFFSET(start_y), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.131825904205311970493132056385139}, -100, 100, FLAGS },
@@ -112,7 +111,6 @@ AVFILTER_DEFINE_CLASS(mandelbrot);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     MBContext *mb = ctx->priv;
-    AVRational rate_q;
     int err;
 
     mb->class = &mandelbrot_class;
@@ -124,13 +122,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     mb->start_scale /=mb->h;
     mb->end_scale /=mb->h;
-
-    if (av_parse_video_rate(&rate_q, mb->rate) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", mb->rate);
-        return AVERROR(EINVAL);
-    }
-    mb->time_base.num = rate_q.den;
-    mb->time_base.den = rate_q.num;
 
     mb->cache_allocated = mb->w * mb->h * 3;
     mb->cache_used = 0;
@@ -145,7 +136,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     MBContext *mb = ctx->priv;
 
-    av_freep(&mb->rate);
     av_freep(&mb->point_cache);
     av_freep(&mb-> next_cache);
     av_freep(&mb->zyklus);
@@ -172,7 +162,7 @@ static int config_props(AVFilterLink *inlink)
 
     inlink->w = mb->w;
     inlink->h = mb->h;
-    inlink->time_base = mb->time_base;
+    inlink->time_base = av_inv_q(mb->frame_rate);
 
     return 0;
 }
