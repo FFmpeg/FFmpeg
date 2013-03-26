@@ -2137,7 +2137,7 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
 
         if (strcspn(line, "#\n\r") == 0)
             continue;
-        strcpy(tmp_line, line);
+        av_strlcpy(tmp_line, line, sizeof(tmp_line));
         if (!av_strtok(key,   "=",    &value) ||
             !av_strtok(value, "\r\n", &endptr)) {
             av_log(NULL, AV_LOG_FATAL, "%s: Invalid syntax: '%s'\n", filename, line);
