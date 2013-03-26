@@ -43,11 +43,7 @@
 
 uint32_t ff_squareTbl[512] = {0, };
 
-#define BIT_DEPTH 9
-#include "dsputil_template.c"
-#undef BIT_DEPTH
-
-#define BIT_DEPTH 10
+#define BIT_DEPTH 16
 #include "dsputil_template.c"
 #undef BIT_DEPTH
 
@@ -2737,10 +2733,8 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     switch (avctx->bits_per_raw_sample) {
     case 9:
-        BIT_DEPTH_FUNCS(9);
-        break;
     case 10:
-        BIT_DEPTH_FUNCS(10);
+        BIT_DEPTH_FUNCS(16);
         break;
     default:
         BIT_DEPTH_FUNCS(8);
