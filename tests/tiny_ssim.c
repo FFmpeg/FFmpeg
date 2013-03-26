@@ -46,11 +46,13 @@ static void ssim_4x4x2_core( const pixel *pix1, intptr_t stride1,
                              const pixel *pix2, intptr_t stride2,
                              int sums[2][4] )
 {
-    for( int z = 0; z < 2; z++ )
+    int x,y,z;
+
+    for( z = 0; z < 2; z++ )
     {
         uint32_t s1 = 0, s2 = 0, ss = 0, s12 = 0;
-        for( int y = 0; y < 4; y++ )
-            for( int x = 0; x < 4; x++ )
+        for( y = 0; y < 4; y++ )
+            for( x = 0; x < 4; x++ )
             {
                 int a = pix1[x+y*stride1];
                 int b = pix2[x+y*stride2];
@@ -97,7 +99,9 @@ static float ssim_end1( int s1, int s2, int ss, int s12 )
 static float ssim_end4( int sum0[5][4], int sum1[5][4], int width )
 {
     float ssim = 0.0;
-    for( int i = 0; i < width; i++ )
+    int i;
+
+    for( i = 0; i < width; i++ )
         ssim += ssim_end1( sum0[i][0] + sum0[i+1][0] + sum1[i][0] + sum1[i+1][0],
                            sum0[i][1] + sum0[i+1][1] + sum1[i][1] + sum1[i+1][1],
                            sum0[i][2] + sum0[i+1][2] + sum1[i][2] + sum1[i+1][2],
@@ -111,20 +115,21 @@ float ssim_plane(
                            int width, int height, void *buf, int *cnt )
 {
     int z = 0;
+    int x, y;
     float ssim = 0.0;
     int (*sum0)[4] = buf;
     int (*sum1)[4] = sum0 + (width >> 2) + 3;
     width >>= 2;
     height >>= 2;
-    for( int y = 1; y < height; y++ )
+    for( y = 1; y < height; y++ )
     {
         for( ; z <= y; z++ )
         {
             FFSWAP( void*, sum0, sum1 );
-            for( int x = 0; x < width; x+=2 )
+            for( x = 0; x < width; x+=2 )
                 ssim_4x4x2_core( &pix1[4*(x+z*stride1)], stride1, &pix2[4*(x+z*stride2)], stride2, &sum0[x] );
         }
-        for( int x = 0; x < width-1; x += 4 )
+        for( x = 0; x < width-1; x += 4 )
             ssim += ssim_end4( sum0+x, sum1+x, FFMIN(4,width-x-1) );
     }
 //     *cnt = (height-1) * (width-1);
