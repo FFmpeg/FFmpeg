@@ -607,6 +607,7 @@ cglobal bswap32_buf, 3,4,3
 cglobal bswap32_buf, 3,4,5
     mov      r3, r1
 %endif
+    or       r3, r0
     and      r3, 15
     jz       .start_align
     BSWAP_LOOPS  u
