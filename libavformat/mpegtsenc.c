@@ -1095,9 +1095,12 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         uint32_t state = -1;
 
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
+            if (!st->nb_frames) {
             av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
                    "no startcode found, use the h264_mp4toannexb bitstream filter (-bsf h264_mp4toannexb)\n");
             return AVERROR(EINVAL);
+            }
+            av_log(s, AV_LOG_WARNING, "H.264 bitstream error, startcode missing\n");
         }
 
         do {
