@@ -12,6 +12,7 @@
 @chapter Developers Guide
 
 @section API
+
 @itemize @bullet
 @item libavcodec is the library containing the codecs (both encoding and
 decoding). Look at @file{libavcodec/apiexample.c} to see how to use it.
@@ -20,7 +21,6 @@ decoding). Look at @file{libavcodec/apiexample.c} to see how to use it.
 demux code for several formats). Look at @file{avplay.c} to use it in a
 player. See @file{libavformat/output-example.c} to use it to generate
 audio or video streams.
-
 @end itemize
 
 @section Integrating libav in your program
@@ -47,6 +47,7 @@ mailing list.
 
 @subsection Code formatting conventions
 The code is written in K&R C style. That means the following:
+
 @itemize @bullet
 @item
 The control statements are formatted by putting space between the statement
@@ -54,6 +55,7 @@ and parenthesis in the following way:
 @example
 for (i = 0; i < filter->input_count; i++) @{
 @end example
+
 @item
 The case statement is always located at the same level as the switch itself:
 @example
@@ -64,6 +66,7 @@ case AVLINK_STARTINIT:
     av_log(filter, AV_LOG_INFO, "circular filter chain detected");
     return 0;
 @end example
+
 @item
 Braces in function declarations are written on the new line:
 @example
@@ -72,29 +75,35 @@ const char *avfilter_configuration(void)
     return LIBAV_CONFIGURATION;
 @}
 @end example
+
 @item
 Do not check for NULL values by comparison, @samp{if (p)} and
 @samp{if (!p)} are correct; @samp{if (p == NULL)} and @samp{if (p != NULL)}
 are not.
+
 @item
 In case of a single-statement if, no curly braces are required:
 @example
 if (!pic || !picref)
     goto fail;
 @end example
+
 @item
 Do not put spaces immediately inside parentheses. @samp{if (ret)} is
 a valid style; @samp{if ( ret )} is not.
 @end itemize
 
 There are the following guidelines regarding the indentation in files:
+
 @itemize @bullet
 @item
 Indent size is 4.
+
 @item
 The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
 rejected by the git repository.
+
 @item
 You should try to limit your code lines to 80 characters; however, do so if
 and only if this improves readability.
@@ -148,13 +157,17 @@ int myfunc(int my_parameter)
 
 Libav is programmed in the ISO C90 language with a few additional
 features from ISO C99, namely:
+
 @itemize @bullet
 @item
 the @samp{inline} keyword;
+
 @item
 @samp{//} comments;
+
 @item
 designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
+
 @item
 compound literals (@samp{x = (struct s) @{ 17, 23 @};})
 @end itemize
@@ -166,13 +179,17 @@ clarity and performance.
 All code must compile with recent versions of GCC and a number of other
 currently supported compilers. To ensure compatibility, please do not use
 additional C99 features or GCC extensions. Especially watch out for:
+
 @itemize @bullet
 @item
 mixing statements and declarations;
+
 @item
 @samp{long long} (use @samp{int64_t} instead);
+
 @item
 @samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
+
 @item
 GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 @end itemize
@@ -184,20 +201,25 @@ All names should be composed with underscores (_), not CamelCase. For example,
 names; they should always be CamelCase.
 
 There are the following conventions for naming variables and functions:
+
 @itemize @bullet
 @item
 For local variables no prefix is required.
+
 @item
 For file-scope variables and functions declared as @code{static}, no prefix
 is required.
+
 @item
 For variables and functions visible outside of file scope, but only used
 internally by a library, an @code{ff_} prefix should be used,
 e.g. @samp{ff_w64_demuxer}.
+
 @item
 For variables and functions visible outside of file scope, used internally
 across multiple libraries, use @code{avpriv_} as prefix, for example,
 @samp{avpriv_aac_parse_header}.
+
 @item
 For externally visible symbols, each library has its own prefix. Check
 the existing code and choose names accordingly.
@@ -212,10 +234,12 @@ are reserved at the file level and may not be used for externally visible
 symbols. If in doubt, just avoid names starting with @code{_} altogether.
 
 @subsection Miscellaneous conventions
+
 @itemize @bullet
 @item
 fprintf and printf are forbidden in libavformat and libavcodec,
 please use av_log() instead.
+
 @item
 Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
@@ -258,105 +282,122 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 
 @enumerate
 @item
-   Contributions should be licensed under the
-   @uref{http://www.gnu.org/licenses/lgpl-2.1.html, LGPL 2.1},
-   including an "or any later version" clause, or, if you prefer
-   a gift-style license, the
-   @uref{http://www.isc.org/software/license/, ISC} or
-   @uref{http://mit-license.org/, MIT} license.
-   @uref{http://www.gnu.org/licenses/gpl-2.0.html, GPL 2} including
-   an "or any later version" clause is also acceptable, but LGPL is
-   preferred.
+Contributions should be licensed under the
+@uref{http://www.gnu.org/licenses/lgpl-2.1.html, LGPL 2.1},
+including an "or any later version" clause, or, if you prefer
+a gift-style license, the
+@uref{http://www.isc.org/software/license/, ISC} or
+@uref{http://mit-license.org/, MIT} license.
+@uref{http://www.gnu.org/licenses/gpl-2.0.html, GPL 2} including
+an "or any later version" clause is also acceptable, but LGPL is
+preferred.
+
 @item
-   All the patches MUST be reviewed in the mailing list before they are
-   committed.
+All the patches MUST be reviewed in the mailing list before they are
+committed.
+
 @item
-   The Libav coding style should remain consistent. Changes to
-   conform will be suggested during the review or implemented on commit.
+The Libav coding style should remain consistent. Changes to
+conform will be suggested during the review or implemented on commit.
+
 @item
-   Patches should be generated using @code{git format-patch} or directly sent
-   using @code{git send-email}.
-   Please make sure you give the proper credit by setting the correct author
-   in the commit.
+Patches should be generated using @code{git format-patch} or directly sent
+using @code{git send-email}.
+Please make sure you give the proper credit by setting the correct author
+in the commit.
+
 @item
-   The commit message should have a short first line in the form of
-   a @samp{topic: short description} as a header, separated by a newline
-   from the body consisting of an explanation of why the change is necessary.
-   If the commit fixes a known bug on the bug tracker, the commit message
-   should include its bug ID. Referring to the issue on the bug tracker does
-   not exempt you from writing an excerpt of the bug in the commit message.
-   If the patch is a bug fix which should be backported to stable releases,
-   i.e. a non-API/ABI-breaking bug fix, add @code{CC: libav-stable@@libav.org}
-   to the bottom of your commit message, and make sure to CC your patch to
-   this address, too. Some git setups will do this automatically.
+The commit message should have a short first line in the form of
+a @samp{topic: short description} as a header, separated by a newline
+from the body consisting of an explanation of why the change is necessary.
+If the commit fixes a known bug on the bug tracker, the commit message
+should include its bug ID. Referring to the issue on the bug tracker does
+not exempt you from writing an excerpt of the bug in the commit message.
+If the patch is a bug fix which should be backported to stable releases,
+i.e. a non-API/ABI-breaking bug fix, add @code{CC: libav-stable@@libav.org}
+to the bottom of your commit message, and make sure to CC your patch to
+this address, too. Some git setups will do this automatically.
+
 @item
-   Work in progress patches should be sent to the mailing list with the [WIP]
-   or the [RFC] tag.
+Work in progress patches should be sent to the mailing list with the [WIP]
+or the [RFC] tag.
+
 @item
-   Branches in public personal repos are advised as way to
-   work on issues collaboratively.
+Branches in public personal repos are advised as way to
+work on issues collaboratively.
+
 @item
-   You do not have to over-test things. If it works for you and you think it
-   should work for others, send it to the mailing list for review.
-   If you have doubt about portability please state it in the submission so
-   people with specific hardware could test it.
+You do not have to over-test things. If it works for you and you think it
+should work for others, send it to the mailing list for review.
+If you have doubt about portability please state it in the submission so
+people with specific hardware could test it.
+
 @item
-   Do not commit unrelated changes together, split them into self-contained
-   pieces. Also do not forget that if part B depends on part A, but A does not
-   depend on B, then A can and should be committed first and separate from B.
-   Keeping changes well split into self-contained parts makes reviewing and
-   understanding them on the commit log mailing list easier. This also helps
-   in case of debugging later on.
+Do not commit unrelated changes together, split them into self-contained
+pieces. Also do not forget that if part B depends on part A, but A does not
+depend on B, then A can and should be committed first and separate from B.
+Keeping changes well split into self-contained parts makes reviewing and
+understanding them on the commit log mailing list easier. This also helps
+in case of debugging later on.
+
 @item
-   Patches that change behavior of the programs (renaming options etc) or
-   public API or ABI should be discussed in depth and possible few days should
-   pass between discussion and commit.
-   Changes to the build system (Makefiles, configure script) which alter
-   the expected behavior should be considered in the same regard.
+Patches that change behavior of the programs (renaming options etc) or
+public API or ABI should be discussed in depth and possible few days should
+pass between discussion and commit.
+Changes to the build system (Makefiles, configure script) which alter
+the expected behavior should be considered in the same regard.
+
 @item
-   When applying patches that have been discussed (at length) on the mailing
-   list, reference the thread in the log message.
+When applying patches that have been discussed (at length) on the mailing
+list, reference the thread in the log message.
+
 @item
-    Subscribe to the
-    @uref{https://lists.libav.org/mailman/listinfo/libav-devel, libav-devel} and
-    @uref{https://lists.libav.org/mailman/listinfo/libav-commits, libav-commits}
-    mailing lists.
-    Bugs and possible improvements or general questions regarding commits
-    are discussed on libav-devel. We expect you to react if problems with
-    your code are uncovered.
+Subscribe to the
+@uref{https://lists.libav.org/mailman/listinfo/libav-devel, libav-devel} and
+@uref{https://lists.libav.org/mailman/listinfo/libav-commits, libav-commits}
+mailing lists.
+Bugs and possible improvements or general questions regarding commits
+are discussed on libav-devel. We expect you to react if problems with
+your code are uncovered.
+
 @item
-    Update the documentation if you change behavior or add features. If you are
-    unsure how best to do this, send an [RFC] patch to libav-devel.
+Update the documentation if you change behavior or add features. If you are
+unsure how best to do this, send an [RFC] patch to libav-devel.
+
 @item
-    All discussions and decisions should be reported on the public developer
-    mailing list, so that there is a reference to them.
-    Other media (e.g. IRC) should be used for coordination and immediate
-    collaboration.
+All discussions and decisions should be reported on the public developer
+mailing list, so that there is a reference to them.
+Other media (e.g. IRC) should be used for coordination and immediate
+collaboration.
+
 @item
-    Never write to unallocated memory, never write over the end of arrays,
-    always check values read from some untrusted source before using them
-    as array index or other risky things. Always use valgrind to double-check.
+Never write to unallocated memory, never write over the end of arrays,
+always check values read from some untrusted source before using them
+as array index or other risky things. Always use valgrind to double-check.
+
 @item
-    Remember to check if you need to bump versions for the specific libav
-    parts (libavutil, libavcodec, libavformat) you are changing. You need
-    to change the version integer.
-    Incrementing the first component means no backward compatibility to
-    previous versions (e.g. removal of a function from the public API).
-    Incrementing the second component means backward compatible change
-    (e.g. addition of a function to the public API or extension of an
-    existing data structure).
-    Incrementing the third component means a noteworthy binary compatible
-    change (e.g. encoder bug fix that matters for the decoder).
+Remember to check if you need to bump versions for the specific libav
+parts (libavutil, libavcodec, libavformat) you are changing. You need
+to change the version integer.
+Incrementing the first component means no backward compatibility to
+previous versions (e.g. removal of a function from the public API).
+Incrementing the second component means backward compatible change
+(e.g. addition of a function to the public API or extension of an
+existing data structure).
+Incrementing the third component means a noteworthy binary compatible
+change (e.g. encoder bug fix that matters for the decoder).
+
 @item
-    Compiler warnings indicate potential bugs or code with bad style.
-    If it is a bug, the bug has to be fixed. If it is not, the code should
-    be changed to not generate a warning unless that causes a slowdown
-    or obfuscates the code.
-    If a type of warning leads to too many false positives, that warning
-    should be disabled, not the code changed.
+Compiler warnings indicate potential bugs or code with bad style.
+If it is a bug, the bug has to be fixed. If it is not, the code should
+be changed to not generate a warning unless that causes a slowdown
+or obfuscates the code.
+If a type of warning leads to too many false positives, that warning
+should be disabled, not the code changed.
+
 @item
-    If you add a new file, give it a proper license header. Do not copy and
-    paste it from a random place, use an existing file as template.
+If you add a new file, give it a proper license header. Do not copy and
+paste it from a random place, use an existing file as template.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
@@ -409,40 +450,51 @@ send a reminder by email. Your patch should eventually be dealt with.
 
 @enumerate
 @item
-    Did you use av_cold for codec initialization and close functions?
+Did you use av_cold for codec initialization and close functions?
+
 @item
-    Did you add a long_name under NULL_IF_CONFIG_SMALL to the AVCodec or
-    AVInputFormat/AVOutputFormat struct?
+Did you add a long_name under NULL_IF_CONFIG_SMALL to the AVCodec or
+AVInputFormat/AVOutputFormat struct?
+
 @item
-    Did you bump the minor version number (and reset the micro version
-    number) in @file{libavcodec/version.h} or @file{libavformat/version.h}?
+Did you bump the minor version number (and reset the micro version
+number) in @file{libavcodec/version.h} or @file{libavformat/version.h}?
+
 @item
-    Did you register it in @file{allcodecs.c} or @file{allformats.c}?
+Did you register it in @file{allcodecs.c} or @file{allformats.c}?
+
 @item
-    Did you add the AVCodecID to @file{avcodec.h}?
-    When adding new codec IDs, also add an entry to the codec descriptor
-    list in @file{libavcodec/codec_desc.c}.
+Did you add the AVCodecID to @file{avcodec.h}?
+When adding new codec IDs, also add an entry to the codec descriptor
+list in @file{libavcodec/codec_desc.c}.
+
 @item
-    If it has a FourCC, did you add it to @file{libavformat/riff.c},
-    even if it is only a decoder?
+If it has a FourCC, did you add it to @file{libavformat/riff.c},
+even if it is only a decoder?
+
 @item
-    Did you add a rule to compile the appropriate files in the Makefile?
-    Remember to do this even if you are just adding a format to a file that
-    is already being compiled by some other rule, like a raw demuxer.
+Did you add a rule to compile the appropriate files in the Makefile?
+Remember to do this even if you are just adding a format to a file that
+is already being compiled by some other rule, like a raw demuxer.
+
 @item
-    Did you add an entry to the table of supported formats or codecs in
-    @file{doc/general.texi}?
+Did you add an entry to the table of supported formats or codecs in
+@file{doc/general.texi}?
+
 @item
-    Did you add an entry in the Changelog?
+Did you add an entry in the Changelog?
+
 @item
-    If it depends on a parser or a library, did you add that dependency in
-    configure?
+If it depends on a parser or a library, did you add that dependency in
+configure?
+
 @item
-    Did you @code{git add} the appropriate files before committing?
+Did you @code{git add} the appropriate files before committing?
+
 @item
-    Did you make sure it compiles standalone, i.e. with
-    @code{configure --disable-everything --enable-decoder=foo}
-    (or @code{--enable-demuxer} or whatever your component is)?
+Did you make sure it compiles standalone, i.e. with
+@code{configure --disable-everything --enable-decoder=foo}
+(or @code{--enable-demuxer} or whatever your component is)?
 @end enumerate
 
 
@@ -450,68 +502,89 @@ send a reminder by email. Your patch should eventually be dealt with.
 
 @enumerate
 @item
-    Does @code{make check} pass with the patch applied?
+Does @code{make check} pass with the patch applied?
+
 @item
-    Is the patch against latest Libav git master branch?
+Is the patch against latest Libav git master branch?
+
 @item
-    Are you subscribed to the
-    @uref{https://lists.libav.org/mailman/listinfo/libav-devel, libav-devel}
-    mailing list? (Only list subscribers are allowed to post.)
+Are you subscribed to the
+@uref{https://lists.libav.org/mailman/listinfo/libav-devel, libav-devel}
+mailing list? (Only list subscribers are allowed to post.)
+
 @item
-    Have you checked that the changes are minimal, so that the same cannot be
-    achieved with a smaller patch and/or simpler final code?
+Have you checked that the changes are minimal, so that the same cannot be
+achieved with a smaller patch and/or simpler final code?
+
 @item
-    If the change is to speed critical code, did you benchmark it?
+If the change is to speed critical code, did you benchmark it?
+
 @item
-    If you did any benchmarks, did you provide them in the mail?
+If you did any benchmarks, did you provide them in the mail?
+
 @item
-    Have you checked that the patch does not introduce buffer overflows or
-    other security issues?
+Have you checked that the patch does not introduce buffer overflows or
+other security issues?
+
 @item
-    Did you test your decoder or demuxer against damaged data? If no, see
-    tools/trasher, the noise bitstream filter, and
-    @uref{http://caca.zoy.org/wiki/zzuf, zzuf}. Your decoder or demuxer
-    should not crash, end in a (near) infinite loop, or allocate ridiculous
-    amounts of memory when fed damaged data.
+Did you test your decoder or demuxer against damaged data? If no, see
+tools/trasher, the noise bitstream filter, and
+@uref{http://caca.zoy.org/wiki/zzuf, zzuf}. Your decoder or demuxer
+should not crash, end in a (near) infinite loop, or allocate ridiculous
+amounts of memory when fed damaged data.
+
 @item
-    Does the patch not mix functional and cosmetic changes?
+Does the patch not mix functional and cosmetic changes?
+
 @item
-    Did you add tabs or trailing whitespace to the code? Both are forbidden.
+Did you add tabs or trailing whitespace to the code? Both are forbidden.
+
 @item
-    Is the patch attached to the email you send?
+Is the patch attached to the email you send?
+
 @item
-    Is the mime type of the patch correct? It should be text/x-diff or
-    text/x-patch or at least text/plain and not application/octet-stream.
+Is the mime type of the patch correct? It should be text/x-diff or
+text/x-patch or at least text/plain and not application/octet-stream.
+
 @item
-    If the patch fixes a bug, did you provide a verbose analysis of the bug?
+If the patch fixes a bug, did you provide a verbose analysis of the bug?
+
 @item
-    If the patch fixes a bug, did you provide enough information, including
-    a sample, so the bug can be reproduced and the fix can be verified?
-    Note please do not attach samples >100k to mails but rather provide a
-    URL, you can upload to ftp://upload.libav.org
+If the patch fixes a bug, did you provide enough information, including
+a sample, so the bug can be reproduced and the fix can be verified?
+Note please do not attach samples >100k to mails but rather provide a
+URL, you can upload to ftp://upload.libav.org
+
 @item
-    Did you provide a verbose summary about what the patch does change?
+Did you provide a verbose summary about what the patch does change?
+
 @item
-    Did you provide a verbose explanation why it changes things like it does?
+Did you provide a verbose explanation why it changes things like it does?
+
 @item
-    Did you provide a verbose summary of the user visible advantages and
-    disadvantages if the patch is applied?
+Did you provide a verbose summary of the user visible advantages and
+disadvantages if the patch is applied?
+
 @item
-    Did you provide an example so we can verify the new feature added by the
-    patch easily?
+Did you provide an example so we can verify the new feature added by the
+patch easily?
+
 @item
-    If you added a new file, did you insert a license header? It should be
-    taken from Libav, not randomly copied and pasted from somewhere else.
+If you added a new file, did you insert a license header? It should be
+taken from Libav, not randomly copied and pasted from somewhere else.
+
 @item
-    You should maintain alphabetical order in alphabetically ordered lists as
-    long as doing so does not break API/ABI compatibility.
+You should maintain alphabetical order in alphabetically ordered lists as
+long as doing so does not break API/ABI compatibility.
+
 @item
-    Lines with similar content should be aligned vertically when doing so
-    improves readability.
+Lines with similar content should be aligned vertically when doing so
+improves readability.
+
 @item
-    Make sure you check the return values of function and return appropriate
-    error codes. Especially memory allocation functions like @code{malloc()}
-    are notoriously left unchecked, which is a serious problem.
+Make sure you check the return values of function and return appropriate
+error codes. Especially memory allocation functions like @code{malloc()}
+are notoriously left unchecked, which is a serious problem.
 @end enumerate
 
 @section Patch review process
@@ -560,12 +633,15 @@ the following steps:
 @item
     Configure to compile with instrumentation enabled:
     @code{configure --toolchain=gcov}.
+
 @item
     Run your test case, either manually or via FATE. This can be either
     the full FATE regression suite, or any arbitrary invocation of any
     front-end tool provided by Libav, in any combination.
+
 @item
     Run @code{make lcov} to generate coverage data in HTML format.
+
 @item
     View @code{lcov/index.html} in your preferred HTML viewer.
 @end enumerate
@@ -600,12 +676,13 @@ There are two kinds of releases:
 
 @enumerate
 @item
-    @strong{Major releases} always include the latest and greatest
-    features and functionality.
+@strong{Major releases} always include the latest and greatest
+features and functionality.
+
 @item
-    @strong{Point releases} are cut from @strong{release} branches,
-    which are named @code{release/X}, with @code{X} being the release
-    version number.
+@strong{Point releases} are cut from @strong{release} branches,
+which are named @code{release/X}, with @code{X} being the release
+version number.
 @end enumerate
 
 Note that we promise to our users that shared libraries from any Libav
@@ -626,15 +703,18 @@ inclusion into a point release:
 
 @enumerate
 @item
-    Fixes a security issue, preferably identified by a @strong{CVE
-    number} issued by @url{http://cve.mitre.org/}.
+Fixes a security issue, preferably identified by a @strong{CVE
+number} issued by @url{http://cve.mitre.org/}.
+
 @item
-    Fixes a documented bug in @url{http://bugzilla.libav.org}.
+Fixes a documented bug in @url{http://bugzilla.libav.org}.
+
 @item
-    Improves the included documentation.
+Improves the included documentation.
+
 @item
-    Retains both source code and binary compatibility with previous
-    point releases of the same release branch.
+Retains both source code and binary compatibility with previous
+point releases of the same release branch.
 @end enumerate
 
 The order for checking the rules is (1 OR 2 OR 3) AND 4.
@@ -651,43 +731,54 @@ The release process involves the following steps:
 
 @enumerate
 @item
-    Ensure that the @file{RELEASE} file contains the version number for
-    the upcoming release.
+Ensure that the @file{RELEASE} file contains the version number for
+the upcoming release.
+
 @item
-    File a release tracking bug in @url{http://bugzilla.libav.org}. Make
-    sure that the bug has an alias named @code{ReleaseX.Y} for the
-    @code{X.Y} release.
+File a release tracking bug in @url{http://bugzilla.libav.org}. Make
+sure that the bug has an alias named @code{ReleaseX.Y} for the
+@code{X.Y} release.
+
 @item
-    Announce the intent to do a release to the mailing list.
+Announce the intent to do a release to the mailing list.
+
 @item
-    Reassign unresolved blocking bugs from previous release
-    tracking bugs to the new bug.
+Reassign unresolved blocking bugs from previous release
+tracking bugs to the new bug.
+
 @item
-    Review patch nominations that reach the @strong{libav-stable}
-    mailing list, and push patches that fulfill the stable release
-    criteria to the release branch.
+Review patch nominations that reach the @strong{libav-stable}
+mailing list, and push patches that fulfill the stable release
+criteria to the release branch.
+
 @item
-    Ensure that the FATE regression suite still passes in the release
-    branch on at least @strong{i386} and @strong{amd64}
-    (cf. @ref{Regression Tests}).
+Ensure that the FATE regression suite still passes in the release
+branch on at least @strong{i386} and @strong{amd64}
+(cf. @ref{Regression Tests}).
+
 @item
-    Prepare the release tarballs in @code{xz} and @code{gz} formats, and
-    supplementing files that contain @code{md5} and @code{sha1}
-    checksums.
+Prepare the release tarballs in @code{xz} and @code{gz} formats, and
+supplementing files that contain @code{md5} and @code{sha1}
+checksums.
+
 @item
-    Publish the tarballs at @url{http://libav.org/releases}. Create and
-    push an annotated tag in the form @code{vX}, with @code{X}
-    containing the version number.
+Publish the tarballs at @url{http://libav.org/releases}. Create and
+push an annotated tag in the form @code{vX}, with @code{X}
+containing the version number.
+
 @item
-    Build the tarballs with the Windows binaries, and publish them at
-    @url{http://win32.libav.org/releases}.
+Build the tarballs with the Windows binaries, and publish them at
+@url{http://win32.libav.org/releases}.
+
 @item
-    Propose and send a patch to the @strong{libav-devel} mailing list
-    with a news entry for the website.
+Propose and send a patch to the @strong{libav-devel} mailing list
+with a news entry for the website.
+
 @item
-    Publish the news entry.
+Publish the news entry.
+
 @item
-    Send announcement to the mailing list.
+Send announcement to the mailing list.
 @end enumerate
 
 @bye
