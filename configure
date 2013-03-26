@@ -1678,7 +1678,7 @@ mdct_select="fft"
 rdft_select="fft"
 mpegaudio_select="mpegaudiodsp"
 mpegaudiodsp_select="dct"
-mpegvideo_select="dsputil error_resilience h264chroma hpeldsp videodsp"
+mpegvideo_select="dsputil h264chroma hpeldsp videodsp"
 mpegvideoenc_select="mpegvideo"
 
 # decoders / encoders
