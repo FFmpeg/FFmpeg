@@ -2,7 +2,7 @@
 # common bits used by all libraries
 #
 
-include $(SRC_PATH)/arch.mak
+include $(SRC_PATH)/avbuild/arch.mak
 
 OBJS      += $(OBJS-yes)
 FFLIBS    := $($(NAME)_FFLIBS) $(FFLIBS-yes) $(FFLIBS)

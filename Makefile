@@ -1,4 +1,4 @@
-include config.mak
+include avbuild/config.mak
 
 vpath %.c    $(SRC_PATH)
 vpath %.m    $(SRC_PATH)
@@ -110,7 +110,7 @@ SKIPHEADERS = cmdutils_common_opts.h                                    \
 all: all-yes
 
 include $(SRC_PATH)/tools/Makefile
-include $(SRC_PATH)/common.mak
+include $(SRC_PATH)/avbuild/common.mak
 
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
@@ -129,8 +129,8 @@ CONFIGURABLE_COMPONENTS =                                           \
     $(SRC_PATH)/libavcodec/bitstream_filters.c                      \
     $(SRC_PATH)/libavformat/protocols.c                             \
 
-config.h: .config
-.config: $(CONFIGURABLE_COMPONENTS)
+config.h: avbuild/.config
+avbuild/.config: $(CONFIGURABLE_COMPONENTS)
 	@-tput bold 2>/dev/null
 	@-printf '\nWARNING: $(?) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
@@ -152,7 +152,7 @@ SUBDIR := $(1)/
 include $(SRC_PATH)/$(1)/Makefile
 -include $(SRC_PATH)/$(1)/$(ARCH)/Makefile
 -include $(SRC_PATH)/$(1)/$(INTRINSICS)/Makefile
-include $(SRC_PATH)/library.mak
+include $(SRC_PATH)/avbuild/library.mak
 endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
@@ -173,10 +173,10 @@ $(foreach P,$(PROGS),$(eval $(call DOPROG,$(P:$(EXESUF)=))))
 $(PROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
-VERSION_SH  = $(SRC_PATH)/version.sh
+VERSION_SH  = $(SRC_PATH)/avbuild/version.sh
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
-.version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
+.version: $(wildcard $(GIT_LOG)) $(VERSION_SH) avbuild/config.mak
 .version: M=@
 
 cmdutils.o libavutil/utils.o: avversion.h
@@ -221,8 +221,9 @@ clean::
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .config libavutil/avconfig.h .version avversion.h \
-            mapfile libavcodec/bsf_list.c libavformat/protocol_list.c
+	$(RM) .version avversion.h config.asm config.h mapfile \
+            avbuild/.config avbuild/config.* libavutil/avconfig.h \
+            libavcodec/bsf_list.c libavformat/protocol_list.c
 
 config:
 	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)
