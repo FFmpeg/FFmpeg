@@ -1961,10 +1961,10 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 }
 
 static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
-                                int size, int type,
+                                int* buf_size, int type,
                                 uint32_t **lace_buf, int *laces)
 {
-    int res = 0, n;
+    int res = 0, n, size = *buf_size;
     uint8_t *data = *buf;
     uint32_t *lace_size;
 
@@ -2062,6 +2062,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
 
     *buf      = data;
     *lace_buf = lace_size;
+    *buf_size = size;
 
     return res;
 }
@@ -2299,7 +2300,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             matroska->skip_to_keyframe = 0;
     }
 
-    res = matroska_parse_laces(matroska, &data, size, (flags & 0x06) >> 1,
+    res = matroska_parse_laces(matroska, &data, &size, (flags & 0x06) >> 1,
                                &lace_size, &laces);
 
     if (res)
