@@ -2912,7 +2912,6 @@ static int h264_set_parameter_from_sps(H264Context *h)
             ff_h264qpel_init(&h->h264qpel, h->sps.bit_depth_luma);
             ff_h264_pred_init(&h->hpc, h->avctx->codec_id, h->sps.bit_depth_luma,
                               h->sps.chroma_format_idc);
-            h->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
             if (CONFIG_ERROR_RESILIENCE)
                 ff_dsputil_init(&h->dsp, h->avctx);
             ff_videodsp_init(&h->vdsp, h->sps.bit_depth_luma);

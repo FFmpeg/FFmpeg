@@ -2736,18 +2736,10 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     switch (avctx->bits_per_raw_sample) {
     case 9:
-        if (c->dct_bits == 32) {
-            BIT_DEPTH_FUNCS(9, _32);
-        } else {
-            BIT_DEPTH_FUNCS(9, _16);
-        }
+        BIT_DEPTH_FUNCS(9, _16);
         break;
     case 10:
-        if (c->dct_bits == 32) {
-            BIT_DEPTH_FUNCS(10, _32);
-        } else {
-            BIT_DEPTH_FUNCS(10, _16);
-        }
+        BIT_DEPTH_FUNCS(10, _16);
         break;
     default:
         BIT_DEPTH_FUNCS(8, _16);

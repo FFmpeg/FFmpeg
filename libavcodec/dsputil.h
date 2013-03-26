@@ -125,11 +125,6 @@ void ff_init_scantable_permutation(uint8_t *idct_permutation,
  * DSPContext.
  */
 typedef struct DSPContext {
-    /**
-     * Size of DCT coefficients.
-     */
-    int dct_bits;
-
     /* pixel ops : interface with DCT */
     void (*get_pixels)(int16_t *block/*align 16*/, const uint8_t *pixels/*align 8*/, int line_size);
     void (*diff_pixels)(int16_t *block/*align 16*/, const uint8_t *s1/*align 8*/, const uint8_t *s2/*align 8*/, int stride);
