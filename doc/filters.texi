@@ -2355,6 +2355,7 @@ Available presets are:
 @item linear_contrast
 @item medium_contrast
 @item negative
+@item strong_contrast
 @item vintage
 @end table
 Default is unset.
