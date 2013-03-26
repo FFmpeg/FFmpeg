@@ -446,8 +446,13 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     } else if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
                (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
-        av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
-        return -1;
+        if (!s->streams[pkt->stream_index]->nb_frames) {
+        av_log(s, AV_LOG_ERROR, "Malformed AAC bitstream detected: "
+               "use audio bitstream filter 'aac_adtstoasc' to fix it "
+               "('-bsf:a aac_adtstoasc' option with ffmpeg)\n");
+        return AVERROR_INVALIDDATA;
+        }
+        av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     }
     if (flv->delay == AV_NOPTS_VALUE)
         flv->delay = -pkt->dts;
