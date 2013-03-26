@@ -30,6 +30,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/pixfmt.h"
 #include "avcodec.h"
+#include "config.h"
 
 #define FF_SANE_NB_CHANNELS 63U
 
@@ -226,5 +227,9 @@ int ff_codec_close_recursive(AVCodecContext *avctx);
  * Finalize buf into extradata and set its size appropriately.
  */
 int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf);
+
+const uint8_t *avpriv_find_start_code(const uint8_t *p,
+                                      const uint8_t *end,
+                                      uint32_t *state);
 
 #endif /* AVCODEC_INTERNAL_H */

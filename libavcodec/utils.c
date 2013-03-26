@@ -41,7 +41,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
-#include "mpegvideo.h"
 #include "thread.h"
 #include "frame_thread_encoder.h"
 #include "internal.h"
@@ -3100,9 +3099,9 @@ int avpriv_bprint_to_extradata(AVCodecContext *avctx, struct AVBPrint *buf)
     return 0;
 }
 
-const uint8_t *avpriv_mpv_find_start_code(const uint8_t *av_restrict p,
-                                          const uint8_t *end,
-                                          uint32_t *av_restrict state)
+const uint8_t *avpriv_find_start_code(const uint8_t *av_restrict p,
+                                      const uint8_t *end,
+                                      uint32_t *av_restrict state)
 {
     int i;
 
