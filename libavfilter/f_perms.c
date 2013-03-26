@@ -50,7 +50,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
+static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     PermsContext *perms = ctx->priv;
 
@@ -108,11 +108,6 @@ static const char *const shorthand[] = { "mode", NULL };
 #define aperms_options options
 AVFILTER_DEFINE_CLASS(aperms);
 
-static av_cold int aperms_init(AVFilterContext *ctx, const char *args)
-{
-    return init(ctx, args, &aperms_class);
-}
-
 static const AVFilterPad aperms_inputs[] = {
     {
         .name         = "default",
@@ -133,7 +128,7 @@ static const AVFilterPad aperms_outputs[] = {
 AVFilter avfilter_af_aperms = {
     .name        = "aperms",
     .description = NULL_IF_CONFIG_SMALL("Set permissions for the output audio frame."),
-    .init        = aperms_init,
+    .init        = init,
     .priv_size   = sizeof(PermsContext),
     .inputs      = aperms_inputs,
     .outputs     = aperms_outputs,
@@ -146,11 +141,6 @@ AVFilter avfilter_af_aperms = {
 
 #define perms_options options
 AVFILTER_DEFINE_CLASS(perms);
-
-static av_cold int perms_init(AVFilterContext *ctx, const char *args)
-{
-    return init(ctx, args, &perms_class);
-}
 
 static const AVFilterPad perms_inputs[] = {
     {
@@ -172,7 +162,7 @@ static const AVFilterPad perms_outputs[] = {
 AVFilter avfilter_vf_perms = {
     .name        = "perms",
     .description = NULL_IF_CONFIG_SMALL("Set permissions for the output video frame."),
-    .init        = perms_init,
+    .init        = init,
     .priv_size   = sizeof(PermsContext),
     .inputs      = perms_inputs,
     .outputs     = perms_outputs,
