@@ -53,18 +53,18 @@ enum test_type {
 typedef struct MPTestContext {
     const AVClass *class;
     unsigned int frame_nb;
-    AVRational time_base;
+    AVRational frame_rate;
     int64_t pts, max_pts;
     int hsub, vsub;
-    char *size, *rate, *duration;
+    char *size, *duration;
     enum test_type test;
 } MPTestContext;
 
 #define OFFSET(x) offsetof(MPTestContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption mptestsrc_options[]= {
-    { "rate",     "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
-    { "r",        "set video rate",     OFFSET(rate),     AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, FLAGS },
+    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
 
@@ -259,7 +259,6 @@ static void ring2_test(uint8_t *dst, int dst_linesize, int off)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     MPTestContext *test = ctx->priv;
-    AVRational frame_rate_q;
     int64_t duration = -1;
     int ret;
 
@@ -269,26 +268,19 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0)
         return ret;
 
-    if ((ret = av_parse_video_rate(&frame_rate_q, test->rate)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", test->rate);
-        return ret;
-    }
-
     if ((test->duration) && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
         return ret;
     }
 
-    test->time_base.num = frame_rate_q.den;
-    test->time_base.den = frame_rate_q.num;
     test->max_pts = duration >= 0 ?
-        av_rescale_q(duration, AV_TIME_BASE_Q, test->time_base) : -1;
+        av_rescale_q(duration, AV_TIME_BASE_Q, av_inv_q(test->frame_rate)) : -1;
     test->frame_nb = 0;
     test->pts = 0;
 
     av_log(ctx, AV_LOG_VERBOSE, "rate:%d/%d duration:%f\n",
-           frame_rate_q.num, frame_rate_q.den,
-           duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base));
+           test->frame_rate.num, test->frame_rate.den,
+           duration < 0 ? -1 : test->max_pts * av_q2d(av_inv_q(test->frame_rate)));
     init_idct();
 
     return 0;
@@ -305,7 +297,7 @@ static int config_props(AVFilterLink *outlink)
 
     outlink->w = WIDTH;
     outlink->h = HEIGHT;
-    outlink->time_base = test->time_base;
+    outlink->time_base = av_inv_q(test->frame_rate);
 
     return 0;
 }
