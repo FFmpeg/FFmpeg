@@ -2070,7 +2070,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
         h->sync |= 2;
     }
 
-    if (setup_finished)
+    if (setup_finished && !h->avctx->hwaccel)
         ff_thread_finish_setup(h->avctx);
 }
 
