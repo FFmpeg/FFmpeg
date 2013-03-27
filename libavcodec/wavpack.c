@@ -373,6 +373,10 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb,
         INC_MED(2);
     }
     if (!c->error_limit) {
+        if (add >= 0x2000000U) {
+            av_log(ctx->avctx, AV_LOG_ERROR, "k %d is too large\n", add);
+            goto error;
+        }
         ret = base + get_tail(gb, add);
         if (get_bits_left(gb) <= 0)
             goto error;
