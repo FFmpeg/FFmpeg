@@ -542,22 +542,15 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     InputStream *ist = ifilter->ist;
     AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
                                          ist->st->time_base;
-    AVRational fr = ist->framerate.num ? ist->framerate :
-                                         ist->st->r_frame_rate;
+    AVRational fr = ist->framerate;
     AVRational sar;
     AVBPrint args;
     char name[255];
     int pad_idx = in->pad_idx;
     int ret;
 
-    if (!ist->framerate.num && ist->st->codec->ticks_per_frame>1) {
-        AVRational codec_fr = av_inv_q(ist->st->codec->time_base);
-        AVRational   avg_fr = ist->st->avg_frame_rate;
-        codec_fr.den *= ist->st->codec->ticks_per_frame;
-        if (   codec_fr.num>0 && codec_fr.den>0 && av_q2d(codec_fr) < av_q2d(fr)*0.7
-            && fabs(1.0 - av_q2d(av_div_q(avg_fr, fr)))>0.1)
-            fr = codec_fr;
-    }
+    if (!fr.num)
+        fr = av_guess_frame_rate(input_files[ist->file_index]->ctx, ist->st, NULL);
 
     if (ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         ret = sub2video_prepare(ist);

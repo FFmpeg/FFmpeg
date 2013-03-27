@@ -2108,6 +2108,16 @@ const struct AVCodecTag *avformat_get_riff_audio_tags(void);
 AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *stream, AVFrame *frame);
 
 /**
+ * Guess the frame rate, based on both the container and codec information.
+ *
+ * @param ctx the format context which the stream is part of
+ * @param stream the stream which the frame is part of
+ * @param frame the frame for which the frame rate should be determined, may be NULL
+ * @return the guessed (valid) frame rate, 0/1 if no idea
+ */
+AVRational av_guess_frame_rate(AVFormatContext *ctx, AVStream *stream, AVFrame *frame);
+
+/**
  * Check if the stream st contained in s is matched by the stream specifier
  * spec.
  *

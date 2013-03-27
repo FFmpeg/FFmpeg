@@ -4278,6 +4278,22 @@ AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *strea
         return frame_sample_aspect_ratio;
 }
 
+AVRational av_guess_frame_rate(AVFormatContext *format, AVStream *st, AVFrame *frame)
+{
+    AVRational fr = st->r_frame_rate;
+
+    if (st->codec->ticks_per_frame > 1) {
+        AVRational codec_fr = av_inv_q(st->codec->time_base);
+        AVRational   avg_fr = st->avg_frame_rate;
+        codec_fr.den *= st->codec->ticks_per_frame;
+        if (   codec_fr.num > 0 && codec_fr.den > 0 && av_q2d(codec_fr) < av_q2d(fr)*0.7
+            && fabs(1.0 - av_q2d(av_div_q(avg_fr, fr))) > 0.1)
+            fr = codec_fr;
+    }
+
+    return fr;
+}
+
 int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
                                     const char *spec)
 {
