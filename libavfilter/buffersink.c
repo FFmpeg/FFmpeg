@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 
 #include "audio.h"
@@ -137,6 +138,7 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
 }
 
 #if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 static void compat_free_buffer(AVFilterBuffer *buf)
 {
     AVFrame *frame = buf->priv;
@@ -206,6 +208,7 @@ int attribute_align_arg av_buffersink_read_samples(AVFilterContext *ctx, AVFilte
 {
     return compat_read(ctx, buf, nb_samples);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 static const AVFilterPad avfilter_vsink_buffer_inputs[] = {

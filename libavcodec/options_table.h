@@ -23,6 +23,7 @@
 #include <float.h>
 #include <limits.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "version.h"
@@ -39,6 +40,7 @@
 
 #define AV_CODEC_DEFAULT_BITRATE 200*1000
 
+FF_DISABLE_DEPRECATION_WARNINGS
 static const AVOption avcodec_options[] = {
 {"b", "set bitrate (in bits/s)", OFFSET(bit_rate), AV_OPT_TYPE_INT, {.i64 = AV_CODEC_DEFAULT_BITRATE }, INT_MIN, INT_MAX, V|A|E},
 {"bt", "Set video bitrate tolerance (in bits/s). In 1-pass mode, bitrate tolerance specifies how far "
@@ -373,6 +375,7 @@ static const AVOption avcodec_options[] = {
 {"refcounted_frames", NULL, OFFSET(refcounted_frames), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, A|V|D },
 {NULL},
 };
+FF_ENABLE_DEPRECATION_WARNINGS
 
 #undef A
 #undef V

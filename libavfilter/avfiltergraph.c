@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -127,7 +128,9 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     graph->filters[graph->nb_filters++] = filter;
 
 #if FF_API_FOO_COUNT
+FF_DISABLE_DEPRECATION_WARNINGS
     graph->filter_count = graph->nb_filters;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     filter->graph = graph;
@@ -187,7 +190,9 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
     graph->filters[graph->nb_filters++] = s;
 
 #if FF_API_FOO_COUNT
+FF_DISABLE_DEPRECATION_WARNINGS
     graph->filter_count = graph->nb_filters;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     s->graph = graph;

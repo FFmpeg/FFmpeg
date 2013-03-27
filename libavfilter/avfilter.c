@@ -23,6 +23,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
@@ -436,8 +437,10 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
             goto err;
     }
 #if FF_API_FOO_COUNT
+FF_DISABLE_DEPRECATION_WARNINGS
     ret->output_count = ret->nb_outputs;
     ret->input_count  = ret->nb_inputs;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     return ret;

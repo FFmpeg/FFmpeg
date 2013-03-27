@@ -28,6 +28,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
+#include "libavutil/internal.h"
 #include "get_bits.h"
 #include "parser.h"
 #include "mlp_parser.h"
@@ -323,11 +324,13 @@ static int mlp_parse(AVCodecParserContext *s,
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
 #if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
             if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
                 mh.num_substreams > 1) {
                 avctx->channels       = 2;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
             } else
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
             if (avctx->request_channel_layout == AV_CH_LAYOUT_STEREO &&
                 mh.num_substreams > 1) {
@@ -340,6 +343,7 @@ static int mlp_parse(AVCodecParserContext *s,
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
 #if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
             if (avctx->request_channels > 0 && avctx->request_channels <= 2 &&
                 mh.num_substreams > 1) {
                 avctx->channels       = 2;
@@ -349,6 +353,7 @@ static int mlp_parse(AVCodecParserContext *s,
                 avctx->channels       = mh.channels_thd_stream1;
                 avctx->channel_layout = mh.channel_layout_thd_stream1;
             } else
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
             if (avctx->request_channel_layout == AV_CH_LAYOUT_STEREO &&
                 mh.num_substreams > 1) {

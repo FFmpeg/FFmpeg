@@ -32,6 +32,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/frame.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
@@ -511,7 +512,9 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
         return ret;
 
 #if FF_API_GET_BUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
     frame->type = FF_BUFFER_TYPE_INTERNAL;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     switch (avctx->codec_type) {
@@ -525,6 +528,7 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
 }
 
 #if FF_API_GET_BUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 int avcodec_default_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
     return avcodec_default_get_buffer2(avctx, frame, 0);
@@ -548,6 +552,7 @@ static void compat_release_buffer(void *opaque, uint8_t *data)
     AVBufferRef *buf = opaque;
     av_buffer_unref(&buf);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
@@ -601,6 +606,7 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     frame->reordered_opaque = avctx->reordered_opaque;
 
 #if FF_API_GET_BUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
     /*
      * Wrap an old get_buffer()-allocated buffer in an bunch of AVBuffers.
      * We wrap each plane in its own AVBuffer. Each of those has a reference to
@@ -712,6 +718,7 @@ fail:
         av_buffer_unref(&dummy_buf);
         return ret;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     ret = avctx->get_buffer2(avctx, frame, flags);
@@ -1095,7 +1102,9 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
     if (avpkt->data) {
         AVBufferRef *buf = avpkt->buf;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
         void *destruct = avpkt->destruct;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
         if (avpkt->size < size)
@@ -1103,7 +1112,9 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
 
         av_init_packet(avpkt);
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
         avpkt->destruct = destruct;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         avpkt->buf      = buf;
         avpkt->size     = size;
@@ -2042,6 +2053,7 @@ int ff_match_2uint16(const uint16_t(*tab)[2], int size, int a, int b)
 }
 
 #if FF_API_MISSING_SAMPLE
+FF_DISABLE_DEPRECATION_WARNINGS
 void av_log_missing_feature(void *avc, const char *feature, int want_sample)
 {
     av_log(avc, AV_LOG_WARNING, "%s is not implemented. Update your Libav "
@@ -2066,6 +2078,7 @@ void av_log_ask_for_sample(void *avc, const char *msg, ...)
 
     va_end(argument_list);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif /* FF_API_MISSING_SAMPLE */
 
 static AVHWAccel *first_hwaccel = NULL;

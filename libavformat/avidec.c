@@ -22,6 +22,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 #include "libavutil/dict.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
@@ -1165,12 +1166,16 @@ resync:
         if (CONFIG_DV_DEMUXER && avi->dv_demux) {
             AVBufferRef *avbuf = pkt->buf;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
             dstr = pkt->destruct;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
             size = avpriv_dv_produce_packet(avi->dv_demux, pkt,
                                             pkt->data, pkt->size);
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
             pkt->destruct = dstr;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
             pkt->buf    = avbuf;
             pkt->flags |= AV_PKT_FLAG_KEY;
