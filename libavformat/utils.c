@@ -2671,6 +2671,7 @@ void avformat_free_context(AVFormatContext *s)
         if (st->attached_pic.data)
             av_free_packet(&st->attached_pic);
         av_dict_free(&st->metadata);
+        av_freep(&st->probe_data.buf);
         av_free(st->index_entries);
         av_free(st->codec->extradata);
         av_free(st->codec->subtitle_header);
