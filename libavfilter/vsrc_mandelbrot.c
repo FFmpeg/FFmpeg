@@ -42,6 +42,7 @@ enum Outer{
     ITERATION_COUNT,
     NORMALIZED_ITERATION_COUNT,
     WHITE,
+    OUTZ,
 };
 
 enum Inner{
@@ -98,6 +99,7 @@ static const AVOption mandelbrot_options[] = {
     {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.i64=ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
     {"normalized_iteration_count", "set normalized iteration count mode",   0, AV_OPT_TYPE_CONST, {.i64=NORMALIZED_ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
     {"white", "set white mode",                      0, AV_OPT_TYPE_CONST, {.i64=WHITE}, INT_MIN, INT_MAX, FLAGS, "outer" },
+    {"outz",        "set outz mode",                 0, AV_OPT_TYPE_CONST, {.i64=OUTZ}, INT_MIN, INT_MAX, FLAGS, "outer" },
 
     {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.i64=MINCOL}, 0, INT_MAX, FLAGS, "inner" },
     {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.i64=BLACK}, INT_MIN, INT_MAX, FLAGS, "inner"},
@@ -330,6 +332,11 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                                 break;
                             case                      WHITE:
                                 c = 0xFFFFFF;
+                                break;
+                            case                      OUTZ:
+                                zr /= mb->bailout;
+                                zi /= mb->bailout;
+                                c = (((int)(zr*128+128))&0xFF)*256 + (((int)(zi*128+128))&0xFF);
                             }
                             break;
                         }
