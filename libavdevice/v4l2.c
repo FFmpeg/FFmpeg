@@ -949,11 +949,10 @@ static int v4l2_read_header(AVFormatContext *s1)
     }
 
     if (!s->width && !s->height) {
-        struct v4l2_format fmt;
+        struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
 
         av_log(s1, AV_LOG_VERBOSE,
                "Querying the device for the current frame size\n");
-        fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if (v4l2_ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
             res = AVERROR(errno);
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", av_err2str(res));
