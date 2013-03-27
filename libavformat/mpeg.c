@@ -110,6 +110,7 @@ typedef struct MpegDemuxContext {
     unsigned char psm_es_type[256];
     int sofdec;
     int dvd;
+    int imkh_cctv;
 #if CONFIG_VOBSUB_DEMUXER
     AVFormatContext *sub_ctx;
     FFDemuxSubtitlesQueue q;
@@ -119,22 +120,18 @@ typedef struct MpegDemuxContext {
 static int mpegps_read_header(AVFormatContext *s)
 {
     MpegDemuxContext *m = s->priv_data;
-    const char *sofdec = "Sofdec";
-    int v, i = 0;
+    char buffer[7];
     int64_t last_pos = avio_tell(s->pb);
 
     m->header_state = 0xff;
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    m->sofdec = -1;
-    do {
-        v = avio_r8(s->pb);
-        m->sofdec++;
-    } while (v == sofdec[i] && i++ < 6);
-
-    m->sofdec = (m->sofdec == 6) ? 1 : 0;
-
-    if (!m->sofdec)
+    avio_get_str(s->pb, 6, buffer, sizeof(buffer));
+    if (!memcmp("IMKH", buffer, 4)) {
+        m->imkh_cctv = 1;
+    } else if (!memcmp("Sofdec", buffer, 6)) {
+        m->sofdec = 1;
+    } else
        avio_seek(s->pb, last_pos, SEEK_SET);
 
     /* no need to do more */
@@ -506,6 +503,9 @@ static int mpegps_read_packet(AVFormatContext *s,
         } else if(es_type == STREAM_TYPE_AUDIO_AC3){
             codec_id = AV_CODEC_ID_AC3;
             type = AVMEDIA_TYPE_AUDIO;
+        } else if(m->imkh_cctv && es_type == 0x91){
+            codec_id = AV_CODEC_ID_PCM_MULAW;
+            type = AVMEDIA_TYPE_AUDIO;
     } else if (startcode >= 0x1e0 && startcode <= 0x1ef) {
         static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
         unsigned char buf[8];
@@ -564,6 +564,11 @@ static int mpegps_read_packet(AVFormatContext *s,
     st->id = startcode;
     st->codec->codec_type = type;
     st->codec->codec_id = codec_id;
+    if (st->codec->codec_id == AV_CODEC_ID_PCM_MULAW) {
+        st->codec->channels = 1;
+        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+        st->codec->sample_rate = 8000;
+    }
     st->request_probe     = request_probe;
     if (codec_id != AV_CODEC_ID_PCM_S16BE)
         st->need_parsing = AVSTREAM_PARSE_FULL;
