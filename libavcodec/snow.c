@@ -352,8 +352,6 @@ void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, 
 
         av_assert2(s->chroma_h_shift == s->chroma_v_shift); // only one mv_scale
 
-//        assert(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h);
-//        assert(!(b_w&(b_w-1)));
         av_assert2(b_w>1 && b_h>1);
         av_assert2((tab_index>=0 && tab_index<4) || b_w==32);
         if((dx&3) || (dy&3) || !(b_w == b_h || 2*b_w == b_h || b_w == 2*b_h) || (b_w&(b_w-1)) || !s->plane[plane_index].fast_mc )
