@@ -32,8 +32,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libavutil/avutil.h"
-
+#define FFSWAP(type,a,b) do{type SWAP_tmp= b; b= a; a= SWAP_tmp;}while(0)
+#define FFMIN(a,b) ((a) > (b) ? (b) : (a))
 
 #define BIT_DEPTH 8
 #define PIXEL_MAX ((1 << BIT_DEPTH)-1)
