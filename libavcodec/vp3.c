@@ -2224,7 +2224,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
 
     fps.num = get_bits_long(gb, 32);
     fps.den = get_bits_long(gb, 32);
-    if (fps.num && fps.den) {
+    if (fps.num>0 && fps.den>0) {
         av_reduce(&avctx->time_base.num, &avctx->time_base.den,
                   fps.den, fps.num, 1<<30);
     }
