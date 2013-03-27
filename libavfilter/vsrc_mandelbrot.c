@@ -77,6 +77,10 @@ typedef struct {
     Point *next_cache;
     double (*zyklus)[2];
     uint32_t dither;
+
+    double morphxf;
+    double morphyf;
+    double morphamp;
 } MBContext;
 
 #define OFFSET(x) offsetof(MBContext, x)
@@ -94,6 +98,9 @@ static const AVOption mandelbrot_options[] = {
     {"end_scale",   "set the terminal scale value",  OFFSET(end_scale), AV_OPT_TYPE_DOUBLE,   {.dbl=0.3},  0, FLT_MAX, FLAGS },
     {"end_pts",     "set the terminal pts value",    OFFSET(end_pts), AV_OPT_TYPE_DOUBLE,     {.dbl=400},  0, INT64_MAX, FLAGS },
     {"bailout",     "set the bailout value",         OFFSET(bailout), AV_OPT_TYPE_DOUBLE,     {.dbl=10},   0, FLT_MAX, FLAGS },
+    {"morphxf",     "set morph x frequency",         OFFSET(morphxf), AV_OPT_TYPE_DOUBLE,     {.dbl=0.01},   -FLT_MAX, FLT_MAX, FLAGS },
+    {"morphyf",     "set morph y frequency",         OFFSET(morphyf), AV_OPT_TYPE_DOUBLE,     {.dbl=0.0123}, -FLT_MAX, FLT_MAX, FLAGS },
+    {"morphamp",    "set morph amplitude",           OFFSET(morphamp), AV_OPT_TYPE_DOUBLE,    {.dbl=0},      -FLT_MAX, FLT_MAX, FLAGS },
 
     {"outer",       "set outer coloring mode",       OFFSET(outer), AV_OPT_TYPE_INT, {.i64=NORMALIZED_ITERATION_COUNT}, 0, INT_MAX, FLAGS, "outer" },
     {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.i64=ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
@@ -173,6 +180,8 @@ static int config_props(AVFilterLink *inlink)
 
 static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx, int *out_cidx, double py, double scale){
     MBContext *mb = ctx->priv;
+    if(mb->morphamp)
+        return;
     for(; *in_cidx < mb->cache_used; (*in_cidx)++){
         Point *p= &mb->point_cache[*in_cidx];
         int x;
@@ -262,15 +271,15 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
         for(x=0; x<mb->w; x++){
             float av_uninit(epsilon);
             const double cr=mb->start_x+scale*(x-mb->w/2);
-            double zr=cr;
-            double zi=ci;
+            double zr=cr + cos(pts * mb->morphxf) * mb->morphamp;
+            double zi=ci + sin(pts * mb->morphyf) * mb->morphamp;
             uint32_t c=0;
             double dv= mb->dither / (double)(1LL<<32);
             mb->dither= mb->dither*1664525+1013904223;
 
             if(color[x + y*linesize] & 0xFF000000)
                 continue;
-            if(interpol(mb, color, x, y, linesize)){
+            if(!mb->morphamp && interpol(mb, color, x, y, linesize)){
                 if(next_cidx < mb->cache_allocated){
                     mb->next_cache[next_cidx  ].p[0]= cr;
                     mb->next_cache[next_cidx  ].p[1]= ci;
