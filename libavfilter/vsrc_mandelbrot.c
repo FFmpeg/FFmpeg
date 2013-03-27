@@ -41,6 +41,7 @@
 enum Outer{
     ITERATION_COUNT,
     NORMALIZED_ITERATION_COUNT,
+    WHITE,
 };
 
 enum Inner{
@@ -96,6 +97,7 @@ static const AVOption mandelbrot_options[] = {
     {"outer",       "set outer coloring mode",       OFFSET(outer), AV_OPT_TYPE_INT, {.i64=NORMALIZED_ITERATION_COUNT}, 0, INT_MAX, FLAGS, "outer" },
     {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.i64=ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
     {"normalized_iteration_count", "set normalized iteration count mode",   0, AV_OPT_TYPE_CONST, {.i64=NORMALIZED_ITERATION_COUNT}, INT_MIN, INT_MAX, FLAGS, "outer" },
+    {"white", "set white mode",                      0, AV_OPT_TYPE_CONST, {.i64=WHITE}, INT_MIN, INT_MAX, FLAGS, "outer" },
 
     {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.i64=MINCOL}, 0, INT_MAX, FLAGS, "inner" },
     {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.i64=BLACK}, INT_MIN, INT_MAX, FLAGS, "inner"},
@@ -318,10 +320,17 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                         zi= mb->zyklus[i][1];
                         if(zr*zr + zi*zi > mb->bailout){
                             switch(mb->outer){
-                            case            ITERATION_COUNT: zr = i; break;
-                            case NORMALIZED_ITERATION_COUNT: zr= i + log2(log(mb->bailout) / log(zr*zr + zi*zi)); break;
+                            case            ITERATION_COUNT:
+                                zr = i;
+                                c = lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                                break;
+                            case NORMALIZED_ITERATION_COUNT:
+                                zr = i + log2(log(mb->bailout) / log(zr*zr + zi*zi));
+                                c = lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                                break;
+                            case                      WHITE:
+                                c = 0xFFFFFF;
                             }
-                            c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
                             break;
                         }
                     }
