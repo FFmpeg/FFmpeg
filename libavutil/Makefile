@@ -103,9 +103,9 @@ OBJS += $(COMPAT_OBJS:%=../compat/%)
 
 SKIPHEADERS          = old_pix_fmts.h
 
-SKIPHEADERS-$(HAVE_MACHINE_RW_BARRIER)          += atomic_suncc.h
-SKIPHEADERS-$(HAVE_MEMORYBARRIER)               += atomic_win32.h
-SKIPHEADERS-$(HAVE_SYNC_VAL_COMPARE_AND_SWAP)   += atomic_gcc.h
+SKIPHEADERS-$(HAVE_ATOMICS_SUNCC)      += atomic_suncc.h
+SKIPHEADERS-$(HAVE_ATOMICS_WIN32)      += atomic_win32.h
+SKIPHEADERS-$(HAVE_ATOMICS_GCC)        += atomic_gcc.h
 
 TESTPROGS = adler32                                                     \
             aes                                                         \
