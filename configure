@@ -1319,6 +1319,7 @@ HAVE_LIST="
     nanosleep
     poll_h
     posix_memalign
+    pragma_deprecated
     rdtsc
     sched_getaffinity
     sdl
@@ -3392,6 +3393,11 @@ for restrict_keyword in restrict __restrict__ __restrict; do
 void foo(char * $restrict_keyword p);
 EOF
 done
+
+check_cc <<EOF && enable pragma_deprecated
+_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+_Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")
+EOF
 
 check_cc <<EOF && enable attribute_packed
 struct { int x; } __attribute__((packed)) x;
