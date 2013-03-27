@@ -263,6 +263,8 @@ static int decode_wdlt(uint8_t *frame, int width, int height,
             segments = bytestream_get_le16(&src);
         }
         line_ptr = frame;
+        if (frame_end - frame < width)
+            return AVERROR_INVALIDDATA;
         frame += width;
         y++;
         while (segments--) {
