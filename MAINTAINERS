@@ -314,6 +314,7 @@ Muxers/Demuxers:
   astdec.c                              Paul B Mahol
   astenc.c                              James Almer
   avi*                                  Michael Niedermayer
+  avisynth.c                            AvxSynth Team
   avr.c                                 Paul B Mahol
   bink.c                                Peter Ross
   brstm.c                               Paul B Mahol
