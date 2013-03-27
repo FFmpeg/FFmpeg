@@ -134,7 +134,7 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
                 av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32" (%"PRIu32" bytes)",
                        i, ape_ctx->seektable[i],
                        ape_ctx->seektable[i + 1] - ape_ctx->seektable[i]);
-                if (s->bittable)
+                if (ape_ctx->bittable)
                     av_log(s, AV_LOG_DEBUG, " + %2d bits\n",
                            ape_ctx->bittable[i]);
                 av_log(s, AV_LOG_DEBUG, "\n");
