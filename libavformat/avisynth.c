@@ -164,24 +164,20 @@ static av_cold int avisynth_context_create(AVFormatContext *s) {
             return ret;
     }
 
-    if (!avs)
-        return AVERROR_UNKNOWN;
+    avs->env = avs_library->avs_create_script_environment(3);
+    if (avs_library->avs_get_error) {
+        const char *error = avs_library->avs_get_error(avs->env);
+        if (error) {
+            av_log(s, AV_LOG_ERROR, "%s\n", error);
+            return AVERROR_UNKNOWN;
+        }
+    }
 
     if (!avs_ctx_list) {
         avs_ctx_list = avs;
     } else {
         avs->next = avs_ctx_list;
         avs_ctx_list = avs;
-    }
-
-    avs->env = avs_library->avs_create_script_environment(3);
-    if (avs_library->avs_get_error) {
-        const char *error = avs_library->avs_get_error(avs->env);
-        if (error) {
-            av_log(s, AV_LOG_ERROR, "%s\n", error);
-            av_free(avs);
-            return AVERROR_UNKNOWN;
-        }
     }
 
     return 0;
