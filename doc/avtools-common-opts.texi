@@ -48,7 +48,7 @@ Matches the stream by format-specific ID.
 
 @section Generic options
 
-These options are shared amongst the av* tools.
+These options are shared amongst the ff* tools.
 
 @table @option
 
