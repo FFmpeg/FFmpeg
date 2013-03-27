@@ -1738,7 +1738,7 @@ int ff_add_index_entry(AVIndexEntry **index_entries,
     if(index<0){
         index= (*nb_index_entries)++;
         ie= &entries[index];
-        assert(index==0 || ie[-1].timestamp < timestamp);
+        av_assert0(index==0 || ie[-1].timestamp < timestamp);
     }else{
         ie= &entries[index];
         if(ie->timestamp != timestamp){
@@ -1854,7 +1854,7 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         }
 
         index= av_index_search_timestamp(st, target_ts, flags & ~AVSEEK_FLAG_BACKWARD);
-        assert(index < st->nb_index_entries);
+        av_assert0(index < st->nb_index_entries);
         if(index >= 0){
             e= &st->index_entries[index];
             assert(e->timestamp >= target_ts);
@@ -2037,7 +2037,7 @@ static int seek_frame_generic(AVFormatContext *s,
         int nonkey=0;
 
         if(st->nb_index_entries){
-            assert(st->index_entries);
+            av_assert0(st->index_entries);
             ie= &st->index_entries[st->nb_index_entries-1];
             if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
                 return ret;
