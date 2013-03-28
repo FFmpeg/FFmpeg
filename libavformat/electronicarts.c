@@ -289,6 +289,10 @@ static int process_video_header_vp6(AVFormatContext *s)
     avio_skip(pb, 4);
     ea->time_base.den = avio_rl32(pb);
     ea->time_base.num = avio_rl32(pb);
+    if (ea->time_base.den <= 0 || ea->time_base.num <= 0) {
+        av_log(s, AV_LOG_ERROR, "Timebase is invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
     ea->video_codec = AV_CODEC_ID_VP6;
 
     return 1;
