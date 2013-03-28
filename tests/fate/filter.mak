@@ -106,15 +106,15 @@ fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLE
 
 FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
-FATE_HQDN3D += fate-filter-hqdn3d-ubitux
-fate-filter-hqdn3d-ubitux: CMD = framecrc -idct simple -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf perms=random,hqdn3d -an
+FATE_HQDN3D += fate-filter-hqdn3d-sample
+fate-filter-hqdn3d-sample: CMD = framecrc -idct simple -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf perms=random,hqdn3d -an
 FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILTER) += $(FATE_HQDN3D)
 
 fate-filter-curves: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgb_median.avi -vf perms=random,curves=vintage
 FATE_FILTER-$(call ALLYES, UTVIDEO_DECODER AVI_DEMUXER PERMS_FILTER CURVES_FILTER) += fate-filter-curves
 
-FATE_GRADFUN += fate-filter-gradfun-ubitux
-fate-filter-gradfun-ubitux: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;format=gray,perms=random,gradfun=10:8" -an -frames:v 20
+FATE_GRADFUN += fate-filter-gradfun-sample
+fate-filter-gradfun-sample: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;format=gray,perms=random,gradfun=10:8" -an -frames:v 20
 FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER FORMAT_FILTER PERMS_FILTER GRADFUN_FILTER) += $(FATE_GRADFUN)
 
 fate-filter-concat: CMD = framecrc -lavfi "testsrc=r=5:n=1:d=2[v1];sine=440:b=2:d=1[a1];testsrc=r=5:n=1:d=1[v2];sine=622:b=2:d=2[a2];testsrc=r=5:n=1:d=1[v3];sine=880:b=2:d=1[a3];[v1][a1][v2][a2][v3][a3]concat=v=1:a=1:n=3"
