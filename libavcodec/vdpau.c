@@ -48,6 +48,9 @@ int ff_vdpau_common_start_frame(AVCodecContext *avctx,
     return 0;
 }
 
+#if CONFIG_H263_VDPAU_HWACCEL  || CONFIG_MPEG1_VDPAU_HWACCEL || \
+    CONFIG_MPEG2_VDPAU_HWACCEL || CONFIG_MPEG4_VDPAU_HWACCEL || \
+    CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
 {
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
@@ -62,6 +65,7 @@ int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
 
     return 0;
 }
+#endif
 
 int ff_vdpau_add_buffer(AVCodecContext *avctx,
                         const uint8_t *buf, uint32_t size)
@@ -170,6 +174,7 @@ void ff_vdpau_add_data_chunk(uint8_t *data, const uint8_t *buf, int buf_size)
     render->bitstream_buffers_used++;
 }
 
+#if CONFIG_H264_VDPAU_DECODER
 void ff_vdpau_h264_picture_start(H264Context *h)
 {
     struct vdpau_render_state *render;
@@ -230,7 +235,9 @@ void ff_vdpau_h264_picture_complete(H264Context *h)
     ff_h264_draw_horiz_band(h, 0, h->avctx->height);
     render->bitstream_buffers_used = 0;
 }
+#endif /* CONFIG_H264_VDPAU_DECODER */
 
+#if CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER
 void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
                                     int buf_size, int slice_count)
 {
@@ -287,7 +294,9 @@ void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
         ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
     render->bitstream_buffers_used               = 0;
 }
+#endif /* CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER */
 
+#if CONFIG_VC1_VDPAU_DECODER
 void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
                                  int buf_size)
 {
@@ -356,7 +365,9 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
     ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
     render->bitstream_buffers_used        = 0;
 }
+#endif /* (CONFIG_VC1_VDPAU_DECODER */
 
+#if CONFIG_MPEG4_VDPAU_DECODER
 void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
                                    int buf_size)
 {
@@ -410,5 +421,6 @@ void ff_vdpau_mpeg4_decode_picture(MpegEncContext *s, const uint8_t *buf,
     ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
     render->bitstream_buffers_used = 0;
 }
+#endif /* CONFIG_MPEG4_VDPAU_DECODER */
 
 /* @}*/

@@ -39,4 +39,10 @@
 
 extern av_export const uint32_t avpriv_dca_sample_rates[16];
 
+/**
+ * Convert bitstream to one representation based on sync marker
+ */
+int ff_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
+                             int max_size);
+
 #endif /* AVCODEC_DCA_H */
