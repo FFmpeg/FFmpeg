@@ -36,9 +36,21 @@ fate-filter-aresample: CMD = pcm -i $(SRC) -af aresample=min_comp=0.001:min_hard
 fate-filter-aresample: CMP = oneoff
 fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
+FATE_FILTER_VSYNTH-$(CONFIG_BOXBLUR_FILTER) += fate-filter-boxblur
+fate-filter-boxblur: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf boxblur=2:1
+
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf perms=random,delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_FILTER-$(call ALLYES, PERMS_FILTER DELOGO_FILTER RM_DEMUXER RV30_DECODER) += fate-filter-delogo
+
+FATE_FILTER_VSYNTH-$(CONFIG_DRAWBOX_FILTER) += fate-filter-drawbox
+fate-filter-drawbox: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf drawbox=10:20:200:60:red@0.5
+
+FATE_FILTER_VSYNTH-$(CONFIG_FADE_FILTER) += fate-filter-fade
+fate-filter-fade: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf fade=in:0:25,fade=out:25:25
+
+FATE_FILTER_VSYNTH-$(CONFIG_GRADFUN_FILTER) += fate-filter-gradfun
+fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
 
 FATE_YADIF += fate-filter-yadif-mode0
 fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf yadif=0
@@ -55,12 +67,16 @@ FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILT
 fate-filter-curves: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgb_median.avi -vf perms=random,curves=vintage
 FATE_FILTER-$(call ALLYES, UTVIDEO_DECODER AVI_DEMUXER PERMS_FILTER CURVES_FILTER) += fate-filter-curves
 
-FATE_GRADFUN += fate-filter-gradfun
-fate-filter-gradfun: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;format=gray,perms=random,gradfun=10:8" -an -frames:v 20
+FATE_GRADFUN += fate-filter-gradfun-ubitux
+fate-filter-gradfun-ubitux: CMD = framecrc -i $(SAMPLES)/vmd/12.vmd -vf "sws_flags=+accurate_rnd+bitexact;format=gray,perms=random,gradfun=10:8" -an -frames:v 20
 FATE_FILTER-$(call ALLYES, VMD_DEMUXER VMDVIDEO_DECODER FORMAT_FILTER PERMS_FILTER GRADFUN_FILTER) += $(FATE_GRADFUN)
 
 fate-filter-concat: CMD = framecrc -lavfi "testsrc=r=5:n=1:d=2[v1];sine=440:b=2:d=1[a1];testsrc=r=5:n=1:d=1[v2];sine=622:b=2:d=2[a2];testsrc=r=5:n=1:d=1[v3];sine=880:b=2:d=1[a3];[v1][a1][v2][a2][v3][a3]concat=v=1:a=1:n=3"
 FATE_FILTER-$(call ALLYES, TESTSRC_FILTER SINE_FILTER CONCAT_FILTER) += fate-filter-concat
+
+$(FATE_FILTER_VSYNTH-yes): tests/vsynth1/00.pgm
+$(FATE_FILTER_VSYNTH-yes): SRC = $(TARGET_PATH)/tests/vsynth1/%02d.pgm
+FATE_AVCONV-$(call DEMDEC, IMAGE2, PGMYUV) += $(FATE_FILTER_VSYNTH-yes)
 
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
 
@@ -87,4 +103,4 @@ fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SR
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
-fate-filter: $(FATE_FILTER-yes) $(FATE_METADATA_FILTER-yes)
+fate-filter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes) $(FATE_METADATA_FILTER-yes)
