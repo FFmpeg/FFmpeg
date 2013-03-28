@@ -635,7 +635,7 @@ static int read_filter_params(MLPDecodeContext *m, GetBitContext *gbp,
             /* TODO: Check validity of state data. */
 
             for (i = 0; i < order; i++)
-                fp->state[i] = get_sbits(gbp, state_bits) << state_shift;
+                fp->state[i] = state_bits ? get_sbits(gbp, state_bits) << state_shift : 0;
         }
     }
 
