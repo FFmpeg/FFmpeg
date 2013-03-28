@@ -119,6 +119,9 @@ typedef struct Picture{
     AVBufferRef *mc_mb_var_buf;
     uint16_t *mc_mb_var;        ///< Table for motion compensated MB variances
 
+    int alloc_mb_width;         ///< mb_width used to allocate tables
+    int alloc_mb_height;        ///< mb_height used to allocate tables
+
     AVBufferRef *mb_mean_buf;
     uint8_t *mb_mean;           ///< Table for MB luminance
 

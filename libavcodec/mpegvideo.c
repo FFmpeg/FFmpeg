@@ -294,6 +294,9 @@ static void free_picture_tables(Picture *pic)
 {
     int i;
 
+    pic->alloc_mb_width  =
+    pic->alloc_mb_height = 0;
+
     av_buffer_unref(&pic->mb_var_buf);
     av_buffer_unref(&pic->mc_mb_var_buf);
     av_buffer_unref(&pic->mb_mean_buf);
@@ -343,6 +346,9 @@ static int alloc_picture_tables(MpegEncContext *s, Picture *pic)
         }
     }
 
+    pic->alloc_mb_width  = s->mb_width;
+    pic->alloc_mb_height = s->mb_height;
+
     return 0;
 }
 
@@ -380,8 +386,8 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
     int i, ret;
 
     if (pic->qscale_table_buf)
-        if (pic->mbskip_table_buf->size < s->mb_stride * s->mb_height + 2 ||
-            pic->qscale_table_buf->size < s->mb_stride * (s->mb_height + 1) + 1 + s->mb_stride)
+        if (   pic->alloc_mb_width  != s->mb_width
+            || pic->alloc_mb_height != s->mb_height)
             free_picture_tables(pic);
 
     if (shared) {
@@ -489,6 +495,9 @@ do {\
         dst->motion_val[i] = src->motion_val[i];
         dst->ref_index[i]  = src->ref_index[i];
     }
+
+    dst->alloc_mb_width  = src->alloc_mb_width;
+    dst->alloc_mb_height = src->alloc_mb_height;
 
     return 0;
 }
