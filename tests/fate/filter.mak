@@ -69,6 +69,14 @@ fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
 FATE_FILTER_VSYNTH-$(CONFIG_HQDN3D_FILTER) += fate-filter-hqdn3d
 fate-filter-hqdn3d: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf hqdn3d
 
+FATE_FILTER-$(call FILTERDEMDECENCMUX, JOIN, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-join
+fate-filter-join: SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-join: SRC2 = $(TARGET_PATH)/tests/data/asynth-44100-3.wav
+fate-filter-join: tests/data/asynth-44100-2.wav tests/data/asynth-44100-3.wav
+fate-filter-join: CMD = md5 -i $(SRC1) -i $(SRC2) -filter_complex join=channel_layout=5 -f s16le
+fate-filter-join: CMP = oneline
+fate-filter-join: REF = 38fa1b18b0c46d77df6f17bfc4f078dd
+
 FATE_FILTER_VSYNTH-$(CONFIG_NEGATE_FILTER) += fate-filter-negate
 fate-filter-negate: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf negate
 
@@ -83,6 +91,13 @@ fate-filter-transpose: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf transpose
 
 FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
 fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp
+
+FATE_FILTER-$(call FILTERDEMDECENCMUX, VOLUME, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-volume
+fate-filter-volume: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-volume: tests/data/asynth-44100-2.wav
+fate-filter-volume: CMD = md5 -i $(SRC) -af volume=precision=fixed:volume=0.5 -f s16le
+fate-filter-volume: CMP = oneline
+fate-filter-volume: REF = 4d6ba75ef3e32d305d066b9bc771d6f4
 
 FATE_YADIF += fate-filter-yadif-mode0
 fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf yadif=0
