@@ -627,12 +627,12 @@ fail:
     return ret;
 }
 
-const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx)
+const char *avfilter_pad_get_name(const AVFilterPad *pads, int pad_idx)
 {
     return pads[pad_idx].name;
 }
 
-enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx)
+enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx)
 {
     return pads[pad_idx].type;
 }
