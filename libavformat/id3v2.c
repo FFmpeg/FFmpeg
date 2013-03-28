@@ -476,9 +476,10 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag
         goto fail;
     }
 
-    apic->buf = av_buffer_alloc(taglen);
+    apic->buf = av_buffer_alloc(taglen + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!apic->buf || avio_read(pb, apic->buf->data, taglen) != taglen)
         goto fail;
+    memset(apic->buf->data + taglen, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     new_extra->tag    = "APIC";
     new_extra->data   = apic;
@@ -735,7 +736,7 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         av_init_packet(&st->attached_pic);
         st->attached_pic.buf          = apic->buf;
         st->attached_pic.data         = apic->buf->data;
-        st->attached_pic.size         = apic->buf->size;
+        st->attached_pic.size         = apic->buf->size - FF_INPUT_BUFFER_PADDING_SIZE;
         st->attached_pic.stream_index = st->index;
         st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
 
