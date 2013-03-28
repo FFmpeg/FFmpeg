@@ -477,9 +477,10 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag
     }
 
     apic->len   = taglen;
-    apic->data  = av_malloc(taglen);
+    apic->data  = av_malloc(taglen + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!apic->data || avio_read(pb, apic->data, taglen) != taglen)
         goto fail;
+    memset(apic->data + taglen, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     new_extra->tag    = "APIC";
     new_extra->data   = apic;
