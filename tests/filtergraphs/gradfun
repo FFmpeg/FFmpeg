@@ -1,0 +1,2 @@
+sws_flags=+accurate_rnd+bitexact;
+format=gray, perms=random, gradfun=10:8
