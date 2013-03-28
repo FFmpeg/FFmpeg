@@ -359,6 +359,11 @@ syntax.
 See the @ref{filter_complex_option,,-filter_complex option} if you
 want to create filter graphs with multiple inputs and/or outputs.
 
+@item -filter_script[:@var{stream_specifier}] @var{filename} (@emph{output,per-stream})
+This option is similar to @option{-filter}, the only difference is that its
+argument is the name of the file from which a filtergraph description is to be
+read.
+
 @item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
 Specify the preset for matching stream(s).
 
@@ -1048,6 +1053,11 @@ ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @item -lavfi @var{filtergraph} (@emph{global})
 Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
 outputs. Equivalent to @option{-filter_complex}.
+
+@item -filter_complex_script @var{filename} (@emph{global})
+This option is similar to @option{-filter_complex}, the only difference is that
+its argument is the name of the file from which a complex filtergraph
+description is to be read.
 
 @end table
 

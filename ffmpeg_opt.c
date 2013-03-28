@@ -1103,6 +1103,59 @@ static void parse_matrix_coeffs(uint16_t *dest, const char *str)
     }
 }
 
+/* read file contents into a string */
+static uint8_t *read_file(const char *filename)
+{
+    AVIOContext *pb      = NULL;
+    AVIOContext *dyn_buf = NULL;
+    int ret = avio_open(&pb, filename, AVIO_FLAG_READ);
+    uint8_t buf[1024], *str;
+
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Error opening file %s.\n", filename);
+        return NULL;
+    }
+
+    ret = avio_open_dyn_buf(&dyn_buf);
+    if (ret < 0) {
+        avio_closep(&pb);
+        return NULL;
+    }
+    while ((ret = avio_read(pb, buf, sizeof(buf))) > 0)
+        avio_write(dyn_buf, buf, ret);
+    avio_w8(dyn_buf, 0);
+    avio_closep(&pb);
+
+    ret = avio_close_dyn_buf(dyn_buf, &str);
+    if (ret < 0)
+        return NULL;
+    return str;
+}
+
+static char *get_ost_filters(OptionsContext *o, AVFormatContext *oc,
+                             OutputStream *ost)
+{
+    AVStream *st = ost->st;
+    char *filter = NULL, *filter_script = NULL;
+
+    MATCH_PER_STREAM_OPT(filter_scripts, str, filter_script, oc, st);
+    MATCH_PER_STREAM_OPT(filters, str, filter, oc, st);
+
+    if (filter_script && filter) {
+        av_log(NULL, AV_LOG_ERROR, "Both -filter and -filter_script set for "
+               "output stream #%d:%d.\n", nb_output_files, st->index);
+        exit(1);
+    }
+
+    if (filter_script)
+        return read_file(filter_script);
+    else if (filter)
+        return av_strdup(filter);
+
+    return av_strdup(st->codec->codec_type == AVMEDIA_TYPE_VIDEO ?
+                     "null" : "anull");
+}
+
 static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
 {
     AVStream *st;
@@ -1125,7 +1178,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         char *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
-        const char *filters = "null";
         int do_pass = 0;
         int i;
 
@@ -1236,8 +1288,10 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         ost->top_field_first = -1;
         MATCH_PER_STREAM_OPT(top_field_first, i, ost->top_field_first, oc, st);
 
-        MATCH_PER_STREAM_OPT(filters, str, filters, oc, st);
-        ost->avfilter = av_strdup(filters);
+
+        ost->avfilter = get_ost_filters(o, oc, ost);
+        if (!ost->avfilter)
+            exit(1);
     } else {
         MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i, ost->copy_initial_nonkeyframes, oc ,st);
     }
@@ -1260,7 +1314,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
 
     if (!ost->stream_copy) {
         char *sample_fmt = NULL;
-        const char *filters = "anull";
 
         MATCH_PER_STREAM_OPT(audio_channels, i, audio_enc->channels, oc, st);
 
@@ -1273,10 +1326,9 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
 
         MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
 
-        MATCH_PER_STREAM_OPT(filters, str, filters, oc, st);
-
-        av_assert1(filters);
-        ost->avfilter = av_strdup(filters);
+        ost->avfilter = get_ost_filters(o, oc, ost);
+        if (!ost->avfilter)
+            exit(1);
 
         /* check for channel mapping for this audio stream */
         for (n = 0; n < o->nb_audio_channel_maps; n++) {
@@ -2291,8 +2343,24 @@ static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
     GROW_ARRAY(filtergraphs, nb_filtergraphs);
     if (!(filtergraphs[nb_filtergraphs - 1] = av_mallocz(sizeof(*filtergraphs[0]))))
         return AVERROR(ENOMEM);
-    filtergraphs[nb_filtergraphs - 1]->index       = nb_filtergraphs - 1;
-    filtergraphs[nb_filtergraphs - 1]->graph_desc = arg;
+    filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
+    filtergraphs[nb_filtergraphs - 1]->graph_desc = av_strdup(arg);
+    if (!filtergraphs[nb_filtergraphs - 1]->graph_desc)
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
+static int opt_filter_complex_script(void *optctx, const char *opt, const char *arg)
+{
+    uint8_t *graph_desc = read_file(arg);
+    if (!graph_desc)
+        return AVERROR(EINVAL);
+
+    GROW_ARRAY(filtergraphs, nb_filtergraphs);
+    if (!(filtergraphs[nb_filtergraphs - 1] = av_mallocz(sizeof(*filtergraphs[0]))))
+        return AVERROR(ENOMEM);
+    filtergraphs[nb_filtergraphs - 1]->index      = nb_filtergraphs - 1;
+    filtergraphs[nb_filtergraphs - 1]->graph_desc = graph_desc;
     return 0;
 }
 
@@ -2590,12 +2658,16 @@ const OptionDef options[] = {
         "set profile", "profile" },
     { "filter",         HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(filters) },
         "set stream filtergraph", "filter_graph" },
+    { "filter_script",  HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(filter_scripts) },
+        "read stream filtergraph description from a file", "filename" },
     { "reinit_filter",  HAS_ARG | OPT_INT | OPT_SPEC | OPT_INPUT,    { .off = OFFSET(reinit_filters) },
         "reinit filtergraph on input parameter changes", "" },
     { "filter_complex", HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
         "create a complex filtergraph", "graph_description" },
     { "lavfi",          HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_filter_complex },
         "create a complex filtergraph", "graph_description" },
+    { "filter_complex_script", HAS_ARG | OPT_EXPERT,                 { .func_arg = opt_filter_complex_script },
+        "read complex filtergraph description from a file", "filename" },
     { "stats",          OPT_BOOL,                                    { &print_stats },
         "print progress report during encoding", },
     { "attach",         HAS_ARG | OPT_PERFILE | OPT_EXPERT |

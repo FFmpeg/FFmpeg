@@ -165,6 +165,8 @@ typedef struct OptionsContext {
     int        nb_copy_prior_start;
     SpecifierOpt *filters;
     int        nb_filters;
+    SpecifierOpt *filter_scripts;
+    int        nb_filter_scripts;
     SpecifierOpt *reinit_filters;
     int        nb_reinit_filters;
     SpecifierOpt *fix_sub_duration;
