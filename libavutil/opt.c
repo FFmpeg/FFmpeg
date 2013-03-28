@@ -420,8 +420,8 @@ int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int
     if (o->type != AV_OPT_TYPE_BINARY)
         return AVERROR(EINVAL);
 
-    ptr = av_malloc(len);
-    if (!ptr)
+    ptr = len ? av_malloc(len) : NULL;
+    if (len && !ptr)
         return AVERROR(ENOMEM);
 
     dst = (uint8_t **)(((uint8_t *)target_obj) + o->offset);
@@ -430,7 +430,8 @@ int av_opt_set_bin(void *obj, const char *name, const uint8_t *val, int len, int
     av_free(*dst);
     *dst = ptr;
     *lendst = len;
-    memcpy(ptr, val, len);
+    if (len)
+        memcpy(ptr, val, len);
 
     return 0;
 }
