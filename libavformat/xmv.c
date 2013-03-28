@@ -126,6 +126,16 @@ static int xmv_probe(AVProbeData *p)
     return 0;
 }
 
+static int xmv_read_close(AVFormatContext *s)
+{
+    XMVDemuxContext *xmv = s->priv_data;
+
+    av_free(xmv->audio);
+    av_free(xmv->audio_tracks);
+
+    return 0;
+}
+
 static int xmv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
@@ -136,6 +146,7 @@ static int xmv_read_header(AVFormatContext *s,
     uint32_t file_version;
     uint32_t this_packet_size;
     uint16_t audio_track;
+    int ret;
 
     avio_skip(pb, 4); /* Next packet size */
 
@@ -214,6 +225,13 @@ static int xmv_read_header(AVFormatContext *s,
             av_log(s, AV_LOG_WARNING, "Unsupported 5.1 ADPCM audio stream "
                                       "(0x%04X)\n", track->flags);
 
+        if (!track->channels || !track->sample_rate) {
+            av_log(s, AV_LOG_ERROR, "Invalid parameters for audio track %d.\n",
+                   audio_track);
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
         ast = avformat_new_stream(s, NULL);
         if (!ast) {
             ret = AVERROR(ENOMEM);
@@ -244,6 +262,10 @@ static int xmv_read_header(AVFormatContext *s,
     xmv->stream_count       = xmv->audio_track_count + 1;
 
     return 0;
+
+fail:
+    xmv_read_close(s);
+    return ret;
 }
 
 static void xmv_read_extradata(uint8_t *extradata, AVIOContext *pb)
@@ -547,16 +569,6 @@ static int xmv_read_packet(AVFormatContext *s,
         xmv->current_stream       = 0;
         xmv->video.current_frame += 1;
     }
-
-    return 0;
-}
-
-static int xmv_read_close(AVFormatContext *s)
-{
-    XMVDemuxContext *xmv = s->priv_data;
-
-    av_free(xmv->audio);
-    av_free(xmv->audio_tracks);
 
     return 0;
 }
