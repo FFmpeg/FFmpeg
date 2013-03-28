@@ -913,8 +913,6 @@ void ff_mpeg1_encode_mb(MpegEncContext *s,
                         int motion_x, int motion_y);
 void ff_mpeg1_encode_init(MpegEncContext *s);
 void ff_mpeg1_encode_slice_header(MpegEncContext *s);
-void ff_mpeg1_clean_buffers(MpegEncContext *s);
-int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
 
 extern const uint8_t ff_aic_dc_scale_table[32];
 extern const uint8_t ff_h263_chroma_qscale_table[32];

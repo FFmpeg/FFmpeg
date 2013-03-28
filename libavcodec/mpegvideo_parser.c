@@ -21,7 +21,7 @@
  */
 
 #include "parser.h"
-#include "mpegvideo.h"
+#include "mpeg12.h"
 #include "internal.h"
 
 struct MpvParseContext {

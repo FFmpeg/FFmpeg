@@ -35,6 +35,7 @@
 #include "avcodec.h"
 #include "dct.h"
 #include "dsputil.h"
+#include "mpeg12.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "mathops.h"
