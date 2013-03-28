@@ -373,6 +373,19 @@ const char *avfilter_pad_get_name(const AVFilterPad *pads, int pad_idx);
 enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
 
 /**
+ * The number of the filter inputs is not determined just by AVFilter.inputs.
+ * The filter might add additional inputs during initialization depending on the
+ * options supplied to it.
+ */
+#define AVFILTER_FLAG_DYNAMIC_INPUTS        (1 << 0)
+/**
+ * The number of the filter outputs is not determined just by AVFilter.outputs.
+ * The filter might add additional outputs during initialization depending on
+ * the options supplied to it.
+ */
+#define AVFILTER_FLAG_DYNAMIC_OUTPUTS       (1 << 1)
+
+/**
  * Filter definition. This defines the pads a filter contains, and all the
  * callback functions used to interact with the filter.
  */
@@ -393,6 +406,11 @@ typedef struct AVFilter {
      * AVOptions.
      */
     const AVClass *priv_class;
+
+    /**
+     * A combination of AVFILTER_FLAG_*
+     */
+    int flags;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They

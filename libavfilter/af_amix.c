@@ -562,4 +562,6 @@ AVFilter avfilter_af_amix = {
 
     .inputs    = NULL,
     .outputs   = avfilter_af_amix_outputs,
+
+    .flags     = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
