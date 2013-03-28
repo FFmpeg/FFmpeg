@@ -323,7 +323,7 @@ static void list_framesizes(AVFormatContext *ctx, int fd, uint32_t pixelformat)
 {
     struct v4l2_frmsizeenum vfse = { .pixel_format = pixelformat };
 
-    while(!ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
+    while(!v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
         switch (vfse.type) {
         case V4L2_FRMSIZE_TYPE_DISCRETE:
             av_log(ctx, AV_LOG_INFO, " %ux%u",
@@ -348,7 +348,7 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
 {
     struct v4l2_fmtdesc vfd = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
 
-    while(!ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
+    while(!v4l2_ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
         enum AVCodecID codec_id = fmt_v4l2codec(vfd.pixelformat);
         enum AVPixelFormat pix_fmt = fmt_v4l2ff(vfd.pixelformat, codec_id);
 
