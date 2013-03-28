@@ -74,6 +74,10 @@ Print detailed information about the demuxer named @var{demuxer_name}. Use the
 Print detailed information about the muxer named @var{muxer_name}. Use the
 @option{-formats} option to get a list of all muxers and demuxers.
 
+@item filter=@var{filter_name}
+Print detailed information about the filter name @var{filter_name}. Use the
+@option{-filters} option to get a list of all filters.
+
 @end table
 
 @item -version
