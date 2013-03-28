@@ -371,10 +371,8 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
         }
 
 #ifdef V4L2_FMT_FLAG_EMULATED
-        if (vfd.flags & V4L2_FMT_FLAG_EMULATED) {
-            av_log(ctx, AV_LOG_WARNING, "%s", "Emulated");
-            continue;
-        }
+        if (vfd.flags & V4L2_FMT_FLAG_EMULATED)
+            av_log(ctx, AV_LOG_INFO, " Emulated :");
 #endif
 #if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
         list_framesizes(ctx, fd, vfd.pixelformat);
