@@ -135,8 +135,7 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (yop->video_packet.data) {
         *pkt                   =  yop->video_packet;
-        yop->video_packet.data =  NULL;
-        yop->video_packet.size =  0;
+        memset(&yop->video_packet, 0, sizeof(yop->video_packet));
         pkt->data[0]           =  yop->odd_frame;
         pkt->flags             |= AV_PKT_FLAG_KEY;
         yop->odd_frame         ^= 1;
