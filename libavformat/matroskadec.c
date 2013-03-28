@@ -1821,7 +1821,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
 
     case 0x3: /* EBML lacing */ {
         uint64_t num;
-        uint32_t total;
+        uint64_t total;
         n = matroska_ebmlnum_uint(matroska, data, size, &num);
         if (n < 0) {
             av_log(matroska->ctx, AV_LOG_INFO,
