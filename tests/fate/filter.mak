@@ -52,6 +52,18 @@ fate-filter-fade: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf fade=in:0:25,fade=out
 FATE_FILTER_VSYNTH-$(CONFIG_GRADFUN_FILTER) += fate-filter-gradfun
 fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
 
+FATE_FILTER_VSYNTH-$(CONFIG_HQDN3D_FILTER) += fate-filter-hqdn3d
+fate-filter-hqdn3d: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf hqdn3d
+
+FATE_FILTER_VSYNTH-$(call ALLYES, SETPTS_FILTER  SETTB_FILTER) += fate-filter-setpts
+fate-filter-setpts: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_script $(SRC_PATH)/tests/filtergraphs/setpts
+
+FATE_FILTER_VSYNTH-$(CONFIG_TRANSPOSE_FILTER) += fate-filter-transpose
+fate-filter-transpose: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf transpose
+
+FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
+fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp
+
 FATE_YADIF += fate-filter-yadif-mode0
 fate-filter-yadif-mode0: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf yadif=0
 
@@ -60,8 +72,8 @@ fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLE
 
 FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
-FATE_HQDN3D += fate-filter-hqdn3d
-fate-filter-hqdn3d: CMD = framecrc -idct simple -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf perms=random,hqdn3d -an
+FATE_HQDN3D += fate-filter-hqdn3d-ubitux
+fate-filter-hqdn3d-ubitux: CMD = framecrc -idct simple -i $(SAMPLES)/smjpeg/scenwin.mjpg -vf perms=random,hqdn3d -an
 FATE_FILTER-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER HQDN3D_FILTER) += $(FATE_HQDN3D)
 
 fate-filter-curves: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgb_median.avi -vf perms=random,curves=vintage
