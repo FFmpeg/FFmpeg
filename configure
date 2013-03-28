@@ -1241,6 +1241,7 @@ HAVE_LIST="
     arpa_inet_h
     asm_mod_q
     asm_mod_y
+    atomic_cas_ptr
     atomics_native
     attribute_may_alias
     attribute_packed
@@ -3467,6 +3468,7 @@ check_func  strtok_r
 check_func  sched_getaffinity
 check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
+check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
 check_func  sysconf
 check_func  sysctl
@@ -3537,7 +3539,7 @@ for thread in $THREADS_LIST; do
 done
 
 enabled sync_val_compare_and_swap && enable atomics_gcc
-enabled machine_rw_barrier && enable atomics_suncc
+enabled machine_rw_barrier && enabled atomic_cas_ptr && enable atomics_suncc
 enabled MemoryBarrier && enable atomics_win32
 
 check_lib math.h sin -lm && LIBM="-lm"
