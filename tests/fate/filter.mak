@@ -39,6 +39,20 @@ fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 FATE_FILTER_VSYNTH-$(CONFIG_BOXBLUR_FILTER) += fate-filter-boxblur
 fate-filter-boxblur: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf boxblur=2:1
 
+FATE_FILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-channelmap
+fate-filter-channelmap: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
+fate-filter-channelmap: tests/data/asynth-44100-6.wav
+fate-filter-channelmap: CMD = md5 -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/channelmap -f wav -flags +bitexact
+fate-filter-channelmap: CMP = oneline
+fate-filter-channelmap: REF = 06168d06085e2c0603e4e118ba4cade2
+
+FATE_FILTER-$(call FILTERDEMDECENCMUX, CHANNELSPLIT, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-channelsplit
+fate-filter-channelsplit: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+fate-filter-channelsplit: tests/data/asynth-44100-2.wav
+fate-filter-channelsplit: CMD = md5 -i $(SRC) -filter_complex channelsplit -f s16le
+fate-filter-channelsplit: CMP = oneline
+fate-filter-channelsplit: REF = d92988d0fe2dd92236763f47b07ab597
+
 fate-filter-delogo: CMD = framecrc -i $(SAMPLES)/real/rv30.rm -vf perms=random,delogo=show=0:x=290:y=25:w=26:h=16 -an
 
 FATE_FILTER-$(call ALLYES, PERMS_FILTER DELOGO_FILTER RM_DEMUXER RV30_DECODER) += fate-filter-delogo
@@ -54,6 +68,12 @@ fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
 
 FATE_FILTER_VSYNTH-$(CONFIG_HQDN3D_FILTER) += fate-filter-hqdn3d
 fate-filter-hqdn3d: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf hqdn3d
+
+FATE_FILTER_VSYNTH-$(CONFIG_NEGATE_FILTER) += fate-filter-negate
+fate-filter-negate: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf negate
+
+FATE_FILTER_VSYNTH-$(CONFIG_OVERLAY_FILTER) += fate-filter-overlay
+fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay
 
 FATE_FILTER_VSYNTH-$(call ALLYES, SETPTS_FILTER  SETTB_FILTER) += fate-filter-setpts
 fate-filter-setpts: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_script $(SRC_PATH)/tests/filtergraphs/setpts
