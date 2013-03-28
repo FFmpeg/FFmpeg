@@ -446,6 +446,8 @@ int ff_wmv2_decode_mb(MpegEncContext *s, int16_t block[6][64])
 static av_cold int wmv2_decode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
 
+    avctx->flags |= CODEC_FLAG_EMU_EDGE;
+
     if(ff_msmpeg4_decode_init(avctx) < 0)
         return -1;
 

@@ -116,7 +116,6 @@ void ff_mspel_motion(MpegEncContext *s,
     uvlinesize = s->uvlinesize;
     ptr = ref_picture[0] + (src_y * linesize) + src_x;
 
-    if(s->flags&CODEC_FLAG_EMU_EDGE || src_y <= -15 || src_y >= s->height - 1)
         if(src_x<1 || src_y<1 || src_x + 17  >= s->h_edge_pos
                               || src_y + h+1 >= v_edge_pos){
             s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr - 1 - s->linesize, s->linesize, 19, 19,
