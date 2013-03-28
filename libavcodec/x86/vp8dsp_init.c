@@ -30,93 +30,93 @@
 /*
  * MC functions
  */
-extern void ff_put_vp8_epel4_h4_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel4_h6_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel4_v4_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel4_v6_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
+void ff_put_vp8_epel4_h4_mmxext(uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel4_h6_mmxext(uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel4_v4_mmxext(uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel4_v6_mmxext(uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
 
-extern void ff_put_vp8_epel8_h4_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_h6_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_v4_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_v6_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
+void ff_put_vp8_epel8_h4_sse2  (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_h6_sse2  (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_v4_sse2  (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_v6_sse2  (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
 
-extern void ff_put_vp8_epel4_h4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel4_h6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel4_v4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel4_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_h4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_h6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_v4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
-extern void ff_put_vp8_epel8_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                       uint8_t *src, ptrdiff_t srcstride,
-                                       int height, int mx, int my);
+void ff_put_vp8_epel4_h4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel4_h6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel4_v4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel4_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_h4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_h6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_v4_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
+void ff_put_vp8_epel8_v6_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                uint8_t *src, ptrdiff_t srcstride,
+                                int height, int mx, int my);
 
-extern void ff_put_vp8_bilinear4_h_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
-extern void ff_put_vp8_bilinear8_h_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
-extern void ff_put_vp8_bilinear4_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
-extern void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
+void ff_put_vp8_bilinear4_h_mmxext(uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
+void ff_put_vp8_bilinear8_h_sse2  (uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
+void ff_put_vp8_bilinear4_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
+void ff_put_vp8_bilinear8_h_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
 
-extern void ff_put_vp8_bilinear4_v_mmxext(uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
-extern void ff_put_vp8_bilinear8_v_sse2  (uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
-extern void ff_put_vp8_bilinear4_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
-extern void ff_put_vp8_bilinear8_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
-                                          uint8_t *src, ptrdiff_t srcstride,
-                                          int height, int mx, int my);
+void ff_put_vp8_bilinear4_v_mmxext(uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
+void ff_put_vp8_bilinear8_v_sse2  (uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
+void ff_put_vp8_bilinear4_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
+void ff_put_vp8_bilinear8_v_ssse3 (uint8_t *dst, ptrdiff_t dststride,
+                                   uint8_t *src, ptrdiff_t srcstride,
+                                   int height, int mx, int my);
 
 
-extern void ff_put_vp8_pixels8_mmx (uint8_t *dst, ptrdiff_t dststride,
-                                    uint8_t *src, ptrdiff_t srcstride,
-                                    int height, int mx, int my);
-extern void ff_put_vp8_pixels16_mmx(uint8_t *dst, ptrdiff_t dststride,
-                                    uint8_t *src, ptrdiff_t srcstride,
-                                    int height, int mx, int my);
-extern void ff_put_vp8_pixels16_sse(uint8_t *dst, ptrdiff_t dststride,
-                                    uint8_t *src, ptrdiff_t srcstride,
-                                    int height, int mx, int my);
+void ff_put_vp8_pixels8_mmx (uint8_t *dst, ptrdiff_t dststride,
+                             uint8_t *src, ptrdiff_t srcstride,
+                             int height, int mx, int my);
+void ff_put_vp8_pixels16_mmx(uint8_t *dst, ptrdiff_t dststride,
+                             uint8_t *src, ptrdiff_t srcstride,
+                             int height, int mx, int my);
+void ff_put_vp8_pixels16_sse(uint8_t *dst, ptrdiff_t dststride,
+                             uint8_t *src, ptrdiff_t srcstride,
+                             int height, int mx, int my);
 
 #define TAP_W16(OPT, FILTERTYPE, TAPTYPE) \
 static void ff_put_vp8_ ## FILTERTYPE ## 16_ ## TAPTYPE ## _ ## OPT( \
@@ -230,58 +230,56 @@ HVBILIN(ssse3, 8,  4,  8)
 HVBILIN(ssse3, 8,  8, 16)
 HVBILIN(ssse3, 8, 16, 16)
 
-extern void ff_vp8_idct_dc_add_mmx(uint8_t *dst, int16_t block[16],
-                                   ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add_sse4(uint8_t *dst, int16_t block[16],
-                                    ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add4y_mmx(uint8_t *dst, int16_t block[4][16],
-                                      ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add4y_sse2(uint8_t *dst, int16_t block[4][16],
-                                      ptrdiff_t stride);
-extern void ff_vp8_idct_dc_add4uv_mmx(uint8_t *dst, int16_t block[2][16],
-                                      ptrdiff_t stride);
-extern void ff_vp8_luma_dc_wht_mmx(int16_t block[4][4][16], int16_t dc[16]);
-extern void ff_vp8_luma_dc_wht_sse(int16_t block[4][4][16], int16_t dc[16]);
-extern void ff_vp8_idct_add_mmx(uint8_t *dst, int16_t block[16],
-                                ptrdiff_t stride);
-extern void ff_vp8_idct_add_sse(uint8_t *dst, int16_t block[16],
-                                ptrdiff_t stride);
+void ff_vp8_idct_dc_add_mmx(uint8_t *dst, int16_t block[16],
+                            ptrdiff_t stride);
+void ff_vp8_idct_dc_add_sse4(uint8_t *dst, int16_t block[16],
+                             ptrdiff_t stride);
+void ff_vp8_idct_dc_add4y_mmx(uint8_t *dst, int16_t block[4][16],
+                               ptrdiff_t stride);
+void ff_vp8_idct_dc_add4y_sse2(uint8_t *dst, int16_t block[4][16],
+                               ptrdiff_t stride);
+void ff_vp8_idct_dc_add4uv_mmx(uint8_t *dst, int16_t block[2][16],
+                               ptrdiff_t stride);
+void ff_vp8_luma_dc_wht_mmx(int16_t block[4][4][16], int16_t dc[16]);
+void ff_vp8_luma_dc_wht_sse(int16_t block[4][4][16], int16_t dc[16]);
+void ff_vp8_idct_add_mmx(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
+void ff_vp8_idct_add_sse(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 
-#define DECLARE_LOOP_FILTER(NAME)\
-extern void ff_vp8_v_loop_filter_simple_ ## NAME(uint8_t *dst, \
-                                                 ptrdiff_t stride, \
-                                                 int flim);\
-extern void ff_vp8_h_loop_filter_simple_ ## NAME(uint8_t *dst, \
-                                                 ptrdiff_t stride, \
-                                                 int flim);\
-extern void ff_vp8_v_loop_filter16y_inner_ ## NAME (uint8_t *dst, \
-                                                     ptrdiff_t stride,\
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_h_loop_filter16y_inner_ ## NAME (uint8_t *dst, \
-                                                    ptrdiff_t stride,\
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_v_loop_filter8uv_inner_ ## NAME (uint8_t *dstU, \
-                                                    uint8_t *dstV,\
-                                                    ptrdiff_t s, \
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_h_loop_filter8uv_inner_ ## NAME (uint8_t *dstU, \
-                                                    uint8_t *dstV,\
-                                                    ptrdiff_t s, \
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_v_loop_filter16y_mbedge_ ## NAME(uint8_t *dst, \
-                                                    ptrdiff_t stride,\
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_h_loop_filter16y_mbedge_ ## NAME(uint8_t *dst, \
-                                                    ptrdiff_t stride,\
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_v_loop_filter8uv_mbedge_ ## NAME(uint8_t *dstU, \
-                                                    uint8_t *dstV,\
-                                                    ptrdiff_t s, \
-                                                    int e, int i, int hvt);\
-extern void ff_vp8_h_loop_filter8uv_mbedge_ ## NAME(uint8_t *dstU, \
-                                                    uint8_t *dstV,\
-                                                    ptrdiff_t s, \
-                                                    int e, int i, int hvt);
+#define DECLARE_LOOP_FILTER(NAME)                                       \
+void ff_vp8_v_loop_filter_simple_ ## NAME(uint8_t *dst,                 \
+                                          ptrdiff_t stride,             \
+                                          int flim);                    \
+void ff_vp8_h_loop_filter_simple_ ## NAME(uint8_t *dst,                 \
+                                          ptrdiff_t stride,             \
+                                          int flim);                    \
+void ff_vp8_v_loop_filter16y_inner_ ## NAME (uint8_t *dst,              \
+                                             ptrdiff_t stride,          \
+                                             int e, int i, int hvt);    \
+void ff_vp8_h_loop_filter16y_inner_ ## NAME (uint8_t *dst,              \
+                                             ptrdiff_t stride,          \
+                                             int e, int i, int hvt);    \
+void ff_vp8_v_loop_filter8uv_inner_ ## NAME (uint8_t *dstU,             \
+                                             uint8_t *dstV,             \
+                                             ptrdiff_t s,               \
+                                             int e, int i, int hvt);    \
+void ff_vp8_h_loop_filter8uv_inner_ ## NAME (uint8_t *dstU,             \
+                                             uint8_t *dstV,             \
+                                             ptrdiff_t s,               \
+                                             int e, int i, int hvt);    \
+void ff_vp8_v_loop_filter16y_mbedge_ ## NAME(uint8_t *dst,              \
+                                             ptrdiff_t stride,          \
+                                             int e, int i, int hvt);    \
+void ff_vp8_h_loop_filter16y_mbedge_ ## NAME(uint8_t *dst,              \
+                                             ptrdiff_t stride,          \
+                                             int e, int i, int hvt);    \
+void ff_vp8_v_loop_filter8uv_mbedge_ ## NAME(uint8_t *dstU,             \
+                                             uint8_t *dstV,             \
+                                             ptrdiff_t s,               \
+                                             int e, int i, int hvt);    \
+void ff_vp8_h_loop_filter8uv_mbedge_ ## NAME(uint8_t *dstU,             \
+                                             uint8_t *dstV,             \
+                                             ptrdiff_t s,               \
+                                             int e, int i, int hvt);
 
 DECLARE_LOOP_FILTER(mmx)
 DECLARE_LOOP_FILTER(mmxext)

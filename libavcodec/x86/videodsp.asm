@@ -23,9 +23,9 @@
 
 SECTION .text
 
-; extern void ff_emu_edge_core(uint8_t *buf, const uint8_t *src, x86_reg linesize,
-;                              x86_reg start_y, x86_reg end_y, x86_reg block_h,
-;                              x86_reg start_x, x86_reg end_x, x86_reg block_w);
+; void ff_emu_edge_core(uint8_t *buf, const uint8_t *src, x86_reg linesize,
+;                       x86_reg start_y, x86_reg end_y, x86_reg block_h,
+;                       x86_reg start_x, x86_reg end_x, x86_reg block_w);
 ;
 ; The actual function itself is below. It basically wraps a very simple
 ; w = end_x - start_x

@@ -23,23 +23,23 @@
 #include "cpu.h"
 #include "asm.h"
 
-extern void ff_vector_fmul_sse(float *dst, const float *src0, const float *src1,
+void ff_vector_fmul_sse(float *dst, const float *src0, const float *src1,
+                        int len);
+void ff_vector_fmul_avx(float *dst, const float *src0, const float *src1,
+                        int len);
+
+void ff_vector_fmac_scalar_sse(float *dst, const float *src, float mul,
                                int len);
-extern void ff_vector_fmul_avx(float *dst, const float *src0, const float *src1,
+void ff_vector_fmac_scalar_avx(float *dst, const float *src, float mul,
                                int len);
 
-extern void ff_vector_fmac_scalar_sse(float *dst, const float *src, float mul,
-                                      int len);
-extern void ff_vector_fmac_scalar_avx(float *dst, const float *src, float mul,
-                                      int len);
+void ff_vector_fmul_scalar_sse(float *dst, const float *src, float mul,
+                               int len);
 
-extern void ff_vector_fmul_scalar_sse(float *dst, const float *src, float mul,
-                                      int len);
-
-extern void ff_vector_dmul_scalar_sse2(double *dst, const double *src,
-                                       double mul, int len);
-extern void ff_vector_dmul_scalar_avx(double *dst, const double *src,
-                                      double mul, int len);
+void ff_vector_dmul_scalar_sse2(double *dst, const double *src,
+                                double mul, int len);
+void ff_vector_dmul_scalar_avx(double *dst, const double *src,
+                               double mul, int len);
 
 void ff_vector_fmul_add_sse(float *dst, const float *src0, const float *src1,
                             const float *src2, int len);
