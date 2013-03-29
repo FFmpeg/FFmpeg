@@ -489,7 +489,8 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag
         goto fail;
     }
 
-    apic->buf = av_buffer_alloc(taglen);
+    apic->buf = av_buffer_alloc(taglen + FF_INPUT_BUFFER_PADDING_SIZE);
+    apic->buf->size -= FF_INPUT_BUFFER_PADDING_SIZE;
     if (!apic->buf || !taglen || avio_read(pb, apic->buf->data, taglen) != taglen)
         goto fail;
 
