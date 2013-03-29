@@ -1656,8 +1656,10 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         } else {
             av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%td\n",
                    start_code, buf_end - buf_ptr);
-
-            init_get_bits(&s->gb, unescaped_buf_ptr, unescaped_buf_size * 8);
+            if ((ret = init_get_bits8(&s->gb, unescaped_buf_ptr, unescaped_buf_size)) < 0) {
+                av_log(avctx, AV_LOG_ERROR, "invalid buffer\n");
+                goto fail;
+            }
 
             s->start_code = start_code;
             if (s->avctx->debug & FF_DEBUG_STARTCODE)
