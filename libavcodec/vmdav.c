@@ -98,7 +98,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
     if (bytestream2_get_bytes_left(&gb) < 4)
         return;
     if (bytestream2_peek_le32(&gb) == 0x56781234) {
-        bytestream2_get_le32(&gb);
+        bytestream2_skipu(&gb, 4);
         qpos = 0x111;
         speclen = 0xF + 3;
     } else {
@@ -123,7 +123,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
                 if (tag & 0x01) {
                     if (d_end - d < 1 || bytestream2_get_bytes_left(&gb) < 1)
                         return;
-                    queue[qpos++] = *d++ = bytestream2_get_byte(&gb);
+                    queue[qpos++] = *d++ = bytestream2_get_byteu(&gb);
                     qpos &= QUEUE_MASK;
                     dataleft--;
                 } else {
@@ -173,7 +173,7 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
             l = (l & 0x7F) * 2;
             if (dest_end - pd < l || bytestream2_get_bytes_left(&gb) < l)
                 return bytestream2_tell(&gb);
-            bytestream2_get_buffer(&gb, pd, l);
+            bytestream2_get_bufferu(&gb, pd, l);
             pd += l;
         } else {
             if (dest_end - pd < i || bytestream2_get_bytes_left(&gb) < 2)
@@ -281,7 +281,7 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
                         len = (len & 0x7F) + 1;
                         if (ofs + len > frame_width || bytestream2_get_bytes_left(&gb) < len)
                             return;
-                        bytestream2_get_buffer(&gb, &dp[ofs], len);
+                        bytestream2_get_bufferu(&gb, &dp[ofs], len);
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
