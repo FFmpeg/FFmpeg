@@ -48,7 +48,7 @@ static const uint8_t block_sequences[16][8] =
 };
 
 typedef struct PAFVideoDecContext {
-    AVFrame  pic;
+    AVFrame  *pic;
     GetByteContext gb;
 
     int     current_frame;
@@ -58,6 +58,19 @@ typedef struct PAFVideoDecContext {
 
     uint8_t *opcodes;
 } PAFVideoDecContext;
+
+static av_cold int paf_vid_close(AVCodecContext *avctx)
+{
+    PAFVideoDecContext *c = avctx->priv_data;
+    int i;
+
+    av_frame_free(&c->pic);
+
+    for (i = 0; i < 4; i++)
+        av_freep(&c->frame[i]);
+
+    return 0;
+}
 
 static av_cold int paf_vid_init(AVCodecContext *avctx)
 {
@@ -71,13 +84,18 @@ static av_cold int paf_vid_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
-    avcodec_get_frame_defaults(&c->pic);
+    c->pic = av_frame_alloc();
+    if (!c->pic)
+        return AVERROR(ENOMEM);
+
     c->frame_size = FFALIGN(avctx->height, 256) * avctx->width;
     c->video_size = avctx->height * avctx->width;
     for (i = 0; i < 4; i++) {
         c->frame[i] = av_mallocz(c->frame_size);
-        if (!c->frame[i])
+        if (!c->frame[i]) {
+            paf_vid_close(avctx);
             return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
@@ -251,7 +269,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
     uint8_t code, *dst, *src, *end;
     int i, frame, ret;
 
-    if ((ret =ff_reget_buffer(avctx, &c->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
         return ret;
 
     bytestream2_init(&c->gb, pkt->data, pkt->size);
@@ -261,17 +279,17 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
         for (i = 0; i < 4; i++)
             memset(c->frame[i], 0, c->frame_size);
 
-        memset(c->pic.data[1], 0, AVPALETTE_SIZE);
+        memset(c->pic->data[1], 0, AVPALETTE_SIZE);
         c->current_frame = 0;
-        c->pic.key_frame = 1;
-        c->pic.pict_type = AV_PICTURE_TYPE_I;
+        c->pic->key_frame = 1;
+        c->pic->pict_type = AV_PICTURE_TYPE_I;
     } else {
-        c->pic.key_frame = 0;
-        c->pic.pict_type = AV_PICTURE_TYPE_P;
+        c->pic->key_frame = 0;
+        c->pic->pict_type = AV_PICTURE_TYPE_P;
     }
 
     if (code & 0x40) {
-        uint32_t *out = (uint32_t *)c->pic.data[1];
+        uint32_t *out = (uint32_t *)c->pic->data[1];
         int index, count;
 
         index = bytestream2_get_byte(&c->gb);
@@ -294,7 +312,7 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
             b = b << 2 | b >> 4;
             *out++ = 0xFFU << 24 | r << 16 | g << 8 | b;
         }
-        c->pic.palette_has_changed = 1;
+        c->pic->palette_has_changed = 1;
     }
 
     switch (code & 0x0F) {
@@ -346,34 +364,21 @@ static int paf_vid_decode(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    dst = c->pic.data[0];
+    dst = c->pic->data[0];
     src = c->frame[c->current_frame];
     for (i = 0; i < avctx->height; i++) {
         memcpy(dst, src, avctx->width);
-        dst += c->pic.linesize[0];
+        dst += c->pic->linesize[0];
         src += avctx->width;
     }
 
     c->current_frame = (c->current_frame + 1) & 3;
-    if ((ret = av_frame_ref(data, &c->pic)) < 0)
+    if ((ret = av_frame_ref(data, c->pic)) < 0)
         return ret;
 
     *got_frame       = 1;
 
     return pkt->size;
-}
-
-static av_cold int paf_vid_close(AVCodecContext *avctx)
-{
-    PAFVideoDecContext *c = avctx->priv_data;
-    int i;
-
-    av_frame_unref(&c->pic);
-
-    for (i = 0; i < 4; i++)
-        av_freep(&c->frame[i]);
-
-    return 0;
 }
 
 static av_cold int paf_aud_init(AVCodecContext *avctx)
