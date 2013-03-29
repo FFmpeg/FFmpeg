@@ -1760,6 +1760,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_crop;
     AVCodecContext *codec = is->video_st->codec;
+    AVRational fr = av_guess_frame_rate(is->ic, is->video_st, NULL);
 
     if (!buffersink_params)
         return AVERROR(ENOMEM);
@@ -1773,6 +1774,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
              frame->width, frame->height, frame->format,
              is->video_st->time_base.num, is->video_st->time_base.den,
              codec->sample_aspect_ratio.num, FFMAX(codec->sample_aspect_ratio.den, 1));
+    if (fr.num && fr.den)
+        av_strlcatf(buffersrc_args, sizeof(buffersrc_args), ":frame_rate=%d/%d", fr.num, fr.den);
 
     if ((ret = avfilter_graph_create_filter(&filt_src,
                                             avfilter_get_by_name("buffer"),
