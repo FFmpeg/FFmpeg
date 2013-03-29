@@ -398,7 +398,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         acodec = astream ? astream->codec : NULL;
         vcodec = vstream ? vstream->codec : NULL;
 
-        if (amf_type == AMF_DATA_TYPE_NUMBER) {
+        if (amf_type == AMF_DATA_TYPE_NUMBER || amf_type == AMF_DATA_TYPE_BOOL) {
             if (!strcmp(key, "duration"))
                 s->duration = num_val * AV_TIME_BASE;
             else if (!strcmp(key, "videodatarate") && vcodec && 0 <= (int)(num_val * 1024.0))
@@ -420,6 +420,13 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                 } else
                 if (!strcmp(key, "audiosamplerate") && acodec) {
                     acodec->sample_rate = num_val;
+                } else if (!strcmp(key, "audiosamplesize") && acodec) {
+                    acodec->bits_per_coded_sample = num_val;
+                } else if (!strcmp(key, "stereo") && acodec) {
+                    acodec->channels = num_val + 1;
+                    acodec->channel_layout = acodec->channels == 2 ?
+                                             AV_CH_LAYOUT_STEREO :
+                                             AV_CH_LAYOUT_MONO;
                 } else
                 if (!strcmp(key, "width") && vcodec) {
                     vcodec->width = num_val;
