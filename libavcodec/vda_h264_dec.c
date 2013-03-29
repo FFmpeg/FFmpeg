@@ -64,23 +64,30 @@ static enum AVPixelFormat get_format(struct AVCodecContext *avctx,
     return AV_PIX_FMT_VDA_VLD;
 }
 
-static int get_buffer(AVCodecContext *avctx, AVFrame *pic)
+typedef struct {
+    CVPixelBufferRef cv_buffer;
+} VDABufferContext;
+
+static void release_buffer(void *opaque, uint8_t *data)
 {
-    pic->type = FF_BUFFER_TYPE_USER;
-    pic->data[0] = (void *)1;
-    return 0;
+    VDABufferContext *context = opaque;
+    CVPixelBufferUnlockBaseAddress(context->cv_buffer, 0);
+    CVPixelBufferRelease(context->cv_buffer);
+    av_free(context);
 }
 
-static void release_buffer(AVCodecContext *avctx, AVFrame *pic)
+static int get_buffer2(AVCodecContext *avctx, AVFrame *pic, int flag)
 {
-    int i;
+    VDABufferContext *context = av_mallocz(sizeof(VDABufferContext));
+    AVBufferRef *buffer = av_buffer_create(NULL, 0, release_buffer, context, 0);
+    if (!context || !buffer) {
+        av_free(context);
+        return AVERROR(ENOMEM);
+    }
 
-    CVPixelBufferRef cv_buffer = (CVPixelBufferRef)pic->data[3];
-    CVPixelBufferUnlockBaseAddress(cv_buffer, 0);
-    CVPixelBufferRelease(cv_buffer);
-
-    for (i = 0; i < 4; i++)
-        pic->data[i] = NULL;
+    pic->buf[0] = buffer;
+    pic->data[0] = (void *)1;
+    return 0;
 }
 
 static int vdadec_decode(AVCodecContext *avctx,
@@ -92,8 +99,11 @@ static int vdadec_decode(AVCodecContext *avctx,
 
     ret = ff_h264_decoder.decode(avctx, data, got_frame, avpkt);
     if (*got_frame) {
+        AVBufferRef *buffer = pic->buf[0];
+        VDABufferContext *context = av_buffer_get_opaque(buffer);
         CVPixelBufferRef cv_buffer = (CVPixelBufferRef)pic->data[3];
         CVPixelBufferLockBaseAddress(cv_buffer, 0);
+        context->cv_buffer = cv_buffer;
         pic->format = ctx->pix_fmt;
         if (CVPixelBufferIsPlanar(cv_buffer)) {
             int i, count = CVPixelBufferGetPlaneCount(cv_buffer);
@@ -221,8 +231,11 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
 
     /* changes callback functions */
     avctx->get_format = get_format;
-    avctx->get_buffer = get_buffer;
-    avctx->release_buffer = release_buffer;
+    avctx->get_buffer2 = get_buffer2;
+#if FF_API_GET_BUFFER
+    // force the old get_buffer to be empty
+    avctx->get_buffer = NULL;
+#endif
 
     /* init H.264 decoder */
     ret = ff_h264_decoder.init(avctx);
