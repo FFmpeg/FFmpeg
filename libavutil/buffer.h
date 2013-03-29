@@ -122,7 +122,7 @@ AVBufferRef *av_buffer_allocz(int size);
  * @param data   data array
  * @param size   size of data in bytes
  * @param free   a callback for freeing data
- * @param opaque parameter to be passed to free
+ * @param opaque parameter to be got for processing or passed to free
  * @param flags  a combination of AV_BUFFER_FLAG_*
  *
  * @return an AVBufferRef referring to data on success, NULL on failure.
@@ -161,6 +161,11 @@ void av_buffer_unref(AVBufferRef **buf);
  * A positive answer is valid until av_buffer_ref() is called on buf.
  */
 int av_buffer_is_writable(const AVBufferRef *buf);
+
+/**
+ * @return the opaque parameter set by av_buffer_create.
+ */
+void *av_buffer_get_opaque(const AVBufferRef *buf);
 
 /**
  * Create a writable reference from a given buffer reference, avoiding data copy

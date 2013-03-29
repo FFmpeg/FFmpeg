@@ -125,6 +125,11 @@ int av_buffer_is_writable(const AVBufferRef *buf)
     return avpriv_atomic_int_get(&buf->buffer->refcount) == 1;
 }
 
+void *av_buffer_get_opaque(const AVBufferRef *buf)
+{
+    return buf->buffer->opaque;
+}
+
 int av_buffer_make_writable(AVBufferRef **pbuf)
 {
     AVBufferRef *newbuf, *buf = *pbuf;
