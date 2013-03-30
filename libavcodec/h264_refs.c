@@ -317,6 +317,7 @@ int ff_h264_decode_ref_pic_list_reordering(H264Context *h)
                 else
                     return -1;
             }
+            av_assert0(av_buffer_get_ref_count(h->ref_list[list][index].f.buf[0]) > 0);
         }
     }
 
