@@ -6266,6 +6266,43 @@ following one, the permission might not be received as expected in that
 following filter. Inserting a @ref{format} or @ref{aformat} filter before the
 perms/aperms filter can avoid this problem.
 
+@section aphaser
+Add a phasing effect to the input audio.
+
+A phaser filter creates series of peaks and troughs in the frequency spectrum.
+The position of the peaks and troughs are modulated so that they vary over time, creating a sweeping effect.
+
+The filter accepts parameters as a list of @var{key}=@var{value}
+pairs, separated by ":".
+
+A description of the accepted parameters follows.
+
+@table @option
+@item in_gain
+Set input gain. Default is 0.4.
+
+@item out_gain
+Set output gain. Default is 0.74
+
+@item delay
+Set delay in milliseconds. Default is 3.0.
+
+@item decay
+Set decay. Default is 0.4.
+
+@item speed
+Set modulation speed in Hz. Default is 0.5.
+
+@item type
+Set modulation type. Default is triangular.
+
+It accepts the following values:
+@table @samp
+@item triangular, t
+@item sinusoidal, s
+@end table
+@end table
+
 @section aselect, select
 Select frames to pass in output.
 

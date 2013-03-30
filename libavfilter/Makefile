@@ -58,6 +58,7 @@ OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 OBJS-$(CONFIG_APAD_FILTER)                   += af_apad.o
 OBJS-$(CONFIG_APERMS_FILTER)                 += f_perms.o
+OBJS-$(CONFIG_APHASER_FILTER)                += af_aphaser.o
 OBJS-$(CONFIG_ARESAMPLE_FILTER)              += af_aresample.o
 OBJS-$(CONFIG_ASELECT_FILTER)                += f_select.o
 OBJS-$(CONFIG_ASENDCMD_FILTER)               += f_sendcmd.o

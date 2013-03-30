@@ -54,6 +54,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ANULL,          anull,          af);
     REGISTER_FILTER(APAD,           apad,           af);
     REGISTER_FILTER(APERMS,         aperms,         af);
+    REGISTER_FILTER(APHASER,        aphaser,        af);
     REGISTER_FILTER(ARESAMPLE,      aresample,      af);
     REGISTER_FILTER(ASELECT,        aselect,        af);
     REGISTER_FILTER(ASENDCMD,       asendcmd,       af);
