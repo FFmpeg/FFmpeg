@@ -48,6 +48,7 @@ typedef struct LAMEContext {
     int buffer_index;
     int buffer_size;
     int reservoir;
+    int joint_stereo;
     float *samples_flt[2];
     AudioFrameQueue afq;
     AVFloatDSPContext fdsp;
@@ -96,7 +97,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     lame_set_num_channels(s->gfp, avctx->channels);
-    lame_set_mode(s->gfp, avctx->channels > 1 ? JOINT_STEREO : MONO);
+    lame_set_mode(s->gfp, avctx->channels > 1 ? s->joint_stereo ? JOINT_STEREO : STEREO : MONO);
 
     /* sample rate */
     lame_set_in_samplerate (s->gfp, avctx->sample_rate);
@@ -260,6 +261,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "reservoir", "Use bit reservoir.", OFFSET(reservoir), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
+    { "joint_stereo", "Use joint stereo.", OFFSET(joint_stereo), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
     { NULL },
 };
 
