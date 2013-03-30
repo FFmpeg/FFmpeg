@@ -120,13 +120,25 @@ Set the logging level used by the library.
 @var{loglevel} is a number or a string containing one of the following values:
 @table @samp
 @item quiet
+Show nothing at all; be silent.
 @item panic
+Only show fatal errors which could lead the process to crash, such as
+and assert failure. This is not currently used for anything.
 @item fatal
+Only show fatal errors. These are errors after which the process absolutely
+cannot continue after.
 @item error
+Show all errors, including ones which can be recovered from.
 @item warning
+Show all warnings and errors. Any message related to possibly
+incorrect or unexpected events will be shown.
 @item info
+Show informative messages during processing. This is in addition to
+warnings and errors. This is the default value.
 @item verbose
+Same as @code{info}, except more verbose.
 @item debug
+Show everything, including debugging information.
 @end table
 
 By default the program logs to stderr, if coloring is supported by the
