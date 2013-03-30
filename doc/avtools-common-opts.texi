@@ -180,6 +180,53 @@ ffmpeg -cpuflags -sse+mmx ...
 ffmpeg -cpuflags mmx ...
 ffmpeg -cpuflags 0 ...
 @end example
+Possible flags for this option are:
+@table @samp
+@item x86
+@table @samp
+@item mmx
+@item mmxext
+@item sse
+@item sse2
+@item sse2slow
+@item sse3
+@item sse3slow
+@item ssse3
+@item atom
+@item sse4.1
+@item sse4.2
+@item avx
+@item xop
+@item fma4
+@item 3dnow
+@item 3dnowext
+@item cmov
+@end table
+@item ARM
+@table @samp
+@item armv5te
+@item armv6
+@item armv6t2
+@item vfp
+@item vfpv3
+@item neon
+@end table
+@item PowerPC
+@table @samp
+@item altivec
+@end table
+@item Specific Processors
+@table @samp
+@item pentium2
+@item pentium3
+@item pentium4
+@item k6
+@item k62
+@item athlon
+@item athlonxp
+@item k8
+@end table
+@end table
 
 @end table
 
