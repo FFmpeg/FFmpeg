@@ -120,7 +120,7 @@ same for all the files in the sequence.
 This demuxer accepts the following options:
 @table @option
 @item framerate
-Set the framerate for the video stream. It defaults to 25.
+Set the frame rate for the video stream. It defaults to 25.
 @item loop
 If set to 1, loop over the input. Default value is 0.
 @item pattern_type

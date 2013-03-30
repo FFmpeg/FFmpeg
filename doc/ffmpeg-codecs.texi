@@ -144,8 +144,8 @@ Set codec time base.
 
 It is the fundamental unit of time (in seconds) in terms of which
 frame timestamps are represented. For fixed-fps content, timebase
-should be 1/framerate and timestamp increments should be identically
-1.
+should be @code{1 / frame_rate} and timestamp increments should be
+identically 1.
 
 @item g @var{integer} (@emph{encoding,video})
 Set the group of picture size. Default value is 12.

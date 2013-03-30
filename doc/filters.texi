@@ -2404,7 +2404,7 @@ curves=vintage
 @section decimate
 
 Drop frames that do not differ greatly from the previous frame in
-order to reduce framerate.
+order to reduce frame rate.
 
 The main use of this filter is for very-low-bitrate encoding
 (e.g. streaming over dialup modem), but it could in theory be used for
@@ -3169,14 +3169,14 @@ format=yuv420p:yuv444p:yuv410p
 
 @section fps
 
-Convert the video to specified constant framerate by duplicating or dropping
+Convert the video to specified constant frame rate by duplicating or dropping
 frames as necessary.
 
 This filter accepts the following named parameters:
 @table @option
 
 @item fps
-Desired output framerate. The default is @code{25}.
+Desired output frame rate. The default is @code{25}.
 
 @item round
 Rounding method.
@@ -5387,27 +5387,27 @@ Available values are:
 @table @samp
 @item merge, 0
 Move odd frames into the upper field, even into the lower field,
-generating a double height frame at half framerate.
+generating a double height frame at half frame rate.
 
 @item drop_odd, 1
 Only output even frames, odd frames are dropped, generating a frame with
-unchanged height at half framerate.
+unchanged height at half frame rate.
 
 @item drop_even, 2
 Only output odd frames, even frames are dropped, generating a frame with
-unchanged height at half framerate.
+unchanged height at half frame rate.
 
 @item pad, 3
 Expand each frame to full height, but pad alternate lines with black,
-generating a frame with double height at the same input framerate.
+generating a frame with double height at the same input frame rate.
 
 @item interleave_top, 4
 Interleave the upper field from odd frames with the lower field from
-even frames, generating a frame with unchanged height at half framerate.
+even frames, generating a frame with unchanged height at half frame rate.
 
 @item interleave_bottom, 5
 Interleave the lower field from odd frames with the upper field from
-even frames, generating a frame with unchanged height at half framerate.
+even frames, generating a frame with unchanged height at half frame rate.
 
 @item interlacex2, 6
 Double frame rate with unchanged height. Frames are inserted each
@@ -7003,7 +7003,7 @@ amovie=a.mp3,asplit[out0],showwaves[out1]
 
 @item
 Create a synthetic signal and show it with showwaves, forcing a
-framerate of 30 frames per second:
+frame rate of 30 frames per second:
 @example
 aevalsrc=sin(1*2*PI*t)*sin(880*2*PI*t):cos(2*PI*200*t),asplit[out0],showwaves=r=30[out1]
 @end example

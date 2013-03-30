@@ -204,7 +204,7 @@ Frame scheduling
     filter; these buffered frames must be flushed immediately if a new input
     produces new output.
 
-    (Example: framerate-doubling filter: filter_frame must (1) flush the
+    (Example: frame rate-doubling filter: filter_frame must (1) flush the
     second copy of the previous frame, if it is still there, (2) push the
     first copy of the incoming frame, (3) keep the second copy for later.)
 

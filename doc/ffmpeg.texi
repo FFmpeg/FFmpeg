@@ -896,7 +896,7 @@ Newly added values will have to be specified as strings always.
 Each frame is passed with its timestamp from the demuxer to the muxer.
 @item 1, cfr
 Frames will be duplicated and dropped to achieve exactly the requested
-constant framerate.
+constant frame rate.
 @item 2, vfr
 Frames are passed through with their timestamp or dropped so as to
 prevent 2 frames from having the same timestamp.
