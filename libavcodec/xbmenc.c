@@ -24,16 +24,6 @@
 #include "internal.h"
 #include "mathops.h"
 
-static av_cold int xbm_encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-
-    return 0;
-}
-
 static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *p, int *got_packet)
 {
@@ -65,20 +55,11 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int xbm_encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
-
-    return 0;
-}
-
 AVCodec ff_xbm_encoder = {
     .name         = "xbm",
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XBM,
-    .init         = xbm_encode_init,
     .encode2      = xbm_encode_frame,
-    .close        = xbm_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE,
                                                    AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
