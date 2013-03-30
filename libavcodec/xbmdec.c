@@ -27,6 +27,7 @@
 
 static av_cold int xbm_decode_init(AVCodecContext *avctx)
 {
+    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
 
     return 0;
 }
@@ -73,8 +74,6 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         ptr += strcspn(ptr, "\n\r") + 1;
     }
 
-    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
@@ -109,18 +108,11 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-static av_cold int xbm_decode_close(AVCodecContext *avctx)
-{
-
-    return 0;
-}
-
 AVCodec ff_xbm_decoder = {
     .name         = "xbm",
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XBM,
     .init         = xbm_decode_init,
-    .close        = xbm_decode_close,
     .decode       = xbm_decode_frame,
     .capabilities = CODEC_CAP_DR1,
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),

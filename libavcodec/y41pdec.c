@@ -81,19 +81,12 @@ static int y41p_decode_frame(AVCodecContext *avctx, void *data,
     return avpkt->size;
 }
 
-static av_cold int y41p_decode_close(AVCodecContext *avctx)
-{
-
-    return 0;
-}
-
 AVCodec ff_y41p_decoder = {
     .name         = "y41p",
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_Y41P,
     .init         = y41p_decode_init,
     .decode       = y41p_decode_frame,
-    .close        = y41p_decode_close,
     .capabilities = CODEC_CAP_DR1,
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed YUV 4:1:1 12-bit"),
 };
