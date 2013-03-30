@@ -96,14 +96,14 @@ tracking lowest timestamp on any active input stream.
 Encoded packets are then passed to the decoder (unless streamcopy is selected
 for the stream, see further for a description). The decoder produces
 uncompressed frames (raw video/PCM audio/...) which can be processed further by
-filtering (see next section). After filtering the frames are passed to the
-encoder, which encodes them and outputs encoded packets again. Finally those are
+filtering (see next section). After filtering, the frames are passed to the
+encoder, which encodes them and outputs encoded packets. Finally those are
 passed to the muxer, which writes the encoded packets to the output file.
 
 @section Filtering
 Before encoding, @command{ffmpeg} can process raw audio and video frames using
 filters from the libavfilter library. Several chained filters form a filter
-graph.  @command{ffmpeg} distinguishes between two types of filtergraphs -
+graph. @command{ffmpeg} distinguishes between two types of filtergraphs:
 simple and complex.
 
 @subsection Simple filtergraphs
@@ -139,7 +139,7 @@ only sets timestamps and otherwise passes the frames unchanged.
 
 @subsection Complex filtergraphs
 Complex filtergraphs are those which cannot be described as simply a linear
-processing chain applied to one stream. This is the case e.g. when the graph has
+processing chain applied to one stream. This is the case, for example, when the graph has
 more than one input and/or output, or when output stream type is different from
 input. They can be represented with the following diagram:
 
@@ -164,7 +164,7 @@ input. They can be represented with the following diagram:
 @end example
 
 Complex filtergraphs are configured with the @option{-filter_complex} option.
-Note that this option is global, since a complex filtergraph by its nature
+Note that this option is global, since a complex filtergraph, by its nature,
 cannot be unambiguously associated with a single stream or file.
 
 The @option{-lavfi} option is equivalent to @option{-filter_complex}.
@@ -178,7 +178,7 @@ Stream copy is a mode selected by supplying the @code{copy} parameter to the
 @option{-codec} option. It makes @command{ffmpeg} omit the decoding and encoding
 step for the specified stream, so it does only demuxing and muxing. It is useful
 for changing the container format or modifying container-level metadata. The
-diagram above will in this case simplify to this:
+diagram above will, in this case, simplify to this:
 
 @example
  _______              ______________            ________
@@ -190,7 +190,7 @@ diagram above will in this case simplify to this:
 @end example
 
 Since there is no decoding or encoding, it is very fast and there is no quality
-loss. However it might not work in some cases because of many factors. Applying
+loss. However, it might not work in some cases because of many factors. Applying
 filters is obviously also impossible, since filters work on uncompressed data.
 
 @c man end DETAILED DESCRIPTION
