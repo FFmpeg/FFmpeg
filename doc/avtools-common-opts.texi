@@ -1,16 +1,17 @@
-All the numerical options, if not specified otherwise, accept in input
-a string representing a number, which may contain one of the
-SI unit prefixes, for example 'K', 'M', 'G'.
-If 'i' is appended after the prefix, binary prefixes are used,
-which are based on powers of 1024 instead of powers of 1000.
-The 'B' postfix multiplies the value by 8, and can be
-appended after a unit prefix or used alone. This allows using for
-example 'KB', 'MiB', 'G' and 'B' as number postfix.
+All the numerical options, if not specified otherwise, accept a string
+representing a number as input, which may be followed by one of the SI
+unit prefixes, for example: 'K', 'M', or 'G'.
+
+If 'i' is appended to the SI unit prefix, the complete prefix will be
+interpreted as a unit prefix for binary multiplies, which are based on
+powers of 1024 instead of powers of 1000. Appending 'B' to the SI unit
+prefix multiplies the value by 8. This allows using, for example:
+'KB', 'MiB', 'G' and 'B' as number suffixes.
 
 Options which do not take arguments are boolean options, and set the
 corresponding value to true. They can be set to false by prefixing
-with "no" the option name, for example using "-nofoo" in the
-command line will set to false the boolean option with name "foo".
+the option name with "no". For example using "-nofoo"
+will set the boolean option with name "foo" to false.
 
 @anchor{Stream specifiers}
 @section Stream specifiers
