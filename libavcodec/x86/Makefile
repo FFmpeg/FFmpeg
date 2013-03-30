@@ -31,6 +31,7 @@ OBJS-$(CONFIG_VP3DSP)                  += x86/vp3dsp_init.o
 OBJS-$(CONFIG_VP5_DECODER)             += x86/vp56dsp_init.o
 OBJS-$(CONFIG_VP6_DECODER)             += x86/vp56dsp_init.o
 OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
+OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
@@ -85,6 +86,7 @@ YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp56dsp.o
 YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
+YASM-OBJS-$(CONFIG_WEBP_DECODER)       += x86/vp8dsp.o
 
 YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputil.o                 \
                                           x86/mpeg4qpel.o               \
