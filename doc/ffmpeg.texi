@@ -232,7 +232,8 @@ input file name
 Overwrite output files without asking.
 
 @item -n (@emph{global})
-Do not overwrite output files but exit if file exists.
+Do not overwrite output files, and exit immediately if a specified
+output file already exists.
 
 @item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 @itemx -codec[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
