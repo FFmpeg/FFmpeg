@@ -234,7 +234,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             break;
     av_assert1(input_number < am->nb_inputs);
     if (ff_bufqueue_is_full(&am->in[input_number].queue)) {
-        av_log(ctx, AV_LOG_ERROR, "Buffer queue overflow\n");
         av_frame_free(&insamples);
         return AVERROR(ENOMEM);
     }
