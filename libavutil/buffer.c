@@ -130,6 +130,11 @@ void *av_buffer_get_opaque(const AVBufferRef *buf)
     return buf->buffer->opaque;
 }
 
+int av_buffer_get_ref_count(const AVBufferRef *buf)
+{
+    return buf->buffer->refcount;
+}
+
 int av_buffer_make_writable(AVBufferRef **pbuf)
 {
     AVBufferRef *newbuf, *buf = *pbuf;
