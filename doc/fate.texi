@@ -185,6 +185,8 @@ the synchronisation of the samples directory.
     The @var{TARGET_EXEC} option provides a way to run FATE wrapped in
     @command{valgrind}, @command{qemu-user} or @command{wine} or on remote targets
     through @command{ssh}.
+@item GEN
+Set to @var{1} to generate the missing or mismatched references.
 @end table
 
 @section Examples
