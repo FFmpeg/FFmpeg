@@ -1772,9 +1772,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
     copy_picture_range(h->delayed_pic, h1->delayed_pic,
                        MAX_DELAYED_PIC_COUNT + 2, h, h1);
 
-    h->last_slice_type = h1->last_slice_type;
     h->sync            = h1->sync;
-    memcpy(h->last_ref_count, h1->last_ref_count, sizeof(h->last_ref_count));
 
     if (context_reinitialized)
         h264_set_parameter_from_sps(h);
@@ -3560,6 +3558,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             memset(h->slice_table, -1,
                 (h->mb_height * h->mb_stride - 1) * sizeof(*h->slice_table));
         }
+        h0->last_slice_type = -1;
     }
     if (h != h0 && (ret = clone_slice(h, h0)) < 0)
         return ret;
