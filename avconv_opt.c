@@ -28,7 +28,6 @@
 #include "libavcodec/avcodec.h"
 
 #include "libavfilter/avfilter.h"
-#include "libavfilter/avfiltergraph.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"

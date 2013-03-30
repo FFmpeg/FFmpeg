@@ -28,7 +28,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/audioconvert.h"
-#include "libavfilter/avfiltergraph.h"
+#include "libavfilter/avfilter.h"
 
 #if !HAVE_GETOPT
 #include "compat/getopt.c"

@@ -41,7 +41,6 @@
 
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"
-# include "libavfilter/avfiltergraph.h"
 # include "libavfilter/buffersink.h"
 # include "libavfilter/buffersrc.h"
 #endif

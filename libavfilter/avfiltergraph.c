@@ -28,7 +28,6 @@
 #include "libavutil/common.h"
 #include "libavutil/log.h"
 #include "avfilter.h"
-#include "avfiltergraph.h"
 #include "formats.h"
 #include "internal.h"
 
