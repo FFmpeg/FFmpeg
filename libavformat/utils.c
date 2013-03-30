@@ -2304,7 +2304,7 @@ static void fill_all_stream_timings(AVFormatContext *ic)
 static void estimate_timings_from_bit_rate(AVFormatContext *ic)
 {
     int64_t filesize, duration;
-    int bit_rate, i;
+    int bit_rate, i, show_warning = 0;
     AVStream *st;
 
     /* if bit_rate is already set, we believe it */
@@ -2329,10 +2329,13 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
                     && st->duration == AV_NOPTS_VALUE) {
                     duration= av_rescale(8*filesize, st->time_base.den, ic->bit_rate*(int64_t)st->time_base.num);
                     st->duration = duration;
+                    show_warning = 1;
                 }
             }
         }
     }
+    if (show_warning)
+        av_log(ic, AV_LOG_WARNING, "Estimating duration from bitrate, this may be inaccurate\n");
 }
 
 #define DURATION_MAX_READ_SIZE 250000LL
@@ -2440,7 +2443,6 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         fill_all_stream_timings(ic);
         ic->duration_estimation_method = AVFMT_DURATION_FROM_STREAM;
     } else {
-        av_log(ic, AV_LOG_WARNING, "Estimating duration from bitrate, this may be inaccurate\n");
         /* less precise: use bitrate info */
         estimate_timings_from_bit_rate(ic);
         ic->duration_estimation_method = AVFMT_DURATION_FROM_BITRATE;
