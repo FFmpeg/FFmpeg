@@ -179,16 +179,7 @@ If you plan to link with MSVC-built static libraries, you will need
 to make sure you have @code{Runtime Library} set to
 @code{Multi-threaded (/MT)} in your project's settings.
 
-Libav headers do not declare global data for Windows DLLs through the usual
-dllexport/dllimport interface. Such data will be exported properly while
-building, but to use them in your MSVC code you will have to edit the
-appropriate headers and mark the data as dllimport. For example, in
-libavutil/pixdesc.h you should have:
-@example
-extern __declspec(dllimport) const AVPixFmtDescriptor av_pix_fmt_descriptors[];
-@end example
-
-You will also need to define @code{inline} to something MSVC understands:
+You will need to define @code{inline} to something MSVC understands:
 @example
 #define inline __inline
 @end example
