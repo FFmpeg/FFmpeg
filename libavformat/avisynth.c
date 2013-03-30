@@ -256,7 +256,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st) {
         break;
 #endif
     case AVS_CS_BGR24:
-        st->codec->pix_fmt = PIX_FMT_RGB24;
+        st->codec->pix_fmt = PIX_FMT_BGR24;
         break;
     case AVS_CS_BGR32:
         st->codec->pix_fmt = PIX_FMT_RGB32;
