@@ -16,18 +16,18 @@ will set the boolean option with name "foo" to false.
 @anchor{Stream specifiers}
 @section Stream specifiers
 Some options are applied per-stream, e.g. bitrate or codec. Stream specifiers
-are used to precisely specify which stream(s) does a given option belong to.
+are used to precisely specify which stream(s) a given option belongs to.
 
 A stream specifier is a string generally appended to the option name and
-separated from it by a colon. E.g. @code{-codec:a:1 ac3} option contains
-@code{a:1} stream specifier, which matches the second audio stream. Therefore it
+separated from it by a colon. E.g. @code{-codec:a:1 ac3} contains the
+@code{a:1} stream specifier, which matches the second audio stream. Therefore, it
 would select the ac3 codec for the second audio stream.
 
-A stream specifier can match several streams, the option is then applied to all
+A stream specifier can match several streams, so that the option is applied to all
 of them. E.g. the stream specifier in @code{-b:a 128k} matches all audio
 streams.
 
-An empty stream specifier matches all streams, for example @code{-codec copy}
+An empty stream specifier matches all streams. For example, @code{-codec copy}
 or @code{-codec: copy} would copy all the streams without reencoding.
 
 Possible forms of stream specifiers are:
@@ -36,15 +36,16 @@ Possible forms of stream specifiers are:
 Matches the stream with this index. E.g. @code{-threads:1 4} would set the
 thread count for the second stream to 4.
 @item @var{stream_type}[:@var{stream_index}]
-@var{stream_type} is one of: 'v' for video, 'a' for audio, 's' for subtitle,
-'d' for data and 't' for attachments. If @var{stream_index} is given, then
-matches stream number @var{stream_index} of this type. Otherwise matches all
+@var{stream_type} is one of following: 'v' for video, 'a' for audio, 's' for subtitle,
+'d' for data, and 't' for attachments. If @var{stream_index} is given, then it matches
+stream number @var{stream_index} of this type. Otherwise, it matches all
 streams of this type.
 @item p:@var{program_id}[:@var{stream_index}]
-If @var{stream_index} is given, then matches stream number @var{stream_index} in
-program with id @var{program_id}. Otherwise matches all streams in this program.
+If @var{stream_index} is given, then it matches the stream with number @var{stream_index}
+in the program with the id @var{program_id}. Otherwise, it matches all streams in the
+program.
 @item #@var{stream_id}
-Matches the stream by format-specific ID.
+Matches the stream by a format-specific ID.
 @end table
 
 @section Generic options
