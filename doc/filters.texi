@@ -6,7 +6,7 @@ Filtering in FFmpeg is enabled through the libavfilter library.
 In libavfilter, it is possible for filters to have multiple inputs and
 multiple outputs.
 To illustrate the sorts of things that are possible, we can
-use a complex filter graph. For example, the following one:
+use a complex filtergraph. For example, the following one:
 
 @example
 input --> split ---------------------> overlay --> output
@@ -49,7 +49,7 @@ output.
 @c man begin GRAPH2DOT
 
 The @file{graph2dot} program included in the FFmpeg @file{tools}
-directory can be used to parse a filter graph description and issue a
+directory can be used to parse a filtergraph description and issue a
 corresponding textual representation in the dot language.
 
 Invoke the command:
@@ -61,7 +61,7 @@ to see how to use @file{graph2dot}.
 
 You can then pass the dot description to the @file{dot} program (from
 the graphviz suite of programs) and obtain a graphical representation
-of the filter graph.
+of the filtergraph.
 
 For example the sequence of commands:
 @example
@@ -2865,7 +2865,7 @@ they should be escaped.
 
 Note that they probably must also be escaped as the value for the
 @option{text} option in the filter argument string and as the filter
-argument in the filter graph description, and possibly also for the shell,
+argument in the filtergraph description, and possibly also for the shell,
 that makes up to four levels of escaping; using a text file avoids these
 problems.
 

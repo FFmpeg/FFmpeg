@@ -346,19 +346,19 @@ Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
 @anchor{filter_option}
-@item -filter[:@var{stream_specifier}] @var{filter_graph} (@emph{output,per-stream})
-Create the filter graph specified by @var{filter_graph} and use it to
+@item -filter[:@var{stream_specifier}] @var{filtergraph} (@emph{output,per-stream})
+Create the filtergraph specified by @var{filtergraph} and use it to
 filter the stream.
 
-@var{filter_graph} is a description of the filter graph to apply to
+@var{filtergraph} is a description of the filtergraph to apply to
 the stream, and must have a single input and a single output of the
-same type of the stream. In the filter graph, the input is associated
+same type of the stream. In the filtergraph, the input is associated
 to the label @code{in}, and the output to the label @code{out}. See
 the ffmpeg-filters manual for more information about the filtergraph
 syntax.
 
 See the @ref{filter_complex_option,,-filter_complex option} if you
-want to create filter graphs with multiple inputs and/or outputs.
+want to create filtergraphs with multiple inputs and/or outputs.
 
 @item -filter_script[:@var{stream_specifier}] @var{filename} (@emph{output,per-stream})
 This option is similar to @option{-filter}, the only difference is that its
@@ -496,8 +496,8 @@ stream
 @item -vlang @var{code}
 Set the ISO 639 language code (3 letters) of the current video stream.
 
-@item -vf @var{filter_graph} (@emph{output})
-Create the filter graph specified by @var{filter_graph} and use it to
+@item -vf @var{filtergraph} (@emph{output})
+Create the filtergraph specified by @var{filtergraph} and use it to
 filter the stream.
 
 This is an alias for @code{-filter:v}, see the @ref{filter_option,,-filter option}.
@@ -513,7 +513,7 @@ If the selected pixel format can not be selected, ffmpeg will print a
 warning and select the best pixel format supported by the encoder.
 If @var{pix_fmt} is prefixed by a @code{+}, ffmpeg will exit with an error
 if the requested pixel format can not be selected, and automatic conversions
-inside filter graphs are disabled.
+inside filtergraphs are disabled.
 If @var{pix_fmt} is a single @code{+}, ffmpeg selects the same pixel format
 as the input (or graph output) and automatic conversions are disabled.
 
@@ -637,8 +637,8 @@ Set the audio codec. This is an alias for @code{-codec:a}.
 Set the audio sample format. Use @code{-sample_fmts} to get a list
 of supported sample formats.
 
-@item -af @var{filter_graph} (@emph{output})
-Create the filter graph specified by @var{filter_graph} and use it to
+@item -af @var{filtergraph} (@emph{output})
+Create the filtergraph specified by @var{filtergraph} and use it to
 filter the stream.
 
 This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter option}.
@@ -1005,10 +1005,10 @@ ffmpeg -i input.mpg -timecode 01:02:03.04 -r 30000/1001 -s ntsc output.mpg
 
 @anchor{filter_complex_option}
 @item -filter_complex @var{filtergraph} (@emph{global})
-Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
+Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
 outputs. For simple graphs -- those with one input and one output of the same
 type -- see the @option{-filter} options. @var{filtergraph} is a description of
-the filter graph, as described in the ``Filtergraph syntax'' section of the
+the filtergraph, as described in the ``Filtergraph syntax'' section of the
 ffmpeg-filters manual.
 
 Input link labels must refer to input streams using the
@@ -1052,7 +1052,7 @@ ffmpeg -filter_complex 'color=c=red' -t 5 out.mkv
 @end example
 
 @item -lavfi @var{filtergraph} (@emph{global})
-Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
+Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
 outputs. Equivalent to @option{-filter_complex}.
 
 @item -filter_complex_script @var{filename} (@emph{global})

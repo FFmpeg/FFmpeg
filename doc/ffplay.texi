@@ -73,19 +73,19 @@ Default value is "video", if video is not present or cannot be played
 You can interactively cycle through the available show modes by
 pressing the key @key{w}.
 
-@item -vf @var{filter_graph}
-Create the filter graph specified by @var{filter_graph} and use it to
+@item -vf @var{filtergraph}
+Create the filtergraph specified by @var{filtergraph} and use it to
 filter the video stream.
 
-@var{filter_graph} is a description of the filter graph to apply to
+@var{filtergraph} is a description of the filtergraph to apply to
 the stream, and must have a single video input and a single video
-output. In the filter graph, the input is associated to the label
+output. In the filtergraph, the input is associated to the label
 @code{in}, and the output to the label @code{out}. See the
 ffmpeg-filters manual for more information about the filtergraph
 syntax.
 
-@item -af @var{filter_graph}
-@var{filter_graph} is a description of the filter graph to apply to
+@item -af @var{filtergraph}
+@var{filtergraph} is a description of the filtergraph to apply to
 the input audio.
 Use the option "-filters" to show all the available filters (including
 sources and sinks).
