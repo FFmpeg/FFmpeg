@@ -2249,6 +2249,14 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
     }
 
+    if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
+        (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
+        if (!s->streams[pkt->stream_index]->nb_frames) {
+            av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
+            return -1;
+        }
+        av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
+    }
     if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
@@ -2262,13 +2270,6 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
             trk->cluster[trk->entry].data= buf;
         }else
             size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
-    } else if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
-               (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
-        if (!s->streams[pkt->stream_index]->nb_frames) {
-        av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
-        return -1;
-        }
-        av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
     } else if (mov->frag_seq_num>0){
         trk->cluster[trk->entry].data = av_malloc(size);
         if (!trk->cluster[trk->entry].data)
