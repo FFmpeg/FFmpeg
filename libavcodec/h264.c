@@ -3184,7 +3184,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     unsigned int pps_id;
     int num_ref_idx_active_override_flag, ret;
     unsigned int slice_type, tmp, i, j;
-    int default_ref_list_done = 0;
     int last_pic_structure, last_pic_droppable;
     int must_reinit;
     int needs_reinit = 0;
@@ -3223,12 +3222,6 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         h->slice_type_fixed = 0;
 
     slice_type = golomb_to_pict_type[slice_type];
-    if (slice_type == AV_PICTURE_TYPE_I ||
-        (h0->current_slice != 0 &&
-         slice_type == h0->last_slice_type &&
-         !memcmp(h0->last_ref_count, h0->ref_count, sizeof(h0->ref_count)))) {
-        default_ref_list_done = 1;
-    }
     h->slice_type     = slice_type;
     h->slice_type_nos = slice_type & 3;
 
@@ -3659,9 +3652,12 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         h->list_count = 0;
         h->ref_count[0] = h->ref_count[1] = 0;
     }
-
-    if (!default_ref_list_done)
+    if (slice_type != AV_PICTURE_TYPE_I &&
+        (h0->current_slice == 0 ||
+         slice_type != h0->last_slice_type ||
+         memcmp(h0->last_ref_count, h0->ref_count, sizeof(h0->ref_count)))) {
         ff_h264_fill_default_ref_list(h);
+    }
 
     if (h->slice_type_nos != AV_PICTURE_TYPE_I &&
         ff_h264_decode_ref_pic_list_reordering(h) < 0) {
