@@ -222,7 +222,7 @@ described.
 
 @item -f @var{fmt} (@emph{input/output})
 Force input or output file format. The format is normally auto detected for input
-files and guessed from file extension for output files, so this option is not
+files and guessed from the file extension for output files, so this option is not
 needed in most cases.
 
 @item -i @var{filename} (@emph{input})
