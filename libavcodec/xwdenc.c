@@ -30,17 +30,8 @@
 #define WINDOW_NAME         "lavcxwdenc"
 #define WINDOW_NAME_SIZE    11
 
-static av_cold int xwd_encode_init(AVCodecContext *avctx)
-{
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                            const AVFrame *p, int *got_packet)
+                            const AVFrame *pict, int *got_packet)
 {
     enum AVPixelFormat pix_fmt = avctx->pix_fmt;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -49,6 +40,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint32_t header_size;
     int i, out_size, ret;
     uint8_t *ptr, *buf;
+    AVFrame * const p = (AVFrame *)pict;
 
     pixdepth = av_get_bits_per_pixel(desc);
     if (desc->flags & PIX_FMT_BE)
@@ -158,8 +150,8 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     buf = pkt->data;
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
+    p->key_frame = 1;
+    p->pict_type = AV_PICTURE_TYPE_I;
 
     bytestream_put_be32(&buf, header_size);
     bytestream_put_be32(&buf, XWD_VERSION);   // file version
@@ -216,20 +208,11 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int xwd_encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
-
-    return 0;
-}
-
 AVCodec ff_xwd_encoder = {
     .name         = "xwd",
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XWD,
-    .init         = xwd_encode_init,
     .encode2      = xwd_encode_frame,
-    .close        = xwd_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGRA,
                                                  AV_PIX_FMT_RGBA,
                                                  AV_PIX_FMT_ARGB,
