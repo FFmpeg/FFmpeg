@@ -85,14 +85,6 @@ Show version.
 @item -formats
 Show available formats.
 
-The fields preceding the format names have the following meanings:
-@table @samp
-@item D
-Decoding available
-@item E
-Encoding available
-@end table
-
 @item -codecs
 Show all codecs known to libavcodec.
 
