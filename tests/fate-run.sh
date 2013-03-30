@@ -206,7 +206,9 @@ fi
 
 if test $err = 0; then
     rm -f $outfile $errfile $cmpfile $cleanfiles
-else
+elif test $gen = "no"; then
     echo "Test $test failed. Look at $errfile for details."
+else
+    echo "Updating reference failed, possibly no output file was generated."
 fi
 exit $err
