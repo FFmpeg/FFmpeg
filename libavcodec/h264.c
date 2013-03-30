@@ -1864,11 +1864,6 @@ static int h264_frame_start(H264Context *h)
         h->block_offset[48 + 32 + i] = (4 * ((scan8[i] - scan8[0]) & 7) << pixel_shift) + 8 * h->uvlinesize * ((scan8[i] - scan8[0]) >> 3);
     }
 
-    /* Some macroblocks can be accessed before they're available in case
-     * of lost slices, MBAFF or threading. */
-    memset(h->slice_table, -1,
-           (h->mb_height * h->mb_stride - 1) * sizeof(*h->slice_table));
-
     // s->decode = (h->flags & CODEC_FLAG_PSNR) || !s->encoding ||
     //             h->cur_pic.reference /* || h->contains_intra */ || 1;
 
@@ -3562,6 +3557,15 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             }
         } else {
             release_unused_pictures(h, 0);
+        }
+        /* Some macroblocks can be accessed before they're available in case
+        * of lost slices, MBAFF or threading. */
+        if (FIELD_PICTURE(h)) {
+            for(i = (h->picture_structure == PICT_BOTTOM_FIELD); i<h->mb_height; i++)
+                memset(h->slice_table + i*h->mb_stride, -1, (h->mb_stride - (i+1==h->mb_height)) * sizeof(*h->slice_table));
+        } else {
+            memset(h->slice_table, -1,
+                (h->mb_height * h->mb_stride - 1) * sizeof(*h->slice_table));
         }
     }
     if (h != h0 && (ret = clone_slice(h, h0)) < 0)
