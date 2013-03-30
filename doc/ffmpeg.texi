@@ -198,14 +198,14 @@ filters is obviously also impossible, since filters work on uncompressed data.
 @chapter Stream selection
 @c man begin STREAM SELECTION
 
-By default ffmpeg includes only one stream of each type (video, audio, subtitle)
+By default, @command{ffmpeg} includes only one stream of each type (video, audio, subtitle)
 present in the input files and adds them to each output file.  It picks the
-"best" of each based upon the following criteria; for video it is the stream
-with the highest resolution, for audio the stream with the most channels, for
-subtitle it's the first subtitle stream. In the case where several streams of
-the same type rate equally, the lowest numbered stream is chosen.
+"best" of each based upon the following criteria: for video, it is the stream
+with the highest resolution, for audio, it is the stream with the most channels, for
+subtitles, it is the first subtitle stream. In the case where several streams of
+the same type rate equally, the stream with the lowest index is chosen.
 
-You can disable some of those defaults by using @code{-vn/-an/-sn} options. For
+You can disable some of those defaults by using the @code{-vn/-an/-sn} options. For
 full manual control, use the @code{-map} option, which disables the defaults just
 described.
 
