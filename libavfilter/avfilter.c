@@ -428,10 +428,28 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
 }
 #endif
 
+static void free_link(AVFilterLink *link)
+{
+    if (!link)
+        return;
+
+    if (link->src)
+        link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
+    if (link->dst)
+        link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
+
+    ff_formats_unref(&link->in_formats);
+    ff_formats_unref(&link->out_formats);
+    ff_formats_unref(&link->in_samplerates);
+    ff_formats_unref(&link->out_samplerates);
+    ff_channel_layouts_unref(&link->in_channel_layouts);
+    ff_channel_layouts_unref(&link->out_channel_layouts);
+    av_freep(&link);
+}
+
 void avfilter_free(AVFilterContext *filter)
 {
     int i;
-    AVFilterLink *link;
 
     if (filter->graph)
         ff_filter_graph_remove_filter(filter->graph, filter);
@@ -440,30 +458,10 @@ void avfilter_free(AVFilterContext *filter)
         filter->filter->uninit(filter);
 
     for (i = 0; i < filter->nb_inputs; i++) {
-        if ((link = filter->inputs[i])) {
-            if (link->src)
-                link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
-            ff_formats_unref(&link->in_formats);
-            ff_formats_unref(&link->out_formats);
-            ff_formats_unref(&link->in_samplerates);
-            ff_formats_unref(&link->out_samplerates);
-            ff_channel_layouts_unref(&link->in_channel_layouts);
-            ff_channel_layouts_unref(&link->out_channel_layouts);
-        }
-        av_freep(&link);
+        free_link(filter->inputs[i]);
     }
     for (i = 0; i < filter->nb_outputs; i++) {
-        if ((link = filter->outputs[i])) {
-            if (link->dst)
-                link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
-            ff_formats_unref(&link->in_formats);
-            ff_formats_unref(&link->out_formats);
-            ff_formats_unref(&link->in_samplerates);
-            ff_formats_unref(&link->out_samplerates);
-            ff_channel_layouts_unref(&link->in_channel_layouts);
-            ff_channel_layouts_unref(&link->out_channel_layouts);
-        }
-        av_freep(&link);
+        free_link(filter->outputs[i]);
     }
 
     if (filter->filter->priv_class)
