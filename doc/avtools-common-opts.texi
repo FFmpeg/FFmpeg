@@ -117,8 +117,14 @@ Show available sample formats.
 @item -layouts
 Show channel names and standard channel layouts.
 
-@item -loglevel @var{loglevel} | -v @var{loglevel}
+@item -loglevel [repeat+]@var{loglevel} | -v [repeat+]@var{loglevel}
 Set the logging level used by the library.
+Adding "repeat+" indicates that repeated log output should not be compressed
+to the first line and the "Last message repeated n times" line will be
+omitted. "repeat" can also be used alone.
+If "repeat" is used alone, and with no prior loglevel set, the default
+loglevel will be used. If multiple loglevel parameters are given, using
+'repeat' will not change the loglevel.
 @var{loglevel} is a number or a string containing one of the following values:
 @table @samp
 @item quiet
