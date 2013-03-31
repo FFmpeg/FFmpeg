@@ -46,12 +46,27 @@ AVFilterGraph *avfilter_graph_alloc(void)
     return ret;
 }
 
+void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter)
+{
+    int i;
+    for (i = 0; i < graph->nb_filters; i++) {
+        if (graph->filters[i] == filter) {
+            FFSWAP(AVFilterContext*, graph->filters[i],
+                   graph->filters[graph->nb_filters - 1]);
+            graph->nb_filters--;
+            return;
+        }
+    }
+}
+
 void avfilter_graph_free(AVFilterGraph **graph)
 {
     if (!*graph)
         return;
-    for (; (*graph)->nb_filters > 0; (*graph)->nb_filters--)
-        avfilter_free((*graph)->filters[(*graph)->nb_filters - 1]);
+
+    while ((*graph)->nb_filters)
+        avfilter_free((*graph)->filters[0]);
+
     av_freep(&(*graph)->scale_sws_opts);
     av_freep(&(*graph)->resample_lavr_opts);
     av_freep(&(*graph)->filters);

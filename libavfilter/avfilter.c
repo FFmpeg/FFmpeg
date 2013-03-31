@@ -430,6 +430,9 @@ void avfilter_free(AVFilterContext *filter)
     int i;
     AVFilterLink *link;
 
+    if (filter->graph)
+        ff_filter_graph_remove_filter(filter->graph, filter);
+
     if (filter->filter->uninit)
         filter->filter->uninit(filter);
 

@@ -206,4 +206,9 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
  */
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name);
 
+/**
+ * Remove a filter from a graph;
+ */
+void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter);
+
 #endif /* AVFILTER_INTERNAL_H */

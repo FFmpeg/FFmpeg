@@ -658,7 +658,8 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque);
 
 /**
- * Free a filter context.
+ * Free a filter context. This will also remove the filter from its
+ * filtergraph's list of filters.
  *
  * @param filter the filter to free
  */
