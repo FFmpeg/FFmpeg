@@ -139,7 +139,6 @@ typedef struct {
     FFTSample *correlation;
 
     // for managing AVFilterPad.request_frame and AVFilterPad.filter_frame
-    int request_fulfilled;
     AVFrame *dst_buffer;
     uint8_t *dst;
     uint8_t *dst_end;
@@ -181,7 +180,6 @@ static void yae_clear(ATempoContext *atempo)
     atempo->dst     = NULL;
     atempo->dst_end = NULL;
 
-    atempo->request_fulfilled = 0;
     atempo->nsamples_in       = 0;
     atempo->nsamples_out      = 0;
 }
@@ -1017,6 +1015,8 @@ static int config_props(AVFilterLink *inlink)
     int sample_rate = (int)inlink->sample_rate;
     int channels = av_get_channel_layout_nb_channels(inlink->channel_layout);
 
+    ctx->outputs[0]->flags |= FF_LINK_FLAG_REQUEST_LOOP;
+
     return yae_reset(atempo, format, sample_rate, channels);
 }
 
@@ -1074,7 +1074,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
             ret = push_samples(atempo, outlink, n_out);
             if (ret < 0)
                 goto end;
-            atempo->request_fulfilled = 1;
         }
     }
 
@@ -1090,11 +1089,7 @@ static int request_frame(AVFilterLink *outlink)
     ATempoContext *atempo = ctx->priv;
     int ret;
 
-    atempo->request_fulfilled = 0;
-    do {
-        ret = ff_request_frame(ctx->inputs[0]);
-    }
-    while (!atempo->request_fulfilled && ret >= 0);
+    ret = ff_request_frame(ctx->inputs[0]);
 
     if (ret == AVERROR_EOF) {
         // flush the filter:
