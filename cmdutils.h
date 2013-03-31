@@ -190,13 +190,13 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
 void show_help_children(const AVClass *class, int flags);
 
 /**
- * Per-avtool specific help handler. Implemented in each
- * avtool, called by show_help().
+ * Per-fftool specific help handler. Implemented in each
+ * fftool, called by show_help().
  */
 void show_help_default(const char *opt, const char *arg);
 
 /**
- * Generic -h handler common to all avtools.
+ * Generic -h handler common to all fftools.
  */
 int show_help(void *optctx, const char *opt, const char *arg);
 
