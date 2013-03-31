@@ -839,9 +839,11 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         else if (unit && opt->type==AV_OPT_TYPE_CONST && strcmp(unit, opt->unit))
             continue;
         else if (unit && opt->type == AV_OPT_TYPE_CONST)
-            av_log(av_log_obj, AV_LOG_INFO, "   %-15s ", opt->name);
+            av_log(av_log_obj, AV_LOG_INFO, "     %-15s ", opt->name);
         else
-            av_log(av_log_obj, AV_LOG_INFO, "-%-17s ", opt->name);
+            av_log(av_log_obj, AV_LOG_INFO, "  %s%-17s ",
+                   (opt->flags & AV_OPT_FLAG_FILTERING_PARAM) ? "" : "-",
+                   opt->name);
 
         switch (opt->type) {
             case AV_OPT_TYPE_FLAGS:
