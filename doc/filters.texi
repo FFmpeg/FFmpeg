@@ -2113,7 +2113,7 @@ This expression is evaluated only once during the filter
 configuration.
 
 @item h, out_h
-Set the crop area width. It defaults to @code{ih}.
+Set the crop area height. It defaults to @code{ih}.
 This expression is evaluated only once during the filter
 configuration.
 
