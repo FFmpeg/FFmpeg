@@ -148,8 +148,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     DecimateContext *decimate = ctx->priv;
     av_frame_free(&decimate->ref);
-    avcodec_close(decimate->avctx);
-    av_freep(&decimate->avctx);
+    if (decimate->avctx) {
+        avcodec_close(decimate->avctx);
+        av_freep(&decimate->avctx);
+    }
 }
 
 static int query_formats(AVFilterContext *ctx)
