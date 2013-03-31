@@ -439,7 +439,7 @@ typedef struct AVFilter {
 struct AVFilterContext {
     const AVClass *av_class;              ///< needed for av_log()
 
-    AVFilter *filter;               ///< the AVFilter of which this is an instance
+    const AVFilter *filter;         ///< the AVFilter of which this is an instance
 
     char *name;                     ///< name of this filter instance
 
