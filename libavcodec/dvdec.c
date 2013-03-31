@@ -287,9 +287,9 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
                   int x, y;
                   mb->idct_put(pixels, 8, block);
                   for (y = 0; y < (1 << log2_blocksize); y++, c_ptr += s->picture.linesize[j], pixels += 8) {
-                      ptr1   = pixels + (1 << (log2_blocksize - 1));
+                      ptr1   = pixels + ((1 << (log2_blocksize))>>1);
                       c_ptr1 = c_ptr + (s->picture.linesize[j] << log2_blocksize);
-                      for (x = 0; x < (1 << (log2_blocksize - 1)); x++) {
+                      for (x = 0; x < (1 << FFMAX(log2_blocksize - 1, 0)); x++) {
                           c_ptr[x]  = pixels[x];
                           c_ptr1[x] = ptr1[x];
                       }
