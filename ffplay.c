@@ -1828,9 +1828,10 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
         return AVERROR(ENOMEM);
 
     ret = snprintf(asrc_args, sizeof(asrc_args),
-                   "sample_rate=%d:sample_fmt=%s:channels=%d",
+                   "sample_rate=%d:sample_fmt=%s:channels=%d:time_base=%d/%d",
                    is->audio_filter_src.freq, av_get_sample_fmt_name(is->audio_filter_src.fmt),
-                   is->audio_filter_src.channels);
+                   is->audio_filter_src.channels,
+                   1, is->audio_filter_src.freq);
     if (is->audio_filter_src.channel_layout)
         snprintf(asrc_args + ret, sizeof(asrc_args) - ret,
                  ":channel_layout=0x%"PRIx64,  is->audio_filter_src.channel_layout);
@@ -2190,11 +2191,13 @@ static int audio_decode_frame(VideoState *is)
                 continue;
             }
 
+            tb = (AVRational){1, is->frame->sample_rate};
+            if (is->frame->pts != AV_NOPTS_VALUE)
+                is->frame->pts = av_rescale_q(is->frame->pts, dec->time_base, tb);
             if (is->frame->pts == AV_NOPTS_VALUE && pkt_temp->pts != AV_NOPTS_VALUE)
-                is->frame->pts = av_rescale_q(pkt_temp->pts, is->audio_st->time_base, dec->time_base);
+                is->frame->pts = av_rescale_q(pkt_temp->pts, is->audio_st->time_base, tb);
             if (pkt_temp->pts != AV_NOPTS_VALUE)
                 pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
-            tb = dec->time_base;
 
 #if CONFIG_AVFILTER
             {
