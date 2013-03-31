@@ -495,7 +495,6 @@ static void blend_image(AVFilterContext *ctx,
 static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
 {
     OverlayContext *over = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *next_overpic;
     int ret;
 
@@ -521,10 +520,10 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
     /* At this point, we know that the current overlay frame extends to the
      * time of the main frame. */
     av_dlog(ctx, "main_pts:%s main_pts_time:%s",
-            av_ts2str(mainpic->pts), av_ts2timestr(mainpic->pts, &outlink->time_base));
+            av_ts2str(mainpic->pts), av_ts2timestr(mainpic->pts, &ctx->inputs[MAIN]->time_base));
     if (over->overpicref)
         av_dlog(ctx, " over_pts:%s over_pts_time:%s",
-                av_ts2str(over->overpicref->pts), av_ts2timestr(over->overpicref->pts, &outlink->time_base));
+                av_ts2str(over->overpicref->pts), av_ts2timestr(over->overpicref->pts, &ctx->inputs[OVERLAY]->time_base));
     av_dlog(ctx, "\n");
 
     if (over->overpicref)
