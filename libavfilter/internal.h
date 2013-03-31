@@ -196,4 +196,14 @@ int ff_request_frame(AVFilterLink *link);
  */
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
 
+/**
+ * Allocate a new filter context and return it.
+ *
+ * @param filter what filter to create an instance of
+ * @param inst_name name to give to the new filter context
+ *
+ * @return newly created filter context or NULL on failure
+ */
+AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name);
+
 #endif /* AVFILTER_INTERNAL_H */

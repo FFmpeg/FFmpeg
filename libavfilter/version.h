@@ -58,5 +58,8 @@
 #ifndef FF_API_OLD_FILTER_OPTS
 #define FF_API_OLD_FILTER_OPTS              (LIBAVFILTER_VERSION_MAJOR < 4)
 #endif
+#ifndef FF_API_AVFILTER_OPEN
+#define FF_API_AVFILTER_OPEN                (LIBAVFILTER_VERSION_MAJOR < 4)
+#endif
 
 #endif /* AVFILTER_VERSION_H */
