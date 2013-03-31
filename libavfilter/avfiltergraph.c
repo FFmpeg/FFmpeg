@@ -73,6 +73,8 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     graph->filter_count = graph->nb_filters;
 #endif
 
+    filter->graph = graph;
+
     return 0;
 }
 #endif
@@ -120,6 +122,8 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
 #if FF_API_FOO_COUNT
     graph->filter_count = graph->nb_filters;
 #endif
+
+    s->graph = graph;
 
     return s;
 }

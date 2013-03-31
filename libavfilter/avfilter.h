@@ -458,6 +458,8 @@ struct AVFilterContext {
     unsigned    nb_outputs;         ///< number of output pads
 
     void *priv;                     ///< private data for use by the filter
+
+    struct AVFilterGraph *graph;    ///< filtergraph this filter belongs to
 };
 
 /**
