@@ -795,6 +795,13 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg)
     int level;
     int i;
 
+    tail = strstr(arg, "repeat");
+    av_log_set_flags(tail ? 0 : AV_LOG_SKIP_REPEATED);
+    if (tail == arg)
+        arg += 6 + (arg[6]=='+');
+    if(tail && !*arg)
+        return 0;
+
     for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++) {
         if (!strcmp(log_levels[i].name, arg)) {
             av_log_set_level(log_levels[i].level);
