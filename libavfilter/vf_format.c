@@ -91,7 +91,7 @@ static AVFilterFormats *make_format_list(FormatContext *s, int flag)
 
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
         if (s->listed_pix_fmt_flags[pix_fmt] == flag)
-            formats->formats[formats->format_count++] = pix_fmt;
+            formats->formats[formats->nb_formats++] = pix_fmt;
 
     return formats;
 }

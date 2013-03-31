@@ -341,17 +341,17 @@ static int pick_format(AVFilterLink *link)
     if (!link || !link->in_formats)
         return 0;
 
-    link->in_formats->format_count = 1;
+    link->in_formats->nb_formats = 1;
     link->format = link->in_formats->formats[0];
 
     if (link->type == AVMEDIA_TYPE_AUDIO) {
-        if (!link->in_samplerates->format_count) {
+        if (!link->in_samplerates->nb_formats) {
             av_log(link->src, AV_LOG_ERROR, "Cannot select sample rate for"
                    " the link between filters %s and %s.\n", link->src->name,
                    link->dst->name);
             return AVERROR(EINVAL);
         }
-        link->in_samplerates->format_count = 1;
+        link->in_samplerates->nb_formats = 1;
         link->sample_rate = link->in_samplerates->formats[0];
 
         if (!link->in_channel_layouts->nb_channel_layouts) {
@@ -414,9 +414,9 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     int i, j, k, ret = 0;
 
     REDUCE_FORMATS(int,      AVFilterFormats,        formats,         formats,
-                   format_count, ff_add_format);
+                   nb_formats, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        samplerates,     formats,
-                   format_count, ff_add_format);
+                   nb_formats, ff_add_format);
     REDUCE_FORMATS(uint64_t, AVFilterChannelLayouts, channel_layouts,
                    channel_layouts, nb_channel_layouts, ff_add_channel_layout);
 
@@ -445,7 +445,7 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         link = filter->inputs[i];
 
         if (link->type == AVMEDIA_TYPE_AUDIO &&
-            link->out_samplerates->format_count == 1)
+            link->out_samplerates->nb_formats== 1)
             break;
     }
     if (i == filter->nb_inputs)
@@ -458,10 +458,10 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         int best_idx, best_diff = INT_MAX;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
-            outlink->in_samplerates->format_count < 2)
+            outlink->in_samplerates->nb_formats < 2)
             continue;
 
-        for (j = 0; j < outlink->in_samplerates->format_count; j++) {
+        for (j = 0; j < outlink->in_samplerates->nb_formats; j++) {
             int diff = abs(sample_rate - outlink->in_samplerates->formats[j]);
 
             if (diff < best_diff) {
@@ -607,7 +607,7 @@ static void swap_sample_fmts_on_filter(AVFilterContext *filter)
         link = filter->inputs[i];
 
         if (link->type == AVMEDIA_TYPE_AUDIO &&
-            link->out_formats->format_count == 1)
+            link->out_formats->nb_formats == 1)
             break;
     }
     if (i == filter->nb_inputs)
@@ -621,10 +621,10 @@ static void swap_sample_fmts_on_filter(AVFilterContext *filter)
         int best_idx = -1, best_score = INT_MIN;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
-            outlink->in_formats->format_count < 2)
+            outlink->in_formats->nb_formats < 2)
             continue;
 
-        for (j = 0; j < outlink->in_formats->format_count; j++) {
+        for (j = 0; j < outlink->in_formats->nb_formats; j++) {
             int out_format = outlink->in_formats->formats[j];
             int out_bps    = av_get_bytes_per_sample(out_format);
             int score;
