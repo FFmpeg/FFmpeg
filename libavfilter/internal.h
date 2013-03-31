@@ -325,4 +325,18 @@ int ff_buffersink_read_samples_compat(AVFilterContext *ctx, AVFilterBufferRef **
  */
 int ff_filter_frame(AVFilterLink *link, AVFrame *frame);
 
+/**
+ * Flags for AVFilterLink.flags.
+ */
+enum {
+
+    /**
+     * Frame requests may need to loop in order to be fulfilled.
+     * A filter must set this flags on an output link if it may return 0 in
+     * request_frame() without filtering a frame.
+     */
+    FF_LINK_FLAG_REQUEST_LOOP = 1,
+
+};
+
 #endif /* AVFILTER_INTERNAL_H */
