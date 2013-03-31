@@ -750,13 +750,19 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
  */
 AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, char *name);
 
+#if FF_API_AVFILTER_OPEN
 /**
  * Add an existing filter instance to a filter graph.
  *
  * @param graphctx  the filter graph
  * @param filter the filter to be added
+ *
+ * @deprecated use avfilter_graph_alloc_filter() to allocate a filter in a
+ * filter graph
  */
+attribute_deprecated
 int avfilter_graph_add_filter(AVFilterGraph *graphctx, AVFilterContext *filter);
+#endif
 
 /**
  * Create and add a filter instance into an existing graph.
