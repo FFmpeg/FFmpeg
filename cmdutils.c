@@ -1615,6 +1615,7 @@ static void show_help_muxer(const char *name)
 
 static void show_help_filter(const char *name)
 {
+#if CONFIG_AVFILTER
     const AVFilter *filter;
 
     if (!name) {
@@ -1633,6 +1634,10 @@ static void show_help_filter(const char *name)
         show_help_children(filter->priv_class, AV_OPT_FLAG_FILTERING_PARAM);
     else
         printf("No AVOption available\n");
+#else
+    av_log(NULL, AV_LOG_ERROR, "Build without libavfilter; "
+           "can not to satisfy request\n");
+#endif
 }
 
 int show_help(void *optctx, const char *opt, const char *arg)
