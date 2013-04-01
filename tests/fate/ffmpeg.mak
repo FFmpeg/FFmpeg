@@ -35,3 +35,14 @@ fate-sub2video: CMD = framecrc \
   -ss 132 -i $(SAMPLES)/sub/vobsub.idx \
   -filter_complex "sws_flags=+accurate_rnd+bitexact;[0:0]scale=720:480[v];[v][1:0]overlay[v2]" \
   -map "[v2]" -c:v rawvideo -map 1:s -c:s dvdsub
+
+FATE_FFMPEG-$(call ALLYES, PCM_S16LE_DEMUXER PCM_S16LE_MUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER) += fate-unknown_layout-pcm
+fate-unknown_layout-pcm: $(AREF)
+fate-unknown_layout-pcm: CMD = md5 \
+  -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(AREF) -f s16le
+
+FATE_FFMPEG-$(call ALLYES, PCM_S16LE_DEMUXER AC3_MUXER PCM_S16LE_DECODER AC3_FIXED_ENCODER) += fate-unknown_layout-ac3
+fate-unknown_layout-ac3: $(AREF)
+fate-unknown_layout-ac3: CMD = md5 \
+  -guess_layout_max 0 -f s16le -ac 1 -ar 44100 -i $(AREF) \
+  -f ac3 -flags +bitexact -c ac3_fixed
