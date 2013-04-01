@@ -34,7 +34,8 @@
 #include "internal.h"
 #include "video.h"
 
-unsigned avfilter_version(void) {
+unsigned avfilter_version(void)
+{
     return LIBAVFILTER_VERSION_INT;
 }
 
@@ -59,13 +60,13 @@ void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
 
     *pads  = av_realloc(*pads,  sizeof(AVFilterPad)   * (*count + 1));
     *links = av_realloc(*links, sizeof(AVFilterLink*) * (*count + 1));
-    memmove(*pads +idx+1, *pads +idx, sizeof(AVFilterPad)   * (*count-idx));
-    memmove(*links+idx+1, *links+idx, sizeof(AVFilterLink*) * (*count-idx));
-    memcpy(*pads+idx, newpad, sizeof(AVFilterPad));
+    memmove(*pads  + idx + 1, *pads  + idx, sizeof(AVFilterPad)   * (*count - idx));
+    memmove(*links + idx + 1, *links + idx, sizeof(AVFilterLink*) * (*count - idx));
+    memcpy(*pads + idx, newpad, sizeof(AVFilterPad));
     (*links)[idx] = NULL;
 
     (*count)++;
-    for (i = idx+1; i < *count; i++)
+    for (i = idx + 1; i < *count; i++)
         if (*links[i])
             (*(unsigned *)((uint8_t *) *links[i] + padidx_off))++;
 }
@@ -118,18 +119,18 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     }
 
     /* re-hookup the link to the new destination filter we inserted */
-    link->dst = filt;
-    link->dstpad = &filt->input_pads[filt_srcpad_idx];
+    link->dst                     = filt;
+    link->dstpad                  = &filt->input_pads[filt_srcpad_idx];
     filt->inputs[filt_srcpad_idx] = link;
 
     /* if any information on supported media formats already exists on the
      * link, we need to preserve that */
     if (link->out_formats)
         ff_formats_changeref(&link->out_formats,
-                                   &filt->outputs[filt_dstpad_idx]->out_formats);
+                             &filt->outputs[filt_dstpad_idx]->out_formats);
     if (link->out_samplerates)
         ff_formats_changeref(&link->out_samplerates,
-                                   &filt->outputs[filt_dstpad_idx]->out_samplerates);
+                             &filt->outputs[filt_dstpad_idx]->out_samplerates);
     if (link->out_channel_layouts)
         ff_channel_layouts_changeref(&link->out_channel_layouts,
                                      &filt->outputs[filt_dstpad_idx]->out_channel_layouts);
@@ -314,7 +315,8 @@ int avfilter_pad_count(const AVFilterPad *pads)
     if (!pads)
         return 0;
 
-    for(count = 0; pads->name; count ++) pads ++;
+    for (count = 0; pads->name; count++)
+        pads++;
     return count;
 }
 
@@ -540,7 +542,7 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
 {
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;
-    int ret=0;
+    int ret = 0;
 
     if (args && *args) {
         if (!filter->filter->priv_class) {
