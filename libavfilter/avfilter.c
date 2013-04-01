@@ -87,8 +87,11 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         return AVERROR(EINVAL);
     }
 
-    src->outputs[srcpad] =
-    dst-> inputs[dstpad] = link = av_mallocz(sizeof(AVFilterLink));
+    link = av_mallocz(sizeof(*link));
+    if (!link)
+        return AVERROR(ENOMEM);
+
+    src->outputs[srcpad] = dst->inputs[dstpad] = link;
 
     link->src     = src;
     link->dst     = dst;
