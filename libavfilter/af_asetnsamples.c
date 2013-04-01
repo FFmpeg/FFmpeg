@@ -171,9 +171,8 @@ static int request_frame(AVFilterLink *outlink)
     } while (!asns->req_fullfilled && ret >= 0);
 
     if (ret == AVERROR_EOF) {
-        do {
-            ret = push_samples(outlink);
-        } while (ret > 0);
+        ret = push_samples(outlink);
+        return ret < 0 ? ret : ret > 0 ? 0 : AVERROR_EOF;
     }
 
     return ret;
