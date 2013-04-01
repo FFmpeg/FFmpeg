@@ -14,6 +14,7 @@ version <next>:
 - WebP demuxing and decoding support
 - new ffmpeg options -filter_script and -filter_complex_script, which allow a
   filtergraph description to be read from a file
+- OpenCL support
 
 
 version 1.2:
