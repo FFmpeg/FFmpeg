@@ -28,8 +28,8 @@
  * change without prior notice.
  */
 
-#ifndef LIBAVUTIL_OPENCLWRAPPER_H
-#define LIBAVUTIL_OPENCLWRAPPER_H
+#ifndef LIBAVUTIL_OPENCL_H
+#define LIBAVUTIL_OPENCL_H
 
 #include <CL/cl.h>
 #include "config.h"
@@ -199,4 +199,4 @@ void av_opencl_release_kernel(AVOpenCLKernelEnv *env);
  */
 void av_opencl_uninit(void);
 
-#endif/*LIBAVUTIL_OPENCL_H*/
+#endif /* LIBAVUTIL_OPENCL_H */
