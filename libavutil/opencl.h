@@ -67,7 +67,8 @@ AVOpenCLExternalEnv *av_opencl_alloc_external_env(void);
 /**
  * Free OpenCL external environment.
  *
- * @param ext_opencl_env pointer to OpenCL external environment created by av_opencl_alloc_external_env()
+ * @param ext_opencl_env pointer to OpenCL external environment
+ *                       created by av_opencl_alloc_external_env()
  */
 void av_opencl_free_external_env(AVOpenCLExternalEnv **ext_opencl_env);
 
@@ -83,25 +84,25 @@ void av_opencl_free_external_env(AVOpenCLExternalEnv **ext_opencl_env);
 int av_opencl_register_kernel_code(const char *kernel_code);
 
 /**
- * Initialize the run time OpenCL environment and compile the kernel code registered with
- * av_opencl_register_kernel_code().
+ * Initialize the run time OpenCL environment and compile the kernel
+ * code registered with av_opencl_register_kernel_code().
  *
  * Currently, the only accepted option is "build_options", used to set
  * options to compile registered kernels code. See reference "OpenCL
  * Specification Version: 1.2 chapter 5.6.4".
  *
- * @param options                  dictionary of key/value options
- * @param ext_opencl_env      external OpenCL environment, created by an
- *                                          application program, ignored if set to NULL
- * @return  >=0 on success, a negative error code in case of failure
+ * @param options        dictionary of key/value options
+ * @param ext_opencl_env external OpenCL environment, created by an
+ *                       application program, ignored if set to NULL
+ * @return >=0 on success, a negative error code in case of failure
  */
  int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env);
 
 /**
  * Create kernel object in the specified kernel environment.
  *
- * @param env                 pointer to kernel environment which is filled with the environment,
- *                                   used to run the kernel
+ * @param env              pointer to kernel environment which is filled with
+ *                         the environment used to run the kernel
  * @param kernel_name      kernel function name
  * @return >=0 on success, a negative error code in case of failure
  */
@@ -159,11 +160,10 @@ int av_opencl_buffer_read(uint8_t *dst_buf, cl_mem src_cl_buf, size_t buf_size);
  * @return >=0 on success, a negative error code in case of failure
  */
 int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int dst_cl_offset,
-                                        uint8_t **src_data, int *plane_size, int plane_num);
+                                 uint8_t **src_data, int *plane_size, int plane_num);
+
 /**
  * Read image data from OpenCL buffer.
- *
- * src buffer is OpenCL buffer, dst buffer is frame buffer(data[0],data[1]....).
  *
  * @param dst_data           array of pointers to destination plane buffers
  * @param dst_plane_sizes    array of pointers to destination plane buffers
@@ -172,25 +172,27 @@ int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int d
  * @param src_cl_buf_size    size in bytes of OpenCL buffer
  * @return >=0 on success, a negative error code in case of failure
  */
-
 int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_num,
-                                       cl_mem src_cl_buf, size_t cl_buffer_size);
+                                cl_mem src_cl_buf, size_t cl_buffer_size);
+
 /**
  * Release OpenCL buffer.
  *
- * @param cl_buf  pointer to OpenCL buffer to release, which was previously filled with av_opencl_buffer_create()
+ * @param cl_buf pointer to OpenCL buffer to release, which was
+ *               previously filled with av_opencl_buffer_create()
  */
 void av_opencl_buffer_release(cl_mem *cl_buf);
 
 /**
- *  Release kernel object.
+ * Release kernel object.
  *
- * @param env  kernel environment where the kernel object was created with av_opencl_create_kernel
+ * @param env kernel environment where the kernel object was created
+ *            with av_opencl_create_kernel()
  */
 void av_opencl_release_kernel(AVOpenCLKernelEnv *env);
 
 /**
- *  Release OpenCL environment.
+ * Release OpenCL environment.
  *
  * The OpenCL environment is effectively released only if all the created
  * kernels had been released with av_opencl_release_kernel().

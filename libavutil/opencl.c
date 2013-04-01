@@ -67,9 +67,9 @@ typedef struct {
     KernelCode kernel_code[MAX_KERNEL_CODE_NUM];
     int kernel_count;
     /**
-         * if set to 1, the OpenCL environment was created by the user and
-         * passed as AVOpenCLExternalEnv when initing ,0:created by opencl wrapper.
-         */
+     * if set to 1, the OpenCL environment was created by the user and
+     * passed as AVOpenCLExternalEnv when initing ,0:created by opencl wrapper.
+     */
     int is_user_created;
 } GPUEnv;
 
@@ -79,11 +79,16 @@ typedef struct {
     void *log_ctx;
 } OpenclUtils;
 
-static const AVClass openclutils_class = {"OPENCLUTILS", av_default_item_name,
-                                                   NULL, LIBAVUTIL_VERSION_INT,
-                                                   offsetof(OpenclUtils, log_offset),
-                                                   offsetof(OpenclUtils, log_ctx)};
+static const AVClass openclutils_class = {
+    .class_name                = "OPENCLUTILS",
+    .item_name                 = av_default_item_name,
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset   = offsetof(OpenclUtils, log_offset),
+    .parent_log_context_offset = offsetof(OpenclUtils, log_ctx),
+};
+
 static OpenclUtils openclutils = {&openclutils_class};
+
 static GPUEnv gpu_env;
 
 typedef struct {
@@ -92,64 +97,64 @@ typedef struct {
 } OpenclErrorMsg;
 
 static const OpenclErrorMsg opencl_err_msg[] = {
-        {CL_DEVICE_NOT_FOUND,                               "DEVICE NOT FOUND"},
-        {CL_DEVICE_NOT_AVAILABLE,                           "DEVICE NOT AVAILABLE"},
-        {CL_COMPILER_NOT_AVAILABLE,                         "COMPILER NOT AVAILABLE"},
-        {CL_MEM_OBJECT_ALLOCATION_FAILURE,                  "MEM OBJECT ALLOCATION FAILURE"},
-        {CL_OUT_OF_RESOURCES,                               "OUT OF RESOURCES"},
-        {CL_OUT_OF_HOST_MEMORY,                             "OUT OF HOST MEMORY"},
-        {CL_PROFILING_INFO_NOT_AVAILABLE,                   "PROFILING INFO NOT AVAILABLE"},
-        {CL_MEM_COPY_OVERLAP,                               "MEM COPY OVERLAP"},
-        {CL_IMAGE_FORMAT_MISMATCH,                          "IMAGE FORMAT MISMATCH"},
-        {CL_IMAGE_FORMAT_NOT_SUPPORTED,                     "IMAGE FORMAT NOT_SUPPORTED"},
-        {CL_BUILD_PROGRAM_FAILURE,                          "BUILD PROGRAM FAILURE"},
-        {CL_MAP_FAILURE,                                    "MAP FAILURE"},
-        {CL_MISALIGNED_SUB_BUFFER_OFFSET,                   "MISALIGNED SUB BUFFER OFFSET"},
-        {CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST,      "EXEC STATUS ERROR FOR EVENTS IN WAIT LIST"},
-        {CL_COMPILE_PROGRAM_FAILURE,                        "COMPILE PROGRAM FAILURE"},
-        {CL_LINKER_NOT_AVAILABLE,                           "LINKER NOT AVAILABLE"},
-        {CL_LINK_PROGRAM_FAILURE,                           "LINK PROGRAM FAILURE"},
-        {CL_DEVICE_PARTITION_FAILED,                        "DEVICE PARTITION FAILED"},
-        {CL_KERNEL_ARG_INFO_NOT_AVAILABLE,                  "KERNEL ARG INFO NOT AVAILABLE"},
-        {CL_INVALID_VALUE,                                  "INVALID VALUE"},
-        {CL_INVALID_DEVICE_TYPE,                            "INVALID DEVICE TYPE"},
-        {CL_INVALID_PLATFORM,                               "INVALID PLATFORM"},
-        {CL_INVALID_DEVICE,                                 "INVALID DEVICE"},
-        {CL_INVALID_CONTEXT,                                "INVALID CONTEXT"},
-        {CL_INVALID_QUEUE_PROPERTIES,                       "INVALID QUEUE PROPERTIES"},
-        {CL_INVALID_COMMAND_QUEUE,                          "INVALID COMMAND QUEUE"},
-        {CL_INVALID_HOST_PTR,                               "INVALID HOST PTR"},
-        {CL_INVALID_MEM_OBJECT,                             "INVALID MEM OBJECT"},
-        {CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,                "INVALID IMAGE FORMAT DESCRIPTOR"},
-        {CL_INVALID_IMAGE_SIZE,                             "INVALID IMAGE SIZE"},
-        {CL_INVALID_SAMPLER,                                "INVALID SAMPLER"},
-        {CL_INVALID_BINARY,                                 "INVALID BINARY"},
-        {CL_INVALID_BUILD_OPTIONS,                          "INVALID BUILD OPTIONS"},
-        {CL_INVALID_PROGRAM,                                "INVALID PROGRAM"},
-        {CL_INVALID_PROGRAM_EXECUTABLE,                     "INVALID PROGRAM EXECUTABLE"},
-        {CL_INVALID_KERNEL_NAME,                            "INVALID KERNEL NAME"},
-        {CL_INVALID_KERNEL_DEFINITION,                      "INVALID KERNEL DEFINITION"},
-        {CL_INVALID_KERNEL,                                 "INVALID KERNEL"},
-        {CL_INVALID_ARG_INDEX,                              "INVALID ARG INDEX"},
-        {CL_INVALID_ARG_VALUE,                              "INVALID ARG VALUE"},
-        {CL_INVALID_ARG_SIZE,                               "INVALID ARG_SIZE"},
-        {CL_INVALID_KERNEL_ARGS,                            "INVALID KERNEL ARGS"},
-        {CL_INVALID_WORK_DIMENSION,                         "INVALID WORK DIMENSION"},
-        {CL_INVALID_WORK_GROUP_SIZE,                        "INVALID WORK GROUP SIZE"},
-        {CL_INVALID_WORK_ITEM_SIZE,                         "INVALID WORK ITEM SIZE"},
-        {CL_INVALID_GLOBAL_OFFSET,                          "INVALID GLOBAL OFFSET"},
-        {CL_INVALID_EVENT_WAIT_LIST,                        "INVALID EVENT WAIT LIST"},
-        {CL_INVALID_EVENT,                                  "INVALID EVENT"},
-        {CL_INVALID_OPERATION,                              "INVALID OPERATION"},
-        {CL_INVALID_GL_OBJECT,                              "INVALID GL OBJECT"},
-        {CL_INVALID_BUFFER_SIZE,                            "INVALID BUFFER SIZE"},
-        {CL_INVALID_MIP_LEVEL,                              "INVALID MIP LEVEL"},
-        {CL_INVALID_GLOBAL_WORK_SIZE,                       "INVALID GLOBAL WORK SIZE"},
-        {CL_INVALID_PROPERTY,                               "INVALID PROPERTY"},
-        {CL_INVALID_IMAGE_DESCRIPTOR,                       "INVALID IMAGE DESCRIPTOR"},
-        {CL_INVALID_COMPILER_OPTIONS,                       "INVALID COMPILER OPTIONS"},
-        {CL_INVALID_LINKER_OPTIONS,                         "INVALID LINKER OPTIONS"},
-        {CL_INVALID_DEVICE_PARTITION_COUNT,                 "INVALID DEVICE PARTITION COUNT"},
+    {CL_DEVICE_NOT_FOUND,                               "DEVICE NOT FOUND"},
+    {CL_DEVICE_NOT_AVAILABLE,                           "DEVICE NOT AVAILABLE"},
+    {CL_COMPILER_NOT_AVAILABLE,                         "COMPILER NOT AVAILABLE"},
+    {CL_MEM_OBJECT_ALLOCATION_FAILURE,                  "MEM OBJECT ALLOCATION FAILURE"},
+    {CL_OUT_OF_RESOURCES,                               "OUT OF RESOURCES"},
+    {CL_OUT_OF_HOST_MEMORY,                             "OUT OF HOST MEMORY"},
+    {CL_PROFILING_INFO_NOT_AVAILABLE,                   "PROFILING INFO NOT AVAILABLE"},
+    {CL_MEM_COPY_OVERLAP,                               "MEM COPY OVERLAP"},
+    {CL_IMAGE_FORMAT_MISMATCH,                          "IMAGE FORMAT MISMATCH"},
+    {CL_IMAGE_FORMAT_NOT_SUPPORTED,                     "IMAGE FORMAT NOT_SUPPORTED"},
+    {CL_BUILD_PROGRAM_FAILURE,                          "BUILD PROGRAM FAILURE"},
+    {CL_MAP_FAILURE,                                    "MAP FAILURE"},
+    {CL_MISALIGNED_SUB_BUFFER_OFFSET,                   "MISALIGNED SUB BUFFER OFFSET"},
+    {CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST,      "EXEC STATUS ERROR FOR EVENTS IN WAIT LIST"},
+    {CL_COMPILE_PROGRAM_FAILURE,                        "COMPILE PROGRAM FAILURE"},
+    {CL_LINKER_NOT_AVAILABLE,                           "LINKER NOT AVAILABLE"},
+    {CL_LINK_PROGRAM_FAILURE,                           "LINK PROGRAM FAILURE"},
+    {CL_DEVICE_PARTITION_FAILED,                        "DEVICE PARTITION FAILED"},
+    {CL_KERNEL_ARG_INFO_NOT_AVAILABLE,                  "KERNEL ARG INFO NOT AVAILABLE"},
+    {CL_INVALID_VALUE,                                  "INVALID VALUE"},
+    {CL_INVALID_DEVICE_TYPE,                            "INVALID DEVICE TYPE"},
+    {CL_INVALID_PLATFORM,                               "INVALID PLATFORM"},
+    {CL_INVALID_DEVICE,                                 "INVALID DEVICE"},
+    {CL_INVALID_CONTEXT,                                "INVALID CONTEXT"},
+    {CL_INVALID_QUEUE_PROPERTIES,                       "INVALID QUEUE PROPERTIES"},
+    {CL_INVALID_COMMAND_QUEUE,                          "INVALID COMMAND QUEUE"},
+    {CL_INVALID_HOST_PTR,                               "INVALID HOST PTR"},
+    {CL_INVALID_MEM_OBJECT,                             "INVALID MEM OBJECT"},
+    {CL_INVALID_IMAGE_FORMAT_DESCRIPTOR,                "INVALID IMAGE FORMAT DESCRIPTOR"},
+    {CL_INVALID_IMAGE_SIZE,                             "INVALID IMAGE SIZE"},
+    {CL_INVALID_SAMPLER,                                "INVALID SAMPLER"},
+    {CL_INVALID_BINARY,                                 "INVALID BINARY"},
+    {CL_INVALID_BUILD_OPTIONS,                          "INVALID BUILD OPTIONS"},
+    {CL_INVALID_PROGRAM,                                "INVALID PROGRAM"},
+    {CL_INVALID_PROGRAM_EXECUTABLE,                     "INVALID PROGRAM EXECUTABLE"},
+    {CL_INVALID_KERNEL_NAME,                            "INVALID KERNEL NAME"},
+    {CL_INVALID_KERNEL_DEFINITION,                      "INVALID KERNEL DEFINITION"},
+    {CL_INVALID_KERNEL,                                 "INVALID KERNEL"},
+    {CL_INVALID_ARG_INDEX,                              "INVALID ARG INDEX"},
+    {CL_INVALID_ARG_VALUE,                              "INVALID ARG VALUE"},
+    {CL_INVALID_ARG_SIZE,                               "INVALID ARG_SIZE"},
+    {CL_INVALID_KERNEL_ARGS,                            "INVALID KERNEL ARGS"},
+    {CL_INVALID_WORK_DIMENSION,                         "INVALID WORK DIMENSION"},
+    {CL_INVALID_WORK_GROUP_SIZE,                        "INVALID WORK GROUP SIZE"},
+    {CL_INVALID_WORK_ITEM_SIZE,                         "INVALID WORK ITEM SIZE"},
+    {CL_INVALID_GLOBAL_OFFSET,                          "INVALID GLOBAL OFFSET"},
+    {CL_INVALID_EVENT_WAIT_LIST,                        "INVALID EVENT WAIT LIST"},
+    {CL_INVALID_EVENT,                                  "INVALID EVENT"},
+    {CL_INVALID_OPERATION,                              "INVALID OPERATION"},
+    {CL_INVALID_GL_OBJECT,                              "INVALID GL OBJECT"},
+    {CL_INVALID_BUFFER_SIZE,                            "INVALID BUFFER SIZE"},
+    {CL_INVALID_MIP_LEVEL,                              "INVALID MIP LEVEL"},
+    {CL_INVALID_GLOBAL_WORK_SIZE,                       "INVALID GLOBAL WORK SIZE"},
+    {CL_INVALID_PROPERTY,                               "INVALID PROPERTY"},
+    {CL_INVALID_IMAGE_DESCRIPTOR,                       "INVALID IMAGE DESCRIPTOR"},
+    {CL_INVALID_COMPILER_OPTIONS,                       "INVALID COMPILER OPTIONS"},
+    {CL_INVALID_LINKER_OPTIONS,                         "INVALID LINKER OPTIONS"},
+    {CL_INVALID_DEVICE_PARTITION_COUNT,                 "INVALID DEVICE PARTITION COUNT"},
 };
 
 static const char *opencl_errstr(cl_int status)
@@ -167,7 +172,7 @@ AVOpenCLExternalEnv *av_opencl_alloc_external_env(void)
     AVOpenCLExternalEnv *ext = av_mallocz(sizeof(AVOpenCLExternalEnv));
     if (!ext) {
         av_log(&openclutils, AV_LOG_ERROR,
-         "Could not malloc external opencl environment data space\n");
+               "Could not malloc external opencl environment data space\n");
     }
     return ext;
 }
@@ -183,8 +188,8 @@ int av_opencl_register_kernel_code(const char *kernel_code)
     LOCK_OPENCL;
     if (gpu_env.kernel_code_count >= MAX_KERNEL_CODE_NUM) {
         av_log(&openclutils, AV_LOG_ERROR,
-         "Could not register kernel code, maximum number of registered kernel code %d already reached\n",
-         MAX_KERNEL_CODE_NUM);
+               "Could not register kernel code, maximum number of registered kernel code %d already reached\n",
+               MAX_KERNEL_CODE_NUM);
         ret = AVERROR(EINVAL);
         goto end;
     }
@@ -215,8 +220,8 @@ int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name)
     if (!env->kernel) {
         if (gpu_env.kernel_count >= MAX_KERNEL_NUM) {
             av_log(&openclutils, AV_LOG_ERROR,
-            "Could not create kernel with name '%s', maximum number of kernels %d already reached\n",
-                kernel_name, MAX_KERNEL_NUM);
+                   "Could not create kernel with name '%s', maximum number of kernels %d already reached\n",
+                   kernel_name, MAX_KERNEL_NUM);
             ret = AVERROR(EINVAL);
             goto end;
         }
@@ -359,22 +364,22 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
                 }
             }
 
-           /*
-                    * Use available platform.
-                    */
-
+            /*
+             * Use available platform.
+             */
             av_log(&openclutils, AV_LOG_VERBOSE, "Platform Name: %s\n", platform_name);
             cps[0] = CL_CONTEXT_PLATFORM;
             cps[1] = (cl_context_properties)gpu_env->platform_id;
             cps[2] = 0;
-            /* Check for GPU. */
 
+            /* Check for GPU. */
             for (i = 0; i < sizeof(device_type); i++) {
                 gpu_env->device_type = device_type[i];
                 gpu_env->context     = clCreateContextFromType(cps, gpu_env->device_type,
                                                                NULL, NULL, &status);
                 if (status != CL_SUCCESS) {
-                    av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL context from device type: %s\n", opencl_errstr(status));
+                    av_log(&openclutils, AV_LOG_ERROR,
+                           "Could not get OpenCL context from device type: %s\n", opencl_errstr(status));
                     ret = AVERROR_EXTERNAL;
                     goto end;
                 }
@@ -382,7 +387,8 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
                     break;
             }
             if (!gpu_env->context) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL context from device type\n");
+                av_log(&openclutils, AV_LOG_ERROR,
+                       "Could not get OpenCL context from device type\n");
                 ret = AVERROR_EXTERNAL;
                 goto end;
             }
@@ -391,7 +397,8 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
             status = clGetContextInfo(gpu_env->context, CL_CONTEXT_DEVICES,
                                       0, NULL, &device_length);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device length: %s\n", opencl_errstr(status));
+                av_log(&openclutils, AV_LOG_ERROR,
+                       "Could not get OpenCL device length: %s\n", opencl_errstr(status));
                 ret = AVERROR_EXTERNAL;
                 goto end;
             }
@@ -410,7 +417,8 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
             status = clGetContextInfo(gpu_env->context, CL_CONTEXT_DEVICES, device_length,
                                       gpu_env->device_ids, NULL);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL context info: %s\n", opencl_errstr(status));
+                av_log(&openclutils, AV_LOG_ERROR,
+                       "Could not get OpenCL context info: %s\n", opencl_errstr(status));
                 ret = AVERROR_EXTERNAL;
                 goto end;
             }
@@ -422,7 +430,8 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
             gpu_env->command_queue = clCreateCommandQueue(gpu_env->context, gpu_env->device_ids[i],
                                                           0, &status);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not create OpenCL command queue: %s\n", opencl_errstr(status));
+                av_log(&openclutils, AV_LOG_ERROR,
+                       "Could not create OpenCL command queue: %s\n", opencl_errstr(status));
                 ret = AVERROR_EXTERNAL;
                 goto end;
             }
@@ -465,8 +474,8 @@ static int compile_kernel_file(GPUEnv *gpu_env, const char *build_options)
                                                            1, (const char **)(&source_str),
                                                                    &source_str_len, &status);
     if(status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not create OpenCL program with source code: %s\n",
-               opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not create OpenCL program with source code: %s\n", opencl_errstr(status));
         ret = AVERROR_EXTERNAL;
         goto end;
     }
@@ -487,7 +496,8 @@ static int compile_kernel_file(GPUEnv *gpu_env, const char *build_options)
                                  build_options, NULL, NULL);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not compile OpenCL kernel: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not compile OpenCL kernel: %s\n", opencl_errstr(status));
         ret = AVERROR_EXTERNAL;
         goto end;
     }
@@ -507,7 +517,7 @@ int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
     if (!gpu_env.init_count) {
         opt_platform_entry = av_dict_get(options, "platform_idx", NULL, 0);
         opt_device_entry   = av_dict_get(options, "device_idx", NULL, 0);
-        /*initialize devices, context, command_queue*/
+        /* initialize devices, context, command_queue */
         gpu_env.usr_spec_dev_info.platform_idx = -1;
         gpu_env.usr_spec_dev_info.dev_idx = -1;
         if (opt_platform_entry) {
@@ -544,13 +554,14 @@ void av_opencl_uninit(void)
     gpu_env.init_count--;
     if (gpu_env.is_user_created)
         goto end;
-    if ((gpu_env.init_count > 0) || (gpu_env.kernel_count > 0))
+    if (gpu_env.init_count > 0 || gpu_env.kernel_count > 0)
         goto end;
     for (i = 0; i < gpu_env.program_count; i++) {
         if (gpu_env.programs[i]) {
             status = clReleaseProgram(gpu_env.programs[i]);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not release OpenCL program: %s\n", opencl_errstr(status));
+                av_log(&openclutils, AV_LOG_ERROR,
+                       "Could not release OpenCL program: %s\n", opencl_errstr(status));
             }
             gpu_env.programs[i] = NULL;
         }
@@ -558,14 +569,16 @@ void av_opencl_uninit(void)
     if (gpu_env.command_queue) {
         status = clReleaseCommandQueue(gpu_env.command_queue);
         if (status != CL_SUCCESS) {
-            av_log(&openclutils, AV_LOG_ERROR, "Could not release OpenCL command queue: %s\n", opencl_errstr(status));
+            av_log(&openclutils, AV_LOG_ERROR,
+                   "Could not release OpenCL command queue: %s\n", opencl_errstr(status));
         }
         gpu_env.command_queue = NULL;
     }
     if (gpu_env.context) {
         status = clReleaseContext(gpu_env.context);
         if (status != CL_SUCCESS) {
-            av_log(&openclutils, AV_LOG_ERROR, "Could not release OpenCL context: %s\n", opencl_errstr(status));
+            av_log(&openclutils, AV_LOG_ERROR,
+                   "Could not release OpenCL context: %s\n", opencl_errstr(status));
         }
         gpu_env.context = NULL;
     }
@@ -592,7 +605,8 @@ void av_opencl_buffer_release(cl_mem *cl_buf)
         return;
     status = clReleaseMemObject(*cl_buf);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not release OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not release OpenCL buffer: %s\n", opencl_errstr(status));
     }
     memset(cl_buf, 0, sizeof(*cl_buf));
 }
@@ -605,14 +619,16 @@ int av_opencl_buffer_write(cl_mem dst_cl_buf, uint8_t *src_buf, size_t buf_size)
                                       0, NULL, NULL, &status);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     memcpy(mapped, src_buf, buf_size);
 
     status = clEnqueueUnmapMemObject(gpu_env.command_queue, dst_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     return 0;
@@ -626,21 +642,23 @@ int av_opencl_buffer_read(uint8_t *dst_buf, cl_mem src_cl_buf, size_t buf_size)
                                       0, NULL, NULL, &status);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     memcpy(dst_buf, mapped, buf_size);
 
     status = clEnqueueUnmapMemObject(gpu_env.command_queue, src_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     return 0;
 }
 
 int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int dst_cl_offset,
-                                                    uint8_t **src_data, int *plane_size, int plane_num)
+                                 uint8_t **src_data, int *plane_size, int plane_num)
 {
     int i, buffer_size = 0;
     uint8_t *temp;
@@ -653,14 +671,16 @@ int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int d
         buffer_size += plane_size[i];
     }
     if (buffer_size > cl_buffer_size) {
-        av_log(&openclutils, AV_LOG_ERROR, "Cannot write image to OpenCL buffer: buffer too small\n");
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Cannot write image to OpenCL buffer: buffer too small\n");
         return AVERROR(EINVAL);
     }
     mapped = clEnqueueMapBuffer(gpu_env.command_queue, dst_cl_buf,
-                                      CL_TRUE,CL_MAP_WRITE, 0, buffer_size + dst_cl_offset,
-                                      0, NULL, NULL, &status);
+                                CL_TRUE,CL_MAP_WRITE, 0, buffer_size + dst_cl_offset,
+                                0, NULL, NULL, &status);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     temp = mapped;
@@ -671,14 +691,15 @@ int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int d
     }
     status = clEnqueueUnmapMemObject(gpu_env.command_queue, dst_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     return 0;
 }
 
 int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_num,
-                                       cl_mem src_cl_buf, size_t cl_buffer_size)
+                                cl_mem src_cl_buf, size_t cl_buffer_size)
 {
     int i,buffer_size = 0,ret = 0;
     uint8_t *temp;
@@ -687,31 +708,34 @@ int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_n
     if ((unsigned int)plane_num > 8) {
         return AVERROR(EINVAL);
     }
-    for (i = 0;i < plane_num;i++) {
+    for (i = 0; i < plane_num; i++) {
         buffer_size += plane_size[i];
     }
     if (buffer_size > cl_buffer_size) {
-        av_log(&openclutils, AV_LOG_ERROR, "Cannot write image to CPU buffer: OpenCL buffer too small\n");
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Cannot write image to CPU buffer: OpenCL buffer too small\n");
         return AVERROR(EINVAL);
     }
     mapped = clEnqueueMapBuffer(gpu_env.command_queue, src_cl_buf,
-                                      CL_TRUE,CL_MAP_READ, 0, buffer_size,
-                                      0, NULL, NULL, &status);
+                                CL_TRUE,CL_MAP_READ, 0, buffer_size,
+                                0, NULL, NULL, &status);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     temp = mapped;
     if (ret >= 0) {
-        for (i = 0;i < plane_num;i++) {
+        for (i = 0; i < plane_num; i++) {
             memcpy(dst_data[i], temp, plane_size[i]);
             temp += plane_size[i];
         }
     }
     status = clEnqueueUnmapMemObject(gpu_env.command_queue, src_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     return 0;
