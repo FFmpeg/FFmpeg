@@ -1648,7 +1648,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
     return 0;
 }
 
-static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt, int *serial)
+static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *serial)
 {
     int got_picture;
 
@@ -1679,22 +1679,22 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         int ret = 1;
 
         if (decoder_reorder_pts == -1) {
-            *pts = av_frame_get_best_effort_timestamp(frame);
+            frame->pts = av_frame_get_best_effort_timestamp(frame);
         } else if (decoder_reorder_pts) {
-            *pts = frame->pkt_pts;
+            frame->pts = frame->pkt_pts;
         } else {
-            *pts = frame->pkt_dts;
+            frame->pts = frame->pkt_dts;
         }
 
-        if (*pts == AV_NOPTS_VALUE) {
-            *pts = 0;
+        if (frame->pts == AV_NOPTS_VALUE) {
+            frame->pts = 0;
         }
 
         if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
             SDL_LockMutex(is->pictq_mutex);
-            if (is->frame_last_pts != AV_NOPTS_VALUE && *pts) {
+            if (is->frame_last_pts != AV_NOPTS_VALUE && frame->pts) {
                 double clockdiff = get_video_clock(is) - get_master_clock(is);
-                double dpts = av_q2d(is->video_st->time_base) * *pts;
+                double dpts = av_q2d(is->video_st->time_base) * frame->pts;
                 double ptsdiff = dpts - is->frame_last_pts;
                 if (!isnan(clockdiff) && fabs(clockdiff) < AV_NOSYNC_THRESHOLD &&
                      ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
@@ -1886,7 +1886,6 @@ static int video_thread(void *arg)
     AVPacket pkt = { 0 };
     VideoState *is = arg;
     AVFrame *frame = av_frame_alloc();
-    int64_t pts_int = AV_NOPTS_VALUE, pos = -1;
     double pts;
     int ret;
     int serial = 0;
@@ -1901,19 +1900,15 @@ static int video_thread(void *arg)
 #endif
 
     for (;;) {
-#if CONFIG_AVFILTER
-        AVRational tb;
-#endif
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 
         avcodec_get_frame_defaults(frame);
         av_free_packet(&pkt);
 
-        ret = get_video_frame(is, frame, &pts_int, &pkt, &serial);
+        ret = get_video_frame(is, frame, &pkt, &serial);
         if (ret < 0)
             goto the_end;
-
         if (!ret)
             continue;
 
@@ -1946,7 +1941,6 @@ static int video_thread(void *arg)
             last_serial = serial;
         }
 
-        frame->pts = pts_int;
         frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
         ret = av_buffersrc_add_frame(filt_in, frame);
         if (ret < 0)
@@ -1968,23 +1962,12 @@ static int video_thread(void *arg)
             if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
                 is->frame_last_filter_delay = 0;
 
-            pts_int = frame->pts;
-            tb      = filt_out->inputs[0]->time_base;
-            pos     = av_frame_get_pkt_pos(frame);
-            if (av_cmp_q(tb, is->video_st->time_base)) {
-                av_unused int64_t pts1 = pts_int;
-                pts_int = av_rescale_q(pts_int, tb, is->video_st->time_base);
-                av_dlog(NULL, "video_thread(): "
-                        "tb:%d/%d pts:%"PRId64" -> tb:%d/%d pts:%"PRId64"\n",
-                        tb.num, tb.den, pts1,
-                        is->video_st->time_base.num, is->video_st->time_base.den, pts_int);
-            }
-            pts = pts_int * av_q2d(is->video_st->time_base);
-            ret = queue_picture(is, frame, pts, pos, serial);
+            pts = frame->pts * av_q2d(filt_out->inputs[0]->time_base);
+            ret = queue_picture(is, frame, pts, av_frame_get_pkt_pos(frame), serial);
             av_frame_unref(frame);
         }
 #else
-        pts = pts_int * av_q2d(is->video_st->time_base);
+        pts = frame->pts * av_q2d(is->video_st->time_base);
         ret = queue_picture(is, frame, pts, pkt.pos, serial);
         av_frame_unref(frame);
 #endif
