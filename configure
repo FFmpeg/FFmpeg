@@ -234,6 +234,7 @@ External library support:
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
+  --enable-opencl          enable OpenCL code
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing [no]
   --enable-zlib            enable zlib [autodetect]
@@ -1179,6 +1180,7 @@ EXTERNAL_LIBRARY_LIST="
     libxavs
     libxvid
     openal
+    opencl
     openssl
     x11grab
     zlib
@@ -3987,6 +3989,7 @@ enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32
                         die "ERROR: openal not found"; } &&
                       { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                         die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
+enabled opencl     && require2 opencl CL/cl.h clEnqueueNDRangeKernel -lOpenCL
 enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
@@ -4355,6 +4358,7 @@ echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
+echo "opencl enabled            ${opencl-no}"
 echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"

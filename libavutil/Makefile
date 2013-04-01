@@ -52,6 +52,8 @@ HEADERS = adler32.h                                                     \
 
 HEADERS-$(CONFIG_LZO)                   += lzo.h
 
+HEADERS-$(CONFIG_OPENCL)                += opencl.h
+
 ARCH_HEADERS = bswap.h                                                  \
                intmath.h                                                \
                intreadwrite.h                                           \
@@ -106,6 +108,7 @@ OBJS = adler32.o                                                        \
        xtea.o                                                           \
 
 OBJS-$(CONFIG_LZO)                      += lzo.o
+OBJS-$(CONFIG_OPENCL)                   += opencl.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
