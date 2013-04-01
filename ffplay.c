@@ -2175,34 +2175,33 @@ static int audio_decode_frame(VideoState *is)
                 return -1;
 
             if (!is->audio_buf_frames_pending) {
+                if (flush_complete)
+                    break;
+                new_packet = 0;
+                len1 = avcodec_decode_audio4(dec, is->frame, &got_frame, pkt_temp);
+                if (len1 < 0) {
+                    /* if error, we skip the frame */
+                    pkt_temp->size = 0;
+                    break;
+                }
 
-            if (flush_complete)
-                break;
-            new_packet = 0;
-            len1 = avcodec_decode_audio4(dec, is->frame, &got_frame, pkt_temp);
-            if (len1 < 0) {
-                /* if error, we skip the frame */
-                pkt_temp->size = 0;
-                break;
-            }
+                pkt_temp->data += len1;
+                pkt_temp->size -= len1;
 
-            pkt_temp->data += len1;
-            pkt_temp->size -= len1;
+                if (!got_frame) {
+                    /* stop sending empty packets if the decoder is finished */
+                    if (!pkt_temp->data && dec->codec->capabilities & CODEC_CAP_DELAY)
+                        flush_complete = 1;
+                    continue;
+                }
 
-            if (!got_frame) {
-                /* stop sending empty packets if the decoder is finished */
-                if (!pkt_temp->data && dec->codec->capabilities & CODEC_CAP_DELAY)
-                    flush_complete = 1;
-                continue;
-            }
-
-            tb = (AVRational){1, is->frame->sample_rate};
-            if (is->frame->pts != AV_NOPTS_VALUE)
-                is->frame->pts = av_rescale_q(is->frame->pts, dec->time_base, tb);
-            if (is->frame->pts == AV_NOPTS_VALUE && pkt_temp->pts != AV_NOPTS_VALUE)
-                is->frame->pts = av_rescale_q(pkt_temp->pts, is->audio_st->time_base, tb);
-            if (pkt_temp->pts != AV_NOPTS_VALUE)
-                pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
+                tb = (AVRational){1, is->frame->sample_rate};
+                if (is->frame->pts != AV_NOPTS_VALUE)
+                    is->frame->pts = av_rescale_q(is->frame->pts, dec->time_base, tb);
+                if (is->frame->pts == AV_NOPTS_VALUE && pkt_temp->pts != AV_NOPTS_VALUE)
+                    is->frame->pts = av_rescale_q(pkt_temp->pts, is->audio_st->time_base, tb);
+                if (pkt_temp->pts != AV_NOPTS_VALUE)
+                    pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
 
 #if CONFIG_AVFILTER
                 dec_channel_layout = get_valid_channel_layout(is->frame->channel_layout, av_frame_get_channels(is->frame));
