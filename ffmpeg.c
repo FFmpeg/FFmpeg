@@ -1776,7 +1776,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 static int output_packet(InputStream *ist, const AVPacket *pkt)
 {
     int ret = 0, i;
-    int got_output;
+    int got_output = 0;
 
     AVPacket avpkt;
     if (!ist->saw_first_ts) {
