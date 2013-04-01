@@ -188,6 +188,7 @@ typedef struct VideoState {
     unsigned int audio_buf1_size;
     int audio_buf_index; /* in bytes */
     int audio_write_buf_size;
+    int audio_buf_frames_pending;
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
     int audio_pkt_temp_serial;
@@ -2153,10 +2154,12 @@ static int audio_decode_frame(VideoState *is)
     int flush_complete = 0;
     int wanted_nb_samples;
     AVRational tb;
+    int ret;
+    int reconfigure;
 
     for (;;) {
         /* NOTE: the audio packet can contain several frames */
-        while (pkt_temp->size > 0 || (!pkt_temp->data && new_packet)) {
+        while (pkt_temp->size > 0 || (!pkt_temp->data && new_packet) || is->audio_buf_frames_pending) {
             if (!is->frame) {
                 if (!(is->frame = avcodec_alloc_frame()))
                     return AVERROR(ENOMEM);
@@ -2170,6 +2173,8 @@ static int audio_decode_frame(VideoState *is)
 
             if (is->paused)
                 return -1;
+
+            if (!is->audio_buf_frames_pending) {
 
             if (flush_complete)
                 break;
@@ -2200,10 +2205,6 @@ static int audio_decode_frame(VideoState *is)
                 pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
 
 #if CONFIG_AVFILTER
-            {
-                int ret;
-                int reconfigure;
-
                 dec_channel_layout = get_valid_channel_layout(is->frame->channel_layout, av_frame_get_channels(is->frame));
 
                 reconfigure =
@@ -2235,10 +2236,18 @@ static int audio_decode_frame(VideoState *is)
                 if ((ret = av_buffersrc_add_frame(is->in_audio_filter, is->frame)) < 0)
                     return ret;
                 av_frame_unref(is->frame);
-                if ((ret = av_buffersink_get_frame_flags(is->out_audio_filter, is->frame, 0)) < 0)
-                    return ret;
-                tb = is->out_audio_filter->inputs[0]->time_base;
+#endif
             }
+#if CONFIG_AVFILTER
+            if ((ret = av_buffersink_get_frame_flags(is->out_audio_filter, is->frame, 0)) < 0) {
+                if (ret == AVERROR(EAGAIN)) {
+                    is->audio_buf_frames_pending = 0;
+                    continue;
+                }
+                return ret;
+            }
+            is->audio_buf_frames_pending = 1;
+            tb = is->out_audio_filter->inputs[0]->time_base;
 #endif
 
             data_size = av_samples_get_buffer_size(NULL, av_frame_get_channels(is->frame),
@@ -2340,6 +2349,7 @@ static int audio_decode_frame(VideoState *is)
         if (pkt->data == flush_pkt.data) {
             avcodec_flush_buffers(dec);
             flush_complete = 0;
+            is->audio_buf_frames_pending = 0;
         }
 
         *pkt_temp = *pkt;
