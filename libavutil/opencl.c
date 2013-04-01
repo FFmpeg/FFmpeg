@@ -332,7 +332,7 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
                     }
                     if (status != CL_SUCCESS) {
                         av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device ids: %s\n", opencl_errstr(status));
-                        ret = AVERROR(EINVAL);;
+                        ret = AVERROR(EINVAL);
                         goto end;
                     }
                     if (num_devices)
@@ -354,7 +354,7 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
             if (gpu_env->usr_spec_dev_info.dev_idx >= 0) {
                 if (num_devices < gpu_env->usr_spec_dev_info.dev_idx + 1) {
                     av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device idx in the user set platform\n");
-                    ret = AVERROR(EINVAL);;
+                    ret = AVERROR(EINVAL);
                     goto end;
                 }
             }
