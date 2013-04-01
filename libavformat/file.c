@@ -105,7 +105,7 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
         int ret = fstat(fd, &st);
         return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
     }
-    return lseek(fd, pos, whence);
+    return lseek64(fd, pos, whence);
 }
 
 static int file_close(URLContext *h)

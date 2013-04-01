@@ -2,6 +2,7 @@
  * MOV demuxer
  * Copyright (c) 2001 Fabrice Bellard
  * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot com>
+ * Copyright (c) 2011 Cedirc Fung (wolfplanet@gmail.com)
  *
  * This file is part of FFmpeg.
  *
@@ -525,6 +526,13 @@ int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom)
     st = fc->streams[fc->nb_streams-1];
 
     avio_rb32(pb); /* version + flags */
+    MOVContext *c = fc->priv_data;
+    int64_t left = (int64_t)atom.size;
+    if (left > c->esds_size + 3 && left <= (off_t)sizeof(c->esds_data)) {
+      avio_read(pb, c->esds_data, left - 4);
+      c->esds_size = left - 4;
+      avio_skip(pb, 4 - left);
+    }
     ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4ESDescrTag) {
         ff_mp4_parse_es_descr(pb, NULL);

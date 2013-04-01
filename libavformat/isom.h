@@ -3,6 +3,7 @@
  * copyright (c) 2001 Fabrice Bellard
  * copyright (c) 2002 Francois Revol <revol@free.fr>
  * copyright (c) 2006 Baptiste Coudurier <baptiste.coudurier@free.fr>
+ * Copyright (c) 2011 Cedirc Fung (wolfplanet@gmail.com)
  *
  * This file is part of FFmpeg.
  *
@@ -155,6 +156,8 @@ typedef struct MOVContext {
     int chapter_track;
     int use_absolute_path;
     int64_t next_root_atom; ///< offset of the next root atom
+    uint8_t esds_data[256];
+    int64_t esds_size;
 } MOVContext;
 
 int ff_mp4_read_descr_len(AVIOContext *pb);

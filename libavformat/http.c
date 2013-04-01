@@ -1,6 +1,7 @@
 /*
  * HTTP protocol for ffmpeg client
  * Copyright (c) 2000, 2001 Fabrice Bellard
+ * Copyright (c) 2012 Cedric Fung (wolfplanet@gmail.com)
  *
  * This file is part of FFmpeg.
  *
@@ -33,8 +34,10 @@
    only a subset of it. */
 
 /* used for protocol handling */
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 10240
 #define MAX_REDIRECTS 8
+
+#define DEFAULT_UA "Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; zh-cn) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5"
 
 typedef struct {
     const AVClass *class;
@@ -99,11 +102,11 @@ void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 static int http_open_cnx(URLContext *h)
 {
     const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
-    char hostname[1024], hoststr[1024], proto[10];
-    char auth[1024], proxyauth[1024] = "";
-    char path1[1024];
-    char buf[1024], urlbuf[1024];
-    int port, use_proxy, err, location_changed = 0, redirects = 0, attempts = 0;
+    char hostname[10240], hoststr[10240], proto[10];
+    char auth[10240], proxyauth[10240] = "";
+    char path1[10240];
+    char buf[10240], urlbuf[10240];
+    int port, use_proxy, err, location_changed = 0, redirects = 0, attempts = 0, change_ua = 0;
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
 
@@ -164,6 +167,15 @@ static int http_open_cnx(URLContext *h)
             goto redo;
         } else
             goto fail;
+    }
+    if (s->http_code == 403 && !change_ua) {
+      av_opt_set(s, "user-agent", DEFAULT_UA, 0);
+      ffurl_closep(&s->hd);
+      memset(&s->auth_state, 0, sizeof(s->auth_state));
+      attempts = 0;
+      location_changed = 0;
+      change_ua = 1;
+      goto redo;
     }
     if (s->http_code == 407) {
         if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
@@ -285,9 +297,9 @@ static int process_line(URLContext *h, char *line, int line_count,
 
         /* error codes are 4xx and 5xx, but regard 401 as a success, so we
          * don't abort until all headers have been parsed. */
-        if (s->http_code >= 400 && s->http_code < 600 && (s->http_code != 401
-            || s->auth_state.auth_type != HTTP_AUTH_NONE) &&
-            (s->http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
+        if (s->http_code >= 400 && s->http_code < 600 && s->http_code != 403
+            && (s->http_code != 401 || s->auth_state.auth_type != HTTP_AUTH_NONE)
+            && (s->http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
             end += strspn(end, SPACE_CHARS);
             av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n",
                    s->http_code, end);
@@ -352,7 +364,7 @@ static inline int has_header(const char *str, const char *header)
 static int http_read_header(URLContext *h, int *new_location)
 {
     HTTPContext *s = h->priv_data;
-    char line[1024];
+    char line[10240];
     int err = 0;
 
     s->chunksize = -1;
@@ -380,12 +392,11 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 {
     HTTPContext *s = h->priv_data;
     int post, err;
-    char headers[1024] = "";
+    char headers[10240] = "";
     char *authstr = NULL, *proxyauthstr = NULL;
     int64_t off = s->off;
     int len = 0;
     const char *method;
-
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
@@ -411,7 +422,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);
-    if (!has_header(s->headers, "\r\nRange: ") && !post)
+    if (!has_header(s->headers, "\r\nRange: ") && !post && !strstr(hoststr, "youku.com"))
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-\r\n", s->off);
 
@@ -450,6 +461,8 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              authstr ? authstr : "",
              proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
+
+    av_dlog(h, "HTTP HEADERS: \n%s\n", s->buffer);
     av_freep(&authstr);
     av_freep(&proxyauthstr);
     if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
@@ -479,7 +492,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     /* wait for header */
     err = http_read_header(h, new_location);
     if (err < 0)
-        return err;
+      return err;
 
     return (off == s->off) ? 0 : -1;
 }
@@ -691,8 +704,8 @@ static int http_proxy_close(URLContext *h)
 static int http_proxy_open(URLContext *h, const char *uri, int flags)
 {
     HTTPContext *s = h->priv_data;
-    char hostname[1024], hoststr[1024];
-    char auth[1024], pathbuf[1024], *path;
+    char hostname[10240], hoststr[10240];
+    char auth[10240], pathbuf[10240], *path;
     char lower_url[100];
     int port, ret = 0, attempts = 0;
     HTTPAuthType cur_auth_type;

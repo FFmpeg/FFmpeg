@@ -1,6 +1,7 @@
 /*
  * DVD subtitle decoding
  * Copyright (c) 2005 Fabrice Bellard
+ * Copyright (c) 2012 Cedric Fung
  *
  * This file is part of FFmpeg.
  *
@@ -516,6 +517,8 @@ static int dvdsub_init(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = (DVDSubContext*) avctx->priv_data;
     char *dataorig, *data;
+
+    avctx->pix_fmt = PIX_FMT_PAL8;
 
     if (!avctx->extradata || !avctx->extradata_size)
         return 1;

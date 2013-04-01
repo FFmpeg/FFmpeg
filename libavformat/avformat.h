@@ -912,7 +912,7 @@ typedef struct AVFormatContext {
     unsigned int nb_streams;
     AVStream **streams;
 
-    char filename[1024]; /**< input or output filename */
+    char filename[10240]; /**< input or output filename */
 
     /**
      * Decoding: position of the first frame of the component, in
