@@ -1910,7 +1910,10 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
                              ist->st->codec->sample_rate;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            if (pkt->duration) {
+            if (ist->framerate.num) {
+                int64_t next_dts = av_rescale_q(ist->next_dts, AV_TIME_BASE_Q, av_inv_q(ist->framerate));
+                ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), AV_TIME_BASE_Q);
+            } else if (pkt->duration) {
                 ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
             } else if(ist->st->codec->time_base.num != 0) {
                 int ticks= ist->st->parser ? ist->st->parser->repeat_pict + 1 : ist->st->codec->ticks_per_frame;
@@ -2213,6 +2216,8 @@ static int transcode_init(void)
                 codec->time_base = icodec->time_base;
             }
 
+            if (ist && !ost->frame_rate.num)
+                ost->frame_rate = ist->framerate;
             if(ost->frame_rate.num)
                 codec->time_base = av_inv_q(ost->frame_rate);
 
