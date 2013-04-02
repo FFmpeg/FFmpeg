@@ -40,6 +40,7 @@ OBJS = allfilters.o                                                     \
        formats.o                                                        \
        graphdump.o                                                      \
        graphparser.o                                                    \
+       opencl_allkernels.o                                              \
        transform.o                                                      \
        video.o                                                          \
 
@@ -139,6 +140,7 @@ OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NOISE_FILTER)                  += vf_noise.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
+OBJS-$(CONFIG_OPENCL)                        += deshake_opencl.o
 OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PERMS_FILTER)                  += f_perms.o

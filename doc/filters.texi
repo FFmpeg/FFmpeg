@@ -2504,7 +2504,7 @@ tripod, moving on a vehicle, etc.
 The filter accepts parameters as a list of @var{key}=@var{value}
 pairs, separated by ":". If the key of the first options is omitted,
 the arguments are interpreted according to the syntax
-@var{x}:@var{y}:@var{w}:@var{h}:@var{rx}:@var{ry}:@var{edge}:@var{blocksize}:@var{contrast}:@var{search}:@var{filename}.
+@var{x}:@var{y}:@var{w}:@var{h}:@var{rx}:@var{ry}:@var{edge}:@var{blocksize}:@var{contrast}:@var{search}:@var{filename}:@var{opencl}.
 
 A description of the accepted parameters follows.
 
@@ -2569,6 +2569,10 @@ Default value is @samp{exhaustive}.
 @item filename
 If set then a detailed log of the motion search is written to the
 specified file.
+
+@item opencl
+If set to 1, specify using OpenCL capabilities, only available if
+FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 @end table
 
