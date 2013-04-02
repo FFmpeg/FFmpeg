@@ -345,6 +345,70 @@ with a negative pts due to encoder delay.
 
 @end table
 
+@section atrim
+Trim the input so that the output contains one continuous subpart of the input.
+
+This filter accepts the following options:
+@table @option
+@item start
+Timestamp (in seconds) of the start of the kept section. I.e. the audio sample
+with the timestamp @var{start} will be the first sample in the output.
+
+@item end
+Timestamp (in seconds) of the first audio sample that will be dropped. I.e. the
+audio sample immediately preceding the one with the timestamp @var{end} will be
+the last sample in the output.
+
+@item start_pts
+Same as @var{start}, except this option sets the start timestamp in samples
+instead of seconds.
+
+@item end_pts
+Same as @var{end}, except this option sets the end timestamp in samples instead
+of seconds.
+
+@item duration
+Maximum duration of the output in seconds.
+
+@item start_sample
+Number of the first sample that should be passed to output.
+
+@item end_sample
+Number of the first sample that should be dropped.
+@end table
+
+Note that the first two sets of the start/end options and the @option{duration}
+option look at the frame timestamp, while the _sample options simply count the
+samples that pass through the filter. So start/end_pts and start/end_sample will
+give different results when the timestamps are wrong, inexact or do not start at
+zero. Also note that this filter does not modify the timestamps. If you wish
+that the output timestamps start at zero, insert the asetpts filter after the
+atrim filter.
+
+If multiple start or end options are set, this filter tries to be greedy and
+keep all samples that match at least one of the specified constraints. To keep
+only the part that matches all the constraints at once, chain multiple atrim
+filters.
+
+The defaults are such that all the input is kept. So it is possible to set e.g.
+just the end values to keep everything before the specified time.
+
+Examples:
+@itemize
+@item
+drop everything except the second minute of input
+@example
+avconv -i INPUT -af atrim=60:120
+@end example
+
+@item
+keep only the first 1000 samples
+@example
+avconv -i INPUT -af atrim=end_sample=1000
+@end example
+
+@end itemize
+
 @section channelsplit
 Split each channel in input audio stream into a separate output stream.
 
@@ -2251,6 +2315,67 @@ l.r     l.L
 @end example
 @end table
 
+@section trim
+Trim the input so that the output contains one continuous subpart of the input.
+
+This filter accepts the following options:
+@table @option
+@item start
+Timestamp (in seconds) of the start of the kept section. I.e. the frame with the
+timestamp @var{start} will be the first frame in the output.
+
+@item end
+Timestamp (in seconds) of the first frame that will be dropped. I.e. the frame
+immediately preceding the one with the timestamp @var{end} will be the last
+frame in the output.
+
+@item start_pts
+Same as @var{start}, except this option sets the start timestamp in timebase
+units instead of seconds.
+
+@item end_pts
+Same as @var{end}, except this option sets the end timestamp in timebase units
+instead of seconds.
+
+@item duration
+Maximum duration of the output in seconds.
+
+@item start_frame
+Number of the first frame that should be passed to output.
+
+@item end_frame
+Number of the first frame that should be dropped.
+@end table
+
+Note that the first two sets of the start/end options and the @option{duration}
+option look at the frame timestamp, while the _frame variants simply count the
+frames that pass through the filter. Also note that this filter does not modify
+the timestamps. If you wish that the output timestamps start at zero, insert a
+setpts filter after the trim filter.
+
+If multiple start or end options are set, this filter tries to be greedy and
+keep all the frames that match at least one of the specified constraints. To keep
+only the part that matches all the constraints at once, chain multiple trim
+filters.
+
+The defaults are such that all the input is kept. So it is possible to set e.g.
+just the end values to keep everything before the specified time.
+
+Examples:
+@itemize
+@item
+drop everything except the second minute of input
+@example
+avconv -i INPUT -vf trim=60:120
+@end example
+
+@item
+keep only the first second
+@example
+avconv -i INPUT -vf trim=duration=1
+@end example
+
+@end itemize
 @section unsharp
 
 Sharpen or blur the input video.

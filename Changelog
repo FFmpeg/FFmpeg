@@ -13,6 +13,7 @@ version 10:
 - new interlace filter
 - JPEG 2000 decoder
 - new asetpts filter (same as setpts, but for audio)
+- new trim and atrim filters
 
 
 version 9:
