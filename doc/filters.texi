@@ -6950,6 +6950,109 @@ For example, to vertically flip a video with @command{ffmpeg}:
 ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
+@section vignette
+
+Make or reverse a natural vignetting effect.
+
+The filter accepts the following options:
+
+@table @option
+@item angle, a
+Set lens angle expression as a number of radians.
+
+The value is clipped in the @code{[0,PI/2]} range.
+
+Default value: @code{"PI/5"}
+
+@item x0
+@item y0
+Set center coordinates expressions. Respectively @code{"w/2"} and @code{"h/2"}
+by default.
+
+@item mode
+Set forward/backward mode.
+
+Available modes are:
+@table @samp
+@item forward
+The larger the distance from the central point, the darker the image becomes.
+
+@item backward
+The larger the distance from the central point, the brighter the image becomes.
+This can be used to reverse a vignette effect, though there is no automatic
+detection to extract the lens @option{angle} and other settings (yet). It can
+also be used to create a burning effect.
+@end table
+
+Default value is @samp{forward}.
+
+@item eval
+Set evaluation mode for the expressions (@option{angle}, @option{x0}, @option{y0}).
+
+It accepts the following values:
+@table @samp
+@item init
+Evaluate expressions only once during the filter initialization.
+
+@item frame
+Evaluate expressions for each incoming frame. This is way slower than the
+@samp{init} mode since it requires all the scalers to be re-computed, but it
+allows advanced dynamic expressions.
+@end table
+
+Default value is @samp{init}.
+
+@item dither
+Set dithering to reduce the circular banding effects. Default is @code{1}
+(enabled).
+@end table
+
+@subsection Expressions
+
+The @option{alpha}, @option{x0} and @option{y0} expressions can contain the
+following parameters.
+
+@table @option
+@item w
+@item h
+input width and height
+
+@item n
+the number of input frame, starting from 0
+
+@item pts
+the PTS (Presentation TimeStamp) time of the filtered video frame, expressed in
+@var{TB} units, NAN if undefined
+
+@item r
+frame rate of the input video, NAN if the input frame rate is unknown
+
+@item t
+the PTS (Presentation TimeStamp) of the filtered video frame,
+expressed in seconds, NAN if undefined
+
+@item tb
+time base of the input video
+@end table
+
+
+@subsection Examples
+
+@itemize
+@item
+Apply simple strong vignetting effect:
+@example
+vignette=PI/4
+@end example
+
+@item
+Make a flickering vignetting:
+@example
+vignette='PI/4+random(1)*PI/50':eval=frame
+@end example
+
+@end itemize
+
 @anchor{yadif}
 @section yadif
 
