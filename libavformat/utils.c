@@ -222,6 +222,10 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
 
 enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type, enum AVMediaType type){
+    if (!strcmp(fmt->name, "segment") || !strcmp(fmt->name, "ssegment")) {
+        fmt = av_guess_format(NULL, filename, NULL);
+    }
+
     if(type == AVMEDIA_TYPE_VIDEO){
         enum AVCodecID codec_id= AV_CODEC_ID_NONE;
 
