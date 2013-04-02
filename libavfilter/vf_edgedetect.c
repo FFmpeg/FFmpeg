@@ -256,14 +256,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     uint8_t  *tmpbuf    = edgedetect->tmpbuf;
     uint16_t *gradients = edgedetect->gradients;
+    int direct = 0;
     AVFrame *out;
 
+    if (av_frame_is_writable(in)) {
+        direct = 1;
+        out = in;
+    } else {
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
+    }
 
     /* gaussian filter to reduce noise  */
     gaussian_blur(ctx, inlink->w, inlink->h,
@@ -287,7 +293,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                      out->data[0], out->linesize[0],
                      tmpbuf,       inlink->w);
 
-    av_frame_free(&in);
+    if (!direct)
+        av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
