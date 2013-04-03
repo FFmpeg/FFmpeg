@@ -27,7 +27,7 @@ by visiting this website:
 
   This is especially recommended for all people contributing source
 code to FFmpeg, as it can be seen if some test on some platform broke
-with there recent contribution. This usually happens on the platforms
+with their recent contribution. This usually happens on the platforms
 the developers could not test on.
 
   The second part of this document describes how you can run FATE to
