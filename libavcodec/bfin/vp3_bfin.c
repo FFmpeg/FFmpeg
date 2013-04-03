@@ -37,7 +37,7 @@ static void bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block)
 
     for (i=0;i<8;i++)
         for (j=0;j<8;j++)
-            dest[line_size*i+j]=cm[block[i*8+j]];
+            dest[line_size*i + j] = cm[block[j*8 + i]];
 
     memset(block, 0, 128);
 }
@@ -45,8 +45,13 @@ static void bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block)
 /* Inter iDCT */
 static void bfin_vp3_idct_add(uint8_t *dest, int line_size, int16_t *block)
 {
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    int i, j;
+
     ff_bfin_vp3_idct (block);
-    ff_bfin_add_pixels_clamped (block, dest, line_size);
+    for (i = 0; i < 8; i++)
+        for (j = 0; j < 8; j++)
+            dest[line_size*i + j] = cm[dest[line_size*i + j] + block[j*8 + i]];
 
     memset(block, 0, 128);
 }
@@ -56,5 +61,6 @@ av_cold void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
     if (!(flags & CODEC_FLAG_BITEXACT)) {
         c->idct_add = bfin_vp3_idct_add;
         c->idct_put = bfin_vp3_idct_put;
+        c->idct_perm = FF_TRANSPOSE_IDCT_PERM;
     }
 }
