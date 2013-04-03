@@ -480,7 +480,13 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     AVDictionaryEntry *e;
     int ret=0;
 
-    if (args && *args && filter->filter->priv_class) {
+    if (args && *args) {
+        if (!filter->filter->priv_class) {
+            av_log(filter, AV_LOG_ERROR, "This filter does not take any "
+                   "options, but options were provided: %s.\n", args);
+            return AVERROR(EINVAL);
+        }
+
 #if FF_API_OLD_FILTER_OPTS
         if (!strcmp(filter->filter->name, "scale") &&
             strchr(args, ':') < strchr(args, '=')) {
