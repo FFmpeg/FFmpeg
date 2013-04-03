@@ -406,7 +406,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         out_buf = ff_get_audio_buffer(inlink, nb_samples);
         if (!out_buf)
             return AVERROR(ENOMEM);
-        out_buf->pts = buf->pts;
+        av_frame_copy_props(out_buf, buf);
     }
 
     for (ch = 0; ch < av_frame_get_channels(buf); ch++)
