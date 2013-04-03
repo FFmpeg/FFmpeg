@@ -757,7 +757,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         avio_seek(s->pb, next, SEEK_SET);
         continue;
     }
-    if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY)
+    if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || stream_type == FLV_STREAM_TYPE_AUDIO)
         av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
     break;
  }
