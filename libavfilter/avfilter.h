@@ -682,6 +682,17 @@ struct AVFilterLink {
      * Number of channels.
      */
     int channels;
+
+    /**
+     * True if a frame is being requested on the link.
+     * Used internally by the framework.
+     */
+    unsigned frame_requested;
+
+    /**
+     * Link processing flags.
+     */
+    unsigned flags;
 };
 
 /**

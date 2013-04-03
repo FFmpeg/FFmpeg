@@ -38,7 +38,6 @@ typedef struct {
     int nb_out_samples;  ///< how many samples to output
     AVAudioFifo *fifo;   ///< samples are queued here
     int64_t next_out_pts;
-    int req_fullfilled;
     int pad;
 } ASNSContext;
 
@@ -86,6 +85,7 @@ static int config_props_output(AVFilterLink *outlink)
     asns->fifo = av_audio_fifo_alloc(outlink->format, nb_channels, asns->nb_out_samples);
     if (!asns->fifo)
         return AVERROR(ENOMEM);
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     return 0;
 }
@@ -128,7 +128,6 @@ static int push_samples(AVFilterLink *outlink)
     ret = ff_filter_frame(outlink, outsamples);
     if (ret < 0)
         return ret;
-    asns->req_fullfilled = 1;
     return nb_out_samples;
 }
 
@@ -161,15 +160,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
 static int request_frame(AVFilterLink *outlink)
 {
-    ASNSContext *asns = outlink->src->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
     int ret;
 
-    asns->req_fullfilled = 0;
-    do {
-        ret = ff_request_frame(inlink);
-    } while (!asns->req_fullfilled && ret >= 0);
-
+    ret = ff_request_frame(inlink);
     if (ret == AVERROR_EOF) {
         ret = push_samples(outlink);
         return ret < 0 ? ret : ret > 0 ? 0 : AVERROR_EOF;

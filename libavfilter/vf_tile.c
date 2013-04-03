@@ -116,6 +116,8 @@ static int config_props(AVFilterLink *outlink)
     /* TODO make the color an option, or find an unified way of choosing it */
     ff_draw_color(&tile->draw, &tile->blank, (uint8_t[]){ 0, 0, 0, -1 });
 
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
+
     return 0;
 }
 
@@ -203,16 +205,9 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     int r;
 
-    while (1) {
-        r = ff_request_frame(inlink);
-        if (r < 0) {
-            if (r == AVERROR_EOF && tile->current)
-                r = end_last_frame(ctx);
-            break;
-        }
-        if (!tile->current) /* done */
-            break;
-    }
+    r = ff_request_frame(inlink);
+    if (r == AVERROR_EOF && tile->current)
+        r = end_last_frame(ctx);
     return r;
 }
 
