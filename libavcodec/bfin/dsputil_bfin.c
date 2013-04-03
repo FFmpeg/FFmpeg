@@ -132,7 +132,7 @@ av_cold void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx)
     c->add_pixels_clamped = ff_bfin_add_pixels_clamped;
 
     if (!high_bit_depth)
-    c->get_pixels         = ff_bfin_get_pixels;
+        c->get_pixels     = ff_bfin_get_pixels;
     c->clear_blocks       = bfin_clear_blocks;
     c->pix_sum            = ff_bfin_pix_sum;
     c->pix_norm1          = ff_bfin_pix_norm1;
@@ -163,7 +163,7 @@ av_cold void ff_dsputil_init_bfin(DSPContext *c, AVCodecContext *avctx)
         if (avctx->dct_algo == FF_DCT_AUTO)
             c->fdct                  = ff_bfin_fdct;
 
-    if (avctx->idct_algo == FF_IDCT_AUTO) {
+        if (avctx->idct_algo == FF_IDCT_AUTO) {
             c->idct_permutation_type = FF_NO_IDCT_PERM;
             c->idct                  = ff_bfin_idct;
             c->idct_add              = bfin_idct_add;
