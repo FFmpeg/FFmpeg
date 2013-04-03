@@ -1884,8 +1884,10 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
             break;
         case AVMEDIA_TYPE_VIDEO:
             if (ist->framerate.num) {
-                int64_t next_dts = av_rescale_q(ist->next_dts, AV_TIME_BASE_Q, av_inv_q(ist->framerate));
-                ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), AV_TIME_BASE_Q);
+                // TODO: Remove work-around for c99-to-c89 issue 7
+                AVRational time_base_q = AV_TIME_BASE_Q;
+                int64_t next_dts = av_rescale_q(ist->next_dts, time_base_q, av_inv_q(ist->framerate));
+                ist->next_dts = av_rescale_q(next_dts + 1, av_inv_q(ist->framerate), time_base_q);
             } else if (pkt->duration) {
                 ist->next_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
             } else if(ist->st->codec->time_base.num != 0) {
