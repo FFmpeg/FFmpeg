@@ -370,7 +370,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         return AVERROR(EINVAL);
     }
 
-    if (deshake->opencl && CONFIG_OPENCL) {
+    if (CONFIG_OPENCL && deshake->opencl) {
         deshake->transform = ff_opencl_transform;
         ret = ff_opencl_deshake_init(ctx);
         if (ret < 0)
@@ -415,7 +415,7 @@ static int config_props(AVFilterLink *link)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     DeshakeContext *deshake = ctx->priv;
-    if (deshake->opencl && CONFIG_OPENCL) {
+    if (CONFIG_OPENCL && deshake->opencl) {
         ff_opencl_deshake_uninit(ctx);
     }
     av_frame_free(&deshake->ref);
@@ -444,7 +444,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    if (deshake->opencl && CONFIG_OPENCL) {
+    if (CONFIG_OPENCL && deshake->opencl) {
         ret = ff_opencl_deshake_process_inout_buf(link->dst,in, out);
         if (ret < 0)
             return ret;
