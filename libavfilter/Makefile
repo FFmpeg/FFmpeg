@@ -222,6 +222,8 @@ OBJS-$(CONFIG_SHOWWAVES_FILTER)              += avf_showwaves.o
 OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 
+SKIPHEADERS-$(CONFIG_OPENCL)                 += deshake_kernel.h
+
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats
 
