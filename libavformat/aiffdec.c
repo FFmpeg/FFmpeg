@@ -192,7 +192,7 @@ static int aiff_probe(AVProbeData *p)
 static int aiff_read_header(AVFormatContext *s)
 {
     int ret, size, filesize;
-    int64_t offset = 0;
+    int64_t offset = 0, position;
     uint32_t tag;
     unsigned version = AIFF_C_VERSION1;
     AVIOContext *pb = s->pb;
@@ -236,6 +236,7 @@ static int aiff_read_header(AVFormatContext *s)
                 goto got_sound;
             break;
         case MKTAG('I', 'D', '3', ' '):
+            position = avio_tell(pb);
             ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
             if (id3v2_extra_meta)
                 if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0) {
@@ -243,6 +244,8 @@ static int aiff_read_header(AVFormatContext *s)
                     return ret;
                 }
             ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+            if (position + size > avio_tell(pb))
+                avio_skip(pb, position + size - avio_tell(pb));
             break;
         case MKTAG('F', 'V', 'E', 'R'):     /* Version chunk */
             version = avio_rb32(pb);
