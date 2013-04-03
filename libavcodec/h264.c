@@ -1612,6 +1612,9 @@ static int decode_update_thread_context(AVCodecContext *dst,
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
         memset(&h->er, 0, sizeof(h->er));
         memset(&h->me, 0, sizeof(h->me));
+        memset(&h->mb, 0, sizeof(h->mb));
+        memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
+        memset(&h->mb_padding, 0, sizeof(h->mb_padding));
         h->context_initialized = 0;
 
         memset(&h->cur_pic, 0, sizeof(h->cur_pic));
@@ -1640,8 +1643,6 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
         h->thread_context[0] = h;
 
-        h->dsp.clear_blocks(h->mb);
-        h->dsp.clear_blocks(h->mb + (24 * 16 << h->pixel_shift));
         h->context_initialized = 1;
     }
 
