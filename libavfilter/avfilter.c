@@ -326,16 +326,15 @@ int ff_request_frame(AVFilterLink *link)
     av_assert0(!link->frame_requested);
     link->frame_requested = 1;
     while (link->frame_requested) {
-        /* TODO reindent */
-    if (link->srcpad->request_frame)
-        ret = link->srcpad->request_frame(link);
-    else if (link->src->inputs[0])
-        ret = ff_request_frame(link->src->inputs[0]);
-    if (ret == AVERROR_EOF && link->partial_buf) {
-        AVFrame *pbuf = link->partial_buf;
-        link->partial_buf = NULL;
-        ret = ff_filter_frame_framed(link, pbuf);
-    }
+        if (link->srcpad->request_frame)
+            ret = link->srcpad->request_frame(link);
+        else if (link->src->inputs[0])
+            ret = ff_request_frame(link->src->inputs[0]);
+        if (ret == AVERROR_EOF && link->partial_buf) {
+            AVFrame *pbuf = link->partial_buf;
+            link->partial_buf = NULL;
+            ret = ff_filter_frame_framed(link, pbuf);
+        }
         if (ret < 0) {
             link->frame_requested = 0;
             if (ret == AVERROR_EOF)
