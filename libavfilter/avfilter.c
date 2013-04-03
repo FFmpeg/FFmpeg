@@ -267,42 +267,44 @@ int ff_poll_frame(AVFilterLink *link)
     return min;
 }
 
-#define MAX_REGISTERED_AVFILTERS_NB 64
-
-static AVFilter *registered_avfilters[MAX_REGISTERED_AVFILTERS_NB + 1];
-
-static int next_registered_avfilter_idx = 0;
+static AVFilter *first_filter;
 
 AVFilter *avfilter_get_by_name(const char *name)
 {
-    int i;
+    AVFilter *f = NULL;
 
-    for (i = 0; registered_avfilters[i]; i++)
-        if (!strcmp(registered_avfilters[i]->name, name))
-            return registered_avfilters[i];
+    while ((f = avfilter_next(f)))
+        if (!strcmp(f->name, name))
+            return f;
 
     return NULL;
 }
 
 int avfilter_register(AVFilter *filter)
 {
-    if (next_registered_avfilter_idx == MAX_REGISTERED_AVFILTERS_NB)
-        return -1;
-
-    registered_avfilters[next_registered_avfilter_idx++] = filter;
+    AVFilter **f = &first_filter;
+    while (*f)
+        f = &(*f)->next;
+    *f = filter;
+    filter->next = NULL;
     return 0;
 }
 
+const AVFilter *avfilter_next(const AVFilter *prev)
+{
+    return prev ? prev->next : first_filter;
+}
+
+#if FF_API_OLD_FILTER_REGISTER
 AVFilter **av_filter_next(AVFilter **filter)
 {
-    return filter ? ++filter : &registered_avfilters[0];
+    return filter ? &(*filter)->next : &first_filter;
 }
 
 void avfilter_uninit(void)
 {
-    memset(registered_avfilters, 0, sizeof(registered_avfilters));
-    next_registered_avfilter_idx = 0;
 }
+#endif
 
 int avfilter_pad_count(const AVFilterPad *pads)
 {
@@ -331,15 +333,15 @@ static void *filter_child_next(void *obj, void *prev)
 
 static const AVClass *filter_child_class_next(const AVClass *prev)
 {
-    AVFilter **f = NULL;
+    AVFilter *f = NULL;
 
-    while (prev && *(f = av_filter_next(f)))
-        if ((*f)->priv_class == prev)
+    while (prev && (f = avfilter_next(f)))
+        if (f->priv_class == prev)
             break;
 
-    while (*(f = av_filter_next(f)))
-        if ((*f)->priv_class)
-            return (*f)->priv_class;
+    while ((f = avfilter_next(f)))
+        if (f->priv_class)
+            return f->priv_class;
 
     return NULL;
 }

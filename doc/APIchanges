@@ -24,6 +24,8 @@ API changes, most recent first:
   Add avfilter_init_dict().
   Add AVFilter.flags field and AVFILTER_FLAG_DYNAMIC_{INPUTS,OUTPUTS} flags.
   Add avfilter_pad_count() for counting filter inputs/outputs.
+  Add avfilter_next(), deprecate av_filter_next().
+  Deprecate avfilter_uninit().
 
 2013-xx-xx - lavfi 3.7.0 - avfilter.h
   Add AVFilter.priv_class for exporting filter options through the AVOptions API

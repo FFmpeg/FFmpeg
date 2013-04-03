@@ -1246,9 +1246,6 @@ static void do_exit(void)
         cur_stream = NULL;
     }
     uninit_opts();
-#if CONFIG_AVFILTER
-    avfilter_uninit();
-#endif
     avformat_network_deinit();
     if (show_status)
         printf("\n");
