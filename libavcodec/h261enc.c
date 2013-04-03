@@ -31,8 +31,6 @@
 #include "h261.h"
 #include "h261data.h"
 
-extern uint8_t ff_h261_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
-
 static void h261_encode_block(H261Context * h, int16_t * block,
                               int n);
 
