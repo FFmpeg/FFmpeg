@@ -70,7 +70,7 @@
 #   define pixel4 uint32_t
 #   define dctcoef int16_t
 
-#   define INIT_CLIP uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+#   define INIT_CLIP const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 #   define no_rnd_avg_pixel4 no_rnd_avg32
 #   define    rnd_avg_pixel4    rnd_avg32
 #   define AV_RN2P  AV_RN16

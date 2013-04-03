@@ -56,7 +56,7 @@ static void clear_blocks_sh4(int16_t *blocks)
 static void idct_put(uint8_t *dest, int line_size, int16_t *block)
 {
         int i;
-        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+        const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
         ff_idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[block[0]];
@@ -74,7 +74,7 @@ static void idct_put(uint8_t *dest, int line_size, int16_t *block)
 static void idct_add(uint8_t *dest, int line_size, int16_t *block)
 {
         int i;
-        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+        const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
         ff_idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[dest[0]+block[0]];
