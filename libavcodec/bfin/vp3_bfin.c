@@ -53,6 +53,8 @@ void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
 
 av_cold void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
 {
-    c->idct_add = ff_bfin_vp3_idct_add;
-    c->idct_put = ff_bfin_vp3_idct_put;
+    if (!(flags & CODEC_FLAG_BITEXACT)) {
+        c->idct_add = ff_bfin_vp3_idct_add;
+        c->idct_put = ff_bfin_vp3_idct_put;
+    }
 }
