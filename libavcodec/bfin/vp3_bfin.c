@@ -28,7 +28,7 @@
 #include "vp3_bfin.h"
 
 /* Intra iDCT offset 128 */
-void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, int16_t *block)
+static void bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block)
 {
     uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + 128;
     int i,j;
@@ -43,7 +43,7 @@ void ff_bfin_vp3_idct_put (uint8_t *dest, int line_size, int16_t *block)
 }
 
 /* Inter iDCT */
-void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
+static void bfin_vp3_idct_add(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_bfin_vp3_idct (block);
     ff_bfin_add_pixels_clamped (block, dest, line_size);
@@ -54,7 +54,7 @@ void ff_bfin_vp3_idct_add (uint8_t *dest, int line_size, int16_t *block)
 av_cold void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags)
 {
     if (!(flags & CODEC_FLAG_BITEXACT)) {
-        c->idct_add = ff_bfin_vp3_idct_add;
-        c->idct_put = ff_bfin_vp3_idct_put;
+        c->idct_add = bfin_vp3_idct_add;
+        c->idct_put = bfin_vp3_idct_put;
     }
 }

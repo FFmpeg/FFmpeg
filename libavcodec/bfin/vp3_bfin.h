@@ -23,7 +23,5 @@
 #include <stdint.h>
 
 void ff_bfin_vp3_idct(int16_t *block);
-void ff_bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block);
-void ff_bfin_vp3_idct_add(uint8_t *dest, int line_size, int16_t *block);
 
 #endif /* AVCODEC_BFIN_VP3_BFIN_H */
