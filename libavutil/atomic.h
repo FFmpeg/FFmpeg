@@ -23,11 +23,11 @@
 
 #include "config.h"
 
-#if HAVE_SYNC_VAL_COMPARE_AND_SWAP
+#if HAVE_ATOMICS_GCC
 #include "atomic_gcc.h"
-#elif HAVE_MEMORYBARRIER
+#elif HAVE_ATOMICS_WIN32
 #include "atomic_win32.h"
-#elif HAVE_MACHINE_RW_BARRIER
+#elif HAVE_ATOMICS_SUNCC
 #include "atomic_suncc.h"
 #else
 

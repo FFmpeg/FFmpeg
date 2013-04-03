@@ -1264,6 +1264,12 @@ THREADS_LIST='
     os2threads
 '
 
+ATOMICS_LIST='
+    atomics_gcc
+    atomics_win32
+    atomics_suncc
+'
+
 ARCH_LIST='
     aarch64
     alpha
@@ -1374,6 +1380,7 @@ HAVE_LIST="
     $HAVE_LIST_CMDLINE
     $HAVE_LIST_PUB
     $THREADS_LIST
+    $ATOMICS_LIST
     $MATH_FUNCS
     access
     aligned_malloc
@@ -1384,6 +1391,7 @@ HAVE_LIST="
     asm_mod_q
     asm_mod_y
     asm_types_h
+    atomics_native
     attribute_may_alias
     attribute_packed
     cdio_paranoia_h
@@ -3909,6 +3917,10 @@ if enabled pthreads; then
   check_func pthread_cancel
 fi
 
+enabled sync_val_compare_and_swap && enable atomics_gcc
+enabled machine_rw_barrier && enable atomics_suncc
+enabled MemoryBarrier && enable atomics_win32
+
 check_lib math.h sin -lm && LIBM="-lm"
 disabled crystalhd || check_lib libcrystalhd/libcrystalhd_if.h DtsCrystalHDVersion -lcrystalhd || disable crystalhd
 enabled vaapi && require vaapi va/va.h vaInitialize -lva
@@ -4248,8 +4260,9 @@ case $target_os in
     ;;
 esac
 
-enabled_any $THREADS_LIST      && enable threads
 enable frame_thread_encoder
+enabled_any $THREADS_LIST      && enable threads
+enabled_any $ATOMICS_LIST      && enable atomics_native
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
