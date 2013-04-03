@@ -391,6 +391,34 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     return 0;
 }
 
+/*
+ * FIXME: this function should NEVER get undefined pts/dts beside when the
+ * AVFMT_NOTIMESTAMPS is set.
+ * Those additional safety checks should be dropped once the correct checks
+ * are set in the callers.
+ */
+
+static int write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    if (!(s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS))) {
+        AVRational time_base = s->streams[pkt->stream_index]->time_base;
+        int64_t offset = 0;
+
+        if (!s->offset && pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
+            s->offset = -pkt->dts;
+            s->offset_timebase = time_base;
+        }
+        if (s->offset)
+            offset = av_rescale_q(s->offset, s->offset_timebase, time_base);
+
+        if (pkt->dts != AV_NOPTS_VALUE)
+            pkt->dts += offset;
+        if (pkt->pts != AV_NOPTS_VALUE)
+            pkt->pts += offset;
+    }
+    return s->oformat->write_packet(s, pkt);
+}
+
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
@@ -406,7 +434,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
         return ret;
 
-    ret = s->oformat->write_packet(s, pkt);
+    ret = write_packet(s, pkt);
 
     if (ret >= 0)
         s->streams[pkt->stream_index]->nb_frames++;
@@ -544,7 +572,7 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt)
         if (ret <= 0) //FIXME cleanup needed for ret<0 ?
             return ret;
 
-        ret = s->oformat->write_packet(s, &opkt);
+        ret = write_packet(s, &opkt);
         if (ret >= 0)
             s->streams[opkt.stream_index]->nb_frames++;
 
@@ -568,7 +596,7 @@ int av_write_trailer(AVFormatContext *s)
         if (!ret)
             break;
 
-        ret = s->oformat->write_packet(s, &pkt);
+        ret = write_packet(s, &pkt);
         if (ret >= 0)
             s->streams[pkt.stream_index]->nb_frames++;
 

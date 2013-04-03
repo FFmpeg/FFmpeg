@@ -127,6 +127,7 @@ AVOutputFormat ff_framemd5_muxer = {
     .write_header      = framemd5_write_header,
     .write_packet      = framemd5_write_packet,
     .write_trailer     = framemd5_write_trailer,
-    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
+                         AVFMT_TS_NEGATIVE,
 };
 #endif

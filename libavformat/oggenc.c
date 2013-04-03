@@ -619,5 +619,6 @@ AVOutputFormat ff_ogg_muxer = {
     .write_header      = ogg_write_header,
     .write_packet      = ogg_write_packet,
     .write_trailer     = ogg_write_trailer,
+    .flags             = AVFMT_TS_NEGATIVE,
     .priv_class        = &ogg_muxer_class,
 };
