@@ -1923,7 +1923,7 @@ Available values for component modes are:
 @item c3_opacity
 @item all_opacity
 Set blend opacity for specific pixel component or all pixel components in case
-of @var{all_expr}. Only used in combination with pixel component blend modes.
+of @var{all_opacity}. Only used in combination with pixel component blend modes.
 
 @item c0_expr
 @item c1_expr
