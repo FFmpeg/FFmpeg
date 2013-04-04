@@ -84,6 +84,10 @@ int avfilter_graph_add_filter(AVFilterGraph *graph, AVFilterContext *filter)
     graph->filters = filters;
     graph->filters[graph->nb_filters++] = filter;
 
+#if FF_API_FOO_COUNT
+    graph->filter_count_unused = graph->nb_filters;
+#endif
+
     return 0;
 }
 
