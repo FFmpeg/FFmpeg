@@ -735,6 +735,11 @@ static int ogg_read_packet(AVFormatContext *s, AVPacket *pkt)
     int pstart, psize;
     int64_t fpos, pts, dts;
 
+    if (s->io_repositioned) {
+        ogg_reset(s);
+        s->io_repositioned = 0;
+    }
+
     //Get an ogg packet
 retry:
     do {
