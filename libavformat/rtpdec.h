@@ -33,7 +33,7 @@ typedef struct PayloadContext PayloadContext;
 typedef struct RTPDynamicProtocolHandler RTPDynamicProtocolHandler;
 
 #define RTP_MIN_PACKET_LENGTH 12
-#define RTP_MAX_PACKET_LENGTH 1500
+#define RTP_MAX_PACKET_LENGTH 8192
 
 #define RTP_REORDER_QUEUE_DEFAULT_SIZE 10
 
