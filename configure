@@ -2460,13 +2460,13 @@ sysinclude_default="${sysroot}/usr/include"
 case "$toolchain" in
     clang-asan)
         cc_default="clang"
-        add_cflags  -faddress-sanitizer
-        add_ldflags -faddress-sanitizer
+        add_cflags  -fsanitize=address
+        add_ldflags -fsanitize=address
     ;;
     clang-tsan)
         cc_default="clang"
-        add_cflags  -fthread-sanitizer
-        add_ldflags -fthread-sanitizer
+        add_cflags  -fsanitize=thread -pie
+        add_ldflags -fsanitize=thread -pie
     ;;
     msvc)
         cc_default="c99wrap cl"
