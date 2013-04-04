@@ -1032,9 +1032,16 @@ static int parse_key_value_pair(void *ctx, const char **buf,
     char *val;
     int ret;
 
+    if (!key)
+        return AVERROR(ENOMEM);
+
     if (*key && strspn(*buf, key_val_sep)) {
         (*buf)++;
         val = av_get_token(buf, pairs_sep);
+        if (!val) {
+            av_freep(&key);
+            return AVERROR(ENOMEM);
+        }
     } else {
         av_log(ctx, AV_LOG_ERROR, "Missing key or no key/value separator found after key '%s'\n", key);
         av_free(key);

@@ -2327,7 +2327,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
              st->codec->codec_id == AV_CODEC_ID_ATRAC3) &&
              st->codec->block_align && track->audio.sub_packet_size) {
 
-            res = matroska_parse_rm_audio(matroska, track, st, data, size,
+            res = matroska_parse_rm_audio(matroska, track, st, data,
+                                          lace_size[n],
                                           timecode, pos);
             if (res)
                 goto end;
