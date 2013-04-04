@@ -4882,7 +4882,8 @@ scale=3/2*oh:3/5*ih
 @end example
 
 @item
-Increase the size, but make the size a multiple of the chroma:
+Increase the size, but make the size a multiple of the chroma
+subsample values:
 @example
 scale="trunc(3/2*iw/hsub)*hsub:trunc(3/2*ih/vsub)*vsub"
 @end example
