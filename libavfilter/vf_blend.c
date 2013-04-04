@@ -60,8 +60,8 @@ enum BlendMode {
     BLEND_NB
 };
 
-static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "SW",   "SH",   "T",     "A",        "B",   "TOP",   "BOTTOM",        NULL };
-enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_SW, VAR_SH, VAR_T,   VAR_A,      VAR_B, VAR_TOP, VAR_BOTTOM, VAR_VARS_NB };
+static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "SW",   "SH",   "T",   "N",   "A",   "B",   "TOP",   "BOTTOM",        NULL };
+enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_SW, VAR_SH, VAR_T, VAR_N, VAR_A, VAR_B, VAR_TOP, VAR_BOTTOM, VAR_VARS_NB };
 
 typedef struct FilterParams {
     enum BlendMode mode;
@@ -81,6 +81,7 @@ typedef struct {
     struct FFBufQueue queue_bottom;
     int hsub, vsub;             ///< chroma subsampling values
     int frame_requested;
+    int framenum;
     char *all_expr;
     enum BlendMode all_mode;
     double all_opacity;
@@ -387,6 +388,7 @@ static void blend_frame(AVFilterContext *ctx,
         uint8_t *bottom = bottom_buf->data[plane];
 
         param = &b->params[plane];
+        param->values[VAR_N]  = b->framenum++;
         param->values[VAR_T]  = dst_buf->pts == AV_NOPTS_VALUE ? NAN : dst_buf->pts * av_q2d(inlink->time_base);
         param->values[VAR_W]  = outw;
         param->values[VAR_H]  = outh;

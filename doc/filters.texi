@@ -1936,6 +1936,9 @@ of @var{all_expr}. Note that related mode options will be ignored if those are s
 The expressions can use the following variables:
 
 @table @option
+@item N
+The sequential number of the filtered frame, starting from @code{0}.
+
 @item X
 @item Y
 the coordinates of the current sample
