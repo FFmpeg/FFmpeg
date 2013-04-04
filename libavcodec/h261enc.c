@@ -31,9 +31,6 @@
 #include "h261.h"
 #include "h261data.h"
 
-static void h261_encode_block(H261Context *h, int16_t *block,
-                              int n);
-
 int ff_h261_get_picture_format(int width, int height)
 {
     // QCIF
@@ -155,6 +152,79 @@ static inline int get_cbp(MpegEncContext *s, int16_t block[6][64])
     return cbp;
 }
 
+/**
+ * Encode an 8x8 block.
+ * @param block the 8x8 block
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ */
+static void h261_encode_block(H261Context *h, int16_t *block, int n)
+{
+    MpegEncContext *const s = &h->s;
+    int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
+    RLTable *rl;
+
+    rl = &h261_rl_tcoeff;
+    if (s->mb_intra) {
+        /* DC coef */
+        level = block[0];
+        /* 255 cannot be represented, so we clamp */
+        if (level > 254) {
+            level    = 254;
+            block[0] = 254;
+        }
+        /* 0 cannot be represented also */
+        else if (level < 1) {
+            level    = 1;
+            block[0] = 1;
+        }
+        if (level == 128)
+            put_bits(&s->pb, 8, 0xff);
+        else
+            put_bits(&s->pb, 8, level);
+        i = 1;
+    } else if ((block[0] == 1 || block[0] == -1) &&
+               (s->block_last_index[n] > -1)) {
+        // special case
+        put_bits(&s->pb, 2, block[0] > 0 ? 2 : 3);
+        i = 1;
+    } else {
+        i = 0;
+    }
+
+    /* AC coefs */
+    last_index    = s->block_last_index[n];
+    last_non_zero = i - 1;
+    for (; i <= last_index; i++) {
+        j     = s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            run    = i - last_non_zero - 1;
+            sign   = 0;
+            slevel = level;
+            if (level < 0) {
+                sign  = 1;
+                level = -level;
+            }
+            code = get_rl_index(rl, 0 /*no last in H.261, EOB is used*/,
+                                run, level);
+            if (run == 0 && level < 16)
+                code += 1;
+            put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
+            if (code == rl->n) {
+                put_bits(&s->pb, 6, run);
+                assert(slevel != 0);
+                assert(level <= 127);
+                put_sbits(&s->pb, 8, slevel);
+            } else {
+                put_bits(&s->pb, 1, sign);
+            }
+            last_non_zero = i;
+        }
+    }
+    if (last_index > -1)
+        put_bits(&s->pb, rl->table_vlc[0][1], rl->table_vlc[0][0]); // EOB
+}
+
 void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
                        int motion_x, int motion_y)
 {
@@ -250,79 +320,6 @@ void ff_h261_encode_init(MpegEncContext *s)
     s->max_qcoeff       = 127;
     s->y_dc_scale_table =
     s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
-}
-
-/**
- * Encode an 8x8 block.
- * @param block the 8x8 block
- * @param n block index (0-3 are luma, 4-5 are chroma)
- */
-static void h261_encode_block(H261Context *h, int16_t *block, int n)
-{
-    MpegEncContext *const s = &h->s;
-    int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
-    RLTable *rl;
-
-    rl = &h261_rl_tcoeff;
-    if (s->mb_intra) {
-        /* DC coef */
-        level = block[0];
-        /* 255 cannot be represented, so we clamp */
-        if (level > 254) {
-            level    = 254;
-            block[0] = 254;
-        }
-        /* 0 cannot be represented also */
-        else if (level < 1) {
-            level    = 1;
-            block[0] = 1;
-        }
-        if (level == 128)
-            put_bits(&s->pb, 8, 0xff);
-        else
-            put_bits(&s->pb, 8, level);
-        i = 1;
-    } else if ((block[0] == 1 || block[0] == -1) &&
-               (s->block_last_index[n] > -1)) {
-        // special case
-        put_bits(&s->pb, 2, block[0] > 0 ? 2 : 3);
-        i = 1;
-    } else {
-        i = 0;
-    }
-
-    /* AC coefs */
-    last_index    = s->block_last_index[n];
-    last_non_zero = i - 1;
-    for (; i <= last_index; i++) {
-        j     = s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            run    = i - last_non_zero - 1;
-            sign   = 0;
-            slevel = level;
-            if (level < 0) {
-                sign  = 1;
-                level = -level;
-            }
-            code = get_rl_index(rl, 0 /*no last in H.261, EOB is used*/,
-                                run, level);
-            if (run == 0 && level < 16)
-                code += 1;
-            put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
-            if (code == rl->n) {
-                put_bits(&s->pb, 6, run);
-                assert(slevel != 0);
-                assert(level <= 127);
-                put_sbits(&s->pb, 8, slevel);
-            } else {
-                put_bits(&s->pb, 1, sign);
-            }
-            last_non_zero = i;
-        }
-    }
-    if (last_index > -1)
-        put_bits(&s->pb, rl->table_vlc[0][1], rl->table_vlc[0][0]); // EOB
 }
 
 FF_MPV_GENERIC_CLASS(h261)
