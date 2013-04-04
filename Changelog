@@ -17,6 +17,7 @@ version <next>:
 - OpenCL support
 - audio phaser filter
 - separatefields filter
+- libquvi demuxer
 
 
 version 1.2:

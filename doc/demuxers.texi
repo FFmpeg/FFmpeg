@@ -103,6 +103,18 @@ probed and 0 otherwise.
 
 @end table
 
+@section libquvi
+
+Play media from Internet services using the quvi project.
+
+The demuxer accepts a @option{format} option to request a specific quality. It
+is by default set to @var{best}.
+
+See @url{http://quvi.sourceforge.net/} for more information.
+
+FFmpeg needs to be built with @code{--enable-libquvi} for this demuxer to be
+enabled.
+
 @section image2
 
 Image file demuxer.

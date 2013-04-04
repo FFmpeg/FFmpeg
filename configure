@@ -215,6 +215,7 @@ External library support:
   --enable-libopenjpeg     enable JPEG 2000 de/encoding via OpenJPEG [no]
   --enable-libopus         enable Opus decoding via libopus [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
+  --enable-libquvi         enable quvi input via libquvi [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac de/encoding via libschroedinger [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
@@ -1168,6 +1169,7 @@ EXTERNAL_LIBRARY_LIST="
     libopenjpeg
     libopus
     libpulse
+    libquvi
     librtmp
     libschroedinger
     libsoxr
@@ -1958,6 +1960,7 @@ libopenjpeg_encoder_deps="libopenjpeg"
 libopus_decoder_deps="libopus"
 libopus_encoder_deps="libopus"
 libopus_encoder_select="audio_frame_queue"
+libquvi_demuxer_deps="libquvi"
 libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
 libspeex_decoder_deps="libspeex"
@@ -3978,6 +3981,7 @@ enabled libopenjpeg && { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpe
                          die "ERROR: libopenjpeg not found"; }
 enabled libopus    && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
 enabled libpulse && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
+enabled libquvi    && require_pkg_config libquvi quvi/quvi.h quvi_init
 enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libsoxr    && require  libsoxr soxr.h soxr_create -lsoxr
