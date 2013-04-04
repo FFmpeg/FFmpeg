@@ -24,15 +24,13 @@
  * H.261 tables.
  */
 
-#ifndef AVCODEC_H261DATA_H
-#define AVCODEC_H261DATA_H
-
 #include <stdint.h>
 
+#include "rl.h"
 #include "h261.h"
 
 // H.261 VLC table for macroblock addressing
-static const uint8_t h261_mba_code[35] = {
+const uint8_t ff_h261_mba_code[35] = {
      1,  3,  2,  3,
      2,  3,  2,  7,
      6, 11, 10,  9,
@@ -46,7 +44,7 @@ static const uint8_t h261_mba_code[35] = {
      1  // (start code)
 };
 
-static const uint8_t h261_mba_bits[35] = {
+const uint8_t ff_h261_mba_bits[35] = {
      1,  3,  3,  4,
      4,  5,  5,  7,
      7,  8,  8,  8,
@@ -61,19 +59,19 @@ static const uint8_t h261_mba_bits[35] = {
 };
 
 // H.261 VLC table for macroblock type
-static const uint8_t h261_mtype_code[10] = {
+const uint8_t ff_h261_mtype_code[10] = {
     1, 1, 1, 1,
     1, 1, 1, 1,
     1, 1
 };
 
-static const uint8_t h261_mtype_bits[10] = {
+const uint8_t ff_h261_mtype_bits[10] = {
     4, 7,  1, 5,
     9, 8, 10, 3,
     2, 6
 };
 
-static const int h261_mtype_map[10] = {
+const int ff_h261_mtype_map[10] = {
     MB_TYPE_INTRA4x4,
     MB_TYPE_INTRA4x4 | MB_TYPE_QUANT,
     MB_TYPE_CBP,
@@ -87,13 +85,13 @@ static const int h261_mtype_map[10] = {
 };
 
 // H.261 VLC table for motion vectors
-static const uint8_t h261_mv_tab[17][2] = {
+const uint8_t ff_h261_mv_tab[17][2] = {
     {  1, 1 }, {  1, 2 }, { 1, 3 }, {  1,  4 }, {  3,  6 }, {  5,  7 }, {  4,  7 }, {  3,  7 },
     { 11, 9 }, { 10, 9 }, { 9, 9 }, { 17, 10 }, { 16, 10 }, { 15, 10 }, { 14, 10 }, { 13, 10 }, { 12, 10 }
 };
 
 // H.261 VLC table for coded block pattern
-static const uint8_t h261_cbp_tab[63][2] = {
+const uint8_t ff_h261_cbp_tab[63][2] = {
     { 11, 5 }, {  9, 5 }, { 13, 6 }, { 13, 4 }, { 23, 7 }, { 19, 7 }, { 31, 8 }, { 12, 4 },
     { 22, 7 }, { 18, 7 }, { 30, 8 }, { 19, 5 }, { 27, 8 }, { 23, 8 }, { 19, 8 }, { 11, 4 },
     { 21, 7 }, { 17, 7 }, { 29, 8 }, { 17, 5 }, { 25, 8 }, { 21, 8 }, { 17, 8 }, { 15, 6 },
@@ -148,12 +146,10 @@ static const int8_t h261_tcoeff_run[64] = {
     20, 21, 22, 23, 24, 25, 26
 };
 
-static RLTable h261_rl_tcoeff = {
+RLTable ff_h261_rl_tcoeff = {
     64,
     64,
     h261_tcoeff_vlc,
     h261_tcoeff_run,
     h261_tcoeff_level,
 };
-
-#endif /* AVCODEC_H261DATA_H */
