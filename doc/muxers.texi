@@ -171,6 +171,12 @@ avconv -i in.avi -f image2 -frames:v 1 img.jpeg
 @table @option
 @item -start_number @var{number}
 Start the sequence from @var{number}.
+
+@item -update @var{number}
+If @var{number} is nonzero, the filename will always be interpreted as just a
+filename, not a pattern, and this file will be continuously overwritten with new
+images.
+
 @end table
 
 @section MOV/MP4/ISMV
