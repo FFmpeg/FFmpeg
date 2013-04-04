@@ -1257,6 +1257,14 @@ typedef struct AVFormatContext {
      */
 #define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
+
+    /**
+     * IO repositioned flag.
+     * This is set by avformat when the underlaying IO context read pointer
+     * is repositioned, for example when doing byte based seeking.
+     * Demuxers can use the flag to detect such changes.
+     */
+    int io_repositioned;
 } AVFormatContext;
 
 /**

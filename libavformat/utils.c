@@ -2018,6 +2018,8 @@ static int seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos, in
 
     avio_seek(s->pb, pos, SEEK_SET);
 
+    s->io_repositioned = 1;
+
     return 0;
 }
 
