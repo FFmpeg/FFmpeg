@@ -63,6 +63,9 @@ fate-filter-gradfun: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf gradfun
 FATE_FILTER_VSYNTH-$(CONFIG_HQDN3D_FILTER) += fate-filter-hqdn3d
 fate-filter-hqdn3d: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf hqdn3d
 
+FATE_FILTER_VSYNTH-$(CONFIG_INTERLACE_FILTER) += fate-filter-interlace
+fate-filter-interlace: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf interlace
+
 FATE_FILTER-$(call FILTERDEMDECENCMUX, JOIN, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-join
 fate-filter-join: SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-join: SRC2 = $(TARGET_PATH)/tests/data/asynth-44100-3.wav
