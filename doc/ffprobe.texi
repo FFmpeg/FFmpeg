@@ -490,7 +490,7 @@ DV, GXF and AVI timecodes are available in format metadata
 @chapter See Also
 
 @ifhtml
-@url{ffplay.html,ffmpeg}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffserver.html,ffserver},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
