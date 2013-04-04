@@ -181,8 +181,10 @@ static int xmv_read_header(AVFormatContext *s)
     avio_skip(pb, 2); /* Unknown (padding?) */
 
     xmv->audio = av_malloc(xmv->audio_track_count * sizeof(XMVAudioPacket));
-    if (!xmv->audio)
-        return AVERROR(ENOMEM);
+    if (!xmv->audio) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     for (audio_track = 0; audio_track < xmv->audio_track_count; audio_track++) {
         XMVAudioPacket *packet = &xmv->audio[audio_track];
@@ -221,8 +223,10 @@ static int xmv_read_header(AVFormatContext *s)
         }
 
         ast = avformat_new_stream(s, NULL);
-        if (!ast)
-            return AVERROR(ENOMEM);
+        if (!ast) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         ast->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id              = packet->codec_id;
