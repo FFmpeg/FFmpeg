@@ -518,6 +518,7 @@ int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
     AVDictionaryEntry *opt_build_entry;
     AVDictionaryEntry *opt_platform_entry;
     AVDictionaryEntry *opt_device_entry;
+    char *pos;
     LOCK_OPENCL
     if (!gpu_env.init_count) {
         opt_platform_entry = av_dict_get(options, "platform_idx", NULL, 0);
@@ -526,10 +527,20 @@ int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
         gpu_env.usr_spec_dev_info.platform_idx = -1;
         gpu_env.usr_spec_dev_info.dev_idx = -1;
         if (opt_platform_entry) {
-            gpu_env.usr_spec_dev_info.platform_idx = strtol(opt_platform_entry->value, NULL, 10);
+            gpu_env.usr_spec_dev_info.platform_idx = strtol(opt_platform_entry->value, &pos, 10);
+            if (pos == opt_platform_entry->value) {
+                av_log(&openclutils, AV_LOG_ERROR, "Platform index should be a number\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
         }
         if (opt_device_entry) {
-            gpu_env.usr_spec_dev_info.dev_idx = strtol(opt_device_entry->value, NULL, 10);
+            gpu_env.usr_spec_dev_info.dev_idx = strtol(opt_device_entry->value, &pos, 10);
+            if (pos == opt_platform_entry->value) {
+                av_log(&openclutils, AV_LOG_ERROR, "Device index should be a number\n");
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
         }
         ret = init_opencl_env(&gpu_env, ext_opencl_env);
         if (ret < 0)
