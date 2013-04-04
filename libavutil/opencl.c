@@ -225,6 +225,11 @@ int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name)
             ret = AVERROR(EINVAL);
             goto end;
         }
+        if (gpu_env.program_count == 0) {
+            av_log(&openclutils, AV_LOG_ERROR, "Program count of OpenCL is 0, can not create kernel\n");
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
         for (i = 0; i < gpu_env.program_count; i++) {
             env->kernel = clCreateKernel(gpu_env.programs[i], kernel_name, &status);
             if (status == CL_SUCCESS)
