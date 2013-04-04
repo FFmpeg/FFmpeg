@@ -3309,13 +3309,16 @@ The expressions can use the following variables and functions:
 @item N
 The sequential number of the filtered frame, starting from @code{0}.
 
-@item X, Y
+@item X
+@item Y
 The coordinates of the current sample.
 
-@item W, H
+@item W
+@item H
 The width and height of the image.
 
-@item SW, SH
+@item SW
+@item SH
 Width and height scale depending on the currently filtered plane. It is the
 ratio between the corresponding luma plane number of pixels and the current
 plane ones. E.g. for YUV4:2:0 the values are @code{1,1} for the luma plane, and
