@@ -2229,6 +2229,14 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
             ret = avctx->codec->decode(avctx, sub, got_sub_ptr, &pkt_recoded);
             av_assert1((ret >= 0) >= !!*got_sub_ptr &&
                        !!*got_sub_ptr >= !!sub->num_rects);
+
+            if (sub->num_rects && !sub->end_display_time && avpkt->duration &&
+                avctx->pkt_timebase.num) {
+                AVRational ms = { 1, 1000 };
+                sub->end_display_time = av_rescale_q(avpkt->duration,
+                                                     avctx->pkt_timebase, ms);
+            }
+
             if (tmp.data != pkt_recoded.data) { // did we recode?
                 /* prevent from destroying side data from original packet */
                 pkt_recoded.side_data = NULL;
