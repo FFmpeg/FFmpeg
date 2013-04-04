@@ -554,7 +554,12 @@ int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
         ret = compile_kernel_file(&gpu_env, NULL);
     if (ret < 0)
         goto end;
-    av_assert1(gpu_env.kernel_code_count > 0);
+    if (gpu_env.kernel_code_count <= 0) {
+        av_log(&openclutils, AV_LOG_ERROR,
+               "No kernel code is registered, compile kernel file failed\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
     gpu_env.init_count++;
 
 end:
