@@ -704,12 +704,13 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 {
     TestSourceContext *test = ctx->priv;
     FFDrawColor color;
-    int r_w, r_h, w_h, p_w, p_h, i, x = 0;
+    int r_w, r_h, w_h, p_w, p_h, i, tmp, x = 0;
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(picref->format);
 
-    r_w = (test->w + 6) / 7;
-    r_h = test->h * 2 / 3;
-    w_h = test->h * 3 / 4 - r_h;
-    p_w = r_w * 5 / 4;
+    r_w = FFALIGN((test->w + 6) / 7, 1 << pixdesc->log2_chroma_w);
+    r_h = FFALIGN(test->h * 2 / 3, 1 << pixdesc->log2_chroma_h);
+    w_h = FFALIGN(test->h * 3 / 4 - r_h,  1 << pixdesc->log2_chroma_h);
+    p_w = FFALIGN(r_w * 5 / 4, 1 << pixdesc->log2_chroma_w);
     p_h = test->h - w_h - r_h;
 
 #define DRAW_COLOR(rgba, x, y, w, h)                                    \
@@ -729,14 +730,16 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     x += p_w;
     DRAW_COLOR(q_pixel, x, r_h + w_h, p_w, p_h);
     x += p_w;
-    DRAW_COLOR(black, x, r_h + w_h, 5 * r_w - x, p_h);
-    x += 5 * r_w - x;
-    DRAW_COLOR(neg4ire, x, r_h + w_h, r_w / 3, p_h);
-    x += r_w / 3;
-    DRAW_COLOR(black, x, r_h + w_h, r_w / 3, p_h);
-    x += r_w / 3;
-    DRAW_COLOR(pos4ire, x, r_h + w_h, r_w / 3, p_h);
-    x += r_w / 3;
+    tmp = FFALIGN(5 * r_w - x,  1 << pixdesc->log2_chroma_w);
+    DRAW_COLOR(black, x, r_h + w_h, tmp, p_h);
+    x += tmp;
+    tmp = FFALIGN(r_w / 3,  1 << pixdesc->log2_chroma_w);
+    DRAW_COLOR(neg4ire, x, r_h + w_h, tmp, p_h);
+    x += tmp;
+    DRAW_COLOR(black, x, r_h + w_h, tmp, p_h);
+    x += tmp;
+    DRAW_COLOR(pos4ire, x, r_h + w_h, tmp, p_h);
+    x += tmp;
     DRAW_COLOR(black, x, r_h + w_h, test->w - x, p_h);
 }
 
