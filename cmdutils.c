@@ -547,8 +547,6 @@ int opt_default(void *optctx, const char *opt, const char *arg)
 
     if (consumed)
         return 0;
-    av_log(NULL, AV_LOG_ERROR, "Could not find option '%s' in any of the FFmpeg subsystems "
-           "(codec, format, scaler, resampler contexts)\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
 }
 
