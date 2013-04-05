@@ -53,7 +53,7 @@ typedef struct {
     char path[1024];
     char *pixel_format;     /**< Set by a private option. */
     char *video_size;       /**< Set by a private option. */
-    char *framerate;        /**< Set by a private option. */
+    AVRational framerate;   /**< Set by a private option. */
     int loop;
     enum { PT_GLOB_SEQUENCE, PT_GLOB, PT_SEQUENCE } pattern_type;
     int use_glob;
@@ -197,7 +197,6 @@ static int img_read_header(AVFormatContext *s1)
     int width = 0, height = 0;
     AVStream *st;
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
-    AVRational framerate;
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -218,11 +217,6 @@ static int img_read_header(AVFormatContext *s1)
                "Could not parse video size: %s.\n", s->video_size);
         return ret;
     }
-    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
-        av_log(s, AV_LOG_ERROR,
-               "Could not parse framerate: %s.\n", s->framerate);
-        return ret;
-    }
 
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
@@ -236,7 +230,7 @@ static int img_read_header(AVFormatContext *s1)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
+    avpriv_set_pts_info(st, 60, s->framerate.den, s->framerate.num);
 
     if (width && height) {
         st->codec->width  = width;
@@ -444,7 +438,7 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 #define OFFSET(x) offsetof(VideoDemuxData, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0,       DEC },
+    { "framerate",    "set the video framerate",             OFFSET(framerate),    AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0,   DEC },
     { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 1,       DEC },
 
     { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT,    {.i64=PT_GLOB_SEQUENCE}, 0,       INT_MAX, DEC, "pattern_type"},
