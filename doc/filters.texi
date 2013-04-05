@@ -4329,8 +4329,8 @@ ffmpeg -i input -i logo1 -i logo2 -filter_complex 'overlay=10:H-h-10,overlay=W-w
 @end example
 
 @item
-Add a transparent color layer on top of the main video, WxH specifies
-the size of the main input to the overlay filter:
+Add a transparent color layer on top of the main video, @code{WxH}
+must specify the size of the main input to the overlay filter:
 @example
 color=color=red@@.3:size=WxH [over]; [in][over] overlay [out]
 @end example
