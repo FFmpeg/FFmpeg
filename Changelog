@@ -9,6 +9,7 @@ version 10:
   or vice versa
 - new avconv options -filter_script and -filter_complex_script, which allow a
   filtergraph description to be read from a file
+- uniform options syntax across all filters
 
 
 version 9:
