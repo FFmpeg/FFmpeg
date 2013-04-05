@@ -32,6 +32,34 @@
 
 uint8_t ff_h261_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
 
+static void h261_loop_filter(uint8_t *src, int stride)
+{
+    int x,y,xy,yz;
+    int temp[64];
+
+    for(x=0; x<8; x++){
+        temp[x      ] = 4*src[x           ];
+        temp[x + 7*8] = 4*src[x + 7*stride];
+    }
+    for(y=1; y<7; y++){
+        for(x=0; x<8; x++){
+            xy = y * stride + x;
+            yz = y * 8 + x;
+            temp[yz] = src[xy - stride] + 2*src[xy] + src[xy + stride];
+        }
+    }
+
+    for(y=0; y<8; y++){
+        src[  y*stride] = (temp[  y*8] + 2)>>2;
+        src[7+y*stride] = (temp[7+y*8] + 2)>>2;
+        for(x=1; x<7; x++){
+            xy = y * stride + x;
+            yz = y * 8 + x;
+            src[xy] = (temp[yz-1] + 2*temp[yz] + temp[yz+1] + 8)>>4;
+        }
+    }
+}
+
 void ff_h261_loop_filter(MpegEncContext *s){
     H261Context * h= (H261Context*)s;
     const int linesize  = s->linesize;
@@ -43,10 +71,10 @@ void ff_h261_loop_filter(MpegEncContext *s){
     if(!(IS_FIL (h->mtype)))
         return;
 
-    s->dsp.h261_loop_filter(dest_y                   , linesize);
-    s->dsp.h261_loop_filter(dest_y                + 8, linesize);
-    s->dsp.h261_loop_filter(dest_y + 8 * linesize    , linesize);
-    s->dsp.h261_loop_filter(dest_y + 8 * linesize + 8, linesize);
-    s->dsp.h261_loop_filter(dest_cb, uvlinesize);
-    s->dsp.h261_loop_filter(dest_cr, uvlinesize);
+    h261_loop_filter(dest_y,                    linesize);
+    h261_loop_filter(dest_y                + 8, linesize);
+    h261_loop_filter(dest_y + 8 * linesize,     linesize);
+    h261_loop_filter(dest_y + 8 * linesize + 8, linesize);
+    h261_loop_filter(dest_cb, uvlinesize);
+    h261_loop_filter(dest_cr, uvlinesize);
 }
