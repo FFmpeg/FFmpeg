@@ -91,6 +91,9 @@ static OpenclUtils openclutils = {&openclutils_class};
 
 static GPUEnv gpu_env;
 
+static const cl_device_type device_type[] = {CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_DEFAULT};
+
+
 typedef struct {
     int err_code;
     const char *err_str;
@@ -276,8 +279,8 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
     cl_platform_id *platform_ids = NULL;
     cl_context_properties cps[3];
     char platform_name[100];
-    int i, ret = 0;
-    cl_device_type device_type[] = {CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_DEFAULT};
+    int i, j, ret = 0;
+
     if (ext_opencl_env) {
         if (gpu_env->is_user_created)
             return 0;
@@ -328,22 +331,10 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
                         goto end;
                     }
                     gpu_env->platform_id = platform_ids[i];
-                    status = clGetDeviceIDs(gpu_env->platform_id, CL_DEVICE_TYPE_GPU,
-                                            0, NULL, &num_devices);
-                    if (status != CL_SUCCESS) {
-                        av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device number:%s\n", opencl_errstr(status));
-                        ret = AVERROR_EXTERNAL;
-                        goto end;
-                    }
-                    if (num_devices == 0) {
-                        //find CPU device
-                        status = clGetDeviceIDs(gpu_env->platform_id, CL_DEVICE_TYPE_CPU,
-                                             0, NULL, &num_devices);
-                    }
-                    if (status != CL_SUCCESS) {
-                        av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device ids: %s\n", opencl_errstr(status));
-                        ret = AVERROR(EINVAL);
-                        goto end;
+                    for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
+                        status = clGetDeviceIDs(gpu_env->platform_id, device_type[j], 0, NULL, &num_devices);
+                        if (status == CL_SUCCESS)
+                            break;
                     }
                     if (num_devices)
                        break;
@@ -352,8 +343,15 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
                         ret = AVERROR_EXTERNAL;
                         goto end;
                     }
+                    if (i >= num_platforms - 1) {
+                        if (status != CL_SUCCESS) {
+                            av_log(&openclutils, AV_LOG_ERROR,
+                                    "Could not get OpenCL device ids: %s\n", opencl_errstr(status));
+                            ret = AVERROR(EINVAL);
+                            goto end;
+                        }
+                    }
                     i++;
-
                 }
             }
             if (!gpu_env->platform_id) {
@@ -378,22 +376,16 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
             cps[2] = 0;
 
             /* Check for GPU. */
-            for (i = 0; i < sizeof(device_type); i++) {
+            for (i = 0; i < FF_ARRAY_ELEMS(device_type); i++) {
                 gpu_env->device_type = device_type[i];
                 gpu_env->context     = clCreateContextFromType(cps, gpu_env->device_type,
                                                                NULL, NULL, &status);
-                if (status != CL_SUCCESS) {
-                    av_log(&openclutils, AV_LOG_ERROR,
-                           "Could not get OpenCL context from device type: %s\n", opencl_errstr(status));
-                    ret = AVERROR_EXTERNAL;
-                    goto end;
-                }
-                if (gpu_env->context)
+                if (status == CL_SUCCESS)
                     break;
             }
             if (!gpu_env->context) {
                 av_log(&openclutils, AV_LOG_ERROR,
-                       "Could not get OpenCL context from device type\n");
+                       "Could not get OpenCL context from device type: %s\n", opencl_errstr(status));
                 ret = AVERROR_EXTERNAL;
                 goto end;
             }
