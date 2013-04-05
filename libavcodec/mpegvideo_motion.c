@@ -27,6 +27,7 @@
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "dsputil.h"
+#include "h261.h"
 #include "mpegvideo.h"
 #include "mjpegenc.h"
 #include "msmpeg4.h"
