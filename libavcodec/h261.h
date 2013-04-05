@@ -48,4 +48,6 @@ typedef struct H261Context{
 
 #define MB_TYPE_H261_FIL 0x800000
 
+extern uint8_t ff_h261_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
+
 #endif /* AVCODEC_H261_H */

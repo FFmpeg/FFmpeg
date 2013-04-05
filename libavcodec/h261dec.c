@@ -40,8 +40,6 @@
 #define MBA_STUFFING 33
 #define MBA_STARTCODE 34
 
-extern uint8_t ff_h261_rl_table_store[2][2*MAX_RUN + MAX_LEVEL + 3];
-
 static VLC h261_mba_vlc;
 static VLC h261_mtype_vlc;
 static VLC h261_mv_vlc;
