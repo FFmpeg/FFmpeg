@@ -29,7 +29,7 @@ typedef struct RawVideoDemuxerContext {
     const AVClass *class;     /**< Class for private options. */
     char *video_size;         /**< String describing video size, set by a private option. */
     char *pixel_format;       /**< Set by a private option. */
-    char *framerate;          /**< String describing framerate, set by a private option. */
+    AVRational framerate;     /**< AVRational describing framerate, set by a private option. */
 } RawVideoDemuxerContext;
 
 
@@ -38,7 +38,6 @@ static int rawvideo_read_header(AVFormatContext *ctx)
     RawVideoDemuxerContext *s = ctx->priv_data;
     int width = 0, height = 0, ret = 0;
     enum AVPixelFormat pix_fmt;
-    AVRational framerate;
     AVStream *st;
 
     st = avformat_new_stream(ctx, NULL);
@@ -61,13 +60,7 @@ static int rawvideo_read_header(AVFormatContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Could not parse framerate: %s.\n",
-               s->framerate);
-        return ret;
-    }
-
-    avpriv_set_pts_info(st, 64, framerate.den, framerate.num);
+    avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
     st->codec->width  = width;
     st->codec->height = height;
@@ -105,7 +98,7 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 static const AVOption rawvideo_options[] = {
     { "video_size", "set frame size", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "pixel_format", "set pixel format", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
-    { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { "framerate", "set frame rate", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 
