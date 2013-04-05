@@ -39,7 +39,7 @@ typedef struct {
     int chars_per_frame;
     uint64_t fsize;  /**< file size less metadata buffer */
     char *video_size;/**< A string describing video size, set by a private option. */
-    char *framerate; /**< Set by a private option. */
+    AVRational framerate; /**< Set by a private option. */
 } TtyDemuxContext;
 
 /**
@@ -77,7 +77,6 @@ static int read_header(AVFormatContext *avctx)
     TtyDemuxContext *s = avctx->priv_data;
     int width = 0, height = 0, ret = 0;
     AVStream *st = avformat_new_stream(avctx, NULL);
-    AVRational framerate;
 
     if (!st) {
         ret = AVERROR(ENOMEM);
@@ -91,14 +90,10 @@ static int read_header(AVFormatContext *avctx)
         av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto fail;
     }
-    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
-        goto fail;
-    }
     st->codec->width  = width;
     st->codec->height = height;
-    avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
-    st->avg_frame_rate = framerate;
+    avpriv_set_pts_info(st, 60, s->framerate.den, s->framerate.num);
+    st->avg_frame_rate = s->framerate;
 
     /* simulate tty display speed */
     s->chars_per_frame = FFMAX(av_q2d(st->time_base)*s->chars_per_frame, 1);
@@ -147,7 +142,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
 static const AVOption options[] = {
     { "chars_per_frame", "", offsetof(TtyDemuxContext, chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 
