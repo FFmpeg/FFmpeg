@@ -61,7 +61,6 @@ static av_cold void h261_decode_init_vlc(H261Context *h)
         INIT_VLC_STATIC(&h261_cbp_vlc, H261_CBP_VLC_BITS, 63,
                         &ff_h261_cbp_tab[0][1], 2, 1,
                         &ff_h261_cbp_tab[0][0], 2, 1, 512);
-        ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
         INIT_VLC_RL(ff_h261_rl_tcoeff, 552);
     }
 }
@@ -82,6 +81,7 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     s->codec_id    = avctx->codec->id;
 
+    ff_h261_common_init();
     h261_decode_init_vlc(h);
 
     h->gob_start_code_skipped = 0;

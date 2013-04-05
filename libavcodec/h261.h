@@ -61,6 +61,7 @@ extern const uint8_t ff_h261_cbp_tab[63][2];
 extern RLTable ff_h261_rl_tcoeff;
 
 void ff_h261_loop_filter(MpegEncContext *s);
+void ff_h261_common_init(void);
 
 int ff_h261_get_picture_format(int width, int height);
 void ff_h261_reorder_mb_index(MpegEncContext *s);

@@ -313,12 +313,7 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
 void ff_h261_encode_init(MpegEncContext *s)
 {
-    static int done = 0;
-
-    if (!done) {
-        done = 1;
-        ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
-    }
+    ff_h261_common_init();
 
     s->min_qcoeff       = -127;
     s->max_qcoeff       = 127;
