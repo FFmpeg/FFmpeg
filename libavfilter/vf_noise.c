@@ -169,12 +169,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     NoiseContext *n = ctx->priv;
     int ret, i;
 
-    n->class = &noise_class;
-    av_opt_set_defaults(n);
-
-    if ((ret = av_set_options_string(n, args, "=", ":")) < 0)
-        return ret;
-
     for (i = 0; i < 4; i++) {
         if (n->all.seed >= 0)
             n->param[i].seed = n->all.seed;
@@ -355,6 +349,8 @@ static const AVFilterPad noise_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { NULL };
+
 AVFilter avfilter_vf_noise = {
     .name          = "noise",
     .description   = NULL_IF_CONFIG_SMALL("Add noise."),
@@ -365,4 +361,5 @@ AVFilter avfilter_vf_noise = {
     .inputs        = noise_inputs,
     .outputs       = noise_outputs,
     .priv_class    = &noise_class,
+    .shorthand     = shorthand,
 };
