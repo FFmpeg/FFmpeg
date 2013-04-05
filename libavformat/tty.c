@@ -38,7 +38,7 @@ typedef struct {
     AVClass *class;
     int chars_per_frame;
     uint64_t fsize;  /**< file size less metadata buffer */
-    char *video_size;/**< A string describing video size, set by a private option. */
+    int width, height; /**< Set by a private option. */
     AVRational framerate; /**< Set by a private option. */
 } TtyDemuxContext;
 
@@ -75,7 +75,7 @@ static int efi_read(AVFormatContext *avctx, uint64_t start_pos)
 static int read_header(AVFormatContext *avctx)
 {
     TtyDemuxContext *s = avctx->priv_data;
-    int width = 0, height = 0, ret = 0;
+    int ret = 0;
     AVStream *st = avformat_new_stream(avctx, NULL);
 
     if (!st) {
@@ -86,12 +86,8 @@ static int read_header(AVFormatContext *avctx)
     st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id    = AV_CODEC_ID_ANSI;
 
-    if (s->video_size && (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
-        av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
-        goto fail;
-    }
-    st->codec->width  = width;
-    st->codec->height = height;
+    st->codec->width  = s->width;
+    st->codec->height = s->height;
     avpriv_set_pts_info(st, 60, s->framerate.den, s->framerate.num);
     st->avg_frame_rate = s->framerate;
 
@@ -141,7 +137,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "chars_per_frame", "", offsetof(TtyDemuxContext, chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
