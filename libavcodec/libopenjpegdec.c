@@ -59,10 +59,15 @@
                             AV_PIX_FMT_YUV420P16,AV_PIX_FMT_YUV422P16,AV_PIX_FMT_YUV444P16, \
                             AV_PIX_FMT_YUVA420P16,AV_PIX_FMT_YUVA422P16,AV_PIX_FMT_YUVA444P16
 
+#define XYZ_PIXEL_FORMATS  AV_PIX_FMT_XYZ12
+
 static const enum AVPixelFormat libopenjpeg_rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
 static const enum AVPixelFormat libopenjpeg_gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
 static const enum AVPixelFormat libopenjpeg_yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
-static const enum AVPixelFormat libopenjpeg_all_pix_fmts[]  = {RGB_PIXEL_FORMATS,GRAY_PIXEL_FORMATS,YUV_PIXEL_FORMATS};
+static const enum AVPixelFormat libopenjpeg_all_pix_fmts[]  = {RGB_PIXEL_FORMATS,
+                                                               GRAY_PIXEL_FORMATS,
+                                                               YUV_PIXEL_FORMATS,
+                                                               XYZ_PIXEL_FORMATS};
 
 typedef struct {
     AVClass *class;
