@@ -45,8 +45,6 @@ static VLC h261_mtype_vlc;
 static VLC h261_mv_vlc;
 static VLC h261_cbp_vlc;
 
-static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded);
-
 static av_cold void h261_decode_init_vlc(H261Context *h)
 {
     static int done = 0;
@@ -250,6 +248,94 @@ static int decode_mv_component(GetBitContext *gb, int v)
     return v;
 }
 
+/**
+ * Decode a macroblock.
+ * @return <0 if an error occurred
+ */
+static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
+{
+    MpegEncContext *const s = &h->s;
+    int code, level, i, j, run;
+    RLTable *rl = &ff_h261_rl_tcoeff;
+    const uint8_t *scan_table;
+
+    /* For the variable length encoding there are two code tables, one being
+     * used for the first transmitted LEVEL in INTER, INTER + MC and
+     * INTER + MC + FIL blocks, the second for all other LEVELs except the
+     * first one in INTRA blocks which is fixed length coded with 8 bits.
+     * NOTE: The two code tables only differ in one VLC so we handle that
+     * manually. */
+    scan_table = s->intra_scantable.permutated;
+    if (s->mb_intra) {
+        /* DC coef */
+        level = get_bits(&s->gb, 8);
+        // 0 (00000000b) and -128 (10000000b) are FORBIDDEN
+        if ((level & 0x7F) == 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n",
+                   level, s->mb_x, s->mb_y);
+            return -1;
+        }
+        /* The code 1000 0000 is not used, the reconstruction level of 1024
+         * being coded as 1111 1111. */
+        if (level == 255)
+            level = 128;
+        block[0] = level;
+        i        = 1;
+    } else if (coded) {
+        // Run  Level   Code
+        // EOB          Not possible for first level when cbp is available (that's why the table is different)
+        // 0    1       1s
+        // *    *       0*
+        int check = show_bits(&s->gb, 2);
+        i = 0;
+        if (check & 0x2) {
+            skip_bits(&s->gb, 2);
+            block[0] = (check & 0x1) ? -1 : 1;
+            i        = 1;
+        }
+    } else {
+        i = 0;
+    }
+    if (!coded) {
+        s->block_last_index[n] = i - 1;
+        return 0;
+    }
+    for (;;) {
+        code = get_vlc2(&s->gb, rl->vlc.table, TCOEFF_VLC_BITS, 2);
+        if (code < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
+                   s->mb_x, s->mb_y);
+            return -1;
+        }
+        if (code == rl->n) {
+            /* escape */
+            /* The remaining combinations of (run, level) are encoded with a
+             * 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits
+             * level. */
+            run   = get_bits(&s->gb, 6);
+            level = get_sbits(&s->gb, 8);
+        } else if (code == 0) {
+            break;
+        } else {
+            run   = rl->table_run[code];
+            level = rl->table_level[code];
+            if (get_bits1(&s->gb))
+                level = -level;
+        }
+        i += run;
+        if (i >= 64) {
+            av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n",
+                   s->mb_x, s->mb_y);
+            return -1;
+        }
+        j        = scan_table[i];
+        block[j] = level;
+        i++;
+    }
+    s->block_last_index[n] = i - 1;
+    return 0;
+}
+
 static int h261_decode_mb(H261Context *h)
 {
     MpegEncContext *const s = &h->s;
@@ -359,94 +445,6 @@ intra:
     ff_MPV_decode_mb(s, s->block);
 
     return SLICE_OK;
-}
-
-/**
- * Decode a macroblock.
- * @return <0 if an error occurred
- */
-static int h261_decode_block(H261Context *h, int16_t *block, int n, int coded)
-{
-    MpegEncContext *const s = &h->s;
-    int code, level, i, j, run;
-    RLTable *rl = &ff_h261_rl_tcoeff;
-    const uint8_t *scan_table;
-
-    /* For the variable length encoding there are two code tables, one being
-     * used for the first transmitted LEVEL in INTER, INTER + MC and
-     * INTER + MC + FIL blocks, the second for all other LEVELs except the
-     * first one in INTRA blocks which is fixed length coded with 8 bits.
-     * NOTE: The two code tables only differ in one VLC so we handle that
-     * manually. */
-    scan_table = s->intra_scantable.permutated;
-    if (s->mb_intra) {
-        /* DC coef */
-        level = get_bits(&s->gb, 8);
-        // 0 (00000000b) and -128 (10000000b) are FORBIDDEN
-        if ((level & 0x7F) == 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n",
-                   level, s->mb_x, s->mb_y);
-            return -1;
-        }
-        /* The code 1000 0000 is not used, the reconstruction level of 1024
-         * being coded as 1111 1111. */
-        if (level == 255)
-            level = 128;
-        block[0] = level;
-        i        = 1;
-    } else if (coded) {
-        // Run  Level   Code
-        // EOB          Not possible for first level when cbp is available (that's why the table is different)
-        // 0    1       1s
-        // *    *       0*
-        int check = show_bits(&s->gb, 2);
-        i = 0;
-        if (check & 0x2) {
-            skip_bits(&s->gb, 2);
-            block[0] = (check & 0x1) ? -1 : 1;
-            i        = 1;
-        }
-    } else {
-        i = 0;
-    }
-    if (!coded) {
-        s->block_last_index[n] = i - 1;
-        return 0;
-    }
-    for (;;) {
-        code = get_vlc2(&s->gb, rl->vlc.table, TCOEFF_VLC_BITS, 2);
-        if (code < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "illegal ac vlc code at %dx%d\n",
-                   s->mb_x, s->mb_y);
-            return -1;
-        }
-        if (code == rl->n) {
-            /* escape */
-            /* The remaining combinations of (run, level) are encoded with a
-             * 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits
-             * level. */
-            run   = get_bits(&s->gb, 6);
-            level = get_sbits(&s->gb, 8);
-        } else if (code == 0) {
-            break;
-        } else {
-            run   = rl->table_run[code];
-            level = rl->table_level[code];
-            if (get_bits1(&s->gb))
-                level = -level;
-        }
-        i += run;
-        if (i >= 64) {
-            av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n",
-                   s->mb_x, s->mb_y);
-            return -1;
-        }
-        j        = scan_table[i];
-        block[j] = level;
-        i++;
-    }
-    s->block_last_index[n] = i - 1;
-    return 0;
 }
 
 /**
