@@ -110,6 +110,7 @@ typedef struct {
     int overlay_pix_step[4];    ///< steps per pixel for each plane of the overlay
     int hsub, vsub;             ///< chroma subsampling values
     int shortest;               ///< terminate stream when the shortest input terminates
+    int repeatlast;             ///< repeat last overlay frame
 
     double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
@@ -561,6 +562,10 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
      * before the main frame, we can drop the current overlay. */
     while (1) {
         next_overpic = ff_bufqueue_peek(&over->queue_over, 0);
+        if (!next_overpic && over->overlay_eof && !over->repeatlast) {
+            av_frame_free(&over->overpicref);
+            break;
+        }
         if (!next_overpic || av_compare_ts(next_overpic->pts, ctx->inputs[OVERLAY]->time_base,
                                            mainpic->pts     , ctx->inputs[MAIN]->time_base) > 0)
             break;
@@ -713,6 +718,7 @@ static const AVOption overlay_options[] = {
         { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
         { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
         { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
+    { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
