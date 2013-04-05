@@ -28,6 +28,7 @@
 #define AVCODEC_H261DATA_H
 
 #include <stdint.h>
+
 #include "h261.h"
 
 extern const uint8_t ff_h261_mba_code[35];
