@@ -44,7 +44,7 @@ typedef struct {
                               set by private options as characters per second, and then
                               converted to characters per frame at runtime */
     char *video_size;    /**< video size (WxH pixels) (private option) */
-    char *framerate;     /**< frames per second (private option) */
+    AVRational framerate; /**< frames per second (private option) */
     uint64_t fsize;  /**< file size less metadata buffer */
 } BinDemuxContext;
 
@@ -67,16 +67,7 @@ static AVStream * init_stream(AVFormatContext *s)
         st->codec->height = (25<<4);
     }
 
-    if (bin->framerate) {
-        AVRational framerate;
-        if (av_parse_video_rate(&framerate, bin->framerate) < 0) {
-            av_log(s, AV_LOG_ERROR, "Could not parse framerate: '%s'\n", bin->framerate);
-            return NULL;
-        }
-        avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
-    } else {
-        avpriv_set_pts_info(st, 60, 1, 25);
-    }
+    avpriv_set_pts_info(st, 60, bin->framerate.den, bin->framerate.num);
 
     /* simulate tty display speed */
     bin->chars_per_frame = FFMAX(av_q2d(st->time_base) * bin->chars_per_frame, 1);
@@ -347,7 +338,7 @@ static int read_packet(AVFormatContext *s,
 static const AVOption options[] = {
     { "linespeed", "set simulated line speed (bytes per second)", OFFSET(chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "set video size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
-    { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
