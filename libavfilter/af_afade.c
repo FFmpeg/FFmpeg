@@ -80,13 +80,6 @@ AVFILTER_DEFINE_CLASS(afade);
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AudioFadeContext *afade = ctx->priv;
-    int ret;
-
-    afade->class = &afade_class;
-    av_opt_set_defaults(afade);
-
-    if ((ret = av_set_options_string(afade, args, "=", ":")) < 0)
-        return ret;
 
     if (INT64_MAX - afade->nb_samples < afade->start_sample)
         return AVERROR(EINVAL);
@@ -295,6 +288,8 @@ static const AVFilterPad avfilter_af_afade_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { NULL };
+
 AVFilter avfilter_af_afade = {
     .name          = "afade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input audio."),
@@ -304,4 +299,5 @@ AVFilter avfilter_af_afade = {
     .inputs        = avfilter_af_afade_inputs,
     .outputs       = avfilter_af_afade_outputs,
     .priv_class    = &afade_class,
+    .shorthand     = shorthand,
 };
