@@ -225,12 +225,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     BlendContext *b = ctx->priv;
     int ret, plane;
 
-    b->class = &blend_class;
-    av_opt_set_defaults(b);
-
-    if ((ret = av_set_options_string(b, args, "=", ":")) < 0)
-        return ret;
-
     for (plane = 0; plane < FF_ARRAY_ELEMS(b->params); plane++) {
         FilterParams *param = &b->params[plane];
 
@@ -460,6 +454,8 @@ static const AVFilterPad blend_outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { NULL };
+
 AVFilter avfilter_vf_blend = {
     .name          = "blend",
     .description   = NULL_IF_CONFIG_SMALL("Blend two video frames into each other."),
@@ -470,4 +466,5 @@ AVFilter avfilter_vf_blend = {
     .inputs        = blend_inputs,
     .outputs       = blend_outputs,
     .priv_class    = &blend_class,
+    .shorthand     = shorthand,
 };
