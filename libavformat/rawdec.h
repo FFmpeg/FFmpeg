@@ -30,7 +30,7 @@ typedef struct FFRawVideoDemuxerContext {
     const AVClass *class;     /**< Class for private options. */
     char *video_size;         /**< String describing video size, set by a private option. */
     char *pixel_format;       /**< Set by a private option. */
-    char *framerate;          /**< String describing framerate, set by a private option. */
+    AVRational framerate;     /**< AVRational describing framerate, set by a private option. */
 } FFRawVideoDemuxerContext;
 
 extern const AVOption ff_rawvideo_options[];
