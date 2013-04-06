@@ -288,9 +288,24 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
     return 0;
 }
 
-static int decode_unk6(GetByteContext *gb, uint8_t *frame, int width, int height)
+static int decode_tdlt(GetByteContext *gb, uint8_t *frame, int width, int height)
 {
-    return AVERROR_PATCHWELCOME;
+    const uint8_t *frame_end = frame + width * height;
+    uint32_t segments = bytestream2_get_le32(gb);
+
+    while (segments--) {
+        int count = bytestream2_get_byte(gb) << 1;
+        int skip = bytestream2_get_byte(gb) << 1;
+
+        if (frame_end - frame < skip + count)
+            return AVERROR_INVALIDDATA;
+        frame += skip;
+        if (bytestream2_get_buffer(gb, frame, count) != count)
+            return AVERROR_INVALIDDATA;
+        frame += count;
+    }
+
+    return 0;
 }
 
 static int decode_blck(GetByteContext *gb, uint8_t *frame, int width, int height)
@@ -304,11 +319,11 @@ typedef int (*chunk_decoder)(GetByteContext *gb, uint8_t *frame, int width, int 
 
 static const chunk_decoder decoder[8] = {
     decode_copy, decode_tsw1, decode_bdlt, decode_wdlt,
-    decode_unk6, decode_dsw1, decode_blck, decode_dds1,
+    decode_tdlt, decode_dsw1, decode_blck, decode_dds1,
 };
 
 static const char* chunk_name[8] = {
-    "COPY", "TSW1", "BDLT", "WDLT", "????", "DSW1", "BLCK", "DDS1"
+    "COPY", "TSW1", "BDLT", "WDLT", "TDLT", "DSW1", "BLCK", "DDS1"
 };
 
 static int dfa_decode_frame(AVCodecContext *avctx,
