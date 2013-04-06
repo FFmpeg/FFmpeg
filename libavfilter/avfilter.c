@@ -759,6 +759,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "split"    ) ||
         !strcmp(filter->filter->name, "stereo3d" ) ||
         !strcmp(filter->filter->name, "subtitles") ||
+        !strcmp(filter->filter->name, "telecine" ) ||
         !strcmp(filter->filter->name, "testsrc"  ) ||
         !strcmp(filter->filter->name, "thumbnail") ||
         !strcmp(filter->filter->name, "tile") ||

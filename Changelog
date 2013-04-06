@@ -19,6 +19,7 @@ version <next>:
 - separatefields filter
 - libquvi demuxer
 - uniform options syntax across all filters
+- telecine filter
 
 
 version 1.2:
