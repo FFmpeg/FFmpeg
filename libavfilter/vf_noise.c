@@ -40,7 +40,6 @@
 
 #define NOISE_UNIFORM  1
 #define NOISE_TEMPORAL 2
-#define NOISE_QUALITY  4
 #define NOISE_AVERAGED 8
 #define NOISE_PATTERN  16
 
@@ -76,7 +75,6 @@ typedef struct {
     {#name"f", "set component #"#x" flags", OFFSET(param.flags), AV_OPT_TYPE_FLAGS, {.i64=0}, 0, 31, FLAGS, #name"_flags"},      \
     {"a", "averaged noise", 0, AV_OPT_TYPE_CONST, {.i64=NOISE_AVERAGED}, 0, 0, FLAGS, #name"_flags"},                            \
     {"p", "(semi)regular pattern", 0, AV_OPT_TYPE_CONST, {.i64=NOISE_PATTERN},  0, 0, FLAGS, #name"_flags"},                     \
-    {"q", "high quality",   0, AV_OPT_TYPE_CONST, {.i64=NOISE_QUALITY},  0, 0, FLAGS, #name"_flags"},                            \
     {"t", "temporal noise", 0, AV_OPT_TYPE_CONST, {.i64=NOISE_TEMPORAL}, 0, 0, FLAGS, #name"_flags"},                            \
     {"u", "uniform noise",  0, AV_OPT_TYPE_CONST, {.i64=NOISE_UNIFORM},  0, 0, FLAGS, #name"_flags"},
 
@@ -273,9 +271,6 @@ static void noise(uint8_t *dst, const uint8_t *src,
             shift = av_lfg_get(lfg) & (MAX_SHIFT - 1);
         else
             shift = n->rand_shift[y];
-
-        if (!(flags & NOISE_QUALITY))
-            shift &= ~7;
 
         if (flags & NOISE_AVERAGED) {
             line_noise_avg(dst, src, width, n->param[comp].prev_shift[y]);
