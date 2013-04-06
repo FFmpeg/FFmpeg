@@ -630,8 +630,21 @@ static int vf_default_query_format(struct vf_instance *vf, unsigned int fmt){
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     MPContext *m = ctx->priv;
+    int cpu_flags = av_get_cpu_flags();
     char name[256];
     int i;
+
+    ff_gCpuCaps.hasMMX      = cpu_flags & AV_CPU_FLAG_MMX;
+    ff_gCpuCaps.hasMMX2     = cpu_flags & AV_CPU_FLAG_MMX2;
+    ff_gCpuCaps.hasSSE      = cpu_flags & AV_CPU_FLAG_SSE;
+    ff_gCpuCaps.hasSSE2     = cpu_flags & AV_CPU_FLAG_SSE2;
+    ff_gCpuCaps.hasSSE3     = cpu_flags & AV_CPU_FLAG_SSE3;
+    ff_gCpuCaps.hasSSSE3    = cpu_flags & AV_CPU_FLAG_SSSE3;
+    ff_gCpuCaps.hasSSE4     = cpu_flags & AV_CPU_FLAG_SSE4;
+    ff_gCpuCaps.hasSSE42    = cpu_flags & AV_CPU_FLAG_SSE42;
+    ff_gCpuCaps.hasAVX      = cpu_flags & AV_CPU_FLAG_AVX;
+    ff_gCpuCaps.has3DNow    = cpu_flags & AV_CPU_FLAG_3DNOW;
+    ff_gCpuCaps.has3DNowExt = cpu_flags & AV_CPU_FLAG_3DNOWEXT;
 
     m->avfctx= ctx;
 
