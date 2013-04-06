@@ -154,8 +154,8 @@ clean::
 	$(RM) $(ALLPROGS) $(ALLPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
-	$(RM) coverage.info
 	$(RM) -r coverage-html
+	$(RM) -rf coverage.info lcov
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
@@ -163,15 +163,6 @@ distclean::
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
-
-# Without the sed genthml thinks "libavutil" and "./libavutil" are two different things
-coverage.info: $(wildcard *.gcda *.gcno */*.gcda */*.gcno */*/*.gcda */*/*.gcno)
-	$(Q)lcov -c -d . -b . | sed -e 's#/./#/#g' > $@
-
-coverage-html: coverage.info
-	$(Q)mkdir -p $@
-	$(Q)genhtml -o $@ $<
-	$(Q)touch $@
 
 check: all alltools examples testprogs fate
 

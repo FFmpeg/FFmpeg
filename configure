@@ -316,7 +316,6 @@ Optimization options (experts only):
   --disable-fast-unaligned consider unaligned accesses slow
 
 Developer options (useful when working on FFmpeg itself):
-  --enable-coverage        build with test coverage instrumentation
   --disable-debug          disable debugging symbols
   --enable-debug=LEVEL     set the debug level [$debuglevel]
   --disable-optimizations  disable compiler optimizations
@@ -1560,7 +1559,6 @@ CMDLINE_SELECT="
     $HAVE_LIST_CMDLINE
     $THREADS_LIST
     asm
-    coverage
     cross_compile
     debug
     extra_warnings
@@ -2480,6 +2478,10 @@ case "$toolchain" in
         nm_default="dumpbin -symbols"
         ar_default="lib"
         target_os_default="win32"
+    ;;
+    gcov)
+        add_cflags  -fprofile-arcs -ftest-coverage
+        add_ldflags -fprofile-arcs -ftest-coverage
     ;;
     ?*)
         die "Unknown toolchain $toolchain"
@@ -4117,7 +4119,6 @@ enabled vdpau &&
 disabled iconv || check_func_headers iconv.h iconv || check_lib2 iconv.h iconv -liconv || disable iconv
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
-enabled coverage && add_cflags "-fprofile-arcs -ftest-coverage" && add_ldflags "-fprofile-arcs -ftest-coverage"
 test -n "$valgrind" && target_exec="$valgrind --error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
 
 # add some useful compiler flags if supported

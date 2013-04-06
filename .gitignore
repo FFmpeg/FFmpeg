@@ -6,6 +6,8 @@
 *.dylib
 *.exe
 *.exp
+*.gcda
+*.gcno
 *.h.c
 *.ilk
 *.lib
@@ -24,6 +26,7 @@
 /ffprobe
 /ffserver
 /config.*
+/coverage.info
 /version.h
 /doc/*.1
 /doc/*.3
@@ -44,6 +47,7 @@
 /doc/fate.txt
 /doc/doxy/html/
 /doc/print_options
+/lcov/
 /libavcodec/*_tablegen
 /libavcodec/*_tables.c
 /libavcodec/*_tables.h

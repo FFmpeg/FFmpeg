@@ -580,6 +580,30 @@ message or introductionary message for the patch series that you post to
 the ffmpeg-devel mailing list, a direct link to download the sample media.
 
 
+@subsection Visualizing Test Coverage
+
+The FFmpeg build system allows visualizing the test coverage in an easy
+manner with the coverage tools @code{gcov}/@code{lcov}.  This involves
+the following steps:
+
+@enumerate
+@item
+    Configure to compile with instrumentation enabled:
+    @code{configure --toolchain=gcov}.
+@item
+    Run your test case, either manually or via FATE. This can be either
+    the full FATE regression suite, or any arbitrary invocation of any
+    front-end tool provided by FFmpeg, in any combination.
+@item
+    Run @code{make lcov} to generate coverage data in HTML format.
+@item
+    View @code{lcov/index.html} in your preferred HTML viewer.
+@end enumerate
+
+You can use the command @code{make lcov-reset} to reset the coverage
+measurements. You will need to rerun @code{make lcov} after running a
+new test.
+
 @anchor{Release process}
 @section Release process
 
