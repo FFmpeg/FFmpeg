@@ -126,8 +126,8 @@ static int init_noise(NoiseContext *n, int comp)
         } else {
             double x1, x2, w, y1;
             do {
-                x1 = 2.0 * av_lfg_get(lfg) / (float)RAND_MAX - 1.0;
-                x2 = 2.0 * av_lfg_get(lfg) / (float)RAND_MAX - 1.0;
+                x1 = 2.0 * av_lfg_get(lfg) / (float)UINT_MAX - 1.0;
+                x2 = 2.0 * av_lfg_get(lfg) / (float)UINT_MAX - 1.0;
                 w = x1 * x1 + x2 * x2;
             } while (w >= 1.0);
 
