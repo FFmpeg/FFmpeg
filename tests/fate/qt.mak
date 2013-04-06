@@ -49,5 +49,11 @@ fate-svq1: CMD = framecrc -i $(TARGET_SAMPLES)/svq1/marymary-shackles.mov -an -t
 FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, SVQ1) += fate-svq1-headerswap
 fate-svq1-headerswap: CMD = framecrc -i $(TARGET_SAMPLES)/svq1/ct_ending_cut.mov -frames 4
 
-FATE_SAMPLES_AVCONV-$(call ALLYES, MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-svq3
-fate-svq3: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
+FATE_SVQ3 += fate-svq3-1
+fate-svq3-1: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
+
+FATE_SVQ3 += fate-svq3-2
+fate-svq3-2: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/svq3_decoding_regression.mov -an
+
+FATE_SAMPLES_AVCONV-$(call ALLYES, MOV_DEMUXER SVQ3_DECODER ZLIB) += $(FATE_SVQ3)
+fate-svq3: $(FATE_SVQ3)
