@@ -163,6 +163,7 @@ fate-list:
 coverage.info: TAG = LCOV
 coverage.info:
 	$(M)lcov -d $(CURDIR) -b $(SRC_PATH) --capture | sed -e 's#/./#/#g' > $@
+	$(M)lcov --remove $@ "/usr*" -o $@
 
 lcov:  TAG = GENHTML
 lcov: coverage.info
