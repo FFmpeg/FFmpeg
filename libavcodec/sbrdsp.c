@@ -122,9 +122,34 @@ static av_always_inline void autocorrelate(const float x[40][2],
 
 static void sbr_autocorrelate_c(const float x[40][2], float phi[3][2][2])
 {
+#if 0
+    // This code is slower because it multiplies memory accesses.
+    // It is left as eucational purpose and because it may offer
+    // a better reference for writing arch-specific dsp functions.
     autocorrelate(x, phi, 0);
     autocorrelate(x, phi, 1);
     autocorrelate(x, phi, 2);
+#else
+    float real_sum2 = x[ 0][0] * x[ 2][0] + x[ 0][1] * x[ 2][1];
+    float imag_sum2 = x[ 0][0] * x[ 2][1] - x[ 0][1] * x[ 2][0];
+    float real_sum1 = 0.f, imag_sum1 = 0.f, real_sum0 = 0.0f;
+    int   i;
+    for (i = 1; i < 38; i++) {
+        real_sum0 += x[i][0] * x[i  ][0] + x[i][1] * x[i  ][1];
+        real_sum1 += x[i][0] * x[i+1][0] + x[i][1] * x[i+1][1];
+        imag_sum1 += x[i][0] * x[i+1][1] - x[i][1] * x[i+1][0];
+        real_sum2 += x[i][0] * x[i+2][0] + x[i][1] * x[i+2][1];
+        imag_sum2 += x[i][0] * x[i+2][1] - x[i][1] * x[i+2][0];
+    }
+    phi[2-2][1][0] = real_sum2;
+    phi[2-2][1][1] = imag_sum2;
+    phi[2  ][1][0] = real_sum0 + x[ 0][0] * x[ 0][0] + x[ 0][1] * x[ 0][1];
+    phi[1  ][0][0] = real_sum0 + x[38][0] * x[38][0] + x[38][1] * x[38][1];
+    phi[2-1][1][0] = real_sum1 + x[ 0][0] * x[ 1][0] + x[ 0][1] * x[ 1][1];
+    phi[2-1][1][1] = imag_sum1 + x[ 0][0] * x[ 1][1] - x[ 0][1] * x[ 1][0];
+    phi[0  ][0][0] = real_sum1 + x[38][0] * x[39][0] + x[38][1] * x[39][1];
+    phi[0  ][0][1] = imag_sum1 + x[38][0] * x[39][1] - x[38][1] * x[39][0];
+#endif
 }
 
 static void sbr_hf_gen_c(float (*X_high)[2], const float (*X_low)[2],
