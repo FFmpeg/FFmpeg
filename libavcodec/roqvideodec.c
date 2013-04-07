@@ -43,7 +43,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
     roq_qcell *qcell;
     int64_t chunk_start;
 
-    while (bytestream2_get_bytes_left(&ri->gb) > 0) {
+    while (bytestream2_get_bytes_left(&ri->gb) >= 8) {
         chunk_id = bytestream2_get_le16(&ri->gb);
         chunk_size = bytestream2_get_le32(&ri->gb);
         chunk_arg = bytestream2_get_le16(&ri->gb);

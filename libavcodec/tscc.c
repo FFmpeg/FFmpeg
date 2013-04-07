@@ -58,6 +58,7 @@ typedef struct TsccContext {
     unsigned int decomp_size;
     // Decompression buffer
     unsigned char* decomp_buf;
+    GetByteContext gb;
     int height;
     z_stream zstream;
 
@@ -105,8 +106,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
 
-    if(zret != Z_DATA_ERROR)
-        ff_msrle_decode(avctx, (AVPicture*)&c->pic, c->bpp, c->decomp_buf, c->decomp_size - c->zstream.avail_out);
+    if (zret != Z_DATA_ERROR) {
+        bytestream2_init(&c->gb, c->decomp_buf,
+                         c->decomp_size - c->zstream.avail_out);
+        ff_msrle_decode(avctx, (AVPicture*)&c->pic, c->bpp, &c->gb);
+    }
 
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == PIX_FMT_PAL8) {

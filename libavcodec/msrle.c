@@ -40,6 +40,7 @@ typedef struct MsrleContext {
     AVCodecContext *avctx;
     AVFrame frame;
 
+    GetByteContext gb;
     const unsigned char *buf;
     int size;
 
@@ -127,7 +128,8 @@ static int msrle_decode_frame(AVCodecContext *avctx,
             ptr += s->frame.linesize[0];
         }
     } else {
-        ff_msrle_decode(avctx, (AVPicture*)&s->frame, avctx->bits_per_coded_sample, buf, buf_size);
+        bytestream2_init(&s->gb, buf, buf_size);
+        ff_msrle_decode(avctx, (AVPicture*)&s->frame, avctx->bits_per_coded_sample, &s->gb);
     }
 
     *data_size = sizeof(AVFrame);
