@@ -972,6 +972,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     char *bsf = NULL, *next, *codec_tag = NULL;
     AVBitStreamFilterContext *bsfc, *bsfc_prev = NULL;
     double qscale = -1;
+    int i;
 
     if (!st) {
         av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
@@ -1030,6 +1031,13 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     ost->max_frames = INT64_MAX;
     MATCH_PER_STREAM_OPT(max_frames, i64, ost->max_frames, oc, st);
+    for (i = 0; i<o->nb_max_frames; i++) {
+        char *p = o->max_frames[i].specifier;
+        if (!*p && type != AVMEDIA_TYPE_VIDEO) {
+            av_log(NULL, AV_LOG_WARNING, "Applying unspecific -frames to non video streams, maybe you meant -vframes ?\n");
+            break;
+        }
+    }
 
     ost->copy_prior_start = -1;
     MATCH_PER_STREAM_OPT(copy_prior_start, i, ost->copy_prior_start, oc ,st);
