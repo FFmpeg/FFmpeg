@@ -98,6 +98,16 @@ void ff_thread_report_progress(ThreadFrame *f, int progress, int field);
 void ff_thread_await_progress(ThreadFrame *f, int progress, int field);
 
 /**
+ * Wrapper around get_format() for frame-multithreaded codecs.
+ * Call this function instead of avctx->get_format().
+ * Cannot be called after the codec has called ff_thread_finish_setup().
+ *
+ * @param avctx The current context.
+ * @param fmt The list of available formats.
+ */
+enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
+
+/**
  * Wrapper around get_buffer() for frame-multithreaded codecs.
  * Call this function instead of ff_get_buffer(f).
  * Cannot be called after the codec has called ff_thread_finish_setup().

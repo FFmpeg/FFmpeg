@@ -119,6 +119,10 @@ typedef struct PerThreadContext {
                                      * Set when the codec calls get_buffer().
                                      * State is returned to STATE_SETTING_UP afterwards.
                                      */
+        STATE_GET_FORMAT,           /**<
+                                     * Set when the codec calls get_format().
+                                     * State is returned to STATE_SETTING_UP afterwards.
+                                     */
         STATE_SETUP_FINISHED        ///< Set after the codec has called ff_thread_finish_setup().
     } state;
 
@@ -132,6 +136,9 @@ typedef struct PerThreadContext {
 
     AVFrame *requested_frame;       ///< AVFrame the codec passed to get_buffer()
     int      requested_flags;       ///< flags passed to get_buffer() for requested_frame
+
+    const enum AVPixelFormat *available_formats; ///< Format array for get_format()
+    enum AVPixelFormat result_format;            ///< get_format() result
 } PerThreadContext;
 
 /**
@@ -586,17 +593,29 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
      */
 
     if (!p->avctx->thread_safe_callbacks && (
+         p->avctx->get_format != avcodec_default_get_format ||
 #if FF_API_GET_BUFFER
          p->avctx->get_buffer ||
 #endif
          p->avctx->get_buffer2 != avcodec_default_get_buffer2)) {
         while (p->state != STATE_SETUP_FINISHED && p->state != STATE_INPUT_READY) {
+            int call_done = 1;
             pthread_mutex_lock(&p->progress_mutex);
             while (p->state == STATE_SETTING_UP)
                 pthread_cond_wait(&p->progress_cond, &p->progress_mutex);
 
-            if (p->state == STATE_GET_BUFFER) {
+            switch (p->state) {
+            case STATE_GET_BUFFER:
                 p->result = ff_get_buffer(p->avctx, p->requested_frame, p->requested_flags);
+                break;
+            case STATE_GET_FORMAT:
+                p->result_format = p->avctx->get_format(p->avctx, p->available_formats);
+                break;
+            default:
+                call_done = 0;
+                break;
+            }
+            if (call_done) {
                 p->state  = STATE_SETTING_UP;
                 pthread_cond_signal(&p->progress_cond);
             }
@@ -1016,6 +1035,32 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
     pthread_mutex_unlock(&p->parent->buffer_mutex);
 
     return err;
+}
+
+enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
+{
+    enum AVPixelFormat res;
+    PerThreadContext *p = avctx->thread_opaque;
+    if (!(avctx->active_thread_type & FF_THREAD_FRAME) || avctx->thread_safe_callbacks ||
+        avctx->get_format == avcodec_default_get_format)
+        return avctx->get_format(avctx, fmt);
+    if (p->state != STATE_SETTING_UP) {
+        av_log(avctx, AV_LOG_ERROR, "get_format() cannot be called after ff_thread_finish_setup()\n");
+        return -1;
+    }
+    pthread_mutex_lock(&p->progress_mutex);
+    p->available_formats = fmt;
+    p->state = STATE_GET_FORMAT;
+    pthread_cond_broadcast(&p->progress_cond);
+
+    while (p->state != STATE_SETTING_UP)
+        pthread_cond_wait(&p->progress_cond, &p->progress_mutex);
+
+    res = p->result_format;
+
+    pthread_mutex_unlock(&p->progress_mutex);
+
+    return res;
 }
 
 int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)

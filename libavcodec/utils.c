@@ -3034,6 +3034,11 @@ int ff_thread_ref_frame(ThreadFrame *dst, ThreadFrame *src)
 
 #if !HAVE_THREADS
 
+enum AVPixelFormat ff_thread_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
+{
+    return avctx->get_format(avctx, fmt);
+}
+
 int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
 {
     f->owner = avctx;

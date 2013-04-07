@@ -3043,7 +3043,7 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
             for (i=0; fmt[i] != AV_PIX_FMT_NONE; i++)
                 if (fmt[i] == h->avctx->pix_fmt && !force_callback)
                     return fmt[i];
-            return h->avctx->get_format(h->avctx, fmt);
+            return ff_thread_get_format(h->avctx, fmt);
         }
         break;
     default:
