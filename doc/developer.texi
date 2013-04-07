@@ -187,8 +187,8 @@ the following snippet into your @file{.vimrc}:
 set expandtab
 set shiftwidth=4
 set softtabstop=4
-" allow tabs in Makefiles
-autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
+" Allow tabs in Makefiles.
+autocmd FileType make,automake set noexpandtab shiftwidth=8 softtabstop=8
 " Trailing whitespace and tabs are forbidden, so highlight them.
 highlight ForbiddenWhitespace ctermbg=red guibg=red
 match ForbiddenWhitespace /\s\+$\|\t/
