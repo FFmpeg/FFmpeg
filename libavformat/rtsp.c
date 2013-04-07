@@ -91,6 +91,7 @@ const AVOption ff_rtsp_options[] = {
     { "min_port", "Minimum local UDP port", OFFSET(rtp_port_min), AV_OPT_TYPE_INT, {.i64 = RTSP_RTP_PORT_MIN}, 0, 65535, DEC|ENC },
     { "max_port", "Maximum local UDP port", OFFSET(rtp_port_max), AV_OPT_TYPE_INT, {.i64 = RTSP_RTP_PORT_MAX}, 0, 65535, DEC|ENC },
     { "timeout", "Maximum timeout (in seconds) to wait for incoming connections. -1 is infinite. Implies flag listen", OFFSET(initial_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, DEC },
+    { "stimeout", "timeout (in micro seconds) of socket i/o operations.", OFFSET(stimeout), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, DEC },
     RTSP_REORDERING_OPTS(),
     { NULL },
 };
@@ -1618,7 +1619,8 @@ redirect:
         }
     } else {
         /* open the tcp connection */
-        ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port, NULL);
+        ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port,
+                    "?timeout=%d", rt->stimeout);
         if (ffurl_open(&rt->rtsp_hd, tcpname, AVIO_FLAG_READ_WRITE,
                        &s->interrupt_callback, NULL) < 0) {
             err = AVERROR(EIO);

@@ -538,6 +538,11 @@ To receive a stream in realtime:
 ffmpeg -rtsp_flags listen -i rtsp://ownaddress/live.sdp @var{output}
 @end example
 
+@table @option
+@item stimeout
+Socket IO timeout in micro seconds.
+@end table
+
 @section sap
 
 Session Announcement Protocol (RFC 2974). This is not technically a
