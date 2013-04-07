@@ -152,7 +152,7 @@ static int decode_frame(AVCodecContext *avctx,
                 return -1;
             }
             avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-            total_size = (avctx->width * avctx->height * elements + 2) / 3 * 4;
+            total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
             break;
         case 12:
             if (!packing) {
@@ -210,6 +210,7 @@ static int decode_frame(AVCodecContext *avctx,
                     read10in32(&buf, &rgbBuffer,
                                &n_datum, endian);
             }
+            n_datum = 0;
             for (i = 0; i < 3; i++)
                 ptr[i] += p->linesize[i];
         }
