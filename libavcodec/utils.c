@@ -1938,7 +1938,7 @@ static int recode_subtitle(AVCodecContext *avctx,
         goto end;
     }
     outpkt->size -= outl;
-    outpkt->data[outpkt->size - 1] = '\0';
+    memset(outpkt->data + outpkt->size, 0, outl);
 
 end:
     if (cd != (iconv_t)-1)
