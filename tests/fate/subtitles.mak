@@ -1,5 +1,5 @@
-FATE_SUBTITLES_ASS-$(call DEMDEC, AQTITLE, TEXT) += fate-sub-aqtitle
-fate-sub-aqtitle: CMD = md5 -i $(SAMPLES)/sub/AQTitle_capability_tester.aqt -f ass
+FATE_SUBTITLES_ASS-$(call ALLYES, AQTITLE_DEMUXER TEXT_DECODER ICONV) += fate-sub-aqtitle
+fate-sub-aqtitle: CMD = md5 -sub_charenc windows-1250 -i $(SAMPLES)/sub/AQTitle_capability_tester.aqt -f ass
 
 FATE_SUBTITLES_ASS-$(call DEMDEC, JACOSUB, JACOSUB) += fate-sub-jacosub
 fate-sub-jacosub: CMD = md5 -i $(SAMPLES)/sub/JACOsub_capability_tester.jss -f ass
@@ -40,8 +40,8 @@ fate-sub-srt: CMD = md5 -i $(SAMPLES)/sub/SubRip_capability_tester.srt -f ass
 FATE_SUBTITLES-$(call ALLYES, MOV_DEMUXER MOVTEXT_DECODER SUBRIP_ENCODER) += fate-sub-subripenc
 fate-sub-subripenc: CMD = md5 -i $(SAMPLES)/sub/MovText_capability_tester.mp4 -scodec subrip -f srt
 
-FATE_SUBTITLES_ASS-$(call DEMDEC, SUBVIEWER1, SUBVIEWER1) += fate-sub-subviewer1
-fate-sub-subviewer1: CMD = md5 -i $(SAMPLES)/sub/SubViewer1_capability_tester.sub -f ass
+FATE_SUBTITLES_ASS-$(call ALLYES, SUBVIEWER1_DEMUXER SUBVIEWER1_DECODER ICONV) += fate-sub-subviewer1
+fate-sub-subviewer1: CMD = md5 -sub_charenc windows-1250 -i $(SAMPLES)/sub/SubViewer1_capability_tester.sub -f ass
 
 FATE_SUBTITLES_ASS-$(call DEMDEC, SUBVIEWER, SUBVIEWER) += fate-sub-subviewer
 fate-sub-subviewer: CMD = md5 -i $(SAMPLES)/sub/SubViewer_capability_tester.sub -f ass

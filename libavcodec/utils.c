@@ -2206,11 +2206,30 @@ end:
 #endif
 }
 
+static int utf8_check(const uint8_t *str)
+{
+    const uint8_t *byte;
+    uint32_t codepoint, min;
+
+    while (*str) {
+        byte = str;
+        GET_UTF8(codepoint, *(byte++), return 0;);
+        min = byte - str == 1 ? 0 : byte - str == 2 ? 0x80 :
+              1 << (5 * (byte - str) - 4);
+        if (codepoint < min || codepoint >= 0x110000 ||
+            codepoint == 0xFFFE /* BOM */ ||
+            codepoint >= 0xD800 && codepoint <= 0xDFFF /* surrogates */)
+            return 0;
+        str = byte;
+    }
+    return 1;
+}
+
 int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                              int *got_sub_ptr,
                              AVPacket *avpkt)
 {
-    int ret = 0;
+    int i, ret = 0;
 
     if (avctx->codec->type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid media type for subtitles\n");
@@ -2245,6 +2264,16 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 AVRational ms = { 1, 1000 };
                 sub->end_display_time = av_rescale_q(avpkt->duration,
                                                      avctx->pkt_timebase, ms);
+            }
+
+            for (i = 0; i < sub->num_rects; i++) {
+                if (sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Invalid UTF-8 in decoded subtitles text; "
+                           "maybe missing -sub_charenc option\n");
+                    avsubtitle_free(sub);
+                    return AVERROR_INVALIDDATA;
+                }
             }
 
             if (tmp.data != pkt_recoded.data) { // did we recode?
