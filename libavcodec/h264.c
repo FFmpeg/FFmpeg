@@ -4086,6 +4086,12 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if(avctx->has_b_frames < 2)
                 avctx->has_b_frames= !s->low_delay;
+
+            if (h->sps.bit_depth_luma != h->sps.bit_depth_chroma) {
+                av_log_missing_feature(s->avctx,
+                    "Different bit depth between chroma and luma", 1);
+                return AVERROR_PATCHWELCOME;
+            }
             break;
         case NAL_PPS:
             init_get_bits(&s->gb, ptr, bit_length);

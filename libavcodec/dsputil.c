@@ -2822,7 +2822,7 @@ int ff_check_alignment(void){
 
 av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
-    int i;
+    int i, j;
 
     ff_check_alignment();
 
@@ -3184,11 +3184,15 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (ARCH_SH4)        dsputil_init_sh4   (c, avctx);
     if (ARCH_BFIN)       dsputil_init_bfin  (c, avctx);
 
-    for(i=0; i<64; i++){
-        if(!c->put_2tap_qpel_pixels_tab[0][i])
-            c->put_2tap_qpel_pixels_tab[0][i]= c->put_h264_qpel_pixels_tab[0][i];
-        if(!c->avg_2tap_qpel_pixels_tab[0][i])
-            c->avg_2tap_qpel_pixels_tab[0][i]= c->avg_h264_qpel_pixels_tab[0][i];
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 16; j++) {
+            if(!c->put_2tap_qpel_pixels_tab[i][j])
+                c->put_2tap_qpel_pixels_tab[i][j] =
+                    c->put_h264_qpel_pixels_tab[i][j];
+            if(!c->avg_2tap_qpel_pixels_tab[i][j])
+                c->avg_2tap_qpel_pixels_tab[i][j] =
+                    c->avg_h264_qpel_pixels_tab[i][j];
+        }
     }
 
     ff_init_scantable_permutation(c->idct_permutation,

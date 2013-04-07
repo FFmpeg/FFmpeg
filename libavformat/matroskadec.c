@@ -1463,7 +1463,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                    && track->codec_priv.data != NULL) {
             int ret;
             ffio_init_context(&b, track->codec_priv.data, track->codec_priv.size,
-                          AVIO_FLAG_READ, NULL, NULL, NULL, NULL);
+                              0, NULL, NULL, NULL, NULL);
             ret = ff_get_wav_header(&b, st->codec, track->codec_priv.size);
             if (ret < 0)
                 return ret;
