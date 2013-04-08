@@ -273,7 +273,7 @@ static void pred4x4_tm_vp8_c(uint8_t *src, const uint8_t *topright,
     int y;
 
     for (y = 0; y < 4; y++) {
-        uint8_t *cm_in = cm + src[-1];
+        const uint8_t *cm_in = cm + src[-1];
         src[0] = cm_in[top[0]];
         src[1] = cm_in[top[1]];
         src[2] = cm_in[top[2]];
@@ -299,7 +299,7 @@ static void pred16x16_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
     int y;
 
     for (y = 0; y < 16; y++) {
-        uint8_t *cm_in = cm + src[-1];
+        const uint8_t *cm_in = cm + src[-1];
         src[0]  = cm_in[top[0]];
         src[1]  = cm_in[top[1]];
         src[2]  = cm_in[top[2]];
@@ -381,7 +381,7 @@ static void pred8x8_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
     int y;
 
     for (y = 0; y < 8; y++) {
-        uint8_t *cm_in = cm + src[-1];
+        const uint8_t *cm_in = cm + src[-1];
         src[0] = cm_in[top[0]];
         src[1] = cm_in[top[1]];
         src[2] = cm_in[top[2]];
