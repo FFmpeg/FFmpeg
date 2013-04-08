@@ -120,32 +120,32 @@ typedef struct AVIOContext {
      * max filesize, used to limit allocations
      * This field is internal to libavformat and access from outside is not allowed.
      */
-     int64_t maxsize;
+    int64_t maxsize;
 
-     /**
-      * avio_read and avio_write should if possible be satisfied directly
-      * instead of going through a buffer, and avio_seek will always
-      * call the underlying seek function directly.
-      */
-     int direct;
+    /**
+     * avio_read and avio_write should if possible be satisfied directly
+     * instead of going through a buffer, and avio_seek will always
+     * call the underlying seek function directly.
+     */
+    int direct;
 
     /**
      * Bytes read statistic
      * This field is internal to libavformat and access from outside is not allowed.
      */
-     int64_t bytes_read;
+    int64_t bytes_read;
 
     /**
      * seek statistic
      * This field is internal to libavformat and access from outside is not allowed.
      */
-     int seek_count;
+    int seek_count;
 
     /**
      * writeout statistic
      * This field is internal to libavformat and access from outside is not allowed.
      */
-     int writeout_count;
+    int writeout_count;
 } AVIOContext;
 
 /* unbuffered I/O */
