@@ -4267,8 +4267,14 @@ on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
 
+@item enable
+Set the expression which enables the overlay. If the evaluation is
+different from 0, the overlay is displayed on top of the input
+frame. By default it is "1".
+
 @item eval
-Set when the expressions for @option{x} and @option{y} are evaluated.
+Set when the expressions for @option{x}, @option{y}, and
+@option{enable} are evaluated.
 
 It accepts the following values:
 @table @samp
@@ -4308,8 +4314,8 @@ color space. Default value is 0. This option is deprecated, use
 @option{format} instead.
 @end table
 
-The @option{x}, and @option{y} expressions can contain the following
-parameters.
+The @option{x}, @option{y}, and @option{enable} expressions can
+contain the following parameters.
 
 @table @option
 @item main_w, W

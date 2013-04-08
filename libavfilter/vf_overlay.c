@@ -87,6 +87,7 @@ enum var_name {
 typedef struct {
     const AVClass *class;
     int x, y;                   ///< position of overlayed picture
+    double enable;              ///< tells if blending is enabled
 
     int allow_packed_rgb;
     uint8_t frame_requested;
@@ -110,8 +111,8 @@ typedef struct {
     int shortest;               ///< terminate stream when the shortest input terminates
 
     double var_values[VAR_VARS_NB];
-    char *x_expr, *y_expr;
-    AVExpr *x_pexpr, *y_pexpr;
+    char *x_expr, *y_expr, *enable_expr;
+    AVExpr *x_pexpr, *y_pexpr, *enable_pexpr;
 } OverlayContext;
 
 #define OFFSET(x) offsetof(OverlayContext, x)
@@ -120,6 +121,7 @@ typedef struct {
 static const AVOption overlay_options[] = {
     { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "enable", "set expression which enables overlay", OFFSET(enable_expr), AV_OPT_TYPE_STRING, {.str = "1"}, .flags = FLAGS },
 
     { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
     { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT}, .flags = FLAGS, .unit = "eval" },
@@ -159,6 +161,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     ff_bufqueue_discard_all(&over->queue_over);
     av_expr_free(over->x_pexpr); over->x_pexpr = NULL;
     av_expr_free(over->y_pexpr); over->y_pexpr = NULL;
+    av_expr_free(over->enable_pexpr); over->enable_pexpr = NULL;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -257,6 +260,7 @@ static void eval_expr(AVFilterContext *ctx)
     over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
     over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
     over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
+    over->enable = av_expr_eval(over->enable_pexpr, over->var_values, NULL);
 }
 
 static int config_input_overlay(AVFilterLink *inlink)
@@ -291,6 +295,10 @@ static int config_input_overlay(AVFilterLink *inlink)
     if ((ret = av_expr_parse(&over->y_pexpr, expr, var_names,
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         goto fail;
+    expr = over->enable_expr;
+    if ((ret = av_expr_parse(&over->enable_pexpr, expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail;
 
     over->overlay_is_packed_rgb =
         ff_fill_rgba_map(over->overlay_rgba_map, inlink->format) >= 0;
@@ -298,9 +306,10 @@ static int config_input_overlay(AVFilterLink *inlink)
 
     if (over->eval_mode == EVAL_MODE_INIT) {
         eval_expr(ctx);
-        av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d\n",
+        av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d enable:%f\n",
                over->var_values[VAR_X], over->x,
-               over->var_values[VAR_Y], over->y);
+               over->var_values[VAR_Y], over->y,
+               over->enable);
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
@@ -573,12 +582,14 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
             over->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
             eval_expr(ctx);
-            av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d\n",
+            av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d enable:%f\n",
                    over->var_values[VAR_N], over->var_values[VAR_T], over->var_values[VAR_POS],
                    over->var_values[VAR_X], over->x,
-                   over->var_values[VAR_Y], over->y);
+                   over->var_values[VAR_Y], over->y,
+                   over->enable);
         }
-        blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
+        if (over->enable)
+            blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
 
         over->var_values[VAR_N] += 1.0;
     }
