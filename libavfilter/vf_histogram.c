@@ -73,20 +73,6 @@ static const AVOption histogram_options[] = {
 
 AVFILTER_DEFINE_CLASS(histogram);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    HistogramContext *h = ctx->priv;
-    int ret;
-
-    h->class = &histogram_class;
-    av_opt_set_defaults(h);
-
-    if ((ret = (av_set_options_string(h, args, "=", ":"))) < 0)
-        return ret;
-
-    return 0;
-}
-
 static const enum AVPixelFormat color_pix_fmts[] = {
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_NONE
@@ -306,13 +292,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return 0;
 }
 
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    HistogramContext *h = ctx->priv;
-
-    av_opt_free(h);
-}
-
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
@@ -332,14 +311,15 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { NULL };
+
 AVFilter avfilter_vf_histogram = {
     .name          = "histogram",
     .description   = NULL_IF_CONFIG_SMALL("Compute and draw a histogram."),
     .priv_size     = sizeof(HistogramContext),
-    .init          = init,
-    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = inputs,
     .outputs       = outputs,
     .priv_class    = &histogram_class,
+    .shorthand     = shorthand,
 };
