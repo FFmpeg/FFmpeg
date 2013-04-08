@@ -233,4 +233,5 @@ AVFilter avfilter_vf_cropdetect = {
     .query_formats = query_formats,
     .inputs    = avfilter_vf_cropdetect_inputs,
     .outputs   = avfilter_vf_cropdetect_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

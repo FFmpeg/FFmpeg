@@ -514,4 +514,5 @@ AVFilter avfilter_vf_curves = {
     .inputs        = curves_inputs,
     .outputs       = curves_outputs,
     .priv_class    = &curves_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

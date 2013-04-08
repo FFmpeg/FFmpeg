@@ -30,6 +30,7 @@ version <next>:
 - decent native animated GIF encoding
 - asetrate filter
 - interleave filter
+- timeline editing with filters
 
 
 version 1.2:

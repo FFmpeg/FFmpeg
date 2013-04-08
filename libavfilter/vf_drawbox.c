@@ -181,4 +181,5 @@ AVFilter avfilter_vf_drawbox = {
     .query_formats   = query_formats,
     .inputs    = avfilter_vf_drawbox_inputs,
     .outputs   = avfilter_vf_drawbox_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

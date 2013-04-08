@@ -385,6 +385,19 @@ struct AVFilterPad {
     int needs_fifo;
 
     int needs_writable;
+
+    /**
+     * Passthrough filtering callback.
+     *
+     * If a filter supports timeline editing (in case
+     * AVFILTER_FLAG_SUPPORT_TIMELINE is enabled) then it can implement a
+     * custom passthrough callback to update its local context (for example to
+     * keep a frame reference, or simply send the filter to a custom outlink).
+     * The filter must not do any change to the frame in this callback.
+     *
+     * Input pads only.
+     */
+    int (*passthrough_filter_frame)(AVFilterLink *link, AVFrame *frame);
 };
 #endif
 
@@ -428,6 +441,12 @@ enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
  * the options supplied to it.
  */
 #define AVFILTER_FLAG_DYNAMIC_OUTPUTS       (1 << 1)
+/**
+ * Some filters support a generic "enable" expression option that can be used
+ * to enable or disable a filter in the timeline. Filters supporting this
+ * option have this flag set.
+ */
+#define AVFILTER_FLAG_SUPPORT_TIMELINE      (1 << 16)
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -522,7 +541,7 @@ typedef struct AVFilter {
 
 /** An instance of a filter */
 struct AVFilterContext {
-    const AVClass *av_class;        ///< needed for av_log()
+    const AVClass *av_class;        ///< needed for av_log() and filters common options
 
     const AVFilter *filter;         ///< the AVFilter of which this is an instance
 
@@ -547,6 +566,10 @@ struct AVFilterContext {
     struct AVFilterGraph *graph;    ///< filtergraph this filter belongs to
 
     struct AVFilterCommand *command_queue;
+
+    char *enable_str;               ///< enable expression string
+    void *enable;                   ///< parsed expression (AVExpr*)
+    double *var_values;             ///< variable values for the enable expression
 };
 
 /**

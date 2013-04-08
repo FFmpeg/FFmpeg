@@ -1683,6 +1683,8 @@ static void show_help_filter(const char *name)
     if (f->priv_class)
         show_help_children(f->priv_class, AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM |
                                           AV_OPT_FLAG_AUDIO_PARAM);
+    if (f->flags & AVFILTER_FLAG_SUPPORT_TIMELINE)
+        printf("This filter has support for timeline through the 'enable' option.\n");
 #else
     av_log(NULL, AV_LOG_ERROR, "Build without libavfilter; "
            "can not to satisfy request\n");

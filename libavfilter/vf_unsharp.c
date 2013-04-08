@@ -299,6 +299,6 @@ AVFilter avfilter_vf_unsharp = {
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_unsharp_inputs,
-
     .outputs   = avfilter_vf_unsharp_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

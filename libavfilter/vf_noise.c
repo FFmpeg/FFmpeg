@@ -471,4 +471,5 @@ AVFilter avfilter_vf_noise = {
     .inputs        = noise_inputs,
     .outputs       = noise_outputs,
     .priv_class    = &noise_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

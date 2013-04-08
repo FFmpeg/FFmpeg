@@ -267,6 +267,36 @@ See the ``Quoting and escaping'' section in the ffmpeg-utils manual
 for more information about the escaping and quoting rules adopted by
 FFmpeg.
 
+@chapter Timeline editing
+
+Some filters support a generic @option{enable} option. For the filters
+supporting timeline editing, this option can be set to an expression which is
+evaluated before sending a frame to the filter. If the evaluation is non-zero,
+the filter will be enabled, otherwise the frame will be sent unchanged to the
+next filter in the filtergraph.
+
+The expression accepts the following values:
+@table @samp
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@item n
+sequential number of the input frame, starting from 0
+
+@item pos
+the position in the file of the input frame, NAN if unknown
+@end table
+
+Like any other filtering option, the @option{enable} option follows the same
+rules.
+
+For example, to enable a denoiser filter (@ref{hqdn3d}) from 10 seconds to 3
+minutes, and a @ref{curves} filter starting at 3 seconds:
+@example
+hqdn3d = enable='between(t,10,3*60)',
+curves = enable='gte(t,3)' : preset=cross_process
+@end example
+
 @c man end FILTERGRAPH DESCRIPTION
 
 @chapter Audio Filters
@@ -2409,6 +2439,7 @@ indicates never reset and return the largest area encountered during
 playback.
 @end table
 
+@anchor{curves}
 @section curves
 
 Apply color adjustments using curves.
@@ -4013,6 +4044,7 @@ ffplay -i input -vf histogram
 
 @end itemize
 
+@anchor{hqdn3d}
 @section hqdn3d
 
 High precision/quality 3d denoise filter. This filter aims to reduce

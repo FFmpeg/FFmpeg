@@ -350,6 +350,7 @@ static const AVFilterPad outputs[] = {
                                                                         \
         .inputs        = inputs,                                        \
         .outputs       = outputs,                                       \
+        .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,                \
     }
 
 #if CONFIG_LUT_FILTER

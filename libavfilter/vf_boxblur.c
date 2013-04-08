@@ -383,4 +383,5 @@ AVFilter avfilter_vf_boxblur = {
 
     .inputs    = avfilter_vf_boxblur_inputs,
     .outputs   = avfilter_vf_boxblur_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

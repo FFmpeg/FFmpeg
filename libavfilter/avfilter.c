@@ -23,6 +23,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -483,12 +484,20 @@ static const AVClass *filter_child_class_next(const AVClass *prev)
     return NULL;
 }
 
+#define OFFSET(x) offsetof(AVFilterContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption filters_common_options[] = {
+    { "enable", "set enable expression", OFFSET(enable_str), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { NULL }
+};
+
 static const AVClass avfilter_class = {
     .class_name = "AVFilter",
     .item_name  = default_filter_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,
     .child_next = filter_child_next,
+    .option     = filters_common_options,
     .child_class_next = filter_child_class_next,
 };
 
@@ -618,8 +627,15 @@ void avfilter_free(AVFilterContext *filter)
     while(filter->command_queue){
         ff_command_queue_pop(filter);
     }
+    av_opt_free(filter);
+    av_expr_free(filter->enable);
+    filter->enable = NULL;
+    av_freep(&filter->var_values);
     av_free(filter);
 }
+
+static const char *const var_names[] = {   "t",   "n",   "pos",        NULL };
+enum                                   { VAR_T, VAR_N, VAR_POS, VAR_VARS_NB };
 
 static int process_options(AVFilterContext *ctx, AVDictionary **options,
                            const char *args)
@@ -629,6 +645,8 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     char *av_uninit(parsed_key), *av_uninit(value);
     const char *key;
     int offset= -1;
+
+    av_opt_set_defaults(ctx);
 
     if (!args)
         return 0;
@@ -665,6 +683,12 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
         }
 
         av_log(ctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
+
+        if (av_opt_find(ctx, key, NULL, 0, 0)) {
+            ret = av_opt_set(ctx, key, value, 0);
+            if (ret < 0)
+                return ret;
+        } else {
         av_dict_set(options, key, value, 0);
         if ((ret = av_opt_set(ctx->priv, key, value, 0)) < 0) {
             if (!av_opt_find(ctx->priv, key, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)) {
@@ -675,10 +699,26 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
             return ret;
             }
         }
+        }
 
         av_free(value);
         av_free(parsed_key);
         count++;
+    }
+
+    if (ctx->enable_str) {
+        if (!(ctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE)) {
+            av_log(ctx, AV_LOG_ERROR, "Timeline ('enable' option) not supported "
+                   "with filter '%s'\n", ctx->filter->name);
+            return AVERROR_PATCHWELCOME;
+        }
+        ctx->var_values = av_calloc(VAR_VARS_NB, sizeof(*ctx->var_values));
+        if (!ctx->var_values)
+            return AVERROR(ENOMEM);
+        ret = av_expr_parse((AVExpr**)&ctx->enable, ctx->enable_str, var_names,
+                            NULL, NULL, NULL, NULL, 0, ctx->priv);
+        if (ret < 0)
+            return ret;
     }
     return count;
 }
@@ -852,6 +892,7 @@ static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 {
     int (*filter_frame)(AVFilterLink *, AVFrame *);
+    AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
     AVFrame *out;
     int ret;
@@ -914,6 +955,15 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
     }
 
     pts = out->pts;
+    if (dstctx->enable_str) {
+        int64_t pos = av_frame_get_pkt_pos(out);
+        dstctx->var_values[VAR_N] = link->frame_count;
+        dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
+        dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+        if (!av_expr_eval(dstctx->enable, dstctx->var_values, NULL))
+            filter_frame = dst->passthrough_filter_frame ? dst->passthrough_filter_frame
+                                                         : default_filter_frame;
+    }
     ret = filter_frame(link, out);
     link->frame_count++;
     link->frame_requested = 0;

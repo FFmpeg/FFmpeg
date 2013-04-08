@@ -180,5 +180,5 @@ AVFilter avfilter_vf_pp = {
     .outputs         = pp_outputs,
     .process_command = pp_process_command,
     .priv_class      = &pp_class,
-
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };
