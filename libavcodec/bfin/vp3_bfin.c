@@ -30,7 +30,7 @@
 /* Intra iDCT offset 128 */
 static void bfin_vp3_idct_put(uint8_t *dest, int line_size, int16_t *block)
 {
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + 128;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP + 128;
     int i,j;
 
     ff_bfin_vp3_idct (block);

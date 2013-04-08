@@ -381,7 +381,8 @@ static void init_dequantizer(Vp3DecodeContext *s, int qpi)
                 int qmin= 8<<(inter + !i);
                 int qscale= i ? ac_scale_factor : dc_scale_factor;
 
-                s->qmat[qpi][inter][plane][s->idct_permutation[i]]= av_clip((qscale * coeff)/100 * 4, qmin, 4096);
+                s->qmat[qpi][inter][plane][s->idct_permutation[i]] =
+                    av_clip((qscale * coeff) / 100 * 4, qmin, 4096);
             }
             // all DC coefficients use the same quant so as not to interfere with DC prediction
             s->qmat[qpi][inter][plane][0] = s->qmat[0][inter][plane][0];
