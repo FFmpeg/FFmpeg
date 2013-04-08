@@ -7475,6 +7475,54 @@ do not have exactly the same duration in the first file.
 
 @end itemize
 
+@section interleave, ainterleave
+
+Temporally interleave frames from several inputs.
+
+@code{interleave} works with video inputs, @code{ainterleave} with audio.
+
+These filters read frames from several inputs and send the oldest
+queued frame to the output.
+
+Input streams must have a well defined, monotonically increasing frame
+timestamp values.
+
+In order to submit one frame to output, these filters need to enqueue
+at least one frame for each input, so they cannot work in case one
+input is not yet terminated and will not receive incoming frames.
+
+For example consider the case when one input is a @code{select} filter
+which always drop input frames. The @code{interleave} filter will keep
+reading from that input, but it will never be able to send new frames
+to output until the input will send an end-of-stream signal.
+
+Also, depending on inputs synchronization, the filters will drop
+frames in case one input receives more frames than the other ones, and
+the queue is already filled.
+
+These filters accept the following options:
+
+@table @option
+@item nb_inputs, n
+Set the number of different inputs, it is 2 by default.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Interleave frames belonging to different streams using @command{ffmpeg}:
+@example
+ffmpeg -i bambi.avi -i pr0n.mkv -filter_complex "[0:v][1:v] interleave" out.avi
+@end example
+
+@item
+Add flickering blur effect:
+@example
+select='if(gt(random(0), 0.2), 1, 2)':n=2 [tmp], boxblur=2:2, [tmp] interleave
+@end example
+@end itemize
+
 @section showspectrum
 
 Convert input audio to a video output, representing the audio frequency

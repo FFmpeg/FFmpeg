@@ -50,6 +50,7 @@ void avfilter_register_all(void)
 #endif
     REGISTER_FILTER(AFADE,          afade,          af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
+    REGISTER_FILTER(AINTERLEAVE,    ainterleave,    af);
     REGISTER_FILTER(ALLPASS,        allpass,        af);
     REGISTER_FILTER(AMERGE,         amerge,         af);
     REGISTER_FILTER(AMIX,           amix,           af);
@@ -134,6 +135,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(IDET,           idet,           vf);
     REGISTER_FILTER(IL,             il,             vf);
     REGISTER_FILTER(INTERLACE,      interlace,      vf);
+    REGISTER_FILTER(INTERLEAVE,     interleave,     vf);
     REGISTER_FILTER(KERNDEINT,      kerndeint,      vf);
     REGISTER_FILTER(LUT,            lut,            vf);
     REGISTER_FILTER(LUTRGB,         lutrgb,         vf);
