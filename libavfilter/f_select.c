@@ -23,6 +23,7 @@
  * filter for selecting which frame passes in the filterchain
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
 #include "libavutil/internal.h"
@@ -136,13 +137,16 @@ typedef struct {
 #endif
     AVFrame *prev_picref; ///< previous frame                            (scene detect only)
     double select;
+    int select_out;                 ///< mark the selected output pad index
+    int nb_outputs;
 } SelectContext;
 
+static int request_frame(AVFilterLink *outlink);
 
 static av_cold int init(AVFilterContext *ctx)
 {
     SelectContext *select = ctx->priv;
-    int ret;
+    int i, ret;
 
     if ((ret = av_expr_parse(&select->expr, select->expr_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
@@ -151,6 +155,17 @@ static av_cold int init(AVFilterContext *ctx)
         return ret;
     }
     select->do_scene_detect = !!strstr(select->expr_str, "scene");
+
+    for (i = 0; i < select->nb_outputs; i++) {
+        AVFilterPad pad = { 0 };
+
+        pad.name = av_asprintf("output%d", i);
+        if (!pad.name)
+            return AVERROR(ENOMEM);
+        pad.type = ctx->filter->inputs[0].type;
+        pad.request_frame = request_frame;
+        ff_insert_outpad(ctx, i, &pad);
+    }
 
     return 0;
 }
@@ -308,7 +323,15 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
         break;
     }
 
-    av_log(inlink->dst, AV_LOG_DEBUG, " -> select:%f\n", res);
+    if (res == 0) {
+        select->select_out = -1; /* drop */
+    } else if (isnan(res) || res < 0) {
+        select->select_out = 0; /* first output */
+    } else {
+        select->select_out = FFMIN(ceilf(res)-1, select->nb_outputs-1); /* other outputs */
+    }
+
+    av_log(inlink->dst, AV_LOG_DEBUG, " -> select:%f select_out:%d\n", res, select->select_out);
 
     if (res) {
         select->var_values[VAR_PREV_SELECTED_N]   = select->var_values[VAR_N];
@@ -326,11 +349,12 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    SelectContext *select = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    SelectContext *select = ctx->priv;
 
-    select_frame(inlink->dst, frame);
+    select_frame(ctx, frame);
     if (select->select)
-        return ff_filter_frame(inlink->dst->outputs[0], frame);
+        return ff_filter_frame(ctx->outputs[select->select_out], frame);
 
     av_frame_free(&frame);
     return 0;
@@ -341,13 +365,13 @@ static int request_frame(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     SelectContext *select = ctx->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
-    select->select = 0;
+    int out_no = FF_OUTLINK_IDX(outlink);
 
     do {
         int ret = ff_request_frame(inlink);
         if (ret < 0)
             return ret;
-    } while (!select->select);
+    } while (select->select_out != out_no);
 
     return 0;
 }
@@ -355,9 +379,13 @@ static int request_frame(AVFilterLink *outlink)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     SelectContext *select = ctx->priv;
+    int i;
 
     av_expr_free(select->expr);
     select->expr = NULL;
+
+    for (i = 0; i < ctx->nb_outputs; i++)
+        av_freep(&ctx->output_pads[i].name);
 
 #if CONFIG_AVCODEC
     if (select->do_scene_detect) {
@@ -393,6 +421,8 @@ static int query_formats(AVFilterContext *ctx)
 static const AVOption aselect_options[] = {
     { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = AFLAGS },
     { "e",    "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = AFLAGS },
+    { "outputs", "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AFLAGS },
+    { "n",       "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AFLAGS },
     { NULL },
 };
 AVFILTER_DEFINE_CLASS(aselect);
@@ -424,14 +454,6 @@ static const AVFilterPad avfilter_af_aselect_inputs[] = {
     { NULL }
 };
 
-static const AVFilterPad avfilter_af_aselect_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-    { NULL }
-};
-
 AVFilter avfilter_af_aselect = {
     .name      = "aselect",
     .description = NULL_IF_CONFIG_SMALL("Select audio frames to pass in output."),
@@ -439,8 +461,8 @@ AVFilter avfilter_af_aselect = {
     .uninit    = uninit,
     .priv_size = sizeof(SelectContext),
     .inputs    = avfilter_af_aselect_inputs,
-    .outputs   = avfilter_af_aselect_outputs,
     .priv_class = &aselect_class,
+    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 #endif /* CONFIG_ASELECT_FILTER */
 
@@ -451,6 +473,8 @@ AVFilter avfilter_af_aselect = {
 static const AVOption select_options[] = {
     { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
     { "e",    "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
+    { "outputs", "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, FLAGS },
+    { "n",       "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, FLAGS },
     { NULL },
 };
 
@@ -483,15 +507,6 @@ static const AVFilterPad avfilter_vf_select_inputs[] = {
     { NULL }
 };
 
-static const AVFilterPad avfilter_vf_select_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
-    },
-    { NULL }
-};
-
 AVFilter avfilter_vf_select = {
     .name      = "select",
     .description = NULL_IF_CONFIG_SMALL("Select video frames to pass in output."),
@@ -503,6 +518,6 @@ AVFilter avfilter_vf_select = {
     .priv_class = &select_class,
 
     .inputs    = avfilter_vf_select_inputs,
-    .outputs   = avfilter_vf_select_outputs,
+    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 #endif /* CONFIG_SELECT_FILTER */
