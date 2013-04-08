@@ -220,6 +220,8 @@ static int request_frame(AVFilterLink *outlink)
         return AVERROR_EOF;
 
     samplesref = ff_get_audio_buffer(outlink, eval->nb_samples);
+    if (!samplesref)
+        return AVERROR(ENOMEM);
 
     /* evaluate expression for each single sample and for each channel */
     for (i = 0; i < eval->nb_samples; i++, eval->n++) {

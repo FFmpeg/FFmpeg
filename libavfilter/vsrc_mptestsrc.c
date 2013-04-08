@@ -323,6 +323,8 @@ static int request_frame(AVFilterLink *outlink)
     if (test->max_pts >= 0 && test->pts > test->max_pts)
         return AVERROR_EOF;
     picref = ff_get_video_buffer(outlink, w, h);
+    if (!picref)
+        return AVERROR(ENOMEM);
     picref->pts = test->pts++;
 
     // clean image

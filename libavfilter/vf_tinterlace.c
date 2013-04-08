@@ -266,6 +266,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     case MODE_PAD: /* expand each frame to double height, but pad alternate
                     * lines with black; framerate unchanged */
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
         av_frame_copy_props(out, cur);
         out->height = outlink->h;
 

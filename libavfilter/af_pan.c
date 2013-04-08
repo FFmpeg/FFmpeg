@@ -361,6 +361,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFrame *outsamples = ff_get_audio_buffer(outlink, n);
     PanContext *pan = inlink->dst->priv;
 
+    if (!outsamples)
+        return AVERROR(ENOMEM);
     swr_convert(pan->swr, outsamples->data, n, (void *)insamples->data, n);
     av_frame_copy_props(outsamples, insamples);
     outsamples->channel_layout = outlink->channel_layout;

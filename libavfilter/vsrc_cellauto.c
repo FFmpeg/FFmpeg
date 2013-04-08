@@ -294,6 +294,8 @@ static int request_frame(AVFilterLink *outlink)
 {
     CellAutoContext *cellauto = outlink->src->priv;
     AVFrame *picref = ff_get_video_buffer(outlink, cellauto->w, cellauto->h);
+    if (!picref)
+        return AVERROR(ENOMEM);
     picref->sample_aspect_ratio = (AVRational) {1, 1};
     if (cellauto->generation == 0 && cellauto->start_full) {
         int i;

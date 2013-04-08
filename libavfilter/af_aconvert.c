@@ -143,6 +143,8 @@ static int  filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
     AVFrame *outsamplesref = ff_get_audio_buffer(outlink, n);
     int ret;
 
+    if (!outsamplesref)
+        return AVERROR(ENOMEM);
     swr_convert(aconvert->swr, outsamplesref->extended_data, n,
                         (void *)insamplesref->extended_data, n);
 

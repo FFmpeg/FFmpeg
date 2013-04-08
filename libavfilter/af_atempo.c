@@ -1062,6 +1062,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
     while (src < src_end) {
         if (!atempo->dst_buffer) {
             atempo->dst_buffer = ff_get_audio_buffer(outlink, n_out);
+            if (!atempo->dst_buffer)
+                return AVERROR(ENOMEM);
             av_frame_copy_props(atempo->dst_buffer, src_buffer);
 
             atempo->dst = atempo->dst_buffer->data[0];
@@ -1100,6 +1102,8 @@ static int request_frame(AVFilterLink *outlink)
         while (err == AVERROR(EAGAIN)) {
             if (!atempo->dst_buffer) {
                 atempo->dst_buffer = ff_get_audio_buffer(outlink, n_max);
+                if (!atempo->dst_buffer)
+                    return AVERROR(ENOMEM);
 
                 atempo->dst = atempo->dst_buffer->data[0];
                 atempo->dst_end = atempo->dst + n_max * atempo->stride;

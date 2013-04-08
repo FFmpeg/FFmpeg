@@ -108,7 +108,8 @@ static int push_samples(AVFilterLink *outlink)
         return 0;
 
     outsamples = ff_get_audio_buffer(outlink, nb_out_samples);
-    av_assert0(outsamples);
+    if (!outsamples)
+        return AVERROR(ENOMEM);
 
     av_audio_fifo_read(asns->fifo,
                        (void **)outsamples->extended_data, nb_out_samples);
