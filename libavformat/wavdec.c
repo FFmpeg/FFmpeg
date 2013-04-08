@@ -74,7 +74,7 @@ static int64_t find_tag(AVIOContext *pb, uint32_t tag1)
         size = next_tag(pb, &tag);
         if (tag == tag1)
             break;
-        avio_skip(pb, size);
+        avio_skip(pb, size + (size & 1));
     }
     return size;
 }
@@ -353,6 +353,9 @@ static int wav_read_header(AVFormatContext *s)
             }
             break;
         }
+
+        /* skip padding byte */
+        next_tag_ofs += (next_tag_ofs < INT64_MAX && next_tag_ofs & 1);
 
         /* seek to next tag unless we know that we'll run into EOF */
         if ((avio_size(pb) > 0 && next_tag_ofs >= avio_size(pb)) ||
