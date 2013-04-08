@@ -281,13 +281,12 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 continue;
             if(!mb->morphamp){
                 if(interpol(mb, color, x, y, linesize)){
-                //TODO: reindent
-                if(next_cidx < mb->cache_allocated){
-                    mb->next_cache[next_cidx  ].p[0]= cr;
-                    mb->next_cache[next_cidx  ].p[1]= ci;
-                    mb->next_cache[next_cidx++].val = color[x + y*linesize];
-                }
-                continue;
+                    if(next_cidx < mb->cache_allocated){
+                        mb->next_cache[next_cidx  ].p[0]= cr;
+                        mb->next_cache[next_cidx  ].p[1]= ci;
+                        mb->next_cache[next_cidx++].val = color[x + y*linesize];
+                    }
+                    continue;
                 }
             }else{
                 zr += cos(pts * mb->morphxf) * mb->morphamp;
