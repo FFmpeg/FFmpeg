@@ -338,7 +338,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     BlendContext *b = ctx->priv;
     int i;
 
-    av_opt_free(b);
     ff_bufqueue_discard_all(&b->queue_top);
     ff_bufqueue_discard_all(&b->queue_bottom);
 

@@ -322,7 +322,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     for (i = 0; i < 4; i++)
         av_freep(&n->param[i].noise);
-    av_opt_free(n);
 }
 
 static const AVFilterPad noise_inputs[] = {
