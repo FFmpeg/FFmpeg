@@ -131,6 +131,7 @@ static void writeout(AVIOContext *s, const uint8_t *data, int len)
             s->error = ret;
         }
     }
+    s->writeout_count ++;
     s->pos += len;
 }
 
@@ -827,7 +828,9 @@ int avio_close(AVIOContext *s)
     avio_flush(s);
     h = s->opaque;
     av_freep(&s->buffer);
-    if (!s->write_flag)
+    if (s->write_flag)
+        av_log(s, AV_LOG_DEBUG, "Statistics: %d seeks, %d writeouts\n", s->seek_count, s->writeout_count);
+    else
         av_log(s, AV_LOG_DEBUG, "Statistics: %"PRId64" bytes read, %d seeks\n", s->bytes_read, s->seek_count);
     av_free(s);
     return ffurl_close(h);

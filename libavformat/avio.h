@@ -140,6 +140,12 @@ typedef struct AVIOContext {
      * This field is internal to libavformat and access from outside is not allowed.
      */
      int seek_count;
+
+    /**
+     * writeout statistic
+     * This field is internal to libavformat and access from outside is not allowed.
+     */
+     int writeout_count;
 } AVIOContext;
 
 /* unbuffered I/O */
