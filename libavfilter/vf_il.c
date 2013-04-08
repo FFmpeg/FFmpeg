@@ -81,20 +81,6 @@ static const AVOption il_options[] = {
 
 AVFILTER_DEFINE_CLASS(il);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    IlContext *il = ctx->priv;
-    int ret;
-
-    il->class = &il_class;
-    av_opt_set_defaults(il);
-
-    if ((ret = av_set_options_string(il, args, "=", ":")) < 0)
-        return ret;
-
-    return 0;
-}
-
 static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
@@ -218,13 +204,15 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
+static const char *const shorthand[] = { NULL };
+
 AVFilter avfilter_vf_il = {
     .name          = "il",
     .description   = NULL_IF_CONFIG_SMALL("Deinterleave or interleave fields."),
     .priv_size     = sizeof(IlContext),
-    .init          = init,
     .query_formats = query_formats,
     .inputs        = inputs,
     .outputs       = outputs,
     .priv_class    = &il_class,
+    .shorthand     = shorthand,
 };
