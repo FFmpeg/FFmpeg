@@ -26,6 +26,12 @@ SECTION_RODATA
 ps_mask         times 2 dd 1<<31, 0
 ps_mask2        times 2 dd 0, 1<<31
 ps_neg          times 4 dd 1<<31
+ps_noise0       times 2 dd  1.0,  0.0,
+ps_noise2       times 2 dd -1.0,  0.0
+ps_noise13      dd  0.0,  1.0, 0.0, -1.0
+                dd  0.0, -1.0, 0.0,  1.0
+                dd  0.0,  1.0, 0.0, -1.0
+cextern         sbr_noise_table
 
 SECTION_TEXT
 
@@ -314,3 +320,111 @@ cglobal sbr_qmf_pre_shuffle, 1,4,7,z
     mova       m2, [zq]
     movq    [r2q], m2
     REP_RET
+
+%if WIN64
+%define NREGS 0
+%define NOISE_TABLE sbr_noise_table
+%else
+%ifdef PIC
+%define NREGS 1
+%if UNIX64
+%define NOISE_TABLE r6q ; r5q is m_max
+%else
+%define NOISE_TABLE r5q
+%endif
+%else
+%define NREGS 0
+%define NOISE_TABLE sbr_noise_table
+%endif
+%endif
+
+%macro LOAD_NST  1
+%if NREGS
+    lea  NOISE_TABLE, [%1]
+    mova          m0, [kxq + NOISE_TABLE]
+%else
+    mova          m0, [kxq + %1]
+%endif
+%endmacro
+
+INIT_XMM sse2
+; sbr_hf_apply_noise_0(float (*Y)[2], const float *s_m,
+;                      const float *q_filt, int noise,
+;                      int kx, int m_max)
+cglobal sbr_hf_apply_noise_0, 5,5+NREGS+UNIX64,8, Y,s_m,q_filt,noise,kx,m_max
+    mova       m0, [ps_noise0]
+    jmp apply_noise_main
+
+; sbr_hf_apply_noise_1(float (*Y)[2], const float *s_m,
+;                      const float *q_filt, int noise,
+;                      int kx, int m_max)
+cglobal sbr_hf_apply_noise_1, 5,5+NREGS+UNIX64,8, Y,s_m,q_filt,noise,kx,m_max
+    and       kxq, 1
+    shl       kxq, 4
+    LOAD_NST  ps_noise13
+    jmp apply_noise_main
+
+; sbr_hf_apply_noise_2(float (*Y)[2], const float *s_m,
+;                      const float *q_filt, int noise,
+;                      int kx, int m_max)
+cglobal sbr_hf_apply_noise_2, 5,5+NREGS+UNIX64,8, Y,s_m,q_filt,noise,kx,m_max
+    mova       m0, [ps_noise2]
+    jmp apply_noise_main
+
+; sbr_hf_apply_noise_3(float (*Y)[2], const float *s_m,
+;                      const float *q_filt, int noise,
+;                      int kx, int m_max)
+cglobal sbr_hf_apply_noise_3, 5,5+NREGS+UNIX64,8, Y,s_m,q_filt,noise,kx,m_max
+    and       kxq, 1
+    shl       kxq, 4
+    LOAD_NST  ps_noise13+16
+
+apply_noise_main:
+%if ARCH_X86_64 == 0 || WIN64
+    mov       kxd, m_maxm
+%define count kxq
+%else
+%define count m_maxq
+%endif
+    dec    noiseq
+    shl    count, 2
+%if NREGS
+    lea NOISE_TABLE, [sbr_noise_table]
+%endif
+    lea        Yq, [Yq + 2*count]
+    add      s_mq, count
+    add   q_filtq, count
+    shl    noiseq, 3
+    pxor       m5, m5
+    neg    count
+.loop:
+    mova       m1, [q_filtq + count]
+    movu       m3, [noiseq + NOISE_TABLE + 1*mmsize]
+    movu       m4, [noiseq + NOISE_TABLE + 2*mmsize]
+    add    noiseq, 2*mmsize
+    and    noiseq, 0x1ff<<3
+    punpckhdq  m2, m1, m1
+    punpckldq  m1, m1
+    mulps      m1, m3 ; m2 = q_filt[m] * ff_sbr_noise_table[noise]
+    mulps      m2, m4 ; m2 = q_filt[m] * ff_sbr_noise_table[noise]
+    mova       m3, [s_mq + count]
+    ; TODO: replace by a vpermd in AVX2
+    punpckhdq  m4, m3, m3
+    punpckldq  m3, m3
+    pcmpeqd    m6, m3, m5 ; m6 == 0
+    pcmpeqd    m7, m4, m5 ; m7 == 0
+    mulps      m3, m0 ; s_m[m] * phi_sign
+    mulps      m4, m0 ; s_m[m] * phi_sign
+    pand       m1, m6
+    pand       m2, m7
+    movu       m6, [Yq + 2*count]
+    movu       m7, [Yq + 2*count + mmsize]
+    addps      m3, m1
+    addps      m4, m2
+    addps      m6, m3
+    addps      m7, m4
+    movu    [Yq + 2*count], m6
+    movu    [Yq + 2*count + mmsize], m7
+    add    count, mmsize
+    jl      .loop
+    RET
