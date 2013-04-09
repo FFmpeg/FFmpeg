@@ -653,7 +653,6 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
         if (level < 0){
             av_log(s->avctx, AV_LOG_ERROR, "dc overflow- block: %d qscale: %d//\n", n, s->qscale);
             if(s->inter_intra_pred) level=0;
-            else                    return -1;
         }
         if (n < 4) {
             rl = &ff_rl_table[s->rl_table_index];
