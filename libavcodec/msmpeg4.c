@@ -228,13 +228,13 @@ int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
         "addl %%eax, %2         \n\t"
         "addl %%eax, %1         \n\t"
         "addl %0, %%eax         \n\t"
-        "mull %4                \n\t"
+        "imull %4               \n\t"
         "movl %%edx, %0         \n\t"
         "movl %1, %%eax         \n\t"
-        "mull %4                \n\t"
+        "imull %4               \n\t"
         "movl %%edx, %1         \n\t"
         "movl %2, %%eax         \n\t"
-        "mull %4                \n\t"
+        "imull %4               \n\t"
         "movl %%edx, %2         \n\t"
         : "+b" (a), "+c" (b), "+D" (c)
         : "g" (scale), "S" (ff_inverse[scale])
