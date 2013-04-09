@@ -45,148 +45,144 @@ typedef struct RVDecContext {
     int sub_id;
 } RVDecContext;
 
-static const uint16_t rv_lum_code[256] =
-{
- 0x3e7f, 0x0f00, 0x0f01, 0x0f02, 0x0f03, 0x0f04, 0x0f05, 0x0f06,
- 0x0f07, 0x0f08, 0x0f09, 0x0f0a, 0x0f0b, 0x0f0c, 0x0f0d, 0x0f0e,
- 0x0f0f, 0x0f10, 0x0f11, 0x0f12, 0x0f13, 0x0f14, 0x0f15, 0x0f16,
- 0x0f17, 0x0f18, 0x0f19, 0x0f1a, 0x0f1b, 0x0f1c, 0x0f1d, 0x0f1e,
- 0x0f1f, 0x0f20, 0x0f21, 0x0f22, 0x0f23, 0x0f24, 0x0f25, 0x0f26,
- 0x0f27, 0x0f28, 0x0f29, 0x0f2a, 0x0f2b, 0x0f2c, 0x0f2d, 0x0f2e,
- 0x0f2f, 0x0f30, 0x0f31, 0x0f32, 0x0f33, 0x0f34, 0x0f35, 0x0f36,
- 0x0f37, 0x0f38, 0x0f39, 0x0f3a, 0x0f3b, 0x0f3c, 0x0f3d, 0x0f3e,
- 0x0f3f, 0x0380, 0x0381, 0x0382, 0x0383, 0x0384, 0x0385, 0x0386,
- 0x0387, 0x0388, 0x0389, 0x038a, 0x038b, 0x038c, 0x038d, 0x038e,
- 0x038f, 0x0390, 0x0391, 0x0392, 0x0393, 0x0394, 0x0395, 0x0396,
- 0x0397, 0x0398, 0x0399, 0x039a, 0x039b, 0x039c, 0x039d, 0x039e,
- 0x039f, 0x00c0, 0x00c1, 0x00c2, 0x00c3, 0x00c4, 0x00c5, 0x00c6,
- 0x00c7, 0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd, 0x00ce,
- 0x00cf, 0x0050, 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056,
- 0x0057, 0x0020, 0x0021, 0x0022, 0x0023, 0x000c, 0x000d, 0x0004,
- 0x0000, 0x0005, 0x000e, 0x000f, 0x0024, 0x0025, 0x0026, 0x0027,
- 0x0058, 0x0059, 0x005a, 0x005b, 0x005c, 0x005d, 0x005e, 0x005f,
- 0x00d0, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00d7,
- 0x00d8, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x00dd, 0x00de, 0x00df,
- 0x03a0, 0x03a1, 0x03a2, 0x03a3, 0x03a4, 0x03a5, 0x03a6, 0x03a7,
- 0x03a8, 0x03a9, 0x03aa, 0x03ab, 0x03ac, 0x03ad, 0x03ae, 0x03af,
- 0x03b0, 0x03b1, 0x03b2, 0x03b3, 0x03b4, 0x03b5, 0x03b6, 0x03b7,
- 0x03b8, 0x03b9, 0x03ba, 0x03bb, 0x03bc, 0x03bd, 0x03be, 0x03bf,
- 0x0f40, 0x0f41, 0x0f42, 0x0f43, 0x0f44, 0x0f45, 0x0f46, 0x0f47,
- 0x0f48, 0x0f49, 0x0f4a, 0x0f4b, 0x0f4c, 0x0f4d, 0x0f4e, 0x0f4f,
- 0x0f50, 0x0f51, 0x0f52, 0x0f53, 0x0f54, 0x0f55, 0x0f56, 0x0f57,
- 0x0f58, 0x0f59, 0x0f5a, 0x0f5b, 0x0f5c, 0x0f5d, 0x0f5e, 0x0f5f,
- 0x0f60, 0x0f61, 0x0f62, 0x0f63, 0x0f64, 0x0f65, 0x0f66, 0x0f67,
- 0x0f68, 0x0f69, 0x0f6a, 0x0f6b, 0x0f6c, 0x0f6d, 0x0f6e, 0x0f6f,
- 0x0f70, 0x0f71, 0x0f72, 0x0f73, 0x0f74, 0x0f75, 0x0f76, 0x0f77,
- 0x0f78, 0x0f79, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f7e, 0x0f7f,
+static const uint16_t rv_lum_code[256] = {
+    0x3e7f, 0x0f00, 0x0f01, 0x0f02, 0x0f03, 0x0f04, 0x0f05, 0x0f06,
+    0x0f07, 0x0f08, 0x0f09, 0x0f0a, 0x0f0b, 0x0f0c, 0x0f0d, 0x0f0e,
+    0x0f0f, 0x0f10, 0x0f11, 0x0f12, 0x0f13, 0x0f14, 0x0f15, 0x0f16,
+    0x0f17, 0x0f18, 0x0f19, 0x0f1a, 0x0f1b, 0x0f1c, 0x0f1d, 0x0f1e,
+    0x0f1f, 0x0f20, 0x0f21, 0x0f22, 0x0f23, 0x0f24, 0x0f25, 0x0f26,
+    0x0f27, 0x0f28, 0x0f29, 0x0f2a, 0x0f2b, 0x0f2c, 0x0f2d, 0x0f2e,
+    0x0f2f, 0x0f30, 0x0f31, 0x0f32, 0x0f33, 0x0f34, 0x0f35, 0x0f36,
+    0x0f37, 0x0f38, 0x0f39, 0x0f3a, 0x0f3b, 0x0f3c, 0x0f3d, 0x0f3e,
+    0x0f3f, 0x0380, 0x0381, 0x0382, 0x0383, 0x0384, 0x0385, 0x0386,
+    0x0387, 0x0388, 0x0389, 0x038a, 0x038b, 0x038c, 0x038d, 0x038e,
+    0x038f, 0x0390, 0x0391, 0x0392, 0x0393, 0x0394, 0x0395, 0x0396,
+    0x0397, 0x0398, 0x0399, 0x039a, 0x039b, 0x039c, 0x039d, 0x039e,
+    0x039f, 0x00c0, 0x00c1, 0x00c2, 0x00c3, 0x00c4, 0x00c5, 0x00c6,
+    0x00c7, 0x00c8, 0x00c9, 0x00ca, 0x00cb, 0x00cc, 0x00cd, 0x00ce,
+    0x00cf, 0x0050, 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056,
+    0x0057, 0x0020, 0x0021, 0x0022, 0x0023, 0x000c, 0x000d, 0x0004,
+    0x0000, 0x0005, 0x000e, 0x000f, 0x0024, 0x0025, 0x0026, 0x0027,
+    0x0058, 0x0059, 0x005a, 0x005b, 0x005c, 0x005d, 0x005e, 0x005f,
+    0x00d0, 0x00d1, 0x00d2, 0x00d3, 0x00d4, 0x00d5, 0x00d6, 0x00d7,
+    0x00d8, 0x00d9, 0x00da, 0x00db, 0x00dc, 0x00dd, 0x00de, 0x00df,
+    0x03a0, 0x03a1, 0x03a2, 0x03a3, 0x03a4, 0x03a5, 0x03a6, 0x03a7,
+    0x03a8, 0x03a9, 0x03aa, 0x03ab, 0x03ac, 0x03ad, 0x03ae, 0x03af,
+    0x03b0, 0x03b1, 0x03b2, 0x03b3, 0x03b4, 0x03b5, 0x03b6, 0x03b7,
+    0x03b8, 0x03b9, 0x03ba, 0x03bb, 0x03bc, 0x03bd, 0x03be, 0x03bf,
+    0x0f40, 0x0f41, 0x0f42, 0x0f43, 0x0f44, 0x0f45, 0x0f46, 0x0f47,
+    0x0f48, 0x0f49, 0x0f4a, 0x0f4b, 0x0f4c, 0x0f4d, 0x0f4e, 0x0f4f,
+    0x0f50, 0x0f51, 0x0f52, 0x0f53, 0x0f54, 0x0f55, 0x0f56, 0x0f57,
+    0x0f58, 0x0f59, 0x0f5a, 0x0f5b, 0x0f5c, 0x0f5d, 0x0f5e, 0x0f5f,
+    0x0f60, 0x0f61, 0x0f62, 0x0f63, 0x0f64, 0x0f65, 0x0f66, 0x0f67,
+    0x0f68, 0x0f69, 0x0f6a, 0x0f6b, 0x0f6c, 0x0f6d, 0x0f6e, 0x0f6f,
+    0x0f70, 0x0f71, 0x0f72, 0x0f73, 0x0f74, 0x0f75, 0x0f76, 0x0f77,
+    0x0f78, 0x0f79, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f7e, 0x0f7f,
 };
 
-static const uint8_t rv_lum_bits[256] =
-{
- 14, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10,  8,  8,  8,  8,  8,  8,  8,
-  8,  8,  8,  8,  8,  8,  8,  8,
-  8,  7,  7,  7,  7,  7,  7,  7,
-  7,  6,  6,  6,  6,  5,  5,  4,
-  2,  4,  5,  5,  6,  6,  6,  6,
-  7,  7,  7,  7,  7,  7,  7,  7,
-  8,  8,  8,  8,  8,  8,  8,  8,
-  8,  8,  8,  8,  8,  8,  8,  8,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
+static const uint8_t rv_lum_bits[256] = {
+    14, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10,  8,  8,  8,  8,  8,  8,  8,
+     8,  8,  8,  8,  8,  8,  8,  8,
+     8,  7,  7,  7,  7,  7,  7,  7,
+     7,  6,  6,  6,  6,  5,  5,  4,
+     2,  4,  5,  5,  6,  6,  6,  6,
+     7,  7,  7,  7,  7,  7,  7,  7,
+     8,  8,  8,  8,  8,  8,  8,  8,
+     8,  8,  8,  8,  8,  8,  8,  8,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
 };
 
-static const uint16_t rv_chrom_code[256] =
-{
- 0xfe7f, 0x3f00, 0x3f01, 0x3f02, 0x3f03, 0x3f04, 0x3f05, 0x3f06,
- 0x3f07, 0x3f08, 0x3f09, 0x3f0a, 0x3f0b, 0x3f0c, 0x3f0d, 0x3f0e,
- 0x3f0f, 0x3f10, 0x3f11, 0x3f12, 0x3f13, 0x3f14, 0x3f15, 0x3f16,
- 0x3f17, 0x3f18, 0x3f19, 0x3f1a, 0x3f1b, 0x3f1c, 0x3f1d, 0x3f1e,
- 0x3f1f, 0x3f20, 0x3f21, 0x3f22, 0x3f23, 0x3f24, 0x3f25, 0x3f26,
- 0x3f27, 0x3f28, 0x3f29, 0x3f2a, 0x3f2b, 0x3f2c, 0x3f2d, 0x3f2e,
- 0x3f2f, 0x3f30, 0x3f31, 0x3f32, 0x3f33, 0x3f34, 0x3f35, 0x3f36,
- 0x3f37, 0x3f38, 0x3f39, 0x3f3a, 0x3f3b, 0x3f3c, 0x3f3d, 0x3f3e,
- 0x3f3f, 0x0f80, 0x0f81, 0x0f82, 0x0f83, 0x0f84, 0x0f85, 0x0f86,
- 0x0f87, 0x0f88, 0x0f89, 0x0f8a, 0x0f8b, 0x0f8c, 0x0f8d, 0x0f8e,
- 0x0f8f, 0x0f90, 0x0f91, 0x0f92, 0x0f93, 0x0f94, 0x0f95, 0x0f96,
- 0x0f97, 0x0f98, 0x0f99, 0x0f9a, 0x0f9b, 0x0f9c, 0x0f9d, 0x0f9e,
- 0x0f9f, 0x03c0, 0x03c1, 0x03c2, 0x03c3, 0x03c4, 0x03c5, 0x03c6,
- 0x03c7, 0x03c8, 0x03c9, 0x03ca, 0x03cb, 0x03cc, 0x03cd, 0x03ce,
- 0x03cf, 0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6,
- 0x00e7, 0x0030, 0x0031, 0x0032, 0x0033, 0x0008, 0x0009, 0x0002,
- 0x0000, 0x0003, 0x000a, 0x000b, 0x0034, 0x0035, 0x0036, 0x0037,
- 0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
- 0x03d0, 0x03d1, 0x03d2, 0x03d3, 0x03d4, 0x03d5, 0x03d6, 0x03d7,
- 0x03d8, 0x03d9, 0x03da, 0x03db, 0x03dc, 0x03dd, 0x03de, 0x03df,
- 0x0fa0, 0x0fa1, 0x0fa2, 0x0fa3, 0x0fa4, 0x0fa5, 0x0fa6, 0x0fa7,
- 0x0fa8, 0x0fa9, 0x0faa, 0x0fab, 0x0fac, 0x0fad, 0x0fae, 0x0faf,
- 0x0fb0, 0x0fb1, 0x0fb2, 0x0fb3, 0x0fb4, 0x0fb5, 0x0fb6, 0x0fb7,
- 0x0fb8, 0x0fb9, 0x0fba, 0x0fbb, 0x0fbc, 0x0fbd, 0x0fbe, 0x0fbf,
- 0x3f40, 0x3f41, 0x3f42, 0x3f43, 0x3f44, 0x3f45, 0x3f46, 0x3f47,
- 0x3f48, 0x3f49, 0x3f4a, 0x3f4b, 0x3f4c, 0x3f4d, 0x3f4e, 0x3f4f,
- 0x3f50, 0x3f51, 0x3f52, 0x3f53, 0x3f54, 0x3f55, 0x3f56, 0x3f57,
- 0x3f58, 0x3f59, 0x3f5a, 0x3f5b, 0x3f5c, 0x3f5d, 0x3f5e, 0x3f5f,
- 0x3f60, 0x3f61, 0x3f62, 0x3f63, 0x3f64, 0x3f65, 0x3f66, 0x3f67,
- 0x3f68, 0x3f69, 0x3f6a, 0x3f6b, 0x3f6c, 0x3f6d, 0x3f6e, 0x3f6f,
- 0x3f70, 0x3f71, 0x3f72, 0x3f73, 0x3f74, 0x3f75, 0x3f76, 0x3f77,
- 0x3f78, 0x3f79, 0x3f7a, 0x3f7b, 0x3f7c, 0x3f7d, 0x3f7e, 0x3f7f,
+static const uint16_t rv_chrom_code[256] = {
+    0xfe7f, 0x3f00, 0x3f01, 0x3f02, 0x3f03, 0x3f04, 0x3f05, 0x3f06,
+    0x3f07, 0x3f08, 0x3f09, 0x3f0a, 0x3f0b, 0x3f0c, 0x3f0d, 0x3f0e,
+    0x3f0f, 0x3f10, 0x3f11, 0x3f12, 0x3f13, 0x3f14, 0x3f15, 0x3f16,
+    0x3f17, 0x3f18, 0x3f19, 0x3f1a, 0x3f1b, 0x3f1c, 0x3f1d, 0x3f1e,
+    0x3f1f, 0x3f20, 0x3f21, 0x3f22, 0x3f23, 0x3f24, 0x3f25, 0x3f26,
+    0x3f27, 0x3f28, 0x3f29, 0x3f2a, 0x3f2b, 0x3f2c, 0x3f2d, 0x3f2e,
+    0x3f2f, 0x3f30, 0x3f31, 0x3f32, 0x3f33, 0x3f34, 0x3f35, 0x3f36,
+    0x3f37, 0x3f38, 0x3f39, 0x3f3a, 0x3f3b, 0x3f3c, 0x3f3d, 0x3f3e,
+    0x3f3f, 0x0f80, 0x0f81, 0x0f82, 0x0f83, 0x0f84, 0x0f85, 0x0f86,
+    0x0f87, 0x0f88, 0x0f89, 0x0f8a, 0x0f8b, 0x0f8c, 0x0f8d, 0x0f8e,
+    0x0f8f, 0x0f90, 0x0f91, 0x0f92, 0x0f93, 0x0f94, 0x0f95, 0x0f96,
+    0x0f97, 0x0f98, 0x0f99, 0x0f9a, 0x0f9b, 0x0f9c, 0x0f9d, 0x0f9e,
+    0x0f9f, 0x03c0, 0x03c1, 0x03c2, 0x03c3, 0x03c4, 0x03c5, 0x03c6,
+    0x03c7, 0x03c8, 0x03c9, 0x03ca, 0x03cb, 0x03cc, 0x03cd, 0x03ce,
+    0x03cf, 0x00e0, 0x00e1, 0x00e2, 0x00e3, 0x00e4, 0x00e5, 0x00e6,
+    0x00e7, 0x0030, 0x0031, 0x0032, 0x0033, 0x0008, 0x0009, 0x0002,
+    0x0000, 0x0003, 0x000a, 0x000b, 0x0034, 0x0035, 0x0036, 0x0037,
+    0x00e8, 0x00e9, 0x00ea, 0x00eb, 0x00ec, 0x00ed, 0x00ee, 0x00ef,
+    0x03d0, 0x03d1, 0x03d2, 0x03d3, 0x03d4, 0x03d5, 0x03d6, 0x03d7,
+    0x03d8, 0x03d9, 0x03da, 0x03db, 0x03dc, 0x03dd, 0x03de, 0x03df,
+    0x0fa0, 0x0fa1, 0x0fa2, 0x0fa3, 0x0fa4, 0x0fa5, 0x0fa6, 0x0fa7,
+    0x0fa8, 0x0fa9, 0x0faa, 0x0fab, 0x0fac, 0x0fad, 0x0fae, 0x0faf,
+    0x0fb0, 0x0fb1, 0x0fb2, 0x0fb3, 0x0fb4, 0x0fb5, 0x0fb6, 0x0fb7,
+    0x0fb8, 0x0fb9, 0x0fba, 0x0fbb, 0x0fbc, 0x0fbd, 0x0fbe, 0x0fbf,
+    0x3f40, 0x3f41, 0x3f42, 0x3f43, 0x3f44, 0x3f45, 0x3f46, 0x3f47,
+    0x3f48, 0x3f49, 0x3f4a, 0x3f4b, 0x3f4c, 0x3f4d, 0x3f4e, 0x3f4f,
+    0x3f50, 0x3f51, 0x3f52, 0x3f53, 0x3f54, 0x3f55, 0x3f56, 0x3f57,
+    0x3f58, 0x3f59, 0x3f5a, 0x3f5b, 0x3f5c, 0x3f5d, 0x3f5e, 0x3f5f,
+    0x3f60, 0x3f61, 0x3f62, 0x3f63, 0x3f64, 0x3f65, 0x3f66, 0x3f67,
+    0x3f68, 0x3f69, 0x3f6a, 0x3f6b, 0x3f6c, 0x3f6d, 0x3f6e, 0x3f6f,
+    0x3f70, 0x3f71, 0x3f72, 0x3f73, 0x3f74, 0x3f75, 0x3f76, 0x3f77,
+    0x3f78, 0x3f79, 0x3f7a, 0x3f7b, 0x3f7c, 0x3f7d, 0x3f7e, 0x3f7f,
 };
 
-static const uint8_t rv_chrom_bits[256] =
-{
- 16, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10,  8,  8,  8,  8,  8,  8,  8,
-  8,  6,  6,  6,  6,  4,  4,  3,
-  2,  3,  4,  4,  6,  6,  6,  6,
-  8,  8,  8,  8,  8,  8,  8,  8,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 10, 10, 10, 10, 10, 10, 10, 10,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 12, 12, 12, 12, 12, 12, 12, 12,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
- 14, 14, 14, 14, 14, 14, 14, 14,
+static const uint8_t rv_chrom_bits[256] = {
+    16, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10,  8,  8,  8,  8,  8,  8,  8,
+     8,  6,  6,  6,  6,  4,  4,  3,
+     2,  3,  4,  4,  6,  6,  6,  6,
+     8,  8,  8,  8,  8,  8,  8,  8,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    10, 10, 10, 10, 10, 10, 10, 10,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 12, 12,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
+    14, 14, 14, 14, 14, 14, 14, 14,
 };
 
 static VLC rv_dc_lum, rv_dc_chrom;
@@ -252,18 +248,21 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         s->pict_type = AV_PICTURE_TYPE_P;
     else
         s->pict_type = AV_PICTURE_TYPE_I;
-    if(!marker) av_log(s->avctx, AV_LOG_ERROR, "marker missing\n");
+
+    if (!marker)
+        av_log(s->avctx, AV_LOG_ERROR, "marker missing\n");
+
     pb_frame = get_bits1(&s->gb);
 
     av_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 
-    if (pb_frame){
+    if (pb_frame) {
         av_log(s->avctx, AV_LOG_ERROR, "pb frame not supported\n");
         return -1;
     }
 
     s->qscale = get_bits(&s->gb, 5);
-    if(s->qscale==0){
+    if (s->qscale == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
         return -1;
     }
@@ -281,14 +280,14 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     /* if multiple packets per frame are sent, the position at which
        to display the macroblocks is coded here */
 
-    mb_xy= s->mb_x + s->mb_y*s->mb_width;
-    if(show_bits(&s->gb, 12)==0 || (mb_xy && mb_xy < s->mb_num)){
-        s->mb_x = get_bits(&s->gb, 6); /* mb_x */
-        s->mb_y = get_bits(&s->gb, 6); /* mb_y */
+    mb_xy = s->mb_x + s->mb_y * s->mb_width;
+    if (show_bits(&s->gb, 12) == 0 || (mb_xy && mb_xy < s->mb_num)) {
+        s->mb_x  = get_bits(&s->gb, 6); /* mb_x */
+        s->mb_y  = get_bits(&s->gb, 6); /* mb_y */
         mb_count = get_bits(&s->gb, 12);
     } else {
-        s->mb_x = 0;
-        s->mb_y = 0;
+        s->mb_x  = 0;
+        s->mb_y  = 0;
         mb_count = s->mb_width * s->mb_height;
     }
     skip_bits(&s->gb, 3);   /* ignored */
@@ -304,57 +303,58 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     int seq, mb_pos, i;
     int rpr_bits;
 
-    i= get_bits(&s->gb, 2);
-    switch(i){
-    case 0: s->pict_type= AV_PICTURE_TYPE_I; break;
-    case 1: s->pict_type= AV_PICTURE_TYPE_I; break; //hmm ...
-    case 2: s->pict_type= AV_PICTURE_TYPE_P; break;
-    case 3: s->pict_type= AV_PICTURE_TYPE_B; break;
+    i = get_bits(&s->gb, 2);
+    switch (i) {
+    case 0: s->pict_type = AV_PICTURE_TYPE_I; break;
+    case 1: s->pict_type = AV_PICTURE_TYPE_I; break; //hmm ...
+    case 2: s->pict_type = AV_PICTURE_TYPE_P; break;
+    case 3: s->pict_type = AV_PICTURE_TYPE_B; break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "unknown frame type\n");
         return -1;
     }
 
-    if(s->last_picture_ptr==NULL && s->pict_type==AV_PICTURE_TYPE_B){
+    if (s->last_picture_ptr == NULL && s->pict_type == AV_PICTURE_TYPE_B) {
         av_log(s->avctx, AV_LOG_ERROR, "early B pix\n");
         return -1;
     }
 
-    if (get_bits1(&s->gb)){
+    if (get_bits1(&s->gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "reserved bit set\n");
         return -1;
     }
 
     s->qscale = get_bits(&s->gb, 5);
-    if(s->qscale==0){
+    if (s->qscale == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
         return -1;
     }
 
-    if(RV_GET_MINOR_VER(rv->sub_id) >= 2)
+    if (RV_GET_MINOR_VER(rv->sub_id) >= 2)
         s->loop_filter = get_bits1(&s->gb);
 
-    if(RV_GET_MINOR_VER(rv->sub_id) <= 1)
+    if (RV_GET_MINOR_VER(rv->sub_id) <= 1)
         seq = get_bits(&s->gb, 8) << 7;
     else
         seq = get_bits(&s->gb, 13) << 2;
 
     rpr_bits = s->avctx->extradata[1] & 7;
-    if(rpr_bits){
+    if (rpr_bits) {
         int f, new_w, new_h;
         rpr_bits = FFMIN((rpr_bits >> 1) + 1, 3);
 
         f = get_bits(&s->gb, rpr_bits);
 
-        if(f){
-            new_w= 4*((uint8_t*)s->avctx->extradata)[6+2*f];
-            new_h= 4*((uint8_t*)s->avctx->extradata)[7+2*f];
-        }else{
-            new_w= s->orig_width ;
-            new_h= s->orig_height;
+        if (f) {
+            new_w = 4 * ((uint8_t*)s->avctx->extradata)[6 + 2 * f];
+            new_h = 4 * ((uint8_t*)s->avctx->extradata)[7 + 2 * f];
+        } else {
+            new_w = s->orig_width ;
+            new_h = s->orig_height;
         }
-        if(new_w != s->width || new_h != s->height){
-            av_log(s->avctx, AV_LOG_DEBUG, "attempting to change resolution to %dx%d\n", new_w, new_h);
+        if (new_w != s->width || new_h != s->height) {
+            av_log(s->avctx, AV_LOG_DEBUG,
+                   "attempting to change resolution to %dx%d\n", new_w, new_h);
             if (av_image_check_size(new_w, new_h, 0, s->avctx) < 0)
                 return -1;
             ff_MPV_common_end(s);
@@ -365,7 +365,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
                 return -1;
         }
 
-        if(s->avctx->debug & FF_DEBUG_PICT_INFO){
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
             av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d\n", f, rpr_bits);
         }
     } else if (av_image_check_size(s->width, s->height, 0, s->avctx) < 0)
@@ -373,42 +373,44 @@ static int rv20_decode_picture_header(RVDecContext *rv)
 
     mb_pos = ff_h263_decode_mba(s);
 
-    seq |= s->time &~0x7FFF;
-    if(seq - s->time >  0x4000) seq -= 0x8000;
-    if(seq - s->time < -0x4000) seq += 0x8000;
-    if(seq != s->time){
-        if(s->pict_type!=AV_PICTURE_TYPE_B){
-            s->time= seq;
-            s->pp_time= s->time - s->last_non_b_time;
-            s->last_non_b_time= s->time;
-        }else{
-            s->time= seq;
-            s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
-            if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
-                av_log(s->avctx, AV_LOG_DEBUG, "messed up order, possible from seeking? skipping current b frame\n");
+    seq |= s->time & ~0x7FFF;
+    if (seq - s->time >  0x4000)
+        seq -= 0x8000;
+    if (seq - s->time < -0x4000)
+        seq += 0x8000;
+
+    if (seq != s->time) {
+        if (s->pict_type != AV_PICTURE_TYPE_B) {
+            s->time            = seq;
+            s->pp_time         = s->time - s->last_non_b_time;
+            s->last_non_b_time = s->time;
+        } else {
+            s->time    = seq;
+            s->pb_time = s->pp_time - (s->last_non_b_time - s->time);
+            if (s->pp_time <= s->pb_time ||
+                s->pp_time <= s->pp_time - s->pb_time || s->pp_time <= 0) {
+                av_log(s->avctx, AV_LOG_DEBUG, "messed up order, possible "
+                       "from seeking? skipping current b frame\n");
                 return FRAME_SKIPPED;
             }
             ff_mpeg4_init_direct_mv(s);
         }
     }
 
-    s->no_rounding= get_bits1(&s->gb);
+    s->no_rounding = get_bits1(&s->gb);
 
-    if(RV_GET_MINOR_VER(rv->sub_id) <= 1 && s->pict_type == AV_PICTURE_TYPE_B)
+    if (RV_GET_MINOR_VER(rv->sub_id) <= 1 && s->pict_type == AV_PICTURE_TYPE_B)
         skip_bits(&s->gb, 5); // binary decoder reads 3+2 bits here but they don't seem to be used
 
-    s->f_code = 1;
+    s->f_code          = 1;
     s->unrestricted_mv = 1;
-    s->h263_aic= s->pict_type == AV_PICTURE_TYPE_I;
-//    s->alt_inter_vlc=1;
-//    s->obmc=1;
-//    s->umvplus=1;
-    s->modified_quant=1;
-    s->loop_filter=1;
+    s->h263_aic        = s->pict_type == AV_PICTURE_TYPE_I;
+    s->modified_quant  = 1;
+    s->loop_filter     = 1;
 
-    if(s->avctx->debug & FF_DEBUG_PICT_INFO){
-            av_log(s->avctx, AV_LOG_INFO, "num:%5d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n",
-                   seq, s->mb_x, s->mb_y, s->pict_type, s->qscale, s->no_rounding);
+    if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
+        av_log(s->avctx, AV_LOG_INFO, "num:%5d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n",
+               seq, s->mb_x, s->mb_y, s->pict_type, s->qscale, s->no_rounding);
     }
 
     assert(s->pict_type != AV_PICTURE_TYPE_B || !s->low_delay);
@@ -420,7 +422,7 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 {
     RVDecContext  *rv = avctx->priv_data;
     MpegEncContext *s = &rv->m;
-    static int done=0;
+    static int done = 0;
     int major_ver, minor_ver, micro_ver;
 
     if (avctx->extradata_size < 8) {
@@ -430,16 +432,16 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     ff_MPV_decode_defaults(s);
 
-    s->avctx= avctx;
+    s->avctx      = avctx;
     s->out_format = FMT_H263;
-    s->codec_id= avctx->codec_id;
+    s->codec_id   = avctx->codec_id;
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
-    s->orig_width = s->width  = avctx->coded_width;
-    s->orig_height= s->height = avctx->coded_height;
+    s->orig_width  = s->width  = avctx->coded_width;
+    s->orig_height = s->height = avctx->coded_height;
 
-    s->h263_long_vectors= ((uint8_t*)avctx->extradata)[3] & 1;
-    rv->sub_id = AV_RB32((uint8_t*)avctx->extradata + 4);
+    s->h263_long_vectors = ((uint8_t*)avctx->extradata)[3] & 1;
+    rv->sub_id           = AV_RB32((uint8_t*)avctx->extradata + 4);
 
     major_ver = RV_GET_MAJOR_VER(rv->sub_id);
     minor_ver = RV_GET_MINOR_VER(rv->sub_id);
@@ -449,11 +451,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     switch (major_ver) {
     case 1:
         s->rv10_version = micro_ver ? 3 : 1;
-        s->obmc = micro_ver == 2;
+        s->obmc         = micro_ver == 2;
         break;
     case 2:
         if (minor_ver >= 2) {
-            s->low_delay = 0;
+            s->low_delay           = 0;
             s->avctx->has_b_frames = 1;
         }
         break;
@@ -463,8 +465,9 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    if(avctx->debug & FF_DEBUG_PICT_INFO){
-        av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id, avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
+    if (avctx->debug & FF_DEBUG_PICT_INFO) {
+        av_log(avctx, AV_LOG_DEBUG, "ver:%X ver0:%X\n", rv->sub_id,
+               avctx->extradata_size >= 4 ? ((uint32_t*)avctx->extradata)[0] : -1);
     }
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -477,11 +480,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     /* init rv vlc */
     if (!done) {
         INIT_VLC_STATIC(&rv_dc_lum, DC_VLC_BITS, 256,
-                 rv_lum_bits, 1, 1,
-                 rv_lum_code, 2, 2, 16384);
+                        rv_lum_bits, 1, 1,
+                        rv_lum_code, 2, 2, 16384);
         INIT_VLC_STATIC(&rv_dc_chrom, DC_VLC_BITS, 256,
-                 rv_chrom_bits, 1, 1,
-                 rv_chrom_code, 2, 2, 16388);
+                        rv_chrom_bits, 1, 1,
+                        rv_chrom_code, 2, 2, 16388);
         done = 1;
     }
 
@@ -497,7 +500,7 @@ static av_cold int rv10_decode_end(AVCodecContext *avctx)
 }
 
 static int rv10_decode_packet(AVCodecContext *avctx,
-                             const uint8_t *buf, int buf_size, int buf_size2)
+                              const uint8_t *buf, int buf_size, int buf_size2)
 {
     RVDecContext  *rv = avctx->priv_data;
     MpegEncContext *s = &rv->m;
@@ -505,7 +508,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 
     active_bits_size = buf_size * 8;
     init_get_bits(&s->gb, buf, FFMAX(buf_size, buf_size2) * 8);
-    if(s->codec_id ==AV_CODEC_ID_RV10)
+    if (s->codec_id == AV_CODEC_ID_RV10)
         mb_count = rv10_decode_picture_header(s);
     else
         mb_count = rv20_decode_picture_header(rv);
@@ -526,13 +529,13 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         return -1;
     }
 
-    if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
-        if(s->current_picture_ptr){ //FIXME write parser so we always have complete frames?
+    if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr == NULL) {
+        if (s->current_picture_ptr) { // FIXME write parser so we always have complete frames?
             ff_er_frame_end(&s->er);
             ff_MPV_frame_end(s);
-            s->mb_x= s->mb_y = s->resync_mb_x = s->resync_mb_y= 0;
+            s->mb_x = s->mb_y = s->resync_mb_x = s->resync_mb_y = 0;
         }
-        if(ff_MPV_frame_start(s, avctx) < 0)
+        if (ff_MPV_frame_start(s, avctx) < 0)
             return -1;
         ff_mpeg_er_frame_start(s);
     } else {
@@ -545,47 +548,46 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     av_dlog(avctx, "qscale=%d\n", s->qscale);
 
     /* default quantization values */
-    if(s->codec_id== AV_CODEC_ID_RV10){
-        if(s->mb_y==0) s->first_slice_line=1;
-    }else{
-        s->first_slice_line=1;
-        s->resync_mb_x= s->mb_x;
+    if (s->codec_id == AV_CODEC_ID_RV10) {
+        if (s->mb_y == 0)
+            s->first_slice_line = 1;
+    } else {
+        s->first_slice_line = 1;
+        s->resync_mb_x      = s->mb_x;
     }
-    start_mb_x= s->mb_x;
-    s->resync_mb_y= s->mb_y;
-    if(s->h263_aic){
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_aic_dc_scale_table;
-    }else{
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    start_mb_x     = s->mb_x;
+    s->resync_mb_y = s->mb_y;
+    if (s->h263_aic) {
+        s->y_dc_scale_table = s->c_dc_scale_table = ff_aic_dc_scale_table;
+    } else {
+        s->y_dc_scale_table = s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
     }
 
-    if(s->modified_quant)
-        s->chroma_qscale_table= ff_h263_chroma_qscale_table;
+    if (s->modified_quant)
+        s->chroma_qscale_table = ff_h263_chroma_qscale_table;
 
     ff_set_qscale(s, s->qscale);
 
     s->rv10_first_dc_coded[0] = 0;
     s->rv10_first_dc_coded[1] = 0;
     s->rv10_first_dc_coded[2] = 0;
-    s->block_wrap[0]=
-    s->block_wrap[1]=
-    s->block_wrap[2]=
-    s->block_wrap[3]= s->b8_stride;
-    s->block_wrap[4]=
-    s->block_wrap[5]= s->mb_stride;
+    s->block_wrap[0] =
+    s->block_wrap[1] =
+    s->block_wrap[2] =
+    s->block_wrap[3] = s->b8_stride;
+    s->block_wrap[4] =
+    s->block_wrap[5] = s->mb_stride;
     ff_init_block_index(s);
-    /* decode each macroblock */
 
-    for(s->mb_num_left= mb_count; s->mb_num_left>0; s->mb_num_left--) {
+    /* decode each macroblock */
+    for (s->mb_num_left = mb_count; s->mb_num_left > 0; s->mb_num_left--) {
         int ret;
         ff_update_block_index(s);
         av_dlog(avctx, "**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 
-        s->mv_dir = MV_DIR_FORWARD;
+        s->mv_dir  = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16;
-        ret=ff_h263_decode_mb(s, s->block);
+        ret = ff_h263_decode_mb(s, s->block);
 
         // Repeat the slice end check from ff_h263_decode_mb with our active
         // bitstream size
@@ -603,17 +605,17 @@ static int rv10_decode_packet(AVCodecContext *avctx,
             active_bits_size = buf_size2 * 8;
             av_log(avctx, AV_LOG_DEBUG, "update size from %d to %d\n",
                    8 * buf_size, active_bits_size);
-            ret= SLICE_OK;
+            ret = SLICE_OK;
         }
 
         if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&s->gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
-        if(s->pict_type != AV_PICTURE_TYPE_B)
+        if (s->pict_type != AV_PICTURE_TYPE_B)
             ff_h263_update_motion_val(s);
         ff_MPV_decode_mb(s, s->block);
-        if(s->loop_filter)
+        if (s->loop_filter)
             ff_h263_loop_filter(s);
 
         if (++s->mb_x == s->mb_width) {
@@ -621,20 +623,24 @@ static int rv10_decode_packet(AVCodecContext *avctx,
             s->mb_y++;
             ff_init_block_index(s);
         }
-        if(s->mb_x == s->resync_mb_x)
-            s->first_slice_line=0;
-        if(ret == SLICE_END) break;
+        if (s->mb_x == s->resync_mb_x)
+            s->first_slice_line = 0;
+        if (ret == SLICE_END)
+            break;
     }
 
-    ff_er_add_slice(&s->er, start_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
+    ff_er_add_slice(&s->er, start_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y,
+                    ER_MB_END);
 
     return active_bits_size;
 }
 
 static int get_slice_offset(AVCodecContext *avctx, const uint8_t *buf, int n)
 {
-    if(avctx->slice_count) return avctx->slice_offset[n];
-    else                   return AV_RL32(buf + n*8);
+    if (avctx->slice_count)
+        return avctx->slice_offset[n];
+    else
+        return AV_RL32(buf + n * 8);
 }
 
 static int rv10_decode_frame(AVCodecContext *avctx,
@@ -642,10 +648,10 @@ static int rv10_decode_frame(AVCodecContext *avctx,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    MpegEncContext *s = avctx->priv_data;
+    int buf_size       = avpkt->size;
+    MpegEncContext *s  = avctx->priv_data;
+    AVFrame *pict      = data;
     int i, ret;
-    AVFrame *pict = data;
     int slice_count;
     const uint8_t *slices_hdr = NULL;
 
@@ -656,7 +662,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         return 0;
     }
 
-    if(!avctx->slice_count){
+    if (!avctx->slice_count) {
         slice_count = (*buf++) + 1;
         buf_size--;
 
@@ -666,37 +672,37 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         }
 
         slices_hdr = buf + 4;
-        buf += 8 * slice_count;
-        buf_size -= 8 * slice_count;
-    }else
+        buf       += 8 * slice_count;
+        buf_size  -= 8 * slice_count;
+    } else
         slice_count = avctx->slice_count;
 
-    for(i=0; i<slice_count; i++){
+    for (i = 0; i < slice_count; i++) {
         unsigned offset = get_slice_offset(avctx, slices_hdr, i);
         int size, size2;
 
         if (offset >= buf_size)
             return AVERROR_INVALIDDATA;
 
-        if(i+1 == slice_count)
-            size= buf_size - offset;
+        if (i + 1 == slice_count)
+            size = buf_size - offset;
         else
-            size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
+            size = get_slice_offset(avctx, slices_hdr, i + 1) - offset;
 
-        if(i+2 >= slice_count)
-            size2= buf_size - offset;
+        if (i + 2 >= slice_count)
+            size2 = buf_size - offset;
         else
-            size2= get_slice_offset(avctx, slices_hdr, i+2) - offset;
+            size2 = get_slice_offset(avctx, slices_hdr, i + 2) - offset;
 
         if (size <= 0 || size2 <= 0 ||
             offset + FFMAX(size, size2) > buf_size)
             return AVERROR_INVALIDDATA;
 
-        if(rv10_decode_packet(avctx, buf+offset, size, size2) > 8*size)
+        if (rv10_decode_packet(avctx, buf + offset, size, size2) > 8 * size)
             i++;
     }
 
-    if(s->current_picture_ptr != NULL && s->mb_y>=s->mb_height){
+    if (s->current_picture_ptr != NULL && s->mb_y >= s->mb_height) {
         ff_er_frame_end(&s->er);
         ff_MPV_frame_end(s);
 
@@ -710,10 +716,12 @@ static int rv10_decode_frame(AVCodecContext *avctx,
             ff_print_debug_info(s, s->last_picture_ptr);
         }
 
-        if(s->last_picture_ptr || s->low_delay){
+        if (s->last_picture_ptr || s->low_delay) {
             *got_frame = 1;
         }
-        s->current_picture_ptr= NULL; // so we can detect if frame_end was not called (find some nicer solution...)
+
+        // so we can detect if frame_end was not called (find some nicer solution...)
+        s->current_picture_ptr = NULL;
     }
 
     return avpkt->size;
