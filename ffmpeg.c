@@ -129,6 +129,7 @@ static int64_t subtitle_size = 0;
 static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
+static int64_t decode_error_stat[2];
 
 static int current_time;
 AVIOContext *progress_avio = NULL;
@@ -1506,6 +1507,9 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         ret = AVERROR_INVALIDDATA;
     }
 
+    if (*got_output || ret<0 || pkt->size)
+        decode_error_stat[ret<0] ++;
+
     if (!*got_output || ret < 0) {
         if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
@@ -1640,6 +1644,10 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
     update_benchmark("decode_video %d.%d", ist->file_index, ist->st->index);
+
+    if (*got_output || ret<0 || pkt->size)
+        decode_error_stat[ret<0] ++;
+
     if (!*got_output || ret < 0) {
         if (!pkt->size) {
             for (i = 0; i < ist->nb_filters; i++)
@@ -1730,6 +1738,10 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     AVSubtitle subtitle;
     int i, ret = avcodec_decode_subtitle2(ist->st->codec,
                                           &subtitle, got_output, pkt);
+
+    if (*got_output || ret<0 || pkt->size)
+        decode_error_stat[ret<0] ++;
+
     if (ret < 0 || !*got_output) {
         if (!pkt->size)
             sub2video_flush(ist);
@@ -3349,6 +3361,8 @@ int main(int argc, char **argv)
     if (do_benchmark) {
         printf("bench: utime=%0.3fs\n", ti / 1000000.0);
     }
+    if (2*decode_error_stat[0] < decode_error_stat[1])
+        exit(254);
 
     exit(received_nb_signals ? 255 : 0);
     return 0;
