@@ -407,10 +407,10 @@ static void avisynth_next_stream(AVFormatContext *s, AVStream **st, AVPacket *pk
 static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int discard) {
     AviSynthContext *avs = s->priv_data;
     AVS_VideoFrame *frame;
-    unsigned char*  dst_p;
-    const unsigned char* src_p;
+    unsigned char *dst_p;
+    const unsigned char *src_p;
     int n, i, plane, rowsize, planeheight, pitch, bits;
-    const char* error;
+    const char *error;
 
     if (avs->curr_frame >= avs->vi->num_frames)
         return AVERROR_EOF;
@@ -481,7 +481,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
     AVRational fps, samplerate;
     int samples;
     int64_t n;
-    const char* error;
+    const char *error;
 
     if (avs->curr_sample >= avs->vi->num_audio_samples)
         return AVERROR_EOF;
