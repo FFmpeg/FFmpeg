@@ -16,6 +16,7 @@ version <next>:
   filtergraph description to be read from a file
 - OpenCL support
 - audio phaser filter
+- separatefields filter
 
 
 version 1.2:

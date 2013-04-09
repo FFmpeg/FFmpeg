@@ -4896,6 +4896,16 @@ scale='min(500\, iw*3/2):-1'
 @end example
 @end itemize
 
+@section separatefields
+
+The @code{separatefields} takes a frame-based video input and splits
+each frame into its components fields, producing a new half height clip
+with twice the frame rate and twice the frame count.
+
+This filter use field-dominance information in frame to decide which
+of each pair of fields to place first in the output.
+If it gets it wrong use @ref{setfield} filter before @code{separatefields} filter.
+
 @section setdar, setsar
 
 The @code{setdar} filter sets the Display Aspect Ratio for the filter
@@ -4970,6 +4980,7 @@ To set a display aspect ratio of 16:9, and specify a maximum integer value of
 setdar=ratio='16:9':max=1000
 @end example
 
+@anchor{setfield}
 @section setfield
 
 Force field for the output video frame.
