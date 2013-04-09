@@ -1072,7 +1072,7 @@ static int reap_filters(void)
             switch (ost->filter->filter->inputs[0]->type) {
             case AVMEDIA_TYPE_VIDEO:
                 filtered_frame->pts = frame_pts;
-                if (!ost->frame_aspect_ratio)
+                if (!ost->frame_aspect_ratio.num)
                     ost->st->codec->sample_aspect_ratio = filtered_frame->sample_aspect_ratio;
 
                 do_video_out(of->ctx, ost, filtered_frame);
@@ -2312,8 +2312,8 @@ static int transcode_init(void)
                 codec->width  = ost->filter->filter->inputs[0]->w;
                 codec->height = ost->filter->filter->inputs[0]->h;
                 codec->sample_aspect_ratio = ost->st->sample_aspect_ratio =
-                    ost->frame_aspect_ratio ? // overridden by the -aspect cli option
-                    av_d2q(ost->frame_aspect_ratio * codec->height/codec->width, 255) :
+                    ost->frame_aspect_ratio.num ? // overridden by the -aspect cli option
+                    av_mul_q(ost->frame_aspect_ratio, (AVRational){ codec->height, codec->width }) :
                     ost->filter->filter->inputs[0]->sample_aspect_ratio;
                 if (!strncmp(ost->enc->name, "libx264", 7) &&
                     codec->pix_fmt == AV_PIX_FMT_NONE &&
