@@ -25,6 +25,7 @@
 #include "url.h"
 
 #include "internal.h"
+#include "rtpdec.h"
 #include "srtp.h"
 
 typedef struct SRTPProtoContext {
@@ -33,7 +34,7 @@ typedef struct SRTPProtoContext {
     const char *out_suite, *out_params;
     const char *in_suite, *in_params;
     struct SRTPContext srtp_out, srtp_in;
-    uint8_t encryptbuf[1500];
+    uint8_t encryptbuf[RTP_MAX_PACKET_LENGTH];
 } SRTPProtoContext;
 
 #define D AV_OPT_FLAG_DECODING_PARAM

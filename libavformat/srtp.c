@@ -25,6 +25,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "rtp.h"
+#include "rtpdec.h"
 #include "srtp.h"
 
 void ff_srtp_free(struct SRTPContext *s)
@@ -419,7 +420,7 @@ static void test_encrypt(const uint8_t *data, int in_len, const char *suite,
 {
     struct SRTPContext enc = { 0 }, dec = { 0 };
     int len;
-    char buf[1500];
+    char buf[RTP_MAX_PACKET_LENGTH];
     ff_srtp_set_crypto(&enc, suite, key);
     ff_srtp_set_crypto(&dec, suite, key);
     len = ff_srtp_encrypt(&enc, data, in_len, buf, sizeof(buf));
@@ -441,7 +442,7 @@ int main(void)
     static const char *aes128_32_suite = "AES_CM_128_HMAC_SHA1_32";
     static const char *aes128_80_32_suite = "SRTP_AES128_CM_HMAC_SHA1_32";
     static const char *test_key = "abcdefghijklmnopqrstuvwxyz1234567890ABCD";
-    uint8_t buf[1500];
+    uint8_t buf[RTP_MAX_PACKET_LENGTH];
     struct SRTPContext srtp = { 0 };
     int len;
     ff_srtp_set_crypto(&srtp, aes128_80_suite, aes128_80_key);
