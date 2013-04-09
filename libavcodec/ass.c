@@ -23,6 +23,7 @@
 #include "ass.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/common.h"
 
 int ff_ass_subtitle_header(AVCodecContext *avctx,
@@ -62,35 +63,41 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx)
                                          ASS_DEFAULT_ALIGNMENT);
 }
 
-static int ts_to_string(char *str, int strlen, int ts)
+static void insert_ts(AVBPrint *buf, int ts)
 {
-    int h, m, s;
-    h = ts/360000;  ts -= 360000*h;
-    m = ts/  6000;  ts -=   6000*m;
-    s = ts/   100;  ts -=    100*s;
-    return snprintf(str, strlen, "%d:%02d:%02d.%02d", h, m, s, ts);
+    if (ts == -1) {
+        av_bprintf(buf, "9:59:59.99,");
+    } else {
+        int h, m, s;
+
+        h = ts/360000;  ts -= 360000*h;
+        m = ts/  6000;  ts -=   6000*m;
+        s = ts/   100;  ts -=    100*s;
+        av_bprintf(buf, "%d:%02d:%02d.%02d,", h, m, s, ts);
+    }
 }
 
 int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                     int ts_start, int duration, int raw)
 {
-    int len = 0, dlen;
-    char s_start[16], s_end[16], header[48] = {0};
+    AVBPrint buf;
+    int ret, dlen;
     AVSubtitleRect **rects;
 
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (!raw) {
-        ts_to_string(s_start, sizeof(s_start), ts_start);
-        if (duration == -1)
-            snprintf(s_end, sizeof(s_end), "9:59:59.99");
-        else
-            ts_to_string(s_end, sizeof(s_end), ts_start + duration);
-        len = snprintf(header, sizeof(header), "Dialogue: 0,%s,%s,Default,",
-                       s_start, s_end);
-        av_assert0(len < sizeof(header));
+        av_bprintf(&buf, "Dialogue: 0,");
+        insert_ts(&buf, ts_start);
+        insert_ts(&buf, duration == -1 ? -1 : ts_start + duration);
+        av_bprintf(&buf, "Default,");
     }
 
     dlen = strcspn(dialog, "\n");
     dlen += dialog[dlen] == '\n';
+
+    av_bprintf(&buf, "%.*s", dlen, dialog);
+    if (!av_bprint_is_complete(&buf))
+        return AVERROR(ENOMEM);
 
     rects = av_realloc(sub->rects, (sub->num_rects+1) * sizeof(*sub->rects));
     if (!rects)
@@ -99,9 +106,9 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     sub->end_display_time = FFMAX(sub->end_display_time, 10 * duration);
     rects[sub->num_rects]       = av_mallocz(sizeof(*rects[0]));
     rects[sub->num_rects]->type = SUBTITLE_ASS;
-    rects[sub->num_rects]->ass  = av_malloc(len + dlen + 1);
-    strcpy (rects[sub->num_rects]->ass      , header);
-    av_strlcpy(rects[sub->num_rects]->ass + len, dialog, dlen + 1);
+    ret = av_bprint_finalize(&buf, &rects[sub->num_rects]->ass);
+    if (ret < 0)
+        return ret;
     sub->num_rects++;
     return dlen;
 }
