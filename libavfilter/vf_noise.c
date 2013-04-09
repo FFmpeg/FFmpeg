@@ -214,10 +214,10 @@ static inline void line_noise_c(uint8_t *dst, const uint8_t *src, int8_t *noise,
 
 #define ASMALIGN(ZEROBITS) ".p2align " #ZEROBITS "\n\t"
 
-#if HAVE_MMX_INLINE
 static void line_noise_mmx(uint8_t *dst, const uint8_t *src,
                            int8_t *noise, int len, int shift)
 {
+#if HAVE_MMX_INLINE
     x86_reg mmx_len= len&(~7);
     noise+=shift;
 
@@ -241,13 +241,13 @@ static void line_noise_mmx(uint8_t *dst, const uint8_t *src,
     );
     if (mmx_len!=len)
         line_noise_c(dst+mmx_len, src+mmx_len, noise+mmx_len, len-mmx_len, 0);
-}
 #endif
+}
 
-#if HAVE_MMXEXT_INLINE
 static void line_noise_mmxext(uint8_t *dst, const uint8_t *src,
                               int8_t *noise, int len, int shift)
 {
+#if HAVE_MMXEXT_INLINE
     x86_reg mmx_len= len&(~7);
     noise+=shift;
 
@@ -271,8 +271,8 @@ static void line_noise_mmxext(uint8_t *dst, const uint8_t *src,
             );
     if (mmx_len != len)
         line_noise_c(dst+mmx_len, src+mmx_len, noise+mmx_len, len-mmx_len, 0);
-}
 #endif
+}
 
 static inline void line_noise_avg_c(uint8_t *dst, const uint8_t *src,
                            int len, int8_t **shift)
@@ -286,10 +286,10 @@ static inline void line_noise_avg_c(uint8_t *dst, const uint8_t *src,
     }
 }
 
-#if HAVE_MMX_INLINE
 static inline void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
                                       int len, int8_t **shift)
 {
+#if HAVE_MMX_INLINE
     x86_reg mmx_len= len&(~7);
 
     __asm__ volatile(
@@ -327,8 +327,8 @@ static inline void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
         int8_t *shift2[3]={shift[0]+mmx_len, shift[1]+mmx_len, shift[2]+mmx_len};
         line_noise_avg_c(dst+mmx_len, src+mmx_len, len-mmx_len, shift2);
     }
-}
 #endif
+}
 
 static void noise(uint8_t *dst, const uint8_t *src,
                   int dst_linesize, int src_linesize,
