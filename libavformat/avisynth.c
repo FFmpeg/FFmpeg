@@ -409,14 +409,14 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
     AVS_VideoFrame *frame;
     unsigned char*  dst_p;
     const unsigned char* src_p;
-    int i, plane, rowsize, planeheight, pitch, bits;
+    int n, i, plane, rowsize, planeheight, pitch, bits;
     const char* error;
 
     if (avs->curr_frame >= avs->vi->num_frames)
         return AVERROR_EOF;
 
     // This must happen even if the stream is discarded to prevent desync.
-    avs->curr_frame++;
+    n = avs->curr_frame++;
     if (discard)
         return 0;
 
@@ -445,7 +445,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
     if (!pkt->data)
         return AVERROR_UNKNOWN;
 
-    frame = avs_library->avs_get_frame(avs->clip, avs->curr_frame);
+    frame = avs_library->avs_get_frame(avs->clip, n);
     error = avs_library->avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
@@ -480,6 +480,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
     AviSynthContext *avs = s->priv_data;
     AVRational fps, samplerate;
     int samples;
+    int64_t n;
     const char* error;
 
     if (avs->curr_sample >= avs->vi->num_audio_samples)
@@ -510,6 +511,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
         samples = avs->vi->num_audio_samples - avs->curr_sample;
 
     // This must happen even if the stream is discarded to prevent desync.
+    n = avs->curr_sample;
     avs->curr_sample += samples;
     if (discard)
         return 0;
@@ -525,7 +527,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
     if (!pkt->data)
         return AVERROR_UNKNOWN;
 
-    avs_library->avs_get_audio(avs->clip, pkt->data, avs->curr_sample, samples);
+    avs_library->avs_get_audio(avs->clip, pkt->data, n, samples);
     error = avs_library->avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
