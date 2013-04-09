@@ -245,3 +245,31 @@ cglobal sbr_neg_odd_64, 1,2,4,z
     cmp         zq, r1q
     jne      .loop
     REP_RET
+
+INIT_XMM sse2
+; sbr_qmf_deint_bfly(float *v, const float *src0, const float *src1)
+cglobal sbr_qmf_deint_bfly, 3,5,8, v,src0,src1,vrev,c
+    mov               cq, 64*4-2*mmsize
+    lea            vrevq, [vq + 64*4]
+.loop:
+    mova              m0, [src0q+cq]
+    mova              m1, [src1q]
+    mova              m2, [src0q+cq+mmsize]
+    mova              m3, [src1q+mmsize]
+    pshufd            m4, m0, q0123
+    pshufd            m5, m1, q0123
+    pshufd            m6, m2, q0123
+    pshufd            m7, m3, q0123
+    addps             m3, m4
+    subps             m0, m7
+    addps             m1, m6
+    subps             m2, m5
+    mova         [vrevq], m1
+    mova  [vrevq+mmsize], m3
+    mova         [vq+cq], m0
+    mova  [vq+cq+mmsize], m2
+    add            src1q, 2*mmsize
+    add            vrevq, 2*mmsize
+    sub               cq, 2*mmsize
+    jge            .loop
+    REP_RET
