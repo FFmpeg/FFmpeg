@@ -25,6 +25,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "rtp.h"
+#include "rtpdec.h"
 #include "srtp.h"
 
 void ff_srtp_free(struct SRTPContext *s)
