@@ -2385,6 +2385,11 @@ Set the key points for the red component.
 Set the key points for the green component.
 @item blue, b
 Set the key points for the blue component.
+@item all
+Set the key points for all components.
+Can be used in addition to the other key points component
+options. In this case, the unset component(s) will fallback on this
+@option{all} setting.
 @item preset
 Select one of the available color presets. This option can not be used in
 addition to the @option{r}, @option{g}, @option{b} parameters.
