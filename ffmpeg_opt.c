@@ -1203,7 +1203,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
                 av_log(NULL, AV_LOG_FATAL, "Invalid aspect ratio: %s\n", frame_aspect_ratio);
                 exit(1);
             }
-            ost->frame_aspect_ratio = av_q2d(q);
+            ost->frame_aspect_ratio = q;
         }
 
         video_enc->bits_per_raw_sample = frame_bits_per_raw_sample;

@@ -331,7 +331,7 @@ typedef struct OutputStream {
     int force_fps;
     int top_field_first;
 
-    float frame_aspect_ratio;
+    AVRational frame_aspect_ratio;
 
     /* forced key frames */
     int64_t *forced_kf_pts;
