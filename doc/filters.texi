@@ -3036,27 +3036,23 @@ edgedetect=low=0.1:high=0.4
 
 Apply fade-in/out effect to input video.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-@var{type}:@var{start_frame}:@var{nb_frames}.
-
-A description of the accepted parameters follows.
+This filter accepts the following options:
 
 @table @option
 @item type, t
-Specify if the effect type, can be either @code{in} for fade-in, or
-@code{out} for a fade-out effect. Default is @code{in}.
+The effect type -- can be either "in" for fade-in, or "out" for a fade-out
+effect.
+Default is @code{in}.
 
 @item start_frame, s
 Specify the number of the start frame for starting to apply the fade
 effect. Default is 0.
 
 @item nb_frames, n
-Specify the number of frames for which the fade effect has to last. At
-the end of the fade-in effect the output video will have the same
-intensity as the input video, at the end of the fade-out transition
-the output video will be completely black. Default is 25.
+The number of frames for which the fade effect has to last. At the end of the
+fade-in effect the output video will have the same intensity as the input video,
+at the end of the fade-out transition the output video will be completely black.
+Default is 25.
 
 @item alpha
 If set to 1, fade only alpha channel, if one exists on the input.
@@ -3081,6 +3077,7 @@ fade=t=in:s=0:n=30
 Fade out last 45 frames of a 200-frame video:
 @example
 fade=out:155:45
+fade=type=out:start_frame=155:nb_frames=45
 @end example
 
 @item
