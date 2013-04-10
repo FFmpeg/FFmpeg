@@ -38,6 +38,8 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
+
 #include "drawutils.h"
 
 static const char *const var_names[] = {
@@ -82,31 +84,15 @@ typedef struct {
     int x, y;               ///< offsets of the input area with respect to the padded area
     int in_w, in_h;         ///< width and height for the padded input video, which has to be aligned to the chroma values in order to avoid chroma issues
 
-    char *w_expr;       ///< width  expression string
-    char *h_expr;       ///< height expression string
-    char *x_expr;       ///< width  expression string
-    char *y_expr;       ///< height expression string
+    char *w_expr;           ///< width  expression string
+    char *h_expr;           ///< height expression string
+    char *x_expr;           ///< width  expression string
+    char *y_expr;           ///< height expression string
     char *color_str;
     uint8_t rgba_color[4];  ///< color for the padding area
     FFDrawContext draw;
     FFDrawColor color;
 } PadContext;
-
-#define OFFSET(x) offsetof(PadContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
-
-static const AVOption pad_options[] = {
-    { "width",  "set the pad area width expression",       OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "w",      "set the pad area width expression",       OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "height", "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "h",      "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "x",      "set the x offset expression for the input image position", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "y",      "set the y offset expression for the input image position", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "color",  "set the color of the padded area border", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = FLAGS },
-    {NULL}
-};
-
-AVFILTER_DEFINE_CLASS(pad);
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
@@ -382,6 +368,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(inlink->dst->outputs[0], out);
 }
 
+#define OFFSET(x) offsetof(PadContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+static const AVOption pad_options[] = {
+    { "width",  "set the pad area width expression",       OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "w",      "set the pad area width expression",       OFFSET(w_expr), AV_OPT_TYPE_STRING, {.str = "iw"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "height", "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "h",      "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "x",      "set the x offset expression for the input image position", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "y",      "set the y offset expression for the input image position", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "color",  "set the color of the padded area border", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(pad);
+
 static const AVFilterPad avfilter_vf_pad_inputs[] = {
     {
         .name             = "default",
@@ -402,19 +404,16 @@ static const AVFilterPad avfilter_vf_pad_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "width", "height", "x", "y", "color", NULL };
-
 AVFilter avfilter_vf_pad = {
     .name          = "pad",
     .description   = NULL_IF_CONFIG_SMALL("Pad input image to width:height[:x:y[:color]] (default x and y: 0, default color: black)."),
 
     .priv_size     = sizeof(PadContext),
+    .priv_class    = &pad_class,
     .init          = init,
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_pad_inputs,
 
     .outputs   = avfilter_vf_pad_outputs,
-    .priv_class = &pad_class,
-    .shorthand = shorthand,
 };

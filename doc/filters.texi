@@ -4469,14 +4469,7 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 Add paddings to the input image, and place the original input at the
 given coordinates @var{x}, @var{y}.
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
-If the key of the first options is omitted, the arguments are
-interpreted according to the syntax
-@var{width}:@var{height}:@var{x}:@var{y}:@var{color}.
-
-A description of the accepted options follows.
+This filter accepts the following parameters:
 
 @table @option
 @item width, w
