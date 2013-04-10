@@ -1117,6 +1117,8 @@ minimum detected noise duration.
 
 The printed times and duration are expressed in seconds.
 
+The filter accepts the following options:
+
 @table @option
 @item duration, d
 Set silence duration until notification (default is 2 seconds).
