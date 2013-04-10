@@ -5322,8 +5322,7 @@ To enable compilation of this filter you need to configure FFmpeg with
 libavformat to convert the passed subtitles file to ASS (Advanced Substation
 Alpha) subtitles format.
 
-This filter accepts the following named options, expressed as a
-sequence of @var{key}=@var{value} pairs, separated by ":".
+The filter accepts the following options:
 
 @table @option
 @item filename, f

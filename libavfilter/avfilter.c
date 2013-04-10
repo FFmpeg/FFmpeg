@@ -657,6 +657,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     int ret=0;
     int anton_options =
         !strcmp(filter->filter->name,  "aformat") ||
+        !strcmp(filter->filter->name,  "ass")     ||
         !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,  "boxblur"   ) ||
         !strcmp(filter->filter->name,  "colormatrix") ||
@@ -691,6 +692,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "resample") ||
         !strcmp(filter->filter->name, "showspectrum") ||
         !strcmp(filter->filter->name, "silencedetect") ||
+        !strcmp(filter->filter->name, "subtitles") ||
         !strcmp(filter->filter->name, "thumbnail") ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
         0
