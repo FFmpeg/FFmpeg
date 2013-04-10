@@ -4070,8 +4070,7 @@ noformat=yuv420p|yuv444p|yuv410p
 
 Add noise on video input frame.
 
-This filter accepts a list of options in the form of @var{key}=@var{value}
-pairs separated by ":". A description of the accepted options follows.
+The filter accepts the following options:
 
 @table @option
 @item all_seed

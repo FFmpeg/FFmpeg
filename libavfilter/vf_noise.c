@@ -462,8 +462,6 @@ static const AVFilterPad noise_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { NULL };
-
 AVFilter avfilter_vf_noise = {
     .name          = "noise",
     .description   = NULL_IF_CONFIG_SMALL("Add noise."),
@@ -474,5 +472,4 @@ AVFilter avfilter_vf_noise = {
     .inputs        = noise_inputs,
     .outputs       = noise_outputs,
     .priv_class    = &noise_class,
-    .shorthand     = shorthand,
 };
