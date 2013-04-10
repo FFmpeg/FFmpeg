@@ -623,6 +623,7 @@ static int process_unnamed_options(AVFilterContext *ctx, AVDictionary **options,
     const AVOption *o = NULL;
     const char *p = args;
     char *val;
+    int offset= -1;
 
     while (*p) {
         o = av_opt_next(ctx->priv, o);
@@ -631,8 +632,9 @@ static int process_unnamed_options(AVFilterContext *ctx, AVDictionary **options,
                    "this filter supports.\n");
             return AVERROR(EINVAL);
         }
-        if (o->type == AV_OPT_TYPE_CONST)
+        if (o->type == AV_OPT_TYPE_CONST || o->offset == offset)
             continue;
+        offset = o->offset;
 
         val = av_get_token(&p, ":");
         if (!val)
