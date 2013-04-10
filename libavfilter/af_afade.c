@@ -288,8 +288,6 @@ static const AVFilterPad avfilter_af_afade_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { NULL };
-
 AVFilter avfilter_af_afade = {
     .name          = "afade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input audio."),
@@ -299,5 +297,4 @@ AVFilter avfilter_af_afade = {
     .inputs        = avfilter_af_afade_inputs,
     .outputs       = avfilter_af_afade_outputs,
     .priv_class    = &afade_class,
-    .shorthand     = shorthand,
 };

@@ -610,9 +610,6 @@ Beware of clipping when using a positive gain.
 
 Apply fade-in/out effect to input audio.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
 A description of the accepted parameters follows.
 
 @table @option
