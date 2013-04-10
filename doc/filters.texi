@@ -3445,12 +3445,7 @@ viewed as an "automatically adjusting contrast filter". This filter is
 useful only for correcting degraded or poorly captured source
 video.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to syntax
-@var{strength}:@var{intensity}:@var{antibanding}.
-
-This filter accepts the following named options:
+The filter accepts the following options:
 
 @table @option
 @item strength

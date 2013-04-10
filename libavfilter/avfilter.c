@@ -679,6 +679,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "frei0r_src") ||
         !strcmp(filter->filter->name,  "geq"       ) ||
         !strcmp(filter->filter->name, "gradfun"    ) ||
+        !strcmp(filter->filter->name, "histeq"     ) ||
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
         !strcmp(filter->filter->name, "ocv"        ) ||
         !strcmp(filter->filter->name, "life"       ) ||
