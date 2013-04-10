@@ -2133,7 +2133,7 @@ testing purposes.
 
 @section crop
 
-Crop the input video.
+Crop the input video to given dimensions.
 
 This filter accepts a list of @var{key}=@var{value} pairs as argument,
 separated by ':'. If the key of the first options is omitted, the
@@ -2143,22 +2143,22 @@ arguments are interpreted according to the syntax
 A description of the accepted options follows:
 @table @option
 @item w, out_w
-Set the crop area width. It defaults to @code{iw}.
+Width of the output video. It defaults to @code{iw}.
 This expression is evaluated only once during the filter
 configuration.
 
 @item h, out_h
-Set the crop area height. It defaults to @code{ih}.
+Height of the output video. It defaults to @code{ih}.
 This expression is evaluated only once during the filter
 configuration.
 
 @item x
-Set the expression for the x top-left coordinate of the cropped area.
+Horizontal position, in the input video, of the left edge of the output video.
 It defaults to @code{(in_w-out_w)/2}.
 This expression is evaluated per-frame.
 
 @item y
-Set the expression for the y top-left coordinate of the cropped area.
+Vertical position, in the input video, of the top edge of the output video.
 It defaults to @code{(in_h-out_h)/2}.
 This expression is evaluated per-frame.
 
@@ -2251,6 +2251,7 @@ crop=2/3*in_w:2/3*in_h
 @item
 Crop the input video central square:
 @example
+crop=out_w=in_h
 crop=in_h
 @end example
 
