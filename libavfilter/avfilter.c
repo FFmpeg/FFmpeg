@@ -704,6 +704,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "subtitles") ||
         !strcmp(filter->filter->name, "thumbnail") ||
         !strcmp(filter->filter->name, "transpose") ||
+        !strcmp(filter->filter->name, "unsharp"  ) ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
         !strcmp(filter->filter->name, "select") ||
         0
