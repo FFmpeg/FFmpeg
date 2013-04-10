@@ -5392,10 +5392,7 @@ Swap U & V plane.
 @section thumbnail
 Select the most representative frame in a given sequence of consecutive frames.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-thumbnail[=@var{n}].
+The filter accepts the following options:
 
 @table @option
 @item n

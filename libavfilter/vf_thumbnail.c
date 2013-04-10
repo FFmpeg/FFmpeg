@@ -227,8 +227,6 @@ static const AVFilterPad thumbnail_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "n", NULL };
-
 AVFilter avfilter_vf_thumbnail = {
     .name          = "thumbnail",
     .description   = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
@@ -239,5 +237,4 @@ AVFilter avfilter_vf_thumbnail = {
     .inputs        = thumbnail_inputs,
     .outputs       = thumbnail_outputs,
     .priv_class    = &thumbnail_class,
-    .shorthand     = shorthand,
 };
