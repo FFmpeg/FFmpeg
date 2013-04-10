@@ -666,6 +666,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "drawtext"  ) ||
         !strcmp(filter->filter->name,  "fade"      ) ||
         !strcmp(filter->filter->name,  "fieldorder") ||
+        !strcmp(filter->filter->name,  "fps"       ) ||
         !strcmp(filter->filter->name,   "format") ||
         !strcmp(filter->filter->name, "noformat") ||
         !strcmp(filter->filter->name, "resample")

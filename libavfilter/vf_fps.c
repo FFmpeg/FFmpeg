@@ -273,8 +273,6 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "fps", "round", NULL };
-
 AVFilter avfilter_vf_fps = {
     .name        = "fps",
     .description = NULL_IF_CONFIG_SMALL("Force constant framerate"),
@@ -283,9 +281,8 @@ AVFilter avfilter_vf_fps = {
     .uninit    = uninit,
 
     .priv_size = sizeof(FPSContext),
+    .priv_class = &fps_class,
 
     .inputs    = avfilter_vf_fps_inputs,
     .outputs   = avfilter_vf_fps_outputs,
-    .priv_class = &fps_class,
-    .shorthand = shorthand,
 };
