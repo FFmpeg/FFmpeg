@@ -486,14 +486,7 @@ fail:
 static int init(AVFilterContext *ctx, const char *args)
 {
     MixContext *s = ctx->priv;
-    int i, ret;
-
-    s->class = &amix_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0)
-        return ret;
-    av_opt_free(s);
+    int i;
 
     for (i = 0; i < s->nb_inputs; i++) {
         char name[32];
@@ -556,6 +549,7 @@ AVFilter avfilter_af_amix = {
     .name          = "amix",
     .description   = NULL_IF_CONFIG_SMALL("Audio mixing."),
     .priv_size     = sizeof(MixContext),
+    .priv_class    = &amix_class,
 
     .init           = init,
     .uninit         = uninit,
@@ -563,5 +557,4 @@ AVFilter avfilter_af_amix = {
 
     .inputs    = NULL,
     .outputs   = avfilter_af_amix_outputs,
-    .priv_class = &amix_class,
 };
