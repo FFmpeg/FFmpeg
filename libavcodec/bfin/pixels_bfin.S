@@ -440,6 +440,7 @@ LE$8OT: DISALGNEXCPT                       || R2  =[I1++]   || [I3++M2] = R5;
         (r7:4) = [sp++];
         unlink;
         rts;
+DEFUN_END(put_pixels8_xy2_nornd)
 
 DEFUN(diff_pixels,mL1,
        (int16_t *block, uint8_t *s1, uint8_t *s2, int stride)):
@@ -467,7 +468,7 @@ DEFUN(diff_pixels,mL1,
         (r7:4) = [sp++];
         unlink;
         rts;
-DEFUN_END(put_pixels8_xy2_nornd)
+DEFUN_END(diff_pixels)
 
 /*
     for (i = 0; i < 16; i++) {
