@@ -420,8 +420,8 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
     if (discard)
         return 0;
 
-    pkt->pts = avs->curr_frame;
-    pkt->dts = avs->curr_frame;
+    pkt->pts = n;
+    pkt->dts = n;
     pkt->duration = 1;
 
     // Define the bpp values for the new AviSynth 2.6 colorspaces
@@ -516,8 +516,8 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
     if (discard)
         return 0;
 
-    pkt->pts = avs->curr_sample;
-    pkt->dts = avs->curr_sample;
+    pkt->pts = n;
+    pkt->dts = n;
     pkt->duration = samples;
 
     pkt->size = avs_bytes_per_channel_sample(avs->vi) * samples * avs->vi->nchannels;
