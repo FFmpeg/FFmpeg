@@ -7033,7 +7033,8 @@ do not have exactly the same duration in the first file.
 Convert input audio to a video output, representing the audio frequency
 spectrum.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
+
 @table @option
 @item size, s
 Specify the video size for the output. Default value is @code{640x512}.
