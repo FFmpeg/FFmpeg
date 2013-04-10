@@ -2452,11 +2452,6 @@ The main use of this filter is for very-low-bitrate encoding
 (e.g. streaming over dialup modem), but it could in theory be used for
 fixing movies that were inverse-telecined incorrectly.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax:
-@option{max}:@option{hi}:@option{lo}:@option{frac}.
-
 A description of the accepted options follows.
 
 @table @option

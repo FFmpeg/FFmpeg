@@ -664,6 +664,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "crop"      ) ||
         !strcmp(filter->filter->name,  "cropdetect") ||
         !strcmp(filter->filter->name,  "curves"    ) ||
+        !strcmp(filter->filter->name,  "decimate"  ) ||
         !strcmp(filter->filter->name,  "delogo"    ) ||
         !strcmp(filter->filter->name,  "drawbox"   ) ||
         !strcmp(filter->filter->name,  "drawtext"  ) ||
