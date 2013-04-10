@@ -380,9 +380,6 @@ static void do_audio_out(AVFormatContext *s, OutputStream *ost,
     pkt.data = NULL;
     pkt.size = 0;
 
-    if (!check_recording_time(ost))
-        return;
-
     if (frame->pts == AV_NOPTS_VALUE || audio_sync_method < 0)
         frame->pts = ost->sync_opts;
     ost->sync_opts = frame->pts + frame->nb_samples;
@@ -549,8 +546,7 @@ static void do_video_out(AVFormatContext *s,
     pkt.data = NULL;
     pkt.size = 0;
 
-    if (!check_recording_time(ost) ||
-        ost->frame_number >= ost->max_frames)
+    if (ost->frame_number >= ost->max_frames)
         return;
 
     if (s->oformat->flags & AVFMT_RAWPICTURE &&
