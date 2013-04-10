@@ -1511,9 +1511,9 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
                                        int mm_flags)
 {
+#if HAVE_YASM
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-#if HAVE_YASM
     if (!high_bit_depth) {
         c->put_pixels_tab[0][1] = ff_put_pixels16_x2_3dnow;
         c->put_pixels_tab[0][2] = ff_put_pixels16_y2_3dnow;
@@ -1551,9 +1551,9 @@ static av_cold void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
                                      int mm_flags)
 {
+#if HAVE_INLINE_ASM
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-#if HAVE_INLINE_ASM
     if (!high_bit_depth) {
         if (!(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)) {
             /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
