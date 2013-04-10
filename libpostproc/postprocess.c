@@ -666,7 +666,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     char temp[GET_MODE_BUFFER_SIZE];
     char *p= temp;
     static const char filterDelimiters[] = ",/";
-    static const char optionDelimiters[] = ":";
+    static const char optionDelimiters[] = ":|";
     struct PPMode *ppMode;
     char *filterToken;
 

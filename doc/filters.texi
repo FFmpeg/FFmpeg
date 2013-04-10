@@ -4605,6 +4605,13 @@ Subfilters must be separated by '/' and can be disabled by prepending a '-'.
 Each subfilter and some options have a short and a long name that can be used
 interchangeably, i.e. dr/dering are the same.
 
+The filters accept the following options:
+
+@table @option
+@item subfilters
+Set postprocessing subfilters string.
+@end table
+
 All subfilters share common options to determine their scope:
 
 @table @option
@@ -4621,12 +4628,12 @@ Do luminance filtering only (no chrominance).
 Do chrominance filtering only (no luminance).
 @end table
 
-These options can be appended after the subfilter name, separated by a ':'.
+These options can be appended after the subfilter name, separated by a '|'.
 
 Available subfilters are:
 
 @table @option
-@item hb/hdeblock[:difference[:flatness]]
+@item hb/hdeblock[|difference[|flatness]]
 Horizontal deblocking filter
 @table @option
 @item difference
@@ -4635,7 +4642,7 @@ Difference factor where higher values mean more deblocking (default: @code{32}).
 Flatness threshold where lower values mean more deblocking (default: @code{39}).
 @end table
 
-@item vb/vdeblock[:difference[:flatness]]
+@item vb/vdeblock[|difference[|flatness]]
 Vertical deblocking filter
 @table @option
 @item difference
@@ -4644,7 +4651,7 @@ Difference factor where higher values mean more deblocking (default: @code{32}).
 Flatness threshold where lower values mean more deblocking (default: @code{39}).
 @end table
 
-@item ha/hadeblock[:difference[:flatness]]
+@item ha/hadeblock[|difference[|flatness]]
 Accurate horizontal deblocking filter
 @table @option
 @item difference
@@ -4653,7 +4660,7 @@ Difference factor where higher values mean more deblocking (default: @code{32}).
 Flatness threshold where lower values mean more deblocking (default: @code{39}).
 @end table
 
-@item va/vadeblock[:difference[:flatness]]
+@item va/vadeblock[|difference[|flatness]]
 Accurate vertical deblocking filter
 @table @option
 @item difference
@@ -4677,7 +4684,7 @@ Experimental vertical deblocking filter
 @item dr/dering
 Deringing filter
 
-@item tn/tmpnoise[:threshold1[:threshold2[:threshold3]]], temporal noise reducer
+@item tn/tmpnoise[|threshold1[|threshold2[|threshold3]]], temporal noise reducer
 @table @option
 @item threshold1
 larger -> stronger filtering
@@ -4717,7 +4724,7 @@ second line with a @code{(-1 4 2 4 -1)} filter.
 Vertically applied FIR lowpass deinterlacing filter that deinterlaces the given
 block by filtering all lines with a @code{(-1 2 6 2 -1)} filter.
 
-@item fq/forceQuant[:quantizer]
+@item fq/forceQuant[|quantizer]
 Overrides the quantizer table from the input with the constant quantizer you
 specify.
 @table @option
@@ -4726,13 +4733,13 @@ Quantizer to use
 @end table
 
 @item de/default
-Default pp filter combination (@code{hb:a,vb:a,dr:a})
+Default pp filter combination (@code{hb|a,vb|a,dr|a})
 
 @item fa/fast
-Fast pp filter combination (@code{h1:a,v1:a,dr:a})
+Fast pp filter combination (@code{h1|a,v1|a,dr|a})
 
 @item ac
-High quality pp filter combination (@code{ha:a:128:7,va:a,dr:a})
+High quality pp filter combination (@code{ha|a|128|7,va|a,dr|a})
 @end table
 
 @subsection Examples
@@ -4754,14 +4761,14 @@ pp=de/-al
 @item
 Apply default filters and temporal denoiser:
 @example
-pp=default/tmpnoise:1:2:3
+pp=default/tmpnoise|1|2|3
 @end example
 
 @item
 Apply deblocking on luminance only, and switch vertical deblocking on or off
 automatically depending on available CPU time:
 @example
-pp=hb:y/vb:a
+pp=hb|y/vb|a
 @end example
 @end itemize
 

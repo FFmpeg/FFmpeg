@@ -31,21 +31,29 @@
 #include "libpostproc/postprocess.h"
 
 typedef struct {
+    const AVClass *class;
+    char *subfilters;
     int mode_id;
     pp_mode *modes[PP_QUALITY_MAX + 1];
     void *pp_ctx;
 } PPFilterContext;
+
+#define OFFSET(x) offsetof(PPFilterContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption pp_options[] = {
+    { "subfilters", "set postprocess subfilters", OFFSET(subfilters), AV_OPT_TYPE_STRING, {.str="de"}, .flags = FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(pp);
 
 static av_cold int pp_init(AVFilterContext *ctx, const char *args)
 {
     int i;
     PPFilterContext *pp = ctx->priv;
 
-    if (!args || !*args)
-        args = "de";
-
     for (i = 0; i <= PP_QUALITY_MAX; i++) {
-        pp->modes[i] = pp_get_mode_by_name_and_quality(args, i);
+        pp->modes[i] = pp_get_mode_by_name_and_quality(pp->subfilters, i);
         if (!pp->modes[i])
             return AVERROR_EXTERNAL;
     }
@@ -171,4 +179,6 @@ AVFilter avfilter_vf_pp = {
     .inputs          = pp_inputs,
     .outputs         = pp_outputs,
     .process_command = pp_process_command,
+    .priv_class      = &pp_class,
+
 };
