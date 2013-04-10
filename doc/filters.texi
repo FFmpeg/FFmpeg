@@ -689,13 +689,13 @@ The filter accepts the following named parameters:
 @table @option
 
 @item sample_fmts
-A comma-separated list of requested sample formats.
+A '|'-separated list of requested sample formats.
 
 @item sample_rates
-A comma-separated list of requested sample rates.
+A '|'-separated list of requested sample rates.
 
 @item channel_layouts
-A comma-separated list of requested channel layouts.
+A '|'-separated list of requested channel layouts.
 
 @end table
 
@@ -703,7 +703,7 @@ If a parameter is omitted, all values are allowed.
 
 For example to force the output to either unsigned 8-bit or signed 16-bit stereo:
 @example
-aformat='sample_fmts=u8,s16:channel_layouts=stereo'
+aformat=sample_fmts=u8|s16:channel_layouts=stereo
 @end example
 
 @section amerge
@@ -3173,8 +3173,14 @@ Convert the input video to one of the specified pixel formats.
 Libavfilter will try to pick one that is supported for the input to
 the next filter.
 
-The filter accepts a list of pixel format names, separated by ":",
-for example "yuv420p:monow:rgb24".
+This filter accepts the following parameters:
+@table @option
+
+@item pix_fmts
+A '|'-separated list of pixel format names, for example
+"pix_fmts=yuv420p|monow|rgb24".
+
+@end table
 
 @subsection Examples
 
@@ -3182,12 +3188,12 @@ for example "yuv420p:monow:rgb24".
 @item
 Convert the input video to the format @var{yuv420p}
 @example
-format=yuv420p
+format=pix_fmts=yuv420p
 @end example
 
 Convert the input video to any of the formats in the list
 @example
-format=yuv420p:yuv444p:yuv410p
+format=pix_fmts=yuv420p|yuv444p|yuv410p
 @end example
 @end itemize
 
@@ -4072,8 +4078,14 @@ alpha component (if available). The default value in input is 0.
 Force libavfilter not to use any of the specified pixel formats for the
 input to the next filter.
 
-The filter accepts a list of pixel format names, separated by ":",
-for example "yuv420p:monow:rgb24".
+This filter accepts the following parameters:
+@table @option
+
+@item pix_fmts
+A '|'-separated list of pixel format names, for example
+"pix_fmts=yuv420p|monow|rgb24".
+
+@end table
 
 @subsection Examples
 
@@ -4082,13 +4094,13 @@ for example "yuv420p:monow:rgb24".
 Force libavfilter to use a format different from @var{yuv420p} for the
 input to the vflip filter:
 @example
-noformat=yuv420p,vflip
+noformat=pix_fmts=yuv420p,vflip
 @end example
 
 @item
 Convert the input video to any of the formats not contained in the list:
 @example
-noformat=yuv420p:yuv444p:yuv410p
+noformat=yuv420p|yuv444p|yuv410p
 @end example
 @end itemize
 
