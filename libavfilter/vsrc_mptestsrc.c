@@ -262,12 +262,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     int64_t duration = -1;
     int ret;
 
-    test->class = &mptestsrc_class;
-    av_opt_set_defaults(test);
-
-    if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0)
-        return ret;
-
     if ((test->duration) && (ret = av_parse_time(&duration, test->duration, 1)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", test->duration);
         return ret;

@@ -660,6 +660,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "ass")     ||
         !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,  "boxblur"   ) ||
+        !strcmp(filter->filter->name,  "cellauto") ||
         !strcmp(filter->filter->name,  "colormatrix") ||
         !strcmp(filter->filter->name,  "crop"      ) ||
         !strcmp(filter->filter->name,  "cropdetect") ||
@@ -680,9 +681,12 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "gradfun"    ) ||
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
         !strcmp(filter->filter->name, "ocv"        ) ||
+        !strcmp(filter->filter->name, "life"       ) ||
         !strcmp(filter->filter->name, "lut"        ) ||
         !strcmp(filter->filter->name, "lutyuv"     ) ||
         !strcmp(filter->filter->name, "lutrgb"     ) ||
+        !strcmp(filter->filter->name, "mandelbrot" ) ||
+        !strcmp(filter->filter->name, "mptestsrc"  ) ||
         !strcmp(filter->filter->name, "negate"     ) ||
         !strcmp(filter->filter->name, "overlay"    ) ||
         !strcmp(filter->filter->name, "pad"        ) ||
