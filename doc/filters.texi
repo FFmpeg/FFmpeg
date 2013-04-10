@@ -1904,8 +1904,7 @@ It takes two input streams and outputs one stream, the first input is the
 "top" layer and second input is "bottom" layer.
 Output terminates when shortest input terminates.
 
-This filter accepts a list of options in the form of @var{key}=@var{value}
-pairs separated by ":". A description of the accepted options follows.
+A description of the accepted options follows.
 
 @table @option
 @item c0_mode
