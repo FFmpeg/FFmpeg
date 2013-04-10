@@ -5540,17 +5540,15 @@ Vertical low-pass filtering can only be enabled for @option{mode}
 
 Transpose rows with columns in the input video and optionally flip it.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ':'. If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-@var{dir}:@var{passthrough}.
+This filter accepts the following options:
 
 @table @option
+
 @item dir
-Specify the transposition direction. Can assume the following values:
+The direction of the transpose.
 
 @table @samp
-@item 0, 4
+@item 0, 4, cclock_flip
 Rotate by 90 degrees counterclockwise and vertically flip (default), that is:
 @example
 L.R     L.l
@@ -5558,7 +5556,7 @@ L.R     L.l
 l.r     R.r
 @end example
 
-@item 1, 5
+@item 1, 5, clock
 Rotate by 90 degrees clockwise, that is:
 @example
 L.R     l.L
@@ -5566,7 +5564,7 @@ L.R     l.L
 l.r     r.R
 @end example
 
-@item 2, 6
+@item 2, 6, cclock
 Rotate by 90 degrees counterclockwise, that is:
 @example
 L.R     R.r
@@ -5574,7 +5572,7 @@ L.R     R.r
 l.r     L.l
 @end example
 
-@item 3, 7
+@item 3, 7, clock_flip
 Rotate by 90 degrees clockwise and vertically flip, that is:
 @example
 L.R     r.R

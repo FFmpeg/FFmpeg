@@ -32,6 +32,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -43,35 +44,21 @@ typedef enum {
     TRANSPOSE_PT_TYPE_PORTRAIT,
 } PassthroughType;
 
+enum TransposeDir {
+    TRANSPOSE_CCLOCK_FLIP,
+    TRANSPOSE_CLOCK,
+    TRANSPOSE_CCLOCK,
+    TRANSPOSE_CLOCK_FLIP,
+};
+
 typedef struct {
     const AVClass *class;
     int hsub, vsub;
     int pixsteps[4];
 
-    /* 0    Rotate by 90 degrees counterclockwise and vflip. */
-    /* 1    Rotate by 90 degrees clockwise.                  */
-    /* 2    Rotate by 90 degrees counterclockwise.           */
-    /* 3    Rotate by 90 degrees clockwise and vflip.        */
-    int dir;
     PassthroughType passthrough; ///< landscape passthrough mode enabled
+    enum TransposeDir dir;
 } TransContext;
-
-#define OFFSET(x) offsetof(TransContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
-
-static const AVOption transpose_options[] = {
-    { "dir", "set transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, {.i64=0},  0, 7, FLAGS },
-
-    { "passthrough", "do not apply transposition if the input matches the specified geometry",
-      OFFSET(passthrough), AV_OPT_TYPE_INT, {.i64=TRANSPOSE_PT_TYPE_NONE},  0, INT_MAX, FLAGS, "passthrough" },
-    { "none",      "always apply transposition",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_NONE},      INT_MIN, INT_MAX, FLAGS, "passthrough" },
-    { "portrait",  "preserve portrait geometry",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_PORTRAIT},  INT_MIN, INT_MAX, FLAGS, "passthrough" },
-    { "landscape", "preserve landscape geometry",  0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_LANDSCAPE}, INT_MIN, INT_MAX, FLAGS, "passthrough" },
-
-    { NULL },
-};
-
-AVFILTER_DEFINE_CLASS(transpose);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -236,6 +223,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(TransContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+
+static const AVOption transpose_options[] = {
+    { "dir", "Transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, { .i64 = TRANSPOSE_CCLOCK_FLIP },
+        TRANSPOSE_CCLOCK_FLIP, TRANSPOSE_CLOCK_FLIP, FLAGS, "dir" },
+        { "cclock_flip", "counter-clockwise with vertical flip", 0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK_FLIP }, .unit = "dir" },
+        { "clock",       "clockwise",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .unit = "dir" },
+        { "cclock",      "counter-clockwise",                    0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .unit = "dir" },
+        { "clock_flip",  "clockwise with vertical flip",         0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .unit = "dir" },
+
+    { "passthrough", "do not apply transposition if the input matches the specified geometry",
+      OFFSET(passthrough), AV_OPT_TYPE_INT, {.i64=TRANSPOSE_PT_TYPE_NONE},  0, INT_MAX, FLAGS, "passthrough" },
+    { "none",      "always apply transposition",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_NONE},      INT_MIN, INT_MAX, FLAGS, "passthrough" },
+    { "portrait",  "preserve portrait geometry",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_PORTRAIT},  INT_MIN, INT_MAX, FLAGS, "passthrough" },
+    { "landscape", "preserve landscape geometry",  0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_LANDSCAPE}, INT_MIN, INT_MAX, FLAGS, "passthrough" },
+
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(transpose);
+
 static const AVFilterPad avfilter_vf_transpose_inputs[] = {
     {
         .name        = "default",
@@ -255,18 +264,15 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "dir", "passthrough", NULL };
-
 AVFilter avfilter_vf_transpose = {
     .name      = "transpose",
     .description = NULL_IF_CONFIG_SMALL("Transpose input video."),
 
     .priv_size = sizeof(TransContext),
+    .priv_class = &transpose_class,
 
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_transpose_inputs,
     .outputs   = avfilter_vf_transpose_outputs,
-    .priv_class = &transpose_class,
-    .shorthand = shorthand,
 };
