@@ -431,6 +431,12 @@ typedef struct AVFilter {
     const AVFilterPad *inputs;  ///< NULL terminated list of inputs. NULL if none
     const AVFilterPad *outputs; ///< NULL terminated list of outputs. NULL if none
 
+    /**
+     * A class for the private data, used to access filter private
+     * AVOptions.
+     */
+    const AVClass *priv_class;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavfilter and can be changed and
@@ -484,8 +490,6 @@ typedef struct AVFilter {
      * used for providing binary data.
      */
     int (*init_opaque)(AVFilterContext *ctx, const char *args, void *opaque);
-
-    const AVClass *priv_class;      ///< private class, containing filter specific options
 
     /**
      * Shorthand syntax for init arguments.

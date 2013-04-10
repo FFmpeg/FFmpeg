@@ -130,8 +130,25 @@ The name of the filter class is optionally followed by a string
 "=@var{arguments}".
 
 @var{arguments} is a string which contains the parameters used to
-initialize the filter instance, and are described in the filter
-descriptions below.
+initialize the filter instance. It may have one of the two allowed forms:
+@itemize
+
+@item
+A ':'-separated list of @var{key=value} pairs.
+
+@item
+A ':'-separated list of @var{value}. In this case, the keys are assumed to be
+the option names in the order they are declared. E.g. the @code{fade} filter
+declares three options in this order -- @option{type}, @option{start_frame} and
+@option{nb_frames}. Then the parameter list @var{in:0:30} means that the value
+@var{in} is assigned to the option @option{type}, @var{0} to
+@option{start_frame} and @var{30} to @option{nb_frames}.
+
+@end itemize
+
+If the option value itself is a list of items (e.g. the @code{format} filter
+takes a list of pixel formats), the items in the list are usually separated by
+'|'.
 
 The list of arguments can be quoted using the character "'" as initial
 and ending mark, and the character '\' for escaping the characters
