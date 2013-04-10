@@ -2454,6 +2454,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     if ((ret = avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET)) < 0)
         return ret;
     ff_update_cur_dts(s, st, sample_time);
+    mxf->current_edit_unit = sample_time;
     } else {
         t = &mxf->index_tables[0];
 
