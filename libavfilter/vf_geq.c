@@ -228,8 +228,6 @@ static const AVFilterPad geq_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "lum_expr", "cb_expr", "cr_expr", "alpha_expr", NULL };
-
 AVFilter avfilter_vf_geq = {
     .name          = "geq",
     .description   = NULL_IF_CONFIG_SMALL("Apply generic equation to each pixel."),
@@ -240,5 +238,4 @@ AVFilter avfilter_vf_geq = {
     .inputs        = geq_inputs,
     .outputs       = geq_outputs,
     .priv_class    = &geq_class,
-    .shorthand     = shorthand,
 };

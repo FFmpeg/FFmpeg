@@ -201,8 +201,6 @@ static const AVFilterPad ass_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "filename", NULL };
-
 #if CONFIG_ASS_FILTER
 
 static const AVOption ass_options[] = {
@@ -240,7 +238,6 @@ AVFilter avfilter_vf_ass = {
     .inputs        = ass_inputs,
     .outputs       = ass_outputs,
     .priv_class    = &ass_class,
-    .shorthand     = shorthand,
 };
 #endif
 
@@ -365,6 +362,5 @@ AVFilter avfilter_vf_subtitles = {
     .inputs        = ass_inputs,
     .outputs       = ass_outputs,
     .priv_class    = &subtitles_class,
-    .shorthand     = shorthand,
 };
 #endif

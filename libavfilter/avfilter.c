@@ -657,18 +657,24 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     int ret=0;
     int anton_options =
         !strcmp(filter->filter->name,  "aformat") ||
+        !strcmp(filter->filter->name,  "ass")     ||
         !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,  "boxblur"   ) ||
+        !strcmp(filter->filter->name,  "colormatrix") ||
         !strcmp(filter->filter->name,  "crop"      ) ||
         !strcmp(filter->filter->name,  "cropdetect") ||
+        !strcmp(filter->filter->name,  "curves"    ) ||
         !strcmp(filter->filter->name,  "delogo"    ) ||
         !strcmp(filter->filter->name,  "drawbox"   ) ||
         !strcmp(filter->filter->name,  "drawtext"  ) ||
+        !strcmp(filter->filter->name,  "ebur128"   ) ||
+        !strcmp(filter->filter->name,  "edgedetect") ||
         !strcmp(filter->filter->name,  "fade"      ) ||
         !strcmp(filter->filter->name,  "fieldorder") ||
         !strcmp(filter->filter->name,  "fps"       ) ||
         !strcmp(filter->filter->name,  "frei0r"    ) ||
         !strcmp(filter->filter->name,  "frei0r_src") ||
+        !strcmp(filter->filter->name,  "geq"       ) ||
         !strcmp(filter->filter->name, "gradfun"    ) ||
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
         !strcmp(filter->filter->name, "ocv"        ) ||
@@ -680,7 +686,14 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "pad"        ) ||
         !strcmp(filter->filter->name,   "format") ||
         !strcmp(filter->filter->name, "noformat") ||
+        !strcmp(filter->filter->name, "perms")  ||
+        !strcmp(filter->filter->name, "pp"   )  ||
+        !strcmp(filter->filter->name, "aperms") ||
         !strcmp(filter->filter->name, "resample") ||
+        !strcmp(filter->filter->name, "showspectrum") ||
+        !strcmp(filter->filter->name, "silencedetect") ||
+        !strcmp(filter->filter->name, "subtitles") ||
+        !strcmp(filter->filter->name, "thumbnail") ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
         !strcmp(filter->filter->name, "select") ||
         0

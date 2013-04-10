@@ -1117,6 +1117,8 @@ minimum detected noise duration.
 
 The printed times and duration are expressed in seconds.
 
+The filter accepts the following options:
+
 @table @option
 @item duration, d
 Set silence duration until notification (default is 2 seconds).
@@ -2100,12 +2102,8 @@ boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chrom
 
 Convert color matrix.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-@var{src}:@var{dst}.
+The filter accepts the following options:
 
-A description of the accepted options follows:
 @table @option
 @item src
 @item dst
@@ -2371,30 +2369,15 @@ If there is no key point defined in @code{x=0}, the filter will automatically
 insert a @var{(0;0)} point. In the same way, if there is no key point defined
 in @code{x=1}, the filter will automatically insert a @var{(1;1)} point.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-curves[=@var{preset}].
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
-@item red, r
-Set the key points for the red component.
-@item green, g
-Set the key points for the green component.
-@item blue, b
-Set the key points for the blue component.
-@item all
-Set the key points for all components.
-Can be used in addition to the other key points component
-options. In this case, the unset component(s) will fallback on this
-@option{all} setting.
 @item preset
 Select one of the available color presets. This option can not be used in
 addition to the @option{r}, @option{g}, @option{b} parameters.
 Available presets are:
 @table @samp
+@item none
 @item color_negative
 @item cross_process
 @item darker
@@ -2406,7 +2389,18 @@ Available presets are:
 @item strong_contrast
 @item vintage
 @end table
-Default is unset.
+Default is @code{none}.
+@item red, r
+Set the key points for the red component.
+@item green, g
+Set the key points for the green component.
+@item blue, b
+Set the key points for the blue component.
+@item all
+Set the key points for all components.
+Can be used in addition to the other key points component
+options. In this case, the unset component(s) will fallback on this
+@option{all} setting.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
@@ -3014,7 +3008,7 @@ For more information about fontconfig, check:
 
 Detect and draw edges. The filter uses the Canny Edge Detection algorithm.
 
-This filter accepts the following optional named parameters:
+The filter accepts the following options:
 
 @table @option
 @item low, high
@@ -3308,11 +3302,7 @@ For more information see:
 
 @section geq
 
-The filter takes one, two, three or four equations as parameter, separated by ':'.
-The first equation is mandatory and applies to the luma plane. The two
-following are respectively for chroma blue and chroma red planes.
-
-The filter syntax allows named parameters:
+The filter accepts the following options:
 
 @table @option
 @item lum_expr
@@ -4615,6 +4605,13 @@ Subfilters must be separated by '/' and can be disabled by prepending a '-'.
 Each subfilter and some options have a short and a long name that can be used
 interchangeably, i.e. dr/dering are the same.
 
+The filters accept the following options:
+
+@table @option
+@item subfilters
+Set postprocessing subfilters string.
+@end table
+
 All subfilters share common options to determine their scope:
 
 @table @option
@@ -4631,12 +4628,12 @@ Do luminance filtering only (no chrominance).
 Do chrominance filtering only (no luminance).
 @end table
 
-These options can be appended after the subfilter name, separated by a ':'.
+These options can be appended after the subfilter name, separated by a '|'.
 
 Available subfilters are:
 
 @table @option
-@item hb/hdeblock[:difference[:flatness]]
+@item hb/hdeblock[|difference[|flatness]]
 Horizontal deblocking filter
 @table @option
 @item difference
@@ -4645,7 +4642,7 @@ Difference factor where higher values mean more deblocking (default: @code{32}).
 Flatness threshold where lower values mean more deblocking (default: @code{39}).
 @end table
 
-@item vb/vdeblock[:difference[:flatness]]
+@item vb/vdeblock[|difference[|flatness]]
 Vertical deblocking filter
 @table @option
 @item difference
@@ -4654,7 +4651,7 @@ Difference factor where higher values mean more deblocking (default: @code{32}).
 Flatness threshold where lower values mean more deblocking (default: @code{39}).
 @end table
 
-@item ha/hadeblock[:difference[:flatness]]
+@item ha/hadeblock[|difference[|flatness]]
 Accurate horizontal deblocking filter
 @table @option
 @item difference
@@ -4663,7 +4660,7 @@ Difference factor where higher values mean more deblocking (default: @code{32}).
 Flatness threshold where lower values mean more deblocking (default: @code{39}).
 @end table
 
-@item va/vadeblock[:difference[:flatness]]
+@item va/vadeblock[|difference[|flatness]]
 Accurate vertical deblocking filter
 @table @option
 @item difference
@@ -4687,7 +4684,7 @@ Experimental vertical deblocking filter
 @item dr/dering
 Deringing filter
 
-@item tn/tmpnoise[:threshold1[:threshold2[:threshold3]]], temporal noise reducer
+@item tn/tmpnoise[|threshold1[|threshold2[|threshold3]]], temporal noise reducer
 @table @option
 @item threshold1
 larger -> stronger filtering
@@ -4727,7 +4724,7 @@ second line with a @code{(-1 4 2 4 -1)} filter.
 Vertically applied FIR lowpass deinterlacing filter that deinterlaces the given
 block by filtering all lines with a @code{(-1 2 6 2 -1)} filter.
 
-@item fq/forceQuant[:quantizer]
+@item fq/forceQuant[|quantizer]
 Overrides the quantizer table from the input with the constant quantizer you
 specify.
 @table @option
@@ -4736,13 +4733,13 @@ Quantizer to use
 @end table
 
 @item de/default
-Default pp filter combination (@code{hb:a,vb:a,dr:a})
+Default pp filter combination (@code{hb|a,vb|a,dr|a})
 
 @item fa/fast
-Fast pp filter combination (@code{h1:a,v1:a,dr:a})
+Fast pp filter combination (@code{h1|a,v1|a,dr|a})
 
 @item ac
-High quality pp filter combination (@code{ha:a:128:7,va:a,dr:a})
+High quality pp filter combination (@code{ha|a|128|7,va|a,dr|a})
 @end table
 
 @subsection Examples
@@ -4764,14 +4761,14 @@ pp=de/-al
 @item
 Apply default filters and temporal denoiser:
 @example
-pp=default/tmpnoise:1:2:3
+pp=default/tmpnoise|1|2|3
 @end example
 
 @item
 Apply deblocking on luminance only, and switch vertical deblocking on or off
 automatically depending on available CPU time:
 @example
-pp=hb:y/vb:a
+pp=hb|y/vb|a
 @end example
 @end itemize
 
@@ -5325,8 +5322,7 @@ To enable compilation of this filter you need to configure FFmpeg with
 libavformat to convert the passed subtitles file to ASS (Advanced Substation
 Alpha) subtitles format.
 
-This filter accepts the following named options, expressed as a
-sequence of @var{key}=@var{value} pairs, separated by ":".
+The filter accepts the following options:
 
 @table @option
 @item filename, f
@@ -5392,10 +5388,7 @@ Swap U & V plane.
 @section thumbnail
 Select the most representative frame in a given sequence of consecutive frames.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-thumbnail[=@var{n}].
+The filter accepts the following options:
 
 @table @option
 @item n
@@ -6345,11 +6338,7 @@ Set read/write permissions for the output frames.
 These filters are mainly aimed at developers to test direct path in the
 following filter in the filtergraph.
 
-The filters accept parameters as a list of @var{key}=@var{value} pairs,
-separated by ":". If the key of the first options is omitted, the argument is
-assumed to be the @var{mode}.
-
-A description of the accepted parameters follows.
+The filters accept the following options:
 
 @table @option
 @item mode
@@ -6848,7 +6837,7 @@ the momentary loudness (400 milliseconds).
 More information about the Loudness Recommendation EBU R128 on
 @url{http://tech.ebu.ch/loudness}.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
 
 @table @option
 
@@ -7036,7 +7025,8 @@ do not have exactly the same duration in the first file.
 Convert input audio to a video output, representing the audio frequency
 spectrum.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
+
 @table @option
 @item size, s
 Specify the video size for the output. Default value is @code{640x512}.

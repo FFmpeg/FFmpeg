@@ -54,22 +54,6 @@ static const AVOption silencedetect_options[] = {
 
 AVFILTER_DEFINE_CLASS(silencedetect);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    int ret;
-    SilenceDetectContext *silence = ctx->priv;
-
-    silence->class = &silencedetect_class;
-    av_opt_set_defaults(silence);
-
-    if ((ret = av_set_options_string(silence, args, "=", ":")) < 0)
-        return ret;
-
-    av_opt_free(silence);
-
-    return 0;
-}
-
 static char *get_metadata_val(AVFrame *insamples, const char *key)
 {
     AVDictionaryEntry *e = av_dict_get(insamples->metadata, key, NULL, 0);
@@ -176,7 +160,6 @@ AVFilter avfilter_af_silencedetect = {
     .name          = "silencedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect silence."),
     .priv_size     = sizeof(SilenceDetectContext),
-    .init          = init,
     .query_formats = query_formats,
     .inputs        = silencedetect_inputs,
     .outputs       = silencedetect_outputs,
