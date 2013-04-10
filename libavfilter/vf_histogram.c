@@ -311,8 +311,6 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { NULL };
-
 AVFilter avfilter_vf_histogram = {
     .name          = "histogram",
     .description   = NULL_IF_CONFIG_SMALL("Compute and draw a histogram."),
@@ -321,5 +319,4 @@ AVFilter avfilter_vf_histogram = {
     .inputs        = inputs,
     .outputs       = outputs,
     .priv_class    = &histogram_class,
-    .shorthand     = shorthand,
 };

@@ -3474,7 +3474,7 @@ Compute and draw a color distribution histogram for the input video.
 The computed histogram is a representation of distribution of color components
 in an image.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
 
 @table @option
 @item mode
