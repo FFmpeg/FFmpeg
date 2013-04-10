@@ -204,8 +204,6 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { NULL };
-
 AVFilter avfilter_vf_il = {
     .name          = "il",
     .description   = NULL_IF_CONFIG_SMALL("Deinterleave or interleave fields."),
@@ -214,5 +212,4 @@ AVFilter avfilter_vf_il = {
     .inputs        = inputs,
     .outputs       = outputs,
     .priv_class    = &il_class,
-    .shorthand     = shorthand,
 };

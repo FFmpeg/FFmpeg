@@ -305,7 +305,6 @@ static const AVFilterPad kerndeint_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "thresh", "map", "order", "sharp", "twoway", NULL };
 
 AVFilter avfilter_vf_kerndeint = {
     .name          = "kerndeint",
@@ -318,5 +317,4 @@ AVFilter avfilter_vf_kerndeint = {
     .outputs       = kerndeint_outputs,
 
     .priv_class    = &kerndeint_class,
-    .shorthand     = shorthand,
 };
