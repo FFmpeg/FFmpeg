@@ -893,8 +893,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
     if (ctx->data_size == 16)
         return 4;
-    if (ctx->data_size > buf_size)
-        ctx->data_size = buf_size;
+    ctx->data_size = FFMIN(ctx->data_size, buf_size - 16);
 
     bytestream2_skip(&gb, 3); // skip reserved byte and checksum
 
