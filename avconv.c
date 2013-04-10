@@ -681,11 +681,6 @@ static int poll_filter(OutputStream *ost)
                               av_rescale_q(of->start_time,
                                            AV_TIME_BASE_Q,
                                            ost->st->codec->time_base);
-
-        if (of->start_time && filtered_frame->pts < 0) {
-            av_frame_unref(filtered_frame);
-            return 0;
-        }
     }
 
     switch (ost->filter->filter->inputs[0]->type) {
