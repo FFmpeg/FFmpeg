@@ -60,7 +60,7 @@ typedef struct {
 #define OFFSET(x) offsetof(SetTBContext, x)
 #define DEFINE_OPTIONS(filt_name, filt_type)                                               \
 static const AVOption filt_name##_options[] = {                                            \
-    { "tb", "set timebase expression", OFFSET(tb_expr), AV_OPT_TYPE_STRING, {.str="intb"}, \
+    { "tb", "Expression determining the output timebase", OFFSET(tb_expr), AV_OPT_TYPE_STRING, {.str="intb"}, \
            .flags=AV_OPT_FLAG_##filt_type##_PARAM|AV_OPT_FLAG_FILTERING_PARAM },           \
     { NULL }                                                                               \
 }
@@ -149,11 +149,10 @@ AVFilter avfilter_vf_settb = {
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the video output link."),
 
     .priv_size = sizeof(SetTBContext),
+    .priv_class = &settb_class,
 
     .inputs    = avfilter_vf_settb_inputs,
     .outputs   = avfilter_vf_settb_outputs,
-    .priv_class = &settb_class,
-    .shorthand  = shorthand,
 };
 #endif
 
