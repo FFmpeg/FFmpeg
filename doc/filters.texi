@@ -3112,17 +3112,6 @@ Specify whether to extract the top (if the value is @code{0} or
 @code{bottom}).
 @end table
 
-If the option key is not specified, the first value sets the @var{type}
-option. For example:
-@example
-field=bottom
-@end example
-
-is equivalent to:
-@example
-field=type=bottom
-@end example
-
 @section fieldorder
 
 Transform the field order of the input video.

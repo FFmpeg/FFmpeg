@@ -117,5 +117,4 @@ AVFilter avfilter_vf_field = {
     .inputs        = field_inputs,
     .outputs       = field_outputs,
     .priv_class    = &field_class,
-    .shorthand     = shorthand,
 };
