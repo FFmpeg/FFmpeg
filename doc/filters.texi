@@ -6845,7 +6845,7 @@ the momentary loudness (400 milliseconds).
 More information about the Loudness Recommendation EBU R128 on
 @url{http://tech.ebu.ch/loudness}.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
 
 @table @option
 

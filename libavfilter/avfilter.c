@@ -664,6 +664,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "delogo"    ) ||
         !strcmp(filter->filter->name,  "drawbox"   ) ||
         !strcmp(filter->filter->name,  "drawtext"  ) ||
+        !strcmp(filter->filter->name,  "ebur128"   ) ||
         !strcmp(filter->filter->name,  "fade"      ) ||
         !strcmp(filter->filter->name,  "fieldorder") ||
         !strcmp(filter->filter->name,  "fps"       ) ||
