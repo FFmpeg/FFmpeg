@@ -1,26 +1,26 @@
 FATE_VP3-$(call DEMDEC, MATROSKA, THEORA) += fate-theora-coeff-level64
-fate-theora-coeff-level64: CMD = framecrc -i $(SAMPLES)/vp3/coeff_level64.mkv
+fate-theora-coeff-level64: CMD = framecrc -flags +bitexact -i $(SAMPLES)/vp3/coeff_level64.mkv
 
 FATE_VP3-$(call DEMDEC, AVI, VP3) += fate-vp31
-fate-vp31: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
+fate-vp31: CMD = framecrc -flags +bitexact -i $(SAMPLES)/vp3/vp31.avi
 
 FATE_SAMPLES_AVCONV += $(FATE_VP3-yes)
 fate-vp3: $(FATE_VP3-yes)
 
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP5) += fate-vp5
-fate-vp5: CMD = framecrc -i $(SAMPLES)/vp5/potter512-400-partial.avi -an
+fate-vp5: CMD = framecrc -flags +bitexact -i $(SAMPLES)/vp5/potter512-400-partial.avi -an
 
 FATE_VP6-$(call DEMDEC, EA, VP6) += fate-vp60
-fate-vp60: CMD = framecrc -i $(SAMPLES)/ea-vp6/g36.vp6
+fate-vp60: CMD = framecrc -flags +bitexact -i $(SAMPLES)/ea-vp6/g36.vp6
 
 FATE_VP6-$(call DEMDEC, EA, VP6) += fate-vp61
-fate-vp61: CMD = framecrc -i $(SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
+fate-vp61: CMD = framecrc -flags +bitexact -i $(SAMPLES)/ea-vp6/MovieSkirmishGondor.vp6 -t 4
 
 FATE_VP6-$(call DEMDEC, FLV, VP6A) += fate-vp6a
-fate-vp6a: CMD = framecrc -i $(SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
+fate-vp6a: CMD = framecrc -flags +bitexact -i $(SAMPLES)/flash-vp6/300x180-Scr-f8-056alpha.flv
 
 FATE_VP6-$(call DEMDEC, FLV, VP6F) += fate-vp6f
-fate-vp6f: CMD = framecrc -i $(SAMPLES)/flash-vp6/clip1024.flv
+fate-vp6f: CMD = framecrc -flags +bitexact -i $(SAMPLES)/flash-vp6/clip1024.flv
 
 FATE_SAMPLES_AVCONV += $(FATE_VP6-yes)
 fate-vp6: $(FATE_VP6-yes)
