@@ -685,6 +685,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "lutyuv"     ) ||
         !strcmp(filter->filter->name, "lutrgb"     ) ||
         !strcmp(filter->filter->name, "mandelbrot" ) ||
+        !strcmp(filter->filter->name, "mptestsrc"  ) ||
         !strcmp(filter->filter->name, "negate"     ) ||
         !strcmp(filter->filter->name, "overlay"    ) ||
         !strcmp(filter->filter->name, "pad"        ) ||
