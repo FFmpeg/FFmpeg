@@ -307,5 +307,4 @@ AVFilter avfilter_vf_smartblur = {
     .inputs        = smartblur_inputs,
     .outputs       = smartblur_outputs,
     .priv_class    = &smartblur_class,
-    .shorthand     = shorthand,
 };

@@ -693,6 +693,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "setpts"       ) ||
         !strcmp(filter->filter->name, "showspectrum") ||
         !strcmp(filter->filter->name, "silencedetect") ||
+        !strcmp(filter->filter->name, "smartblur") ||
         !strcmp(filter->filter->name, "subtitles") ||
         !strcmp(filter->filter->name, "thumbnail") ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
