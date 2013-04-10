@@ -671,7 +671,9 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "frei0r_src") ||
         !strcmp(filter->filter->name,   "format") ||
         !strcmp(filter->filter->name, "noformat") ||
-        !strcmp(filter->filter->name, "resample")
+        !strcmp(filter->filter->name, "resample") ||
+//         !strcmp(filter->filter->name, "scale"      ) ||
+        0
         ;
 
     if (filter->filter->shorthand) {
@@ -687,6 +689,36 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     }
 
     if (anton_options && args && *args && filter->filter->priv_class) {
+#if FF_API_OLD_FILTER_OPTS
+        if (!strcmp(filter->filter->name, "scale") &&
+            strchr(args, ':') < strchr(args, '=')) {
+            /* old w:h:flags=<flags> syntax */
+            char *copy = av_strdup(args);
+            char *p;
+
+            av_log(filter, AV_LOG_WARNING, "The <w>:<h>:flags=<flags> option "
+                   "syntax is deprecated. Use either <w>:<h>:<flags> or "
+                   "w=<w>:h=<h>:flags=<flags>.\n");
+
+            if (!copy) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            p = strrchr(copy, ':');
+            if (p) {
+                *p++ = 0;
+                ret = av_dict_parse_string(&options, p, "=", ":", 0);
+            }
+            if (ret >= 0)
+                ret = process_unnamed_options(filter, &options, copy);
+            av_freep(&copy);
+
+            if (ret < 0)
+                goto fail;
+        } else
+#endif
+
         if (strchr(args, '=')) {
             /* assume a list of key1=value1:key2=value2:... */
             ret = av_dict_parse_string(&options, args, "=", ":", 0);
