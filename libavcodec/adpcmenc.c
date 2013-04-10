@@ -1,6 +1,10 @@
 /*
  * Copyright (c) 2001-2003 The ffmpeg Project
  *
+ * first version by Francois Revol (revol@free.fr)
+ * fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
+ *   by Mike Melanson (melanson@pcisys.net)
+ *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -29,10 +33,6 @@
 /**
  * @file
  * ADPCM encoders
- * First version by Francois Revol (revol@free.fr)
- * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
- *   by Mike Melanson (melanson@pcisys.net)
- *
  * See ADPCM decoder reference documents for codec information.
  */
 

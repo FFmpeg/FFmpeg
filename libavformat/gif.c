@@ -2,6 +2,8 @@
  * Animated GIF muxer
  * Copyright (c) 2000 Fabrice Bellard
  *
+ * first version by Francois Revol <revol@free.fr>
+ *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -20,8 +22,6 @@
  */
 
 /*
- * First version by Francois Revol revol@free.fr
- *
  * Features and limitations:
  * - currently no compression is performed,
  *   in fact the size of the data is 9/8 the size of the image in 8bpp

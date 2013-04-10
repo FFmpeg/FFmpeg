@@ -3,6 +3,9 @@
  * Copyright (c) 2001 Fabrice Bellard
  * Copyright (c) 2009 Baptiste Coudurier <baptiste dot coudurier at gmail dot com>
  *
+ * first version by Francois Revol <revol@free.fr>
+ * seek function by Gael Chardon <gael.dev@4now.net>
+ *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -45,11 +48,6 @@
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
-
-/*
- * First version by Francois Revol revol@free.fr
- * Seek function by Gael Chardon gael.dev@4now.net
- */
 
 #include "qtpalette.h"
 

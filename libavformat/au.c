@@ -2,6 +2,8 @@
  * AU muxer and demuxer
  * Copyright (c) 2001 Fabrice Bellard
  *
+ * first version by Francois Revol <revol@free.fr>
+ *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -20,8 +22,6 @@
  */
 
 /*
- * First version by Francois Revol revol@free.fr
- *
  * Reference documents:
  * http://www.opengroup.org/public/pubs/external/auformat.html
  * http://www.goice.co.jp/member/mo/formats/au.html
