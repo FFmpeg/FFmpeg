@@ -5919,9 +5919,7 @@ cellauto=p='@@@@ @@ @@@@':s=100x400:full=0:rule=18
 Generate a Mandelbrot set fractal, and progressively zoom towards the
 point specified with @var{start_x} and @var{start_y}.
 
-This source accepts a list of options in the form of
-@var{key}=@var{value} pairs separated by ":". A description of the
-accepted options follows.
+This source accepts the following options:
 
 @table @option
 
