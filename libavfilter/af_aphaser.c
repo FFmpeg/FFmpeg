@@ -344,8 +344,6 @@ static const AVFilterPad aphaser_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "in_gain", "out_gain", "delay", "decay", "speed", "type", NULL };
-
 AVFilter avfilter_af_aphaser = {
     .name          = "aphaser",
     .description   = NULL_IF_CONFIG_SMALL("Add a phasing effect to the audio."),
@@ -356,5 +354,4 @@ AVFilter avfilter_af_aphaser = {
     .inputs        = aphaser_inputs,
     .outputs       = aphaser_outputs,
     .priv_class    = &aphaser_class,
-    .shorthand     = shorthand,
 };

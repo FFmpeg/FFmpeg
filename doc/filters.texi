@@ -6343,9 +6343,6 @@ Add a phasing effect to the input audio.
 A phaser filter creates series of peaks and troughs in the frequency spectrum.
 The position of the peaks and troughs are modulated so that they vary over time, creating a sweeping effect.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
 A description of the accepted parameters follows.
 
 @table @option

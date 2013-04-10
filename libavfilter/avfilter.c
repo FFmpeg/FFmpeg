@@ -659,6 +659,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "afade"     ) ||
         !strcmp(filter->filter->name,  "aformat") ||
         !strcmp(filter->filter->name,  "apad"      ) ||
+        !strcmp(filter->filter->name,  "aphaser"   ) ||
         !strcmp(filter->filter->name,  "ass")     ||
         !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,  "blend"     ) ||
