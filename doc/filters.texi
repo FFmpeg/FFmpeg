@@ -2612,12 +2612,7 @@ FFmpeg was configured with @code{--enable-opencl}. Default value is 0.
 
 Draw a colored box on the input image.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-@option{x}:@option{y}:@option{width}:@option{height}:@option{color}:@option{thickness}.
-
-A description of the accepted options follows.
+This filter accepts the following options:
 
 @table @option
 @item x, y
