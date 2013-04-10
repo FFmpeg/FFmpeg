@@ -671,6 +671,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "frei0r_src") ||
         !strcmp(filter->filter->name, "gradfun"    ) ||
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
+        !strcmp(filter->filter->name, "ocv"        ) ||
         !strcmp(filter->filter->name,   "format") ||
         !strcmp(filter->filter->name, "noformat") ||
         !strcmp(filter->filter->name, "resample") ||
@@ -730,7 +731,8 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         } else if (!strcmp(filter->filter->name, "format")     ||
                    !strcmp(filter->filter->name, "noformat")   ||
                    !strcmp(filter->filter->name, "frei0r")     ||
-                   !strcmp(filter->filter->name, "frei0r_src")) {
+                   !strcmp(filter->filter->name, "frei0r_src") ||
+                   !strcmp(filter->filter->name, "ocv")) {
             /* a hack for compatibility with the old syntax
              * replace colons with |s */
             char *copy = av_strdup(args);
@@ -742,7 +744,8 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                 goto fail;
             }
 
-            if (!strcmp(filter->filter->name, "frei0r"))
+            if (!strcmp(filter->filter->name, "frei0r") ||
+                !strcmp(filter->filter->name, "ocv"))
                 nb_leading = 1;
             else if (!strcmp(filter->filter->name, "frei0r_src"))
                 nb_leading = 3;
