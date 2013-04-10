@@ -767,6 +767,5 @@ AVFilter avfilter_vf_overlay = {
 
     .inputs    = avfilter_vf_overlay_inputs,
     .outputs   = avfilter_vf_overlay_outputs,
-    .priv_class = &overlay_class,
     .shorthand  = shorthand,
 };
