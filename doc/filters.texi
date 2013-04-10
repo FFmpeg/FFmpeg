@@ -6095,9 +6095,7 @@ which specifies the number of neighbor alive cells which will make a
 cell stay alive or born. The @option{rule} option allows to specify
 the rule to adopt.
 
-This source accepts a list of options in the form of
-@var{key}=@var{value} pairs separated by ":". A description of the
-accepted options follows.
+This source accepts the following options:
 
 @table @option
 @item filename, f
