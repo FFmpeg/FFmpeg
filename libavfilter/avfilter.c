@@ -659,6 +659,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "aformat") ||
         !strcmp(filter->filter->name,  "amix"      ) ||
         !strcmp(filter->filter->name,  "ass")     ||
+        !strcmp(filter->filter->name,  "asyncts"   ) ||
         !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,  "boxblur"   ) ||
         !strcmp(filter->filter->name,  "cellauto") ||

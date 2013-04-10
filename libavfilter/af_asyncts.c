@@ -63,14 +63,6 @@ AVFILTER_DEFINE_CLASS(asyncts);
 static int init(AVFilterContext *ctx, const char *args)
 {
     ASyncContext *s = ctx->priv;
-    int ret;
-
-    s->class = &asyncts_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0)
-        return ret;
-    av_opt_free(s);
 
     s->pts         = AV_NOPTS_VALUE;
     s->first_frame = 1;
@@ -319,8 +311,8 @@ AVFilter avfilter_af_asyncts = {
     .uninit      = uninit,
 
     .priv_size   = sizeof(ASyncContext),
+    .priv_class  = &asyncts_class,
 
     .inputs      = avfilter_af_asyncts_inputs,
     .outputs     = avfilter_af_asyncts_outputs,
-    .priv_class = &asyncts_class,
 };
