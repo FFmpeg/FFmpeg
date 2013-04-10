@@ -669,6 +669,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "fps"       ) ||
         !strcmp(filter->filter->name,  "frei0r"    ) ||
         !strcmp(filter->filter->name,  "frei0r_src") ||
+        !strcmp(filter->filter->name, "gradfun"    ) ||
         !strcmp(filter->filter->name,   "format") ||
         !strcmp(filter->filter->name, "noformat") ||
         !strcmp(filter->filter->name, "resample") ||

@@ -35,6 +35,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
@@ -42,17 +43,6 @@
 #include "gradfun.h"
 #include "internal.h"
 #include "video.h"
-
-#define OFFSET(x) offsetof(GradFunContext, x)
-#define F AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-
-static const AVOption gradfun_options[] = {
-    { "strength", "set the maximum amount by which the filter will change any one pixel", OFFSET(strength), AV_OPT_TYPE_DOUBLE, {.dbl = 1.2}, 0.51, 64, F },
-    { "radius",   "set the neighborhood to fit the gradient to",                          OFFSET(radius),   AV_OPT_TYPE_INT,    {.i64 =  16},    4, 32, F },
-    { NULL }
-};
-
-AVFILTER_DEFINE_CLASS(gradfun);
 
 DECLARE_ALIGNED(16, static const uint16_t, dither)[8][8] = {
     {0x00,0x60,0x18,0x78,0x06,0x66,0x1E,0x7E},
@@ -135,8 +125,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     GradFunContext *gf = ctx->priv;
 
-    gf->thresh = (1 << 15) / gf->strength;
-    gf->radius = av_clip((gf->radius + 1) & ~1, 4, 32);
+    gf->thresh  = (1 << 15) / gf->strength;
+    gf->radius  = av_clip((gf->radius + 1) & ~1, 4, 32);
 
     gf->blur_line   = ff_gradfun_blur_line_c;
     gf->filter_line = ff_gradfun_filter_line_c;
@@ -231,6 +221,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(GradFunContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption gradfun_options[] = {
+    { "strength", "The maximum amount by which the filter will change any one pixel.", OFFSET(strength), AV_OPT_TYPE_FLOAT, { .dbl = 1.2 }, 0.51, 64, FLAGS },
+    { "radius",   "The neighborhood to fit the gradient to.",                          OFFSET(radius),   AV_OPT_TYPE_INT,   { .i64 = 16  }, 4,    32, FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(gradfun);
+
 static const AVFilterPad avfilter_vf_gradfun_inputs[] = {
     {
         .name         = "default",
@@ -249,17 +250,14 @@ static const AVFilterPad avfilter_vf_gradfun_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "strength", "radius", NULL };
-
 AVFilter avfilter_vf_gradfun = {
     .name          = "gradfun",
     .description   = NULL_IF_CONFIG_SMALL("Debands video quickly using gradients."),
     .priv_size     = sizeof(GradFunContext),
+    .priv_class    = &gradfun_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = avfilter_vf_gradfun_inputs,
     .outputs       = avfilter_vf_gradfun_outputs,
-    .priv_class    = &gradfun_class,
-    .shorthand     = shorthand,
 };
