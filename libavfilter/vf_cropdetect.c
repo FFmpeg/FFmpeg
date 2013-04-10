@@ -26,6 +26,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -40,18 +41,6 @@ typedef struct {
     int frame_nb;
     int max_pixsteps[4];
 } CropDetectContext;
-
-#define OFFSET(x) offsetof(CropDetectContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-
-static const AVOption cropdetect_options[] = {
-    { "limit", "set black threshold", OFFSET(limit), AV_OPT_TYPE_INT, {.i64=24}, 0, 255, FLAGS },
-    { "round", "set width/height round value", OFFSET(round), AV_OPT_TYPE_INT, {.i64=16}, 0, INT_MAX, FLAGS },
-    { "reset_count", "set after how many frames to reset detected info",  OFFSET(reset_count), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS },
-    { NULL }
-};
-
-AVFILTER_DEFINE_CLASS(cropdetect);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -100,6 +89,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     CropDetectContext *cd = ctx->priv;
 
     cd->frame_nb = -2;
+
     av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
            cd->limit, cd->round, cd->reset_count);
 
@@ -201,6 +191,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+#define OFFSET(x) offsetof(CropDetectContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption cropdetect_options[] = {
+    { "limit", "Threshold below which the pixel is considered black", OFFSET(limit),       AV_OPT_TYPE_INT, { .i64 = 24 }, 0, 255, FLAGS },
+    { "round", "Value by which the width/height should be divisible", OFFSET(round),       AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, FLAGS },
+    { "reset", "Recalculate the crop area after this many frames",    OFFSET(reset_count), AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
+    { "reset_count", "Recalculate the crop area after this many frames",OFFSET(reset_count),AV_OPT_TYPE_INT,{ .i64 = 0 },  0, INT_MAX, FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(cropdetect);
+
 static const AVFilterPad avfilter_vf_cropdetect_inputs[] = {
     {
         .name             = "default",
@@ -220,17 +223,14 @@ static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "limit", "round", "reset_count", NULL };
-
 AVFilter avfilter_vf_cropdetect = {
     .name        = "cropdetect",
     .description = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
 
     .priv_size = sizeof(CropDetectContext),
+    .priv_class = &cropdetect_class,
     .init      = init,
     .query_formats = query_formats,
     .inputs    = avfilter_vf_cropdetect_inputs,
     .outputs   = avfilter_vf_cropdetect_outputs,
-    .priv_class = &cropdetect_class,
-    .shorthand  = shorthand,
 };
