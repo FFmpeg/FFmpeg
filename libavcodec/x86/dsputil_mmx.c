@@ -1438,8 +1438,7 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
                                         int mm_flags)
 {
-    const int bit_depth      = avctx->bits_per_raw_sample;
-    const int high_bit_depth = bit_depth > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
 #if HAVE_YASM
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
@@ -1570,8 +1569,7 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
                                       int mm_flags)
 {
-    const int bit_depth      = avctx->bits_per_raw_sample;
-    const int high_bit_depth = bit_depth > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
 #if HAVE_SSE2_INLINE
     if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
