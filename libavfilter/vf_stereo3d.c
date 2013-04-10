@@ -440,8 +440,6 @@ static const AVFilterPad stereo3d_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "in", "out", NULL };
-
 AVFilter avfilter_vf_stereo3d = {
     .name          = "stereo3d",
     .description   = NULL_IF_CONFIG_SMALL("Convert video stereoscopic 3D view."),
@@ -450,5 +448,4 @@ AVFilter avfilter_vf_stereo3d = {
     .inputs        = stereo3d_inputs,
     .outputs       = stereo3d_outputs,
     .priv_class    = &stereo3d_class,
-    .shorthand     = shorthand,
 };

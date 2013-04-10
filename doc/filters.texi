@@ -5181,8 +5181,7 @@ is set.
 
 Convert between different stereoscopic image formats.
 
-This filter accepts the following named options, expressed as a
-sequence of @var{key}=@var{value} pairs, separated by ":".
+The filters accept the following options:
 
 @table @option
 @item in
