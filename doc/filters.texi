@@ -3008,7 +3008,7 @@ For more information about fontconfig, check:
 
 Detect and draw edges. The filter uses the Canny Edge Detection algorithm.
 
-This filter accepts the following optional named parameters:
+The filter accepts the following options:
 
 @table @option
 @item low, high
