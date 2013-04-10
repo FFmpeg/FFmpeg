@@ -653,7 +653,9 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;
     int ret=0;
-    int anton_options = 0;
+    int anton_options =
+        !strcmp(filter->filter->name, "resample")
+        ;
 
     if (filter->filter->shorthand) {
         av_assert0(filter->priv);
@@ -688,14 +690,14 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         }
     }
 
-    if (filter->filter->init || filter->filter->init_opaque) {
-        if (filter->filter->init_opaque)
-            ret = filter->filter->init_opaque(filter, args, opaque);
-        else
-            ret = filter->filter->init(filter, args);
-        if (ret < 0)
-            goto fail;
-    }
+    if (filter->filter->init_opaque)
+        ret = filter->filter->init_opaque(filter, args, opaque);
+    else if (filter->filter->init)
+        ret = filter->filter->init(filter, args);
+    else if (filter->filter->init_dict)
+        ret = filter->filter->init_dict(filter, &options);
+    if (ret < 0)
+        goto fail;
 
     if ((e = av_dict_get(options, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         av_log(filter, AV_LOG_ERROR, "No such option: %s.\n", e->key);
