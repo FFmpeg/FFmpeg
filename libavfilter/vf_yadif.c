@@ -344,32 +344,6 @@ static int request_frame(AVFilterLink *link)
     return 0;
 }
 
-#define OFFSET(x) offsetof(YADIFContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-
-#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, unit }
-
-static const AVOption yadif_options[] = {
-    { "mode",   "specify the interlacing mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=YADIF_MODE_SEND_FRAME}, 0, 3, FLAGS, "mode"},
-    CONST("send_frame",           "send one frame for each frame",                                     YADIF_MODE_SEND_FRAME,           "mode"),
-    CONST("send_field",           "send one frame for each field",                                     YADIF_MODE_SEND_FIELD,           "mode"),
-    CONST("send_frame_nospatial", "send one frame for each frame, but skip spatial interlacing check", YADIF_MODE_SEND_FRAME_NOSPATIAL, "mode"),
-    CONST("send_field_nospatial", "send one frame for each field, but skip spatial interlacing check", YADIF_MODE_SEND_FIELD_NOSPATIAL, "mode"),
-
-    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=YADIF_PARITY_AUTO}, -1, 1, FLAGS, "parity" },
-    CONST("tff",  "assume top field first",    YADIF_PARITY_TFF,  "parity"),
-    CONST("bff",  "assume bottom field first", YADIF_PARITY_BFF,  "parity"),
-    CONST("auto", "auto detect parity",        YADIF_PARITY_AUTO, "parity"),
-
-    { "deint", "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=YADIF_DEINT_ALL}, 0, 1, FLAGS, "deint" },
-    CONST("all",        "deinterlace all frames",                       YADIF_DEINT_ALL,         "deint"),
-    CONST("interlaced", "only deinterlace frames marked as interlaced", YADIF_DEINT_INTERLACED,  "deint"),
-
-    {NULL},
-};
-
-AVFILTER_DEFINE_CLASS(yadif);
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     YADIFContext *yadif = ctx->priv;
@@ -420,16 +394,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    YADIFContext *yadif = ctx->priv;
-
-    av_log(ctx, AV_LOG_VERBOSE, "mode:%d parity:%d deint:%d\n",
-           yadif->mode, yadif->parity, yadif->deint);
-
-    return 0;
-}
-
 static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
@@ -463,6 +427,33 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
+
+#define OFFSET(x) offsetof(YADIFContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, unit }
+
+static const AVOption yadif_options[] = {
+    { "mode",   "specify the interlacing mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=YADIF_MODE_SEND_FRAME}, 0, 3, FLAGS, "mode"},
+    CONST("send_frame",           "send one frame for each frame",                                     YADIF_MODE_SEND_FRAME,           "mode"),
+    CONST("send_field",           "send one frame for each field",                                     YADIF_MODE_SEND_FIELD,           "mode"),
+    CONST("send_frame_nospatial", "send one frame for each frame, but skip spatial interlacing check", YADIF_MODE_SEND_FRAME_NOSPATIAL, "mode"),
+    CONST("send_field_nospatial", "send one frame for each field, but skip spatial interlacing check", YADIF_MODE_SEND_FIELD_NOSPATIAL, "mode"),
+
+    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=YADIF_PARITY_AUTO}, -1, 1, FLAGS, "parity" },
+    CONST("tff",  "assume top field first",    YADIF_PARITY_TFF,  "parity"),
+    CONST("bff",  "assume bottom field first", YADIF_PARITY_BFF,  "parity"),
+    CONST("auto", "auto detect parity",        YADIF_PARITY_AUTO, "parity"),
+
+    { "deint", "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=YADIF_DEINT_ALL}, 0, 1, FLAGS, "deint" },
+    CONST("all",        "deinterlace all frames",                       YADIF_DEINT_ALL,         "deint"),
+    CONST("interlaced", "only deinterlace frames marked as interlaced", YADIF_DEINT_INTERLACED,  "deint"),
+
+    {NULL},
+};
+
+AVFILTER_DEFINE_CLASS(yadif);
+
 static const AVFilterPad avfilter_vf_yadif_inputs[] = {
     {
         .name             = "default",
@@ -482,20 +473,15 @@ static const AVFilterPad avfilter_vf_yadif_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "mode", "parity", "deint", NULL };
-
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
 
     .priv_size     = sizeof(YADIFContext),
-    .init          = init,
+    .priv_class    = &yadif_class,
     .uninit        = uninit,
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_yadif_inputs,
     .outputs   = avfilter_vf_yadif_outputs,
-
-    .priv_class = &yadif_class,
-    .shorthand = shorthand,
 };

@@ -714,6 +714,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "unsharp"  ) ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
         !strcmp(filter->filter->name, "select") ||
+        !strcmp(filter->filter->name, "yadif"    ) ||
         0
         ;
 
