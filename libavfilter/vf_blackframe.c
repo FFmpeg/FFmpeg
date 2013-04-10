@@ -96,6 +96,8 @@ static const AVOption blackframe_options[] = {
         "for the frame to be considered black.", OFFSET(bamount), AV_OPT_TYPE_INT, { .i64 = 98 }, 0, 100,     FLAGS },
     { "threshold", "threshold below which a pixel value is considered black",
                                                  OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, 255,     FLAGS },
+    { "thresh", "threshold below which a pixel value is considered black",
+                                                 OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, 255,     FLAGS },
     { NULL },
 };
 
