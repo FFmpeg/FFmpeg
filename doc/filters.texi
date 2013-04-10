@@ -6937,7 +6937,8 @@ The filter works on segments of synchronized video and audio streams. All
 segments must have the same number of streams of each type, and that will
 also be the number of streams at output.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
+
 @table @option
 
 @item n
