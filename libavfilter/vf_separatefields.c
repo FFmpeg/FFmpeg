@@ -41,11 +41,13 @@ static int config_props_output(AVFilterLink *outlink)
         return AVERROR_INVALIDDATA;
     }
 
+    outlink->time_base.num = inlink->time_base.num;
+    outlink->time_base.den = inlink->time_base.den * 2;
     outlink->frame_rate.num = inlink->frame_rate.num * 2;
     outlink->frame_rate.den = inlink->frame_rate.den;
     outlink->w = inlink->w;
     outlink->h = inlink->h / 2;
-    sf->ts_unit = av_q2d(av_inv_q(av_mul_q(outlink->frame_rate, inlink->time_base)));
+    sf->ts_unit = av_q2d(av_inv_q(av_mul_q(outlink->frame_rate, outlink->time_base)));
 
     return 0;
 }
