@@ -2369,30 +2369,15 @@ If there is no key point defined in @code{x=0}, the filter will automatically
 insert a @var{(0;0)} point. In the same way, if there is no key point defined
 in @code{x=1}, the filter will automatically insert a @var{(1;1)} point.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-curves[=@var{preset}].
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
-@item red, r
-Set the key points for the red component.
-@item green, g
-Set the key points for the green component.
-@item blue, b
-Set the key points for the blue component.
-@item all
-Set the key points for all components.
-Can be used in addition to the other key points component
-options. In this case, the unset component(s) will fallback on this
-@option{all} setting.
 @item preset
 Select one of the available color presets. This option can not be used in
 addition to the @option{r}, @option{g}, @option{b} parameters.
 Available presets are:
 @table @samp
+@item none
 @item color_negative
 @item cross_process
 @item darker
@@ -2404,7 +2389,18 @@ Available presets are:
 @item strong_contrast
 @item vintage
 @end table
-Default is unset.
+Default is @code{none}.
+@item red, r
+Set the key points for the red component.
+@item green, g
+Set the key points for the green component.
+@item blue, b
+Set the key points for the blue component.
+@item all
+Set the key points for all components.
+Can be used in addition to the other key points component
+options. In this case, the unset component(s) will fallback on this
+@option{all} setting.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
