@@ -1400,10 +1400,13 @@ Buffer audio frames, and make them available to the filter chain.
 This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/asrc_abuffer.h}.
 
-It accepts the following mandatory parameters:
-@var{sample_rate}:@var{sample_fmt}:@var{channel_layout}
+It accepts the following named parameters:
 
 @table @option
+
+@item time_base
+Timebase which will be used for timestamps of submitted frames. It must be
+either a floating-point number or in @var{numerator}/@var{denominator} form.
 
 @item sample_rate
 The sample rate of the incoming audio buffers.
@@ -1429,7 +1432,7 @@ must be consistent.
 @subsection Examples
 
 @example
-abuffer=44100:s16p:stereo
+abuffer=sample_rate=44100:sample_fmt=s16p:channel_layout=stereo
 @end example
 
 will instruct the source to accept planar 16bit signed stereo at 44100Hz.
@@ -1437,7 +1440,7 @@ Since the sample format with name "s16p" corresponds to the number
 6 and the "stereo" channel layout corresponds to the value 0x3, this is
 equivalent to:
 @example
-abuffer=44100:6:0x3
+abuffer=sample_rate=44100:sample_fmt=6:channel_layout=0x3
 @end example
 
 @section aevalsrc
@@ -5743,6 +5746,12 @@ separated by ":". A description of the accepted options follows.
 @item video_size
 Specify the size (width and height) of the buffered video frames.
 
+@item width
+Input video width.
+
+@item height
+Input video height.
+
 @item pix_fmt
 A string representing the pixel format of the buffered video frames.
 It may be a number corresponding to a pixel format, or a pixel format
@@ -5751,10 +5760,10 @@ name.
 @item time_base
 Specify the timebase assumed by the timestamps of the buffered frames.
 
-@item time_base
+@item frame_rate
 Specify the frame rate expected for the video stream.
 
-@item pixel_aspect
+@item pixel_aspect, sar
 Specify the sample aspect ratio assumed by the video frames.
 
 @item sws_param
@@ -5765,7 +5774,7 @@ input size or format.
 
 For example:
 @example
-buffer=size=320x240:pix_fmt=yuv410p:time_base=1/24:pixel_aspect=1/1
+buffer=width=320:height=240:pix_fmt=yuv410p:time_base=1/24:sar=1
 @end example
 
 will instruct the source to accept video frames with size 320x240 and
