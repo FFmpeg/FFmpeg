@@ -2102,12 +2102,8 @@ boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chrom
 
 Convert color matrix.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-@var{src}:@var{dst}.
+The filter accepts the following options:
 
-A description of the accepted options follows:
 @table @option
 @item src
 @item dst

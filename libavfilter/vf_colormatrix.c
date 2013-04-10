@@ -375,8 +375,6 @@ static const AVFilterPad colormatrix_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "src", "dst", NULL };
-
 AVFilter avfilter_vf_colormatrix = {
     .name          = "colormatrix",
     .description   = NULL_IF_CONFIG_SMALL("Convert color matrix."),
@@ -387,5 +385,4 @@ AVFilter avfilter_vf_colormatrix = {
     .inputs        = colormatrix_inputs,
     .outputs       = colormatrix_outputs,
     .priv_class    = &colormatrix_class,
-    .shorthand     = shorthand,
 };
