@@ -12,6 +12,7 @@ version 10:
 - uniform options syntax across all filters
 - new interlace filter
 - JPEG 2000 decoder
+- new asetpts filter (same as setpts, but for audio)
 
 
 version 9:
