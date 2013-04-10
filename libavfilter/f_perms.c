@@ -111,8 +111,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ret;
 }
 
-static const char *const shorthand[] = { "mode", NULL };
-
 #if CONFIG_APERMS_FILTER
 
 #define aperms_options options
@@ -143,7 +141,6 @@ AVFilter avfilter_af_aperms = {
     .inputs      = aperms_inputs,
     .outputs     = aperms_outputs,
     .priv_class  = &aperms_class,
-    .shorthand   = shorthand,
 };
 #endif /* CONFIG_APERMS_FILTER */
 
@@ -177,6 +174,5 @@ AVFilter avfilter_vf_perms = {
     .inputs      = perms_inputs,
     .outputs     = perms_outputs,
     .priv_class  = &perms_class,
-    .shorthand   = shorthand,
 };
 #endif /* CONFIG_PERMS_FILTER */
