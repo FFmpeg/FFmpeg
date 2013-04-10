@@ -5813,9 +5813,7 @@ At each new frame a new row in the video is filled with the result of
 the cellular automaton next generation. The behavior when the whole
 frame is filled is defined by the @option{scroll} option.
 
-This source accepts a list of options in the form of
-@var{key}=@var{value} pairs separated by ":". A description of the
-accepted options follows.
+This source accepts the following options:
 
 @table @option
 @item filename, f
