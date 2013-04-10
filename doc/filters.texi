@@ -2671,9 +2671,6 @@ To enable compilation of this filter you need to configure FFmpeg with
 
 @subsection Syntax
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
 The description of the accepted parameters follows.
 
 @table @option

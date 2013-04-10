@@ -201,24 +201,24 @@ static const AVOption drawtext_options[]= {
 {"reload",   "reload text file for each frame", OFFSET(reload),  AV_OPT_TYPE_INT,    {.i64=0},            0,        1, FLAGS},
 {"fix_bounds", "if true, check and fix text coords to avoid clipping", OFFSET(fix_bounds), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS},
 
-/* FT_LOAD_* flags */
-{"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.i64=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, FLAGS, "ft_load_flags"},
-{"default",                     "set default",                     0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_DEFAULT},                     INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"no_scale",                    "set no_scale",                    0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_NO_SCALE},                    INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"no_hinting",                  "set no_hinting",                  0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_NO_HINTING},                  INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"render",                      "set render",                      0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_RENDER},                      INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"no_bitmap",                   "set no_bitmap",                   0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_NO_BITMAP},                   INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"vertical_layout",             "set vertical_layout",             0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_VERTICAL_LAYOUT},             INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"force_autohint",              "set force_autohint",              0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_FORCE_AUTOHINT},              INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"crop_bitmap",                 "set crop_bitmap",                 0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_CROP_BITMAP},                 INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"pedantic",                    "set pedantic",                    0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_PEDANTIC},                    INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"ignore_global_advance_width", "set ignore_global_advance_width", 0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH}, INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"no_recurse",                  "set no_recurse",                  0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_NO_RECURSE},                  INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"ignore_transform",            "set ignore_transform",            0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_IGNORE_TRANSFORM},            INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"monochrome",                  "set monochrome",                  0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_MONOCHROME},                  INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"linear_design",               "set linear_design",               0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_LINEAR_DESIGN},               INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{"no_autohint",                 "set no_autohint",                 0, AV_OPT_TYPE_CONST, {.i64=FT_LOAD_NO_AUTOHINT},                 INT_MIN, INT_MAX, FLAGS, "ft_load_flags"},
-{NULL},
+    /* FT_LOAD_* flags */
+    { "ft_load_flags", "set font loading flags for libfreetype", OFFSET(ft_load_flags), AV_OPT_TYPE_FLAGS, { .i64 = FT_LOAD_DEFAULT | FT_LOAD_RENDER}, 0, INT_MAX, FLAGS, "ft_load_flags" },
+        { "default",                     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_DEFAULT },                     .flags = FLAGS, .unit = "ft_load_flags" },
+        { "no_scale",                    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_SCALE },                    .flags = FLAGS, .unit = "ft_load_flags" },
+        { "no_hinting",                  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_HINTING },                  .flags = FLAGS, .unit = "ft_load_flags" },
+        { "render",                      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_RENDER },                      .flags = FLAGS, .unit = "ft_load_flags" },
+        { "no_bitmap",                   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_BITMAP },                   .flags = FLAGS, .unit = "ft_load_flags" },
+        { "vertical_layout",             NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_VERTICAL_LAYOUT },             .flags = FLAGS, .unit = "ft_load_flags" },
+        { "force_autohint",              NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_FORCE_AUTOHINT },              .flags = FLAGS, .unit = "ft_load_flags" },
+        { "crop_bitmap",                 NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_CROP_BITMAP },                 .flags = FLAGS, .unit = "ft_load_flags" },
+        { "pedantic",                    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_PEDANTIC },                    .flags = FLAGS, .unit = "ft_load_flags" },
+        { "ignore_global_advance_width", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH }, .flags = FLAGS, .unit = "ft_load_flags" },
+        { "no_recurse",                  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_RECURSE },                  .flags = FLAGS, .unit = "ft_load_flags" },
+        { "ignore_transform",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_IGNORE_TRANSFORM },            .flags = FLAGS, .unit = "ft_load_flags" },
+        { "monochrome",                  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_MONOCHROME },                  .flags = FLAGS, .unit = "ft_load_flags" },
+        { "linear_design",               NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_LINEAR_DESIGN },               .flags = FLAGS, .unit = "ft_load_flags" },
+        { "no_autohint",                 NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_AUTOHINT },                 .flags = FLAGS, .unit = "ft_load_flags" },
+    { NULL},
 };
 
 AVFILTER_DEFINE_CLASS(drawtext);
@@ -422,12 +422,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     DrawTextContext *dtext = ctx->priv;
     Glyph *glyph;
 
-    dtext->class = &drawtext_class;
-    av_opt_set_defaults(dtext);
-
-    if ((err = av_set_options_string(dtext, args, "=", ":")) < 0)
-        return err;
-
     if (!dtext->fontfile && !CONFIG_FONTCONFIG) {
         av_log(ctx, AV_LOG_ERROR, "No font filename provided\n");
         return AVERROR(EINVAL);
@@ -542,10 +536,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(dtext->x_pexpr); dtext->x_pexpr = NULL;
     av_expr_free(dtext->y_pexpr); dtext->y_pexpr = NULL;
     av_expr_free(dtext->draw_pexpr); dtext->draw_pexpr = NULL;
-    av_opt_free(dtext);
 
     av_freep(&dtext->positions);
     dtext->nb_positions = 0;
+
 
     av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
     av_tree_destroy(dtext->glyphs);
@@ -1028,6 +1022,7 @@ AVFilter avfilter_vf_drawtext = {
     .name          = "drawtext",
     .description   = NULL_IF_CONFIG_SMALL("Draw text on top of video frames using libfreetype library."),
     .priv_size     = sizeof(DrawTextContext),
+    .priv_class    = &drawtext_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
@@ -1035,5 +1030,4 @@ AVFilter avfilter_vf_drawtext = {
     .inputs    = avfilter_vf_drawtext_inputs,
     .outputs   = avfilter_vf_drawtext_outputs,
     .process_command = command,
-    .priv_class = &drawtext_class,
 };
