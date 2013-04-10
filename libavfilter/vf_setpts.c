@@ -85,13 +85,13 @@ static av_cold int init(AVFilterContext *ctx)
         return ret;
     }
 
-    setpts->var_values[VAR_E          ] = M_E;
-    setpts->var_values[VAR_N          ] = 0.0;
-    setpts->var_values[VAR_PHI        ] = M_PHI;
-    setpts->var_values[VAR_PI         ] = M_PI;
-    setpts->var_values[VAR_PREV_INPTS ] = NAN;
+    setpts->var_values[VAR_E]           = M_E;
+    setpts->var_values[VAR_N]           = 0.0;
+    setpts->var_values[VAR_PHI]         = M_PHI;
+    setpts->var_values[VAR_PI]          = M_PI;
+    setpts->var_values[VAR_PREV_INPTS]  = NAN;
     setpts->var_values[VAR_PREV_OUTPTS] = NAN;
-    setpts->var_values[VAR_STARTPTS   ] = NAN;
+    setpts->var_values[VAR_STARTPTS]    = NAN;
     return 0;
 }
 
