@@ -26,10 +26,14 @@
  * libmpcodecs/vf_hqdn3d.c.
  */
 
+#include <float.h>
+
 #include "config.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -180,57 +184,19 @@ static int16_t *precalc_coefs(double dist25, int depth)
 static int init(AVFilterContext *ctx, const char *args)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
-    double lum_spac, lum_tmp, chrom_spac, chrom_tmp;
-    double param1, param2, param3, param4;
 
-    lum_spac   = PARAM1_DEFAULT;
-    chrom_spac = PARAM2_DEFAULT;
-    lum_tmp    = PARAM3_DEFAULT;
-    chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
-
-    if (args) {
-        switch (sscanf(args, "%lf:%lf:%lf:%lf",
-                       &param1, &param2, &param3, &param4)) {
-        case 1:
-            lum_spac   = param1;
-            chrom_spac = PARAM2_DEFAULT * param1 / PARAM1_DEFAULT;
-            lum_tmp    = PARAM3_DEFAULT * param1 / PARAM1_DEFAULT;
-            chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
-            break;
-        case 2:
-            lum_spac   = param1;
-            chrom_spac = param2;
-            lum_tmp    = PARAM3_DEFAULT * param1 / PARAM1_DEFAULT;
-            chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
-            break;
-        case 3:
-            lum_spac   = param1;
-            chrom_spac = param2;
-            lum_tmp    = param3;
-            chrom_tmp  = lum_tmp * chrom_spac / lum_spac;
-            break;
-        case 4:
-            lum_spac   = param1;
-            chrom_spac = param2;
-            lum_tmp    = param3;
-            chrom_tmp  = param4;
-            break;
-        }
-    }
-
-    hqdn3d->strength[0] = lum_spac;
-    hqdn3d->strength[1] = lum_tmp;
-    hqdn3d->strength[2] = chrom_spac;
-    hqdn3d->strength[3] = chrom_tmp;
+    if (!hqdn3d->strength[LUMA_SPATIAL])
+        hqdn3d->strength[LUMA_SPATIAL] = PARAM1_DEFAULT;
+    if (!hqdn3d->strength[CHROMA_SPATIAL])
+        hqdn3d->strength[CHROMA_SPATIAL] = PARAM2_DEFAULT * hqdn3d->strength[LUMA_SPATIAL] / PARAM1_DEFAULT;
+    if (!hqdn3d->strength[LUMA_TMP])
+        hqdn3d->strength[LUMA_TMP]   = PARAM3_DEFAULT * hqdn3d->strength[LUMA_SPATIAL] / PARAM1_DEFAULT;
+    if (!hqdn3d->strength[CHROMA_TMP])
+        hqdn3d->strength[CHROMA_TMP] = hqdn3d->strength[LUMA_TMP] * hqdn3d->strength[CHROMA_SPATIAL] / hqdn3d->strength[LUMA_SPATIAL];
 
     av_log(ctx, AV_LOG_VERBOSE, "ls:%f cs:%f lt:%f ct:%f\n",
-           lum_spac, chrom_spac, lum_tmp, chrom_tmp);
-    if (lum_spac < 0 || chrom_spac < 0 || isnan(chrom_tmp)) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid negative value for luma or chroma spatial strength, "
-               "or resulting value for chroma temporal strength is nan.\n");
-        return AVERROR(EINVAL);
-    }
+           hqdn3d->strength[LUMA_SPATIAL], hqdn3d->strength[CHROMA_SPATIAL],
+           hqdn3d->strength[LUMA_TMP], hqdn3d->strength[CHROMA_TMP]);
 
     return 0;
 }
@@ -342,6 +308,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(HQDN3DContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "luma_spatial",   "spatial luma strength",    OFFSET(strength[LUMA_SPATIAL]),   AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
+    { "chroma_spatial", "spatial chroma strength",  OFFSET(strength[CHROMA_SPATIAL]), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
+    { "luma_tmp",       "temporal luma strength",   OFFSET(strength[LUMA_TMP]),       AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
+    { "chroma_tmp",     "temporal chroma strength", OFFSET(strength[CHROMA_TMP]),     AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
+    { NULL },
+};
+
+static const AVClass hqdn3d_class = {
+    .class_name = "hqdn3d",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_hqdn3d_inputs[] = {
     {
         .name         = "default",
@@ -366,6 +349,7 @@ AVFilter avfilter_vf_hqdn3d = {
     .description   = NULL_IF_CONFIG_SMALL("Apply a High Quality 3D Denoiser."),
 
     .priv_size     = sizeof(HQDN3DContext),
+    .priv_class    = &hqdn3d_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
