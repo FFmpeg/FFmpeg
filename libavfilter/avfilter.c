@@ -682,6 +682,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "noformat") ||
         !strcmp(filter->filter->name, "resample") ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
+        !strcmp(filter->filter->name, "select") ||
         0
         ;
 

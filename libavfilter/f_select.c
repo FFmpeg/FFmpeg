@@ -125,8 +125,8 @@ enum var_name {
 
 typedef struct {
     const AVClass *class;
-    AVExpr *expr;
     char *expr_str;
+    AVExpr *expr;
     double var_values[VAR_VARS_NB];
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
 #if CONFIG_AVCODEC
@@ -138,13 +138,6 @@ typedef struct {
     double select;
 } SelectContext;
 
-#define OFFSET(x) offsetof(SelectContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
-static const AVOption options[] = {
-    { "expr", "set selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = "1"}, 0, 0, FLAGS },
-    { "e",    "set selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = "1"}, 0, 0, FLAGS },
-    {NULL},
-};
 
 static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *class)
 {
@@ -153,7 +146,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, const AVClass *c
 
     if ((ret = av_expr_parse(&select->expr, select->expr_str,
                              var_names, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n", select->expr_str);
+        av_log(ctx, AV_LOG_ERROR, "Error while parsing expression '%s'\n",
+               select->expr_str);
         return ret;
     }
     select->do_scene_detect = !!strstr(select->expr_str, "scene");
@@ -398,7 +392,13 @@ static const char *const shorthand[] = { "expr", NULL };
 
 #if CONFIG_ASELECT_FILTER
 
-#define aselect_options options
+#define OFFSET(x) offsetof(SelectContext, x)
+#define AFLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+static const AVOption aselect_options[] = {
+    { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = AFLAGS },
+    { "e",    "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = AFLAGS },
+    { NULL },
+};
 AVFILTER_DEFINE_CLASS(aselect);
 
 static av_cold int aselect_init(AVFilterContext *ctx, const char *args)
@@ -451,7 +451,14 @@ AVFilter avfilter_af_aselect = {
 
 #if CONFIG_SELECT_FILTER
 
-#define select_options options
+#define OFFSET(x) offsetof(SelectContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption select_options[] = {
+    { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
+    { "e",    "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
+    { NULL },
+};
+
 AVFILTER_DEFINE_CLASS(select);
 
 static av_cold int select_init(AVFilterContext *ctx, const char *args)
@@ -498,10 +505,9 @@ AVFilter avfilter_vf_select = {
     .query_formats = query_formats,
 
     .priv_size = sizeof(SelectContext),
+    .priv_class = &select_class,
 
     .inputs    = avfilter_vf_select_inputs,
     .outputs   = avfilter_vf_select_outputs,
-    .priv_class = &select_class,
-    .shorthand  = shorthand,
 };
 #endif /* CONFIG_SELECT_FILTER */

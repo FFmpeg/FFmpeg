@@ -6421,14 +6421,16 @@ It accepts the following values:
 @section aselect, select
 Select frames to pass in output.
 
-These filters accept a single option @option{expr} or @option{e}
-specifying the select expression, which can be specified either by
-specyfing @code{expr=VALUE} or specifying the expression
-alone.
+This filter accepts the following options:
 
-The select expression is evaluated for each input frame. If the
-evaluation result is a non-zero value, the frame is selected and
-passed to the output, otherwise it is discarded.
+@table @option
+
+@item expr
+An expression, which is evaluated for each input frame. If the expression is
+evaluated to a non-zero value, the frame is selected and passed to the output,
+otherwise it is discarded.
+
+@end table
 
 The expression can contain the following constants:
 
