@@ -305,7 +305,7 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
 
         ret = sscanf(buf,
                      " %12s %dx%d -> %12s %dx%d flags=%d CRC=%x"
-                     " SSD=%"PRId64 ", %"PRId64 ", %"PRId64 ", %"PRId64 "\n",
+                     " SSD=%"SCNd64 ", %"SCNd64 ", %"SCNd64 ", %"SCNd64 "\n",
                      srcStr, &srcW, &srcH, dstStr, &dstW, &dstH,
                      &flags, &r.crc, &r.ssdY, &r.ssdU, &r.ssdV, &r.ssdA);
         if (ret != 12) {

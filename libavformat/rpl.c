@@ -255,7 +255,7 @@ static int rpl_read_header(AVFormatContext *s)
     for (i = 0; !error && i < number_of_chunks; i++) {
         int64_t offset, video_size, audio_size;
         error |= read_line(pb, line, sizeof(line));
-        if (3 != sscanf(line, "%"PRId64" , %"PRId64" ; %"PRId64,
+        if (3 != sscanf(line, "%"SCNd64" , %"SCNd64" ; %"SCNd64,
                         &offset, &video_size, &audio_size))
             error = -1;
         av_add_index_entry(vst, offset, i * rpl->frames_per_chunk,

@@ -70,7 +70,7 @@ static int aqt_read_header(AVFormatContext *s)
 
         line[strcspn(line, "\r\n")] = 0;
 
-        if (sscanf(line, "-->> %"PRId64, &frame) == 1) {
+        if (sscanf(line, "-->> %"SCNd64, &frame) == 1) {
             new_event = 1;
             pos = avio_tell(s->pb);
             if (sub) {

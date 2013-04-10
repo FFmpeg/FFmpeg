@@ -40,8 +40,8 @@ static int mpl2_probe(AVProbeData *p)
     const unsigned char *ptr_end = ptr + p->buf_size;
 
     for (i = 0; i < 2; i++) {
-        if (sscanf(ptr, "[%"PRId64"][%"PRId64"]%c", &start, &end, &c) != 3 &&
-            sscanf(ptr, "[%"PRId64"][]%c",          &start,       &c) != 2)
+        if (sscanf(ptr, "[%"SCNd64"][%"SCNd64"]%c", &start, &end, &c) != 3 &&
+            sscanf(ptr, "[%"SCNd64"][]%c",          &start,       &c) != 2)
             return 0;
         ptr += strcspn(ptr, "\r\n") + 1;
         if (ptr >= ptr_end)
@@ -56,13 +56,13 @@ static int read_ts(char **line, int64_t *pts_start, int *duration)
     int len;
     int64_t end;
 
-    if (sscanf(*line, "[%"PRId64"][]%c%n",
+    if (sscanf(*line, "[%"SCNd64"][]%c%n",
                pts_start, &c, &len) >= 2) {
         *duration = -1;
         *line += len - 1;
         return 0;
     }
-    if (sscanf(*line, "[%"PRId64"][%"PRId64"]%c%n",
+    if (sscanf(*line, "[%"SCNd64"][%"SCNd64"]%c%n",
                pts_start, &end, &c, &len) >= 3) {
         *duration = end - *pts_start;
         *line += len - 1;

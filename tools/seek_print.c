@@ -91,7 +91,7 @@ int main(int argc, char **argv)
                        av_ts2str(packet.pts), av_ts2timestr(packet.pts, tb));
                 av_free_packet(&packet);
             }
-        } else if (sscanf(*argv, "seek:%i:%"PRIi64":%"PRIi64":%"PRIi64":%i",
+        } else if (sscanf(*argv, "seek:%i:%"SCNi64":%"SCNi64":%"SCNi64":%i",
                    &stream, &min_ts, &ts, &max_ts, &flags) == 5) {
             ret = avformat_seek_file(avf, stream, min_ts, ts, max_ts, flags);
             printf("seek: %d (%s)\n", ret, av_err2str(ret));

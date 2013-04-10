@@ -735,7 +735,7 @@ static int vobsub_read_header(AVFormatContext *s)
             int64_t pos, timestamp;
             const char *p = line + 10;
 
-            if (sscanf(p, "%02d:%02d:%02d:%03d, filepos: %"PRIx64,
+            if (sscanf(p, "%02d:%02d:%02d:%03d, filepos: %"SCNx64,
                        &hh, &mm, &ss, &ms, &pos) != 5) {
                 av_log(s, AV_LOG_ERROR, "Unable to parse timestamp line '%s', "
                        "abort parsing\n", line);

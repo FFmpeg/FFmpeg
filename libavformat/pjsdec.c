@@ -39,7 +39,7 @@ static int pjs_probe(AVProbeData *p)
     int64_t start, end;
     const unsigned char *ptr = p->buf;
 
-    if (sscanf(ptr, "%"PRId64",%"PRId64",%c", &start, &end, &c) == 3) {
+    if (sscanf(ptr, "%"SCNd64",%"SCNd64",%c", &start, &end, &c) == 3) {
         size_t q1pos = strcspn(ptr, "\"");
         size_t q2pos = q1pos + strcspn(ptr + q1pos + 1, "\"") + 1;
         if (strcspn(ptr, "\r\n") > q2pos)
@@ -52,7 +52,7 @@ static int64_t read_ts(char **line, int *duration)
 {
     int64_t start, end;
 
-    if (sscanf(*line, "%"PRId64",%"PRId64, &start, &end) == 2) {
+    if (sscanf(*line, "%"SCNd64",%"SCNd64, &start, &end) == 2) {
         *line += strcspn(*line, "\"") + 1;
         *duration = end - start;
         return start;
