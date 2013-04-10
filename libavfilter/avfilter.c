@@ -679,7 +679,6 @@ static const char *const filters_left_to_update[] = {
     "atempo",
     "buffer",
     "flite",
-    "hue",
     "mp",
     "pan",
     "scale",

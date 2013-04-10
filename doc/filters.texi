@@ -3653,24 +3653,27 @@ a float number which specifies chroma temporal strength, defaults to
 
 Modify the hue and/or the saturation of the input.
 
-This filter accepts the following optional named options:
+This filter accepts the following options:
 
 @table @option
 @item h
-Specify the hue angle as a number of degrees. It accepts a float
-number or an expression, and defaults to 0.0.
-
-@item H
-Specify the hue angle as a number of radians. It accepts a float
-number or an expression, and defaults to 0.0.
+Specify the hue angle as a number of degrees. It accepts an expression,
+and defaults to "0".
 
 @item s
 Specify the saturation in the [-10,10] range. It accepts a float number and
-defaults to 1.0.
+defaults to "1".
+
+@item H
+Specify the hue angle as a number of radians. It accepts a float
+number or an expression, and defaults to "0".
 @end table
 
-The @var{h}, @var{H} and @var{s} parameters are expressions containing the
-following constants:
+@option{h} and @option{H} are mutually exclusive, and can't be
+specified at the same time.
+
+The @option{h}, @option{H} and @option{s} option values are
+expressions containing the following constants:
 
 @table @option
 @item n
@@ -3689,10 +3692,6 @@ timestamp expressed in seconds, NAN if the input timestamp is unknown
 time base of the input video
 @end table
 
-The options can also be set using the syntax: @var{hue}:@var{saturation}
-
-In this case @var{hue} is expressed in degrees.
-
 @subsection Examples
 
 @itemize
@@ -3706,19 +3705,6 @@ hue=h=90:s=1
 Same command but expressing the hue in radians:
 @example
 hue=H=PI/2:s=1
-@end example
-
-@item
-Same command without named options, hue must be expressed in degrees:
-@example
-hue=90:1
-@end example
-
-@item
-Note that "h:s" syntax does not support expressions for the values of
-h and s, so the following example will issue an error:
-@example
-hue=PI/2:1
 @end example
 
 @item
@@ -3756,12 +3742,15 @@ hue="s=max(0\, min(1\, (START+DURATION-t)/DURATION))"
 
 This filter supports the following command:
 @table @option
-@item reinit
+@item s
+@item h
+@item H
 Modify the hue and/or the saturation of the input video.
-The command accepts the same named options and syntax than when calling the
-filter from the command-line.
+The command accepts the same options and syntax of the corresponding
+options.
 
-If a parameter is omitted, it is kept at its current value.
+If the specified expression is not valid, it is kept at its current
+value.
 @end table
 
 @section idet
