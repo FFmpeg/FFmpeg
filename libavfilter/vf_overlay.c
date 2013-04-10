@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "internal.h"
 #include "bufferqueue.h"
@@ -111,34 +112,10 @@ typedef struct {
     int shortest;               ///< terminate stream when the shortest input terminates
 
     double var_values[VAR_VARS_NB];
-    char *x_expr, *y_expr, *enable_expr;
+    char *x_expr, *y_expr;
+    char *enable_expr;
     AVExpr *x_pexpr, *y_pexpr, *enable_pexpr;
 } OverlayContext;
-
-#define OFFSET(x) offsetof(OverlayContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-
-static const AVOption overlay_options[] = {
-    { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "enable", "set expression which enables overlay", OFFSET(enable_expr), AV_OPT_TYPE_STRING, {.str = "1"}, .flags = FLAGS },
-
-    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
-    { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT}, .flags = FLAGS, .unit = "eval" },
-    { "frame", "eval expressions per-frame",   0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
-
-    { "rgb", "force packed RGB in input and output (deprecated)", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
-
-    { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
-    { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
-    { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
-    { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
-
-    { NULL }
-};
-
-AVFILTER_DEFINE_CLASS(overlay);
 
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
@@ -720,6 +697,31 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
+#define OFFSET(x) offsetof(OverlayContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption overlay_options[] = {
+    { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "enable", "set expression which enables overlay", OFFSET(enable_expr), AV_OPT_TYPE_STRING, {.str = "1"}, .flags = FLAGS },
+
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_FRAME}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+    { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT}, .flags = FLAGS, .unit = "eval" },
+    { "frame", "eval expressions per-frame",   0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
+
+    { "rgb", "force packed RGB in input and output (deprecated)", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+
+    { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
+    { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
+    { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
+    { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
+
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(overlay);
+
 static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
         .name         = "main",
@@ -758,6 +760,7 @@ AVFilter avfilter_vf_overlay = {
     .uninit    = uninit,
 
     .priv_size = sizeof(OverlayContext),
+    .priv_class = &overlay_class,
 
     .query_formats = query_formats,
     .process_command = process_command,

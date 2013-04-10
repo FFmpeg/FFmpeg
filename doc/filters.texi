@@ -4264,9 +4264,7 @@ Overlay one video on top of another.
 It takes two inputs and one output, the first input is the "main"
 video on which the second input is overlayed.
 
-This filter accepts a list of @var{key}=@var{value} pairs as argument,
-separated by ":". If the key of the first options is omitted, the
-arguments are interpreted according to the syntax @var{x}:@var{y}.
+This filter accepts the following parameters:
 
 A description of the accepted options follows.
 
@@ -4412,7 +4410,7 @@ ffmpeg -i input -i logo -filter_complex 'overlay=10:main_h-overlay_h-10' output
 Insert 2 different transparent PNG logos (second logo on bottom
 right corner) using the @command{ffmpeg} tool:
 @example
-ffmpeg -i input -i logo1 -i logo2 -filter_complex 'overlay=10:H-h-10,overlay=W-w-10:H-h-10' output
+ffmpeg -i input -i logo1 -i logo2 -filter_complex 'overlay=x=10:y=H-h-10,overlay=x=W-w-10:y=H-h-10' output
 @end example
 
 @item
