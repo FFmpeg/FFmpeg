@@ -176,7 +176,7 @@ PIXELS16_L2 put
 PIXELS16_L2 avg
 
 INIT_MMX mmxext
-; void pixels(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+; void pixels(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 %macro PIXELS48 2
 %if %2 == 4
 %define OP movh
