@@ -2008,6 +2008,19 @@ pairs, separated by ":". If the key of the first options is omitted,
 the arguments are interpreted according to the syntax
 @option{luma_radius}:@option{luma_power}:@option{chroma_radius}:@option{chroma_power}:@option{alpha_radius}:@option{alpha_power}.
 
+This filter accepts the following options:
+
+@table @option
+
+@item luma_radius
+@item luma_power
+@item chroma_radius
+@item chroma_power
+@item alpha_radius
+@item alpha_power
+
+@end table
+
 A description of the accepted options follows.
 
 @table @option
@@ -2059,6 +2072,7 @@ A value of 0 will disable the effect.
 Apply a boxblur filter with luma, chroma, and alpha radius
 set to 2:
 @example
+boxblur=luma_radius=2:luma_power=1
 boxblur=2:1
 @end example
 
@@ -2071,7 +2085,7 @@ boxblur=2:1:cr=0:ar=0
 @item
 Set luma and chroma radius to a fraction of the video dimension:
 @example
-boxblur=min(h\,w)/10:1:min(cw\,ch)/10:1
+boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chroma_power=1
 @end example
 @end itemize
 
