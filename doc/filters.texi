@@ -3750,8 +3750,7 @@ fields (so called half pictures). Odd lines are moved to the top
 half of the output image, even lines to the bottom half.
 You can process (filter) them independently and then re-interleave them.
 
-It accepts a list of options in the form of @var{key}=@var{value} pairs
-separated by ":". A description of the accepted options follows.
+The filter accepts the following options:
 
 @table @option
 @item luma_mode, l
