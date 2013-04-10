@@ -655,6 +655,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     int ret=0;
     int anton_options =
         !strcmp(filter->filter->name,  "aformat") ||
+        !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,   "format") ||
         !strcmp(filter->filter->name, "noformat") ||
         !strcmp(filter->filter->name, "resample")

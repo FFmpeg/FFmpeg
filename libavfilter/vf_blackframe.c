@@ -40,23 +40,12 @@
 
 typedef struct {
     const AVClass *class;
-    unsigned int bamount; ///< black amount
-    unsigned int bthresh; ///< black threshold
+    int bamount;          ///< black amount
+    int bthresh;          ///< black threshold
     unsigned int frame;   ///< frame number
     unsigned int nblack;  ///< number of black pixels counted so far
     unsigned int last_keyframe; ///< frame number of the last received key-frame
 } BlackFrameContext;
-
-#define OFFSET(x) offsetof(BlackFrameContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-
-static const AVOption blackframe_options[] = {
-    { "amount", "set least percentual amount of pixels below the black threshold enabling black detection", OFFSET(bamount), AV_OPT_TYPE_INT, {.i64=98}, 0, 100, FLAGS },
-    { "thresh", "set threshold below which a pixel value is considered black", OFFSET(bthresh), AV_OPT_TYPE_INT, {.i64=32}, 0, 255, FLAGS },
-    { NULL }
-};
-
-AVFILTER_DEFINE_CLASS(blackframe);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -67,16 +56,6 @@ static int query_formats(AVFilterContext *ctx)
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
-}
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    BlackFrameContext *blackframe = ctx->priv;
-
-    av_log(ctx, AV_LOG_VERBOSE, "bamount:%u bthresh:%u\n",
-           blackframe->bamount, blackframe->bthresh);
-
     return 0;
 }
 
@@ -110,6 +89,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+#define OFFSET(x) offsetof(BlackFrameContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption blackframe_options[] = {
+    { "amount", "Percentage of the pixels that have to be below the threshold "
+        "for the frame to be considered black.", OFFSET(bamount), AV_OPT_TYPE_INT, { .i64 = 98 }, 0, 100,     FLAGS },
+    { "threshold", "threshold below which a pixel value is considered black",
+                                                 OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, 255,     FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(blackframe);
+
 static const AVFilterPad avfilter_vf_blackframe_inputs[] = {
     {
         .name             = "default",
@@ -128,14 +119,12 @@ static const AVFilterPad avfilter_vf_blackframe_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "amount", "thresh", NULL };
-
 AVFilter avfilter_vf_blackframe = {
     .name        = "blackframe",
     .description = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
 
     .priv_size = sizeof(BlackFrameContext),
-    .init      = init,
+    .priv_class = &blackframe_class,
 
     .query_formats = query_formats,
 
@@ -144,5 +133,4 @@ AVFilter avfilter_vf_blackframe = {
     .outputs   = avfilter_vf_blackframe_outputs,
 
     .priv_class = &blackframe_class,
-    .shorthand  = shorthand,
 };

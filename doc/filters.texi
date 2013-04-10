@@ -1874,16 +1874,17 @@ pairs, separated by ":". If the key of the first options is omitted,
 the arguments are interpreted according to the syntax
 blackframe[=@var{amount}[:@var{threshold}]].
 
-A description of the accepted options follows.
+The filter accepts the following options:
 
 @table @option
+
 @item amount
-Set the percentage of pixels that have to be below the
-threshold to enable black detection. Default value is 98.
+The percentage of the pixels that have to be below the threshold, defaults to
+98.
 
 @item threshold
-Set the threshold below which a pixel value is considered
-black. Default value is 32.
+Threshold below which a pixel value is considered black, defaults to 32.
+
 @end table
 
 @section blend
@@ -5040,7 +5041,7 @@ Set the maximum integer value to use for expressing numerator and
 denominator when reducing the expressed aspect ratio to a rational.
 Default value is @code{100}.
 
-@item r, ratio:
+@item r, ratio, dar, sar:
 Set the aspect ratio used by the filter.
 
 The parameter can be a floating point number string, an expression, or
@@ -5057,16 +5058,17 @@ are assumed to be @var{ratio} and @var{max} in that order.
 For example to change the display aspect ratio to 16:9, specify:
 @example
 setdar='16:9'
-@end example
-
-The example above is equivalent to:
-@example
+# the above is equivalent to
 setdar=1.77777
+setdar=dar=16/9
+setdar=dar=1.77777
 @end example
 
 To change the sample aspect ratio to 10:11, specify:
 @example
 setsar='10:11'
+# the above is equivalent to
+setsar='sar=10/11'
 @end example
 
 To set a display aspect ratio of 16:9, and specify a maximum integer value of
