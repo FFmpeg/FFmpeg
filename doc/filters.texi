@@ -3302,11 +3302,7 @@ For more information see:
 
 @section geq
 
-The filter takes one, two, three or four equations as parameter, separated by ':'.
-The first equation is mandatory and applies to the luma plane. The two
-following are respectively for chroma blue and chroma red planes.
-
-The filter syntax allows named parameters:
+The filter accepts the following options:
 
 @table @option
 @item lum_expr
