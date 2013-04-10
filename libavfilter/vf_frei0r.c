@@ -35,6 +35,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
@@ -53,6 +54,7 @@ typedef void (*f0r_set_param_value_f)(f0r_instance_t instance, f0r_param_t param
 typedef void (*f0r_get_param_value_f)(f0r_instance_t instance, f0r_param_t param, int param_index);
 
 typedef struct Frei0rContext {
+    const AVClass *class;
     f0r_update_f update;
     void *dl_handle;            /* dynamic library handle   */
     f0r_instance_t instance;
@@ -64,7 +66,11 @@ typedef struct Frei0rContext {
     f0r_construct_f       construct;
     f0r_destruct_f        destruct;
     f0r_deinit_f          deinit;
-    char params[256];
+
+    char *dl_name;
+    char *params;
+    char *size;
+    char *framerate;
 
     /* only used by the source */
     int w, h;
@@ -143,7 +149,7 @@ static int set_params(AVFilterContext *ctx, const char *params)
         frei0r->get_param_info(&info, i);
 
         if (*params) {
-            if (!(param = av_get_token(&params, ":")))
+            if (!(param = av_get_token(&params, "|")))
                 return AVERROR(ENOMEM);
             params++;               /* skip ':' */
             ret = set_param(ctx, info, i, param);
@@ -224,6 +230,11 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     f0r_plugin_info_t *pi;
     char *path;
     int ret = 0;
+
+    if (!dl_name) {
+        av_log(ctx, AV_LOG_ERROR, "No filter name provided.\n");
+        return AVERROR(EINVAL);
+    }
 
     /* see: http://frei0r.dyne.org/codedoc/html/group__pluglocations.html */
     if ((path = av_strdup(getenv("FREI0R_PATH")))) {
@@ -320,13 +331,8 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
 static av_cold int filter_init(AVFilterContext *ctx, const char *args)
 {
     Frei0rContext *frei0r = ctx->priv;
-    char dl_name[1024], c;
-    *frei0r->params = 0;
 
-    if (args)
-        sscanf(args, "%1023[^:=]%c%255c", dl_name, &c, frei0r->params);
-
-    return frei0r_init(ctx, dl_name, F0R_PLUGIN_TYPE_FILTER);
+    return frei0r_init(ctx, frei0r->dl_name, F0R_PLUGIN_TYPE_FILTER);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -339,8 +345,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         frei0r->deinit();
     if (frei0r->dl_handle)
         dlclose(frei0r->dl_handle);
-
-    memset(frei0r, 0, sizeof(*frei0r));
 }
 
 static int config_input_props(AVFilterLink *inlink)
@@ -401,6 +405,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+#define OFFSET(x) offsetof(Frei0rContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption filter_options[] = {
+    { "filter_name",   NULL, OFFSET(dl_name), AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { "filter_params", NULL, OFFSET(params),  AV_OPT_TYPE_STRING, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass filter_class = {
+    .class_name = "frei0r",
+    .item_name  = av_default_item_name,
+    .option     = filter_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vf_frei0r_inputs[] = {
     {
         .name         = "default",
@@ -428,6 +447,7 @@ AVFilter avfilter_vf_frei0r = {
     .uninit = uninit,
 
     .priv_size = sizeof(Frei0rContext),
+    .priv_class = &filter_class,
 
     .inputs    = avfilter_vf_frei0r_inputs,
 
@@ -437,30 +457,21 @@ AVFilter avfilter_vf_frei0r = {
 static av_cold int source_init(AVFilterContext *ctx, const char *args)
 {
     Frei0rContext *frei0r = ctx->priv;
-    char dl_name[1024], c;
-    char frame_size[128] = "";
-    char frame_rate[128] = "";
     AVRational frame_rate_q;
 
-    memset(frei0r->params, 0, sizeof(frei0r->params));
-
-    if (args)
-        sscanf(args, "%127[^:]:%127[^:]:%1023[^:=]%c%255c",
-               frame_size, frame_rate, dl_name, &c, frei0r->params);
-
-    if (av_parse_video_size(&frei0r->w, &frei0r->h, frame_size) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: '%s'\n", frame_size);
+    if (av_parse_video_size(&frei0r->w, &frei0r->h, frei0r->size) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: '%s'\n", frei0r->size);
         return AVERROR(EINVAL);
     }
 
-    if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", frame_rate);
+    if (av_parse_video_rate(&frame_rate_q, frei0r->framerate) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: '%s'\n", frei0r->framerate);
         return AVERROR(EINVAL);
     }
     frei0r->time_base.num = frame_rate_q.den;
     frei0r->time_base.den = frame_rate_q.num;
 
-    return frei0r_init(ctx, dl_name, F0R_PLUGIN_TYPE_SOURCE);
+    return frei0r_init(ctx, frei0r->dl_name, F0R_PLUGIN_TYPE_SOURCE);
 }
 
 static int source_config_props(AVFilterLink *outlink)
@@ -500,6 +511,21 @@ static int source_request_frame(AVFilterLink *outlink)
     return ff_filter_frame(outlink, frame);
 }
 
+static const AVOption src_options[] = {
+    { "size",          "Dimensions of the generated video.", OFFSET(size),      AV_OPT_TYPE_STRING, { .str = "" },   .flags = FLAGS },
+    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = FLAGS },
+    { "filter_name",   NULL,                                 OFFSET(dl_name),   AV_OPT_TYPE_STRING,                  .flags = FLAGS },
+    { "filter_params", NULL,                                 OFFSET(params),    AV_OPT_TYPE_STRING,                  .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass src_class = {
+    .class_name = "frei0r_src",
+    .item_name  = av_default_item_name,
+    .option     = src_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_vsrc_frei0r_src_outputs[] = {
     {
         .name          = "default",
@@ -515,6 +541,7 @@ AVFilter avfilter_vsrc_frei0r_src = {
     .description = NULL_IF_CONFIG_SMALL("Generate a frei0r source."),
 
     .priv_size = sizeof(Frei0rContext),
+    .priv_class = &src_class,
     .init      = source_init,
     .uninit    = uninit,
 
