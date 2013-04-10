@@ -682,6 +682,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "histeq"     ) ||
         !strcmp(filter->filter->name, "histogram"  ) ||
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
+        !strcmp(filter->filter->name, "idet"       ) ||
         !strcmp(filter->filter->name, "ocv"        ) ||
         !strcmp(filter->filter->name, "life"       ) ||
         !strcmp(filter->filter->name, "lut"        ) ||

@@ -3730,6 +3730,15 @@ Detect video interlacing type.
 This filter tries to detect if the input is interlaced or progressive,
 top or bottom field first.
 
+The filter accepts the following options:
+
+@table @option
+@item intl_thres
+Set interlacing threshold.
+@item prog_thres
+Set progressive threshold.
+@end table
+
 @section il
 
 Deinterleave or interleave fields.
