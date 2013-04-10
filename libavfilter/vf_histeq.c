@@ -269,8 +269,6 @@ static const AVFilterPad histeq_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "strength", "intensity", "antibanding", NULL };
-
 AVFilter avfilter_vf_histeq = {
     .name          = "histeq",
     .description   = NULL_IF_CONFIG_SMALL("Apply global color histogram equalization."),
@@ -281,5 +279,4 @@ AVFilter avfilter_vf_histeq = {
     .inputs        = histeq_inputs,
     .outputs       = histeq_outputs,
     .priv_class    = &histeq_class,
-    .shorthand     = shorthand,
 };
