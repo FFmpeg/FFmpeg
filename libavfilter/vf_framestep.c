@@ -30,7 +30,7 @@
 
 typedef struct {
     const AVClass *class;
-    int frame_step, frame_count, frame_selected;
+    int frame_step, frame_count;
 } FrameStepContext;
 
 #define OFFSET(x) offsetof(FrameStepContext, x)
@@ -49,6 +49,7 @@ static int config_output_props(AVFilterLink *outlink)
     FrameStepContext *framestep = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
 
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->frame_rate =
         av_div_q(inlink->frame_rate, (AVRational){framestep->frame_step, 1});
 
@@ -64,34 +65,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
     FrameStepContext *framestep = inlink->dst->priv;
 
     if (!(framestep->frame_count++ % framestep->frame_step)) {
-        framestep->frame_selected = 1;
         return ff_filter_frame(inlink->dst->outputs[0], ref);
     } else {
-        framestep->frame_selected = 0;
         av_frame_free(&ref);
         return 0;
     }
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    FrameStepContext *framestep = outlink->src->priv;
-    AVFilterLink *inlink = outlink->src->inputs[0];
-    int ret;
-
-    framestep->frame_selected = 0;
-    do {
-        ret = ff_request_frame(inlink);
-    } while (!framestep->frame_selected && ret >= 0);
-
-    return ret;
 }
 
 static const AVFilterPad framestep_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
     },
     { NULL }
@@ -102,7 +86,6 @@ static const AVFilterPad framestep_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output_props,
-        .request_frame = request_frame,
     },
     { NULL }
 };
