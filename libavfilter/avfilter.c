@@ -676,7 +676,6 @@ static const char *const filters_left_to_update[] = {
     "aconvert",
     "aevalsrc",
     "amerge",
-    "anullsrc",
     "aresample",
     "asetnsamples",
     "atempo",

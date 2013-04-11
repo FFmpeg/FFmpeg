@@ -1596,15 +1596,9 @@ as a template and to be employed in analysis / debugging tools, or as
 the source for filters which ignore the input data (for example the sox
 synth filter).
 
-It accepts an optional sequence of @var{key}=@var{value} pairs,
-separated by ":".
-
-The description of the accepted options follows.
+This source accepts the following options:
 
 @table @option
-
-@item sample_rate, s
-Specify the sample rate, and defaults to 44100.
 
 @item channel_layout, cl
 
@@ -1615,6 +1609,9 @@ is "stereo".
 Check the channel_layout_map definition in
 @file{libavutil/channel_layout.c} for the mapping between strings and
 channel layout values.
+
+@item sample_rate, r
+Specify the sample rate, and defaults to 44100.
 
 @item nb_samples, n
 Set the number of samples per requested frames.
