@@ -79,3 +79,14 @@ void ff_h261_loop_filter(MpegEncContext *s)
     h261_loop_filter(dest_cb, uvlinesize);
     h261_loop_filter(dest_cr, uvlinesize);
 }
+
+av_cold void ff_h261_common_init(void)
+{
+    static int done = 0;
+
+    if (done)
+        return;
+
+    ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
+    done = 1;
+}
