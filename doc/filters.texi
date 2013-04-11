@@ -2371,8 +2371,9 @@ The filter accepts the following options:
 
 @table @option
 @item preset
-Select one of the available color presets. This option can not be used in
-addition to the @option{r}, @option{g}, @option{b} parameters.
+Select one of the available color presets. This option can be used in addition
+to the @option{r}, @option{g}, @option{b} parameters; in this case, the later
+options takes priority on the preset values.
 Available presets are:
 @table @samp
 @item none

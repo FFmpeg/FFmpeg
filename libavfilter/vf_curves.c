@@ -333,14 +333,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     }
 
     if (curves->preset != PRESET_NONE) {
-        if (pts[0] || pts[1] || pts[2]) {
-            av_log(ctx, AV_LOG_ERROR, "It is not possible to mix a preset "
-                   "with explicit points placements\n");
-            return AVERROR(EINVAL);
-        }
-        pts[0] = av_strdup(curves_presets[curves->preset].r);
-        pts[1] = av_strdup(curves_presets[curves->preset].g);
-        pts[2] = av_strdup(curves_presets[curves->preset].b);
+        if (!pts[0]) pts[0] = av_strdup(curves_presets[curves->preset].r);
+        if (!pts[1]) pts[1] = av_strdup(curves_presets[curves->preset].g);
+        if (!pts[2]) pts[2] = av_strdup(curves_presets[curves->preset].b);
         if (!pts[0] || !pts[1] || !pts[2])
             return AVERROR(ENOMEM);
     }
