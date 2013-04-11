@@ -1,6 +1,18 @@
 /*
  * Copyright (c) 2001-2003 The ffmpeg Project
  *
+ * first version by Francois Revol (revol@free.fr)
+ * fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
+ *   by Mike Melanson (melanson@pcisys.net)
+ * CD-ROM XA ADPCM codec by BERO
+ * EA ADPCM decoder by Robin Kay (komadori@myrealbox.com)
+ * EA ADPCM R1/R2/R3 decoder by Peter Ross (pross@xvid.org)
+ * EA IMA EACS decoder by Peter Ross (pross@xvid.org)
+ * EA IMA SEAD decoder by Peter Ross (pross@xvid.org)
+ * EA ADPCM XAS decoder by Peter Ross (pross@xvid.org)
+ * MAXIS EA ADPCM decoder by Robert Marston (rmarston@gmail.com)
+ * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -28,18 +40,6 @@
 /**
  * @file
  * ADPCM decoders
- * First version by Francois Revol (revol@free.fr)
- * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
- *   by Mike Melanson (melanson@pcisys.net)
- * CD-ROM XA ADPCM codec by BERO
- * EA ADPCM decoder by Robin Kay (komadori@myrealbox.com)
- * EA ADPCM R1/R2/R3 decoder by Peter Ross (pross@xvid.org)
- * EA IMA EACS decoder by Peter Ross (pross@xvid.org)
- * EA IMA SEAD decoder by Peter Ross (pross@xvid.org)
- * EA ADPCM XAS decoder by Peter Ross (pross@xvid.org)
- * MAXIS EA ADPCM decoder by Robert Marston (rmarston@gmail.com)
- * THP ADPCM decoder by Marco Gerards (mgerards@xs4all.nl)
- *
  * Features and limitations:
  *
  * Reference documents:

@@ -4,6 +4,8 @@
  * Copyright (c) 2002 Francois Revol
  * Copyright (c) 2006 Baptiste Coudurier
  *
+ * first version by Francois Revol <revol@free.fr>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -22,8 +24,6 @@
  */
 
 /*
- * First version by Francois Revol revol@free.fr
- *
  * Features and limitations:
  * - uses only a global standard palette
  * - tested with IE 5.0, Opera for BeOS, NetPositive (BeOS), and Mozilla (BeOS).

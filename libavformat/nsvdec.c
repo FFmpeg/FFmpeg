@@ -2,6 +2,8 @@
  * NSV demuxer
  * Copyright (c) 2004 The FFmpeg Project
  *
+ * first version by Francois Revol <revol@free.fr>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -37,7 +39,6 @@
 #define NSV_MAX_RESYNC_TRIES 300
 
 /*
- * First version by Francois Revol - revol@free.fr
  * References:
  * (1) http://www.multimedia.cx/nsv-format.txt
  * seems someone came to the same conclusions as me, and updated it:
