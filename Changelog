@@ -21,6 +21,7 @@ version <next>:
 - uniform options syntax across all filters
 - telecine filter
 - new interlace filter
+- smptehdbars source
 
 
 version 1.2:
