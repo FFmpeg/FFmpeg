@@ -5465,13 +5465,7 @@ Perform various types of temporal field interlacing.
 Frames are counted starting from 1, so the first input frame is
 considered odd.
 
-This filter accepts options in the form of @var{key}=@var{value} pairs
-separated by ":".
-Alternatively, the @var{mode} option can be specified as a value alone,
-optionally followed by a ":" and further ":" separated @var{key}=@var{value}
-pairs.
-
-A description of the accepted options follows.
+The filter accepts the following options:
 
 @table @option
 

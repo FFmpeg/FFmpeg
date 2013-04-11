@@ -758,6 +758,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "testsrc"  ) ||
         !strcmp(filter->filter->name, "thumbnail") ||
         !strcmp(filter->filter->name, "tile") ||
+        !strcmp(filter->filter->name, "tinterlace") ||
         !strcmp(filter->filter->name, "transpose") ||
         !strcmp(filter->filter->name, "treble"    ) ||
         !strcmp(filter->filter->name, "unsharp"  ) ||
