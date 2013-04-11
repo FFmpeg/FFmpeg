@@ -251,34 +251,33 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
         av_frame_copy_props(outpic, inpic);
     }
 
-    /* todo: reindent */
-        hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
-        hue->var_values[VAR_PTS] = TS2D(inpic->pts);
+    hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
+    hue->var_values[VAR_PTS] = TS2D(inpic->pts);
 
-        if (hue->saturation_expr) {
-            hue->saturation = av_expr_eval(hue->saturation_pexpr, hue->var_values, NULL);
+    if (hue->saturation_expr) {
+        hue->saturation = av_expr_eval(hue->saturation_pexpr, hue->var_values, NULL);
 
-            if (hue->saturation < SAT_MIN_VAL || hue->saturation > SAT_MAX_VAL) {
-                hue->saturation = av_clip(hue->saturation, SAT_MIN_VAL, SAT_MAX_VAL);
-                av_log(inlink->dst, AV_LOG_WARNING,
-                       "Saturation value not in range [%d,%d]: clipping value to %0.1f\n",
-                       SAT_MIN_VAL, SAT_MAX_VAL, hue->saturation);
-            }
+        if (hue->saturation < SAT_MIN_VAL || hue->saturation > SAT_MAX_VAL) {
+            hue->saturation = av_clip(hue->saturation, SAT_MIN_VAL, SAT_MAX_VAL);
+            av_log(inlink->dst, AV_LOG_WARNING,
+                   "Saturation value not in range [%d,%d]: clipping value to %0.1f\n",
+                   SAT_MIN_VAL, SAT_MAX_VAL, hue->saturation);
         }
+    }
 
-        if (hue->hue_deg_expr) {
-            hue->hue_deg = av_expr_eval(hue->hue_deg_pexpr, hue->var_values, NULL);
-            hue->hue = hue->hue_deg * M_PI / 180;
-        } else if (hue->hue_expr) {
-            hue->hue = av_expr_eval(hue->hue_pexpr, hue->var_values, NULL);
-        }
+    if (hue->hue_deg_expr) {
+        hue->hue_deg = av_expr_eval(hue->hue_deg_pexpr, hue->var_values, NULL);
+        hue->hue = hue->hue_deg * M_PI / 180;
+    } else if (hue->hue_expr) {
+        hue->hue = av_expr_eval(hue->hue_pexpr, hue->var_values, NULL);
+    }
 
-        av_log(inlink->dst, AV_LOG_DEBUG,
-               "H:%0.1f s:%0.f t:%0.1f n:%d\n",
-               hue->hue, hue->saturation,
-               hue->var_values[VAR_T], (int)hue->var_values[VAR_N]);
+    av_log(inlink->dst, AV_LOG_DEBUG,
+           "H:%0.1f s:%0.f t:%0.1f n:%d\n",
+           hue->hue, hue->saturation,
+           hue->var_values[VAR_T], (int)hue->var_values[VAR_N]);
 
-        compute_sin_and_cos(hue);
+    compute_sin_and_cos(hue);
 
     hue->var_values[VAR_N] += 1;
 
