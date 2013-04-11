@@ -430,8 +430,8 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
     return 0;
 
  fail:end:
-    for (; graph->nb_filters > 0; graph->nb_filters--)
-        avfilter_free(graph->filters[graph->nb_filters - 1]);
+    while (graph->nb_filters)
+        avfilter_free(graph->filters[0]);
     av_freep(&graph->filters);
     avfilter_inout_free(&open_inputs);
     avfilter_inout_free(&open_outputs);
@@ -498,8 +498,8 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
 
  fail:
     if (ret < 0) {
-        for (; graph->nb_filters > 0; graph->nb_filters--)
-            avfilter_free(graph->filters[graph->nb_filters - 1]);
+        while (graph->nb_filters)
+            avfilter_free(graph->filters[0]);
         av_freep(&graph->filters);
     }
     avfilter_inout_free(&inputs);
