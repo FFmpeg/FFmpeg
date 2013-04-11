@@ -683,6 +683,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "field"     ) ||
         !strcmp(filter->filter->name,  "fieldorder") ||
         !strcmp(filter->filter->name,  "fps"       ) ||
+        !strcmp(filter->filter->name,  "framestep" ) ||
         !strcmp(filter->filter->name,  "frei0r"    ) ||
         !strcmp(filter->filter->name,  "frei0r_src") ||
         !strcmp(filter->filter->name,  "geq"       ) ||

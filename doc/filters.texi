@@ -3212,10 +3212,14 @@ See also the @ref{setpts} filter.
 
 @section framestep
 
-Select one frame every N.
+Select one frame every N-th frame.
 
-This filter accepts in input a string representing a positive
-integer. Default argument is @code{1}.
+This filter accepts the following option:
+@table @option
+@item step
+Select frame after every @code{step} frames.
+Allowed values are positive integers higher than 0. Default value is @code{1}.
+@end table
 
 @anchor{frei0r}
 @section frei0r
