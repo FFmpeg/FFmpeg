@@ -681,7 +681,6 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     return count;
 }
 
-#if 0
 #if FF_API_AVFILTER_INIT_FILTER
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
 {
@@ -690,14 +689,6 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 #endif
 
 int avfilter_init_str(AVFilterContext *filter, const char *args)
-#else
-int avfilter_init_str(AVFilterContext *filter, const char *args)
-{
-    return avfilter_init_filter(filter, args, NULL);
-}
-
-int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
-#endif
 {
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;
@@ -812,7 +803,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     }
 
     if (filter->filter->init_opaque)
-        ret = filter->filter->init_opaque(filter, opaque);
+        ret = filter->filter->init_opaque(filter, NULL);
     else if (filter->filter->init)
         ret = filter->filter->init(filter);
     else if (filter->filter->init_dict)
