@@ -39,6 +39,28 @@
 
 #define AV_OPENCL_MAX_KERNEL_NAME_SIZE 150
 
+#define AV_OPENCL_MAX_DEVICE_NAME_SIZE 100
+
+#define AV_OPENCL_MAX_PLATFORM_NAME_SIZE 100
+
+typedef struct {
+    int device_type;
+    char device_name[AV_OPENCL_MAX_DEVICE_NAME_SIZE];
+    cl_device_id device_id;
+} AVOpenCLDeviceNode;
+
+typedef struct {
+    cl_platform_id platform_id;
+    char platform_name[AV_OPENCL_MAX_PLATFORM_NAME_SIZE];
+    int device_num;
+    AVOpenCLDeviceNode **device_node;
+} AVOpenCLPlatformNode;
+
+typedef struct {
+    int platform_num;
+    AVOpenCLPlatformNode **platform_node;
+} AVOpenCLDeviceList;
+
 typedef struct {
     cl_command_queue command_queue;
     cl_kernel kernel;
@@ -49,11 +71,30 @@ typedef struct {
     cl_platform_id platform_id;
     cl_device_type device_type;
     cl_context context;
-    cl_device_id *device_ids;
     cl_device_id  device_id;
     cl_command_queue command_queue;
     char *platform_name;
 } AVOpenCLExternalEnv;
+
+/**
+ * Get OpenCL device list.
+ *
+ * It must be freed with av_opencl_free_device_list().
+ *
+ * @param device_list pointer to OpenCL environment device list,
+ *                    should be released by av_opencl_free_device_list()
+ *
+ * @return  >=0 on success, a negative error code in case of failure
+ */
+int av_opencl_get_device_list(AVOpenCLDeviceList **device_list);
+
+/**
+  * Free OpenCL device list.
+  *
+  * @param device_list pointer to OpenCL environment device list
+  *                       created by av_opencl_get_device_list()
+  */
+void av_opencl_free_device_list(AVOpenCLDeviceList **device_list);
 
 /**
  * Allocate OpenCL external environment.

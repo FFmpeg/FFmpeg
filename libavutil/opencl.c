@@ -43,22 +43,17 @@ static pthread_mutex_t atomic_opencl_lock = PTHREAD_MUTEX_INITIALIZER;
 #define MAX_KERNEL_CODE_NUM 200
 
 typedef struct {
-    int dev_idx;
-    int platform_idx;
-} UserSpecDevInfo;
-
-typedef struct {
     int is_compiled;
     const char *kernel_string;
 } KernelCode;
 
 typedef struct {
     int init_count;
-    UserSpecDevInfo usr_spec_dev_info;
+    int platform_idx;
+    int device_idx;
     cl_platform_id platform_id;
     cl_device_type device_type;
     cl_context context;
-    cl_device_id *device_ids;
     cl_device_id device_id;
     cl_command_queue command_queue;
     int program_count;
@@ -71,6 +66,7 @@ typedef struct {
      * passed as AVOpenCLExternalEnv when initing ,0:created by opencl wrapper.
      */
     int is_user_created;
+    AVOpenCLDeviceList device_list;
 } GPUEnv;
 
 typedef struct {
@@ -168,6 +164,151 @@ static const char *opencl_errstr(cl_int status)
             return opencl_err_msg[i].err_str;
     }
     return "unknown error";
+}
+
+static void free_device_list(AVOpenCLDeviceList *device_list)
+{
+    int i, j;
+    if (!device_list)
+        return;
+    for (i = 0; i < device_list->platform_num; i++) {
+        if (!device_list->platform_node[i])
+            continue;
+        for (j = 0; j < device_list->platform_node[i]->device_num; j++) {
+            av_freep(&(device_list->platform_node[i]->device_node[j]));
+        }
+        av_freep(&device_list->platform_node[i]->device_node);
+        av_freep(&device_list->platform_node[i]);
+    }
+    av_freep(&device_list->platform_node);
+    device_list->platform_num = 0;
+}
+
+static int get_device_list(AVOpenCLDeviceList *device_list)
+{
+    cl_int status;
+    int i, j, k, device_num, total_devices_num,ret = 0;
+    int *devices_num;
+    cl_platform_id *platform_ids = NULL;
+    cl_device_id *device_ids = NULL;
+    AVOpenCLDeviceNode *device_node = NULL;
+    status = clGetPlatformIDs(0, NULL, &device_list->platform_num);
+    if (status != CL_SUCCESS) {
+        av_log(&openclutils, AV_LOG_ERROR,
+               "Could not get OpenCL platform ids: %s\n", opencl_errstr(status));
+        return AVERROR_EXTERNAL;
+    }
+    platform_ids = av_mallocz(device_list->platform_num * sizeof(cl_platform_id));
+    if (!platform_ids)
+        return AVERROR(ENOMEM);
+    status = clGetPlatformIDs(device_list->platform_num, platform_ids, NULL);
+    if (status != CL_SUCCESS) {
+        av_log(&openclutils, AV_LOG_ERROR,
+                "Could not get OpenCL platform ids: %s\n", opencl_errstr(status));
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+    device_list->platform_node = av_mallocz(device_list->platform_num * sizeof(AVOpenCLPlatformNode *));
+    if (!device_list->platform_node) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    devices_num = av_mallocz(sizeof(int) * FF_ARRAY_ELEMS(device_type));
+    if (!devices_num) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+    for (i = 0; i < device_list->platform_num; i++) {
+        device_list->platform_node[i] = av_mallocz(sizeof(AVOpenCLPlatformNode));
+        if (!device_list->platform_node[i]) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+        device_list->platform_node[i]->platform_id = platform_ids[i];
+        status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
+                                   sizeof(device_list->platform_node[i]->platform_name),
+                                   device_list->platform_node[i]->platform_name, NULL);
+        total_devices_num = 0;
+        for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
+            status = clGetDeviceIDs(device_list->platform_node[i]->platform_id,
+                                    device_type[j], 0, NULL, &devices_num[j]);
+            total_devices_num += devices_num[j];
+        }
+        device_list->platform_node[i]->device_node = av_mallocz(total_devices_num * sizeof(AVOpenCLDeviceNode *));
+        if (!device_list->platform_node[i]->device_node) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+        for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
+            if (devices_num[j]) {
+                device_ids = av_mallocz(devices_num[j] * sizeof(cl_device_id));
+                if (!device_ids) {
+                    ret = AVERROR(ENOMEM);
+                    goto end;
+                }
+                status = clGetDeviceIDs(device_list->platform_node[i]->platform_id, device_type[j],
+                                        devices_num[j], device_ids, NULL);
+                if (status != CL_SUCCESS) {
+                    av_log(&openclutils, AV_LOG_WARNING,
+                            "Could not get device ID: %s:\n", opencl_errstr(status));
+                    av_freep(&device_ids);
+                    continue;
+                }
+                for (k = 0; k < devices_num[j]; k++) {
+                    device_num = device_list->platform_node[i]->device_num;
+                    device_list->platform_node[i]->device_node[device_num] = av_mallocz(sizeof(AVOpenCLDeviceNode));
+                    if (!device_list->platform_node[i]->device_node[device_num]) {
+                        ret = AVERROR(ENOMEM);
+                        goto end;
+                    }
+                    device_node = device_list->platform_node[i]->device_node[device_num];
+                    device_node->device_id = device_ids[k];
+                    device_node->device_type = device_type[j];
+                    status = clGetDeviceInfo(device_node->device_id, CL_DEVICE_NAME,
+                                             sizeof(device_node->device_name), device_node->device_name,
+                                             NULL);
+                    if (status != CL_SUCCESS) {
+                        av_log(&openclutils, AV_LOG_WARNING,
+                                "Could not get device name: %s\n", opencl_errstr(status));
+                        continue;
+                    }
+                    device_list->platform_node[i]->device_num++;
+                }
+                av_freep(&device_ids);
+            }
+        }
+    }
+end:
+    av_freep(&platform_ids);
+    av_freep(&devices_num);
+    av_freep(&device_ids);
+    if (ret < 0)
+        free_device_list(device_list);
+    return ret;
+}
+
+int av_opencl_get_device_list(AVOpenCLDeviceList **device_list)
+{
+    int ret = 0;
+    *device_list = av_mallocz(sizeof(AVOpenCLDeviceList));
+    if (!(*device_list)) {
+        av_log(&openclutils, AV_LOG_ERROR, "Could not allocate opencl device list\n");
+        return AVERROR(ENOMEM);
+    }
+    ret = get_device_list(*device_list);
+    if (ret < 0) {
+        av_log(&openclutils, AV_LOG_ERROR, "Could not get device list from environment\n");
+        free_device_list(*device_list);
+        av_freep(device_list);
+        return ret;
+    }
+    return ret;
+}
+
+void av_opencl_free_device_list(AVOpenCLDeviceList **device_list)
+{
+    free_device_list(*device_list);
+    av_freep(device_list);
 }
 
 AVOpenCLExternalEnv *av_opencl_alloc_external_env(void)
@@ -273,13 +414,10 @@ end:
 
 static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
 {
-    size_t device_length;
     cl_int status;
-    cl_uint num_platforms, num_devices;
-    cl_platform_id *platform_ids = NULL;
     cl_context_properties cps[3];
-    char platform_name[100];
-    int i, j, ret = 0;
+    int i, ret = 0;
+    AVOpenCLDeviceNode *device_node = NULL;
 
     if (ext_opencl_env) {
         if (gpu_env->is_user_created)
@@ -288,154 +426,82 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
         gpu_env->is_user_created = 1;
         gpu_env->command_queue   = ext_opencl_env->command_queue;
         gpu_env->context         = ext_opencl_env->context;
-        gpu_env->device_ids      = ext_opencl_env->device_ids;
         gpu_env->device_id       = ext_opencl_env->device_id;
         gpu_env->device_type     = ext_opencl_env->device_type;
     } else {
         if (!gpu_env->is_user_created) {
-            status = clGetPlatformIDs(0, NULL, &num_platforms);
-            if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL platform ids: %s\n", opencl_errstr(status));
-                return AVERROR_EXTERNAL;
+            if (!gpu_env->device_list.platform_num) {
+                ret = get_device_list(&gpu_env->device_list);
+                if (ret < 0) {
+                    return ret;
+                }
             }
-            if (gpu_env->usr_spec_dev_info.platform_idx >= 0) {
-                if (num_platforms < gpu_env->usr_spec_dev_info.platform_idx + 1) {
+            if (gpu_env->platform_idx >= 0) {
+                if (gpu_env->device_list.platform_num < gpu_env->platform_idx + 1) {
                     av_log(&openclutils, AV_LOG_ERROR, "User set platform index not exist\n");
                     return AVERROR(EINVAL);
                 }
-            }
-            if (num_platforms > 0) {
-                platform_ids = av_mallocz(num_platforms * sizeof(cl_platform_id));
-                if (!platform_ids) {
-                    ret = AVERROR(ENOMEM);
-                    goto end;
+                if (!gpu_env->device_list.platform_node[gpu_env->platform_idx]->device_num) {
+                    av_log(&openclutils, AV_LOG_ERROR, "No devices in user specific platform with index %d\n",
+                           gpu_env->platform_idx);
+                    return AVERROR(EINVAL);
                 }
-                status = clGetPlatformIDs(num_platforms, platform_ids, NULL);
-                if (status != CL_SUCCESS) {
-                    av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL platform ids: %s\n", opencl_errstr(status));
-                    ret = AVERROR_EXTERNAL;
-                    goto end;
-                }
-                i = 0;
-                if (gpu_env->usr_spec_dev_info.platform_idx >= 0) {
-                    i = gpu_env->usr_spec_dev_info.platform_idx;
-                }
-                while (i < num_platforms) {
-                    status = clGetPlatformInfo(platform_ids[i], CL_PLATFORM_VENDOR,
-                                               sizeof(platform_name), platform_name,
-                                               NULL);
-
-                    if (status != CL_SUCCESS) {
-                        av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL platform info: %s\n", opencl_errstr(status));
-                        ret = AVERROR_EXTERNAL;
-                        goto end;
+                gpu_env->platform_id = gpu_env->device_list.platform_node[gpu_env->platform_idx]->platform_id;
+            } else {
+                /* get a usable platform by default*/
+                for (i = 0; i < gpu_env->device_list.platform_num; i++) {
+                    if (gpu_env->device_list.platform_node[i]->device_num) {
+                        gpu_env->platform_id = gpu_env->device_list.platform_node[i]->platform_id;
+                        gpu_env->platform_idx = i;
+                        break;
                     }
-                    gpu_env->platform_id = platform_ids[i];
-                    for (j = 0; j < FF_ARRAY_ELEMS(device_type); j++) {
-                        status = clGetDeviceIDs(gpu_env->platform_id, device_type[j], 0, NULL, &num_devices);
-                        if (status == CL_SUCCESS)
-                            break;
-                    }
-                    if (num_devices)
-                       break;
-                    if (gpu_env->usr_spec_dev_info.platform_idx >= 0) {
-                        av_log(&openclutils, AV_LOG_ERROR, "Device number of user set platform is 0\n");
-                        ret = AVERROR_EXTERNAL;
-                        goto end;
-                    }
-                    if (i >= num_platforms - 1) {
-                        if (status != CL_SUCCESS) {
-                            av_log(&openclutils, AV_LOG_ERROR,
-                                    "Could not get OpenCL device ids: %s\n", opencl_errstr(status));
-                            ret = AVERROR(EINVAL);
-                            goto end;
-                        }
-                    }
-                    i++;
                 }
             }
             if (!gpu_env->platform_id) {
                 av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL platforms\n");
-                ret = AVERROR_EXTERNAL;
-                goto end;
+                return AVERROR_EXTERNAL;
             }
-            if (gpu_env->usr_spec_dev_info.dev_idx >= 0) {
-                if (num_devices < gpu_env->usr_spec_dev_info.dev_idx + 1) {
-                    av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device idx in the user set platform\n");
-                    ret = AVERROR(EINVAL);
-                    goto end;
+            /* get a usable device*/
+            if (gpu_env->device_idx >= 0) {
+                if (gpu_env->device_list.platform_node[gpu_env->platform_idx]->device_num < gpu_env->device_idx + 1) {
+                    av_log(&openclutils, AV_LOG_ERROR,
+                           "Could not get OpenCL device idx %d in the user set platform\n", gpu_env->platform_idx);
+                    return AVERROR(EINVAL);
                 }
+            } else {
+                gpu_env->device_idx = 0;
             }
+
+            device_node = gpu_env->device_list.platform_node[gpu_env->platform_idx]->device_node[gpu_env->device_idx];
+            gpu_env->device_id = device_node->device_id;
+            gpu_env->device_type = device_node->device_type;
 
             /*
              * Use available platform.
              */
-            av_log(&openclutils, AV_LOG_VERBOSE, "Platform Name: %s\n", platform_name);
+            av_log(&openclutils, AV_LOG_VERBOSE, "Platform Name: %s, device id: 0x%x\n",
+                   gpu_env->device_list.platform_node[gpu_env->platform_idx]->platform_name,
+                   (unsigned int)gpu_env->device_id);
             cps[0] = CL_CONTEXT_PLATFORM;
             cps[1] = (cl_context_properties)gpu_env->platform_id;
             cps[2] = 0;
-
             /* Check for GPU. */
-            for (i = 0; i < FF_ARRAY_ELEMS(device_type); i++) {
-                gpu_env->device_type = device_type[i];
-                gpu_env->context     = clCreateContextFromType(cps, gpu_env->device_type,
-                                                               NULL, NULL, &status);
-                if (status == CL_SUCCESS)
-                    break;
-            }
-            if (!gpu_env->context) {
+            gpu_env->context = clCreateContextFromType(cps, gpu_env->device_type,
+                                                       NULL, NULL, &status);
+            if (status != CL_SUCCESS) {
                 av_log(&openclutils, AV_LOG_ERROR,
                        "Could not get OpenCL context from device type: %s\n", opencl_errstr(status));
-                ret = AVERROR_EXTERNAL;
-                goto end;
+                return AVERROR_EXTERNAL;
             }
-            /* Detect OpenCL devices. */
-            /* First, get the size of device list data */
-            status = clGetContextInfo(gpu_env->context, CL_CONTEXT_DEVICES,
-                                      0, NULL, &device_length);
-            if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR,
-                       "Could not get OpenCL device length: %s\n", opencl_errstr(status));
-                ret = AVERROR_EXTERNAL;
-                goto end;
-            }
-            if (device_length == 0) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL device length\n");
-                ret = AVERROR_EXTERNAL;
-                goto end;
-            }
-            /* Now allocate memory for device list based on the size we got earlier */
-            gpu_env->device_ids = av_mallocz(device_length);
-            if (!gpu_env->device_ids) {
-                ret = AVERROR(ENOMEM);
-                goto end;
-            }
-            /* Now, get the device list data */
-            status = clGetContextInfo(gpu_env->context, CL_CONTEXT_DEVICES, device_length,
-                                      gpu_env->device_ids, NULL);
-            if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR,
-                       "Could not get OpenCL context info: %s\n", opencl_errstr(status));
-                ret = AVERROR_EXTERNAL;
-                goto end;
-            }
-            /* Create OpenCL command queue. */
-            i = 0;
-            if (gpu_env->usr_spec_dev_info.dev_idx >= 0) {
-                i = gpu_env->usr_spec_dev_info.dev_idx;
-            }
-            gpu_env->command_queue = clCreateCommandQueue(gpu_env->context, gpu_env->device_ids[i],
+            gpu_env->command_queue = clCreateCommandQueue(gpu_env->context, gpu_env->device_id,
                                                           0, &status);
             if (status != CL_SUCCESS) {
                 av_log(&openclutils, AV_LOG_ERROR,
                        "Could not create OpenCL command queue: %s\n", opencl_errstr(status));
-                ret = AVERROR_EXTERNAL;
-                goto end;
+                return AVERROR_EXTERNAL;
             }
         }
     }
-end:
-    av_free(platform_ids);
     return ret;
 }
 
@@ -481,17 +547,8 @@ static int compile_kernel_file(GPUEnv *gpu_env, const char *build_options)
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    i = 0;
-    if (gpu_env->usr_spec_dev_info.dev_idx >= 0)
-        i = gpu_env->usr_spec_dev_info.dev_idx;
-    /* create a cl program executable for all the devices specified */
-    if (!gpu_env->is_user_created)
-        status = clBuildProgram(gpu_env->programs[gpu_env->program_count], 1, &gpu_env->device_ids[i],
-                                build_options, NULL, NULL);
-    else
-        status = clBuildProgram(gpu_env->programs[gpu_env->program_count], 1, &(gpu_env->device_id),
-                                 build_options, NULL, NULL);
-
+    status = clBuildProgram(gpu_env->programs[gpu_env->program_count], 1, &(gpu_env->device_id),
+                            build_options, NULL, NULL);
     if (status != CL_SUCCESS) {
         av_log(&openclutils, AV_LOG_ERROR,
                "Could not compile OpenCL kernel: %s\n", opencl_errstr(status));
@@ -516,10 +573,10 @@ int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
         opt_platform_entry = av_dict_get(options, "platform_idx", NULL, 0);
         opt_device_entry   = av_dict_get(options, "device_idx", NULL, 0);
         /* initialize devices, context, command_queue */
-        gpu_env.usr_spec_dev_info.platform_idx = -1;
-        gpu_env.usr_spec_dev_info.dev_idx = -1;
+        gpu_env.platform_idx = -1;
+        gpu_env.device_idx = -1;
         if (opt_platform_entry) {
-            gpu_env.usr_spec_dev_info.platform_idx = strtol(opt_platform_entry->value, &pos, 10);
+            gpu_env.platform_idx = strtol(opt_platform_entry->value, &pos, 10);
             if (pos == opt_platform_entry->value) {
                 av_log(&openclutils, AV_LOG_ERROR, "Platform index should be a number\n");
                 ret = AVERROR(EINVAL);
@@ -527,7 +584,7 @@ int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
             }
         }
         if (opt_device_entry) {
-            gpu_env.usr_spec_dev_info.dev_idx = strtol(opt_device_entry->value, &pos, 10);
+            gpu_env.device_idx = strtol(opt_device_entry->value, &pos, 10);
             if (pos == opt_platform_entry->value) {
                 av_log(&openclutils, AV_LOG_ERROR, "Device index should be a number\n");
                 ret = AVERROR(EINVAL);
@@ -595,7 +652,7 @@ void av_opencl_uninit(void)
         }
         gpu_env.context = NULL;
     }
-    av_freep(&(gpu_env.device_ids));
+    free_device_list(&gpu_env.device_list);
 end:
     UNLOCK_OPENCL
 }
