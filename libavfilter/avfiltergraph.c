@@ -96,12 +96,14 @@ int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
 {
     int ret;
 
-    if ((ret = avfilter_open(filt_ctx, filt, name)) < 0)
+    *filt_ctx = avfilter_graph_alloc_filter(graph_ctx, filt, name);
+    if (!*filt_ctx)
+        return AVERROR(ENOMEM);
+    if ((ret = avfilter_init_filter(*filt_ctx, args, opaque)) < 0) {
+        graph_ctx->filters[graph_ctx->nb_filters-1] = NULL;
         goto fail;
-    if ((ret = avfilter_init_filter(*filt_ctx, args, opaque)) < 0)
-        goto fail;
-    if ((ret = avfilter_graph_add_filter(graph_ctx, *filt_ctx)) < 0)
-        goto fail;
+    }
+
     return 0;
 
 fail:
@@ -114,6 +116,32 @@ fail:
 void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags)
 {
     graph->disable_auto_convert = flags;
+}
+
+AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
+                                             const AVFilter *filter,
+                                             const char *name)
+{
+    AVFilterContext **filters, *s;
+
+    s = ff_filter_alloc(filter, name);
+    if (!s)
+        return NULL;
+
+    filters = av_realloc(graph->filters, sizeof(*filters) * (graph->nb_filters + 1));
+    if (!filters) {
+        avfilter_free(s);
+        return NULL;
+    }
+
+    graph->filters = filters;
+    graph->filters[graph->nb_filters++] = s;
+
+#if FF_API_FOO_COUNT
+    graph->filter_count_unused = graph->nb_filters;
+#endif
+
+    return s;
 }
 
 /**

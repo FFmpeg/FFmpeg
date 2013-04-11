@@ -490,17 +490,16 @@ static const AVClass avfilter_class = {
     .child_class_next = filter_child_class_next,
 };
 
-int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)
+AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 {
     AVFilterContext *ret;
-    *filter_ctx = NULL;
 
     if (!filter)
-        return AVERROR(EINVAL);
+        return NULL;
 
     ret = av_mallocz(sizeof(AVFilterContext));
     if (!ret)
-        return AVERROR(ENOMEM);
+        return NULL;
 
     ret->av_class = &avfilter_class;
     ret->filter   = filter;
@@ -542,8 +541,7 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
     ret->input_count  = ret->nb_inputs;
 #endif
 
-    *filter_ctx = ret;
-    return 0;
+    return ret;
 
 err:
     av_freep(&ret->inputs);
@@ -554,8 +552,16 @@ err:
     ret->nb_outputs = 0;
     av_freep(&ret->priv);
     av_free(ret);
-    return AVERROR(ENOMEM);
+    return NULL;
 }
+
+#if FF_API_AVFILTER_OPEN
+int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)
+{
+    *filter_ctx = ff_filter_alloc(filter, inst_name);
+    return *filter_ctx ? 0 : AVERROR(ENOMEM);
+}
+#endif
 
 void avfilter_free(AVFilterContext *filter)
 {

@@ -817,8 +817,8 @@ void avfilter_uninit(void);
 /**
  * Register a filter. This is only needed if you plan to use
  * avfilter_get_by_name later to lookup the AVFilter structure by name. A
- * filter can still by instantiated with avfilter_open even if it is not
- * registered.
+ * filter can still by instantiated with avfilter_graph_alloc_filter even if it
+ * is not registered.
  *
  * @param filter the filter to register
  * @return 0 if the registration was successful, a negative value
@@ -843,6 +843,7 @@ AVFilter *avfilter_get_by_name(const char *name);
  */
 AVFilter **av_filter_next(AVFilter **filter);
 
+#if FF_API_AVFILTER_OPEN
 /**
  * Create a filter instance.
  *
@@ -851,8 +852,11 @@ AVFilter **av_filter_next(AVFilter **filter);
  * @param filter    the filter to create an instance of
  * @param inst_name Name to give to the new instance. Can be NULL for none.
  * @return >= 0 in case of success, a negative error code otherwise
+ * @deprecated use avfilter_graph_alloc_filter() instead
  */
+attribute_deprecated
 int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name);
+#endif
 
 /**
  * Initialize a filter.
@@ -947,6 +951,24 @@ typedef struct AVFilterGraph {
  * Allocate a filter graph.
  */
 AVFilterGraph *avfilter_graph_alloc(void);
+
+/**
+ * Create a new filter instance in a filter graph.
+ *
+ * @param graph graph in which the new filter will be used
+ * @param filter the filter to create an instance of
+ * @param name Name to give to the new instance (will be copied to
+ *             AVFilterContext.name). This may be used by the caller to identify
+ *             different filters, libavfilter itself assigns no semantics to
+ *             this parameter. May be NULL.
+ *
+ * @return the context of the newly created filter instance (note that it is
+ *         also retrievable directly through AVFilterGraph.filters or with
+ *         avfilter_graph_get_filter()) on success or NULL or failure.
+ */
+AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
+                                             const AVFilter *filter,
+                                             const char *name);
 
 /**
  * Get a filter instance with name name from graph.

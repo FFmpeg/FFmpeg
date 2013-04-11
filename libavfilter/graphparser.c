@@ -109,16 +109,11 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         return AVERROR(EINVAL);
     }
 
-    ret = avfilter_open(filt_ctx, filt, inst_name);
+    *filt_ctx = avfilter_graph_alloc_filter(ctx, filt, inst_name);
     if (!*filt_ctx) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error creating filter '%s'\n", filt_name);
-        return ret;
-    }
-
-    if ((ret = avfilter_graph_add_filter(ctx, *filt_ctx)) < 0) {
-        avfilter_free(*filt_ctx);
-        return ret;
+        return AVERROR(ENOMEM);
     }
 
     if (!strcmp(filt_name, "scale") && args && !strstr(args, "flags") &&
