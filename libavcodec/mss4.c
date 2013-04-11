@@ -573,7 +573,7 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             ff_mss34_gen_quant_mat(c->quant_mat[i], quality, !i);
     }
 
-    init_get_bits(&gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE) * 8);
+    init_get_bits8(&gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE));
 
     mb_width  = FFALIGN(width,  16) >> 4;
     mb_height = FFALIGN(height, 16) >> 4;
