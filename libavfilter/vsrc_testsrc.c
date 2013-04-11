@@ -103,7 +103,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
     int ret = 0;
@@ -218,7 +218,7 @@ static av_cold int color_init(AVFilterContext *ctx, const char *args)
     TestSourceContext *test = ctx->priv;
     test->fill_picture_fn = color_fill_picture;
     test->draw_once = 1;
-    return init(ctx, NULL);
+    return init(ctx);
 }
 
 static int color_query_formats(AVFilterContext *ctx)
@@ -287,7 +287,7 @@ static av_cold int nullsrc_init(AVFilterContext *ctx, const char *args)
     TestSourceContext *test = ctx->priv;
 
     test->fill_picture_fn = nullsrc_fill_picture;
-    return init(ctx, NULL);
+    return init(ctx);
 }
 
 static const AVFilterPad nullsrc_outputs[] = {
@@ -505,7 +505,7 @@ static av_cold int test_init(AVFilterContext *ctx, const char *args)
     TestSourceContext *test = ctx->priv;
 
     test->fill_picture_fn = test_fill_picture;
-    return init(ctx, NULL);
+    return init(ctx);
 }
 
 static int test_query_formats(AVFilterContext *ctx)
@@ -610,7 +610,7 @@ static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
 
     test->draw_once = 1;
     test->fill_picture_fn = rgbtest_fill_picture;
-    return init(ctx, NULL);
+    return init(ctx);
 }
 
 static int rgbtest_query_formats(AVFilterContext *ctx)
@@ -760,7 +760,7 @@ static av_cold int smptebars_init(AVFilterContext *ctx, const char *args)
 
     test->fill_picture_fn = smptebars_fill_picture;
     test->draw_once = 1;
-    return init(ctx, args);
+    return init(ctx);
 }
 
 static int smptebars_query_formats(AVFilterContext *ctx)
