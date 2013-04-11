@@ -18,6 +18,7 @@ version <next>:
 - audio phaser filter
 - separatefields filter
 - libquvi demuxer
+- uniform options syntax across all filters
 
 
 version 1.2:

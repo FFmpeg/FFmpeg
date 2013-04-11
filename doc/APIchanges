@@ -156,6 +156,12 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
+2013-xx-xx - lavfi 3.7.0 - avfilter.h
+  Add AVFilter.priv_class for exporting filter options through the AVOptions API
+  in the similar way private options work in lavc and lavf.
+  Add avfilter_get_class().
+  Switch all filters to use AVOptions.
+
 2013-xx-xx - lavu 52.9.0 - pixdesc.h
   Add av_pix_fmt_count_planes() function for counting planes in a pixel format.
 
