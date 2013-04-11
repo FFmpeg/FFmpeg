@@ -133,6 +133,4 @@ AVFilter avfilter_vf_blackframe = {
     .inputs    = avfilter_vf_blackframe_inputs,
 
     .outputs   = avfilter_vf_blackframe_outputs,
-
-    .priv_class = &blackframe_class,
 };

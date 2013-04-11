@@ -145,5 +145,4 @@ AVFilter avfilter_af_aformat = {
 
     .inputs        = avfilter_af_aformat_inputs,
     .outputs       = avfilter_af_aformat_outputs,
-    .priv_class    = &aformat_class,
 };

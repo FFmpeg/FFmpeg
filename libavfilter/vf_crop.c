@@ -348,5 +348,4 @@ AVFilter avfilter_vf_crop = {
 
     .inputs    = avfilter_vf_crop_inputs,
     .outputs   = avfilter_vf_crop_outputs,
-    .priv_class = &crop_class,
 };
