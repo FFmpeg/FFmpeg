@@ -31,15 +31,7 @@
 
 typedef struct {
     unsigned int frame;
-    int vsub, hsub;
 } BBoxContext;
-
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    BBoxContext *bbox = ctx->priv;
-    bbox->frame = 0;
-    return 0;
-}
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -92,7 +84,6 @@ static const AVFilterPad bbox_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
     },
     { NULL }
@@ -111,7 +102,6 @@ AVFilter avfilter_vf_bbox = {
     .description   = NULL_IF_CONFIG_SMALL("Compute bounding box for each frame."),
     .priv_size     = sizeof(BBoxContext),
     .query_formats = query_formats,
-    .init          = init,
     .inputs        = bbox_inputs,
     .outputs       = bbox_outputs,
 };
