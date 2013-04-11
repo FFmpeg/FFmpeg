@@ -1329,19 +1329,19 @@ QPEL_MC(0, avg_       , _       , op_avg)
 
 void ff_put_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  put_pixels8_8_c(dst, src, stride, 8);
+    put_pixels8_8_c(dst, src, stride, 8);
 }
 void ff_avg_pixels8x8_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  avg_pixels8_8_c(dst, src, stride, 8);
+    avg_pixels8_8_c(dst, src, stride, 8);
 }
 void ff_put_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  put_pixels16_8_c(dst, src, stride, 16);
+    put_pixels16_8_c(dst, src, stride, 16);
 }
 void ff_avg_pixels16x16_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  avg_pixels16_8_c(dst, src, stride, 16);
+    avg_pixels16_8_c(dst, src, stride, 16);
 }
 
 #define put_qpel8_mc00_c  ff_put_pixels8x8_c
