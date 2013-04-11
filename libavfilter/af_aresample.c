@@ -35,17 +35,18 @@
 #include "internal.h"
 
 typedef struct {
+    const AVClass *class;
+    int sample_rate_arg;
     double ratio;
     struct SwrContext *swr;
     int64_t next_pts;
     int req_fullfilled;
 } AResampleContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 {
     AResampleContext *aresample = ctx->priv;
     int ret = 0;
-    char *argd = av_strdup(args);
 
     aresample->next_pts = AV_NOPTS_VALUE;
     aresample->swr = swr_alloc();
@@ -54,27 +55,20 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
         goto end;
     }
 
-    if (args) {
-        char *ptr = argd, *token;
+    if (opts) {
+        AVDictionaryEntry *e = NULL;
 
-        while (token = av_strtok(ptr, ":", &ptr)) {
-            char *value;
-            av_strtok(token, "=", &value);
-
-            if (value) {
-                if ((ret = av_opt_set(aresample->swr, token, value, 0)) < 0)
-                    goto end;
-            } else {
-                int out_rate;
-                if ((ret = ff_parse_sample_rate(&out_rate, token, ctx)) < 0)
-                    goto end;
-                if ((ret = av_opt_set_int(aresample->swr, "osr", out_rate, 0)) < 0)
-                    goto end;
-            }
+        while ((e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+            const char *token = e->key;
+            const char *value = e->value;
+            if ((ret = av_opt_set(aresample->swr, token, value, 0)) < 0)
+                goto end;
         }
+        av_dict_free(opts);
     }
+    if (aresample->sample_rate_arg > 0)
+        av_opt_set_int(aresample->swr, "osr", aresample->sample_rate_arg, 0);
 end:
-    av_free(argd);
     return ret;
 }
 
@@ -257,6 +251,34 @@ static int request_frame(AVFilterLink *outlink)
     return ret;
 }
 
+static const AVClass *resample_child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : swr_get_class();
+}
+
+static void *resample_child_next(void *obj, void *prev)
+{
+    AResampleContext *s = obj;
+    return prev ? NULL : s->swr;
+}
+
+#define OFFSET(x) offsetof(AResampleContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption options[] = {
+    {"sample_rate", NULL, OFFSET(sample_rate_arg), AV_OPT_TYPE_INT, {.i64=0},  0,        INT_MAX, FLAGS },
+    {NULL}
+};
+
+static const AVClass aresample_class = {
+    .class_name       = "aresample",
+    .item_name        = av_default_item_name,
+    .option           = options,
+    .version          = LIBAVUTIL_VERSION_INT,
+    .child_class_next = resample_child_class_next,
+    .child_next       = resample_child_next,
+};
+
 static const AVFilterPad aresample_inputs[] = {
     {
         .name         = "default",
@@ -279,10 +301,11 @@ static const AVFilterPad aresample_outputs[] = {
 AVFilter avfilter_af_aresample = {
     .name          = "aresample",
     .description   = NULL_IF_CONFIG_SMALL("Resample audio data."),
-    .init          = init,
+    .init_dict     = init_dict,
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AResampleContext),
+    .priv_class    = &aresample_class,
     .inputs        = aresample_inputs,
     .outputs       = aresample_outputs,
 };
