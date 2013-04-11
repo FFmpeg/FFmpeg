@@ -714,6 +714,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "mptestsrc"  ) ||
         !strcmp(filter->filter->name, "negate"     ) ||
         !strcmp(filter->filter->name, "noise"      ) ||
+        !strcmp(filter->filter->name, "nullsrc"    ) ||
         !strcmp(filter->filter->name, "overlay"    ) ||
         !strcmp(filter->filter->name, "pad"        ) ||
         !strcmp(filter->filter->name,   "format") ||

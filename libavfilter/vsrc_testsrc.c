@@ -95,11 +95,11 @@ static const AVOption color_options[] = {
 };
 
 static const AVOption options[] = {
+    COMMON_OPTIONS
     /* only used by testsrc */
     { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
     { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
 
-    COMMON_OPTIONS
     { NULL },
 };
 
@@ -290,10 +290,8 @@ static av_cold int nullsrc_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
-    test->class = &nullsrc_class;
     test->fill_picture_fn = nullsrc_fill_picture;
-    av_opt_set_defaults(test);
-    return init(ctx, args);
+    return init(ctx, NULL);
 }
 
 static const AVFilterPad nullsrc_outputs[] = {
@@ -312,9 +310,9 @@ AVFilter avfilter_vsrc_nullsrc = {
     .init       = nullsrc_init,
     .uninit     = uninit,
     .priv_size  = sizeof(TestSourceContext),
+    .priv_class = &nullsrc_class,
     .inputs     = NULL,
     .outputs    = nullsrc_outputs,
-    .priv_class = &nullsrc_class,
 };
 
 #endif /* CONFIG_NULLSRC_FILTER */
