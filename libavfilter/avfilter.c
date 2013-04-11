@@ -674,7 +674,6 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 static const char *const filters_left_to_update[] = {
     "abuffer",
     "aconvert",
-    "amerge",
     "aresample",
     "atempo",
     "buffer",

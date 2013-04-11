@@ -306,15 +306,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     AMergeContext *am = ctx->priv;
-    int ret, i;
+    int i;
 
-    am->class = &amerge_class;
-    av_opt_set_defaults(am);
-    ret = av_set_options_string(am, args, "=", ":");
-    if (ret < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options: '%s'\n", args);
-        return ret;
-    }
     am->in = av_calloc(am->nb_inputs, sizeof(*am->in));
     if (!am->in)
         return AVERROR(ENOMEM);
