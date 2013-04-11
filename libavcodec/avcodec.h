@@ -1282,16 +1282,20 @@ typedef struct AVCodecContext {
     /**
      * picture width / height.
      * - encoding: MUST be set by user.
-     * - decoding: Set by libavcodec.
-     * Note: For compatibility it is possible to set this instead of
-     * coded_width/height before decoding.
+     * - decoding: May be set by the user before opening the decoder if known e.g.
+     *             from the container. Some decoders will require the dimensions
+     *             to be set by the caller. During decoding, the decoder may
+     *             overwrite those values as required.
      */
     int width, height;
 
     /**
-     * Bitstream width / height, may be different from width/height if lowres enabled.
+     * Bitstream width / height, may be different from width/height e.g. when
+     * the decoded frame is cropped before being output or lowres is enabled.
      * - encoding: unused
-     * - decoding: Set by user before init if known. Codec should override / dynamically change if needed.
+     * - decoding: May be set by the user before opening the decoder if known
+     *             e.g. from the container. During decoding, the decoder may
+     *             overwrite those values as required.
      */
     int coded_width, coded_height;
 
