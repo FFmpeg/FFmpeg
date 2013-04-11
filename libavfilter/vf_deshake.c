@@ -560,12 +560,6 @@ static const AVFilterPad deshake_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = {
-    "x", "y", "w", "h", "rx", "ry", "edge",
-    "blocksize", "contrast", "search", "filename",
-    NULL
-};
-
 AVFilter avfilter_vf_deshake = {
     .name          = "deshake",
     .description   = NULL_IF_CONFIG_SMALL("Stabilize shaky video."),
@@ -576,5 +570,4 @@ AVFilter avfilter_vf_deshake = {
     .inputs        = deshake_inputs,
     .outputs       = deshake_outputs,
     .priv_class    = &deshake_class,
-    .shorthand     = shorthand,
 };

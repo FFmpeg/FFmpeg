@@ -210,8 +210,6 @@ static const AVFilterPad sine_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "frequency", "beep_factor", NULL };
-
 AVFilter avfilter_asrc_sine = {
     .name          = "sine",
     .description   = NULL_IF_CONFIG_SMALL("Generate sine wave audio signal."),
@@ -222,5 +220,4 @@ AVFilter avfilter_asrc_sine = {
     .inputs        = NULL,
     .outputs       = sine_outputs,
     .priv_class    = &sine_class,
-    .shorthand     = shorthand,
 };

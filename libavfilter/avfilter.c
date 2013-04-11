@@ -697,11 +697,13 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "channelsplit") ||
         !strcmp(filter->filter->name,  "color"     ) ||
         !strcmp(filter->filter->name,  "colormatrix") ||
+        !strcmp(filter->filter->name,  "concat"    ) ||
         !strcmp(filter->filter->name,  "crop"      ) ||
         !strcmp(filter->filter->name,  "cropdetect") ||
         !strcmp(filter->filter->name,  "curves"    ) ||
         !strcmp(filter->filter->name,  "decimate"  ) ||
         !strcmp(filter->filter->name,  "delogo"    ) ||
+        !strcmp(filter->filter->name,  "deshake"   ) ||
         !strcmp(filter->filter->name,  "drawbox"   ) ||
         !strcmp(filter->filter->name,  "drawtext"  ) ||
         !strcmp(filter->filter->name,  "ebur128"   ) ||
@@ -748,19 +750,25 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "rgbtestsrc") ||
         !strcmp(filter->filter->name, "setpts"       ) ||
         !strcmp(filter->filter->name, "settb"        ) ||
+        !strcmp(filter->filter->name, "asettb"       ) ||
+        !strcmp(filter->filter->name, "setfield") ||
         !strcmp(filter->filter->name, "showspectrum") ||
         !strcmp(filter->filter->name, "silencedetect") ||
+        !strcmp(filter->filter->name, "sine"     ) ||
         !strcmp(filter->filter->name, "smartblur") ||
         !strcmp(filter->filter->name, "split"    ) ||
         !strcmp(filter->filter->name, "stereo3d" ) ||
         !strcmp(filter->filter->name, "subtitles") ||
         !strcmp(filter->filter->name, "testsrc"  ) ||
         !strcmp(filter->filter->name, "thumbnail") ||
+        !strcmp(filter->filter->name, "tile") ||
+        !strcmp(filter->filter->name, "tinterlace") ||
         !strcmp(filter->filter->name, "transpose") ||
         !strcmp(filter->filter->name, "treble"    ) ||
         !strcmp(filter->filter->name, "unsharp"  ) ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
         !strcmp(filter->filter->name, "select") ||
+        !strcmp(filter->filter->name, "aselect"  ) ||
         !strcmp(filter->filter->name, "volume"   ) ||
         !strcmp(filter->filter->name, "yadif"    ) ||
         0

@@ -51,12 +51,12 @@ typedef struct {
 static const AVOption tile_options[] = {
     { "layout", "set grid size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE,
         {.str = "6x5"}, 0, 0, FLAGS },
+    { "nb_frames", "set maximum number of frame to render", OFFSET(nb_frames),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     { "margin",  "set outer border margin in pixels",    OFFSET(margin),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
     { "padding", "set inner border thickness in pixels", OFFSET(padding),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
-    { "nb_frames", "set maximum number of frame to render", OFFSET(nb_frames),
-        AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
     {NULL},
 };
 
@@ -230,9 +230,6 @@ static const AVFilterPad tile_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] =
-    { "layout", "nb_frames", "margin", "padding", NULL };
-
 AVFilter avfilter_vf_tile = {
     .name          = "tile",
     .description   = NULL_IF_CONFIG_SMALL("Tile several successive frames together."),
@@ -242,5 +239,4 @@ AVFilter avfilter_vf_tile = {
     .inputs        = tile_inputs,
     .outputs       = tile_outputs,
     .priv_class    = &tile_class,
-    .shorthand     = shorthand,
 };

@@ -409,8 +409,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_free(cat->in);
 }
 
-static const char *const shorthand[] = { NULL };
-
 AVFilter avfilter_avf_concat = {
     .name          = "concat",
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
@@ -421,5 +419,4 @@ AVFilter avfilter_avf_concat = {
     .inputs        = NULL,
     .outputs       = NULL,
     .priv_class    = &concat_class,
-    .shorthand     = shorthand,
 };

@@ -388,8 +388,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static const char *const shorthand[] = { "expr", NULL };
-
 #if CONFIG_ASELECT_FILTER
 
 #define OFFSET(x) offsetof(SelectContext, x)
@@ -445,7 +443,6 @@ AVFilter avfilter_af_aselect = {
     .inputs    = avfilter_af_aselect_inputs,
     .outputs   = avfilter_af_aselect_outputs,
     .priv_class = &aselect_class,
-    .shorthand  = shorthand,
 };
 #endif /* CONFIG_ASELECT_FILTER */
 
