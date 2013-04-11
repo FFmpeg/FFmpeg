@@ -75,22 +75,31 @@ typedef struct {
 #define OFFSET(x) offsetof(TestSourceContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
-static const AVOption options[] = {
-    { "size",     "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },
-    { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },
-    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
-    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
-    { "duration", "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },
-    { "d",        "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },
+#define COMMON_OPTIONS \
+    { "size",     "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },\
+    { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },\
+    { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },\
+    { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },\
+    { "duration", "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },\
+    { "d",        "set video duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, FLAGS },\
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX, FLAGS },
 
-    /* only used by color */
-    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
 
+static const AVOption color_options[] = {
+    /* only used by color */
+    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+
+    COMMON_OPTIONS
+    { NULL },
+};
+
+static const AVOption options[] = {
     /* only used by testsrc */
     { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
     { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
+
+    COMMON_OPTIONS
     { NULL },
 };
 
@@ -98,8 +107,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
     int ret = 0;
-
-    av_opt_set_defaults(test);
 
     if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0)
         return ret;
@@ -200,7 +207,6 @@ static int request_frame(AVFilterLink *outlink)
 
 #if CONFIG_COLOR_FILTER
 
-#define color_options options
 AVFILTER_DEFINE_CLASS(color);
 
 static void color_fill_picture(AVFilterContext *ctx, AVFrame *picref)
@@ -214,11 +220,9 @@ static void color_fill_picture(AVFilterContext *ctx, AVFrame *picref)
 static av_cold int color_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
-    test->class = &color_class;
     test->fill_picture_fn = color_fill_picture;
     test->draw_once = 1;
-    av_opt_set(test, "color", "black", 0);
-    return init(ctx, args);
+    return init(ctx, NULL);
 }
 
 static int color_query_formats(AVFilterContext *ctx)
@@ -263,6 +267,7 @@ AVFilter avfilter_vsrc_color = {
     .name        = "color",
     .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
 
+    .priv_class = &color_class,
     .priv_size = sizeof(TestSourceContext),
     .init      = color_init,
     .uninit    = uninit,
@@ -270,7 +275,6 @@ AVFilter avfilter_vsrc_color = {
     .query_formats = color_query_formats,
     .inputs        = NULL,
     .outputs       = color_outputs,
-    .priv_class    = &color_class,
 };
 
 #endif /* CONFIG_COLOR_FILTER */
@@ -288,6 +292,7 @@ static av_cold int nullsrc_init(AVFilterContext *ctx, const char *args)
 
     test->class = &nullsrc_class;
     test->fill_picture_fn = nullsrc_fill_picture;
+    av_opt_set_defaults(test);
     return init(ctx, args);
 }
 
@@ -507,6 +512,7 @@ static av_cold int test_init(AVFilterContext *ctx, const char *args)
 
     test->class = &testsrc_class;
     test->fill_picture_fn = test_fill_picture;
+    av_opt_set_defaults(test);
     return init(ctx, args);
 }
 
@@ -613,6 +619,7 @@ static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
     test->draw_once = 1;
     test->class = &rgbtestsrc_class;
     test->fill_picture_fn = rgbtest_fill_picture;
+    av_opt_set_defaults(test);
     return init(ctx, args);
 }
 
@@ -764,6 +771,7 @@ static av_cold int smptebars_init(AVFilterContext *ctx, const char *args)
     test->class = &smptebars_class;
     test->fill_picture_fn = smptebars_fill_picture;
     test->draw_once = 1;
+    av_opt_set_defaults(test);
     return init(ctx, args);
 }
 
