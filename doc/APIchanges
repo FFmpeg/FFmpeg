@@ -159,7 +159,8 @@ API changes, most recent first:
 2013-xx-xx - lavfi 3.8.0
   Move all content from avfiltergraph.h to avfilter.h. Deprecate
   avfilterhraph.h, user applications should include just avfilter.h
-  Add avfilter_graph_alloc_filter(), deprecate avfilter_open().
+  Add avfilter_graph_alloc_filter(), deprecate avfilter_open() and
+  avfilter_graph_add_filter().
 
 2013-xx-xx - lavfi 3.7.0 - avfilter.h
   Add AVFilter.priv_class for exporting filter options through the AVOptions API
