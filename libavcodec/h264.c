@@ -1476,10 +1476,9 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     h->dequant_coeff_pps = -1;
 
-    if (CONFIG_ERROR_RESILIENCE) {
-        /* needed so that IDCT permutation is known early */
+    /* needed so that IDCT permutation is known early */
+    if (CONFIG_ERROR_RESILIENCE)
         ff_dsputil_init(&h->dsp, h->avctx);
-    }
     ff_videodsp_init(&h->vdsp, 8);
 
     memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
@@ -2960,9 +2959,9 @@ static int h264_set_parameter_from_sps(H264Context *h)
             ff_h264qpel_init(&h->h264qpel, h->sps.bit_depth_luma);
             ff_h264_pred_init(&h->hpc, h->avctx->codec_id, h->sps.bit_depth_luma,
                               h->sps.chroma_format_idc);
-            if (CONFIG_ERROR_RESILIENCE) {
+
+            if (CONFIG_ERROR_RESILIENCE)
                 ff_dsputil_init(&h->dsp, h->avctx);
-            }
             ff_videodsp_init(&h->vdsp, h->sps.bit_depth_luma);
         } else {
             av_log(h->avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
