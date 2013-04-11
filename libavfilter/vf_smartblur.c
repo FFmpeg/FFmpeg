@@ -289,12 +289,6 @@ static const AVFilterPad smartblur_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = {
-    "luma_radius", "luma_strength", "luma_threshold",
-    "chroma_radius", "chroma_strength", "chroma_threshold",
-    NULL
-};
-
 AVFilter avfilter_vf_smartblur = {
     .name        = "smartblur",
     .description = NULL_IF_CONFIG_SMALL("Blur the input video without impacting the outlines."),
