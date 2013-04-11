@@ -668,6 +668,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "boxblur"   ) ||
         !strcmp(filter->filter->name,  "cellauto") ||
         !strcmp(filter->filter->name,  "channelmap") ||
+        !strcmp(filter->filter->name,  "channelsplit") ||
         !strcmp(filter->filter->name,  "colormatrix") ||
         !strcmp(filter->filter->name,  "crop"      ) ||
         !strcmp(filter->filter->name,  "cropdetect") ||
