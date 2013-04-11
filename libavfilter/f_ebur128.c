@@ -773,7 +773,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
     av_frame_free(&ebur128->outpicref);
-    av_opt_free(ebur128);
 }
 
 static const AVFilterPad ebur128_inputs[] = {
