@@ -23,32 +23,25 @@
  * Daniele Fornighieri <guru AT digitalfantasy it>.
  */
 
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
 
 typedef struct {
+    const AVClass *class;
     int frame_step, frame_count, frame_selected;
 } FrameStepContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    FrameStepContext *framestep = ctx->priv;
-    char *tailptr;
-    long int n = 1;
+#define OFFSET(x) offsetof(FrameStepContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
-    if (args) {
-        n = strtol(args, &tailptr, 10);
-        if (*tailptr || n <= 0 || n >= INT_MAX) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Invalid argument '%s', must be a positive integer <= INT_MAX\n", args);
-            return AVERROR(EINVAL);
-        }
-    }
+static const AVOption framestep_options[] = {
+    { "step", "set frame step",  OFFSET(frame_step), AV_OPT_TYPE_INT, {.i64=1}, 1, INT_MAX, FLAGS},
+    {NULL},
+};
 
-    framestep->frame_step = n;
-    return 0;
-}
+AVFILTER_DEFINE_CLASS(framestep);
 
 static int config_output_props(AVFilterLink *outlink)
 {
@@ -117,8 +110,8 @@ static const AVFilterPad framestep_outputs[] = {
 AVFilter avfilter_vf_framestep = {
     .name      = "framestep",
     .description = NULL_IF_CONFIG_SMALL("Select one frame every N frames."),
-    .init      = init,
     .priv_size = sizeof(FrameStepContext),
+    .priv_class = &framestep_class,
     .inputs    = framestep_inputs,
     .outputs   = framestep_outputs,
 };
