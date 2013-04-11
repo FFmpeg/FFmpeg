@@ -752,6 +752,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "settb"        ) ||
         !strcmp(filter->filter->name, "showspectrum") ||
         !strcmp(filter->filter->name, "silencedetect") ||
+        !strcmp(filter->filter->name, "sine"     ) ||
         !strcmp(filter->filter->name, "smartblur") ||
         !strcmp(filter->filter->name, "split"    ) ||
         !strcmp(filter->filter->name, "stereo3d" ) ||

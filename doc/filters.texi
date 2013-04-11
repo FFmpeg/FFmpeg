@@ -1688,11 +1688,7 @@ Generate an audio signal made of a sine wave with amplitude 1/8.
 
 The audio signal is bit-exact.
 
-It accepts a list of options in the form of @var{key}=@var{value} pairs
-separated by ":". If the option name is omitted, the first option is the
-frequency and the second option is the beep factor.
-
-The supported options are:
+The filter accepts the following options:
 
 @table @option
 
