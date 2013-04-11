@@ -750,8 +750,6 @@ static const AVFilterPad avfilter_vf_overlay_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "x", "y", NULL };
-
 AVFilter avfilter_vf_overlay = {
     .name      = "overlay",
     .description = NULL_IF_CONFIG_SMALL("Overlay a video source on top of the input."),
@@ -767,5 +765,4 @@ AVFilter avfilter_vf_overlay = {
 
     .inputs    = avfilter_vf_overlay_inputs,
     .outputs   = avfilter_vf_overlay_outputs,
-    .shorthand  = shorthand,
 };
