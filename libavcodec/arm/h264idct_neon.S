@@ -187,8 +187,8 @@ endfunc
         vshr.s16        q2,  q10, #1
         vadd.i16        q0,  q8,  q12
         vld1.16         {q14-q15},[r1,:128]
-        vst1.16         {q7},     [r1,:128]!
-        vst1.16         {q7},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
         vsub.i16        q1,  q8,  q12
         vshr.s16        q3,  q14, #1
         vsub.i16        q2,  q2,  q14
@@ -267,16 +267,16 @@ endfunc
 .endm
 
 function ff_h264_idct8_add_neon, export=1
-        vmov.i16        q7,       #0
+        vmov.i16        q3,       #0
         vld1.16         {q8-q9},  [r1,:128]
-        vst1.16         {q7},     [r1,:128]!
-        vst1.16         {q7},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
         vld1.16         {q10-q11},[r1,:128]
-        vst1.16         {q7},     [r1,:128]!
-        vst1.16         {q7},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
         vld1.16         {q12-q13},[r1,:128]
-        vst1.16         {q7},     [r1,:128]!
-        vst1.16         {q7},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
+        vst1.16         {q3},     [r1,:128]!
 
         idct8x8_cols    0
         idct8x8_cols    1

@@ -145,7 +145,7 @@ void FUNCC(ff_h264_idct_dc_add)(uint8_t *_dst, int16_t *_block, int stride){
     pixel *dst = (pixel*)_dst;
     dctcoef *block = (dctcoef*)_block;
     int dc = (block[0] + 32) >> 6;
-    stride >>= sizeof(pixel)-1;
+    stride /= sizeof(pixel);
     block[0] = 0;
     for( j = 0; j < 4; j++ )
     {
@@ -161,7 +161,7 @@ void FUNCC(ff_h264_idct8_dc_add)(uint8_t *_dst, int16_t *_block, int stride){
     dctcoef *block = (dctcoef*)_block;
     int dc = (block[0] + 32) >> 6;
     block[0] = 0;
-    stride >>= sizeof(pixel)-1;
+    stride /= sizeof(pixel);
     for( j = 0; j < 8; j++ )
     {
         for( i = 0; i < 8; i++ )

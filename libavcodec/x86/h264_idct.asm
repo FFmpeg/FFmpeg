@@ -312,7 +312,7 @@ INIT_MMX mmxext
 %if ARCH_X86_64
 cglobal h264_idct_dc_add_8, 3, 4, 0
     movsx        r3, word [r1]
-    mov   word [r1], 0
+    mov  dword [r1], 0
     DC_ADD_MMXEXT_INIT r3, r2
     DC_ADD_MMXEXT_OP movh, r0, r2, r3
     RET
@@ -320,7 +320,7 @@ cglobal h264_idct_dc_add_8, 3, 4, 0
 ; ff_h264_idct8_dc_add_mmxext(uint8_t *dst, int16_t *block, int stride)
 cglobal h264_idct8_dc_add_8, 3, 4, 0
     movsx        r3, word [r1]
-    mov   word [r1], 0
+    mov  dword [r1], 0
     DC_ADD_MMXEXT_INIT r3, r2
     DC_ADD_MMXEXT_OP mova, r0, r2, r3
     lea          r0, [r0+r2*4]
@@ -329,7 +329,7 @@ cglobal h264_idct8_dc_add_8, 3, 4, 0
 %else
 cglobal h264_idct_dc_add_8, 2, 3, 0
     movsx        r2, word [r1]
-    mov   word [r1], 0
+    mov  dword [r1], 0
     mov          r1, r2m
     DC_ADD_MMXEXT_INIT r2, r1
     DC_ADD_MMXEXT_OP movh, r0, r1, r2
@@ -338,7 +338,7 @@ cglobal h264_idct_dc_add_8, 2, 3, 0
 ; ff_h264_idct8_dc_add_mmxext(uint8_t *dst, int16_t *block, int stride)
 cglobal h264_idct8_dc_add_8, 2, 3, 0
     movsx        r2, word [r1]
-    mov   word [r1], 0
+    mov  dword [r1], 0
     mov          r1, r2m
     DC_ADD_MMXEXT_INIT r2, r1
     DC_ADD_MMXEXT_OP mova, r0, r1, r2
