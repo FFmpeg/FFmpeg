@@ -87,6 +87,7 @@ static const struct {
     const char *r;
     const char *g;
     const char *b;
+    const char *all;
 } curves_presets[] = {
     [PRESET_COLOR_NEGATIVE] = {
         "0/1 0.129/1 0.466/0.498 0.725/0 1/0",
@@ -98,35 +99,13 @@ static const struct {
         "0.25/0.188 0.38/0.501 0.745/0.815 1/0.815",
         "0.231/0.094 0.709/0.874",
     },
-    [PRESET_DARKER] = {
-        "0.5/0.4", "0.5/0.4", "0.5/0.4",
-    },
-    [PRESET_INCREASE_CONTRAST] = {
-        "0.149/0.066 0.831/0.905 0.905/0.98",
-        "0.149/0.066 0.831/0.905 0.905/0.98",
-        "0.149/0.066 0.831/0.905 0.905/0.98",
-    },
-    [PRESET_LIGHTER] = {
-        "0.4/0.5", "0.4/0.5", "0.4/0.5",
-    },
-    [PRESET_LINEAR_CONTRAST] = {
-        "0.305/0.286 0.694/0.713",
-        "0.305/0.286 0.694/0.713",
-        "0.305/0.286 0.694/0.713",
-    },
-    [PRESET_MEDIUM_CONTRAST] = {
-        "0.286/0.219 0.639/0.643",
-        "0.286/0.219 0.639/0.643",
-        "0.286/0.219 0.639/0.643",
-    },
-    [PRESET_NEGATIVE] = {
-        "0/1 1/0", "0/1 1/0", "0/1 1/0",
-    },
-    [PRESET_STRONG_CONTRAST] = {
-        "0.301/0.196 0.592/0.6 0.686/0.737",
-        "0.301/0.196 0.592/0.6 0.686/0.737",
-        "0.301/0.196 0.592/0.6 0.686/0.737",
-    },
+    [PRESET_DARKER]             = { .all = "0.5/0.4" },
+    [PRESET_INCREASE_CONTRAST]  = { .all = "0.149/0.066 0.831/0.905 0.905/0.98" },
+    [PRESET_LIGHTER]            = { .all = "0.4/0.5" },
+    [PRESET_LINEAR_CONTRAST]    = { .all = "0.305/0.286 0.694/0.713" },
+    [PRESET_MEDIUM_CONTRAST]    = { .all = "0.286/0.219 0.639/0.643" },
+    [PRESET_NEGATIVE]           = { .all = "0/1 1/0" },
+    [PRESET_STRONG_CONTRAST]    = { .all = "0.301/0.196 0.592/0.6 0.686/0.737" },
     [PRESET_VINTAGE] = {
         "0/0.11 0.42/0.51 1/0.95",
         "0.50/0.48",
@@ -322,11 +301,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     CurvesContext *curves = ctx->priv;
     struct keypoint *comp_points[NB_COMP] = {0};
     char **pts = curves->comp_points_str;
+    const char *allp = curves->comp_points_str_all;
 
-    if (curves->comp_points_str_all) {
+    if (!allp && curves->preset != PRESET_NONE && curves_presets[curves->preset].all)
+        allp = curves_presets[curves->preset].all;
+
+    if (allp) {
         for (i = 0; i < NB_COMP; i++) {
             if (!pts[i])
-                pts[i] = av_strdup(curves->comp_points_str_all);
+                pts[i] = av_strdup(allp);
             if (!pts[i])
                 return AVERROR(ENOMEM);
         }
