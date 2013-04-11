@@ -694,7 +694,6 @@ static const char *const filters_left_to_update[] = {
     "sendcmd",
     "setdar",
     "setsar",
-    "smptebars",
 };
 
 static int filter_use_deprecated_init(const char *name)

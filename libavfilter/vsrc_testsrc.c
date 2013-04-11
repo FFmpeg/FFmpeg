@@ -108,9 +108,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     TestSourceContext *test = ctx->priv;
     int ret = 0;
 
-    if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0)
-        return ret;
-
     test->duration = -1;
     if (test->duration_str &&
         (ret = av_parse_time(&test->duration, test->duration_str, 1)) < 0) {
@@ -151,7 +148,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
 
-    av_opt_free(test);
     av_frame_free(&test->picref);
 }
 
@@ -762,10 +758,8 @@ static av_cold int smptebars_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
-    test->class = &smptebars_class;
     test->fill_picture_fn = smptebars_fill_picture;
     test->draw_once = 1;
-    av_opt_set_defaults(test);
     return init(ctx, args);
 }
 
