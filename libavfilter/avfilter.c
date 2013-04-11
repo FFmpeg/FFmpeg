@@ -680,7 +680,6 @@ static const char *const filters_left_to_update[] = {
     "aresample",
     "asetnsamples",
     "atempo",
-    "bbox",
     "buffer",
     "flite",
     "hue",
