@@ -77,7 +77,7 @@ static const AVOption curves_options[] = {
     { "g",     "set green points coordinates", OFFSET(comp_points_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "blue",  "set blue points coordinates",  OFFSET(comp_points_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { "b",     "set blue points coordinates",  OFFSET(comp_points_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
-    { "all",   "set points coordinates for all components",   OFFSET(comp_points_str_all),AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { "all",   "set points coordinates for all components", OFFSET(comp_points_str_all), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
     { NULL }
 };
 
