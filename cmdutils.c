@@ -56,6 +56,10 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
+#if CONFIG_OPENCL
+#include "libavutil/opencl.h"
+#endif
+
 
 static int init_report(const char *env);
 
@@ -954,6 +958,26 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg)
 #endif
     return 0;
 }
+
+#if CONFIG_OPENCL
+int opt_opencl(void *optctx, const char *opt, const char *arg)
+{
+    char *key, *value;
+    const char *opts = arg;
+    int ret = 0;
+    while (*opts) {
+        ret = av_opt_get_key_value(&opts, "=", ":", 0, &key, &value);
+        if (ret < 0)
+            return ret;
+        ret = av_opencl_set_option(key, value);
+        if (ret < 0)
+            return ret;
+        if (*opts)
+            opts++;
+    }
+    return ret;
+}
+#endif
 
 void print_error(const char *filename, int err)
 {
