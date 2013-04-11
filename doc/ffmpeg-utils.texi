@@ -19,6 +19,7 @@ by the libavutil library.
 
 @include syntax.texi
 @include eval.texi
+@include opencl.texi
 
 @chapter See Also
 

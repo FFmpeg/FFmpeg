@@ -3,6 +3,7 @@
 @ifset config-avutil
 @include syntax.texi
 @include eval.texi
+@include opencl.texi
 @end ifset
 
 @ifset config-avcodec

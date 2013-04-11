@@ -24,6 +24,7 @@
 #include "avstring.h"
 #include "log.h"
 #include "avassert.h"
+#include "opt.h"
 
 #if HAVE_PTHREADS
 
@@ -73,10 +74,23 @@ typedef struct {
     const AVClass *class;
     int log_offset;
     void *log_ctx;
+    int init_flag;
+    int platform_idx;
+    int device_idx;
+    char *build_options;
 } OpenclUtils;
+
+#define OFFSET(x) offsetof(OpenclUtils, x)
+
+static const AVOption opencl_options[] = {
+     { "platform_idx",        "set platform index value",  OFFSET(platform_idx),  AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
+     { "device_idx",          "set device index value",    OFFSET(device_idx),    AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
+     { "build_options",       "build options of opencl",   OFFSET(build_options), AV_OPT_TYPE_STRING, {.str="-I."},  CHAR_MIN, CHAR_MAX},
+};
 
 static const AVClass openclutils_class = {
     .class_name                = "OPENCLUTILS",
+    .option                    = opencl_options,
     .item_name                 = av_default_item_name,
     .version                   = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset   = offsetof(OpenclUtils, log_offset),
@@ -309,6 +323,36 @@ void av_opencl_free_device_list(AVOpenCLDeviceList **device_list)
 {
     free_device_list(*device_list);
     av_freep(device_list);
+}
+
+int av_opencl_set_option(const char *key, const char *val)
+{
+    int ret = 0;
+    LOCK_OPENCL
+    if (!openclutils.init_flag) {
+        av_opt_set_defaults(&openclutils);
+        openclutils.init_flag = 1;
+    }
+    ret = av_opt_set(&openclutils, key, val, 0);
+    UNLOCK_OPENCL
+    return ret;
+}
+
+int av_opencl_get_option(const char *key, uint8_t **out_val)
+{
+    int ret = 0;
+    LOCK_OPENCL
+    ret = av_opt_get(&openclutils, key, 0, out_val);
+    UNLOCK_OPENCL
+    return ret;
+}
+
+void av_opencl_free_option(void)
+{
+    /*FIXME: free openclutils context*/
+    LOCK_OPENCL
+    av_opt_free(&openclutils);
+    UNLOCK_OPENCL
 }
 
 AVOpenCLExternalEnv *av_opencl_alloc_external_env(void)
@@ -561,46 +605,22 @@ end:
     return ret;
 }
 
-int av_opencl_init(AVDictionary *options, AVOpenCLExternalEnv *ext_opencl_env)
+int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env)
 {
     int ret = 0;
-    AVDictionaryEntry *opt_build_entry;
-    AVDictionaryEntry *opt_platform_entry;
-    AVDictionaryEntry *opt_device_entry;
-    char *pos;
     LOCK_OPENCL
     if (!gpu_env.init_count) {
-        opt_platform_entry = av_dict_get(options, "platform_idx", NULL, 0);
-        opt_device_entry   = av_dict_get(options, "device_idx", NULL, 0);
-        /* initialize devices, context, command_queue */
-        gpu_env.platform_idx = -1;
-        gpu_env.device_idx = -1;
-        if (opt_platform_entry) {
-            gpu_env.platform_idx = strtol(opt_platform_entry->value, &pos, 10);
-            if (pos == opt_platform_entry->value) {
-                av_log(&openclutils, AV_LOG_ERROR, "Platform index should be a number\n");
-                ret = AVERROR(EINVAL);
-                goto end;
-            }
+        if (!openclutils.init_flag) {
+            av_opt_set_defaults(&openclutils);
+            openclutils.init_flag = 1;
         }
-        if (opt_device_entry) {
-            gpu_env.device_idx = strtol(opt_device_entry->value, &pos, 10);
-            if (pos == opt_platform_entry->value) {
-                av_log(&openclutils, AV_LOG_ERROR, "Device index should be a number\n");
-                ret = AVERROR(EINVAL);
-                goto end;
-            }
-        }
+        gpu_env.device_idx   = openclutils.device_idx;
+        gpu_env.platform_idx = openclutils.platform_idx;
         ret = init_opencl_env(&gpu_env, ext_opencl_env);
         if (ret < 0)
             goto end;
     }
-    /*initialize program, kernel_name, kernel_count*/
-    opt_build_entry = av_dict_get(options, "build_options", NULL, 0);
-    if (opt_build_entry)
-        ret = compile_kernel_file(&gpu_env, opt_build_entry->value);
-    else
-        ret = compile_kernel_file(&gpu_env, NULL);
+    ret = compile_kernel_file(&gpu_env, openclutils.build_options);
     if (ret < 0)
         goto end;
     if (gpu_env.kernel_code_count <= 0) {
@@ -654,6 +674,8 @@ void av_opencl_uninit(void)
     }
     free_device_list(&gpu_env.device_list);
 end:
+    if ((gpu_env.init_count <= 0) && (gpu_env.kernel_count <= 0))
+        av_opt_free(&openclutils); //FIXME: free openclutils context
     UNLOCK_OPENCL
 }
 

@@ -98,10 +98,7 @@ int ff_opencl_deshake_init(AVFilterContext *ctx)
 {
     int ret = 0;
     DeshakeContext *deshake = ctx->priv;
-    AVDictionary *options = NULL;
-    av_dict_set(&options, "build_options", "-I.", 0);
-    ret = av_opencl_init(options, NULL);
-    av_dict_free(&options);
+    ret = av_opencl_init(NULL);
     if (ret < 0)
         return ret;
     deshake->opencl_ctx.matrix_size = MATRIX_SIZE;

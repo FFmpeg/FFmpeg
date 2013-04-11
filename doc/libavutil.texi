@@ -33,6 +33,7 @@ ffmpeg-utils(1)
 @end ifnothtml
 
 @include authors.texi
+@include opencl.texi
 
 @ignore
 
