@@ -694,7 +694,6 @@ static const char *const filters_left_to_update[] = {
     "sendcmd",
     "setdar",
     "setsar",
-    "showwaves",
     "smptebars",
 };
 

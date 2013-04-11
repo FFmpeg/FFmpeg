@@ -7140,8 +7140,12 @@ ffplay -f lavfi 'amovie=input.mp3, asplit [a][out1];
 
 Convert input audio to a video output, representing the samples waves.
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
+
 @table @option
+@item size, s
+Specify the video size for the output. Default value is "600x240".
+
 @item mode
 Set display mode.
 
@@ -7166,8 +7170,6 @@ is not explicitly specified.
 Set the (approximate) output frame rate. This is done by setting the
 option @var{n}. Default value is "25".
 
-@item size, s
-Specify the video size for the output. Default value is "600x240".
 @end table
 
 @subsection Examples
