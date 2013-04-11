@@ -678,7 +678,6 @@ static const char *const filters_left_to_update[] = {
     "amerge",
     "anullsrc",
     "aresample",
-    "asendcmd",
     "asetnsamples",
     "astreamsync",
     "atempo",
@@ -691,7 +690,6 @@ static const char *const filters_left_to_update[] = {
     "pan",
     "removelogo",
     "scale",
-    "sendcmd",
     "setdar",
     "setsar",
 };
