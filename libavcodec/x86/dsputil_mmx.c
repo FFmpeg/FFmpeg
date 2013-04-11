@@ -118,7 +118,6 @@ void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
 void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 
-void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
                                    ptrdiff_t line_size, int h)
 {
@@ -1238,14 +1237,6 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
         src += 4 - h * stride;
     }
 }
-#endif /* HAVE_INLINE_ASM */
-
-void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          ptrdiff_t line_size, int h);
-void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          ptrdiff_t line_size, int h);
-
-#if HAVE_INLINE_ASM
 
 /* CAVS-specific */
 void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride)

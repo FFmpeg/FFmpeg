@@ -32,8 +32,6 @@ void ff_put_pixels4_mmxext(uint8_t *block, const uint8_t *pixels,
                            ptrdiff_t line_size, int h);
 void ff_avg_pixels4_mmxext(uint8_t *block, const uint8_t *pixels,
                            ptrdiff_t line_size, int h);
-void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels,
-                           ptrdiff_t line_size, int h);
 static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
                                    ptrdiff_t line_size, int h)
 {
@@ -58,10 +56,6 @@ void ff_put_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                int dstStride, int src1Stride, int h);
 void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                int dstStride, int src1Stride, int h);
-void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          int line_size, int h);
-void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          int line_size, int h);
 #define ff_put_pixels8_l2_sse2  ff_put_pixels8_l2_mmxext
 #define ff_avg_pixels8_l2_sse2  ff_avg_pixels8_l2_mmxext
 #define ff_put_pixels16_l2_sse2 ff_put_pixels16_l2_mmxext
