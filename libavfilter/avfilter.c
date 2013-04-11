@@ -672,7 +672,7 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 
 // TODO: drop me
 static const char *const filters_left_to_update[] = {
-    "abuffer"
+    "abuffer",
     "aconvert",
     "aevalsrc",
     "amerge",
@@ -684,7 +684,7 @@ static const char *const filters_left_to_update[] = {
     "atempo",
     "bbox",
     "blackdetect",
-    "buffer"
+    "buffer",
     "flite",
     "hue",
     "mp",
