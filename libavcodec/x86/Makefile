@@ -1,5 +1,5 @@
-OBJS                                   += x86/fmtconvert_init.o \
-                                          x86/constants.o
+OBJS                                   += x86/constants.o               \
+                                          x86/fmtconvert_init.o         \
 
 OBJS-$(CONFIG_AAC_DECODER)             += x86/sbrdsp_init.o
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
@@ -52,6 +52,10 @@ YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32.o
 YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o\
                                           x86/dwt_yasm.o
+YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputil.o                 \
+                                          x86/fpelbase.o                \
+                                          x86/mpeg4qpel.o               \
+                                          x86/qpelbase.o
 YASM-OBJS-$(CONFIG_ENCODERS)           += x86/dsputilenc.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft.o
 YASM-OBJS-$(CONFIG_H263_DECODER)       += x86/h263_loopfilter.o
@@ -88,10 +92,5 @@ YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp56dsp.o
 YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
 YASM-OBJS-$(CONFIG_WEBP_DECODER)       += x86/vp8dsp.o
 
-YASM-OBJS-$(CONFIG_DSPUTIL)            += x86/dsputil.o                 \
-                                          x86/mpeg4qpel.o               \
-                                          x86/qpelbase.o                \
-                                          x86/fpelbase.o
-
 YASM-OBJS                              += x86/deinterlace.o             \
-                                          x86/fmtconvert.o
+                                          x86/fmtconvert.o              \

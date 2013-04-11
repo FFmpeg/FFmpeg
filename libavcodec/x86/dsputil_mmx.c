@@ -38,9 +38,6 @@
 //#include <assert.h>
 
 /* pixel operations */
-DECLARE_ALIGNED(8,  const uint64_t, ff_bone) = 0x0101010101010101ULL;
-DECLARE_ALIGNED(8,  const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
-
 DECLARE_ALIGNED(8,  const uint64_t, ff_pw_15)   =   0x000F000F000F000FULL;
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_17)   = { 0x0011001100110011ULL, 0x0011001100110011ULL };
 DECLARE_ALIGNED(8,  const uint64_t, ff_pw_20)   =   0x0014001400140014ULL;

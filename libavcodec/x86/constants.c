@@ -21,6 +21,9 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h" // for xmm_reg
 
+DECLARE_ALIGNED(8,  const uint64_t, ff_bone) = 0x0101010101010101ULL;
+DECLARE_ALIGNED(8,  const uint64_t, ff_wtwo) = 0x0002000200020002ULL;
+
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_1)    = { 0x0001000100010001ULL, 0x0001000100010001ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_2)    = { 0x0002000200020002ULL, 0x0002000200020002ULL };
 DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_3)    = { 0x0003000300030003ULL, 0x0003000300030003ULL };
