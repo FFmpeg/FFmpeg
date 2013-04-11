@@ -681,8 +681,6 @@ static const char *const filters_left_to_update[] = {
     "mp",
     "pan",
     "scale",
-    "setdar",
-    "setsar",
 };
 
 static int filter_use_deprecated_init(const char *name)
