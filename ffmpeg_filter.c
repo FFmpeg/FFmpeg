@@ -124,7 +124,7 @@ static char *choose_pix_fmts(OutputStream *ost)
 
         for (; *p != AV_PIX_FMT_NONE; p++) {
             const char *name = av_get_pix_fmt_name(*p);
-            avio_printf(s, "%s:", name);
+            avio_printf(s, "%s|", name);
         }
         len = avio_close_dyn_buf(s, &ret);
         ret[len - 1] = 0;
