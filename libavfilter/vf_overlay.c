@@ -170,16 +170,21 @@ static void eval_expr(AVFilterContext *ctx, enum EvalTarget eval_tgt)
 static int set_expr(AVExpr **pexpr, const char *expr, void *log_ctx)
 {
     int ret;
+    AVExpr *old = NULL;
 
     if (*pexpr)
-        av_expr_free(*pexpr);
-    *pexpr = NULL;
+        old = *pexpr;
     ret = av_expr_parse(pexpr, expr, var_names,
                         NULL, NULL, NULL, NULL, 0, log_ctx);
-    if (ret < 0)
+    if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error when evaluating the expression '%s'\n", expr);
-    return ret;
+        *pexpr = old;
+        return ret;
+    }
+
+    av_expr_free(old);
+    return 0;
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
