@@ -670,111 +670,51 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     return count;
 }
 
+// TODO: drop me
+static const char *const filters_left_to_update[] = {
+    "abuffer"
+    "aconvert",
+    "aevalsrc",
+    "amerge",
+    "anullsrc",
+    "aresample",
+    "asendcmd",
+    "asetnsamples",
+    "astreamsync",
+    "atempo",
+    "bbox",
+    "blackdetect",
+    "buffer"
+    "flite",
+    "hue",
+    "mp",
+    "pan",
+    "removelogo",
+    "scale",
+    "sendcmd",
+    "setdar",
+    "setsar",
+    "showwaves",
+    "smptebars",
+};
+
+static int filter_use_deprecated_init(const char *name)
+{
+    int i;
+    for (i = 0; i < FF_ARRAY_ELEMS(filters_left_to_update); i++)
+        if (!strcmp(name, filters_left_to_update[i]))
+            return 1;
+    return 0;
+}
+
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
 {
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;
     int ret=0;
-    int anton_options =
-        !strcmp(filter->filter->name,  "allpass"   ) ||
-        !strcmp(filter->filter->name,  "afade"     ) ||
-        !strcmp(filter->filter->name,  "aformat") ||
-        !strcmp(filter->filter->name,  "amix"      ) ||
-        !strcmp(filter->filter->name,  "apad"      ) ||
-        !strcmp(filter->filter->name,  "aphaser"   ) ||
-        !strcmp(filter->filter->name,  "asplit"    ) ||
-        !strcmp(filter->filter->name,  "ass")     ||
-        !strcmp(filter->filter->name,  "asyncts"   ) ||
-        !strcmp(filter->filter->name,  "bandpass"  ) ||
-        !strcmp(filter->filter->name,  "bandreject") ||
-        !strcmp(filter->filter->name,  "bass"      ) ||
-        !strcmp(filter->filter->name,  "biquad"    ) ||
-        !strcmp(filter->filter->name,  "blackframe") ||
-        !strcmp(filter->filter->name,  "blend"     ) ||
-        !strcmp(filter->filter->name,  "boxblur"   ) ||
-        !strcmp(filter->filter->name,  "cellauto") ||
-        !strcmp(filter->filter->name,  "channelmap") ||
-        !strcmp(filter->filter->name,  "channelsplit") ||
-        !strcmp(filter->filter->name,  "color"     ) ||
-        !strcmp(filter->filter->name,  "colormatrix") ||
-        !strcmp(filter->filter->name,  "concat"    ) ||
-        !strcmp(filter->filter->name,  "crop"      ) ||
-        !strcmp(filter->filter->name,  "cropdetect") ||
-        !strcmp(filter->filter->name,  "curves"    ) ||
-        !strcmp(filter->filter->name,  "decimate"  ) ||
-        !strcmp(filter->filter->name,  "delogo"    ) ||
-        !strcmp(filter->filter->name,  "deshake"   ) ||
-        !strcmp(filter->filter->name,  "drawbox"   ) ||
-        !strcmp(filter->filter->name,  "drawtext"  ) ||
-        !strcmp(filter->filter->name,  "ebur128"   ) ||
-        !strcmp(filter->filter->name,  "edgedetect") ||
-        !strcmp(filter->filter->name,  "equalizer" ) ||
-        !strcmp(filter->filter->name,  "fade"      ) ||
-        !strcmp(filter->filter->name,  "field"     ) ||
-        !strcmp(filter->filter->name,  "fieldorder") ||
-        !strcmp(filter->filter->name,  "fps"       ) ||
-        !strcmp(filter->filter->name,  "framestep" ) ||
-        !strcmp(filter->filter->name,  "frei0r"    ) ||
-        !strcmp(filter->filter->name,  "frei0r_src") ||
-        !strcmp(filter->filter->name,  "geq"       ) ||
-        !strcmp(filter->filter->name, "gradfun"    ) ||
-        !strcmp(filter->filter->name, "highpass"  ) ||
-        !strcmp(filter->filter->name, "histeq"     ) ||
-        !strcmp(filter->filter->name, "histogram"  ) ||
-        !strcmp(filter->filter->name, "hqdn3d"     ) ||
-        !strcmp(filter->filter->name, "idet"       ) ||
-        !strcmp(filter->filter->name,  "il"        ) ||
-        !strcmp(filter->filter->name,  "join"      ) ||
-        !strcmp(filter->filter->name,  "kerndeint" ) ||
-        !strcmp(filter->filter->name, "ocv"        ) ||
-        !strcmp(filter->filter->name, "life"       ) ||
-        !strcmp(filter->filter->name, "lut"        ) ||
-        !strcmp(filter->filter->name, "lutyuv"     ) ||
-        !strcmp(filter->filter->name, "lutrgb"     ) ||
-        !strcmp(filter->filter->name, "lowpass"   ) ||
-        !strcmp(filter->filter->name, "mandelbrot" ) ||
-        !strcmp(filter->filter->name, "mptestsrc"  ) ||
-        !strcmp(filter->filter->name, "movie"      ) ||
-        !strcmp(filter->filter->name, "amovie"     ) ||
-        !strcmp(filter->filter->name, "negate"     ) ||
-        !strcmp(filter->filter->name, "noise"      ) ||
-        !strcmp(filter->filter->name, "nullsrc"    ) ||
-        !strcmp(filter->filter->name, "overlay"    ) ||
-        !strcmp(filter->filter->name, "pad"        ) ||
-        !strcmp(filter->filter->name,   "format") ||
-        !strcmp(filter->filter->name, "noformat") ||
-        !strcmp(filter->filter->name, "perms")  ||
-        !strcmp(filter->filter->name, "pp"   )  ||
-        !strcmp(filter->filter->name, "aperms") ||
-        !strcmp(filter->filter->name, "resample") ||
-        !strcmp(filter->filter->name, "rgbtestsrc") ||
-        !strcmp(filter->filter->name, "setpts"       ) ||
-        !strcmp(filter->filter->name, "settb"        ) ||
-        !strcmp(filter->filter->name, "asettb"       ) ||
-        !strcmp(filter->filter->name, "setfield") ||
-        !strcmp(filter->filter->name, "showspectrum") ||
-        !strcmp(filter->filter->name, "silencedetect") ||
-        !strcmp(filter->filter->name, "sine"     ) ||
-        !strcmp(filter->filter->name, "smartblur") ||
-        !strcmp(filter->filter->name, "split"    ) ||
-        !strcmp(filter->filter->name, "stereo3d" ) ||
-        !strcmp(filter->filter->name, "subtitles") ||
-        !strcmp(filter->filter->name, "telecine" ) ||
-        !strcmp(filter->filter->name, "testsrc"  ) ||
-        !strcmp(filter->filter->name, "thumbnail") ||
-        !strcmp(filter->filter->name, "tile") ||
-        !strcmp(filter->filter->name, "tinterlace") ||
-        !strcmp(filter->filter->name, "transpose") ||
-        !strcmp(filter->filter->name, "treble"    ) ||
-        !strcmp(filter->filter->name, "unsharp"  ) ||
-//         !strcmp(filter->filter->name, "scale"      ) ||
-        !strcmp(filter->filter->name, "select") ||
-        !strcmp(filter->filter->name, "aselect"  ) ||
-        !strcmp(filter->filter->name, "volume"   ) ||
-        !strcmp(filter->filter->name, "yadif"    ) ||
-        0
-        ;
+    int deprecated_init = filter_use_deprecated_init(filter->filter->name);
 
+    // TODO: remove old shorthand
     if (filter->filter->shorthand) {
         av_assert0(filter->priv);
         av_assert0(filter->filter->priv_class);
@@ -787,7 +727,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         args = NULL;
     }
 
-    if (anton_options && args && *args) {
+    if (!deprecated_init && args && *args) {
         if (!filter->filter->priv_class) {
             av_log(filter, AV_LOG_ERROR, "This filter does not take any "
                    "options, but options were provided: %s.\n", args);
@@ -873,7 +813,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         }
     }
 
-    if (anton_options && filter->filter->priv_class) {
+    if (!deprecated_init && filter->filter->priv_class) {
         ret = av_opt_set_dict(filter->priv, &options);
         if (ret < 0) {
             av_log(filter, AV_LOG_ERROR, "Error applying options to the filter.\n");
