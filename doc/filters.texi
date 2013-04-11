@@ -6699,7 +6699,7 @@ Specify a list of drawtext and hue commands in a file.
           [leave] drawtext reinit 'fontfile=FreeSerif.ttf:text=color';
 
 # apply an exponential saturation fade-out effect, starting from time 25
-25 [enter] hue s exp(t-25)
+25 [enter] hue s exp(25-t)
 @end example
 
 A filtergraph allowing to read and process the above command list
