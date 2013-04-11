@@ -397,7 +397,7 @@ struct AVFilterPad {
  *
  * @return name of the pad_idx'th pad in pads
  */
-const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
+const char *avfilter_pad_get_name(const AVFilterPad *pads, int pad_idx);
 
 /**
  * Get the type of an AVFilterPad.
@@ -408,7 +408,7 @@ const char *avfilter_pad_get_name(AVFilterPad *pads, int pad_idx);
  *
  * @return type of the pad_idx'th pad in pads
  */
-enum AVMediaType avfilter_pad_get_type(AVFilterPad *pads, int pad_idx);
+enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -507,7 +507,7 @@ typedef struct AVFilter {
 struct AVFilterContext {
     const AVClass *av_class;        ///< needed for av_log()
 
-    AVFilter *filter;               ///< the AVFilter of which this is an instance
+    const AVFilter *filter;         ///< the AVFilter of which this is an instance
 
     char *name;                     ///< name of this filter instance
 
