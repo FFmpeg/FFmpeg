@@ -397,6 +397,16 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'c';
             }
             break;
+        case AVMEDIA_TYPE_DATA:
+            if (st->codec->codec_id == AV_CODEC_ID_SMPTE_KLV) {
+                *q++ = 0x05; /* MPEG-2 registration descriptor */
+                *q++ = 4;
+                *q++ = 'K';
+                *q++ = 'L';
+                *q++ = 'V';
+                *q++ = 'A';
+            }
+            break;
         }
 
         val = 0xf000 | (q - desc_length_ptr - 2);
@@ -977,8 +987,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = len >> 8;
             *q++ = len;
             val = 0x80;
-            /* data alignment indicator is required for subtitle data */
-            if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+            /* data alignment indicator is required for subtitle and data streams */
+            if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codec->codec_type == AVMEDIA_TYPE_DATA)
                 val |= 0x04;
             *q++ = val;
             *q++ = flags;
