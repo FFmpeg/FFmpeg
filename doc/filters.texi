@@ -1865,9 +1865,7 @@ duration of the detected black interval expressed in seconds.
 In order to display the output lines, you need to set the loglevel at
 least to the AV_LOG_INFO value.
 
-This filter accepts a list of options in the form of
-@var{key}=@var{value} pairs separated by ":". A description of the
-accepted options follows.
+The filter accepts the following options:
 
 @table @option
 @item black_min_duration, d

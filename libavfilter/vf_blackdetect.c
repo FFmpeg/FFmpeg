@@ -82,20 +82,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
-{
-    int ret;
-    BlackDetectContext *blackdetect = ctx->priv;
-
-    blackdetect->class = &blackdetect_class;
-    av_opt_set_defaults(blackdetect);
-
-    if ((ret = av_set_options_string(blackdetect, args, "=", ":")) < 0)
-        return ret;
-
-    return 0;
-}
-
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -211,7 +197,6 @@ AVFilter avfilter_vf_blackdetect = {
     .name          = "blackdetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect video intervals that are (almost) black."),
     .priv_size     = sizeof(BlackDetectContext),
-    .init          = init,
     .query_formats = query_formats,
     .inputs        = blackdetect_inputs,
     .outputs       = blackdetect_outputs,

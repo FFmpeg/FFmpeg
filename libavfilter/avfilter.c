@@ -682,7 +682,6 @@ static const char *const filters_left_to_update[] = {
     "astreamsync",
     "atempo",
     "bbox",
-    "blackdetect",
     "buffer",
     "flite",
     "hue",
