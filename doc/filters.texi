@@ -3732,14 +3732,13 @@ hue="s=max(0\, min(1\, (START+DURATION-t)/DURATION))"
 
 @subsection Commands
 
-This filter supports the following command:
+This filter supports the following commands:
 @table @option
 @item s
 @item h
 @item H
 Modify the hue and/or the saturation of the input video.
-The command accepts the same options and syntax of the corresponding
-options.
+The command accepts the same syntax of the corresponding option.
 
 If the specified expression is not valid, it is kept at its current
 value.
