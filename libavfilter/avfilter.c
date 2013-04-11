@@ -610,39 +610,64 @@ void avfilter_free(AVFilterContext *filter)
     av_free(filter);
 }
 
-/* process a list of value1:value2:..., each value corresponding
- * to subsequent AVOption, in the order they are declared */
-static int process_unnamed_options(AVFilterContext *ctx, AVDictionary **options,
-                                   const char *args)
+static int process_options(AVFilterContext *ctx, AVDictionary **options,
+                           const char *args)
 {
     const AVOption *o = NULL;
-    const char *p = args;
-    char *val;
+    int ret, count = 0;
+    char *av_uninit(parsed_key), *av_uninit(value);
+    const char *key;
     int offset= -1;
 
-    while (*p) {
+    if (!args)
+        return 0;
+
+    while (*args) {
+        const char *shorthand = NULL;
+
         o = av_opt_next(ctx->priv, o);
-        if (!o) {
-            av_log(ctx, AV_LOG_ERROR, "More options provided than "
-                   "this filter supports.\n");
-            return AVERROR(EINVAL);
+        if (o) {
+            if (o->type == AV_OPT_TYPE_CONST || o->offset == offset)
+                continue;
+            offset = o->offset;
+            shorthand = o->name;
         }
-        if (o->type == AV_OPT_TYPE_CONST || o->offset == offset)
-            continue;
-        offset = o->offset;
 
-        val = av_get_token(&p, ":");
-        if (!val)
-            return AVERROR(ENOMEM);
+        ret = av_opt_get_key_value(&args, "=", ":",
+                                   shorthand ? AV_OPT_FLAG_IMPLICIT_KEY : 0,
+                                   &parsed_key, &value);
+        if (ret < 0) {
+            if (ret == AVERROR(EINVAL))
+                av_log(ctx, AV_LOG_ERROR, "No option name near '%s'\n", args);
+            else
+                av_log(ctx, AV_LOG_ERROR, "Unable to parse '%s': %s\n", args,
+                       av_err2str(ret));
+            return ret;
+        }
+        if (*args)
+            args++;
+        if (parsed_key) {
+            key = parsed_key;
+            while ((o = av_opt_next(ctx->priv, o))); /* discard all remaining shorthand */
+        } else {
+            key = shorthand;
+        }
 
-        av_dict_set(options, o->name, val, 0);
+        av_log(ctx, AV_LOG_DEBUG, "Setting '%s' to value '%s'\n", key, value);
+        av_dict_set(options, key, value, 0);
+        if ((ret = av_opt_set(ctx->priv, key, value, 0)) < 0) {
+            if (ret == AVERROR_OPTION_NOT_FOUND)
+                av_log(ctx, AV_LOG_ERROR, "Option '%s' not found\n", key);
+            av_free(value);
+            av_free(parsed_key);
+            return ret;
+        }
 
-        av_freep(&val);
-        if (*p)
-            p++;
+        av_free(value);
+        av_free(parsed_key);
+        count++;
     }
-
-    return 0;
+    return count;
 }
 
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
@@ -782,20 +807,11 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                 ret = av_dict_parse_string(&options, p, "=", ":", 0);
             }
             if (ret >= 0)
-                ret = process_unnamed_options(filter, &options, copy);
+                ret = process_options(filter, &options, copy);
             av_freep(&copy);
 
             if (ret < 0)
                 goto fail;
-        } else
-#endif
-
-        if (strchr(args, '=')) {
-            /* assume a list of key1=value1:key2=value2:... */
-            ret = av_dict_parse_string(&options, args, "=", ":", 0);
-            if (ret < 0)
-                goto fail;
-#if FF_API_OLD_FILTER_OPTS
         } else if (!strcmp(filter->filter->name, "format")     ||
                    !strcmp(filter->filter->name, "noformat")   ||
                    !strcmp(filter->filter->name, "frei0r")     ||
@@ -835,14 +851,14 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
             while ((p = strchr(p, ':')))
                 *p++ = '|';
 
-            ret = process_unnamed_options(filter, &options, copy);
+            ret = process_options(filter, &options, copy);
             av_freep(&copy);
 
             if (ret < 0)
                 goto fail;
 #endif
         } else {
-            ret = process_unnamed_options(filter, &options, args);
+            ret = process_options(filter, &options, args);
             if (ret < 0)
                 goto fail;
         }
