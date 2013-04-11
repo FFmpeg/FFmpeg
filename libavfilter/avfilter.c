@@ -763,6 +763,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
             char *copy = av_strdup(args);
             char *p    = copy;
             int nb_leading = 0; // number of leading colons to skip
+            int deprecated = 0;
 
             if (!copy) {
                 ret = AVERROR(ENOMEM);
@@ -784,12 +785,10 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                 p++;
             }
 
-            if (strchr(p, ':')) {
-                av_log(filter, AV_LOG_WARNING, "This syntax is deprecated. Use "
-                       "'|' to separate the list items.\n");
-            }
+            deprecated = strchr(p, ':') != NULL;
 
             if (!strcmp(filter->filter->name, "aevalsrc")) {
+                deprecated = 0;
                 while ((p = strchr(p, ':')) && p[1] != ':') {
                     const char *epos = strchr(p + 1, '=');
                     const char *spos = strchr(p + 1, ':');
@@ -798,13 +797,21 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                         p++;
                         break;
                     }
+                    /* next token does not contain a '=', assume a channel expression */
+                    deprecated = 1;
                     *p++ = '|';
                 }
-                if (p && *p == ':')
+                if (p && *p == ':') { // double sep '::' found
+                    deprecated = 1;
                     memmove(p, p + 1, strlen(p));
+                }
             } else
             while ((p = strchr(p, ':')))
                 *p++ = '|';
+
+            if (deprecated)
+                av_log(filter, AV_LOG_WARNING, "This syntax is deprecated. Use "
+                       "'|' to separate the list items.\n");
 
             av_log(filter, AV_LOG_DEBUG, "compat: called with args=[%s]\n", copy);
             ret = process_options(filter, &options, copy);
