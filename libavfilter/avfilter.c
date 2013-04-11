@@ -756,7 +756,8 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                    !strcmp(filter->filter->name, "noformat")   ||
                    !strcmp(filter->filter->name, "frei0r")     ||
                    !strcmp(filter->filter->name, "frei0r_src") ||
-                   !strcmp(filter->filter->name, "ocv")) {
+                   !strcmp(filter->filter->name, "ocv")        ||
+                   !strcmp(filter->filter->name, "pp")) {
             /* a hack for compatibility with the old syntax
              * replace colons with |s */
             char *copy = av_strdup(args);
