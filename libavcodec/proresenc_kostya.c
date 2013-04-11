@@ -1060,8 +1060,8 @@ static const AVClass proresenc_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-AVCodec ff_prores_kostya_encoder = {
-    .name           = "prores_kostya",
+AVCodec ff_prores_ks_encoder = {
+    .name           = "prores_ks",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),

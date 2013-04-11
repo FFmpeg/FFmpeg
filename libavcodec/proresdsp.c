@@ -56,7 +56,7 @@ static void prores_idct_put_c(uint16_t *out, int linesize, int16_t *block, const
 }
 #endif
 
-#if CONFIG_PRORES_KOSTYA_ENCODER
+#if CONFIG_PRORES_KS_ENCODER
 static void prores_fdct_c(const uint16_t *src, int linesize, int16_t *block)
 {
     int x, y;
@@ -82,7 +82,7 @@ void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
     ff_init_scantable_permutation(dsp->idct_permutation,
                                   dsp->idct_permutation_type);
 #endif
-#if CONFIG_PRORES_KOSTYA_ENCODER
+#if CONFIG_PRORES_KS_ENCODER
     dsp->fdct                 = prores_fdct_c;
     dsp->dct_permutation_type = FF_NO_IDCT_PERM;
     ff_init_scantable_permutation(dsp->dct_permutation,

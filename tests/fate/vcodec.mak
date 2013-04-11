@@ -202,11 +202,11 @@ fate-vsynth%-mpng:               CODEC   = png
 
 FATE_VCODEC-$(call ENCDEC, MSVIDEO1, AVI) += msvideo1
 
-FATE_VCODEC-$(call ENCDEC, PRORES, MOV) += prores prores_kostya
+FATE_VCODEC-$(call ENCDEC, PRORES, MOV) += prores prores_ks
 fate-vsynth%-prores:             FMT     = mov
 
-fate-vsynth%-prores_kostya:      ENCOPTS = -profile hq
-fate-vsynth%-prores_kostya:      FMT     = mov
+fate-vsynth%-prores_ks:          ENCOPTS = -profile hq
+fate-vsynth%-prores_ks:          FMT     = mov
 
 FATE_VCODEC-$(call ENCDEC, QTRLE, MOV)  += qtrle qtrlegray
 fate-vsynth%-qtrle:              FMT     = mov
