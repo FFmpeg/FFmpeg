@@ -70,19 +70,20 @@ typedef struct {
 } MovieContext;
 
 #define OFFSET(x) offsetof(MovieContext, x)
-#define F AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption movie_options[]= {
-{"format_name",  "set format name",         OFFSET(format_name),  AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MIN, CHAR_MAX, F },
-{"f",            "set format name",         OFFSET(format_name),  AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MIN, CHAR_MAX, F },
-{"streams",      "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, F },
-{"s",            "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, F },
-{"si",           "set stream index",        OFFSET(stream_index), AV_OPT_TYPE_INT,    {.i64 = -1},  -1,       INT_MAX, F },
-{"stream_index", "set stream index",        OFFSET(stream_index), AV_OPT_TYPE_INT,    {.i64 = -1},  -1,       INT_MAX, F },
-{"seek_point",   "set seekpoint (seconds)", OFFSET(seek_point_d), AV_OPT_TYPE_DOUBLE, {.dbl =  0},  0,        (INT64_MAX-1) / 1000000, F },
-{"sp",           "set seekpoint (seconds)", OFFSET(seek_point_d), AV_OPT_TYPE_DOUBLE, {.dbl =  0},  0,        (INT64_MAX-1) / 1000000, F },
-{"loop",         "set loop count",          OFFSET(loop_count),   AV_OPT_TYPE_INT,    {.i64 =  1},  0,        INT_MAX, F },
-{NULL},
+    { "filename",     NULL,                      OFFSET(file_name),    AV_OPT_TYPE_STRING,                                    .flags = FLAGS },
+    { "format_name",  "set format name",         OFFSET(format_name),  AV_OPT_TYPE_STRING,                                    .flags = FLAGS },
+    { "f",            "set format name",         OFFSET(format_name),  AV_OPT_TYPE_STRING,                                    .flags = FLAGS },
+    { "stream_index", "set stream index",        OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX,                 FLAGS  },
+    { "si",           "set stream index",        OFFSET(stream_index), AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX,                 FLAGS  },
+    { "seek_point",   "set seekpoint (seconds)", OFFSET(seek_point_d), AV_OPT_TYPE_DOUBLE, { .dbl =  0 },  0, (INT64_MAX-1) / 1000000, FLAGS },
+    { "sp",           "set seekpoint (seconds)", OFFSET(seek_point_d), AV_OPT_TYPE_DOUBLE, { .dbl =  0 },  0, (INT64_MAX-1) / 1000000, FLAGS },
+    { "streams",      "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, FLAGS },
+    { "s",            "set streams",             OFFSET(stream_specs), AV_OPT_TYPE_STRING, {.str =  0},  CHAR_MAX, CHAR_MAX, FLAGS },
+    { "loop",         "set loop count",          OFFSET(loop_count),   AV_OPT_TYPE_INT,    {.i64 =  1},  0,        INT_MAX, FLAGS },
+    { NULL },
 };
 
 static int movie_config_output_props(AVFilterLink *outlink);
@@ -186,7 +187,7 @@ static int guess_channel_layout(MovieStream *st, int st_index, void *log_ctx)
     return 0;
 }
 
-static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, const AVClass *class)
+static av_cold int movie_common_init(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
     AVInputFormat *iformat = NULL;
@@ -196,21 +197,10 @@ static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, con
     char name[16];
     AVStream *st;
 
-    movie->class = class;
-    av_opt_set_defaults(movie);
-
-    if (args) {
-        movie->file_name = av_get_token(&args, ":");
-        if (!movie->file_name)
-            return AVERROR(ENOMEM);
-    }
-    if (!args || !*movie->file_name) {
+    if (!*movie->file_name) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
         return AVERROR(EINVAL);
     }
-
-    if (*args++ == ':' && (ret = av_set_options_string(movie, args, "=", ":")) < 0)
-        return ret;
 
     movie->seek_point = movie->seek_point_d * 1000000 + 0.5;
 
@@ -332,7 +322,6 @@ static av_cold void movie_uninit(AVFilterContext *ctx)
         if (movie->st[i].st)
             avcodec_close(movie->st[i].st->codec);
     }
-    av_opt_free(movie);
     av_freep(&movie->file_name);
     av_freep(&movie->st);
     av_freep(&movie->out_index);
@@ -576,20 +565,20 @@ AVFILTER_DEFINE_CLASS(movie);
 
 static av_cold int movie_init(AVFilterContext *ctx, const char *args)
 {
-    return movie_common_init(ctx, args, &movie_class);
+    return movie_common_init(ctx);
 }
 
 AVFilter avfilter_avsrc_movie = {
     .name          = "movie",
     .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
     .priv_size     = sizeof(MovieContext),
+    .priv_class    = &movie_class,
     .init          = movie_init,
     .uninit        = movie_uninit,
     .query_formats = movie_query_formats,
 
     .inputs    = NULL,
     .outputs   = NULL,
-    .priv_class = &movie_class,
 };
 
 #endif  /* CONFIG_MOVIE_FILTER */
@@ -601,7 +590,7 @@ AVFILTER_DEFINE_CLASS(amovie);
 
 static av_cold int amovie_init(AVFilterContext *ctx, const char *args)
 {
-    return movie_common_init(ctx, args, &amovie_class);
+    return movie_common_init(ctx);
 }
 
 AVFilter avfilter_avsrc_amovie = {

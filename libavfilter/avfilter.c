@@ -712,6 +712,8 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "lowpass"   ) ||
         !strcmp(filter->filter->name, "mandelbrot" ) ||
         !strcmp(filter->filter->name, "mptestsrc"  ) ||
+        !strcmp(filter->filter->name, "movie"      ) ||
+        !strcmp(filter->filter->name, "amovie"     ) ||
         !strcmp(filter->filter->name, "negate"     ) ||
         !strcmp(filter->filter->name, "noise"      ) ||
         !strcmp(filter->filter->name, "nullsrc"    ) ||
