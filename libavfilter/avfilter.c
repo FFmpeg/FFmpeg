@@ -701,8 +701,23 @@ static int filter_use_deprecated_init(const char *name)
             return 1;
     return 0;
 }
+#if 0
+#if FF_API_AVFILTER_INIT_FILTER
+int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
+{
+    return avfilter_init_str(filter, args);
+}
+#endif
+
+int avfilter_init_str(AVFilterContext *filter, const char *args)
+#else
+int avfilter_init_str(AVFilterContext *filter, const char *args)
+{
+    return avfilter_init_filter(filter, args, NULL);
+}
 
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
+#endif
 {
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;

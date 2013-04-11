@@ -118,7 +118,9 @@ int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
     *filt_ctx = avfilter_graph_alloc_filter(graph_ctx, filt, name);
     if (!*filt_ctx)
         return AVERROR(ENOMEM);
-    if ((ret = avfilter_init_filter(*filt_ctx, args, opaque)) < 0)
+
+    ret = avfilter_init_filter(*filt_ctx, args, opaque);
+    if (ret < 0)
         goto fail;
 
     return 0;
