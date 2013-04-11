@@ -167,7 +167,7 @@ static void eval_expr(AVFilterContext *ctx, enum EvalTarget eval_tgt)
     }
 }
 
-static int set_expr(AVExpr **pexpr, const char *expr, void *log_ctx)
+static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *log_ctx)
 {
     int ret;
     AVExpr *old = NULL;
@@ -178,7 +178,8 @@ static int set_expr(AVExpr **pexpr, const char *expr, void *log_ctx)
                         NULL, NULL, NULL, NULL, 0, log_ctx);
     if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "Error when evaluating the expression '%s'\n", expr);
+               "Error when evaluating the expression '%s' for %s\n",
+               expr, option);
         *pexpr = old;
         return ret;
     }
@@ -194,11 +195,11 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     int ret;
 
     if      (!strcmp(cmd, "x"))
-        ret = set_expr(&over->x_pexpr, args, ctx);
+        ret = set_expr(&over->x_pexpr, args, cmd, ctx);
     else if (!strcmp(cmd, "y"))
-        ret = set_expr(&over->y_pexpr, args, ctx);
+        ret = set_expr(&over->y_pexpr, args, cmd, ctx);
     else if (!strcmp(cmd, "enable"))
-        ret = set_expr(&over->enable_pexpr, args, ctx);
+        ret = set_expr(&over->enable_pexpr, args, cmd, ctx);
     else
         ret = AVERROR(ENOSYS);
 
@@ -318,9 +319,9 @@ static int config_input_overlay(AVFilterLink *inlink)
     over->var_values[VAR_T]     = NAN;
     over->var_values[VAR_POS]   = NAN;
 
-    if ((ret = set_expr(&over->x_pexpr,      over->x_expr,      ctx)) < 0 ||
-        (ret = set_expr(&over->y_pexpr,      over->y_expr,      ctx)) < 0 ||
-        (ret = set_expr(&over->enable_pexpr, over->enable_expr, ctx)) < 0)
+    if ((ret = set_expr(&over->x_pexpr,      over->x_expr,      "x",      ctx)) < 0 ||
+        (ret = set_expr(&over->y_pexpr,      over->y_expr,      "y",      ctx)) < 0 ||
+        (ret = set_expr(&over->enable_pexpr, over->enable_expr, "enable", ctx)) < 0)
         return ret;
 
     over->overlay_is_packed_rgb =
