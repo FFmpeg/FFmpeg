@@ -6873,7 +6873,7 @@ This filter accepts the following options:
 
 @table @option
 
-@item expr
+@item expr, tb
 The expression which is evaluated into the output timebase.
 
 @end table
