@@ -693,6 +693,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
         !strcmp(filter->filter->name, "idet"       ) ||
         !strcmp(filter->filter->name,  "il"        ) ||
+        !strcmp(filter->filter->name,  "join"      ) ||
         !strcmp(filter->filter->name,  "kerndeint" ) ||
         !strcmp(filter->filter->name, "ocv"        ) ||
         !strcmp(filter->filter->name, "life"       ) ||
