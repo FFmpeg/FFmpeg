@@ -30,7 +30,6 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h261.h"
-#include "h261data.h"
 
 int ff_h261_get_picture_format(int width, int height)
 {
@@ -254,7 +253,8 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
     }
 
     /* MB is not skipped, encode MBA */
-    put_bits(&s->pb, ff_h261_mba_bits[(h->current_mba - h->previous_mba) - 1],
+    put_bits(&s->pb,
+             ff_h261_mba_bits[(h->current_mba - h->previous_mba) - 1],
              ff_h261_mba_code[(h->current_mba - h->previous_mba) - 1]);
 
     /* calculate MTYPE */
@@ -273,7 +273,9 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
     if (s->dquant)
         h->mtype++;
 
-    put_bits(&s->pb, ff_h261_mtype_bits[h->mtype], ff_h261_mtype_code[h->mtype]);
+    put_bits(&s->pb,
+             ff_h261_mtype_bits[h->mtype],
+             ff_h261_mtype_code[h->mtype]);
 
     h->mtype = ff_h261_mtype_map[h->mtype];
 
@@ -295,7 +297,9 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
     if (HAS_CBP(h->mtype)) {
         av_assert1(cbp > 0);
-        put_bits(&s->pb, ff_h261_cbp_tab[cbp - 1][1], ff_h261_cbp_tab[cbp - 1][0]);
+        put_bits(&s->pb,
+                 ff_h261_cbp_tab[cbp - 1][1],
+                 ff_h261_cbp_tab[cbp - 1][0]);
     }
     for (i = 0; i < 6; i++)
         /* encode each block */

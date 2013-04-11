@@ -30,7 +30,6 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h261.h"
-#include "h261data.h"
 
 #define H261_MBA_VLC_BITS 9
 #define H261_MTYPE_VLC_BITS 6
