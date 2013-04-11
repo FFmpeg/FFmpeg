@@ -107,8 +107,6 @@ static const AVFilterPad field_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "type", NULL };
-
 AVFilter avfilter_vf_field = {
     .name          = "field",
     .description   = NULL_IF_CONFIG_SMALL("Extract a field from the input video."),
