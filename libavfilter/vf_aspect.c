@@ -52,7 +52,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     if (s->aspect_num > 0 && s->aspect_den > 0) {
         av_log(ctx, AV_LOG_WARNING,
                "num:den syntax is deprecated, please use num/den or named options instead\n");
-        s->aspect = av_d2q(s->aspect_num / s->aspect_den, INT_MAX);
+        s->aspect = av_d2q(s->aspect_num / s->aspect_den, s->max);
     }
 
     return 0;
