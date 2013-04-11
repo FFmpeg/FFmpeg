@@ -26,7 +26,6 @@
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 #include "avfilter.h"
-#include "avfiltergraph.h"
 
 #define WHITESPACES " \n\t"
 

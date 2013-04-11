@@ -28,7 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
-#include "libavfilter/avfiltergraph.h"
+#include "libavfilter/avfilter.h"
 
 #if !HAVE_GETOPT
 #include "compat/getopt.c"

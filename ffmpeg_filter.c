@@ -21,7 +21,6 @@
 #include "ffmpeg.h"
 
 #include "libavfilter/avfilter.h"
-#include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
 
 #include "libavresample/avresample.h"

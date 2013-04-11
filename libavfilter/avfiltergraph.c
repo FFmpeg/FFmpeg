@@ -30,7 +30,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt_of_2()
 #include "avfilter.h"
-#include "avfiltergraph.h"
 #include "formats.h"
 #include "internal.h"
 
