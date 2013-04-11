@@ -999,7 +999,11 @@ will create 5 copies of the input audio.
 
 Forward two audio streams and control the order the buffers are forwarded.
 
-The argument to the filter is an expression deciding which stream should be
+The filter accepts the following options:
+
+@table @option
+@item expr, e
+Set the expression deciding which stream should be
 forwarded next: if the result is negative, the first stream is forwarded; if
 the result is positive or zero, the second stream is forwarded. It can use
 the following variables:
@@ -1015,8 +1019,11 @@ current timestamp of each stream
 
 The default value is @code{t1-t2}, which means to always forward the stream
 that has a smaller timestamp.
+@end table
 
-Example: stress-test @code{amerge} by randomly sending buffers on the wrong
+@subsection Examples
+
+Stress-test @code{amerge} by randomly sending buffers on the wrong
 input, while avoiding too much of a desynchronization:
 @example
 amovie=file.ogg [a] ; amovie=file.mp3 [b] ;

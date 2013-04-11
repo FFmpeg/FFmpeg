@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/eval.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "internal.h"
@@ -45,7 +46,9 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     AVExpr *expr;
+    char *expr_str;
     double var_values[VAR_NB];
     struct buf_queue {
         AVFrame *buf[QUEUE_SIZE];
@@ -58,18 +61,25 @@ typedef struct {
     int eof; /* bitmask, one bit for each stream */
 } AStreamSyncContext;
 
-static const char *default_expr = "t1-t2";
+#define OFFSET(x) offsetof(AStreamSyncContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption astreamsync_options[] = {
+    { "expr", "set stream selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "t1-t2" }, .flags = FLAGS },
+    { "e",    "set stream selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "t1-t2" }, .flags = FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(astreamsync);
 
 static av_cold int init(AVFilterContext *ctx, const char *args0)
 {
     AStreamSyncContext *as = ctx->priv;
-    const char *expr = args0 ? args0 : default_expr;
     int r, i;
 
-    r = av_expr_parse(&as->expr, expr, var_names,
+    r = av_expr_parse(&as->expr, as->expr_str, var_names,
                       NULL, NULL, NULL, NULL, 0, ctx);
     if (r < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error in expression \"%s\"\n", expr);
+        av_log(ctx, AV_LOG_ERROR, "Error in expression \"%s\"\n", as->expr_str);
         return r;
     }
     for (i = 0; i < 42; i++)
@@ -226,4 +236,5 @@ AVFilter avfilter_af_astreamsync = {
     .query_formats = query_formats,
     .inputs        = astreamsync_inputs,
     .outputs       = astreamsync_outputs,
+    .priv_class    = &astreamsync_class,
 };

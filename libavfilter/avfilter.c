@@ -679,7 +679,6 @@ static const char *const filters_left_to_update[] = {
     "anullsrc",
     "aresample",
     "asetnsamples",
-    "astreamsync",
     "atempo",
     "bbox",
     "buffer",
