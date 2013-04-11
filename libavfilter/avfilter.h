@@ -527,6 +527,8 @@ struct AVFilterContext {
 
     void *priv;                     ///< private data for use by the filter
 
+    struct AVFilterGraph *graph;    ///< filtergraph this filter belongs to
+
     struct AVFilterCommand *command_queue;
 };
 
