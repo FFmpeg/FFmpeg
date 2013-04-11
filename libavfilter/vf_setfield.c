@@ -85,8 +85,6 @@ static const AVFilterPad setfield_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "mode", NULL };
-
 AVFilter avfilter_vf_setfield = {
     .name      = "setfield",
     .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
@@ -94,5 +92,4 @@ AVFilter avfilter_vf_setfield = {
     .inputs    = setfield_inputs,
     .outputs   = setfield_outputs,
     .priv_class = &setfield_class,
-    .shorthand  = shorthand,
 };
