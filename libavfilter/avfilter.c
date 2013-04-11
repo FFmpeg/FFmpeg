@@ -490,11 +490,6 @@ static const AVClass avfilter_class = {
     .child_class_next = filter_child_class_next,
 };
 
-const AVClass *avfilter_get_class(void)
-{
-    return &avfilter_class;
-}
-
 int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *inst_name)
 {
     AVFilterContext *ret;
@@ -1037,4 +1032,9 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
     } else {
         return ff_filter_frame_framed(link, frame);
     }
+}
+
+const AVClass *avfilter_get_class(void)
+{
+    return &avfilter_class;
 }
