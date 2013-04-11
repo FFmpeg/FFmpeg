@@ -3388,6 +3388,12 @@ Generate a fancy enigmatic moving light:
 @example
 nullsrc=s=256x256,geq=random(1)/hypot(X-cos(N*0.07)*W/2-W/2\,Y-sin(N*0.09)*H/2-H/2)^2*1000000*sin(N*0.02):128:128
 @end example
+
+@item
+Generate a quick emboss effect:
+@example
+format=gray,geq=lum_expr='(p(X,Y)+(256-p(X-4,Y-4)))/2'
+@end example
 @end itemize
 
 @section gradfun
