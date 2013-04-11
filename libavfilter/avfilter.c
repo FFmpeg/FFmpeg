@@ -662,6 +662,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "amix"      ) ||
         !strcmp(filter->filter->name,  "apad"      ) ||
         !strcmp(filter->filter->name,  "aphaser"   ) ||
+        !strcmp(filter->filter->name,  "asplit"    ) ||
         !strcmp(filter->filter->name,  "ass")     ||
         !strcmp(filter->filter->name,  "asyncts"   ) ||
         !strcmp(filter->filter->name,  "bandpass"  ) ||
@@ -725,6 +726,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "showspectrum") ||
         !strcmp(filter->filter->name, "silencedetect") ||
         !strcmp(filter->filter->name, "smartblur") ||
+        !strcmp(filter->filter->name, "split"    ) ||
         !strcmp(filter->filter->name, "stereo3d" ) ||
         !strcmp(filter->filter->name, "subtitles") ||
         !strcmp(filter->filter->name, "thumbnail") ||
