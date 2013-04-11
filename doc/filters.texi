@@ -1664,10 +1664,7 @@ To enable compilation of this filter you need to configure FFmpeg with
 
 Note that the flite library is not thread-safe.
 
-The source accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
-The description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 
