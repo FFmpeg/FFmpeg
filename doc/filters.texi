@@ -6376,7 +6376,7 @@ This filter accepts the following options:
 
 @table @option
 
-@item expr
+@item expr, e
 An expression, which is evaluated for each input frame. If the expression is
 evaluated to a non-zero value, the frame is selected and passed to the output,
 otherwise it is discarded.
