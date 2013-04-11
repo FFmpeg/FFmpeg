@@ -781,7 +781,10 @@ general presets system (e.g. passing the @code{-pre} option).
 
 Apple ProRes encoder.
 
-@subsection Private Options
+FFmpeg contains 2 ProRes encoders, the prores-aw and prores-ks encoder.
+The used encoder can be choosen with the @code{-vcodec} option.
+
+@subsection Private Options for prores-ks
 
 @table @option
 @item profile @var{integer}
