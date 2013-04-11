@@ -508,10 +508,8 @@ static av_cold int test_init(AVFilterContext *ctx, const char *args)
 {
     TestSourceContext *test = ctx->priv;
 
-    test->class = &testsrc_class;
     test->fill_picture_fn = test_fill_picture;
-    av_opt_set_defaults(test);
-    return init(ctx, args);
+    return init(ctx, NULL);
 }
 
 static int test_query_formats(AVFilterContext *ctx)
@@ -534,17 +532,17 @@ static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
 };
 
 AVFilter avfilter_vsrc_testsrc = {
-    .name      = "testsrc",
-    .description = NULL_IF_CONFIG_SMALL("Generate test pattern."),
-    .priv_size = sizeof(TestSourceContext),
-    .init      = test_init,
-    .uninit    = uninit,
+    .name          = "testsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &testsrc_class,
+    .init          = test_init,
+    .uninit        = uninit,
 
-    .query_formats   = test_query_formats,
+    .query_formats = test_query_formats,
 
     .inputs    = NULL,
     .outputs   = avfilter_vsrc_testsrc_outputs,
-    .priv_class = &testsrc_class,
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
@@ -615,10 +613,8 @@ static av_cold int rgbtest_init(AVFilterContext *ctx, const char *args)
     TestSourceContext *test = ctx->priv;
 
     test->draw_once = 1;
-    test->class = &rgbtestsrc_class;
     test->fill_picture_fn = rgbtest_fill_picture;
-    av_opt_set_defaults(test);
-    return init(ctx, args);
+    return init(ctx, NULL);
 }
 
 static int rgbtest_query_formats(AVFilterContext *ctx)
@@ -654,18 +650,18 @@ static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
 };
 
 AVFilter avfilter_vsrc_rgbtestsrc = {
-    .name      = "rgbtestsrc",
-    .description = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
-    .priv_size = sizeof(TestSourceContext),
-    .init      = rgbtest_init,
-    .uninit    = uninit,
+    .name          = "rgbtestsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &rgbtestsrc_class,
+    .init          = rgbtest_init,
+    .uninit        = uninit,
 
-    .query_formats   = rgbtest_query_formats,
+    .query_formats = rgbtest_query_formats,
 
     .inputs    = NULL,
 
     .outputs   = avfilter_vsrc_rgbtestsrc_outputs,
-    .priv_class = &rgbtestsrc_class,
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */

@@ -725,6 +725,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "pp"   )  ||
         !strcmp(filter->filter->name, "aperms") ||
         !strcmp(filter->filter->name, "resample") ||
+        !strcmp(filter->filter->name, "rgbtestsrc") ||
         !strcmp(filter->filter->name, "setpts"       ) ||
         !strcmp(filter->filter->name, "settb"        ) ||
         !strcmp(filter->filter->name, "showspectrum") ||
@@ -733,6 +734,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "split"    ) ||
         !strcmp(filter->filter->name, "stereo3d" ) ||
         !strcmp(filter->filter->name, "subtitles") ||
+        !strcmp(filter->filter->name, "testsrc"  ) ||
         !strcmp(filter->filter->name, "thumbnail") ||
         !strcmp(filter->filter->name, "transpose") ||
         !strcmp(filter->filter->name, "treble"    ) ||

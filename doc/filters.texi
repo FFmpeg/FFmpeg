@@ -6201,8 +6201,7 @@ The @code{testsrc} source generates a test video pattern, showing a
 color pattern, a scrolling gradient and a timestamp. This is mainly
 intended for testing purposes.
 
-These sources accept an optional sequence of @var{key}=@var{value} pairs,
-separated by ":". The description of the accepted options follows.
+The sources accept the following options:
 
 @table @option
 
