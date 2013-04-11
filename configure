@@ -1275,8 +1275,8 @@ THREADS_LIST='
 
 ATOMICS_LIST='
     atomics_gcc
-    atomics_win32
     atomics_suncc
+    atomics_win32
 '
 
 ARCH_LIST='
