@@ -287,16 +287,13 @@ static const AVFilterPad avfilter_af_volume_outputs[] = {
     { NULL }
 };
 
-static const char *const shorthand[] = { "volume", "precision", NULL };
-
 AVFilter avfilter_af_volume = {
     .name           = "volume",
     .description    = NULL_IF_CONFIG_SMALL("Change input volume."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(VolumeContext),
+    .priv_class     = &volume_class,
     .init           = init,
     .inputs         = avfilter_af_volume_inputs,
     .outputs        = avfilter_af_volume_outputs,
-    .priv_class     = &volume_class,
-    .shorthand      = shorthand,
 };
