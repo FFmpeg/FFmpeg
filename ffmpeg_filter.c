@@ -165,13 +165,13 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
 //                   GET_PIX_FMT_NAME, ":")
 
 DEF_CHOOSE_FORMAT(enum AVSampleFormat, sample_fmt, sample_fmts,
-                  AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME, ",")
+                  AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME, "|")
 
 DEF_CHOOSE_FORMAT(int, sample_rate, supported_samplerates, 0,
-                  GET_SAMPLE_RATE_NAME, ",")
+                  GET_SAMPLE_RATE_NAME, "|")
 
 DEF_CHOOSE_FORMAT(uint64_t, channel_layout, channel_layouts, 0,
-                  GET_CH_LAYOUT_NAME, ",")
+                  GET_CH_LAYOUT_NAME, "|")
 
 FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
