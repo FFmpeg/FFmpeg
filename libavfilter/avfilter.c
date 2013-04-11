@@ -677,7 +677,6 @@ static const char *const filters_left_to_update[] = {
     "aevalsrc",
     "amerge",
     "aresample",
-    "asetnsamples",
     "atempo",
     "buffer",
     "flite",

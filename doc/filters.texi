@@ -902,8 +902,7 @@ The last output packet may contain a different number of samples, as
 the filter will flush all the remaining samples when the input audio
 signal its end.
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
+The filter accepts the following options:
 
 @table @option
 
