@@ -4800,10 +4800,14 @@ Suppress a TV station logo, using an image file to determine which
 pixels comprise the logo. It works by filling in the pixels that
 comprise the logo with neighboring pixels.
 
-This filter requires one argument which specifies the filter bitmap
-file, which can be any image format supported by libavformat. The
-width and height of the image file must match those of the video
-stream being processed.
+The filters accept the following options:
+
+@table @option
+@item filename, f
+Set the filter bitmap file, which can be any image format supported by
+libavformat. The width and height of the image file must match those of the
+video stream being processed.
+@end table
 
 Pixels in the provided bitmap image with a value of zero are not
 considered part of the logo, non-zero pixels are considered part of

@@ -70,6 +70,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -79,6 +80,8 @@
 #include "lswsutils.h"
 
 typedef struct {
+    const AVClass *class;
+    char *filename;
     /* Stores our collection of masks. The first is for an array of
        the second for the y axis, and the third for the x axis. */
     int ***mask;
@@ -90,6 +93,16 @@ typedef struct {
     uint8_t      *half_mask_data;
     FFBoundingBox half_mask_bbox;
 } RemovelogoContext;
+
+#define OFFSET(x) offsetof(RemovelogoContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption removelogo_options[] = {
+    { "filename", "set bitmap filename", OFFSET(filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { "f",        "set bitmap filename", OFFSET(filename), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(removelogo);
 
 /**
  * Choose a slightly larger mask size to improve performance.
@@ -272,13 +285,13 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
     int a, b, c, w, h;
     int full_max_mask_size, half_max_mask_size;
 
-    if (!args) {
-        av_log(ctx, AV_LOG_ERROR, "An image file must be specified as argument\n");
+    if (!removelogo->filename) {
+        av_log(ctx, AV_LOG_ERROR, "The bitmap file name is mandatory\n");
         return AVERROR(EINVAL);
     }
 
     /* Load our mask image. */
-    if ((ret = load_mask(&removelogo->full_mask_data, &w, &h, args, ctx)) < 0)
+    if ((ret = load_mask(&removelogo->full_mask_data, &w, &h, removelogo->filename, ctx)) < 0)
         return ret;
     removelogo->mask_w = w;
     removelogo->mask_h = h;
@@ -564,4 +577,5 @@ AVFilter avfilter_vf_removelogo = {
     .query_formats = query_formats,
     .inputs        = removelogo_inputs,
     .outputs       = removelogo_outputs,
+    .priv_class    = &removelogo_class,
 };

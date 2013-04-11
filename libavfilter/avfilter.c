@@ -681,7 +681,6 @@ static const char *const filters_left_to_update[] = {
     "hue",
     "mp",
     "pan",
-    "removelogo",
     "scale",
     "setdar",
     "setsar",
