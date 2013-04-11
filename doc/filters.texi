@@ -4369,16 +4369,16 @@ efficiency of such approach.
 
 @subsection Commands
 
-This filter supports the following command:
+This filter supports the following commands:
 @table @option
 @item x
-Set the @option{x} option expression.
-
 @item y
-Set the @option{y} option expression.
-
 @item enable
-Set the @option{enable} option expression.
+Modify the x/y and enable overlay of the overlay input.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
 @end table
 
 @subsection Examples
