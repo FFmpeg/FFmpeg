@@ -285,13 +285,11 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
     int pad_idx = out->pad_idx;
     int ret;
     char name[255];
-    AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
 
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("buffersink"),
                                        name, NULL, NULL, fg->graph);
-    av_freep(&buffersink_params);
 
     if (ret < 0)
         return ret;
@@ -368,17 +366,14 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     char *sample_fmts, *sample_rates, *channel_layouts;
     char name[255];
     int ret;
-    AVABufferSinkParams *params = av_abuffersink_params_alloc();
 
-    if (!params)
-        return AVERROR(ENOMEM);
-    params->all_channel_counts = 1;
     snprintf(name, sizeof(name), "output stream %d:%d", ost->file_index, ost->index);
     ret = avfilter_graph_create_filter(&ofilter->filter,
                                        avfilter_get_by_name("abuffersink"),
-                                       name, NULL, params, fg->graph);
-    av_freep(&params);
+                                       name, NULL, NULL, fg->graph);
     if (ret < 0)
+        return ret;
+    if ((ret = av_opt_set_int(ofilter->filter, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN)) < 0)
         return ret;
 
 #define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
