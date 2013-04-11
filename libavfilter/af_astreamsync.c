@@ -180,6 +180,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    AStreamSyncContext *as = ctx->priv;
+
+    av_expr_free(as->expr);
+    as->expr = NULL;
+}
+
 static const AVFilterPad astreamsync_inputs[] = {
     {
         .name         = "in1",
@@ -214,6 +222,7 @@ AVFilter avfilter_af_astreamsync = {
                                           "in a configurable order."),
     .priv_size     = sizeof(AStreamSyncContext),
     .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = astreamsync_inputs,
     .outputs       = astreamsync_outputs,
