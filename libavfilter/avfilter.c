@@ -656,6 +656,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     AVDictionaryEntry *e;
     int ret=0;
     int anton_options =
+        !strcmp(filter->filter->name,  "allpass"   ) ||
         !strcmp(filter->filter->name,  "afade"     ) ||
         !strcmp(filter->filter->name,  "aformat") ||
         !strcmp(filter->filter->name,  "amix"      ) ||
@@ -663,6 +664,10 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "aphaser"   ) ||
         !strcmp(filter->filter->name,  "ass")     ||
         !strcmp(filter->filter->name,  "asyncts"   ) ||
+        !strcmp(filter->filter->name,  "bandpass"  ) ||
+        !strcmp(filter->filter->name,  "bandreject") ||
+        !strcmp(filter->filter->name,  "bass"      ) ||
+        !strcmp(filter->filter->name,  "biquad"    ) ||
         !strcmp(filter->filter->name,  "blackframe") ||
         !strcmp(filter->filter->name,  "blend"     ) ||
         !strcmp(filter->filter->name,  "boxblur"   ) ||
@@ -679,6 +684,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "drawtext"  ) ||
         !strcmp(filter->filter->name,  "ebur128"   ) ||
         !strcmp(filter->filter->name,  "edgedetect") ||
+        !strcmp(filter->filter->name,  "equalizer" ) ||
         !strcmp(filter->filter->name,  "fade"      ) ||
         !strcmp(filter->filter->name,  "field"     ) ||
         !strcmp(filter->filter->name,  "fieldorder") ||
@@ -688,6 +694,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name,  "frei0r_src") ||
         !strcmp(filter->filter->name,  "geq"       ) ||
         !strcmp(filter->filter->name, "gradfun"    ) ||
+        !strcmp(filter->filter->name, "highpass"  ) ||
         !strcmp(filter->filter->name, "histeq"     ) ||
         !strcmp(filter->filter->name, "histogram"  ) ||
         !strcmp(filter->filter->name, "hqdn3d"     ) ||
@@ -700,6 +707,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "lut"        ) ||
         !strcmp(filter->filter->name, "lutyuv"     ) ||
         !strcmp(filter->filter->name, "lutrgb"     ) ||
+        !strcmp(filter->filter->name, "lowpass"   ) ||
         !strcmp(filter->filter->name, "mandelbrot" ) ||
         !strcmp(filter->filter->name, "mptestsrc"  ) ||
         !strcmp(filter->filter->name, "negate"     ) ||
@@ -721,6 +729,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         !strcmp(filter->filter->name, "subtitles") ||
         !strcmp(filter->filter->name, "thumbnail") ||
         !strcmp(filter->filter->name, "transpose") ||
+        !strcmp(filter->filter->name, "treble"    ) ||
         !strcmp(filter->filter->name, "unsharp"  ) ||
 //         !strcmp(filter->filter->name, "scale"      ) ||
         !strcmp(filter->filter->name, "select") ||
