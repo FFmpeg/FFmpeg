@@ -1676,6 +1676,10 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
         memset(&h->er, 0, sizeof(h->er));
         memset(&h->me, 0, sizeof(h->me));
+        memset(&h->mb, 0, sizeof(h->mb));
+        memset(&h->mb_luma_dc, 0, sizeof(h->mb_luma_dc));
+        memset(&h->mb_padding, 0, sizeof(h->mb_padding));
+
         h->avctx = dst;
         h->DPB   = NULL;
         h->qscale_table_pool = NULL;
