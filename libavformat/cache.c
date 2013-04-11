@@ -56,43 +56,42 @@ typedef struct Context {
   Segment *segs;
   Segment *seg;
   char *cache_path;
-  int fdw, fdr;
+  int fdw, fdr, fdi;
   int64_t position;
   int8_t cache_fill;
   pthread_t thread;
   pthread_mutex_t mutex;
 } Context;
 
-
-static Segment *segments_contains(Segment *segs, int64_t position)
-{
-  Segment *seg = segs;
-  while (seg) {
-    if (seg->begin <= position && seg->end >= position) {
-      return seg;
-    }
-    seg = seg->next;
-  }
-  return NULL;
-}
-
-static void segments_insert(Segment **segs, Segment *seg)
+static Segment *segments_select(Segment **segs, int64_t position)
 {
   Segment *root = *segs;
+  Segment *next = root;
+
   if (root == NULL) {
-    *segs = seg;
+    *segs = av_mallocz(sizeof(Segment));
+    (*segs)->begin = (*segs)->end = position;
+    return *segs;
   }
-  while (root) {
-    Segment *next = root->next;
-    if (root->begin < seg->begin) {
-      seg->next = root;
+
+  while (next) {
+    if (position < next->begin) {
+      Segment *seg = av_mallocz(sizeof(Segment));
+      seg->begin = seg->end = position;
+      seg->next = next->next;
       *segs = seg;
-    } else if (root->end < seg->begin && (!next || seg->begin < next->begin)) {
-      root->next = seg;
-      seg->next = next;
+    } else if (next->begin <= position && position <= next->end) {
+      return next;
+    } else if (next->end < position && (!next->next || position < next->next->begin)) {
+      Segment *seg = av_mallocz(sizeof(Segment));
+      seg->begin = seg->end = position;
+      seg->next = next->next;
+      next->next = seg;
     }
-    root = next;
+    next = next->next;
   }
+
+  return NULL;
 }
 
 static void segments_balance(Context *c, Segment *seg)
@@ -104,6 +103,32 @@ static void segments_balance(Context *c, Segment *seg)
     seg->next = next->next;
     av_free(next);
   }
+}
+
+static void segments_dump(Segment *segs, int fd)
+{
+  lseek(fd, 0, SEEK_SET);
+  ftruncate64(fd, 0);
+  while (segs) {
+    write(fd, &segs->begin, sizeof(int64_t));
+    write(fd, &segs->end, sizeof(int64_t));
+    segs = segs->next;
+  }
+}
+
+static Segment *segments_load(int fd)
+{
+  Segment *seg , **next = &seg;
+  int64_t begin, end;
+  lseek(fd, 0, SEEK_SET);
+  while (sizeof(int64_t) == read(fd, &begin, sizeof(int64_t)) &&
+      sizeof(int64_t) == read(fd, &end, sizeof(int64_t))) {
+    *next = av_mallocz(sizeof(Segment));
+    (*next)->begin = begin;
+    (*next)->end = end;
+    next = &((*next)->next);
+  }
+  return seg;
 }
 
 static void segments_free(Segment *segs)
@@ -138,15 +163,6 @@ static void* cache_fill_thread(void* arg)
   return NULL;
 }
 
-static Segment *segment_alloc(void)
-{
-  Segment *seg = (Segment *)av_mallocz(sizeof(Segment));
-
-  seg->begin = 0;
-  seg->end = 0;
-  return seg;
-}
-
 static int cache_open(URLContext *h, const char *arg, int flags)
 {
   char *url;
@@ -159,30 +175,38 @@ static int cache_open(URLContext *h, const char *arg, int flags)
   dlen = strlen(arg) - strlen(url);
   c->cache_path = av_mallocz(sizeof(char) * dlen);
   av_strlcpy(c->cache_path, arg, dlen);
-
   av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s\n", c->cache_path, url);
 
   opened = ffurl_open(&c->inner, url, flags, &h->interrupt_callback, NULL);
-  if (opened == 0) {
-    vlen = ffurl_size(c->inner);
-    if (vlen > 0) {
-      c->fdw = open(c->cache_path, O_RDWR | O_BINARY | O_CREAT, 0600);
-      c->fdr = open(c->cache_path, O_RDWR | O_BINARY, 0600);
-      if (ftruncate64(c->fdw, vlen) == 0) {
-        c->seg = segment_alloc();
-        segments_insert(&c->segs, c->seg);
-        pthread_mutex_init(&c->mutex, NULL);
-        pthread_create(&c->thread, NULL, cache_fill_thread, c);
-        c->cache_fill = 1;
-        av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d, %lld\n", c->cache_path, url, opened, (long long)vlen);
+  if (opened != 0) {
+    return opened;
+  }
+
+  vlen = ffurl_size(c->inner);
+  if (vlen > 0) {
+    c->fdw = open(c->cache_path, O_RDWR | O_BINARY | O_CREAT, 0600);
+    c->fdr = open(c->cache_path, O_RDWR | O_BINARY, 0600);
+    if (ftruncate64(c->fdw, vlen) == 0) {
+      char index_path[dlen + 4];
+      snprintf(index_path, dlen + 4, "%s.ssi", c->cache_path);
+      c->fdi = open(index_path, O_RDWR | O_BINARY | O_CREAT, 0600);
+      c->segs = segments_load(c->fdi);
+      if (c->segs) {
+        c->seg = c->segs;
       } else {
-        close(c->fdw);
-        close(c->fdr);
+        c->seg = segments_select(&c->segs, 0);
       }
+      pthread_mutex_init(&c->mutex, NULL);
+      pthread_create(&c->thread, NULL, cache_fill_thread, c);
+      c->cache_fill = 1;
+      av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d, %lld\n", index_path, url, opened, (long long)vlen);
+    } else {
+      close(c->fdw);
+      close(c->fdr);
     }
   }
 
-  return opened;
+  return 0;
 }
 
 static int cache_read(URLContext *h, unsigned char *buf, int size)
@@ -219,22 +243,14 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
   }
 
   pthread_mutex_lock(&c->mutex);
-  candi = segments_contains(c->segs, position);
-  if (!candi) {
-    candi = segment_alloc();
-    segments_insert(&c->segs, candi);
-    candi->begin = ffurl_seek(c->inner, position, whence);
-    candi->end = candi->begin;
-    c->position = candi->begin;
-    lseek(c->fdw, c->position, SEEK_SET);
-    lseek(c->fdr, c->position, SEEK_SET);
-    c->seg = candi;
-  } else if (candi == c->seg) {
+  candi = segments_select(&c->segs, position);
+  if (candi == c->seg) {
     c->position = lseek(c->fdr, position, whence);
   } else {
-    int64_t wp = ffurl_seek(c->inner, candi->end, whence);
-    lseek(c->fdw, wp, SEEK_SET);
-    c->position = lseek(c->fdr, position, whence);
+    ffurl_seek(c->inner, candi->end, whence);
+    lseek(c->fdw, candi->end, SEEK_SET);
+    lseek(c->fdr, position, SEEK_SET);
+    c->position = position;
     c->seg = candi;
   }
   pthread_mutex_unlock(&c->mutex);
@@ -249,8 +265,12 @@ static int cache_close(URLContext *h)
   if (c->cache_fill) {
     c->cache_fill = 0;
     pthread_join(c->thread, NULL);
+    segments_dump(c->segs, c->fdi);
     pthread_mutex_destroy(&c->mutex);
     segments_free(c->segs);
+    close(c->fdw);
+    close(c->fdr);
+    close(c->fdi);
   }
 
   ffurl_close(c->inner);
