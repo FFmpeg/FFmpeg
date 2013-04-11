@@ -675,7 +675,9 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 // TODO: drop me
 static const char *const filters_left_to_update[] = {
     "abuffer",
+#if FF_API_ACONVERT_FILTER
     "aconvert",
+#endif
     "atempo",
     "buffer",
     "mp",

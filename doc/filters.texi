@@ -283,6 +283,8 @@ Below is a description of the currently available audio filters.
 
 Convert the input audio format to the specified formats.
 
+@emph{This filter is deprecated. Use @ref{aformat} instead.}
+
 The filter accepts a string of the form:
 "@var{sample_format}:@var{channel_layout}".
 

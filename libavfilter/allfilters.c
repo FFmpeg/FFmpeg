@@ -45,7 +45,9 @@ void avfilter_register_all(void)
         return;
     initialized = 1;
 
+#if FF_API_ACONVERT_FILTER
     REGISTER_FILTER(ACONVERT,       aconvert,       af);
+#endif
     REGISTER_FILTER(AFADE,          afade,          af);
     REGISTER_FILTER(AFORMAT,        aformat,        af);
     REGISTER_FILTER(ALLPASS,        allpass,        af);

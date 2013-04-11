@@ -37,7 +37,7 @@
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 
-const char *filter_descr = "aresample=8000,aconvert=s16:mono";
+const char *filter_descr = "aresample=8000,aformat=sample_fmts=s16:channel_layouts=mono";
 const char *player       = "ffplay -f s16le -ar 8000 -ac 1 -";
 
 static AVFormatContext *fmt_ctx;

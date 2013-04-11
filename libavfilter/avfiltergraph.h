@@ -98,7 +98,7 @@ int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
  * Enable or disable automatic format conversion inside the graph.
  *
  * Note that format conversion can still happen inside explicitly inserted
- * scale and aconvert filters.
+ * scale and aresample filters.
  *
  * @param flags  any of the AVFILTER_AUTO_CONVERT_* constants
  */
