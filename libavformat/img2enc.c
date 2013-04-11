@@ -36,7 +36,7 @@ typedef struct {
     int is_pipe;
     int split_planes;       /**< use independent file for each Y, U, V plane */
     char path[1024];
-    int updatefirst;
+    int update;
 } VideoMuxData;
 
 static int write_header(AVFormatContext *s)
@@ -75,8 +75,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
 
     if (!img->is_pipe) {
-        if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number > 1 && !img->updatefirst) {
+        if (img->update) {
+            av_strlcpy(filename, img->path, sizeof(filename));
+        } else if (av_get_frame_filename(filename, sizeof(filename), img->path, img->img_number) < 0 &&
+                   img->img_number > 1) {
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s' (either set updatefirst or use a pattern like %%03d within the filename pattern)\n",
                    img->img_number, img->path);
@@ -128,7 +130,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(VideoMuxData, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption muxoptions[] = {
-    { "updatefirst",  "update the first image file",      OFFSET(updatefirst), AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       1, ENC },
+    { "updatefirst",  "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       1, ENC },
+    { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       1, ENC },
     { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 1, INT_MAX, ENC },
     { NULL },
 };
