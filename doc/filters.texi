@@ -802,16 +802,9 @@ amovie=left.wav [l] ; amovie=right.mp3 [r] ; [l] [r] amerge
 @end example
 
 @item
-Multiple merges:
+Multiple merges assuming 1 video stream and 6 audio streams in @file{input.mkv}:
 @example
-ffmpeg -f lavfi -i "
-amovie=input.mkv:si=0 [a0];
-amovie=input.mkv:si=1 [a1];
-amovie=input.mkv:si=2 [a2];
-amovie=input.mkv:si=3 [a3];
-amovie=input.mkv:si=4 [a4];
-amovie=input.mkv:si=5 [a5];
-[a0][a1][a2][a3][a4][a5] amerge=inputs=6" -c:a pcm_s16le output.mkv
+ffmpeg -i input.mkv -filter_complex "[0:1][0:2][0:3][0:4][0:5][0:6] amerge=inputs=6" -c:a pcm_s16le output.mkv
 @end example
 @end itemize
 
@@ -1191,7 +1184,7 @@ silencedetect=n=-50dB:d=5
 Complete example with @command{ffmpeg} to detect silence with 0.0001 noise
 tolerance in @file{silence.mp3}:
 @example
-ffmpeg -f lavfi -i amovie=silence.mp3,silencedetect=noise=0.0001 -f null -
+ffmpeg -i silence.mp3 -af silencedetect=noise=0.0001 -f null -
 @end example
 @end itemize
 
