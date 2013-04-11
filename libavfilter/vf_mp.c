@@ -32,6 +32,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 
 #include "libmpcodecs/vf.h"
 #include "libmpcodecs/img_format.h"
@@ -262,11 +263,22 @@ struct SwsContext *ff_sws_getContextFromCmdLine(int srcW, int srcH, int srcForma
 }
 
 typedef struct {
+    const AVClass *class;
     vf_instance_t vf;
     vf_instance_t next_vf;
     AVFilterContext *avfctx;
     int frame_returned;
+    char *filter;
 } MPContext;
+
+#define OFFSET(x) offsetof(MPContext, x)
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption mp_options[] = {
+    { "filter", "set MPlayer filter name and parameters", OFFSET(filter), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(mp);
 
 void ff_mp_msg(int mod, int lev, const char *format, ... ){
     va_list va;
@@ -533,7 +545,7 @@ mp_image_t* ff_vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgty
 static void dummy_free(void *opaque, uint8_t *data){}
 
 int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
-    MPContext *m= (void*)vf;
+    MPContext *m= (MPContext*)(((uint8_t*)vf) - offsetof(MPContext, vf));
     AVFilterLink *outlink     = m->avfctx->outputs[0];
     AVFrame *picref = av_frame_alloc();
     int i;
@@ -605,13 +617,13 @@ int ff_vf_next_config(struct vf_instance *vf,
 }
 
 int ff_vf_next_control(struct vf_instance *vf, int request, void* data){
-    MPContext *m= (void*)vf;
+    MPContext *m= (MPContext*)(((uint8_t*)vf) - offsetof(MPContext, vf));
     av_log(m->avfctx, AV_LOG_DEBUG, "Received control %d\n", request);
     return 0;
 }
 
 static int vf_default_query_format(struct vf_instance *vf, unsigned int fmt){
-    MPContext *m= (void*)vf;
+    MPContext *m= (MPContext*)(((uint8_t*)vf) - offsetof(MPContext, vf));
     int i;
     av_log(m->avfctx, AV_LOG_DEBUG, "query %X\n", fmt);
 
@@ -644,6 +656,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 
     m->avfctx= ctx;
 
+    args = m->filter;
     if(!args || 1!=sscanf(args, "%255[^:=]", name)){
         av_log(ctx, AV_LOG_ERROR, "Invalid parameter.\n");
         return AVERROR(EINVAL);
@@ -850,4 +863,5 @@ AVFilter avfilter_vf_mp = {
     .query_formats = query_formats,
     .inputs        = mp_inputs,
     .outputs       = mp_outputs,
+    .priv_class    = &mp_class,
 };
