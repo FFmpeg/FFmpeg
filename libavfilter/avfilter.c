@@ -674,7 +674,6 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 static const char *const filters_left_to_update[] = {
     "abuffer",
     "aconvert",
-    "aevalsrc",
     "amerge",
     "aresample",
     "atempo",
@@ -757,7 +756,8 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                    !strcmp(filter->filter->name, "frei0r")     ||
                    !strcmp(filter->filter->name, "frei0r_src") ||
                    !strcmp(filter->filter->name, "ocv")        ||
-                   !strcmp(filter->filter->name, "pp")) {
+                   !strcmp(filter->filter->name, "pp")         ||
+                   !strcmp(filter->filter->name, "aevalsrc")) {
             /* a hack for compatibility with the old syntax
              * replace colons with |s */
             char *copy = av_strdup(args);
@@ -789,9 +789,24 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                        "'|' to separate the list items.\n");
             }
 
+            if (!strcmp(filter->filter->name, "aevalsrc")) {
+                while ((p = strchr(p, ':')) && p[1] != ':') {
+                    const char *epos = strchr(p + 1, '=');
+                    const char *spos = strchr(p + 1, ':');
+                    const int next_token_is_opt = epos && (!spos || epos < spos);
+                    if (next_token_is_opt) {
+                        p++;
+                        break;
+                    }
+                    *p++ = '|';
+                }
+                if (p && *p == ':')
+                    memmove(p, p + 1, strlen(p));
+            } else
             while ((p = strchr(p, ':')))
                 *p++ = '|';
 
+            av_log(filter, AV_LOG_DEBUG, "compat: called with args=[%s]\n", copy);
             ret = process_options(filter, &options, copy);
             av_freep(&copy);
 

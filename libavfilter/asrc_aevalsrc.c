@@ -56,7 +56,7 @@ typedef struct {
     int nb_channels;
     int64_t pts;
     AVExpr *expr[8];
-    char *expr_str[8];
+    char *exprs;
     int nb_samples;             ///< number of samples per requested frame
     char *duration_str;         ///< total duration of the generated audio
     double duration;
@@ -68,6 +68,7 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption aevalsrc_options[]= {
+    { "exprs",       "set the '|'-separated list of channels expressions", OFFSET(exprs), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = FLAGS },
     { "nb_samples",  "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.i64 = 1024},    0,        INT_MAX, FLAGS },
     { "n",           "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.i64 = 1024},    0,        INT_MAX, FLAGS },
     { "sample_rate", "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX, FLAGS },
@@ -84,15 +85,12 @@ AVFILTER_DEFINE_CLASS(aevalsrc);
 static int init(AVFilterContext *ctx, const char *args)
 {
     EvalContext *eval = ctx->priv;
-    char *args1 = av_strdup(args);
-    char *expr, *buf, *bufptr;
+    char *args1 = av_strdup(eval->exprs);
+    char *expr, *buf;
     int ret, i;
 
-    eval->class = &aevalsrc_class;
-    av_opt_set_defaults(eval);
-
     if (!args1) {
-        av_log(ctx, AV_LOG_ERROR, "Argument is empty\n");
+        av_log(ctx, AV_LOG_ERROR, "Channels expressions list is empty\n");
         ret = args ? AVERROR(ENOMEM) : AVERROR(EINVAL);
         goto end;
     }
@@ -100,22 +98,14 @@ static int init(AVFilterContext *ctx, const char *args)
     /* parse expressions */
     buf = args1;
     i = 0;
-    while (expr = av_strtok(buf, ":", &bufptr)) {
+    while (i < FF_ARRAY_ELEMS(eval->expr) && (expr = av_strtok(buf, "|", &buf))) {
         ret = av_expr_parse(&eval->expr[i], expr, var_names,
                             NULL, NULL, NULL, NULL, 0, ctx);
         if (ret < 0)
             goto end;
         i++;
-        if (bufptr && *bufptr == ':') { /* found last expression */
-            bufptr++;
-            break;
-        }
-        buf = NULL;
     }
     eval->nb_channels = i;
-
-    if (bufptr && (ret = av_set_options_string(eval, bufptr, "=", ":")) < 0)
-        goto end;
 
     if (eval->chlayout_str) {
         int n;
