@@ -278,7 +278,7 @@ static int select_frame(AVFilterContext *ctx, AVFrame *frame)
             select->var_values[VAR_SCENE] = get_scene_score(ctx, frame);
             // TODO: document metadata
             snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
-            av_dict_set(&frame->metadata, "lavfi.scene_score", buf, 0);
+            av_dict_set(avpriv_frame_get_metadatap(frame), "lavfi.scene_score", buf, 0);
         }
 #endif
         break;
