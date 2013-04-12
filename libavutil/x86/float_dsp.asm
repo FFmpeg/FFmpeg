@@ -252,3 +252,29 @@ cglobal scalarproduct_float, 3,3,2, v1, v2, offset
     fld dword r0m
 %endif
     RET
+
+;-----------------------------------------------------------------------------
+; void ff_butterflies_float(float *src0, float *src1, int len);
+;-----------------------------------------------------------------------------
+INIT_XMM sse
+cglobal butterflies_float, 3,3,3, src0, src1, len
+%if ARCH_X86_64
+    movsxd    lenq, lend
+%endif
+    test      lenq, lenq
+    jz .end
+    shl       lenq, 2
+    lea      src0q, [src0q +   lenq]
+    lea      src1q, [src1q +   lenq]
+    neg       lenq
+.loop:
+    mova        m0, [src0q + lenq]
+    mova        m1, [src1q + lenq]
+    subps       m2, m0, m1
+    addps       m0, m0, m1
+    mova        [src1q + lenq], m2
+    mova        [src0q + lenq], m0
+    add       lenq, mmsize
+    jl .loop
+.end:
+    REP_RET
