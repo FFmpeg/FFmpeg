@@ -146,4 +146,6 @@ AVFilter avfilter_af_channelsplit = {
 
     .inputs  = avfilter_af_channelsplit_inputs,
     .outputs = NULL,
+
+    .flags   = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

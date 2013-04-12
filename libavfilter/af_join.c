@@ -525,4 +525,6 @@ AVFilter avfilter_af_join = {
 
     .inputs  = NULL,
     .outputs = avfilter_af_join_outputs,
+
+    .flags   = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

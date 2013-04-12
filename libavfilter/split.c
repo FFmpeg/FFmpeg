@@ -133,6 +133,8 @@ AVFilter avfilter_vf_split = {
 
     .inputs    = avfilter_vf_split_inputs,
     .outputs   = NULL,
+
+    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 
 static const AVFilterPad avfilter_af_asplit_inputs[] = {
@@ -157,4 +159,6 @@ AVFilter avfilter_af_asplit = {
 
     .inputs  = avfilter_af_asplit_inputs,
     .outputs = NULL,
+
+    .flags   = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
