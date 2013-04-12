@@ -322,6 +322,10 @@ static av_cold int init(AVFilterContext *ctx)
     OCVContext *ocv = ctx->priv;
     int i;
 
+    if (!ocv->name) {
+        av_log(ctx, AV_LOG_ERROR, "No libopencv filter name specified\n");
+        return AVERROR(EINVAL);
+    }
     for (i = 0; i < FF_ARRAY_ELEMS(ocv_filter_entries); i++) {
         OCVFilterEntry *entry = &ocv_filter_entries[i];
         if (!strcmp(ocv->name, entry->name)) {
