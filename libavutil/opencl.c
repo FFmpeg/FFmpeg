@@ -49,9 +49,19 @@ typedef struct {
 } KernelCode;
 
 typedef struct {
+    const AVClass *class;
+    int log_offset;
+    void *log_ctx;
     int init_count;
+    int opt_init_flag;
+     /**
+     * if set to 1, the OpenCL environment was created by the user and
+     * passed as AVOpenCLExternalEnv when initing ,0:created by opencl wrapper.
+     */
+    int is_user_created;
     int platform_idx;
     int device_idx;
+    char *build_options;
     cl_platform_id platform_id;
     cl_device_type device_type;
     cl_context context;
@@ -62,25 +72,10 @@ typedef struct {
     int kernel_code_count;
     KernelCode kernel_code[MAX_KERNEL_CODE_NUM];
     int kernel_count;
-    /**
-     * if set to 1, the OpenCL environment was created by the user and
-     * passed as AVOpenCLExternalEnv when initing ,0:created by opencl wrapper.
-     */
-    int is_user_created;
     AVOpenCLDeviceList device_list;
-} GPUEnv;
+} OpenclContext;
 
-typedef struct {
-    const AVClass *class;
-    int log_offset;
-    void *log_ctx;
-    int init_flag;
-    int platform_idx;
-    int device_idx;
-    char *build_options;
-} OpenclUtils;
-
-#define OFFSET(x) offsetof(OpenclUtils, x)
+#define OFFSET(x) offsetof(OpenclContext, x)
 
 static const AVOption opencl_options[] = {
      { "platform_idx",        "set platform index value",  OFFSET(platform_idx),  AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
@@ -93,16 +88,13 @@ static const AVClass openclutils_class = {
     .option                    = opencl_options,
     .item_name                 = av_default_item_name,
     .version                   = LIBAVUTIL_VERSION_INT,
-    .log_level_offset_offset   = offsetof(OpenclUtils, log_offset),
-    .parent_log_context_offset = offsetof(OpenclUtils, log_ctx),
+    .log_level_offset_offset   = offsetof(OpenclContext, log_offset),
+    .parent_log_context_offset = offsetof(OpenclContext, log_ctx),
 };
 
-static OpenclUtils openclutils = {&openclutils_class};
-
-static GPUEnv gpu_env;
+static OpenclContext opencl_ctx = {&openclutils_class};
 
 static const cl_device_type device_type[] = {CL_DEVICE_TYPE_GPU, CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_DEFAULT};
-
 
 typedef struct {
     int err_code;
@@ -208,7 +200,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
     AVOpenCLDeviceNode *device_node = NULL;
     status = clGetPlatformIDs(0, NULL, &device_list->platform_num);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not get OpenCL platform ids: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
@@ -217,7 +209,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
         return AVERROR(ENOMEM);
     status = clGetPlatformIDs(device_list->platform_num, platform_ids, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                 "Could not get OpenCL platform ids: %s\n", opencl_errstr(status));
         ret = AVERROR_EXTERNAL;
         goto end;
@@ -263,7 +255,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                 status = clGetDeviceIDs(device_list->platform_node[i]->platform_id, device_type[j],
                                         devices_num[j], device_ids, NULL);
                 if (status != CL_SUCCESS) {
-                    av_log(&openclutils, AV_LOG_WARNING,
+                    av_log(&opencl_ctx, AV_LOG_WARNING,
                             "Could not get device ID: %s:\n", opencl_errstr(status));
                     av_freep(&device_ids);
                     continue;
@@ -282,7 +274,7 @@ static int get_device_list(AVOpenCLDeviceList *device_list)
                                              sizeof(device_node->device_name), device_node->device_name,
                                              NULL);
                     if (status != CL_SUCCESS) {
-                        av_log(&openclutils, AV_LOG_WARNING,
+                        av_log(&opencl_ctx, AV_LOG_WARNING,
                                 "Could not get device name: %s\n", opencl_errstr(status));
                         continue;
                     }
@@ -306,12 +298,12 @@ int av_opencl_get_device_list(AVOpenCLDeviceList **device_list)
     int ret = 0;
     *device_list = av_mallocz(sizeof(AVOpenCLDeviceList));
     if (!(*device_list)) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not allocate opencl device list\n");
+        av_log(&opencl_ctx, AV_LOG_ERROR, "Could not allocate opencl device list\n");
         return AVERROR(ENOMEM);
     }
     ret = get_device_list(*device_list);
     if (ret < 0) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not get device list from environment\n");
+        av_log(&opencl_ctx, AV_LOG_ERROR, "Could not get device list from environment\n");
         free_device_list(*device_list);
         av_freep(device_list);
         return ret;
@@ -329,11 +321,11 @@ int av_opencl_set_option(const char *key, const char *val)
 {
     int ret = 0;
     LOCK_OPENCL
-    if (!openclutils.init_flag) {
-        av_opt_set_defaults(&openclutils);
-        openclutils.init_flag = 1;
+    if (!opencl_ctx.opt_init_flag) {
+        av_opt_set_defaults(&opencl_ctx);
+        opencl_ctx.opt_init_flag = 1;
     }
-    ret = av_opt_set(&openclutils, key, val, 0);
+    ret = av_opt_set(&opencl_ctx, key, val, 0);
     UNLOCK_OPENCL
     return ret;
 }
@@ -342,7 +334,7 @@ int av_opencl_get_option(const char *key, uint8_t **out_val)
 {
     int ret = 0;
     LOCK_OPENCL
-    ret = av_opt_get(&openclutils, key, 0, out_val);
+    ret = av_opt_get(&opencl_ctx, key, 0, out_val);
     UNLOCK_OPENCL
     return ret;
 }
@@ -351,7 +343,7 @@ void av_opencl_free_option(void)
 {
     /*FIXME: free openclutils context*/
     LOCK_OPENCL
-    av_opt_free(&openclutils);
+    av_opt_free(&opencl_ctx);
     UNLOCK_OPENCL
 }
 
@@ -359,7 +351,7 @@ AVOpenCLExternalEnv *av_opencl_alloc_external_env(void)
 {
     AVOpenCLExternalEnv *ext = av_mallocz(sizeof(AVOpenCLExternalEnv));
     if (!ext) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not malloc external opencl environment data space\n");
     }
     return ext;
@@ -374,22 +366,22 @@ int av_opencl_register_kernel_code(const char *kernel_code)
 {
     int i, ret = 0;
     LOCK_OPENCL;
-    if (gpu_env.kernel_code_count >= MAX_KERNEL_CODE_NUM) {
-        av_log(&openclutils, AV_LOG_ERROR,
+    if (opencl_ctx.kernel_code_count >= MAX_KERNEL_CODE_NUM) {
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not register kernel code, maximum number of registered kernel code %d already reached\n",
                MAX_KERNEL_CODE_NUM);
         ret = AVERROR(EINVAL);
         goto end;
     }
-    for (i = 0; i < gpu_env.kernel_code_count; i++) {
-        if (gpu_env.kernel_code[i].kernel_string == kernel_code) {
-            av_log(&openclutils, AV_LOG_WARNING, "Same kernel code has been registered\n");
+    for (i = 0; i < opencl_ctx.kernel_code_count; i++) {
+        if (opencl_ctx.kernel_code[i].kernel_string == kernel_code) {
+            av_log(&opencl_ctx, AV_LOG_WARNING, "Same kernel code has been registered\n");
             goto end;
         }
     }
-    gpu_env.kernel_code[gpu_env.kernel_code_count].kernel_string = kernel_code;
-    gpu_env.kernel_code[gpu_env.kernel_code_count].is_compiled = 0;
-    gpu_env.kernel_code_count++;
+    opencl_ctx.kernel_code[opencl_ctx.kernel_code_count].kernel_string = kernel_code;
+    opencl_ctx.kernel_code[opencl_ctx.kernel_code_count].is_compiled = 0;
+    opencl_ctx.kernel_code_count++;
 end:
     UNLOCK_OPENCL;
     return ret;
@@ -401,35 +393,35 @@ int av_opencl_create_kernel(AVOpenCLKernelEnv *env, const char *kernel_name)
     int i, ret = 0;
     LOCK_OPENCL;
     if (strlen(kernel_name) + 1 > AV_OPENCL_MAX_KERNEL_NAME_SIZE) {
-        av_log(&openclutils, AV_LOG_ERROR, "Created kernel name %s is too long\n", kernel_name);
+        av_log(&opencl_ctx, AV_LOG_ERROR, "Created kernel name %s is too long\n", kernel_name);
         ret = AVERROR(EINVAL);
         goto end;
     }
     if (!env->kernel) {
-        if (gpu_env.kernel_count >= MAX_KERNEL_NUM) {
-            av_log(&openclutils, AV_LOG_ERROR,
+        if (opencl_ctx.kernel_count >= MAX_KERNEL_NUM) {
+            av_log(&opencl_ctx, AV_LOG_ERROR,
                    "Could not create kernel with name '%s', maximum number of kernels %d already reached\n",
                    kernel_name, MAX_KERNEL_NUM);
             ret = AVERROR(EINVAL);
             goto end;
         }
-        if (gpu_env.program_count == 0) {
-            av_log(&openclutils, AV_LOG_ERROR, "Program count of OpenCL is 0, can not create kernel\n");
+        if (opencl_ctx.program_count == 0) {
+            av_log(&opencl_ctx, AV_LOG_ERROR, "Program count of OpenCL is 0, can not create kernel\n");
             ret = AVERROR(EINVAL);
             goto end;
         }
-        for (i = 0; i < gpu_env.program_count; i++) {
-            env->kernel = clCreateKernel(gpu_env.programs[i], kernel_name, &status);
+        for (i = 0; i < opencl_ctx.program_count; i++) {
+            env->kernel = clCreateKernel(opencl_ctx.programs[i], kernel_name, &status);
             if (status == CL_SUCCESS)
                 break;
         }
         if (status != CL_SUCCESS) {
-            av_log(&openclutils, AV_LOG_ERROR, "Could not create OpenCL kernel: %s\n", opencl_errstr(status));
+            av_log(&opencl_ctx, AV_LOG_ERROR, "Could not create OpenCL kernel: %s\n", opencl_errstr(status));
             ret = AVERROR_EXTERNAL;
             goto end;
         }
-        gpu_env.kernel_count++;
-        env->command_queue = gpu_env.command_queue;
+        opencl_ctx.kernel_count++;
+        env->command_queue = opencl_ctx.command_queue;
         av_strlcpy(env->kernel_name, kernel_name, sizeof(env->kernel_name));
     }
 end:
@@ -445,18 +437,18 @@ void av_opencl_release_kernel(AVOpenCLKernelEnv *env)
         goto end;
     status = clReleaseKernel(env->kernel);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not release kernel: %s\n",
+        av_log(&opencl_ctx, AV_LOG_ERROR, "Could not release kernel: %s\n",
               opencl_errstr(status));
     }
     env->kernel = NULL;
     env->command_queue = NULL;
     env->kernel_name[0] = 0;
-    gpu_env.kernel_count--;
+    opencl_ctx.kernel_count--;
 end:
     UNLOCK_OPENCL
 }
 
-static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
+static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_opencl_env)
 {
     cl_int status;
     cl_context_properties cps[3];
@@ -464,83 +456,83 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
     AVOpenCLDeviceNode *device_node = NULL;
 
     if (ext_opencl_env) {
-        if (gpu_env->is_user_created)
+        if (opencl_ctx->is_user_created)
             return 0;
-        gpu_env->platform_id     = ext_opencl_env->platform_id;
-        gpu_env->is_user_created = 1;
-        gpu_env->command_queue   = ext_opencl_env->command_queue;
-        gpu_env->context         = ext_opencl_env->context;
-        gpu_env->device_id       = ext_opencl_env->device_id;
-        gpu_env->device_type     = ext_opencl_env->device_type;
+        opencl_ctx->platform_id     = ext_opencl_env->platform_id;
+        opencl_ctx->is_user_created = 1;
+        opencl_ctx->command_queue   = ext_opencl_env->command_queue;
+        opencl_ctx->context         = ext_opencl_env->context;
+        opencl_ctx->device_id       = ext_opencl_env->device_id;
+        opencl_ctx->device_type     = ext_opencl_env->device_type;
     } else {
-        if (!gpu_env->is_user_created) {
-            if (!gpu_env->device_list.platform_num) {
-                ret = get_device_list(&gpu_env->device_list);
+        if (!opencl_ctx->is_user_created) {
+            if (!opencl_ctx->device_list.platform_num) {
+                ret = get_device_list(&opencl_ctx->device_list);
                 if (ret < 0) {
                     return ret;
                 }
             }
-            if (gpu_env->platform_idx >= 0) {
-                if (gpu_env->device_list.platform_num < gpu_env->platform_idx + 1) {
-                    av_log(&openclutils, AV_LOG_ERROR, "User set platform index not exist\n");
+            if (opencl_ctx->platform_idx >= 0) {
+                if (opencl_ctx->device_list.platform_num < opencl_ctx->platform_idx + 1) {
+                    av_log(opencl_ctx, AV_LOG_ERROR, "User set platform index not exist\n");
                     return AVERROR(EINVAL);
                 }
-                if (!gpu_env->device_list.platform_node[gpu_env->platform_idx]->device_num) {
-                    av_log(&openclutils, AV_LOG_ERROR, "No devices in user specific platform with index %d\n",
-                           gpu_env->platform_idx);
+                if (!opencl_ctx->device_list.platform_node[opencl_ctx->platform_idx]->device_num) {
+                    av_log(opencl_ctx, AV_LOG_ERROR, "No devices in user specific platform with index %d\n",
+                           opencl_ctx->platform_idx);
                     return AVERROR(EINVAL);
                 }
-                gpu_env->platform_id = gpu_env->device_list.platform_node[gpu_env->platform_idx]->platform_id;
+                opencl_ctx->platform_id = opencl_ctx->device_list.platform_node[opencl_ctx->platform_idx]->platform_id;
             } else {
                 /* get a usable platform by default*/
-                for (i = 0; i < gpu_env->device_list.platform_num; i++) {
-                    if (gpu_env->device_list.platform_node[i]->device_num) {
-                        gpu_env->platform_id = gpu_env->device_list.platform_node[i]->platform_id;
-                        gpu_env->platform_idx = i;
+                for (i = 0; i < opencl_ctx->device_list.platform_num; i++) {
+                    if (opencl_ctx->device_list.platform_node[i]->device_num) {
+                        opencl_ctx->platform_id = opencl_ctx->device_list.platform_node[i]->platform_id;
+                        opencl_ctx->platform_idx = i;
                         break;
                     }
                 }
             }
-            if (!gpu_env->platform_id) {
-                av_log(&openclutils, AV_LOG_ERROR, "Could not get OpenCL platforms\n");
+            if (!opencl_ctx->platform_id) {
+                av_log(opencl_ctx, AV_LOG_ERROR, "Could not get OpenCL platforms\n");
                 return AVERROR_EXTERNAL;
             }
             /* get a usable device*/
-            if (gpu_env->device_idx >= 0) {
-                if (gpu_env->device_list.platform_node[gpu_env->platform_idx]->device_num < gpu_env->device_idx + 1) {
-                    av_log(&openclutils, AV_LOG_ERROR,
-                           "Could not get OpenCL device idx %d in the user set platform\n", gpu_env->platform_idx);
+            if (opencl_ctx->device_idx >= 0) {
+                if (opencl_ctx->device_list.platform_node[opencl_ctx->platform_idx]->device_num < opencl_ctx->device_idx + 1) {
+                    av_log(opencl_ctx, AV_LOG_ERROR,
+                           "Could not get OpenCL device idx %d in the user set platform\n", opencl_ctx->platform_idx);
                     return AVERROR(EINVAL);
                 }
             } else {
-                gpu_env->device_idx = 0;
+                opencl_ctx->device_idx = 0;
             }
 
-            device_node = gpu_env->device_list.platform_node[gpu_env->platform_idx]->device_node[gpu_env->device_idx];
-            gpu_env->device_id = device_node->device_id;
-            gpu_env->device_type = device_node->device_type;
+            device_node = opencl_ctx->device_list.platform_node[opencl_ctx->platform_idx]->device_node[opencl_ctx->device_idx];
+            opencl_ctx->device_id = device_node->device_id;
+            opencl_ctx->device_type = device_node->device_type;
 
             /*
              * Use available platform.
              */
-            av_log(&openclutils, AV_LOG_VERBOSE, "Platform Name: %s, device id: 0x%x\n",
-                   gpu_env->device_list.platform_node[gpu_env->platform_idx]->platform_name,
-                   (unsigned int)gpu_env->device_id);
+            av_log(opencl_ctx, AV_LOG_VERBOSE, "Platform Name: %s, device id: 0x%x\n",
+                   opencl_ctx->device_list.platform_node[opencl_ctx->platform_idx]->platform_name,
+                   (unsigned int)opencl_ctx->device_id);
             cps[0] = CL_CONTEXT_PLATFORM;
-            cps[1] = (cl_context_properties)gpu_env->platform_id;
+            cps[1] = (cl_context_properties)opencl_ctx->platform_id;
             cps[2] = 0;
-            /* Check for GPU. */
-            gpu_env->context = clCreateContextFromType(cps, gpu_env->device_type,
+
+            opencl_ctx->context = clCreateContextFromType(cps, opencl_ctx->device_type,
                                                        NULL, NULL, &status);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR,
+                av_log(opencl_ctx, AV_LOG_ERROR,
                        "Could not get OpenCL context from device type: %s\n", opencl_errstr(status));
                 return AVERROR_EXTERNAL;
             }
-            gpu_env->command_queue = clCreateCommandQueue(gpu_env->context, gpu_env->device_id,
+            opencl_ctx->command_queue = clCreateCommandQueue(opencl_ctx->context, opencl_ctx->device_id,
                                                           0, &status);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR,
+                av_log(opencl_ctx, AV_LOG_ERROR,
                        "Could not create OpenCL command queue: %s\n", opencl_errstr(status));
                 return AVERROR_EXTERNAL;
             }
@@ -549,16 +541,16 @@ static int init_opencl_env(GPUEnv *gpu_env, AVOpenCLExternalEnv *ext_opencl_env)
     return ret;
 }
 
-static int compile_kernel_file(GPUEnv *gpu_env, const char *build_options)
+static int compile_kernel_file(OpenclContext *opencl_ctx)
 {
     cl_int status;
     char *temp, *source_str = NULL;
     size_t source_str_len = 0;
     int i, ret = 0;
 
-    for (i = 0; i < gpu_env->kernel_code_count; i++) {
-        if (!gpu_env->kernel_code[i].is_compiled)
-            source_str_len += strlen(gpu_env->kernel_code[i].kernel_string);
+    for (i = 0; i < opencl_ctx->kernel_code_count; i++) {
+        if (!opencl_ctx->kernel_code[i].is_compiled)
+            source_str_len += strlen(opencl_ctx->kernel_code[i].kernel_string);
     }
     if (!source_str_len) {
         return 0;
@@ -568,38 +560,38 @@ static int compile_kernel_file(GPUEnv *gpu_env, const char *build_options)
         return AVERROR(ENOMEM);
     }
     temp = source_str;
-    for (i = 0; i < gpu_env->kernel_code_count; i++) {
-        if (!gpu_env->kernel_code[i].is_compiled) {
-            memcpy(temp, gpu_env->kernel_code[i].kernel_string,
-                        strlen(gpu_env->kernel_code[i].kernel_string));
-            gpu_env->kernel_code[i].is_compiled = 1;
-            temp += strlen(gpu_env->kernel_code[i].kernel_string);
+    for (i = 0; i < opencl_ctx->kernel_code_count; i++) {
+        if (!opencl_ctx->kernel_code[i].is_compiled) {
+            memcpy(temp, opencl_ctx->kernel_code[i].kernel_string,
+                        strlen(opencl_ctx->kernel_code[i].kernel_string));
+            opencl_ctx->kernel_code[i].is_compiled = 1;
+            temp += strlen(opencl_ctx->kernel_code[i].kernel_string);
         }
     }
     /* create a CL program using the kernel source */
-    gpu_env->programs[gpu_env->program_count] = clCreateProgramWithSource(gpu_env->context,
+    opencl_ctx->programs[opencl_ctx->program_count] = clCreateProgramWithSource(opencl_ctx->context,
                                                            1, (const char **)(&source_str),
                                                                    &source_str_len, &status);
     if(status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(opencl_ctx, AV_LOG_ERROR,
                "Could not create OpenCL program with source code: %s\n", opencl_errstr(status));
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    if (!gpu_env->programs[gpu_env->program_count]) {
-        av_log(&openclutils, AV_LOG_ERROR, "Created program is NULL\n");
+    if (!opencl_ctx->programs[opencl_ctx->program_count]) {
+        av_log(opencl_ctx, AV_LOG_ERROR, "Created program is NULL\n");
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    status = clBuildProgram(gpu_env->programs[gpu_env->program_count], 1, &(gpu_env->device_id),
-                            build_options, NULL, NULL);
+    status = clBuildProgram(opencl_ctx->programs[opencl_ctx->program_count], 1, &(opencl_ctx->device_id),
+                            opencl_ctx->build_options, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(opencl_ctx, AV_LOG_ERROR,
                "Could not compile OpenCL kernel: %s\n", opencl_errstr(status));
         ret = AVERROR_EXTERNAL;
         goto end;
     }
-    gpu_env->program_count++;
+    opencl_ctx->program_count++;
 end:
     av_free(source_str);
     return ret;
@@ -609,27 +601,25 @@ int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env)
 {
     int ret = 0;
     LOCK_OPENCL
-    if (!gpu_env.init_count) {
-        if (!openclutils.init_flag) {
-            av_opt_set_defaults(&openclutils);
-            openclutils.init_flag = 1;
+    if (!opencl_ctx.init_count) {
+        if (!opencl_ctx.opt_init_flag) {
+            av_opt_set_defaults(&opencl_ctx);
+            opencl_ctx.opt_init_flag = 1;
         }
-        gpu_env.device_idx   = openclutils.device_idx;
-        gpu_env.platform_idx = openclutils.platform_idx;
-        ret = init_opencl_env(&gpu_env, ext_opencl_env);
+        ret = init_opencl_env(&opencl_ctx, ext_opencl_env);
         if (ret < 0)
             goto end;
     }
-    ret = compile_kernel_file(&gpu_env, openclutils.build_options);
+    ret = compile_kernel_file(&opencl_ctx);
     if (ret < 0)
         goto end;
-    if (gpu_env.kernel_code_count <= 0) {
-        av_log(&openclutils, AV_LOG_ERROR,
+    if (opencl_ctx.kernel_code_count <= 0) {
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "No kernel code is registered, compile kernel file failed\n");
         ret = AVERROR(EINVAL);
         goto end;
     }
-    gpu_env.init_count++;
+    opencl_ctx.init_count++;
 
 end:
     UNLOCK_OPENCL
@@ -641,50 +631,50 @@ void av_opencl_uninit(void)
     cl_int status;
     int i;
     LOCK_OPENCL
-    gpu_env.init_count--;
-    if (gpu_env.is_user_created)
+    opencl_ctx.init_count--;
+    if (opencl_ctx.is_user_created)
         goto end;
-    if (gpu_env.init_count > 0 || gpu_env.kernel_count > 0)
+    if (opencl_ctx.init_count > 0 || opencl_ctx.kernel_count > 0)
         goto end;
-    for (i = 0; i < gpu_env.program_count; i++) {
-        if (gpu_env.programs[i]) {
-            status = clReleaseProgram(gpu_env.programs[i]);
+    for (i = 0; i < opencl_ctx.program_count; i++) {
+        if (opencl_ctx.programs[i]) {
+            status = clReleaseProgram(opencl_ctx.programs[i]);
             if (status != CL_SUCCESS) {
-                av_log(&openclutils, AV_LOG_ERROR,
+                av_log(&opencl_ctx, AV_LOG_ERROR,
                        "Could not release OpenCL program: %s\n", opencl_errstr(status));
             }
-            gpu_env.programs[i] = NULL;
+            opencl_ctx.programs[i] = NULL;
         }
     }
-    if (gpu_env.command_queue) {
-        status = clReleaseCommandQueue(gpu_env.command_queue);
+    if (opencl_ctx.command_queue) {
+        status = clReleaseCommandQueue(opencl_ctx.command_queue);
         if (status != CL_SUCCESS) {
-            av_log(&openclutils, AV_LOG_ERROR,
+            av_log(&opencl_ctx, AV_LOG_ERROR,
                    "Could not release OpenCL command queue: %s\n", opencl_errstr(status));
         }
-        gpu_env.command_queue = NULL;
+        opencl_ctx.command_queue = NULL;
     }
-    if (gpu_env.context) {
-        status = clReleaseContext(gpu_env.context);
+    if (opencl_ctx.context) {
+        status = clReleaseContext(opencl_ctx.context);
         if (status != CL_SUCCESS) {
-            av_log(&openclutils, AV_LOG_ERROR,
+            av_log(&opencl_ctx, AV_LOG_ERROR,
                    "Could not release OpenCL context: %s\n", opencl_errstr(status));
         }
-        gpu_env.context = NULL;
+        opencl_ctx.context = NULL;
     }
-    free_device_list(&gpu_env.device_list);
+    free_device_list(&opencl_ctx.device_list);
 end:
-    if ((gpu_env.init_count <= 0) && (gpu_env.kernel_count <= 0))
-        av_opt_free(&openclutils); //FIXME: free openclutils context
+    if ((opencl_ctx.init_count <= 0) && (opencl_ctx.kernel_count <= 0))
+        av_opt_free(&opencl_ctx); //FIXME: free openclutils context
     UNLOCK_OPENCL
 }
 
 int av_opencl_buffer_create(cl_mem *cl_buf, size_t cl_buf_size, int flags, void *host_ptr)
 {
     cl_int status;
-    *cl_buf = clCreateBuffer(gpu_env.context, flags, cl_buf_size, host_ptr, &status);
+    *cl_buf = clCreateBuffer(opencl_ctx.context, flags, cl_buf_size, host_ptr, &status);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR, "Could not create OpenCL buffer: %s\n", opencl_errstr(status));
+        av_log(&opencl_ctx, AV_LOG_ERROR, "Could not create OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     return 0;
@@ -697,7 +687,7 @@ void av_opencl_buffer_release(cl_mem *cl_buf)
         return;
     status = clReleaseMemObject(*cl_buf);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not release OpenCL buffer: %s\n", opencl_errstr(status));
     }
     memset(cl_buf, 0, sizeof(*cl_buf));
@@ -706,20 +696,20 @@ void av_opencl_buffer_release(cl_mem *cl_buf)
 int av_opencl_buffer_write(cl_mem dst_cl_buf, uint8_t *src_buf, size_t buf_size)
 {
     cl_int status;
-    void *mapped = clEnqueueMapBuffer(gpu_env.command_queue, dst_cl_buf,
-                                      CL_TRUE,CL_MAP_WRITE, 0, sizeof(uint8_t) * buf_size,
+    void *mapped = clEnqueueMapBuffer(opencl_ctx.command_queue, dst_cl_buf,
+                                      CL_TRUE, CL_MAP_WRITE, 0, sizeof(uint8_t) * buf_size,
                                       0, NULL, NULL, &status);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     memcpy(mapped, src_buf, buf_size);
 
-    status = clEnqueueUnmapMemObject(gpu_env.command_queue, dst_cl_buf, mapped, 0, NULL, NULL);
+    status = clEnqueueUnmapMemObject(opencl_ctx.command_queue, dst_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
@@ -729,20 +719,20 @@ int av_opencl_buffer_write(cl_mem dst_cl_buf, uint8_t *src_buf, size_t buf_size)
 int av_opencl_buffer_read(uint8_t *dst_buf, cl_mem src_cl_buf, size_t buf_size)
 {
     cl_int status;
-    void *mapped = clEnqueueMapBuffer(gpu_env.command_queue, src_cl_buf,
-                                      CL_TRUE,CL_MAP_READ, 0, buf_size,
+    void *mapped = clEnqueueMapBuffer(opencl_ctx.command_queue, src_cl_buf,
+                                      CL_TRUE, CL_MAP_READ, 0, buf_size,
                                       0, NULL, NULL, &status);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     memcpy(dst_buf, mapped, buf_size);
 
-    status = clEnqueueUnmapMemObject(gpu_env.command_queue, src_cl_buf, mapped, 0, NULL, NULL);
+    status = clEnqueueUnmapMemObject(opencl_ctx.command_queue, src_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
@@ -763,15 +753,15 @@ int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int d
         buffer_size += plane_size[i];
     }
     if (buffer_size > cl_buffer_size) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Cannot write image to OpenCL buffer: buffer too small\n");
         return AVERROR(EINVAL);
     }
-    mapped = clEnqueueMapBuffer(gpu_env.command_queue, dst_cl_buf,
-                                CL_TRUE,CL_MAP_WRITE, 0, buffer_size + dst_cl_offset,
+    mapped = clEnqueueMapBuffer(opencl_ctx.command_queue, dst_cl_buf,
+                                CL_TRUE, CL_MAP_WRITE, 0, buffer_size + dst_cl_offset,
                                 0, NULL, NULL, &status);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
@@ -781,9 +771,9 @@ int av_opencl_buffer_write_image(cl_mem dst_cl_buf, size_t cl_buffer_size, int d
         memcpy(temp, src_data[i], plane_size[i]);
         temp += plane_size[i];
     }
-    status = clEnqueueUnmapMemObject(gpu_env.command_queue, dst_cl_buf, mapped, 0, NULL, NULL);
+    status = clEnqueueUnmapMemObject(opencl_ctx.command_queue, dst_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
@@ -804,16 +794,16 @@ int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_n
         buffer_size += plane_size[i];
     }
     if (buffer_size > cl_buffer_size) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Cannot write image to CPU buffer: OpenCL buffer too small\n");
         return AVERROR(EINVAL);
     }
-    mapped = clEnqueueMapBuffer(gpu_env.command_queue, src_cl_buf,
-                                CL_TRUE,CL_MAP_READ, 0, buffer_size,
+    mapped = clEnqueueMapBuffer(opencl_ctx.command_queue, src_cl_buf,
+                                CL_TRUE, CL_MAP_READ, 0, buffer_size,
                                 0, NULL, NULL, &status);
 
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not map OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
@@ -824,9 +814,9 @@ int av_opencl_buffer_read_image(uint8_t **dst_data, int *plane_size, int plane_n
             temp += plane_size[i];
         }
     }
-    status = clEnqueueUnmapMemObject(gpu_env.command_queue, src_cl_buf, mapped, 0, NULL, NULL);
+    status = clEnqueueUnmapMemObject(opencl_ctx.command_queue, src_cl_buf, mapped, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(&openclutils, AV_LOG_ERROR,
+        av_log(&opencl_ctx, AV_LOG_ERROR,
                "Could not unmap OpenCL buffer: %s\n", opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
