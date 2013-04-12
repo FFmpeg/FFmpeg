@@ -681,21 +681,6 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     return count;
 }
 
-// TODO: drop me
-static const char *const filters_left_to_update[] = {
-#if FF_API_ACONVERT_FILTER
-    "aconvert",
-#endif
-};
-
-static int filter_use_deprecated_init(const char *name)
-{
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(filters_left_to_update); i++)
-        if (!strcmp(name, filters_left_to_update[i]))
-            return 1;
-    return 0;
-}
 #if 0
 #if FF_API_AVFILTER_INIT_FILTER
 int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque)
@@ -717,22 +702,8 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
     AVDictionary *options = NULL;
     AVDictionaryEntry *e;
     int ret=0;
-    int deprecated_init = filter_use_deprecated_init(filter->filter->name);
 
-    // TODO: remove old shorthand
-    if (filter->filter->shorthand) {
-        av_assert0(filter->priv);
-        av_assert0(filter->filter->priv_class);
-        *(const AVClass **)filter->priv = filter->filter->priv_class;
-        av_opt_set_defaults(filter->priv);
-        ret = av_opt_set_from_string(filter->priv, args,
-                                     filter->filter->shorthand, "=", ":");
-        if (ret < 0)
-            return ret;
-        args = NULL;
-    }
-
-    if (!deprecated_init && args && *args) {
+    if (args && *args) {
         if (!filter->filter->priv_class) {
             av_log(filter, AV_LOG_ERROR, "This filter does not take any "
                    "options, but options were provided: %s.\n", args);
@@ -858,7 +829,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         }
     }
 
-    if (!deprecated_init && filter->filter->priv_class) {
+    if (filter->filter->priv_class) {
         ret = av_opt_set_dict(filter->priv, &options);
         if (ret < 0) {
             av_log(filter, AV_LOG_ERROR, "Error applying options to the filter.\n");
