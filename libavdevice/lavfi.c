@@ -243,13 +243,12 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
                                                   AV_SAMPLE_FMT_S32,
                                                   AV_SAMPLE_FMT_FLT,
                                                   AV_SAMPLE_FMT_DBL, -1 };
-            AVABufferSinkParams *abuffersink_params = av_abuffersink_params_alloc();
-            abuffersink_params->sample_fmts = sample_fmts;
 
             ret = avfilter_graph_create_filter(&sink, abuffersink,
                                                inout->name, NULL,
-                                               abuffersink_params, lavfi->graph);
-            av_free(abuffersink_params);
+                                               NULL, lavfi->graph);
+
+            av_opt_set_int_list(sink, "sample_fmts", sample_fmts,  AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
             if (ret < 0)
                 goto end;
         }
