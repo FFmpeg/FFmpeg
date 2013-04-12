@@ -85,6 +85,8 @@ typedef enum {
  * Filter state machine
  */
 typedef struct {
+    const AVClass *class;
+
     // ring-buffer of input samples, necessary because some times
     // input fragment position may be adjusted backwards:
     uint8_t *buffer;
@@ -145,6 +147,17 @@ typedef struct {
     uint64_t nsamples_in;
     uint64_t nsamples_out;
 } ATempoContext;
+
+#define OFFSET(x) offsetof(ATempoContext, x)
+
+static const AVOption atempo_options[] = {
+    { "tempo", "set tempo scale factor",
+      OFFSET(tempo), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0.5, 2.0,
+      AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(atempo);
 
 /**
  * Reset filter to initial state, do not deallocate existing local buffers.
@@ -950,13 +963,9 @@ static int yae_flush(ATempoContext *atempo,
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ATempoContext *atempo = ctx->priv;
-
-    // NOTE: this assumes that the caller has memset ctx->priv to 0:
     atempo->format = AV_SAMPLE_FMT_NONE;
-    atempo->tempo  = 1.0;
     atempo->state  = YAE_LOAD_FRAGMENT;
-
-    return args ? yae_set_tempo(ctx, args) : 0;
+    return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -1166,6 +1175,7 @@ AVFilter avfilter_af_atempo = {
     .query_formats   = query_formats,
     .process_command = process_command,
     .priv_size       = sizeof(ATempoContext),
+    .priv_class      = &atempo_class,
     .inputs          = atempo_inputs,
     .outputs         = atempo_outputs,
 };
