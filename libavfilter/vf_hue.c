@@ -302,10 +302,10 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 {
     HueContext *hue = ctx->priv;
 
-#define SET_CMD(expr, option)                                          \
-    if (!strcmp(cmd, option)) do {                                     \
-            return set_expr(&hue->expr##_pexpr, args, cmd, ctx);       \
-    } while (0)
+#define SET_CMD(expr, option) do {                                 \
+    if (!strcmp(cmd, option))                                      \
+        return set_expr(&hue->expr##_pexpr, args, cmd, ctx);       \
+} while (0)
     SET_CMD(hue_deg,    "h");
     SET_CMD(hue,        "H");
     SET_CMD(saturation, "s");
