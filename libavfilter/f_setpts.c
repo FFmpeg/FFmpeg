@@ -257,7 +257,7 @@ AVFilter avfilter_af_asetpts = {
 #if CONFIG_SETPTS_FILTER
 
 #define OFFSET(x) offsetof(SetPTSContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = FLAGS },
     { NULL },

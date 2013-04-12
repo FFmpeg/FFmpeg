@@ -379,7 +379,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 }
 
 #define OFFSET(x) offsetof(OCVContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { "filter_name",   NULL, OFFSET(name),   AV_OPT_TYPE_STRING, .flags = FLAGS },
     { "filter_params", NULL, OFFSET(params), AV_OPT_TYPE_STRING, .flags = FLAGS },

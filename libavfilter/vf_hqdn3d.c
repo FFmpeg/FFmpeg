@@ -309,7 +309,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 }
 
 #define OFFSET(x) offsetof(HQDN3DContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { "luma_spatial",   "spatial luma strength",    OFFSET(strength[LUMA_SPATIAL]),   AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
     { "chroma_spatial", "spatial chroma strength",  OFFSET(strength[CHROMA_SPATIAL]), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
