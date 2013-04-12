@@ -686,7 +686,6 @@ static const char *const filters_left_to_update[] = {
 #if FF_API_ACONVERT_FILTER
     "aconvert",
 #endif
-    "pan",
 };
 
 static int filter_use_deprecated_init(const char *name)
@@ -772,6 +771,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
                    !strcmp(filter->filter->name, "frei0r")     ||
                    !strcmp(filter->filter->name, "frei0r_src") ||
                    !strcmp(filter->filter->name, "ocv")        ||
+                   !strcmp(filter->filter->name, "pan")        ||
                    !strcmp(filter->filter->name, "pp")         ||
                    !strcmp(filter->filter->name, "aevalsrc")) {
             /* a hack for compatibility with the old syntax
