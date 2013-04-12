@@ -60,7 +60,7 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
     int64_t layout, layout0;
 
     /* try to parse a channel name, e.g. "FL" */
-    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
+    if (sscanf(*arg, " %7[A-Z] %n", buf, &len)) {
         layout0 = layout = av_get_channel_layout(buf);
         /* channel_id <- first set bit in layout */
         for (i = 32; i > 0; i >>= 1) {
