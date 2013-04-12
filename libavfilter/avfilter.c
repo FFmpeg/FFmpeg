@@ -711,33 +711,7 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
         }
 
 #if FF_API_OLD_FILTER_OPTS
-        if (!strcmp(filter->filter->name, "scale") &&
-            strchr(args, ':') < strchr(args, '=')) {
-            /* old w:h:flags=<flags> syntax */
-            char *copy = av_strdup(args);
-            char *p;
-
-            av_log(filter, AV_LOG_WARNING, "The <w>:<h>:flags=<flags> option "
-                   "syntax is deprecated. Use either <w>:<h>:<flags> or "
-                   "w=<w>:h=<h>:flags=<flags>.\n");
-
-            if (!copy) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-
-            p = strrchr(copy, ':');
-            if (p) {
-                *p++ = 0;
-                ret = av_dict_parse_string(&options, p, "=", ":", 0);
-            }
-            if (ret >= 0)
-                ret = process_options(filter, &options, copy);
-            av_freep(&copy);
-
-            if (ret < 0)
-                goto fail;
-        } else if (!strcmp(filter->filter->name, "format")     ||
+            if (   !strcmp(filter->filter->name, "format")     ||
                    !strcmp(filter->filter->name, "noformat")   ||
                    !strcmp(filter->filter->name, "frei0r")     ||
                    !strcmp(filter->filter->name, "frei0r_src") ||
