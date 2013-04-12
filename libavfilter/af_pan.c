@@ -55,14 +55,23 @@ typedef struct PanContext {
     struct SwrContext *swr;
 } PanContext;
 
+static void skip_spaces(char **arg)
+{
+    int len = 0;
+
+    sscanf(*arg, " %n", &len);
+    *arg += len;
+}
+
 static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
 {
     char buf[8];
     int len, i, channel_id = 0;
     int64_t layout, layout0;
 
+    skip_spaces(arg);
     /* try to parse a channel name, e.g. "FL" */
-    if (sscanf(*arg, " %7[A-Z] %n", buf, &len)) {
+    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
         layout0 = layout = av_get_channel_layout(buf);
         /* channel_id <- first set bit in layout */
         for (i = 32; i > 0; i >>= 1) {
@@ -88,14 +97,6 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
         return 0;
     }
     return AVERROR(EINVAL);
-}
-
-static void skip_spaces(char **arg)
-{
-    int len = 0;
-
-    sscanf(*arg, " %n", &len);
-    *arg += len;
 }
 
 static av_cold int init(AVFilterContext *ctx, const char *args0)
