@@ -303,7 +303,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     return ff_filter_frame(ctx->outputs[0], outbuf);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     AMergeContext *am = ctx->priv;
     int i;

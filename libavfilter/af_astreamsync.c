@@ -71,7 +71,7 @@ static const AVOption astreamsync_options[] = {
 
 AVFILTER_DEFINE_CLASS(astreamsync);
 
-static av_cold int init(AVFilterContext *ctx, const char *args0)
+static av_cold int init(AVFilterContext *ctx)
 {
     AStreamSyncContext *as = ctx->priv;
     int r, i;

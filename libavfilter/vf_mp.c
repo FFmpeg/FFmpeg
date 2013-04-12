@@ -635,11 +635,12 @@ static int vf_default_query_format(struct vf_instance *vf, unsigned int fmt){
 }
 
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     MPContext *m = ctx->priv;
     int cpu_flags = av_get_cpu_flags();
     char name[256];
+    const char *args;
     int i;
 
     ff_gCpuCaps.hasMMX      = cpu_flags & AV_CPU_FLAG_MMX;

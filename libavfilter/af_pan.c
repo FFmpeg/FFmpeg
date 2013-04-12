@@ -99,7 +99,7 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
     return AVERROR(EINVAL);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args0)
+static av_cold int init(AVFilterContext *ctx)
 {
     PanContext *const pan = ctx->priv;
     char *arg, *arg0, *tokenizer, *args = av_strdup(pan->args);

@@ -82,7 +82,7 @@ static const AVOption smartblur_options[] = {
 
 AVFILTER_DEFINE_CLASS(smartblur);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     SmartblurContext *sblur = ctx->priv;
 

@@ -76,7 +76,7 @@ static const AVOption aphaser_options[] = {
 
 AVFILTER_DEFINE_CLASS(aphaser);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     AudioPhaserContext *p = ctx->priv;
 

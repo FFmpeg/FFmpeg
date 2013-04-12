@@ -277,7 +277,7 @@ static void generate_half_size_image(const uint8_t *src_data, int src_linesize,
                                   src_w/2, src_h/2, 0, max_mask_size);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     RemovelogoContext *removelogo = ctx->priv;
     int ***mask;

@@ -129,7 +129,7 @@ static int decimate_frame(AVFilterContext *ctx,
     return 1;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     DecimateContext *decimate = ctx->priv;
 

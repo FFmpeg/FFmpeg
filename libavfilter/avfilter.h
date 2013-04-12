@@ -491,7 +491,7 @@ typedef struct AVFilter {
      * callback. Args contains the user-supplied parameters, opaque is
      * used for providing binary data.
      */
-    int (*init_opaque)(AVFilterContext *ctx, const char *args, void *opaque);
+    int (*init_opaque)(AVFilterContext *ctx, void *opaque);
 
     /**
      * Shorthand syntax for init arguments.

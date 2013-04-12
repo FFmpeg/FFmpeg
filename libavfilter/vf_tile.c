@@ -62,7 +62,7 @@ static const AVOption tile_options[] = {
 
 AVFILTER_DEFINE_CLASS(tile);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     TileContext *tile = ctx->priv;
 

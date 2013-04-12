@@ -403,7 +403,7 @@ static struct hist_entry *get_histogram(void)
     return h;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     EBUR128Context *ebur128 = ctx->priv;
     AVFilterPad pad;

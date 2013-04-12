@@ -56,7 +56,7 @@ static const AVOption apad_options[] = {
 
 AVFILTER_DEFINE_CLASS(apad);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     APadContext *apad = ctx->priv;
 

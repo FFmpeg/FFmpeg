@@ -960,7 +960,7 @@ static int yae_flush(ATempoContext *atempo,
     return atempo->position[1] == stop_here ? 0 : AVERROR(EAGAIN);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     ATempoContext *atempo = ctx->priv;
     atempo->format = AV_SAMPLE_FMT_NONE;

@@ -131,7 +131,7 @@ static int select_voice(struct voice_entry **entry_ret, const char *voice_name, 
     return AVERROR(EINVAL);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     FliteContext *flite = ctx->priv;
     int ret = 0;

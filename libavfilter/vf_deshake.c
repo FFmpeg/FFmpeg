@@ -344,7 +344,7 @@ static int deshake_transform_c(AVFilterContext *ctx,
     return ret;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     int ret;
     DeshakeContext *deshake = ctx->priv;

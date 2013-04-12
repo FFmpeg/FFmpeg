@@ -88,7 +88,7 @@ static double alpha(void *priv, double x, double y) { return getpix(priv, x, y, 
 static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
 enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
 
-static av_cold int geq_init(AVFilterContext *ctx, const char *args)
+static av_cold int geq_init(AVFilterContext *ctx)
 {
     GEQContext *geq = ctx->priv;
     int plane, ret = 0;

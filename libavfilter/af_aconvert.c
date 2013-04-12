@@ -38,12 +38,12 @@ typedef struct {
     struct SwrContext *swr;
 } AConvertContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args0)
+static av_cold int init(AVFilterContext *ctx)
 {
     AConvertContext *aconvert = ctx->priv;
     char *arg, *ptr = NULL;
     int ret = 0;
-    char *args = av_strdup(args0);
+    char *args = av_strdup(NULL);
 
     av_log(ctx, AV_LOG_WARNING, "This filter is deprecated, use aformat instead\n");
 

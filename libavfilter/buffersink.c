@@ -362,7 +362,7 @@ int attribute_align_arg av_buffersink_poll_frame(AVFilterContext *ctx)
     return av_fifo_size(buf->fifo)/sizeof(AVFilterBufferRef *) + ff_poll_frame(inlink);
 }
 
-static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int vsink_init(AVFilterContext *ctx, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
     AVBufferSinkParams *params = opaque;
@@ -411,7 +411,7 @@ static int64_t *concat_channels_lists(const int64_t *layouts, const int *counts)
     return list;
 }
 
-static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int asink_init(AVFilterContext *ctx, void *opaque)
 {
     BufferSinkContext *buf = ctx->priv;
     AVABufferSinkParams *params = opaque;

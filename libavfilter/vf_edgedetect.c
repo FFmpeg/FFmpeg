@@ -50,7 +50,7 @@ static const AVOption edgedetect_options[] = {
 
 AVFILTER_DEFINE_CLASS(edgedetect);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     EdgeDetectContext *edgedetect = ctx->priv;
 

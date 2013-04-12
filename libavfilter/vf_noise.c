@@ -400,7 +400,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     return ret;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     NoiseContext *n = ctx->priv;
     int ret, i;

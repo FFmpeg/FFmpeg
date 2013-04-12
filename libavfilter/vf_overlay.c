@@ -118,7 +118,7 @@ typedef struct {
     AVExpr *x_pexpr, *y_pexpr, *enable_pexpr;
 } OverlayContext;
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
 

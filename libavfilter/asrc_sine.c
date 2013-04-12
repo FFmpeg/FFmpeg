@@ -120,7 +120,7 @@ static void make_sin_table(int16_t *sin)
         sin[i + 2 * half_pi] = -sin[i];
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     SineContext *sine = ctx->priv;
 

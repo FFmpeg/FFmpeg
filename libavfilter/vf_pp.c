@@ -47,7 +47,7 @@ static const AVOption pp_options[] = {
 
 AVFILTER_DEFINE_CLASS(pp);
 
-static av_cold int pp_init(AVFilterContext *ctx, const char *args)
+static av_cold int pp_init(AVFilterContext *ctx)
 {
     int i;
     PPFilterContext *pp = ctx->priv;

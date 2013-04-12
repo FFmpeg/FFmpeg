@@ -220,7 +220,7 @@ static void blend_expr(const uint8_t *top, int top_linesize,
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     BlendContext *b = ctx->priv;
     int ret, plane;

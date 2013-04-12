@@ -54,7 +54,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     PermsContext *perms = ctx->priv;
 

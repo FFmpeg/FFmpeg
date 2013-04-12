@@ -510,7 +510,7 @@ end:
 #define sendcmd_options options
 AVFILTER_DEFINE_CLASS(sendcmd);
 
-static av_cold int sendcmd_init(AVFilterContext *ctx, const char *args)
+static av_cold int sendcmd_init(AVFilterContext *ctx)
 {
     return init(ctx);
 }
@@ -552,7 +552,7 @@ AVFilter avfilter_vf_sendcmd = {
 #define asendcmd_options options
 AVFILTER_DEFINE_CLASS(asendcmd);
 
-static av_cold int asendcmd_init(AVFilterContext *ctx, const char *args)
+static av_cold int asendcmd_init(AVFilterContext *ctx)
 {
     return init(ctx);
 }

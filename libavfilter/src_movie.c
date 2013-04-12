@@ -563,7 +563,7 @@ static int movie_request_frame(AVFilterLink *outlink)
 
 AVFILTER_DEFINE_CLASS(movie);
 
-static av_cold int movie_init(AVFilterContext *ctx, const char *args)
+static av_cold int movie_init(AVFilterContext *ctx)
 {
     return movie_common_init(ctx);
 }
@@ -588,7 +588,7 @@ AVFilter avfilter_avsrc_movie = {
 #define amovie_options movie_options
 AVFILTER_DEFINE_CLASS(amovie);
 
-static av_cold int amovie_init(AVFilterContext *ctx, const char *args)
+static av_cold int amovie_init(AVFilterContext *ctx)
 {
     return movie_common_init(ctx);
 }

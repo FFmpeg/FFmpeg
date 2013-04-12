@@ -295,7 +295,7 @@ end:
     return ret;
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     int i, j, ret;
     CurvesContext *curves = ctx->priv;

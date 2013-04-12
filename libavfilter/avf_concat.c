@@ -355,7 +355,7 @@ static int request_frame(AVFilterLink *outlink)
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     ConcatContext *cat = ctx->priv;
     unsigned seg, type, str;

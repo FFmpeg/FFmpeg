@@ -77,7 +77,7 @@ static const AVOption afade_options[] = {
 
 AVFILTER_DEFINE_CLASS(afade);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     AudioFadeContext *afade = ctx->priv;
 

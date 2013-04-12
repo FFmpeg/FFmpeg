@@ -256,7 +256,7 @@ static void ring2_test(uint8_t *dst, int dst_linesize, int off)
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     MPTestContext *test = ctx->priv;
     int64_t duration = -1;

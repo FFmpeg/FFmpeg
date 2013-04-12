@@ -213,7 +213,7 @@ static void color_fill_picture(AVFilterContext *ctx, AVFrame *picref)
                       0, 0, test->w, test->h);
 }
 
-static av_cold int color_init(AVFilterContext *ctx, const char *args)
+static av_cold int color_init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
     test->fill_picture_fn = color_fill_picture;
@@ -282,7 +282,7 @@ AVFILTER_DEFINE_CLASS(nullsrc);
 
 static void nullsrc_fill_picture(AVFilterContext *ctx, AVFrame *picref) { }
 
-static av_cold int nullsrc_init(AVFilterContext *ctx, const char *args)
+static av_cold int nullsrc_init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
 
@@ -754,7 +754,7 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     draw_bar(test, black, x, r_h + w_h, test->w - x, p_h, picref);
 }
 
-static av_cold int smptebars_init(AVFilterContext *ctx, const char *args)
+static av_cold int smptebars_init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
 

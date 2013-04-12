@@ -68,7 +68,7 @@ static const AVOption telecine_options[] = {
 
 AVFILTER_DEFINE_CLASS(telecine);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     TelecineContext *tc = ctx->priv;
     const char *p;

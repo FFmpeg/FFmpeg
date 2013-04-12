@@ -160,7 +160,7 @@ static void calc_coefficients(AVFilterContext *ctx)
 
 static const char *color_modes[] = {"bt709", "fcc", "bt601", "smpte240m"};
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     ColorMatrixContext *color = ctx->priv;
 

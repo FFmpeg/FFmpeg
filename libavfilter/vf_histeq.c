@@ -82,7 +82,7 @@ static const AVOption histeq_options[] = {
 
 AVFILTER_DEFINE_CLASS(histeq);
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     HisteqContext *histeq = ctx->priv;
 
