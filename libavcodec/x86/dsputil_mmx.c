@@ -526,12 +526,7 @@ static void add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
     *left_top = tl;
 }
 #endif
-#endif /* HAVE_INLINE_ASM */
 
-void ff_h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale);
-void ff_h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale);
-
-#if HAVE_INLINE_ASM
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */
 static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
@@ -1358,6 +1353,9 @@ static void vector_clipf_sse(float *dst, const float *src,
 }
 
 #endif /* HAVE_INLINE_ASM */
+
+void ff_h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale);
+void ff_h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale);
 
 int32_t ff_scalarproduct_int16_mmxext(const int16_t *v1, const int16_t *v2,
                                       int order);
