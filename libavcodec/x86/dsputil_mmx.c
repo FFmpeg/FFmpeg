@@ -73,7 +73,6 @@ void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2
 void ff_avg_pixels8_mmxext(uint8_t *block, const uint8_t *pixels,
                            ptrdiff_t line_size, int h);
 
-void ff_put_pixels8_mmxext(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h);
 static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
                                    ptrdiff_t line_size, int h)
 {
@@ -1180,6 +1179,7 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
     }
 }
 
+
 #if CONFIG_VIDEODSP
 #if HAVE_YASM
 #if ARCH_X86_32
@@ -1211,15 +1211,6 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
 }
 #endif
 #endif
-
-#endif /* HAVE_INLINE_ASM */
-
-void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          ptrdiff_t line_size, int h);
-void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
-                          ptrdiff_t line_size, int h);
-
-#if HAVE_INLINE_ASM
 
 /* CAVS-specific */
 void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
