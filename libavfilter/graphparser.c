@@ -586,8 +586,8 @@ end:
     avfilter_inout_free(&curr_inputs);
 
     if (ret < 0) {
-        for (; graph->nb_filters > 0; graph->nb_filters--)
-            avfilter_free(graph->filters[graph->nb_filters - 1]);
+        while (graph->nb_filters)
+            avfilter_free(graph->filters[0]);
         av_freep(&graph->filters);
     }
     return ret;
