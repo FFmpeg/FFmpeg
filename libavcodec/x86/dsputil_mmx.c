@@ -1482,9 +1482,9 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
                                      int mm_flags)
 {
+#if HAVE_INLINE_ASM
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-#if HAVE_INLINE_ASM
     if (!high_bit_depth) {
         if (!(CONFIG_MPEG_XVMC_DECODER && avctx->xvmc_acceleration > 1)) {
             /* XvMCCreateBlocks() may not allocate 16-byte aligned blocks */
