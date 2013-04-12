@@ -1758,13 +1758,9 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     char sws_flags_str[128];
     char buffersrc_args[256];
     int ret;
-    AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
     AVFilterContext *filt_src = NULL, *filt_out = NULL, *filt_crop;
     AVCodecContext *codec = is->video_st->codec;
     AVRational fr = av_guess_frame_rate(is->ic, is->video_st, NULL);
-
-    if (!buffersink_params)
-        return AVERROR(ENOMEM);
 
     av_opt_get_int(sws_opts, "sws_flags", 0, &sws_flags);
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%"PRId64, sws_flags);
@@ -1784,11 +1780,13 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
                                             graph)) < 0)
         goto fail;
 
-    buffersink_params->pixel_fmts = pix_fmts;
     ret = avfilter_graph_create_filter(&filt_out,
                                        avfilter_get_by_name("buffersink"),
-                                       "ffplay_buffersink", NULL, buffersink_params, graph);
+                                       "ffplay_buffersink", NULL, NULL, graph);
     if (ret < 0)
+        goto fail;
+
+    if ((ret = av_opt_set_int_list(filt_out, "pix_fmts", pix_fmts,  AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
 
     /* SDL YUV code is not handling odd width/height for some driver
@@ -1807,7 +1805,6 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     is->out_video_filter = filt_out;
 
 fail:
-    av_freep(&buffersink_params);
     return ret;
 }
 
@@ -1819,7 +1816,6 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     int channels[2] = { 0, -1 };
     AVFilterContext *filt_asrc = NULL, *filt_asink = NULL;
     char asrc_args[256];
-    AVABufferSinkParams *asink_params = NULL;
     int ret;
 
     avfilter_graph_free(&is->agraph);
@@ -1841,29 +1837,32 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     if (ret < 0)
         goto end;
 
-    if (!(asink_params = av_abuffersink_params_alloc())) {
-        ret = AVERROR(ENOMEM);
-        goto end;
-    }
-    asink_params->sample_fmts = sample_fmts;
-
-    asink_params->all_channel_counts = 1;
-    if (force_output_format) {
-        channel_layouts[0] = is->audio_tgt.channel_layout;
-        asink_params->channel_layouts = channel_layouts;
-        asink_params->all_channel_counts = 0;
-        channels[0] = is->audio_tgt.channels;
-        asink_params->channel_counts = channels;
-        asink_params->all_channel_counts = 0;
-        sample_rates[0] = is->audio_tgt.freq;
-        asink_params->sample_rates = sample_rates;
-    }
 
     ret = avfilter_graph_create_filter(&filt_asink,
                                        avfilter_get_by_name("abuffersink"), "ffplay_abuffersink",
-                                       NULL, asink_params, is->agraph);
+                                       NULL, NULL, is->agraph);
     if (ret < 0)
         goto end;
+
+    if ((ret = av_opt_set_int_list(filt_asink, "sample_fmts", sample_fmts,  AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN)) < 0)
+        goto end;
+    if ((ret = av_opt_set_int(filt_asink, "all_channel_counts", 1, AV_OPT_SEARCH_CHILDREN)) < 0)
+        goto end;
+
+    if (force_output_format) {
+        channel_layouts[0] = is->audio_tgt.channel_layout;
+        channels       [0] = is->audio_tgt.channels;
+        sample_rates   [0] = is->audio_tgt.freq;
+        if ((ret = av_opt_set_int(filt_asink, "all_channel_counts", 0, AV_OPT_SEARCH_CHILDREN)) < 0)
+            goto end;
+        if ((ret = av_opt_set_int_list(filt_asink, "channel_layouts", channel_layouts,  -1, AV_OPT_SEARCH_CHILDREN)) < 0)
+            goto end;
+        if ((ret = av_opt_set_int_list(filt_asink, "channel_counts" , channels       ,  -1, AV_OPT_SEARCH_CHILDREN)) < 0)
+            goto end;
+        if ((ret = av_opt_set_int_list(filt_asink, "sample_rates"   , sample_rates   ,  -1, AV_OPT_SEARCH_CHILDREN)) < 0)
+            goto end;
+    }
+
 
     if ((ret = configure_filtergraph(is->agraph, afilters, filt_asrc, filt_asink)) < 0)
         goto end;
@@ -1872,7 +1871,6 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     is->out_audio_filter = filt_asink;
 
 end:
-    av_freep(&asink_params);
     if (ret < 0)
         avfilter_graph_free(&is->agraph);
     return ret;
