@@ -230,8 +230,8 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             ret = avfilter_graph_create_filter(&sink, buffersink,
                                                inout->name, NULL,
                                                NULL, lavfi->graph);
-            av_opt_set_int_list(sink, "pix_fmts", pix_fmts,  AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
-
+            if (ret >= 0)
+                ret = av_opt_set_int_list(sink, "pix_fmts", pix_fmts,  AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
             if (ret < 0)
                 goto end;
         } else if (type == AVMEDIA_TYPE_AUDIO) {
@@ -244,8 +244,8 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
             ret = avfilter_graph_create_filter(&sink, abuffersink,
                                                inout->name, NULL,
                                                NULL, lavfi->graph);
-
-            av_opt_set_int_list(sink, "sample_fmts", sample_fmts,  AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+            if (ret >= 0)
+                ret = av_opt_set_int_list(sink, "sample_fmts", sample_fmts,  AV_SAMPLE_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
             if (ret < 0)
                 goto end;
         }
