@@ -282,10 +282,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     hue->var_values[VAR_N] += 1;
 
-    if (!direct)
+    if (!direct) {
         av_image_copy_plane(outpic->data[0], outpic->linesize[0],
                             inpic->data[0],  inpic->linesize[0],
                             inlink->w, inlink->h);
+        if (inpic->data[3])
+            av_image_copy_plane(outpic->data[3], outpic->linesize[3],
+                                inpic->data[3],  inpic->linesize[3],
+                                inlink->w, inlink->h);
+    }
 
     process_chrominance(outpic->data[1], outpic->data[2], outpic->linesize[1],
                         inpic->data[1],  inpic->data[2],  inpic->linesize[1],
