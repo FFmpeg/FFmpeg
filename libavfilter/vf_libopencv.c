@@ -261,17 +261,18 @@ static av_cold int dilate_init(AVFilterContext *ctx, const char *args)
     const char *buf = args;
     int ret;
 
-    dilate->nb_iterations = 1;
-
     if (args)
         kernel_str = av_get_token(&buf, "|");
-    if ((ret = parse_iplconvkernel(&dilate->kernel,
-                                   *kernel_str ? kernel_str : default_kernel_str,
-                                   ctx)) < 0)
+    else
+        kernel_str = av_strdup(default_kernel_str);
+    if (!kernel_str)
+        return AVERROR(ENOMEM);
+    if ((ret = parse_iplconvkernel(&dilate->kernel, kernel_str, ctx)) < 0)
         return ret;
     av_free(kernel_str);
 
-    sscanf(buf, "|%d", &dilate->nb_iterations);
+    if (!buf || sscanf(buf, "|%d", &dilate->nb_iterations) != 1)
+        dilate->nb_iterations = 1;
     av_log(ctx, AV_LOG_VERBOSE, "iterations_nb:%d\n", dilate->nb_iterations);
     if (dilate->nb_iterations <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid non-positive value '%d' for nb_iterations\n",
