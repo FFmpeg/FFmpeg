@@ -889,6 +889,28 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 int avfilter_init_str(AVFilterContext *ctx, const char *args);
 
 /**
+ * Initialize a filter with the supplied dictionary of options.
+ *
+ * @param ctx     uninitialized filter context to initialize
+ * @param options An AVDictionary filled with options for this filter. On
+ *                return this parameter will be destroyed and replaced with
+ *                a dict containing options that were not found. This dictionary
+ *                must be freed by the caller.
+ *                May be NULL, then this function is equivalent to
+ *                avfilter_init_str() with the second parameter set to NULL.
+ * @return 0 on success, a negative AVERROR on failure
+ *
+ * @note This function and avfilter_init_str() do essentially the same thing,
+ * the difference is in manner in which the options are passed. It is up to the
+ * calling code to choose whichever is more preferable. The two functions also
+ * behave differently when some of the provided options are not declared as
+ * supported by the filter. In such a case, avfilter_init_str() will fail, but
+ * this function will leave those extra options in the options AVDictionary and
+ * continue as usual.
+ */
+int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options);
+
+/**
  * Free a filter context. This will also remove the filter from its
  * filtergraph's list of filters.
  *
