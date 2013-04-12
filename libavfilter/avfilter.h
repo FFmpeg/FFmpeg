@@ -389,6 +389,12 @@ struct AVFilterPad {
 #endif
 
 /**
+ * Get the number of elements in a NULL-terminated array of AVFilterPads (e.g.
+ * AVFilter.inputs/outputs).
+ */
+int avfilter_pad_count(const AVFilterPad *pads);
+
+/**
  * Get the name of an AVFilterPad.
  *
  * @param pads an array of AVFilterPads

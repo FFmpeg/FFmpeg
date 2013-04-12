@@ -436,7 +436,7 @@ void avfilter_uninit(void)
     next_registered_avfilter_idx = 0;
 }
 
-static int pad_count(const AVFilterPad *pads)
+int avfilter_pad_count(const AVFilterPad *pads)
 {
     int count;
 
@@ -515,7 +515,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         av_opt_set_defaults(ret->priv);
     }
 
-    ret->nb_inputs = pad_count(filter->inputs);
+    ret->nb_inputs = avfilter_pad_count(filter->inputs);
     if (ret->nb_inputs ) {
         ret->input_pads   = av_malloc(sizeof(AVFilterPad) * ret->nb_inputs);
         if (!ret->input_pads)
@@ -526,7 +526,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
             goto err;
     }
 
-    ret->nb_outputs = pad_count(filter->outputs);
+    ret->nb_outputs = avfilter_pad_count(filter->outputs);
     if (ret->nb_outputs) {
         ret->output_pads  = av_malloc(sizeof(AVFilterPad) * ret->nb_outputs);
         if (!ret->output_pads)
