@@ -345,8 +345,8 @@ static const AVOption abuffer_options[] = {
     { "time_base",      NULL, OFFSET(time_base),           AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, A },
     { "sample_rate",    NULL, OFFSET(sample_rate),         AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { "sample_fmt",     NULL, OFFSET(sample_fmt_str),      AV_OPT_TYPE_STRING,             .flags = A },
-    { "channels",       NULL, OFFSET(channels),            AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { "channel_layout", NULL, OFFSET(channel_layout_str),  AV_OPT_TYPE_STRING,             .flags = A },
+    { "channels",       NULL, OFFSET(channels),            AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, A },
     { NULL },
 };
 
@@ -532,9 +532,6 @@ static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {
     { NULL }
 };
 
-static const char *const abuffer_shorthand[] = { "time_base", "sample_rate",
-    "sample_fmt", "channel_layout", NULL };
-
 AVFilter avfilter_asrc_abuffer = {
     .name          = "abuffer",
     .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them accessible to the filterchain."),
@@ -547,5 +544,4 @@ AVFilter avfilter_asrc_abuffer = {
     .inputs    = NULL,
     .outputs   = avfilter_asrc_abuffer_outputs,
     .priv_class = &abuffer_class,
-    .shorthand = abuffer_shorthand,
 };
