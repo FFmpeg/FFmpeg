@@ -227,13 +227,10 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
         }
 
         if (type == AVMEDIA_TYPE_VIDEO) {
-            AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
-
-            buffersink_params->pixel_fmts = pix_fmts;
             ret = avfilter_graph_create_filter(&sink, buffersink,
                                                inout->name, NULL,
-                                               buffersink_params, lavfi->graph);
-            av_freep(&buffersink_params);
+                                               NULL, lavfi->graph);
+            av_opt_set_int_list(sink, "pix_fmts", pix_fmts,  AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
 
             if (ret < 0)
                 goto end;
