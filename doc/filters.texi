@@ -1323,12 +1323,7 @@ not meant to be used directly.
 
 Adjust the input audio volume.
 
-The filter accepts the following named parameters. If the key of the
-first options is omitted, the arguments are interpreted according to
-the following syntax:
-@example
-volume=@var{volume}:@var{precision}
-@end example
+The filter accepts the following options:
 
 @table @option
 
