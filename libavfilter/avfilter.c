@@ -690,7 +690,6 @@ static const char *const filters_left_to_update[] = {
     "atempo",
     "buffer",
     "pan",
-    "scale",
 };
 
 static int filter_use_deprecated_init(const char *name)

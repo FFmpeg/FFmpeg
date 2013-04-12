@@ -95,27 +95,16 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     ScaleContext *scale = ctx->priv;
-#if 1
-    static const char *shorthand[] = { "w", "h", NULL };
     int ret;
-    const char *args0 = args;
-
-    if (args && (scale->size_str = av_get_token(&args, ":"))) {
-        if (av_parse_video_size(&scale->w, &scale->h, scale->size_str) < 0) {
-            av_freep(&scale->size_str);
-            args = args0;
-        } else if (*args)
-            args++;
-    }
-
-    if ((ret = av_opt_set_from_string(scale, args, shorthand, "=", ":")) < 0)
-        return ret;
 
     if (scale->size_str && (scale->w_expr || scale->h_expr)) {
         av_log(ctx, AV_LOG_ERROR,
                "Size and width/height expressions cannot be set at the same time.\n");
             return AVERROR(EINVAL);
     }
+
+    if (scale->w_expr && !scale->h_expr)
+        FFSWAP(char *, scale->w_expr, scale->size_str);
 
     if (scale->size_str) {
         char buf[32];
@@ -138,7 +127,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
            scale->w_expr, scale->h_expr, (char *)av_x_if_null(scale->flags_str, ""), scale->interlaced);
 
     scale->flags = SWS_BILINEAR;
-#endif
+
     if (scale->flags_str) {
         const AVClass *class = sws_get_class();
         const AVOption    *o = av_opt_find(&class, "sws_flags", NULL, 0,
@@ -399,10 +388,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption scale_options[] = {
-    { "w",     "Output video width",          OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "iw" },       .flags = FLAGS },
-    { "width", "Output video width",          OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str = "iw" },       .flags = FLAGS },
-    { "h",     "Output video height",         OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "ih" },       .flags = FLAGS },
-    { "height","Output video height",         OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str = "ih" },       .flags = FLAGS },
+    { "w",     "Output video width",          OFFSET(w_expr),    AV_OPT_TYPE_STRING,        .flags = FLAGS },
+    { "width", "Output video width",          OFFSET(w_expr),    AV_OPT_TYPE_STRING,        .flags = FLAGS },
+    { "h",     "Output video height",         OFFSET(h_expr),    AV_OPT_TYPE_STRING,        .flags = FLAGS },
+    { "height","Output video height",         OFFSET(h_expr),    AV_OPT_TYPE_STRING,        .flags = FLAGS },
     { "flags", "Flags to pass to libswscale", OFFSET(flags_str), AV_OPT_TYPE_STRING, { .str = "bilinear" }, .flags = FLAGS },
     { "interl", "set interlacing", OFFSET(interlaced), AV_OPT_TYPE_INT, {.i64 = 0 }, -1, 1, FLAGS },
     { "size",   "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
