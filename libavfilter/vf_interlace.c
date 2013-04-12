@@ -113,8 +113,10 @@ static int config_out_props(AVFilterLink *outlink)
     outlink->w = inlink->w;
     outlink->h = inlink->h;
     outlink->time_base = inlink->time_base;
+    outlink->frame_rate = inlink->frame_rate;
     // half framerate
     outlink->time_base.num *= 2;
+    outlink->frame_rate.den *= 2;
 
     av_log(ctx, AV_LOG_VERBOSE, "%s interlacing %s lowpass filter\n",
            s->scan == MODE_TFF ? "tff" : "bff", (s->lowpass) ? "with" : "without");
