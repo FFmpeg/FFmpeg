@@ -606,7 +606,7 @@ void avfilter_free(AVFilterContext *filter)
         avfilter_link_free(&link);
     }
 
-    if (filter->filter->priv_class || filter->filter->shorthand)
+    if (filter->filter->priv_class)
         av_opt_free(filter->priv);
 
     av_freep(&filter->name);
