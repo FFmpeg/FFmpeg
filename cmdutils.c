@@ -1638,24 +1638,41 @@ static void show_help_muxer(const char *name)
 static void show_help_filter(const char *name)
 {
 #if CONFIG_AVFILTER
-    const AVFilter *filter;
+    const AVFilter *f = avfilter_get_by_name(name);
+    int i, count;
 
     if (!name) {
         av_log(NULL, AV_LOG_ERROR, "No filter name specified.\n");
         return;
-    }
-    filter = avfilter_get_by_name(name);
-    if (!filter) {
-        av_log(NULL, AV_LOG_ERROR, "Filter '%s' not found.\n", name);
+    } else if (!f) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown filter '%s'.\n", name);
         return;
     }
-    printf("Filter %s\n", filter->name);
-    if (filter->description)
-        printf("  %s\n", filter->description);
-    if (filter->priv_class)
-        show_help_children(filter->priv_class, AV_OPT_FLAG_FILTERING_PARAM);
-    else
-        printf("No AVOption available\n");
+
+    printf("Filter %s\n", f->name);
+    if (f->description)
+        printf("  %s\n", f->description);
+    printf("    Inputs:\n");
+    count = avfilter_pad_count(f->inputs);
+    for (i = 0; i < count; i++) {
+        printf("        %d %s (%s)\n", i, avfilter_pad_get_name(f->inputs, i),
+               media_type_string(avfilter_pad_get_type(f->inputs, i)));
+    }
+    if (f->flags & AVFILTER_FLAG_DYNAMIC_INPUTS)
+        printf("        dynamic (depending on the options)\n");
+
+    printf("    Outputs:\n");
+    count = avfilter_pad_count(f->outputs);
+    for (i = 0; i < count; i++) {
+        printf("        %d %s (%s)\n", i, avfilter_pad_get_name(f->outputs, i),
+               media_type_string(avfilter_pad_get_type(f->outputs, i)));
+    }
+    if (f->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS)
+        printf("        dynamic (depending on the options)\n");
+
+    if (f->priv_class)
+        show_help_children(f->priv_class, AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM |
+                                          AV_OPT_FLAG_AUDIO_PARAM);
 #else
     av_log(NULL, AV_LOG_ERROR, "Build without libavfilter; "
            "can not to satisfy request\n");
