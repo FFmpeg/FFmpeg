@@ -1027,7 +1027,6 @@ static void do_exit(VideoState *is)
     av_lockmgr_register(NULL);
     uninit_opts();
 #if CONFIG_AVFILTER
-    avfilter_uninit();
     av_freep(&vfilters);
 #endif
     avformat_network_deinit();

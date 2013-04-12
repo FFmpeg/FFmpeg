@@ -1448,21 +1448,21 @@ int show_protocols(void *optctx, const char *opt, const char *arg)
 
 int show_filters(void *optctx, const char *opt, const char *arg)
 {
-    AVFilter av_unused(**filter) = NULL;
+    const AVFilter av_unused(*filter) = NULL;
     char descr[64], *descr_cur;
     int i, j;
     const AVFilterPad *pad;
 
     printf("Filters:\n");
 #if CONFIG_AVFILTER
-    while ((filter = av_filter_next(filter)) && *filter) {
+    while ((filter = avfilter_next(filter))) {
         descr_cur = descr;
         for (i = 0; i < 2; i++) {
             if (i) {
                 *(descr_cur++) = '-';
                 *(descr_cur++) = '>';
             }
-            pad = i ? (*filter)->outputs : (*filter)->inputs;
+            pad = i ? filter->outputs : filter->inputs;
             for (j = 0; pad && pad[j].name; j++) {
                 if (descr_cur >= descr + sizeof(descr) - 4)
                     break;
@@ -1472,7 +1472,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                 *(descr_cur++) = '|';
         }
         *descr_cur = 0;
-        printf("%-16s %-10s %s\n", (*filter)->name, descr, (*filter)->description);
+        printf("%-16s %-10s %s\n", filter->name, descr, filter->description);
     }
 #endif
     return 0;

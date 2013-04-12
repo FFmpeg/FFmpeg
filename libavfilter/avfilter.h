@@ -496,6 +496,8 @@ typedef struct AVFilter {
 
     int priv_size;      ///< size of private data to allocate for the filter
 
+    struct AVFilter *next;
+
     /**
      * Make the filter instance process a command.
      *
@@ -837,8 +839,11 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
 /** Initialize the filter system. Register all builtin filters. */
 void avfilter_register_all(void);
 
+#if FF_API_OLD_FILTER_REGISTER
 /** Uninitialize the filter system. Unregister all filters. */
+attribute_deprecated
 void avfilter_uninit(void);
+#endif
 
 /**
  * Register a filter. This is only needed if you plan to use
@@ -862,12 +867,23 @@ int avfilter_register(AVFilter *filter);
 AVFilter *avfilter_get_by_name(const char *name);
 
 /**
+ * Iterate over all registered filters.
+ * @return If prev is non-NULL, next registered filter after prev or NULL if
+ * prev is the last filter. If prev is NULL, return the first registered filter.
+ */
+const AVFilter *avfilter_next(const AVFilter *prev);
+
+#if FF_API_OLD_FILTER_REGISTER
+/**
  * If filter is NULL, returns a pointer to the first registered filter pointer,
  * if filter is non-NULL, returns the next pointer after filter.
  * If the returned pointer points to NULL, the last registered filter
  * was already reached.
+ * @deprecated use avfilter_next()
  */
+attribute_deprecated
 AVFilter **av_filter_next(AVFilter **filter);
+#endif
 
 #if FF_API_AVFILTER_OPEN
 /**

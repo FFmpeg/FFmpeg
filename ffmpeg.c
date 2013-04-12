@@ -499,7 +499,6 @@ static void exit_program(void)
 
     uninit_opts();
 
-    avfilter_uninit();
     avformat_network_deinit();
 
     if (received_sigterm) {
