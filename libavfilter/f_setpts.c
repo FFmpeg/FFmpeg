@@ -208,6 +208,21 @@ static av_cold void uninit(AVFilterContext *ctx)
 }
 
 #if CONFIG_ASETPTS_FILTER
+
+#define OFFSET(x) offsetof(SetPTSContext, x)
+#define AFLAGS AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption aoptions[] = {
+    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = AFLAGS },
+    { NULL },
+};
+
+static const AVClass asetpts_class = {
+    .class_name = "asetpts",
+    .item_name  = av_default_item_name,
+    .option     = aoptions,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVFilterPad avfilter_af_asetpts_inputs[] = {
     {
         .name             = "default",
@@ -233,6 +248,7 @@ AVFilter avfilter_af_asetpts = {
     .init      = init,
     .uninit    = uninit,
     .priv_size = sizeof(SetPTSContext),
+    .priv_class= &asetpts_class,
     .inputs    = avfilter_af_asetpts_inputs,
     .outputs   = avfilter_af_asetpts_outputs,
 };
