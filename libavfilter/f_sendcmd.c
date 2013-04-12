@@ -80,7 +80,7 @@ typedef struct {
 } SendCmdContext;
 
 #define OFFSET(x) offsetof(SendCmdContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption options[] = {
     { "commands", "set commands", OFFSET(commands_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "c",        "set commands", OFFSET(commands_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },

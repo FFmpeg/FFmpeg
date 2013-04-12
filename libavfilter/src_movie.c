@@ -70,7 +70,7 @@ typedef struct {
 } MovieContext;
 
 #define OFFSET(x) offsetof(MovieContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption movie_options[]= {
     { "filename",     NULL,                      OFFSET(file_name),    AV_OPT_TYPE_STRING,                                    .flags = FLAGS },
