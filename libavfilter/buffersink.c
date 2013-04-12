@@ -504,7 +504,6 @@ static const AVOption abuffersink_options[] = {
     { NULL },
 };
 #undef FLAGS
-static const char *const shorthand[] = { NULL };
 
 AVFILTER_DEFINE_CLASS(buffersink);
 AVFILTER_DEFINE_CLASS(abuffersink);
@@ -530,7 +529,6 @@ AVFilter avfilter_vsink_ffbuffersink = {
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .priv_class = &ffbuffersink_class,
-    .shorthand = shorthand,
     .init_opaque = vsink_init,
     .uninit    = uninit,
 
@@ -555,7 +553,6 @@ AVFilter avfilter_asink_ffabuffersink = {
     .uninit    = uninit,
     .priv_size = sizeof(BufferSinkContext),
     .priv_class = &ffabuffersink_class,
-    .shorthand = shorthand,
     .query_formats = asink_query_formats,
     .inputs        = ffabuffersink_inputs,
     .outputs       = NULL,
@@ -576,7 +573,6 @@ AVFilter avfilter_vsink_buffer = {
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .priv_class = &buffersink_class,
-    .shorthand = shorthand,
     .init_opaque = vsink_init,
     .uninit    = uninit,
 
@@ -598,7 +594,6 @@ AVFilter avfilter_asink_abuffer = {
     .name      = "abuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
     .priv_class = &abuffersink_class,
-    .shorthand = shorthand,
     .priv_size = sizeof(BufferSinkContext),
     .init_opaque = asink_init,
     .uninit    = uninit,
