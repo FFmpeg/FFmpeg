@@ -70,6 +70,7 @@ enum var_name {
     VAR_X,
     VAR_Y,
     VAR_N,
+    VAR_POS,
     VAR_T,
     VAR_VARS_NB
 };
@@ -169,6 +170,7 @@ static int config_input(AVFilterLink *link)
     crop->var_values[VAR_OUT_H] = crop->var_values[VAR_OH] = NAN;
     crop->var_values[VAR_N]     = 0;
     crop->var_values[VAR_T]     = NAN;
+    crop->var_values[VAR_POS]   = NAN;
 
     av_image_fill_max_pixsteps(crop->max_step, NULL, pix_desc);
     crop->hsub = pix_desc->log2_chroma_w;
@@ -259,6 +261,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 
     crop->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(link->time_base);
+    crop->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ?
+        NAN : av_frame_get_pkt_pos(frame);
     crop->var_values[VAR_X] = av_expr_eval(crop->x_pexpr, crop->var_values, NULL);
     crop->var_values[VAR_Y] = av_expr_eval(crop->y_pexpr, crop->var_values, NULL);
     crop->var_values[VAR_X] = av_expr_eval(crop->x_pexpr, crop->var_values, NULL);
