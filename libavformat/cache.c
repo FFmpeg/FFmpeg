@@ -45,6 +45,10 @@
 #define O_EXCL 0
 #endif
 
+#ifndef ftruncate64
+#define ftruncate64 ftruncate
+#endif
+
 typedef struct Segment {
   int64_t begin;
   int64_t end;
