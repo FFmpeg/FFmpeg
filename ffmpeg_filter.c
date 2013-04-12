@@ -134,7 +134,7 @@ static char *choose_pix_fmts(OutputStream *ost)
 
 /* Define a function for building a string containing a list of
  * allowed formats. */
-#define DEF_CHOOSE_FORMAT(type, var, supported_list, none, get_name, separator)\
+#define DEF_CHOOSE_FORMAT(type, var, supported_list, none, get_name)           \
 static char *choose_ ## var ## s(OutputStream *ost)                            \
 {                                                                              \
     if (ost->st->codec->var != none) {                                         \
@@ -151,7 +151,7 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
                                                                                \
         for (p = ost->enc->supported_list; *p != none; p++) {                  \
             get_name(*p);                                                      \
-            avio_printf(s, "%s" separator, name);                              \
+            avio_printf(s, "%s|", name);                                       \
         }                                                                      \
         len = avio_close_dyn_buf(s, &ret);                                     \
         ret[len - 1] = 0;                                                      \
@@ -161,16 +161,16 @@ static char *choose_ ## var ## s(OutputStream *ost)                            \
 }
 
 // DEF_CHOOSE_FORMAT(enum AVPixelFormat, pix_fmt, pix_fmts, AV_PIX_FMT_NONE,
-//                   GET_PIX_FMT_NAME, ":")
+//                   GET_PIX_FMT_NAME)
 
 DEF_CHOOSE_FORMAT(enum AVSampleFormat, sample_fmt, sample_fmts,
-                  AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME, "|")
+                  AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME)
 
 DEF_CHOOSE_FORMAT(int, sample_rate, supported_samplerates, 0,
-                  GET_SAMPLE_RATE_NAME, "|")
+                  GET_SAMPLE_RATE_NAME)
 
 DEF_CHOOSE_FORMAT(uint64_t, channel_layout, channel_layouts, 0,
-                  GET_CH_LAYOUT_NAME, "|")
+                  GET_CH_LAYOUT_NAME)
 
 FilterGraph *init_simple_filtergraph(InputStream *ist, OutputStream *ost)
 {
