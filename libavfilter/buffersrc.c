@@ -320,8 +320,8 @@ unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src)
 
 static const AVOption buffer_options[] = {
     { "width",         NULL,                     OFFSET(w),                AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
-    { "height",        NULL,                     OFFSET(h),                AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
     { "video_size",    NULL,                     OFFSET(w),                AV_OPT_TYPE_IMAGE_SIZE,                .flags = V },
+    { "height",        NULL,                     OFFSET(h),                AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
     { "pix_fmt",       NULL,                     OFFSET(pix_fmt),          AV_OPT_TYPE_PIXEL_FMT,                 .flags = V },
 #if FF_API_OLD_FILTER_OPTS
     /* those 4 are for compatibility with the old option passing system where each filter
@@ -507,9 +507,6 @@ static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
     { NULL }
 };
 
-static const char *const buffer_shorthand[] = { "width", "height", "pix_fmt",
-    "time_base_num", "time_base_den", "sar_num", "sar_den", NULL };
-
 AVFilter avfilter_vsrc_buffer = {
     .name      = "buffer",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them accessible to the filterchain."),
@@ -522,7 +519,6 @@ AVFilter avfilter_vsrc_buffer = {
     .inputs    = NULL,
     .outputs   = avfilter_vsrc_buffer_outputs,
     .priv_class = &buffer_class,
-    .shorthand = buffer_shorthand,
 };
 
 static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {

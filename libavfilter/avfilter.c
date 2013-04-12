@@ -687,7 +687,6 @@ static const char *const filters_left_to_update[] = {
 #if FF_API_ACONVERT_FILTER
     "aconvert",
 #endif
-    "buffer",
     "pan",
 };
 
