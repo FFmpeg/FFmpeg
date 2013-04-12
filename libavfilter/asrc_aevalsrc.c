@@ -91,7 +91,7 @@ static int init(AVFilterContext *ctx, const char *args)
 
     if (!args1) {
         av_log(ctx, AV_LOG_ERROR, "Channels expressions list is empty\n");
-        ret = args ? AVERROR(ENOMEM) : AVERROR(EINVAL);
+        ret = args1 ? AVERROR(ENOMEM) : AVERROR(EINVAL);
         goto end;
     }
 
