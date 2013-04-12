@@ -2159,12 +2159,8 @@ testing purposes.
 
 Crop the input video to given dimensions.
 
-This filter accepts a list of @var{key}=@var{value} pairs as argument,
-separated by ':'. If the key of the first options is omitted, the
-arguments are interpreted according to the syntax
-@var{out_w}:@var{out_h}:@var{x}:@var{y}:@var{keep_aspect}.
+The filter accepts the following options:
 
-A description of the accepted options follows:
 @table @option
 @item w, out_w
 Width of the output video. It defaults to @code{iw}.
