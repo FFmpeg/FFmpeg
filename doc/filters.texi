@@ -2036,21 +2036,16 @@ blend=all_expr='if(eq(mod(X,2),mod(Y,2)),A,B)'
 
 Apply boxblur algorithm to the input video.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":". If the key of the first options is omitted,
-the arguments are interpreted according to the syntax
-@option{luma_radius}:@option{luma_power}:@option{chroma_radius}:@option{chroma_power}:@option{alpha_radius}:@option{alpha_power}.
-
-This filter accepts the following options:
+The filter accepts the following options:
 
 @table @option
 
-@item luma_radius
-@item luma_power
-@item chroma_radius
-@item chroma_power
-@item alpha_radius
-@item alpha_power
+@item luma_radius, lr
+@item luma_power, lp
+@item chroma_radius, cr
+@item chroma_power, cp
+@item alpha_radius, ar
+@item alpha_power, ap
 
 @end table
 
