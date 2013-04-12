@@ -277,9 +277,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     crop->x &= ~((1 << crop->hsub) - 1);
     crop->y &= ~((1 << crop->vsub) - 1);
 
-    av_dlog(ctx, "n:%d t:%f x:%d y:%d x+w:%d y+h:%d\n",
-            (int)crop->var_values[VAR_N], crop->var_values[VAR_T], crop->x,
-            crop->y, crop->x+crop->w, crop->y+crop->h);
+    av_dlog(ctx, "n:%d t:%f pos:%f x:%d y:%d x+w:%d y+h:%d\n",
+            (int)crop->var_values[VAR_N], crop->var_values[VAR_T], crop->var_values[VAR_POS],
+            crop->x, crop->y, crop->x+crop->w, crop->y+crop->h);
 
     frame->data[0] += crop->y * frame->linesize[0];
     frame->data[0] += crop->x * crop->max_step[0];
