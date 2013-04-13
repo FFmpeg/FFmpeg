@@ -384,6 +384,13 @@ static av_cold int vsink_init(AVFilterContext *ctx, void *opaque)
     return common_init(ctx);
 }
 
+#define CHECK_LIST_SIZE(field) \
+        if (buf->field ## _size % sizeof(*buf->field)) { \
+            av_log(ctx, AV_LOG_ERROR, "Invalid size for " #field ": %d, " \
+                   "should be multiple of %d\n", \
+                   buf->field ## _size, (int)sizeof(*buf->field)); \
+            return AVERROR(EINVAL); \
+        }
 static int vsink_query_formats(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
@@ -391,11 +398,7 @@ static int vsink_query_formats(AVFilterContext *ctx)
     unsigned i;
     int ret;
 
-    if (buf->pixel_fmts_size % sizeof(*buf->pixel_fmts)) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid size for format list\n");
-        return AVERROR(EINVAL);
-    }
-
+    CHECK_LIST_SIZE(pixel_fmts)
     if (buf->pixel_fmts_size) {
         for (i = 0; i < NB_ITEMS(buf->pixel_fmts); i++)
             if ((ret = ff_add_format(&formats, buf->pixel_fmts[i])) < 0)
@@ -433,23 +436,10 @@ static int asink_query_formats(AVFilterContext *ctx)
     unsigned i;
     int ret;
 
-    if (buf->sample_fmts_size     % sizeof(*buf->sample_fmts)     ||
-        buf->sample_rates_size    % sizeof(*buf->sample_rates)    ||
-        buf->channel_layouts_size % sizeof(*buf->channel_layouts) ||
-        buf->channel_counts_size  % sizeof(*buf->channel_counts)) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid size for format lists\n");
-#define LOG_ERROR(field) \
-        if (buf->field ## _size % sizeof(*buf->field)) \
-            av_log(ctx, AV_LOG_ERROR, "  " #field " is %d, should be " \
-                   "multiple of %d\n", \
-                   buf->field ## _size, (int)sizeof(*buf->field));
-        LOG_ERROR(sample_fmts);
-        LOG_ERROR(sample_rates);
-        LOG_ERROR(channel_layouts);
-        LOG_ERROR(channel_counts);
-#undef LOG_ERROR
-        return AVERROR(EINVAL);
-    }
+    CHECK_LIST_SIZE(sample_fmts)
+    CHECK_LIST_SIZE(sample_rates)
+    CHECK_LIST_SIZE(channel_layouts)
+    CHECK_LIST_SIZE(channel_counts)
 
     if (buf->sample_fmts_size) {
         for (i = 0; i < NB_ITEMS(buf->sample_fmts); i++)
