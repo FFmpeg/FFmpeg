@@ -271,7 +271,7 @@ unsigned av_int_list_length_for_size(unsigned elsize,
  * @return  length of the list, in elements, not counting the terminator
  */
 #define av_int_list_length(list, term) \
-    av_int_list_length_for_size(sizeof(*list), list, term)
+    av_int_list_length_for_size(sizeof(*(list)), list, term)
 
 /**
  * @}
