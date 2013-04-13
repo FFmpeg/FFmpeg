@@ -321,10 +321,7 @@ Apply a two-pole all-pass filter with central frequency (in Hz)
 An all-pass filter changes the audio's frequency to phase relationship
 without changing its frequency to amplitude relationship.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item frequency, f
@@ -353,10 +350,7 @@ Apply a high-pass filter with 3dB point frequency.
 The filter can be either single-pole, or double-pole (the default).
 The filter roll off at 6dB per pole per octave (20dB per pole per decade).
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item frequency, f
@@ -390,10 +384,7 @@ Apply a low-pass filter with 3dB point frequency.
 The filter can be either single-pole or double-pole (the default).
 The filter roll off at 6dB per pole per octave (20dB per pole per decade).
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item frequency, f
@@ -427,10 +418,7 @@ Boost or cut the bass (lower) frequencies of the audio using a two-pole
 shelving filter with a response similar to that of a standard
 hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item gain, g
@@ -505,10 +493,7 @@ Boost or cut treble (upper) frequencies of the audio using a two-pole
 shelving filter with a response similar to that of a standard
 hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item gain, g
@@ -546,10 +531,7 @@ The @var{csg} option selects a constant skirt gain (peak gain = Q)
 instead of the default: constant 0dB peak gain.
 The filter roll off at 6dB per octave (20dB per decade).
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item frequency, f
@@ -581,10 +563,7 @@ Apply a two-pole Butterworth band-reject filter with central
 frequency @var{frequency}, and (3dB-point) band-width @var{width}.
 The filter roll off at 6dB per octave (20dB per decade).
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item frequency, f
@@ -623,10 +602,7 @@ filters) that at all other frequencies is unchanged.
 In order to produce complex equalisation curves, this filter can
 be given several times, each with a different central frequency.
 
-The filter accepts parameters as a list of @var{key}=@var{value}
-pairs, separated by ":".
-
-A description of the accepted parameters follows.
+The filter accepts the following options:
 
 @table @option
 @item frequency, f
@@ -4826,14 +4802,7 @@ Scale (resize) the input video, using the libswscale library.
 The scale filter forces the output display aspect ratio to be the same
 of the input, by changing the output sample aspect ratio.
 
-This filter accepts a list of named options in the form of
-@var{key}=@var{value} pairs separated by ":". If the key for the first
-two options is not specified, the assumed keys for the first two
-values are @code{w} and @code{h}. If the first option has no key and
-can be interpreted like a video size specification, it will be used
-to set the video size.
-
-A description of the accepted options follows.
+The filter accepts the following options:
 
 @table @option
 @item width, w
@@ -5772,8 +5741,7 @@ Buffer video frames, and make them available to the filter chain.
 This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 
-It accepts a list of options in the form of @var{key}=@var{value} pairs
-separated by ":". A description of the accepted options follows.
+This source accepts the following options:
 
 @table @option
 
