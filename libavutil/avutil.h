@@ -261,7 +261,7 @@ static inline void *av_x_if_null(const void *p, const void *x)
  * @return  length of the list, in elements, not counting the terminator
  */
 unsigned av_int_list_length_for_size(unsigned elsize,
-                                     const void *list, uint64_t term);
+                                     const void *list, uint64_t term) av_pure;
 
 /**
  * Compute the length of an integer list.
@@ -271,7 +271,7 @@ unsigned av_int_list_length_for_size(unsigned elsize,
  * @return  length of the list, in elements, not counting the terminator
  */
 #define av_int_list_length(list, term) \
-    av_int_list_length_for_size(sizeof(*list), list, term)
+    av_int_list_length_for_size(sizeof(*(list)), list, term)
 
 /**
  * @}
