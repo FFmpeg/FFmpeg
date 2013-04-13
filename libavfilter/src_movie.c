@@ -579,6 +579,7 @@ AVFilter avfilter_avsrc_movie = {
 
     .inputs    = NULL,
     .outputs   = NULL,
+    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 
 #endif  /* CONFIG_MOVIE_FILTER */
@@ -604,6 +605,7 @@ AVFilter avfilter_avsrc_amovie = {
     .inputs     = NULL,
     .outputs    = NULL,
     .priv_class = &amovie_class,
+    .flags      = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 
 #endif /* CONFIG_AMOVIE_FILTER */

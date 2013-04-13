@@ -419,4 +419,5 @@ AVFilter avfilter_avf_concat = {
     .inputs        = NULL,
     .outputs       = NULL,
     .priv_class    = &concat_class,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

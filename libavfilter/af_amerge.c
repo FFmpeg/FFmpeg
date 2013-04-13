@@ -346,4 +346,5 @@ AVFilter avfilter_af_amerge = {
     .inputs        = NULL,
     .outputs       = amerge_outputs,
     .priv_class    = &amerge_class,
+    .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

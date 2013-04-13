@@ -796,4 +796,5 @@ AVFilter avfilter_af_ebur128 = {
     .inputs        = ebur128_inputs,
     .outputs       = NULL,
     .priv_class    = &ebur128_class,
+    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
