@@ -668,8 +668,10 @@ int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int searc
  * @param flags  search flags
  */
 #define av_opt_set_int_list(obj, name, val, term, flags) \
-    av_opt_set_bin(obj, name, (const uint8_t *)val, \
-                   av_int_list_length(val, term) * sizeof(*val), flags)
+    (av_int_list_length(val, term) > INT_MAX / sizeof(*(val)) ? \
+     AVERROR(EINVAL) : \
+     av_opt_set_bin(obj, name, (const uint8_t *)(val), \
+                    av_int_list_length(val, term) * sizeof(*(val)), flags))
 /**
  * @}
  */
