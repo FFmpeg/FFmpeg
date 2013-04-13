@@ -1662,7 +1662,7 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
 {
     struct tm time;
     time.tm_year = (timestamp >> 48) - 1900;
-    time.tm_mon  = (timestamp >> 48 & 0xF) - 1;
+    time.tm_mon  = (timestamp >> 40 & 0xF) - 1;
     time.tm_mday = (timestamp >> 32 & 0xF);
     time.tm_hour = (timestamp >> 24 & 0XF);
     time.tm_min  = (timestamp >> 16 & 0xF);
