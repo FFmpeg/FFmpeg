@@ -448,45 +448,6 @@ slope
 Determine how steep is the filter's shelf transition.
 @end table
 
-@section telecine
-
-Apply telecine process to the video.
-
-This filter accepts the following options:
-
-@table @option
-@item first_field
-@table @samp
-@item top, t
-top field first
-@item bottom, b
-bottom field first
-The default value is @code{top}.
-@end table
-
-@item pattern
-A string of numbers representing the pulldown pattern you wish to apply.
-The default value is @code{23}.
-@end table
-
-@example
-Some typical patterns:
-
-NTSC output (30i):
-27.5p: 32222
-24p: 23 (classic)
-24p: 2332 (preferred)
-20p: 33
-18p: 334
-16p: 3444
-
-PAL output (25i):
-27.5p: 12222
-24p: 222222222223 ("Euro pulldown")
-16.67p: 33
-16p: 33333334
-@end example
-
 @section treble
 
 Boost or cut treble (upper) frequencies of the audio using a two-pole
@@ -5385,6 +5346,45 @@ Useful for enlarging pixel art images without reducing sharpness.
 
 @section swapuv
 Swap U & V plane.
+
+@section telecine
+
+Apply telecine process to the video.
+
+This filter accepts the following options:
+
+@table @option
+@item first_field
+@table @samp
+@item top, t
+top field first
+@item bottom, b
+bottom field first
+The default value is @code{top}.
+@end table
+
+@item pattern
+A string of numbers representing the pulldown pattern you wish to apply.
+The default value is @code{23}.
+@end table
+
+@example
+Some typical patterns:
+
+NTSC output (30i):
+27.5p: 32222
+24p: 23 (classic)
+24p: 2332 (preferred)
+20p: 33
+18p: 334
+16p: 3444
+
+PAL output (25i):
+27.5p: 12222
+24p: 222222222223 ("Euro pulldown")
+16.67p: 33
+16p: 33333334
+@end example
 
 @section thumbnail
 Select the most representative frame in a given sequence of consecutive frames.
