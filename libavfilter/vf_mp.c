@@ -568,15 +568,17 @@ int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     memcpy(picref->linesize, mpi->stride, FFMIN(sizeof(picref->linesize), sizeof(mpi->stride)));
 
     for(i=0; i<4 && mpi->stride[i]; i++){
-        picref->buf[i] = av_buffer_create(mpi->planes[i], mpi->stride[i], dummy_free, NULL,
-                                          (mpi->flags & MP_IMGFLAG_PRESERVE) ? AV_BUFFER_FLAG_READONLY : 0);
-        if (!picref->buf[i])
-            goto fail;
-        picref->data[i] = picref->buf[i]->data;
+        picref->data[i] = mpi->planes[i];
     }
 
     if(pts != MP_NOPTS_VALUE)
         picref->pts= pts * av_q2d(outlink->time_base);
+
+    if(1) { // mp buffers are currently unsupported in libavfilter, we thus must copy
+        AVFrame *tofree = picref;
+        picref = av_frame_clone(picref);
+        av_frame_free(&tofree);
+    }
 
     ff_filter_frame(outlink, picref);
     m->frame_returned++;
