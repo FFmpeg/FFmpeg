@@ -1668,6 +1668,10 @@ static int mxf_timestamp_to_str(uint64_t timestamp, char **str)
     time.tm_min  = (timestamp >> 16 & 0xFF);
     time.tm_sec  = (timestamp >> 8  & 0xFF);
 
+    /* ensure month/day are valid */
+    time.tm_mon  = FFMAX(time.tm_mon, 0);
+    time.tm_mday = FFMAX(time.tm_mday, 1);
+
     *str = av_mallocz(32);
     if (!*str)
         return AVERROR(ENOMEM);
