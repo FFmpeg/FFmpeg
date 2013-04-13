@@ -1660,6 +1660,8 @@ static void show_help_filter(const char *name)
     }
     if (f->flags & AVFILTER_FLAG_DYNAMIC_INPUTS)
         printf("        dynamic (depending on the options)\n");
+    else if (!count)
+        printf("        none (source filter)\n");
 
     printf("    Outputs:\n");
     count = avfilter_pad_count(f->outputs);
@@ -1669,6 +1671,8 @@ static void show_help_filter(const char *name)
     }
     if (f->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS)
         printf("        dynamic (depending on the options)\n");
+    else if (!count)
+        printf("        none (sink filter)\n");
 
     if (f->priv_class)
         show_help_children(f->priv_class, AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM |
