@@ -48,8 +48,8 @@ av_dict_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int
 
     for(; i<m->count; i++){
         const char *s= m->elems[i].key;
-        if(flags & AV_DICT_MATCH_CASE) for(j=0;         s[j]  ==         key[j]  && key[j]; j++);
-        else                               for(j=0; av_toupper(s[j]) == av_toupper(key[j]) && key[j]; j++);
+        if(flags & AV_DICT_MATCH_CASE) for(j=0;            s[j]  ==            key[j]  && key[j]; j++);
+        else                           for(j=0; av_toupper(s[j]) == av_toupper(key[j]) && key[j]; j++);
         if(key[j])
             continue;
         if(s[j] && !(flags & AV_DICT_IGNORE_SUFFIX))
@@ -86,9 +86,9 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
     }
     if (value) {
         if (flags & AV_DICT_DONT_STRDUP_KEY) {
-            m->elems[m->count].key   = (char*)(intptr_t)key;
+            m->elems[m->count].key = (char*)(intptr_t)key;
         } else
-        m->elems[m->count].key  = av_strdup(key  );
+            m->elems[m->count].key = av_strdup(key);
         if (flags & AV_DICT_DONT_STRDUP_VAL) {
             m->elems[m->count].value = (char*)(intptr_t)value;
         } else if (oldval && flags & AV_DICT_APPEND) {
