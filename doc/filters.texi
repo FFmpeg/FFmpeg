@@ -5727,8 +5727,8 @@ subtitles=filename=sub.srt
 
 Split input video into several identical outputs.
 
-The filter accepts a single parameter which specifies the number of outputs. If
-unspecified, it defaults to 2.
+The filter accepts a single option @option{outputs} which specifies
+the number of outputs. If unspecified, it defaults to 2.
 
 For example
 @example
