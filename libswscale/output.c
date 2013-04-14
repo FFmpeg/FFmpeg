@@ -1391,9 +1391,9 @@ yuv2rgb_full_2_c_template(SwsContext *c, const int16_t *buf[2],
         int A;
 
         if (hasAlpha) {
-            A = (abuf0[i] * yalpha1 + abuf1[i] * yalpha)<<3;
-            if (A & 0xC0000000)
-                A = av_clip_uintp2(A, 30);
+            A = (abuf0[i] * yalpha1 + abuf1[i] * yalpha + (1<<18)) >> 19;
+            if (A & 0x100)
+                A = av_clip_uint8(A);
         }
 
         yuv2rgb_write_full(c, dest, i, Y, A, U, V, y, target, hasAlpha, err);
@@ -1428,9 +1428,9 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
             int A;
 
             if (hasAlpha) {
-                A = abuf0[i]<<15;
-                if (A & 0xC0000000)
-                    A = av_clip_uintp2(A, 30);
+                A = (abuf0[i] + 64) >> 7;
+                if (A & 0x100)
+                    A = av_clip_uint8(A);
             }
 
             yuv2rgb_write_full(c, dest, i, Y, A, U, V, y, target, hasAlpha, err);
@@ -1445,9 +1445,9 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
             int A;
 
             if (hasAlpha) {
-                A = abuf0[i]<<15;
-                if (A & 0xC0000000)
-                    A = av_clip_uintp2(A, 30);
+                A = (abuf0[i] + 64) >> 7;
+                if (A & 0x100)
+                    A = av_clip_uint8(A);
             }
 
             yuv2rgb_write_full(c, dest, i, Y, A, U, V, y, target, hasAlpha, err);
