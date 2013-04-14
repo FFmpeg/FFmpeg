@@ -4302,7 +4302,6 @@ The list of the currently supported filters follows:
 @item sab
 @item softpulldown
 @item spp
-@item telecine
 @item tinterlace
 @item uspp
 @end table
