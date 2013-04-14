@@ -186,6 +186,7 @@ static void phaser_## name ##p(AudioPhaserContext *p,                  \
 {                                                                      \
     int i, c, delay_pos, modulation_pos;                               \
                                                                        \
+    av_assert0(channels > 0);                                          \
     for (c = 0; c < channels; c++) {                                   \
         type *s = (type *)src[c];                                      \
         type *d = (type *)dst[c];                                      \
