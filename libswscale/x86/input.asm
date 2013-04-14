@@ -50,6 +50,18 @@ rgb_UVrnd:       times 4 dd 0x400100       ; 128.5 << 15
 %define rgb_Vcoeff_12x4 16*4 + 16*10 + tableq
 %define rgb_Vcoeff_3x56 16*4 + 16*11 + tableq
 
+%define rgba_Ycoeff_rb 16*4 + 16*12 + tableq
+%define rgba_Ycoeff_br 16*4 + 16*13 + tableq
+%define rgba_Ycoeff_ga 16*4 + 16*14 + tableq
+%define rgba_Ycoeff_ag 16*4 + 16*15 + tableq
+%define rgba_Ucoeff_rb 16*4 + 16*16 + tableq
+%define rgba_Ucoeff_br 16*4 + 16*17 + tableq
+%define rgba_Ucoeff_ga 16*4 + 16*18 + tableq
+%define rgba_Ucoeff_ag 16*4 + 16*19 + tableq
+%define rgba_Vcoeff_rb 16*4 + 16*20 + tableq
+%define rgba_Vcoeff_br 16*4 + 16*21 + tableq
+%define rgba_Vcoeff_ga 16*4 + 16*22 + tableq
+%define rgba_Vcoeff_ag 16*4 + 16*23 + tableq
 
 ; bgr_Ycoeff_12x4: times 2 dw BY, GY, 0, BY
 ; bgr_Ycoeff_3x56: times 2 dw RY, 0, GY, RY
@@ -64,18 +76,18 @@ rgb_UVrnd:       times 4 dd 0x400100       ; 128.5 << 15
 ; rgb_Vcoeff_12x4: times 2 dw RV, GV, 0, RV
 ; rgb_Vcoeff_3x56: times 2 dw BV, 0, GV, BV
 
-rgba_Ycoeff_rb:  times 4 dw RY, BY
-rgba_Ycoeff_br:  times 4 dw BY, RY
-rgba_Ycoeff_ga:  times 4 dw GY, 0
-rgba_Ycoeff_ag:  times 4 dw 0,  GY
-rgba_Ucoeff_rb:  times 4 dw RU, BU
-rgba_Ucoeff_br:  times 4 dw BU, RU
-rgba_Ucoeff_ga:  times 4 dw GU, 0
-rgba_Ucoeff_ag:  times 4 dw 0,  GU
-rgba_Vcoeff_rb:  times 4 dw RV, BV
-rgba_Vcoeff_br:  times 4 dw BV, RV
-rgba_Vcoeff_ga:  times 4 dw GV, 0
-rgba_Vcoeff_ag:  times 4 dw 0,  GV
+; rgba_Ycoeff_rb:  times 4 dw RY, BY
+; rgba_Ycoeff_br:  times 4 dw BY, RY
+; rgba_Ycoeff_ga:  times 4 dw GY, 0
+; rgba_Ycoeff_ag:  times 4 dw 0,  GY
+; rgba_Ucoeff_rb:  times 4 dw RU, BU
+; rgba_Ucoeff_br:  times 4 dw BU, RU
+; rgba_Ucoeff_ga:  times 4 dw GU, 0
+; rgba_Ucoeff_ag:  times 4 dw 0,  GU
+; rgba_Vcoeff_rb:  times 4 dw RV, BV
+; rgba_Vcoeff_br:  times 4 dw BV, RV
+; rgba_Vcoeff_ga:  times 4 dw GV, 0
+; rgba_Vcoeff_ag:  times 4 dw 0,  GV
 
 shuf_rgb_12x4:   db 0, 0x80, 1, 0x80,  2, 0x80,  3, 0x80, \
                     6, 0x80, 7, 0x80,  8, 0x80,  9, 0x80
