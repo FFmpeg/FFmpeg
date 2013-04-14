@@ -2051,6 +2051,46 @@ boxblur=luma_radius=min(h\,w)/10:luma_power=1:chroma_radius=min(cw\,ch)/10:chrom
 @end example
 @end itemize
 
+@section colorbalance
+Modify intensity of primary colors (red, green and blue) of input frames.
+
+The filter allows an input frame to be adjusted in the shadows, midtones or highlights
+regions for the red-cyan, green-magenta or blue-yellow balance.
+
+A positive adjustment value shifts the balance towards the primary color, a negative
+value towards the complementary color.
+
+The filter accepts the following options:
+
+@table @option
+@item rs
+@item gs
+@item bs
+Adjust red, green and blue shadows (darkest pixels).
+
+@item rm
+@item gm
+@item bm
+Adjust red, green and blue midtones (medium pixels).
+
+@item rh
+@item gh
+@item bh
+Adjust red, green and blue highlights (brightest pixels).
+
+Allowed ranges for options are @code{[-1.0, 1.0]}. Defaults are @code{0}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Add red color cast to shadows:
+@example
+colorbalance=rs=.3
+@end example
+@end itemize
+
 @section colormatrix
 
 Convert color matrix.

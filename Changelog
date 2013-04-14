@@ -23,6 +23,7 @@ version <next>:
 - new interlace filter
 - smptehdbars source
 - inverse telecine filters (fieldmatch and decimate)
+- colorbalance filter
 
 
 version 1.2:
