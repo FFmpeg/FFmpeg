@@ -139,7 +139,7 @@ static av_cold int init(AVFilterContext *ctx)
     decimate->avctx = avcodec_alloc_context3(NULL);
     if (!decimate->avctx)
         return AVERROR(ENOMEM);
-    dsputil_init(&decimate->dspctx, decimate->avctx);
+    avpriv_dsputil_init(&decimate->dspctx, decimate->avctx);
 
     return 0;
 }

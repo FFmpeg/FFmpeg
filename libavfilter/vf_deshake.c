@@ -407,7 +407,7 @@ static int config_props(AVFilterLink *link)
     deshake->last.zoom = 0;
 
     deshake->avctx = avcodec_alloc_context3(NULL);
-    dsputil_init(&deshake->c, deshake->avctx);
+    avpriv_dsputil_init(&deshake->c, deshake->avctx);
 
     return 0;
 }

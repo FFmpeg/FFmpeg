@@ -315,6 +315,7 @@ typedef struct DSPContext {
 
 void ff_dsputil_static_init(void);
 void ff_dsputil_init(DSPContext* p, AVCodecContext *avctx);
+void avpriv_dsputil_init(DSPContext* p, AVCodecContext *avctx);
 attribute_deprecated void dsputil_init(DSPContext* c, AVCodecContext *avctx);
 
 int ff_check_alignment(void);
