@@ -30,7 +30,7 @@
  * rgbtestsrc is ported from MPlayer libmpcodecs/vf_rgbtest.c by
  * Michael Niedermayer.
  *
- * smptebars and smptehdbars is by Paul B Mahol.
+ * smptebars and smptehdbars are by Paul B Mahol.
  */
 
 #include <float.h>
