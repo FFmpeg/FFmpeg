@@ -974,7 +974,7 @@ static const AVFilterPad fieldmatch_outputs[] = {
 
 AVFilter avfilter_vf_fieldmatch = {
     .name           = "fieldmatch",
-    .description    = NULL_IF_CONFIG_SMALL("Field matching for inverse telecine"),
+    .description    = NULL_IF_CONFIG_SMALL("Field matching for inverse telecine."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(FieldMatchContext),
     .init           = fieldmatch_init,

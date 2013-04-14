@@ -275,7 +275,7 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
 
 AVFilter avfilter_vf_fps = {
     .name        = "fps",
-    .description = NULL_IF_CONFIG_SMALL("Force constant framerate"),
+    .description = NULL_IF_CONFIG_SMALL("Force constant framerate."),
 
     .init      = init,
     .uninit    = uninit,
