@@ -37,18 +37,32 @@ SECTION_RODATA
 
 rgb_Yrnd:        times 4 dd 0x80100        ;  16.5 << 15
 rgb_UVrnd:       times 4 dd 0x400100       ; 128.5 << 15
-bgr_Ycoeff_12x4: times 2 dw BY, GY, 0, BY
-bgr_Ycoeff_3x56: times 2 dw RY, 0, GY, RY
-rgb_Ycoeff_12x4: times 2 dw RY, GY, 0, RY
-rgb_Ycoeff_3x56: times 2 dw BY, 0, GY, BY
-bgr_Ucoeff_12x4: times 2 dw BU, GU, 0, BU
-bgr_Ucoeff_3x56: times 2 dw RU, 0, GU, RU
-rgb_Ucoeff_12x4: times 2 dw RU, GU, 0, RU
-rgb_Ucoeff_3x56: times 2 dw BU, 0, GU, BU
-bgr_Vcoeff_12x4: times 2 dw BV, GV, 0, BV
-bgr_Vcoeff_3x56: times 2 dw RV, 0, GV, RV
-rgb_Vcoeff_12x4: times 2 dw RV, GV, 0, RV
-rgb_Vcoeff_3x56: times 2 dw BV, 0, GV, BV
+%define bgr_Ycoeff_12x4 16*4 + 16* 0 + tableq
+%define bgr_Ycoeff_3x56 16*4 + 16* 1 + tableq
+%define rgb_Ycoeff_12x4 16*4 + 16* 2 + tableq
+%define rgb_Ycoeff_3x56 16*4 + 16* 3 + tableq
+%define bgr_Ucoeff_12x4 16*4 + 16* 4 + tableq
+%define bgr_Ucoeff_3x56 16*4 + 16* 5 + tableq
+%define rgb_Ucoeff_12x4 16*4 + 16* 6 + tableq
+%define rgb_Ucoeff_3x56 16*4 + 16* 7 + tableq
+%define bgr_Vcoeff_12x4 16*4 + 16* 8 + tableq
+%define bgr_Vcoeff_3x56 16*4 + 16* 9 + tableq
+%define rgb_Vcoeff_12x4 16*4 + 16*10 + tableq
+%define rgb_Vcoeff_3x56 16*4 + 16*11 + tableq
+
+
+; bgr_Ycoeff_12x4: times 2 dw BY, GY, 0, BY
+; bgr_Ycoeff_3x56: times 2 dw RY, 0, GY, RY
+; rgb_Ycoeff_12x4: times 2 dw RY, GY, 0, RY
+; rgb_Ycoeff_3x56: times 2 dw BY, 0, GY, BY
+; bgr_Ucoeff_12x4: times 2 dw BU, GU, 0, BU
+; bgr_Ucoeff_3x56: times 2 dw RU, 0, GU, RU
+; rgb_Ucoeff_12x4: times 2 dw RU, GU, 0, RU
+; rgb_Ucoeff_3x56: times 2 dw BU, 0, GU, BU
+; bgr_Vcoeff_12x4: times 2 dw BV, GV, 0, BV
+; bgr_Vcoeff_3x56: times 2 dw RV, 0, GV, RV
+; rgb_Vcoeff_12x4: times 2 dw RV, GV, 0, RV
+; rgb_Vcoeff_3x56: times 2 dw BV, 0, GV, BV
 
 rgba_Ycoeff_rb:  times 4 dw RY, BY
 rgba_Ycoeff_br:  times 4 dw BY, RY
@@ -82,7 +96,7 @@ SECTION .text
 ; %1 = nr. of XMM registers
 ; %2 = rgb or bgr
 %macro RGB24_TO_Y_FN 2-3
-cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, u3
+cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
 %if mmsize == 8
     mova           m5, [%2_Ycoeff_12x4]
     mova           m6, [%2_Ycoeff_3x56]
@@ -171,7 +185,7 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, u3
 ; %1 = nr. of XMM registers
 ; %2 = rgb or bgr
 %macro RGB24_TO_UV_FN 2-3
-cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
+cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
 %if ARCH_X86_64
     mova           m8, [%2_Ucoeff_12x4]
     mova           m9, [%2_Ucoeff_3x56]
@@ -311,7 +325,7 @@ RGB24_FUNCS 11, 13
 ; %1 = nr. of XMM registers
 ; %2-5 = rgba, bgra, argb or abgr (in individual characters)
 %macro RGB32_TO_Y_FN 5-6
-cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, u3
+cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
     mova           m5, [rgba_Ycoeff_%2%4]
     mova           m6, [rgba_Ycoeff_%3%5]
 %if %0 == 6
@@ -354,7 +368,7 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, u3
 ; %1 = nr. of XMM registers
 ; %2-5 = rgba, bgra, argb or abgr (in individual characters)
 %macro RGB32_TO_UV_FN 5-6
-cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
+cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
 %if ARCH_X86_64
     mova           m8, [rgba_Ucoeff_%2%4]
     mova           m9, [rgba_Ucoeff_%3%5]
