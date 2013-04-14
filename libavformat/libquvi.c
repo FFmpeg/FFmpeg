@@ -97,8 +97,8 @@ static int libquvi_read_header(AVFormatContext *s)
     return 0;
 
 quvi_fail:
-    av_log(s, AV_LOG_ERROR, "%s\n", quvi_strerror(&q, rc));
-    ret = rc;
+    av_log(s, AV_LOG_ERROR, "%s\n", quvi_strerror(q, rc));
+    ret = AVERROR_EXTERNAL;
 
 end:
     quvi_parse_close(&m);
