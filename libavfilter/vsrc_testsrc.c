@@ -743,7 +743,7 @@ static const AVFilterPad smptebars_outputs[] = {
     { NULL }
 };
 
-#if CONFIG_SMPTEHDBARS_FILTER
+#if CONFIG_SMPTEBARS_FILTER
 
 #define smptebars_options options
 AVFILTER_DEFINE_CLASS(smptebars);
@@ -912,4 +912,4 @@ AVFilter avfilter_vsrc_smptehdbars = {
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
-#endif  /* CONFIG_SMPTEHDBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER */
+#endif  /* CONFIG_SMPTEBARS_FILTER || CONFIG_SMPTEHDBARS_FILTER */
