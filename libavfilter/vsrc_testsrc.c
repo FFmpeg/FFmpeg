@@ -908,7 +908,7 @@ AVFilter avfilter_vsrc_smptehdbars = {
     .query_formats = smptebars_query_formats,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
-    .priv_class    = &smptebars_class,
+    .priv_class    = &smptehdbars_class,
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
