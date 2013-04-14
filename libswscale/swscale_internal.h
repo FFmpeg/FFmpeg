@@ -360,6 +360,16 @@ typedef struct SwsContext {
     uint8_t *table_gU[256 + 2*YUVRGB_TABLE_HEADROOM];
     int table_gV[256 + 2*YUVRGB_TABLE_HEADROOM];
     uint8_t *table_bU[256 + 2*YUVRGB_TABLE_HEADROOM];
+    int32_t input_rgb2yuv_table[16]; // This table can contain both C and SIMD formatted values, teh C vales are always at the XY_IDX points
+#define RY_IDX 0
+#define GY_IDX 1
+#define BY_IDX 2
+#define RU_IDX 3
+#define GU_IDX 4
+#define BU_IDX 5
+#define RV_IDX 6
+#define GV_IDX 7
+#define BV_IDX 8
 
     int *dither_error[4];
 
@@ -489,9 +499,9 @@ typedef struct SwsContext {
      * internally to Y/UV.
      */
     /** @{ */
-    void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width);
+    void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width, int32_t *rgb2yuv);
     void (*readChrPlanar)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src[4],
-                          int width);
+                          int width, int32_t *rgb2yuv);
     /** @} */
 
     /**

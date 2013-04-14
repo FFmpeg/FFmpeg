@@ -254,7 +254,7 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
         toYV12(formatConvBuffer, src, src_in[1], src_in[2], srcW, pal);
         src = formatConvBuffer;
     } else if (c->readLumPlanar && !isAlpha) {
-        c->readLumPlanar(formatConvBuffer, src_in, srcW);
+        c->readLumPlanar(formatConvBuffer, src_in, srcW, c->input_rgb2yuv_table);
         src = formatConvBuffer;
     }
 
@@ -307,7 +307,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1,
     } else if (c->readChrPlanar) {
         uint8_t *buf2 = formatConvBuffer +
                         FFALIGN(srcW*2+78, 16);
-        c->readChrPlanar(formatConvBuffer, buf2, src_in, srcW);
+        c->readChrPlanar(formatConvBuffer, buf2, src_in, srcW, c->input_rgb2yuv_table);
         src1 = formatConvBuffer;
         src2 = buf2;
     }
@@ -382,6 +382,20 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     int chrBufIndex  = c->chrBufIndex;
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
+
+    if (!usePal(c->srcFormat)) {
+        pal = c->input_rgb2yuv_table;
+#define RGB2YUV_SHIFT 15
+        pal[BY_IDX] =  ((int)(0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[BV_IDX] = (-(int)(0.081 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[BU_IDX] =  ((int)(0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[GY_IDX] =  ((int)(0.587 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[GV_IDX] = (-(int)(0.419 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[GU_IDX] = (-(int)(0.331 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[RY_IDX] =  ((int)(0.299 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[RV_IDX] =  ((int)(0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        pal[RU_IDX] = (-(int)(0.169 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+    }
 
     if (isPacked(c->srcFormat)) {
         src[0] =
