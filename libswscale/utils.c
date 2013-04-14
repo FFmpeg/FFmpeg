@@ -799,6 +799,55 @@ static void getSubSampleFactors(int *h, int *v, enum AVPixelFormat format)
     *v = desc->log2_chroma_h;
 }
 
+static void fill_rgb2yuv_table(SwsContext *c, const int table[4], int dstRange)
+{
+    int64_t W,V,Z;
+    int64_t vr =  table[0];
+    int64_t ub =  table[1];
+    int64_t ug = -table[2];
+    int64_t vg = -table[3];
+    int64_t ONE = 65536;
+    int64_t cy = ONE;
+
+    dstRange = 0; //FIXME range = 1 is handled elsewhere
+
+    if (!dstRange) {
+        cy = cy * 255 / 219;
+    } else {
+        vr = vr * 224 / 255;
+        ub = ub * 224 / 255;
+        ug = ug * 224 / 255;
+        vg = vg * 224 / 255;
+    }
+    W = ONE*ug/ub;
+    V = ONE*vg/vr;
+    Z = ONE-W-V;
+
+    c->input_rgb2yuv_table[RY_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*V/(Z*cy);
+    c->input_rgb2yuv_table[GY_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*ONE/(Z*cy);
+    c->input_rgb2yuv_table[BY_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*W/(Z*cy);
+
+    c->input_rgb2yuv_table[RU_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*V/(Z*ub);
+    c->input_rgb2yuv_table[GU_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*ONE/(Z*ub);
+    c->input_rgb2yuv_table[BU_IDX] =  (1 << RGB2YUV_SHIFT)*(ONE + ONE*W/Z)/ub;
+
+    c->input_rgb2yuv_table[RV_IDX] =  (1 << RGB2YUV_SHIFT)*(ONE + ONE*V/Z)/vr;
+    c->input_rgb2yuv_table[GV_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*ONE/(Z*vr);
+    c->input_rgb2yuv_table[BV_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*W/(Z*vr);
+
+    if(/*!dstRange && */table == ff_yuv2rgb_coeffs[SWS_CS_DEFAULT]) {
+        c->input_rgb2yuv_table[BY_IDX] =  ((int)(0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[BV_IDX] = (-(int)(0.081 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[BU_IDX] =  ((int)(0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[GY_IDX] =  ((int)(0.587 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[GV_IDX] = (-(int)(0.419 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[GU_IDX] = (-(int)(0.331 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[RY_IDX] =  ((int)(0.299 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[RV_IDX] =  ((int)(0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+        c->input_rgb2yuv_table[RU_IDX] = (-(int)(0.169 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
+    }
+}
+
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                              int srcRange, const int table[4], int dstRange,
                              int brightness, int contrast, int saturation)
@@ -819,7 +868,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
 
-    if (isYUV(c->dstFormat) || isGray(c->dstFormat))
+    if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat)))
         return -1;
 
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
@@ -832,6 +881,9 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     if (HAVE_ALTIVEC && av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)
         ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness,
                                        contrast, saturation);
+
+    fill_rgb2yuv_table(c, table, dstRange);
+
     return 0;
 }
 
