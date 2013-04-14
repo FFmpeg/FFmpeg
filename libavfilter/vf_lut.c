@@ -421,7 +421,7 @@ static int negate_init(AVFilterContext *ctx)
         }
     }
 
-    return lut_init(ctx);
+    return 0;
 }
 
 DEFINE_LUT_FILTER(negate, "Negate input video.");
