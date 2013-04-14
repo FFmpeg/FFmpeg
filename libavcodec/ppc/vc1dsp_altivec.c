@@ -19,10 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/vc1dsp.h"
+
+#if HAVE_ALTIVEC
 
 // main steps of 8x8 transform
 #define STEP8(s0, s1, s2, s3, s4, s5, s6, s7, vec_rnd) \
@@ -335,8 +338,11 @@ static void vc1_inv_trans_8x4_altivec(uint8_t *dest, int stride, int16_t *block)
 #undef OP_U8_ALTIVEC
 #undef PREFIX_no_rnd_vc1_chroma_mc8_altivec
 
-av_cold void ff_vc1dsp_init_altivec(VC1DSPContext *dsp)
+#endif /* HAVE_ALTIVEC */
+
+av_cold void ff_vc1dsp_init_ppc(VC1DSPContext *dsp)
 {
+#if HAVE_ALTIVEC
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
@@ -344,4 +350,5 @@ av_cold void ff_vc1dsp_init_altivec(VC1DSPContext *dsp)
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_altivec;
+#endif /* HAVE_ALTIVEC */
 }

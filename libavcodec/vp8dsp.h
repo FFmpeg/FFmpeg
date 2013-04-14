@@ -90,7 +90,7 @@ void ff_put_vp8_pixels4_c(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
 
 void ff_vp8dsp_init(VP8DSPContext *c);
 void ff_vp8dsp_init_x86(VP8DSPContext *c);
-void ff_vp8dsp_init_altivec(VP8DSPContext *c);
 void ff_vp8dsp_init_arm(VP8DSPContext *c);
+void ff_vp8dsp_init_ppc(VP8DSPContext *c);
 
 #endif /* AVCODEC_VP8DSP_H */

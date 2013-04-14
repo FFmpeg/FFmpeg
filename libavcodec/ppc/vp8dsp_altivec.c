@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/ppc/types_altivec.h"
@@ -27,6 +28,7 @@
 #include "libavcodec/vp8dsp.h"
 #include "dsputil_altivec.h"
 
+#if HAVE_ALTIVEC
 #define REPT4(...) { __VA_ARGS__, __VA_ARGS__, __VA_ARGS__, __VA_ARGS__ }
 
 // h subpel filter uses msum to multiply+add 4 pixel taps at once
@@ -272,8 +274,11 @@ static void put_vp8_pixels16_altivec(uint8_t *dst, ptrdiff_t stride, uint8_t *sr
     ff_put_pixels16_altivec(dst, src, stride, h);
 }
 
-av_cold void ff_vp8dsp_init_altivec(VP8DSPContext *c)
+#endif /* HAVE_ALTIVEC */
+
+av_cold void ff_vp8dsp_init_ppc(VP8DSPContext *c)
 {
+#if HAVE_ALTIVEC
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
@@ -301,4 +306,5 @@ av_cold void ff_vp8dsp_init_altivec(VP8DSPContext *c)
     c->put_vp8_epel_pixels_tab[2][1][1] = put_vp8_epel4_h4v4_altivec;
     c->put_vp8_epel_pixels_tab[2][1][2] = put_vp8_epel4_h6v4_altivec;
     c->put_vp8_epel_pixels_tab[2][2][1] = put_vp8_epel4_h4v6_altivec;
+#endif /* HAVE_ALTIVEC */
 }

@@ -19,11 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil_altivec.h"
+#include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegaudiodsp.h"
+#include "dsputil_altivec.h"
+
+#if HAVE_ALTIVEC
 
 #define MACS(rt, ra, rb) rt+=(ra)*(rb)
 #define MLSS(rt, ra, rb) rt-=(ra)*(rb)
@@ -124,7 +127,11 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
     *out = sum;
 }
 
-av_cold void ff_mpadsp_init_altivec(MPADSPContext *s)
+#endif /* HAVE_ALTIVEC */
+
+av_cold void ff_mpadsp_init_ppc(MPADSPContext *s)
 {
+#if HAVE_ALTIVEC
     s->apply_window_float = apply_window_mp3;
+#endif /* HAVE_ALTIVEC */
 }
