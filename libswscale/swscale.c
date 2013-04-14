@@ -385,7 +385,6 @@ static int swScale(SwsContext *c, const uint8_t *src[],
 
     if (!usePal(c->srcFormat)) {
         pal = c->input_rgb2yuv_table;
-#define RGB2YUV_SHIFT 15
         pal[BY_IDX] =  ((int)(0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
         pal[BV_IDX] = (-(int)(0.081 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
         pal[BU_IDX] =  ((int)(0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));

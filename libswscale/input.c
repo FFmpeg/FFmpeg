@@ -36,8 +36,6 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-#define RGB2YUV_SHIFT 15
-
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
 #define r ((origin == AV_PIX_FMT_BGR48BE || origin == AV_PIX_FMT_BGR48LE) ? b_r : r_b)

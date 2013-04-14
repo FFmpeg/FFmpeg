@@ -370,6 +370,7 @@ typedef struct SwsContext {
 #define RV_IDX 6
 #define GV_IDX 7
 #define BV_IDX 8
+#define RGB2YUV_SHIFT 15
 
     int *dither_error[4];
 
