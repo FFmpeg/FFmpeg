@@ -259,6 +259,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     frame->width  = crop->w;
     frame->height = crop->h;
 
+    crop->var_values[VAR_N] = link->frame_count;
     crop->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(link->time_base);
     crop->var_values[VAR_POS] = av_frame_get_pkt_pos(frame) == -1 ?
@@ -298,8 +299,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         frame->data[3] += crop->y * frame->linesize[3];
         frame->data[3] += crop->x * crop->max_step[3];
     }
-
-    crop->var_values[VAR_N] += 1.0;
 
     return ff_filter_frame(link->dst->outputs[0], frame);
 }

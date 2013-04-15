@@ -30,7 +30,7 @@
 
 typedef struct {
     const AVClass *class;
-    int frame_step, frame_count;
+    int frame_step;
 } FrameStepContext;
 
 #define OFFSET(x) offsetof(FrameStepContext, x)
@@ -64,7 +64,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 {
     FrameStepContext *framestep = inlink->dst->priv;
 
-    if (!(framestep->frame_count++ % framestep->frame_step)) {
+    if (!(inlink->frame_count % framestep->frame_step)) {
         return ff_filter_frame(inlink->dst->outputs[0], ref);
     } else {
         av_frame_free(&ref);

@@ -40,7 +40,6 @@ typedef struct {
     int fid;                ///< current frame id in the queue
     int filled;             ///< 1 if the queue is filled, 0 otherwise
     AVFrame *last;          ///< last frame from the previous queue
-    int64_t frame_count;    ///< output frame counter
     AVFrame **clean_src;    ///< frame queue for the clean source
     int got_frame[2];       ///< frame request flag for each input stream
     double ts_unit;         ///< timestamp units for the output frames
@@ -215,7 +214,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
             }
-            frame->pts = dm->frame_count++ * dm->ts_unit;
+            frame->pts = outlink->frame_count * dm->ts_unit;
             ret = ff_filter_frame(outlink, frame);
             if (ret < 0)
                 break;

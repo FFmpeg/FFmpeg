@@ -164,7 +164,6 @@ typedef struct {
     AVRational  tc_rate;            ///< frame rate for timecode
     AVTimecode  tc;                 ///< timecode context
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
-    int frame_id;
     int reload;                     ///< reload text file for each frame
 } DrawTextContext;
 
@@ -820,6 +819,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
                      int width, int height)
 {
     DrawTextContext *dtext = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
     int max_text_line_w = 0, len;
@@ -857,7 +857,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
 
     if (dtext->tc_opt_string) {
         char tcbuf[AV_TIMECODE_STR_SIZE];
-        av_timecode_make_string(&dtext->tc, tcbuf, dtext->frame_id++);
+        av_timecode_make_string(&dtext->tc, tcbuf, inlink->frame_count);
         av_bprint_clear(bp);
         av_bprintf(bp, "%s%s", dtext->text, tcbuf);
     }
@@ -983,6 +983,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if ((ret = load_textfile(ctx)) < 0)
             return ret;
 
+    dtext->var_values[VAR_N] = inlink->frame_count;
     dtext->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);
 
@@ -992,8 +993,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
            (int)dtext->var_values[VAR_TEXT_W], (int)dtext->var_values[VAR_TEXT_H],
            dtext->x, dtext->y);
-
-    dtext->var_values[VAR_N] += 1.0;
 
     return ff_filter_frame(outlink, frame);
 }

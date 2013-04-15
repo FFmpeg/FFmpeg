@@ -24,7 +24,6 @@
 
 typedef struct {
     int nb_planes;
-    int64_t frame_count;
     double ts_unit;
 } SeparateFieldsContext;
 
@@ -76,12 +75,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         second->linesize[i]   *= 2;
     }
 
-    inpicref->pts = sf->frame_count++ * sf->ts_unit;
-    second->pts   = sf->frame_count++ * sf->ts_unit;
-
+    inpicref->pts = outlink->frame_count * sf->ts_unit;
     ret = ff_filter_frame(outlink, inpicref);
     if (ret < 0)
         return ret;
+
+    second->pts = outlink->frame_count * sf->ts_unit;
     return ff_filter_frame(outlink, second);
 }
 

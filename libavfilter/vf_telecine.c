@@ -43,7 +43,6 @@ typedef struct {
     double ts_unit;
     int out_cnt;
     int occupied;
-    int64_t frame_count;
 
     int nb_planes;
     int planeheight[4];
@@ -233,7 +232,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         }
 
         av_frame_copy_props(frame, inpicref);
-        frame->pts = tc->frame_count++ * tc->ts_unit;
+        frame->pts = outlink->frame_count * tc->ts_unit;
         ret = ff_filter_frame(outlink, frame);
     }
     av_frame_free(&inpicref);

@@ -915,6 +915,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 
     pts = out->pts;
     ret = filter_frame(link, out);
+    link->frame_count++;
     link->frame_requested = 0;
     ff_update_link_current_pts(link, pts);
     return ret;

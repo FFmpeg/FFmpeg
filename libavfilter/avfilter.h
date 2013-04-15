@@ -718,6 +718,11 @@ struct AVFilterLink {
      * Link processing flags.
      */
     unsigned flags;
+
+    /**
+     * Number of past frames sent through the link.
+     */
+    int64_t frame_count;
 };
 
 /**

@@ -36,7 +36,6 @@ typedef struct {
     const AVClass *class;
     AVExpr *e[4];               ///< expressions for each plane
     char *expr_str[4];          ///< expression strings for each plane
-    int framenum;               ///< frame counter
     AVFrame *picref;            ///< current input buffer
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
@@ -163,7 +162,7 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
     double values[VAR_VARS_NB] = {
-        [VAR_N] = geq->framenum++,
+        [VAR_N] = inlink->frame_count,
         [VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
     };
 

@@ -81,7 +81,6 @@ typedef struct {
     struct FFBufQueue queue_bottom;
     int hsub, vsub;             ///< chroma subsampling values
     int frame_requested;
-    int framenum;
     char *all_expr;
     enum BlendMode all_mode;
     double all_opacity;
@@ -382,7 +381,7 @@ static void blend_frame(AVFilterContext *ctx,
         uint8_t *bottom = bottom_buf->data[plane];
 
         param = &b->params[plane];
-        param->values[VAR_N]  = b->framenum++;
+        param->values[VAR_N]  = inlink->frame_count;
         param->values[VAR_T]  = dst_buf->pts == AV_NOPTS_VALUE ? NAN : dst_buf->pts * av_q2d(inlink->time_base);
         param->values[VAR_W]  = outw;
         param->values[VAR_H]  = outh;

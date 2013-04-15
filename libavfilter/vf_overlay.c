@@ -600,6 +600,7 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
         if (over->eval_mode == EVAL_MODE_FRAME) {
             int64_t pos = av_frame_get_pkt_pos(mainpic);
 
+            over->var_values[VAR_N] = inlink->frame_count;
             over->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
                 NAN : mainpic->pts * av_q2d(inlink->time_base);
             over->var_values[VAR_POS] = pos == -1 ? NAN : pos;
@@ -614,7 +615,6 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
         if (over->enable)
             blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
 
-        over->var_values[VAR_N] += 1.0;
     }
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
     av_assert1(ret != AVERROR(EAGAIN));

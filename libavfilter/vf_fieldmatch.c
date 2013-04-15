@@ -77,7 +77,6 @@ typedef struct {
 
     AVFrame *prv,  *src,  *nxt;     ///< main sliding window of 3 frames
     AVFrame *prv2, *src2, *nxt2;    ///< sliding window of the optional second stream
-    int64_t frame_count;            ///< output frame counter
     int got_frame[2];               ///< frame request flag for each input stream
     int hsub, vsub;                 ///< chroma subsampling values
     uint32_t eof;                   ///< bitmask for end of stream
@@ -738,7 +737,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     /* scene change check */
     if (fm->combmatch == COMBMATCH_SC) {
-        if (fm->lastn == fm->frame_count - 1) {
+        if (fm->lastn == outlink->frame_count - 1) {
             if (fm->lastscdiff > fm->scthresh)
                 sc = 1;
         } else if (luma_abs_diff(fm->prv, fm->src) > fm->scthresh) {
@@ -746,7 +745,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         if (!sc) {
-            fm->lastn = fm->frame_count;
+            fm->lastn = outlink->frame_count;
             fm->lastscdiff = luma_abs_diff(fm->src, fm->nxt);
             sc = fm->lastscdiff > fm->scthresh;
         }
@@ -805,10 +804,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     dst->interlaced_frame = combs[match] >= fm->combpel;
     if (dst->interlaced_frame) {
         av_log(ctx, AV_LOG_WARNING, "Frame #%"PRId64" at %s is still interlaced\n",
-               fm->frame_count, av_ts2timestr(in->pts, &inlink->time_base));
+               outlink->frame_count, av_ts2timestr(in->pts, &inlink->time_base));
         dst->top_field_first = field;
     }
-    fm->frame_count++;
 
     av_log(ctx, AV_LOG_DEBUG, "SC:%d | COMBS: %3d %3d %3d %3d %3d (combpel=%d)"
            " match=%d combed=%s\n", sc, combs[0], combs[1], combs[2], combs[3], combs[4],
