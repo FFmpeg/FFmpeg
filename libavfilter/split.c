@@ -97,19 +97,11 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass split_class = {
-    .class_name = "split",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define split_options options
+AVFILTER_DEFINE_CLASS(split);
 
-static const AVClass asplit_class = {
-    .class_name = "asplit",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define asplit_options options
+AVFILTER_DEFINE_CLASS(asplit);
 
 static const AVFilterPad avfilter_vf_split_inputs[] = {
     {
