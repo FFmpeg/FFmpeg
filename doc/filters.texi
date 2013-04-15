@@ -2346,6 +2346,8 @@ Set the key points for all components (not including master).
 Can be used in addition to the other key points component
 options. In this case, the unset component(s) will fallback on this
 @option{all} setting.
+@item psfile
+Specify a Photoshop curves file (@code{.asv}) to import the settings from.
 @end table
 
 To avoid some filtergraph syntax conflicts, each key points list need to be
