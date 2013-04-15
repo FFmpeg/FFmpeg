@@ -2963,7 +2963,7 @@ int main(int argc, char **argv)
     SDL_EventState(SDL_USEREVENT, SDL_IGNORE);
 
     av_init_packet(&flush_pkt);
-    flush_pkt.data = "FLUSH";
+    flush_pkt.data = (uint8_t *)&flush_pkt;
 
     cur_stream = stream_open(input_filename, file_iformat);
 
