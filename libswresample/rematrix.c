@@ -337,7 +337,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
             return r;
     }
     if (s->midbuf.fmt == AV_SAMPLE_FMT_S16P){
-        s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(int));
+        s->native_matrix = av_calloc(nb_in * nb_out, sizeof(int));
         s->native_one    = av_mallocz(sizeof(int));
         for (i = 0; i < nb_out; i++)
             for (j = 0; j < nb_in; j++)
@@ -347,7 +347,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->mix_2_1_f = (mix_2_1_func_type*)sum2_s16;
         s->mix_any_f = (mix_any_func_type*)get_mix_any_func_s16(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_FLTP){
-        s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(float));
+        s->native_matrix = av_calloc(nb_in * nb_out, sizeof(float));
         s->native_one    = av_mallocz(sizeof(float));
         for (i = 0; i < nb_out; i++)
             for (j = 0; j < nb_in; j++)
@@ -357,7 +357,7 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->mix_2_1_f = (mix_2_1_func_type*)sum2_float;
         s->mix_any_f = (mix_any_func_type*)get_mix_any_func_float(s);
     }else if(s->midbuf.fmt == AV_SAMPLE_FMT_DBLP){
-        s->native_matrix = av_mallocz(nb_in * nb_out * sizeof(double));
+        s->native_matrix = av_calloc(nb_in * nb_out, sizeof(double));
         s->native_one    = av_mallocz(sizeof(double));
         for (i = 0; i < nb_out; i++)
             for (j = 0; j < nb_in; j++)
