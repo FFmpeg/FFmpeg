@@ -33,7 +33,7 @@ vp3_idct_data: times 8 dw 64277
                times 8 dw 25080
                times 8 dw 12785
 
-pb_7: times 8 db 7
+pb_7:  times 8 db 0x07
 pb_1F: times 8 db 0x1f
 pb_81: times 8 db 0x81
 
