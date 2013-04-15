@@ -247,7 +247,7 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
 #define D2TS(d)  (isnan(d) ? AV_NOPTS_VALUE : (int64_t)(d))
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 
-static int select_frame(AVFilterContext *ctx, AVFrame *frame)
+static void select_frame(AVFilterContext *ctx, AVFrame *frame)
 {
     SelectContext *select = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
@@ -284,7 +284,7 @@ static int select_frame(AVFilterContext *ctx, AVFrame *frame)
         break;
     }
 
-    res = av_expr_eval(select->expr, select->var_values, NULL);
+    select->select = res = av_expr_eval(select->expr, select->var_values, NULL);
     av_log(inlink->dst, AV_LOG_DEBUG,
            "n:%f pts:%f t:%f key:%d",
            select->var_values[VAR_N],
@@ -322,15 +322,13 @@ static int select_frame(AVFilterContext *ctx, AVFrame *frame)
     select->var_values[VAR_N] += 1.0;
     select->var_values[VAR_PREV_PTS] = select->var_values[VAR_PTS];
     select->var_values[VAR_PREV_T]   = select->var_values[VAR_T];
-
-    return res;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     SelectContext *select = inlink->dst->priv;
 
-    select->select = select_frame(inlink->dst, frame);
+    select_frame(inlink->dst, frame);
     if (select->select)
         return ff_filter_frame(inlink->dst->outputs[0], frame);
 
