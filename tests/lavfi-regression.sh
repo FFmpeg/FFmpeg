@@ -20,23 +20,6 @@ do_video_filter() {
         $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
 }
 
-do_lavfi() {
-    if [ $test = $1 ] ; then
-        do_video_filter $test "$2"
-    fi
-}
-
-do_lavfi "crop"               "crop=iw-100:ih-100:100:100"
-do_lavfi "crop_scale"         "crop=iw-100:ih-100:100:100,scale=400:-1"
-do_lavfi "crop_scale_vflip"   "null,null,crop=iw-200:ih-200:200:200,crop=iw-20:ih-20:20:20,scale=200:200,scale=250:250,vflip,vflip,null,scale=200:200,crop=iw-100:ih-100:100:100,vflip,scale=200:200,null,vflip,crop=iw-100:ih-100:100:100,null"
-do_lavfi "crop_vflip"         "crop=iw-100:ih-100:100:100,vflip"
-do_lavfi "null"               "null"
-do_lavfi "scale200"           "scale=200:200"
-do_lavfi "scale500"           "scale=500:500"
-do_lavfi "vflip"              "vflip"
-do_lavfi "vflip_crop"         "vflip,crop=iw-100:ih-100:100:100"
-do_lavfi "vflip_vflip"        "vflip,vflip"
-
 do_lavfi_pixfmts(){
     test ${test%_[bl]e} = pixfmts_$1 || return 0
     filter=$1
