@@ -934,32 +934,6 @@ the data is treated as if all the planes were concatenated.
 A list of Adler-32 checksums for each data plane.
 @end table
 
-@section asplit
-
-Split input audio into several identical outputs.
-
-The filter accepts a single parameter which specifies the number of outputs. If
-unspecified, it defaults to 2.
-
-For example:
-@example
-[in] asplit [out0][out1]
-@end example
-
-will create two separate outputs from the same input.
-
-To create 3 or more outputs, you need to specify the number of
-outputs, like in:
-@example
-[in] asplit=3 [out0][out1][out2]
-@end example
-
-@example
-ffmpeg -i INPUT -filter_complex asplit=5 OUTPUT
-@end example
-will create 5 copies of the input audio.
-
-
 @section astreamsync
 
 Forward two audio streams and control the order the buffers are forwarded.
@@ -5723,29 +5697,6 @@ which is equivalent to:
 subtitles=filename=sub.srt
 @end example
 
-@section split
-
-Split input video into several identical outputs.
-
-The filter accepts a single option @option{outputs} which specifies
-the number of outputs. If unspecified, it defaults to 2.
-
-For example
-@example
-ffmpeg -i INPUT -filter_complex split=5 OUTPUT
-@end example
-will create 5 copies of the input video.
-
-For example:
-@example
-[in] split [splitout1][splitout2];
-[splitout1] crop=100:100:0:0    [cropout];
-[splitout2] pad=200:200:100:100 [padout];
-@end example
-
-will create two separate outputs from the same input, one cropped and
-one padded.
-
 @section super2xsai
 
 Scale the input by 2x and smooth using the Super2xSaI (Scale and
@@ -7529,6 +7480,47 @@ Create a synthetic signal and show it with showwaves, forcing a
 frame rate of 30 frames per second:
 @example
 aevalsrc=sin(1*2*PI*t)*sin(880*2*PI*t):cos(2*PI*200*t),asplit[out0],showwaves=r=30[out1]
+@end example
+@end itemize
+
+@section split, asplit
+
+Split input into several identical outputs.
+
+@code{asplit} works with audio input, @code{split} with video.
+
+The filter accepts a single parameter which specifies the number of outputs. If
+unspecified, it defaults to 2.
+
+@subsection Examples
+
+@itemize
+@item
+Create two separate outputs from the same input:
+@example
+[in] split [out0][out1]
+@end example
+
+@item
+To create 3 or more outputs, you need to specify the number of
+outputs, like in:
+@example
+[in] asplit=3 [out0][out1][out2]
+@end example
+
+@item
+Create two separate outputs from the same input, one cropped and
+one padded:
+@example
+[in] split [splitout1][splitout2];
+[splitout1] crop=100:100:0:0    [cropout];
+[splitout2] pad=200:200:100:100 [padout];
+@end example
+
+@item
+Create 5 copies of the input audio with @command{ffmpeg}:
+@example
+ffmpeg -i INPUT -filter_complex asplit=5 OUTPUT
 @end example
 @end itemize
 
