@@ -1556,11 +1556,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
     vp = &is->pictq[is->pictq_windex];
 
-#if CONFIG_AVFILTER
     vp->sar = src_frame->sample_aspect_ratio;
-#else
-    vp->sar = av_guess_sample_aspect_ratio(is->ic, is->video_st, src_frame);
-#endif
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp || vp->reallocate || !vp->allocated ||
@@ -1687,6 +1683,8 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
         if (frame->pts == AV_NOPTS_VALUE) {
             frame->pts = 0;
         }
+
+        frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
 
         if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
             SDL_LockMutex(is->pictq_mutex);
@@ -1937,7 +1935,6 @@ static int video_thread(void *arg)
             last_serial = serial;
         }
 
-        frame->sample_aspect_ratio = av_guess_sample_aspect_ratio(is->ic, is->video_st, frame);
         ret = av_buffersrc_add_frame(filt_in, frame);
         if (ret < 0)
             goto the_end;
