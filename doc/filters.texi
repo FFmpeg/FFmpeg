@@ -2330,6 +2330,11 @@ Available presets are:
 @item vintage
 @end table
 Default is @code{none}.
+@item master, m
+Set the master key points. These points will define a second pass mapping. It
+is sometimes called a "luminance" or "value" mapping. It can be used with
+@option{r}, @option{g}, @option{b} or @option{all} since it acts like a
+post-processing LUT.
 @item red, r
 Set the key points for the red component.
 @item green, g
@@ -2337,7 +2342,7 @@ Set the key points for the green component.
 @item blue, b
 Set the key points for the blue component.
 @item all
-Set the key points for all components.
+Set the key points for all components (not including master).
 Can be used in addition to the other key points component
 options. In this case, the unset component(s) will fallback on this
 @option{all} setting.
