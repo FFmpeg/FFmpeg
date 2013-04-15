@@ -68,13 +68,15 @@
 #define OFFSET(x) offsetof(DeshakeContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
+#define MAX_R 64
+
 static const AVOption deshake_options[] = {
     { "x", "set x for the rectangular search area",      OFFSET(cx), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
     { "y", "set y for the rectangular search area",      OFFSET(cy), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
     { "w", "set width for the rectangular search area",  OFFSET(cw), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
     { "h", "set height for the rectangular search area", OFFSET(ch), AV_OPT_TYPE_INT, {.i64=-1}, -1, INT_MAX, .flags = FLAGS },
-    { "rx", "set x for the rectangular search area",     OFFSET(rx), AV_OPT_TYPE_INT, {.i64=16}, 0, 64, .flags = FLAGS },
-    { "ry", "set y for the rectangular search area",     OFFSET(ry), AV_OPT_TYPE_INT, {.i64=16}, 0, 64, .flags = FLAGS },
+    { "rx", "set x for the rectangular search area",     OFFSET(rx), AV_OPT_TYPE_INT, {.i64=16}, 0, MAX_R, .flags = FLAGS },
+    { "ry", "set y for the rectangular search area",     OFFSET(ry), AV_OPT_TYPE_INT, {.i64=16}, 0, MAX_R, .flags = FLAGS },
     { "edge", "set edge mode", OFFSET(edge), AV_OPT_TYPE_INT, {.i64=FILL_MIRROR}, FILL_BLANK, FILL_COUNT-1, FLAGS, "edge"},
         { "blank",    "fill zeroes at blank locations",         0, AV_OPT_TYPE_CONST, {.i64=FILL_BLANK},    INT_MIN, INT_MAX, FLAGS, "edge" },
         { "original", "original image at blank locations",      0, AV_OPT_TYPE_CONST, {.i64=FILL_ORIGINAL}, INT_MIN, INT_MAX, FLAGS, "edge" },
@@ -242,7 +244,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 {
     int x, y;
     IntMotionVector mv = {0, 0};
-    int counts[128][128];
+    int counts[2*MAX_R+1][2*MAX_R+1];
     int count_max_value = 0;
     int contrast;
 
