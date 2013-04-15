@@ -39,8 +39,6 @@
 
 #define YUVRGB_TABLE_HEADROOM 128
 
-#define FAST_BGR2YV12 // use 7-bit instead of 15-bit coefficients
-
 #define MAX_FILTER_SIZE 256
 
 #define DITHER1XBPP
