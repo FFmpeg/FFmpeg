@@ -105,7 +105,6 @@ void (*yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                      const uint8_t *src, int width, int height,
                      int lumStride, int chromStride, int srcStride);
 
-#define RGB2YUV_SHIFT 8
 #define BY ((int)( 0.098 * (1 << RGB2YUV_SHIFT) + 0.5))
 #define BV ((int)(-0.071 * (1 << RGB2YUV_SHIFT) + 0.5))
 #define BU ((int)( 0.439 * (1 << RGB2YUV_SHIFT) + 0.5))
