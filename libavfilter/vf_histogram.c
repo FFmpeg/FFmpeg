@@ -197,7 +197,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 h->max_hval = FFMAX(h->max_hval, h->histogram[i]);
 
             for (i = 0; i < outlink->w; i++) {
-                int col_height = h->level_height - (float)h->histogram[i] / h->max_hval * h->level_height;
+                int col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + h->max_hval - 1) / h->max_hval;
 
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {
