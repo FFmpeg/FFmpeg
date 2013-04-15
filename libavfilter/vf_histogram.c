@@ -168,7 +168,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     const uint8_t *src;
     uint8_t *dst;
-    int i, j, k, l, ret;
+    int i, j, k, l;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -285,11 +285,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_assert0(0);
     }
 
-    ret = ff_filter_frame(outlink, out);
     av_frame_free(&in);
-    if (ret < 0)
-        return ret;
-    return 0;
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad inputs[] = {
