@@ -1641,12 +1641,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 "pmaddwd                 %%mm6, %%mm1       \n\t"
                 "pmaddwd                 %%mm6, %%mm2       \n\t"
                 "pmaddwd                 %%mm6, %%mm3       \n\t"
-#ifndef FAST_BGR2YV12
                 "psrad                      $8, %%mm0       \n\t"
                 "psrad                      $8, %%mm1       \n\t"
                 "psrad                      $8, %%mm2       \n\t"
                 "psrad                      $8, %%mm3       \n\t"
-#endif
                 "packssdw                %%mm1, %%mm0       \n\t"
                 "packssdw                %%mm3, %%mm2       \n\t"
                 "pmaddwd                 %%mm5, %%mm0       \n\t"
@@ -1666,12 +1664,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 "pmaddwd                 %%mm6, %%mm1       \n\t"
                 "pmaddwd                 %%mm6, %%mm2       \n\t"
                 "pmaddwd                 %%mm6, %%mm3       \n\t"
-#ifndef FAST_BGR2YV12
                 "psrad                      $8, %%mm4       \n\t"
                 "psrad                      $8, %%mm1       \n\t"
                 "psrad                      $8, %%mm2       \n\t"
                 "psrad                      $8, %%mm3       \n\t"
-#endif
                 "packssdw                %%mm1, %%mm4       \n\t"
                 "packssdw                %%mm3, %%mm2       \n\t"
                 "pmaddwd                 %%mm5, %%mm4       \n\t"
@@ -1752,12 +1748,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "pmaddwd                 %%mm2, %%mm3       \n\t"
             "pmaddwd                 %%mm6, %%mm0       \n\t"
             "pmaddwd                 %%mm6, %%mm2       \n\t"
-#ifndef FAST_BGR2YV12
             "psrad                      $8, %%mm0       \n\t"
             "psrad                      $8, %%mm1       \n\t"
             "psrad                      $8, %%mm2       \n\t"
             "psrad                      $8, %%mm3       \n\t"
-#endif
             "packssdw                %%mm2, %%mm0       \n\t"
             "packssdw                %%mm3, %%mm1       \n\t"
             "pmaddwd                 %%mm5, %%mm0       \n\t"
@@ -1814,12 +1808,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "pmaddwd                 %%mm2, %%mm3       \n\t"
             "pmaddwd                 %%mm6, %%mm4       \n\t"
             "pmaddwd                 %%mm6, %%mm2       \n\t"
-#ifndef FAST_BGR2YV12
             "psrad                      $8, %%mm4       \n\t"
             "psrad                      $8, %%mm1       \n\t"
             "psrad                      $8, %%mm2       \n\t"
             "psrad                      $8, %%mm3       \n\t"
-#endif
             "packssdw                %%mm2, %%mm4       \n\t"
             "packssdw                %%mm3, %%mm1       \n\t"
             "pmaddwd                 %%mm5, %%mm4       \n\t"

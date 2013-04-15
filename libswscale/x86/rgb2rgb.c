@@ -76,7 +76,6 @@ DECLARE_ASM_CONST(8, uint64_t, mul15_mid)    = 0x4200420042004200ULL;
 DECLARE_ASM_CONST(8, uint64_t, mul15_hi)     = 0x0210021002100210ULL;
 DECLARE_ASM_CONST(8, uint64_t, mul16_mid)    = 0x2080208020802080ULL;
 
-#define RGB2YUV_SHIFT 8
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
 #define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
 #define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
