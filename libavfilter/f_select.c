@@ -141,6 +141,16 @@ typedef struct {
     int nb_outputs;
 } SelectContext;
 
+#define OFFSET(x) offsetof(SelectContext, x)
+#define DEFINE_OPTIONS(filt_name, FLAGS)                            \
+static const AVOption filt_name##_options[] = {                     \
+    { "expr", "set an expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags=FLAGS }, \
+    { "e",    "set an expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags=FLAGS }, \
+    { "outputs", "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, .flags=FLAGS }, \
+    { "n",       "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, .flags=FLAGS }, \
+    { NULL }                                                            \
+}
+
 static int request_frame(AVFilterLink *outlink);
 
 static av_cold int init(AVFilterContext *ctx)
@@ -416,15 +426,7 @@ static int query_formats(AVFilterContext *ctx)
 
 #if CONFIG_ASELECT_FILTER
 
-#define OFFSET(x) offsetof(SelectContext, x)
-#define AFLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
-static const AVOption aselect_options[] = {
-    { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = AFLAGS },
-    { "e",    "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = AFLAGS },
-    { "outputs", "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AFLAGS },
-    { "n",       "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, AFLAGS },
-    { NULL },
-};
+DEFINE_OPTIONS(aselect, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);
 AVFILTER_DEFINE_CLASS(aselect);
 
 static av_cold int aselect_init(AVFilterContext *ctx)
@@ -468,16 +470,7 @@ AVFilter avfilter_af_aselect = {
 
 #if CONFIG_SELECT_FILTER
 
-#define OFFSET(x) offsetof(SelectContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption select_options[] = {
-    { "expr", "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
-    { "e",    "An expression to use for selecting frames", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
-    { "outputs", "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, FLAGS },
-    { "n",       "set the number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, {.i64 = 1}, 1, INT_MAX, FLAGS },
-    { NULL },
-};
-
+DEFINE_OPTIONS(select, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);
 AVFILTER_DEFINE_CLASS(select);
 
 static av_cold int select_init(AVFilterContext *ctx)
