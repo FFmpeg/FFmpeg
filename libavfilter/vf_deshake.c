@@ -150,8 +150,8 @@ static void find_block_motion(DeshakeContext *deshake, uint8_t *src1,
         }
     } else if (deshake->search == SMART_EXHAUSTIVE) {
         // Compare every other possible position and find the best match
-        for (y = -deshake->ry + 1; y < deshake->ry - 2; y += 2) {
-            for (x = -deshake->rx + 1; x < deshake->rx - 2; x += 2) {
+        for (y = -deshake->ry + 1; y < deshake->ry; y += 2) {
+            for (x = -deshake->rx + 1; x < deshake->rx; x += 2) {
                 diff = CMP(cx - x, cy - y);
                 if (diff < smallest) {
                     smallest = diff;
