@@ -81,6 +81,31 @@ FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += fate-filter-pixdesc
 fate-filter-pixdesc: CMD = pixdesc
 
 
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-copy
+fate-filter-pixfmts-copy:  CMD = pixfmts
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-crop
+fate-filter-pixfmts-crop:  CMD = pixfmts "100:100:100:100"
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-hflip
+fate-filter-pixfmts-hflip: CMD = pixfmts
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-null
+fate-filter-pixfmts-null:  CMD = pixfmts
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-pad
+fate-filter-pixfmts-pad:   CMD = pixfmts "500:400:20:20"
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-scale
+fate-filter-pixfmts-scale: CMD = pixfmts "200:100"
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-vflip
+fate-filter-pixfmts-vflip: CMD = pixfmts
+
+$(FATE_FILTER_PIXFMTS): libavfilter/filtfmts-test$(EXESUF)
+FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += $(FATE_FILTER_PIXFMTS)
+
+
 $(FATE_FILTER_VSYNTH-yes): $(VREF)
 $(FATE_FILTER_VSYNTH-yes): SRC = $(TARGET_PATH)/tests/vsynth1/%02d.pgm
 
