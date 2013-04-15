@@ -36,13 +36,15 @@ static int dfa_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVStream *st;
     int frames;
+    int version;
     uint32_t mspf;
 
     if (avio_rl32(pb) != MKTAG('D', 'F', 'I', 'A')) {
         av_log(s, AV_LOG_ERROR, "Invalid magic for DFA\n");
         return AVERROR_INVALIDDATA;
     }
-    avio_skip(pb, 2); // unused
+
+    version = avio_rl16(pb);
     frames = avio_rl16(pb);
 
     st = avformat_new_stream(s, NULL);
@@ -61,6 +63,12 @@ static int dfa_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 24, mspf, 1000);
     avio_skip(pb, 128 - 16); // padding
     st->duration = frames;
+
+    st->codec->extradata = av_malloc(2);
+    st->codec->extradata_size = 2;
+    AV_WL16(st->codec->extradata, version);
+    if (version == 0x100)
+        st->sample_aspect_ratio = (AVRational){2, 1};
 
     return 0;
 }

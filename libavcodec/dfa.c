@@ -340,6 +340,7 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     uint8_t *dst;
     int ret;
     int i, pal_elems;
+    int version = avctx->extradata_size==2 ? AV_RL16(avctx->extradata) : 0;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
@@ -374,9 +375,17 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     buf = s->frame_buf;
     dst = frame->data[0];
     for (i = 0; i < avctx->height; i++) {
-        memcpy(dst, buf, avctx->width);
+        if(version == 0x100) {
+            int j;
+            for(j = 0; j < avctx->width; j++) {
+                dst[j] = buf[ (i&3)*(avctx->width /4) + (j/4) +
+                             ((j&3)*(avctx->height/4) + (i/4))*avctx->width];
+            }
+        } else {
+            memcpy(dst, buf, avctx->width);
+            buf += avctx->width;
+        }
         dst += frame->linesize[0];
-        buf += avctx->width;
     }
     memcpy(frame->data[1], s->pal, sizeof(s->pal));
 
