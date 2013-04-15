@@ -1,5 +1,4 @@
-FATE_LAVFI = fate-lavfi-pixdesc                                         \
-             fate-lavfi-pixfmts_copy                                    \
+FATE_LAVFI = fate-lavfi-pixfmts_copy                                    \
              fate-lavfi-pixfmts_crop                                    \
              fate-lavfi-pixfmts_hflip                                   \
              fate-lavfi-pixfmts_null                                    \
