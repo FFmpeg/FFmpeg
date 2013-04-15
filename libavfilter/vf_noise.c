@@ -377,7 +377,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     NoiseContext *n = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
-    int ret, i;
+    int i;
 
     if (av_frame_is_writable(inpicref)) {
         out = inpicref;
@@ -394,10 +394,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         noise(out->data[i], inpicref->data[i], out->linesize[i],
               inpicref->linesize[i], n->linesize[i], n->height[i], n, i);
 
-    ret = ff_filter_frame(outlink, out);
     if (inpicref != out)
         av_frame_free(&inpicref);
-    return ret;
+    return ff_filter_frame(outlink, out);
 }
 
 static av_cold int init(AVFilterContext *ctx)
