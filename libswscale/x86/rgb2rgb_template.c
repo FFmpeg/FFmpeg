@@ -1615,6 +1615,9 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                                        int lumStride, int chromStride, int srcStride,
                                        int32_t *rgb2yuv)
 {
+#define BGR2Y_IDX "16*4+16*32"
+#define BGR2U_IDX "16*4+16*33"
+#define BGR2V_IDX "16*4+16*34"
     int y;
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height-2; y+=2) {
@@ -1622,7 +1625,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         for (i=0; i<2; i++) {
             __asm__ volatile(
                 "mov                        %2, %%"REG_a"   \n\t"
-                "movq  "MANGLE(ff_bgr2YCoeff)", %%mm6       \n\t"
+                "movq          "BGR2Y_IDX"(%3), %%mm6       \n\t"
                 "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
                 "pxor                    %%mm7, %%mm7       \n\t"
                 "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
@@ -1682,7 +1685,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 MOVNTQ"                  %%mm0, (%1, %%"REG_a") \n\t"
                 "add                        $8,      %%"REG_a"  \n\t"
                 " js                        1b                  \n\t"
-                : : "r" (src+width*3), "r" (ydst+width), "g" ((x86_reg)-width)
+                : : "r" (src+width*3), "r" (ydst+width), "g" ((x86_reg)-width), "r"(rgb2yuv)
                 : "%"REG_a, "%"REG_d
             );
             ydst += lumStride;
@@ -1692,7 +1695,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         __asm__ volatile(
             "mov                        %4, %%"REG_a"   \n\t"
             "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
-            "movq  "MANGLE(ff_bgr2UCoeff)", %%mm6       \n\t"
+            "movq          "BGR2U_IDX"(%5), %%mm6       \n\t"
             "pxor                    %%mm7, %%mm7       \n\t"
             "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
             "add                 %%"REG_d", %%"REG_d"   \n\t"
@@ -1741,8 +1744,8 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "psrlw                      $2, %%mm0       \n\t"
             "psrlw                      $2, %%mm2       \n\t"
 #endif
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm1       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm3       \n\t"
 
             "pmaddwd                 %%mm0, %%mm1       \n\t"
             "pmaddwd                 %%mm2, %%mm3       \n\t"
@@ -1801,8 +1804,8 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "psrlw                      $2, %%mm4       \n\t"
             "psrlw                      $2, %%mm2       \n\t"
 #endif
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm1       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm3       \n\t"
 
             "pmaddwd                 %%mm4, %%mm1       \n\t"
             "pmaddwd                 %%mm2, %%mm3       \n\t"
@@ -1830,7 +1833,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "movd                    %%mm0, (%3, %%"REG_a") \n\t"
             "add                        $4, %%"REG_a"       \n\t"
             " js                        1b                  \n\t"
-            : : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth)
+            : : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth), "r"(rgb2yuv)
             : "%"REG_a, "%"REG_d
         );
 

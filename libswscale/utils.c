@@ -834,7 +834,18 @@ static void fill_rgb2yuv_table(SwsContext *c, const int table[4], int dstRange)
     RV_IDX, BV_IDX, RV_IDX, BV_IDX, RV_IDX, BV_IDX, RV_IDX, BV_IDX,
     BV_IDX, RV_IDX, BV_IDX, RV_IDX, BV_IDX, RV_IDX, BV_IDX, RV_IDX,
     GV_IDX, -1    , GV_IDX, -1    , GV_IDX, -1    , GV_IDX, -1    ,
-    -1    , GV_IDX, -1    , GV_IDX, -1    , GV_IDX, -1    , GV_IDX,
+    -1    , GV_IDX, -1    , GV_IDX, -1    , GV_IDX, -1    , GV_IDX, //23
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //24
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //25
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //26
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //27
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //28
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //29
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //30
+    -1    , -1    , -1    , -1    , -1    , -1    , -1    , -1    , //31
+    BY_IDX, GY_IDX, RY_IDX, -1    , -1    , -1    , -1    , -1    , //32
+    BU_IDX, GU_IDX, RU_IDX, -1    , -1    , -1    , -1    , -1    , //33
+    BV_IDX, GV_IDX, RV_IDX, -1    , -1    , -1    , -1    , -1    , //34
     };
 
     dstRange = 0; //FIXME range = 1 is handled elsewhere
@@ -874,7 +885,6 @@ static void fill_rgb2yuv_table(SwsContext *c, const int table[4], int dstRange)
         c->input_rgb2yuv_table[RV_IDX] =  ((int)(0.500 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
         c->input_rgb2yuv_table[RU_IDX] = (-(int)(0.169 * 224 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
     }
-
     for(i=0; i<FF_ARRAY_ELEMS(map); i++)
         AV_WL16(p + 16*4 + 2*i, map[i] >= 0 ? c->input_rgb2yuv_table[map[i]] : 0);
 }
