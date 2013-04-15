@@ -138,7 +138,7 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             Hd = Bd + H;
 
             /* Final sequence of operations over-write original inputs. */
-            if(type==1){
+            if (type == 1) {
                 dst[0*stride] = av_clip_uint8((Gd + Cd )  >> 4);
                 dst[7*stride] = av_clip_uint8((Gd - Cd )  >> 4);
 
@@ -165,7 +165,7 @@ static av_always_inline void idct(uint8_t *dst, int stride, int16_t *input, int 
             }
 
         } else {
-            if(type==1){
+            if (type == 1) {
                 dst[0*stride]=
                 dst[1*stride]=
                 dst[2*stride]=
