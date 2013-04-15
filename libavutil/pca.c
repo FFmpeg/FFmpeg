@@ -40,7 +40,7 @@ PCA *ff_pca_init(int n){
     if(n<=0)
         return NULL;
 
-    pca= av_mallocz(sizeof(PCA));
+    pca= av_mallocz(sizeof(*pca));
     pca->n= n;
     pca->z = av_malloc(sizeof(*pca->z) * n);
     pca->count=0;
