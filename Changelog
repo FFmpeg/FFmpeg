@@ -24,6 +24,7 @@ version <next>:
 - smptehdbars source
 - inverse telecine filters (fieldmatch and decimate)
 - colorbalance filter
+- colorchannelmixer filter
 
 
 version 1.2:

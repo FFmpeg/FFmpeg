@@ -2091,6 +2091,61 @@ colorbalance=rs=.3
 @end example
 @end itemize
 
+@section colorchannelmixer
+
+Adjust video input frames by re-mixing color channels.
+
+This filter modifies a color channel by adding the values associated to
+the other channels of the same pixels. For example if the value to
+modify is red, the output value will be:
+@example
+@var{red}=@var{red}*@var{rr} + @var{blue}*@var{rb} + @var{green}*@var{rg} + @var{alpha}*@var{ra}
+@end example
+
+The filter accepts the following options:
+
+@table @option
+@item rr
+@item rg
+@item rb
+@item ra
+Adjust contribution of input red, green, blue and alpha channels for output red channel.
+Default is @code{1} for @var{rr}, and @code{0} for @var{rg}, @var{rb} and @var{ra}.
+
+@item gr
+@item gg
+@item gb
+@item ga
+Adjust contribution of input red, green, blue and alpha channels for output green channel.
+Default is @code{1} for @var{gg}, and @code{0} for @var{gr}, @var{gb} and @var{ga}.
+
+@item br
+@item bg
+@item bb
+@item ba
+Adjust contribution of input red, green, blue and alpha channels for output blue channel.
+Default is @code{1} for @var{bb}, and @code{0} for @var{br}, @var{bg} and @var{ba}.
+
+@item ar
+@item ag
+@item ab
+@item aa
+Adjust contribution of input red, green, blue and alpha channels for output alpha channel.
+Default is @code{1} for @var{aa}, and @code{0} for @var{ar}, @var{ag} and @var{ab}.
+
+Allowed ranges for options are @code{[-2.0, 2.0]}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Convert source to grayscale:
+@example
+colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3
+@end example
+@end itemize
+
 @section colormatrix
 
 Convert color matrix.
