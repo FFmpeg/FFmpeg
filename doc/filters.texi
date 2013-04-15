@@ -4765,14 +4765,8 @@ on the main video. Default value is "0" for both expressions. In case
 the expression is invalid, it is set to a huge value (meaning that the
 overlay will not be displayed within the output visible area).
 
-@item enable
-Set the expression which enables the overlay. If the evaluation is
-different from 0, the overlay is displayed on top of the input
-frame. By default it is "1".
-
 @item eval
-Set when the expressions for @option{x}, @option{y}, and
-@option{enable} are evaluated.
+Set when the expressions for @option{x}, and @option{y} are evaluated.
 
 It accepts the following values:
 @table @samp
@@ -4818,8 +4812,8 @@ main input until the end of the stream. A value of 0 disables this
 behavior, which is enabled by default.
 @end table
 
-The @option{x}, @option{y}, and @option{enable} expressions can
-contain the following parameters.
+The @option{x}, and @option{y} expressions can contain the following
+parameters.
 
 @table @option
 @item main_w, W
@@ -4870,8 +4864,7 @@ This filter supports the following commands:
 @table @option
 @item x
 @item y
-@item enable
-Modify the x/y and enable overlay of the overlay input.
+Modify the x and y of the overlay input.
 The command accepts the same syntax of the corresponding option.
 
 If the specified expression is not valid, it is kept at its current
