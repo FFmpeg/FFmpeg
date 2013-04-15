@@ -427,7 +427,7 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
-    for (i = 0; i < NB_COMP; i++) {
+    for (i = 0; i < NB_COMP + 1; i++) {
         struct keypoint *point = comp_points[i];
         while (point) {
             struct keypoint *next = point->next;
