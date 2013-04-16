@@ -151,7 +151,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     IlContext *il = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
-    int ret, comp;
+    int comp;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -173,16 +173,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     if (il->has_alpha) {
-        int comp = il->nb_planes - 1;
+        comp = il->nb_planes - 1;
         interleave(out->data[comp], inpicref->data[comp],
                    il->linesize[comp], inlink->h,
                    out->linesize[comp], inpicref->linesize[comp],
                    il->alpha_mode, il->alpha_swap);
     }
 
-    ret = ff_filter_frame(outlink, out);
     av_frame_free(&inpicref);
-    return ret;
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad inputs[] = {
