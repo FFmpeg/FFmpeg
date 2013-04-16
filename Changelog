@@ -33,6 +33,7 @@ version 10:
 - avconv -t option can now be used for inputs, to limit the duration of
   data read from an input file
 - incomplete Voxware MetaSound decoder
+- WebP decoder
 
 
 version 9:

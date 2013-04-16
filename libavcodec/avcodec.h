@@ -273,6 +273,7 @@ enum AVCodecID {
     AV_CODEC_ID_AIC,
     AV_CODEC_ID_ESCAPE130,
     AV_CODEC_ID_G2M,
+    AV_CODEC_ID_WEBP,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
