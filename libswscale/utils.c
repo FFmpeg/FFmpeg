@@ -919,6 +919,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
     c->srcFormatBpp = av_get_bits_per_pixel(desc_src);
 
+    if (!isYUV(c->dstFormat) && !isGray(c->dstFormat)) {
     ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness,
                              contrast, saturation);
     // FIXME factorize
@@ -926,6 +927,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     if (HAVE_ALTIVEC && av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)
         ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness,
                                        contrast, saturation);
+    }
 
     fill_rgb2yuv_table(c, table, dstRange);
 
