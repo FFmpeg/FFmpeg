@@ -272,8 +272,8 @@ cglobal butterflies_float, 3,3,3, src0, src1, len
     test         lenq, lenq
     jz           .end
     shl          lenq, 2
-    lea         src0q, [src0q + lenq]
-    lea         src1q, [src1q + lenq]
+    add         src0q, lenq
+    add         src1q, lenq
     neg          lenq
 .loop:
     mova           m0, [src0q + lenq]
