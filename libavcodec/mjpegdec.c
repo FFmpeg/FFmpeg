@@ -1634,6 +1634,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     MJpegDecodeContext *s = avctx->priv_data;
     const uint8_t *buf_end, *buf_ptr;
     const uint8_t *unescaped_buf_ptr;
+    int hshift, vshift;
     int unescaped_buf_size;
     int start_code;
     int i, index;
@@ -1815,6 +1816,9 @@ the_end:
     }
     if (s->upscale_v) {
         uint8_t *dst = &((uint8_t *)s->picture_ptr->data[s->upscale_v])[(s->height - 1) * s->linesize[s->upscale_v]];
+        int w;
+        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
+        w = s->width >> hshift;
         av_assert0(avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
                    avctx->pix_fmt == AV_PIX_FMT_YUV444P  ||
                    avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
@@ -1823,16 +1827,16 @@ the_end:
             uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[s->upscale_v])[i / 2 * s->linesize[s->upscale_v]];
             uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[s->upscale_v])[(i + 1) / 2 * s->linesize[s->upscale_v]];
             if (src1 == src2) {
-                memcpy(dst, src1, s->width);
+                memcpy(dst, src1, w);
             } else {
-                for (index = 0; index < s->width; index++)
+                for (index = 0; index < w; index++)
                     dst[index] = (src1[index] + src2[index]) >> 1;
             }
             dst -= s->linesize[s->upscale_v];
         }
     }
     if (s->flipped && (s->avctx->flags & CODEC_FLAG_EMU_EDGE)) {
-        int hshift, vshift, j;
+        int j;
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &hshift, &vshift);
         for (index=0; index<4; index++) {
             uint8_t *dst = s->picture_ptr->data[index];
