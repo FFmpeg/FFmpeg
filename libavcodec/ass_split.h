@@ -124,7 +124,7 @@ typedef struct {
     void (*text)(void *priv, const char *text, int len);
     void (*new_line)(void *priv, int forced);
     void (*style)(void *priv, char style, int close);
-    void (*color)(void *priv, unsigned int color, unsigned int color_id);
+    void (*color)(void *priv, unsigned int /* color */, unsigned int color_id);
     void (*alpha)(void *priv, int alpha, int alpha_id);
     void (*font_name)(void *priv, const char *name);
     void (*font_size)(void *priv, int size);
