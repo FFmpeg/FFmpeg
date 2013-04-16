@@ -114,7 +114,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
     AVFrame *outsamples = ff_get_audio_buffer(inlink, insamples->nb_samples);
-    int ret;
 
     if (!outsamples) {
         av_frame_free(&insamples);
@@ -137,9 +136,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     // save part of input for next round
     memcpy(taps, endin, NUMTAPS * sizeof(*taps));
 
-    ret = ff_filter_frame(outlink, outsamples);
     av_frame_free(&insamples);
-    return ret;
+    return ff_filter_frame(outlink, outsamples);
 }
 
 static const AVFilterPad earwax_inputs[] = {
