@@ -498,7 +498,6 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 3, 1, 0, 7 },        /* R */
             { 0, 3, 2, 0, 7 },        /* G */
             { 0, 3, 3, 0, 7 },        /* B */
-            { 0, 3, 4, 0, 7 },        /* A */
         },
         .flags = PIX_FMT_RGB,
     },
@@ -523,7 +522,6 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
             { 0, 3, 3, 0, 7 },        /* R */
             { 0, 3, 2, 0, 7 },        /* G */
             { 0, 3, 1, 0, 7 },        /* B */
-            { 0, 3, 4, 0, 7 },        /* A */
         },
         .flags = PIX_FMT_RGB,
     },
