@@ -184,8 +184,25 @@ static int return_audio_frame(AVFilterContext *ctx)
         }
 
         while (s->buf_out->audio->nb_samples < s->allocated_samples) {
-            int len = FFMIN(s->allocated_samples - s->buf_out->audio->nb_samples,
-                            head->audio->nb_samples);
+            int len;
+
+            if (!s->root.next &&
+                (ret = ff_request_frame(ctx->inputs[0])) < 0) {
+                if (ret == AVERROR_EOF) {
+                    av_samples_set_silence(s->buf_out->extended_data,
+                                           s->buf_out->audio->nb_samples,
+                                           s->allocated_samples -
+                                           s->buf_out->audio->nb_samples,
+                                           nb_channels, link->format);
+                    s->buf_out->audio->nb_samples = s->allocated_samples;
+                    break;
+                }
+                return ret;
+            }
+            head = s->root.next->buf;
+
+            len = FFMIN(s->allocated_samples - s->buf_out->audio->nb_samples,
+                        head->audio->nb_samples);
 
             av_samples_copy(s->buf_out->extended_data, head->extended_data,
                             s->buf_out->audio->nb_samples, 0, len, nb_channels,
@@ -195,21 +212,6 @@ static int return_audio_frame(AVFilterContext *ctx)
             if (len == head->audio->nb_samples) {
                 avfilter_unref_buffer(head);
                 queue_pop(s);
-
-                if (!s->root.next &&
-                    (ret = ff_request_frame(ctx->inputs[0])) < 0) {
-                    if (ret == AVERROR_EOF) {
-                        av_samples_set_silence(s->buf_out->extended_data,
-                                               s->buf_out->audio->nb_samples,
-                                               s->allocated_samples -
-                                               s->buf_out->audio->nb_samples,
-                                               nb_channels, link->format);
-                        s->buf_out->audio->nb_samples = s->allocated_samples;
-                        break;
-                    }
-                    return ret;
-                }
-                head = s->root.next->buf;
             } else {
                 buffer_offset(link, head, len);
             }
