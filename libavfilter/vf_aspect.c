@@ -79,12 +79,22 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 #define OFFSET(x) offsetof(AspectContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
+static inline void compute_dar(AVRational *dar, AVRational sar, int w, int h)
+{
+    if (sar.num && sar.den) {
+        av_reduce(&dar->num, &dar->den, sar.num * w, sar.den * h, INT_MAX);
+    } else {
+        av_reduce(&dar->num, &dar->den, w, h, INT_MAX);
+    }
+}
+
 #if CONFIG_SETDAR_FILTER
 
 static int setdar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
-    AVRational dar = aspect->aspect;
+    AVRational dar = aspect->aspect, old_dar;
+    AVRational old_sar = inlink->sample_aspect_ratio;
 
     if (aspect->aspect.num && aspect->aspect.den) {
         av_reduce(&aspect->aspect.num, &aspect->aspect.den,
@@ -96,9 +106,10 @@ static int setdar_config_props(AVFilterLink *inlink)
         dar = (AVRational){ inlink->w, inlink->h };
     }
 
-    av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d -> dar:%d/%d sar:%d/%d\n",
-           inlink->w, inlink->h, dar.num, dar.den,
-           inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den);
+    compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
+    av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d dar:%d/%d sar:%d/%d -> dar:%d/%d sar:%d/%d\n",
+           inlink->w, inlink->h, old_dar.num, old_dar.den, old_sar.num, old_sar.den,
+           dar.den, dar.num, inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den);
 
     return 0;
 }
@@ -152,12 +163,19 @@ AVFilter avfilter_vf_setdar = {
 
 #if CONFIG_SETSAR_FILTER
 
-
 static int setsar_config_props(AVFilterLink *inlink)
 {
     AspectContext *aspect = inlink->dst->priv;
+    AVRational old_sar = inlink->sample_aspect_ratio;
+    AVRational old_dar, dar;
 
     inlink->sample_aspect_ratio = aspect->aspect;
+
+    compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
+    compute_dar(&dar, aspect->aspect, inlink->w, inlink->h);
+    av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d sar:%d/%d dar:%d/%d -> sar:%d/%d dar:%d/%d\n",
+           inlink->w, inlink->h, old_sar.num, old_sar.den, old_dar.num, old_dar.den,
+           inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den, dar.num, dar.den);
 
     return 0;
 }
