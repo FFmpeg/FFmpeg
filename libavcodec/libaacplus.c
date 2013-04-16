@@ -74,11 +74,6 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 
     avctx->frame_size = s->samples_input / avctx->channels;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    avctx->coded_frame= avcodec_alloc_frame();
-    avctx->coded_frame->key_frame= 1;
-#endif
-
     /* Set decoder specific info */
     avctx->extradata_size = 0;
     if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
@@ -118,9 +113,6 @@ static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
 {
     aacPlusAudioContext *s = avctx->priv_data;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    av_freep(&avctx->coded_frame);
-#endif
     av_freep(&avctx->extradata);
 
     aacplusEncClose(s->aacplus_handle);
