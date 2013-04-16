@@ -302,7 +302,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
     dec_desc = avcodec_descriptor_get(dec_ctx->codec_id);
-    if (dec_desc && (dec_desc->props & AV_CODEC_PROP_BITMAP_SUB)) {
+    if (dec_desc && !(dec_desc->props & AV_CODEC_PROP_TEXT_SUB)) {
         av_log(ctx, AV_LOG_ERROR,
                "Only text based subtitles are currently supported\n");
         return AVERROR_PATCHWELCOME;

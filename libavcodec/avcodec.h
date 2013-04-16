@@ -541,8 +541,14 @@ typedef struct AVCodecDescriptor {
 #define AV_CODEC_PROP_LOSSLESS      (1 << 2)
 /**
  * Subtitle codec is bitmap based
+ * Decoded AVSubtitle data can be read from the AVSubtitleRect->pict field.
  */
 #define AV_CODEC_PROP_BITMAP_SUB    (1 << 16)
+/**
+ * Subtitle codec is text based.
+ * Decoded AVSubtitle data can be read from the AVSubtitleRect->ass field.
+ */
+#define AV_CODEC_PROP_TEXT_SUB      (1 << 17)
 
 /**
  * @ingroup lavc_decoding
