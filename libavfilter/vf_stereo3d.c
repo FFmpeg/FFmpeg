@@ -332,7 +332,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     AVFrame *out;
     int out_off_left, out_off_right;
     int in_off_left, in_off_right;
-    int ret;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -414,18 +413,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         av_assert0(0);
     }
 
-    ret = ff_filter_frame(outlink, out);
     av_frame_free(&inpicref);
-    if (ret < 0)
-        return ret;
-    return 0;
+    return ff_filter_frame(outlink, out);
 }
 
 static const AVFilterPad stereo3d_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
     },
     { NULL }
