@@ -45,7 +45,7 @@ fate-filter-join: SRC2 = $(TARGET_PATH)/tests/data/asynth-44100-3.wav
 fate-filter-join: tests/data/asynth-44100-2.wav tests/data/asynth-44100-3.wav
 fate-filter-join: CMD = md5 -i $(SRC1) -i $(SRC2) -filter_complex join=channel_layout=5 -f s16le
 fate-filter-join: CMP = oneline
-fate-filter-join: REF = 38fa1b18b0c46d77df6f17bfc4f078dd
+fate-filter-join: REF = 409e66fc5ece4ddea4aa16bc47026bb0
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, VOLUME, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-volume
 fate-filter-volume: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
