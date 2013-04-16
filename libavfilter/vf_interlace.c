@@ -95,8 +95,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_frame_free(&s->cur);
     av_frame_free(&s->next);
-
-    av_opt_free(s);
 }
 
 static int config_out_props(AVFilterLink *outlink)
