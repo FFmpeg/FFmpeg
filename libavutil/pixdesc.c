@@ -1848,8 +1848,15 @@ void ff_check_pixfmt_descriptors(void){
 
         for (j=0; j<FF_ARRAY_ELEMS(d->comp); j++) {
             const AVComponentDescriptor *c = &d->comp[j];
-            if(j>=d->nb_components)
+            if(j>=d->nb_components) {
                 av_assert0(!c->plane && !c->step_minus1 && !c->offset_plus1 && !c->shift && !c->depth_minus1);
+                continue;
+            }
+            if (d->flags & PIX_FMT_BITSTREAM) {
+                av_assert0(c->step_minus1 >= c->depth_minus1);
+            } else {
+                av_assert0(8*(c->step_minus1+1) >= c->depth_minus1+1);
+            }
         }
     }
 }
