@@ -212,6 +212,11 @@ static int flv_write_header(AVFormatContext *s)
             } else {
                 framerate = 1 / av_q2d(s->streams[i]->codec->time_base);
             }
+            if (video_enc) {
+                av_log(s, AV_LOG_ERROR,
+                       "at most one video stream is supported in flv\n");
+                return AVERROR(EINVAL);
+            }
             video_enc = enc;
             if (enc->codec_tag == 0) {
                 av_log(s, AV_LOG_ERROR, "Video codec '%s' for stream %d is not compatible with FLV\n",
@@ -220,6 +225,11 @@ static int flv_write_header(AVFormatContext *s)
             }
             break;
         case AVMEDIA_TYPE_AUDIO:
+            if (audio_enc) {
+                av_log(s, AV_LOG_ERROR,
+                       "at most one audio stream is supported in flv\n");
+                return AVERROR(EINVAL);
+            }
             audio_enc = enc;
             if (get_audio_flags(s, enc) < 0)
                 return AVERROR_INVALIDDATA;

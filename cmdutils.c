@@ -1635,6 +1635,7 @@ static void show_help_muxer(const char *name)
         show_help_children(fmt->priv_class, AV_OPT_FLAG_ENCODING_PARAM);
 }
 
+#if CONFIG_AVFILTER
 static void show_help_filter(const char *name)
 {
 #if CONFIG_AVFILTER
@@ -1682,6 +1683,7 @@ static void show_help_filter(const char *name)
            "can not to satisfy request\n");
 #endif
 }
+#endif
 
 int show_help(void *optctx, const char *opt, const char *arg)
 {
@@ -1703,8 +1705,10 @@ int show_help(void *optctx, const char *opt, const char *arg)
         show_help_demuxer(par);
     } else if (!strcmp(topic, "muxer")) {
         show_help_muxer(par);
+#if CONFIG_AVFILTER
     } else if (!strcmp(topic, "filter")) {
         show_help_filter(par);
+#endif
     } else {
         show_help_default(topic, par);
     }
