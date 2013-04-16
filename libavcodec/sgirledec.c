@@ -24,9 +24,7 @@
  * SGI RLE 8-bit decoder
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "bytestream.h"
 #include "internal.h"
 
 typedef struct SGIRLEContext {
