@@ -1835,6 +1835,10 @@ void ff_check_pixfmt_descriptors(void){
 
     for (i=0; i<FF_ARRAY_ELEMS(av_pix_fmt_descriptors); i++) {
         const AVPixFmtDescriptor *d = &av_pix_fmt_descriptors[i];
+        uint8_t fill[4][8+6+3] = {{0}};
+        uint8_t *data[4] = {fill[0], fill[1], fill[2], fill[3]};
+        int linesize[4] = {0,0,0,0};
+        uint16_t tmp[2];
 
         if (!d->name && !d->nb_components && !d->log2_chroma_w && !d->log2_chroma_h && !d->flags)
             continue;
@@ -1857,6 +1861,10 @@ void ff_check_pixfmt_descriptors(void){
             } else {
                 av_assert0(8*(c->step_minus1+1) >= c->depth_minus1+1);
             }
+            av_read_image_line(tmp, (void*)data, linesize, d, 0, 0, j, 2, 0);
+            av_assert0(tmp[0] == 0 && tmp[1] == 0);
+            tmp[0] = tmp[1] = (1<<(c->depth_minus1 + 1)) - 1;
+            av_write_image_line(tmp, data, linesize, d, 0, 0, j, 2);
         }
     }
 }
