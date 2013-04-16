@@ -66,7 +66,7 @@ fate-utvideoenc_yuv422_median: OPTS = -pix_fmt yuv422p -pred median
 FATE_UTVIDEOENC += fate-utvideoenc_yuv422_none
 fate-utvideoenc_yuv422_none: OPTS = -pix_fmt yuv422p -pred 3
 
-$(FATE_UTVIDEOENC): tests/vsynth1/00.pgm
+$(FATE_UTVIDEOENC): $(VREF)
 
 FATE_AVCONV-$(call ENCMUX, UTVIDEO, AVI) += $(FATE_UTVIDEOENC)
 fate-utvideoenc: $(FATE_UTVIDEOENC)
