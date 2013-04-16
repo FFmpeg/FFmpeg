@@ -5362,8 +5362,8 @@ The parameter can be a floating point number string, an expression, or
 a string of the form @var{num}:@var{den}, where @var{num} and
 @var{den} are the numerator and denominator of the aspect ratio. If
 the parameter is not specified, it is assumed the value "0".
-In case the form "@var{num}:@var{den}" the @code{:} character should
-be escaped.
+In case the form "@var{num}:@var{den}" is used, the @code{:} character
+should be escaped.
 
 @item max
 Set the maximum integer value to use for expressing numerator and
