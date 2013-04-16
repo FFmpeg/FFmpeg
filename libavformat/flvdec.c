@@ -742,9 +742,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     if(i == s->nb_streams){
+        static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA};
         av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");
         st = create_stream(s,
-             (int[]){AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_DATA}[stream_type]);
+                           stream_types[stream_type]);
         if (!st)
             return AVERROR(ENOMEM);
 
