@@ -20,6 +20,7 @@
 #include "avutil.h"
 #include "avassert.h"
 #include "samplefmt.h"
+#include "pixdesc.h"
 
 /**
  * @file
@@ -39,6 +40,8 @@ unsigned avutil_version(void)
         av_log(NULL, AV_LOG_FATAL, "Libavutil has been build with a broken binutils, please upgrade binutils and rebuild\n");
         abort();
     }
+
+    ff_check_pixfmt_descriptors();
 
     return LIBAVUTIL_VERSION_INT;
 }
