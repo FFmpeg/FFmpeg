@@ -124,12 +124,6 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
-static const uint64_t channel_layouts[] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    0,
-};
-
 AVCodec ff_libaacplus_encoder = {
     .name           = "libaacplus",
     .type           = AVMEDIA_TYPE_AUDIO,
