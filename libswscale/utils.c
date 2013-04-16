@@ -868,9 +868,9 @@ static void fill_rgb2yuv_table(SwsContext *c, const int table[4], int dstRange)
 
     c->input_rgb2yuv_table[RU_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*V/(Z*ub);
     c->input_rgb2yuv_table[GU_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*ONE/(Z*ub);
-    c->input_rgb2yuv_table[BU_IDX] =  (1 << RGB2YUV_SHIFT)*(ONE + ONE*W/Z)/ub;
+    c->input_rgb2yuv_table[BU_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*(Z+W)/(Z*ub);
 
-    c->input_rgb2yuv_table[RV_IDX] =  (1 << RGB2YUV_SHIFT)*(ONE + ONE*V/Z)/vr;
+    c->input_rgb2yuv_table[RV_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*(V+Z)/(Z*vr);
     c->input_rgb2yuv_table[GV_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*ONE/(Z*vr);
     c->input_rgb2yuv_table[BV_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*W/(Z*vr);
 
