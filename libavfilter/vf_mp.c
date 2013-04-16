@@ -123,17 +123,13 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-extern const vf_info_t ff_vf_info_detc;
 extern const vf_info_t ff_vf_info_dint;
-extern const vf_info_t ff_vf_info_divtc;
 extern const vf_info_t ff_vf_info_down3dright;
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_fil;
-//extern const vf_info_t ff_vf_info_filmdint;
 extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_ilpack;
-extern const vf_info_t ff_vf_info_ivtc;
 extern const vf_info_t ff_vf_info_mcdeint;
 extern const vf_info_t ff_vf_info_ow;
 extern const vf_info_t ff_vf_info_perspective;
@@ -149,17 +145,13 @@ extern const vf_info_t ff_vf_info_uspp;
 
 
 static const vf_info_t* const filters[]={
-    &ff_vf_info_detc,
     &ff_vf_info_dint,
-    &ff_vf_info_divtc,
     &ff_vf_info_down3dright,
     &ff_vf_info_eq2,
     &ff_vf_info_eq,
     &ff_vf_info_fil,
-//    &ff_vf_info_filmdint, cmmx.h vd.h ‘opt_screen_size_x’
     &ff_vf_info_fspp,
     &ff_vf_info_ilpack,
-    &ff_vf_info_ivtc,
     &ff_vf_info_mcdeint,
     &ff_vf_info_ow,
     &ff_vf_info_perspective,

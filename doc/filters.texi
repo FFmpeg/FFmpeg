@@ -4303,16 +4303,13 @@ the named filter.
 
 The list of the currently supported filters follows:
 @table @var
-@item detc
 @item dint
-@item divtc
 @item down3dright
 @item eq2
 @item eq
 @item fil
 @item fspp
 @item ilpack
-@item ivtc
 @item mcdeint
 @item ow
 @item perspective

@@ -192,17 +192,13 @@ OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/mp_image.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/img_format.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_detc.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_dint.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_divtc.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_down3dright.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq2.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o
-#OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_filmdint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ilpack.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ivtc.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_mcdeint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ow.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_perspective.o
