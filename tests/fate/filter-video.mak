@@ -48,4 +48,6 @@ $(FATE_FILTER_VSYNTH-yes): SRC = $(TARGET_PATH)/tests/vsynth1/%02d.pgm
 FATE_AVCONV-$(call DEMDEC, IMAGE2, PGMYUV) += $(FATE_FILTER_VSYNTH-yes)
 
 FATE_SAMPLES_AVCONV += $(FATE_FILTER-yes)
-fate-filter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes)
+fate-vfilter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes)
+
+fate-filter: fate-afilter fate-vfilter
