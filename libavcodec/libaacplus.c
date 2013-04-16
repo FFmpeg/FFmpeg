@@ -66,7 +66,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
     aacplus_cfg->bitRate = avctx->bit_rate;
     aacplus_cfg->bandWidth = avctx->cutoff;
     aacplus_cfg->outputFormat = !(avctx->flags & CODEC_FLAG_GLOBAL_HEADER);
-    aacplus_cfg->inputFormat = AACPLUS_INPUT_16BIT;
+    aacplus_cfg->inputFormat = avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? AACPLUS_INPUT_FLOAT : AACPLUS_INPUT_16BIT;
     if (!aacplusEncSetConfiguration(s->aacplus_handle, aacplus_cfg)) {
         av_log(avctx, AV_LOG_ERROR, "libaacplus doesn't support this output format!\n");
         return -1;
@@ -139,6 +139,7 @@ AVCodec ff_libaacplus_encoder = {
     .encode2        = aacPlus_encode_frame,
     .close          = aacPlus_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libaacplus AAC+ (Advanced Audio Codec with SBR+PS)"),
     .profiles       = profiles,
