@@ -858,25 +858,25 @@ static void fill_rgb2yuv_table(SwsContext *c, const int table[4], int dstRange)
         ug = ug * 224 / 255;
         vg = vg * 224 / 255;
     }
-    W = ONE*ONE*ug/ub;
-    V = ONE*ONE*vg/vr;
+    W = ROUNDED_DIV(ONE*ONE*ug, ub);
+    V = ROUNDED_DIV(ONE*ONE*vg, vr);
     Z = ONE*ONE-W-V;
 
-    Cy = cy*Z / ONE;
-    Cu = ub*Z / ONE;
-    Cv = vr*Z / ONE;
+    Cy = ROUNDED_DIV(cy*Z, ONE);
+    Cu = ROUNDED_DIV(ub*Z, ONE);
+    Cv = ROUNDED_DIV(vr*Z, ONE);
 
-    c->input_rgb2yuv_table[RY_IDX] = -(1 << RGB2YUV_SHIFT)*V/Cy;
-    c->input_rgb2yuv_table[GY_IDX] =  (1 << RGB2YUV_SHIFT)*ONE*ONE/Cy;
-    c->input_rgb2yuv_table[BY_IDX] = -(1 << RGB2YUV_SHIFT)*W/Cy;
+    c->input_rgb2yuv_table[RY_IDX] = -ROUNDED_DIV((1 << RGB2YUV_SHIFT)*V        , Cy);
+    c->input_rgb2yuv_table[GY_IDX] =  ROUNDED_DIV((1 << RGB2YUV_SHIFT)*ONE*ONE  , Cy);
+    c->input_rgb2yuv_table[BY_IDX] = -ROUNDED_DIV((1 << RGB2YUV_SHIFT)*W        , Cy);
 
-    c->input_rgb2yuv_table[RU_IDX] =  (1 << RGB2YUV_SHIFT)*V/Cu;
-    c->input_rgb2yuv_table[GU_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*ONE/Cu;
-    c->input_rgb2yuv_table[BU_IDX] =  (1 << RGB2YUV_SHIFT)*(Z+W)/Cu;
+    c->input_rgb2yuv_table[RU_IDX] =  ROUNDED_DIV((1 << RGB2YUV_SHIFT)*V        , Cu);
+    c->input_rgb2yuv_table[GU_IDX] = -ROUNDED_DIV((1 << RGB2YUV_SHIFT)*ONE*ONE  , Cu);
+    c->input_rgb2yuv_table[BU_IDX] =  ROUNDED_DIV((1 << RGB2YUV_SHIFT)*(Z+W)    , Cu);
 
-    c->input_rgb2yuv_table[RV_IDX] =  (1 << RGB2YUV_SHIFT)*(V+Z)/Cv;
-    c->input_rgb2yuv_table[GV_IDX] = -(1 << RGB2YUV_SHIFT)*ONE*ONE/Cv;
-    c->input_rgb2yuv_table[BV_IDX] =  (1 << RGB2YUV_SHIFT)*W/Cv;
+    c->input_rgb2yuv_table[RV_IDX] =  ROUNDED_DIV((1 << RGB2YUV_SHIFT)*(V+Z)    , Cv);
+    c->input_rgb2yuv_table[GV_IDX] = -ROUNDED_DIV((1 << RGB2YUV_SHIFT)*ONE*ONE  , Cv);
+    c->input_rgb2yuv_table[BV_IDX] =  ROUNDED_DIV((1 << RGB2YUV_SHIFT)*W        , Cv);
 
     if(/*!dstRange && */table == ff_yuv2rgb_coeffs[SWS_CS_DEFAULT]) {
         c->input_rgb2yuv_table[BY_IDX] =  ((int)(0.114 * 219 / 255 * (1 << RGB2YUV_SHIFT) + 0.5));
