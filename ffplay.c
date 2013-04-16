@@ -1694,7 +1694,8 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
                 double ptsdiff = dpts - is->frame_last_pts;
                 if (!isnan(clockdiff) && fabs(clockdiff) < AV_NOSYNC_THRESHOLD &&
                     !isnan(ptsdiff) && ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
-                    clockdiff + ptsdiff - is->frame_last_filter_delay < 0) {
+                    clockdiff + ptsdiff - is->frame_last_filter_delay < 0 &&
+                    is->videoq.nb_packets) {
                     is->frame_last_dropped_pos = pkt->pos;
                     is->frame_last_dropped_pts = dpts;
                     is->frame_last_dropped_serial = *serial;
