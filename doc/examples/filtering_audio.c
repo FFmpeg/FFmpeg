@@ -70,6 +70,7 @@ static int open_input_file(const char *filename)
     }
     audio_stream_index = ret;
     dec_ctx = fmt_ctx->streams[audio_stream_index]->codec;
+    av_opt_set_int(dec_ctx, "refcounted_frames", 1, 0);
 
     /* init the audio decoder */
     if ((ret = avcodec_open2(dec_ctx, dec, NULL)) < 0) {
