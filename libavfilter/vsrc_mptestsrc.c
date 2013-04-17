@@ -301,9 +301,10 @@ static int request_frame(AVFilterLink *outlink)
 {
     MPTestContext *test = outlink->src->priv;
     AVFrame *picref;
-    int w = WIDTH, h = HEIGHT, ch = h>>test->vsub;
+    int w = WIDTH, h = HEIGHT, cw = w>>test->hsub, ch = h>>test->vsub;
     unsigned int frame = test->frame_nb;
     enum test_type tt = test->test;
+    int i;
 
     if (test->max_pts >= 0 && test->pts > test->max_pts)
         return AVERROR_EOF;
@@ -313,9 +314,12 @@ static int request_frame(AVFilterLink *outlink)
     picref->pts = test->pts++;
 
     // clean image
-    memset(picref->data[0], 0,   picref->linesize[0] * h);
-    memset(picref->data[1], 128, picref->linesize[1] * ch);
-    memset(picref->data[2], 128, picref->linesize[2] * ch);
+    for (i = 0; i < h; i++)
+        memset(picref->data[0] + i*picref->linesize[0], 0, w);
+    for (i = 0; i < ch; i++) {
+        memset(picref->data[1] + i*picref->linesize[1], 128, cw);
+        memset(picref->data[2] + i*picref->linesize[2], 128, cw);
+    }
 
     if (tt == TEST_ALL && frame%30) /* draw a black frame at the beginning of each test */
         tt = (frame/30)%(TEST_NB-1);
