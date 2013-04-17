@@ -196,6 +196,34 @@ static int config_output(AVFilterLink *outlink)
     Stereo3DContext *s = ctx->priv;
     AVRational aspect = inlink->sample_aspect_ratio;
 
+    switch (s->in.format) {
+    case SIDE_BY_SIDE_2_LR:
+    case SIDE_BY_SIDE_LR:
+    case SIDE_BY_SIDE_2_RL:
+    case SIDE_BY_SIDE_RL:
+        if (inlink->w & 1) {
+            av_log(ctx, AV_LOG_ERROR, "width must be even\n");
+            return AVERROR_INVALIDDATA;
+        }
+        break;
+    case ABOVE_BELOW_2_LR:
+    case ABOVE_BELOW_LR:
+    case ABOVE_BELOW_2_RL:
+    case ABOVE_BELOW_RL:
+        if (s->out.format == INTERLEAVE_ROWS_LR ||
+            s->out.format == INTERLEAVE_ROWS_RL) {
+            if (inlink->h & 3) {
+                av_log(ctx, AV_LOG_ERROR, "height must be multiple of 4\n");
+                return AVERROR_INVALIDDATA;
+            }
+        }
+        if (inlink->h & 1) {
+            av_log(ctx, AV_LOG_ERROR, "height must be even\n");
+            return AVERROR_INVALIDDATA;
+        }
+        break;
+    }
+
     s->in.width     =
     s->width        = inlink->w;
     s->in.height    =
