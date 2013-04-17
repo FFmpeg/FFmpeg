@@ -322,8 +322,8 @@ AVFILTER_DEFINE_CLASS(testsrc);
  * @param w width  of the rectangle to draw, expressed as a number of segment_width units
  * @param h height of the rectangle to draw, expressed as a number of segment_width units
  */
-static void draw_rectangle(unsigned val, uint8_t *dst, int dst_linesize, unsigned segment_width,
-                           unsigned x, unsigned y, unsigned w, unsigned h)
+static void draw_rectangle(unsigned val, uint8_t *dst, int dst_linesize, int segment_width,
+                           int x, int y, int w, int h)
 {
     int i;
     int step = 3;
@@ -337,8 +337,8 @@ static void draw_rectangle(unsigned val, uint8_t *dst, int dst_linesize, unsigne
     }
 }
 
-static void draw_digit(int digit, uint8_t *dst, unsigned dst_linesize,
-                       unsigned segment_width)
+static void draw_digit(int digit, uint8_t *dst, int dst_linesize,
+                       int segment_width)
 {
 #define TOP_HBAR        1
 #define MID_HBAR        2
