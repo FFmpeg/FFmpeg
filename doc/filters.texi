@@ -4440,7 +4440,6 @@ the named filter.
 The list of the currently supported filters follows:
 @table @var
 @item dint
-@item down3dright
 @item eq2
 @item eq
 @item fil

@@ -124,7 +124,6 @@ static const struct {
 };
 
 extern const vf_info_t ff_vf_info_dint;
-extern const vf_info_t ff_vf_info_down3dright;
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_fil;
@@ -146,7 +145,6 @@ extern const vf_info_t ff_vf_info_uspp;
 
 static const vf_info_t* const filters[]={
     &ff_vf_info_dint,
-    &ff_vf_info_down3dright,
     &ff_vf_info_eq2,
     &ff_vf_info_eq,
     &ff_vf_info_fil,
