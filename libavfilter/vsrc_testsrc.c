@@ -475,7 +475,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
         if (time >= INT_MAX)
             return;
 
-        for(x=0; x<test->nb_decimals; x++)
+        for (x = 0; x < test->nb_decimals; x++)
             p10decimals *= 10;
 
         second = av_rescale_rnd(test->nb_frame * test->time_base.num, p10decimals, test->time_base.den, AV_ROUND_ZERO);
