@@ -55,7 +55,7 @@ static av_cold int init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_WARNING,
                "num:den syntax is deprecated, please use num/den or named options instead\n");
         s->aspect = av_d2q(s->aspect_num / s->aspect_den, s->max);
-    }
+    } else
 #endif
     if (s->ratio_str) {
         ret = av_parse_ratio(&s->aspect, s->ratio_str, s->max, 0, ctx);
