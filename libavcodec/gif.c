@@ -51,61 +51,54 @@ typedef struct {
     uint8_t *buf;
 } GIFContext;
 
-/* GIF header */
-static int gif_image_write_header(AVCodecContext *avctx,
-                                  uint8_t **bytestream, uint32_t *palette)
-{
-    int i;
-    unsigned int v, smallest_alpha = 0xFF, alpha_component = 0;
-
-    bytestream_put_buffer(bytestream, "GIF", 3);
-    bytestream_put_buffer(bytestream, "89a", 3);
-    bytestream_put_le16(bytestream, avctx->width);
-    bytestream_put_le16(bytestream, avctx->height);
-
-    bytestream_put_byte(bytestream, 0xf7); /* flags: global clut, 256 entries */
-    bytestream_put_byte(bytestream, 0x1f); /* background color index */
-    bytestream_put_byte(bytestream, 0); /* aspect ratio */
-
-    /* the global palette */
-    for(i=0;i<256;i++) {
-        v = palette[i];
-        bytestream_put_be24(bytestream, v);
-        if (v >> 24 < smallest_alpha) {
-            smallest_alpha = v >> 24;
-            alpha_component = i;
-        }
-    }
-
-    if (smallest_alpha < 128) {
-        bytestream_put_byte(bytestream, 0x21); /* Extension Introducer */
-        bytestream_put_byte(bytestream, 0xf9); /* Graphic Control Label */
-        bytestream_put_byte(bytestream, 0x04); /* block length */
-        bytestream_put_byte(bytestream, 0x01); /* Transparent Color Flag */
-        bytestream_put_le16(bytestream, 0x00); /* no delay */
-        bytestream_put_byte(bytestream, alpha_component);
-        bytestream_put_byte(bytestream, 0x00);
-    }
-
-    return 0;
-}
-
 static int gif_image_write_image(AVCodecContext *avctx,
                                  uint8_t **bytestream, uint8_t *end,
+                                 const uint32_t *palette,
                                  const uint8_t *buf, int linesize)
 {
     GIFContext *s = avctx->priv_data;
     int len = 0, height;
     const uint8_t *ptr;
-    /* image block */
 
+    /* Mark one colour as transparent if the input palette contains at least
+     * one colour that is more than 50% transparent. */
+    if (palette) {
+        unsigned i, smallest_alpha = 0xFF, alpha_component = 0;
+        for (i = 0; i < AVPALETTE_COUNT; i++) {
+            const uint32_t v = palette[i];
+            if (v >> 24 < smallest_alpha) {
+                smallest_alpha = v >> 24;
+                alpha_component = i;
+            }
+        }
+        if (smallest_alpha < 128) {
+            bytestream_put_byte(bytestream, 0x21); /* Extension Introducer */
+            bytestream_put_byte(bytestream, 0xf9); /* Graphic Control Label */
+            bytestream_put_byte(bytestream, 0x04); /* block length */
+            bytestream_put_byte(bytestream, 0x01); /* Transparent Color Flag */
+            bytestream_put_le16(bytestream, 0x00); /* no delay */
+            bytestream_put_byte(bytestream, alpha_component);
+            bytestream_put_byte(bytestream, 0x00);
+        }
+    }
+
+    /* image block */
     bytestream_put_byte(bytestream, 0x2c);
     bytestream_put_le16(bytestream, 0);
     bytestream_put_le16(bytestream, 0);
     bytestream_put_le16(bytestream, avctx->width);
     bytestream_put_le16(bytestream, avctx->height);
+
+    if (!palette) {
     bytestream_put_byte(bytestream, 0x00); /* flags */
-    /* no local clut */
+    } else {
+        unsigned i;
+        bytestream_put_byte(bytestream, 1<<7 | 0x7); /* flags */
+        for (i = 0; i < AVPALETTE_COUNT; i++) {
+            const uint32_t v = palette[i];
+            bytestream_put_be24(bytestream, v);
+        }
+    }
 
     bytestream_put_byte(bytestream, 0x08);
 
@@ -130,7 +123,6 @@ static int gif_image_write_image(AVCodecContext *avctx,
         len -= size;
     }
     bytestream_put_byte(bytestream, 0x00); /* end of image block */
-    bytestream_put_byte(bytestream, 0x3b);
     return 0;
 }
 
@@ -160,6 +152,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     GIFContext *s = avctx->priv_data;
     AVFrame *const p = &s->picture;
     uint8_t *outbuf_ptr, *end;
+    const uint32_t *palette = NULL;
     int ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*7/5 + FF_MIN_BUFFER_SIZE)) < 0)
@@ -170,8 +163,11 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     *p = *pict;
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
-    gif_image_write_header(avctx, &outbuf_ptr, (uint32_t *)pict->data[1]);
-    gif_image_write_image(avctx, &outbuf_ptr, end, pict->data[0], pict->linesize[0]);
+
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
+        palette = (uint32_t*)p->data[1];
+
+    gif_image_write_image(avctx, &outbuf_ptr, end, palette, pict->data[0], pict->linesize[0]);
 
     pkt->size   = outbuf_ptr - pkt->data;
     pkt->flags |= AV_PKT_FLAG_KEY;
