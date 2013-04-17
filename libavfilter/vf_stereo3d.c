@@ -263,7 +263,7 @@ static int config_output(AVFilterLink *outlink)
     case SIDE_BY_SIDE_2_LR:
         aspect.num      /= 2;
     case SIDE_BY_SIDE_LR:
-        s->out.width     =
+        s->out.width     = s->width * 2;
         s->out.off_right = s->width * 3;
         break;
     case SIDE_BY_SIDE_2_RL:
