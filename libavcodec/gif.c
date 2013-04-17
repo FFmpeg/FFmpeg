@@ -49,6 +49,7 @@ typedef struct {
     AVFrame picture;
     LZWState *lzw;
     uint8_t *buf;
+    AVFrame *last_frame;
 } GIFContext;
 
 static int gif_image_write_image(AVCodecContext *avctx,
@@ -57,7 +58,8 @@ static int gif_image_write_image(AVCodecContext *avctx,
                                  const uint8_t *buf, int linesize)
 {
     GIFContext *s = avctx->priv_data;
-    int len = 0, height;
+    int len = 0, height = avctx->height, width = avctx->width, y;
+    int x_start = 0, y_start = 0;
     const uint8_t *ptr;
 
     /* Mark one colour as transparent if the input palette contains at least
@@ -82,12 +84,64 @@ static int gif_image_write_image(AVCodecContext *avctx,
         }
     }
 
+    /* Crop image */
+    // TODO support with palette change
+    if (s->last_frame && !palette) {
+        const uint8_t *ref = s->last_frame->data[0];
+        const int ref_linesize = s->last_frame->linesize[0];
+        int x_end = avctx->width  - 1,
+            y_end = avctx->height - 1;
+
+        /* skip common lines */
+        while (y_start < height) {
+            if (memcmp(ref + y_start*ref_linesize, buf + y_start*linesize, width))
+                break;
+            y_start++;
+        }
+        while (y_end > y_start) {
+            if (memcmp(ref + y_end*ref_linesize, buf + y_end*linesize, width))
+                break;
+            y_end--;
+        }
+        height = y_end + 1 - y_start;
+
+        /* skip common columns */
+        while (x_start < width) {
+            int same_column = 1;
+            for (y = y_start; y < y_end; y++) {
+                if (ref[y*ref_linesize + x_start] != buf[y*linesize + x_start]) {
+                    same_column = 0;
+                    break;
+                }
+            }
+            if (!same_column)
+                break;
+            x_start++;
+        }
+        while (x_end > x_start) {
+            int same_column = 1;
+            for (y = y_start; y < y_end; y++) {
+                if (ref[y*ref_linesize + x_end] != buf[y*linesize + x_end]) {
+                    same_column = 0;
+                    break;
+                }
+            }
+            if (!same_column)
+                break;
+            x_end--;
+        }
+        width = x_end + 1 - x_start;
+
+        av_log(avctx, AV_LOG_DEBUG,"%dx%d image at pos (%d;%d) [area:%dx%d]\n",
+               width, height, x_start, y_start, avctx->width, avctx->height);
+    }
+
     /* image block */
     bytestream_put_byte(bytestream, 0x2c);
-    bytestream_put_le16(bytestream, 0);
-    bytestream_put_le16(bytestream, 0);
-    bytestream_put_le16(bytestream, avctx->width);
-    bytestream_put_le16(bytestream, avctx->height);
+    bytestream_put_le16(bytestream, x_start);
+    bytestream_put_le16(bytestream, y_start);
+    bytestream_put_le16(bytestream, width);
+    bytestream_put_le16(bytestream, height);
 
     if (!palette) {
     bytestream_put_byte(bytestream, 0x00); /* flags */
@@ -102,12 +156,12 @@ static int gif_image_write_image(AVCodecContext *avctx,
 
     bytestream_put_byte(bytestream, 0x08);
 
-    ff_lzw_encode_init(s->lzw, s->buf, avctx->width*avctx->height,
+    ff_lzw_encode_init(s->lzw, s->buf, width * height,
                        12, FF_LZW_GIF, put_bits);
 
-    ptr = buf;
-    for (height = avctx->height; height--;) {
-        len += ff_lzw_encode(s->lzw, ptr, avctx->width);
+    ptr = buf + y_start*linesize + x_start;
+    for (y = 0; y < height; y++) {
+        len += ff_lzw_encode(s->lzw, ptr, width);
         ptr += linesize;
     }
     len += ff_lzw_encode_flush(s->lzw, flush_put_bits);
@@ -168,6 +222,15 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         palette = (uint32_t*)p->data[1];
 
     gif_image_write_image(avctx, &outbuf_ptr, end, palette, pict->data[0], pict->linesize[0]);
+    if (!s->last_frame) {
+        s->last_frame = av_frame_alloc();
+        if (!s->last_frame)
+            return AVERROR(ENOMEM);
+    }
+    av_frame_unref(s->last_frame);
+    ret = av_frame_ref(s->last_frame, (AVFrame*)pict);
+    if (ret < 0)
+        return ret;
 
     pkt->size   = outbuf_ptr - pkt->data;
     pkt->flags |= AV_PKT_FLAG_KEY;
@@ -182,6 +245,7 @@ static int gif_encode_close(AVCodecContext *avctx)
 
     av_freep(&s->lzw);
     av_freep(&s->buf);
+    av_frame_free(&s->last_frame);
     return 0;
 }
 
