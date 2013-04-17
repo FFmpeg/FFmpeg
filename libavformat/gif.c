@@ -48,7 +48,7 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
         avio_w8(pb, 0x1f); /* background color index */
         avio_w8(pb, 0);    /* aspect ratio */
         for (i = 0; i < 256; i++) {
-            const uint32_t v = palette[i];
+            const uint32_t v = palette[i] & 0xffffff;
             avio_wb24(pb, v);
         }
     } else {
