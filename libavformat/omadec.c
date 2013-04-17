@@ -200,13 +200,13 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
     }
     if (!em) {
         av_log(s, AV_LOG_ERROR, "No encryption header found\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (geob->datasize < 64) {
         av_log(s, AV_LOG_ERROR,
                "Invalid GEOB data size: %u\n", geob->datasize);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     gdata = geob->data;
@@ -221,7 +221,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
 
     if (memcmp(&gdata[OMA_ENC_HEADER_SIZE], "KEYRING     ", 12)) {
         av_log(s, AV_LOG_ERROR, "Invalid encryption header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     oc->rid = AV_RB32(&gdata[OMA_ENC_HEADER_SIZE + 28]);
     av_log(s, AV_LOG_DEBUG, "RID: %.8x\n", oc->rid);
@@ -251,7 +251,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
         }
         if (i >= sizeof(leaf_table)) {
             av_log(s, AV_LOG_ERROR, "Invalid key\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -286,7 +286,7 @@ static int oma_read_header(AVFormatContext *s)
     if (memcmp(buf, ((const uint8_t[]){'E', 'A', '3'}), 3) ||
         buf[4] != 0 || buf[5] != EA3_HEADER_SIZE) {
         av_log(s, AV_LOG_ERROR, "Couldn't find the EA3 header !\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     oc->content_start = avio_tell(s->pb);
@@ -380,7 +380,7 @@ static int oma_read_header(AVFormatContext *s)
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n", buf[32]);
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     st->codec->block_align = framesize;
