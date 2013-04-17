@@ -36,6 +36,7 @@
 #include <libavfilter/avcodec.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
+#include <libavutil/opt.h>
 
 const char *filter_descr = "aresample=8000,aformat=sample_fmts=s16:channel_layouts=mono";
 const char *player       = "ffplay -f s16le -ar 8000 -ac 1 -";
@@ -89,8 +90,9 @@ static int init_filters(const char *filters_descr)
     AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
-    const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
-    AVABufferSinkParams *abuffersink_params;
+    const enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
+    const int64_t out_channel_layouts[] = { AV_CH_LAYOUT_MONO, -1 };
+    const int out_sample_rates[] = { 8000, -1 };
     const AVFilterLink *outlink;
     AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
 
@@ -111,13 +113,31 @@ static int init_filters(const char *filters_descr)
     }
 
     /* buffer audio sink: to terminate the filter chain. */
-    abuffersink_params = av_abuffersink_params_alloc();
-    abuffersink_params->sample_fmts     = sample_fmts;
     ret = avfilter_graph_create_filter(&buffersink_ctx, abuffersink, "out",
-                                       NULL, abuffersink_params, filter_graph);
-    av_free(abuffersink_params);
+                                       NULL, NULL, filter_graph);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
+        return ret;
+    }
+
+    ret = av_opt_set_int_list(buffersink_ctx, "sample_fmts", out_sample_fmts, -1,
+                              AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot set output sample format\n");
+        return ret;
+    }
+
+    ret = av_opt_set_int_list(buffersink_ctx, "channel_layouts", out_channel_layouts, -1,
+                              AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot set output channel layout\n");
+        return ret;
+    }
+
+    ret = av_opt_set_int_list(buffersink_ctx, "sample_rates", out_sample_rates, -1,
+                              AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot set output sample rate\n");
         return ret;
     }
 
