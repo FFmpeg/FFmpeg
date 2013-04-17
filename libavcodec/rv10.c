@@ -257,14 +257,14 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     av_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 
     if (pb_frame) {
-        av_log(s->avctx, AV_LOG_ERROR, "pb frame not supported\n");
-        return -1;
+        avpriv_request_sample(s->avctx, "pb frame");
+        return AVERROR_PATCHWELCOME;
     }
 
     s->qscale = get_bits(&s->gb, 5);
     if (s->qscale == 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
-        return -1;
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
+        return AVERROR_INVALIDDATA;
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
@@ -300,7 +300,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 static int rv20_decode_picture_header(RVDecContext *rv)
 {
     MpegEncContext *s = &rv->m;
-    int seq, mb_pos, i;
+    int seq, mb_pos, i, ret;
     int rpr_bits;
 
     i = get_bits(&s->gb, 2);
@@ -311,7 +311,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     case 3: s->pict_type = AV_PICTURE_TYPE_B; break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "unknown frame type\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (s->low_delay && s->pict_type == AV_PICTURE_TYPE_B) {
@@ -319,19 +319,19 @@ static int rv20_decode_picture_header(RVDecContext *rv)
         return -1;
     }
     if (s->last_picture_ptr == NULL && s->pict_type == AV_PICTURE_TYPE_B) {
-        av_log(s->avctx, AV_LOG_ERROR, "early B pix\n");
-        return -1;
+        av_log(s->avctx, AV_LOG_ERROR, "early B-frame\n");
+        return AVERROR_INVALIDDATA;
     }
 
     if (get_bits1(&s->gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "reserved bit set\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->qscale = get_bits(&s->gb, 5);
     if (s->qscale == 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
-        return -1;
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid qscale value: 0\n");
+        return AVERROR_INVALIDDATA;
     }
 
     if (RV_GET_MINOR_VER(rv->sub_id) >= 2)
@@ -361,7 +361,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             av_log(s->avctx, AV_LOG_DEBUG,
                    "attempting to change resolution to %dx%d\n", new_w, new_h);
             if (av_image_check_size(new_w, new_h, 0, s->avctx) < 0)
-                return -1;
+                return AVERROR_INVALIDDATA;
             ff_MPV_common_end(s);
 
             // attempt to keep aspect during typical resolution switches
@@ -374,8 +374,8 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             avcodec_set_dimensions(s->avctx, new_w, new_h);
             s->width  = new_w;
             s->height = new_h;
-            if (ff_MPV_common_init(s) < 0)
-                return -1;
+            if ((ret = ff_MPV_common_init(s)) < 0)
+                return ret;
         }
 
         if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
@@ -440,11 +440,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     RVDecContext  *rv = avctx->priv_data;
     MpegEncContext *s = &rv->m;
     static int done = 0;
-    int major_ver, minor_ver, micro_ver;
+    int major_ver, minor_ver, micro_ver, ret;
 
     if (avctx->extradata_size < 8) {
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ff_MPV_decode_defaults(s);
@@ -488,8 +488,8 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
-    if (ff_MPV_common_init(s) < 0)
-        return -1;
+    if ((ret = ff_MPV_common_init(s)) < 0)
+        return ret;
 
     ff_h263_decode_init_vlc();
 
@@ -520,7 +520,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 {
     RVDecContext  *rv = avctx->priv_data;
     MpegEncContext *s = &rv->m;
-    int mb_count, mb_pos, left, start_mb_x, active_bits_size;
+    int mb_count, mb_pos, left, start_mb_x, active_bits_size, ret;
 
     active_bits_size = buf_size * 8;
     init_get_bits(&s->gb, buf, FFMAX(buf_size, buf_size2) * 8);
@@ -531,19 +531,19 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     if (mb_count < 0) {
         if (mb_count != ERROR_SKIP_FRAME)
             av_log(s->avctx, AV_LOG_ERROR, "HEADER ERROR\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (s->mb_x >= s->mb_width ||
         s->mb_y >= s->mb_height) {
         av_log(s->avctx, AV_LOG_ERROR, "POS ERROR %d %d\n", s->mb_x, s->mb_y);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     mb_pos = s->mb_y * s->mb_width + s->mb_x;
     left = s->mb_width * s->mb_height - mb_pos;
     if (mb_count > left) {
         av_log(s->avctx, AV_LOG_ERROR, "COUNT ERROR\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr == NULL) {
@@ -552,13 +552,13 @@ static int rv10_decode_packet(AVCodecContext *avctx,
             ff_MPV_frame_end(s);
             s->mb_x = s->mb_y = s->resync_mb_x = s->resync_mb_y = 0;
         }
-        if (ff_MPV_frame_start(s, avctx) < 0)
-            return -1;
+        if ((ret = ff_MPV_frame_start(s, avctx)) < 0)
+            return ret;
         ff_mpeg_er_frame_start(s);
     } else {
         if (s->current_picture_ptr->f.pict_type != s->pict_type) {
             av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -628,7 +628,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 
         if (ret == SLICE_ERROR || active_bits_size < get_bits_count(&s->gb)) {
             av_log(s->avctx, AV_LOG_ERROR, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (s->pict_type != AV_PICTURE_TYPE_B)
             ff_h263_update_motion_val(s);
