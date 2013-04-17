@@ -260,14 +260,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     uint8_t *inrow, *outrow, *inrow0, *outrow0;
-    int i, j, plane;
+    int i, j, plane, direct = 0;
 
+    if (av_frame_is_writable(in)) {
+        direct = 1;
+        out = in;
+    } else {
+        /* TODO reindent */
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
+    }
 
     if (lut->is_rgb) {
         /* packed */
@@ -316,7 +322,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
-    av_frame_free(&in);
+    if (!direct)
+        av_frame_free(&in);
+
     return ff_filter_frame(outlink, out);
 }
 

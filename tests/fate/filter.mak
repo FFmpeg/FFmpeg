@@ -79,8 +79,8 @@ fate-filter-join: CMD = md5 -i $(SRC1) -i $(SRC2) -filter_complex join=channel_l
 fate-filter-join: CMP = oneline
 fate-filter-join: REF = 38fa1b18b0c46d77df6f17bfc4f078dd
 
-FATE_FILTER_VSYNTH-$(CONFIG_NEGATE_FILTER) += fate-filter-negate
-fate-filter-negate: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf negate
+FATE_FILTER_VSYNTH-$(call ALLYES, NEGATE_FILTER PERMS_FILTER) += fate-filter-negate
+fate-filter-negate: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf perms=random,negate
 
 FATE_FILTER_VSYNTH-$(CONFIG_HISTOGRAM_FILTER) += fate-filter-histogram-levels
 fate-filter-histogram-levels: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogram -flags +bitexact -sws_flags +accurate_rnd+bitexact
