@@ -56,7 +56,6 @@ typedef struct MPTestContext {
     AVRational frame_rate;
     int64_t pts, max_pts, duration;
     int hsub, vsub;
-    char *size;
     enum test_type test;
 } MPTestContext;
 
