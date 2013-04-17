@@ -123,6 +123,8 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
     AVFrame *copy;
     int ret;
 
+    s->nb_failed_requests = 0;
+
     if (!frame) {
         s->eof = 1;
         return 0;
