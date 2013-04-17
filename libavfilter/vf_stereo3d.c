@@ -63,6 +63,7 @@ typedef struct StereoComponent {
     enum StereoCode format;
     int width, height;
     int off_left, off_right;
+    int off_lstep, off_rstep;
     int row_left, row_right;
 } StereoComponent;
 
@@ -229,6 +230,8 @@ static int config_output(AVFilterLink *outlink)
     s->in.height    =
     s->height       = inlink->h;
     s->row_step     = 1;
+    s->in.off_lstep =
+    s->in.off_rstep =
     s->in.off_left  =
     s->in.off_right =
     s->in.row_left  =
@@ -266,6 +269,8 @@ static int config_output(AVFilterLink *outlink)
 
     s->out.width     = s->width;
     s->out.height    = s->height;
+    s->out.off_lstep =
+    s->out.off_rstep =
     s->out.off_left  =
     s->out.off_right =
     s->out.row_left  =
@@ -315,14 +320,14 @@ static int config_output(AVFilterLink *outlink)
     case INTERLEAVE_ROWS_LR:
         s->row_step      = 2;
         s->height        = s->height / 2;
-        s->out.off_right = s->width * 3;
-        s->in.off_right += s->in.width * 3;
+        s->out.off_rstep =
+        s->in.off_rstep  = 1;
         break;
     case INTERLEAVE_ROWS_RL:
         s->row_step      = 2;
         s->height        = s->height / 2;
-        s->out.off_left  = s->width * 3;
-        s->in.off_left  += s->in.width * 3;
+        s->out.off_lstep =
+        s->in.off_lstep  = 1;
         break;
     case MONO_R:
         s->in.off_left   = s->in.off_right;
@@ -368,10 +373,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
     av_frame_copy_props(out, inpicref);
 
-    in_off_left   = s->in.row_left  * inpicref->linesize[0] + s->in.off_left;
-    in_off_right  = s->in.row_right * inpicref->linesize[0] + s->in.off_right;
-    out_off_left  = s->out.row_left  * out->linesize[0] + s->out.off_left;
-    out_off_right = s->out.row_right * out->linesize[0] + s->out.off_right;
+    in_off_left   = (s->in.row_left   + s->in.off_lstep)  * inpicref->linesize[0] + s->in.off_left;
+    in_off_right  = (s->in.row_right  + s->in.off_rstep)  * inpicref->linesize[0] + s->in.off_right;
+    out_off_left  = (s->out.row_left  + s->out.off_lstep) * out->linesize[0] + s->out.off_left;
+    out_off_right = (s->out.row_right + s->out.off_rstep) * out->linesize[0] + s->out.off_right;
 
     switch (s->out.format) {
     case SIDE_BY_SIDE_LR:
