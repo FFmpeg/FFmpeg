@@ -55,7 +55,6 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
                                   int loop_count, uint32_t *palette)
 {
     int i;
-    unsigned int v;
 
     avio_write(pb, "GIF", 3);
     avio_write(pb, "89a", 3);
@@ -67,10 +66,8 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
         avio_w8(pb, 0x1f); /* background color index */
         avio_w8(pb, 0);    /* aspect ratio */
         for (i = 0; i < 256; i++) {
-            v = palette[i];
-            avio_w8(pb, (v >> 16) & 0xff);
-            avio_w8(pb, (v >>  8) & 0xff);
-            avio_w8(pb, (v)       & 0xff);
+            const uint32_t v = palette[i];
+            avio_wb24(pb, v);
         }
     } else {
         avio_w8(pb, 0); /* flags */
