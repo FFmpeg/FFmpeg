@@ -894,17 +894,20 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                                 const uint8_t *buf, int buf_size)
 {
-    const uint8_t   *buf_ptr = buf, *bs_hdr;
+    GetByteContext gb;
+    const uint8_t   *bs_hdr;
     uint32_t        frame_num, word2, check_sum, data_size;
     uint32_t        y_offset, u_offset, v_offset, starts[3], ends[3];
     uint16_t        height, width;
     int             i, j;
 
+    bytestream2_init(&gb, buf, buf_size);
+
     /* parse and check the OS header */
-    frame_num = bytestream_get_le32(&buf_ptr);
-    word2     = bytestream_get_le32(&buf_ptr);
-    check_sum = bytestream_get_le32(&buf_ptr);
-    data_size = bytestream_get_le32(&buf_ptr);
+    frame_num = bytestream2_get_le32(&gb);
+    word2     = bytestream2_get_le32(&gb);
+    check_sum = bytestream2_get_le32(&gb);
+    data_size = bytestream2_get_le32(&gb);
 
     if ((frame_num ^ word2 ^ data_size ^ OS_HDR_ID) != check_sum) {
         av_log(avctx, AV_LOG_ERROR, "OS header checksum mismatch!\n");
@@ -912,29 +915,29 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     }
 
     /* parse the bitstream header */
-    bs_hdr = buf_ptr;
+    bs_hdr = gb.buffer;
     buf_size -= 16;
 
-    if (bytestream_get_le16(&buf_ptr) != 32) {
+    if (bytestream2_get_le16(&gb) != 32) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported codec version!\n");
         return AVERROR_INVALIDDATA;
     }
 
     ctx->frame_num   =  frame_num;
-    ctx->frame_flags =  bytestream_get_le16(&buf_ptr);
-    ctx->data_size   = (bytestream_get_le32(&buf_ptr) + 7) >> 3;
-    ctx->cb_offset   = *buf_ptr++;
+    ctx->frame_flags =  bytestream2_get_le16(&gb);
+    ctx->data_size   = (bytestream2_get_le32(&gb) + 7) >> 3;
+    ctx->cb_offset   =  bytestream2_get_byte(&gb);
 
     if (ctx->data_size == 16)
         return 4;
     if (ctx->data_size > buf_size)
         ctx->data_size = buf_size;
 
-    buf_ptr += 3; // skip reserved byte and checksum
+    bytestream2_skip(&gb, 3); // skip reserved byte and checksum
 
     /* check frame dimensions */
-    height = bytestream_get_le16(&buf_ptr);
-    width  = bytestream_get_le16(&buf_ptr);
+    height = bytestream2_get_le16(&gb);
+    width  = bytestream2_get_le16(&gb);
     if (av_image_check_size(width, height, 0, avctx))
         return AVERROR_INVALIDDATA;
 
@@ -956,9 +959,10 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         avcodec_set_dimensions(avctx, width, height);
     }
 
-    y_offset = bytestream_get_le32(&buf_ptr);
-    v_offset = bytestream_get_le32(&buf_ptr);
-    u_offset = bytestream_get_le32(&buf_ptr);
+    y_offset = bytestream2_get_le32(&gb);
+    v_offset = bytestream2_get_le32(&gb);
+    u_offset = bytestream2_get_le32(&gb);
+    bytestream2_skip(&gb, 4);
 
     /* unfortunately there is no common order of planes in the buffer */
     /* so we use that sorting algo for determining planes data sizes  */
@@ -977,6 +981,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->v_data_size = ends[1] - starts[1];
     ctx->u_data_size = ends[2] - starts[2];
     if (FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
+        FFMIN3(y_offset, v_offset, u_offset) < gb.buffer - bs_hdr + 16 ||
         FFMIN3(ctx->y_data_size, ctx->v_data_size, ctx->u_data_size) <= 0) {
         av_log(avctx, AV_LOG_ERROR, "One of the y/u/v offsets is invalid\n");
         return AVERROR_INVALIDDATA;
@@ -985,7 +990,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->y_data_ptr = bs_hdr + y_offset;
     ctx->v_data_ptr = bs_hdr + v_offset;
     ctx->u_data_ptr = bs_hdr + u_offset;
-    ctx->alt_quant  = buf_ptr + sizeof(uint32_t);
+    ctx->alt_quant  = gb.buffer;
 
     if (ctx->data_size == 16) {
         av_log(avctx, AV_LOG_DEBUG, "Sync frame encountered!\n");
