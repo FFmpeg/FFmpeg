@@ -3131,6 +3131,17 @@ Default is 25.
 @item alpha
 If set to 1, fade only alpha channel, if one exists on the input.
 Default value is 0.
+
+@item start_time, st
+Specify the timestamp (in seconds) of the frame to start to apply the fade
+effect. If both start_frame and start_time are specified, the fade will start at
+whichever comes last.  Default is 0.
+
+@item duration, d
+The number of seconds for which the fade effect has to last. At the end of the
+fade-in effect the output video will have the same intensity as the input video,
+at the end of the fade-out transition the output video will be completely black.
+If both duration and nb_frames are specified, duration is used. Default is 0.
 @end table
 
 @subsection Examples
@@ -3171,6 +3182,13 @@ Fade in alpha over first 25 frames of video:
 @example
 fade=in:0:25:alpha=1
 @end example
+
+@item
+Make first 5.5 seconds black, then fade in for 0.5 seconds:
+@example
+fade=t=in:st=5.5:d=0.5
+@end example
+
 @end itemize
 
 @section field
