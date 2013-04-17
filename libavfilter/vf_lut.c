@@ -285,15 +285,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             inrow  = inrow0;
             outrow = outrow0;
             for (j = 0; j < w; j++) {
-                outrow[0] = tab[0][inrow[0]];
-                if (lut->step>1) {
-                    outrow[1] = tab[1][inrow[1]];
-                    if (lut->step>2) {
-                        outrow[2] = tab[2][inrow[2]];
-                        if (lut->step>3) {
-                            outrow[3] = tab[3][inrow[3]];
-                        }
-                    }
+                switch (lut->step) {
+                case 3:  outrow[3] = tab[3][inrow[3]]; // Fall-through
+                case 2:  outrow[2] = tab[2][inrow[2]]; // Fall-through
+                case 1:  outrow[1] = tab[1][inrow[1]]; // Fall-through
+                default: outrow[0] = tab[0][inrow[0]];
                 }
                 outrow += lut->step;
                 inrow  += lut->step;
