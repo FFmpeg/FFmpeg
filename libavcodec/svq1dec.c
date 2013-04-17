@@ -321,7 +321,8 @@ static void svq1_skip_block(uint8_t *current, uint8_t *previous,
 
 static int svq1_motion_inter_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
-                                   int pitch, svq1_pmv *motion, int x, int y)
+                                   int pitch, svq1_pmv *motion, int x, int y,
+                                   int width, int height)
 {
     uint8_t *src;
     uint8_t *dst;
@@ -350,10 +351,8 @@ static int svq1_motion_inter_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
     motion[x / 8 + 2].y =
     motion[x / 8 + 3].y = mv.y;
 
-    if (y + (mv.y >> 1) < 0)
-        mv.y = 0;
-    if (x + (mv.x >> 1) < 0)
-        mv.x = 0;
+    mv.x = av_clip(mv.x, -2 * x, 2 * (width  - x - 16));
+    mv.y = av_clip(mv.y, -2 * y, 2 * (height - y - 16));
 
     src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1)) * pitch];
     dst = current;
@@ -365,7 +364,8 @@ static int svq1_motion_inter_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
 
 static int svq1_motion_inter_4v_block(HpelDSPContext *hdsp, GetBitContext *bitbuf,
                                       uint8_t *current, uint8_t *previous,
-                                      int pitch, svq1_pmv *motion, int x, int y)
+                                      int pitch, svq1_pmv *motion, int x, int y,
+                                      int width, int height)
 {
     uint8_t *src;
     uint8_t *dst;
@@ -421,10 +421,8 @@ static int svq1_motion_inter_4v_block(HpelDSPContext *hdsp, GetBitContext *bitbu
         int mvy = pmv[i]->y + (i >> 1) * 16;
 
         // FIXME: clipping or padding?
-        if (y + (mvy >> 1) < 0)
-            mvy = 0;
-        if (x + (mvx >> 1) < 0)
-            mvx = 0;
+        mvx = av_clip(mvx, -2 * x, 2 * (width  - x - 8));
+        mvy = av_clip(mvy, -2 * y, 2 * (height - y - 8));
 
         src = &previous[(x + (mvx >> 1)) + (y + (mvy >> 1)) * pitch];
         dst = current;
@@ -444,7 +442,8 @@ static int svq1_motion_inter_4v_block(HpelDSPContext *hdsp, GetBitContext *bitbu
 static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
                                    GetBitContext *bitbuf,
                                    uint8_t *current, uint8_t *previous,
-                                   int pitch, svq1_pmv *motion, int x, int y)
+                                   int pitch, svq1_pmv *motion, int x, int y,
+                                   int width, int height)
 {
     uint32_t block_type;
     int result = 0;
@@ -469,7 +468,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
 
     case SVQ1_BLOCK_INTER:
         result = svq1_motion_inter_block(hdsp, bitbuf, current, previous,
-                                         pitch, motion, x, y);
+                                         pitch, motion, x, y, width, height);
 
         if (result != 0) {
             av_dlog(avctx, "Error in svq1_motion_inter_block %i\n", result);
@@ -480,7 +479,7 @@ static int svq1_decode_delta_block(AVCodecContext *avctx, HpelDSPContext *hdsp,
 
     case SVQ1_BLOCK_INTER_4V:
         result = svq1_motion_inter_4v_block(hdsp, bitbuf, current, previous,
-                                            pitch, motion, x, y);
+                                            pitch, motion, x, y, width, height);
 
         if (result != 0) {
             av_dlog(avctx, "Error in svq1_motion_inter_4v_block %i\n", result);
@@ -703,8 +702,8 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
                     result = svq1_decode_delta_block(avctx, &s->hdsp,
                                                      &s->gb, &current[x],
                                                      previous, linesize,
-                                                     pmv, x, y);
-                    if (result) {
+                                                     pmv, x, y, width, height);
+                    if (result != 0) {
                         av_dlog(avctx,
                                 "Error in svq1_decode_delta_block %i\n",
                                 result);
