@@ -144,7 +144,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     bytestream_put_le16(bytestream, height);
 
     if (!palette) {
-    bytestream_put_byte(bytestream, 0x00); /* flags */
+        bytestream_put_byte(bytestream, 0x00); /* flags */
     } else {
         unsigned i;
         bytestream_put_byte(bytestream, 1<<7 | 0x7); /* flags */

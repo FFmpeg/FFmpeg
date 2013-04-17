@@ -63,10 +63,9 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
     avio_wl16(pb, height);
 
     if (palette) {
-    /* TODO: reindent */
-    avio_w8(pb, 0xf7); /* flags: global clut, 256 entries */
-    avio_w8(pb, 0x1f); /* background color index */
-    avio_w8(pb, 0);    /* aspect ratio */
+        avio_w8(pb, 0xf7); /* flags: global clut, 256 entries */
+        avio_w8(pb, 0x1f); /* background color index */
+        avio_w8(pb, 0);    /* aspect ratio */
         for (i = 0; i < 256; i++) {
             v = palette[i];
             avio_w8(pb, (v >> 16) & 0xff);
