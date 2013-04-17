@@ -244,6 +244,11 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, int x, int y,
     curframe_x = x;
     prevframe_index = (y + motion_y) * stride + x + motion_x;
     prevframe_x = x + motion_x;
+
+    if (prev_palette_plane == palette_plane && FFABS(curframe_index - prevframe_index) < pixel_count) {
+         return ;
+    }
+
     while (pixel_count &&
            curframe_index  < s->frame_size &&
            prevframe_index < s->frame_size) {
