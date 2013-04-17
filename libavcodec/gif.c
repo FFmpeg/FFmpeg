@@ -1,5 +1,4 @@
 /*
- * GIF encoder.
  * Copyright (c) 2000 Fabrice Bellard
  * Copyright (c) 2002 Francois Revol
  * Copyright (c) 2006 Baptiste Coudurier
@@ -23,15 +22,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/*
- * Features and limitations:
- * - uses only a global standard palette
- * - tested with IE 5.0, Opera for BeOS, NetPositive (BeOS), and Mozilla (BeOS).
- *
- * Reference documents:
- * http://www.goice.co.jp/member/mo/formats/gif.html
- * http://astronomy.swin.edu.au/pbourke/dataformats/gif/
- * http://www.dcs.ed.ac.uk/home/mxr/gfx/2d/GIF89a.txt
+/**
+ * @file
+ * GIF encoder
+ * @see http://www.w3.org/Graphics/GIF/spec-gif89a.txt
  */
 
 #include "avcodec.h"
