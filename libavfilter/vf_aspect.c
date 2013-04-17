@@ -109,7 +109,7 @@ static int setdar_config_props(AVFilterLink *inlink)
     compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
     av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d dar:%d/%d sar:%d/%d -> dar:%d/%d sar:%d/%d\n",
            inlink->w, inlink->h, old_dar.num, old_dar.den, old_sar.num, old_sar.den,
-           dar.den, dar.num, inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den);
+           dar.num, dar.den, inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den);
 
     return 0;
 }
