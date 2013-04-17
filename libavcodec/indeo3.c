@@ -916,7 +916,6 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
     /* parse the bitstream header */
     bs_hdr = gb.buffer;
-    buf_size -= 16;
 
     if (bytestream2_get_le16(&gb) != 32) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported codec version!\n");
@@ -930,8 +929,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
     if (ctx->data_size == 16)
         return 4;
-    if (ctx->data_size > buf_size)
-        ctx->data_size = buf_size;
+    ctx->data_size = FFMIN(ctx->data_size, buf_size - 16);
 
     bytestream2_skip(&gb, 3); // skip reserved byte and checksum
 
