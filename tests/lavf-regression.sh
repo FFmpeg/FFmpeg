@@ -49,7 +49,11 @@ do_image_formats()
 {
     outfile="$datadir/images/$1/"
     mkdir -p "$outfile"
-    file=${outfile}%02d.$1
+    if [ "$1" = "gif" ]; then
+        file=${outfile}02.$1
+    else
+        file=${outfile}%02d.$1
+    fi
     run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS -t 0.5 -y -qscale 10 $target_path/$file
     do_md5sum ${outfile}02.$1
     do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
