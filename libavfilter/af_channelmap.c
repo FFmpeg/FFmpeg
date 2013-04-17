@@ -363,24 +363,25 @@ static int channelmap_config_input(AVFilterLink *inlink)
     char layout_name[256];
 
     for (i = 0; i < s->nch; i++) {
+        struct ChannelMap *m = &s->map[i];
+
         if (s->mode == MAP_PAIR_STR_INT || s->mode == MAP_PAIR_STR_STR) {
-            s->map[i].in_channel_idx = av_get_channel_layout_channel_index(
-                inlink->channel_layout, s->map[i].in_channel);
+            m->in_channel_idx = av_get_channel_layout_channel_index(
+                inlink->channel_layout, m->in_channel);
         }
 
-        if (s->map[i].in_channel_idx < 0 ||
-            s->map[i].in_channel_idx >= nb_channels) {
+        if (m->in_channel_idx < 0 || m->in_channel_idx >= nb_channels) {
             av_get_channel_layout_string(layout_name, sizeof(layout_name),
                                          0, inlink->channel_layout);
-            if (s->map[i].in_channel) {
-                channel_name = av_get_channel_name(s->map[i].in_channel);
+            if (m->in_channel) {
+                channel_name = av_get_channel_name(m->in_channel);
                 av_log(ctx, AV_LOG_ERROR,
                        "input channel '%s' not available from input layout '%s'\n",
                        channel_name, layout_name);
             } else {
                 av_log(ctx, AV_LOG_ERROR,
                        "input channel #%d not available from input layout '%s'\n",
-                       s->map[i].in_channel_idx, layout_name);
+                       m->in_channel_idx, layout_name);
             }
             err = AVERROR(EINVAL);
         }
