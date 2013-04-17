@@ -1453,7 +1453,11 @@ int show_filters(void *optctx, const char *opt, const char *arg)
     int i, j;
     const AVFilterPad *pad;
 
-    printf("Filters:\n");
+    printf("Filters:\n"
+           "  A = Audio input/output\n"
+           "  V = Video input/output\n"
+           "  N = Dynamic number and/or type of input/output\n"
+           "  | = Source or sink filter\n");
 #if CONFIG_AVFILTER
     while ((filter = avfilter_next(filter))) {
         descr_cur = descr;
@@ -1469,7 +1473,8 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                 *(descr_cur++) = get_media_type_char(pad[j].type);
             }
             if (!j)
-                *(descr_cur++) = '|';
+                *(descr_cur++) = ((!i && (filter->flags & AVFILTER_FLAG_DYNAMIC_INPUTS)) ||
+                                  ( i && (filter->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS))) ? 'N' : '|';
         }
         *descr_cur = 0;
         printf("%-16s %-10s %s\n", filter->name, descr, filter->description);
