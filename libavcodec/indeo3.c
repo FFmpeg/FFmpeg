@@ -226,7 +226,7 @@ static av_cold void free_frame_buffers(Indeo3DecodeContext *ctx)
  *  @param plane    pointer to the plane descriptor
  *  @param cell     pointer to the cell  descriptor
  */
-static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
+static int copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
 {
     int     h, w, mv_x, mv_y, offset, offset_dst;
     uint8_t *src, *dst;
@@ -239,6 +239,16 @@ static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
     mv_x        = cell->mv_ptr[1];
     }else
         mv_x= mv_y= 0;
+
+    /* -1 because there is an extra line on top for prediction */
+    if ((cell->ypos << 2) + mv_y < -1 || (cell->xpos << 2) + mv_x < 0 ||
+        ((cell->ypos + cell->height) << 2) + mv_y >= plane->height    ||
+        ((cell->xpos + cell->width)  << 2) + mv_x >= plane->width) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "Motion vectors point out of the frame.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     offset      = offset_dst + mv_y * plane->pitch + mv_x;
     src         = plane->pixels[ctx->buf_sel ^ 1] + offset;
 
@@ -266,6 +276,8 @@ static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
             dst += 4;
         }
     }
+
+    return 0;
 }
 
 
@@ -587,29 +599,29 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     offset = (cell->ypos << 2) * plane->pitch + (cell->xpos << 2);
     block  =  plane->pixels[ctx->buf_sel] + offset;
 
-    if (cell->mv_ptr) {
-        mv_y      = cell->mv_ptr[0];
-        mv_x      = cell->mv_ptr[1];
-        if (   mv_x + 4*cell->xpos < 0
-            || mv_y + 4*cell->ypos < 0
-            || mv_x + 4*cell->xpos + 4*cell->width  > plane->width
-            || mv_y + 4*cell->ypos + 4*cell->height > plane->height) {
-            av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", mv_x + 4*cell->xpos, mv_y + 4*cell->ypos);
-            return AVERROR_INVALIDDATA;
-        }
-    }
-
     if (!cell->mv_ptr) {
         /* use previous line as reference for INTRA cells */
         ref_block = block - plane->pitch;
     } else if (mode >= 10) {
         /* for mode 10 and 11 INTER first copy the predicted cell into the current one */
         /* so we don't need to do data copying for each RLE code later */
-        copy_cell(ctx, plane, cell);
+        int ret = copy_cell(ctx, plane, cell);
+        if (ret < 0)
+            return ret;
     } else {
         /* set the pointer to the reference pixels for modes 0-4 INTER */
         mv_y      = cell->mv_ptr[0];
         mv_x      = cell->mv_ptr[1];
+
+        /* -1 because there is an extra line on top for prediction */
+        if ((cell->ypos << 2) + mv_y < -1 || (cell->xpos << 2) + mv_x < 0 ||
+            ((cell->ypos + cell->height) << 2) + mv_y >= plane->height    ||
+            ((cell->xpos + cell->width)  << 2) + mv_x >= plane->width) {
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "Motion vectors point out of the frame.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         offset   += mv_y * plane->pitch + mv_x;
         ref_block = plane->pixels[ctx->buf_sel ^ 1] + offset;
     }
@@ -743,8 +755,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                          const int depth, const int strip_width)
 {
     Cell    curr_cell;
-    int     bytes_used;
-    int mv_x, mv_y;
+    int     bytes_used, ret;
 
     if (depth <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Stack overflow (corrupted binary tree)!\n");
@@ -796,18 +807,8 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 if (!curr_cell.mv_ptr)
                     return AVERROR_INVALIDDATA;
 
-                mv_y = curr_cell.mv_ptr[0];
-                mv_x = curr_cell.mv_ptr[1];
-                if (   mv_x + 4*curr_cell.xpos < 0
-                    || mv_y + 4*curr_cell.ypos < 0
-                    || mv_x + 4*curr_cell.xpos + 4*curr_cell.width  > plane->width
-                    || mv_y + 4*curr_cell.ypos + 4*curr_cell.height > plane->height) {
-                    av_log(avctx, AV_LOG_ERROR, "motion vector %d %d outside reference\n", mv_x + 4*curr_cell.xpos, mv_y + 4*curr_cell.ypos);
-                    return AVERROR_INVALIDDATA;
-                }
-
-                copy_cell(ctx, plane, &curr_cell);
-                return 0;
+                ret = copy_cell(ctx, plane, &curr_cell);
+                return ret;
             }
             break;
         case INTER_DATA:
@@ -1136,6 +1137,6 @@ AVCodec ff_indeo3_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
     .capabilities   = CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
 };
