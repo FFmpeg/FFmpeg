@@ -186,7 +186,7 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
 
     if (avctx->width > 65535 || avctx->height > 65535) {
         av_log(avctx, AV_LOG_ERROR, "GIF does not support resolutions above 65535x65535\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     avctx->coded_frame = &s->picture;
