@@ -216,11 +216,7 @@ static const AVFilterPad avfilter_vf_setsar_outputs[] = {
 AVFilter avfilter_vf_setsar = {
     .name      = "setsar",
     .description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
-
-#if FF_API_OLD_FILTER_OPTS
     .init      = init,
-#endif
-
     .priv_size = sizeof(AspectContext),
     .priv_class = &setsar_class,
 
