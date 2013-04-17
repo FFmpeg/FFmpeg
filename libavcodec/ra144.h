@@ -56,7 +56,7 @@ typedef struct RA144Context {
 
     /** Adaptive codebook, its size is two units bigger to avoid a
      *  buffer overflow. */
-    uint16_t adapt_cb[146+2];
+    int16_t adapt_cb[146+2];
 } RA144Context;
 
 void ff_copy_and_dup(int16_t *target, const int16_t *source, int offset);
@@ -69,7 +69,7 @@ int ff_interp(RA144Context *ractx, int16_t *out, int a, int copyold,
               int energy);
 unsigned int ff_rescale_rms(unsigned int rms, unsigned int energy);
 int ff_irms(const int16_t *data);
-void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
+void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
                            int cba_idx, int cb1_idx, int cb2_idx,
                            int gval, int gain);
 

@@ -1694,12 +1694,12 @@ int ff_irms(const int16_t *data)
     return 0x20000000 / (ff_t_sqrt(sum) >> 8);
 }
 
-void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
+void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
                            int cba_idx, int cb1_idx, int cb2_idx,
                            int gval, int gain)
 {
-    uint16_t buffer_a[BLOCKSIZE];
-    uint16_t *block;
+    int16_t buffer_a[BLOCKSIZE];
+    int16_t *block;
     int m[3];
 
     if (cba_idx) {

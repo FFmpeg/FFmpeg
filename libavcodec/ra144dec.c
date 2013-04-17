@@ -45,7 +45,7 @@ static av_cold int ra144_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
+static void do_output_subblock(RA144Context *ractx, const int16_t  *lpc_coefs,
                                int gval, GetBitContext *gb)
 {
     int cba_idx = get_bits(gb, 7); // index of the adaptive CB, 0 if none
@@ -66,7 +66,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     int buf_size = avpkt->size;
     static const uint8_t sizes[LPC_ORDER] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
     unsigned int refl_rms[NBLOCKS];           // RMS of the reflection coefficients
-    uint16_t block_coefs[NBLOCKS][LPC_ORDER]; // LPC coefficients of each sub-block
+    int16_t block_coefs[NBLOCKS][LPC_ORDER];  // LPC coefficients of each sub-block
     unsigned int lpc_refl[LPC_ORDER];         // LPC reflection coefficients of the frame
     int i, j;
     int ret;
