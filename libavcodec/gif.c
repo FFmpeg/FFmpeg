@@ -56,28 +56,6 @@ static int gif_image_write_image(AVCodecContext *avctx,
     int x_start = 0, y_start = 0;
     const uint8_t *ptr;
 
-    /* Mark one colour as transparent if the input palette contains at least
-     * one colour that is more than 50% transparent. */
-    if (palette) {
-        unsigned i, smallest_alpha = 0xFF, alpha_component = 0;
-        for (i = 0; i < AVPALETTE_COUNT; i++) {
-            const uint32_t v = palette[i];
-            if (v >> 24 < smallest_alpha) {
-                smallest_alpha = v >> 24;
-                alpha_component = i;
-            }
-        }
-        if (smallest_alpha < 128) {
-            bytestream_put_byte(bytestream, 0x21); /* Extension Introducer */
-            bytestream_put_byte(bytestream, 0xf9); /* Graphic Control Label */
-            bytestream_put_byte(bytestream, 0x04); /* block length */
-            bytestream_put_byte(bytestream, 0x01); /* Transparent Color Flag */
-            bytestream_put_le16(bytestream, 0x00); /* no delay */
-            bytestream_put_byte(bytestream, alpha_component);
-            bytestream_put_byte(bytestream, 0x00);
-        }
-    }
-
     /* Crop image */
     // TODO support with palette change
     if (s->last_frame && !palette) {
@@ -210,8 +188,13 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        uint8_t *pal_exdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
+        if (!pal_exdata)
+            return AVERROR(ENOMEM);
+        memcpy(pal_exdata, p->data[1], AVPALETTE_SIZE);
         palette = (uint32_t*)p->data[1];
+    }
 
     gif_image_write_image(avctx, &outbuf_ptr, end, palette, pict->data[0], pict->linesize[0]);
     if (!s->last_frame) {

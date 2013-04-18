@@ -102,15 +102,39 @@ static int gif_write_header(AVFormatContext *s)
 
 static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    int size;
     AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
     AVIOContext *pb = s->pb;
     int jiffies;
+    uint8_t flags = 0x4, transparent_color_index = 0x1f;
+    const uint32_t *palette;
+
+    /* Mark one colour as transparent if the input palette contains at least
+     * one colour that is more than 50% transparent. */
+    palette = (uint32_t*)av_packet_get_side_data(pkt, AV_PKT_DATA_PALETTE, &size);
+    if (palette && size != AVPALETTE_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Invalid palette extradata\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (palette) {
+        unsigned i, smallest_alpha = 0xff;
+
+        for (i = 0; i < AVPALETTE_COUNT; i++) {
+            const uint32_t v = palette[i];
+            if (v >> 24 < smallest_alpha) {
+                smallest_alpha = v >> 24;
+                transparent_color_index = i;
+            }
+        }
+        if (smallest_alpha < 128)
+            flags |= 0x1; /* Transparent Color Flag */
+    }
 
     /* graphic control extension block */
     avio_w8(pb, 0x21);
     avio_w8(pb, 0xf9);
     avio_w8(pb, 0x04); /* block size */
-    avio_w8(pb, 0x04); /* flags */
+    avio_w8(pb, flags);
 
     /* 1 jiffy is 1/70 s */
     /* the delay_time field indicates the number of jiffies - 1 */
@@ -121,7 +145,7 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     avio_wl16(pb, jiffies);
 
-    avio_w8(pb, 0x1f); /* transparent color index */
+    avio_w8(pb, transparent_color_index);
     avio_w8(pb, 0x00);
 
     avio_write(pb, pkt->data, pkt->size);
