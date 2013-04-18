@@ -22,6 +22,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
@@ -67,6 +68,7 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
 typedef struct {
     AVClass *class;         /** Class for private options. */
     int loop;
+    int64_t prev_pts;
 } GIFContext;
 
 static int gif_write_header(AVFormatContext *s)
@@ -89,6 +91,7 @@ static int gif_write_header(AVFormatContext *s)
     width  = video_enc->width;
     height = video_enc->height;
 
+    avpriv_set_pts_info(s->streams[0], 64, 1, 100);
     if (avpriv_set_systematic_pal2(palette, video_enc->pix_fmt) < 0) {
         av_assert0(video_enc->pix_fmt == AV_PIX_FMT_PAL8);
         gif_image_write_header(pb, width, height, gif->loop, NULL);
@@ -102,10 +105,9 @@ static int gif_write_header(AVFormatContext *s)
 
 static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int size;
-    AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
+    GIFContext *gif = s->priv_data;
+    int size, duration;
     AVIOContext *pb = s->pb;
-    int jiffies;
     uint8_t flags = 0x4, transparent_color_index = 0x1f;
     const uint32_t *palette;
 
@@ -130,21 +132,15 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
             flags |= 0x1; /* Transparent Color Flag */
     }
 
+    duration = pkt->pts == AV_NOPTS_VALUE ? 0 : av_clip_uint16(pkt->pts - gif->prev_pts);
+    gif->prev_pts = pkt->pts;
+
     /* graphic control extension block */
     avio_w8(pb, 0x21);
     avio_w8(pb, 0xf9);
     avio_w8(pb, 0x04); /* block size */
     avio_w8(pb, flags);
-
-    /* 1 jiffy is 1/70 s */
-    /* the delay_time field indicates the number of jiffies - 1 */
-    /* XXX: should use delay, in order to be more accurate */
-    /* instead of using the same rounded value each time */
-    /* XXX: don't even remember if I really use it for now */
-    jiffies = (70 * enc->time_base.num / enc->time_base.den) - 1;
-
-    avio_wl16(pb, jiffies);
-
+    avio_wl16(pb, duration);
     avio_w8(pb, transparent_color_index);
     avio_w8(pb, 0x00);
 
@@ -189,4 +185,5 @@ AVOutputFormat ff_gif_muxer = {
     .write_packet   = gif_write_packet,
     .write_trailer  = gif_write_trailer,
     .priv_class     = &gif_muxer_class,
+    .flags          = AVFMT_VARIABLE_FPS,
 };
