@@ -77,10 +77,11 @@ static int gif_write_header(AVFormatContext *s)
     int width, height;
     uint32_t palette[AVPALETTE_COUNT];
 
-    if (s->nb_streams != 1 || !s->streams[0]->codec ||
-        s->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+    if (s->nb_streams != 1 ||
+        s->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
+        s->streams[0]->codec->codec_id   != AV_CODEC_ID_GIF) {
         av_log(s, AV_LOG_ERROR,
-               "GIF supports only a single video stream.\n");
+               "GIF muxer supports only a single video GIF stream.\n");
         return AVERROR(EINVAL);
     }
 
