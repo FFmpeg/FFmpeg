@@ -468,6 +468,10 @@ form @var{num}:@var{den}, where @var{num} and @var{den} are the
 numerator and denominator of the aspect ratio. For example "4:3",
 "16:9", "1.3333", and "1.7777" are valid argument values.
 
+If used together with @option{-vcodec copy}, it will affect the aspect ratio
+stored at container level, but not the aspect ratio stored in encoded
+frames, if it exists.
+
 @item -vn (@emph{output})
 Disable video recording.
 

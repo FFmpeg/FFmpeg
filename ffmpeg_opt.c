@@ -1168,7 +1168,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *video_enc;
-    char *frame_rate = NULL;
+    char *frame_rate = NULL, *frame_aspect_ratio = NULL;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO, source_index);
     st  = ost->st;
@@ -1180,10 +1180,21 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         exit(1);
     }
 
+    MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
+    if (frame_aspect_ratio) {
+        AVRational q;
+        if (av_parse_ratio(&q, frame_aspect_ratio, 255, 0, NULL) < 0 ||
+            q.num <= 0 || q.den <= 0) {
+            av_log(NULL, AV_LOG_FATAL, "Invalid aspect ratio: %s\n", frame_aspect_ratio);
+            exit(1);
+        }
+        ost->frame_aspect_ratio = q;
+    }
+
     if (!ost->stream_copy) {
         const char *p = NULL;
         char *frame_size = NULL;
-        char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
+        char *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
         int do_pass = 0;
         int i;
@@ -1192,17 +1203,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         if (frame_size && av_parse_video_size(&video_enc->width, &video_enc->height, frame_size) < 0) {
             av_log(NULL, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
             exit(1);
-        }
-
-        MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
-        if (frame_aspect_ratio) {
-            AVRational q;
-            if (av_parse_ratio(&q, frame_aspect_ratio, 255, 0, NULL) < 0 ||
-                q.num <= 0 || q.den <= 0) {
-                av_log(NULL, AV_LOG_FATAL, "Invalid aspect ratio: %s\n", frame_aspect_ratio);
-                exit(1);
-            }
-            ost->frame_aspect_ratio = q;
         }
 
         video_enc->bits_per_raw_sample = frame_bits_per_raw_sample;

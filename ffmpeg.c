@@ -2224,7 +2224,14 @@ static int transcode_init(void)
                 codec->width              = icodec->width;
                 codec->height             = icodec->height;
                 codec->has_b_frames       = icodec->has_b_frames;
-                if (!codec->sample_aspect_ratio.num) {
+                if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
+                    codec->sample_aspect_ratio   =
+                    ost->st->sample_aspect_ratio =
+                        av_mul_q(ost->frame_aspect_ratio,
+                                 (AVRational){ codec->height, codec->width });
+                    av_log(NULL, AV_LOG_WARNING, "Overriding aspect ratio "
+                           "with stream copy may produce invalid files\n");
+                } else if (!codec->sample_aspect_ratio.num) {
                     codec->sample_aspect_ratio   =
                     ost->st->sample_aspect_ratio =
                         ist->st->sample_aspect_ratio.num ? ist->st->sample_aspect_ratio :
