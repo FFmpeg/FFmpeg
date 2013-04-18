@@ -28,6 +28,7 @@ version <next>:
 - The matroska demuxer can now output proper verbatim ASS packets. It will
   become the default at the next libavformat major bump.
 - decent native animated GIF encoding
+- asetrate filter
 
 
 version 1.2:

@@ -900,6 +900,18 @@ disable padding for the last frame, use:
 asetnsamples=n=1234:p=0
 @end example
 
+@section asetrate
+
+Set the sample rate without altering the PCM data.
+This will result in a change of speed and pitch.
+
+The filter accepts the following options:
+
+@table @option
+@item sample_rate, r
+Set the output sample rate. Default is 44100 Hz.
+@end table
+
 @section ashowinfo
 
 Show a line containing various information for each input audio frame.
