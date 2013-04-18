@@ -43,5 +43,7 @@ static const uint8_t gif89a_sig[6] = "GIF89a";
 #define GIF_EXTENSION_INTRODUCER    0x21
 #define GIF_IMAGE_SEPARATOR         0x2c
 #define GIF_GCE_EXT_LABEL           0xf9
+#define GIF_APP_EXT_LABEL           0xff
+#define NETSCAPE_EXT_STR            "NETSCAPE2.0"
 
 #endif /* AVCODEC_GIFDEFS_H */
