@@ -87,7 +87,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
             y_end = avctx->height - 1;
 
         /* skip common lines */
-        while (y_start < height) {
+        while (y_start < y_end) {
             if (memcmp(ref + y_start*ref_linesize, buf + y_start*linesize, width))
                 break;
             y_start++;
@@ -100,7 +100,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
         height = y_end + 1 - y_start;
 
         /* skip common columns */
-        while (x_start < width) {
+        while (x_start < x_end) {
             int same_column = 1;
             for (y = y_start; y < y_end; y++) {
                 if (ref[y*ref_linesize + x_start] != buf[y*linesize + x_start]) {
