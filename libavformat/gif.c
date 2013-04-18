@@ -104,32 +104,23 @@ static int gif_write_header(AVFormatContext *s)
 {
     GIFContext *gif = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecContext *enc, *video_enc;
-    int i, width, height /*, rate*/;
+    AVCodecContext *video_enc;
+    int width, height;
     uint32_t palette[AVPALETTE_COUNT];
 
-/* XXX: do we reject audio streams or just ignore them ?
- *  if (s->nb_streams > 1)
- *      return -1;
- */
+    if (s->nb_streams != 1 || !s->streams[0]->codec ||
+        s->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+        av_log(s, AV_LOG_ERROR,
+               "GIF supports only a single video stream.\n");
+        return AVERROR(EINVAL);
+    }
+
     gif->time      = 0;
     gif->file_time = 0;
 
-    video_enc = NULL;
-    for (i = 0; i < s->nb_streams; i++) {
-        enc = s->streams[i]->codec;
-        if (enc->codec_type != AVMEDIA_TYPE_AUDIO)
-            video_enc = enc;
-    }
-
-    if (!video_enc) {
-        av_free(gif);
-        return -1;
-    } else {
-        width  = video_enc->width;
-        height = video_enc->height;
-//        rate = video_enc->time_base.den;
-    }
+    video_enc = s->streams[0]->codec;
+    width  = video_enc->width;
+    height = video_enc->height;
 
     if (avpriv_set_systematic_pal2(palette, video_enc->pix_fmt) < 0) {
         av_assert0(video_enc->pix_fmt == AV_PIX_FMT_PAL8);
@@ -174,10 +165,7 @@ static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
 static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO)
-        return 0; /* just ignore audio */
-    else
-        return gif_write_video(s, codec, pkt->data, pkt->size);
+    return gif_write_video(s, codec, pkt->data, pkt->size);
 }
 
 static int gif_write_trailer(AVFormatContext *s)
