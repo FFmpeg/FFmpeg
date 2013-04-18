@@ -21,9 +21,11 @@
 
 #include "avformat.h"
 #include "rtpdec_formats.h"
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 
-static int h263_init(AVFormatContext *ctx, int st_index, PayloadContext *data)
+static av_cold int h263_init(AVFormatContext *ctx, int st_index,
+                             PayloadContext *data)
 {
     if (st_index < 0)
         return 0;

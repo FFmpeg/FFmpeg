@@ -19,10 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "rtpdec_formats.h"
+#include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
+#include "rtpdec_formats.h"
 
-static int mpeg_init(AVFormatContext *ctx, int st_index, PayloadContext *data)
+static av_cold int mpeg_init(AVFormatContext *ctx, int st_index, PayloadContext *data)
 {
     if (st_index < 0)
         return 0;
