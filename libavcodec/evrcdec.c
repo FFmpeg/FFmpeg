@@ -640,7 +640,7 @@ static void postfilter(EVRCContext *e, float *in, const float *coeff,
     /* Short term postfilter */
     synthesis_filter(temp, wcoef2, e->postfilter_iir, length, out);
 
-    memcpy(e->postfilter_residual,
+    memmove(e->postfilter_residual,
            e->postfilter_residual + length, ACB_SIZE * sizeof(float));
 }
 
@@ -714,7 +714,7 @@ static void frame_erasure(EVRCContext *e, float *samples)
                 e->pitch[ACB_SIZE + j] = e->energy_vector[i];
         }
 
-        memcpy(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
+        memmove(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
 
         if (e->bitrate != RATE_QUANT && e->avg_acb_gain < 0.4) {
             f = 0.1 * e->avg_fcb_gain;
@@ -814,7 +814,7 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
 
                 interpolate_delay(idelay, delay, e->prev_pitch_delay, i);
                 acb_excitation(e, e->pitch + ACB_SIZE, e->avg_acb_gain, idelay, subframe_size);
-                memcpy(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
+                memmove(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
             }
         }
 
@@ -872,7 +872,7 @@ static int evrc_decode_frame(AVCodecContext *avctx, void *data,
                 e->pitch[ACB_SIZE + j] = e->energy_vector[i];
         }
 
-        memcpy(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
+        memmove(e->pitch, e->pitch + subframe_size, ACB_SIZE * sizeof(float));
 
         synthesis_filter(e->pitch + ACB_SIZE, ilpc,
                          e->synthesis, subframe_size, tmp);
