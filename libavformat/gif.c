@@ -95,8 +95,6 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
 
 typedef struct {
     AVClass *class;         /** Class for private options. */
-    int64_t time, file_time;
-    uint8_t buffer[100]; /* data chunks */
     int loop;
 } GIFContext;
 
@@ -114,9 +112,6 @@ static int gif_write_header(AVFormatContext *s)
                "GIF supports only a single video stream.\n");
         return AVERROR(EINVAL);
     }
-
-    gif->time      = 0;
-    gif->file_time = 0;
 
     video_enc = s->streams[0]->codec;
     width  = video_enc->width;
