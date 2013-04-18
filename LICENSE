@@ -72,6 +72,7 @@ compatible libraries
 The following libraries are under GPL:
     - libcdio
     - libutvideo
+    - libvidstab
     - libx264
     - libxavs
     - libxvid

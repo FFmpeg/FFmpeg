@@ -5308,6 +5308,141 @@ much, but it will increase the amount of blurring needed to cover over
 the image and will destroy more information than necessary, and extra
 pixels will slow things down on a large logo.
 
+@anchor{vidstabtransform}
+@section vidstabtransform
+
+Video stabilization/deshaking: pass 2 of 2,
+see @ref{vidstabdetect} for pass 1.
+
+Read a file with transform information for each frame and
+apply/compensate them. Together with the @ref{vidstabdetect}
+filter this can be used to deshake videos. See also
+@url{http://public.hronopik.de/vid.stab}. It is important to also use
+the unsharp filter, see below.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libvidstab}.
+
+This filter accepts the following named options, expressed as a
+sequence of @var{key}=@var{value} pairs, separated by ":".
+
+@table @option
+
+@item input
+path to the file used to read the transforms (default: @file{transforms.trf})
+
+@item smoothing
+number of frames (value*2 + 1) used for lowpass filtering the camera movements
+(default: 10). For example a number of 10 means that 21 frames are used
+(10 in the past and 10 in the future) to smoothen the motion in the
+video. A larger values leads to a smoother video, but limits the
+acceleration of the camera (pan/tilt movements).
+
+@item maxshift
+maximal number of pixels to translate frames (default: -1 no limit)
+
+@item maxangle
+maximal angle in radians (degree*PI/180) to rotate frames (default: -1
+no limit)
+
+@item crop
+How to deal with borders that may be visible due to movement
+compensation. Available values are:
+
+@table @samp
+@item keep
+keep image information from previous frame (default)
+@item black
+fill the border black
+@end table
+
+@item invert
+@table @samp
+@item 0
+ keep transforms normal (default)
+@item 1
+ invert transforms
+@end table
+
+
+@item relative
+consider transforms as
+@table @samp
+@item 0
+ absolute
+@item 1
+ relative to previous frame (default)
+@end table
+
+
+@item zoom
+percentage to zoom (default: 0)
+@table @samp
+@item >0
+  zoom in
+@item <0
+  zoom out
+@end table
+
+@item optzoom
+if 1 then optimal zoom value is determined (default).
+Optimal zoom means no (or only little) border should be visible.
+Note that the value given at zoom is added to the one calculated
+here.
+
+@item interpol
+type of interpolation
+
+Available values are:
+@table @samp
+@item no
+no interpolation
+@item linear
+linear only horizontal
+@item bilinear
+linear in both directions (default)
+@item bicubic
+cubic in both directions (slow)
+@end table
+
+@item tripod
+virtual tripod mode means that the video is stabilized such that the
+camera stays stationary. Use also @code{tripod} option of
+@ref{vidstabdetect}.
+@table @samp
+@item 0
+off (default)
+@item 1
+virtual tripod mode: equivalent to @code{relative=0:smoothing=0}
+@end table
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+typical call with default default values:
+ (note the unsharp filter which is always recommended)
+@example
+ffmpeg -i inp.mpeg -vf vidstabtransform,unsharp=5:5:0.8:3:3:0.4 inp_stabilized.mpeg
+@end example
+
+@item
+zoom in a bit more and load transform data from a given file
+@example
+vidstabtransform=zoom=5:input="mytransforms.trf"
+@end example
+
+@item
+smoothen the video even more
+@example
+vidstabtransform=smoothing=30
+@end example
+
+@end itemize
+
+
 @section scale
 
 Scale (resize) the input video, using the libswscale library.
@@ -5705,6 +5840,93 @@ in [-30,0] will filter edges. Default value is 0.
 
 If a chroma option is not explicitly set, the corresponding luma value
 is set.
+
+@anchor{vidstabdetect}
+@section vidstabdetect
+
+Video stabilization/deshaking: pass 1 of 2, see @ref{vidstabtransform}
+for pass 2.
+
+Generates a file with relative transform information translation,
+rotation about subsequent frames.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libvidstab}.
+
+This filter accepts the following named options, expressed as a
+sequence of @var{key}=@var{value} pairs, separated by ":".
+
+@table @option
+@item result
+path to the file used to write the transforms (default:@file{transforms.trf})
+
+@item shakiness
+how shaky is the video and how quick is the camera? (default: 5)
+@table @samp
+@item 1
+ little (fast)
+@item ...
+@item 10
+ very strong/quick (slow)
+@end table
+
+@item accuracy
+accuracy of detection process (>=shakiness) (default: 9)
+@table @samp
+@item 1
+ low (fast)
+@item 15
+ high (slow)
+@end table
+
+@item stepsize
+stepsize of search process, region around minimum is scanned with 1 pixel
+resolution (default: 6)
+
+@item mincontrast
+below this contrast a local measurement field is discarded (0-1) (default: 0.3)
+
+@item tripod
+virtual tripod mode: @code{tripod=framenum} if framenum>0 otherwise disabled.
+The motion of the frames is compared to a reference frame (framenum).
+The idea is to compensate all movements in a more-or-less static scene
+ and keep the camera view absolutely still.
+(default: 0 (disabled))
+
+@item show
+draw nothing (default); 1,2: show fields and transforms in the resulting frames
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+use default values:
+@example
+vidstabdetect
+@end example
+
+@item
+strongly shaky movie and put the results in @code{mytransforms.trf}
+@example
+vidstabdetect=shakiness=10:accuracy=15:result="mytransforms.trf"
+@end example
+
+@item
+visualize some internals in the resulting video
+@example
+vidstabdetect=show=1
+@end example
+
+
+@item
+Typical call with visualization
+@example
+ffmpeg -i input -vf vidstabdetect=shakiness=5:show=1 dummy.avi
+@end example
+@end itemize
+
 
 @section stereo3d
 

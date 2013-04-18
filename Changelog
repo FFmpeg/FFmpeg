@@ -31,6 +31,8 @@ version <next>:
 - asetrate filter
 - interleave filter
 - timeline editing with filters
+- vidstabdetect and vidstabtransform filters for video stabilization using
+  the vid.stab library
 
 
 version 1.2:
