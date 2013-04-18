@@ -99,9 +99,9 @@ static int gif_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
-                           const uint8_t *buf, int size)
+static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    AVCodecContext *enc = s->streams[pkt->stream_index]->codec;
     AVIOContext *pb = s->pb;
     int jiffies;
 
@@ -123,15 +123,9 @@ static int gif_write_video(AVFormatContext *s, AVCodecContext *enc,
     avio_w8(pb, 0x1f); /* transparent color index */
     avio_w8(pb, 0x00);
 
-    avio_write(pb, buf, size);
+    avio_write(pb, pkt->data, pkt->size);
 
     return 0;
-}
-
-static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    return gif_write_video(s, codec, pkt->data, pkt->size);
 }
 
 static int gif_write_trailer(AVFormatContext *s)
