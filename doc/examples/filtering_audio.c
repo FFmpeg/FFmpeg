@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 
             if (got_frame) {
                 /* push the audio data from decoded frame into the filtergraph */
-                if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
+                if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, 0) < 0) {
                     av_log(NULL, AV_LOG_ERROR, "Error while feeding the audio filtergraph\n");
                     break;
                 }
