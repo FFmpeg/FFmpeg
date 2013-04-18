@@ -388,6 +388,8 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
         }else if (score == score_max)
             fmt = NULL;
     }
+    if(nodat)
+        score_max = FFMIN(AVPROBE_SCORE_MAX/4-1, score_max);
     *score_ret= score_max;
 
     return fmt;
