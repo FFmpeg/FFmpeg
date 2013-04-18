@@ -310,6 +310,10 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
             return -1;\
         }\
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);\
+        if (buf[j].code >= (1LL<<buf[j].bits)) {\
+            av_log(NULL, AV_LOG_ERROR, "Invalid code in init_vlc\n");\
+            return -1;\
+        }\
         if (flags & INIT_VLC_LE)\
             buf[j].code = bitswap_32(buf[j].code);\
         else\
