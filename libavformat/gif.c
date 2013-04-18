@@ -27,12 +27,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
-/* slows down the decoding (and some browsers don't like it) */
-/* update on the 'some browsers don't like it issue from above:
- * this was probably due to missing 'Data Sub-block Terminator'
- * (byte 19) in the app_header */
-#define GIF_ADD_APP_HEADER // required to enable looping of animated gif
-
 static int gif_image_write_header(AVIOContext *pb, int width, int height,
                                   int loop_count, uint32_t *palette)
 {
@@ -57,39 +51,16 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
         avio_w8(pb, 0); /* aspect ratio */
     }
 
-    /* update: this is the 'NETSCAPE EXTENSION' that allows for looped animated
-     * GIF, see http://members.aol.com/royalef/gifabout.htm#net-extension
-     *
-     * byte   1       : 33 (hex 0x21) GIF Extension code
-     * byte   2       : 255 (hex 0xFF) Application Extension Label
-     * byte   3       : 11 (hex (0x0B) Length of Application Block
-     *                          (eleven bytes of data to follow)
-     * bytes  4 to 11 : "NETSCAPE"
-     * bytes 12 to 14 : "2.0"
-     * byte  15       : 3 (hex 0x03) Length of Data Sub-Block
-     *                          (three bytes of data to follow)
-     * byte  16       : 1 (hex 0x01)
-     * bytes 17 to 18 : 0 to 65535, an unsigned integer in
-     *                          lo-hi byte format. This indicate the
-     *                          number of iterations the loop should
-     *                          be executed.
-     * bytes 19       : 0 (hex 0x00) a Data Sub-block Terminator
-     */
+    /* "NETSCAPE EXTENSION" for looped animation GIF */
+    avio_w8(pb, 0x21); /* GIF Extension code */
+    avio_w8(pb, 0xff); /* Application Extension Label */
+    avio_w8(pb, 0x0b); /* Length of Application Block */
+    avio_write(pb, "NETSCAPE2.0", sizeof("NETSCAPE2.0") - 1);
+    avio_w8(pb, 0x03); /* Length of Data Sub-Block */
+    avio_w8(pb, 0x01);
+    avio_wl16(pb, (uint16_t)loop_count);
+    avio_w8(pb, 0x00); /* Data Sub-block Terminator */
 
-    /* application extension header */
-#ifdef GIF_ADD_APP_HEADER
-    if (loop_count >= 0 && loop_count <= 65535) {
-        avio_w8(pb, 0x21);
-        avio_w8(pb, 0xff);
-        avio_w8(pb, 0x0b);
-        // bytes 4 to 14
-        avio_write(pb, "NETSCAPE2.0", sizeof("NETSCAPE2.0") - 1);
-        avio_w8(pb, 0x03); // byte 15
-        avio_w8(pb, 0x01); // byte 16
-        avio_wl16(pb, (uint16_t)loop_count);
-        avio_w8(pb, 0x00); // byte 19
-    }
-#endif
     return 0;
 }
 
