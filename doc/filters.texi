@@ -14104,6 +14104,27 @@ Set scale used for displaying graticule.
 Default is digital.
 @end table
 
+@section weave
+
+The @code{weave} takes a field-based video input and join
+each two sequential fields into single frame, producing a new double
+height clip with half the frame rate and half the frame count.
+
+It accepts the following option:
+
+@table @option
+@item first_field
+Set first field. Available values are:
+
+@table @samp
+@item top, t
+Set the frame as top-field-first.
+
+@item bottom, b
+Set the frame as bottom-field-first.
+@end table
+@end table
+
 @section xbr
 Apply the xBR high-quality magnification filter which is designed for pixel
 art. It follows a set of edge-detection rules, see

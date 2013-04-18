@@ -24,6 +24,7 @@ version <next>:
 - yuvtestsrc filter
 - vaguedenoiser filter
 - added threads option per filter instance
+- weave filter
 
 
 version 3.1:
