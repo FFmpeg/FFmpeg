@@ -809,7 +809,8 @@ static av_always_inline void MPV_motion_internal(MpegEncContext *s,
                                   s->mv[dir][1][0], s->mv[dir][1][1], 8, mb_y);
             }
         } else {
-            if(s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != AV_PICTURE_TYPE_B && !s->first_field){
+            if(   s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != AV_PICTURE_TYPE_B && !s->first_field
+               || !ref_picture[0]){
                 ref_picture = s->current_picture_ptr->f.data;
             }
 
