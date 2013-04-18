@@ -1772,6 +1772,8 @@ int attribute_align_arg avcodec_encode_video2(AVCodecContext *avctx,
 
     if (ret < 0 || !*got_packet_ptr)
         av_free_packet(avpkt);
+    else
+        av_packet_merge_side_data(avpkt);
 
     emms_c();
     return ret;
