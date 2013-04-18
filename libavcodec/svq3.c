@@ -790,8 +790,8 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
                     header ^ s->watermark_key);
         }
         if (length > 0) {
-            memcpy((uint8_t *) &h->gb.buffer[get_bits_count(&h->gb) >> 3],
-                   &h->gb.buffer[h->gb.size_in_bits >> 3], length - 1);
+            memmove((uint8_t *) &h->gb.buffer[get_bits_count(&h->gb) >> 3],
+                    &h->gb.buffer[h->gb.size_in_bits >> 3], length - 1);
         }
         skip_bits_long(&h->gb, 0);
     }
