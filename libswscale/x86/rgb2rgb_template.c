@@ -1610,6 +1610,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
  * others are ignored in the C version.
  * FIXME: Write HQ version.
  */
+#if HAVE_7REGS
 static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                        int width, int height,
                                        int lumStride, int chromStride, int srcStride,
@@ -1848,6 +1849,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 
      ff_rgb24toyv12_c(src, ydst, udst, vdst, width, height-y, lumStride, chromStride, srcStride, rgb2yuv);
 }
+#endif /* HAVE_7REGS */
 #endif /* !COMPILE_TEMPLATE_SSE2 */
 
 #if !COMPILE_TEMPLATE_AMD3DNOW
@@ -2482,7 +2484,9 @@ static inline void RENAME(rgb2rgb_init)(void)
 #if COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW
     planar2x           = RENAME(planar2x);
 #endif /* COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW */
+#if HAVE_7REGS
     ff_rgb24toyv12     = RENAME(rgb24toyv12);
+#endif /* HAVE_7REGS */
 
     yuyvtoyuv420       = RENAME(yuyvtoyuv420);
     uyvytoyuv420       = RENAME(uyvytoyuv420);
