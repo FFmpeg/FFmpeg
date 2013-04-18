@@ -208,11 +208,12 @@ static double getSplineCoeff(double a, double b, double c, double d,
                               dist - 1.0);
 }
 
-static int initFilter(int16_t **outFilter, int32_t **filterPos,
-                      int *outFilterSize, int xInc, int srcW, int dstW,
-                      int filterAlign, int one, int flags, int cpu_flags,
-                      SwsVector *srcFilter, SwsVector *dstFilter,
-                      double param[2], int is_horizontal)
+static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
+                              int *outFilterSize, int xInc, int srcW,
+                              int dstW, int filterAlign, int one,
+                              int flags, int cpu_flags,
+                              SwsVector *srcFilter, SwsVector *dstFilter,
+                              double param[2], int is_horizontal)
 {
     int i;
     int filterSize;
@@ -600,9 +601,9 @@ fail:
 }
 
 #if HAVE_MMXEXT_INLINE
-static int init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
-                               int16_t *filter, int32_t *filterPos,
-                               int numSplits)
+static av_cold int init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
+                                       int16_t *filter, int32_t *filterPos,
+                                       int numSplits)
 {
     uint8_t *fragmentA;
     x86_reg imm8OfPShufW1A;
