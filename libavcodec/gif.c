@@ -34,11 +34,9 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "lzw.h"
+#include "gif.h"
 
-/* The GIF format uses reversed order for bitstreams... */
-/* at least they don't use PDP_ENDIAN :) */
 #define BITSTREAM_WRITER_LE
-
 #include "put_bits.h"
 
 typedef struct {
@@ -137,7 +135,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     }
 
     /* image block */
-    bytestream_put_byte(bytestream, 0x2c);
+    bytestream_put_byte(bytestream, GIF_IMAGE_SEPARATOR);
     bytestream_put_le16(bytestream, x_start);
     bytestream_put_le16(bytestream, y_start);
     bytestream_put_le16(bytestream, width);
@@ -189,11 +187,10 @@ static int gif_image_write_image(AVCodecContext *avctx,
             ref += ref_linesize;
         }
     } else {
-        /* TODO: reindent */
-    for (y = 0; y < height; y++) {
-        len += ff_lzw_encode(s->lzw, ptr, width);
-        ptr += linesize;
-    }
+        for (y = 0; y < height; y++) {
+            len += ff_lzw_encode(s->lzw, ptr, width);
+            ptr += linesize;
+        }
     }
     len += ff_lzw_encode_flush(s->lzw, flush_put_bits);
 
@@ -233,7 +230,6 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/* better than nothing gif encoder */
 static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
