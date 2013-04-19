@@ -104,22 +104,6 @@ static int gif_write_header(AVFormatContext *s)
     return 0;
 }
 
-/* TODO: move below */
-static int flush_packet(AVFormatContext *s, AVPacket *pkt);
-
-static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    GIFContext *gif = s->priv_data;
-
-    if (!gif->prev_pkt) {
-        gif->prev_pkt = av_malloc(sizeof(*gif->prev_pkt));
-        if (!gif->prev_pkt)
-            return AVERROR(ENOMEM);
-        return av_copy_packet(gif->prev_pkt, pkt);
-    }
-    return flush_packet(s, pkt);
-}
-
 static int flush_packet(AVFormatContext *s, AVPacket *new)
 {
     GIFContext *gif = s->priv_data;
@@ -172,6 +156,19 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
         av_copy_packet(gif->prev_pkt, new);
 
     return 0;
+}
+
+static int gif_write_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    GIFContext *gif = s->priv_data;
+
+    if (!gif->prev_pkt) {
+        gif->prev_pkt = av_malloc(sizeof(*gif->prev_pkt));
+        if (!gif->prev_pkt)
+            return AVERROR(ENOMEM);
+        return av_copy_packet(gif->prev_pkt, pkt);
+    }
+    return flush_packet(s, pkt);
 }
 
 static int gif_write_trailer(AVFormatContext *s)
