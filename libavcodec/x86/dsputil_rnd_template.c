@@ -91,6 +91,8 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff
         :REG_a, "memory");
 }
 
+// avg_pixels
+#ifndef NO_RND
 // in case more speed is needed - unroling would certainly help
 static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
@@ -110,6 +112,7 @@ static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, ptrdiff_t l
     }
     while (--h);
 }
+#endif /* NO_RND */
 
 static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
