@@ -1856,14 +1856,14 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             av_dlog(s, "using cached pos_min=0x%"PRIx64" dts_min=%s\n",
                     pos_min, av_ts2str(ts_min));
         }else{
-            assert(index==0);
+            av_assert1(index==0);
         }
 
         index= av_index_search_timestamp(st, target_ts, flags & ~AVSEEK_FLAG_BACKWARD);
         av_assert0(index < st->nb_index_entries);
         if(index >= 0){
             e= &st->index_entries[index];
-            assert(e->timestamp >= target_ts);
+            av_assert1(e->timestamp >= target_ts);
             pos_max= e->pos;
             ts_max= e->timestamp;
             pos_limit= pos_max - e->min_distance;
