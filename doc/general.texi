@@ -418,7 +418,6 @@ following image formats are supported:
 @item .Y.U.V       @tab X @tab X
     @tab one raw file per component
 @item animated GIF @tab X @tab X
-    @tab Only uncompressed GIFs are generated.
 @item BMP          @tab X @tab X
     @tab Microsoft BMP image
 @item PIX          @tab   @tab X
