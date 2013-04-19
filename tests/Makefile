@@ -15,10 +15,10 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 
 OBJDIRS += tests/data tests/vsynth1
 
-tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF) | tests/vsynth1
+$(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
 
-tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF) | tests/data
+$(AREF): tests/audiogen$(HOSTEXESUF) | tests/data
 	$(M)./$< $@
 
 tests/data/asynth-%.wav: tests/audiogen$(HOSTEXESUF) | tests/data
