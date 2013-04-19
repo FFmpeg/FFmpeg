@@ -27,6 +27,7 @@ version <next>:
 - colorchannelmixer filter
 - The matroska demuxer can now output proper verbatim ASS packets. It will
   become the default at the next libavformat major bump.
+- decent native animated GIF encoding
 
 
 version 1.2:
