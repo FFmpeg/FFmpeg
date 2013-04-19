@@ -68,6 +68,7 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
 typedef struct {
     AVClass *class;         /** Class for private options. */
     int loop;
+    int last_delay;
     AVPacket *prev_pkt;
     int duration;
 } GIFContext;
@@ -139,6 +140,8 @@ static int flush_packet(AVFormatContext *s, AVPacket *new)
 
     if (new && new->pts != AV_NOPTS_VALUE)
         gif->duration = av_clip_uint16(new->pts - gif->prev_pkt->pts);
+    else if (!new && gif->last_delay >= 0)
+        gif->duration = gif->last_delay;
 
     /* graphic control extension block */
     avio_w8(pb, 0x21);
@@ -188,6 +191,8 @@ static int gif_write_trailer(AVFormatContext *s)
 static const AVOption options[] = {
     { "loop", "Number of times to loop the output.", OFFSET(loop),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 65535, ENC },
+    { "final_delay", "Force delay (in ms) after the last frame", OFFSET(last_delay),
+      AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 65535, ENC },
     { NULL },
 };
 
