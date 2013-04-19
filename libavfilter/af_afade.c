@@ -34,8 +34,8 @@ typedef struct {
     int curve;
     int nb_samples;
     int64_t start_sample;
-    double duration;
-    double start_time;
+    int64_t duration;
+    int64_t start_time;
 
     void (*fade_samples)(uint8_t **dst, uint8_t * const *src,
                          int nb_samples, int channels, int direction,
@@ -56,10 +56,10 @@ static const AVOption afade_options[] = {
     { "ss",           "set expression of sample to start fading",    OFFSET(start_sample), AV_OPT_TYPE_INT64,  {.i64 = 0    }, 0, INT64_MAX, FLAGS },
     { "nb_samples",   "set expression for fade duration in samples", OFFSET(nb_samples),   AV_OPT_TYPE_INT,    {.i64 = 44100}, 1, INT32_MAX, FLAGS },
     { "ns",           "set expression for fade duration in samples", OFFSET(nb_samples),   AV_OPT_TYPE_INT,    {.i64 = 44100}, 1, INT32_MAX, FLAGS },
-    { "start_time",   "set expression of second to start fading",    OFFSET(start_time),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.   }, 0, 7*24*60*60,FLAGS },
-    { "st",           "set expression of second to start fading",    OFFSET(start_time),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.   }, 0, 7*24*60*60,FLAGS },
-    { "duration",     "set expression for fade duration in seconds", OFFSET(duration),     AV_OPT_TYPE_DOUBLE, {.dbl = 0.   }, 0, 24*60*60,  FLAGS },
-    { "d",            "set expression for fade duration in seconds", OFFSET(duration),     AV_OPT_TYPE_DOUBLE, {.dbl = 0.   }, 0, 24*60*60,  FLAGS },
+    { "start_time",   "set expression of time to start fading",      OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
+    { "st",           "set expression of time to start fading",      OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
+    { "duration",     "set expression for fade duration",            OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
+    { "d",            "set expression for fade duration",            OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "curve",        "set expression for fade curve",               OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, TRI, CBR, FLAGS, "curve" },
     { "c",            "set expression for fade curve",               OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, TRI, CBR, FLAGS, "curve" },
     { "tri",          "linear slope",                                0,                    AV_OPT_TYPE_CONST,  {.i64 = TRI  }, 0, 0, FLAGS, "curve" },
@@ -218,9 +218,9 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (afade->duration)
-        afade->nb_samples = afade->duration * inlink->sample_rate;
+        afade->nb_samples = afade->duration * inlink->sample_rate / AV_TIME_BASE;
     if (afade->start_time)
-        afade->start_sample = afade->start_time * inlink->sample_rate;
+        afade->start_sample = afade->start_time * inlink->sample_rate / AV_TIME_BASE;
 
     return 0;
 }
