@@ -28,6 +28,7 @@
  * @see http://www.w3.org/Graphics/GIF/spec-gif89a.txt
  */
 
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -40,11 +41,17 @@
 #include "put_bits.h"
 
 typedef struct {
+    const AVClass *class;
     AVFrame picture;
     LZWState *lzw;
     uint8_t *buf;
     AVFrame *last_frame;
+    int flags;
 } GIFContext;
+
+enum {
+    GF_OFFSETTING = 1<<0,
+};
 
 static int gif_image_write_image(AVCodecContext *avctx,
                                  uint8_t **bytestream, uint8_t *end,
@@ -58,7 +65,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
 
     /* Crop image */
     // TODO support with palette change
-    if (s->last_frame && !palette) {
+    if ((s->flags & GF_OFFSETTING) && s->last_frame && !palette) {
         const uint8_t *ref = s->last_frame->data[0];
         const int ref_linesize = s->last_frame->linesize[0];
         int x_end = avctx->width  - 1,
@@ -224,6 +231,21 @@ static int gif_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(GIFContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption gif_options[] = {
+    { "gifflags", "set GIF flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = GF_OFFSETTING}, 0, INT_MAX, FLAGS, "flags" },
+        { "offsetting", "enable picture offsetting", 0, AV_OPT_TYPE_CONST, {.i64=GF_OFFSETTING}, INT_MIN, INT_MAX, FLAGS, "flags" },
+    { NULL }
+};
+
+static const AVClass gif_class = {
+    .class_name = "GIF encoder",
+    .item_name  = av_default_item_name,
+    .option     = gif_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_gif_encoder = {
     .name           = "gif",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -237,4 +259,5 @@ AVCodec ff_gif_encoder = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
+    .priv_class     = &gif_class,
 };
