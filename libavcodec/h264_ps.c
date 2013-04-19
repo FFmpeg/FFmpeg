@@ -459,44 +459,45 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
 #endif
     sps->crop= get_bits1(&h->gb);
     if(sps->crop){
-        int crop_vertical_limit   = sps->chroma_format_idc  & 2 ? 16 : 8;
-        int crop_horizontal_limit = sps->chroma_format_idc == 3 ? 16 : 8;
-        sps->crop_left  = get_ue_golomb(&h->gb);
-        sps->crop_right = get_ue_golomb(&h->gb);
-        sps->crop_top   = get_ue_golomb(&h->gb);
-        sps->crop_bottom= get_ue_golomb(&h->gb);
+        int crop_left   = get_ue_golomb(&h->gb);
+        int crop_right  = get_ue_golomb(&h->gb);
+        int crop_top    = get_ue_golomb(&h->gb);
+        int crop_bottom = get_ue_golomb(&h->gb);
+
         if (h->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
-            av_log(h->avctx, AV_LOG_DEBUG,
-                   "discarding sps cropping, "
-                   "original values are l:%u r:%u t:%u b:%u\n",
-                   sps->crop_left,
-                   sps->crop_right,
-                   sps->crop_top,
-                   sps->crop_bottom);
+            av_log(h->avctx, AV_LOG_DEBUG, "discarding sps cropping, original "
+                   "values are l:%u r:%u t:%u b:%u\n", crop_left, crop_right,
+                   crop_top, crop_bottom);
 
             sps->crop_left   =
             sps->crop_right  =
             sps->crop_top    =
             sps->crop_bottom = 0;
-        }
-        if(sps->crop_left || sps->crop_top){
-            av_log(h->avctx, AV_LOG_ERROR, "insane cropping not completely supported, this could look slightly wrong ... (left: %d, top: %d)\n", sps->crop_left, sps->crop_top);
-        }
-        if(sps->crop_right >= crop_horizontal_limit || sps->crop_bottom >= crop_vertical_limit){
-            av_log(h->avctx, AV_LOG_ERROR, "brainfart cropping not supported, cropping disabled (right: %d, bottom: %d)\n", sps->crop_right, sps->crop_bottom);
-        /* It is very unlikely that partial cropping will make anybody happy.
-         * Not cropping at all fixes for example playback of Sisvel 3D streams
-         * in applications supporting Sisvel 3D. */
-        sps->crop_left  =
-        sps->crop_right =
-        sps->crop_top   =
-        sps->crop_bottom= 0;
+        } else {
+            int vsub = (sps->chroma_format_idc == 1) ? 1 : 0;
+            int hsub = (sps->chroma_format_idc == 1 || sps->chroma_format_idc == 2) ? 1 : 0;
+            int step_x = 1 << hsub;
+            int step_y = (2 - sps->frame_mbs_only_flag) << vsub;
+
+            if (crop_left & (0x1F >> (sps->bit_depth_luma > 8)) &&
+                !(h->avctx->flags & CODEC_FLAG_UNALIGNED)) {
+                crop_left &= ~(0x1F >> (sps->bit_depth_luma > 8));
+                av_log(h->avctx, AV_LOG_WARNING, "Reducing left cropping to %d "
+                       "chroma samples to preserve alignment.\n",
+                       crop_left);
+            }
+
+            sps->crop_left   = crop_left   * step_x;
+            sps->crop_right  = crop_right  * step_x;
+            sps->crop_top    = crop_top    * step_y;
+            sps->crop_bottom = crop_bottom * step_y;
         }
     }else{
         sps->crop_left  =
         sps->crop_right =
         sps->crop_top   =
         sps->crop_bottom= 0;
+        sps->crop = 0;
     }
 
     sps->vui_parameters_present_flag= get_bits1(&h->gb);

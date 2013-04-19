@@ -168,6 +168,8 @@ typedef struct SPS {
     int mb_aff;                        ///< mb_adaptive_frame_field_flag
     int direct_8x8_inference_flag;
     int crop;                          ///< frame_cropping_flag
+
+    /* those 4 are already in luma samples */
     unsigned int crop_left;            ///< frame_cropping_rect_left_offset
     unsigned int crop_right;           ///< frame_cropping_rect_right_offset
     unsigned int crop_top;             ///< frame_cropping_rect_top_offset
@@ -276,6 +278,7 @@ typedef struct H264Context {
 
     int qp_thresh;      ///< QP threshold to skip loopfilter
 
+    /* coded dimensions -- 16 * mb w/h */
     int width, height;
     int linesize, uvlinesize;
     int chroma_x_shift, chroma_y_shift;

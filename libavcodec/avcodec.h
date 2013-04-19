@@ -685,6 +685,11 @@ typedef struct RcOverride{
    Note: Not everything is supported yet.
 */
 
+/**
+ * Allow decoders to produce frames with data planes that are not aligned
+ * to CPU requirements (e.g. due to cropping).
+ */
+#define CODEC_FLAG_UNALIGNED 0x0001
 #define CODEC_FLAG_QSCALE 0x0002  ///< Use fixed qscale.
 #define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed / advanced prediction for H.263.
 #define CODEC_FLAG_QPEL   0x0010  ///< Use qpel MC.
