@@ -29,6 +29,7 @@
  */
 
 #include "libavutil/opt.h"
+#include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -47,20 +48,40 @@ typedef struct {
     uint8_t *buf;
     AVFrame *last_frame;
     int flags;
+    uint32_t palette[AVPALETTE_COUNT];  ///< local reference palette for !pal8
+    uint8_t *tmpl;                      ///< temporary line buffer
 } GIFContext;
 
 enum {
     GF_OFFSETTING = 1<<0,
+    GF_TRANSDIFF  = 1<<1,
 };
+
+static int pick_palette_entry(const uint8_t *buf, int linesize, int w, int h)
+{
+    int histogram[AVPALETTE_COUNT] = {0};
+    int x, y, i;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++)
+            histogram[buf[x]]++;
+        buf += linesize;
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(histogram); i++)
+        if (!histogram[i])
+            return i;
+    return -1;
+}
 
 static int gif_image_write_image(AVCodecContext *avctx,
                                  uint8_t **bytestream, uint8_t *end,
                                  const uint32_t *palette,
-                                 const uint8_t *buf, int linesize)
+                                 const uint8_t *buf, const int linesize,
+                                 AVPacket *pkt)
 {
     GIFContext *s = avctx->priv_data;
-    int len = 0, height = avctx->height, width = avctx->width, y;
-    int x_start = 0, y_start = 0;
+    int len = 0, height = avctx->height, width = avctx->width, x, y;
+    int x_start = 0, y_start = 0, trans = -1;
     const uint8_t *ptr;
 
     /* Crop image */
@@ -133,15 +154,46 @@ static int gif_image_write_image(AVCodecContext *avctx,
         }
     }
 
+    /* TODO: support with palette change (pal8) */
+    if ((s->flags & GF_TRANSDIFF) && s->last_frame && !palette) {
+        trans = pick_palette_entry(buf + y_start*linesize + x_start,
+                                   linesize, width, height);
+        if (trans < 0) { // TODO, patch welcome
+            av_log(avctx, AV_LOG_DEBUG, "No available color, can not use transparency\n");
+        } else {
+            uint8_t *pal_exdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
+            if (!pal_exdata)
+                return AVERROR(ENOMEM);
+            memcpy(pal_exdata, s->palette, AVPALETTE_SIZE);
+            pal_exdata[trans*4 + 3] = 0x00;
+        }
+    }
+
     bytestream_put_byte(bytestream, 0x08);
 
     ff_lzw_encode_init(s->lzw, s->buf, width * height,
                        12, FF_LZW_GIF, put_bits);
 
     ptr = buf + y_start*linesize + x_start;
+    if (trans >= 0) {
+        const int ref_linesize = s->last_frame->linesize[0];
+        const uint8_t *ref = s->last_frame->data[0] + y_start*ref_linesize + x_start;
+
+        for (y = 0; y < height; y++) {
+            memcpy(s->tmpl, ptr, width);
+            for (x = 0; x < width; x++)
+                if (ref[x] == ptr[x])
+                    s->tmpl[x] = trans;
+            len += ff_lzw_encode(s->lzw, s->tmpl, width);
+            ptr += linesize;
+            ref += ref_linesize;
+        }
+    } else {
+        /* TODO: reindent */
     for (y = 0; y < height; y++) {
         len += ff_lzw_encode(s->lzw, ptr, width);
         ptr += linesize;
+    }
     }
     len += ff_lzw_encode_flush(s->lzw, flush_put_bits);
 
@@ -171,8 +223,13 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
     avctx->coded_frame = &s->picture;
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
     s->buf = av_malloc(avctx->width*avctx->height*2);
-    if (!s->buf || !s->lzw)
+    s->tmpl = av_malloc(avctx->width);
+    if (!s->tmpl || !s->buf || !s->lzw)
         return AVERROR(ENOMEM);
+
+    if (avpriv_set_systematic_pal2(s->palette, avctx->pix_fmt) < 0)
+        av_assert0(avctx->pix_fmt == AV_PIX_FMT_PAL8);
+
     return 0;
 }
 
@@ -203,7 +260,8 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         palette = (uint32_t*)p->data[1];
     }
 
-    gif_image_write_image(avctx, &outbuf_ptr, end, palette, pict->data[0], pict->linesize[0]);
+    gif_image_write_image(avctx, &outbuf_ptr, end, palette,
+                          pict->data[0], pict->linesize[0], pkt);
     if (!s->last_frame) {
         s->last_frame = av_frame_alloc();
         if (!s->last_frame)
@@ -228,14 +286,16 @@ static int gif_encode_close(AVCodecContext *avctx)
     av_freep(&s->lzw);
     av_freep(&s->buf);
     av_frame_free(&s->last_frame);
+    av_freep(&s->tmpl);
     return 0;
 }
 
 #define OFFSET(x) offsetof(GIFContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption gif_options[] = {
-    { "gifflags", "set GIF flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = GF_OFFSETTING}, 0, INT_MAX, FLAGS, "flags" },
+    { "gifflags", "set GIF flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = GF_OFFSETTING|GF_TRANSDIFF}, 0, INT_MAX, FLAGS, "flags" },
         { "offsetting", "enable picture offsetting", 0, AV_OPT_TYPE_CONST, {.i64=GF_OFFSETTING}, INT_MIN, INT_MAX, FLAGS, "flags" },
+        { "transdiff", "enable transparency detection between frames", 0, AV_OPT_TYPE_CONST, {.i64=GF_TRANSDIFF}, INT_MIN, INT_MAX, FLAGS, "flags" },
     { NULL }
 };
 
