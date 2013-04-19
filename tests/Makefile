@@ -88,7 +88,7 @@ include $(SRC_PATH)/tests/fate/ea.mak
 include $(SRC_PATH)/tests/fate/ffmpeg.mak
 include $(SRC_PATH)/tests/fate/ffprobe.mak
 include $(SRC_PATH)/tests/fate/filter-audio.mak
-include $(SRC_PATH)/tests/fate/filter.mak
+include $(SRC_PATH)/tests/fate/filter-video.mak
 include $(SRC_PATH)/tests/fate/flac.mak
 include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/gif.mak

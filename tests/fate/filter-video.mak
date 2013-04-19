@@ -89,4 +89,6 @@ fate-filter-metadata-ebur128: CMD = run $(FILTER_METADATA_COMMAND) "amovie='$(SR
 
 FATE_SAMPLES_FFPROBE += $(FATE_METADATA_FILTER-yes)
 
-fate-filter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes) $(FATE_METADATA_FILTER-yes)
+fate-vfilter: $(FATE_FILTER-yes) $(FATE_FILTER_VSYNTH-yes)
+
+fate-filter: fate-afilter fate-vfilter $(FATE_METADATA_FILTER-yes)
