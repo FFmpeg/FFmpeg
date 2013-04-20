@@ -40,7 +40,7 @@
 /* cos((M_PI * x / (2 * n)) */
 #define COS(s, n, x) (s->costab[x])
 
-static void ff_dst_calc_I_c(DCTContext *ctx, FFTSample *data)
+static void dst_calc_I_c(DCTContext *ctx, FFTSample *data)
 {
     int n = 1 << ctx->nbits;
     int i;
@@ -70,7 +70,7 @@ static void ff_dst_calc_I_c(DCTContext *ctx, FFTSample *data)
     data[n - 1] = 0;
 }
 
-static void ff_dct_calc_I_c(DCTContext *ctx, FFTSample *data)
+static void dct_calc_I_c(DCTContext *ctx, FFTSample *data)
 {
     int n = 1 << ctx->nbits;
     int i;
@@ -100,7 +100,7 @@ static void ff_dct_calc_I_c(DCTContext *ctx, FFTSample *data)
         data[i] = data[i - 2] - data[i];
 }
 
-static void ff_dct_calc_III_c(DCTContext *ctx, FFTSample *data)
+static void dct_calc_III_c(DCTContext *ctx, FFTSample *data)
 {
     int n = 1 << ctx->nbits;
     int i;
@@ -133,7 +133,7 @@ static void ff_dct_calc_III_c(DCTContext *ctx, FFTSample *data)
     }
 }
 
-static void ff_dct_calc_II_c(DCTContext *ctx, FFTSample *data)
+static void dct_calc_II_c(DCTContext *ctx, FFTSample *data)
 {
     int n = 1 << ctx->nbits;
     int i;
@@ -201,10 +201,10 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
             s->csc2[i] = 0.5 / sin((M_PI / (2 * n) * (2 * i + 1)));
 
         switch (inverse) {
-        case DCT_I  : s->dct_calc = ff_dct_calc_I_c;   break;
-        case DCT_II : s->dct_calc = ff_dct_calc_II_c;  break;
-        case DCT_III: s->dct_calc = ff_dct_calc_III_c; break;
-        case DST_I  : s->dct_calc = ff_dst_calc_I_c;   break;
+        case DCT_I  : s->dct_calc = dct_calc_I_c;   break;
+        case DCT_II : s->dct_calc = dct_calc_II_c;  break;
+        case DCT_III: s->dct_calc = dct_calc_III_c; break;
+        case DST_I  : s->dct_calc = dst_calc_I_c;   break;
         }
     }
 

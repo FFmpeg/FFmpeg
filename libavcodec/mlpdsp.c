@@ -23,10 +23,10 @@
 #include "mlpdsp.h"
 #include "mlp.h"
 
-static void ff_mlp_filter_channel(int32_t *state, const int32_t *coeff,
-                                  int firorder, int iirorder,
-                                  unsigned int filter_shift, int32_t mask, int blocksize,
-                                  int32_t *sample_buffer)
+static void mlp_filter_channel(int32_t *state, const int32_t *coeff,
+                               int firorder, int iirorder,
+                               unsigned int filter_shift, int32_t mask,
+                               int blocksize, int32_t *sample_buffer)
 {
     int32_t *firbuf = state;
     int32_t *iirbuf = state + MAX_BLOCKSIZE + MAX_FIR_ORDER;
@@ -58,7 +58,7 @@ static void ff_mlp_filter_channel(int32_t *state, const int32_t *coeff,
 
 void ff_mlpdsp_init(MLPDSPContext *c)
 {
-    c->mlp_filter_channel = ff_mlp_filter_channel;
+    c->mlp_filter_channel = mlp_filter_channel;
     if (ARCH_X86)
         ff_mlpdsp_init_x86(c);
 }

@@ -39,11 +39,11 @@
  *                  the layout of the numpad (1-3 sub, 4-6 mid, 7-9 top)
  * @return >= 0 on success otherwise an error code <0
  */
-static int ff_ass_subtitle_header(AVCodecContext *avctx,
-                                  const char *font, int font_size,
-                                  int color, int back_color,
-                                  int bold, int italic, int underline,
-                                  int alignment)
+static int ass_subtitle_header(AVCodecContext *avctx,
+                               const char *font, int font_size,
+                               int color, int back_color,
+                               int bold, int italic, int underline,
+                               int alignment)
 {
     char header[512];
 
@@ -69,14 +69,14 @@ static int ff_ass_subtitle_header(AVCodecContext *avctx,
 
 int ff_ass_subtitle_header_default(AVCodecContext *avctx)
 {
-    return ff_ass_subtitle_header(avctx, ASS_DEFAULT_FONT,
-                                         ASS_DEFAULT_FONT_SIZE,
-                                         ASS_DEFAULT_COLOR,
-                                         ASS_DEFAULT_BACK_COLOR,
-                                         ASS_DEFAULT_BOLD,
-                                         ASS_DEFAULT_ITALIC,
-                                         ASS_DEFAULT_UNDERLINE,
-                                         ASS_DEFAULT_ALIGNMENT);
+    return ass_subtitle_header(avctx, ASS_DEFAULT_FONT,
+                               ASS_DEFAULT_FONT_SIZE,
+                               ASS_DEFAULT_COLOR,
+                               ASS_DEFAULT_BACK_COLOR,
+                               ASS_DEFAULT_BOLD,
+                               ASS_DEFAULT_ITALIC,
+                               ASS_DEFAULT_UNDERLINE,
+                               ASS_DEFAULT_ALIGNMENT);
 }
 
 void ff_ass_init(AVSubtitle *sub)

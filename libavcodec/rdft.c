@@ -54,7 +54,7 @@ static SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
  * the two real FFTs into one complex FFT. Unmangle the results.
  * ref: http://www.engineeringproductivitytools.com/stuff/T0001/PT10.HTM
  */
-static void ff_rdft_calc_c(RDFTContext* s, FFTSample* data)
+static void rdft_calc_c(RDFTContext *s, FFTSample *data)
 {
     int i, i1, i2;
     FFTComplex ev, od;
@@ -120,7 +120,7 @@ av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
         s->tsin[i] = sin(i*theta);
     }
 #endif
-    s->rdft_calc   = ff_rdft_calc_c;
+    s->rdft_calc   = rdft_calc_c;
 
     if (ARCH_ARM) ff_rdft_init_arm(s);
 
