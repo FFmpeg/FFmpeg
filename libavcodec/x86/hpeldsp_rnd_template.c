@@ -196,14 +196,3 @@ static void DEF(avg, pixels8_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_
         :"r"((x86_reg)line_size)
         :REG_a, "memory");
 }
-
-//FIXME optimize
-static void DEF(put, pixels16_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){
-    DEF(put, pixels8_y2)(block  , pixels  , line_size, h);
-    DEF(put, pixels8_y2)(block+8, pixels+8, line_size, h);
-}
-
-static void DEF(avg, pixels16_y2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h){
-    DEF(avg, pixels8_y2)(block  , pixels  , line_size, h);
-    DEF(avg, pixels8_y2)(block+8, pixels+8, line_size, h);
-}

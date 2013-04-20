@@ -153,4 +153,16 @@ void ff_deinterlace_line_inplace_mmx(const uint8_t *lum_m4,
                                      const uint8_t *lum_m1,
                                      const uint8_t *lum, int size);
 
+#define PIXELS16(STATIC, PFX1, PFX2, TYPE, CPUEXT)                      \
+STATIC void PFX1 ## _pixels16 ## TYPE ## CPUEXT(uint8_t *block,         \
+                                                const uint8_t *pixels,  \
+                                                ptrdiff_t line_size,    \
+                                                int h)                  \
+{                                                                       \
+    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block,      pixels,      \
+                                               line_size, h);           \
+    PFX2 ## PFX1 ## _pixels8 ## TYPE ## CPUEXT(block + 8,  pixels + 8,  \
+                                               line_size, h);           \
+}
+
 #endif /* AVCODEC_X86_DSPUTIL_MMX_H */
