@@ -20,10 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/bit_depth_template.c" // for BYTE_VEC32
+#include "libavcodec/hpeldsp.h"
+#include "libavcodec/rnd_avg.h"
 #include "dsputil_sh4.h"
 
 
@@ -69,7 +71,8 @@
 
 #define         OP      put
 
-static void put_pixels4_c(uint8_t *dest,const uint8_t *ref, const int stride,int height)
+static void put_pixels4_c(uint8_t *dest, const uint8_t *ref,
+                          const int stride, int height)
 {
         switch((int)ref&3){
         case 0: OP_C40(); return;
@@ -82,7 +85,8 @@ static void put_pixels4_c(uint8_t *dest,const uint8_t *ref, const int stride,int
 #undef          OP
 #define         OP      avg
 
-static void avg_pixels4_c(uint8_t *dest,const uint8_t *ref, const int stride,int height)
+static void avg_pixels4_c(uint8_t *dest, const uint8_t *ref,
+                          const int stride, int height)
 {
         switch((int)ref&3){
         case 0: OP_C40(); return;
@@ -261,9 +265,9 @@ if (sz==16) { \
         } while(--height); \
 }
 
-#define         DEFFUNC(prefix, op,rnd,xy,sz,OP_N,avgfunc) \
-prefix void op##_##rnd##_pixels##sz##_##xy (uint8_t * dest, const uint8_t * ref, \
-                                const int stride, int height) \
+#define         DEFFUNC(prefix, op, rnd, xy, sz, OP_N, avgfunc) \
+prefix void op##_##rnd##_pixels##sz##_##xy(uint8_t *dest, const uint8_t *ref, \
+                                           const ptrdiff_t stride, int height) \
 { \
         switch((int)ref&3) { \
         case 0:OP_N##0(sz,rnd##_##avgfunc); return; \
@@ -311,37 +315,37 @@ DEFFUNC(static,avg,no_rnd,xy,16,OP_XY,PACK)
 #define         ff_put_no_rnd_pixels16_o    ff_put_rnd_pixels16_o
 #define         ff_avg_no_rnd_pixels16_o    ff_avg_rnd_pixels16_o
 
-void ff_hpeldsp_init_sh4(HpelDSPContext* c, int flags)
+av_cold void ff_hpeldsp_init_sh4(HpelDSPContext *c, int flags)
 {
-        c->put_pixels_tab[0][0] = ff_put_rnd_pixels16_o;
-        c->put_pixels_tab[0][1] = put_rnd_pixels16_x;
-        c->put_pixels_tab[0][2] = put_rnd_pixels16_y;
-        c->put_pixels_tab[0][3] = put_rnd_pixels16_xy;
-        c->put_pixels_tab[1][0] = ff_put_rnd_pixels8_o;
-        c->put_pixels_tab[1][1] = put_rnd_pixels8_x;
-        c->put_pixels_tab[1][2] = put_rnd_pixels8_y;
-        c->put_pixels_tab[1][3] = put_rnd_pixels8_xy;
+    c->put_pixels_tab[0][0] = ff_put_rnd_pixels16_o;
+    c->put_pixels_tab[0][1] = put_rnd_pixels16_x;
+    c->put_pixels_tab[0][2] = put_rnd_pixels16_y;
+    c->put_pixels_tab[0][3] = put_rnd_pixels16_xy;
+    c->put_pixels_tab[1][0] = ff_put_rnd_pixels8_o;
+    c->put_pixels_tab[1][1] = put_rnd_pixels8_x;
+    c->put_pixels_tab[1][2] = put_rnd_pixels8_y;
+    c->put_pixels_tab[1][3] = put_rnd_pixels8_xy;
 
-        c->put_no_rnd_pixels_tab[0][0] = ff_put_no_rnd_pixels16_o;
-        c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x;
-        c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y;
-        c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy;
-        c->put_no_rnd_pixels_tab[1][0] = ff_put_no_rnd_pixels8_o;
-        c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x;
-        c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y;
-        c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy;
+    c->put_no_rnd_pixels_tab[0][0] = ff_put_no_rnd_pixels16_o;
+    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x;
+    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y;
+    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy;
+    c->put_no_rnd_pixels_tab[1][0] = ff_put_no_rnd_pixels8_o;
+    c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x;
+    c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y;
+    c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy;
 
-        c->avg_pixels_tab[0][0] = ff_avg_rnd_pixels16_o;
-        c->avg_pixels_tab[0][1] = avg_rnd_pixels16_x;
-        c->avg_pixels_tab[0][2] = avg_rnd_pixels16_y;
-        c->avg_pixels_tab[0][3] = avg_rnd_pixels16_xy;
-        c->avg_pixels_tab[1][0] = ff_avg_rnd_pixels8_o;
-        c->avg_pixels_tab[1][1] = avg_rnd_pixels8_x;
-        c->avg_pixels_tab[1][2] = avg_rnd_pixels8_y;
-        c->avg_pixels_tab[1][3] = avg_rnd_pixels8_xy;
+    c->avg_pixels_tab[0][0] = ff_avg_rnd_pixels16_o;
+    c->avg_pixels_tab[0][1] = avg_rnd_pixels16_x;
+    c->avg_pixels_tab[0][2] = avg_rnd_pixels16_y;
+    c->avg_pixels_tab[0][3] = avg_rnd_pixels16_xy;
+    c->avg_pixels_tab[1][0] = ff_avg_rnd_pixels8_o;
+    c->avg_pixels_tab[1][1] = avg_rnd_pixels8_x;
+    c->avg_pixels_tab[1][2] = avg_rnd_pixels8_y;
+    c->avg_pixels_tab[1][3] = avg_rnd_pixels8_xy;
 
-        c->avg_no_rnd_pixels_tab[0] = ff_avg_no_rnd_pixels16_o;
-        c->avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels16_x;
-        c->avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels16_y;
-        c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy;
+    c->avg_no_rnd_pixels_tab[0] = ff_avg_no_rnd_pixels16_o;
+    c->avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels16_x;
+    c->avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels16_y;
+    c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy;
 }

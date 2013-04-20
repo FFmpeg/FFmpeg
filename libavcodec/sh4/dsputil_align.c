@@ -233,18 +233,6 @@ if (sz==16) { \
         } while(--height); \
 }
 
-#define         DEFFUNC(op,rnd,xy,sz,OP_N,avgfunc) \
-static void op##_##rnd##_pixels##sz##_##xy (uint8_t * dest, const uint8_t * ref, \
-                                const ptrdiff_t stride, int height) \
-{ \
-        switch((int)ref&3) { \
-        case 0:OP_N##0(sz,rnd##_##avgfunc); return; \
-        case 1:OP_N(1,sz,rnd##_##avgfunc); return; \
-        case 2:OP_N(2,sz,rnd##_##avgfunc); return; \
-        case 3:OP_N(3,sz,rnd##_##avgfunc); return; \
-        } \
-}
-
 #define         put_pixels8_c            ff_put_rnd_pixels8_o
 #define         put_pixels16_c           ff_put_rnd_pixels16_o
 #define         avg_pixels8_c            ff_avg_rnd_pixels8_o
@@ -253,7 +241,7 @@ static void op##_##rnd##_pixels##sz##_##xy (uint8_t * dest, const uint8_t * ref,
 #define         put_no_rnd_pixels16_c    ff_put_rnd_pixels16_o
 #define         avg_no_rnd_pixels16_c    ff_avg_rnd_pixels16_o
 
-#if CONFIG_H264QPEL
+#if CONFIG_HPELDSP
 
 #include "qpel.c"
 
@@ -261,9 +249,7 @@ static void op##_##rnd##_pixels##sz##_##xy (uint8_t * dest, const uint8_t * ref,
 
 av_cold void ff_dsputil_init_align(DSPContext *c, AVCodecContext *avctx)
 {
-        const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-
-#if CONFIG_H264QPEL
+#if CONFIG_HPELDSP
 
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_sh4; \
