@@ -447,9 +447,9 @@ static int svq1_encode_plane(SVQ1Context *s, int plane,
                     dxy = (mx & 1) + 2 * (my & 1);
 
                     s->hdsp.put_pixels_tab[0][dxy](temp + 16,
-                                                  ref + (mx >> 1) +
-                                                  stride * (my >> 1),
-                                                  stride, 16);
+                                                   ref + (mx >> 1) +
+                                                   stride * (my >> 1),
+                                                   stride, 16);
 
                     score[1] += encode_block(s, src + 16 * x, temp + 16,
                                              decoded, stride, 5, 64, lambda, 0);
