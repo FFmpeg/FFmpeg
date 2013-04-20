@@ -338,9 +338,11 @@ int ff_init_me(MpegEncContext *s){
         else
             c->sub_motion_search= hpel_motion_search;
     }
-    c->hpel_avg= s->hdsp.avg_pixels_tab;
-    if(s->no_rounding) c->hpel_put= s->hdsp.put_no_rnd_pixels_tab;
-    else               c->hpel_put= s->hdsp.put_pixels_tab;
+    c->hpel_avg = s->hdsp.avg_pixels_tab;
+    if (s->no_rounding)
+        c->hpel_put = s->hdsp.put_no_rnd_pixels_tab;
+    else
+        c->hpel_put = s->hdsp.put_pixels_tab;
 
     if(s->linesize){
         c->stride  = s->linesize;
