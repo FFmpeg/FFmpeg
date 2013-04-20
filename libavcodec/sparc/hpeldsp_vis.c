@@ -22,13 +22,12 @@
    The vis code from libmpeg2 was adapted for libavcodec by James A. Morrison.
  */
 
-#include "config.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#include <inttypes.h>
-
-#include "libavcodec/hpeldsp.h"
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
-
+#include "libavcodec/hpeldsp.h"
 #include "vis.h"
 
 /* The trick used in some of this file is the formula from the MMX
@@ -3481,19 +3480,7 @@ static void MC_avg_no_round_xy_16_vis (uint8_t * dest, const uint8_t * ref,
 
 /* End of no rounding code */
 
-#define ACCEL_SPARC_VIS 1
-#define ACCEL_SPARC_VIS2 2
-
-static int vis_level(void)
-{
-    int accel = 0;
-    accel |= ACCEL_SPARC_VIS;
-    accel |= ACCEL_SPARC_VIS2;
-    return accel;
-}
-
-/* libavcodec initialization code */
-void ff_hpeldsp_init_vis(HpelDSPContext* c, int flags)
+av_cold void ff_hpeldsp_init_vis(HpelDSPContext *c, int flags)
 {
   /* VIS-specific optimizations */
   int accel = vis_level ();
