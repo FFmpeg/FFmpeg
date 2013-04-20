@@ -366,6 +366,49 @@ int ff_poll_frame(AVFilterLink *link)
     return min;
 }
 
+static const char *const var_names[] = {   "t",   "n",   "pos",        NULL };
+enum                                   { VAR_T, VAR_N, VAR_POS, VAR_VARS_NB };
+
+static int set_enable_expr(AVFilterContext *ctx, const char *expr)
+{
+    int ret;
+    char *expr_dup;
+    AVExpr *old = ctx->enable;
+
+    if (!(ctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE)) {
+        av_log(ctx, AV_LOG_ERROR, "Timeline ('enable' option) not supported "
+               "with filter '%s'\n", ctx->filter->name);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    expr_dup = av_strdup(expr);
+    if (!expr_dup)
+        return AVERROR(ENOMEM);
+
+    if (!ctx->var_values) {
+        ctx->var_values = av_calloc(VAR_VARS_NB, sizeof(*ctx->var_values));
+        if (!ctx->var_values) {
+            av_free(expr_dup);
+            return AVERROR(ENOMEM);
+        }
+    }
+
+    ret = av_expr_parse((AVExpr**)&ctx->enable, expr_dup, var_names,
+                        NULL, NULL, NULL, NULL, 0, ctx->priv);
+    if (ret < 0) {
+        av_log(ctx->priv, AV_LOG_ERROR,
+               "Error when evaluating the expression '%s' for enable\n",
+               expr_dup);
+        av_free(expr_dup);
+        return ret;
+    }
+
+    av_expr_free(old);
+    av_free(ctx->enable_str);
+    ctx->enable_str = expr_dup;
+    return 0;
+}
+
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts)
 {
     if (pts == AV_NOPTS_VALUE)
@@ -381,6 +424,8 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
     if(!strcmp(cmd, "ping")){
         av_strlcatf(res, res_len, "pong from:%s %s\n", filter->filter->name, filter->name);
         return 0;
+    }else if(!strcmp(cmd, "enable")) {
+        return set_enable_expr(filter, arg);
     }else if(filter->filter->process_command) {
         return filter->filter->process_command(filter, cmd, arg, res, res_len, flags);
     }
@@ -634,9 +679,6 @@ void avfilter_free(AVFilterContext *filter)
     av_free(filter);
 }
 
-static const char *const var_names[] = {   "t",   "n",   "pos",        NULL };
-enum                                   { VAR_T, VAR_N, VAR_POS, VAR_VARS_NB };
-
 static int process_options(AVFilterContext *ctx, AVDictionary **options,
                            const char *args)
 {
@@ -707,16 +749,7 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     }
 
     if (ctx->enable_str) {
-        if (!(ctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE)) {
-            av_log(ctx, AV_LOG_ERROR, "Timeline ('enable' option) not supported "
-                   "with filter '%s'\n", ctx->filter->name);
-            return AVERROR_PATCHWELCOME;
-        }
-        ctx->var_values = av_calloc(VAR_VARS_NB, sizeof(*ctx->var_values));
-        if (!ctx->var_values)
-            return AVERROR(ENOMEM);
-        ret = av_expr_parse((AVExpr**)&ctx->enable, ctx->enable_str, var_names,
-                            NULL, NULL, NULL, NULL, 0, ctx->priv);
+        ret = set_enable_expr(ctx, ctx->enable_str);
         if (ret < 0)
             return ret;
     }

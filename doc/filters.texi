@@ -287,6 +287,9 @@ sequential number of the input frame, starting from 0
 the position in the file of the input frame, NAN if unknown
 @end table
 
+Additionally, these filters support an @option{enable} command that can be used
+to re-define the expression.
+
 Like any other filtering option, the @option{enable} option follows the same
 rules.
 
