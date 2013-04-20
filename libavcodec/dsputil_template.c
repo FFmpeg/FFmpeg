@@ -87,9 +87,6 @@ static void FUNCC(clear_block)(int16_t *block)
     memset(block, 0, sizeof(int16_t)*64);
 }
 
-/**
- * memset(blocks, 0, sizeof(int16_t)*6*64)
- */
 static void FUNCC(clear_blocks)(int16_t *blocks)
 {
     memset(blocks, 0, sizeof(int16_t)*6*64);
