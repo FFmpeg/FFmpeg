@@ -25,52 +25,52 @@
  */
 
 //FIXME the following could be optimized too ...
-static void DEF(ff_put_no_rnd_pixels16_x2)(uint8_t *block,
-                                           const uint8_t *pixels,
-                                           ptrdiff_t line_size, int h)
+static void DEF(put_no_rnd_pixels16_x2)(uint8_t *block,
+                                        const uint8_t *pixels,
+                                        ptrdiff_t line_size, int h)
 {
     DEF(ff_put_no_rnd_pixels8_x2)(block,     pixels,     line_size, h);
     DEF(ff_put_no_rnd_pixels8_x2)(block + 8, pixels + 8, line_size, h);
 }
 
-static void DEF(ff_put_pixels16_y2)(uint8_t *block, const uint8_t *pixels,
-                                    ptrdiff_t line_size, int h)
+static void DEF(put_pixels16_y2)(uint8_t *block, const uint8_t *pixels,
+                                 ptrdiff_t line_size, int h)
 {
     DEF(ff_put_pixels8_y2)(block,     pixels,     line_size, h);
     DEF(ff_put_pixels8_y2)(block + 8, pixels + 8, line_size, h);
 }
 
-static void DEF(ff_put_no_rnd_pixels16_y2)(uint8_t *block,
-                                           const uint8_t *pixels,
-                                           ptrdiff_t line_size, int h)
+static void DEF(put_no_rnd_pixels16_y2)(uint8_t *block,
+                                        const uint8_t *pixels,
+                                        ptrdiff_t line_size, int h)
 {
     DEF(ff_put_no_rnd_pixels8_y2)(block,     pixels,     line_size, h);
     DEF(ff_put_no_rnd_pixels8_y2)(block + 8, pixels + 8, line_size, h);
 }
 
-static void DEF(ff_avg_pixels16)(uint8_t *block, const uint8_t *pixels,
-                                 ptrdiff_t line_size, int h)
+static void DEF(avg_pixels16)(uint8_t *block, const uint8_t *pixels,
+                              ptrdiff_t line_size, int h)
 {
     DEF(ff_avg_pixels8)(block,     pixels,     line_size, h);
     DEF(ff_avg_pixels8)(block + 8, pixels + 8, line_size, h);
 }
 
-static void DEF(ff_avg_pixels16_x2)(uint8_t *block, const uint8_t *pixels,
-                                    ptrdiff_t line_size, int h)
+static void DEF(avg_pixels16_x2)(uint8_t *block, const uint8_t *pixels,
+                                 ptrdiff_t line_size, int h)
 {
     DEF(ff_avg_pixels8_x2)(block,     pixels,     line_size, h);
     DEF(ff_avg_pixels8_x2)(block + 8, pixels + 8, line_size, h);
 }
 
-static void DEF(ff_avg_pixels16_y2)(uint8_t *block, const uint8_t *pixels,
-                                    ptrdiff_t line_size, int h)
+static void DEF(avg_pixels16_y2)(uint8_t *block, const uint8_t *pixels,
+                                 ptrdiff_t line_size, int h)
 {
     DEF(ff_avg_pixels8_y2)(block,     pixels,     line_size, h);
     DEF(ff_avg_pixels8_y2)(block + 8, pixels + 8, line_size, h);
 }
 
-static void DEF(ff_avg_pixels16_xy2)(uint8_t *block, const uint8_t *pixels,
-                                     ptrdiff_t line_size, int h)
+static void DEF(avg_pixels16_xy2)(uint8_t *block, const uint8_t *pixels,
+                                  ptrdiff_t line_size, int h)
 {
     DEF(ff_avg_pixels8_xy2)(block,     pixels,     line_size, h);
     DEF(ff_avg_pixels8_xy2)(block + 8, pixels + 8, line_size, h);
