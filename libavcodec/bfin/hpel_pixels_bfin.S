@@ -20,7 +20,7 @@
  */
 #include "config_bfin.h"
 
-/**
+/*
   motion compensation
   primitives
 

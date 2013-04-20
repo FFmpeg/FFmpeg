@@ -21,6 +21,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "libavutil/attributes.h"
 #include "libavcodec/hpeldsp.h"
 #include "hpeldsp_bfin.h"
 
@@ -95,7 +99,7 @@ static void bfin_put_pixels16_y2_nornd (uint8_t *block, const uint8_t *pixels, p
     ff_bfin_put_pixels16uc_nornd (block, pixels, pixels+line_size, line_size, h);
 }
 
-void ff_hpeldsp_init_bfin(HpelDSPContext* c, int flags)
+av_cold void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags)
 {
     c->put_pixels_tab[0][0] = bfin_put_pixels16;
     c->put_pixels_tab[0][1] = bfin_put_pixels16_x2;
