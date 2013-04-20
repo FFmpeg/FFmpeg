@@ -2358,6 +2358,10 @@ void ff_mpeg_flush(AVCodecContext *avctx){
         ff_mpeg_unref_picture(s, &s->picture[i]);
     s->current_picture_ptr = s->last_picture_ptr = s->next_picture_ptr = NULL;
 
+    ff_mpeg_unref_picture(s, &s->current_picture);
+    ff_mpeg_unref_picture(s, &s->last_picture);
+    ff_mpeg_unref_picture(s, &s->next_picture);
+
     s->mb_x= s->mb_y= 0;
 
     s->parse_context.state= -1;
