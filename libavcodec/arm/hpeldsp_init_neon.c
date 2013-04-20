@@ -19,8 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "hpeldsp_arm.h"
 
 void ff_put_pixels16_neon(uint8_t *, const uint8_t *, ptrdiff_t, int);
@@ -50,7 +52,7 @@ void ff_avg_pixels16_x2_no_rnd_neon(uint8_t *, const uint8_t *, ptrdiff_t, int);
 void ff_avg_pixels16_y2_no_rnd_neon(uint8_t *, const uint8_t *, ptrdiff_t, int);
 void ff_avg_pixels16_xy2_no_rnd_neon(uint8_t *, const uint8_t *, ptrdiff_t, int);
 
-void ff_hpeldsp_init_neon(HpelDSPContext *c, int flags)
+av_cold void ff_hpeldsp_init_neon(HpelDSPContext *c, int flags)
 {
     c->put_pixels_tab[0][0] = ff_put_pixels16_neon;
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_neon;

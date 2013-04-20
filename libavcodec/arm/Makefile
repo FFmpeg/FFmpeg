@@ -31,8 +31,10 @@ OBJS-$(CONFIG_H264DSP)                 += arm/h264dsp_init_arm.o
 OBJS-$(CONFIG_H264PRED)                += arm/h264pred_init_arm.o
 OBJS-$(CONFIG_H264QPEL)                += arm/h264qpel_init_arm.o
 
-OBJS-$(CONFIG_HPELDSP)                 += arm/hpeldsp_arm.o             \
-                                          arm/hpeldsp_init_arm.o
+OBJS-$(CONFIG_HPELDSP)                 += arm/hpeldsp_init_arm.o        \
+                                          arm/hpeldsp_arm.o
+ARMV6-OBJS-$(CONFIG_HPELDSP)           += arm/hpeldsp_init_armv6.o      \
+                                          arm/hpeldsp_armv6.o
 
 OBJS-$(CONFIG_RV30_DECODER)            += arm/rv34dsp_init_arm.o
 OBJS-$(CONFIG_RV40_DECODER)            += arm/rv34dsp_init_arm.o        \
@@ -61,9 +63,6 @@ ARMV6-OBJS                             += arm/dsputil_init_armv6.o      \
                                           arm/dsputil_armv6.o           \
                                           arm/simple_idct_armv6.o       \
 
-ARMV6-OBJS-$(CONFIG_HPELDSP)           += arm/hpeldsp_armv6.o           \
-                                          arm/hpeldsp_init_armv6.o
-
 VFP-OBJS-$(HAVE_ARMV6)                 += arm/fmtconvert_vfp.o
 
 NEON-OBJS-$(CONFIG_FFT)                += arm/fft_neon.o                \
@@ -82,9 +81,6 @@ NEON-OBJS-$(CONFIG_H264PRED)           += arm/h264pred_neon.o           \
 
 NEON-OBJS-$(CONFIG_H264QPEL)           += arm/h264qpel_neon.o           \
 
-NEON-OBJS-$(CONFIG_HPELDSP)            += arm/hpeldsp_neon.o            \
-                                          arm/hpeldsp_init_neon.o
-
 NEON-OBJS-$(CONFIG_AC3DSP)             += arm/ac3dsp_neon.o
 
 NEON-OBJS-$(CONFIG_AAC_DECODER)        += arm/sbrdsp_neon.o             \
@@ -92,6 +88,9 @@ NEON-OBJS-$(CONFIG_AAC_DECODER)        += arm/sbrdsp_neon.o             \
 
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o       \
+
+NEON-OBJS-$(CONFIG_HPELDSP)            += arm/hpeldsp_init_neon.o       \
+                                          arm/hpeldsp_neon.o
 
 NEON-OBJS-$(CONFIG_MPEGVIDEO)          += arm/mpegvideo_neon.o
 NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_neon.o
