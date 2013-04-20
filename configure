@@ -3627,6 +3627,8 @@ elif check_header _mingw.h; then
             __MINGW64_VERSION_MAJOR < 3"; then
         add_compat msvcrt/snprintf.o
         add_cflags "-include $source_path/compat/msvcrt/snprintf.h"
+    else
+        add_cppflags -D__USE_MINGW_ANSI_STDIO=1
     fi
 elif check_func_headers stdlib.h _get_doserrno; then
     libc_type=msvcrt
