@@ -350,8 +350,8 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
         /* only need a 12x12 block, but there is no such dsp function, */
         /* so copy a 16x12 block */
         s->hdsp.put_pixels_tab[0][0](s->edge_emu_buffer,
-                                    src + s->block_offset[b] + (dy-2)*stride + (dx-2),
-                                    stride, 12);
+                                     src + s->block_offset[b] + (dy-2)*stride + (dx-2),
+                                     stride, 12);
         src_block = s->edge_emu_buffer;
         src_offset = 2 + 2*stride;
     } else {
@@ -420,8 +420,8 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
                 plane = ff_vp56_b2p[b+ab];
                 off = s->block_offset[b];
                 s->hdsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
-                                            frame_ref->data[plane] + off,
-                                            s->stride[plane], 8);
+                                             frame_ref->data[plane] + off,
+                                             s->stride[plane], 8);
                 s->vp3dsp.idct_add(frame_current->data[plane] + off,
                                 s->stride[plane], s->block_coeff[b]);
             }
