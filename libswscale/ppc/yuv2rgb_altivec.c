@@ -624,18 +624,18 @@ av_cold void ff_yuv2rgb_init_tables_altivec(SwsContext *c,
     return;
 }
 
-static av_always_inline void ff_yuv2packedX_altivec(SwsContext *c,
-                                                    const int16_t *lumFilter,
-                                                    const int16_t **lumSrc,
-                                                    int lumFilterSize,
-                                                    const int16_t *chrFilter,
-                                                    const int16_t **chrUSrc,
-                                                    const int16_t **chrVSrc,
-                                                    int chrFilterSize,
-                                                    const int16_t **alpSrc,
-                                                    uint8_t *dest,
-                                                    int dstW, int dstY,
-                                                    enum AVPixelFormat target)
+static av_always_inline void yuv2packedX_altivec(SwsContext *c,
+                                                 const int16_t *lumFilter,
+                                                 const int16_t **lumSrc,
+                                                 int lumFilterSize,
+                                                 const int16_t *chrFilter,
+                                                 const int16_t **chrUSrc,
+                                                 const int16_t **chrVSrc,
+                                                 int chrFilterSize,
+                                                 const int16_t **alpSrc,
+                                                 uint8_t *dest,
+                                                 int dstW, int dstY,
+                                                 enum AVPixelFormat target)
 {
     int i, j;
     vector signed short X, X0, X1, Y0, U0, V0, Y1, U1, V1, U, V;
@@ -844,10 +844,10 @@ void ff_yuv2 ## suffix ## _X_altivec(SwsContext *c,                     \
                                      const int16_t **alpSrc,            \
                                      uint8_t *dest, int dstW, int dstY) \
 {                                                                       \
-    ff_yuv2packedX_altivec(c, lumFilter, lumSrc, lumFilterSize,         \
-                           chrFilter, chrUSrc, chrVSrc,                 \
-                           chrFilterSize, alpSrc,                       \
-                           dest, dstW, dstY, pixfmt);                   \
+    yuv2packedX_altivec(c, lumFilter, lumSrc, lumFilterSize,            \
+                        chrFilter, chrUSrc, chrVSrc,                    \
+                        chrFilterSize, alpSrc,                          \
+                        dest, dstW, dstY, pixfmt);                      \
 }
 
 YUV2PACKEDX_WRAPPER(abgr,  AV_PIX_FMT_ABGR);
