@@ -682,6 +682,28 @@ void ff_riff_write_info(AVFormatContext *s)
  * WAVEFORMATEX adds 'WORD  cbSize' and basically makes itself
  * an openended structure.
  */
+
+static void parse_waveformatex(AVIOContext *pb, AVCodecContext *c)
+{
+    ff_asf_guid subformat;
+    c->bits_per_coded_sample = avio_rl16(pb);
+    c->channel_layout        = avio_rl32(pb); /* dwChannelMask */
+
+    ff_get_guid(pb, &subformat);
+    if (!memcmp(subformat + 4,
+                (const uint8_t[]){ FF_MEDIASUBTYPE_BASE_GUID }, 12)) {
+        c->codec_tag = AV_RL32(subformat);
+        c->codec_id  = ff_wav_codec_get_id(c->codec_tag,
+                                           c->bits_per_coded_sample);
+    } else {
+        c->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids, subformat);
+        if (!c->codec_id)
+            av_log(c, AV_LOG_WARNING,
+                   "unknown subformat:"FF_PRI_GUID"\n",
+                   FF_ARG_GUID(subformat));
+    }
+}
+
 int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
 {
     int id;
@@ -708,24 +730,7 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         size  -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
-            ff_asf_guid subformat;
-            codec->bits_per_coded_sample = avio_rl16(pb);
-            codec->channel_layout        = avio_rl32(pb); /* dwChannelMask */
-
-            ff_get_guid(pb, &subformat);
-            if (!memcmp(subformat + 4,
-                        (const uint8_t[]){ FF_MEDIASUBTYPE_BASE_GUID }, 12)) {
-                codec->codec_tag = AV_RL32(subformat);
-                codec->codec_id  = ff_wav_codec_get_id(codec->codec_tag,
-                                                       codec->bits_per_coded_sample);
-            } else {
-                codec->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids,
-                                                       subformat);
-                if (!codec->codec_id)
-                    av_log(codec, AV_LOG_WARNING,
-                           "unknown subformat: "FF_PRI_GUID"\n",
-                           FF_ARG_GUID(subformat));
-            }
+            parse_waveformatex(pb, codec);
             cbSize -= 22;
             size   -= 22;
         }
