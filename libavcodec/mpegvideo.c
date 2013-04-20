@@ -1702,7 +1702,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     }
 
     if (s->dct_error_sum) {
-        assert(s->avctx->noise_reduction && s->encoding);
+        av_assert2(s->avctx->noise_reduction && s->encoding);
         update_noise_reduction(s);
     }
 
@@ -3240,7 +3240,7 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
     int i, level, qmul, qadd;
     int nCoeffs;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     qmul = qscale << 1;
 
@@ -3274,7 +3274,7 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
     int i, level, qmul, qadd;
     int nCoeffs;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
