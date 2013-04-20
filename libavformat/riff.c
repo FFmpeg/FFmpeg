@@ -728,6 +728,10 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
         if (!chunk_code) {
             if (chunk_size)
                 avio_skip(pb, chunk_size);
+            else if (pb->eof_reached) {
+                av_log(s, AV_LOG_WARNING, "truncated file\n");
+                return AVERROR_EOF;
+            }
             continue;
         }
 
