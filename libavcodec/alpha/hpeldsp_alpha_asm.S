@@ -26,16 +26,6 @@
 
 #include "regdef.h"
 
-/* Some nicer register names.  */
-#define ta t10
-#define tb t11
-#define tc t12
-#define td AT
-/* Danger: these overlap with the argument list and the return value */
-#define te a5
-#define tf a4
-#define tg a3
-#define th v0
 
         .set noat
         .set noreorder
