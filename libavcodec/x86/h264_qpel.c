@@ -391,8 +391,6 @@ QPEL(put_, 16,XMM, 16)\
 QPEL(avg_, 8, XMM, 16)\
 QPEL(avg_, 16,XMM, 16)\
 
-#undef PAVGB
-#define PAVGB "pavgb"
 QPEL_H264(put_,        PUT_OP, mmxext)
 QPEL_H264(avg_, AVG_MMXEXT_OP, mmxext)
 QPEL_H264_V_XMM(put_,       PUT_OP, sse2)
@@ -403,7 +401,6 @@ QPEL_H264_H_XMM(put_,       PUT_OP, ssse3)
 QPEL_H264_H_XMM(avg_,AVG_MMXEXT_OP, ssse3)
 QPEL_H264_HV_XMM(put_,       PUT_OP, ssse3)
 QPEL_H264_HV_XMM(avg_,AVG_MMXEXT_OP, ssse3)
-#undef PAVGB
 
 H264_MC_4816(mmxext)
 H264_MC_816(H264_MC_V, sse2)
