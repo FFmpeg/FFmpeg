@@ -527,7 +527,8 @@ static const ID3v2EMFunc *get_extra_meta_func(const char *tag, int isv34)
     return NULL;
 }
 
-static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags, ID3v2ExtraMeta **extra_meta)
+static void id3v2_parse(AVFormatContext *s, int len, uint8_t version,
+                        uint8_t flags, ID3v2ExtraMeta **extra_meta)
 {
     int isv34, tlen, unsync;
     char tag[5];
@@ -687,7 +688,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra
                   ((buf[7] & 0x7f) << 14) |
                   ((buf[8] & 0x7f) << 7) |
                    (buf[9] & 0x7f);
-            ff_id3v2_parse(s, len, buf[3], buf[5], extra_meta);
+            id3v2_parse(s, len, buf[3], buf[5], extra_meta);
         } else {
             avio_seek(s->pb, off, SEEK_SET);
         }

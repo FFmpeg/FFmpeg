@@ -1546,7 +1546,7 @@ static int mxf_write_header(AVFormatContext *s)
 static const uint8_t system_metadata_pack_key[]        = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x03,0x01,0x04,0x01,0x01,0x00 };
 static const uint8_t system_metadata_package_set_key[] = { 0x06,0x0E,0x2B,0x34,0x02,0x43,0x01,0x01,0x0D,0x01,0x03,0x01,0x04,0x01,0x02,0x01 };
 
-static uint32_t ff_framenum_to_12m_time_code(unsigned frame, int drop, int fps)
+static uint32_t framenum_to_12m_time_code(unsigned frame, int drop, int fps)
 {
     return (0                                    << 31) | // color frame flag
            (drop                                 << 30) | // drop  frame flag
@@ -1592,7 +1592,8 @@ static void mxf_write_system_item(AVFormatContext *s)
     avio_wb64(pb, 0); // creation date/time stamp
 
     avio_w8(pb, 0x81); // SMPTE 12M time code
-    time_code = ff_framenum_to_12m_time_code(frame, mxf->timecode_drop_frame, mxf->timecode_base);
+    time_code = framenum_to_12m_time_code(frame, mxf->timecode_drop_frame,
+                                          mxf->timecode_base);
     avio_wb32(pb, time_code);
     avio_wb32(pb, 0); // binary group data
     avio_wb64(pb, 0);

@@ -548,7 +548,7 @@ rdt_free_context (PayloadContext *rdt)
 }
 
 #define RDT_HANDLER(n, s, t) \
-static RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
+static RTPDynamicProtocolHandler rdt_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \
@@ -565,8 +565,8 @@ RDT_HANDLER(audio,      "x-pn-realaudio",                AVMEDIA_TYPE_AUDIO);
 
 void av_register_rdt_dynamic_payload_handlers(void)
 {
-    ff_register_dynamic_payload_handler(&ff_rdt_video_handler);
-    ff_register_dynamic_payload_handler(&ff_rdt_audio_handler);
-    ff_register_dynamic_payload_handler(&ff_rdt_live_video_handler);
-    ff_register_dynamic_payload_handler(&ff_rdt_live_audio_handler);
+    ff_register_dynamic_payload_handler(&rdt_video_handler);
+    ff_register_dynamic_payload_handler(&rdt_audio_handler);
+    ff_register_dynamic_payload_handler(&rdt_live_video_handler);
+    ff_register_dynamic_payload_handler(&rdt_live_audio_handler);
 }
