@@ -28,12 +28,13 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "hpeldsp.h"
 
 #define BIT_DEPTH 8
 #include "hpeldsp_template.c"
 
-av_cold void ff_hpeldsp_init(HpelDSPContext* c, int flags)
+av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
 {
 #define hpel_funcs(prefix, idx, num) \
     c->prefix ## _pixels_tab idx [0] = prefix ## _pixels ## num ## _8_c; \
