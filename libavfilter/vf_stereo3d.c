@@ -132,6 +132,9 @@ typedef struct Stereo3DContext {
     int width, height;
     int row_step;
     int ana_matrix[3][6];
+    int nb_planes;
+    int linesize[4];
+    int pixstep[4];
 } Stereo3DContext;
 
 #define OFFSET(x) offsetof(Stereo3DContext, x)
@@ -179,11 +182,61 @@ static const AVOption stereo3d_options[] = {
 
 AVFILTER_DEFINE_CLASS(stereo3d);
 
+static const enum AVPixelFormat anaglyph_pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat other_pix_fmts[] = {
+    AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_RGB48BE, AV_PIX_FMT_BGR48BE,
+    AV_PIX_FMT_RGB48LE, AV_PIX_FMT_BGR48LE,
+    AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_BGRA64BE,
+    AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_BGRA64LE,
+    AV_PIX_FMT_RGBA,  AV_PIX_FMT_BGRA,
+    AV_PIX_FMT_ARGB,  AV_PIX_FMT_ABGR,
+    AV_PIX_FMT_RGB0,  AV_PIX_FMT_BGR0,
+    AV_PIX_FMT_0RGB,  AV_PIX_FMT_0BGR,
+    AV_PIX_FMT_GBRP,
+    AV_PIX_FMT_GBRP9BE,  AV_PIX_FMT_GBRP9LE,
+    AV_PIX_FMT_GBRP10BE, AV_PIX_FMT_GBRP10LE,
+    AV_PIX_FMT_GBRP12BE, AV_PIX_FMT_GBRP12LE,
+    AV_PIX_FMT_GBRP14BE, AV_PIX_FMT_GBRP14LE,
+    AV_PIX_FMT_GBRP16BE, AV_PIX_FMT_GBRP16LE,
+    AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUV444P9LE,  AV_PIX_FMT_YUVA444P9LE,
+    AV_PIX_FMT_YUV444P9BE,  AV_PIX_FMT_YUVA444P9BE,
+    AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUVA444P10LE,
+    AV_PIX_FMT_YUV444P10BE, AV_PIX_FMT_YUVA444P10BE,
+    AV_PIX_FMT_YUV444P12BE,  AV_PIX_FMT_YUV444P12LE,
+    AV_PIX_FMT_YUV444P14BE,  AV_PIX_FMT_YUV444P14LE,
+    AV_PIX_FMT_YUV444P16LE, AV_PIX_FMT_YUVA444P16LE,
+    AV_PIX_FMT_YUV444P16BE, AV_PIX_FMT_YUVA444P16BE,
+    AV_PIX_FMT_NONE
+};
+
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE
-    };
+    Stereo3DContext *s = ctx->priv;
+    const enum AVPixelFormat *pix_fmts;
+
+    switch (s->out.format) {
+    case ANAGLYPH_GM_COLOR:
+    case ANAGLYPH_GM_DUBOIS:
+    case ANAGLYPH_GM_GRAY:
+    case ANAGLYPH_GM_HALF:
+    case ANAGLYPH_RB_GRAY:
+    case ANAGLYPH_RC_COLOR:
+    case ANAGLYPH_RC_DUBOIS:
+    case ANAGLYPH_RC_GRAY:
+    case ANAGLYPH_RC_HALF:
+    case ANAGLYPH_RG_GRAY:
+    case ANAGLYPH_YB_COLOR:
+    case ANAGLYPH_YB_DUBOIS:
+    case ANAGLYPH_YB_GRAY:
+    case ANAGLYPH_YB_HALF:
+        pix_fmts = anaglyph_pix_fmts;
+        break;
+    default:
+        pix_fmts = other_pix_fmts;
+    }
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 
@@ -196,6 +249,8 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *inlink = ctx->inputs[0];
     Stereo3DContext *s = ctx->priv;
     AVRational aspect = inlink->sample_aspect_ratio;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
+    int ret;
 
     switch (s->in.format) {
     case SIDE_BY_SIDE_2_LR:
@@ -242,13 +297,13 @@ static int config_output(AVFilterLink *outlink)
         aspect.num     *= 2;
     case SIDE_BY_SIDE_LR:
         s->width        = inlink->w / 2;
-        s->in.off_right = s->width * 3;
+        s->in.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
         aspect.num     *= 2;
     case SIDE_BY_SIDE_RL:
         s->width        = inlink->w / 2;
-        s->in.off_left  = s->width * 3;
+        s->in.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
         aspect.den     *= 2;
@@ -297,13 +352,13 @@ static int config_output(AVFilterLink *outlink)
         aspect.num      /= 2;
     case SIDE_BY_SIDE_LR:
         s->out.width     = s->width * 2;
-        s->out.off_right = s->width * 3;
+        s->out.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
         aspect.num      /= 2;
     case SIDE_BY_SIDE_RL:
         s->out.width     = s->width * 2;
-        s->out.off_left  = s->width * 3;
+        s->out.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
         aspect.den      /= 2;
@@ -343,6 +398,11 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = s->out.height;
     outlink->sample_aspect_ratio = aspect;
 
+    if ((ret = av_image_fill_linesizes(s->linesize, outlink->format, s->width)) < 0)
+        return ret;
+    s->nb_planes = av_pix_fmt_count_planes(outlink->format);
+    av_image_fill_max_pixsteps(s->pixstep, NULL, desc);
+
     return 0;
 }
 
@@ -363,8 +423,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     Stereo3DContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
-    int out_off_left, out_off_right;
-    int in_off_left, in_off_right;
+    int out_off_left[4], out_off_right[4];
+    int in_off_left[4], in_off_right[4];
+    int i;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -373,10 +434,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
     av_frame_copy_props(out, inpicref);
 
-    in_off_left   = (s->in.row_left   + s->in.off_lstep)  * inpicref->linesize[0] + s->in.off_left;
-    in_off_right  = (s->in.row_right  + s->in.off_rstep)  * inpicref->linesize[0] + s->in.off_right;
-    out_off_left  = (s->out.row_left  + s->out.off_lstep) * out->linesize[0] + s->out.off_left;
-    out_off_right = (s->out.row_right + s->out.off_rstep) * out->linesize[0] + s->out.off_right;
+    for (i = 0; i < 4; i++) {
+        in_off_left[i]   = (s->in.row_left   + s->in.off_lstep)  * inpicref->linesize[i] + s->in.off_left   * s->pixstep[i];
+        in_off_right[i]  = (s->in.row_right  + s->in.off_rstep)  * inpicref->linesize[i] + s->in.off_right  * s->pixstep[i];
+        out_off_left[i]  = (s->out.row_left  + s->out.off_lstep) * out->linesize[i]      + s->out.off_left  * s->pixstep[i];
+        out_off_right[i] = (s->out.row_right + s->out.off_rstep) * out->linesize[i]      + s->out.off_right * s->pixstep[i];
+    }
 
     switch (s->out.format) {
     case SIDE_BY_SIDE_LR:
@@ -389,23 +452,27 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ABOVE_BELOW_2_RL:
     case INTERLEAVE_ROWS_LR:
     case INTERLEAVE_ROWS_RL:
-        av_image_copy_plane(out->data[0] + out_off_left,
-                            out->linesize[0] * s->row_step,
-                            inpicref->data[0] + in_off_left,
-                            inpicref->linesize[0] * s->row_step,
-                            3 * s->width, s->height);
-        av_image_copy_plane(out->data[0] + out_off_right,
-                            out->linesize[0] * s->row_step,
-                            inpicref->data[0] + in_off_right,
-                            inpicref->linesize[0] * s->row_step,
-                            3 * s->width, s->height);
+        for (i = 0; i < s->nb_planes; i++) {
+            av_image_copy_plane(out->data[i] + out_off_left[i],
+                                out->linesize[i] * s->row_step,
+                                inpicref->data[i] + in_off_left[i],
+                                inpicref->linesize[i] * s->row_step,
+                                s->linesize[i], s->height);
+            av_image_copy_plane(out->data[i] + out_off_right[i],
+                                out->linesize[i] * s->row_step,
+                                inpicref->data[i] + in_off_right[i],
+                                inpicref->linesize[i] * s->row_step,
+                                s->linesize[i], s->height);
+        }
         break;
     case MONO_L:
     case MONO_R:
-        av_image_copy_plane(out->data[0], out->linesize[0],
-                            inpicref->data[0] + in_off_left,
-                            inpicref->linesize[0],
-                            3 * s->width, s->height);
+        for (i = 0; i < s->nb_planes; i++) {
+            av_image_copy_plane(out->data[i], out->linesize[i],
+                                inpicref->data[i] + in_off_left[i],
+                                inpicref->linesize[i],
+                                s->linesize[i], s->height);
+        }
         break;
     case ANAGLYPH_RB_GRAY:
     case ANAGLYPH_RG_GRAY:
@@ -432,8 +499,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
         for (y = 0; y < s->out.height; y++) {
             o   = out->linesize[0] * y;
-            il  = in_off_left  + y * inpicref->linesize[0];
-            ir  = in_off_right + y * inpicref->linesize[0];
+            il  = in_off_left[0]  + y * inpicref->linesize[0];
+            ir  = in_off_right[0] + y * inpicref->linesize[0];
             for (x = 0; x < out_width; x++, il += 3, ir += 3, o+= 3) {
                 dst[o    ] = ana_convert(ana_matrix[0], src + il, src + ir);
                 dst[o + 1] = ana_convert(ana_matrix[1], src + il, src + ir);
