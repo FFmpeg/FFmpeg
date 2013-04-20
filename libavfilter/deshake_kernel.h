@@ -165,8 +165,6 @@ kernel void avfilter_transform(global  unsigned char *src,
         tempsrc = src_u;
         tempsrc_stride = src_stride_ch;
         tempdst_stride = dst_stride_ch;
-        temp_height = height;
-        temp_width = width;
         temp_height = ch;
         temp_width = cw;
      } else {
