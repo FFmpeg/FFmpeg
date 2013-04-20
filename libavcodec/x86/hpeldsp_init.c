@@ -27,10 +27,6 @@
 #include "libavcodec/hpeldsp.h"
 #include "dsputil_mmx.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
-#if HAVE_YASM
 void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 void ff_put_pixels8_x2_3dnow(uint8_t *block, const uint8_t *pixels,
@@ -77,7 +73,6 @@ void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
                                ptrdiff_t line_size, int h);
 void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
-#endif /* HAVE_YASM */
 
 
 #if HAVE_INLINE_ASM
@@ -341,14 +336,12 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int mm_flags)
         c->avg_pixels_tab[0][3] = ff_avg_pixels16_xy2_mmxext;
         c->avg_pixels_tab[1][3] = ff_avg_pixels8_xy2_mmxext;
     }
-#endif /* HAVE_YASM */
 
-#if HAVE_MMXEXT_EXTERNAL
     if (flags & CODEC_FLAG_BITEXACT && CONFIG_VP3_DECODER) {
         c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_mmxext;
         c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
     }
-#endif /* HAVE_MMXEXT_EXTERNAL */
+#endif /* HAVE_YASM */
 }
 
 static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int mm_flags)
@@ -387,14 +380,14 @@ static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int mm_flags)
 
 static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int mm_flags)
 {
-#if HAVE_SSE2_EXTERNAL
+#if HAVE_YASM
     if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
         // these functions are slower than mmx on AMD, but faster on Intel
         c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
         c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_sse2;
         c->avg_pixels_tab[0][0]        = ff_avg_pixels16_sse2;
     }
-#endif /* HAVE_SSE2_EXTERNAL */
+#endif /* HAVE_YASM */
 }
 
 void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
