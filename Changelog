@@ -1,6 +1,36 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.5:
+
+Most of the following fixes resulted from test samples that the Google
+Security Team has kindly made available to us:
+
+- af_channelmap: sanity check input channel indices in all cases
+- avfiltergraph: check for sws opts being non-NULL before using them
+- bmv: check for len being valid in bmv_decode_frame()
+- configure: Enable hwaccels without external dependencies by default
+- dfa: check for invalid access in decode_wdlt()
+- id3v2: pad the APIC packets as required by lavc
+- indeo3: check motion vectors
+- indeo3: fix data size check
+- indeo3: switch parsing the header to bytestream2
+- lavf: make sure stream probe data gets freed
+- matroska: Update the available size after lace parsing
+- matroska: fix a corner case in ebml-lace parsing
+- matroska: pass the lace size to the matroska_parse_rm_audio
+- mp3dec: fallback to generic seeking when a TOC is not present
+- oggdec: fix faulty cleanup prototype
+- oma: Validate sample rates
+- qdm2: check that the FFT size is a power of 2
+- riff: check for eof if chunk size and code are 0 to prevent an infinite loop
+- rv10: check that extradata is large enough
+- svq1dec: check that the reference frame has the same dimensions as the current one
+- svq1dec: clip motion vectors to the frame size
+- xmv: check audio track parameters validity
+- xmv: do not leak memory in the error paths in xmv_read_header()
+
+
 version 9.4:
 - atrac3: avoid oversized shifting in decode_bytes()
 - eamad: allocate a dummy reference frame when the real one is missing
