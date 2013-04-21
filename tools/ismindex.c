@@ -132,7 +132,8 @@ static int write_fragments(struct Tracks *tracks, int start_index,
         struct Track *track = tracks->tracks[i];
         const char *type    = track->is_video ? "video" : "audio";
         snprintf(dirname, sizeof(dirname), "QualityLevels(%d)", track->bitrate);
-        mkdir(dirname, 0777);
+        if (mkdir(dirname, 0777) == -1)
+            return AVERROR(errno);
         for (j = 0; j < track->chunks; j++) {
             snprintf(filename, sizeof(filename), "%s/Fragments(%s=%"PRId64")",
                      dirname, type, track->offsets[j].time);
