@@ -236,6 +236,7 @@ External library support:
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
+  --enable-libzmq          enable message passing via libzmq [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
   --enable-openssl         enable openssl [no]
@@ -1195,6 +1196,7 @@ EXTERNAL_LIBRARY_LIST="
     libx264
     libxavs
     libxvid
+    libzmq
     openal
     opencl
     openssl
@@ -2122,6 +2124,7 @@ aresample_filter_deps="swresample"
 ass_filter_deps="libass"
 asyncts_filter_deps="avresample"
 atempo_filter_deps="avcodec rdft"
+azmq_filter_deps="libzmq"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 colormatrix_filter_deps="gpl"
@@ -2166,6 +2169,7 @@ yadif_filter_deps="gpl"
 pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
+zmq_filter_deps="libzmq"
 
 # libraries
 avcodec_deps="avutil"
@@ -4055,6 +4059,7 @@ enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
                         die "ERROR: libx264 must be installed and version must be >= 0.118."; }
 enabled libxavs    && require  libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
+enabled libzmq     && require_pkg_config libzmq zmq.h zmq_ctx_new
 enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
                         check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
                         die "ERROR: openal not found"; } &&

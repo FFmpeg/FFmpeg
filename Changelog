@@ -45,6 +45,7 @@ version <next>:
 - RSD demuxer
 - RedSpark demuxer
 - ADPCM IMA Radical decoder
+- zmq filters
 
 
 version 1.2:

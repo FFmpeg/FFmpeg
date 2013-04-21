@@ -8371,6 +8371,48 @@ ffmpeg -i INPUT -filter_complex asplit=5 OUTPUT
 @end example
 @end itemize
 
+@section zmq, azmq
+
+Receive commands sent through a libzmq client, and forward them to
+filters in the filtergraph.
+
+@code{zmq} and @code{azmq} work as a pass-through filters. @code{zmq}
+must be inserted between two video filters, @code{azmq} between two
+audio filters.
+
+To enable these filters you need to install the libzmq library and
+headers and configure FFmpeg with @code{--enable-libzmq}.
+
+For more information about libzmq see:
+@url{http://www.zeromq.org/}
+
+The @code{zmq} and @code{azmq} filters work as a libzmq server, which
+receives messages sent through a network interface defined by the
+@option{bind_address} option.
+
+The received message must be in the form:
+@example
+@var{TARGET} @var{COMMAND} [@var{ARG}]
+@end example
+
+@var{TARGET} specifies the target of the command, usually the name of
+the filter class or a specific filter instance name.
+
+@var{COMMAND} specifies the name of the command for the target filter.
+
+@var{ARG} is optional and specifies the optional argument list for the
+given @var{COMMAND}.
+
+Upon reception, the message is processed and the corresponding command
+is injected into the filtergraph. Depending on the result, the filter
+will send a reply to the client, adopting the format:
+@example
+@var{ERROR_CODE} @var{ERROR_REASON}
+@var{MESSAGE}
+@end example
+
+@var{MESSAGE} is optional.
+
 @c man end MULTIMEDIA FILTERS
 
 @chapter Multimedia Sources
