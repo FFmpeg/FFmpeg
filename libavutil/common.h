@@ -297,7 +297,7 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
     val= GET_BYTE;\
     {\
         uint32_t top = (val & 128) >> 1;\
-        if ((val & 0xc0) == 0x80)\
+        if ((val & 0xc0) == 0x80 || val >= 0xFE)\
             ERROR\
         while (val & top) {\
             int tmp= GET_BYTE - 128;\
