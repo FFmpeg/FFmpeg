@@ -224,7 +224,7 @@ static int read_mfra(struct Tracks *tracks, int start_index,
     }
 
     if (split)
-        write_fragments(tracks, start_index, f);
+        err = write_fragments(tracks, start_index, f);
 
 fail:
     if (f)
