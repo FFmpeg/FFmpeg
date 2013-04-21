@@ -100,23 +100,32 @@ static inline void compute_sin_and_cos(HueContext *hue)
     hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
 }
 
-static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *log_ctx)
+static int set_expr(AVExpr **pexpr_ptr, char **expr_ptr,
+                    const char *expr, const char *option, void *log_ctx)
 {
     int ret;
-    AVExpr *old = NULL;
+    AVExpr *new_pexpr;
+    char *new_expr;
 
-    if (*pexpr)
-        old = *pexpr;
-    ret = av_expr_parse(pexpr, expr, var_names,
+    new_expr = av_strdup(expr);
+    if (!new_expr)
+        return AVERROR(ENOMEM);
+    ret = av_expr_parse(&new_pexpr, expr, var_names,
                         NULL, NULL, NULL, NULL, 0, log_ctx);
     if (ret < 0) {
         av_log(log_ctx, AV_LOG_ERROR,
                "Error when evaluating the expression '%s' for %s\n",
                expr, option);
-        *pexpr = old;
+        av_free(new_expr);
         return ret;
     }
-    av_expr_free(old);
+
+    if (*pexpr_ptr)
+        av_expr_free(*pexpr_ptr);
+    *pexpr_ptr = new_pexpr;
+    av_freep(expr_ptr);
+    *expr_ptr = new_expr;
+
     return 0;
 }
 
@@ -134,13 +143,15 @@ static av_cold int init(AVFilterContext *ctx)
 
 #define SET_EXPR(expr, option)                                          \
     if (hue->expr##_expr) do {                                          \
-        ret = set_expr(&hue->expr##_pexpr, hue->expr##_expr, option, ctx); \
+        ret = set_expr(&hue->expr##_pexpr, &hue->expr##_expr,           \
+                       hue->expr##_expr, option, ctx);                  \
         if (ret < 0)                                                    \
             return ret;                                                 \
     } while (0)
     SET_EXPR(saturation, "s");
     SET_EXPR(hue_deg,    "h");
     SET_EXPR(hue,        "H");
+#undef SET_EXPR
 
     av_log(ctx, AV_LOG_VERBOSE,
            "H_expr:%s h_deg_expr:%s s_expr:%s\n",
@@ -306,16 +317,28 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     HueContext *hue = ctx->priv;
+    int ret;
 
-#define SET_CMD(expr, option) do {                                 \
-    if (!strcmp(cmd, option))                                      \
-        return set_expr(&hue->expr##_pexpr, args, cmd, ctx);       \
-} while (0)
-    SET_CMD(hue_deg,    "h");
-    SET_CMD(hue,        "H");
-    SET_CMD(saturation, "s");
+#define SET_EXPR(expr, option)                                          \
+    do {                                                                \
+        ret = set_expr(&hue->expr##_pexpr, &hue->expr##_expr,           \
+                       args, option, ctx);                              \
+        if (ret < 0)                                                    \
+            return ret;                                                 \
+    } while (0)
 
-    return AVERROR(ENOSYS);
+    if (!strcmp(cmd, "h")) {
+        SET_EXPR(hue_deg, "h");
+        av_freep(&hue->hue_expr);
+    } else if (!strcmp(cmd, "H")) {
+        SET_EXPR(hue, "H");
+        av_freep(&hue->hue_deg_expr);
+    } else if (!strcmp(cmd, "s")) {
+        SET_EXPR(saturation, "s");
+    } else
+        return AVERROR(ENOSYS);
+
+    return 0;
 }
 
 static const AVFilterPad hue_inputs[] = {
