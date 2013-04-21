@@ -510,11 +510,6 @@ end:
 #define sendcmd_options options
 AVFILTER_DEFINE_CLASS(sendcmd);
 
-static av_cold int sendcmd_init(AVFilterContext *ctx)
-{
-    return init(ctx);
-}
-
 static const AVFilterPad sendcmd_inputs[] = {
     {
         .name             = "default",
@@ -536,8 +531,7 @@ static const AVFilterPad sendcmd_outputs[] = {
 AVFilter avfilter_vf_sendcmd = {
     .name      = "sendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
-
-    .init = sendcmd_init,
+    .init   = init,
     .uninit = uninit,
     .priv_size = sizeof(SendCmdContext),
     .inputs    = sendcmd_inputs,
@@ -551,11 +545,6 @@ AVFilter avfilter_vf_sendcmd = {
 
 #define asendcmd_options options
 AVFILTER_DEFINE_CLASS(asendcmd);
-
-static av_cold int asendcmd_init(AVFilterContext *ctx)
-{
-    return init(ctx);
-}
 
 static const AVFilterPad asendcmd_inputs[] = {
     {
@@ -578,8 +567,7 @@ static const AVFilterPad asendcmd_outputs[] = {
 AVFilter avfilter_af_asendcmd = {
     .name      = "asendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
-
-    .init = asendcmd_init,
+    .init   = init,
     .uninit = uninit,
     .priv_size = sizeof(SendCmdContext),
     .inputs    = asendcmd_inputs,
