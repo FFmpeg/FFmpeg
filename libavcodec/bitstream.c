@@ -307,11 +307,13 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
             continue;\
         if (buf[j].bits > 3*nb_bits || buf[j].bits>32) {\
             av_log(NULL, AV_LOG_ERROR, "Too long VLC in init_vlc\n");\
+            av_free(buf);\
             return -1;\
         }\
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);\
         if (buf[j].code >= (1LL<<buf[j].bits)) {\
             av_log(NULL, AV_LOG_ERROR, "Invalid code in init_vlc\n");\
+            av_free(buf);\
             return -1;\
         }\
         if (flags & INIT_VLC_LE)\
