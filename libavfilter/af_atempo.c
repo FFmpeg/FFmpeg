@@ -1082,7 +1082,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
         yae_apply(atempo, &src, src_end, &atempo->dst, atempo->dst_end);
 
         if (atempo->dst == atempo->dst_end) {
-            ret = push_samples(atempo, outlink, n_out);
+            int n_samples = ((atempo->dst - atempo->dst_buffer->data[0]) /
+                             atempo->stride);
+            ret = push_samples(atempo, outlink, n_samples);
             if (ret < 0)
                 goto end;
         }
