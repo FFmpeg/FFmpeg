@@ -2262,6 +2262,10 @@ static int audio_decode_frame(VideoState *is)
                 int out_count = (int64_t)wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate + 256;
                 int out_size  = av_samples_get_buffer_size(NULL, is->audio_tgt.channels, out_count, is->audio_tgt.fmt, 0);
                 int len2;
+                if (out_size < 0) {
+                    fprintf(stderr, "av_samples_get_buffer_size() failed\n");
+                    break;
+                }
                 if (wanted_nb_samples != is->frame->nb_samples) {
                     if (swr_set_compensation(is->swr_ctx, (wanted_nb_samples - is->frame->nb_samples) * is->audio_tgt.freq / is->frame->sample_rate,
                                                 wanted_nb_samples * is->audio_tgt.freq / is->frame->sample_rate) < 0) {
