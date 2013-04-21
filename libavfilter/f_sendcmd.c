@@ -134,7 +134,7 @@ static int parse_command(Command *cmd, int cmd_count, int interval_count,
                 char flag_buf[64];
                 av_strlcpy(flag_buf, *buf, sizeof(flag_buf));
                 av_log(log_ctx, AV_LOG_ERROR,
-                       "Unknown flag '%s' in in interval #%d, command #%d\n",
+                       "Unknown flag '%s' in interval #%d, command #%d\n",
                        flag_buf, interval_count, cmd_count);
                 return AVERROR(EINVAL);
             }
@@ -166,7 +166,7 @@ static int parse_command(Command *cmd, int cmd_count, int interval_count,
     cmd->target = av_get_token(buf, COMMAND_DELIMS);
     if (!cmd->target || !cmd->target[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "No target specified in in interval #%d, command #%d\n",
+               "No target specified in interval #%d, command #%d\n",
                interval_count, cmd_count);
         ret = AVERROR(EINVAL);
         goto fail;
@@ -176,7 +176,7 @@ static int parse_command(Command *cmd, int cmd_count, int interval_count,
     cmd->command = av_get_token(buf, COMMAND_DELIMS);
     if (!cmd->command || !cmd->command[0]) {
         av_log(log_ctx, AV_LOG_ERROR,
-               "No command specified in in interval #%d, command #%d\n",
+               "No command specified in interval #%d, command #%d\n",
                interval_count, cmd_count);
         ret = AVERROR(EINVAL);
         goto fail;
