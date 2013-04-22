@@ -32,6 +32,7 @@
 
 //#define DEBUG
 
+#include <inttypes.h>
 #include <math.h>
 #include <time.h>
 
