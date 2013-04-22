@@ -5790,6 +5790,22 @@ mono output (right eye only)
 Default value is @samp{arcd}.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Convert input video from side by side parallel to anaglyph yellow/blue dubois:
+@example
+stereo3d=sbsl:aybd
+@end example
+
+@item
+Convert input video from above bellow (left eye above, right eye below) to side by side crosseye.
+@example
+stereo3d=abl:sbsr
+@end example
+@end itemize
+
 @anchor{subtitles}
 @section subtitles
 
