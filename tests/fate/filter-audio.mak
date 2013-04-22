@@ -45,13 +45,13 @@ fate-filter-channelsplit: CMD = md5 -i $(SRC) -filter_complex channelsplit -f s1
 fate-filter-channelsplit: CMP = oneline
 fate-filter-channelsplit: REF = d92988d0fe2dd92236763f47b07ab597
 
-#FATE_AFILTER-$(call FILTERDEMDECENCMUX, JOIN, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-join
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, JOIN, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-join
 fate-filter-join: SRC1 = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-join: SRC2 = $(TARGET_PATH)/tests/data/asynth-44100-3.wav
 fate-filter-join: tests/data/asynth-44100-2.wav tests/data/asynth-44100-3.wav
 fate-filter-join: CMD = md5 -i $(SRC1) -i $(SRC2) -filter_complex join=channel_layout=5 -f s16le
 fate-filter-join: CMP = oneline
-fate-filter-join: REF = 409e66fc5ece4ddea4aa16bc47026bb0
+fate-filter-join: REF = 88b0d24a64717ba8635b29e8dac6ecd8
 
 FATE_AFILTER-$(call ALLYES, WAV_DEMUXER PCM_S16LE_DECODER PCM_S16LE_ENCODER PCM_S16LE_MUXER APERMS_FILTER VOLUME_FILTER) += fate-filter-volume
 fate-filter-volume: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
