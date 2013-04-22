@@ -770,7 +770,8 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         codec->codec_tag = 0;
     } else {
         codec->codec_tag = id;
-        codec->codec_id = ff_wav_codec_get_id(id, codec->bits_per_coded_sample);
+        codec->codec_id  = ff_wav_codec_get_id(id,
+                                               codec->bits_per_coded_sample);
     }
     if (size >= 18) {  /* We're obviously dealing with WAVEFORMATEX */
         int cbSize = avio_rl16(pb); /* cbSize */
@@ -782,14 +783,20 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
             if (bps)
                 codec->bits_per_coded_sample = bps;
             codec->channel_layout        = avio_rl32(pb); /* dwChannelMask */
+
             ff_get_guid(pb, &subformat);
-            if (!memcmp(subformat + 4, (const uint8_t[]){FF_MEDIASUBTYPE_BASE_GUID}, 12)) {
+            if (!memcmp(subformat + 4,
+                        (const uint8_t[]){ FF_MEDIASUBTYPE_BASE_GUID }, 12)) {
                 codec->codec_tag = AV_RL32(subformat);
-                codec->codec_id = ff_wav_codec_get_id(codec->codec_tag, codec->bits_per_coded_sample);
+                codec->codec_id  = ff_wav_codec_get_id(codec->codec_tag,
+                                                       codec->bits_per_coded_sample);
             } else {
-                codec->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids, subformat);
+                codec->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids,
+                                                       subformat);
                 if (!codec->codec_id)
-                    av_log(codec, AV_LOG_WARNING, "unknown subformat:"FF_PRI_GUID"\n", FF_ARG_GUID(subformat));
+                    av_log(codec, AV_LOG_WARNING,
+                           "unknown subformat: "FF_PRI_GUID"\n",
+                           FF_ARG_GUID(subformat));
             }
             cbSize -= 22;
             size   -= 22;
