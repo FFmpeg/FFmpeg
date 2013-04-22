@@ -420,11 +420,11 @@ const AVCodecTag ff_codec_wav_tags[] = {
 };
 
 const AVCodecGuid ff_codec_wav_guids[] = {
-    {AV_CODEC_ID_AC3,        {0x2C,0x80,0x6D,0xE0,0x46,0xDB,0xCF,0x11,0xB4,0xD1,0x00,0x80,0x5F,0x6C,0xBB,0xEA}},
-    {AV_CODEC_ID_ATRAC3P,    {0xBF,0xAA,0x23,0xE9,0x58,0xCB,0x71,0x44,0xA1,0x19,0xFF,0xFA,0x01,0xE4,0xCE,0x62}},
-    {AV_CODEC_ID_EAC3,       {0xAF,0x87,0xFB,0xA7,0x02,0x2D,0xFB,0x42,0xA4,0xD4,0x05,0xCD,0x93,0x84,0x3B,0xDD}},
-    {AV_CODEC_ID_MP2,        {0x2B,0x80,0x6D,0xE0,0x46,0xDB,0xCF,0x11,0xB4,0xD1,0x00,0x80,0x5F,0x6C,0xBB,0xEA}},
-    {AV_CODEC_ID_NONE}
+    { AV_CODEC_ID_AC3,      { 0x2C, 0x80, 0x6D, 0xE0, 0x46, 0xDB, 0xCF, 0x11, 0xB4, 0xD1, 0x00, 0x80, 0x5F, 0x6C, 0xBB, 0xEA } },
+    { AV_CODEC_ID_ATRAC3P,  { 0xBF, 0xAA, 0x23, 0xE9, 0x58, 0xCB, 0x71, 0x44, 0xA1, 0x19, 0xFF, 0xFA, 0x01, 0xE4, 0xCE, 0x62 } },
+    { AV_CODEC_ID_EAC3,     { 0xAF, 0x87, 0xFB, 0xA7, 0x02, 0x2D, 0xFB, 0x42, 0xA4, 0xD4, 0x05, 0xCD, 0x93, 0x84, 0x3B, 0xDD } },
+    { AV_CODEC_ID_MP2,      { 0x2B, 0x80, 0x6D, 0xE0, 0x46, 0xDB, 0xCF, 0x11, 0xB4, 0xD1, 0x00, 0x80, 0x5F, 0x6C, 0xBB, 0xEA } },
+    { AV_CODEC_ID_NONE }
 };
 
 const AVMetadataConv ff_riff_info_conv[] = {
@@ -442,6 +442,22 @@ const AVMetadataConv ff_riff_info_conv[] = {
     { "ITCH", "encoded_by" },
     { 0 },
 };
+
+void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
+{
+    av_assert0(sizeof(*g) == 16); //compiler will optimize this out
+    if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g))
+        memset(*g, 0, sizeof(*g));
+}
+
+enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
+{
+    int i;
+    for (i = 0; guids[i].id != AV_CODEC_ID_NONE; i++)
+        if (!ff_guidcmp(guids[i].guid, guid))
+            return guids[i].id;
+    return AV_CODEC_ID_NONE;
+}
 
 #if CONFIG_MUXERS
 int64_t ff_start_tag(AVIOContext *pb, const char *tag)
@@ -839,23 +855,6 @@ int ff_get_bmp_header(AVIOContext *pb, AVStream *st, unsigned *esize)
     avio_rl32(pb); /* ClrUsed */
     avio_rl32(pb); /* ClrImportant */
     return tag1;
-}
-
-void ff_get_guid(AVIOContext *s, ff_asf_guid *g)
-{
-    av_assert0(sizeof(*g) == 16); //compiler will optimize this out
-    if (avio_read(s, *g, sizeof(*g)) < (int)sizeof(*g))
-        memset(*g, 0, sizeof(*g));
-}
-
-enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
-{
-    int i;
-    for (i = 0; guids[i].id != AV_CODEC_ID_NONE; i++) {
-        if (!ff_guidcmp(guids[i].guid, guid))
-            return guids[i].id;
-    }
-    return AV_CODEC_ID_NONE;
 }
 
 int ff_read_riff_info(AVFormatContext *s, int64_t size)
