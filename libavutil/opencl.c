@@ -544,57 +544,44 @@ static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_o
 static int compile_kernel_file(OpenclContext *opencl_ctx)
 {
     cl_int status;
-    char *temp, *source_str = NULL;
-    size_t source_str_len = 0;
-    int i, ret = 0;
+    int i, kernel_code_count = 0;
+    const char *kernel_code[MAX_KERNEL_CODE_NUM] = {NULL};
+    size_t kernel_code_len[MAX_KERNEL_CODE_NUM] = {0};
 
     for (i = 0; i < opencl_ctx->kernel_code_count; i++) {
-        if (!opencl_ctx->kernel_code[i].is_compiled)
-            source_str_len += strlen(opencl_ctx->kernel_code[i].kernel_string);
-    }
-    if (!source_str_len) {
-        return 0;
-    }
-    source_str = av_mallocz(source_str_len + 1);
-    if (!source_str) {
-        return AVERROR(ENOMEM);
-    }
-    temp = source_str;
-    for (i = 0; i < opencl_ctx->kernel_code_count; i++) {
         if (!opencl_ctx->kernel_code[i].is_compiled) {
-            memcpy(temp, opencl_ctx->kernel_code[i].kernel_string,
-                        strlen(opencl_ctx->kernel_code[i].kernel_string));
+            kernel_code[kernel_code_count] = opencl_ctx->kernel_code[i].kernel_string;
+            kernel_code_len[kernel_code_count] = strlen(opencl_ctx->kernel_code[i].kernel_string);
             opencl_ctx->kernel_code[i].is_compiled = 1;
-            temp += strlen(opencl_ctx->kernel_code[i].kernel_string);
+            kernel_code_count++;
         }
     }
+    if (!kernel_code_count)
+        return 0;
     /* create a CL program using the kernel source */
     opencl_ctx->programs[opencl_ctx->program_count] = clCreateProgramWithSource(opencl_ctx->context,
-                                                           1, (const char **)(&source_str),
-                                                                   &source_str_len, &status);
+                                                                                kernel_code_count,
+                                                                                kernel_code,
+                                                                                kernel_code_len,
+                                                                                &status);
     if(status != CL_SUCCESS) {
         av_log(opencl_ctx, AV_LOG_ERROR,
                "Could not create OpenCL program with source code: %s\n", opencl_errstr(status));
-        ret = AVERROR_EXTERNAL;
-        goto end;
+        return AVERROR_EXTERNAL;
     }
     if (!opencl_ctx->programs[opencl_ctx->program_count]) {
         av_log(opencl_ctx, AV_LOG_ERROR, "Created program is NULL\n");
-        ret = AVERROR_EXTERNAL;
-        goto end;
+        return AVERROR_EXTERNAL;
     }
     status = clBuildProgram(opencl_ctx->programs[opencl_ctx->program_count], 1, &(opencl_ctx->device_id),
                             opencl_ctx->build_options, NULL, NULL);
     if (status != CL_SUCCESS) {
         av_log(opencl_ctx, AV_LOG_ERROR,
                "Could not compile OpenCL kernel: %s\n", opencl_errstr(status));
-        ret = AVERROR_EXTERNAL;
-        goto end;
+        return AVERROR_EXTERNAL;
     }
     opencl_ctx->program_count++;
-end:
-    av_free(source_str);
-    return ret;
+    return 0;
 }
 
 int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env)
