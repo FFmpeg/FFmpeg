@@ -212,7 +212,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     case FF_PROFILE_JPEG2000_DCINEMA_2K:
     case FF_PROFILE_JPEG2000_DCINEMA_4K:
         /* XYZ color-space for digital cinema profiles */
-        s->avctx->pix_fmt = AV_PIX_FMT_XYZ12LE;
+        s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
         break;
     default:
         /* For other profiles selects color-space according number of
