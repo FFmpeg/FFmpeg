@@ -424,6 +424,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUVJ420P;
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         break;
+    case 0x41111100:
+        s->avctx->pix_fmt = AV_PIX_FMT_YUV411P;
+        s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+        break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "Unhandled pixel format 0x%x\n", pix_fmt_id);
         return AVERROR_PATCHWELCOME;
