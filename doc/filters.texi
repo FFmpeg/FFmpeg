@@ -990,6 +990,51 @@ the data is treated as if all the planes were concatenated.
 A list of Adler-32 checksums for each data plane.
 @end table
 
+@section astats
+
+Display time domain statistical information about the audio channels.
+Statistics are calculated and displayed for each audio channel and,
+where applicable, an overall figure is also given.
+
+The filter accepts the following option:
+@table @option
+@item length
+Short window length in seconds, used for peak and trough RMS measurement.
+Default is @code{0.05} (50 miliseconds). Allowed range is @code{[0.1 - 10]}.
+@end table
+
+A description of each shown parameter follows:
+
+@table @option
+@item DC offset
+Mean amplitude displacement from zero.
+
+@item Min level
+Minimal sample level.
+
+@item Max level
+Maximal sample level.
+
+@item Peak level dB
+@item RMS level dB
+Standard peak and RMS level measured in dBFS.
+
+@item RMS peak dB
+@item RMS trough dB
+Peak and trough values for RMS level measured over a short window.
+
+@item Crest factor
+Standard ratio of peak to RMS level (note: not in dB).
+
+@item Flat factor
+Flatness (i.e. consecutive samples with the same value) of the signal at its peak levels
+(i.e. either @var{Min level} or @var{Max level}).
+
+@item Peak count
+Number of occasions (not the number of samples) that the signal attained either
+@var{Min level} or @var{Max level}.
+@end table
+
 @section astreamsync
 
 Forward two audio streams and control the order the buffers are forwarded.
