@@ -39,9 +39,9 @@ void ff_yadif_filter_line_ssse3(void *dst, void *prev, void *cur,
 
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
+#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
 #if ARCH_X86_32
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         yadif->filter_line = ff_yadif_filter_line_mmxext;
