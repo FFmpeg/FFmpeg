@@ -151,6 +151,9 @@ fate-interplay-mve-8bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/interplay-lo
 FATE_SAMPLES_AVCONV-$(call DEMDEC, IPMOVIE, INTERPLAY_VIDEO) += fate-interplay-mve-16bit
 fate-interplay-mve-16bit: CMD = framecrc -i $(SAMPLES)/interplay-mve/descent3-level5-16bit-partial.mve -pix_fmt rgb24 -an
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MXF, JPEG2000) += fate-jpeg2000-dcinema
+fate-jpeg2000-dcinema: CMD = framecrc -flags +bitexact -i $(SAMPLES)/jpeg2000/chiens_dcinema2K.mxf
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, KGV1) += fate-kgv1
 fate-kgv1: CMD = framecrc -i $(SAMPLES)/kega/kgv1.avi -pix_fmt rgb555le -an
 
