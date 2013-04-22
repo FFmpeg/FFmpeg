@@ -3015,7 +3015,7 @@ static int h264_slice_header_init(H264Context *h, int reinit)
     int nb_slices = (HAVE_THREADS &&
                      h->avctx->active_thread_type & FF_THREAD_SLICE) ?
                     h->avctx->thread_count : 1;
-    int i, ret;
+    int i;
 
     h->avctx->sample_aspect_ratio = h->sps.sar;
     av_assert0(h->avctx->sample_aspect_ratio.den);
