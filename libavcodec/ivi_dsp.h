@@ -64,6 +64,10 @@ void ff_ivi_recompose_haar(const IVIPlaneDesc *plane, uint8_t *dst,
  */
 void ff_ivi_inverse_haar_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
                              const uint8_t *flags);
+void ff_ivi_inverse_haar_8x1(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags);
+void ff_ivi_inverse_haar_1x8(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags);
 
 /**
  *  DC-only two-dimensional inverse Haar transform for Indeo 4.

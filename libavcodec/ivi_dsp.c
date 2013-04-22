@@ -320,6 +320,60 @@ void ff_ivi_inverse_haar_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
 #undef  COMPENSATE
 }
 
+void ff_ivi_inverse_haar_1x8(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags)
+{
+    int     i;
+    const int32_t *src;
+    int     t0, t1, t2, t3, t4, t5, t6, t7, t8;
+
+    /* apply the InvHaar8 to all columns */
+#define COMPENSATE(x) (x)
+    src = in;
+    for (i = 0; i < 8; i++) {
+        if (flags[i]) {
+            INV_HAAR8(src[ 0], src[ 8], src[16], src[24],
+                      src[32], src[40], src[48], src[56],
+                      out[ 0], out[pitch], out[2*pitch], out[3*pitch],
+                      out[4*pitch], out[5*pitch], out[6*pitch], out[7*pitch],
+                      t0, t1, t2, t3, t4, t5, t6, t7, t8);
+        } else
+            out[      0]= out[  pitch]= out[2*pitch]= out[3*pitch]=
+            out[4*pitch]= out[5*pitch]= out[6*pitch]= out[7*pitch]= 0;
+
+        src++;
+        out++;
+    }
+#undef  COMPENSATE
+}
+
+void ff_ivi_inverse_haar_8x1(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags)
+{
+    int     i;
+    const int32_t *src;
+    int     t0, t1, t2, t3, t4, t5, t6, t7, t8;
+
+    /* apply the InvHaar8 to all rows */
+#define COMPENSATE(x) (x)
+    src = in;
+    for (i = 0; i < 8; i++) {
+        if (   !src[0] && !src[1] && !src[2] && !src[3]
+            && !src[4] && !src[5] && !src[6] && !src[7]) {
+            memset(out, 0, 8 * sizeof(out[0]));
+        } else {
+            INV_HAAR8(src[0], src[1], src[2], src[3],
+                      src[4], src[5], src[6], src[7],
+                      out[0], out[1], out[2], out[3],
+                      out[4], out[5], out[6], out[7],
+                      t0, t1, t2, t3, t4, t5, t6, t7, t8);
+        }
+        src += 8;
+        out += pitch;
+    }
+#undef  COMPENSATE
+}
+
 void ff_ivi_dc_haar_2d(const int32_t *in, int16_t *out, uint32_t pitch,
                        int blk_size)
 {
