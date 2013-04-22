@@ -880,7 +880,7 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
                 av_log(s, AV_LOG_WARNING, "INFO subchunk truncated\n");
                 return AVERROR_INVALIDDATA;
             }
-            break;
+            return AVERROR_EOF;
         }
         if (chunk_size > end ||
             end - chunk_size < cur ||
@@ -899,6 +899,10 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
         if (!chunk_code) {
             if (chunk_size)
                 avio_skip(pb, chunk_size);
+            else if (pb->eof_reached) {
+                av_log(s, AV_LOG_WARNING, "truncated file\n");
+                return AVERROR_EOF;
+            }
             continue;
         }
 
