@@ -89,7 +89,7 @@ FATE_VCODEC-$(call ENCDEC, JPEGLS, AVI) += jpegls
 fate-vsynth%-jpegls:             ENCOPTS = -sws_flags neighbor+full_chroma_int
 fate-vsynth%-jpegls:             DECOPTS = -sws_flags area
 
-FATE_VCODEC-$(call ENCDEC, JPEG2000, AVI) += j2k
+FATE_VCODEC-$(call ENCDEC, J2K, AVI) += j2k
 fate-vsynth%-j2k:                ENCOPTS = -qscale 7 -strict experimental -pix_fmt rgb24
 fate-vsynth%-j2k:                DECINOPTS = -vcodec j2k -strict experimental
 
