@@ -947,9 +947,9 @@ int ff_thread_get_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
 
         pthread_mutex_unlock(&p->progress_mutex);
 
-        if (!avctx->codec->update_thread_context)
-            ff_thread_finish_setup(avctx);
     }
+    if (!avctx->thread_safe_callbacks && !avctx->codec->update_thread_context)
+        ff_thread_finish_setup(avctx);
 
     if (err)
         av_buffer_unref(&f->progress);
