@@ -102,6 +102,9 @@ int avcodec_get_context_defaults3(AVCodecContext *s, const AVCodec *codec)
     s->av_class = &av_codec_context_class;
 
     s->codec_type = codec ? codec->type : AVMEDIA_TYPE_UNKNOWN;
+    if (codec)
+        s->codec_id = codec->id;
+
     if(s->codec_type == AVMEDIA_TYPE_AUDIO)
         flags= AV_OPT_FLAG_AUDIO_PARAM;
     else if(s->codec_type == AVMEDIA_TYPE_VIDEO)
