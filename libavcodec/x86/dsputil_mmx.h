@@ -88,10 +88,10 @@ void ff_avg_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
 void ff_put_pixels16_sse2(uint8_t *block, const uint8_t *pixels,
                           ptrdiff_t line_size, int h);
 
-void ff_put_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_avg_cavs_qpel8_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_put_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
-void ff_avg_cavs_qpel16_mc00_mmxext(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_put_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_avg_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_put_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
+void ff_avg_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride);
 
 void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src, ptrdiff_t stride, int rnd);
 
