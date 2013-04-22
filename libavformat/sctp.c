@@ -56,10 +56,10 @@
 
 /*
  * The sctp_recvmsg and sctp_sendmsg functions are part of the user
- * library that offers support
- * for the SCTP kernel Implementation. The main purpose of this
- * code is to provide the SCTP Socket API mappings for user
- * application to interface with the SCTP in kernel.
+ * library that offers support for the SCTP kernel Implementation.
+ * To avoid build-time clashes the functions sport an ff_-prefix here.
+ * The main purpose of this code is to provide the SCTP Socket API
+ * mappings for user applications to interface with SCTP in the kernel.
  *
  * This implementation is based on the Socket API Extensions for SCTP
  * defined in <draft-ietf-tsvwg-sctpsocket-10.txt>
