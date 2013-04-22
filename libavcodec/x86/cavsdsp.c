@@ -459,6 +459,12 @@ static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
 }
 #endif /* HAVE_MMX_INLINE */
 
+#define DSPFUNC(PFX, IDX, NUM, EXT)                                                              \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 2] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc20_ ## EXT; \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 4] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc01_ ## EXT; \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 8] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc02_ ## EXT; \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][12] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc03_ ## EXT; \
+
 #if HAVE_MMXEXT_INLINE
 QPEL_CAVS(put_,        PUT_OP, mmxext)
 QPEL_CAVS(avg_, AVG_MMXEXT_OP, mmxext)
@@ -471,17 +477,10 @@ CAVS_MC(avg_, 16, mmxext)
 static av_cold void ff_cavsdsp_init_mmxext(CAVSDSPContext *c,
                                            AVCodecContext *avctx)
 {
-#define dspfunc(PFX, IDX, NUM) \
-    c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_mmxext; \
-    c->PFX ## _pixels_tab[IDX][ 4] = ff_ ## PFX ## NUM ## _mc01_mmxext; \
-    c->PFX ## _pixels_tab[IDX][ 8] = ff_ ## PFX ## NUM ## _mc02_mmxext; \
-    c->PFX ## _pixels_tab[IDX][12] = ff_ ## PFX ## NUM ## _mc03_mmxext; \
-
-    dspfunc(put_cavs_qpel, 0, 16);
-    dspfunc(put_cavs_qpel, 1, 8);
-    dspfunc(avg_cavs_qpel, 0, 16);
-    dspfunc(avg_cavs_qpel, 1, 8);
-#undef dspfunc
+    DSPFUNC(put, 0, 16, mmxext);
+    DSPFUNC(put, 1,  8, mmxext);
+    DSPFUNC(avg, 0, 16, mmxext);
+    DSPFUNC(avg, 1,  8, mmxext);
 }
 #endif /* HAVE_MMXEXT_INLINE */
 
@@ -497,17 +496,10 @@ CAVS_MC(avg_, 16,3dnow)
 static av_cold void ff_cavsdsp_init_3dnow(CAVSDSPContext *c,
                                           AVCodecContext *avctx)
 {
-#define dspfunc(PFX, IDX, NUM) \
-    c->PFX ## _pixels_tab[IDX][ 2] = ff_ ## PFX ## NUM ## _mc20_3dnow; \
-    c->PFX ## _pixels_tab[IDX][ 4] = ff_ ## PFX ## NUM ## _mc01_3dnow; \
-    c->PFX ## _pixels_tab[IDX][ 8] = ff_ ## PFX ## NUM ## _mc02_3dnow; \
-    c->PFX ## _pixels_tab[IDX][12] = ff_ ## PFX ## NUM ## _mc03_3dnow; \
-
-    dspfunc(put_cavs_qpel, 0, 16);
-    dspfunc(put_cavs_qpel, 1, 8);
-    dspfunc(avg_cavs_qpel, 0, 16);
-    dspfunc(avg_cavs_qpel, 1, 8);
-#undef dspfunc
+    DSPFUNC(put, 0, 16, 3dnow);
+    DSPFUNC(put, 1,  8, 3dnow);
+    DSPFUNC(avg, 0, 16, 3dnow);
+    DSPFUNC(avg, 1,  8, 3dnow);
 }
 #endif /* HAVE_AMD3DNOW_INLINE */
 
