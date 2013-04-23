@@ -3759,6 +3759,12 @@ the chrominance blue expression
 the chrominance red expression
 @item alpha_expr
 the alpha expression
+@item r
+the red expression
+@item g
+the green expression
+@item b
+the blue expression
 @end table
 
 If one of the chrominance expression is not defined, it falls back on the other
