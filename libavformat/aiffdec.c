@@ -147,9 +147,6 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
         case AV_CODEC_ID_GSM:
             codec->block_align = 33;
             break;
-        case AV_CODEC_ID_QCELP:
-            codec->block_align = 35;
-            break;
         default:
             aiff->block_duration = 1;
             break;
@@ -286,6 +283,21 @@ static int aiff_read_header(AVFormatContext *s)
             if (st->codec->codec_id == AV_CODEC_ID_QDM2 && size>=12*4 && !st->codec->block_align) {
                 st->codec->block_align = AV_RB32(st->codec->extradata+11*4);
                 aiff->block_duration = AV_RB32(st->codec->extradata+9*4);
+            } else if (st->codec->codec_id == AV_CODEC_ID_QCELP) {
+                char rate = 0;
+                if (size >= 25)
+                    rate = st->codec->extradata[24];
+                switch (rate) {
+                case 'H': // RATE_HALF
+                    st->codec->block_align = 17;
+                    break;
+                case 'F': // RATE_FULL
+                default:
+                    st->codec->block_align = 35;
+                }
+                aiff->block_duration = 160;
+                st->codec->bit_rate = st->codec->sample_rate * (st->codec->block_align << 3) /
+                                      aiff->block_duration;
             }
             break;
         case MKTAG('C','H','A','N'):
@@ -332,7 +344,7 @@ static int aiff_read_packet(AVFormatContext *s,
         return AVERROR_EOF;
 
     /* Now for that packet */
-    if (st->codec->block_align >= 33) // GSM, QCLP, IMA4
+    if (st->codec->block_align >= 17) // GSM, QCLP, IMA4
         size = st->codec->block_align;
     else
         size = (MAX_SIZE / st->codec->block_align) * st->codec->block_align;
