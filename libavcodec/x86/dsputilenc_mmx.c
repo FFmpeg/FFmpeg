@@ -947,9 +947,10 @@ hadamard_func(ssse3)
 av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
-    int bit_depth = avctx->bits_per_raw_sample;
 
 #if HAVE_YASM
+    int bit_depth = avctx->bits_per_raw_sample;
+
     if (EXTERNAL_MMX(mm_flags)) {
         if (bit_depth <= 8)
             c->get_pixels = ff_get_pixels_mmx;

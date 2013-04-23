@@ -1416,9 +1416,9 @@ void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src,
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int mm_flags)
 {
+#if HAVE_INLINE_ASM
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-#if HAVE_INLINE_ASM
     c->put_pixels_clamped        = ff_put_pixels_clamped_mmx;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_mmx;
     c->add_pixels_clamped        = ff_add_pixels_clamped_mmx;
@@ -1443,15 +1443,13 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     }
 
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
-#endif
-
+#endif /* HAVE_YASM */
 }
 
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
                                         int mm_flags)
 {
-
-#if HAVE_YASM
+#if HAVE_MMXEXT_EXTERNAL
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
 
@@ -1459,9 +1457,7 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_qpel,        1,  8, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmxext, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
-#endif /* HAVE_YASM */
 
-#if HAVE_MMXEXT_EXTERNAL
     /* slower than cmov version on AMD */
     if (!(mm_flags & AV_CPU_FLAG_3DNOW))
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmxext;
@@ -1504,9 +1500,9 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
                                       int mm_flags)
 {
+#if HAVE_SSE2_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-#if HAVE_SSE2_INLINE
     if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
         c->idct_put              = ff_idct_xvid_sse2_put;
         c->idct_add              = ff_idct_xvid_sse2_add;

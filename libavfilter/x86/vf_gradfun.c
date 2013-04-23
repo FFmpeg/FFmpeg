@@ -200,9 +200,9 @@ static void gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, const uint16_t *
 
 av_cold void ff_gradfun_init_x86(GradFunContext *gf)
 {
+#if HAVE_MMXEXT_INLINE
     int cpu_flags = av_get_cpu_flags();
 
-#if HAVE_MMXEXT_INLINE
     if (cpu_flags & AV_CPU_FLAG_MMXEXT)
         gf->filter_line = gradfun_filter_line_mmxext;
 #endif

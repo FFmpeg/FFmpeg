@@ -61,11 +61,11 @@ void ff_yadif_filter_line_10bit_ssse3(void *dst, void *prev, void *cur,
 
 av_cold void ff_yadif_init_x86(YADIFContext *yadif)
 {
+#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
     int bit_depth = (!yadif->csp) ? 8
                                   : yadif->csp->comp[0].depth_minus1 + 1;
 
-#if HAVE_YASM
     if (bit_depth >= 15) {
 #if ARCH_X86_32
         if (EXTERNAL_MMXEXT(cpu_flags))
