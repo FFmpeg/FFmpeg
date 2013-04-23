@@ -6862,7 +6862,208 @@ tools.
 
 Below is a description of the currently available multimedia filters.
 
-@section aperms, perms
+@section concat
+
+Concatenate audio and video streams, joining them together one after the
+other.
+
+The filter works on segments of synchronized video and audio streams. All
+segments must have the same number of streams of each type, and that will
+also be the number of streams at output.
+
+The filter accepts the following options:
+
+@table @option
+
+@item n
+Set the number of segments. Default is 2.
+
+@item v
+Set the number of output video streams, that is also the number of video
+streams in each segment. Default is 1.
+
+@item a
+Set the number of output audio streams, that is also the number of video
+streams in each segment. Default is 0.
+
+@item unsafe
+Activate unsafe mode: do not fail if segments have a different format.
+
+@end table
+
+The filter has @var{v}+@var{a} outputs: first @var{v} video outputs, then
+@var{a} audio outputs.
+
+There are @var{n}x(@var{v}+@var{a}) inputs: first the inputs for the first
+segment, in the same order as the outputs, then the inputs for the second
+segment, etc.
+
+Related streams do not always have exactly the same duration, for various
+reasons including codec frame size or sloppy authoring. For that reason,
+related synchronized streams (e.g. a video and its audio track) should be
+concatenated at once. The concat filter will use the duration of the longest
+stream in each segment (except the last one), and if necessary pad shorter
+audio streams with silence.
+
+For this filter to work correctly, all segments must start at timestamp 0.
+
+All corresponding streams must have the same parameters in all segments; the
+filtering system will automatically select a common pixel format for video
+streams, and a common sample format, sample rate and channel layout for
+audio streams, but other settings, such as resolution, must be converted
+explicitly by the user.
+
+Different frame rates are acceptable but will result in variable frame rate
+at output; be sure to configure the output file to handle it.
+
+@subsection Examples
+
+@itemize
+@item
+Concatenate an opening, an episode and an ending, all in bilingual version
+(video in stream 0, audio in streams 1 and 2):
+@example
+ffmpeg -i opening.mkv -i episode.mkv -i ending.mkv -filter_complex \
+  '[0:0] [0:1] [0:2] [1:0] [1:1] [1:2] [2:0] [2:1] [2:2]
+   concat=n=3:v=1:a=2 [v] [a1] [a2]' \
+  -map '[v]' -map '[a1]' -map '[a2]' output.mkv
+@end example
+
+@item
+Concatenate two parts, handling audio and video separately, using the
+(a)movie sources, and adjusting the resolution:
+@example
+movie=part1.mp4, scale=512:288 [v1] ; amovie=part1.mp4 [a1] ;
+movie=part2.mp4, scale=512:288 [v2] ; amovie=part2.mp4 [a2] ;
+[v1] [v2] concat [outv] ; [a1] [a2] concat=v=0:a=1 [outa]
+@end example
+Note that a desync will happen at the stitch if the audio and video streams
+do not have exactly the same duration in the first file.
+
+@end itemize
+
+@section ebur128
+
+EBU R128 scanner filter. This filter takes an audio stream as input and outputs
+it unchanged. By default, it logs a message at a frequency of 10Hz with the
+Momentary loudness (identified by @code{M}), Short-term loudness (@code{S}),
+Integrated loudness (@code{I}) and Loudness Range (@code{LRA}).
+
+The filter also has a video output (see the @var{video} option) with a real
+time graph to observe the loudness evolution. The graphic contains the logged
+message mentioned above, so it is not printed anymore when this option is set,
+unless the verbose logging is set. The main graphing area contains the
+short-term loudness (3 seconds of analysis), and the gauge on the right is for
+the momentary loudness (400 milliseconds).
+
+More information about the Loudness Recommendation EBU R128 on
+@url{http://tech.ebu.ch/loudness}.
+
+The filter accepts the following options:
+
+@table @option
+
+@item video
+Activate the video output. The audio stream is passed unchanged whether this
+option is set or no. The video stream will be the first output stream if
+activated. Default is @code{0}.
+
+@item size
+Set the video size. This option is for video only. Default and minimum
+resolution is @code{640x480}.
+
+@item meter
+Set the EBU scale meter. Default is @code{9}. Common values are @code{9} and
+@code{18}, respectively for EBU scale meter +9 and EBU scale meter +18. Any
+other integer value between this range is allowed.
+
+@item metadata
+Set metadata injection. If set to @code{1}, the audio input will be segmented
+into 100ms output frames, each of them containing various loudness information
+in metadata.  All the metadata keys are prefixed with @code{lavfi.r128.}.
+
+Default is @code{0}.
+
+@item framelog
+Force the frame logging level.
+
+Available values are:
+@table @samp
+@item info
+information logging level
+@item verbose
+verbose logging level
+@end table
+
+By default, the logging level is set to @var{info}. If the @option{video} or
+the @option{metadata} options are set, it switches to @var{verbose}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Real-time graph using @command{ffplay}, with a EBU scale meter +18:
+@example
+ffplay -f lavfi -i "amovie=input.mp3,ebur128=video=1:meter=18 [out0][out1]"
+@end example
+
+@item
+Run an analysis with @command{ffmpeg}:
+@example
+ffmpeg -nostats -i input.mp3 -filter_complex ebur128 -f null -
+@end example
+@end itemize
+
+@section interleave, ainterleave
+
+Temporally interleave frames from several inputs.
+
+@code{interleave} works with video inputs, @code{ainterleave} with audio.
+
+These filters read frames from several inputs and send the oldest
+queued frame to the output.
+
+Input streams must have a well defined, monotonically increasing frame
+timestamp values.
+
+In order to submit one frame to output, these filters need to enqueue
+at least one frame for each input, so they cannot work in case one
+input is not yet terminated and will not receive incoming frames.
+
+For example consider the case when one input is a @code{select} filter
+which always drop input frames. The @code{interleave} filter will keep
+reading from that input, but it will never be able to send new frames
+to output until the input will send an end-of-stream signal.
+
+Also, depending on inputs synchronization, the filters will drop
+frames in case one input receives more frames than the other ones, and
+the queue is already filled.
+
+These filters accept the following options:
+
+@table @option
+@item nb_inputs, n
+Set the number of different inputs, it is 2 by default.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Interleave frames belonging to different streams using @command{ffmpeg}:
+@example
+ffmpeg -i bambi.avi -i pr0n.mkv -filter_complex "[0:v][1:v] interleave" out.avi
+@end example
+
+@item
+Add flickering blur effect:
+@example
+select='if(gt(random(0), 0.2), 1, 2)':n=2 [tmp], boxblur=2:2, [tmp] interleave
+@end example
+@end itemize
+
+@section perms, aperms
 
 Set read/write permissions for the output frames.
 
@@ -6901,7 +7102,8 @@ following one, the permission might not be received as expected in that
 following filter. Inserting a @ref{format} or @ref{aformat} filter before the
 perms/aperms filter can avoid this problem.
 
-@section aselect, select
+@section select, aselect
+
 Select frames to pass in output.
 
 This filter accepts the following options:
@@ -7084,15 +7286,15 @@ select=n=2:e='mod(n, 2)+1' [odd][even]; [odd] pad=h=2*ih [tmp]; [tmp][even] over
 @end example
 @end itemize
 
-@section asendcmd, sendcmd
+@section sendcmd, asendcmd
 
 Send commands to filters in the filtergraph.
 
 These filters read commands to be sent to other filters in the
 filtergraph.
 
-@code{asendcmd} must be inserted between two audio filters,
-@code{sendcmd} must be inserted between two video filters, but apart
+@code{sendcmd} must be inserted between two video filters,
+@code{asendcmd} must be inserted between two audio filters, but apart
 from that they act the same way.
 
 The specification of commands can be provided in the filter arguments
@@ -7216,11 +7418,11 @@ sendcmd=f=test.cmd,drawtext=fontfile=FreeSerif.ttf:text='',hue
 @end itemize
 
 @anchor{setpts}
-@section asetpts, setpts
+@section setpts, asetpts
 
 Change the PTS (presentation timestamp) of the input frames.
 
-@code{asetpts} works on audio frames, @code{setpts} on video frames.
+@code{setpts} works on video frames, @code{asetpts} on audio frames.
 
 This filter accepts the following options:
 
@@ -7339,79 +7541,6 @@ setpts='(RTCTIME - RTCSTART) / (TB * 1000000)'
 @end example
 @end itemize
 
-@section ebur128
-
-EBU R128 scanner filter. This filter takes an audio stream as input and outputs
-it unchanged. By default, it logs a message at a frequency of 10Hz with the
-Momentary loudness (identified by @code{M}), Short-term loudness (@code{S}),
-Integrated loudness (@code{I}) and Loudness Range (@code{LRA}).
-
-The filter also has a video output (see the @var{video} option) with a real
-time graph to observe the loudness evolution. The graphic contains the logged
-message mentioned above, so it is not printed anymore when this option is set,
-unless the verbose logging is set. The main graphing area contains the
-short-term loudness (3 seconds of analysis), and the gauge on the right is for
-the momentary loudness (400 milliseconds).
-
-More information about the Loudness Recommendation EBU R128 on
-@url{http://tech.ebu.ch/loudness}.
-
-The filter accepts the following options:
-
-@table @option
-
-@item video
-Activate the video output. The audio stream is passed unchanged whether this
-option is set or no. The video stream will be the first output stream if
-activated. Default is @code{0}.
-
-@item size
-Set the video size. This option is for video only. Default and minimum
-resolution is @code{640x480}.
-
-@item meter
-Set the EBU scale meter. Default is @code{9}. Common values are @code{9} and
-@code{18}, respectively for EBU scale meter +9 and EBU scale meter +18. Any
-other integer value between this range is allowed.
-
-@item metadata
-Set metadata injection. If set to @code{1}, the audio input will be segmented
-into 100ms output frames, each of them containing various loudness information
-in metadata.  All the metadata keys are prefixed with @code{lavfi.r128.}.
-
-Default is @code{0}.
-
-@item framelog
-Force the frame logging level.
-
-Available values are:
-@table @samp
-@item info
-information logging level
-@item verbose
-verbose logging level
-@end table
-
-By default, the logging level is set to @var{info}. If the @option{video} or
-the @option{metadata} options are set, it switches to @var{verbose}.
-@end table
-
-@subsection Examples
-
-@itemize
-@item
-Real-time graph using @command{ffplay}, with a EBU scale meter +18:
-@example
-ffplay -f lavfi -i "amovie=input.mp3,ebur128=video=1:meter=18 [out0][out1]"
-@end example
-
-@item
-Run an analysis with @command{ffmpeg}:
-@example
-ffmpeg -nostats -i input.mp3 -filter_complex ebur128 -f null -
-@end example
-@end itemize
-
 @section settb, asettb
 
 Set the timebase to use for the output frames timestamps.
@@ -7462,134 +7591,6 @@ settb=2*intb
 Set the default timebase value:
 @example
 settb=AVTB
-@end example
-@end itemize
-
-@section concat
-
-Concatenate audio and video streams, joining them together one after the
-other.
-
-The filter works on segments of synchronized video and audio streams. All
-segments must have the same number of streams of each type, and that will
-also be the number of streams at output.
-
-The filter accepts the following options:
-
-@table @option
-
-@item n
-Set the number of segments. Default is 2.
-
-@item v
-Set the number of output video streams, that is also the number of video
-streams in each segment. Default is 1.
-
-@item a
-Set the number of output audio streams, that is also the number of video
-streams in each segment. Default is 0.
-
-@item unsafe
-Activate unsafe mode: do not fail if segments have a different format.
-
-@end table
-
-The filter has @var{v}+@var{a} outputs: first @var{v} video outputs, then
-@var{a} audio outputs.
-
-There are @var{n}x(@var{v}+@var{a}) inputs: first the inputs for the first
-segment, in the same order as the outputs, then the inputs for the second
-segment, etc.
-
-Related streams do not always have exactly the same duration, for various
-reasons including codec frame size or sloppy authoring. For that reason,
-related synchronized streams (e.g. a video and its audio track) should be
-concatenated at once. The concat filter will use the duration of the longest
-stream in each segment (except the last one), and if necessary pad shorter
-audio streams with silence.
-
-For this filter to work correctly, all segments must start at timestamp 0.
-
-All corresponding streams must have the same parameters in all segments; the
-filtering system will automatically select a common pixel format for video
-streams, and a common sample format, sample rate and channel layout for
-audio streams, but other settings, such as resolution, must be converted
-explicitly by the user.
-
-Different frame rates are acceptable but will result in variable frame rate
-at output; be sure to configure the output file to handle it.
-
-@subsection Examples
-
-@itemize
-@item
-Concatenate an opening, an episode and an ending, all in bilingual version
-(video in stream 0, audio in streams 1 and 2):
-@example
-ffmpeg -i opening.mkv -i episode.mkv -i ending.mkv -filter_complex \
-  '[0:0] [0:1] [0:2] [1:0] [1:1] [1:2] [2:0] [2:1] [2:2]
-   concat=n=3:v=1:a=2 [v] [a1] [a2]' \
-  -map '[v]' -map '[a1]' -map '[a2]' output.mkv
-@end example
-
-@item
-Concatenate two parts, handling audio and video separately, using the
-(a)movie sources, and adjusting the resolution:
-@example
-movie=part1.mp4, scale=512:288 [v1] ; amovie=part1.mp4 [a1] ;
-movie=part2.mp4, scale=512:288 [v2] ; amovie=part2.mp4 [a2] ;
-[v1] [v2] concat [outv] ; [a1] [a2] concat=v=0:a=1 [outa]
-@end example
-Note that a desync will happen at the stitch if the audio and video streams
-do not have exactly the same duration in the first file.
-
-@end itemize
-
-@section interleave, ainterleave
-
-Temporally interleave frames from several inputs.
-
-@code{interleave} works with video inputs, @code{ainterleave} with audio.
-
-These filters read frames from several inputs and send the oldest
-queued frame to the output.
-
-Input streams must have a well defined, monotonically increasing frame
-timestamp values.
-
-In order to submit one frame to output, these filters need to enqueue
-at least one frame for each input, so they cannot work in case one
-input is not yet terminated and will not receive incoming frames.
-
-For example consider the case when one input is a @code{select} filter
-which always drop input frames. The @code{interleave} filter will keep
-reading from that input, but it will never be able to send new frames
-to output until the input will send an end-of-stream signal.
-
-Also, depending on inputs synchronization, the filters will drop
-frames in case one input receives more frames than the other ones, and
-the queue is already filled.
-
-These filters accept the following options:
-
-@table @option
-@item nb_inputs, n
-Set the number of different inputs, it is 2 by default.
-@end table
-
-@subsection Examples
-
-@itemize
-@item
-Interleave frames belonging to different streams using @command{ffmpeg}:
-@example
-ffmpeg -i bambi.avi -i pr0n.mkv -filter_complex "[0:v][1:v] interleave" out.avi
-@end example
-
-@item
-Add flickering blur effect:
-@example
-select='if(gt(random(0), 0.2), 1, 2)':n=2 [tmp], boxblur=2:2, [tmp] interleave
 @end example
 @end itemize
 
