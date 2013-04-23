@@ -3030,6 +3030,9 @@ It can accept an argument: a strftime() format string.
 @item n, frame_num
 The frame number, starting from 0.
 
+@item pict_type
+A 1 character description of the current picture type.
+
 @item pts
 The timestamp of the current frame, in seconds, with microsecond accuracy.
 

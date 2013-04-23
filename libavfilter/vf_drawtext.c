@@ -72,6 +72,7 @@ static const char *const var_names[] = {
     "text_w", "tw",           ///< width  of the rendered text
     "x",
     "y",
+    "pict_type",
     NULL
 };
 
@@ -108,6 +109,7 @@ enum var_name {
     VAR_TEXT_W, VAR_TW,
     VAR_X,
     VAR_Y,
+    VAR_PICT_TYPE,
     VAR_VARS_NB
 };
 
@@ -608,6 +610,15 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
     return AVERROR(ENOSYS);
 }
 
+static int func_pict_type(AVFilterContext *ctx, AVBPrint *bp,
+                          char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *dtext = ctx->priv;
+
+    av_bprintf(bp, "%c", av_get_picture_type_char(dtext->var_values[VAR_PICT_TYPE]));
+    return 0;
+}
+
 static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
                     char *fct, unsigned argc, char **argv, int tag)
 {
@@ -677,6 +688,7 @@ static const struct drawtext_function {
 } functions[] = {
     { "expr",      1, 1, 0,   func_eval_expr },
     { "e",         1, 1, 0,   func_eval_expr },
+    { "pict_type", 0, 0, 0,   func_pict_type },
     { "pts",       0, 0, 0,   func_pts      },
     { "gmtime",    0, 1, 'G', func_strftime },
     { "localtime", 0, 1, 'L', func_strftime },
@@ -986,6 +998,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     dtext->var_values[VAR_N] = inlink->frame_count;
     dtext->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);
+
+    dtext->var_values[VAR_PICT_TYPE] = frame->pict_type;
 
     draw_text(ctx, frame, frame->width, frame->height);
 
