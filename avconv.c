@@ -1037,16 +1037,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     ost->st->codec->frame_number++;
 }
 
-static void rate_emu_sleep(InputStream *ist)
-{
-    if (input_files[ist->file_index]->rate_emu) {
-        int64_t pts = av_rescale(ist->last_dts, 1000000, AV_TIME_BASE);
-        int64_t now = av_gettime() - ist->start;
-        if (pts > now)
-            av_usleep(pts - now);
-    }
-}
-
 int guess_input_channel_layout(InputStream *ist)
 {
     AVCodecContext *dec = ist->st->codec;
@@ -1094,8 +1084,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         decoded_frame->pts = pkt->pts;
         pkt->pts           = AV_NOPTS_VALUE;
     }
-
-    rate_emu_sleep(ist);
 
     resample_changed = ist->resample_sample_fmt     != decoded_frame->format         ||
                        ist->resample_channels       != avctx->channels               ||
@@ -1190,8 +1178,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
 #endif
 
-    rate_emu_sleep(ist);
-
     if (ist->st->sample_aspect_ratio.num)
         decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
 
@@ -1250,8 +1236,6 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
         return ret;
     if (!*got_output)
         return ret;
-
-    rate_emu_sleep(ist);
 
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
@@ -1340,7 +1324,6 @@ static int output_packet(InputStream *ist, const AVPacket *pkt)
 
     /* handle stream copy */
     if (!ist->decoding_needed) {
-        rate_emu_sleep(ist);
         ist->last_dts = ist->next_dts;
         switch (ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -2047,6 +2030,17 @@ static int get_input_packet_mt(InputFile *f, AVPacket *pkt)
 
 static int get_input_packet(InputFile *f, AVPacket *pkt)
 {
+    if (f->rate_emu) {
+        int i;
+        for (i = 0; i < f->nb_streams; i++) {
+            InputStream *ist = input_streams[f->ist_index + i];
+            int64_t pts = av_rescale(ist->last_dts, 1000000, AV_TIME_BASE);
+            int64_t now = av_gettime() - ist->start;
+            if (pts > now)
+                return AVERROR(EAGAIN);
+        }
+    }
+
 #if HAVE_PTHREADS
     if (nb_input_files > 1)
         return get_input_packet_mt(f, pkt);
