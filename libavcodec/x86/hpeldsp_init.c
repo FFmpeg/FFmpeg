@@ -113,8 +113,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 
 
 #if HAVE_YASM
-#define ff_put_pixels8_mmx ff_put_pixels8_mmxext
-
 /***********************************/
 /* 3Dnow specific */
 
@@ -139,11 +137,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #if HAVE_INLINE_ASM
 #define put_no_rnd_pixels16_mmx put_pixels16_mmx
 #define put_no_rnd_pixels8_mmx put_pixels8_mmx
-#define put_pixels16_mmxext put_pixels16_mmx
-#define put_pixels8_mmxext put_pixels8_mmx
-#define put_pixels4_mmxext put_pixels4_mmx
-#define put_no_rnd_pixels16_mmxext put_no_rnd_pixels16_mmx
-#define put_no_rnd_pixels8_mmxext put_no_rnd_pixels8_mmx
 
 static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                             ptrdiff_t line_size, int h)
