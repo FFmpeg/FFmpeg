@@ -74,6 +74,10 @@ void ff_avg_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
 void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 
+#define put_pixels8_mmx         ff_put_pixels8_mmx
+#define put_pixels16_mmx        ff_put_pixels16_mmx
+#define put_no_rnd_pixels8_mmx  ff_put_pixels8_mmx
+#define put_no_rnd_pixels16_mmx ff_put_pixels16_mmx
 
 #if HAVE_INLINE_ASM
 
@@ -132,74 +136,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #undef DEF
 
 #endif /* HAVE_YASM */
-
-
-#if HAVE_INLINE_ASM
-#define put_no_rnd_pixels16_mmx put_pixels16_mmx
-#define put_no_rnd_pixels8_mmx put_pixels8_mmx
-
-static void put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
-                            ptrdiff_t line_size, int h)
-{
-    __asm__ volatile (
-        "lea   (%3, %3), %%"REG_a"      \n\t"
-        ".p2align     3                 \n\t"
-        "1:                             \n\t"
-        "movq  (%1    ), %%mm0          \n\t"
-        "movq  (%1, %3), %%mm1          \n\t"
-        "movq     %%mm0, (%2)           \n\t"
-        "movq     %%mm1, (%2, %3)       \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
-        "movq  (%1    ), %%mm0          \n\t"
-        "movq  (%1, %3), %%mm1          \n\t"
-        "movq     %%mm0, (%2)           \n\t"
-        "movq     %%mm1, (%2, %3)       \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
-        "subl        $4, %0             \n\t"
-        "jnz         1b                 \n\t"
-        : "+g"(h), "+r"(pixels),  "+r"(block)
-        : "r"((x86_reg)line_size)
-        : "%"REG_a, "memory"
-        );
-}
-
-static void put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
-                             ptrdiff_t line_size, int h)
-{
-    __asm__ volatile (
-        "lea   (%3, %3), %%"REG_a"      \n\t"
-        ".p2align     3                 \n\t"
-        "1:                             \n\t"
-        "movq  (%1    ), %%mm0          \n\t"
-        "movq 8(%1    ), %%mm4          \n\t"
-        "movq  (%1, %3), %%mm1          \n\t"
-        "movq 8(%1, %3), %%mm5          \n\t"
-        "movq     %%mm0,  (%2)          \n\t"
-        "movq     %%mm4, 8(%2)          \n\t"
-        "movq     %%mm1,  (%2, %3)      \n\t"
-        "movq     %%mm5, 8(%2, %3)      \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
-        "movq  (%1    ), %%mm0          \n\t"
-        "movq 8(%1    ), %%mm4          \n\t"
-        "movq  (%1, %3), %%mm1          \n\t"
-        "movq 8(%1, %3), %%mm5          \n\t"
-        "movq     %%mm0,  (%2)          \n\t"
-        "movq     %%mm4, 8(%2)          \n\t"
-        "movq     %%mm1,  (%2, %3)      \n\t"
-        "movq     %%mm5, 8(%2, %3)      \n\t"
-        "add  %%"REG_a", %1             \n\t"
-        "add  %%"REG_a", %2             \n\t"
-        "subl        $4, %0             \n\t"
-        "jnz         1b                 \n\t"
-        : "+g"(h), "+r"(pixels),  "+r"(block)
-        : "r"((x86_reg)line_size)
-        : "%"REG_a, "memory"
-        );
-}
-#endif /* HAVE_INLINE_ASM */
 
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
     do {                                                                        \
