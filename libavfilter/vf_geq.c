@@ -35,10 +35,11 @@
 typedef struct {
     const AVClass *class;
     AVExpr *e[4];               ///< expressions for each plane
-    char *expr_str[4];          ///< expression strings for each plane
+    char *expr_str[4+3];        ///< expression strings for each plane
     AVFrame *picref;            ///< current input buffer
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
+    int is_rgb;
 } GEQContext;
 
 #define OFFSET(x) offsetof(GEQContext, x)
@@ -49,6 +50,10 @@ static const AVOption geq_options[] = {
     { "cb_expr",    "set chroma blue expression", OFFSET(expr_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "cr_expr",    "set chroma red expression",  OFFSET(expr_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "alpha_expr", "set alpha expression",       OFFSET(expr_str[3]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+
+    { "r",          "set red expression",   OFFSET(expr_str[6]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "g",          "set green expression", OFFSET(expr_str[4]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "b",          "set blue expression",  OFFSET(expr_str[5]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     {NULL},
 };
 
@@ -92,8 +97,15 @@ static av_cold int geq_init(AVFilterContext *ctx)
     GEQContext *geq = ctx->priv;
     int plane, ret = 0;
 
-    if (!geq->expr_str[0]) {
-        av_log(ctx, AV_LOG_ERROR, "Luminance expression is mandatory\n");
+    if (!geq->expr_str[0] && !geq->expr_str[4] && !geq->expr_str[5] && !geq->expr_str[6]) {
+        av_log(ctx, AV_LOG_ERROR, "A luminance or RGB expression is mandatory\n");
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+    geq->is_rgb = !geq->expr_str[0];
+
+    if ((geq->expr_str[0] || geq->expr_str[1] || geq->expr_str[2]) && (geq->expr_str[4] || geq->expr_str[5] || geq->expr_str[6])) {
+        av_log(ctx, AV_LOG_ERROR, "Either YCbCr or RGB but not both must be specified\n");
         ret = AVERROR(EINVAL);
         goto end;
     }
@@ -110,18 +122,29 @@ static av_cold int geq_init(AVFilterContext *ctx)
 
     if (!geq->expr_str[3])
         geq->expr_str[3] = av_strdup("255");
+    if (!geq->expr_str[4])
+        geq->expr_str[4] = av_strdup("g(X,Y)");
+    if (!geq->expr_str[5])
+        geq->expr_str[5] = av_strdup("b(X,Y)");
+    if (!geq->expr_str[6])
+        geq->expr_str[6] = av_strdup("r(X,Y)");
 
-    if (!geq->expr_str[1] || !geq->expr_str[2] || !geq->expr_str[3]) {
+    if (geq->is_rgb ?
+            (!geq->expr_str[4] || !geq->expr_str[5] || !geq->expr_str[6])
+                    :
+            (!geq->expr_str[1] || !geq->expr_str[2] || !geq->expr_str[3])) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
 
     for (plane = 0; plane < 4; plane++) {
         static double (*p[])(void *, double, double) = { lum, cb, cr, alpha };
-        static const char *const func2_names[]    = { "lum", "cb", "cr", "alpha", "p", NULL };
+        static const char *const func2_yuv_names[]    = { "lum", "cb", "cr", "alpha", "p", NULL };
+        static const char *const func2_rgb_names[]    = { "g", "b", "r", "alpha", "p", NULL };
+        const char *const *func2_names       = geq->is_rgb ? func2_rgb_names : func2_yuv_names;
         double (*func2[])(void *, double, double) = { lum, cb, cr, alpha, p[plane], NULL };
 
-        ret = av_expr_parse(&geq->e[plane], geq->expr_str[plane], var_names,
+        ret = av_expr_parse(&geq->e[plane], geq->expr_str[plane < 3 && geq->is_rgb ? plane+4 : plane], var_names,
                             NULL, NULL, func2_names, func2, 0, ctx);
         if (ret < 0)
             break;
@@ -133,14 +156,22 @@ end:
 
 static int geq_query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
+    GEQContext *geq = ctx->priv;
+    static const enum PixelFormat yuv_pix_fmts[] = {
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    static const enum PixelFormat rgb_pix_fmts[] = {
+        AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_NONE
+    };
+    if (geq->is_rgb) {
+        ff_set_common_formats(ctx, ff_make_format_list(rgb_pix_fmts));
+    } else
+        ff_set_common_formats(ctx, ff_make_format_list(yuv_pix_fmts));
     return 0;
 }
 
