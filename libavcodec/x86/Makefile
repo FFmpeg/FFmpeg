@@ -40,7 +40,8 @@ MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
 
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o          \
                                           x86/motion_est.o
-MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o
+MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
+                                          x86/hpeldsp_mmx.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
 
 YASM-OBJS-$(CONFIG_AAC_DECODER)        += x86/sbrdsp.o
