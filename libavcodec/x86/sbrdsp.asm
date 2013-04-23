@@ -321,6 +321,8 @@ cglobal sbr_qmf_pre_shuffle, 1,4,7,z
     movq    [r2q], m2
     REP_RET
 
+%if WIN64 == 0
+
 %if WIN64
 %define NREGS 0
 %define NOISE_TABLE sbr_noise_table
@@ -428,3 +430,5 @@ apply_noise_main:
     add    count, mmsize
     jl      .loop
     RET
+
+%endif ; WIN64 == 0
