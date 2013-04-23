@@ -284,7 +284,7 @@ int ffio_limit(AVIOContext *s, int size)
  */
 static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
 {
-    int orig_pos       = pkt->pos; // av_grow_packet might reset pos
+    int64_t orig_pos   = pkt->pos; // av_grow_packet might reset pos
     int orig_size      = pkt->size;
     int ret;
 
