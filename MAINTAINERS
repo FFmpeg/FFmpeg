@@ -164,6 +164,7 @@ Codecs:
   interplayvideo.c                      Mike Melanson
   ivi*                                  Kostya Shishkov
   jacosub*                              Clément Bœsch
+  jpeg2000*                             Nicolas Bertrand
   jpeg_ls.c                             Kostya Shishkov
   jvdec.c                               Peter Ross
   kmvc.c                                Kostya Shishkov
@@ -190,6 +191,7 @@ Codecs:
   mpc*                                  Kostya Shishkov
   mpeg12.c, mpeg12data.h                Michael Niedermayer
   mpegvideo.c, mpegvideo.h              Michael Niedermayer
+  mqc*                                  Nicolas Bertrand
   msmpeg4.c, msmpeg4data.h              Michael Niedermayer
   msrle.c                               Mike Melanson
   msvideo1.c                            Mike Melanson
