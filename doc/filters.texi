@@ -4631,8 +4631,6 @@ Available values for component flags are:
 averaged temporal noise (smoother)
 @item p
 mix random noise with a (semi)regular pattern
-@item q
-higher quality (slightly better looking, slightly slower)
 @item t
 temporal noise (noise pattern changes between frames)
 @item u
