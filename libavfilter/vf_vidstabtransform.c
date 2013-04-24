@@ -31,13 +31,13 @@
 #include "vidstabutils.h"
 
 typedef struct {
-    const AVClass* class;
+    const AVClass *class;
 
     VSTransformData td;
     VSTransformConfig conf;
 
-    VSTransformations trans; // transformations
-    char* input;           // name of transform file
+    VSTransformations trans;    // transformations
+    char *input;                // name of transform file
     int tripod;
 } TransformContext;
 
@@ -45,7 +45,7 @@ typedef struct {
 #define OFFSETC(x) (offsetof(TransformContext, conf)+offsetof(VSTransformConfig, x))
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
-static const AVOption vidstabtransform_options[]= {
+static const AVOption vidstabtransform_options[] = {
     {"input",     "path to the file storing the transforms (def:transforms.trf)",   OFFSET(input),
                    AV_OPT_TYPE_STRING, {.str = DEFAULT_INPUT_NAME} },
     {"smoothing", "number of frames*2 + 1 used for lowpass filtering (def: 10)",    OFFSETC(smoothing),
@@ -62,7 +62,7 @@ static const AVOption vidstabtransform_options[]= {
                    AV_OPT_TYPE_CONST,  {.i64 = VSCropBorder }, 0, 0, FLAGS, "crop"},
     {"invert",    "1: invert transforms (def: 0)",                                  OFFSETC(invert),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
-    {"relative",  "consider transforms as 0: abslute, 1: relative (def)",          OFFSETC(relative),
+    {"relative",  "consider transforms as 0: absolute, 1: relative (def)",          OFFSETC(relative),
                    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,    FLAGS},
     {"zoom",      "percentage to zoom >0: zoom in, <0 zoom out (def: 0)",           OFFSETC(zoom),
                    AV_OPT_TYPE_DOUBLE, {.dbl = 0},        0, 100,  FLAGS},
@@ -80,14 +80,14 @@ static const AVOption vidstabtransform_options[]= {
                    AV_OPT_TYPE_CONST,  {.i64 = VS_BiCubic },0, 0,  FLAGS, "interpol"},
     {"tripod",    "if 1: virtual tripod mode (equiv. to relative=0:smoothing=0)",   OFFSET(tripod),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
-    {NULL},
+    {NULL}
 };
 
 AVFILTER_DEFINE_CLASS(vidstabtransform);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    TransformContext* tc = ctx->priv;
+    TransformContext *tc = ctx->priv;
     vs_set_mem_and_log_functions();
     tc->class = &vidstabtransform_class;
     av_log(ctx, AV_LOG_VERBOSE, "vidstabtransform filter: init %s\n", LIBVIDSTAB_VERSION);
@@ -122,27 +122,27 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     TransformContext *tc = ctx->priv;
-    FILE* f;
+    FILE *f;
 
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    VSTransformData* td = &(tc->td);
+    VSTransformData *td = &(tc->td);
 
     VSFrameInfo fi_src;
     VSFrameInfo fi_dest;
 
-    if(!vsFrameInfoInit(&fi_src, inlink->w, inlink->h,
-                      av_2_vs_pixel_format(ctx,inlink->format)) ||
-       !vsFrameInfoInit(&fi_dest, inlink->w, inlink->h,
-                      av_2_vs_pixel_format(ctx, inlink->format))){
+    if (!vsFrameInfoInit(&fi_src, inlink->w, inlink->h,
+                         av_2_vs_pixel_format(ctx, inlink->format)) ||
+        !vsFrameInfoInit(&fi_dest, inlink->w, inlink->h,
+                         av_2_vs_pixel_format(ctx, inlink->format))) {
         av_log(ctx, AV_LOG_ERROR, "unknown pixel format: %i (%s)",
                inlink->format, desc->name);
         return AVERROR(EINVAL);
     }
 
-    if(fi_src.bytesPerPixel != av_get_bits_per_pixel(desc)/8 ||
-       fi_src.log2ChromaW != desc->log2_chroma_w ||
-       fi_src.log2ChromaH != desc->log2_chroma_h){
+    if (fi_src.bytesPerPixel != av_get_bits_per_pixel(desc)/8 ||
+        fi_src.log2ChromaW != desc->log2_chroma_w ||
+        fi_src.log2ChromaH != desc->log2_chroma_h) {
         av_log(ctx, AV_LOG_ERROR, "pixel-format error: bpp %i<>%i  ",
                fi_src.bytesPerPixel, av_get_bits_per_pixel(desc)/8);
         av_log(ctx, AV_LOG_ERROR, "chroma_subsampl: w: %i<>%i  h: %i<>%i\n",
@@ -154,18 +154,18 @@ static int config_input(AVFilterLink *inlink)
     // set values that are not initializes by the options
     tc->conf.modName = "vidstabtransform";
     tc->conf.verbose =1;
-    if(tc->tripod){
+    if (tc->tripod) {
         av_log(ctx, AV_LOG_INFO, "Virtual tripod mode: relative=0, smoothing=0");
-        tc->conf.relative=0;
-        tc->conf.smoothing=0;
+        tc->conf.relative  = 0;
+        tc->conf.smoothing = 0;
     }
 
-    if(vsTransformDataInit(td, &tc->conf, &fi_src, &fi_dest) != VS_OK){
+    if (vsTransformDataInit(td, &tc->conf, &fi_src, &fi_dest) != VS_OK) {
         av_log(ctx, AV_LOG_ERROR, "initialization of vid.stab transform failed, please report a BUG\n");
         return AVERROR(EINVAL);
     }
 
-    vsTransformGetConfig(&tc->conf,td);
+    vsTransformGetConfig(&tc->conf, td);
     av_log(ctx, AV_LOG_INFO, "Video transformation/stabilization settings (pass 2/2):\n");
     av_log(ctx, AV_LOG_INFO, "    input     = %s\n", tc->input);
     av_log(ctx, AV_LOG_INFO, "    smoothing = %d\n", tc->conf.smoothing);
@@ -184,13 +184,13 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(errno);
     } else {
         VSManyLocalMotions mlms;
-        if(vsReadLocalMotionsFile(f,&mlms)==VS_OK){
-            // calculate the actual transforms from the localmotions
-            if(vsLocalmotions2TransformsSimple(td, &mlms,&tc->trans)!=VS_OK){
+        if (vsReadLocalMotionsFile(f, &mlms) == VS_OK) {
+            // calculate the actual transforms from the local motions
+            if (vsLocalmotions2TransformsSimple(td, &mlms, &tc->trans) != VS_OK) {
                 av_log(ctx, AV_LOG_ERROR, "calculating transformations failed\n");
                 return AVERROR(EINVAL);
             }
-        }else{ // try to read old format
+        } else { // try to read old format
             if (!vsReadOldTransforms(td, f, &tc->trans)) { /* read input file */
                 av_log(ctx, AV_LOG_ERROR, "error parsing input file %s\n", tc->input);
                 return AVERROR(EINVAL);
@@ -199,7 +199,7 @@ static int config_input(AVFilterLink *inlink)
     }
     fclose(f);
 
-    if (vsPreprocessTransforms(td, &tc->trans)!= VS_OK ) {
+    if (vsPreprocessTransforms(td, &tc->trans) != VS_OK ) {
         av_log(ctx, AV_LOG_ERROR, "error while preprocessing transforms\n");
         return AVERROR(EINVAL);
     }
@@ -209,7 +209,7 @@ static int config_input(AVFilterLink *inlink)
 }
 
 
-static int filter_frame(AVFilterLink *inlink,  AVFrame *in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     TransformContext *tc = ctx->priv;
@@ -233,15 +233,15 @@ static int filter_frame(AVFilterLink *inlink,  AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    for(plane=0; plane < vsTransformGetSrcFrameInfo(td)->planes; plane++){
+    for (plane = 0; plane < vsTransformGetSrcFrameInfo(td)->planes; plane++) {
         inframe.data[plane] = in->data[plane];
         inframe.linesize[plane] = in->linesize[plane];
     }
-    if(out == in){ // inplace
+    if (out == in) { // inplace
         vsTransformPrepare(td, &inframe, &inframe);
-    }else{ // seperate frames
+    } else { // separate frames
         VSFrame outframe;
-        for(plane=0; plane < vsTransformGetDestFrameInfo(td)->planes; plane++){
+        for (plane = 0; plane < vsTransformGetDestFrameInfo(td)->planes; plane++) {
             outframe.data[plane] = out->data[plane];
             outframe.linesize[plane] = out->linesize[plane];
         }
@@ -289,6 +289,4 @@ AVFilter avfilter_vf_vidstabtransform = {
     .inputs        = avfilter_vf_vidstabtransform_inputs,
     .outputs       = avfilter_vf_vidstabtransform_outputs,
     .priv_class    = &vidstabtransform_class,
-
 };
-

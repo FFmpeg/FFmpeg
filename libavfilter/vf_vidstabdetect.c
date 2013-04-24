@@ -31,13 +31,13 @@
 #include "vidstabutils.h"
 
 typedef struct {
-    const AVClass* class;
+    const AVClass *class;
 
     VSMotionDetect md;
     VSMotionDetectConfig conf;
 
-    char* result;
-    FILE* f;
+    char *result;
+    FILE *f;
 } StabData;
 
 
@@ -45,24 +45,24 @@ typedef struct {
 #define OFFSETC(x) (offsetof(StabData, conf)+offsetof(VSMotionDetectConfig, x))
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
-static const AVOption vidstabdetect_options[]= {
-    {"result",      "path to the file used to write the transforms (def:transforms.trf)", OFFSET(result),              AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}},
+static const AVOption vidstabdetect_options[] = {
+    {"result",      "path to the file used to write the transforms (def:transforms.trf)", OFFSET(result),             AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}},
     {"shakiness",   "how shaky is the video and how quick is the camera?"
-                    " 1: little (fast) 10: very strong/quick (slow) (def: 5)",            OFFSETC(shakiness),         AV_OPT_TYPE_INT,    {.i64 = 5},  1, 10,       FLAGS},
-    {"accuracy",    "(>=shakiness) 1: low 15: high (slow) (def: 9)",                      OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 9 }, 1, 15,       FLAGS},
-    {"stepsize",    "region around minimum is scanned with 1 pixel resolution (def: 6)",  OFFSETC(stepSize),          AV_OPT_TYPE_INT,    {.i64 = 6},  1, 32,       FLAGS},
-    {"mincontrast", "below this contrast a field is discarded (0-1) (def: 0.3)",          OFFSETC(contrastThreshold), AV_OPT_TYPE_DOUBLE, {.dbl =  0.25}, 0.0, 1.0, FLAGS},
-    {"show",        "0: draw nothing (def); 1,2: show fields and transforms",             OFFSETC(show),              AV_OPT_TYPE_INT,    {.i64 =  0}, 0, 2,        FLAGS},
+                    " 1: little (fast) 10: very strong/quick (slow) (def: 5)",            OFFSETC(shakiness),         AV_OPT_TYPE_INT,    {.i64 = 5},      1,  10, FLAGS},
+    {"accuracy",    "(>=shakiness) 1: low 15: high (slow) (def: 9)",                      OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 9},      1,  15, FLAGS},
+    {"stepsize",    "region around minimum is scanned with 1 pixel resolution (def: 6)",  OFFSETC(stepSize),          AV_OPT_TYPE_INT,    {.i64 = 6},      1,  32, FLAGS},
+    {"mincontrast", "below this contrast a field is discarded (0-1) (def: 0.3)",          OFFSETC(contrastThreshold), AV_OPT_TYPE_DOUBLE, {.dbl = 0.25}, 0.0, 1.0, FLAGS},
+    {"show",        "0: draw nothing (def); 1,2: show fields and transforms",             OFFSETC(show),              AV_OPT_TYPE_INT,    {.i64 = 0},      0,   2, FLAGS},
     {"tripod",      "virtual tripod mode (if >0): motion is compared to a reference"
-                    " reference frame (frame # is the value) (def: 0)",                   OFFSETC(virtualTripod),     AV_OPT_TYPE_INT,    {.i64 = 0},  0, INT_MAX,  FLAGS},
-    {NULL},
+                    " reference frame (frame # is the value) (def: 0)",                   OFFSETC(virtualTripod),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, FLAGS},
+    {NULL}
 };
 
 AVFILTER_DEFINE_CLASS(vidstabdetect);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    StabData* sd = ctx->priv;
+    StabData *sd = ctx->priv;
     vs_set_mem_and_log_functions();
     sd->class = &vidstabdetect_class;
     av_log(ctx, AV_LOG_VERBOSE, "vidstabdetect filter: init %s\n", LIBVIDSTAB_VERSION);
@@ -72,7 +72,7 @@ static av_cold int init(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     StabData *sd = ctx->priv;
-    VSMotionDetect* md = &(sd->md);
+    VSMotionDetect *md = &(sd->md);
 
     if (sd->f) {
         fclose(sd->f);
@@ -80,7 +80,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     vsMotionDetectionCleanup(md);
-
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -98,7 +97,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -108,25 +106,25 @@ static int config_input(AVFilterLink *inlink)
     VSFrameInfo fi;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    vsFrameInfoInit(&fi,inlink->w, inlink->h, av_2_vs_pixel_format(ctx, inlink->format));
-    if(fi.bytesPerPixel != av_get_bits_per_pixel(desc)/8){
+    vsFrameInfoInit(&fi, inlink->w, inlink->h, av_2_vs_pixel_format(ctx, inlink->format));
+    if (fi.bytesPerPixel != av_get_bits_per_pixel(desc)/8) {
         av_log(ctx, AV_LOG_ERROR, "pixel-format error: wrong bits/per/pixel, please report a BUG");
         return AVERROR(EINVAL);
     }
-    if(fi.log2ChromaW != desc->log2_chroma_w){
+    if (fi.log2ChromaW != desc->log2_chroma_w) {
         av_log(ctx, AV_LOG_ERROR, "pixel-format error: log2_chroma_w, please report a BUG");
         return AVERROR(EINVAL);
     }
 
-    if(fi.log2ChromaH != desc->log2_chroma_h){
+    if (fi.log2ChromaH != desc->log2_chroma_h) {
         av_log(ctx, AV_LOG_ERROR, "pixel-format error: log2_chroma_h, please report a BUG");
         return AVERROR(EINVAL);
     }
 
-    // set values that are not initializes by the options
+    // set values that are not initialized by the options
     sd->conf.algo     = 1;
     sd->conf.modName  = "vidstabdetect";
-    if(vsMotionDetectInit(md, &sd->conf, &fi) != VS_OK){
+    if (vsMotionDetectInit(md, &sd->conf, &fi) != VS_OK) {
         av_log(ctx, AV_LOG_ERROR, "initialization of Motion Detection failed, please report a BUG");
         return AVERROR(EINVAL);
     }
@@ -144,8 +142,8 @@ static int config_input(AVFilterLink *inlink)
     if (sd->f == NULL) {
         av_log(ctx, AV_LOG_ERROR, "cannot open transform file %s\n", sd->result);
         return AVERROR(EINVAL);
-    }else{
-        if(vsPrepareFile(md, sd->f) != VS_OK){
+    } else {
+        if (vsPrepareFile(md, sd->f) != VS_OK) {
             av_log(ctx, AV_LOG_ERROR, "cannot write to transform file %s\n", sd->result);
             return AVERROR(EINVAL);
         }
@@ -158,7 +156,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     StabData *sd = ctx->priv;
-    VSMotionDetect* md = &(sd->md);
+    VSMotionDetect *md = &(sd->md);
     LocalMotions localmotions;
 
     AVFilterLink *outlink = inlink->dst->outputs[0];
@@ -179,21 +177,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    for(plane=0; plane < md->fi.planes; plane++){
+    for (plane = 0; plane < md->fi.planes; plane++) {
         frame.data[plane] = in->data[plane];
         frame.linesize[plane] = in->linesize[plane];
     }
-    if(vsMotionDetection(md, &localmotions, &frame) !=  VS_OK){
+    if (vsMotionDetection(md, &localmotions, &frame) != VS_OK) {
         av_log(ctx, AV_LOG_ERROR, "motion detection failed");
         return AVERROR(AVERROR_EXTERNAL);
     } else {
-        if(vsWriteToFile(md, sd->f, &localmotions) != VS_OK){
+        if (vsWriteToFile(md, sd->f, &localmotions) != VS_OK) {
             av_log(ctx, AV_LOG_ERROR, "cannot write to transform file");
             return AVERROR(errno);
         }
         vs_vector_del(&localmotions);
     }
-    if(sd->conf.show>0 && !direct){
+    if (sd->conf.show > 0 && !direct) {
         av_image_copy(out->data, out->linesize,
                       (void*)in->data, in->linesize,
                       in->format, in->width, in->height);

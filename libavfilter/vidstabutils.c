@@ -20,10 +20,10 @@
 
 #include "vidstabutils.h"
 
-
 /** convert AV's pixelformat to vid.stab pixelformat */
-VSPixelFormat av_2_vs_pixel_format(AVFilterContext *ctx, enum AVPixelFormat pf){
-    switch(pf){
+VSPixelFormat av_2_vs_pixel_format(AVFilterContext *ctx, enum AVPixelFormat pf)
+{
+    switch (pf) {
     case AV_PIX_FMT_YUV420P:  return PF_YUV420P;
     case AV_PIX_FMT_YUV422P:  return PF_YUV422P;
     case AV_PIX_FMT_YUV444P:  return PF_YUV444P;
@@ -41,14 +41,14 @@ VSPixelFormat av_2_vs_pixel_format(AVFilterContext *ctx, enum AVPixelFormat pf){
     }
 }
 
-
 /** struct to hold a valid context for logging from within vid.stab lib */
 typedef struct {
-    const AVClass* class;
+    const AVClass *class;
 } VS2AVLogCtx;
 
 /** wrapper to log vs_log into av_log */
-static int vs_2_av_log_wrapper(int type, const char* tag, const char* format, ...){
+static int vs_2_av_log_wrapper(int type, const char *tag, const char *format, ...)
+{
     va_list ap;
     VS2AVLogCtx ctx;
     AVClass class = {
@@ -59,14 +59,15 @@ static int vs_2_av_log_wrapper(int type, const char* tag, const char* format, ..
       .category   = AV_CLASS_CATEGORY_FILTER,
     };
     ctx.class = &class;
-    va_start (ap, format);
+    va_start(ap, format);
     av_vlog(&ctx, type, format, ap);
-    va_end (ap);
+    va_end(ap);
     return VS_OK;
 }
 
 /** sets the memory allocation function and logging constants to av versions */
-void vs_set_mem_and_log_functions(void){
+void vs_set_mem_and_log_functions(void)
+{
     vs_malloc  = av_malloc;
     vs_zalloc  = av_mallocz;
     vs_realloc = av_realloc;
