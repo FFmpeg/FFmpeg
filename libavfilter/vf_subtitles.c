@@ -332,7 +332,7 @@ static av_cold int init_subtitles(AVFilterContext *ctx, const char *args)
     pkt.size = 0;
     while (av_read_frame(fmt, &pkt) >= 0) {
         int i, got_subtitle;
-        AVSubtitle sub;
+        AVSubtitle sub = {0};
 
         if (pkt.stream_index == sid) {
             ret = avcodec_decode_subtitle2(dec_ctx, &sub, &got_subtitle, &pkt);
