@@ -849,7 +849,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     }
 
     if (!dir) {
-        if (v->field_mode && (v->cur_field_type != chroma_ref_type) && v->cur_field_type) {
+        if (v->field_mode && (v->cur_field_type != chroma_ref_type) && v->second_field) {
             srcU = s->current_picture.f.data[1];
             srcV = s->current_picture.f.data[2];
         } else {
