@@ -160,22 +160,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     LocalMotions localmotions;
 
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    int direct = 0;
-    AVFrame *out;
     VSFrame frame;
     int plane;
 
-    if (av_frame_is_writable(in)) {
-        direct = 1;
-        out = in;
-    } else {
-        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!out) {
-            av_frame_free(&in);
-            return AVERROR(ENOMEM);
-        }
-        av_frame_copy_props(out, in);
-    }
+    if (sd->conf.show > 0 && !av_frame_is_writable(in))
+        av_frame_make_writable(in);
 
     for (plane = 0; plane < md->fi.planes; plane++) {
         frame.data[plane] = in->data[plane];
@@ -191,16 +180,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
         vs_vector_del(&localmotions);
     }
-    if (sd->conf.show > 0 && !direct) {
-        av_image_copy(out->data, out->linesize,
-                      (void*)in->data, in->linesize,
-                      in->format, in->width, in->height);
-    }
 
-    if (!direct)
-        av_frame_free(&in);
-
-    return ff_filter_frame(outlink, out);
+    return ff_filter_frame(outlink, in);
 }
 
 static const AVFilterPad avfilter_vf_vidstabdetect_inputs[] = {
