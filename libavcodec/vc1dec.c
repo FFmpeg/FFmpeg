@@ -6014,6 +6014,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             s->current_picture.f.linesize[2] <<= 1;
             s->linesize                      <<= 1;
             s->uvlinesize                    <<= 1;
+            if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {
             tmp[0]          = v->mv_f_last[0];
             tmp[1]          = v->mv_f_last[1];
             v->mv_f_last[0] = v->mv_f_next[0];
@@ -6022,6 +6023,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             v->mv_f_next[1] = v->mv_f[1];
             v->mv_f[0] = tmp[0];
             v->mv_f[1] = tmp[1];
+            }
         }
         mb_height = s->mb_height >> v->field_mode;
         for (i = 0; i <= n_slices; i++) {
