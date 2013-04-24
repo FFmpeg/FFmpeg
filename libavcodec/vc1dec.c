@@ -2034,31 +2034,18 @@ static av_always_inline int scale_mv(int value, int bfrac, int inv, int qs)
 static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2],
                             int direct, int mode)
 {
-    int use_ic = v->next_use_ic || v->curr_use_ic || v->last_use_ic;
-    if (use_ic) {
-        v->mv_mode2 = v->mv_mode;
-        v->mv_mode  = MV_PMODE_INTENSITY_COMP;
-    }
     if (direct) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
-        if (use_ic)
-            v->mv_mode = v->mv_mode2;
         return;
     }
     if (mode == BMV_TYPE_INTERPOLATED) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
-        if (use_ic)
-            v->mv_mode = v->mv_mode2;
         return;
     }
 
-    if (use_ic && (mode == BMV_TYPE_BACKWARD))
-        v->mv_mode = v->mv_mode2;
     vc1_mc_1mv(v, (mode == BMV_TYPE_BACKWARD));
-    if (use_ic)
-        v->mv_mode = v->mv_mode2;
 }
 
 static inline void vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
