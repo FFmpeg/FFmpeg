@@ -578,4 +578,5 @@ AVFilter avfilter_vf_removelogo = {
     .inputs        = removelogo_inputs,
     .outputs       = removelogo_outputs,
     .priv_class    = &removelogo_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };
