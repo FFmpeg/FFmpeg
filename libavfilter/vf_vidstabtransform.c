@@ -237,7 +237,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         inframe.data[plane] = in->data[plane];
         inframe.linesize[plane] = in->linesize[plane];
     }
-    if (out == in) { // inplace
+    if (direct) {
         vsTransformPrepare(td, &inframe, &inframe);
     } else { // separate frames
         VSFrame outframe;
