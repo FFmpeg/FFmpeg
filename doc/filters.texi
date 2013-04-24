@@ -6167,29 +6167,42 @@ It accepts the following parameters:
 
 @table @option
 @item luma_msize_x, lx
-@item chroma_msize_x, cx
-Set the luma/chroma matrix horizontal size. It must be an odd integer
-between 3 and 63, default value is 5.
+Set the luma matrix horizontal size. It must be an odd integer between
+3 and 63, default value is 5.
 
 @item luma_msize_y, ly
-@item chroma_msize_y, cy
-Set the luma/chroma matrix vertical size. It must be an odd integer
-between 3 and 63, default value is 5.
+Set the luma matrix vertical size. It must be an odd integer between 3
+and 63, default value is 5.
 
 @item luma_amount, la
-@item chroma_amount, ca
-Set the luma/chroma effect strength. It can be a float number,
-reasonable values lay between -1.5 and 1.5.
+Set the luma effect strength. It can be a float number, reasonable
+values lay between -1.5 and 1.5.
 
 Negative values will blur the input video, while positive values will
 sharpen it, a value of zero will disable the effect.
 
-Default value is 1.0 for @option{luma_amount}, 0.0 for
-@option{chroma_amount}.
+Default value is 1.0.
+
+@item chroma_msize_x, cx
+Set the chroma matrix horizontal size. It must be an odd integer
+between 3 and 63, default value is 5.
+
+@item chroma_msize_y, cy
+Set the chroma matrix vertical size. It must be an odd integer
+between 3 and 63, default value is 5.
+
+@item chroma_amount, ca
+Set the chroma effect strength. It can be a float number, reasonable
+values lay between -1.5 and 1.5.
+
+Negative values will blur the input video, while positive values will
+sharpen it, a value of zero will disable the effect.
+
+Default value is 0.0.
 @end table
 
-All parameters are optional and default to the
-equivalent of the string '5:5:1.0:5:5:0.0'.
+All parameters are optional and default to the equivalent of the
+string '5:5:1.0:5:5:0.0'.
 
 @subsection Examples
 
