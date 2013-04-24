@@ -348,6 +348,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int i;
+    const uint8_t *luty, *lutuv;
 
     if ((!v->field_mode ||
          (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
@@ -386,15 +387,21 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             srcY = s->current_picture.f.data[0];
             srcU = s->current_picture.f.data[1];
             srcV = s->current_picture.f.data[2];
+            luty  = v->curr_luty [v->ref_field_type[dir]];
+            lutuv = v->curr_lutuv[v->ref_field_type[dir]];
         } else {
             srcY = s->last_picture.f.data[0];
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
+            luty  = v->last_luty [v->ref_field_type[dir]];
+            lutuv = v->last_lutuv[v->ref_field_type[dir]];
         }
     } else {
         srcY = s->next_picture.f.data[0];
         srcU = s->next_picture.f.data[1];
         srcV = s->next_picture.f.data[2];
+        luty  = v->next_luty [v->ref_field_type[dir]];
+        lutuv = v->next_lutuv[v->ref_field_type[dir]];
     }
 
     src_x   = s->mb_x * 16 + (mx   >> 2);
@@ -478,15 +485,15 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             src = srcY;
             for (j = 0; j < 17 + s->mspel * 2; j++) {
                 for (i = 0; i < 17 + s->mspel * 2; i++)
-                    src[i] = v->luty[src[i]];
+                    src[i] = luty[src[i]];
                 src += s->linesize;
             }
             src  = srcU;
             src2 = srcV;
             for (j = 0; j < 9; j++) {
                 for (i = 0; i < 9; i++) {
-                    src[i]  = v->lutuv[src[i]];
-                    src2[i] = v->lutuv[src2[i]];
+                    src[i]  = lutuv[src[i]];
+                    src2[i] = lutuv[src2[i]];
                 }
                 src  += s->uvlinesize;
                 src2 += s->uvlinesize;
@@ -544,6 +551,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     int off;
     int fieldmv = (v->fcm == ILACE_FRAME) ? v->blk_mv_type[s->block_index[n]] : 0;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
+    const uint8_t *luty;
 
     if ((!v->field_mode ||
          (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
@@ -556,10 +564,15 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     if (!dir) {
         if (v->field_mode && (v->cur_field_type != v->ref_field_type[dir]) && v->second_field) {
             srcY = s->current_picture.f.data[0];
-        } else
+            luty = v->curr_luty[v->ref_field_type[dir]];
+        } else {
             srcY = s->last_picture.f.data[0];
-    } else
+            luty = v->last_luty[v->ref_field_type[dir]];
+        }
+    } else {
         srcY = s->next_picture.f.data[0];
+        luty = v->next_luty[v->ref_field_type[dir]];
+    }
 
     if (v->field_mode) {
         if (v->cur_field_type != v->ref_field_type[dir])
@@ -686,7 +699,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
             src = srcY;
             for (j = 0; j < 9 + s->mspel * 2; j++) {
                 for (i = 0; i < 9 + s->mspel * 2; i++)
-                    src[i] = v->luty[src[i]];
+                    src[i] = luty[src[i]];
                 src += s->linesize << fieldmv;
             }
         }
@@ -774,6 +787,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     int valid_count;
     int chroma_ref_type = v->cur_field_type;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
+    const uint8_t *lutuv;
 
     if (!v->field_mode && !v->s.last_picture.f.data[0])
         return;
@@ -839,13 +853,16 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         if (v->field_mode && (v->cur_field_type != chroma_ref_type) && v->second_field) {
             srcU = s->current_picture.f.data[1];
             srcV = s->current_picture.f.data[2];
+            lutuv = v->curr_lutuv[chroma_ref_type];
         } else {
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
+            lutuv = v->last_lutuv[chroma_ref_type];
         }
     } else {
         srcU = s->next_picture.f.data[1];
         srcV = s->next_picture.f.data[2];
+        lutuv = v->next_lutuv[chroma_ref_type];
     }
 
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
@@ -896,8 +913,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
             src2 = srcV;
             for (j = 0; j < 9; j++) {
                 for (i = 0; i < 9; i++) {
-                    src[i]  = v->lutuv[src[i]];
-                    src2[i] = v->lutuv[src2[i]];
+                    src[i]  = lutuv[src[i]];
+                    src2[i] = lutuv[src2[i]];
                 }
                 src  += s->uvlinesize;
                 src2 += s->uvlinesize;
@@ -980,13 +997,14 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
             if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
                 int i, j;
                 uint8_t *src, *src2;
+                const uint8_t *lutuv = v->last_lutuv[v->ref_field_type[0]];
 
                 src  = srcU;
                 src2 = srcV;
                 for (j = 0; j < 5; j++) {
                     for (i = 0; i < 5; i++) {
-                        src[i]  = v->lutuv[src[i]];
-                        src2[i] = v->lutuv[src2[i]];
+                        src[i]  = lutuv[src[i]];
+                        src2[i] = lutuv[src2[i]];
                     }
                     src  += s->uvlinesize << 1;
                     src2 += s->uvlinesize << 1;
@@ -1978,29 +1996,30 @@ static av_always_inline int scale_mv(int value, int bfrac, int inv, int qs)
 static inline void vc1_b_mc(VC1Context *v, int dmv_x[2], int dmv_y[2],
                             int direct, int mode)
 {
-    if (v->use_ic) {
+    int use_ic = v->next_use_ic || v->curr_use_ic || v->last_use_ic;
+    if (use_ic) {
         v->mv_mode2 = v->mv_mode;
         v->mv_mode  = MV_PMODE_INTENSITY_COMP;
     }
     if (direct) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
-        if (v->use_ic)
+        if (use_ic)
             v->mv_mode = v->mv_mode2;
         return;
     }
     if (mode == BMV_TYPE_INTERPOLATED) {
         vc1_mc_1mv(v, 0);
         vc1_interp_mc(v);
-        if (v->use_ic)
+        if (use_ic)
             v->mv_mode = v->mv_mode2;
         return;
     }
 
-    if (v->use_ic && (mode == BMV_TYPE_BACKWARD))
+    if (use_ic && (mode == BMV_TYPE_BACKWARD))
         v->mv_mode = v->mv_mode2;
     vc1_mc_1mv(v, (mode == BMV_TYPE_BACKWARD));
-    if (v->use_ic)
+    if (use_ic)
         v->mv_mode = v->mv_mode2;
 }
 
