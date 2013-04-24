@@ -46,15 +46,15 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption vidstabdetect_options[] = {
-    {"result",      "path to the file used to write the transforms (def:transforms.trf)", OFFSET(result),             AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}, .flags = FLAGS},
+    {"result",      "path to the file used to write the transforms",                 OFFSET(result),             AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}, .flags = FLAGS},
     {"shakiness",   "how shaky is the video and how quick is the camera?"
-                    " 1: little (fast) 10: very strong/quick (slow) (def: 5)",            OFFSETC(shakiness),         AV_OPT_TYPE_INT,    {.i64 = 5},      1,  10, FLAGS},
-    {"accuracy",    "(>=shakiness) 1: low 15: high (slow) (def: 9)",                      OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 9},      1,  15, FLAGS},
-    {"stepsize",    "region around minimum is scanned with 1 pixel resolution (def: 6)",  OFFSETC(stepSize),          AV_OPT_TYPE_INT,    {.i64 = 6},      1,  32, FLAGS},
-    {"mincontrast", "below this contrast a field is discarded (0-1) (def: 0.3)",          OFFSETC(contrastThreshold), AV_OPT_TYPE_DOUBLE, {.dbl = 0.25}, 0.0, 1.0, FLAGS},
-    {"show",        "0: draw nothing (def); 1,2: show fields and transforms",             OFFSETC(show),              AV_OPT_TYPE_INT,    {.i64 = 0},      0,   2, FLAGS},
+                    " 1: little (fast) 10: very strong/quick (slow)",                OFFSETC(shakiness),         AV_OPT_TYPE_INT,    {.i64 = 5},      1,  10, FLAGS},
+    {"accuracy",    "(>=shakiness) 1: low 15: high (slow)",                          OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 9},      1,  15, FLAGS},
+    {"stepsize",    "region around minimum is scanned with 1 pixel resolution",      OFFSETC(stepSize),          AV_OPT_TYPE_INT,    {.i64 = 6},      1,  32, FLAGS},
+    {"mincontrast", "below this contrast a field is discarded (0-1)",                OFFSETC(contrastThreshold), AV_OPT_TYPE_DOUBLE, {.dbl = 0.25}, 0.0, 1.0, FLAGS},
+    {"show",        "0: draw nothing; 1,2: show fields and transforms",              OFFSETC(show),              AV_OPT_TYPE_INT,    {.i64 = 0},      0,   2, FLAGS},
     {"tripod",      "virtual tripod mode (if >0): motion is compared to a reference"
-                    " reference frame (frame # is the value) (def: 0)",                   OFFSETC(virtualTripod),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, FLAGS},
+                    " reference frame (frame # is the value)",                       OFFSETC(virtualTripod),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, FLAGS},
     {NULL}
 };
 
