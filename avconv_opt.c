@@ -845,6 +845,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     av_opt_get_int(o->g->sws_opts, "sws_flags", 0, &ost->sws_flags);
 
     ost->pix_fmts[0] = ost->pix_fmts[1] = AV_PIX_FMT_NONE;
+    ost->last_mux_dts = AV_NOPTS_VALUE;
 
     return ost;
 }
