@@ -904,6 +904,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     av_dict_copy(&ost->resample_opts, o->g->resample_opts, 0);
 
     ost->pix_fmts[0] = ost->pix_fmts[1] = AV_PIX_FMT_NONE;
+    ost->last_mux_dts = AV_NOPTS_VALUE;
 
     return ost;
 }

@@ -348,6 +348,25 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         bsfc = bsfc->next;
     }
 
+    if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
+        ost->last_mux_dts != AV_NOPTS_VALUE &&
+        pkt->dts < ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT)) {
+        av_log(NULL, AV_LOG_WARNING, "Non-monotonous DTS in output stream "
+               "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
+               ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
+        if (exit_on_error) {
+            av_log(NULL, AV_LOG_FATAL, "aborting.\n");
+            exit(1);
+        }
+        av_log(NULL, AV_LOG_WARNING, "changing to %"PRId64". This may result "
+               "in incorrect timestamps in the output file.\n",
+               ost->last_mux_dts + 1);
+        pkt->dts = ost->last_mux_dts + 1;
+        if (pkt->pts != AV_NOPTS_VALUE)
+            pkt->pts = FFMAX(pkt->pts, pkt->dts);
+    }
+    ost->last_mux_dts = pkt->dts;
+
     pkt->stream_index = ost->index;
     ret = av_interleaved_write_frame(s, pkt);
     if (ret < 0) {
