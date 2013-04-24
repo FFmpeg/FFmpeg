@@ -6008,22 +6008,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         v->bits = buf_size * 8;
         v->end_mb_x = s->mb_width;
         if (v->field_mode) {
-            uint8_t *tmp[2];
             s->current_picture.f.linesize[0] <<= 1;
             s->current_picture.f.linesize[1] <<= 1;
             s->current_picture.f.linesize[2] <<= 1;
             s->linesize                      <<= 1;
             s->uvlinesize                    <<= 1;
-            if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {
-            tmp[0]          = v->mv_f_last[0];
-            tmp[1]          = v->mv_f_last[1];
-            v->mv_f_last[0] = v->mv_f_next[0];
-            v->mv_f_last[1] = v->mv_f_next[1];
-            v->mv_f_next[0] = v->mv_f[0];
-            v->mv_f_next[1] = v->mv_f[1];
-            v->mv_f[0] = tmp[0];
-            v->mv_f[1] = tmp[1];
-            }
         }
         mb_height = s->mb_height >> v->field_mode;
         for (i = 0; i <= n_slices; i++) {
@@ -6083,15 +6072,22 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         }
         if (v->field_mode) {
             v->second_field = 0;
-            if (s->pict_type == AV_PICTURE_TYPE_B) {
-                memcpy(v->mv_f_base, v->mv_f_next_base,
-                       2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
-            }
             s->current_picture.f.linesize[0] >>= 1;
             s->current_picture.f.linesize[1] >>= 1;
             s->current_picture.f.linesize[2] >>= 1;
             s->linesize                      >>= 1;
             s->uvlinesize                    >>= 1;
+            if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {
+                uint8_t *tmp[2];
+                tmp[0]          = v->mv_f_last[0];
+                tmp[1]          = v->mv_f_last[1];
+                v->mv_f_last[0] = v->mv_f_next[0];
+                v->mv_f_last[1] = v->mv_f_next[1];
+                v->mv_f_next[0] = v->mv_f[0];
+                v->mv_f_next[1] = v->mv_f[1];
+                v->mv_f[0] = tmp[0];
+                v->mv_f[1] = tmp[1];
+            }
         }
         av_dlog(s->avctx, "Consumed %i/%i bits\n",
                 get_bits_count(&s->gb), s->gb.size_in_bits);
