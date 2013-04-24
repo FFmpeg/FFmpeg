@@ -128,8 +128,8 @@ static void segments_dump(Segment *segs, int fd)
 
 static Segment *segments_load(int fd)
 {
-  Segment *seg , **next = &seg;
-  int64_t begin, end;
+  Segment *seg = NULL, **next = &seg;
+  int64_t begin = 0, end = 0;
   lseek(fd, 0, SEEK_SET);
   while (sizeof(int64_t) == read(fd, &begin, sizeof(int64_t)) &&
       sizeof(int64_t) == read(fd, &end, sizeof(int64_t))) {
@@ -198,10 +198,10 @@ static int cache_open(URLContext *h, const char *arg, int flags)
   }
 
   c->length = ffurl_size(c->inner);
-  if (c->length > 0) {
+  if (c->length > 1048576) {
     c->fdw = open(c->cache_path, O_RDWR | O_BINARY | O_CREAT, 0600);
     c->fdr = open(c->cache_path, O_RDWR | O_BINARY, 0600);
-    if (ftruncate64(c->fdw, c->length) == 0) {
+    if (!c->inner->is_streamed && ftruncate64(c->fdw, c->length) == 0) {
       char index_path[dlen + 4];
       snprintf(index_path, dlen + 4, "%s.ssi", c->cache_path);
       c->fdi = open(index_path, O_RDWR | O_BINARY | O_CREAT, 0600);
