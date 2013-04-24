@@ -46,7 +46,7 @@ typedef struct {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption vidstabdetect_options[] = {
-    {"result",      "path to the file used to write the transforms (def:transforms.trf)", OFFSET(result),             AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}},
+    {"result",      "path to the file used to write the transforms (def:transforms.trf)", OFFSET(result),             AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}, .flags = FLAGS},
     {"shakiness",   "how shaky is the video and how quick is the camera?"
                     " 1: little (fast) 10: very strong/quick (slow) (def: 5)",            OFFSETC(shakiness),         AV_OPT_TYPE_INT,    {.i64 = 5},      1,  10, FLAGS},
     {"accuracy",    "(>=shakiness) 1: low 15: high (slow) (def: 9)",                      OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 9},      1,  15, FLAGS},

@@ -47,7 +47,7 @@ typedef struct {
 
 static const AVOption vidstabtransform_options[] = {
     {"input",     "path to the file storing the transforms (def:transforms.trf)",   OFFSET(input),
-                   AV_OPT_TYPE_STRING, {.str = DEFAULT_INPUT_NAME} },
+                   AV_OPT_TYPE_STRING, {.str = DEFAULT_INPUT_NAME}, .flags = FLAGS },
     {"smoothing", "number of frames*2 + 1 used for lowpass filtering (def: 10)",    OFFSETC(smoothing),
                    AV_OPT_TYPE_INT,    {.i64 = 10},       1, 1000, FLAGS},
     {"maxshift",  "maximal number of pixels to translate image (def: -1 no limit)", OFFSETC(maxShift),
