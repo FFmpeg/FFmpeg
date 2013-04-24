@@ -296,8 +296,11 @@ typedef struct VC1Context{
     int dmb_is_raw;                 ///< direct mb plane is raw
     int fmb_is_raw;                 ///< forward mb plane is raw
     int skip_is_raw;                ///< skip mb plane is not coded
-    uint8_t luty[256], lutuv[256];  ///< lookup tables used for intensity compensation
-    int use_ic;                     ///< use intensity compensation in B-frames
+    uint8_t last_luty[2][256], last_lutuv[2][256];  ///< lookup tables used for intensity compensation
+    uint8_t  aux_luty[2][256],  aux_lutuv[2][256];  ///< lookup tables used for intensity compensation
+    uint8_t next_luty[2][256], next_lutuv[2][256];  ///< lookup tables used for intensity compensation
+    uint8_t (*curr_luty)[256]  ,(*curr_lutuv)[256];
+    int last_use_ic, curr_use_ic, next_use_ic, aux_use_ic;
     int rnd;                        ///< rounding control
 
     /** Frame decoding info for S/M profiles only */
@@ -340,7 +343,6 @@ typedef struct VC1Context{
     int intcomp;
     uint8_t lumscale2;  ///< for interlaced field P picture
     uint8_t lumshift2;
-    uint8_t luty2[256], lutuv2[256]; // lookup tables used for intensity compensation
     VLC* mbmode_vlc;
     VLC* imv_vlc;
     VLC* twomvbp_vlc;
