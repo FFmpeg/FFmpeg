@@ -576,6 +576,25 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
     return 0;
 }
 
+/* fill lookup tables for intensity compensation */
+#define INIT_LUT(lumscale, lumshift, luty, lutuv)   \
+    if (!lumscale) {                                \
+        scale = -64;                                \
+        shift = (255 - lumshift * 2) << 6;          \
+        if (lumshift > 31)                          \
+            shift += 128 << 6;                      \
+    } else {                                        \
+        scale = lumscale + 32;                      \
+        if (lumshift > 31)                          \
+            shift = (lumshift - 64) << 6;           \
+        else                                        \
+            shift = lumshift << 6;                  \
+    }                                               \
+    for (i = 0; i < 256; i++) {                     \
+        luty[i]  = av_clip_uint8((scale * i + shift + 32) >> 6);           \
+        lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);  \
+    }
+
 int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
 {
     int pqindex, lowquant, status;
@@ -682,22 +701,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->lumshift = get_bits(gb, 6);
             v->use_ic   = 1;
             /* fill lookup tables for intensity compensation */
-            if (!v->lumscale) {
-                scale = -64;
-                shift = (255 - v->lumshift * 2) << 6;
-                if (v->lumshift > 31)
-                    shift += 128 << 6;
-            } else {
-                scale = v->lumscale + 32;
-                if (v->lumshift > 31)
-                    shift = (v->lumshift - 64) << 6;
-                else
-                    shift = v->lumshift << 6;
-            }
-            for (i = 0; i < 256; i++) {
-                v->luty[i]  = av_clip_uint8((scale * i + shift + 32) >> 6);
-                v->lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
-            }
+            INIT_LUT(v->lumscale, v->lumshift, v->luty, v->lutuv);
         }
         v->qs_last = v->s.quarter_sample;
         if (v->mv_mode == MV_PMODE_1MV_HPEL || v->mv_mode == MV_PMODE_1MV_HPEL_BILIN)
@@ -807,25 +811,6 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
     }
     return 0;
 }
-
-/* fill lookup tables for intensity compensation */
-#define INIT_LUT(lumscale, lumshift, luty, lutuv)   \
-    if (!lumscale) {                                \
-        scale = -64;                                \
-        shift = (255 - lumshift * 2) << 6;          \
-        if (lumshift > 31)                          \
-            shift += 128 << 6;                      \
-    } else {                                        \
-        scale = lumscale + 32;                      \
-        if (lumshift > 31)                          \
-            shift = (lumshift - 64) << 6;           \
-        else                                        \
-            shift = lumshift << 6;                  \
-    }                                               \
-    for (i = 0; i < 256; i++) {                     \
-        luty[i]  = av_clip_uint8((scale * i + shift + 32) >> 6);           \
-        lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);  \
-    }
 
 int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 {
