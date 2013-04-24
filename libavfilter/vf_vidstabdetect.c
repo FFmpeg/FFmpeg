@@ -223,9 +223,9 @@ static const AVFilterPad avfilter_vf_vidstabdetect_outputs[] = {
 
 AVFilter avfilter_vf_vidstabdetect = {
     .name          = "vidstabdetect",
-    .description   = NULL_IF_CONFIG_SMALL("pass 1 of 2 for stabilization"
-                                          "extracts relative transformations"
-                                          "(pass 2 see vidstabtransform)"),
+    .description   = NULL_IF_CONFIG_SMALL("Extract relative transformations, "
+                                          "pass 1 of 2 for stabilization "
+                                          "(see vidstabtransform for pass 2)."),
     .priv_size     = sizeof(StabData),
     .init          = init,
     .uninit        = uninit,

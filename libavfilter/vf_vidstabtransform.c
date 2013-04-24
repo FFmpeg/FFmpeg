@@ -278,9 +278,9 @@ static const AVFilterPad avfilter_vf_vidstabtransform_outputs[] = {
 
 AVFilter avfilter_vf_vidstabtransform = {
     .name          = "vidstabtransform",
-    .description   = NULL_IF_CONFIG_SMALL("pass 2 of stabilization"
-                                          "transforms the frames"
-                                          "(see vidstabdetect for pass 1)"),
+    .description   = NULL_IF_CONFIG_SMALL("Transform the frames, "
+                                          "pass 2 of 2 for stabilization "
+                                          "(see vidstabdetect for pass 1)."),
     .priv_size     = sizeof(TransformContext),
     .init          = init,
     .uninit        = uninit,
