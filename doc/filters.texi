@@ -4095,12 +4095,12 @@ Specify the hue angle as a number of degrees. It accepts an expression,
 and defaults to "0".
 
 @item s
-Specify the saturation in the [-10,10] range. It accepts a float number and
+Specify the saturation in the [-10,10] range. It accepts an expression and
 defaults to "1".
 
 @item H
-Specify the hue angle as a number of radians. It accepts a float
-number or an expression, and defaults to "0".
+Specify the hue angle as a number of radians. It accepts an
+expression, and defaults to "0".
 @end table
 
 @option{h} and @option{H} are mutually exclusive, and can't be
