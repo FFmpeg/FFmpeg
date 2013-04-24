@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "thread.h"
 #include "jpeg2000.h"
 
 #define JP2_SIG_TYPE    0x6A502020
@@ -1242,6 +1243,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
                                  int *got_frame, AVPacket *avpkt)
 {
     Jpeg2000DecoderContext *s = avctx->priv_data;
+    ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     int tileno, ret;
 
@@ -1277,8 +1279,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     /* get picture buffer */
-    if ((ret = ff_get_buffer(avctx, picture, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "ff_get_buffer() failed\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed.\n");
         return ret;
     }
     picture->pict_type = AV_PICTURE_TYPE_I;
@@ -1326,6 +1328,7 @@ AVCodec ff_jpeg2000_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEG2000,
+    .capabilities   = CODEC_CAP_FRAME_THREADS,
     .priv_data_size = sizeof(Jpeg2000DecoderContext),
     .decode         = jpeg2000_decode_frame,
     .priv_class     = &class,
