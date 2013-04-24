@@ -5419,9 +5419,6 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     v->mv_f_base        = av_mallocz(2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
     v->mv_f[0]          = v->mv_f_base + s->b8_stride + 1;
     v->mv_f[1]          = v->mv_f[0] + (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2);
-    v->mv_f_last_base   = av_mallocz(2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
-    v->mv_f_last[0]     = v->mv_f_last_base + s->b8_stride + 1;
-    v->mv_f_last[1]     = v->mv_f_last[0] + (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2);
     v->mv_f_next_base   = av_mallocz(2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
     v->mv_f_next[0]     = v->mv_f_next_base + s->b8_stride + 1;
     v->mv_f_next[1]     = v->mv_f_next[0] + (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2);
@@ -5619,7 +5616,6 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
     av_freep(&v->mb_type_base);
     av_freep(&v->blk_mv_type_base);
     av_freep(&v->mv_f_base);
-    av_freep(&v->mv_f_last_base);
     av_freep(&v->mv_f_next_base);
     av_freep(&v->block);
     av_freep(&v->cbp_base);
@@ -5889,20 +5885,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         v->bits = buf_size * 8;
         v->end_mb_x = s->mb_width;
         if (v->field_mode) {
-            uint8_t *tmp[2];
             s->current_picture.f.linesize[0] <<= 1;
             s->current_picture.f.linesize[1] <<= 1;
             s->current_picture.f.linesize[2] <<= 1;
             s->linesize                      <<= 1;
             s->uvlinesize                    <<= 1;
-            tmp[0]          = v->mv_f_last[0];
-            tmp[1]          = v->mv_f_last[1];
-            v->mv_f_last[0] = v->mv_f_next[0];
-            v->mv_f_last[1] = v->mv_f_next[1];
-            v->mv_f_next[0] = v->mv_f[0];
-            v->mv_f_next[1] = v->mv_f[1];
-            v->mv_f[0] = tmp[0];
-            v->mv_f[1] = tmp[1];
         }
         mb_height = s->mb_height >> v->field_mode;
         for (i = 0; i <= n_slices; i++) {
@@ -5947,15 +5934,15 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         }
         if (v->field_mode) {
             v->second_field = 0;
-            if (s->pict_type == AV_PICTURE_TYPE_B) {
-                memcpy(v->mv_f_base, v->mv_f_next_base,
-                       2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
-            }
             s->current_picture.f.linesize[0] >>= 1;
             s->current_picture.f.linesize[1] >>= 1;
             s->current_picture.f.linesize[2] >>= 1;
             s->linesize                      >>= 1;
             s->uvlinesize                    >>= 1;
+            if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {
+                FFSWAP(uint8_t *, v->mv_f_next[0], v->mv_f[0]);
+                FFSWAP(uint8_t *, v->mv_f_next[1], v->mv_f[1]);
+            }
         }
         av_dlog(s->avctx, "Consumed %i/%i bits\n",
                 get_bits_count(&s->gb), s->gb.size_in_bits);

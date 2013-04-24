@@ -354,7 +354,6 @@ typedef struct VC1Context{
     int8_t zzi_8x8[64];
     uint8_t *blk_mv_type_base, *blk_mv_type;    ///< 0: frame MV, 1: field MV (interlaced frame)
     uint8_t *mv_f_base, *mv_f[2];               ///< 0: MV obtained from same field, 1: opposite field
-    uint8_t *mv_f_last_base, *mv_f_last[2];
     uint8_t *mv_f_next_base, *mv_f_next[2];
     int field_mode;         ///< 1 for interlaced field pictures
     int fptype;
