@@ -1028,8 +1028,8 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
                         src[i]  = lutuv[f][src[i]];
                         src2[i] = lutuv[f][src2[i]];
                     }
-                    src  += s->uvlinesize << 1;
-                    src2 += s->uvlinesize << 1;
+                    src  += s->uvlinesize << fieldmv;
+                    src2 += s->uvlinesize << fieldmv;
                 }
             }
         }
