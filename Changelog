@@ -46,6 +46,7 @@ version <next>:
 - RedSpark demuxer
 - ADPCM IMA Radical decoder
 - zmq filters
+- DCT denoiser filter (dctdnoiz)
 
 
 version 1.2:

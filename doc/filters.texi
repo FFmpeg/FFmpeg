@@ -2655,6 +2655,59 @@ curves=psfile='MyCurvesPresets/purple.asv':green='0.45/0.53'
 @end example
 @end itemize
 
+@section dctdnoiz
+
+Denoise frames using 2D DCT (frequency domain filtering).
+
+This filter is not designed for real time and can be extremely slow.
+
+The filter accepts the following options:
+
+@table @option
+@item sigma, s
+Set the noise sigma constant.
+
+This @var{sigma} defines a hard threshold of @code{3 * sigma}; every DCT
+coefficient (absolute value) below this threshold with be dropped.
+
+If you need a more advanced filtering, see @option{expr}.
+
+Default is @code{0}.
+
+@item overlap
+Set number overlapping pixels for each block. Each block is of size
+@code{16x16}. Since the filter can be slow, you may want to reduce this value,
+at the cost of a less effective filter and the risk of various artefacts.
+
+If the overlapping value doesn't allow to process the whole input width or
+height, a warning will be displayed and according borders won't be denoised.
+
+Default value is @code{15}.
+
+@item expr, e
+Set the coefficient factor expression.
+
+For each coefficient of a DCT block, this expression will be evaluated as a
+multiplier value for the coefficient.
+
+If this is option is set, the @option{sigma} option will be ignored.
+
+The absolute value of the coefficient can be accessed through the @var{c}
+variable.
+@end table
+
+@subsection Examples
+
+Apply a denoise with a @option{sigma} of @code{4.5}:
+@example
+dctdnoiz=4.5
+@end example
+
+The same operation can be achieved using the expression system:
+@example
+dctdnoiz=e='gte(c, 4.5*3)'
+@end example
+
 @anchor{decimate}
 @section decimate
 
