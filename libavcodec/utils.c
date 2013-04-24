@@ -1407,6 +1407,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             if (!avctx->refcounted_frames) {
                 avci->to_free = *picture;
                 avci->to_free.extended_data = avci->to_free.data;
+                memset(picture->buf, 0, sizeof(picture->buf));
             }
 
             avctx->frame_number++;
@@ -1457,6 +1458,9 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             if (!avctx->refcounted_frames) {
                 avci->to_free = *frame;
                 avci->to_free.extended_data = avci->to_free.data;
+                memset(frame->buf, 0, sizeof(frame->buf));
+                frame->extended_buf    = NULL;
+                frame->nb_extended_buf = 0;
             }
         }
 
