@@ -6224,6 +6224,7 @@ unsharp=7:7:-2:7:7:-2
 
 Flip the input video vertically.
 
+For example, to vertically flip a video with @command{ffmpeg}:
 @example
 ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
