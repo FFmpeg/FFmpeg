@@ -209,6 +209,8 @@ void av_freep(void *ptr);
  * In case of success, the pointer to the array is updated in order to
  * point to the new grown array, and the number pointed to by nb_ptr
  * is incremented.
+ * In case of failure, the array is freed, *tab_ptr is set to NULL and
+ * *nb_ptr is set to 0.
  *
  * @param tab_ptr pointer to the array to grow
  * @param nb_ptr  pointer to the number of elements in the array
