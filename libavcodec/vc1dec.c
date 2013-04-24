@@ -349,6 +349,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int i;
     const uint8_t *luty, *lutuv;
+    int use_ic;
 
     if ((!v->field_mode ||
          (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
@@ -389,12 +390,14 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             srcV = s->current_picture.f.data[2];
             luty  = v->curr_luty [v->ref_field_type[dir]];
             lutuv = v->curr_lutuv[v->ref_field_type[dir]];
+            use_ic = v->curr_use_ic;
         } else {
             srcY = s->last_picture.f.data[0];
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
             luty  = v->last_luty [v->ref_field_type[dir]];
             lutuv = v->last_lutuv[v->ref_field_type[dir]];
+            use_ic = v->last_use_ic;
         }
     } else {
         srcY = s->next_picture.f.data[0];
@@ -402,6 +405,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         srcV = s->next_picture.f.data[2];
         luty  = v->next_luty [v->ref_field_type[dir]];
         lutuv = v->next_lutuv[v->ref_field_type[dir]];
+        use_ic = v->next_use_ic;
     }
 
     src_x   = s->mb_x * 16 + (mx   >> 2);
@@ -437,7 +441,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         srcV = s->edge_emu_buffer + 18 * s->linesize;
     }
 
-    if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+    if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 22 || v_edge_pos < 22
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 16 - s->mspel * 3
         || (unsigned)(src_y - 1)        > v_edge_pos    - (my&3) - 16 - 3) {
@@ -478,7 +482,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             }
         }
         /* if we deal with intensity compensation we need to scale source blocks */
-        if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+        if (use_ic) {
             int i, j;
             uint8_t *src, *src2;
 
@@ -552,6 +556,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     int fieldmv = (v->fcm == ILACE_FRAME) ? v->blk_mv_type[s->block_index[n]] : 0;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     const uint8_t *luty;
+    int use_ic;
 
     if ((!v->field_mode ||
          (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
@@ -565,13 +570,16 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
         if (v->field_mode && (v->cur_field_type != v->ref_field_type[dir]) && v->second_field) {
             srcY = s->current_picture.f.data[0];
             luty = v->curr_luty[v->ref_field_type[dir]];
+            use_ic = v->curr_use_ic;
         } else {
             srcY = s->last_picture.f.data[0];
             luty = v->last_luty[v->ref_field_type[dir]];
+            use_ic = v->last_use_ic;
         }
     } else {
         srcY = s->next_picture.f.data[0];
         luty = v->next_luty[v->ref_field_type[dir]];
+        use_ic = v->next_use_ic;
     }
 
     if (v->field_mode) {
@@ -668,7 +676,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
         v_edge_pos--;
     if (fieldmv && (src_y & 1) && src_y < 4)
         src_y--;
-    if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+    if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 13 || v_edge_pos < 23
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx & 3) - 8 - s->mspel * 2
         || (unsigned)(src_y - (s->mspel << fieldmv)) > v_edge_pos - (my & 3) - ((8 + s->mspel * 2) << fieldmv)) {
@@ -692,7 +700,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
             }
         }
         /* if we deal with intensity compensation we need to scale source blocks */
-        if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+        if (use_ic) {
             int i, j;
             uint8_t *src;
 
@@ -788,6 +796,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     int chroma_ref_type = v->cur_field_type;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     const uint8_t *lutuv;
+    int use_ic;
 
     if (!v->field_mode && !v->s.last_picture.f.data[0])
         return;
@@ -854,15 +863,18 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
             srcU = s->current_picture.f.data[1];
             srcV = s->current_picture.f.data[2];
             lutuv = v->curr_lutuv[chroma_ref_type];
+            use_ic = v->curr_use_ic;
         } else {
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
             lutuv = v->last_lutuv[chroma_ref_type];
+            use_ic = v->last_use_ic;
         }
     } else {
         srcU = s->next_picture.f.data[1];
         srcV = s->next_picture.f.data[2];
         lutuv = v->next_lutuv[chroma_ref_type];
+        use_ic = v->next_use_ic;
     }
 
     srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
@@ -875,7 +887,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         }
     }
 
-    if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+    if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 18 || v_edge_pos < 18
         || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
         || (unsigned)uvsrc_y > (v_edge_pos    >> 1) - 9) {
@@ -905,7 +917,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
             }
         }
         /* if we deal with intensity compensation we need to scale source blocks */
-        if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+        if (use_ic) {
             int i, j;
             uint8_t *src, *src2;
 
@@ -948,6 +960,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
     static const int s_rndtblfield[16] = { 0, 0, 1, 2, 4, 4, 5, 6, 2, 2, 3, 8, 6, 6, 7, 12 };
     int v_dist = fieldmv ? 1 : 4; // vertical offset for lower sub-blocks
     int v_edge_pos = s->v_edge_pos >> 1;
+    int use_ic = v->last_use_ic;
 
     if (!v->s.last_picture.f.data[0])
         return;
@@ -980,7 +993,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
             v_edge_pos--;
         if (fieldmv && (uvsrc_y & 1) && uvsrc_y < 2)
             uvsrc_y--;
-        if ((v->mv_mode == MV_PMODE_INTENSITY_COMP)
+        if (use_ic
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
             || (unsigned)uvsrc_y > v_edge_pos - (5 << fieldmv)) {
@@ -994,7 +1007,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
             srcV = s->edge_emu_buffer + 16;
 
             /* if we deal with intensity compensation we need to scale source blocks */
-            if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+            if (use_ic) {
                 int i, j;
                 uint8_t *src, *src2;
                 const uint8_t *lutuv = v->last_lutuv[v->ref_field_type[0]];
@@ -1844,6 +1857,7 @@ static void vc1_interp_mc(VC1Context *v)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int off, off_uv;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
+    int use_ic = v->next_use_ic;
 
     if (!v->field_mode && !v->s.next_picture.f.data[0])
         return;
@@ -1898,8 +1912,7 @@ static void vc1_interp_mc(VC1Context *v)
         srcV = s->edge_emu_buffer + 18 * s->linesize;
     }
 
-    if (v->rangeredfrm || s->h_edge_pos < 22 || v_edge_pos < 22
-        || v->mv_mode == MV_PMODE_INTENSITY_COMP
+    if (v->rangeredfrm || s->h_edge_pos < 22 || v_edge_pos < 22 || use_ic
         || (unsigned)(src_x - 1) > s->h_edge_pos - (mx & 3) - 16 - 3
         || (unsigned)(src_y - 1) > v_edge_pos    - (my & 3) - 16 - 3) {
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
@@ -1939,7 +1952,7 @@ static void vc1_interp_mc(VC1Context *v)
             }
         }
 
-        if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+        if (use_ic) {
             const uint8_t *luty = v->next_luty [v->ref_field_type[1]];
             const uint8_t *lutuv= v->next_lutuv[v->ref_field_type[1]];
             int i, j;
