@@ -1899,6 +1899,7 @@ static void vc1_interp_mc(VC1Context *v)
     }
 
     if (v->rangeredfrm || s->h_edge_pos < 22 || v_edge_pos < 22
+        || v->mv_mode == MV_PMODE_INTENSITY_COMP
         || (unsigned)(src_x - 1) > s->h_edge_pos - (mx & 3) - 16 - 3
         || (unsigned)(src_y - 1) > v_edge_pos    - (my & 3) - 16 - 3) {
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
@@ -1932,6 +1933,30 @@ static void vc1_interp_mc(VC1Context *v)
                 for (i = 0; i < 9; i++) {
                     src[i]  = ((src[i]  - 128) >> 1) + 128;
                     src2[i] = ((src2[i] - 128) >> 1) + 128;
+                }
+                src  += s->uvlinesize;
+                src2 += s->uvlinesize;
+            }
+        }
+
+        if (v->mv_mode == MV_PMODE_INTENSITY_COMP) {
+            const uint8_t *luty = v->next_luty [v->ref_field_type[1]];
+            const uint8_t *lutuv= v->next_lutuv[v->ref_field_type[1]];
+            int i, j;
+            uint8_t *src, *src2;
+
+            src = srcY;
+            for (j = 0; j < 17 + s->mspel * 2; j++) {
+                for (i = 0; i < 17 + s->mspel * 2; i++)
+                    src[i] = luty[src[i]];
+                src += s->linesize;
+            }
+            src  = srcU;
+            src2 = srcV;
+            for (j = 0; j < 9; j++) {
+                for (i = 0; i < 9; i++) {
+                    src[i]  = lutuv[src[i]];
+                    src2[i] = lutuv[src2[i]];
                 }
                 src  += s->uvlinesize;
                 src2 += s->uvlinesize;
