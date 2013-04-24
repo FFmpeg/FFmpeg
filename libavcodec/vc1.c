@@ -693,22 +693,7 @@ int ff_vc1_parse_frame_header(VC1Context *v, GetBitContext* gb)
             v->lumshift = get_bits(gb, 6);
             v->use_ic   = 1;
             /* fill lookup tables for intensity compensation */
-            if (!v->lumscale) {
-                scale = -64;
-                shift = (255 - v->lumshift * 2) << 6;
-                if (v->lumshift > 31)
-                    shift += 128 << 6;
-            } else {
-                scale = v->lumscale + 32;
-                if (v->lumshift > 31)
-                    shift = (v->lumshift - 64) << 6;
-                else
-                    shift = v->lumshift << 6;
-            }
-            for (i = 0; i < 256; i++) {
-                v->luty[i]  = av_clip_uint8((scale * i + shift + 32) >> 6);
-                v->lutuv[i] = av_clip_uint8((scale * (i - 128) + 128*64 + 32) >> 6);
-            }
+            INIT_LUT(v->lumscale, v->lumshift, v->luty, v->lutuv);
         }
         v->qs_last = v->s.quarter_sample;
         if (v->mv_mode == MV_PMODE_1MV_HPEL || v->mv_mode == MV_PMODE_1MV_HPEL_BILIN)
