@@ -379,32 +379,20 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         uvmx = uvmx + ((uvmx < 0) ? (uvmx & 1) : -(uvmx & 1));
         uvmy = uvmy + ((uvmy < 0) ? (uvmy & 1) : -(uvmy & 1));
     }
-    if (v->field_mode) { // interlaced field picture
-        if (!dir) {
-            if ((v->cur_field_type != v->ref_field_type[dir]) && v->cur_field_type) {
-                srcY = s->current_picture.f.data[0];
-                srcU = s->current_picture.f.data[1];
-                srcV = s->current_picture.f.data[2];
-            } else {
-                srcY = s->last_picture.f.data[0];
-                srcU = s->last_picture.f.data[1];
-                srcV = s->last_picture.f.data[2];
-            }
+    if (!dir) {
+        if (v->field_mode && (v->cur_field_type != v->ref_field_type[dir]) && v->cur_field_type) {
+            srcY = s->current_picture.f.data[0];
+            srcU = s->current_picture.f.data[1];
+            srcV = s->current_picture.f.data[2];
         } else {
-            srcY = s->next_picture.f.data[0];
-            srcU = s->next_picture.f.data[1];
-            srcV = s->next_picture.f.data[2];
-        }
-    } else {
-        if (!dir) {
             srcY = s->last_picture.f.data[0];
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
-        } else {
-            srcY = s->next_picture.f.data[0];
-            srcU = s->next_picture.f.data[1];
-            srcV = s->next_picture.f.data[2];
         }
+    } else {
+        srcY = s->next_picture.f.data[0];
+        srcU = s->next_picture.f.data[1];
+        srcV = s->next_picture.f.data[2];
     }
 
     src_x   = s->mb_x * 16 + (mx   >> 2);
@@ -566,11 +554,8 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
     my = s->mv[dir][n][1];
 
     if (!dir) {
-        if (v->field_mode) {
-            if ((v->cur_field_type != v->ref_field_type[dir]) && v->cur_field_type)
-                srcY = s->current_picture.f.data[0];
-            else
-                srcY = s->last_picture.f.data[0];
+        if (v->field_mode && (v->cur_field_type != v->ref_field_type[dir]) && v->cur_field_type) {
+            srcY = s->current_picture.f.data[0];
         } else
             srcY = s->last_picture.f.data[0];
     } else
