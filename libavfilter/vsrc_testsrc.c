@@ -57,6 +57,7 @@ typedef struct {
     AVRational sar;             ///< sample aspect ratio
     int nb_decimals;
     int draw_once;              ///< draw only the first frame, always put out the same picture
+    int draw_once_reset;        ///< draw only the first frame or in case of reset
     AVFrame *picref;            ///< cached reference containing the painted picture
 
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFrame *frame);
@@ -166,6 +167,10 @@ static int request_frame(AVFilterLink *outlink)
         return AVERROR_EOF;
 
     if (test->draw_once) {
+        if (test->draw_once_reset) {
+            av_frame_free(&test->picref);
+            test->draw_once_reset = 0;
+        }
         if (!test->picref) {
             test->picref =
                 ff_get_video_buffer(outlink, test->w, test->h);
@@ -241,6 +246,34 @@ static int color_config_props(AVFilterLink *inlink)
     return 0;
 }
 
+static int color_process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                                 char *res, int res_len, int flags)
+{
+    TestSourceContext *test = ctx->priv;
+    int ret;
+
+    if (!strcmp(cmd, "color") || !strcmp(cmd, "c")) {
+        char *color_str;
+        uint8_t color_rgba[4];
+
+        ret = av_parse_color(color_rgba, args, -1, ctx);
+        if (ret < 0)
+            return ret;
+        color_str = av_strdup(args);
+        if (!color_str)
+            return AVERROR(ENOMEM);
+        av_free(test->color_str);
+        test->color_str = color_str;
+
+        memcpy(test->color_rgba, color_rgba, sizeof(color_rgba));
+        ff_draw_color(&test->draw, &test->color, test->color_rgba);
+        test->draw_once_reset = 1;
+        return 0;
+    }
+
+    return AVERROR(ENOSYS);
+}
+
 static const AVFilterPad color_outputs[] = {
     {
         .name          = "default",
@@ -263,6 +296,7 @@ AVFilter avfilter_vsrc_color = {
     .query_formats = color_query_formats,
     .inputs        = NULL,
     .outputs       = color_outputs,
+    .process_command = color_process_command,
 };
 
 #endif /* CONFIG_COLOR_FILTER */

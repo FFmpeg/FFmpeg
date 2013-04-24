@@ -7350,6 +7350,16 @@ the @code{geq} filter:
 nullsrc=s=256x256, geq=random(1)*255:128:128
 @end example
 
+@subsection Commands
+
+The @code{color} source supports the following commands:
+
+@table @option
+@item c, color
+Set the color of the created image. Accepts the same syntax of the
+corresponding @option{color} option.
+@end table
+
 @c man end VIDEO SOURCES
 
 @chapter Video Sinks
