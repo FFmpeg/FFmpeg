@@ -362,6 +362,9 @@ static int thread_init(AVCodecContext *avctx)
     return 0;
 }
 
+#define THREAD_SAFE_CALLBACKS(avctx) \
+((avctx)->thread_safe_callbacks || (!(avctx)->get_buffer && (avctx)->get_buffer2 == avcodec_default_get_buffer2))
+
 /**
  * Codec worker thread.
  *
@@ -383,11 +386,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 
         if (fctx->die) break;
 
-        if (!codec->update_thread_context && (avctx->thread_safe_callbacks || (
-#if FF_API_GET_BUFFER
-            !avctx->get_buffer &&
-#endif
-            avctx->get_buffer2 == avcodec_default_get_buffer2)))
+        if (!codec->update_thread_context && THREAD_SAFE_CALLBACKS(avctx))
             ff_thread_finish_setup(avctx);
 
         avcodec_get_frame_defaults(&p->frame);
@@ -1026,7 +1025,7 @@ static int thread_get_buffer_internal(AVCodecContext *avctx, ThreadFrame *f, int
         pthread_mutex_unlock(&p->progress_mutex);
 
     }
-    if (!avctx->thread_safe_callbacks && !avctx->codec->update_thread_context)
+    if (!THREAD_SAFE_CALLBACKS(avctx) && !avctx->codec->update_thread_context)
         ff_thread_finish_setup(avctx);
 
     if (err)
