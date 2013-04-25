@@ -4553,6 +4553,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                         vc1_mc_4mv_luma(v, i, 1, 1);
                     }
                     vc1_mc_4mv_chroma4(v, 0, 0, 0);
+                    vc1_mc_4mv_chroma4(v, 1, 1, 1);
                 } else {
                     vc1_mc_1mv(v, 0);
                     vc1_interp_mc(v);
@@ -4573,6 +4574,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                 }
 
                 vc1_mc_4mv_chroma4(v, 0, 0, 0);
+                vc1_mc_4mv_chroma4(v, 1, 1, 1);
             } else if (bmvtype == BMV_TYPE_INTERPOLATED) {
                 mvbp = v->twomvbp;
                 dmv_x = dmv_y = 0;
@@ -4624,7 +4626,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                 vc1_mc_4mv_luma(v, 1, dir, 0);
                 vc1_mc_4mv_luma(v, 2, dir2, 0);
                 vc1_mc_4mv_luma(v, 3, dir2, 0);
-                vc1_mc_4mv_chroma4(v, 0, 0, 0);
+                vc1_mc_4mv_chroma4(v, dir, dir2, 0);
             } else {
                 dir = bmvtype == BMV_TYPE_BACKWARD;
 
