@@ -6272,11 +6272,12 @@ unsharp=7:7:-2:7:7:-2
 @anchor{vidstabdetect}
 @section vidstabdetect
 
-Video stabilization/deshaking: pass 1 of 2, see @ref{vidstabtransform}
-for pass 2.
+Analyze video stabilization/deshaking. Perform pass 1 of 2, see
+@ref{vidstabtransform} for pass 2.
 
-Generates a file with relative transform information translation,
-rotation about subsequent frames.
+This filter generates a file with relative translation and rotation
+transform information about subsequent frames, which is then used by
+the @ref{vidstabtransform} filter.
 
 To enable compilation of this filter you need to configure FFmpeg with
 @code{--enable-libvidstab}.
@@ -6285,69 +6286,69 @@ This filter accepts the following options:
 
 @table @option
 @item result
-path to the file used to write the transforms (default:@file{transforms.trf})
+Set the path to the file used to write the transforms information.
+Default value is @file{transforms.trf}.
 
 @item shakiness
-how shaky is the video and how quick is the camera? (default: 5)
-@table @samp
-@item 1
- little (fast)
-@item ...
-@item 10
- very strong/quick (slow)
-@end table
+Set how shaky the video is and how quick the camera is. It accepts an
+integer in the range 1-10, a value of 1 means little shakiness, a
+value of 10 means strong shakiness. Default value is 5.
 
 @item accuracy
-accuracy of detection process (>=shakiness) (default: 9)
-@table @samp
-@item 1
- low (fast)
-@item 15
- high (slow)
-@end table
+Set the accuracy of the detection process. It must be a value in the
+range 1-15. A value of 1 means low accuracy, a value of 15 means high
+accuracy. Default value is 9.
 
 @item stepsize
-stepsize of search process, region around minimum is scanned with 1 pixel
-resolution (default: 6)
+Set stepsize of the search process. The region around minimum is
+scanned with 1 pixel resolution. Default value is 6.
 
 @item mincontrast
-below this contrast a local measurement field is discarded (0-1) (default: 0.3)
+Set minimum contrast. Below this value a local measurement field is
+discarded. Must be a floating point value in the range 0-1. Default
+value is 0.3.
 
 @item tripod
-virtual tripod mode: @code{tripod=framenum} if framenum>0 otherwise disabled.
-The motion of the frames is compared to a reference frame (framenum).
-The idea is to compensate all movements in a more-or-less static scene
- and keep the camera view absolutely still.
-(default: 0 (disabled))
+Set reference frame number for tripod mode.
+
+If enabled, the motion of the frames is compared to a reference frame
+in the filtered stream, identified by the specified number. The idea
+is to compensate all movements in a more-or-less static scene and keep
+the camera view absolutely still.
+
+If set to 0, it is disabled. The frames are counted starting from 1.
 
 @item show
-draw nothing (default); 1,2: show fields and transforms in the resulting frames
-
+Show fields and transforms in the resulting frames. It accepts an
+integer in the range 0-2. Default value is 0, which disables any
+visualization.
 @end table
 
 @subsection Examples
 
 @itemize
 @item
-use default values:
+Use default values:
 @example
 vidstabdetect
 @end example
 
 @item
-strongly shaky movie and put the results in @code{mytransforms.trf}
+Analyze strongly shaky movie and put the results in file
+@file{mytransforms.trf}:
 @example
 vidstabdetect=shakiness=10:accuracy=15:result="mytransforms.trf"
 @end example
 
 @item
-visualize some internals in the resulting video
+Visualize the result of internal transformations in the resulting
+video:
 @example
 vidstabdetect=show=1
 @end example
 
 @item
-Typical call with visualization
+Analyze a video with medium shakiness using @command{ffmpeg}:
 @example
 ffmpeg -i input -vf vidstabdetect=shakiness=5:show=1 dummy.avi
 @end example
