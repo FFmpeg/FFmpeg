@@ -46,36 +46,12 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-
-#define MIN_MATRIX_SIZE 3
-#define MAX_MATRIX_SIZE 63
-
-/* right-shift and round-up */
-#define SHIFTUP(x,shift) (-((-(x))>>(shift)))
-
-typedef struct FilterParam {
-    int msize_x;                             ///< matrix width
-    int msize_y;                             ///< matrix height
-    int amount;                              ///< effect amount
-    int steps_x;                             ///< horizontal step count
-    int steps_y;                             ///< vertical step count
-    int scalebits;                           ///< bits to shift pixel
-    int32_t halfscale;                       ///< amount to add to pixel
-    uint32_t *sc[MAX_MATRIX_SIZE - 1];       ///< finite state machine storage
-} FilterParam;
-
-typedef struct {
-    const AVClass *class;
-    int lmsize_x, lmsize_y, cmsize_x, cmsize_y;
-    float lamount, camount;
-    FilterParam luma;   ///< luma parameters (width, height, amount)
-    FilterParam chroma; ///< chroma parameters (width, height, amount)
-    int hsub, vsub;
-} UnsharpContext;
+#include "unsharp.h"
+#include "unsharp_opencl.h"
 
 static void apply_unsharp(      uint8_t *dst, int dst_stride,
                           const uint8_t *src, int src_stride,
-                          int width, int height, FilterParam *fp)
+                          int width, int height, UnsharpFilterParam *fp)
 {
     uint32_t **sc = fp->sc;
     uint32_t sr[MAX_MATRIX_SIZE - 1], tmp1, tmp2;
@@ -131,7 +107,25 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
     }
 }
 
-static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, float amount)
+static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    UnsharpContext *unsharp = ctx->priv;
+    int i, plane_w[3], plane_h[3];
+    UnsharpFilterParam *fp[3];
+    plane_w[0] = inlink->w;
+    plane_w[1] = plane_w[2] = SHIFTUP(inlink->w, unsharp->hsub);
+    plane_h[0] = inlink->h;
+    plane_h[1] = plane_h[2] = SHIFTUP(inlink->h, unsharp->vsub);
+    fp[0] = &unsharp->luma;
+    fp[1] = fp[2] = &unsharp->chroma;
+    for (i = 0; i < 3; i++) {
+        apply_unsharp(out->data[i], out->linesize[i], in->data[i], in->linesize[i], plane_w[i], plane_h[i], fp[i]);
+    }
+    return 0;
+}
+
+static void set_filter_param(UnsharpFilterParam *fp, int msize_x, int msize_y, float amount)
 {
     fp->msize_x = msize_x;
     fp->msize_y = msize_y;
@@ -145,12 +139,24 @@ static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, float am
 
 static av_cold int init(AVFilterContext *ctx)
 {
+    int ret = 0;
     UnsharpContext *unsharp = ctx->priv;
 
 
     set_filter_param(&unsharp->luma,   unsharp->lmsize_x, unsharp->lmsize_y, unsharp->lamount);
     set_filter_param(&unsharp->chroma, unsharp->cmsize_x, unsharp->cmsize_y, unsharp->camount);
 
+    unsharp->apply_unsharp = apply_unsharp_c;
+    if (!CONFIG_OPENCL && unsharp->opencl) {
+        av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
+        return AVERROR(EINVAL);
+    }
+    if (CONFIG_OPENCL && unsharp->opencl) {
+        unsharp->apply_unsharp = ff_opencl_apply_unsharp;
+        ret = ff_opencl_unsharp_init(ctx);
+        if (ret < 0)
+            return ret;
+    }
     return 0;
 }
 
@@ -167,7 +173,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int init_filter_param(AVFilterContext *ctx, FilterParam *fp, const char *effect_type, int width)
+static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const char *effect_type, int width)
 {
     int z;
     const char *effect = fp->amount == 0 ? "none" : fp->amount < 0 ? "blur" : "sharpen";
@@ -208,7 +214,7 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static void free_filter_param(FilterParam *fp)
+static void free_filter_param(UnsharpFilterParam *fp)
 {
     int z;
 
@@ -220,6 +226,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     UnsharpContext *unsharp = ctx->priv;
 
+    if (CONFIG_OPENCL && unsharp->opencl) {
+        ff_opencl_unsharp_uninit(ctx);
+    }
+
     free_filter_param(&unsharp->luma);
     free_filter_param(&unsharp->chroma);
 }
@@ -229,8 +239,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     UnsharpContext *unsharp = link->dst->priv;
     AVFilterLink *outlink   = link->dst->outputs[0];
     AVFrame *out;
-    int cw = SHIFTUP(link->w, unsharp->hsub);
-    int ch = SHIFTUP(link->h, unsharp->vsub);
+    int ret = 0;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -238,12 +247,18 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
+    if (CONFIG_OPENCL && unsharp->opencl) {
+        ret = ff_opencl_unsharp_process_inout_buf(link->dst, in, out);
+        if (ret < 0)
+            goto end;
+    }
 
-    apply_unsharp(out->data[0], out->linesize[0], in->data[0], in->linesize[0], link->w, link->h, &unsharp->luma);
-    apply_unsharp(out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,      ch,      &unsharp->chroma);
-    apply_unsharp(out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,      ch,      &unsharp->chroma);
-
+    ret = unsharp->apply_unsharp(link->dst, in, out);
+end:
     av_frame_free(&in);
+
+    if (ret < 0)
+        return ret;
     return ff_filter_frame(outlink, out);
 }
 
@@ -264,6 +279,7 @@ static const AVOption unsharp_options[] = {
     { "cy",             "chroma matrix vertical size",   OFFSET(cmsize_y), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
     { "chroma_amount",  "chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
     { "ca",             "chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
+    { "opencl",         "use OpenCL filtering capabilities", OFFSET(opencl), AV_OPT_TYPE_INT, { .i64 = 0 },        0,        1, FLAGS },
     { NULL },
 };
 

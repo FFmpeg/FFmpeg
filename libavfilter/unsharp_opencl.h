@@ -18,24 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "opencl_allkernels.h"
-#if CONFIG_OPENCL
-#include "libavutil/opencl.h"
-#include "deshake_kernel.h"
-#include "unsharp_kernel.h"
-#endif
+#ifndef AVFILTER_UNSHARP_OPENCL_H
+#define AVFILTER_UNSHARP_OPENCL_H
 
-#define OPENCL_REGISTER_KERNEL_CODE(X, x)                                              \
-    {                                                                                  \
-        if (CONFIG_##X##_FILTER) {                                                     \
-            av_opencl_register_kernel_code(ff_kernel_##x##_opencl);                    \
-        }                                                                              \
-    }
+#include "unsharp.h"
 
-void ff_opencl_register_filter_kernel_code_all(void)
-{
- #if CONFIG_OPENCL
-   OPENCL_REGISTER_KERNEL_CODE(DESHAKE,     deshake);
-   OPENCL_REGISTER_KERNEL_CODE(UNSHARP,     unsharp);
- #endif
-}
+int ff_opencl_unsharp_init(AVFilterContext *ctx);
+
+void ff_opencl_unsharp_uninit(AVFilterContext *ctx);
+
+int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
+
+int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
+
+#endif /* AVFILTER_UNSHARP_OPENCL_H */
