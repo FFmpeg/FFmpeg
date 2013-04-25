@@ -5490,9 +5490,6 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     v->mv_f_base        = av_mallocz(2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
     v->mv_f[0]          = v->mv_f_base + s->b8_stride + 1;
     v->mv_f[1]          = v->mv_f[0] + (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2);
-    v->mv_f_last_base   = av_mallocz(2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
-    v->mv_f_last[0]     = v->mv_f_last_base + s->b8_stride + 1;
-    v->mv_f_last[1]     = v->mv_f_last[0] + (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2);
     v->mv_f_next_base   = av_mallocz(2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
     v->mv_f_next[0]     = v->mv_f_next_base + s->b8_stride + 1;
     v->mv_f_next[1]     = v->mv_f_next[0] + (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2);
@@ -5705,7 +5702,6 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
     av_freep(&v->mb_type_base);
     av_freep(&v->blk_mv_type_base);
     av_freep(&v->mv_f_base);
-    av_freep(&v->mv_f_last_base);
     av_freep(&v->mv_f_next_base);
     av_freep(&v->block);
     av_freep(&v->cbp_base);
@@ -6102,15 +6098,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             s->linesize                      >>= 1;
             s->uvlinesize                    >>= 1;
             if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {
-                uint8_t *tmp[2];
-                tmp[0]          = v->mv_f_last[0];
-                tmp[1]          = v->mv_f_last[1];
-                v->mv_f_last[0] = v->mv_f_next[0];
-                v->mv_f_last[1] = v->mv_f_next[1];
-                v->mv_f_next[0] = v->mv_f[0];
-                v->mv_f_next[1] = v->mv_f[1];
-                v->mv_f[0] = tmp[0];
-                v->mv_f[1] = tmp[1];
+                FFSWAP(uint8_t *, v->mv_f_next[0], v->mv_f[0]);
+                FFSWAP(uint8_t *, v->mv_f_next[1], v->mv_f[1]);
             }
         }
         av_dlog(s->avctx, "Consumed %i/%i bits\n",
