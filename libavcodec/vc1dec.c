@@ -963,7 +963,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     }
 }
 
-/** Do motion compensation for 4-MV field chroma macroblock (both U and V)
+/** Do motion compensation for 4-MV interlaced frame chroma macroblock (both U and V)
  */
 static void vc1_mc_4mv_chroma4(VC1Context *v)
 {
