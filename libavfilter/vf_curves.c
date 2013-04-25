@@ -24,10 +24,17 @@
 #include "libavutil/file.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+
+#define R 0
+#define G 1
+#define B 2
+#define A 3
 
 struct keypoint {
     double x, y;
@@ -58,6 +65,8 @@ typedef struct {
     char *comp_points_str_all;
     uint8_t graph[NB_COMP + 1][256];
     char *psfile;
+    uint8_t rgba_map[4];
+    int step;
 } CurvesContext;
 
 #define OFFSET(x) offsetof(CurvesContext, x)
@@ -242,27 +251,27 @@ static int interpolate(AVFilterContext *ctx, uint8_t *y, const struct keypoint *
         point = point->next;
     }
 
-#define B 0 /* sub  diagonal (below main) */
-#define M 1 /* main diagonal (center) */
-#define A 2 /* sup  diagonal (above main) */
+#define BD 0 /* sub  diagonal (below main) */
+#define MD 1 /* main diagonal (center) */
+#define AD 2 /* sup  diagonal (above main) */
 
     /* left side of the polynomials into a tridiagonal matrix. */
-    matrix[0][M] = matrix[n - 1][M] = 1;
+    matrix[0][MD] = matrix[n - 1][MD] = 1;
     for (i = 1; i < n - 1; i++) {
-        matrix[i][B] = h[i-1];
-        matrix[i][M] = 2 * (h[i-1] + h[i]);
-        matrix[i][A] = h[i];
+        matrix[i][BD] = h[i-1];
+        matrix[i][MD] = 2 * (h[i-1] + h[i]);
+        matrix[i][AD] = h[i];
     }
 
     /* tridiagonal solving of the linear system */
     for (i = 1; i < n; i++) {
-        double den = matrix[i][M] - matrix[i][B] * matrix[i-1][A];
+        double den = matrix[i][MD] - matrix[i][BD] * matrix[i-1][AD];
         double k = den ? 1./den : 1.;
-        matrix[i][A] *= k;
-        r[i] = (r[i] - matrix[i][B] * r[i - 1]) * k;
+        matrix[i][AD] *= k;
+        r[i] = (r[i] - matrix[i][BD] * r[i - 1]) * k;
     }
     for (i = n - 2; i >= 0; i--)
-        r[i] = r[i] - matrix[i][A] * r[i + 1];
+        r[i] = r[i] - matrix[i][AD] * r[i + 1];
 
     /* compute the graph with x=[0..255] */
     i = 0;
@@ -441,20 +450,43 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum AVPixelFormat pix_fmts[] = {AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE};
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
+        AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_NONE
+    };
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    CurvesContext *curves = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    ff_fill_rgba_map(curves->rgba_map, inlink->format);
+    curves->step = av_get_padded_bits_per_pixel(desc) >> 3;
+
     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    int x, y, i, direct = 0;
+    int x, y, direct = 0;
     AVFilterContext *ctx = inlink->dst;
     CurvesContext *curves = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
     uint8_t *dst;
     const uint8_t *src;
+    const int step = curves->step;
+    const uint8_t r = curves->rgba_map[R];
+    const uint8_t g = curves->rgba_map[G];
+    const uint8_t b = curves->rgba_map[B];
+    const uint8_t a = curves->rgba_map[A];
 
     if (av_frame_is_writable(in)) {
         direct = 1;
@@ -472,12 +504,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     src = in ->data[0];
 
     for (y = 0; y < inlink->h; y++) {
-        uint8_t *dstp = dst;
-        const uint8_t *srcp = src;
-
-        for (x = 0; x < inlink->w; x++)
-            for (i = 0; i < NB_COMP; i++, dstp++, srcp++)
-                *dstp = curves->graph[i][*srcp];
+        for (x = 0; x < inlink->w * step; x += step) {
+            dst[x + r] = curves->graph[R][src[x + r]];
+            dst[x + g] = curves->graph[G][src[x + g]];
+            dst[x + b] = curves->graph[B][src[x + b]];
+            if (!direct && step == 4)
+                dst[x + a] = src[x + a];
+        }
         dst += out->linesize[0];
         src += in ->linesize[0];
     }
@@ -493,6 +526,7 @@ static const AVFilterPad curves_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
