@@ -64,6 +64,7 @@ FATE_H264 = aud_mw_e                                                    \
             ci_mw_d                                                     \
             cvbs3_sony_c                                                \
             cvcanlma2_sony_c                                            \
+            cvfc1_sony_c                                                \
             cvfi1_sony_d                                                \
             cvfi1_sva_c                                                 \
             cvfi2_sony_h                                                \
@@ -266,6 +267,7 @@ fate-h264-conformance-ci1_ft_b:                   CMD = framecrc -vsync drop -i 
 fate-h264-conformance-ci_mw_d:                    CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/CI_MW_D.264
 fate-h264-conformance-cvbs3_sony_c:               CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/CVBS3_Sony_C.jsv
 fate-h264-conformance-cvcanlma2_sony_c:           CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/CVCANLMA2_Sony_C.jsv
+fate-h264-conformance-cvfc1_sony_c:               CMD = framecrc -flags unaligned -i $(SAMPLES)/h264-conformance/CVFC1_Sony_C.jsv
 fate-h264-conformance-cvfi1_sony_d:               CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/CVFI1_Sony_D.jsv
 fate-h264-conformance-cvfi1_sva_c:                CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/CVFI1_SVA_C.264
 fate-h264-conformance-cvfi2_sony_h:               CMD = framecrc -vsync drop -i $(SAMPLES)/h264-conformance/CVFI2_Sony_H.jsv

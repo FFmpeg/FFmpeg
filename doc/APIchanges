@@ -170,43 +170,43 @@ API changes, most recent first:
 2013-03-xx - xxxxxxx - lavc 55.2.0 - avcodec.h
   Add CODEC_FLAG_UNALIGNED to allow decoders to produce unaligned output.
 
-2013-xx-xx - lavfi 3.8.0
-  Move all content from avfiltergraph.h to avfilter.h. Deprecate
-  avfilterhraph.h, user applications should include just avfilter.h
-  Add avfilter_graph_alloc_filter(), deprecate avfilter_open() and
-  avfilter_graph_add_filter().
-  Add AVFilterContext.graph pointing to the AVFilterGraph that contains the
-  filter.
-  Add avfilter_init_str(), deprecate avfilter_init_filter().
-  Add avfilter_init_dict().
-  Add AVFilter.flags field and AVFILTER_FLAG_DYNAMIC_{INPUTS,OUTPUTS} flags.
-  Add avfilter_pad_count() for counting filter inputs/outputs.
-  Add avfilter_next(), deprecate av_filter_next().
-  Deprecate avfilter_uninit().
+2013-04-11 - lavfi 3.8.0
+  38f0c07 - Move all content from avfiltergraph.h to avfilter.h. Deprecate
+            avfilterhraph.h, user applications should include just avfilter.h
+  bc1a985 - Add avfilter_graph_alloc_filter(), deprecate avfilter_open() and
+            avfilter_graph_add_filter().
+  1113672 - Add AVFilterContext.graph pointing to the AVFilterGraph that contains the
+            filter.
+  48a5ada - Add avfilter_init_str(), deprecate avfilter_init_filter().
+  1ba95a9 - Add avfilter_init_dict().
+  7cdd737 - Add AVFilter.flags field and AVFILTER_FLAG_DYNAMIC_{INPUTS,OUTPUTS} flags.
+  7e8fe4b - Add avfilter_pad_count() for counting filter inputs/outputs.
+  fa2a34c - Add avfilter_next(), deprecate av_filter_next().
+            Deprecate avfilter_uninit().
 
-2013-xx-xx - lavfi 3.7.0 - avfilter.h
-  Add AVFilter.priv_class for exporting filter options through the AVOptions API
-  in the similar way private options work in lavc and lavf.
-  Add avfilter_get_class().
+2013-04-09 - lavfi 3.7.0 - avfilter.h
+  b439c99 - Add AVFilter.priv_class for exporting filter options through the
+            AVOptions API in the similar way private options work in lavc and lavf.
+  8114c10 - Add avfilter_get_class().
   Switch all filters to use AVOptions.
 
-2013-xx-xx - lavu 52.9.0 - pixdesc.h
+2013-03-19 - 2c328a9 - lavu 52.9.0 - pixdesc.h
   Add av_pix_fmt_count_planes() function for counting planes in a pixel format.
 
-2013-xx-xx - lavfi 3.6.0
+2013-03-16 - 42c7c61 - lavfi 3.6.0
   Add AVFilterGraph.nb_filters, deprecate AVFilterGraph.filter_count.
 
-2013-03-xx - Reference counted buffers - lavu 52.8.0, lavc 55.0.0, lavf 55.0.0,
+2013-03-08 - Reference counted buffers - lavu 52.8.0, lavc 55.0.0, lavf 55.0.0,
 lavd 54.0.0, lavfi 3.5.0
-  xxxxxxx, xxxxxxx - add a new API for reference counted buffers and buffer
+  8e401db, 1cec062 - add a new API for reference counted buffers and buffer
                      pools (new header libavutil/buffer.h).
-  xxxxxxx - add AVPacket.buf to allow reference counting for the AVPacket data.
+  1afddbe - add AVPacket.buf to allow reference counting for the AVPacket data.
             Add av_packet_from_data() function for constructing packets from
             av_malloc()ed data.
-  xxxxxxx - move AVFrame from lavc to lavu (new header libavutil/frame.h), add
+  7ecc2d4 - move AVFrame from lavc to lavu (new header libavutil/frame.h), add
             AVFrame.buf/extended_buf to allow reference counting for the AVFrame
             data. Add new API for working with reference-counted AVFrames.
-  xxxxxxx - add the refcounted_frames field to AVCodecContext to make audio and
+  759001c - add the refcounted_frames field to AVCodecContext to make audio and
             video decoders return reference-counted frames. Add get_buffer2()
             callback to AVCodecContext which allocates reference-counted frames.
             Add avcodec_default_get_buffer2() as the default get_buffer2()
@@ -224,30 +224,30 @@ lavd 54.0.0, lavfi 3.5.0
                 * qscale_table, qstride, qscale_type, mbskip_table, motion_val,
                   mb_type, dct_coeff, ref_index -- mpegvideo-specific tables,
                   which are not exported anymore.
-  xxxxxxx - switch libavfilter to use AVFrame instead of AVFilterBufferRef. Add
+  7e35037 - switch libavfilter to use AVFrame instead of AVFilterBufferRef. Add
             av_buffersrc_add_frame(), deprecate av_buffersrc_buffer().
             Add av_buffersink_get_frame() and av_buffersink_get_samples(),
             deprecate av_buffersink_read() and av_buffersink_read_samples().
             Deprecate AVFilterBufferRef and all functions for working with it.
 
-2013-xx-xx - xxxxxxx - lavu 52.8.0 - avstring.h
+2013-03-17 - 12c5c1d - lavu 52.8.0 - avstring.h
   Add av_isdigit, av_isgraph, av_isspace, av_isxdigit.
 
-2013-xx-xx - xxxxxxx - lavfi 3.4.0 - avfiltergraph.h
+2013-02-23 - 9f12235 - lavfi 3.4.0 - avfiltergraph.h
   Add resample_lavr_opts to AVFilterGraph for setting libavresample options
   for auto-inserted resample filters.
 
-2013-xx-xx - xxxxxxx - lavu 52.7.0 - dict.h
+2013-01-25 - 38c1466 - lavu 52.7.0 - dict.h
   Add av_dict_parse_string() to set multiple key/value pairs at once from a
   string.
 
-2013-01-xx - xxxxxxx - lavu 52.6.0 - avstring.h
+2013-01-25 - b85a5e8 - lavu 52.6.0 - avstring.h
   Add av_strnstr()
 
-2013-01-xx - xxxxxxx - lavu 52.5.0 - hmac.h
+2013-01-15 - 8ee288d - lavu 52.5.0 - hmac.h
   Add AVHMAC.
 
-2013-01-13 - xxxxxxx - lavc 54.87.100 / 54.36.0 - vdpau.h
+2013-01-13 - 44e065d - lavc 54.87.100 / 54.36.0 - vdpau.h
   Add AVVDPAUContext struct for VDPAU hardware-accelerated decoding.
 
 2013-01-12 - dae382b / 169fb94 - lavu 52.14.100 / 52.4.0 - pixdesc.h
