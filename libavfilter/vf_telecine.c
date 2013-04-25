@@ -156,6 +156,8 @@ static int config_output(AVFilterLink *outlink)
     outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->frame_rate = fps;
     outlink->time_base = av_mul_q(inlink->time_base, tc->pts);
+    av_log(ctx, AV_LOG_VERBOSE, "TB: %d/%d -> %d/%d\n",
+           inlink->time_base.num, inlink->time_base.den, outlink->time_base.num, outlink->time_base.den);
 
     tc->ts_unit = av_q2d(av_inv_q(av_mul_q(fps, outlink->time_base)));
 
