@@ -741,6 +741,26 @@ static void avg_no_rnd_vc1_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
     }
 }
 
+static void avg_no_rnd_vc1_chroma_mc4_c(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int stride, int h, int x, int y){
+    const int A=(8-x)*(8-y);
+    const int B=(  x)*(8-y);
+    const int C=(8-x)*(  y);
+    const int D=(  x)*(  y);
+    int i;
+
+    av_assert2(x<8 && y<8 && x>=0 && y>=0);
+
+    for(i=0; i<h; i++)
+    {
+        dst[0] = avg2(dst[0], ((A*src[0] + B*src[1] + C*src[stride+0] + D*src[stride+1] + 32 - 4) >> 6));
+        dst[1] = avg2(dst[1], ((A*src[1] + B*src[2] + C*src[stride+1] + D*src[stride+2] + 32 - 4) >> 6));
+        dst[2] = avg2(dst[2], ((A*src[2] + B*src[3] + C*src[stride+2] + D*src[stride+3] + 32 - 4) >> 6));
+        dst[3] = avg2(dst[3], ((A*src[3] + B*src[4] + C*src[stride+3] + D*src[stride+4] + 32 - 4) >> 6));
+        dst+= stride;
+        src+= stride;
+    }
+}
+
 #if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
 
 static void sprite_h_c(uint8_t *dst, const uint8_t *src, int offset, int advance, int count)
@@ -858,6 +878,7 @@ av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0]= put_no_rnd_vc1_chroma_mc8_c;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0]= avg_no_rnd_vc1_chroma_mc8_c;
     dsp->put_no_rnd_vc1_chroma_pixels_tab[1] = put_no_rnd_vc1_chroma_mc4_c;
+    dsp->avg_no_rnd_vc1_chroma_pixels_tab[1] = avg_no_rnd_vc1_chroma_mc4_c;
 
 #if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
     dsp->sprite_h = sprite_h_c;
