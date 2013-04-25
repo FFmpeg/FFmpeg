@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * LucasArts VIMA audio decoder
+ * @author Paul B Mahol
+ */
+
 #include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "get_bits.h"
