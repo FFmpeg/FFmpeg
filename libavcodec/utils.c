@@ -2508,6 +2508,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     snprintf(buf, buf_size, "%s: %s", codec_type ? codec_type : "unknown",
              codec_name);
     buf[0] ^= 'a' ^ 'A'; /* first letter in uppercase */
+
+    if (enc->codec && strcmp(enc->codec->name, codec_name))
+        snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s)", enc->codec->name);
+
     if (profile)
         snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s)", profile);
     if (enc->codec_tag) {
