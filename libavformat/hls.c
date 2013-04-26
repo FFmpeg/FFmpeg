@@ -533,6 +533,9 @@ static int hls_read_header(AVFormatContext *s)
         for (i = 0; i < c->variants[0]->n_segments; i++)
             duration += c->variants[0]->segments[i]->duration;
         s->duration = duration * AV_TIME_BASE;
+        s->pb->seekable |= AVIO_SEEKABLE_NORMAL;
+    } else {
+        s->pb->seekable = 0;
     }
 
     /* Open the demuxer for each variant */
