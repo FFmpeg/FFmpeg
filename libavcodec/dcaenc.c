@@ -168,8 +168,13 @@ static int encode_init(AVCodecContext *avctx)
             cb_to_level[i] = (int32_t)(0x7fffffff * pow(10, -0.005 * i));
         }
 
+        /* FIXME: probably incorrect */
+        for (i = 0; i < 256; i++) {
+            lfe_fir_64i[i] = (int32_t)(0x01ffffff * lfe_fir_64[i]);
+            lfe_fir_64i[511 - i] = (int32_t)(0x01ffffff * lfe_fir_64[i]);
+        }
+
         for (i = 0; i < 512; i++) {
-            lfe_fir_64i[i]           = (int32_t)(0x01ffffff * lfe_fir_64[i]);
             band_interpolation[0][i] = (int32_t)(0x1000000000ULL * fir_32bands_perfect[i]);
             band_interpolation[1][i] = (int32_t)(0x1000000000ULL * fir_32bands_nonperfect[i]);
         }
