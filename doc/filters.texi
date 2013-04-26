@@ -5785,6 +5785,12 @@ above-below with half height resolution
 above-below with half height resolution
 (right eye above, left eye below)
 
+@item al
+alternating frames (left eye first, right eye second)
+
+@item ar
+alternating frames (right eye first, left eye second)
+
 Default value is @samp{sbsl}.
 @end table
 
