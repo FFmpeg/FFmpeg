@@ -68,7 +68,7 @@ static av_always_inline av_const int64_t MUL64(int a, int b)
 
 #endif /* ARCH_X86_32 */
 
-#if HAVE_CMOV
+#if HAVE_I686
 /* median of 3 */
 #define mid_pred mid_pred
 static inline av_const int mid_pred(int a, int b, int c)
@@ -87,9 +87,7 @@ static inline av_const int mid_pred(int a, int b, int c)
     );
     return i;
 }
-#endif
 
-#if HAVE_CMOV
 #define COPY3_IF_LT(x, y, a, b, c, d)\
 __asm__ volatile(\
     "cmpl  %0, %3       \n\t"\
@@ -99,7 +97,7 @@ __asm__ volatile(\
     : "+&r" (x), "+&r" (a), "+r" (c)\
     : "r" (y), "r" (b), "r" (d)\
 );
-#endif
+#endif /* HAVE_I686 */
 
 #define MASK_ABS(mask, level)                   \
     __asm__ ("cltd                   \n\t"      \
