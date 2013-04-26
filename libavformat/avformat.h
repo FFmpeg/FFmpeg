@@ -366,6 +366,11 @@ typedef struct AVProbeData {
                                    /**< Format does not require strictly
                                         increasing timestamps, but they must
                                         still be monotonic */
+#define AVFMT_TS_NEGATIVE  0x40000 /**< Format allows muxing negative
+                                        timestamps. If not set the timestamp
+                                        will be shifted in av_write_frame and
+                                        av_interleaved_write_frame so they
+                                        start from 0. */
 
 #define AVFMT_SEEK_TO_PTS   0x4000000 /**< Seeking is based on PTS */
 
@@ -1257,6 +1262,18 @@ typedef struct AVFormatContext {
      */
 #define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
+
+    /**
+     * Offset to remap timestamps to be non-negative.
+     * Expressed in timebase units.
+     * @see AVStream.mux_ts_offset
+     */
+    int64_t offset;
+
+    /**
+     * Timebase for the timestamp offset.
+     */
+    AVRational offset_timebase;
 
     /**
      * IO repositioned flag.
