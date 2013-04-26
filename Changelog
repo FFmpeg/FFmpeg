@@ -21,6 +21,7 @@ version 10:
 - Apple Intermediate Codec decoder
 - Escape 130 video decoder
 - support for slice multithreading in libavfilter
+- VC-1 interlaced B-frame support
 
 
 version 9:
