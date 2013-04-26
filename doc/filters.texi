@@ -2848,7 +2848,6 @@ a combination of the following values:
 @item monochrome
 @item linear_design
 @item no_autohint
-@item end table
 @end table
 
 Default value is "render".
