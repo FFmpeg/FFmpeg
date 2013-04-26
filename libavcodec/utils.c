@@ -2505,8 +2505,8 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             profile = av_get_profile_name(p, enc->profile);
     }
 
-    snprintf(buf, buf_size, "%s: %s%s", codec_type ? codec_type : "unknown",
-             codec_name, enc->mb_decision ? " (hq)" : "");
+    snprintf(buf, buf_size, "%s: %s", codec_type ? codec_type : "unknown",
+             codec_name);
     buf[0] ^= 'a' ^ 'A'; /* first letter in uppercase */
     if (profile)
         snprintf(buf + strlen(buf), buf_size - strlen(buf), " (%s)", profile);
