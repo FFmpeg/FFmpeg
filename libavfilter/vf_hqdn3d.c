@@ -356,5 +356,4 @@ AVFilter avfilter_vf_hqdn3d = {
 
     .inputs    = avfilter_vf_hqdn3d_inputs,
     .outputs   = avfilter_vf_hqdn3d_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };
