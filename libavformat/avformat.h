@@ -370,7 +370,10 @@ typedef struct AVProbeData {
                                         timestamps. If not set the timestamp
                                         will be shifted in av_write_frame and
                                         av_interleaved_write_frame so they
-                                        start from 0. */
+                                        start from 0.
+                                        The user or muxer can override this through
+                                        AVFormatContext.avoid_negative_ts
+                                        */
 
 #define AVFMT_SEEK_TO_PTS   0x4000000 /**< Seeking is based on PTS */
 

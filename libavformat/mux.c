@@ -398,6 +398,13 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     if ((ret = init_pts(s)) < 0)
         return ret;
 
+    if (s->avoid_negative_ts < 0) {
+        if (s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) {
+            s->avoid_negative_ts = 0;
+        } else
+            s->avoid_negative_ts = 1;
+    }
+
     return 0;
 }
 
