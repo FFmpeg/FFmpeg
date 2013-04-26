@@ -120,7 +120,7 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
 #define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
-#include "dsputil_rnd_template.c"
+#include "rnd_template.c"
 
 #undef DEF
 #undef SET_RND
