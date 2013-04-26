@@ -21,18 +21,19 @@
  */
 
 #include "config.h"
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavcodec/hpeldsp.h"
 
-#if HAVE_ALTIVEC
 #if HAVE_ALTIVEC_H
 #include <altivec.h>
 #endif
+
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
+#include "libavcodec/hpeldsp.h"
 #include "dsputil_altivec.h"
 
+#if HAVE_ALTIVEC
 /* next one assumes that ((line_size % 16) == 0) */
 void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {
