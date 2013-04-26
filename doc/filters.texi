@@ -5326,7 +5326,7 @@ Suppress a TV station logo, using an image file to determine which
 pixels comprise the logo. It works by filling in the pixels that
 comprise the logo with neighboring pixels.
 
-The filters accept the following options:
+The filter accepts the following options:
 
 @table @option
 @item filename, f
