@@ -707,7 +707,7 @@ afade=t=in:ss=0:d=15
 @item
 Fade out last 25 seconds of a 900 seconds audio:
 @example
-afade=t=out:ss=875:d=25
+afade=t=out:st=875:d=25
 @end example
 @end itemize
 
