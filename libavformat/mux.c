@@ -529,23 +529,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0);
     }
 
-    if (!(s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) && 0) {
-        AVRational time_base = s->streams[pkt->stream_index]->time_base;
-        int64_t offset = 0;
-
-        if (!s->offset && pkt->dts != AV_NOPTS_VALUE && pkt->dts < 0) {
-            s->offset = -pkt->dts;
-            s->offset_timebase = time_base;
-        }
-        if (s->offset)
-            offset = av_rescale_q(s->offset, s->offset_timebase, time_base);
-
-        if (pkt->dts != AV_NOPTS_VALUE)
-            pkt->dts += offset;
-        if (pkt->pts != AV_NOPTS_VALUE)
-            pkt->pts += offset;
-    }
-
     did_split = av_packet_split_side_data(pkt);
     ret = s->oformat->write_packet(s, pkt);
     if (s->flush_packets && s->pb && s->pb->error >= 0)
