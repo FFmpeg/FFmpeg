@@ -5361,13 +5361,11 @@ The filter accepts the following options:
 
 @table @option
 @item width, w
-Output video width.
-default value is @code{iw}. See below
-for the list of accepted constants.
+Set the output video width expression. Default value is @code{iw}. See
+below for the list of accepted constants.
 
 @item height, h
-Output video height.
-default value is @code{ih}.
+Set the output video height expression. Default value is @code{ih}.
 See below for the list of accepted constants.
 
 @item interl
