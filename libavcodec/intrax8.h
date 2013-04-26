@@ -22,6 +22,7 @@
 #include "get_bits.h"
 #include "mpegvideo.h"
 #include "intrax8dsp.h"
+#include "wmv2dsp.h"
 
 typedef struct IntraX8Context {
     VLC * j_ac_vlc[4];//they point to the static j_mb_vlc
@@ -32,6 +33,8 @@ typedef struct IntraX8Context {
 //set by ff_intrax8_common_init
     uint8_t * prediction_table;//2*(mb_w*2)
     ScanTable scantable[3];
+    WMV2DSPContext wdsp;
+    uint8_t idct_permutation[64];
 //set by the caller codec
     MpegEncContext * s;
     IntraX8DSPContext dsp;

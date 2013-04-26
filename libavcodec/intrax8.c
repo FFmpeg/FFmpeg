@@ -437,7 +437,7 @@ lut2[q>12][c]={
 static void x8_ac_compensation(IntraX8Context * const w, int const direction, int const dc_level){
     MpegEncContext * const s= w->s;
     int t;
-#define B(x,y)  s->block[0][s->dsp.idct_permutation[(x)+(y)*8]]
+#define B(x,y)  s->block[0][w->idct_permutation[(x)+(y)*8]]
 #define T(x)  ((x) * dc_level + 0x8000) >> 16;
     switch(direction){
     case 0:
@@ -643,7 +643,7 @@ static int x8_decode_intra_mb(IntraX8Context* const w, const int chroma){
                                             s->current_picture.f.linesize[!!chroma] );
     }
     if(!zeros_only)
-        s->dsp.idct_add ( s->dest[chroma],
+        w->wdsp.idct_add (s->dest[chroma],
                           s->current_picture.f.linesize[!!chroma],
                           s->block[0] );
 
@@ -695,9 +695,13 @@ av_cold void ff_intrax8_common_init(IntraX8Context * w, MpegEncContext * const s
     av_assert0(s->mb_width>0);
     w->prediction_table=av_mallocz(s->mb_width*2*2);//two rows, 2 blocks per cannon mb
 
-    ff_init_scantable(s->dsp.idct_permutation, &w->scantable[0], ff_wmv1_scantable[0]);
-    ff_init_scantable(s->dsp.idct_permutation, &w->scantable[1], ff_wmv1_scantable[2]);
-    ff_init_scantable(s->dsp.idct_permutation, &w->scantable[2], ff_wmv1_scantable[3]);
+    ff_wmv2dsp_init(&w->wdsp);
+    ff_init_scantable_permutation(w->idct_permutation,
+                                  w->wdsp.idct_perm);
+
+    ff_init_scantable(w->idct_permutation, &w->scantable[0], ff_wmv1_scantable[0]);
+    ff_init_scantable(w->idct_permutation, &w->scantable[1], ff_wmv1_scantable[2]);
+    ff_init_scantable(w->idct_permutation, &w->scantable[2], ff_wmv1_scantable[3]);
 
     ff_intrax8dsp_init(&w->dsp);
 }
