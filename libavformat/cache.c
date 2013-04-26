@@ -69,7 +69,7 @@ typedef struct CacheContext {
   int64_t position;
   int64_t length;
   pthread_t thread;
-  pthread_mutex_t mutex;
+  pthread_mutex_t mutex; // protect fdw and inner
   void (*callback)(int64_t *segs, int len);
 } CacheContext;
 
@@ -117,7 +117,7 @@ static void segments_balance(CacheContext *c, Segment *seg)
     seg->end = FFMAX(next->end, seg->end);
     pos = ffurl_seek(c->inner, seg->end, SEEK_SET);
     if (pos > 0) {
-      seg->end = lseek(c->fdw, pos, SEEK_SET);
+      seg->end = lseek(c->fdw, pos, SEEK_SET); // should be protected
     } else {
       av_log(NULL, AV_LOG_ERROR, "balance: %"PRId64", %"PRId64", %"PRId64"\n", seg->begin, seg->end, pos);
     }
@@ -173,29 +173,37 @@ static void segments_free(Segment *segs)
 static void* cache_fill_thread(void* arg)
 {
   uint8_t buf[1024];
-  int r, r_;
+  int r, r_, len = 0;
   CacheContext *c = (CacheContext *)arg;
 
   while (c->cache_fill && c->seg->end - c->seg->begin < c->length) {
-    pthread_mutex_lock(&c->mutex);
     if (c->seg->end < c->length) {
+      pthread_mutex_lock(&c->mutex);
       r = ffurl_read(c->inner, buf, 1024);
       if(r > 0){
         r_ = write(c->fdw, buf, r);
         av_assert0(r_ == r);
         c->seg->end += r_;
+        len += r_;
         segments_balance(c, c->seg);
-        if (c->segs_flat && c->num_segs > 0 && c->callback) {
+        if (len > 102400 && c->segs_flat && c->num_segs > 0 && c->callback) {
           segments_dump(c, c->segs, c->fdi);
           c->callback(c->segs_flat, c->num_segs);
+          len = 0;
         }
+        pthread_mutex_unlock(&c->mutex);
       } else {
-        usleep(200);
+        pthread_mutex_unlock(&c->mutex);
+        usleep(100 * 1000);
       }
     } else {
-      usleep(200);
+      usleep(100 * 1000);
     }
-    pthread_mutex_unlock(&c->mutex);
+  }
+
+  if (len > 0 && c->segs_flat && c->num_segs > 0 && c->callback) {
+    segments_dump(c, c->segs, c->fdi);
+    c->callback(c->segs_flat, c->num_segs);
   }
 
   return NULL;
@@ -258,7 +266,7 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
 
   if (c->cache_fill) {
     while (seg->begin > c->position || c->position >= seg->end) {
-      usleep(200);
+      usleep(100 * 1000);
       seg = c->seg;
       continue;
     }
@@ -267,11 +275,10 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
     if (len > 0) {
       c->position += len;
     }
+    return (-1 == len) ? AVERROR(errno) : len;
   } else {
-    len = ffurl_read(c->inner, buf, size);
+    return ffurl_read(c->inner, buf, size);
   }
-
-  return (-1 == len) ? AVERROR(errno) : len;
 }
 
 static int64_t cache_seek(URLContext *h, int64_t position, int whence)
@@ -283,11 +290,11 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
     return ffurl_seek(c->inner, position, whence);
   }
 
-  pthread_mutex_lock(&c->mutex);
   candi = segments_select(c, &c->segs, position);
   if (candi == c->seg) {
     c->position = lseek(c->fdr, position, whence);
   } else {
+    pthread_mutex_lock(&c->mutex);
     int64_t pos = ffurl_seek(c->inner, candi->end, whence);
     if (pos > 0) {
       candi->end = lseek(c->fdw, pos, SEEK_SET);
@@ -296,8 +303,8 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
     }
     c->position = lseek(c->fdr, position, SEEK_SET);
     c->seg = candi;
+    pthread_mutex_unlock(&c->mutex);
   }
-  pthread_mutex_unlock(&c->mutex);
 
   return c->position;
 }
