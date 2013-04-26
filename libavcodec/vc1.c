@@ -1110,7 +1110,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                         INIT_LUT(v->lumscale2, v->lumshift2, v->curr_luty[v->cur_field_type^1], v->curr_lutuv[v->cur_field_type^1], 0);
                         INIT_LUT(v->lumscale , v->lumshift , v->last_luty[v->cur_field_type  ], v->last_lutuv[v->cur_field_type  ], 1);
                     }
-                    v->curr_use_ic = 1;
+                    v->next_use_ic = v->curr_use_ic = 1;
                 } else {
                     INIT_LUT(v->lumscale , v->lumshift , v->last_luty[0], v->last_lutuv[0], 1);
                     INIT_LUT(v->lumscale2, v->lumshift2, v->last_luty[1], v->last_lutuv[1], 1);
