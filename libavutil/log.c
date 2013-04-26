@@ -53,35 +53,50 @@ static HANDLE con;
 #else
 static const uint8_t color[] = { 0x41, 0x41, 0x11, 0x03, 9, 0x02, 0x06 };
 #define set_color(x)  fprintf(stderr, "\033[%d;3%dm", color[x] >> 4, color[x]&15)
+#define print_256color(x) fprintf(stderr, "\033[38;5;%dm", x)
 #define reset_color() fprintf(stderr, "\033[0m")
 #endif
 static int use_color = -1;
 
-static void colored_fputs(int level, const char *str)
+static void check_color_terminal(void)
 {
-    if (use_color < 0) {
 #if HAVE_SETCONSOLETEXTATTRIBUTE
-        CONSOLE_SCREEN_BUFFER_INFO con_info;
-        con = GetStdHandle(STD_ERROR_HANDLE);
-        use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
-                    !getenv("AV_LOG_FORCE_NOCOLOR");
-        if (use_color) {
-            GetConsoleScreenBufferInfo(con, &con_info);
-            attr_orig  = con_info.wAttributes;
-            background = attr_orig & 0xF0;
-        }
-#elif HAVE_ISATTY
-        use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
-                    (getenv("TERM") && isatty(2) ||
-                     getenv("AV_LOG_FORCE_COLOR"));
-#else
-        use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
-                   !getenv("AV_LOG_FORCE_NOCOLOR");
-#endif
-    }
-
+    CONSOLE_SCREEN_BUFFER_INFO con_info;
+    con = GetStdHandle(STD_ERROR_HANDLE);
+    use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
+                !getenv("AV_LOG_FORCE_NOCOLOR");
     if (use_color) {
+        GetConsoleScreenBufferInfo(con, &con_info);
+        attr_orig  = con_info.wAttributes;
+        background = attr_orig & 0xF0;
+    }
+#elif HAVE_ISATTY
+    char *term = getenv("TERM");
+    use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
+                (getenv("TERM") && isatty(2) || getenv("AV_LOG_FORCE_COLOR"));
+    use_color += !!strstr(term, "256color") ;
+#else
+    use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
+               !getenv("AV_LOG_FORCE_NOCOLOR");
+#endif
+}
+
+static void colored_fputs(int level, int tint, const char *str)
+{
+    if (use_color < 0)
+        check_color_terminal();
+
+    switch (use_color) {
+    case 1:
         set_color(level);
+        break;
+    case 2:
+        set_color(level);
+        if (tint)
+            print_256color(tint);
+        break;
+    default:
+        break;
     }
     fputs(str, stderr);
     if (use_color) {
@@ -102,6 +117,10 @@ void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
     char line[1024];
     static int is_atty;
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
+    int tint = av_clip(level >> 8, 0, 256);
+
+    level &= 0xff;
+
     if (level > av_log_level)
         return;
     line[0] = 0;
@@ -138,7 +157,7 @@ void av_log_default_callback(void *avcl, int level, const char *fmt, va_list vl)
         fprintf(stderr, "    Last message repeated %d times\n", count);
         count = 0;
     }
-    colored_fputs(av_clip(level >> 3, 0, 6), line);
+    colored_fputs(av_clip(level >> 3, 0, 6), tint, line);
     av_strlcpy(prev, line, sizeof line);
 }
 
