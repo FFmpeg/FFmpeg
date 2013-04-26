@@ -272,13 +272,15 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVFormatContext *oc = seg->avf;
     AVStream *st = s->streams[pkt->stream_index];
     int64_t end_pts = seg->recording_time * seg->number;
-    int ret;
+    int ret, can_split = 1;
 
-    if ((seg->has_video && st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
-        av_compare_ts(pkt->pts, st->time_base,
-                      end_pts, AV_TIME_BASE_Q) >= 0 &&
-        pkt->flags & AV_PKT_FLAG_KEY) {
+    if (seg->has_video) {
+        can_split = st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    pkt->flags & AV_PKT_FLAG_KEY;
+    }
 
+    if (can_split && av_compare_ts(pkt->pts, st->time_base, end_pts,
+                                   AV_TIME_BASE_Q) >= 0) {
         av_log(s, AV_LOG_DEBUG, "Next segment starts at %d %"PRId64"\n",
                pkt->stream_index, pkt->pts);
 
