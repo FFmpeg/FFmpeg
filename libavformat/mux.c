@@ -518,6 +518,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->dts += offset;
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts += offset;
+
+        av_assert2(pkt->dts == AV_NOPTS_VALUE || pkt->dts >= 0);
     }
 
     if (!(s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS)) && 0) {
