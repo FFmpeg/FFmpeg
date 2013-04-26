@@ -495,22 +495,26 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
  */
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, did_split, i;
+    int ret, did_split;
 
     if (s->avoid_negative_ts > 0) {
         AVStream *st = s->streams[pkt->stream_index];
-        if (pkt->dts != AV_NOPTS_VALUE) {
-            if (!st->mux_ts_offset && pkt->dts < 0) {
-                for (i = 0; i < s->nb_streams; i++) {
-                    s->streams[i]->mux_ts_offset =
-                        av_rescale_q_rnd(-pkt->dts,
-                                            st->time_base,
-                                            s->streams[i]->time_base,
-                                            AV_ROUND_UP);
-                }
-            }
-            pkt->dts += st->mux_ts_offset;
+
+        if (pkt->dts < 0 && pkt->dts != AV_NOPTS_VALUE && !s->offset) {
+            s->offset = -pkt->dts;
+            s->offset_timebase = st->time_base;
         }
+
+        if (s->offset && !st->mux_ts_offset) {
+            st->mux_ts_offset =
+                av_rescale_q_rnd(s->offset,
+                                 s->offset_timebase,
+                                 st->time_base,
+                                 AV_ROUND_UP);
+        }
+
+        if (pkt->dts != AV_NOPTS_VALUE)
+            pkt->dts += st->mux_ts_offset;
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts += st->mux_ts_offset;
     }
