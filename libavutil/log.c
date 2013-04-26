@@ -113,33 +113,36 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
 #endif
 static int use_color = -1;
 
+static void check_color_terminal(void)
+{
+#if HAVE_SETCONSOLETEXTATTRIBUTE
+    CONSOLE_SCREEN_BUFFER_INFO con_info;
+    con = GetStdHandle(STD_ERROR_HANDLE);
+    use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
+                !getenv("AV_LOG_FORCE_NOCOLOR");
+    if (use_color) {
+        GetConsoleScreenBufferInfo(con, &con_info);
+        attr_orig  = con_info.wAttributes;
+        background = attr_orig & 0xF0;
+    }
+#elif HAVE_ISATTY
+    use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
+                (getenv("TERM") && isatty(2) || getenv("AV_LOG_FORCE_COLOR"));
+    if (getenv("AV_LOG_FORCE_256COLOR"))
+        use_color *= 256;
+#else
+    use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
+               !getenv("AV_LOG_FORCE_NOCOLOR");
+#endif
+}
+
 static void colored_fputs(int level, const char *str)
 {
     if (!*str)
         return;
 
-    if (use_color < 0) {
-#if HAVE_SETCONSOLETEXTATTRIBUTE
-        CONSOLE_SCREEN_BUFFER_INFO con_info;
-        con = GetStdHandle(STD_ERROR_HANDLE);
-        use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
-                    !getenv("AV_LOG_FORCE_NOCOLOR");
-        if (use_color) {
-            GetConsoleScreenBufferInfo(con, &con_info);
-            attr_orig  = con_info.wAttributes;
-            background = attr_orig & 0xF0;
-        }
-#elif HAVE_ISATTY
-        use_color = !getenv("NO_COLOR") && !getenv("AV_LOG_FORCE_NOCOLOR") &&
-                    (getenv("TERM") && isatty(2) ||
-                     getenv("AV_LOG_FORCE_COLOR"));
-        if (getenv("AV_LOG_FORCE_256COLOR"))
-            use_color *= 256;
-#else
-        use_color = getenv("AV_LOG_FORCE_COLOR") && !getenv("NO_COLOR") &&
-                   !getenv("AV_LOG_FORCE_NOCOLOR");
-#endif
-    }
+    if (use_color < 0)
+        check_color_terminal();
 
 #if HAVE_SETCONSOLETEXTATTRIBUTE
     if (use_color && level != AV_LOG_INFO/8)
