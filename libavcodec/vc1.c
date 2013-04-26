@@ -866,9 +866,6 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         if (fcm) {
             if (fcm == ILACE_FIELD)
                 field_mode = 1;
-            if (!v->warn_interlaced++)
-                av_log(v->s.avctx, AV_LOG_ERROR,
-                       "Interlaced frames/fields support is incomplete\n");
         }
     } else {
         fcm = PROGRESSIVE;

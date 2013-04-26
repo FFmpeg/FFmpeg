@@ -399,8 +399,6 @@ typedef struct VC1Context{
     int end_mb_x;                ///< Horizontal macroblock limit (used only by mss2)
 
     int parse_only;              ///< Context is used within parser
-
-    int warn_interlaced;
 } VC1Context;
 
 /** Find VC-1 marker in buffer
