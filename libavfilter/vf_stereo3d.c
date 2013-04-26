@@ -349,25 +349,25 @@ static int config_output(AVFilterLink *outlink)
         memcpy(s->ana_matrix, ana_coeff[s->out.format], sizeof(s->ana_matrix));
         break;
     case SIDE_BY_SIDE_2_LR:
-        aspect.num      /= 2;
+        aspect.den      *= 2;
     case SIDE_BY_SIDE_LR:
         s->out.width     = s->width * 2;
         s->out.off_right = s->width;
         break;
     case SIDE_BY_SIDE_2_RL:
-        aspect.num      /= 2;
+        aspect.den      *= 2;
     case SIDE_BY_SIDE_RL:
         s->out.width     = s->width * 2;
         s->out.off_left  = s->width;
         break;
     case ABOVE_BELOW_2_LR:
-        aspect.den      /= 2;
+        aspect.num      *= 2;
     case ABOVE_BELOW_LR:
         s->out.height    = s->height * 2;
         s->out.row_right = s->height;
         break;
     case ABOVE_BELOW_2_RL:
-        aspect.den      /= 2;
+        aspect.num      *= 2;
     case ABOVE_BELOW_RL:
         s->out.height    = s->height * 2;
         s->out.row_left  = s->height;
