@@ -180,6 +180,14 @@ av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t si
 char *av_strdup(const char *s) av_malloc_attrib;
 
 /**
+ * Duplicate the buffer p.
+ * @param p buffer to be duplicated
+ * @return Pointer to a newly allocated buffer containing a
+ * copy of p or NULL if the buffer cannot be allocated.
+ */
+void *av_memdup(const void *p, size_t size);
+
+/**
  * Free a memory block which has been allocated with av_malloc(z)() or
  * av_realloc() and set the pointer pointing to it to NULL.
  * @param ptr Pointer to the pointer to the memory block which should

@@ -229,6 +229,17 @@ char *av_strdup(const char *s)
     return ptr;
 }
 
+void *av_memdup(const void *p, size_t size)
+{
+    void *ptr = NULL;
+    if (p) {
+        ptr = av_malloc(size);
+        if (ptr)
+            memcpy(ptr, p, size);
+    }
+    return ptr;
+}
+
 void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
 {
     /* see similar ffmpeg.c:grow_array() */
