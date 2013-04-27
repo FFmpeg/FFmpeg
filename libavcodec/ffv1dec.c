@@ -38,7 +38,6 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
-#include "thread.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
                                                int is_signed)
@@ -734,14 +733,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
-    ThreadFrame frame = { .f = data };
     int i, ret;
     uint8_t keystate = 128;
     const uint8_t *buf_p;
-    AVFrame *const p    = data;
+    AVFrame *p;
 
-    f->cur = p;
-    f->avctx = avctx;
+    if (f->last_picture.f)
+        ff_thread_release_buffer(avctx, &f->last_picture);
+    FFSWAP(ThreadFrame, f->picture, f->last_picture);
+
+    f->cur = p = f->picture.f;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
@@ -762,7 +763,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         p->key_frame = 0;
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &f->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
@@ -818,7 +819,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     for (i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
         int j;
-        if (fs->slice_damaged && f->last_picture.data[0]) {
+        if (fs->slice_damaged && f->last_picture.f->data[0]) {
             const uint8_t *src[4];
             uint8_t *dst[4];
             for (j = 0; j < 4; j++) {
@@ -826,11 +827,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 int sv = (j==1 || j==2) ? f->chroma_v_shift : 0;
                 dst[j] = p->data[j] + p->linesize[j]*
                          (fs->slice_y>>sv) + (fs->slice_x>>sh);
-                src[j] = f->last_picture.data[j] + f->last_picture.linesize[j]*
+                src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j]*
                          (fs->slice_y>>sv) + (fs->slice_x>>sh);
             }
             av_image_copy(dst, p->linesize, (const uint8_t **)src,
-                          f->last_picture.linesize,
+                          f->last_picture.f->linesize,
                           avctx->pix_fmt,
                           fs->slice_width,
                           fs->slice_height);
@@ -839,10 +840,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     f->picture_number++;
 
-    av_frame_unref(&f->last_picture);
-    if ((ret = av_frame_ref(&f->last_picture, p)) < 0)
-        return ret;
+    if (f->last_picture.f)
+        ff_thread_release_buffer(avctx, &f->last_picture);
     f->cur = NULL;
+    if ((ret = av_frame_ref(data, f->picture.f)) < 0)
+        return ret;
 
     *got_frame = 1;
 

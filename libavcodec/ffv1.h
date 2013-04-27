@@ -41,6 +41,7 @@
 #include "mathops.h"
 #include "put_bits.h"
 #include "rangecoder.h"
+#include "thread.h"
 
 #ifdef __INTEL_COMPILER
 #undef av_flatten
@@ -89,7 +90,7 @@ typedef struct FFV1Context {
     int transparency;
     int flags;
     int picture_number;
-    AVFrame picture, last_picture;
+    ThreadFrame picture, last_picture;
 
     AVFrame *cur;
     int plane_count;
