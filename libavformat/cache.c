@@ -50,6 +50,8 @@
 #define ftruncate64 ftruncate
 #endif
 
+#define BUFFER_SIZE 8192
+
 typedef struct Segment {
   int64_t begin;
   int64_t end;
@@ -172,14 +174,14 @@ static void segments_free(Segment *segs)
 
 static void* cache_fill_thread(void* arg)
 {
-  uint8_t buf[1024];
+  uint8_t buf[BUFFER_SIZE];
   int r, r_, len = 0;
   CacheContext *c = (CacheContext *)arg;
 
   while (c->cache_fill && c->seg->end - c->seg->begin < c->length) {
     if (c->seg->end < c->length) {
       pthread_mutex_lock(&c->mutex);
-      r = ffurl_read(c->inner, buf, 1024);
+      r = ffurl_read(c->inner, buf, BUFFER_SIZE);
       if(r > 0){
         r_ = write(c->fdw, buf, r);
         av_assert0(r_ == r);
@@ -286,7 +288,7 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
   CacheContext *c= h->priv_data;
   Segment *candi = NULL;
 
-  if (!c->cache_fill || whence == AVSEEK_SIZE) {
+  if (!c->cache_fill || whence == AVSEEK_SIZE || position < 0) {
     return ffurl_seek(c->inner, position, whence);
   }
 
@@ -296,13 +298,13 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
   } else {
     pthread_mutex_lock(&c->mutex);
     int64_t pos = ffurl_seek(c->inner, candi->end, whence);
-    if (pos > 0) {
+    if (pos >= candi->begin) {
       candi->end = lseek(c->fdw, pos, SEEK_SET);
+      c->position = lseek(c->fdr, position, SEEK_SET);
+      c->seg = candi;
     } else {
       av_log(NULL, AV_LOG_ERROR, "cache_seek: %"PRId64", %"PRId64", %"PRId64"\n", position, candi->end, pos);
     }
-    c->position = lseek(c->fdr, position, SEEK_SET);
-    c->seg = candi;
     pthread_mutex_unlock(&c->mutex);
   }
 
