@@ -38,6 +38,7 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
+#include "thread.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
                                                int is_signed)
@@ -733,12 +734,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
+    ThreadFrame frame = { .f = data };
     int i, ret;
     uint8_t keystate = 128;
     const uint8_t *buf_p;
     AVFrame *const p    = data;
 
     f->cur = p;
+    f->avctx = avctx;
 
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
@@ -759,8 +762,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         p->key_frame = 0;
     }
 
-    if ((ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed.\n");
         return ret;
+    }
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
@@ -801,6 +806,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         } else
             fs->c.bytestream_end = (uint8_t *)(buf_p + v);
 
+        fs->avctx = avctx;
         fs->cur = p;
     }
 
@@ -845,6 +851,24 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     return buf_size;
 }
 
+static int init_thread_copy(AVCodecContext *avctx)
+{
+    FFV1Context *f = avctx->priv_data;
+    int ret, i;
+
+    for (i = 0; i < f->quant_table_count; i++) {
+        void *p = f->initial_states[i];
+        f->initial_states[i] = av_malloc(f->context_count[i] * sizeof(*f->initial_states[i]));
+        if (!f->initial_states[i])
+            return AVERROR(ENOMEM);
+        memcpy(f->initial_states[i], p, f->context_count[i] * sizeof(*f->initial_states[i]));
+    }
+
+    if ((ret = ffv1_init_slice_contexts(f)) < 0)
+        return ret;
+    return 0;
+}
+
 AVCodec ff_ffv1_decoder = {
     .name           = "ffv1",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -853,6 +877,7 @@ AVCodec ff_ffv1_decoder = {
     .init           = decode_init,
     .close          = ffv1_close,
     .decode         = decode_frame,
+    .init_thread_copy = init_thread_copy,
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/ |
                       CODEC_CAP_SLICE_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
