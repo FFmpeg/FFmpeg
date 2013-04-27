@@ -1028,7 +1028,7 @@ void ff_put_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 
 void ff_avg_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-    avg_pixels16_mmx(dst, src, stride, 16);
+    ff_avg_pixels16_mmx(dst, src, stride, 16);
 }
 
 /* VC-1-specific */

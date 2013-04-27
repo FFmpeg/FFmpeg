@@ -75,8 +75,10 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 
 #define avg_pixels8_mmx         ff_avg_pixels8_mmx
+#define avg_pixels16_mmx        ff_avg_pixels16_mmx
 #define put_pixels8_mmx         ff_put_pixels8_mmx
 #define put_pixels16_mmx        ff_put_pixels16_mmx
+#define avg_no_rnd_pixels16_mmx ff_avg_pixels16_mmx
 #define put_no_rnd_pixels8_mmx  ff_put_pixels8_mmx
 #define put_no_rnd_pixels16_mmx ff_put_pixels16_mmx
 

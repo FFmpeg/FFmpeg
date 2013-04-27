@@ -158,6 +158,8 @@ void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int
 
 void ff_avg_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                         ptrdiff_t line_size, int h);
+void ff_avg_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
+                         ptrdiff_t line_size, int h);
 void ff_put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                         ptrdiff_t line_size, int h);
 void ff_put_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
