@@ -251,19 +251,19 @@ static int copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
         /* copy using 16xH blocks */
         if (!((cell->xpos << 2) & 15) && w >= 4) {
             for (; w >= 4; src += 16, dst += 16, w -= 4)
-                ctx->hdsp.put_no_rnd_pixels_tab[0][0](dst, src, plane->pitch, h);
+                ctx->hdsp.put_pixels_tab[0][0](dst, src, plane->pitch, h);
         }
 
         /* copy using 8xH blocks */
         if (!((cell->xpos << 2) & 7) && w >= 2) {
-            ctx->hdsp.put_no_rnd_pixels_tab[1][0](dst, src, plane->pitch, h);
+            ctx->hdsp.put_pixels_tab[1][0](dst, src, plane->pitch, h);
             w -= 2;
             src += 8;
             dst += 8;
         }
 
         if (w >= 1) {
-            ctx->hdsp.put_no_rnd_pixels_tab[2][0](dst, src, plane->pitch, h);
+            ctx->hdsp.put_pixels_tab[2][0](dst, src, plane->pitch, h);
             w--;
             src += 4;
             dst += 4;
