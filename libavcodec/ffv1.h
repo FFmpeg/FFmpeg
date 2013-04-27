@@ -106,6 +106,7 @@ typedef struct FFV1Context {
     int16_t *sample_buffer;
 
     int ec;
+    int intra;
     int slice_damaged;
     int key_frame_ok;
 

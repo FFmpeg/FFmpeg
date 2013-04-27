@@ -498,6 +498,8 @@ static int read_extra_header(FFV1Context *f)
 
     if (f->version > 2) {
         f->ec = get_symbol(c, state, 0);
+        if (f->minor_version > 2)
+            f->intra = get_symbol(c, state, 0);
     }
 
     if (f->version > 2) {

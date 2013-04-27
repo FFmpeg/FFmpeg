@@ -534,7 +534,7 @@ static int write_extradata(FFV1Context *f)
     put_symbol(c, state, f->version, 0);
     if (f->version > 2) {
         if (f->version == 3)
-            f->minor_version = 2;
+            f->minor_version = 3;
         put_symbol(c, state, f->minor_version, 0);
     }
 
@@ -575,6 +575,7 @@ static int write_extradata(FFV1Context *f)
 
     if (f->version > 2) {
         put_symbol(c, state, f->ec, 0);
+        put_symbol(c, state, f->intra = (f->avctx->gop_size < 2), 0);
     }
 
     f->avctx->extradata_size = ff_rac_terminate(c);
