@@ -652,7 +652,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
      */
 
     if (fctx->delaying) {
-        if (fctx->next_decoding >= (avctx->thread_count-1)) fctx->delaying = 0;
+        if (fctx->next_decoding >= (avctx->thread_count-1-(avctx->codec_id == AV_CODEC_ID_FFV1))) fctx->delaying = 0;
 
         *got_picture_ptr=0;
         if (avpkt->size)

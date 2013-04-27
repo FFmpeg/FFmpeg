@@ -91,6 +91,7 @@ typedef struct FFV1Context {
     int flags;
     int picture_number;
     ThreadFrame picture, last_picture;
+    struct FFV1Context *fsrc;
 
     AVFrame *cur;
     int plane_count;
