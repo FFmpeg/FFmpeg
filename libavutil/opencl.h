@@ -31,7 +31,12 @@
 #ifndef LIBAVUTIL_OPENCL_H
 #define LIBAVUTIL_OPENCL_H
 
-#include <CL/cl.h>
+#ifdef __APPLE__
+	#include <OpenCL/opencl.h>
+#else
+	#include <CL/cl.h>
+#endif
+
 #include "config.h"
 #include "dict.h"
 
