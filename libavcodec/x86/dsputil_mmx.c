@@ -860,23 +860,6 @@ QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, mmxext)
 
 
 #if HAVE_INLINE_ASM
-void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_put_pixels8_xy2_mmx(dst, src, stride, 8);
-}
-void ff_put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_put_pixels16_xy2_mmx(dst, src, stride, 16);
-}
-void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_avg_pixels8_xy2_mmx(dst, src, stride, 8);
-}
-void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_avg_pixels16_xy2_mmx(dst, src, stride, 16);
-}
-
 static void gmc_mmx(uint8_t *dst, uint8_t *src,
                     int stride, int h, int ox, int oy,
                     int dxx, int dxy, int dyx, int dyy,

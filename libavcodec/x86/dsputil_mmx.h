@@ -186,11 +186,6 @@ void ff_put_pixels8_xy2_mmx(uint8_t *block, const uint8_t *pixels,
 void ff_put_pixels16_xy2_mmx(uint8_t *block, const uint8_t *pixels,
                              ptrdiff_t line_size, int h);
 
-void ff_put_rv40_qpel8_mc33_mmx(uint8_t *block, uint8_t *pixels, ptrdiff_t stride);
-void ff_put_rv40_qpel16_mc33_mmx(uint8_t *block, uint8_t *pixels, ptrdiff_t stride);
-void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *block, uint8_t *pixels, ptrdiff_t stride);
-void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *block, uint8_t *pixels, ptrdiff_t stride);
-
 void ff_deinterlace_line_mmx(uint8_t *dst,
                              const uint8_t *lum_m4, const uint8_t *lum_m3,
                              const uint8_t *lum_m2, const uint8_t *lum_m1,
