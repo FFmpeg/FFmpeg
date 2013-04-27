@@ -6133,8 +6133,9 @@ This filter accepts the following options:
 @table @option
 
 @item dir
-The direction of the transpose.
+Specify the transposition direction.
 
+Can assume the following values:
 @table @samp
 @item 0, 4, cclock_flip
 Rotate by 90 degrees counterclockwise and vertically flip (default), that is:
@@ -6172,6 +6173,9 @@ l.r     l.L
 For values between 4-7, the transposition is only done if the input
 video geometry is portrait and not landscape. These values are
 deprecated, the @code{passthrough} option should be used instead.
+
+Numerical values are deprecated, and should be dropped in favor of
+symbolic constants.
 
 @item passthrough
 Do not apply the transposition if the input geometry matches the one
