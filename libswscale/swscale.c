@@ -823,7 +823,7 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
                 c->xyz2rgb_matrix[1][1] * y +
                 c->xyz2rgb_matrix[1][2] * z >> 12;
             b = c->xyz2rgb_matrix[2][0] * x +
-                c->xyz2rgb_matrix[1][2] * y +
+                c->xyz2rgb_matrix[2][1] * y +
                 c->xyz2rgb_matrix[2][2] * z >> 12;
 
             // limit values to 12-bit depth
