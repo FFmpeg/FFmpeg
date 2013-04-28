@@ -3535,7 +3535,7 @@ int main(int argc, char **argv)
     }
 
     av_init_packet(&flush_pkt);
-    flush_pkt.data = (char *)(intptr_t)"FLUSH";
+    flush_pkt.data = (uint8_t *)&flush_pkt;
 
     is = stream_open(input_filename, file_iformat);
     if (!is) {
