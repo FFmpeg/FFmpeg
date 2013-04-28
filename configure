@@ -4041,7 +4041,9 @@ enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32
                         die "ERROR: openal not found"; } &&
                       { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                         die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
-enabled opencl     && require2 opencl CL/cl.h clEnqueueNDRangeKernel -lOpenCL
+enabled opencl     && { check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
+			check_lib2 OpenCL/opencl.h clEnqueueNDRangeKernel -framework OpenCL ||
+			die "ERROR: opencl not found"; }
 enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
