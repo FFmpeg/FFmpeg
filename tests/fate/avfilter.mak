@@ -17,7 +17,6 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-pixfmts_hflip                                   \
              fate-lavfi-pixfmts_null                                    \
              fate-lavfi-pixfmts_pad                                     \
-             fate-lavfi-pixfmts_pixdesctest                             \
              fate-lavfi-pixfmts_scale                                   \
              fate-lavfi-pixfmts_vflip                                   \
              fate-lavfi-select                                          \
