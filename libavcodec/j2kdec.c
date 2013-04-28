@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
+#include "thread.h"
 #include "j2k.h"
 #include "libavutil/common.h"
 
@@ -205,6 +206,7 @@ static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold
 static int get_siz(J2kDecoderContext *s)
 {
     int i, ret;
+    ThreadFrame frame = { .f = s->picture };
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
@@ -282,7 +284,7 @@ static int get_siz(J2kDecoderContext *s)
     }
 
 
-    if ((ret = ff_get_buffer(s->avctx, s->picture, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(s->avctx, &frame, 0)) < 0)
         return ret;
 
     s->picture->pict_type = AV_PICTURE_TYPE_I;
@@ -1088,6 +1090,6 @@ AVCodec ff_j2k_decoder = {
     .priv_data_size = sizeof(J2kDecoderContext),
     .init           = j2kdec_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = CODEC_CAP_EXPERIMENTAL | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
 };
