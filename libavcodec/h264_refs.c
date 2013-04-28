@@ -815,7 +815,7 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
         h->mmco_index = mmco_index;
     } else if (!first_slice && mmco_index >= 0 &&
                (mmco_index != h->mmco_index ||
-                (i = check_opcodes(h->mmco, mmco_temp, mmco_index)))) {
+                check_opcodes(h->mmco, mmco_temp, mmco_index))) {
         av_log(h->avctx, AV_LOG_ERROR,
                "Inconsistent MMCO state between slices [%d, %d]\n",
                mmco_index, h->mmco_index);
