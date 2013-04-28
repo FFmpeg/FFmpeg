@@ -155,6 +155,14 @@ AVOpenCLExternalEnv *av_opencl_alloc_external_env(void);
 void av_opencl_free_external_env(AVOpenCLExternalEnv **ext_opencl_env);
 
 /**
+ * Get OpenCL error string.
+ *
+ * @param status    OpenCL error code
+ * @return OpenCL error string
+ */
+const char *av_opencl_errstr(cl_int status);
+
+/**
  * Register kernel code.
  *
  *  The registered kernel code is stored in a global context, and compiled
