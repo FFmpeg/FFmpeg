@@ -968,6 +968,9 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
         uint8_t *base;
         int x,y;
         rgb0_tmp = av_malloc(FFABS(srcStride[0]) * srcSliceH + 32);
+        if (!rgb0_tmp)
+            return AVERROR(ENOMEM);
+
         base = srcStride[0] < 0 ? rgb0_tmp - srcStride[0] * (srcSliceH-1) : rgb0_tmp;
         for (y=0; y<srcSliceH; y++){
             memcpy(base + srcStride[0]*y, src2[0] + srcStride[0]*y, 4*c->srcW);
@@ -981,6 +984,9 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (c->srcXYZ && !(c->dstXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {
         uint8_t *base;
         rgb0_tmp = av_malloc(FFABS(srcStride[0]) * srcSliceH + 32);
+        if (!rgb0_tmp)
+            return AVERROR(ENOMEM);
+
         base = srcStride[0] < 0 ? rgb0_tmp - srcStride[0] * (srcSliceH-1) : rgb0_tmp;
 
         xyz12Torgb48(c, base, src2[0], srcStride[0]/2, srcSliceH);
