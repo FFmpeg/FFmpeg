@@ -114,14 +114,18 @@ static Segment *segments_select(CacheContext *c, Segment **segs, int64_t positio
 static void segments_balance(CacheContext *c, Segment *seg)
 {
   Segment *next = seg->next;
-  int64_t pos = -1;
+  int64_t result = -1;
   if (next && seg->end >= next->begin) {
     seg->end = FFMAX(next->end, seg->end);
-    pos = ffurl_seek(c->inner, seg->end, SEEK_SET);
-    if (pos > 0) {
-      seg->end = lseek(c->fdw, pos, SEEK_SET); // should be protected
+    if (seg->end == c->length) {
+      result = seg->end;
     } else {
-      av_log(NULL, AV_LOG_ERROR, "balance: %"PRId64", %"PRId64", %"PRId64"\n", seg->begin, seg->end, pos);
+      result = ffurl_seek(c->inner, seg->end, SEEK_SET);
+    }
+    if (result >= seg->begin) {
+      seg->end = lseek(c->fdw, result, SEEK_SET); // should be protected
+    } else {
+      av_log(NULL, AV_LOG_ERROR, "balance: %"PRId64", %"PRId64", %"PRId64"\n", seg->begin, seg->end, result);
     }
     seg->next = next->next;
     av_free(next);
@@ -175,7 +179,7 @@ static void segments_free(Segment *segs)
 static void* cache_fill_thread(void* arg)
 {
   uint8_t buf[BUFFER_SIZE];
-  int r, r_, len = 0;
+  int r, w, len = 0, osl = 0;
   CacheContext *c = (CacheContext *)arg;
 
   while (c->cache_fill && c->seg->end - c->seg->begin < c->length) {
@@ -183,12 +187,13 @@ static void* cache_fill_thread(void* arg)
       pthread_mutex_lock(&c->mutex);
       r = ffurl_read(c->inner, buf, BUFFER_SIZE);
       if(r > 0){
-        r_ = write(c->fdw, buf, r);
-        av_assert0(r_ == r);
-        c->seg->end += r_;
-        len += r_;
+        w = write(c->fdw, buf, r);
+        av_assert0(w == r);
+        c->seg->end += w;
+        len += w;
+        osl = c->num_segs;
         segments_balance(c, c->seg);
-        if (len > 102400 && c->segs_flat && c->num_segs > 0 && c->callback) {
+        if ((osl != c->num_segs || len > 102400) && c->segs_flat && c->num_segs > 0 && c->callback) {
           segments_dump(c, c->segs, c->fdi);
           c->callback(c->segs_flat, c->num_segs);
           len = 0;
@@ -287,6 +292,7 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
 {
   CacheContext *c= h->priv_data;
   Segment *candi = NULL;
+  int64_t result = -1;
 
   if (!c->cache_fill || whence == AVSEEK_SIZE || position < 0) {
     return ffurl_seek(c->inner, position, whence);
@@ -297,13 +303,17 @@ static int64_t cache_seek(URLContext *h, int64_t position, int whence)
     c->position = lseek(c->fdr, position, whence);
   } else {
     pthread_mutex_lock(&c->mutex);
-    int64_t pos = ffurl_seek(c->inner, candi->end, whence);
-    if (pos >= candi->begin) {
-      candi->end = lseek(c->fdw, pos, SEEK_SET);
+    if (candi->end == c->length) {
+      result = candi->end;
+    } else {
+      result = ffurl_seek(c->inner, candi->end, whence);
+    }
+    if (result >= candi->begin) {
+      candi->end = lseek(c->fdw, result, SEEK_SET);
       c->position = lseek(c->fdr, position, SEEK_SET);
       c->seg = candi;
     } else {
-      av_log(NULL, AV_LOG_ERROR, "cache_seek: %"PRId64", %"PRId64", %"PRId64"\n", position, candi->end, pos);
+      av_log(NULL, AV_LOG_ERROR, "cache_seek: %"PRId64", %"PRId64", %"PRId64"\n", position, candi->end, result);
     }
     pthread_mutex_unlock(&c->mutex);
   }
