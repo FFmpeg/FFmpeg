@@ -68,14 +68,6 @@ void ff_avg_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                int dstStride, int src1Stride, int h);
 void ff_put_no_rnd_pixels16_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                                       int dstStride, int src1Stride, int h);
-
-static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
-                                   ptrdiff_t line_size, int h)
-{
-    ff_put_pixels8_mmxext(block,     pixels,     line_size, h);
-    ff_put_pixels8_mmxext(block + 8, pixels + 8, line_size, h);
-}
-
 void ff_put_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst, uint8_t *src,
                                          int dstStride, int srcStride, int h);
 void ff_avg_mpeg4_qpel16_h_lowpass_mmxext(uint8_t *dst, uint8_t *src,
@@ -126,26 +118,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #undef PAVGB
 #undef OP_AVG
 
-#endif /* HAVE_INLINE_ASM */
-
-
-#if HAVE_YASM
-
-/***********************************/
-/* MMXEXT specific */
-
-//FIXME the following could be optimized too ...
-static void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
-                                   int line_size, int h)
-{
-    ff_avg_pixels8_mmxext(block,     pixels,     line_size, h);
-    ff_avg_pixels8_mmxext(block + 8, pixels + 8, line_size, h);
-}
-
-#endif /* HAVE_YASM */
-
-
-#if HAVE_INLINE_ASM
 /***********************************/
 /* standard MMX */
 
@@ -567,6 +539,20 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
 
 
 #if HAVE_YASM
+static void ff_avg_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
+                                   int line_size, int h)
+{
+    ff_avg_pixels8_mmxext(block,     pixels,     line_size, h);
+    ff_avg_pixels8_mmxext(block + 8, pixels + 8, line_size, h);
+}
+
+static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
+                                   ptrdiff_t line_size, int h)
+{
+    ff_put_pixels8_mmxext(block,     pixels,     line_size, h);
+    ff_put_pixels8_mmxext(block + 8, pixels + 8, line_size, h);
+}
+
 #define QPEL_OP(OPNAME, ROUNDER, RND, MMX)                              \
 static void OPNAME ## qpel8_mc00_ ## MMX (uint8_t *dst, uint8_t *src,   \
                                           ptrdiff_t stride)             \
