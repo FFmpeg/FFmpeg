@@ -321,19 +321,23 @@ static int packed_16bpc_bswap(SwsContext *c, const uint8_t *src[],
                               int srcStride[], int srcSliceY, int srcSliceH,
                               uint8_t *dst[], int dstStride[])
 {
-    int i, j;
-    int srcstr = srcStride[0] >> 1;
-    int dststr = dstStride[0] >> 1;
-    uint16_t       *dstPtr =       (uint16_t *) dst[0];
-    const uint16_t *srcPtr = (const uint16_t *) src[0];
-    int min_stride         = FFMIN(srcstr, dststr);
+    int i, j, p;
 
-    for (i = 0; i < srcSliceH; i++) {
-        for (j = 0; j < min_stride; j++) {
-            dstPtr[j] = av_bswap16(srcPtr[j]);
+    for (p = 0; p < 4; p++) {
+        int srcstr = srcStride[p] >> 1;
+        int dststr = dstStride[p] >> 1;
+        uint16_t       *dstPtr =       (uint16_t *) dst[p];
+        const uint16_t *srcPtr = (const uint16_t *) src[p];
+        int min_stride         = FFMIN(srcstr, dststr);
+        if(!dstPtr || !srcPtr)
+            continue;
+        for (i = 0; i < (srcSliceH >> c->chrDstVSubSample); i++) {
+            for (j = 0; j < min_stride; j++) {
+                dstPtr[j] = av_bswap16(srcPtr[j]);
+            }
+            srcPtr += srcstr;
+            dstPtr += dststr;
         }
-        srcPtr += srcstr;
-        dstPtr += dststr;
     }
 
     return srcSliceH;
@@ -1061,7 +1065,23 @@ void ff_get_unscaled_swscale(SwsContext *c)
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB48)  ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGBA64) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB555) ||
-        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB565))
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB565) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_XYZ12)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV420P9)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV420P10) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV420P12) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV420P14) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV420P16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV422P9)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV422P10) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV422P12) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV422P14) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV422P16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P9)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P10) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P12) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P14) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P16))
         c->swScale = packed_16bpc_bswap;
 
     if (usePal(srcFormat) && isByteRGB(dstFormat))
