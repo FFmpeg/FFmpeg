@@ -160,6 +160,7 @@ lavftest(){
     regtest lavf lavf tests/vsynth1
 }
 
+#FIXME should be removed
 lavfitest(){
     cleanfiles="tests/data/lavfi/${test#lavfi-}.nut"
     regtest lavfi lavfi tests/vsynth1
@@ -181,6 +182,27 @@ pixdesc(){
         test=$pix_fmt
         video_filter "format=$pix_fmt,pixdesctest" -pix_fmt $pix_fmt
     done
+}
+
+pixfmts(){
+    filter=${test#filter-pixfmts-}
+    filter_args=$1
+
+    showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
+    exclude_fmts=${outfile}${filter}_exclude_fmts
+    out_fmts=${outfile}${filter}_out_fmts
+
+    # exclude pixel formats which are not supported as input
+    ffmpeg -pix_fmts list 2>/dev/null | awk 'NR > 8 && /^\..\./ { print $2 }' | sort >$exclude_fmts
+    $showfiltfmts scale | awk -F '[ \r:]' '/^OUTPUT/{ print $5 }' | sort | comm -23 - $exclude_fmts >$out_fmts
+
+    pix_fmts=$($showfiltfmts $filter | awk -F '[ \r:]' '/^INPUT/{ print $5 }' | sort | comm -12 - $out_fmts)
+    for pix_fmt in $pix_fmts; do
+        test=$pix_fmt
+        video_filter "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
+    done
+
+    rm $exclude_fmts $out_fmts
 }
 
 mkdir -p "$outdir"

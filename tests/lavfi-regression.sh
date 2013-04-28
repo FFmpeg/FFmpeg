@@ -5,6 +5,8 @@
 #
 #set -x
 
+#FIXME the whole file should be removed
+
 set -e
 
 . $(dirname $0)/regression-funcs.sh
@@ -20,7 +22,6 @@ do_video_filter() {
         $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
 }
 
-#should be removed
 do_lavfi_plain() {
     vfilters="$2"
 
@@ -29,12 +30,10 @@ do_lavfi_plain() {
     fi
 }
 
-#should be removed
 do_lavfi() {
     do_lavfi_plain $1 "$2"
 }
 
-#should be removed
 do_lavfi_colormatrix() {
     do_lavfi "${1}1" "$1=$4:$5,$1=$5:$3,$1=$3:$4,$1=$4:$3,$1=$3:$5,$1=$5:$2"
     do_lavfi "${1}2" "$1=$2:$3,$1=$3:$2,$1=$2:$4,$1=$4:$2,$1=$2:$5,$1=$5:$4"
@@ -103,14 +102,7 @@ do_lavfi_pixfmts "field"               "field"   "bottom"
 do_lavfi_pixfmts "histeq"              "histeq"  "antibanding=strong"
 do_lavfi_pixfmts "il"                  "il"      "luma_mode=d:chroma_mode=d:alpha_mode=d"
 do_lavfi_pixfmts "kerndeint"           "kerndeint" "" "tinterlace=interleave_top,"
-do_lavfi_pixfmts "pixfmts_copy"        "copy"    ""
-do_lavfi_pixfmts "pixfmts_crop"        "crop"    "100:100:100:100"
-do_lavfi_pixfmts "pixfmts_hflip"       "hflip"   ""
-do_lavfi_pixfmts "pixfmts_null"        "null"    ""
-do_lavfi_pixfmts "pixfmts_pad"         "pad"     "500:400:20:20"
-do_lavfi_pixfmts "pixfmts_scale"       "scale"   "200:100"
 do_lavfi_pixfmts "pixfmts_super2xsai"  "super2xsai"
-do_lavfi_pixfmts "pixfmts_vflip"       "vflip"
 do_lavfi_pixfmts "tinterlace_merge"    "tinterlace" "merge"
 do_lavfi_pixfmts "tinterlace_pad"      "tinterlace" "pad"
 

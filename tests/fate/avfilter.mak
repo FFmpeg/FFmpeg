@@ -1,3 +1,5 @@
+#FIXME the whole file should be removed
+
 FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-alphaextract_yuv                                \
              fate-lavfi-alphamerge_rgb                                  \
@@ -12,13 +14,6 @@ FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
              fate-lavfi-overlay_yuv420                                  \
              fate-lavfi-overlay_yuv444                                  \
              fate-lavfi-pad                                             \
-             fate-lavfi-pixfmts_copy                                    \
-             fate-lavfi-pixfmts_crop                                    \
-             fate-lavfi-pixfmts_hflip                                   \
-             fate-lavfi-pixfmts_null                                    \
-             fate-lavfi-pixfmts_pad                                     \
-             fate-lavfi-pixfmts_scale                                   \
-             fate-lavfi-pixfmts_vflip                                   \
              fate-lavfi-select                                          \
              fate-lavfi-setdar                                          \
              fate-lavfi-setsar                                          \
