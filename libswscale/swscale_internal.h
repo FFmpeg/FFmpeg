@@ -380,6 +380,8 @@ typedef struct SwsContext {
     int dstRange;                 ///< 0 = MPG YUV range, 1 = JPG YUV range (destination image).
     int src0Alpha;
     int dst0Alpha;
+    int srcXYZ;
+    int dstXYZ;
     int yuv2rgb_y_offset;
     int yuv2rgb_y_coeff;
     int yuv2rgb_v2r_coeff;
@@ -472,6 +474,13 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, uint64_t, sparc_coeffs)[10];
 #endif
     int use_mmx_vfilter;
+
+/* pre defined color-spaces gamma */
+#define XYZ_GAMMA (2.6f)
+#define RGB_GAMMA (2.2f)
+    int16_t xyzgamma[4096];
+    int16_t rgbgamma[4096];
+    int16_t xyz2rgb_matrix[3][4];
 
     /* function pointers for swScale() */
     yuv2planar1_fn yuv2plane1;

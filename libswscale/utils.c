@@ -196,6 +196,8 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GBRP14BE]    = { 1, 1 },
     [AV_PIX_FMT_GBRP16LE]    = { 1, 0 },
     [AV_PIX_FMT_GBRP16BE]    = { 1, 0 },
+    [AV_PIX_FMT_XYZ12BE]     = { 1, 0 },
+    [AV_PIX_FMT_XYZ12LE]     = { 1, 0 },
 };
 
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)
@@ -893,6 +895,24 @@ static void fill_rgb2yuv_table(SwsContext *c, const int table[4], int dstRange)
         AV_WL16(p + 16*4 + 2*i, map[i] >= 0 ? c->input_rgb2yuv_table[map[i]] : 0);
 }
 
+static void fill_xyztables(struct SwsContext *c)
+{
+    int i;
+    double xyzgamma = XYZ_GAMMA;
+    double rgbgamma = 1.0 / RGB_GAMMA;
+    static const int16_t xyz2rgb_matrix[3][4] = {
+        {13270, -6295, -2041},
+        {-3969,  7682,   170},
+        {  228,  -835,  4329} };
+
+    /* set gamma vectors */
+    for (i = 0; i < 4096; i++) {
+        c->xyzgamma[i] = lrint(pow(i / 4095.0, xyzgamma) * 4095.0);
+        c->rgbgamma[i] = lrint(pow(i / 4095.0, rgbgamma) * 4095.0);
+    }
+    memcpy(c->xyz2rgb_matrix, xyz2rgb_matrix, sizeof(c->xyz2rgb_matrix));
+}
+
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                              int srcRange, const int table[4], int dstRange,
                              int brightness, int contrast, int saturation)
@@ -912,6 +932,8 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->saturation = saturation;
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
+
+    fill_xyztables(c);
 
     if ((isYUV(c->dstFormat) || isGray(c->dstFormat)) && (isYUV(c->srcFormat) || isGray(c->srcFormat)))
         return -1;
@@ -983,6 +1005,15 @@ static int handle_0alpha(enum AVPixelFormat *format)
     }
 }
 
+static int handle_xyz(enum AVPixelFormat *format)
+{
+    switch (*format) {
+    case AV_PIX_FMT_XYZ12BE : *format = AV_PIX_FMT_RGB48BE; return 1;
+    case AV_PIX_FMT_XYZ12LE : *format = AV_PIX_FMT_RGB48LE; return 1;
+    default:                                                return 0;
+    }
+}
+
 SwsContext *sws_alloc_context(void)
 {
     SwsContext *c = av_mallocz(sizeof(SwsContext));
@@ -1025,6 +1056,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     handle_jpeg(&dstFormat);
     handle_0alpha(&srcFormat);
     handle_0alpha(&dstFormat);
+    handle_xyz(&srcFormat);
+    handle_xyz(&dstFormat);
 
     if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat){
         av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
@@ -1518,6 +1551,8 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
     c->dstRange  = handle_jpeg(&dstFormat);
     c->src0Alpha = handle_0alpha(&srcFormat);
     c->dst0Alpha = handle_0alpha(&dstFormat);
+    c->srcXYZ    = handle_xyz(&srcFormat);
+    c->dstXYZ    = handle_xyz(&dstFormat);
     c->srcFormat = srcFormat;
     c->dstFormat = dstFormat;
 
@@ -1959,11 +1994,13 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context, int srcW,
         context->srcH      = srcH;
         context->srcRange  = handle_jpeg(&srcFormat);
         context->src0Alpha = handle_0alpha(&srcFormat);
+        context->srcXYZ    = handle_xyz(&srcFormat);
         context->srcFormat = srcFormat;
         context->dstW      = dstW;
         context->dstH      = dstH;
         context->dstRange  = handle_jpeg(&dstFormat);
         context->dst0Alpha = handle_0alpha(&dstFormat);
+        context->dstXYZ    = handle_xyz(&dstFormat);
         context->dstFormat = dstFormat;
         context->flags     = flags;
         context->param[0]  = param[0];
