@@ -139,7 +139,6 @@ extern const vf_info_t ff_vf_info_qp;
 extern const vf_info_t ff_vf_info_sab;
 extern const vf_info_t ff_vf_info_softpulldown;
 extern const vf_info_t ff_vf_info_spp;
-extern const vf_info_t ff_vf_info_tinterlace;
 extern const vf_info_t ff_vf_info_uspp;
 
 
@@ -160,7 +159,6 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_sab,
     &ff_vf_info_softpulldown,
     &ff_vf_info_spp,
-    &ff_vf_info_tinterlace,
     &ff_vf_info_uspp,
 
     NULL
