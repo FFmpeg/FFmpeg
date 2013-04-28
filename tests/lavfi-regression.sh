@@ -20,6 +20,7 @@ do_video_filter() {
         $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
 }
 
+#should be removed
 do_lavfi_plain() {
     vfilters="$2"
 
@@ -28,25 +29,22 @@ do_lavfi_plain() {
     fi
 }
 
+#should be removed
 do_lavfi() {
     do_lavfi_plain $1 "$2"
 }
 
+#should be removed
 do_lavfi_colormatrix() {
     do_lavfi "${1}1" "$1=$4:$5,$1=$5:$3,$1=$3:$4,$1=$4:$3,$1=$3:$5,$1=$5:$2"
     do_lavfi "${1}2" "$1=$2:$3,$1=$3:$2,$1=$2:$4,$1=$4:$2,$1=$2:$5,$1=$5:$4"
 }
 
-do_lavfi "crop"               "crop=iw-100:ih-100:100:100"
-do_lavfi "crop_scale"         "crop=iw-100:ih-100:100:100,scale=400:-1"
-do_lavfi "crop_scale_vflip"   "null,null,crop=iw-200:ih-200:200:200,crop=iw-20:ih-20:20:20,scale=200:200,scale=250:250,vflip,vflip,null,scale=200:200,crop=iw-100:ih-100:100:100,vflip,scale=200:200,null,vflip,crop=iw-100:ih-100:100:100,null"
-do_lavfi "crop_vflip"         "crop=iw-100:ih-100:100:100,vflip"
 do_lavfi "drawbox"            "drawbox=224:24:88:72:#FF8010@0.5"
 do_lavfi "edgedetect"         "format=gray,perms=random,edgedetect"
 do_lavfi "fade"               "fade=in:5:15,fade=out:30:15"
 do_lavfi "hue"                "perms=random,hue=s=sin(2*PI*t)+1"
 do_lavfi "idet"               "idet"
-do_lavfi "null"               "null"
 do_lavfi "overlay_rgb"        "split[m],scale=88:72,pad=96:80:4:4[o2];[m]fifo[o1],[o1][o2]overlay=240:16:format=rgb"
 do_lavfi "overlay_yuv420"     "split[m],scale=88:72,pad=96:80:4:4[o2];[m]fifo[o1],[o1][o2]overlay=240:16:format=yuv420"
 do_lavfi "overlay_yuv444"     "split[m],scale=88:72,pad=96:80:4:4[o2];[m]fifo[o1],[o1][o2]overlay=240:16:format=yuv444"
@@ -57,8 +55,6 @@ do_lavfi "pp3"                "pp=be/fq|8/ha|128|7/va/li"
 do_lavfi "pp4"                "pp=be/ci"
 do_lavfi "pp5"                "pp=md"
 do_lavfi "pp6"                "pp=be/fd"
-do_lavfi "scale200"           "scale=200:200"
-do_lavfi "scale500"           "scale=500:500"
 do_lavfi "select"             "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))"
 do_lavfi "setdar"             "setdar=dar=16/9"
 do_lavfi "setsar"             "setsar=sar=16/11"
@@ -66,9 +62,6 @@ do_lavfi "thumbnail"          "thumbnail=10"
 do_lavfi "tile"               "tile=3x3:nb_frames=5:padding=7:margin=2"
 do_lavfi "transpose"          "transpose"
 do_lavfi "unsharp"            "unsharp=11:11:-1.5:11:11:-1.5"
-do_lavfi "vflip"              "vflip"
-do_lavfi "vflip_crop"         "vflip,crop=iw-100:ih-100:100:100"
-do_lavfi "vflip_vflip"        "vflip,vflip"
 
 do_lavfi_plain "alphamerge_rgb"     "[in]format=bgra,split,alphamerge[out]"
 do_lavfi_plain "alphamerge_yuv"     "[in]format=yuv420p,split,alphamerge[out]"

@@ -165,6 +165,16 @@ lavfitest(){
     regtest lavfi lavfi tests/vsynth1
 }
 
+video_filter(){
+    filters=$1
+    shift
+    label=${test#filter-}
+    raw_src="${target_path}/tests/vsynth1/%02d.pgm"
+    printf '%-20s' $label
+    ffmpeg $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src \
+        $FLAGS $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
+}
+
 mkdir -p "$outdir"
 
 # Disable globbing: command arguments may contain globbing characters and
