@@ -1408,6 +1408,7 @@ HAVE_LIST="
     attribute_packed
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
+    cl_cl_h
     clock_gettime
     closesocket
     cmov
@@ -3894,6 +3895,7 @@ check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
 
+check_header cl/cl.h
 check_header direct.h
 check_header dlfcn.h
 check_header dxva.h
@@ -4041,7 +4043,12 @@ enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32
                         die "ERROR: openal not found"; } &&
                       { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                         die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
-enabled opencl     && require2 opencl CL/cl.h clEnqueueNDRangeKernel -lOpenCL
+enabled opencl     && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
+                        check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
+                        die "ERROR: opencl not found"; } &&
+                      { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
+                        check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
+                        die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
 enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                         check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                         check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||

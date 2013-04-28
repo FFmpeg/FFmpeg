@@ -31,8 +31,12 @@
 #ifndef LIBAVUTIL_OPENCL_H
 #define LIBAVUTIL_OPENCL_H
 
-#include <CL/cl.h>
 #include "config.h"
+#if HAVE_CL_CL_H
+#include <CL/cl.h>
+#else
+#include <OpenCL/cl.h>
+#endif
 #include "dict.h"
 
 #define AV_OPENCL_KERNEL( ... )# __VA_ARGS__
