@@ -175,7 +175,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
     int h, i;
 
     for (plane = 0; plane < desc->nb_components; plane++) {
-        int lines = plane == 1 || plane == 2 ? src_h >> vsub : src_h;
+        int lines = plane == 1 || plane == 2 ? -((-src_h) >> vsub) : src_h;
         int linesize = av_image_get_linesize(format, w, plane);
         uint8_t *dstp = dst[plane];
         const uint8_t *srcp = src[plane];
@@ -183,7 +183,7 @@ void copy_picture_field(uint8_t *dst[4], int dst_linesize[4],
         if (linesize < 0)
             return;
 
-        lines /= k;
+        lines = (lines + (src_field == FIELD_UPPER)) / k;
         if (src_field == FIELD_LOWER)
             srcp += src_linesize[plane];
         if (interleave && dst_field == FIELD_LOWER)
