@@ -635,7 +635,14 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
             if (s->buf_end - s->buf < cblk->lengthinc)
                 return AVERROR(EINVAL);
-            bytestream_get_buffer(&s->buf, cblk->data, cblk->lengthinc);
+            /* A code-block data can be empty. In that case initialize data
+             * with 0xffff. */
+            if (cblk->lengthinc > 0)
+                bytestream_get_buffer(&s->buf, cblk->data, cblk->lengthinc);
+            else {
+                cblk->data[0] = 0xff;
+                cblk->data[1] = 0xff;
+            }
             cblk->length   += cblk->lengthinc;
             cblk->lengthinc = 0;
         }
@@ -853,11 +860,14 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
 {
     int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y;
 
-    for (y = 0; y < height + 2; y++)
-        memset(t1->flags[y], 0, (width + 2) * sizeof(width));
-
     for (y = 0; y < height; y++)
         memset(t1->data[y], 0, width * sizeof(width));
+
+    /* If code-block contains no compressed data: nothing to do. */
+    if (cblk->length == 0)
+        return 0;
+    for (y = 0; y < height + 2; y++)
+        memset(t1->flags[y], 0, (width + 2) * sizeof(width));
 
     ff_mqc_initdec(&t1->mqc, cblk->data);
     cblk->data[cblk->length]     = 0xff;
