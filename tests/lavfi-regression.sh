@@ -22,23 +22,6 @@ do_video_filter() {
         $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
 }
 
-do_lavfi_plain() {
-    vfilters="$2"
-
-    if [ $test = $1 ] ; then
-        do_video_filter $test "$2"
-    fi
-}
-
-do_lavfi() {
-    do_lavfi_plain $1 "$2"
-}
-
-do_lavfi_plain "alphamerge_rgb"     "[in]format=bgra,split,alphamerge[out]"
-do_lavfi_plain "alphamerge_yuv"     "[in]format=yuv420p,split,alphamerge[out]"
-do_lavfi_plain "alphaextract_rgb"   "[in]format=bgra,split,alphamerge,split[o3][o4];[o4]alphaextract[alpha];[o3][alpha]alphamerge[out]"
-do_lavfi_plain "alphaextract_yuv"   "[in]format=yuv420p,split,alphamerge,split[o3][o4];[o4]alphaextract[alpha];[o3][alpha]alphamerge[out]"
-
 do_lavfi_pixfmts(){
     testname=$1;
     test ${test%_[bl]e} = $testname || return 0

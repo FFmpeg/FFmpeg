@@ -1,10 +1,6 @@
 #FIXME the whole file should be removed
 
-FATE_LAVFI = fate-lavfi-alphaextract_rgb                                \
-             fate-lavfi-alphaextract_yuv                                \
-             fate-lavfi-alphamerge_rgb                                  \
-             fate-lavfi-alphamerge_yuv                                  \
-             fate-lavfi-field                                           \
+FATE_LAVFI = fate-lavfi-field                                           \
              fate-lavfi-il                                              \
 
 FATE_LAVFI-$(CONFIG_AVDEVICE) += fate-lavfi-life                        \
