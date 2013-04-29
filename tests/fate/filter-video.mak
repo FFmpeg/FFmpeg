@@ -174,41 +174,41 @@ FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += fate-filter-pixdesc
 fate-filter-pixdesc: CMD = pixdesc
 
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-copy
+FATE_FILTER_PIXFMTS-$(CONFIG_COPY_FILTER) += fate-filter-pixfmts-copy
 fate-filter-pixfmts-copy:  CMD = pixfmts
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-crop
+FATE_FILTER_PIXFMTS-$(CONFIG_CROP_FILTER) += fate-filter-pixfmts-crop
 fate-filter-pixfmts-crop:  CMD = pixfmts "100:100:100:100"
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-field
+FATE_FILTER_PIXFMTS-$(CONFIG_FIELD_FILTER) += fate-filter-pixfmts-field
 fate-filter-pixfmts-field: CMD = pixfmts "bottom"
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-hflip
+FATE_FILTER_PIXFMTS-$(CONFIG_HFLIP_FILTER) += fate-filter-pixfmts-hflip
 fate-filter-pixfmts-hflip: CMD = pixfmts
 
-#FATE_FILTER_PIXFMTS += fate-filter-pixfmts-histeq
+#FATE_FILTER_PIXFMTS-$(CONFIG_HISTEQ_FILTER) += fate-filter-pixfmts-histeq
 #fate-filter-pixfmts-histeq: CMD = pixfmts "antibanding=strong"
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-il
+FATE_FILTER_PIXFMTS-$(CONFIG_IL_FILTER) += fate-filter-pixfmts-il
 fate-filter-pixfmts-il:    CMD = pixfmts "luma_mode=d:chroma_mode=d:alpha_mode=d"
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-null
+FATE_FILTER_PIXFMTS-$(CONFIG_NULL_FILTER) += fate-filter-pixfmts-null
 fate-filter-pixfmts-null:  CMD = pixfmts
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-pad
+FATE_FILTER_PIXFMTS-$(CONFIG_PAD_FILTER) += fate-filter-pixfmts-pad
 fate-filter-pixfmts-pad:   CMD = pixfmts "500:400:20:20"
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-scale
+FATE_FILTER_PIXFMTS-$(CONFIG_SCALE_FILTER) += fate-filter-pixfmts-scale
 fate-filter-pixfmts-scale: CMD = pixfmts "200:100"
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-super2xsai
+FATE_FILTER_PIXFMTS-$(CONFIG_SUPER2XSAI_FILTER) += fate-filter-pixfmts-super2xsai
 fate-filter-pixfmts-super2xsai: CMD = pixfmts
 
-FATE_FILTER_PIXFMTS += fate-filter-pixfmts-vflip
+FATE_FILTER_PIXFMTS-$(CONFIG_VFLIP_FILTER) += fate-filter-pixfmts-vflip
 fate-filter-pixfmts-vflip: CMD = pixfmts
 
 $(FATE_FILTER_PIXFMTS): libavfilter/filtfmts-test$(EXESUF)
-FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += $(FATE_FILTER_PIXFMTS)
+FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += $(FATE_FILTER_PIXFMTS-yes)
 
 
 $(FATE_FILTER_VSYNTH-yes): $(VREF)
