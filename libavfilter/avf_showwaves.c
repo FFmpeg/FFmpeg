@@ -188,7 +188,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                                           (AVRational){ 1, inlink->sample_rate },
                                           outlink->time_base);
             linesize = outpicref->linesize[0];
-            memset(outpicref->data[0], 0, showwaves->h*linesize);
+            for (j = 0; j < outlink->h; j++)
+                memset(outpicref->data[0] + j * linesize, 0, outlink->w);
         }
         for (j = 0; j < nb_channels; j++) {
             h = showwaves->h/2 - av_rescale(*p++, showwaves->h/2, MAX_INT16);
