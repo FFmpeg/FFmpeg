@@ -210,6 +210,7 @@ fate-filter-pixfmts-vflip: CMD = pixfmts
 $(FATE_FILTER_PIXFMTS-yes): libavfilter/filtfmts-test$(EXESUF)
 FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += $(FATE_FILTER_PIXFMTS-yes)
 
+fate-filter-pixfmts: $(FATE_FILTER_PIXFMTS-yes)
 
 $(FATE_FILTER_VSYNTH-yes): $(VREF)
 $(FATE_FILTER_VSYNTH-yes): SRC = $(TARGET_PATH)/tests/vsynth1/%02d.pgm
