@@ -180,8 +180,17 @@ fate-filter-pixfmts-copy:  CMD = pixfmts
 FATE_FILTER_PIXFMTS += fate-filter-pixfmts-crop
 fate-filter-pixfmts-crop:  CMD = pixfmts "100:100:100:100"
 
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-field
+fate-filter-pixfmts-field: CMD = pixfmts "bottom"
+
 FATE_FILTER_PIXFMTS += fate-filter-pixfmts-hflip
 fate-filter-pixfmts-hflip: CMD = pixfmts
+
+#FATE_FILTER_PIXFMTS += fate-filter-pixfmts-histeq
+#fate-filter-pixfmts-histeq: CMD = pixfmts "antibanding=strong"
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-il
+fate-filter-pixfmts-il:    CMD = pixfmts "luma_mode=d:chroma_mode=d:alpha_mode=d"
 
 FATE_FILTER_PIXFMTS += fate-filter-pixfmts-null
 fate-filter-pixfmts-null:  CMD = pixfmts
@@ -191,6 +200,9 @@ fate-filter-pixfmts-pad:   CMD = pixfmts "500:400:20:20"
 
 FATE_FILTER_PIXFMTS += fate-filter-pixfmts-scale
 fate-filter-pixfmts-scale: CMD = pixfmts "200:100"
+
+FATE_FILTER_PIXFMTS += fate-filter-pixfmts-super2xsai
+fate-filter-pixfmts-super2xsai: CMD = pixfmts
 
 FATE_FILTER_PIXFMTS += fate-filter-pixfmts-vflip
 fate-filter-pixfmts-vflip: CMD = pixfmts

@@ -1,10 +1,6 @@
 #FIXME the whole file should be removed
 
-FATE_LAVFI = fate-lavfi-field                                           \
-             fate-lavfi-il                                              \
-
 FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-kerndeint                        \
-                            fate-lavfi-pixfmts_super2xsai               \
                             fate-lavfi-tinterlace_merge                 \
                             fate-lavfi-tinterlace_pad                   \
 
