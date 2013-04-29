@@ -207,7 +207,7 @@ fate-filter-pixfmts-super2xsai: CMD = pixfmts
 FATE_FILTER_PIXFMTS-$(CONFIG_VFLIP_FILTER) += fate-filter-pixfmts-vflip
 fate-filter-pixfmts-vflip: CMD = pixfmts
 
-$(FATE_FILTER_PIXFMTS): libavfilter/filtfmts-test$(EXESUF)
+$(FATE_FILTER_PIXFMTS-yes): libavfilter/filtfmts-test$(EXESUF)
 FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += $(FATE_FILTER_PIXFMTS-yes)
 
 
