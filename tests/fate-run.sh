@@ -189,20 +189,25 @@ pixfmts(){
     filter_args=$1
 
     showfiltfmts="$target_exec $target_path/libavfilter/filtfmts-test"
-    exclude_fmts=${outfile}${filter}_exclude_fmts
-    out_fmts=${outfile}${filter}_out_fmts
+    scale_exclude_fmts=${outfile}${1}_scale_exclude_fmts
+    scale_in_fmts=${outfile}${1}_scale_in_fmts
+    scale_out_fmts=${outfile}${1}_scale_out_fmts
+    in_fmts=${outfile}${1}_in_fmts
 
     # exclude pixel formats which are not supported as input
-    ffmpeg -pix_fmts list 2>/dev/null | awk 'NR > 8 && /^\..\./ { print $2 }' | sort >$exclude_fmts
-    $showfiltfmts scale | awk -F '[ \r:]' '/^OUTPUT/{ print $5 }' | sort | comm -23 - $exclude_fmts >$out_fmts
+    $showfiltfmts scale | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort >$scale_in_fmts
+    $showfiltfmts scale | awk -F '[ \r]' '/^OUTPUT/{ fmt=substr($3, 5); print fmt }' | sort >$scale_out_fmts
+    comm -12 $scale_in_fmts $scale_out_fmts >$scale_exclude_fmts
 
-    pix_fmts=$($showfiltfmts $filter | awk -F '[ \r:]' '/^INPUT/{ print $5 }' | sort | comm -12 - $out_fmts)
+    $showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ fmt=substr($3, 5); print fmt }' | sort >$in_fmts
+    pix_fmts=$(comm -12 $scale_exclude_fmts $in_fmts)
+
     for pix_fmt in $pix_fmts; do
         test=$pix_fmt
         video_filter "format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done
 
-    rm $exclude_fmts $out_fmts
+    rm $in_fmts $scale_in_fmts $scale_out_fmts $scale_exclude_fmts
 }
 
 mkdir -p "$outdir"
