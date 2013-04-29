@@ -192,6 +192,9 @@ fate-filter-pixfmts-hflip: CMD = pixfmts
 FATE_FILTER_PIXFMTS-$(CONFIG_IL_FILTER) += fate-filter-pixfmts-il
 fate-filter-pixfmts-il:    CMD = pixfmts "luma_mode=d:chroma_mode=d:alpha_mode=d"
 
+FATE_FILTER_PIXFMTS-$(CONFIG_KERNDEINT_FILTER) += fate-filter-pixfmts-kerndeint
+fate-filter-pixfmts-kerndeint: CMD = pixfmts "" "tinterlace=interleave_top,"
+
 FATE_FILTER_PIXFMTS-$(CONFIG_NULL_FILTER) += fate-filter-pixfmts-null
 fate-filter-pixfmts-null:  CMD = pixfmts
 

@@ -51,7 +51,6 @@ do_lavfi_pixfmts(){
 }
 
 # all these filters have exactly one input and exactly one output
-do_lavfi_pixfmts "kerndeint"           "kerndeint" "" "tinterlace=interleave_top,"
 do_lavfi_pixfmts "tinterlace_merge"    "tinterlace" "merge"
 do_lavfi_pixfmts "tinterlace_pad"      "tinterlace" "pad"
 

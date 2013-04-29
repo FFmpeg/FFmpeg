@@ -1,7 +1,6 @@
 #FIXME the whole file should be removed
 
-FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-kerndeint                        \
-                            fate-lavfi-tinterlace_merge                 \
+FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-tinterlace_merge                 \
                             fate-lavfi-tinterlace_pad                   \
 
 FATE_LAVFI += $(FATE_LAVFI-yes)
