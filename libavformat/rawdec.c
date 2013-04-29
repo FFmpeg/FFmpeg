@@ -90,6 +90,17 @@ fail:
     return ret;
 }
 
+static int ff_raw_data_read_header(AVFormatContext *s)
+{
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->codec->codec_type = AVMEDIA_TYPE_DATA;
+    st->codec->codec_id = s->iformat->raw_codec_id;
+    st->start_time = 0;
+    return 0;
+}
+
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
@@ -98,6 +109,16 @@ const AVOption ff_rawvideo_options[] = {
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC},
     { NULL },
 };
+
+#if CONFIG_DATA_DEMUXER
+AVInputFormat ff_data_demuxer = {
+    .name           = "data",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
+    .read_header    = ff_raw_data_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
+    .raw_codec_id   = AV_CODEC_ID_NONE,
+};
+#endif
 
 #if CONFIG_LATM_DEMUXER
 AVInputFormat ff_latm_demuxer = {
