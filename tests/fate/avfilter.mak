@@ -3,10 +3,6 @@
 FATE_LAVFI = fate-lavfi-field                                           \
              fate-lavfi-il                                              \
 
-FATE_LAVFI-$(CONFIG_AVDEVICE) += fate-lavfi-life                        \
-                                 fate-lavfi-scalenorm                   \
-                                 fate-lavfi-testsrc                     \
-
 FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-kerndeint                        \
                             fate-lavfi-pixfmts_super2xsai               \
                             fate-lavfi-tinterlace_merge                 \
