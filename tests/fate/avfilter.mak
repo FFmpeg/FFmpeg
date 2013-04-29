@@ -11,9 +11,7 @@ FATE_LAVFI-$(CONFIG_AVDEVICE) += fate-lavfi-life                        \
                                  fate-lavfi-scalenorm                   \
                                  fate-lavfi-testsrc                     \
 
-FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-colormatrix1                     \
-                            fate-lavfi-colormatrix2                     \
-                            fate-lavfi-kerndeint                        \
+FATE_LAVFI-$(CONFIG_GPL) += fate-lavfi-kerndeint                        \
                             fate-lavfi-pixfmts_super2xsai               \
                             fate-lavfi-tinterlace_merge                 \
                             fate-lavfi-tinterlace_pad                   \

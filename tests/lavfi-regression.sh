@@ -34,17 +34,10 @@ do_lavfi() {
     do_lavfi_plain $1 "$2"
 }
 
-do_lavfi_colormatrix() {
-    do_lavfi "${1}1" "$1=$4:$5,$1=$5:$3,$1=$3:$4,$1=$4:$3,$1=$3:$5,$1=$5:$2"
-    do_lavfi "${1}2" "$1=$2:$3,$1=$3:$2,$1=$2:$4,$1=$4:$2,$1=$2:$5,$1=$5:$4"
-}
-
 do_lavfi_plain "alphamerge_rgb"     "[in]format=bgra,split,alphamerge[out]"
 do_lavfi_plain "alphamerge_yuv"     "[in]format=yuv420p,split,alphamerge[out]"
 do_lavfi_plain "alphaextract_rgb"   "[in]format=bgra,split,alphamerge,split[o3][o4];[o4]alphaextract[alpha];[o3][alpha]alphamerge[out]"
 do_lavfi_plain "alphaextract_yuv"   "[in]format=yuv420p,split,alphamerge,split[o3][o4];[o4]alphaextract[alpha];[o3][alpha]alphamerge[out]"
-
-do_lavfi_colormatrix "colormatrix" bt709 fcc bt601 smpte240m
 
 do_lavfi_pixfmts(){
     testname=$1;

@@ -96,6 +96,12 @@ fate-filter-scale500: CMD = video_filter "scale=500:500"
 FATE_FILTER_VSYNTH-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip
 fate-filter-vflip: CMD = video_filter "vflip"
 
+FATE_FILTER_VSYNTH-$(CONFIG_COLORMATRIX_FILTER) += fate-filter-colormatrix1
+fate-filter-colormatrix1: CMD = video_filter "colormatrix=bt601:smpte240m,colormatrix=smpte240m:fcc,colormatrix=fcc:bt601,colormatrix=bt601:fcc,colormatrix=fcc:smpte240m,colormatrix=smpte240m:bt709"
+
+FATE_FILTER_VSYNTH-$(CONFIG_COLORMATRIX_FILTER) += fate-filter-colormatrix2
+fate-filter-colormatrix2: CMD = video_filter "colormatrix=bt709:fcc,colormatrix=fcc:bt709,colormatrix=bt709:bt601,colormatrix=bt601:bt709,colormatrix=bt709:smpte240m,colormatrix=smpte240m:bt601"
+
 FATE_FILTER_VSYNTH-$(call ALLYES, CROP_FILTER VFLIP_FILTER) += fate-filter-vflip_crop
 fate-filter-vflip_crop: CMD = video_filter "vflip,crop=iw-100:ih-100:100:100"
 
