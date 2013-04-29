@@ -42,6 +42,15 @@ fate-filter-histogram-waveform: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogr
 FATE_FILTER_VSYNTH-$(CONFIG_OVERLAY_FILTER) += fate-filter-overlay
 fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay
 
+FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_rgb
+fate-filter-overlay_rgb: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay_rgb
+
+FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv420
+fate-filter-overlay_yuv420: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay_yuv420
+
+FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_yuv444
+fate-filter-overlay_yuv444: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay_yuv444
+
 FATE_FILTER_VSYNTH-$(call ALLYES, SETPTS_FILTER  SETTB_FILTER) += fate-filter-setpts
 fate-filter-setpts: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_script $(SRC_PATH)/tests/filtergraphs/setpts
 
@@ -92,6 +101,51 @@ fate-filter-vflip_crop: CMD = video_filter "vflip,crop=iw-100:ih-100:100:100"
 
 FATE_FILTER_VSYNTH-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip_vflip
 fate-filter-vflip_vflip: CMD = video_filter "vflip,vflip"
+
+FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER EDGEDETECT_FILTER) += fate-filter-edgedetect
+fate-filter-edgedetect: CMD = video_filter "format=gray,perms=random,edgedetect"
+
+FATE_FILTER_VSYNTH-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue
+fate-filter-hue: CMD = video_filter "perms=random,hue=s=sin(2*PI*t)+1"
+
+FATE_FILTER_VSYNTH-$(CONFIG_IDET_FILTER) += fate-filter-idet
+fate-filter-idet: CMD = video_filter "idet"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PAD_FILTER) += fate-filter-pad
+fate-filter-pad: CMD = video_filter "pad=iw*1.5:ih*1.5:iw*0.3:ih*0.2"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp
+fate-filter-pp: CMD = video_filter "pp=be/hb/vb/tn/l5/al"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp2
+fate-filter-pp2: CMD = video_filter "pp=be/fq|16/h1/v1/lb"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp3
+fate-filter-pp3: CMD = video_filter "pp=be/fq|8/ha|128|7/va/li"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp4
+fate-filter-pp4: CMD = video_filter "pp=be/ci"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp5
+fate-filter-pp5: CMD = video_filter "pp=md"
+
+FATE_FILTER_VSYNTH-$(CONFIG_PP_FILTER) += fate-filter-pp6
+fate-filter-pp6: CMD = video_filter "pp=be/fd"
+
+FATE_FILTER_VSYNTH-$(CONFIG_SELECT_FILTER) += fate-filter-select
+fate-filter-select: CMD = video_filter "select=not(eq(mod(n\,2)\,0)+eq(mod(n\,3)\,0))"
+
+FATE_FILTER_VSYNTH-$(CONFIG_SETDAR_FILTER) += fate-filter-setdar
+fate-filter-setdar: CMD = video_filter "setdar=dar=16/9"
+
+FATE_FILTER_VSYNTH-$(CONFIG_SETSAR_FILTER) += fate-filter-setsar
+fate-filter-setsar: CMD = video_filter "setsar=sar=16/11"
+
+FATE_FILTER_VSYNTH-$(CONFIG_THUMBNAIL_FILTER) += fate-filter-thumbnail
+fate-filter-thumbnail: CMD = video_filter "thumbnail=10"
+
+FATE_FILTER_VSYNTH-$(CONFIG_TILE_FILTER) += fate-filter-tile
+fate-filter-tile: CMD = video_filter "tile=3x3:nb_frames=5:padding=7:margin=2"
 
 
 FATE_FILTER_VSYNTH-$(CONFIG_FORMAT_FILTER) += fate-filter-pixdesc
