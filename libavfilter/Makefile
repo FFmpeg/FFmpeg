@@ -229,7 +229,7 @@ OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
-SKIPHEADERS-$(CONFIG_OPENCL)                 += deshake_kernel.h
+SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl_internal.h deshake_kernel.h unsharp_kernel.h
 
 TOOLS     = graph2dot
 TESTPROGS = drawutils filtfmts formats
