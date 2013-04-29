@@ -1898,8 +1898,10 @@ typedef struct AVCodecContext {
     /**
      * This callback is called at the beginning of each frame to get data
      * buffer(s) for it. There may be one contiguous buffer for all the data or
-     * there may be a buffer per each data plane or anything in between. Each
-     * buffer must be reference-counted using the AVBuffer API.
+     * there may be a buffer per each data plane or anything in between. What
+     * this means is, you may set however many entries in buf[] you feel necessary.
+     * Each buffer must be reference-counted using the AVBuffer API (see description
+     * of buf[] below).
      *
      * The following fields will be set in the frame before this callback is
      * called:
