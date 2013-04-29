@@ -180,7 +180,7 @@ do {                                         \
     } while (0)
 
 /* Makes duplicates of data, side_data, but does not copy any other fields */
-static int copy_packet_data(AVPacket *pkt, AVPacket *src)
+static int copy_packet_data(AVPacket *pkt, AVPacket *src, int dup)
 {
     pkt->data      = NULL;
     pkt->side_data = NULL;
@@ -196,8 +196,9 @@ static int copy_packet_data(AVPacket *pkt, AVPacket *src)
 #if FF_API_DESTRUCT_PACKET
     pkt->destruct = dummy_destruct_packet;
 #endif
-
-    if (pkt->side_data_elems) {
+    if (pkt->side_data_elems && dup)
+        pkt->side_data = src->side_data;
+    if (pkt->side_data_elems && !dup) {
         int i;
 
         DUP_DATA(pkt->side_data, src->side_data,
@@ -228,7 +229,7 @@ int av_dup_packet(AVPacket *pkt)
 #endif
         ) {
         tmp_pkt = *pkt;
-        return copy_packet_data(pkt, &tmp_pkt);
+        return copy_packet_data(pkt, &tmp_pkt, 1);
     }
     return 0;
 }
@@ -236,7 +237,7 @@ int av_dup_packet(AVPacket *pkt)
 int av_copy_packet(AVPacket *dst, AVPacket *src)
 {
     *dst = *src;
-    return copy_packet_data(dst, src);
+    return copy_packet_data(dst, src, 0);
 }
 
 void av_free_packet(AVPacket *pkt)
