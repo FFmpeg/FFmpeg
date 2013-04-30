@@ -163,7 +163,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
             if (!pal_exdata)
                 return AVERROR(ENOMEM);
             memcpy(pal_exdata, s->palette, AVPALETTE_SIZE);
-            pal_exdata[trans*4 + 3] = 0x00;
+            pal_exdata[trans*4 + 3*!HAVE_BIGENDIAN] = 0x00;
         }
     }
 
