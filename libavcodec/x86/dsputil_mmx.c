@@ -56,7 +56,6 @@ DECLARE_ALIGNED(16, const double, ff_pd_1)[2] = { 1.0, 1.0 };
 DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
 
 
-#if HAVE_YASM
 void ff_put_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                               int dstStride, int src1Stride, int h);
 void ff_put_no_rnd_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1,
@@ -98,7 +97,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
                                                 int dstStride, int srcStride);
 #define ff_put_no_rnd_pixels16_mmxext ff_put_pixels16_mmxext
 #define ff_put_no_rnd_pixels8_mmxext ff_put_pixels8_mmxext
-#endif /* HAVE_YASM */
 
 
 #if HAVE_INLINE_ASM
