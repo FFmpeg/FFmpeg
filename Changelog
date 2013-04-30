@@ -16,6 +16,7 @@ version 10:
 - new trim and atrim filters
 - avconv -t and -ss (output-only) options are now sample-accurate when
   transcoding audio
+- Matroska muxer can now put the index at the beginning of the file.
 
 
 version 9:
