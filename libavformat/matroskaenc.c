@@ -19,22 +19,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "avc.h"
 #include "avformat.h"
+#include "avlanguage.h"
+#include "flacenc.h"
 #include "internal.h"
-#include "riff.h"
 #include "isom.h"
 #include "matroska.h"
-#include "avc.h"
-#include "flacenc.h"
-#include "avlanguage.h"
-#include "libavutil/samplefmt.h"
-#include "libavutil/intreadwrite.h"
+#include "riff.h"
+
+#include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/lfg.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
-#include "libavutil/lfg.h"
-#include "libavutil/dict.h"
-#include "libavutil/avstring.h"
+#include "libavutil/samplefmt.h"
+
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 
