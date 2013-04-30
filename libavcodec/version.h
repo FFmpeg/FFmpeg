@@ -61,5 +61,8 @@
 #ifndef FF_API_MISSING_SAMPLE
 #define FF_API_MISSING_SAMPLE    (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_LOWRES
+#define FF_API_LOWRES            (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

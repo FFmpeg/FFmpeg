@@ -2408,12 +2408,16 @@ typedef struct AVCodecContext {
      */
     int bits_per_raw_sample;
 
+#if FF_API_LOWRES
     /**
      * low resolution decoding, 1-> 1/2 size, 2->1/4 size
      * - encoding: unused
      * - decoding: Set by user.
+     *
+     * @deprecated use decoder private options instead
      */
     attribute_deprecated int lowres;
+#endif
 
     /**
      * the picture in the bitstream
