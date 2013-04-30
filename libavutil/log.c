@@ -178,7 +178,7 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
             if (parent && *parent) {
                 snprintf(part[0], part_size, "[%s @ %p] ",
                          (*parent)->item_name(parent), parent);
-                if(type) type[0] = get_category(((uint8_t *) ptr) + avc->parent_log_context_offset);
+                if(type) type[0] = get_category(parent);
             }
         }
         snprintf(part[1], part_size, "[%s @ %p] ",
