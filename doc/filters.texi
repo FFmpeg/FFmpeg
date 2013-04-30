@@ -3320,6 +3320,44 @@ Example:
 edgedetect=low=0.1:high=0.4
 @end example
 
+@section extractplanes
+
+Extract color channel components from input video stream into
+separate grayscale video streams.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set plane(s) to extract.
+
+Available values for planes are:
+@table @samp
+@item y
+@item u
+@item v
+@item a
+@item r
+@item g
+@item b
+@end table
+
+Choosing planes not available in the input will result in an error.
+That means you cannot select @code{r}, @code{g}, @code{b} planes
+with @code{y}, @code{u}, @code{v} planes at same time.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Extract luma, u and v color channel component from input video frame
+into 3 grayscale outputs:
+@example
+ffmpeg -i video.avi -filter_complex 'extractplanes=y+u+v[y][u][v]' -map '[y]' y.avi -map '[u]' u.avi -map '[v]' v.avi
+@end example
+@end itemize
+
 @section fade
 
 Apply fade-in/out effect to input video.

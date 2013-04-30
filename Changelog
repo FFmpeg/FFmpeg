@@ -38,6 +38,7 @@ version <next>:
 - ffmpeg -t and -ss (output-only) options are now sample-accurate when
   transcoding audio
 - Matroska muxer can now put the index at the beginning of the file.
+- extractplanes filter
 
 
 version 1.2:
