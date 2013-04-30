@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/x86/cpu.h"
@@ -32,7 +33,7 @@ void ff_scale_samples_s32_ssse3_atom(uint8_t *dst, const uint8_t *src, int len,
 void ff_scale_samples_s32_avx(uint8_t *dst, const uint8_t *src, int len,
                               int volume);
 
-void ff_volume_init_x86(VolumeContext *vol)
+av_cold void ff_volume_init_x86(VolumeContext *vol)
 {
     int mm_flags = av_get_cpu_flags();
     enum AVSampleFormat sample_fmt = av_get_packed_sample_fmt(vol->sample_fmt);

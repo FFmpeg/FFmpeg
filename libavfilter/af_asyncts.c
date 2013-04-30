@@ -17,6 +17,7 @@
  */
 
 #include "libavresample/avresample.h"
+#include "libavutil/attributes.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
@@ -64,7 +65,7 @@ static const AVClass async_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     ASyncContext *s = ctx->priv;
 
@@ -74,7 +75,7 @@ static int init(AVFilterContext *ctx)
     return 0;
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     ASyncContext *s = ctx->priv;
 

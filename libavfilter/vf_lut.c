@@ -24,6 +24,7 @@
  * value, and apply it to input video.
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
@@ -101,7 +102,7 @@ static const AVOption lut_options[] = {
     { NULL },
 };
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
@@ -385,7 +386,7 @@ static const AVOption negate_options[] = {
     { NULL },
 };
 
-static int negate_init(AVFilterContext *ctx)
+static av_cold int negate_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
     int i;

@@ -174,7 +174,7 @@ static inline void scale_samples_s32(uint8_t *dst, const uint8_t *src,
 
 
 
-static void volume_init(VolumeContext *vol)
+static av_cold void volume_init(VolumeContext *vol)
 {
     vol->samples_align = 1;
 

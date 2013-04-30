@@ -31,6 +31,8 @@
 /* #define DEBUG */
 
 #include <float.h>
+
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
@@ -81,7 +83,7 @@ static const AVClass movie_class = {
     movie_options
 };
 
-static int movie_init(AVFilterContext *ctx)
+static av_cold int movie_init(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
     AVInputFormat *iformat = NULL;
