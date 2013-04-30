@@ -160,12 +160,6 @@ lavftest(){
     regtest lavf lavf tests/vsynth1
 }
 
-#FIXME should be removed
-lavfitest(){
-    cleanfiles="tests/data/lavfi/${test#lavfi-}.nut"
-    regtest lavfi lavfi tests/vsynth1
-}
-
 video_filter(){
     filters=$1
     shift
@@ -186,6 +180,7 @@ pixdesc(){
 
 pixfmts(){
     filter=${test#filter-pixfmts-}
+    filter=${filter%_*}
     filter_args=$1
     prefilter_chain=$2
 

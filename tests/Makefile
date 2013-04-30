@@ -68,9 +68,6 @@ include $(SRC_PATH)/tests/fate/vcodec.mak
 include $(SRC_PATH)/tests/fate/avformat.mak
 include $(SRC_PATH)/tests/fate/seek.mak
 
-#FIXME should be removed
-include $(SRC_PATH)/tests/fate/avfilter.mak
-
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/ac3.mak
 include $(SRC_PATH)/tests/fate/adpcm.mak

@@ -207,6 +207,12 @@ fate-filter-pixfmts-scale: CMD = pixfmts "200:100"
 FATE_FILTER_PIXFMTS-$(CONFIG_SUPER2XSAI_FILTER) += fate-filter-pixfmts-super2xsai
 fate-filter-pixfmts-super2xsai: CMD = pixfmts
 
+FATE_FILTER_PIXFMTS-$(CONFIG_TINTERLACE_FILTER) += fate-filter-pixfmts-tinterlace_merge
+fate-filter-pixfmts-tinterlace_merge: CMD = pixfmts "merge"
+
+FATE_FILTER_PIXFMTS-$(CONFIG_TINTERLACE_FILTER) += fate-filter-pixfmts-tinterlace_pad
+fate-filter-pixfmts-tinterlace_pad: CMD = pixfmts "pad"
+
 FATE_FILTER_PIXFMTS-$(CONFIG_VFLIP_FILTER) += fate-filter-pixfmts-vflip
 fate-filter-pixfmts-vflip: CMD = pixfmts
 
