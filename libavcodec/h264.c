@@ -3055,6 +3055,8 @@ static int init_dimensions(H264Context *h)
 {
     int width  = h->width  - (h->sps.crop_right + h->sps.crop_left);
     int height = h->height - (h->sps.crop_top   + h->sps.crop_bottom);
+    av_assert0(h->sps.crop_right + h->sps.crop_left < (unsigned)h->width);
+    av_assert0(h->sps.crop_top + h->sps.crop_bottom < (unsigned)h->height);
 
     /* handle container cropping */
     if (!h->sps.crop &&
