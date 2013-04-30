@@ -177,6 +177,10 @@ typedef struct Picture{
 
     int reference;
     int shared;
+
+    int crop;
+    int crop_left;
+    int crop_top;
 } Picture;
 
 /**
