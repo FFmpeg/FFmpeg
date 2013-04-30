@@ -463,6 +463,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         int crop_right  = get_ue_golomb(&h->gb);
         int crop_top    = get_ue_golomb(&h->gb);
         int crop_bottom = get_ue_golomb(&h->gb);
+        int width  = 16 * sps->mb_width;
+        int height = 16 * sps->mb_height * (2 - sps->frame_mbs_only_flag);
 
         if (h->avctx->flags2 & CODEC_FLAG2_IGNORE_CROP) {
             av_log(h->avctx, AV_LOG_DEBUG, "discarding sps cropping, original "
@@ -485,6 +487,17 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
                 av_log(h->avctx, AV_LOG_WARNING, "Reducing left cropping to %d "
                        "chroma samples to preserve alignment.\n",
                        crop_left);
+            }
+
+            if (crop_left  > (unsigned)INT_MAX / 4 / step_x ||
+                crop_right > (unsigned)INT_MAX / 4 / step_x ||
+                crop_top   > (unsigned)INT_MAX / 4 / step_y ||
+                crop_bottom> (unsigned)INT_MAX / 4 / step_y ||
+                (crop_left + crop_right ) * step_x >= width ||
+                (crop_top  + crop_bottom) * step_y >= height
+            ) {
+                av_log(h->avctx, AV_LOG_ERROR, "crop values invalid %d %d %d %d / %d %d\n", crop_left, crop_right, crop_top, crop_bottom, width, height);
+                goto fail;
             }
 
             sps->crop_left   = crop_left   * step_x;
