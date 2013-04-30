@@ -31,6 +31,7 @@
 #include <math.h>
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mem.h"
@@ -325,8 +326,8 @@ void ff_dither_free(DitherContext **cp)
     av_freep(cp);
 }
 
-static void dither_init(DitherDSPContext *ddsp,
-                        enum AVResampleDitherMethod method)
+static av_cold void dither_init(DitherDSPContext *ddsp,
+                                enum AVResampleDitherMethod method)
 {
     ddsp->quantize      = quantize_c;
     ddsp->ptr_align     = 1;
