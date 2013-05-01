@@ -34,6 +34,8 @@
 
 #include "types_altivec.h"
 
+#if HAVE_ALTIVEC
+
 // used to build registers permutation vectors (vcprm)
 // the 's' are for words in the _s_econd vector
 #define WORD_0 0x00,0x01,0x02,0x03
@@ -114,5 +116,7 @@ static inline vec_u8 load_with_perm_vec(int offset, uint8_t *src, vec_u8 perm_ve
     vec_u8 b = vec_ld(offset+15, src);
     return vec_perm(a, b, perm_vec);
 }
+
+#endif /* HAVE_ALTIVEC */
 
 #endif /* AVUTIL_PPC_UTIL_ALTIVEC_H */
