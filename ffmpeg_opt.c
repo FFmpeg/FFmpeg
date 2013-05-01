@@ -986,7 +986,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         exit(1);
     output_streams[nb_output_streams - 1] = ost;
 
-    ost->file_index = nb_output_files;
+    ost->file_index = nb_output_files - 1;
     ost->index      = idx;
     ost->st         = st;
     st->codec->codec_type = type;
@@ -1573,6 +1573,33 @@ static int open_output_file(OptionsContext *o, const char *filename)
         exit(1);
     }
 
+    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
+        o->stop_time = INT64_MAX;
+        av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
+    }
+
+    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
+        if (o->stop_time <= o->start_time) {
+            av_log(NULL, AV_LOG_WARNING, "-to value smaller than -ss; ignoring -to.\n");
+            o->stop_time = INT64_MAX;
+        } else {
+            o->recording_time = o->stop_time - o->start_time;
+        }
+    }
+
+    GROW_ARRAY(output_files, nb_output_files);
+    of = av_mallocz(sizeof(*of));
+    if (!of)
+        exit(1);
+    output_files[nb_output_files - 1] = of;
+
+    of->ost_index      = nb_output_streams;
+    of->recording_time = o->recording_time;
+    of->start_time     = o->start_time;
+    of->limit_filesize = o->limit_filesize;
+    of->shortest       = o->shortest;
+    av_dict_copy(&of->opts, o->g->format_opts, 0);
+
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
@@ -1581,6 +1608,11 @@ static int open_output_file(OptionsContext *o, const char *filename)
         print_error(filename, err);
         exit(1);
     }
+
+    of->ctx = oc;
+    if (o->recording_time != INT64_MAX)
+        oc->duration = o->recording_time;
+
     file_oformat= oc->oformat;
     oc->interrupt_callback = int_cb;
 
@@ -1785,37 +1817,6 @@ loop_end:
             if (av_opt_set(ost->st->codec, "flags", e->value, 0) < 0)
                 exit(1);
     }
-
-    if (o->stop_time != INT64_MAX && o->recording_time != INT64_MAX) {
-        o->stop_time = INT64_MAX;
-        av_log(NULL, AV_LOG_WARNING, "-t and -to cannot be used together; using -t.\n");
-    }
-
-    if (o->stop_time != INT64_MAX && o->recording_time == INT64_MAX) {
-        if (o->stop_time <= o->start_time) {
-            av_log(NULL, AV_LOG_WARNING, "-to value smaller than -ss; ignoring -to.\n");
-            o->stop_time = INT64_MAX;
-        } else {
-            o->recording_time = o->stop_time - o->start_time;
-        }
-    }
-
-    GROW_ARRAY(output_files, nb_output_files);
-    of = av_mallocz(sizeof(*of));
-    if (!of)
-        exit(1);
-    output_files[nb_output_files - 1] = of;
-
-    of->ctx            = oc;
-    of->ost_index      = nb_output_streams - oc->nb_streams;
-    of->recording_time = o->recording_time;
-    if (o->recording_time != INT64_MAX)
-        oc->duration = o->recording_time;
-    of->start_time     = o->start_time;
-    of->limit_filesize = o->limit_filesize;
-    of->shortest       = o->shortest;
-    av_dict_copy(&of->opts, o->g->format_opts, 0);
-
 
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);
