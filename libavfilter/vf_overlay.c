@@ -478,10 +478,10 @@ static void blend_image(AVFilterContext *ctx,
         for (i = 0; i < 3; i++) {
             int hsub = i ? over->hsub : 0;
             int vsub = i ? over->vsub : 0;
-            int src_wp = FFALIGN(src_w, 1<<hsub) >> hsub;
-            int src_hp = FFALIGN(src_h, 1<<vsub) >> vsub;
-            int dst_wp = FFALIGN(dst_w, 1<<hsub) >> hsub;
-            int dst_hp = FFALIGN(dst_h, 1<<vsub) >> vsub;
+            int src_wp = FF_CEIL_RSHIFT(src_w, hsub);
+            int src_hp = FF_CEIL_RSHIFT(src_h, vsub);
+            int dst_wp = FF_CEIL_RSHIFT(dst_w, hsub);
+            int dst_hp = FF_CEIL_RSHIFT(dst_h, vsub);
             int yp = y>>vsub;
             int xp = x>>hsub;
             uint8_t *s, *sp, *d, *dp, *a, *ap;
