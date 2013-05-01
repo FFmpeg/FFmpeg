@@ -23,13 +23,12 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavcodec/vp3dsp.h"
-
-#if HAVE_ALTIVEC
-
 #include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
+#include "libavcodec/vp3dsp.h"
 #include "dsputil_altivec.h"
+
+#if HAVE_ALTIVEC
 
 static const vec_s16 constants =
     {0, 64277, 60547, 54491, 46341, 36410, 25080, 12785};
