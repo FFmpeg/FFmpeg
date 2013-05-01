@@ -179,12 +179,14 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
             bytestream2_get_buffer(&gb, pd, l);
             pd += l;
         } else {
+            int ps[2];
             if (dest_end - pd < 2*l || bytestream2_get_bytes_left(&gb) < 2)
                 return bytestream2_tell(&gb);
-
+            ps[0] = bytestream2_get_byteu(&gb);
+            ps[1] = bytestream2_get_byteu(&gb);
             for (j = 0; j < l; j++) {
-                *pd++ = bytestream2_get_byteu(&gb);
-                *pd++ = bytestream2_get_byteu(&gb);
+                *pd++ = ps[0];
+                *pd++ = ps[1];
             }
         }
         i += l;
