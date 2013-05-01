@@ -162,7 +162,7 @@ static int rle_unpack(const unsigned char *src, int src_len, int src_count,
     const unsigned char *ps;
     const unsigned char *ps_end;
     unsigned char *pd;
-    int i, l;
+    int i, j, l;
     unsigned char *dest_end = dest + dest_len;
 
     ps = src;
@@ -188,9 +188,9 @@ static int rle_unpack(const unsigned char *src, int src_len, int src_count,
             ps += l;
             pd += l;
         } else {
-            if (dest_end - pd < i || ps_end - ps < 2)
+            if (dest_end - pd < 2*l || ps_end - ps < 2)
                 return ps - src;
-            for (i = 0; i < l; i++) {
+            for (j = 0; j < l; j++) {
                 *pd++ = ps[0];
                 *pd++ = ps[1];
             }
