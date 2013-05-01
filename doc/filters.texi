@@ -5445,7 +5445,7 @@ scale=w=200:h=100
 
 This is equivalent to:
 @example
-scale=w=200:h=100
+scale=200:100
 @end example
 
 or:
