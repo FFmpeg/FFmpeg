@@ -1504,8 +1504,8 @@ const int16_t * const ff_lpc_refl_cb[10]={
     lpc_refl_cb6, lpc_refl_cb7, lpc_refl_cb8, lpc_refl_cb9, lpc_refl_cb10
 };
 
-static void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
-                       const int8_t *s2, const int8_t *s3)
+static void add_wav(int16_t *dest, int n, int skip_first, int *m,
+                    const int16_t *s1, const int8_t *s2, const int8_t *s3)
 {
     int i;
     int v[3];
@@ -1716,8 +1716,8 @@ void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
-    ff_add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
-               ff_cb1_vects[cb1_idx], ff_cb2_vects[cb2_idx]);
+    add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
+            ff_cb1_vects[cb1_idx], ff_cb2_vects[cb2_idx]);
 
     memcpy(ractx->curr_sblock, ractx->curr_sblock + BLOCKSIZE,
            LPC_ORDER*sizeof(*ractx->curr_sblock));

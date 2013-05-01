@@ -148,7 +148,7 @@ static int h261_decode_gob_header(H261Context *h)
  * Decode the group of blocks / video packet header.
  * @return <0 if no resync found
  */
-static int ff_h261_resync(H261Context *h)
+static int h261_resync(H261Context *h)
 {
     MpegEncContext *const s = &h->s;
     int left, ret;
@@ -632,7 +632,7 @@ retry:
     s->mb_y = 0;
 
     while (h->gob_number < (s->mb_height == 18 ? 12 : 5)) {
-        if (ff_h261_resync(h) < 0)
+        if (h261_resync(h) < 0)
             break;
         h261_decode_gob(h);
     }

@@ -54,13 +54,13 @@ int ff_ass_subtitle_header(AVCodecContext *avctx,
 int ff_ass_subtitle_header_default(AVCodecContext *avctx)
 {
     return ff_ass_subtitle_header(avctx, ASS_DEFAULT_FONT,
-                                         ASS_DEFAULT_FONT_SIZE,
-                                         ASS_DEFAULT_COLOR,
-                                         ASS_DEFAULT_BACK_COLOR,
-                                         ASS_DEFAULT_BOLD,
-                                         ASS_DEFAULT_ITALIC,
-                                         ASS_DEFAULT_UNDERLINE,
-                                         ASS_DEFAULT_ALIGNMENT);
+                               ASS_DEFAULT_FONT_SIZE,
+                               ASS_DEFAULT_COLOR,
+                               ASS_DEFAULT_BACK_COLOR,
+                               ASS_DEFAULT_BOLD,
+                               ASS_DEFAULT_ITALIC,
+                               ASS_DEFAULT_UNDERLINE,
+                               ASS_DEFAULT_ALIGNMENT);
 }
 
 static void insert_ts(AVBPrint *buf, int ts)

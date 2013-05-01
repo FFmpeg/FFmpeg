@@ -33,7 +33,7 @@
 #include "internal.h"
 
 
-static int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_size)
+static int h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_size)
 {
     int i, j;
     uint32_t state;
@@ -313,7 +313,7 @@ static int h264_parse(AVCodecParserContext *s,
     if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
         next= buf_size;
     }else{
-        next= ff_h264_find_frame_end(h, buf, buf_size);
+        next = h264_find_frame_end(h, buf, buf_size);
 
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
@@ -323,7 +323,7 @@ static int h264_parse(AVCodecParserContext *s,
 
         if(next<0 && next != END_NOT_FOUND){
             av_assert1(pc->last_index + next >= 0 );
-            ff_h264_find_frame_end(h, &pc->buffer[pc->last_index + next], -next); //update state
+            h264_find_frame_end(h, &pc->buffer[pc->last_index + next], -next); // update state
         }
     }
 
