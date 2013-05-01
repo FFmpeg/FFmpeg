@@ -271,6 +271,12 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
         }
         s->output_layout = fmt;
     }
+    if (!s->output_layout) {
+        av_log(ctx, AV_LOG_ERROR, "Output channel layout is not set and "
+               "cannot be guessed from the maps.\n");
+        return AVERROR(EINVAL);
+    }
+
     ff_add_channel_layout(&s->channel_layouts, s->output_layout);
 
     if (mode == MAP_PAIR_INT_STR || mode == MAP_PAIR_STR_STR) {
