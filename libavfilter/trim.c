@@ -89,17 +89,17 @@ static int config_input(AVFilterLink *inlink)
                      inlink->time_base : (AVRational){ 1, inlink->sample_rate };
 
     if (s->start_time != DBL_MAX) {
-        int64_t start_pts = lrintf(s->start_time / av_q2d(tb));
+        int64_t start_pts = lrint(s->start_time / av_q2d(tb));
         if (s->start_pts == AV_NOPTS_VALUE || start_pts < s->start_pts)
             s->start_pts = start_pts;
     }
     if (s->end_time != DBL_MAX) {
-        int64_t end_pts = lrintf(s->end_time / av_q2d(tb));
+        int64_t end_pts = lrint(s->end_time / av_q2d(tb));
         if (s->end_pts == AV_NOPTS_VALUE || end_pts > s->end_pts)
             s->end_pts = end_pts;
     }
     if (s->duration)
-        s->duration_tb = lrintf(s->duration / av_q2d(tb));
+        s->duration_tb = lrint(s->duration / av_q2d(tb));
 
     return 0;
 }
