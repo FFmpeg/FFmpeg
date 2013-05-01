@@ -206,7 +206,12 @@ static av_always_inline void ff_ ## OPNAME ## h264_qpel16_v_lowpass_ ## MMX(uint
     ff_ ## OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(dst+8, src+8, dstStride, srcStride, 16);\
 }
 
-static av_always_inline void ff_put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp, uint8_t *src, int tmpStride, int srcStride, int size){
+static av_always_inline void put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp,
+                                                                 uint8_t *src,
+                                                                 int tmpStride,
+                                                                 int srcStride,
+                                                                 int size)
+{
     int w = (size+8)>>3;
     src -= 2*srcStride+2;
     while(w--){
@@ -218,7 +223,7 @@ static av_always_inline void ff_put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp
 
 #define QPEL_H264_HV_XMM(OPNAME, OP, MMX)\
 static av_always_inline void ff_ ## OPNAME ## h264_qpel8or16_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride, int size){\
-    ff_put_h264_qpel8or16_hv1_lowpass_sse2(tmp, src, tmpStride, srcStride, size);\
+    put_h264_qpel8or16_hv1_lowpass_sse2(tmp, src, tmpStride, srcStride, size);\
     ff_ ## OPNAME ## h264_qpel8or16_hv2_lowpass_ ## MMX(dst, tmp, dstStride, tmpStride, size);\
 }\
 static av_always_inline void ff_ ## OPNAME ## h264_qpel8_hv_lowpass_ ## MMX(uint8_t *dst, int16_t *tmp, uint8_t *src, int dstStride, int tmpStride, int srcStride){\

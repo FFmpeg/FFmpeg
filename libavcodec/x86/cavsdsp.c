@@ -413,22 +413,22 @@ static void OPNAME ## cavs_qpel16_h_ ## MMX(uint8_t *dst, uint8_t *src, int dstS
 }\
 
 #define CAVS_MC(OPNAME, SIZE, MMX) \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc20_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## cavs_qpel ## SIZE ## _mc20_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## cavs_qpel ## SIZE ## _h_ ## MMX(dst, src, stride, stride);\
 }\
 \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc01_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## cavs_qpel ## SIZE ## _mc01_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## cavs_qpel ## SIZE ## _v1_ ## MMX(dst, src, stride, stride);\
 }\
 \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc02_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## cavs_qpel ## SIZE ## _mc02_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## cavs_qpel ## SIZE ## _v2_ ## MMX(dst, src, stride, stride);\
 }\
 \
-static void ff_ ## OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
+static void OPNAME ## cavs_qpel ## SIZE ## _mc03_ ## MMX(uint8_t *dst, uint8_t *src, ptrdiff_t stride)\
 {\
     OPNAME ## cavs_qpel ## SIZE ## _v3_ ## MMX(dst, src, stride, stride);\
 }\
@@ -459,11 +459,11 @@ static av_cold void cavsdsp_init_mmx(CAVSDSPContext *c,
 }
 #endif /* HAVE_MMX_INLINE */
 
-#define DSPFUNC(PFX, IDX, NUM, EXT)                                                              \
-    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 2] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc20_ ## EXT; \
-    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 4] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc01_ ## EXT; \
-    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 8] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc02_ ## EXT; \
-    c->PFX ## _cavs_qpel_pixels_tab[IDX][12] = ff_ ## PFX ## _cavs_qpel ## NUM ## _mc03_ ## EXT; \
+#define DSPFUNC(PFX, IDX, NUM, EXT)                                                       \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 2] = PFX ## _cavs_qpel ## NUM ## _mc20_ ## EXT; \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 4] = PFX ## _cavs_qpel ## NUM ## _mc01_ ## EXT; \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][ 8] = PFX ## _cavs_qpel ## NUM ## _mc02_ ## EXT; \
+    c->PFX ## _cavs_qpel_pixels_tab[IDX][12] = PFX ## _cavs_qpel ## NUM ## _mc03_ ## EXT; \
 
 #if HAVE_MMXEXT_INLINE
 QPEL_CAVS(put_,        PUT_OP, mmxext)
@@ -474,8 +474,8 @@ CAVS_MC(put_, 16, mmxext)
 CAVS_MC(avg_,  8, mmxext)
 CAVS_MC(avg_, 16, mmxext)
 
-static av_cold void ff_cavsdsp_init_mmxext(CAVSDSPContext *c,
-                                           AVCodecContext *avctx)
+static av_cold void cavsdsp_init_mmxext(CAVSDSPContext *c,
+                                        AVCodecContext *avctx)
 {
     DSPFUNC(put, 0, 16, mmxext);
     DSPFUNC(put, 1,  8, mmxext);
@@ -493,8 +493,8 @@ CAVS_MC(put_, 16,3dnow)
 CAVS_MC(avg_, 8, 3dnow)
 CAVS_MC(avg_, 16,3dnow)
 
-static av_cold void ff_cavsdsp_init_3dnow(CAVSDSPContext *c,
-                                          AVCodecContext *avctx)
+static av_cold void cavsdsp_init_3dnow(CAVSDSPContext *c,
+                                       AVCodecContext *avctx)
 {
     DSPFUNC(put, 0, 16, 3dnow);
     DSPFUNC(put, 1,  8, 3dnow);
@@ -512,9 +512,11 @@ av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
         cavsdsp_init_mmx(c, avctx);
 #endif /* HAVE_MMX_INLINE */
 #if HAVE_MMXEXT_INLINE
-    if (mm_flags & AV_CPU_FLAG_MMXEXT) ff_cavsdsp_init_mmxext(c, avctx);
+    if (mm_flags & AV_CPU_FLAG_MMXEXT)
+        cavsdsp_init_mmxext(c, avctx);
 #endif /* HAVE_MMXEXT_INLINE */
 #if HAVE_AMD3DNOW_INLINE
-    if (mm_flags & AV_CPU_FLAG_3DNOW) ff_cavsdsp_init_3dnow(c, avctx);
+    if (mm_flags & AV_CPU_FLAG_3DNOW)
+        cavsdsp_init_3dnow(c, avctx);
 #endif /* HAVE_AMD3DNOW_INLINE */
 }

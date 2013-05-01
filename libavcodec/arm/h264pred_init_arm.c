@@ -45,9 +45,9 @@ void ff_pred8x8_0lt_dc_neon(uint8_t *src, ptrdiff_t stride);
 void ff_pred8x8_l00_dc_neon(uint8_t *src, ptrdiff_t stride);
 void ff_pred8x8_0l0_dc_neon(uint8_t *src, ptrdiff_t stride);
 
-static av_cold void ff_h264_pred_init_neon(H264PredContext *h, int codec_id,
-                                           const int bit_depth,
-                                           const int chroma_format_idc)
+static av_cold void h264_pred_init_neon(H264PredContext *h, int codec_id,
+                                        const int bit_depth,
+                                        const int chroma_format_idc)
 {
 #if HAVE_NEON
     const int high_depth = bit_depth > 8;
@@ -88,5 +88,5 @@ av_cold void ff_h264_pred_init_arm(H264PredContext *h, int codec_id,
     int cpu_flags = av_get_cpu_flags();
 
     if (have_neon(cpu_flags))
-        ff_h264_pred_init_neon(h, codec_id, bit_depth, chroma_format_idc);
+        h264_pred_init_neon(h, codec_id, bit_depth, chroma_format_idc);
 }

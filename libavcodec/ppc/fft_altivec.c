@@ -38,7 +38,7 @@ void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 void ff_fft_calc_interleave_altivec(FFTContext *s, FFTComplex *z);
 
 #if HAVE_GNU_AS && HAVE_ALTIVEC
-static void ff_imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
+static void imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     int j, k;
     int n = 1 << s->mdct_bits;
@@ -118,7 +118,7 @@ static void ff_imdct_half_altivec(FFTContext *s, FFTSample *output, const FFTSam
     } while(k >= 0);
 }
 
-static void ff_imdct_calc_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
+static void imdct_calc_altivec(FFTContext *s, FFTSample *output, const FFTSample *input)
 {
     int k;
     int n = 1 << s->mdct_bits;
@@ -128,7 +128,7 @@ static void ff_imdct_calc_altivec(FFTContext *s, FFTSample *output, const FFTSam
     vec_u32 *p0 = (vec_u32*)(output+n4);
     vec_u32 *p1 = (vec_u32*)(output+n4*3);
 
-    ff_imdct_half_altivec(s, output+n4, input);
+    imdct_half_altivec(s, output + n4, input);
 
     for (k = 0; k < n16; k++) {
         vec_u32 a = p0[k] ^ sign;
@@ -144,8 +144,8 @@ av_cold void ff_fft_init_ppc(FFTContext *s)
 #if HAVE_GNU_AS && HAVE_ALTIVEC
     s->fft_calc   = ff_fft_calc_interleave_altivec;
     if (s->mdct_bits >= 5) {
-        s->imdct_calc = ff_imdct_calc_altivec;
-        s->imdct_half = ff_imdct_half_altivec;
+        s->imdct_calc = imdct_calc_altivec;
+        s->imdct_half = imdct_half_altivec;
     }
 #endif /* HAVE_GNU_AS && HAVE_ALTIVEC */
 }
