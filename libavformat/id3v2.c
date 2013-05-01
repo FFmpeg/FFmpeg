@@ -510,9 +510,10 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
                     goto seek;
                 }
                 b = buffer;
-                while (avio_tell(s->pb) < end) {
+                while (avio_tell(s->pb) < end && !s->pb->eof_reached) {
                     *b++ = avio_r8(s->pb);
-                    if (*(b - 1) == 0xff && avio_tell(s->pb) < end - 1) {
+                    if (*(b - 1) == 0xff && avio_tell(s->pb) < end - 1 &&
+                        !s->pb->eof_reached ) {
                         uint8_t val = avio_r8(s->pb);
                         *b++ = val ? val : avio_r8(s->pb);
                     }
