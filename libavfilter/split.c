@@ -115,7 +115,7 @@ static const AVFilterPad avfilter_vf_split_inputs[] = {
 
 AVFilter avfilter_vf_split = {
     .name      = "split",
-    .description = NULL_IF_CONFIG_SMALL("Pass on the input video to N outputs."),
+    .description = NULL_IF_CONFIG_SMALL("Pass on the input to N video outputs."),
 
     .priv_size  = sizeof(SplitContext),
     .priv_class = &split_class,
