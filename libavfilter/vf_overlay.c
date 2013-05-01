@@ -151,12 +151,11 @@ static void eval_expr(AVFilterContext *ctx)
 {
     OverlayContext  *over = ctx->priv;
 
-    /* TODO: reindent */
-        over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
-        over->var_values[VAR_Y] = av_expr_eval(over->y_pexpr, over->var_values, NULL);
-        over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
-        over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
-        over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
+    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
+    over->var_values[VAR_Y] = av_expr_eval(over->y_pexpr, over->var_values, NULL);
+    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
+    over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
+    over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
 }
 
 static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *log_ctx)
