@@ -41,8 +41,8 @@ void ff_mpadsp_init(MPADSPContext *s)
     s->imdct36_blocks_fixed = ff_imdct36_blocks_fixed;
 
     if (ARCH_ARM)     ff_mpadsp_init_arm(s);
+    if (ARCH_PPC)     ff_mpadsp_init_ppc(s);
     if (ARCH_X86)     ff_mpadsp_init_x86(s);
-    if (HAVE_ALTIVEC) ff_mpadsp_init_altivec(s);
     if (HAVE_MIPSFPU)   ff_mpadsp_init_mipsfpu(s);
     if (HAVE_MIPSDSPR1) ff_mpadsp_init_mipsdspr1(s);
 }

@@ -84,7 +84,7 @@ av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
     c->float_interleave           = ff_float_interleave_c;
 
     if (ARCH_ARM) ff_fmt_convert_init_arm(c, avctx);
-    if (HAVE_ALTIVEC) ff_fmt_convert_init_altivec(c, avctx);
+    if (ARCH_PPC) ff_fmt_convert_init_ppc(c, avctx);
     if (ARCH_X86) ff_fmt_convert_init_x86(c, avctx);
     if (HAVE_MIPSFPU) ff_fmt_convert_init_mips(c);
 }

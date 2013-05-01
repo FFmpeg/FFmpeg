@@ -90,7 +90,7 @@ void ff_float_interleave_c(float *dst, const float **src, unsigned int len,
 void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx);
 
 void ff_fmt_convert_init_arm(FmtConvertContext *c, AVCodecContext *avctx);
-void ff_fmt_convert_init_altivec(FmtConvertContext *c, AVCodecContext *avctx);
+void ff_fmt_convert_init_ppc(FmtConvertContext *c, AVCodecContext *avctx);
 void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx);
 void ff_fmt_convert_init_mips(FmtConvertContext *c);
 

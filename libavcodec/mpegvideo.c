@@ -179,10 +179,10 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
     ff_MPV_common_init_axp(s);
 #elif ARCH_ARM
     ff_MPV_common_init_arm(s);
-#elif HAVE_ALTIVEC
-    ff_MPV_common_init_altivec(s);
 #elif ARCH_BFIN
     ff_MPV_common_init_bfin(s);
+#elif ARCH_PPC
+    ff_MPV_common_init_ppc(s);
 #endif
 
     /* load & permutate scantables
