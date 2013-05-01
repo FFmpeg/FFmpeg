@@ -34,6 +34,7 @@ version <next>:
 - vidstabdetect and vidstabtransform filters for video stabilization using
   the vid.stab library
 - astats filter
+- trim and atrim filters
 
 
 version 1.2:

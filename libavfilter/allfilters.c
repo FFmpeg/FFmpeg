@@ -71,6 +71,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(ASTREAMSYNC,    astreamsync,    af);
     REGISTER_FILTER(ASYNCTS,        asyncts,        af);
     REGISTER_FILTER(ATEMPO,         atempo,         af);
+    REGISTER_FILTER(ATRIM,          atrim,          af);
     REGISTER_FILTER(BANDPASS,       bandpass,       af);
     REGISTER_FILTER(BANDREJECT,     bandreject,     af);
     REGISTER_FILTER(BASS,           bass,           af);
@@ -175,6 +176,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(TILE,           tile,           vf);
     REGISTER_FILTER(TINTERLACE,     tinterlace,     vf);
     REGISTER_FILTER(TRANSPOSE,      transpose,      vf);
+    REGISTER_FILTER(TRIM,           trim,           vf);
     REGISTER_FILTER(UNSHARP,        unsharp,        vf);
     REGISTER_FILTER(VFLIP,          vflip,          vf);
     REGISTER_FILTER(VIDSTABDETECT,  vidstabdetect,  vf);

@@ -31,6 +31,22 @@ fate-filter-aresample: CMD = pcm -i $(SRC) -af aresample=min_comp=0.001:min_hard
 fate-filter-aresample: CMP = oneoff
 fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
+FATE_ATRIM += fate-filter-atrim-duration
+fate-filter-atrim-duration: CMD = framecrc -i $(SRC) -af atrim=start=0.1:duration=0.01
+FATE_ATRIM += fate-filter-atrim-mixed
+fate-filter-atrim-mixed: CMD = framecrc -i $(SRC) -af atrim=start=0.05:start_sample=1025:end=0.1:end_sample=4411
+
+FATE_ATRIM += fate-filter-atrim-samples
+fate-filter-atrim-samples: CMD = framecrc -i $(SRC) -af atrim=start_sample=26:end_sample=80
+
+FATE_ATRIM += fate-filter-atrim-time
+fate-filter-atrim-time: CMD = framecrc -i $(SRC) -af atrim=0.1:0.2
+
+$(FATE_ATRIM): tests/data/asynth-44100-2.wav
+$(FATE_ATRIM): SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
+
+FATE_FILTER-$(call FILTERDEMDECENCMUX, ATRIM, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_ATRIM)
+
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-channelmap
 fate-filter-channelmap: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
 fate-filter-channelmap: tests/data/asynth-44100-6.wav

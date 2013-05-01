@@ -73,6 +73,20 @@ fate-filter-telecine: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf telecine
 FATE_FILTER_VSYNTH-$(CONFIG_TRANSPOSE_FILTER) += fate-filter-transpose
 fate-filter-transpose: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf transpose
 
+FATE_TRIM += fate-filter-trim-duration
+fate-filter-trim-duration: CMD = framecrc -i $(SRC) -vf trim=start=0.4:duration=0.05
+
+FATE_TRIM += fate-filter-trim-frame
+fate-filter-trim-frame: CMD = framecrc -i $(SRC) -vf trim=start_frame=3:end_frame=10
+
+FATE_TRIM += fate-filter-trim-mixed
+fate-filter-trim-mixed: CMD = framecrc -i $(SRC) -vf trim=start=0.2:end=0.4:start_frame=1:end_frame=3
+
+FATE_TRIM += fate-filter-trim-time
+fate-filter-trim-time: CMD = framecrc -i $(SRC) -vf trim=0:0.1
+
+FATE_FILTER_VSYNTH-$(CONFIG_TRIM_FILTER) += $(FATE_TRIM)
+
 FATE_FILTER_VSYNTH-$(CONFIG_UNSHARP_FILTER) += fate-filter-unsharp
 fate-filter-unsharp: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf unsharp=11:11:-1.5:11:11:-1.5
 
