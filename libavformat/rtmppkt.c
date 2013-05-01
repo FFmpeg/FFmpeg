@@ -438,7 +438,8 @@ static const char* rtmp_packet_type(int type)
     }
 }
 
-static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *data_end)
+static void amf_tag_contents(void *ctx, const uint8_t *data,
+                             const uint8_t *data_end)
 {
     unsigned int size;
     char buf[1024];
@@ -484,7 +485,7 @@ static void ff_amf_tag_contents(void *ctx, const uint8_t *data, const uint8_t *d
                 return;
             data += size;
             av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
-            ff_amf_tag_contents(ctx, data, data_end);
+            amf_tag_contents(ctx, data, data_end);
             t = ff_amf_tag_size(data, data_end);
             if (t < 0 || t >= data_end - data)
                 return;
@@ -507,7 +508,7 @@ void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p)
         uint8_t *src = p->data, *src_end = p->data + p->data_size;
         while (src < src_end) {
             int sz;
-            ff_amf_tag_contents(ctx, src, src_end);
+            amf_tag_contents(ctx, src, src_end);
             sz = ff_amf_tag_size(src, src_end);
             if (sz < 0)
                 break;

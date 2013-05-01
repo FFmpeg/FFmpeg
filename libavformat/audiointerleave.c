@@ -74,8 +74,8 @@ int ff_audio_interleave_init(AVFormatContext *s,
     return 0;
 }
 
-static int ff_interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
-                                   int stream_index, int flush)
+static int interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
+                                       int stream_index, int flush)
 {
     AVStream *st = s->streams[stream_index];
     AudioInterleaveContext *aic = st->priv_data;
@@ -134,7 +134,7 @@ int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             AVPacket new_pkt;
             int ret;
-            while ((ret = ff_interleave_new_audio_packet(s, &new_pkt, i, flush)) > 0) {
+            while ((ret = interleave_new_audio_packet(s, &new_pkt, i, flush)) > 0) {
                 ret = ff_interleave_add_packet(s, &new_pkt, compare_ts);
                 if (ret < 0)
                     return ret;

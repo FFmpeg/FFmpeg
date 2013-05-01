@@ -637,7 +637,8 @@ next_non_null:
     return 0;
 }
 
-static int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
+static int interleave_compare_dts(AVFormatContext *s, AVPacket *next,
+                                  AVPacket *pkt)
 {
     AVStream *st  = s->streams[pkt->stream_index];
     AVStream *st2 = s->streams[next->stream_index];
@@ -668,7 +669,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
     int i, ret;
 
     if (pkt) {
-        ret = ff_interleave_add_packet(s, pkt, ff_interleave_compare_dts);
+        ret = ff_interleave_add_packet(s, pkt, interleave_compare_dts);
         if (ret < 0)
             return ret;
     }
