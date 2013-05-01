@@ -86,12 +86,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *cur_buf)
             }
         }
     } else {
-        const int linesize = abs(FFMIN(out_buf->linesize[Y], cur_buf->linesize[A]));
         int y;
         for (y = 0; y < outlink->h; y++) {
             memcpy(out_buf->data[Y] + y * out_buf->linesize[Y],
                    cur_buf->data[A] + y * cur_buf->linesize[A],
-                   linesize);
+                   outlink->w);
         }
     }
 
