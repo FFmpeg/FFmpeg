@@ -29,15 +29,15 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "audio.h"
 #include "video.h"
 
 static const char *const var_names[] = {
     "FRAME_RATE",  ///< defined only for constant frame-rate video
     "INTERLACED",  ///< tell if the current frame is interlaced
-    "N",           ///< frame number (starting at zero)
+    "N",           ///< frame / sample number (starting at zero)
     "NB_CONSUMED_SAMPLES", ///< number of samples consumed by the filter (only audio)
     "NB_SAMPLES",  ///< number of samples in the current frame (only audio)
     "POS",         ///< original position in the file of the frame
@@ -53,6 +53,8 @@ static const char *const var_names[] = {
     "TB",          ///< timebase
     "RTCTIME",     ///< wallclock (RTC) time in micro seconds
     "RTCSTART",    ///< wallclock (RTC) time at the start of the movie in micro seconds
+    "S",           //   Number of samples in the current frame
+    "SR",          //   Audio sample rate
     NULL
 };
 
@@ -75,6 +77,8 @@ enum var_name {
     VAR_TB,
     VAR_RTCTIME,
     VAR_RTCSTART,
+    VAR_S,
+    VAR_SR,
     VAR_VARS_NB
 };
 
@@ -98,6 +102,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     setpts->var_values[VAR_N]           = 0.0;
+    setpts->var_values[VAR_S]           = 0.0;
     setpts->var_values[VAR_PREV_INPTS]  = NAN;
     setpts->var_values[VAR_PREV_INT]    = NAN;
     setpts->var_values[VAR_PREV_OUTPTS] = NAN;
@@ -116,6 +121,7 @@ static int config_input(AVFilterLink *inlink)
     setpts->var_values[VAR_TB] = av_q2d(inlink->time_base);
     setpts->var_values[VAR_RTCSTART] = av_gettime();
 
+    setpts->var_values[VAR_SR] =
     setpts->var_values[VAR_SAMPLE_RATE] =
         setpts->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
@@ -159,17 +165,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     setpts->var_values[VAR_POS       ] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
     setpts->var_values[VAR_RTCTIME   ] = av_gettime();
 
-    switch (inlink->type) {
-    case AVMEDIA_TYPE_VIDEO:
+    if (inlink->type == AVMEDIA_TYPE_VIDEO) {
         setpts->var_values[VAR_INTERLACED] = frame->interlaced_frame;
-        break;
-
-    case AVMEDIA_TYPE_AUDIO:
+    } else if (inlink->type == AVMEDIA_TYPE_AUDIO) {
+        setpts->var_values[VAR_S] = frame->nb_samples;
         setpts->var_values[VAR_NB_SAMPLES] = frame->nb_samples;
-        break;
     }
 
     d = av_expr_eval(setpts->expr, setpts->var_values, NULL);
+    frame->pts = D2TS(d);
 
     av_log(inlink->dst, AV_LOG_DEBUG,
            "N:%"PRId64" PTS:%s T:%f POS:%s",
@@ -190,13 +194,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
     av_log(inlink->dst, AV_LOG_DEBUG, " -> PTS:%s T:%f\n", d2istr(d), TS2T(d, inlink->time_base));
 
-    frame->pts = D2TS(d);
+    if (inlink->type == AVMEDIA_TYPE_VIDEO) {
+        setpts->var_values[VAR_N] += 1.0;
+    } else {
+        setpts->var_values[VAR_N] += frame->nb_samples;
+    }
 
     setpts->var_values[VAR_PREV_INPTS ] = TS2D(in_pts);
     setpts->var_values[VAR_PREV_INT   ] = TS2T(in_pts, inlink->time_base);
     setpts->var_values[VAR_PREV_OUTPTS] = TS2D(frame->pts);
     setpts->var_values[VAR_PREV_OUTT]   = TS2T(frame->pts, inlink->time_base);
-    setpts->var_values[VAR_N] += 1.0;
     if (setpts->type == AVMEDIA_TYPE_AUDIO) {
         setpts->var_values[VAR_NB_CONSUMED_SAMPLES] += frame->nb_samples;
     }
@@ -210,62 +217,14 @@ static av_cold void uninit(AVFilterContext *ctx)
     setpts->expr = NULL;
 }
 
-#if CONFIG_ASETPTS_FILTER
-
 #define OFFSET(x) offsetof(SetPTSContext, x)
-#define AFLAGS AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
-static const AVOption aoptions[] = {
-    { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = AFLAGS },
-    { NULL },
-};
-
-static const AVClass asetpts_class = {
-    .class_name = "asetpts",
-    .item_name  = av_default_item_name,
-    .option     = aoptions,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-static const AVFilterPad avfilter_af_asetpts_inputs[] = {
-    {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
-        .config_props     = config_input,
-        .filter_frame     = filter_frame,
-    },
-    { NULL }
-};
-
-static const AVFilterPad avfilter_af_asetpts_outputs[] = {
-    {
-        .name = "default",
-        .type = AVMEDIA_TYPE_AUDIO,
-    },
-    { NULL }
-};
-
-AVFilter avfilter_af_asetpts = {
-    .name      = "asetpts",
-    .description = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
-    .init      = init,
-    .uninit    = uninit,
-    .priv_size = sizeof(SetPTSContext),
-    .priv_class= &asetpts_class,
-    .inputs    = avfilter_af_asetpts_inputs,
-    .outputs   = avfilter_af_asetpts_outputs,
-};
-#endif /* CONFIG_ASETPTS_FILTER */
-
-#if CONFIG_SETPTS_FILTER
-
-#define OFFSET(x) offsetof(SetPTSContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { "expr", "Expression determining the frame timestamp", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "PTS" }, .flags = FLAGS },
     { NULL },
 };
 
+#if CONFIG_SETPTS_FILTER
 static const AVClass setpts_class = {
     .class_name = "setpts",
     .item_name  = av_default_item_name,
@@ -305,3 +264,43 @@ AVFilter avfilter_vf_setpts = {
     .outputs   = avfilter_vf_setpts_outputs,
 };
 #endif /* CONFIG_SETPTS_FILTER */
+
+#if CONFIG_ASETPTS_FILTER
+
+static const AVClass asetpts_class = {
+    .class_name = "asetpts",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVFilterPad asetpts_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_AUDIO,
+        .get_audio_buffer = ff_null_get_audio_buffer,
+        .config_props     = config_input,
+        .filter_frame     = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad asetpts_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
+    },
+    { NULL }
+};
+
+AVFilter avfilter_af_asetpts = {
+    .name        = "asetpts",
+    .description = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
+    .init        = init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(SetPTSContext),
+    .priv_class  = &asetpts_class,
+    .inputs      = asetpts_inputs,
+    .outputs     = asetpts_outputs,
+};
+#endif /* CONFIG_ASETPTS_FILTER */

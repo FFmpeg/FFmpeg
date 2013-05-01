@@ -933,6 +933,75 @@ disable padding for the last frame, use:
 asetnsamples=n=1234:p=0
 @end example
 
+@section asetpts
+
+Change the PTS (presentation timestamp) of the input audio frames.
+
+This filter accepts the following options:
+
+@table @option
+
+@item expr
+The expression which is evaluated for each frame to construct its timestamp.
+
+@end table
+
+The expression is evaluated through the eval API and can contain the following
+constants:
+
+@table @option
+@item PTS
+the presentation timestamp in input
+
+@item PI
+Greek PI
+
+@item PHI
+golden ratio
+
+@item E
+Euler number
+
+@item N
+Number of the audio samples pass through the filter so far, starting at 0.
+
+@item S
+Number of the audio samples in the current frame.
+
+@item SR
+Audio sample rate.
+
+@item STARTPTS
+the PTS of the first frame
+
+@item PREV_INPTS
+previous input PTS
+
+@item PREV_OUTPTS
+previous output PTS
+
+@item RTCTIME
+wallclock (RTC) time in microseconds
+
+@item RTCSTART
+wallclock (RTC) time at the start of the movie in microseconds
+
+@end table
+
+Some examples follow:
+
+@example
+# start counting PTS from zero
+asetpts=expr=PTS-STARTPTS
+
+#generate timestamps by counting samples
+asetpts=expr=N/SR/TB
+
+# generate timestamps from a "live source" and rebase onto the current timebase
+asetpts='(RTCTIME - RTCSTART) / (TB * 1000000)"
+@end example
+
+
 @section asetrate
 
 Set the sample rate without altering the PCM data.
