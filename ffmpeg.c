@@ -846,7 +846,11 @@ static void do_video_out(AVFormatContext *s,
 
     in_picture->pts = ost->sync_opts;
 
+#if 1
     if (!check_recording_time(ost))
+#else
+    if (ost->frame_number >= ost->max_frames)
+#endif
         return;
 
     if (s->oformat->flags & AVFMT_RAWPICTURE &&

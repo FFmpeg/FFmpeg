@@ -276,6 +276,54 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
     ist->filters[ist->nb_filters - 1] = fg->inputs[fg->nb_inputs - 1];
 }
 
+static int insert_trim(OutputStream *ost, AVFilterContext **last_filter, int *pad_idx)
+{
+    OutputFile *of = output_files[ost->file_index];
+    AVFilterGraph *graph = (*last_filter)->graph;
+    AVFilterContext *ctx;
+    const AVFilter *trim;
+    const char *name = ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO ? "trim" : "atrim";
+    char filter_name[128];
+    int ret = 0;
+
+    if (of->recording_time == INT64_MAX)
+        return 0;
+
+    return 0;
+
+    trim = avfilter_get_by_name(name);
+    if (!trim) {
+        av_log(NULL, AV_LOG_ERROR, "%s filter not present, cannot limit "
+               "recording time.\n", name);
+        return AVERROR_FILTER_NOT_FOUND;
+    }
+
+    snprintf(filter_name, sizeof(filter_name), "%s for output stream %d:%d",
+             name, ost->file_index, ost->index);
+    ctx = avfilter_graph_alloc_filter(graph, trim, filter_name);
+    if (!ctx)
+        return AVERROR(ENOMEM);
+
+    ret = av_opt_set_double(ctx, "duration", (double)of->recording_time / 1e6,
+                            AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error configuring the %s filter", name);
+        return ret;
+    }
+
+    ret = avfilter_init_str(ctx, NULL);
+    if (ret < 0)
+        return ret;
+
+    ret = avfilter_link(*last_filter, *pad_idx, ctx, 0);
+    if (ret < 0)
+        return ret;
+
+    *last_filter = ctx;
+    *pad_idx     = 0;
+    return 0;
+}
+
 static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOut *out)
 {
     char *pix_fmts;
@@ -351,6 +399,11 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         last_filter = fps;
         pad_idx = 0;
     }
+
+    ret = insert_trim(ost, &last_filter, &pad_idx);
+    if (ret < 0)
+        return ret;
+
 
     if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
         return ret;
@@ -457,6 +510,10 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
         snprintf(args, sizeof(args), "%f", audio_volume / 256.);
         AUTO_INSERT_FILTER("-vol", "volume", args);
     }
+
+    ret = insert_trim(ost, &last_filter, &pad_idx);
+    if (ret < 0)
+        return ret;
 
     if ((ret = avfilter_link(last_filter, pad_idx, ofilter->filter, 0)) < 0)
         return ret;
