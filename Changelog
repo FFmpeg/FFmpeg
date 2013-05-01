@@ -35,7 +35,8 @@ version <next>:
   the vid.stab library
 - astats filter
 - trim and atrim filters
-- ffmpeg -t option is now sample-accurate when transcoding audio
+- ffmpeg -t and -ss (output-only) options are now sample-accurate when
+  transcoding audio
 
 
 version 1.2:

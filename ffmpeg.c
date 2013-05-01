@@ -1059,11 +1059,6 @@ static int reap_filters(void)
                                     av_rescale_q(of->start_time,
                                                 AV_TIME_BASE_Q,
                                                 ost->st->codec->time_base);
-
-                if (of->start_time && filtered_frame->pts < 0) {
-                    av_frame_unref(filtered_frame);
-                    continue;
-                }
             }
             //if (ost->source_index >= 0)
             //    *filtered_frame= *input_streams[ost->source_index]->decoded_frame; //for me_threshold

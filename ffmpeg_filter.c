@@ -286,10 +286,12 @@ static int insert_trim(OutputStream *ost, AVFilterContext **last_filter, int *pa
     char filter_name[128];
     int ret = 0;
 
-    if (of->recording_time == INT64_MAX)
+    if (of->recording_time == INT64_MAX && !of->start_time)
         return 0;
 
-    return 0;
+    // Use with duration and without output starttime is buggy with trim filters
+    if (!of->start_time)
+        return 0;
 
     trim = avfilter_get_by_name(name);
     if (!trim) {
@@ -304,8 +306,14 @@ static int insert_trim(OutputStream *ost, AVFilterContext **last_filter, int *pa
     if (!ctx)
         return AVERROR(ENOMEM);
 
-    ret = av_opt_set_double(ctx, "duration", (double)of->recording_time / 1e6,
-                            AV_OPT_SEARCH_CHILDREN);
+    if (of->recording_time != INT64_MAX) {
+        ret = av_opt_set_double(ctx, "duration", (double)of->recording_time / 1e6,
+                                AV_OPT_SEARCH_CHILDREN);
+    }
+    if (ret >= 0 && of->start_time) {
+        ret = av_opt_set_double(ctx, "start", (double)of->start_time / 1e6,
+                                AV_OPT_SEARCH_CHILDREN);
+    }
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error configuring the %s filter", name);
         return ret;
