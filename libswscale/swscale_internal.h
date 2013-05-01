@@ -478,8 +478,8 @@ typedef struct SwsContext {
 /* pre defined color-spaces gamma */
 #define XYZ_GAMMA (2.6f)
 #define RGB_GAMMA (2.2f)
-    int16_t xyzgamma[4096];
-    int16_t rgbgamma[4096];
+    int16_t *xyzgamma;
+    int16_t *rgbgamma;
     int16_t xyz2rgb_matrix[3][4];
 
     /* function pointers for swScale() */

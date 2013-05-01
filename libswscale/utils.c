@@ -904,13 +904,20 @@ static void fill_xyztables(struct SwsContext *c)
         {13270, -6295, -2041},
         {-3969,  7682,   170},
         {  228,  -835,  4329} };
+    static int16_t xyzgamma_tab[4096], rgbgamma_tab[4096];
+
+    memcpy(c->xyz2rgb_matrix, xyz2rgb_matrix, sizeof(c->xyz2rgb_matrix));
+    c->xyzgamma = xyzgamma_tab;
+    c->rgbgamma = rgbgamma_tab;
+
+    if (rgbgamma_tab[4095])
+        return;
 
     /* set gamma vectors */
     for (i = 0; i < 4096; i++) {
-        c->xyzgamma[i] = lrint(pow(i / 4095.0, xyzgamma) * 4095.0);
-        c->rgbgamma[i] = lrint(pow(i / 4095.0, rgbgamma) * 4095.0);
+        xyzgamma_tab[i] = lrint(pow(i / 4095.0, xyzgamma) * 4095.0);
+        rgbgamma_tab[i] = lrint(pow(i / 4095.0, rgbgamma) * 4095.0);
     }
-    memcpy(c->xyz2rgb_matrix, xyz2rgb_matrix, sizeof(c->xyz2rgb_matrix));
 }
 
 int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
