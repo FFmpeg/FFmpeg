@@ -121,7 +121,7 @@ AVBufferRef *av_buffer_allocz(int size);
  * If this function fails, data is left untouched.
  * @param data   data array
  * @param size   size of data in bytes
- * @param free   a callback for freeing data
+ * @param free   a callback for freeing this buffer's data
  * @param opaque parameter to be got for processing or passed to free
  * @param flags  a combination of AV_BUFFER_FLAG_*
  *
