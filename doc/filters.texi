@@ -293,11 +293,11 @@ to re-define the expression.
 Like any other filtering option, the @option{enable} option follows the same
 rules.
 
-For example, to enable a denoiser filter (@ref{hqdn3d}) from 10 seconds to 3
+For example, to enable a blur filter (@ref{smartblur}) from 10 seconds to 3
 minutes, and a @ref{curves} filter starting at 3 seconds:
 @example
-hqdn3d = enable='between(t,10,3*60)',
-curves = enable='gte(t,3)' : preset=cross_process
+smartblur = enable='between(t,10,3*60)',
+curves    = enable='gte(t,3)' : preset=cross_process
 @end example
 
 @c man end FILTERGRAPH DESCRIPTION
@@ -5698,6 +5698,7 @@ Adler-32 checksum (printed in hexadecimal) of each plane of the input frame,
 expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]"
 @end table
 
+@anchor{smartblur}
 @section smartblur
 
 Blur the input video without impacting the outlines.
