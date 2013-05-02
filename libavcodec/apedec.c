@@ -489,9 +489,12 @@ static inline int ape_decode_value_3860(APEContext *ctx, GetBitContext *gb,
 
     if (!rice->k)
         x = overflow;
-    else
+    else if(rice->k <= MIN_CACHE_BITS) {
         x = (overflow << rice->k) + get_bits(gb, rice->k);
-
+    } else {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Too many bits: %d\n", rice->k);
+        return AVERROR_INVALIDDATA;
+    }
     rice->ksum += x - (rice->ksum + 8 >> 4);
     if (rice->ksum < (rice->k ? 1 << (rice->k + 4) : 0))
         rice->k--;
