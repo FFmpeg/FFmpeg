@@ -116,7 +116,7 @@ static void hscroll(AVCodecContext *avctx)
     AnsiContext *s = avctx->priv_data;
     int i;
 
-    if (s->y < avctx->height - s->font_height) {
+    if (s->y <= avctx->height - 2*s->font_height) {
         s->y += s->font_height;
         return;
     }
@@ -169,7 +169,7 @@ static void draw_char(AVCodecContext *avctx, int c)
     ff_draw_pc_font(s->frame->data[0] + s->y * s->frame->linesize[0] + s->x,
                     s->frame->linesize[0], s->font, s->font_height, c, fg, bg);
     s->x += FONT_WIDTH;
-    if (s->x >= avctx->width) {
+    if (s->x > avctx->width - FONT_WIDTH) {
         s->x = 0;
         hscroll(avctx);
     }
