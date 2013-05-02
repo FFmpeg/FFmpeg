@@ -243,6 +243,8 @@ static int execute_code(AVCodecContext * avctx, int c)
         default:
             avpriv_request_sample(avctx, "Unsupported screen mode");
         }
+        s->x = av_clip(s->x, 0, width  - FONT_WIDTH);
+        s->y = av_clip(s->y, 0, height - s->font_height);
         if (width != avctx->width || height != avctx->height) {
             av_frame_unref(s->frame);
             avcodec_set_dimensions(avctx, width, height);
@@ -336,6 +338,8 @@ static int execute_code(AVCodecContext * avctx, int c)
         avpriv_request_sample(avctx, "Unknown escape code");
         break;
     }
+    s->x = av_clip(s->x, 0, avctx->width  - FONT_WIDTH);
+    s->y = av_clip(s->y, 0, avctx->height - s->font_height);
     return 0;
 }
 
