@@ -219,18 +219,18 @@ static int wav_read_header(AVFormatContext *s)
 
     rf64 = tag == MKTAG('R', 'F', '6', '4');
     if (!rf64 && tag != MKTAG('R', 'I', 'F', 'F'))
-        return -1;
+        return AVERROR_INVALIDDATA;
     avio_rl32(pb); /* file size */
     tag = avio_rl32(pb);
     if (tag != MKTAG('W', 'A', 'V', 'E'))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (rf64) {
         if (avio_rl32(pb) != MKTAG('d', 's', '6', '4'))
-            return -1;
+            return AVERROR_INVALIDDATA;
         size = avio_rl32(pb);
         if (size < 16)
-            return -1;
+            return AVERROR_INVALIDDATA;
         avio_rl64(pb); /* RIFF size */
 
         data_size    = avio_rl64(pb);
@@ -467,22 +467,22 @@ static int w64_read_header(AVFormatContext *s)
 
     avio_read(pb, guid, 16);
     if (memcmp(guid, guid_riff, 16))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* riff + wave + fmt + sizes */
     if (avio_rl64(pb) < 16 + 8 + 16 + 8 + 16 + 8)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     avio_read(pb, guid, 16);
     if (memcmp(guid, guid_wave, 16)) {
         av_log(s, AV_LOG_ERROR, "could not find wave guid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     size = find_guid(pb, guid_fmt);
     if (size < 0) {
         av_log(s, AV_LOG_ERROR, "could not find fmt guid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     st = avformat_new_stream(s, NULL);
@@ -502,7 +502,7 @@ static int w64_read_header(AVFormatContext *s)
     size = find_guid(pb, guid_data);
     if (size < 0) {
         av_log(s, AV_LOG_ERROR, "could not find data guid\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     wav->data_end = avio_tell(pb) + size - 24;
     wav->w64      = 1;
