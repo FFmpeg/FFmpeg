@@ -486,8 +486,6 @@
             "time_base": "1/44100",
             "start_pts": 0,
             "start_time": "0.000000",
-            "duration_ts": 527406,
-            "duration": "11.959320",
             "bit_rate": "705600",
             "nb_read_frames": "6",
             "nb_read_packets": "6",
@@ -527,8 +525,6 @@
             "time_base": "1/51200",
             "start_pts": 0,
             "start_time": "0.000000",
-            "duration_ts": 612317,
-            "duration": "11.959316",
             "nb_read_frames": "4",
             "nb_read_packets": "4",
             "disposition": {
@@ -568,8 +564,6 @@
             "time_base": "1/51200",
             "start_pts": 0,
             "start_time": "0.000000",
-            "duration_ts": 612317,
-            "duration": "11.959316",
             "nb_read_frames": "4",
             "nb_read_packets": "4",
             "disposition": {
@@ -592,9 +586,9 @@
         "nb_streams": 3,
         "format_name": "nut",
         "start_time": "0.000000",
-        "duration": "11.959320",
+        "duration": "0.120000",
         "size": "1054812",
-        "bit_rate": "705599",
+        "bit_rate": "70320800",
         "tags": {
             "title": "ffprobe test file",
             "comment": "'A comment with CSV, XML & JSON special chars': <tag value=\"x\">",

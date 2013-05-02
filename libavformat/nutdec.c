@@ -601,6 +601,7 @@ static int find_and_decode_index(NUTContext *nut)
     int i, j, syncpoint_count;
     int64_t filesize = avio_size(bc);
     int64_t *syncpoints;
+    uint64_t max_pts;
     int8_t *has_keyframe;
     int ret = -1;
 
@@ -620,7 +621,12 @@ static int find_and_decode_index(NUTContext *nut)
     end  = get_packetheader(nut, bc, 1, INDEX_STARTCODE);
     end += avio_tell(bc);
 
-    ffio_read_varlen(bc); // max_pts
+    max_pts = ffio_read_varlen(bc);
+    s->duration = av_rescale_q(max_pts / nut->time_base_count,
+                               nut->time_base[max_pts % nut->time_base_count],
+                               AV_TIME_BASE_Q);
+    s->duration_estimation_method = AVFMT_DURATION_FROM_PTS;
+
     GET_V(syncpoint_count, tmp < INT_MAX / 8 && tmp > 0);
     syncpoints   = av_malloc(sizeof(int64_t) *  syncpoint_count);
     has_keyframe = av_malloc(sizeof(int8_t)  * (syncpoint_count + 1));
