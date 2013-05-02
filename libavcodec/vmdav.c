@@ -362,14 +362,14 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
     if (s->avctx->extradata_size != VMD_HEADER_SIZE) {
         av_log(s->avctx, AV_LOG_ERROR, "expected extradata size of %d\n",
             VMD_HEADER_SIZE);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     vmd_header = (unsigned char *)avctx->extradata;
 
     s->unpack_buffer_size = AV_RL32(&vmd_header[800]);
     s->unpack_buffer = av_malloc(s->unpack_buffer_size);
     if (!s->unpack_buffer)
-        return -1;
+        return AVERROR(ENOMEM);
 
     /* load up the initial palette */
     raw_palette = &vmd_header[28];
