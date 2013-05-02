@@ -151,6 +151,8 @@ static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
             int replace_array = bytestream2_get_byte(&s->gb);
             for(j=0; j<8; j++) {
                 int replace = (replace_array >> (7-j)) & 1;
+                if (x + half_horiz >= s->avctx->width)
+                    return AVERROR_INVALIDDATA;
                 if (replace) {
                     int color = bytestream2_get_byte(&data_ptr);
                     s->frame.data[0][y*s->frame.linesize[0] + x] = color;
