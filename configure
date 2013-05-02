@@ -4082,6 +4082,11 @@ if enabled yasm; then
     printf '' >$TMPASM
 fi
 
+if enabled msvc && ! enabled shared; then
+    echo '#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")' >> $TMPH
+    echo '#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_snprintf")' >> $TMPH
+fi
+
 print_config ARCH_   "$config_files" $ARCH_LIST
 print_config HAVE_   "$config_files" $HAVE_LIST
 print_config CONFIG_ "$config_files" $CONFIG_LIST       \
