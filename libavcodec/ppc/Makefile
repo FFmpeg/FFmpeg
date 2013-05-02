@@ -2,9 +2,7 @@ OBJS                                   += ppc/dsputil_ppc.o             \
                                           ppc/fmtconvert_altivec.o      \
                                           ppc/videodsp_ppc.o            \
 
-FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o
-OBJS-$(CONFIG_FFT)                     += ppc/fft_altivec.o             \
-                                          $(FFT-OBJS-yes)
+OBJS-$(CONFIG_FFT)                     += ppc/fft_altivec.o
 OBJS-$(CONFIG_H264CHROMA)              += ppc/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += ppc/h264dsp.o
 OBJS-$(CONFIG_H264QPEL)                += ppc/h264qpel.o
@@ -21,3 +19,6 @@ ALTIVEC-OBJS                           += ppc/dsputil_altivec.o         \
                                           ppc/gmc_altivec.o             \
                                           ppc/idct_altivec.o            \
                                           ppc/int_altivec.o             \
+
+FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o
+ALTIVEC-OBJS-$(CONFIG_FFT)             += $(FFT-OBJS-yes)
