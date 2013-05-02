@@ -239,6 +239,8 @@ static int execute_code(AVCodecContext * avctx, int c)
         default:
             av_log_ask_for_sample(avctx, "unsupported screen mode\n");
         }
+        s->x = av_clip(s->x, 0, width  - FONT_WIDTH);
+        s->y = av_clip(s->y, 0, height - s->font_height);
         if (width != avctx->width || height != avctx->height) {
             if (s->frame.data[0])
                 avctx->release_buffer(avctx, &s->frame);
@@ -335,6 +337,8 @@ static int execute_code(AVCodecContext * avctx, int c)
         av_log_ask_for_sample(avctx, "unsupported escape code\n");
         break;
     }
+    s->x = av_clip(s->x, 0, avctx->width  - FONT_WIDTH);
+    s->y = av_clip(s->y, 0, avctx->height - s->font_height);
     return 0;
 }
 
