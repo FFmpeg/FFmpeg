@@ -192,7 +192,7 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
     return bytestream2_tell(&gb);
 }
 
-static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
+static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
 {
     int i;
     unsigned int *palette32;
@@ -213,16 +213,6 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
     frame_y = AV_RL16(&s->buf[8]);
     frame_width = AV_RL16(&s->buf[10]) - frame_x + 1;
     frame_height = AV_RL16(&s->buf[12]) - frame_y + 1;
-    if (frame_x < 0 || frame_width < 0 ||
-        frame_x >= s->avctx->width ||
-        frame_width > s->avctx->width ||
-        frame_x + frame_width > s->avctx->width)
-        return;
-    if (frame_y < 0 || frame_height < 0 ||
-        frame_y >= s->avctx->height ||
-        frame_height > s->avctx->height ||
-        frame_y + frame_height > s->avctx->height)
-        return;
 
     if ((frame_width == s->avctx->width && frame_height == s->avctx->height) &&
         (frame_x || frame_y)) {
@@ -232,6 +222,19 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
     }
     frame_x -= s->x_off;
     frame_y -= s->y_off;
+
+    if (frame_x < 0 || frame_width < 0 ||
+        frame_x >= s->avctx->width ||
+        frame_width > s->avctx->width ||
+        frame_x + frame_width > s->avctx->width) {
+        return AVERROR_INVALIDDATA;
+    }
+    if (frame_y < 0 || frame_height < 0 ||
+        frame_y >= s->avctx->height ||
+        frame_height > s->avctx->height ||
+        frame_y + frame_height > s->avctx->height) {
+        return AVERROR_INVALIDDATA;
+    }
 
     /* if only a certain region will be updated, copy the entire previous
      * frame before the decode */
@@ -262,7 +265,7 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
         /* originally UnpackFrame in VAG's code */
         bytestream2_init(&gb, gb.buffer, s->buf + s->size - gb.buffer);
         if (bytestream2_get_bytes_left(&gb) < 1)
-            return;
+            return AVERROR_INVALIDDATA;
         meth = bytestream2_get_byteu(&gb);
         if (meth & 0x80) {
             lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
@@ -282,13 +285,13 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
                         if (ofs + len > frame_width || bytestream2_get_bytes_left(&gb) < len)
-                            return;
+                            return AVERROR_INVALIDDATA;
                         bytestream2_get_bufferu(&gb, &dp[ofs], len);
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
                         if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
-                            return;
+                            return AVERROR_INVALIDDATA;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
                     }
@@ -328,7 +331,7 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
                     } else {
                         /* interframe pixel copy */
                         if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
-                            return;
+                            return AVERROR_INVALIDDATA;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
                     }
@@ -343,6 +346,8 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
             break;
         }
     }
+
+    return 0;
 }
 
 static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
@@ -405,7 +410,8 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
-    vmd_decode(s, frame);
+    if (vmd_decode(s, frame) < 0)
+        av_log(avctx, AV_LOG_WARNING, "decode error\n");
 
     /* make the palette available on the way out */
     memcpy(frame->data[1], s->palette, PALETTE_COUNT * 4);
