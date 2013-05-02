@@ -81,6 +81,7 @@ static const AVOption opencl_options[] = {
      { "platform_idx",        "set platform index value",  OFFSET(platform_idx),  AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
      { "device_idx",          "set device index value",    OFFSET(device_idx),    AV_OPT_TYPE_INT,    {.i64=-1}, -1, INT_MAX},
      { "build_options",       "build options of opencl",   OFFSET(build_options), AV_OPT_TYPE_STRING, {.str="-I."},  CHAR_MIN, CHAR_MAX},
+     { NULL }
 };
 
 static const AVClass openclutils_class = {
