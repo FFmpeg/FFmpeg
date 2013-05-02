@@ -1064,13 +1064,14 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     handle_jpeg(&srcFormat);
     handle_jpeg(&dstFormat);
+    if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat)
+        av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
     handle_0alpha(&srcFormat);
     handle_0alpha(&dstFormat);
     handle_xyz(&srcFormat);
     handle_xyz(&dstFormat);
 
     if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat){
-        av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
         c->srcFormat= srcFormat;
         c->dstFormat= dstFormat;
     }
