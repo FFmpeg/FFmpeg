@@ -937,7 +937,7 @@ static void roq_encode_video(RoqContext *enc)
     enc->framesSinceKeyframe++;
 }
 
-static int roq_encode_end(AVCodecContext *avctx)
+static av_cold int roq_encode_end(AVCodecContext *avctx)
 {
     RoqContext *enc = avctx->priv_data;
 

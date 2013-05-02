@@ -477,7 +477,7 @@ av_cold int ff_bgmc_init(AVCodecContext *avctx,
 
 
 /** Release the lookup table arrays */
-void ff_bgmc_end(uint8_t **cf_lut, int **cf_lut_status)
+av_cold void ff_bgmc_end(uint8_t **cf_lut, int **cf_lut_status)
 {
     av_freep(cf_lut);
     av_freep(cf_lut_status);

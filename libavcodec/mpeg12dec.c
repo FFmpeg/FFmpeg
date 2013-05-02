@@ -26,6 +26,7 @@
  */
 
 //#define DEBUG
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "internal.h"
 #include "avcodec.h"
@@ -2355,7 +2356,7 @@ static void flush(AVCodecContext *avctx)
     ff_mpeg_flush(avctx);
 }
 
-static int mpeg_decode_end(AVCodecContext *avctx)
+static av_cold int mpeg_decode_end(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
 
