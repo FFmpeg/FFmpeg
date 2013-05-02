@@ -1269,6 +1269,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
                    "couldn't find jpeg2k codestream atom\n");
             return -1;
         }
+    } else if (AV_RB16(s->buf) != JPEG2000_SOC && AV_RB32(s->buf + 4) == JP2_CODESTREAM) {
+        s->buf += 8;
     }
 
     if (bytestream_get_be16(&s->buf) != JPEG2000_SOC) {
