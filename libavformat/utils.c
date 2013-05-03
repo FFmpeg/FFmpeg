@@ -2164,6 +2164,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
 
     if(s->seek2any>0)
         flags |= AVSEEK_FLAG_ANY;
+    flags &= ~AVSEEK_FLAG_BACKWARD;
 
     if (s->iformat->read_seek2) {
         int ret;

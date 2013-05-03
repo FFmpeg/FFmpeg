@@ -1687,6 +1687,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * or if stream_index is -1, in AV_TIME_BASE units.
  * If flags contain AVSEEK_FLAG_ANY, then non-keyframes are treated as
  * keyframes (this may not be supported by all demuxers).
+ * If flags contain AVSEEK_FLAG_BACKWARD, it is ignored.
  *
  * @param stream_index index of the stream which is used as time base reference
  * @param min_ts smallest acceptable timestamp
