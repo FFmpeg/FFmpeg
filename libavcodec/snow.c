@@ -618,7 +618,7 @@ int ff_snow_frame_start(SnowContext *s){
 
     av_frame_move_ref(&tmp, &s->last_picture[s->max_ref_frames-1]);
     for(i=s->max_ref_frames-1; i>0; i--)
-        av_frame_move_ref(&s->last_picture[i+1], &s->last_picture[i]);
+        av_frame_move_ref(&s->last_picture[i], &s->last_picture[i-1]);
     memmove(s->halfpel_plane+1, s->halfpel_plane, (s->max_ref_frames-1)*sizeof(void*)*4*4);
     if(USE_HALFPEL_PLANE && s->current_picture.data[0])
         halfpel_interpol(s, s->halfpel_plane[0], &s->current_picture);
