@@ -92,51 +92,6 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff
 }
 
 // avg_pixels
-#ifndef NO_RND
-// in case more speed is needed - unroling would certainly help
-static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-    JUMPALIGN();
-    do {
-        __asm__ volatile(
-             "movq  %0, %%mm0           \n\t"
-             "movq  %1, %%mm1           \n\t"
-             OP_AVG(%%mm0, %%mm1, %%mm2, %%mm6)
-             "movq  %%mm2, %0           \n\t"
-             :"+m"(*block)
-             :"m"(*pixels)
-             :"memory");
-        pixels += line_size;
-        block += line_size;
-    }
-    while (--h);
-}
-#endif /* NO_RND */
-
-static void DEF(avg, pixels16)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
-{
-    MOVQ_BFE(mm6);
-    JUMPALIGN();
-    do {
-        __asm__ volatile(
-             "movq  %0, %%mm0           \n\t"
-             "movq  %1, %%mm1           \n\t"
-             OP_AVG(%%mm0, %%mm1, %%mm2, %%mm6)
-             "movq  %%mm2, %0           \n\t"
-             "movq  8%0, %%mm0          \n\t"
-             "movq  8%1, %%mm1          \n\t"
-             OP_AVG(%%mm0, %%mm1, %%mm2, %%mm6)
-             "movq  %%mm2, 8%0          \n\t"
-             :"+m"(*block)
-             :"m"(*pixels)
-             :"memory");
-        pixels += line_size;
-        block += line_size;
-    }
-    while (--h);
-}
-
 // this routine is 'slightly' suboptimal but mostly unused
 static void DEF(avg, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, ptrdiff_t line_size, int h)
 {

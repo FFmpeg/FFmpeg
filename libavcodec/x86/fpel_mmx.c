@@ -29,6 +29,51 @@
 
 #if HAVE_MMX_INLINE
 
+// in case more speed is needed - unroling would certainly help
+void ff_avg_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
+                        ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    JUMPALIGN();
+    do {
+        __asm__ volatile(
+             "movq  %0, %%mm0           \n\t"
+             "movq  %1, %%mm1           \n\t"
+             PAVGB_MMX(%%mm0, %%mm1, %%mm2, %%mm6)
+             "movq  %%mm2, %0           \n\t"
+             :"+m"(*block)
+             :"m"(*pixels)
+             :"memory");
+        pixels += line_size;
+        block += line_size;
+    }
+    while (--h);
+}
+
+void ff_avg_pixels16_mmx(uint8_t *block, const uint8_t *pixels,
+                         ptrdiff_t line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    JUMPALIGN();
+    do {
+        __asm__ volatile(
+             "movq  %0, %%mm0           \n\t"
+             "movq  %1, %%mm1           \n\t"
+             PAVGB_MMX(%%mm0, %%mm1, %%mm2, %%mm6)
+             "movq  %%mm2, %0           \n\t"
+             "movq  8%0, %%mm0          \n\t"
+             "movq  8%1, %%mm1          \n\t"
+             PAVGB_MMX(%%mm0, %%mm1, %%mm2, %%mm6)
+             "movq  %%mm2, 8%0          \n\t"
+             :"+m"(*block)
+             :"m"(*pixels)
+             :"memory");
+        pixels += line_size;
+        block += line_size;
+    }
+    while (--h);
+}
+
 void ff_put_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                         ptrdiff_t line_size, int h)
 {

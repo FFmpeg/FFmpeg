@@ -1086,7 +1086,7 @@ void ff_put_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 
 void ff_avg_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-    avg_pixels8_mmx(dst, src, stride, 8);
+    ff_avg_pixels8_mmx(dst, src, stride, 8);
 }
 
 void ff_put_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
@@ -1096,7 +1096,7 @@ void ff_put_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 
 void ff_avg_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-    avg_pixels16_mmx(dst, src, stride, 16);
+    ff_avg_pixels16_mmx(dst, src, stride, 16);
 }
 
 /* VC-1-specific */
@@ -1134,7 +1134,7 @@ void ff_ ## OPNAME2 ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[
 
 #if HAVE_MMX_INLINE
 DIRAC_PIXOP(put, ff_put, mmx)
-DIRAC_PIXOP(avg, avg, mmx)
+DIRAC_PIXOP(avg, ff_avg, mmx)
 #endif
 
 #if HAVE_YASM
