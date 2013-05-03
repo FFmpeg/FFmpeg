@@ -50,7 +50,7 @@ do_image_formats()
     outfile="$datadir/images/$1/"
     mkdir -p "$outfile"
     file=${outfile}%02d.$1
-    run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS -t 0.5 -y -qscale 10 $target_path/$file
+    run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS -frames 13 -y -qscale 10 $target_path/$file
     do_md5sum ${outfile}02.$1
     do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
     echo $(wc -c ${outfile}02.$1)
