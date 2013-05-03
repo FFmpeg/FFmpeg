@@ -626,9 +626,9 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         av_log(NULL, AV_LOG_WARNING, "changing to %"PRId64". This may result "
                "in incorrect timestamps in the output file.\n",
                max);
-        pkt->dts = max;
-        if (pkt->pts != AV_NOPTS_VALUE)
+        if(pkt->pts >= pkt->dts)
             pkt->pts = FFMAX(pkt->pts, max);
+        pkt->dts = max;
       }
     }
     ost->last_mux_dts = pkt->dts;
