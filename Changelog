@@ -40,6 +40,7 @@ version <next>:
 - Matroska muxer can now put the index at the beginning of the file.
 - extractplanes filter
 - avectorscope filter
+- ADPCM DTK decoder
 
 
 version 1.2:
