@@ -88,6 +88,11 @@ static void vc1_extract_headers(AVCodecParserContext *s, AVCodecContext *avctx,
                 }
             }
 
+            if (vpc->v.broadcast && vpc->v.interlace && !vpc->v.psf)
+                s->field_order = vpc->v.tff ? AV_FIELD_TT : AV_FIELD_BB;
+            else
+                s->field_order = AV_FIELD_PROGRESSIVE;
+
             break;
         }
     }

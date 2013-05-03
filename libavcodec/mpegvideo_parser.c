@@ -118,6 +118,14 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                 s->repeat_pict = 2;
                             }
                         }
+
+                        if (!pc->progressive_sequence) {
+                            if (top_field_first)
+                                s->field_order = AV_FIELD_TT;
+                            else
+                                s->field_order = AV_FIELD_BB;
+                        } else
+                            s->field_order = AV_FIELD_PROGRESSIVE;
                     }
                     break;
                 }
