@@ -3908,6 +3908,8 @@ typedef struct AVCodecParserContext {
      * For all other types, this is in units of AVCodecContext.time_base.
      */
     int duration;
+
+    enum AVFieldOrder field_order;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
