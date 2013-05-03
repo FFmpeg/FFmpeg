@@ -540,8 +540,13 @@ enable_deep(){
 }
 
 enable_deep_weak(){
-    do_enable_deep $*
-    enable_weak $*
+    for var; do
+        disabled $var && continue
+        pushvar var
+        do_enable_deep $var
+        popvar var
+        enable_weak $var
+    done
 }
 
 enabled(){
