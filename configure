@@ -475,21 +475,21 @@ get_safe(){
 }
 
 pushvar(){
-    for var in $*; do
-        eval level=\${${var}_level:=0}
-        eval ${var}_${level}="\$$var"
-        eval ${var}_level=$(($level+1))
+    for pvar in $*; do
+        eval level=\${${pvar}_level:=0}
+        eval ${pvar}_${level}="\$$pvar"
+        eval ${pvar}_level=$(($level+1))
     done
 }
 
 popvar(){
-    for var in $*; do
-        eval level=\${${var}_level:-0}
+    for pvar in $*; do
+        eval level=\${${pvar}_level:-0}
         test $level = 0 && continue
         eval level=$(($level-1))
-        eval $var="\${${var}_${level}}"
-        eval ${var}_level=$level
-        eval unset ${var}_${level}
+        eval $pvar="\${${pvar}_${level}}"
+        eval ${pvar}_level=$level
+        eval unset ${pvar}_${level}
     done
 }
 
