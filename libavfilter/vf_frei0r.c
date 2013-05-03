@@ -141,6 +141,9 @@ static int set_params(AVFilterContext *ctx, const char *params)
     Frei0rContext *frei0r = ctx->priv;
     int i;
 
+    if (!params)
+        return 0;
+
     for (i = 0; i < frei0r->plugin_info.num_params; i++) {
         f0r_param_info_t info;
         char *param;
