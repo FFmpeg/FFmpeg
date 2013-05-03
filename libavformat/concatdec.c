@@ -341,7 +341,7 @@ static int real_seek(AVFormatContext *avf, int stream,
         return ret;
 
     ret = try_seek(avf, stream, min_ts, ts, max_ts, flags);
-    if (ret < 0 && !(flags & AVSEEK_FLAG_BACKWARD) &&
+    if (ret < 0 &&
         left < cat->nb_files - 1 &&
         cat->files[left + 1].start_time < max_ts) {
         if ((ret = open_file(avf, left + 1)) < 0)
