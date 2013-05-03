@@ -1089,6 +1089,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         input_streams[source_index]->discard = 0;
         input_streams[source_index]->st->discard = AVDISCARD_NONE;
     }
+    ost->last_mux_dts = AV_NOPTS_VALUE;
 
     return ost;
 }
