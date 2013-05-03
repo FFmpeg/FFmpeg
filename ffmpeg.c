@@ -613,8 +613,9 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
         (avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
         pkt->dts != AV_NOPTS_VALUE &&
-        ost->last_mux_dts != AV_NOPTS_VALUE &&
-        pkt->dts < ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT)) {
+        ost->last_mux_dts != AV_NOPTS_VALUE) {
+      int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
+      if (pkt->dts < max) {
         av_log(NULL, AV_LOG_WARNING, "Non-monotonous DTS in output stream "
                "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
                ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
@@ -628,6 +629,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
         pkt->dts = ost->last_mux_dts + 1;
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts = FFMAX(pkt->pts, pkt->dts);
+      }
     }
     ost->last_mux_dts = pkt->dts;
 
