@@ -1041,14 +1041,14 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
             if (use_ic) {
                 int i, j;
                 uint8_t *src, *src2;
-                const uint8_t *lutuv1 = lutuv[v->ref_field_type[i<2 ? dir : dir2]];
 
                 src  = srcU;
                 src2 = srcV;
                 for (j = 0; j < 5; j++) {
+                    int f = (uvsrc_y + (j<<fieldmv))&1;
                     for (i = 0; i < 5; i++) {
-                        src[i]  = lutuv1[src[i]];
-                        src2[i] = lutuv1[src2[i]];
+                        src[i]  = lutuv[f][src[i]];
+                        src2[i] = lutuv[f][src2[i]];
                     }
                     src  += s->uvlinesize << fieldmv;
                     src2 += s->uvlinesize << fieldmv;
