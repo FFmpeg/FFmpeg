@@ -698,9 +698,15 @@ static void vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
     );
 }
 
+static void put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
+                                   ptrdiff_t stride, int rnd)
+{
+    ff_put_pixels8_mmx(dst, src, stride, 8);
+}
+
 av_cold void ff_vc1dsp_init_mmx(VC1DSPContext *dsp)
 {
-    dsp->put_vc1_mspel_pixels_tab[ 0] = ff_put_vc1_mspel_mc00_mmx;
+    dsp->put_vc1_mspel_pixels_tab[ 0] = put_vc1_mspel_mc00_mmx;
     dsp->put_vc1_mspel_pixels_tab[ 4] = put_vc1_mspel_mc01_mmx;
     dsp->put_vc1_mspel_pixels_tab[ 8] = put_vc1_mspel_mc02_mmx;
     dsp->put_vc1_mspel_pixels_tab[12] = put_vc1_mspel_mc03_mmx;

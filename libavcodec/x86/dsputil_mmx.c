@@ -1045,7 +1045,6 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
     }
 }
 
-
 #if CONFIG_VIDEODSP
 #if HAVE_YASM
 #if ARCH_X86_32
@@ -1077,34 +1076,6 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
 }
 #endif
 #endif
-
-/* CAVS-specific */
-void ff_put_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_put_pixels8_mmx(dst, src, stride, 8);
-}
-
-void ff_avg_cavs_qpel8_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_avg_pixels8_mmx(dst, src, stride, 8);
-}
-
-void ff_put_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_put_pixels16_mmx(dst, src, stride, 16);
-}
-
-void ff_avg_cavs_qpel16_mc00_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_avg_pixels16_mmx(dst, src, stride, 16);
-}
-
-/* VC-1-specific */
-void ff_put_vc1_mspel_mc00_mmx(uint8_t *dst, const uint8_t *src,
-                               ptrdiff_t stride, int rnd)
-{
-    ff_put_pixels8_mmx(dst, src, stride, 8);
-}
 
 #if CONFIG_DIRAC_DECODER
 #define DIRAC_PIXOP(OPNAME2, OPNAME, EXT)\
