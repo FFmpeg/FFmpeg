@@ -238,7 +238,7 @@ OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 SKIPHEADERS-$(CONFIG_LIBVIDSTAB)             += vidstabutils.h
 SKIPHEADERS-$(CONFIG_OPENCL)                 += opencl_internal.h deshake_opencl_kernel.h unsharp_opencl_kernel.h
 
-TOOLS     = graph2dot
+TOOLS     = graph2dot zmqsend
 TESTPROGS = drawutils filtfmts formats
 
 clean::
