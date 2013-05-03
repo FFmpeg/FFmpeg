@@ -29,13 +29,13 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
-#include "internal.h"
+#include "avio.h"
 #include "avio_internal.h"
+#include "internal.h"
+#include "metadata.h"
 #include "pcm.h"
 #include "riff.h"
 #include "w64.h"
-#include "avio.h"
-#include "metadata.h"
 #include "spdif.h"
 
 typedef struct WAVDemuxContext {
@@ -52,7 +52,6 @@ typedef struct WAVDemuxContext {
     int ignore_length;
     int spdif;
 } WAVDemuxContext;
-
 
 #if CONFIG_WAV_DEMUXER
 
@@ -86,11 +85,9 @@ static int wav_probe(AVProbeData *p)
         return 0;
     if (!memcmp(p->buf + 8, "WAVE", 4)) {
         if (!memcmp(p->buf, "RIFF", 4))
-            /*
-              Since ACT demuxer has standard WAV header at top of it's own,
-              returning score is decreased to avoid probe conflict
-              between ACT and WAV.
-            */
+            /* Since ACT demuxer has standard WAV header at top of it's
+             * own, returning score is decreased to avoid probe conflict
+             * between ACT and WAV. */
             return AVPROBE_SCORE_MAX - 1;
         else if (!memcmp(p->buf,      "RF64", 4) &&
                  !memcmp(p->buf + 12, "ds64", 4))
@@ -173,16 +170,22 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
 
         if (umid_mask) {
             /* the string formatting below is per SMPTE 330M-2004 Annex C */
-            if (umid_parts[4] == 0 && umid_parts[5] == 0 && umid_parts[6] == 0 && umid_parts[7] == 0) {
+            if (umid_parts[4] == 0 && umid_parts[5] == 0 &&
+                umid_parts[6] == 0 && umid_parts[7] == 0) {
                 /* basic UMID */
-                snprintf(temp, sizeof(temp), "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
-                         umid_parts[0], umid_parts[1], umid_parts[2], umid_parts[3]);
+                snprintf(temp, sizeof(temp),
+                         "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
+                         umid_parts[0], umid_parts[1],
+                         umid_parts[2], umid_parts[3]);
             } else {
                 /* extended UMID */
-                snprintf(temp, sizeof(temp), "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64
-                                               "%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
-                         umid_parts[0], umid_parts[1], umid_parts[2], umid_parts[3],
-                         umid_parts[4], umid_parts[5], umid_parts[6], umid_parts[7]);
+                snprintf(temp, sizeof(temp),
+                         "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64
+                         "%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
+                         umid_parts[0], umid_parts[1],
+                         umid_parts[2], umid_parts[3],
+                         umid_parts[4], umid_parts[5],
+                         umid_parts[6], umid_parts[7]);
             }
 
             if ((ret = av_dict_set(&s->metadata, "umid", temp, 0)) < 0)
@@ -197,7 +200,7 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
         /* CodingHistory present */
         size -= 602;
 
-        if (!(coding_history = av_malloc(size+1)))
+        if (!(coding_history = av_malloc(size + 1)))
             return AVERROR(ENOMEM);
 
         if ((ret = avio_read(s->pb, coding_history, size)) < 0)
@@ -213,22 +216,22 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
 }
 
 static const AVMetadataConv wav_metadata_conv[] = {
-    {"description",      "comment"      },
-    {"originator",       "encoded_by"   },
-    {"origination_date", "date"         },
-    {"origination_time", "creation_time"},
-    {0},
+    { "description",      "comment"       },
+    { "originator",       "encoded_by"    },
+    { "origination_date", "date"          },
+    { "origination_time", "creation_time" },
+    { 0 },
 };
 
 /* wav input */
 static int wav_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
-    int64_t sample_count=0;
+    int64_t sample_count = 0;
     int rf64;
     uint32_t tag;
-    AVIOContext *pb = s->pb;
-    AVStream *st = NULL;
+    AVIOContext *pb      = s->pb;
+    AVStream *st         = NULL;
     WAVDemuxContext *wav = s->priv_data;
     int ret, got_fmt = 0;
     int64_t next_tag_ofs, data_ofs = -1;
@@ -253,8 +256,10 @@ static int wav_read_header(AVFormatContext *s)
         if (size < 24)
             return -1;
         avio_rl64(pb); /* RIFF size */
-        data_size = avio_rl64(pb);
+
+        data_size    = avio_rl64(pb);
         sample_count = avio_rl64(pb);
+
         if (data_size < 0 || sample_count < 0) {
             av_log(s, AV_LOG_ERROR, "negative data_size and/or sample_count in "
                    "ds64: data_size = %"PRId64", sample_count = %"PRId64"\n",
@@ -267,7 +272,7 @@ static int wav_read_header(AVFormatContext *s)
 
     for (;;) {
         AVStream *vst;
-        size = next_tag(pb, &tag);
+        size         = next_tag(pb, &tag);
         next_tag_ofs = avio_tell(pb) + size;
 
         if (url_feof(pb))
@@ -285,14 +290,15 @@ static int wav_read_header(AVFormatContext *s)
             break;
         case MKTAG('d', 'a', 't', 'a'):
             if (!got_fmt) {
-                av_log(s, AV_LOG_ERROR, "found no 'fmt ' tag before the 'data' tag\n");
+                av_log(s, AV_LOG_ERROR,
+                       "found no 'fmt ' tag before the 'data' tag\n");
                 return AVERROR_INVALIDDATA;
             }
 
             if (rf64) {
                 next_tag_ofs = wav->data_end = avio_tell(pb) + data_size;
             } else {
-                data_size = size;
+                data_size    = size;
                 next_tag_ofs = wav->data_end = size ? next_tag_ofs : INT64_MAX;
             }
 
@@ -304,11 +310,11 @@ static int wav_read_header(AVFormatContext *s)
             if (!pb->seekable || (!rf64 && !size))
                 goto break_loop;
             break;
-        case MKTAG('f','a','c','t'):
+        case MKTAG('f', 'a', 'c', 't'):
             if (!sample_count)
                 sample_count = avio_rl32(pb);
             break;
-        case MKTAG('b','e','x','t'):
+        case MKTAG('b', 'e', 'x', 't'):
             if ((ret = wav_parse_bext_tag(s, size)) < 0)
                 return ret;
             break;
@@ -363,6 +369,7 @@ static int wav_read_header(AVFormatContext *s)
             break;
         }
     }
+
 break_loop:
     if (data_ofs < 0) {
         av_log(s, AV_LOG_ERROR, "no 'data' tag found\n");
@@ -371,8 +378,11 @@ break_loop:
 
     avio_seek(pb, data_ofs, SEEK_SET);
 
-    if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id) && wav->data_end <= avio_size(pb))
-        sample_count = (data_size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
+    if (!sample_count && st->codec->channels &&
+        av_get_bits_per_sample(st->codec->codec_id) && wav->data_end <= avio_size(pb))
+        sample_count = (data_size << 3) /
+                       (st->codec->channels *
+                        (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
     if (sample_count)
         st->duration = sample_count;
 
@@ -382,7 +392,8 @@ break_loop:
     return 0;
 }
 
-/** Find chunk with w64 GUID by skipping over other chunks
+/**
+ * Find chunk with w64 GUID by skipping over other chunks.
  * @return the size of the found chunk
  */
 static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
@@ -404,8 +415,7 @@ static int64_t find_guid(AVIOContext *pb, const uint8_t guid1[16])
 
 #define MAX_SIZE 4096
 
-static int wav_read_packet(AVFormatContext *s,
-                           AVPacket *pkt)
+static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size;
     int64_t left;
@@ -470,8 +480,8 @@ smv_out:
 
     left = wav->data_end - avio_tell(s->pb);
     if (wav->ignore_length)
-        left= INT_MAX;
-    if (left <= 0){
+        left = INT_MAX;
+    if (left <= 0) {
         if (CONFIG_W64_DEMUXER && wav->w64)
             left = find_guid(s->pb, ff_w64_guid_data) - 24;
         else
@@ -482,7 +492,7 @@ smv_out:
                 goto smv_retry;
             return AVERROR_EOF;
         }
-        wav->data_end= avio_tell(s->pb) + left;
+        wav->data_end = avio_tell(s->pb) + left;
     }
 
     size = MAX_SIZE;
@@ -552,11 +562,10 @@ AVInputFormat ff_wav_demuxer = {
     .read_packet    = wav_read_packet,
     .read_seek      = wav_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
+    .codec_tag      = (const AVCodecTag * const []) { ff_codec_wav_tags,  0 },
     .priv_class     = &wav_demuxer_class,
 };
 #endif /* CONFIG_WAV_DEMUXER */
-
 
 #if CONFIG_W64_DEMUXER
 static int w64_probe(AVProbeData *p)
@@ -573,8 +582,8 @@ static int w64_probe(AVProbeData *p)
 static int w64_read_header(AVFormatContext *s)
 {
     int64_t size, data_ofs = 0;
-    AVIOContext *pb  = s->pb;
-    WAVDemuxContext    *wav = s->priv_data;
+    AVIOContext *pb      = s->pb;
+    WAVDemuxContext *wav = s->priv_data;
     AVStream *st;
     uint8_t guid[16];
     int ret;
@@ -583,7 +592,8 @@ static int w64_read_header(AVFormatContext *s)
     if (memcmp(guid, ff_w64_guid_riff, 16))
         return -1;
 
-    if (avio_rl64(pb) < 16 + 8 + 16 + 8 + 16 + 8) /* riff + wave + fmt + sizes */
+    /* riff + wave + fmt + sizes */
+    if (avio_rl64(pb) < 16 + 8 + 16 + 8 + 16 + 8)
         return -1;
 
     avio_read(pb, guid, 16);
@@ -685,6 +695,6 @@ AVInputFormat ff_w64_demuxer = {
     .read_packet    = wav_read_packet,
     .read_seek      = wav_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = (const AVCodecTag* const []){ ff_codec_wav_tags, 0 },
+    .codec_tag      = (const AVCodecTag * const []) { ff_codec_wav_tags, 0 },
 };
 #endif /* CONFIG_W64_DEMUXER */
