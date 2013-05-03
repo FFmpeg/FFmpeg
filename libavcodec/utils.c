@@ -982,6 +982,7 @@ void avcodec_free_frame(AVFrame **frame)
 
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
+MAKE_ACCESSORS(AVCodecContext, codec, int, lowres)
 
 static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
 {
