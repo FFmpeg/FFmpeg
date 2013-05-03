@@ -611,6 +611,7 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
     }
 
     if (!(s->oformat->flags & AVFMT_NOTIMESTAMPS) &&
+        (avctx->codec_type == AVMEDIA_TYPE_AUDIO || avctx->codec_type == AVMEDIA_TYPE_VIDEO) &&
         ost->last_mux_dts != AV_NOPTS_VALUE &&
         pkt->dts < ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT)) {
         av_log(NULL, AV_LOG_WARNING, "Non-monotonous DTS in output stream "
