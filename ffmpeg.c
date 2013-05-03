@@ -617,14 +617,14 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, OutputStream *ost)
       int64_t max = ost->last_mux_dts + !(s->oformat->flags & AVFMT_TS_NONSTRICT);
       if (pkt->dts < max) {
         int loglevel = max - pkt->dts > 2 || avctx->codec_type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
-        av_log(NULL, loglevel, "Non-monotonous DTS in output stream "
+        av_log(s, loglevel, "Non-monotonous DTS in output stream "
                "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
                ost->file_index, ost->st->index, ost->last_mux_dts, pkt->dts);
         if (exit_on_error) {
             av_log(NULL, AV_LOG_FATAL, "aborting.\n");
             exit(1);
         }
-        av_log(NULL, loglevel, "changing to %"PRId64". This may result "
+        av_log(s, loglevel, "changing to %"PRId64". This may result "
                "in incorrect timestamps in the output file.\n",
                max);
         if(pkt->pts >= pkt->dts)
