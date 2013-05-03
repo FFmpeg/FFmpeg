@@ -16,6 +16,9 @@ fate-adpcm-creative-8-2.6bit: CMD = md5 -i $(SAMPLES)/creative/BBC_3BIT.VOC -f s
 FATE_ADPCM-$(call DEMDEC, VOC, ADPCM_SBPRO_4) += fate-adpcm-creative-8-4bit
 fate-adpcm-creative-8-4bit: CMD = md5 -i $(SAMPLES)/creative/BBC_4BIT.VOC -f s16le
 
+FATE_ADPCM-$(call DEMDEC, ADP, ADPCM_DTK) += fate-adpcm-dtk
+fate-adpcm-dtk: CMD = framecrc -i $(SAMPLES)/adp/shakespr_partial.adp -f s16le
+
 FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA) += fate-adpcm-ea-1
 fate-adpcm-ea-1: CMD = framecrc -i $(SAMPLES)/ea-wve/networkBackbone-partial.wve -frames:a 26 -vn
 
