@@ -37,6 +37,7 @@ version <next>:
 - trim and atrim filters
 - ffmpeg -t and -ss (output-only) options are now sample-accurate when
   transcoding audio
+- Matroska muxer can now put the index at the beginning of the file.
 
 
 version 1.2:

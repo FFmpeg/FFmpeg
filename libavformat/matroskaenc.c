@@ -34,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/lfg.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/sha.h"
@@ -81,6 +82,7 @@ typedef struct {
 #define MODE_WEBM       0x02
 
 typedef struct MatroskaMuxContext {
+    const AVClass  *class;
     int             mode;
     AVIOContext   *dyn_bc;
     ebml_master     segment;
@@ -97,6 +99,9 @@ typedef struct MatroskaMuxContext {
     AVPacket        cur_audio_pkt;
 
     int have_attachments;
+
+    int reserve_cues_space;
+    int64_t cues_pos;
 } MatroskaMuxContext;
 
 
@@ -1042,6 +1047,11 @@ static int mkv_write_header(AVFormatContext *s)
     if (mkv->cues == NULL)
         return AVERROR(ENOMEM);
 
+    if (pb->seekable && mkv->reserve_cues_space) {
+        mkv->cues_pos = avio_tell(pb);
+        put_ebml_void(pb, mkv->reserve_cues_space);
+    }
+
     av_init_packet(&mkv->cur_audio_pkt);
     mkv->cur_audio_pkt.size = 0;
     mkv->cluster_pos = -1;
@@ -1336,7 +1346,28 @@ static int mkv_write_trailer(AVFormatContext *s)
 
     if (pb->seekable) {
         if (mkv->cues->num_entries) {
-            cuespos = mkv_write_cues(pb, mkv->cues, mkv->tracks, s->nb_streams);
+            if (mkv->reserve_cues_space) {
+                int64_t cues_end;
+
+                currentpos = avio_tell(pb);
+                avio_seek(pb, mkv->cues_pos, SEEK_SET);
+
+                cuespos = mkv_write_cues(pb, mkv->cues, mkv->tracks, s->nb_streams);
+                cues_end = avio_tell(pb);
+                if (cues_end > cuespos + mkv->reserve_cues_space) {
+                    av_log(s, AV_LOG_ERROR, "Insufficient space reserved for cues: %d "
+                           "(needed: %"PRId64").\n", mkv->reserve_cues_space,
+                           cues_end - cuespos);
+                    return AVERROR(EINVAL);
+                }
+
+                if (cues_end < cuespos + mkv->reserve_cues_space)
+                    put_ebml_void(pb, mkv->reserve_cues_space - (cues_end - cuespos));
+
+                avio_seek(pb, currentpos, SEEK_SET);
+            } else {
+                cuespos = mkv_write_cues(pb, mkv->cues, mkv->tracks, s->nb_streams);
+            }
 
             ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES, cuespos);
             if (ret < 0) return ret;
@@ -1404,7 +1435,22 @@ const AVCodecTag additional_video_tags[] = {
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
 
+#define OFFSET(x) offsetof(MatroskaMuxContext, x)
+#define FLAGS AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "reserve_index_space", "Reserve a given amount of space (in bytes) at the beginning "
+        "of the file for the index (cues).", OFFSET(reserve_cues_space), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { NULL },
+};
+
 #if CONFIG_MATROSKA_MUXER
+static const AVClass matroska_class = {
+    .class_name = "matroska muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_matroska_muxer = {
     .name              = "matroska",
     .long_name         = NULL_IF_CONFIG_SMALL("Matroska"),
@@ -1430,10 +1476,18 @@ AVOutputFormat ff_matroska_muxer = {
     .subtitle_codec    = AV_CODEC_ID_ASS,
 #endif
     .query_codec       = mkv_query_codec,
+    .priv_class        = &matroska_class,
 };
 #endif
 
 #if CONFIG_WEBM_MUXER
+static const AVClass webm_class = {
+    .class_name = "webm muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_webm_muxer = {
     .name              = "webm",
     .long_name         = NULL_IF_CONFIG_SMALL("WebM"),
@@ -1447,10 +1501,17 @@ AVOutputFormat ff_webm_muxer = {
     .write_trailer     = mkv_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT,
+    .priv_class        = &webm_class,
 };
 #endif
 
 #if CONFIG_MATROSKA_AUDIO_MUXER
+static const AVClass mka_class = {
+    .class_name = "matroska audio muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVOutputFormat ff_matroska_audio_muxer = {
     .name              = "matroska",
     .long_name         = NULL_IF_CONFIG_SMALL("Matroska"),
@@ -1467,5 +1528,6 @@ AVOutputFormat ff_matroska_audio_muxer = {
     .codec_tag         = (const AVCodecTag* const []){
         ff_codec_wav_tags, additional_audio_tags, 0
     },
+    .priv_class        = &mka_class,
 };
 #endif
