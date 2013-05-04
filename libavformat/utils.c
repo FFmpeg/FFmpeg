@@ -2135,7 +2135,19 @@ static int seek_frame_internal(AVFormatContext *s, int stream_index,
 
 int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
-    int ret = seek_frame_internal(s, stream_index, timestamp, flags);
+    int ret;
+
+    if (s->iformat->read_seek2 && !s->iformat->read_seek) {
+        int64_t min_ts = INT64_MIN, max_ts = INT64_MAX;
+        if ((flags & AVSEEK_FLAG_BACKWARD))
+            max_ts = timestamp;
+        else
+            min_ts = timestamp;
+        return avformat_seek_file(s, stream_index, min_ts, timestamp, max_ts,
+                                  flags & ~AVSEEK_FLAG_BACKWARD);
+    }
+
+    ret = seek_frame_internal(s, stream_index, timestamp, flags);
 
     if (ret >= 0)
         ret = avformat_queue_attached_pictures(s);
@@ -2152,6 +2164,7 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
 
     if(s->seek2any>0)
         flags |= AVSEEK_FLAG_ANY;
+    flags &= ~AVSEEK_FLAG_BACKWARD;
 
     if (s->iformat->read_seek2) {
         int ret;

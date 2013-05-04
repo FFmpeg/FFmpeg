@@ -705,7 +705,7 @@ static int mkv_write_tracks(AVFormatContext *s)
                 break;
             default:
                 av_log(s, AV_LOG_ERROR, "Only audio, video, and subtitles are supported for Matroska.\n");
-                break;
+                return AVERROR(EINVAL);
         }
         ret = mkv_write_codecprivate(s, pb, codec, native_id, qt_id);
         if (ret < 0) return ret;
