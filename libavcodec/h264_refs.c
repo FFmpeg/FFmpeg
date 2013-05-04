@@ -746,7 +746,7 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
                                    int first_slice)
 {
     int i, ret;
-    MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = first_slice ? h->mmco : mmco_temp;
+    MMCO mmco_temp[MAX_MMCO_COUNT], *mmco = mmco_temp;
     int mmco_index = 0;
 
     if (h->nal_unit_type == NAL_IDR_SLICE) { // FIXME fields
@@ -812,6 +812,7 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb,
     }
 
     if (first_slice && mmco_index != -1) {
+        memcpy(h->mmco, mmco_temp, sizeof(h->mmco));
         h->mmco_index = mmco_index;
     } else if (!first_slice && mmco_index >= 0 &&
                (mmco_index != h->mmco_index ||
