@@ -52,41 +52,41 @@ static float sbr_sum_square_c(float (*x)[2], int n)
 
 static void sbr_neg_odd_64_c(float *x)
 {
-    union av_intfloat32 *xi = (union av_intfloat32*)x;
+    union av_intfloat32 *xi = (union av_intfloat32*) x;
     int i;
-    for (i = 1; i < 64; i += 4)
-    {
-        xi[i+0].i ^= 1U<<31;
-        xi[i+2].i ^= 1U<<31;
+    for (i = 1; i < 64; i += 4) {
+        xi[i + 0].i ^= 1U << 31;
+        xi[i + 2].i ^= 1U << 31;
     }
 }
 
 static void sbr_qmf_pre_shuffle_c(float *z)
 {
-    union av_intfloat32 *zi = (union av_intfloat32*)z;
+    union av_intfloat32 *zi = (union av_intfloat32*) z;
     int k;
     zi[64].i = zi[0].i;
     zi[65].i = zi[1].i;
-    for (k = 1; k < 31; k+=2) {
-        zi[64+2*k+0].i = zi[64 - k].i ^ (1U<<31);
-        zi[64+2*k+1].i = zi[ k + 1].i;
-        zi[64+2*k+2].i = zi[63 - k].i ^ (1U<<31);
-        zi[64+2*k+3].i = zi[ k + 2].i;
+    for (k = 1; k < 31; k += 2) {
+        zi[64 + 2 * k + 0].i = zi[64 - k].i ^ (1U << 31);
+        zi[64 + 2 * k + 1].i = zi[ k + 1].i;
+        zi[64 + 2 * k + 2].i = zi[63 - k].i ^ (1U << 31);
+        zi[64 + 2 * k + 3].i = zi[ k + 2].i;
     }
-    zi[64+2*31+0].i = zi[64 - 31].i ^ (1U<<31);
-    zi[64+2*31+1].i = zi[31 + 1].i;
+
+    zi[64 + 2 * 31 + 0].i = zi[64 - 31].i ^ (1U << 31);
+    zi[64 + 2 * 31 + 1].i = zi[31 +  1].i;
 }
 
 static void sbr_qmf_post_shuffle_c(float W[32][2], const float *z)
 {
-    const union av_intfloat32 *zi = (const union av_intfloat32*)z;
-    union av_intfloat32 *Wi = (union av_intfloat32*)W;
+    const union av_intfloat32 *zi = (const union av_intfloat32*) z;
+    union av_intfloat32 *Wi       = (union av_intfloat32*) W;
     int k;
-    for (k = 0; k < 32; k+=2) {
-        Wi[2*k+0].i = zi[63-k].i ^ (1U<<31);
-        Wi[2*k+1].i = zi[k+0].i;
-        Wi[2*k+2].i = zi[62-k].i ^ (1U<<31);
-        Wi[2*k+3].i = zi[k+1].i;
+    for (k = 0; k < 32; k += 2) {
+        Wi[2 * k + 0].i = zi[63 - k].i ^ (1U << 31);
+        Wi[2 * k + 1].i = zi[ k + 0].i;
+        Wi[2 * k + 2].i = zi[62 - k].i ^ (1U << 31);
+        Wi[2 * k + 3].i = zi[ k + 1].i;
     }
 }
 
@@ -96,8 +96,8 @@ static void sbr_qmf_deint_neg_c(float *v, const float *src)
     union av_intfloat32 *vi = (union av_intfloat32*)v;
     int i;
     for (i = 0; i < 32; i++) {
-        vi[     i].i = si[63 - 2*i    ].i;
-        vi[63 - i].i = si[63 - 2*i - 1].i ^ (1U<<31);
+        vi[     i].i = si[63 - 2 * i    ].i;
+        vi[63 - i].i = si[63 - 2 * i - 1].i ^ (1U << 31);
     }
 }
 
@@ -139,32 +139,32 @@ static av_always_inline void autocorrelate(const float x[40][2],
 static void sbr_autocorrelate_c(const float x[40][2], float phi[3][2][2])
 {
 #if 0
-    // This code is slower because it multiplies memory accesses.
-    // It is left as eucational purpose and because it may offer
-    // a better reference for writing arch-specific dsp functions.
+    /* This code is slower because it multiplies memory accesses.
+     * It is left for educational purposes and because it may offer
+     * a better reference for writing arch-specific DSP functions. */
     autocorrelate(x, phi, 0);
     autocorrelate(x, phi, 1);
     autocorrelate(x, phi, 2);
 #else
-    float real_sum2 = x[ 0][0] * x[ 2][0] + x[ 0][1] * x[ 2][1];
-    float imag_sum2 = x[ 0][0] * x[ 2][1] - x[ 0][1] * x[ 2][0];
-    float real_sum1 = 0.f, imag_sum1 = 0.f, real_sum0 = 0.0f;
+    float real_sum2 = x[0][0] * x[2][0] + x[0][1] * x[2][1];
+    float imag_sum2 = x[0][0] * x[2][1] - x[0][1] * x[2][0];
+    float real_sum1 = 0.0f, imag_sum1 = 0.0f, real_sum0 = 0.0f;
     int   i;
     for (i = 1; i < 38; i++) {
-        real_sum0 += x[i][0] * x[i  ][0] + x[i][1] * x[i  ][1];
-        real_sum1 += x[i][0] * x[i+1][0] + x[i][1] * x[i+1][1];
-        imag_sum1 += x[i][0] * x[i+1][1] - x[i][1] * x[i+1][0];
-        real_sum2 += x[i][0] * x[i+2][0] + x[i][1] * x[i+2][1];
-        imag_sum2 += x[i][0] * x[i+2][1] - x[i][1] * x[i+2][0];
+        real_sum0 += x[i][0] * x[i    ][0] + x[i][1] * x[i    ][1];
+        real_sum1 += x[i][0] * x[i + 1][0] + x[i][1] * x[i + 1][1];
+        imag_sum1 += x[i][0] * x[i + 1][1] - x[i][1] * x[i + 1][0];
+        real_sum2 += x[i][0] * x[i + 2][0] + x[i][1] * x[i + 2][1];
+        imag_sum2 += x[i][0] * x[i + 2][1] - x[i][1] * x[i + 2][0];
     }
-    phi[2-2][1][0] = real_sum2;
-    phi[2-2][1][1] = imag_sum2;
-    phi[2  ][1][0] = real_sum0 + x[ 0][0] * x[ 0][0] + x[ 0][1] * x[ 0][1];
-    phi[1  ][0][0] = real_sum0 + x[38][0] * x[38][0] + x[38][1] * x[38][1];
-    phi[2-1][1][0] = real_sum1 + x[ 0][0] * x[ 1][0] + x[ 0][1] * x[ 1][1];
-    phi[2-1][1][1] = imag_sum1 + x[ 0][0] * x[ 1][1] - x[ 0][1] * x[ 1][0];
-    phi[0  ][0][0] = real_sum1 + x[38][0] * x[39][0] + x[38][1] * x[39][1];
-    phi[0  ][0][1] = imag_sum1 + x[38][0] * x[39][1] - x[38][1] * x[39][0];
+    phi[2 - 2][1][0] = real_sum2;
+    phi[2 - 2][1][1] = imag_sum2;
+    phi[2    ][1][0] = real_sum0 + x[ 0][0] * x[ 0][0] + x[ 0][1] * x[ 0][1];
+    phi[1    ][0][0] = real_sum0 + x[38][0] * x[38][0] + x[38][1] * x[38][1];
+    phi[2 - 1][1][0] = real_sum1 + x[ 0][0] * x[ 1][0] + x[ 0][1] * x[ 1][1];
+    phi[2 - 1][1][1] = imag_sum1 + x[ 0][0] * x[ 1][1] - x[ 0][1] * x[ 1][0];
+    phi[0    ][0][0] = real_sum1 + x[38][0] * x[39][0] + x[38][1] * x[39][1];
+    phi[0    ][0][1] = imag_sum1 + x[38][0] * x[39][1] - x[38][1] * x[39][0];
 #endif
 }
 
