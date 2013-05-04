@@ -2210,6 +2210,10 @@ case "$toolchain" in
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
     ;;
+    valgrind-memcheck)
+        target_exec_default="valgrind"
+        target_exec_args="--track-origins=yes --leak-check=full"
+    ;;
     msvc)
         cc_default="c99wrap cl"
         ld_default="c99wrap link"
@@ -2226,7 +2230,7 @@ case "$toolchain" in
     ;;
 esac
 
-set_default arch cc pkg_config sysinclude target_os
+set_default arch cc pkg_config sysinclude target_exec target_os
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -4024,7 +4028,7 @@ HOSTCC_DEPFLAGS=$HOSTCC_DEPFLAGS
 HOSTCC_C=$HOSTCC_C
 HOSTCC_O=$HOSTCC_O
 HOSTLD_O=$HOSTLD_O
-TARGET_EXEC=$target_exec
+TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
 LIBS-avplay=$sdl_libs
 CFLAGS-avplay=$sdl_cflags

@@ -574,6 +574,18 @@ You can use the command @code{make lcov-reset} to reset the coverage
 measurements. You will need to rerun @code{make lcov} after running a
 new test.
 
+@subsection Using Valgrind
+
+The configure script provides a shortcut for using valgrind to spot bugs
+related to memory handling. Just add the option
+@code{--toolchain=valgrind-memcheck} to your configure line, and
+reasonable defaults will be set for running FATE under the supervision
+of the @strong{memcheck} tool of the valgrind suite.
+
+In case you need finer control over how valgrind is invoked, use the
+@code{--target-exec='valgrind <your_custom_valgrind_options>} option in
+your configure line instead.
+
 @anchor{Release process}
 @section Release process
 
