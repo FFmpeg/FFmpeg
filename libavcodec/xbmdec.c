@@ -57,7 +57,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         int number, len;
 
         ptr += strcspn(ptr, "#");
-        if (sscanf(ptr, "#define %256s %u", name, &number) != 2) {
+        if (sscanf(ptr, "#define %255s %u", name, &number) != 2) {
             av_log(avctx, AV_LOG_ERROR, "Unexpected preprocessor directive\n");
             return AVERROR_INVALIDDATA;
         }
