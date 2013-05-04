@@ -521,10 +521,6 @@ Discard threshold.
 @item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
 rate control override for specific intervals
 
-@item -deinterlace
-Deinterlace pictures.
-This option is deprecated since the deinterlacing is very low quality.
-Use the yadif filter with @code{-filter:v yadif}.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}

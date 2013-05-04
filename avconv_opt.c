@@ -61,7 +61,6 @@ float dts_delta_threshold   = 10;
 int audio_volume      = 256;
 int audio_sync_method = 0;
 int video_sync_method = VSYNC_AUTO;
-int do_deinterlace    = 0;
 int do_benchmark      = 0;
 int do_hex_dump       = 0;
 int do_pkt_dump       = 0;
@@ -1864,15 +1863,6 @@ static int opt_vsync(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-#if FF_API_DEINTERLACE
-static int opt_deinterlace(void *optctx, const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -filter:v yadif instead\n", opt);
-    do_deinterlace = 1;
-    return 0;
-}
-#endif
-
 int opt_cpuflags(void *optctx, const char *opt, const char *arg)
 {
     int flags = av_parse_cpu_flags(arg);
@@ -2255,10 +2245,6 @@ const OptionDef options[] = {
     { "passlogfile",  OPT_VIDEO | HAS_ARG | OPT_STRING | OPT_EXPERT | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
-#if FF_API_DEINTERLACE
-    { "deinterlace",  OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_deinterlace },
-        "this option is deprecated, use the yadif filter instead" },
-#endif
     { "vstats",       OPT_VIDEO | OPT_EXPERT ,                                   { &opt_vstats },
         "dump video coding statistics to file" },
     { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { opt_vstats_file },

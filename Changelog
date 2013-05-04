@@ -17,6 +17,7 @@ version 10:
 - avconv -t and -ss (output-only) options are now sample-accurate when
   transcoding audio
 - Matroska muxer can now put the index at the beginning of the file.
+- avconv -deinterlace option removed, the yadif filter should be used instead
 
 
 version 9:
