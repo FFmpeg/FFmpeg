@@ -2611,6 +2611,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 
     if (samples)
         ac->frame->nb_samples = samples;
+    else
+        av_frame_unref(ac->frame);
     *got_frame_ptr = !!samples;
 
     if (is_dmono) {
