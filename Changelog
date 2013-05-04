@@ -479,7 +479,7 @@ version 0.5:
 - MXF demuxer
 - VC-1/WMV3/WMV9 video decoder
 - MacIntel support
-- AVISynth support
+- AviSynth support
 - VMware video decoder
 - VP5 video decoder
 - VP6 video decoder

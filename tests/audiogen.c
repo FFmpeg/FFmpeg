@@ -48,7 +48,7 @@ static unsigned int myrnd(unsigned int *seed_ptr, int n)
 
 #define COS_TABLE_BITS 7
 
-/* integer cosinus */
+/* integer cosine */
 static const unsigned short cos_table[(1 << COS_TABLE_BITS) + 2] = {
     0x8000, 0x7ffe, 0x7ff6, 0x7fea, 0x7fd9, 0x7fc2, 0x7fa7, 0x7f87,
     0x7f62, 0x7f38, 0x7f0a, 0x7ed6, 0x7e9d, 0x7e60, 0x7e1e, 0x7dd6,
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
     if ((ext = strrchr(argv[1], '.')) != NULL && !strcmp(ext, ".wav"))
         put_wav_header(sample_rate, nb_channels, 6 * sample_rate);
 
-    /* 1 second of single freq sinus at 1000 Hz */
+    /* 1 second of single freq sine at 1000 Hz */
     a = 0;
     for (i = 0; i < 1 * sample_rate; i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;

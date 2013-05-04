@@ -1,5 +1,5 @@
 /*
- * AVISynth support
+ * AviSynth support
  * Copyright (c) 2006 DivX, Inc.
  *
  * This file is part of Libav.
@@ -32,29 +32,29 @@ typedef struct {
   DWORD read;
   LONG chunck_size;
   LONG chunck_samples;
-} AVISynthStream;
+} AviSynthStream;
 
 typedef struct {
   PAVIFILE file;
   AVISynthStream *streams;
   int nb_streams;
   int next_stream;
-} AVISynthContext;
+} AviSynthContext;
 
 static int avisynth_read_header(AVFormatContext *s)
 {
-  AVISynthContext *avs = s->priv_data;
+  AviSynthContext *avs = s->priv_data;
   HRESULT res;
   AVIFILEINFO info;
   DWORD id;
   AVStream *st;
-  AVISynthStream *stream;
+  AviSynthStream *stream;
   wchar_t filename_wchar[1024] = { 0 };
   char filename_char[1024] = { 0 };
 
   AVIFileInit();
 
-  /* avisynth can't accept UTF-8 filename */
+  /* AviSynth cannot accept UTF-8 file names. */
   MultiByteToWideChar(CP_UTF8, 0, s->filename, -1, filename_wchar, 1024);
   WideCharToMultiByte(CP_THREAD_ACP, 0, filename_wchar, -1, filename_char, 1024, NULL, NULL);
   res = AVIFileOpen(&avs->file, filename_char, OF_READ|OF_SHARE_DENY_WRITE, NULL);
@@ -73,7 +73,7 @@ static int avisynth_read_header(AVFormatContext *s)
       return -1;
     }
 
-  avs->streams = av_mallocz(info.dwStreams * sizeof(AVISynthStream));
+  avs->streams = av_mallocz(info.dwStreams * sizeof(AviSynthStream));
 
   for (id=0; id<info.dwStreams; id++)
     {
@@ -154,9 +154,9 @@ static int avisynth_read_header(AVFormatContext *s)
 
 static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-  AVISynthContext *avs = s->priv_data;
+  AviSynthContext *avs = s->priv_data;
   HRESULT res;
-  AVISynthStream *stream;
+  AviSynthStream *stream;
   int stream_id = avs->next_stream;
   LONG read_size;
 
@@ -188,7 +188,7 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int avisynth_read_close(AVFormatContext *s)
 {
-  AVISynthContext *avs = s->priv_data;
+  AviSynthContext *avs = s->priv_data;
   int i;
 
   for (i=0;i<avs->nb_streams;i++)
@@ -204,7 +204,7 @@ static int avisynth_read_close(AVFormatContext *s)
 
 static int avisynth_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags)
 {
-  AVISynthContext *avs = s->priv_data;
+  AviSynthContext *avs = s->priv_data;
   int stream_id;
 
   for (stream_id = 0; stream_id < avs->nb_streams; stream_id++)
@@ -217,8 +217,8 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index, int64_t pts,
 
 AVInputFormat ff_avisynth_demuxer = {
     .name           = "avisynth",
-    .long_name      = NULL_IF_CONFIG_SMALL("AVISynth"),
-    .priv_data_size = sizeof(AVISynthContext),
+    .long_name      = NULL_IF_CONFIG_SMALL("AviSynth"),
+    .priv_data_size = sizeof(AviSynthContext),
     .read_header    = avisynth_read_header,
     .read_packet    = avisynth_read_packet,
     .read_close     = avisynth_read_close,
