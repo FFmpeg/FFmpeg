@@ -29,7 +29,7 @@
 
 #if HAVE_MMX_INLINE
 
-// in case more speed is needed - unroling would certainly help
+// in case more speed is needed - unrolling would certainly help
 void ff_avg_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                         ptrdiff_t line_size, int h)
 {

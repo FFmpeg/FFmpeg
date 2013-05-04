@@ -603,7 +603,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
     /* Image is at s->buff_start[buf.index] */
     if (avpriv_atomic_int_get(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
-        /* when we start getting low on queued buffers, fallback to copying data */
+        /* when we start getting low on queued buffers, fall back on copying data */
         res = av_new_packet(pkt, buf.bytesused);
         if (res < 0) {
             av_log(ctx, AV_LOG_ERROR, "Error allocating a packet.\n");

@@ -1259,7 +1259,7 @@ static int flac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     frame_bytes = encode_frame(s);
 
-    /* fallback to verbatim mode if the compressed frame is larger than it
+    /* Fall back on verbatim mode if the compressed frame is larger than it
        would be if encoded uncompressed. */
     if (frame_bytes < 0 || frame_bytes > s->max_framesize) {
         s->frame.verbatim_only = 1;

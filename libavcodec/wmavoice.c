@@ -605,7 +605,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
 
         /* 70.57 =~ 1/log10(1.0331663) */
         idx = (pwr * gain_mul - 0.0295) * 70.570526123;
-        if (idx > 127) { // fallback if index falls outside table range
+        if (idx > 127) { // fall back if index falls outside table range
             coeffs[n] = wmavoice_energy_table[127] *
                         powf(1.0331663, idx - 127);
         } else

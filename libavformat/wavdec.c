@@ -85,9 +85,9 @@ static int wav_probe(AVProbeData *p)
         return 0;
     if (!memcmp(p->buf + 8, "WAVE", 4)) {
         if (!memcmp(p->buf, "RIFF", 4))
-            /* Since ACT demuxer has standard WAV header at top of it's
-             * own, returning score is decreased to avoid probe conflict
-             * between ACT and WAV. */
+            /* Since the ACT demuxer has a standard WAV header at the top of
+             * its own, the returned score is decreased to avoid a probe
+             * conflict between ACT and WAV. */
             return AVPROBE_SCORE_MAX - 1;
         else if (!memcmp(p->buf,      "RF64", 4) &&
                  !memcmp(p->buf + 12, "ds64", 4))

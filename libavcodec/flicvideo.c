@@ -593,7 +593,7 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
             break;
 
         case FLI_LC:
-            av_log(avctx, AV_LOG_ERROR, "Unexpected FLI_LC chunk in non-paletised FLC\n");
+            av_log(avctx, AV_LOG_ERROR, "Unexpected FLI_LC chunk in non-palettized FLC\n");
             bytestream2_skip(&g2, chunk_size - 6);
             break;
 
