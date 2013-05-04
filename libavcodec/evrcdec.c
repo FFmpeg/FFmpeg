@@ -374,7 +374,7 @@ static void bl_intrp(EVRCContext *e, float *ex, float delay)
     int offset, i, coef_idx;
     int16_t t;
 
-    offset = lrintf(fabs(delay));
+    offset = lrintf(delay);
 
     t = (offset - delay + 0.5) * 8.0 + 0.5;
     if (t == 8) {
