@@ -316,7 +316,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
         AacPsyCoeffs *coeffs = pctx->psy_coef[j];
         const uint8_t *band_sizes = ctx->bands[j];
         float line_to_frequency = ctx->avctx->sample_rate / (j ? 256.f : 2048.0f);
-        float avg_chan_bits = chan_bitrate / ctx->avctx->sample_rate * (j ? 128.0f : 1024.0f);
+        float avg_chan_bits = chan_bitrate * (j ? 128.0f : 1024.0f) / ctx->avctx->sample_rate;
         /* reference encoder uses 2.4% here instead of 60% like the spec says */
         float bark_pe = 0.024f * PSY_3GPP_BITS_TO_PE(avg_chan_bits) / num_bark;
         float en_spread_low = j ? PSY_3GPP_EN_SPREAD_LOW_S : PSY_3GPP_EN_SPREAD_LOW_L;
