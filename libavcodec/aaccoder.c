@@ -710,7 +710,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
                                           const float lambda)
 {
     int start = 0, i, w, w2, g;
-    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels;
+    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels * (lambda / 120.f);
     float dists[128] = { 0 }, uplims[128];
     float maxvals[128];
     int fflag, minscaler;
