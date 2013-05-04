@@ -39,6 +39,8 @@
 
 #define MAX_DISTANCE (1024*32-1)
 
+#define NUT_VERSION 3
+
 typedef enum{
     FLAG_KEY        =   1, ///<if set, frame is keyframe
     FLAG_EOR        =   2, ///<if set, stream has no relevance on presentation. (EOR)
