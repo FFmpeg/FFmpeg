@@ -91,13 +91,13 @@ static int movie_request_frame(AVFilterLink *outlink);
 static AVStream *find_stream(void *log, AVFormatContext *avf, const char *spec)
 {
     int i, ret, already = 0, stream_id = -1;
-    char type_char, dummy;
+    char type_char[2], dummy;
     AVStream *found = NULL;
     enum AVMediaType type;
 
-    ret = sscanf(spec, "d%[av]%d%c", &type_char, &stream_id, &dummy);
+    ret = sscanf(spec, "d%1[av]%d%c", type_char, &stream_id, &dummy);
     if (ret >= 1 && ret <= 2) {
-        type = type_char == 'v' ? AVMEDIA_TYPE_VIDEO : AVMEDIA_TYPE_AUDIO;
+        type = type_char[0] == 'v' ? AVMEDIA_TYPE_VIDEO : AVMEDIA_TYPE_AUDIO;
         ret = av_find_best_stream(avf, type, stream_id, -1, NULL, 0);
         if (ret < 0) {
             av_log(log, AV_LOG_ERROR, "No %s stream with index '%d' found\n",
