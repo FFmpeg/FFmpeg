@@ -254,6 +254,9 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
             y        += skip_lines;
             segments = bytestream2_get_le16(gb);
         }
+
+        if (frame_end <= frame)
+            return AVERROR_INVALIDDATA;
         if (segments & 0x8000) {
             frame[width - 1] = segments & 0xFF;
             segments = bytestream2_get_le16(gb);
