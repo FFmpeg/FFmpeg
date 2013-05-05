@@ -106,28 +106,29 @@ static int vmd_read_header(AVFormatContext *s)
     width = AV_RL16(&vmd->vmd_header[12]);
     height = AV_RL16(&vmd->vmd_header[14]);
     if (width && height) {
-    if(vmd->vmd_header[24] == 'i' && vmd->vmd_header[25] == 'v' && vmd->vmd_header[26] == '3')
-        vmd->is_indeo3 = 1;
-    else
-        vmd->is_indeo3 = 0;
-    /* start up the decoders */
-    vst = avformat_new_stream(s, NULL);
-    if (!vst)
-        return AVERROR(ENOMEM);
-    avpriv_set_pts_info(vst, 33, 1, 10);
-    vmd->video_stream_index = vst->index;
-    vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id = vmd->is_indeo3 ? AV_CODEC_ID_INDEO3 : AV_CODEC_ID_VMDVIDEO;
-    vst->codec->codec_tag = 0;  /* no fourcc */
-    vst->codec->width = width;
-    vst->codec->height = height;
-    if(vmd->is_indeo3 && vst->codec->width > 320){
-        vst->codec->width >>= 1;
-        vst->codec->height >>= 1;
-    }
-    vst->codec->extradata_size = VMD_HEADER_SIZE;
-    vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
-    memcpy(vst->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
+        if(vmd->vmd_header[24] == 'i' && vmd->vmd_header[25] == 'v' && vmd->vmd_header[26] == '3') {
+            vmd->is_indeo3 = 1;
+        } else {
+            vmd->is_indeo3 = 0;
+        }
+        /* start up the decoders */
+        vst = avformat_new_stream(s, NULL);
+        if (!vst)
+            return AVERROR(ENOMEM);
+        avpriv_set_pts_info(vst, 33, 1, 10);
+        vmd->video_stream_index = vst->index;
+        vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        vst->codec->codec_id = vmd->is_indeo3 ? AV_CODEC_ID_INDEO3 : AV_CODEC_ID_VMDVIDEO;
+        vst->codec->codec_tag = 0;  /* no fourcc */
+        vst->codec->width = width;
+        vst->codec->height = height;
+        if(vmd->is_indeo3 && vst->codec->width > 320){
+            vst->codec->width >>= 1;
+            vst->codec->height >>= 1;
+        }
+        vst->codec->extradata_size = VMD_HEADER_SIZE;
+        vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
+        memcpy(vst->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
     }
 
     /* if sample rate is 0, assume no audio */
@@ -163,7 +164,7 @@ static int vmd_read_header(AVFormatContext *s)
         den = st->codec->sample_rate * st->codec->channels;
         av_reduce(&num, &den, num, den, (1UL<<31)-1);
         if (vst)
-        avpriv_set_pts_info(vst, 33, num, den);
+            avpriv_set_pts_info(vst, 33, num, den);
         avpriv_set_pts_info(st, 33, num, den);
     }
 
