@@ -722,7 +722,7 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
          * avcodec_default_get_buffer
          */
         if (frame->buf[0])
-            return 0;
+            goto end;
 
         priv = av_mallocz(sizeof(*priv));
         if (!priv) {
@@ -798,6 +798,7 @@ do {                                                                    \
 
         av_buffer_unref(&dummy_buf);
 
+end:
         frame->width  = avctx->width;
         frame->height = avctx->height;
 
