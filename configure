@@ -2506,7 +2506,7 @@ case "$toolchain" in
     ;;
     valgrind-memcheck)
         target_exec_default="valgrind"
-        target_exec_args="--track-origins=yes --leak-check=full"
+        target_exec_args="--error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
     ;;
     msvc)
         cc_default="c99wrap cl"
