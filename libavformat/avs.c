@@ -50,7 +50,9 @@ static int avs_probe(AVProbeData * p)
 
     d = p->buf;
     if (d[0] == 'w' && d[1] == 'W' && d[2] == 0x10 && d[3] == 0)
-        return AVPROBE_SCORE_EXTENSION+5;
+        /* Ensure the buffer probe scores higher than the extension probe.
+         * This avoids problems with misdetection as AviSynth scripts. */
+        return AVPROBE_SCORE_EXTENSION + 5;
 
     return 0;
 }
