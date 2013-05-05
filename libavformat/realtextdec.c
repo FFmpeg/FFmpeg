@@ -41,7 +41,7 @@ static int realtext_probe(AVProbeData *p)
 
     if (AV_RB24(ptr) == 0xEFBBBF)
         ptr += 3;  /* skip UTF-8 BOM */
-    return !av_strncasecmp(ptr, "<window", 7) ? AVPROBE_SCORE_MAX/2 : 0;
+    return !av_strncasecmp(ptr, "<window", 7) ? AVPROBE_SCORE_EXTENSION : 0;
 }
 
 static int read_ts(const char *s)

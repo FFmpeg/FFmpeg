@@ -41,7 +41,7 @@ static int mpsub_probe(AVProbeData *p)
 
         if (!memcmp(ptr, "FORMAT=TIME", 11) ||
             sscanf(ptr, "FORMAT=%d", &n) == 1)
-            return AVPROBE_SCORE_MAX/2;
+            return AVPROBE_SCORE_EXTENSION;
         ptr += strcspn(ptr, "\n") + 1;
     }
     return 0;

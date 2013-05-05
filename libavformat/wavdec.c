@@ -99,7 +99,7 @@ static int wav_probe(AVProbeData *p)
 static void handle_stream_probing(AVStream *st)
 {
     if (st->codec->codec_id == AV_CODEC_ID_PCM_S16LE) {
-        st->request_probe = AVPROBE_SCORE_MAX/2;
+        st->request_probe = AVPROBE_SCORE_EXTENSION;
         st->probe_packets = FFMIN(st->probe_packets, 4);
     }
 }
@@ -427,7 +427,7 @@ static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
         enum AVCodecID codec;
         ret = ff_spdif_probe(s->pb->buffer, s->pb->buf_end - s->pb->buffer,
                              &codec);
-        if (ret > AVPROBE_SCORE_MAX / 2) {
+        if (ret > AVPROBE_SCORE_EXTENSION) {
             s->streams[0]->codec->codec_id = codec;
             wav->spdif = 1;
         } else {

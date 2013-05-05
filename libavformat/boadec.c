@@ -35,7 +35,7 @@ static int probe(AVProbeData *p)
         || AV_RL32(p->buf + 48) % AV_RL32(p->buf + 21)
         )
         return 0;
-    return AVPROBE_SCORE_MAX / 2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 

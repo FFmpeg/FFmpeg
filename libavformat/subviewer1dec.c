@@ -36,7 +36,7 @@ static int subviewer1_probe(AVProbeData *p)
     const unsigned char *ptr = p->buf;
 
     if (strstr(ptr, "******** START SCRIPT ********"))
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
     return 0;
 }
 

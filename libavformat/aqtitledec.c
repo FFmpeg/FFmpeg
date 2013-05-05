@@ -43,7 +43,7 @@ static int aqt_probe(AVProbeData *p)
     const char *ptr = p->buf;
 
     if (sscanf(ptr, "-->> %d", &frame) == 1)
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
     return 0;
 }
 

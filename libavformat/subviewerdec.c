@@ -44,7 +44,7 @@ static int subviewer_probe(AVProbeData *p)
     if (AV_RB24(ptr) == 0xEFBBBF)
         ptr += 3;  /* skip UTF-8 BOM */
     if (sscanf(ptr, "%*u:%*u:%*u.%*u,%*u:%*u:%*u.%*u%c", &c) == 1)
-        return AVPROBE_SCORE_MAX/2;
+        return AVPROBE_SCORE_EXTENSION;
     if (!strncmp(ptr, "[INFORMATION]", 13))
         return AVPROBE_SCORE_MAX/3;
     return 0;

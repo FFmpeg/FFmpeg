@@ -44,7 +44,7 @@ static int probe(AVProbeData *p)
             return 0;
         i+=j;
     }
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int read_header(AVFormatContext *s)

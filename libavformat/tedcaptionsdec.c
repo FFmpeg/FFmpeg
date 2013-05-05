@@ -340,7 +340,7 @@ static av_cold int tedcaptions_read_probe(AVProbeData *p)
             count++;
     }
     return count == FF_ARRAY_ELEMS(tags) ? AVPROBE_SCORE_MAX :
-           count                         ? AVPROBE_SCORE_MAX / 2 : 0;
+           count                         ? AVPROBE_SCORE_EXTENSION : 0;
 }
 
 static int tedcaptions_read_seek(AVFormatContext *avf, int stream_index,

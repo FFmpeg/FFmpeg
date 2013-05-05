@@ -41,7 +41,7 @@ typedef struct CDXLDemuxContext {
 
 static int cdxl_read_probe(AVProbeData *p)
 {
-    int score = AVPROBE_SCORE_MAX / 2 + 10;
+    int score = AVPROBE_SCORE_EXTENSION + 10;
 
     if (p->buf_size < CDXL_HEADER_SIZE)
         return 0;

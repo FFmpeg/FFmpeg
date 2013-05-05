@@ -127,7 +127,7 @@ static int libquvi_probe(AVProbeData *p)
     rc = quvi_init(&q);
     if (rc != QUVI_OK)
         return AVERROR(ENOMEM);
-    score = quvi_supported(q, (char *)p->filename) == QUVI_OK ? AVPROBE_SCORE_MAX/2 : 0;
+    score = quvi_supported(q, (char *)p->filename) == QUVI_OK ? AVPROBE_SCORE_EXTENSION : 0;
     quvi_close(&q);
     return score;
 }
