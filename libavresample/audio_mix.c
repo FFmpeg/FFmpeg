@@ -282,7 +282,7 @@ static void mix_2_to_6_fltp_flt_c(float **samples, float **matrix, int len,
     }
 }
 
-static int mix_function_init(AudioMix *am)
+static av_cold int mix_function_init(AudioMix *am)
 {
     am->func_descr = am->func_descr_generic = "n/a";
     am->mix = am->mix_generic = NULL;
