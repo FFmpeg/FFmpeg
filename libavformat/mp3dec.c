@@ -76,11 +76,11 @@ static int mp3_read_probe(AVProbeData *p)
     }
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
-    if   (first_frames>=4) return AVPROBE_SCORE_MAX/2+1;
-    else if(max_frames>200)return AVPROBE_SCORE_MAX/2;
-    else if(max_frames>=4) return AVPROBE_SCORE_MAX/4;
+    if   (first_frames>=4) return AVPROBE_SCORE_EXTENSION + 1;
+    else if(max_frames>200)return AVPROBE_SCORE_EXTENSION;
+    else if(max_frames>=4) return AVPROBE_SCORE_EXTENSION / 2;
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
-                           return AVPROBE_SCORE_MAX/8;
+                           return AVPROBE_SCORE_EXTENSION / 4;
     else if(max_frames>=1) return 1;
     else                   return 0;
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3

@@ -33,7 +33,7 @@ typedef struct TAKDemuxContext {
 static int tak_probe(AVProbeData *p)
 {
     if (!memcmp(p->buf, "tBaK", 4))
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
     return 0;
 }
 

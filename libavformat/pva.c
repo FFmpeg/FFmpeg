@@ -49,7 +49,7 @@ static int pva_probe(AVProbeData * pd) {
 
     if (pd->buf_size >= len + 8 &&
         pva_check(buf + len) >= 0)
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
 
     return AVPROBE_SCORE_MAX / 4;
 }

@@ -2887,7 +2887,7 @@ static int mov_probe(AVProbeData *p)
                 (AV_RB32(p->buf+offset) != 1 ||
                  offset + 12 > (unsigned int)p->buf_size ||
                  AV_RB64(p->buf+offset + 8) == 0)) {
-                score = FFMAX(score, AVPROBE_SCORE_MAX - 50);
+                score = FFMAX(score, AVPROBE_SCORE_EXTENSION);
             } else {
                 score = AVPROBE_SCORE_MAX;
             }
@@ -2907,7 +2907,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG('u','u','i','d'):
         case MKTAG('p','r','f','l'):
             /* if we only find those cause probedata is too small at least rate them */
-            score  = FFMAX(score, AVPROBE_SCORE_MAX - 50);
+            score  = FFMAX(score, AVPROBE_SCORE_EXTENSION);
             offset = FFMAX(4, AV_RB32(p->buf+offset)) + offset;
             break;
         default:

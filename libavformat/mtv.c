@@ -64,13 +64,13 @@ static int mtv_probe(AVProbeData *p)
     if(!AV_RL16(&p->buf[52]) || !AV_RL16(&p->buf[54]))
     {
         if(!!AV_RL16(&p->buf[56]))
-            return AVPROBE_SCORE_MAX/2;
+            return AVPROBE_SCORE_EXTENSION;
         else
             return 0;
     }
 
     if(p->buf[51] != 16)
-        return AVPROBE_SCORE_MAX/4; // But we are going to assume 16bpp anyway ..
+        return AVPROBE_SCORE_EXTENSION / 2; // But we are going to assume 16bpp anyway ..
 
     return AVPROBE_SCORE_MAX;
 }

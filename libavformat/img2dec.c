@@ -185,7 +185,7 @@ static int img_read_probe(AVProbeData *p)
         else if (av_match_ext(p->filename, "raw") || av_match_ext(p->filename, "gif"))
             return 5;
         else
-            return AVPROBE_SCORE_MAX / 2;
+            return AVPROBE_SCORE_EXTENSION;
     }
     return 0;
 }

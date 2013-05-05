@@ -786,7 +786,7 @@ static int nsv_probe(AVProbeData *p)
     }
     /* so we'll have more luck on extension... */
     if (av_match_ext(p->filename, "nsv"))
-        return AVPROBE_SCORE_MAX/2;
+        return AVPROBE_SCORE_EXTENSION;
     /* FIXME: add mime-type check */
     return score;
 }

@@ -43,7 +43,7 @@ static int vqf_probe(AVProbeData *probe_packet)
     if (!memcmp(probe_packet->buf + 4, "00052200", 8))
         return AVPROBE_SCORE_MAX;
 
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static void add_metadata(AVFormatContext *s, uint32_t tag,

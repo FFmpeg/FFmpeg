@@ -63,7 +63,7 @@ static int h264_probe(AVProbeData *p)
         }
     }
     if(sps && pps && (idr||sli>3) && res<(sps+pps+idr))
-        return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
+        return AVPROBE_SCORE_EXTENSION + 1; // 1 more than .mpg
     return 0;
 }
 

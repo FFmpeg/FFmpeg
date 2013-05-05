@@ -126,7 +126,7 @@ static int str_probe(AVProbeData *p)
     }
     /* MPEG files (like those ripped from VCDs) can also look like this;
      * only return half certainty */
-    if(vid+aud > 3)  return 50;
+    if(vid+aud > 3)  return AVPROBE_SCORE_EXTENSION;
     else if(vid+aud) return 1;
     else             return 0;
 }

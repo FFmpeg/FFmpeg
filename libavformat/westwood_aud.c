@@ -77,7 +77,7 @@ static int wsaud_probe(AVProbeData *p)
         return 0;
 
     /* return 1/2 certainty since this file check is a little sketchy */
-    return AVPROBE_SCORE_MAX / 2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int wsaud_read_header(AVFormatContext *s)
