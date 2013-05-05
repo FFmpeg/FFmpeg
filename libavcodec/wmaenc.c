@@ -19,13 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "wma.h"
 #include "libavutil/avassert.h"
 
 
-static int encode_init(AVCodecContext * avctx){
+static av_cold int encode_init(AVCodecContext *avctx)
+{
     WMACodecContext *s = avctx->priv_data;
     int i, flags1, flags2, block_align;
     uint8_t *extradata;

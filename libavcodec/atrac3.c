@@ -36,6 +36,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"
 #include "avcodec.h"
@@ -838,7 +839,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
-static void atrac3_init_static_data(void)
+static av_cold void atrac3_init_static_data(void)
 {
     int i;
 

@@ -23,6 +23,7 @@
 #include "config.h"
 #include <xvid.h>
 #include <unistd.h>
+#include "libavutil/attributes.h"
 #include "libavutil/file.h"
 #include "avcodec.h"
 #include "libxvid.h"
@@ -31,7 +32,8 @@
 #undef NDEBUG
 #include <assert.h>
 
-int ff_xvid_rate_control_init(MpegEncContext *s){
+av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
+{
     char *tmp_name;
     int fd, i;
     xvid_plg_create_t xvid_plg_create = { 0 };

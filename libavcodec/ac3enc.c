@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
@@ -754,7 +755,7 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
  * Initialize bit allocation.
  * Set default parameter codes and calculate parameter values.
  */
-static void bit_alloc_init(AC3EncodeContext *s)
+static av_cold void bit_alloc_init(AC3EncodeContext *s)
 {
     int ch;
 

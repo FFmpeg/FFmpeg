@@ -20,6 +20,8 @@
  */
 
 #include <stdint.h>
+
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "vp56dsp.h"
 #include "libavutil/common.h"
@@ -75,7 +77,7 @@ VP56_EDGE_FILTER(vp5, ver, stride, 1)
 VP56_EDGE_FILTER(vp6, hor, 1, stride)
 VP56_EDGE_FILTER(vp6, ver, stride, 1)
 
-void ff_vp56dsp_init(VP56DSPContext *s, enum AVCodecID codec)
+av_cold void ff_vp56dsp_init(VP56DSPContext *s, enum AVCodecID codec)
 {
     if (codec == AV_CODEC_ID_VP5) {
         s->edge_filter_hor = vp5_edge_filter_hor;

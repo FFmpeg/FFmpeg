@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "dct32.h"
 #include "mathops.h"
@@ -220,7 +221,7 @@ av_cold void RENAME(ff_mpa_synth_init)(MPA_INT *window)
             window[512+128+16*i+j] = window[64*i+48-j];
 }
 
-void RENAME(ff_init_mpadsp_tabs)(void)
+av_cold void RENAME(ff_init_mpadsp_tabs)(void)
 {
     int i, j;
     /* compute mdct windows */

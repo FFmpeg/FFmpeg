@@ -25,6 +25,7 @@
  * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
  */
 
+#include "libavutil/attributes.h"
 #include "bgmc.h"
 
 #define FREQ_BITS  14                      // bits used by frequency counters
@@ -456,7 +457,8 @@ static uint8_t *bgmc_lut_getp(uint8_t *lut, int *lut_status, int delta)
 
 
 /** Initialize the lookup table arrays */
-int ff_bgmc_init(AVCodecContext *avctx, uint8_t **cf_lut, int **cf_lut_status)
+av_cold int ff_bgmc_init(AVCodecContext *avctx,
+                         uint8_t **cf_lut, int **cf_lut_status)
 {
     *cf_lut        = av_malloc(sizeof(**cf_lut)        * LUT_BUFF * 16 * LUT_SIZE);
     *cf_lut_status = av_malloc(sizeof(**cf_lut_status) * LUT_BUFF);
@@ -483,8 +485,8 @@ void ff_bgmc_end(uint8_t **cf_lut, int **cf_lut_status)
 
 
 /** Initialize decoding and reads the first value */
-void ff_bgmc_decode_init(GetBitContext *gb, unsigned int *h, unsigned int *l,
-                         unsigned int *v)
+av_cold void ff_bgmc_decode_init(GetBitContext *gb, unsigned int *h,
+                                 unsigned int *l, unsigned int *v)
 {
     *h = TOP_VALUE;
     *l = 0;

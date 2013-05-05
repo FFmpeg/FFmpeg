@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "mpegvideo.h"
@@ -1095,7 +1096,7 @@ void ff_mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 }
 
 
-static void init_uni_dc_tab(void)
+static av_cold void init_uni_dc_tab(void)
 {
     int level, uni_code, uni_len;
 
@@ -1147,7 +1148,9 @@ static void init_uni_dc_tab(void)
     }
 }
 
-static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_tab){
+static av_cold void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab,
+                                          uint8_t *len_tab)
+{
     int slevel, run, last;
 
     av_assert0(MAX_LEVEL >= 64);

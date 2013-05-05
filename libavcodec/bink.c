@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
@@ -528,14 +529,14 @@ static inline int get_value(BinkContext *c, int bundle)
     return ret;
 }
 
-static void binkb_init_bundle(BinkContext *c, int bundle_num)
+static av_cold void binkb_init_bundle(BinkContext *c, int bundle_num)
 {
     c->bundle[bundle_num].cur_dec =
     c->bundle[bundle_num].cur_ptr = c->bundle[bundle_num].data;
     c->bundle[bundle_num].len = 13;
 }
 
-static void binkb_init_bundles(BinkContext *c)
+static av_cold void binkb_init_bundles(BinkContext *c)
 {
     int i;
     for (i = 0; i < BINKB_NB_SRC; i++)

@@ -21,6 +21,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "libavutil/attributes.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
@@ -565,7 +566,7 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
     return 1;
 }
 
-static int dvdsub_init(AVCodecContext *avctx)
+static int av_cold dvdsub_init(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = avctx->priv_data;
     int ret;

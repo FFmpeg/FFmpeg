@@ -24,6 +24,7 @@
  * MPEG Audio decoder
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
@@ -1846,7 +1847,7 @@ static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
 }
 
 
-static int decode_init_mp3on4(AVCodecContext * avctx)
+static av_cold int decode_init_mp3on4(AVCodecContext * avctx)
 {
     MP3On4DecodeContext *s = avctx->priv_data;
     MPEG4AudioConfig cfg;

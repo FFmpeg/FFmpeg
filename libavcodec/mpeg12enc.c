@@ -32,6 +32,8 @@
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "bytestream.h"
+
+#include "libavutil/attributes.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
@@ -68,7 +70,8 @@ static uint32_t mpeg1_chr_dc_uni[512];
 static uint8_t mpeg1_index_run[2][64];
 static int8_t mpeg1_max_level[2][64];
 
-static void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len){
+static av_cold void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len)
+{
     int i;
 
     for(i=0; i<128; i++){
@@ -741,7 +744,7 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
     }
 }
 
-void ff_mpeg1_encode_init(MpegEncContext *s)
+av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 {
     static int done=0;
 

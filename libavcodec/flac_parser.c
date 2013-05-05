@@ -32,6 +32,7 @@
  * The parser returns the frame with the highest score.
  **/
 
+#include "libavutil/attributes.h"
 #include "libavutil/crc.h"
 #include "libavutil/fifo.h"
 #include "bytestream.h"
@@ -658,7 +659,7 @@ handle_error:
     return read_end - buf;
 }
 
-static int flac_parse_init(AVCodecParserContext *c)
+static av_cold int flac_parse_init(AVCodecParserContext *c)
 {
     FLACParseContext *fpc = c->priv_data;
     fpc->pc = c;

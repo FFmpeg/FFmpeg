@@ -20,11 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
+#include "libavutil/common.h"
 #include "dct.h"
 #include "dsputil.h"
 #include "proresdsp.h"
 #include "simple_idct.h"
-#include "libavutil/common.h"
 
 #define BIAS     (1 << (PRORES_BITS_PER_SAMPLE - 1))           ///< bias value for converting signed pixels into unsigned ones
 #define CLIP_MIN (1 << (PRORES_BITS_PER_SAMPLE - 8))           ///< minimum value for clipping resulting pixels
@@ -71,7 +72,7 @@ static void prores_fdct_c(const uint16_t *src, int linesize, int16_t *block)
 }
 #endif
 
-void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
+av_cold void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
 #if CONFIG_PRORES_DECODER | CONFIG_PRORES_LGPL_DECODER
     dsp->idct_put = prores_idct_put_c;

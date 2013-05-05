@@ -27,6 +27,7 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "libavutil/attributes.h"
 #include "parser.h"
 #include "h264data.h"
 #include "golomb.h"
@@ -381,7 +382,7 @@ static void close(AVCodecParserContext *s)
     ff_h264_free_context(h);
 }
 
-static int init(AVCodecParserContext *s)
+static av_cold int init(AVCodecParserContext *s)
 {
     H264Context *h = s->priv_data;
     h->thread_context[0] = h;

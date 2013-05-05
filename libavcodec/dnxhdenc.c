@@ -26,6 +26,7 @@
 //#define DEBUG
 #define RC_VARIANCE 1 // use variance or ssd for fast rc
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -115,7 +116,7 @@ static int dnxhd_10bit_dct_quantize(MpegEncContext *ctx, int16_t *block,
     return last_non_zero;
 }
 
-static int dnxhd_init_vlc(DNXHDEncContext *ctx)
+static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
 {
     int i, j, level, run;
     int max_level = 1<<(ctx->cid_table->bit_depth+2);
@@ -170,7 +171,7 @@ static int dnxhd_init_vlc(DNXHDEncContext *ctx)
     return -1;
 }
 
-static int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
+static av_cold int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
 {
     // init first elem to 1 to avoid div by 0 in convert_matrix
     uint16_t weight_matrix[64] = {1,}; // convert_matrix needs uint16_t*
@@ -234,7 +235,7 @@ static int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
     return -1;
 }
 
-static int dnxhd_init_rc(DNXHDEncContext *ctx)
+static av_cold int dnxhd_init_rc(DNXHDEncContext *ctx)
 {
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_rc, 8160*ctx->m.avctx->qmax*sizeof(RCEntry), fail);
     if (ctx->m.avctx->mb_decision != FF_MB_DECISION_RD)
@@ -248,7 +249,7 @@ static int dnxhd_init_rc(DNXHDEncContext *ctx)
     return -1;
 }
 
-static int dnxhd_encode_init(AVCodecContext *avctx)
+static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
     int i, index, bit_depth;

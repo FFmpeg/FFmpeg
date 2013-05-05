@@ -25,6 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "dsputil.h"
 #include "h264pred.h"
@@ -407,8 +408,9 @@ static void pred8x8_tm_vp8_c(uint8_t *src, ptrdiff_t stride)
 /**
  * Set the intra prediction function pointers.
  */
-void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth,
-                       int chroma_format_idc)
+av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
+                               const int bit_depth,
+                               int chroma_format_idc)
 {
 #undef FUNC
 #undef FUNCC

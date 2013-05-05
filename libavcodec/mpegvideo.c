@@ -27,6 +27,7 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
@@ -1301,8 +1302,8 @@ void ff_MPV_common_end(MpegEncContext *s)
     s->linesize = s->uvlinesize = 0;
 }
 
-void ff_init_rl(RLTable *rl,
-                uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
+av_cold void ff_init_rl(RLTable *rl,
+                        uint8_t static_store[2][2 * MAX_RUN + MAX_LEVEL + 3])
 {
     int8_t  max_level[MAX_RUN + 1], max_run[MAX_LEVEL + 1];
     uint8_t index_run[MAX_RUN + 1];
@@ -1353,7 +1354,7 @@ void ff_init_rl(RLTable *rl,
     }
 }
 
-void ff_init_vlc_rl(RLTable *rl)
+av_cold void ff_init_vlc_rl(RLTable *rl)
 {
     int i, q;
 

@@ -56,6 +56,7 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "roqvideo.h"
 #include "bytestream.h"
 #include "elbg.h"
@@ -952,7 +953,7 @@ static int roq_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int roq_encode_init(AVCodecContext *avctx)
+static av_cold int roq_encode_init(AVCodecContext *avctx)
 {
     RoqContext *enc = avctx->priv_data;
 

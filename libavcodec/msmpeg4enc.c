@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mem.h"
 #include "mpegvideo.h"
@@ -45,7 +46,7 @@
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 /* build the table which associate a (x,y) motion vector to a vlc */
-static void init_mv_table(MVTable *tab)
+static av_cold void init_mv_table(MVTable *tab)
 {
     int i, x, y;
 

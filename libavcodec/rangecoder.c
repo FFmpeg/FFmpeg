@@ -33,12 +33,13 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "rangecoder.h"
 #include "bytestream.h"
 
-void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)
+av_cold void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)
 {
     c->bytestream_start  =
     c->bytestream        = buf;
@@ -49,7 +50,8 @@ void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size)
     c->outstanding_byte  = -1;
 }
 
-void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size)
+av_cold void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf,
+                                   int buf_size)
 {
     /* cast to avoid compiler warning */
     ff_init_range_encoder(c, (uint8_t *)buf, buf_size);

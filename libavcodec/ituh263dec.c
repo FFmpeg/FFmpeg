@@ -32,6 +32,7 @@
 //#define DEBUG
 #include <limits.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
@@ -100,7 +101,7 @@ static VLC cbpc_b_vlc;
 /* init vlcs */
 
 /* XXX: find a better solution to handle static init */
-void ff_h263_decode_init_vlc(void)
+av_cold void ff_h263_decode_init_vlc(void)
 {
     static volatile int done = 0;
 

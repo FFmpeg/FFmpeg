@@ -25,6 +25,7 @@
  * FF Video Codec 1 (a lossless codec)
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
@@ -62,7 +63,7 @@ av_cold int ffv1_common_init(AVCodecContext *avctx)
     return 0;
 }
 
-int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
+av_cold int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
 {
     int j;
 
@@ -96,7 +97,7 @@ int ffv1_init_slice_state(FFV1Context *f, FFV1Context *fs)
     return 0;
 }
 
-int ffv1_init_slices_state(FFV1Context *f)
+av_cold int ffv1_init_slices_state(FFV1Context *f)
 {
     int i, ret;
     for (i = 0; i < f->slice_count; i++) {

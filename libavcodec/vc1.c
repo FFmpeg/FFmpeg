@@ -27,6 +27,7 @@
  *
  */
 
+#include "libavutil/attributes.h"
 #include "internal.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
@@ -1575,7 +1576,7 @@ static const uint16_t vlc_offs[] = {
  * @param v The VC1Context to initialize
  * @return Status
  */
-int ff_vc1_init_common(VC1Context *v)
+av_cold int ff_vc1_init_common(VC1Context *v)
 {
     static int done = 0;
     int i = 0;

@@ -27,6 +27,7 @@
  * DSP utils
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
@@ -107,7 +108,9 @@ static const uint8_t simple_mmx_permutation[64]={
 
 static const uint8_t idct_sse2_row_perm[8] = {0, 4, 1, 5, 2, 6, 3, 7};
 
-void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_scantable){
+av_cold void ff_init_scantable(uint8_t *permutation, ScanTable *st,
+                               const uint8_t *src_scantable)
+{
     int i;
     int end;
 
@@ -128,8 +131,8 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
     }
 }
 
-void ff_init_scantable_permutation(uint8_t *idct_permutation,
-                                   int idct_permutation_type)
+av_cold void ff_init_scantable_permutation(uint8_t *idct_permutation,
+                                           int idct_permutation_type)
 {
     int i;
 

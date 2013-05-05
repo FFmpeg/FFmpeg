@@ -31,6 +31,7 @@
 #include <schroedinger/schrodebug.h>
 #include <schroedinger/schrovideoformat.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -100,7 +101,7 @@ static int set_chroma_format(AVCodecContext *avctx)
     return -1;
 }
 
-static int libschroedinger_encode_init(AVCodecContext *avctx)
+static av_cold int libschroedinger_encode_init(AVCodecContext *avctx)
 {
     SchroEncoderParams *p_schro_params = avctx->priv_data;
     SchroVideoFormatEnum preset;

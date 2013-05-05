@@ -20,6 +20,7 @@
  */
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "mlpdsp.h"
 #include "mlp.h"
 
@@ -56,7 +57,7 @@ static void mlp_filter_channel(int32_t *state, const int32_t *coeff,
     }
 }
 
-void ff_mlpdsp_init(MLPDSPContext *c)
+av_cold void ff_mlpdsp_init(MLPDSPContext *c)
 {
     c->mlp_filter_channel = mlp_filter_channel;
     if (ARCH_X86)

@@ -28,6 +28,7 @@
 #define UNCHECKED_BITSTREAM_READER 1
 
 //#define DEBUG
+#include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/timecode.h"
 
@@ -58,7 +59,7 @@ uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
     init_2d_vlc_rl(&rl);\
 }
 
-static void init_2d_vlc_rl(RLTable *rl)
+static av_cold void init_2d_vlc_rl(RLTable *rl)
 {
     int i;
 
@@ -91,7 +92,7 @@ static void init_2d_vlc_rl(RLTable *rl)
     }
 }
 
-void ff_mpeg12_common_init(MpegEncContext *s)
+av_cold void ff_mpeg12_common_init(MpegEncContext *s)
 {
 
     s->y_dc_scale_table =

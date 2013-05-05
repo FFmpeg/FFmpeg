@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/proresdsp.h"
@@ -31,7 +32,7 @@ void ff_prores_idct_put_10_sse4(uint16_t *dst, int linesize,
 void ff_prores_idct_put_10_avx (uint16_t *dst, int linesize,
                                 int16_t *block, const int16_t *qmat);
 
-void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
+av_cold void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
 #if ARCH_X86_64
     int flags = av_get_cpu_flags();
