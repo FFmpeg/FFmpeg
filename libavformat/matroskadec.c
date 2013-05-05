@@ -2319,7 +2319,6 @@ static int matroska_parse_cluster_incremental(MatroskaDemuxContext *matroska)
         }
     }
 
-    if (res < 0)  matroska->done = 1;
     return res;
 }
 
