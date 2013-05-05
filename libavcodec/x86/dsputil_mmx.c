@@ -1119,7 +1119,7 @@ void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src,
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
                                      int mm_flags)
 {
-#if HAVE_INLINE_ASM
+#if HAVE_MMX_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     c->put_pixels_clamped        = ff_put_pixels_clamped_mmx;
@@ -1150,22 +1150,22 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
     c->gmc = gmc_mmx;
 
     c->add_bytes = add_bytes_mmx;
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_MMX_INLINE */
 
-#if HAVE_YASM
+#if HAVE_MMX_EXTERNAL
     if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
         c->h263_v_loop_filter = ff_h263_v_loop_filter_mmx;
         c->h263_h_loop_filter = ff_h263_h_loop_filter_mmx;
     }
 
     c->vector_clip_int32 = ff_vector_clip_int32_mmx;
-#endif /* HAVE_YASM */
+#endif /* HAVE_MMX_EXTERNAL */
 }
 
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
                                         int mm_flags)
 {
-#if HAVE_INLINE_ASM
+#if HAVE_MMXEXT_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
@@ -1173,7 +1173,7 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
         c->idct_add = ff_idct_xvid_mmxext_add;
         c->idct     = ff_idct_xvid_mmxext;
     }
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_MMXEXT_INLINE */
 
 #if HAVE_MMXEXT_EXTERNAL
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
@@ -1202,7 +1202,7 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
                                      int mm_flags)
 {
-#if HAVE_INLINE_ASM
+#if HAVE_SSE_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (!high_bit_depth) {
@@ -1214,7 +1214,7 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
     }
 
     c->vector_clipf = vector_clipf_sse;
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSE_INLINE */
 }
 
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
