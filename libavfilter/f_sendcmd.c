@@ -422,7 +422,7 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static void av_cold uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     SendCmdContext *sendcmd = ctx->priv;
     int i, j;

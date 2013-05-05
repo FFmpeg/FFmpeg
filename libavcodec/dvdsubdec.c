@@ -566,7 +566,7 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
     return 1;
 }
 
-static int av_cold dvdsub_init(AVCodecContext *avctx)
+static av_cold int dvdsub_init(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = avctx->priv_data;
     int ret;

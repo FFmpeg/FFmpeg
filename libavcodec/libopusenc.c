@@ -156,7 +156,7 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
     return OPUS_OK;
 }
 
-static int av_cold libopus_encode_init(AVCodecContext *avctx)
+static av_cold int libopus_encode_init(AVCodecContext *avctx)
 {
     LibopusEncContext *opus = avctx->priv_data;
     const uint8_t *channel_mapping;
@@ -359,7 +359,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-static int av_cold libopus_encode_close(AVCodecContext *avctx)
+static av_cold int libopus_encode_close(AVCodecContext *avctx)
 {
     LibopusEncContext *opus = avctx->priv_data;
 
