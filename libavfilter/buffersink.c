@@ -176,7 +176,8 @@ static int read_from_fifo(AVFilterContext *ctx, AVFrame *frame,
 
 }
 
-int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx, AVFrame *frame, int nb_samples)
+int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
+                                                  AVFrame *frame, int nb_samples)
 {
     BufferSinkContext *s = ctx->priv;
     AVFilterLink   *link = ctx->inputs[0];
@@ -271,7 +272,8 @@ static void compat_free_buffer(AVFilterBuffer *buf)
     av_free(buf);
 }
 
-static int attribute_align_arg compat_read(AVFilterContext *ctx, AVFilterBufferRef **pbuf, int nb_samples, int flags)
+static int attribute_align_arg compat_read(AVFilterContext *ctx,
+                                           AVFilterBufferRef **pbuf, int nb_samples, int flags)
 {
     AVFilterBufferRef *buf;
     AVFrame *frame;
