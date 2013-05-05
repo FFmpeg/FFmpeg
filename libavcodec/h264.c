@@ -1478,6 +1478,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     ff_h264_pred_init(&h->hpc, h->avctx->codec_id, 8, 1);
 
     h->dequant_coeff_pps = -1;
+    h->current_sps_id = -1;
 
     /* needed so that IDCT permutation is known early */
     if (CONFIG_ERROR_RESILIENCE)
