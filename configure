@@ -3864,6 +3864,7 @@ check_func  access
 check_func  clock_gettime || { check_func clock_gettime -lrt && add_extralibs -lrt; }
 check_func  fcntl
 check_func  fork
+check_func_headers stdlib.h getenv
 check_func  gethrtime
 check_func  getopt
 check_func  getrusage
@@ -4617,6 +4618,8 @@ if enabled yasm; then
     append config_files $TMPASM
     printf '' >$TMPASM
 fi
+
+enabled getenv || echo "#define getenv(x) NULL" >> $TMPH
 
 if enabled msvc && ! enabled shared; then
     echo '#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")' >> $TMPH
