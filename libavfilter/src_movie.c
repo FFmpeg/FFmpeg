@@ -30,6 +30,8 @@
 /* #define DEBUG */
 
 #include <float.h>
+
+#include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"

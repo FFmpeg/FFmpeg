@@ -27,6 +27,7 @@
 #include <stddef.h>
 
 #include "libavutil/adler32.h"
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
@@ -49,7 +50,7 @@ typedef struct AShowInfoContext {
     uint64_t frame;
 } AShowInfoContext;
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     AShowInfoContext *s = ctx->priv;
     av_freep(&s->plane_checksums);

@@ -24,6 +24,7 @@
  * value, and apply it to input video.
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
@@ -371,7 +372,7 @@ DEFINE_LUT_FILTER(lut, "Compute and apply a lookup table to the RGB/YUV input vi
 #define lutyuv_options options
 AVFILTER_DEFINE_CLASS(lutyuv);
 
-static int lutyuv_init(AVFilterContext *ctx)
+static av_cold int lutyuv_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
@@ -388,7 +389,7 @@ DEFINE_LUT_FILTER(lutyuv, "Compute and apply a lookup table to the YUV input vid
 #define lutrgb_options options
 AVFILTER_DEFINE_CLASS(lutrgb);
 
-static int lutrgb_init(AVFilterContext *ctx)
+static av_cold int lutrgb_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
 
@@ -409,7 +410,7 @@ static const AVOption negate_options[] = {
 
 AVFILTER_DEFINE_CLASS(negate);
 
-static int negate_init(AVFilterContext *ctx)
+static av_cold int negate_init(AVFilterContext *ctx)
 {
     LutContext *lut = ctx->priv;
     int i;

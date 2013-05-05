@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -39,7 +40,7 @@ typedef struct SplitContext {
     int nb_outputs;
 } SplitContext;
 
-static int split_init(AVFilterContext *ctx)
+static av_cold int split_init(AVFilterContext *ctx)
 {
     SplitContext *s = ctx->priv;
     int i;
@@ -58,7 +59,7 @@ static int split_init(AVFilterContext *ctx)
     return 0;
 }
 
-static void split_uninit(AVFilterContext *ctx)
+static av_cold void split_uninit(AVFilterContext *ctx)
 {
     int i;
 

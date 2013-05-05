@@ -29,6 +29,7 @@
 #include <float.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/intreadwrite.h"
@@ -181,7 +182,7 @@ static int16_t *precalc_coefs(double dist25, int depth)
 #define PARAM2_DEFAULT 3.0
 #define PARAM3_DEFAULT 6.0
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
 
@@ -201,7 +202,7 @@ static int init(AVFilterContext *ctx)
     return 0;
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     HQDN3DContext *hqdn3d = ctx->priv;
 

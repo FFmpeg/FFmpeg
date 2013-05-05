@@ -165,7 +165,7 @@ static inline void scale_samples_s32(uint8_t *dst, const uint8_t *src,
         smp_dst[i] = av_clipl_int32((((int64_t)smp_src[i] * volume + 128) >> 8));
 }
 
-static void volume_init(VolumeContext *vol)
+static av_cold void volume_init(VolumeContext *vol)
 {
     vol->samples_align = 1;
 
