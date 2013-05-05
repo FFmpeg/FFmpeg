@@ -45,11 +45,18 @@ void ff_h264_reset_sei(H264Context *h) {
 }
 
 static int decode_picture_timing(H264Context *h){
-    if(h->sps.nal_hrd_parameters_present_flag || h->sps.vcl_hrd_parameters_present_flag){
-        h->sei_cpb_removal_delay = get_bits_long(&h->gb, h->sps.cpb_removal_delay_length);
-        h->sei_dpb_output_delay = get_bits_long(&h->gb, h->sps.dpb_output_delay_length);
+    SPS *sps = &h->sps;
+    int i;
+
+    for (i = 0; i<MAX_SPS_COUNT; i++)
+        if (!sps->log2_max_frame_num && h->sps_buffers[i])
+            sps = h->sps_buffers[i];
+
+    if(sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag){
+        h->sei_cpb_removal_delay = get_bits_long(&h->gb, sps->cpb_removal_delay_length);
+        h->sei_dpb_output_delay = get_bits_long(&h->gb, sps->dpb_output_delay_length);
     }
-    if(h->sps.pic_struct_present_flag){
+    if(sps->pic_struct_present_flag){
         unsigned int i, num_clock_ts;
         h->sei_pic_struct = get_bits(&h->gb, 4);
         h->sei_ct_type    = 0;
@@ -83,8 +90,8 @@ static int decode_picture_timing(H264Context *h){
                         }
                     }
                 }
-                if(h->sps.time_offset_length > 0)
-                    skip_bits(&h->gb, h->sps.time_offset_length); /* time_offset */
+                if(sps->time_offset_length > 0)
+                    skip_bits(&h->gb, sps->time_offset_length); /* time_offset */
             }
         }
 
