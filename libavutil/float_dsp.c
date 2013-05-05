@@ -20,7 +20,7 @@
  */
 
 #include "config.h"
-
+#include "libavutil/attributes.h"
 #include "float_dsp.h"
 
 static void vector_fmul_c(float *dst, const float *src0, const float *src1,
@@ -115,7 +115,7 @@ float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len)
     return p;
 }
 
-void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
+av_cold void avpriv_float_dsp_init(AVFloatDSPContext *fdsp, int bit_exact)
 {
     fdsp->vector_fmul = vector_fmul_c;
     fdsp->vector_fmac_scalar = vector_fmac_scalar_c;

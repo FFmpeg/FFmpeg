@@ -20,6 +20,7 @@
 
 #include <string.h>
 
+#include "attributes.h"
 #include "hmac.h"
 #include "md5.h"
 #include "sha.h"
@@ -38,7 +39,7 @@ struct AVHMAC {
     int keylen;
 };
 
-static void sha1_init(void *ctx)
+static av_cold void sha1_init(void *ctx)
 {
     av_sha_init(ctx, 160);
 }

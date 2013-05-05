@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/float_dsp.h"
 #include "float_dsp_arm.h"
 
@@ -45,7 +46,7 @@ void ff_butterflies_float_neon(float *v1, float *v2, int len);
 
 float ff_scalarproduct_float_neon(const float *v1, const float *v2, int len);
 
-void ff_float_dsp_init_neon(AVFloatDSPContext *fdsp)
+av_cold void ff_float_dsp_init_neon(AVFloatDSPContext *fdsp)
 {
     fdsp->vector_fmul = ff_vector_fmul_neon;
     fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_neon;

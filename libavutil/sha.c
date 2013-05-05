@@ -22,6 +22,8 @@
  */
 
 #include <string.h>
+
+#include "attributes.h"
 #include "avutil.h"
 #include "bswap.h"
 #include "sha.h"
@@ -249,7 +251,7 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
 }
 
 
-int av_sha_init(AVSHA* ctx, int bits)
+av_cold int av_sha_init(AVSHA *ctx, int bits)
 {
     ctx->digest_len = bits >> 5;
     switch (bits) {

@@ -18,6 +18,7 @@
 
 #include "config.h"
 
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/float_dsp.h"
 #include "cpu.h"
@@ -121,7 +122,7 @@ static void vector_fmul_window_sse(float *dst, const float *src0,
 }
 #endif /* HAVE_6REGS && HAVE_INLINE_ASM */
 
-void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
+av_cold void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {
     int mm_flags = av_get_cpu_flags();
 
