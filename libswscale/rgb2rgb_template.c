@@ -26,6 +26,8 @@
 
 #include <stddef.h>
 
+#include "libavutil/attributes.h"
+
 static inline void rgb24tobgr32_c(const uint8_t *src, uint8_t *dst,
                                   int src_size)
 {
@@ -892,7 +894,7 @@ static void uyvytoyuv422_c(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
     }
 }
 
-static inline void rgb2rgb_init_c(void)
+static av_cold void rgb2rgb_init_c(void)
 {
     rgb15to16          = rgb15to16_c;
     rgb15tobgr24       = rgb15tobgr24_c;

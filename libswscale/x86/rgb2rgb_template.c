@@ -26,6 +26,8 @@
 
 #include <stddef.h>
 
+#include "libavutil/attributes.h"
+
 #undef PREFETCH
 #undef MOVNTQ
 #undef EMMS
@@ -2448,7 +2450,7 @@ static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 #endif /* !COMPILE_TEMPLATE_SSE2 */
 
-static inline void RENAME(rgb2rgb_init)(void)
+static av_cold void RENAME(rgb2rgb_init)(void)
 {
 #if !COMPILE_TEMPLATE_SSE2
 #if !COMPILE_TEMPLATE_AMD3DNOW
