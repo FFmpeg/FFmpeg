@@ -40,6 +40,9 @@ fate-lmlm4-demux: CMD = framecrc -i $(SAMPLES)/lmlm4/LMLM4_CIFat30fps.divx -t 3 
 FATE_SAMPLES_DEMUX-$(CONFIG_XA_DEMUXER) += fate-maxis-xa
 fate-maxis-xa: CMD = framecrc -i $(SAMPLES)/maxis-xa/SC2KBUG.XA -frames:a 30 -c:a copy
 
+FATE_SAMPLES_DEMUX-$(CONFIG_MATROSKA_DEMUXER) += fate-mkv
+fate-mkv: CMD = framecrc -i $(SAMPLES)/mkv/test7_cut.mkv -c copy
+
 FATE_SAMPLES_DEMUX-$(CONFIG_MTV_DEMUXER) += fate-mtv
 fate-mtv: CMD = framecrc -i $(SAMPLES)/mtv/comedian_auto-partial.mtv -c copy
 
