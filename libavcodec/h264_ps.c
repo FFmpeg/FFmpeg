@@ -586,7 +586,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
 
     if(pps_id >= MAX_PPS_COUNT) {
         av_log(h->avctx, AV_LOG_ERROR, "pps_id (%d) out of range\n", pps_id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pps= av_mallocz(sizeof(PPS));
