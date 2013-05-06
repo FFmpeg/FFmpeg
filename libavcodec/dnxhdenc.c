@@ -1003,7 +1003,7 @@ static int dnxhd_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static int dnxhd_encode_end(AVCodecContext *avctx)
+static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
     int max_level = 1<<(ctx->cid_table->bit_depth+2);
