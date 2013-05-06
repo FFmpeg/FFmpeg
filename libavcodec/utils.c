@@ -2104,6 +2104,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             if(frame->nb_samples <= avctx->internal->skip_samples){
                 *got_frame_ptr = 0;
                 avctx->internal->skip_samples -= frame->nb_samples;
+                if (avctx->refcounted_frames)
+                    av_frame_unref(frame);
                 av_log(avctx, AV_LOG_DEBUG, "skip whole frame, skip left: %d\n",
                        avctx->internal->skip_samples);
             } else {
