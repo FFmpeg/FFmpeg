@@ -64,7 +64,9 @@ static int64_t next_tag(AVIOContext *pb, uint32_t *tag)
 /* RIFF chunks are always on a even offset. */
 static int64_t wav_seek_tag(AVIOContext *s, int64_t offset, int whence)
 {
-    return avio_seek(s, offset + (offset & 1), whence);
+    offset += offset < INT64_MAX && offset & 1;
+
+    return avio_seek(s, offset, whence);
 }
 
 /* return the size of the found tag */
@@ -365,9 +367,6 @@ static int wav_read_header(AVFormatContext *s)
             }
             break;
         }
-
-        /* skip padding byte */
-        next_tag_ofs += (next_tag_ofs < INT64_MAX && next_tag_ofs & 1);
 
         /* seek to next tag unless we know that we'll run into EOF */
         if ((avio_size(pb) > 0 && next_tag_ofs >= avio_size(pb)) ||
