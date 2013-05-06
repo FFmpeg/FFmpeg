@@ -492,6 +492,22 @@ static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
+static int planarRgbToplanarRgbWrapper(SwsContext *c, const uint8_t *src[],
+                                       int srcStride[], int srcSliceY, int srcSliceH,
+                                       uint8_t *dst[], int dstStride[])
+{
+    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+              dst[0], dstStride[0]);
+    copyPlane(src[1], srcStride[1], srcSliceY, srcSliceH, c->srcW,
+              dst[1], dstStride[1]);
+    copyPlane(src[2], srcStride[2], srcSliceY, srcSliceH, c->srcW,
+              dst[2], dstStride[2]);
+    if (dst[3])
+        fillPlane(dst[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
+
+    return srcSliceH;
+}
+
 static void packedtogbr24p(const uint8_t *src, int srcStride,
                            uint8_t *dst[], int dstStride[], int srcSliceH,
                            int alpha_first, int inc_size, int width)
@@ -1039,6 +1055,10 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
         c->swScale= rgbToRgbWrapper;
 
+    if ((srcFormat == AV_PIX_FMT_GBRP && dstFormat == AV_PIX_FMT_GBRAP) ||
+        (srcFormat == AV_PIX_FMT_GBRAP && dstFormat == AV_PIX_FMT_GBRP))
+        c->swScale = planarRgbToplanarRgbWrapper;
+
 #define isByteRGB(f) (             \
         f == AV_PIX_FMT_RGB32   || \
         f == AV_PIX_FMT_RGB32_1 || \
@@ -1066,6 +1086,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRP12) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRP14) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRP16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_GBRAP16) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB444) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGB48)  ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_RGBA64) ||

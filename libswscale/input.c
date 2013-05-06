@@ -720,6 +720,14 @@ static void planar_rgb_to_y(uint8_t *_dst, const uint8_t *src[4], int width, int
     }
 }
 
+static void planar_rgb_to_a(uint8_t *_dst, const uint8_t *src[4], int width, int32_t *unused)
+{
+    uint16_t *dst = (uint16_t *)_dst;
+    int i;
+    for (i = 0; i < width; i++)
+        dst[i] = src[3][i] << 6;
+}
+
 static void planar_rgb_to_uv(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4], int width, int32_t *rgb2yuv)
 {
     uint16_t *dstU = (uint16_t *)_dstU;
@@ -835,6 +843,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP14LE:
         c->readChrPlanar = planar_rgb14le_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP16LE:
     case AV_PIX_FMT_GBRP16LE:
         c->readChrPlanar = planar_rgb16le_to_uv;
         break;
@@ -850,9 +859,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP14BE:
         c->readChrPlanar = planar_rgb14be_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP16BE:
     case AV_PIX_FMT_GBRP16BE:
         c->readChrPlanar = planar_rgb16be_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
         c->readChrPlanar = planar_rgb_to_uv;
         break;
@@ -955,7 +966,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         case AV_PIX_FMT_BGR555BE:
             c->chrToYV12 = bgr15beToUV_half_c;
             break;
-        case AV_PIX_FMT_GBR24P  :
+        case AV_PIX_FMT_GBRAP:
+        case AV_PIX_FMT_GBRP:
             c->chrToYV12 = gbr24pToUV_half_c;
             break;
         case AV_PIX_FMT_BGR444LE:
@@ -1084,6 +1096,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP14LE:
         c->readLumPlanar = planar_rgb14le_to_y;
         break;
+    case AV_PIX_FMT_GBRAP16LE:
     case AV_PIX_FMT_GBRP16LE:
         c->readLumPlanar = planar_rgb16le_to_y;
         break;
@@ -1099,9 +1112,12 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP14BE:
         c->readLumPlanar = planar_rgb14be_to_y;
         break;
+    case AV_PIX_FMT_GBRAP16BE:
     case AV_PIX_FMT_GBRP16BE:
         c->readLumPlanar = planar_rgb16be_to_y;
         break;
+    case AV_PIX_FMT_GBRAP:
+        c->readAlpPlanar = planar_rgb_to_a;
     case AV_PIX_FMT_GBRP:
         c->readLumPlanar = planar_rgb_to_y;
         break;

@@ -1495,7 +1495,7 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
     int i;
-    int hasAlpha = 0;
+    int hasAlpha = (desc->flags & PIX_FMT_ALPHA) && alpSrc;
     uint16_t **dest16 = (uint16_t**)dest;
     int SH = 22 + 7 - desc->comp[0].depth_minus1;
 
@@ -1547,10 +1547,14 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
             dest16[0][i] = G >> SH;
             dest16[1][i] = B >> SH;
             dest16[2][i] = R >> SH;
+            if (hasAlpha)
+                dest16[3][i] = A;
         } else {
             dest[0][i] = G >> 22;
             dest[1][i] = B >> 22;
             dest[2][i] = R >> 22;
+            if (hasAlpha)
+                dest[3][i] = A;
         }
     }
     if (SH != 22 && (!isBE(c->dstFormat)) != (!HAVE_BIGENDIAN)) {
@@ -1558,6 +1562,8 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
             dest16[0][i] = av_bswap16(dest16[0][i]);
             dest16[1][i] = av_bswap16(dest16[1][i]);
             dest16[2][i] = av_bswap16(dest16[2][i]);
+            if (hasAlpha)
+                dest16[3][i] = av_bswap16(dest16[3][i]);
         }
     }
 }
@@ -1722,6 +1728,7 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
         case AV_PIX_FMT_GBRP14LE:
         case AV_PIX_FMT_GBRP16BE:
         case AV_PIX_FMT_GBRP16LE:
+        case AV_PIX_FMT_GBRAP:
             *yuv2anyX = yuv2gbrp_full_X_c;
             break;
         }
