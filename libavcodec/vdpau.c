@@ -307,7 +307,7 @@ void ff_vdpau_vc1_decode_picture(MpegEncContext *s, const uint8_t *buf,
     assert(render);
 
     /*  fill LvPictureInfoVC1 struct */
-    render->info.vc1.frame_coding_mode  = v->fcm;
+    render->info.vc1.frame_coding_mode  = v->fcm ? v->fcm + 1 : 0;
     render->info.vc1.postprocflag       = v->postprocflag;
     render->info.vc1.pulldown           = v->broadcast;
     render->info.vc1.interlace          = v->interlace;
