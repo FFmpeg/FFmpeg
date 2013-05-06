@@ -91,7 +91,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
-#define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
 #include "hpeldsp_rnd_template.c"
 
@@ -113,7 +112,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
-#undef OP_AVG
 
 #endif /* HAVE_INLINE_ASM */
 

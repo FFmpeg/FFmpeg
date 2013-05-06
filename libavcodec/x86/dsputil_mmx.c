@@ -106,7 +106,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #define SET_RND  MOVQ_WTWO
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
-#define OP_AVG(a, b, c, e)              PAVGB_MMX(a, b, c, e)
 
 #include "rnd_template.c"
 
@@ -114,7 +113,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
-#undef OP_AVG
 
 /***********************************/
 /* standard MMX */
