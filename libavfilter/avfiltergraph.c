@@ -333,7 +333,8 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
             ret = ff_default_query_formats(f);
         if (ret < 0 && ret != AVERROR(EAGAIN))
             return ret;
-        count_queried++;
+        /* note: EAGAIN could indicate a partial success, not counted yet */
+        count_queried += ret >= 0;
     }
 
     /* go through and merge as many format lists as possible */
