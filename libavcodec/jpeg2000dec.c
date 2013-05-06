@@ -1285,26 +1285,27 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
     if (ret = jpeg2000_read_main_headers(s))
-        return ret;
+        goto end;
 
     /* get picture buffer */
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed.\n");
-        return ret;
+        goto end;
     }
     picture->pict_type = AV_PICTURE_TYPE_I;
     picture->key_frame = 1;
 
     if (ret = jpeg2000_read_bitstream_packets(s))
-        return ret;
+        goto end;
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++)
         if (ret = jpeg2000_decode_tile(s, s->tile + tileno, picture))
-            return ret;
-    jpeg2000_dec_cleanup(s);
+            goto end;
 
     *got_frame = 1;
 
-    return s->buf - s->buf_start;
+end:
+    jpeg2000_dec_cleanup(s);
+    return ret ? ret : s->buf - s->buf_start;
 }
 
 #define OFFSET(x) offsetof(Jpeg2000DecoderContext, x)
