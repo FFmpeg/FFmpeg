@@ -152,7 +152,7 @@ end:
     return ret;
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
     int i;

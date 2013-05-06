@@ -236,7 +236,7 @@ static void print_stats(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_INFO, "Number of samples: %lld\n", nb_samples / s->nb_channels);
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioStatsContext *s = ctx->priv;
 

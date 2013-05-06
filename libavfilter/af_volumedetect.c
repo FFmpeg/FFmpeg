@@ -126,7 +126,7 @@ static void print_stats(AVFilterContext *ctx)
     }
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     print_stats(ctx);
 }

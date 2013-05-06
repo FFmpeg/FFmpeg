@@ -527,7 +527,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     return ff_filter_frame(outlink, outpicref);
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     RemovelogoContext *removelogo = ctx->priv;
     int a, b;
