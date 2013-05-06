@@ -80,7 +80,7 @@ static const enum AVPixelFormat color_pix_fmts[] = {
 
 static const enum AVPixelFormat levels_pix_fmts[] = {
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVJ444P,
-    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GBRP, AV_PIX_FMT_NONE
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
 };
 
 static int query_formats(AVFilterContext *ctx)
@@ -119,6 +119,7 @@ static int config_input(AVFilterLink *inlink)
     h->ncomp = desc->nb_components;
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
         h->bg_color = black_gbrp_color;
         h->fg_color = white_gbrp_color;

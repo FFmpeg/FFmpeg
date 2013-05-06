@@ -165,7 +165,7 @@ static int geq_query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
     static const enum PixelFormat rgb_pix_fmts[] = {
-        AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     if (geq->is_rgb) {
