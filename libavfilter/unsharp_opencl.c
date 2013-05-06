@@ -51,7 +51,7 @@ static int compute_mask(int step, uint32_t *mask)
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    counter = av_mallocz(counter_size);
+    counter = av_mallocz(sizeof(uint32_t *) * (2 * step + 1));
     if (!counter) {
         ret = AVERROR(ENOMEM);
         goto end;
