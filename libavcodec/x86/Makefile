@@ -10,8 +10,7 @@ OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
 OBJS-$(CONFIG_H264DSP)                 += x86/h264dsp_init.o
 OBJS-$(CONFIG_H264PRED)                += x86/h264_intrapred_init.o
 OBJS-$(CONFIG_H264QPEL)                += x86/h264_qpel.o
-OBJS-$(CONFIG_HPELDSP)                 += x86/fpel_mmx.o                \
-                                          x86/hpeldsp_init.o
+OBJS-$(CONFIG_HPELDSP)                 += x86/hpeldsp_init.o
 OBJS-$(CONFIG_LPC)                     += x86/lpc.o
 OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
 OBJS-$(CONFIG_MPEGAUDIODSP)            += x86/mpegaudiodsp.o
@@ -45,6 +44,7 @@ MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o          \
                                           x86/motion_est.o
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
+MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o
