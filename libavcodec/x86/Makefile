@@ -44,7 +44,8 @@ MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
 MMX-OBJS-$(CONFIG_ENCODERS)            += x86/dsputilenc_mmx.o          \
                                           x86/motion_est.o
 MMX-OBJS-$(CONFIG_DIRAC_DECODER)       += x86/dirac_dwt.o
-MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o
+MMX-OBJS-$(CONFIG_HPELDSP)             += x86/fpel_mmx.o                \
+                                          x86/hpeldsp_mmx.o
 MMX-OBJS-$(CONFIG_SNOW_DECODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_SNOW_ENCODER)        += x86/snowdsp.o
 MMX-OBJS-$(CONFIG_VC1_DECODER)         += x86/vc1dsp_mmx.o

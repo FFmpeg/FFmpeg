@@ -75,6 +75,7 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
 
 #define avg_pixels8_mmx         ff_avg_pixels8_mmx
+#define avg_pixels8_x2_mmx      ff_avg_pixels8_x2_mmx
 #define avg_pixels16_mmx        ff_avg_pixels16_mmx
 #define put_pixels8_mmx         ff_put_pixels8_mmx
 #define put_pixels16_mmx        ff_put_pixels16_mmx
@@ -86,7 +87,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 
 /***********************************/
 /* MMX no rounding */
-#define NO_RND 1
 #define DEF(x, y) x ## _no_rnd_ ## y ## _mmx
 #define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
@@ -99,7 +99,6 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
-#undef NO_RND
 /***********************************/
 /* MMX rounding */
 
