@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "mpegts.h"
 #include "rtpdec_formats.h"
 
@@ -43,7 +44,8 @@ static void mpegts_free_context(PayloadContext *data)
     av_free(data);
 }
 
-static int mpegts_init(AVFormatContext *ctx, int st_index, PayloadContext *data)
+static av_cold int mpegts_init(AVFormatContext *ctx, int st_index,
+                               PayloadContext *data)
 {
     data->ts = ff_mpegts_parse_open(ctx);
     if (!data->ts)

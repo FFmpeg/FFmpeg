@@ -24,13 +24,14 @@
  * G.723.1 demuxer
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
 
 static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
 
-static int g723_1_init(AVFormatContext *s)
+static av_cold int g723_1_init(AVFormatContext *s)
 {
     AVStream *st;
 
