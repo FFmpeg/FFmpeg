@@ -27,23 +27,10 @@
 #include "libavutil/dict.h"
 #include "libavutil/pixdesc.h"
 #include "deshake_opencl.h"
+#include "libavutil/opencl_internal.h"
 
 #define MATRIX_SIZE 6
 #define PLANE_NUM 3
-
-#define TRANSFORM_OPENCL_CHECK(method, ...)                                                                  \
-    status = method(__VA_ARGS__);                                                                            \
-    if (status != CL_SUCCESS) {                                                                              \
-        av_log(ctx, AV_LOG_ERROR, "error %s %d\n", # method, status);                                        \
-        return AVERROR_EXTERNAL;                                                                             \
-    }
-
-#define TRANSFORM_OPENCL_SET_KERNEL_ARG(arg_ptr)                                                             \
-    status = clSetKernelArg((kernel),(arg_no++),(sizeof(arg_ptr)),(void*)(&(arg_ptr)));                      \
-    if (status != CL_SUCCESS) {                                                                              \
-        av_log(ctx, AV_LOG_ERROR, "cannot set kernel argument: %d\n", status );                              \
-        return AVERROR_EXTERNAL;                                                                             \
-    }
 
 int ff_opencl_transform(AVFilterContext *ctx,
                         int width, int height, int cw, int ch,
@@ -51,40 +38,50 @@ int ff_opencl_transform(AVFilterContext *ctx,
                         enum InterpolateMethod interpolate,
                         enum FillMethod fill, AVFrame *in, AVFrame *out)
 {
-    int arg_no, ret = 0;
+    int ret = 0;
     const size_t global_work_size = width * height + 2 * ch * cw;
-    cl_kernel kernel;
     cl_int status;
     DeshakeContext *deshake = ctx->priv;
+    FFOpenclParam opencl_param = {0};
+
+    opencl_param.ctx = ctx;
+    opencl_param.kernel = deshake->opencl_ctx.kernel_env.kernel;
     ret = av_opencl_buffer_write(deshake->opencl_ctx.cl_matrix_y, (uint8_t *)matrix_y, deshake->opencl_ctx.matrix_size * sizeof(cl_float));
     if (ret < 0)
         return ret;
     ret = av_opencl_buffer_write(deshake->opencl_ctx.cl_matrix_uv, (uint8_t *)matrix_uv, deshake->opencl_ctx.matrix_size * sizeof(cl_float));
     if (ret < 0)
         return ret;
-    kernel = deshake->opencl_ctx.kernel_env.kernel;
-    arg_no = 0;
 
     if ((unsigned int)interpolate > INTERPOLATE_BIQUADRATIC) {
         av_log(ctx, AV_LOG_ERROR, "Selected interpolate method is invalid\n");
         return AVERROR(EINVAL);
     }
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(deshake->opencl_ctx.cl_inbuf);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(deshake->opencl_ctx.cl_outbuf);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(deshake->opencl_ctx.cl_matrix_y);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(deshake->opencl_ctx.cl_matrix_uv);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(interpolate);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(fill);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(in->linesize[0]);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(out->linesize[0]);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(in->linesize[1]);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(out->linesize[1]);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(height);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(width);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(ch);
-    TRANSFORM_OPENCL_SET_KERNEL_ARG(cw);
-    TRANSFORM_OPENCL_CHECK(clEnqueueNDRangeKernel, deshake->opencl_ctx.kernel_env.command_queue, deshake->opencl_ctx.kernel_env.kernel, 1, NULL,
-                           &global_work_size, NULL, 0, NULL, NULL);
+    ret = ff_opencl_set_parameter(&opencl_param,
+                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_inbuf),
+                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_outbuf),
+                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_matrix_y),
+                                  FF_OPENCL_PARAM_INFO(deshake->opencl_ctx.cl_matrix_uv),
+                                  FF_OPENCL_PARAM_INFO(interpolate),
+                                  FF_OPENCL_PARAM_INFO(fill),
+                                  FF_OPENCL_PARAM_INFO(in->linesize[0]),
+                                  FF_OPENCL_PARAM_INFO(out->linesize[0]),
+                                  FF_OPENCL_PARAM_INFO(in->linesize[1]),
+                                  FF_OPENCL_PARAM_INFO(out->linesize[1]),
+                                  FF_OPENCL_PARAM_INFO(height),
+                                  FF_OPENCL_PARAM_INFO(width),
+                                  FF_OPENCL_PARAM_INFO(ch),
+                                  FF_OPENCL_PARAM_INFO(cw),
+                                  NULL);
+    if (ret < 0)
+        return ret;
+    status = clEnqueueNDRangeKernel(deshake->opencl_ctx.kernel_env.command_queue,
+                                    deshake->opencl_ctx.kernel_env.kernel, 1, NULL,
+                                    &global_work_size, NULL, 0, NULL, NULL);
+    if (status != CL_SUCCESS) {
+        av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
+        return AVERROR_EXTERNAL;
+    }
     clFinish(deshake->opencl_ctx.kernel_env.command_queue);
     ret = av_opencl_buffer_read_image(out->data, deshake->opencl_ctx.out_plane_size,
                                       deshake->opencl_ctx.plane_num, deshake->opencl_ctx.cl_outbuf,
