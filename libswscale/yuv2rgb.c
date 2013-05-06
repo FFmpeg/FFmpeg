@@ -264,16 +264,16 @@ YUV2RGBFUNC(yuva2rgba_c, uint32_t, 1)
     PUTRGBA(dst_2, py_2, pa_2, 0, 24);
 
     LOADCHROMA(1);
-    PUTRGBA(dst_2, py_2, pa_1, 1, 24);
-    PUTRGBA(dst_1, py_1, pa_2, 1, 24);
+    PUTRGBA(dst_2, py_2, pa_2, 1, 24);
+    PUTRGBA(dst_1, py_1, pa_1, 1, 24);
 
     LOADCHROMA(2);
     PUTRGBA(dst_1, py_1, pa_1, 2, 24);
     PUTRGBA(dst_2, py_2, pa_2, 2, 24);
 
     LOADCHROMA(3);
-    PUTRGBA(dst_2, py_2, pa_1, 3, 24);
-    PUTRGBA(dst_1, py_1, pa_2, 3, 24);
+    PUTRGBA(dst_2, py_2, pa_2, 3, 24);
+    PUTRGBA(dst_1, py_1, pa_1, 3, 24);
     pa_1 += 8; \
     pa_2 += 8; \
 ENDYUV2RGBLINE(8, 0)
@@ -282,8 +282,8 @@ ENDYUV2RGBLINE(8, 0)
     PUTRGBA(dst_2, py_2, pa_2, 0, 24);
 
     LOADCHROMA(1);
-    PUTRGBA(dst_2, py_2, pa_1, 1, 24);
-    PUTRGBA(dst_1, py_1, pa_2, 1, 24);
+    PUTRGBA(dst_2, py_2, pa_2, 1, 24);
+    PUTRGBA(dst_1, py_1, pa_1, 1, 24);
     pa_1 += 4; \
     pa_2 += 4; \
 ENDYUV2RGBLINE(8, 1)
