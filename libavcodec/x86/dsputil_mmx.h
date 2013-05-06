@@ -48,7 +48,6 @@ extern const uint64_t ff_pw_255;
 
 extern const xmm_reg  ff_pb_1;
 extern const xmm_reg  ff_pb_3;
-extern const uint64_t ff_pb_3F;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
 
