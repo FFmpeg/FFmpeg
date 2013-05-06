@@ -226,7 +226,7 @@ static int decode_main_header(NUTContext *nut)
     end  = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += avio_tell(bc);
 
-    GET_V(tmp, tmp >= 2 && tmp <= 3);
+    GET_V(tmp, tmp >= 2 && tmp <= NUT_VERSION);
     GET_V(stream_count, tmp > 0 && tmp <= NUT_MAX_STREAMS);
 
     nut->max_distance = ffio_read_varlen(bc);

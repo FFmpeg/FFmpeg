@@ -485,8 +485,8 @@ av_cold void ff_bgmc_end(uint8_t **cf_lut, int **cf_lut_status)
 
 
 /** Initialize decoding and reads the first value */
-av_cold void ff_bgmc_decode_init(GetBitContext *gb, unsigned int *h,
-                                 unsigned int *l, unsigned int *v)
+void ff_bgmc_decode_init(GetBitContext *gb, unsigned int *h,
+                         unsigned int *l, unsigned int *v)
 {
     *h = TOP_VALUE;
     *l = 0;
