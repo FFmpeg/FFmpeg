@@ -189,7 +189,7 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
                                     unsharp->opencl_ctx.kernel_env.kernel, 1, NULL,
                                     &global_work_size, NULL, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %d\n", status);
+        av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
     clFinish(unsharp->opencl_ctx.kernel_env.command_queue);
