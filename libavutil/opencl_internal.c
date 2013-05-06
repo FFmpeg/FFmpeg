@@ -47,7 +47,7 @@ int ff_opencl_set_parameter(FFOpenclParam *opencl_param, ...)
         }
         status = clSetKernelArg(opencl_param->kernel, opencl_param->param_num, param_size, param);
         if (status != CL_SUCCESS) {
-            av_log(opencl_param->ctx, AV_LOG_ERROR, "Cannot set kernel argument: %d\n", status);
+            av_log(opencl_param->ctx, AV_LOG_ERROR, "Cannot set kernel argument: %s\n", av_opencl_errstr(status));
             ret = AVERROR_EXTERNAL;
             goto end;
         }
