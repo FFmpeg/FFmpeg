@@ -183,7 +183,7 @@ static int nut_probe(AVProbeData *p)
         tmp = ffio_read_varlen(bc);                                           \
         if (!(check)) {                                                       \
             av_log(s, AV_LOG_ERROR, "Error " #dst " is (%"PRId64")\n", tmp);  \
-            return -1;                                                        \
+            return AVERROR_INVALIDDATA;                                       \
         }                                                                     \
         dst = tmp;                                                            \
     } while (0)
@@ -193,7 +193,7 @@ static int skip_reserved(AVIOContext *bc, int64_t pos)
     pos -= avio_tell(bc);
     if (pos < 0) {
         avio_seek(bc, pos, SEEK_CUR);
-        return -1;
+        return AVERROR_INVALIDDATA;
     } else {
         while (pos--)
             avio_r8(bc);
@@ -213,7 +213,13 @@ static int decode_main_header(NUTContext *nut)
     end  = get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += avio_tell(bc);
 
-    GET_V(tmp, tmp >= 2 && tmp <= NUT_VERSION);
+    tmp = ffio_read_varlen(bc);
+    if (tmp < 2 && tmp > NUT_VERSION) {
+        av_log(s, AV_LOG_ERROR, "Version %"PRId64" not supported.\n",
+               tmp);
+        return AVERROR(ENOSYS);
+    }
+
     GET_V(stream_count, tmp > 0 && tmp <= NUT_MAX_STREAMS);
 
     nut->max_distance = ffio_read_varlen(bc);
@@ -376,7 +382,7 @@ static int decode_stream_header(NUTContext *nut)
         break;
     default:
         av_log(s, AV_LOG_ERROR, "unknown stream class (%d)\n", class);
-        return -1;
+        return AVERROR(ENOSYS);
     }
     if (class < 3 && st->codec->codec_id == AV_CODEC_ID_NONE)
         av_log(s, AV_LOG_ERROR,
@@ -405,7 +411,7 @@ static int decode_stream_header(NUTContext *nut)
         if ((!st->sample_aspect_ratio.num) != (!st->sample_aspect_ratio.den)) {
             av_log(s, AV_LOG_ERROR, "invalid aspect ratio %d/%d\n",
                    st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         ffio_read_varlen(bc); /* csp type */
     } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -416,7 +422,7 @@ static int decode_stream_header(NUTContext *nut)
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR,
                "stream header %d checksum mismatch\n", stream_id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     stc->time_base = &nut->time_base[stc->time_base_id];
     avpriv_set_pts_info(s->streams[stream_id], 63, stc->time_base->num,
@@ -516,7 +522,7 @@ static int decode_info_header(NUTContext *nut)
 
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR, "info header checksum mismatch\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     return 0;
 }
@@ -542,7 +548,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
 
     if (skip_reserved(bc, end) || ffio_get_checksum(bc)) {
         av_log(s, AV_LOG_ERROR, "sync point checksum mismatch\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     *ts = tmp / s->nb_streams *
@@ -561,13 +567,13 @@ static int find_and_decode_index(NUTContext *nut)
     int64_t filesize = avio_size(bc);
     int64_t *syncpoints;
     int8_t *has_keyframe;
-    int ret = -1;
+    int ret = AVERROR_INVALIDDATA;
 
     avio_seek(bc, filesize - 12, SEEK_SET);
     avio_seek(bc, filesize - avio_rb64(bc), SEEK_SET);
     if (avio_rb64(bc) != INDEX_STARTCODE) {
         av_log(s, AV_LOG_ERROR, "no index at the end\n");
-        return -1;
+        return ret;
     }
 
     end  = get_packetheader(nut, bc, 1, INDEX_STARTCODE);
@@ -843,7 +849,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             frame_code = avio_r8(bc);
             if (bc->eof_reached)
-                return -1;
+                return AVERROR_EOF;
             if (frame_code == 'N') {
                 tmp = frame_code;
                 for (i = 1; i < 8; i++)
