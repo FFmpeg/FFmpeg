@@ -92,7 +92,7 @@ int ff_snow_alloc_blocks(SnowContext *s){
     return 0;
 }
 
-static void init_qexp(void){
+static av_cold void init_qexp(void){
     int i;
     double v=128;
 
