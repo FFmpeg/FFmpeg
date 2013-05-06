@@ -521,10 +521,11 @@ fail:
 static void read_chapter(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag, ID3v2ExtraMeta **extra_meta)
 {
     AVRational time_base = {1, 1000};
-    char title[1024];
     uint32_t start, end;
+    uint8_t *dst = NULL;
+    int encoding;
 
-    taglen -= avio_get_str(pb, taglen, title, sizeof(title));
+    decode_str(s, pb, 0, &dst, &taglen);
     if (taglen < 16)
         return;
 
@@ -538,14 +539,19 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int taglen, char *
         avio_read(pb, tag, 4);
         if (!memcmp(tag, "TIT2", 4)) {
             taglen = FFMIN(taglen, avio_rb32(pb));
-            if (taglen < 0)
+            if (taglen < 0) {
+                av_free(dst);
                 return;
-            avio_skip(pb, 3);
-            avio_get_str(pb, taglen, title, sizeof(title));
+            }
+            avio_skip(pb, 2);
+            encoding = avio_r8(pb);
+            av_freep(&dst);
+            decode_str(s, pb, encoding, &dst, &taglen);
         }
     }
 
-    avpriv_new_chapter(s, s->nb_chapters + 1, time_base, start, end, title);
+    avpriv_new_chapter(s, s->nb_chapters + 1, time_base, start, end, dst);
+    av_free(dst);
 }
 
 typedef struct ID3v2EMFunc {
