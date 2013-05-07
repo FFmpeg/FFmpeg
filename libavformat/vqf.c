@@ -132,6 +132,11 @@ static int vqf_read_header(AVFormatContext *s)
             rate_flag           = AV_RB32(comm_chunk + 8);
             avio_skip(s->pb, len-12);
 
+            if (st->codec->channels <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid number of channels\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             st->codec->bit_rate              = read_bitrate*1000;
             break;
         case MKTAG('D','S','I','Z'): // size of compressed data
