@@ -30,7 +30,6 @@ static const AVFilterPad avfilter_vf_null_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
     },
     { NULL }
 };
@@ -46,10 +45,6 @@ static const AVFilterPad avfilter_vf_null_outputs[] = {
 AVFilter avfilter_vf_null = {
     .name      = "null",
     .description = NULL_IF_CONFIG_SMALL("Pass the source unchanged to the output."),
-
-    .priv_size = 0,
-
     .inputs    = avfilter_vf_null_inputs,
-
     .outputs   = avfilter_vf_null_outputs,
 };
