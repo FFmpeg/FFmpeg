@@ -357,8 +357,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
 
     av_assert1(width && height);
     if (f->colorspace == 0) {
-        const int chroma_width  = -((-width) >> f->chroma_h_shift);
-        const int chroma_height = -((-height) >> f->chroma_v_shift);
+        const int chroma_width  = FF_CEIL_RSHIFT(width,  f->chroma_h_shift);
+        const int chroma_height = FF_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
         decode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);

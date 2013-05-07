@@ -81,8 +81,8 @@ void ff_snow_reset_contexts(SnowContext *s){ //FIXME better initial contexts
 }
 
 int ff_snow_alloc_blocks(SnowContext *s){
-    int w= -((-s->avctx->width )>>LOG2_MB_SIZE);
-    int h= -((-s->avctx->height)>>LOG2_MB_SIZE);
+    int w= FF_CEIL_RSHIFT(s->avctx->width,  LOG2_MB_SIZE);
+    int h= FF_CEIL_RSHIFT(s->avctx->height, LOG2_MB_SIZE);
 
     s->b_width = w;
     s->b_height= h;

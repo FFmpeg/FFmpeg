@@ -973,8 +973,8 @@ static int encode_slice(AVCodecContext *c, void *arg)
     }
 
     if (f->colorspace == 0) {
-        const int chroma_width  = -((-width) >> f->chroma_h_shift);
-        const int chroma_height = -((-height) >> f->chroma_v_shift);
+        const int chroma_width  = FF_CEIL_RSHIFT(width,  f->chroma_h_shift);
+        const int chroma_height = FF_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 

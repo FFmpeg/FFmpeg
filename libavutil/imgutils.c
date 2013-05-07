@@ -284,7 +284,7 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                 return;
             }
             if (i == 1 || i == 2) {
-                h= -((-height)>>desc->log2_chroma_h);
+                h = FF_CEIL_RSHIFT(height, desc->log2_chroma_h);
             }
             av_image_copy_plane(dst_data[i], dst_linesizes[i],
                                 src_data[i], src_linesizes[i],

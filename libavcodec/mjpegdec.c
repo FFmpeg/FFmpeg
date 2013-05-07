@@ -1847,8 +1847,8 @@ the_end:
             int w = s->width;
             int h = s->height;
             if(index && index<3){
-                w = -((-w) >> hshift);
-                h = -((-h) >> vshift);
+                w = FF_CEIL_RSHIFT(w, hshift);
+                h = FF_CEIL_RSHIFT(h, vshift);
             }
             if(dst){
                 uint8_t *dst2 = dst + s->linesize[index]*(h-1);
