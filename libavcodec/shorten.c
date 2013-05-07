@@ -119,11 +119,11 @@ static int allocate_buffers(ShortenContext *s)
     for (chan=0; chan<s->channels; chan++) {
         if(FFMAX(1, s->nmean) >= UINT_MAX/sizeof(int32_t)){
             av_log(s->avctx, AV_LOG_ERROR, "nmean too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if(s->blocksize + s->nwrap >= UINT_MAX/sizeof(int32_t) || s->blocksize + s->nwrap <= (unsigned)s->nwrap){
             av_log(s->avctx, AV_LOG_ERROR, "s->blocksize + s->nwrap too large\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         tmp_ptr = av_realloc(s->offset[chan], sizeof(int32_t)*FFMAX(1, s->nmean));
@@ -209,14 +209,14 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
     init_get_bits(&hb, header, header_size*8);
     if (get_le32(&hb) != MKTAG('R','I','F','F')) {
         av_log(avctx, AV_LOG_ERROR, "missing RIFF tag\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     skip_bits_long(&hb, 32);    /* chunk_size */
 
     if (get_le32(&hb) != MKTAG('W','A','V','E')) {
         av_log(avctx, AV_LOG_ERROR, "missing WAVE tag\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     while (get_le32(&hb) != MKTAG('f','m','t',' ')) {
@@ -227,7 +227,7 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
 
     if (len < 16) {
         av_log(avctx, AV_LOG_ERROR, "fmt chunk was too short\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     wave_format = get_le16(&hb);
@@ -237,7 +237,7 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "unsupported wave format\n");
-            return -1;
+            return AVERROR(ENOSYS);
     }
 
     avctx->channels = get_le16(&hb);
@@ -248,7 +248,7 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
 
     if (avctx->bits_per_coded_sample != 16) {
         av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample\n");
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     len -= 16;
@@ -529,7 +529,7 @@ frame_done:
         av_log(s->avctx, AV_LOG_ERROR, "overread: %d\n", i - buf_size);
         s->bitstream_size=0;
         s->bitstream_index=0;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (s->bitstream_size) {
         s->bitstream_index += i;
