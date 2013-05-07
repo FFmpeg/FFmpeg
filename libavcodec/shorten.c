@@ -428,7 +428,11 @@ static int read_header(ShortenContext *s)
         s->channels = 0;
         return AVERROR_INVALIDDATA;
     }
-    s->avctx->channels = s->channels;
+    if (s->avctx->ch_layout.nb_channels != s->channels) {
+        av_channel_layout_uninit(&s->avctx->ch_layout);
+        s->avctx->ch_layout.nb_channels = s->channels;
+        s->avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+    }
 
     /* get blocksize if version > 0 */
     if (s->version > 0) {
