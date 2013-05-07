@@ -45,14 +45,14 @@ extern const uint8_t *const ff_aac_swb_size_128[];
 extern const int      ff_aac_swb_size_128_len;
 
 /* Supported layouts without using a PCE */
-static const int64_t aac_normal_chan_layouts[7] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_4POINT0,
-    AV_CH_LAYOUT_5POINT0_BACK,
-    AV_CH_LAYOUT_5POINT1_BACK,
-    AV_CH_LAYOUT_7POINT1,
+static const AVChannelLayout aac_normal_chan_layouts[7] = {
+    AV_CHANNEL_LAYOUT_MONO,
+    AV_CHANNEL_LAYOUT_STEREO,
+    AV_CHANNEL_LAYOUT_SURROUND,
+    AV_CHANNEL_LAYOUT_4POINT0,
+    AV_CHANNEL_LAYOUT_5POINT0_BACK,
+    AV_CHANNEL_LAYOUT_5POINT1_BACK,
+    AV_CHANNEL_LAYOUT_7POINT1,
 };
 
 /** default channel configurations */

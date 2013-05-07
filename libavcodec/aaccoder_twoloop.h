@@ -71,7 +71,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 {
     int start = 0, i, w, w2, g, recomprd;
     int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->ch_layout.nb_channels)
         * (lambda / 120.f);
     int refbits = destbits;
     int toomanybits, toofewbits;
@@ -186,7 +186,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         float rate_bandwidth_multiplier = 1.5f;
         int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
             ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
-            : (avctx->bit_rate / avctx->channels);
+            : (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
         /** Compensate for extensions that increase efficiency */
         if (s->options.pns || s->options.intensity_stereo)

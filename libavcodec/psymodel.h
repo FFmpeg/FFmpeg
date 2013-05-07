@@ -41,7 +41,7 @@
 #define AAC_CUTOFF(s) ( \
     (s->flags & AV_CODEC_FLAG_QSCALE) \
     ? s->sample_rate / 2 \
-    : AAC_CUTOFF_FROM_BITRATE(s->bit_rate, s->channels, s->sample_rate) \
+    : AAC_CUTOFF_FROM_BITRATE(s->bit_rate, s->ch_layout.nb_channels, s->sample_rate) \
 )
 
 /**

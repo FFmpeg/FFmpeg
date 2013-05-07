@@ -464,7 +464,10 @@ const AVCodec ff_aac_fixed_decoder = {
     },
     .capabilities    = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = aac_channel_layout,
+#endif
+    .ch_layouts      = aac_ch_layout,
     .profiles        = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     .flush = flush,
 };

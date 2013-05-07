@@ -35,7 +35,7 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     int i, j, k = 0;
 
     ctx->avctx = avctx;
-    ctx->ch        = av_calloc(avctx->channels, 2 * sizeof(ctx->ch[0]));
+    ctx->ch        = av_calloc(avctx->ch_layout.nb_channels, 2 * sizeof(ctx->ch[0]));
     ctx->group     = av_calloc(num_groups, sizeof(ctx->group[0]));
     ctx->bands     = av_malloc_array (sizeof(ctx->bands[0]),      num_lens);
     ctx->num_bands = av_malloc_array (sizeof(ctx->num_bands[0]),  num_lens);
@@ -120,13 +120,13 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
                                                  FF_FILTER_MODE_LOWPASS, FILT_ORDER,
                                                  cutoff_coeff, 0.0, 0.0);
         if (ctx->fcoeffs) {
-            ctx->fstate = av_calloc(avctx->channels, sizeof(ctx->fstate[0]));
+            ctx->fstate = av_calloc(avctx->ch_layout.nb_channels, sizeof(ctx->fstate[0]));
             if (!ctx->fstate) {
                 av_free(ctx->fcoeffs);
                 av_free(ctx);
                 return NULL;
             }
-            for (i = 0; i < avctx->channels; i++)
+            for (i = 0; i < avctx->ch_layout.nb_channels; i++)
                 ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
         }
     }
@@ -154,7 +154,7 @@ av_cold void ff_psy_preprocess_end(struct FFPsyPreprocessContext *ctx)
     int i;
     ff_iir_filter_free_coeffsp(&ctx->fcoeffs);
     if (ctx->fstate)
-        for (i = 0; i < ctx->avctx->channels; i++)
+        for (i = 0; i < ctx->avctx->ch_layout.nb_channels; i++)
             ff_iir_filter_free_statep(&ctx->fstate[i]);
     av_freep(&ctx->fstate);
     av_free(ctx);

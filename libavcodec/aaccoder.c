@@ -397,7 +397,7 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
                                        const float lambda)
 {
     int start = 0, i, w, w2, g;
-    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->channels * (lambda / 120.f);
+    int destbits = avctx->bit_rate * 1024.0 / avctx->sample_rate / avctx->ch_layout.nb_channels * (lambda / 120.f);
     float dists[128] = { 0 }, uplims[128] = { 0 };
     float maxvals[128];
     int fflag, minscaler;
@@ -556,7 +556,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     const float pns_transient_energy_r = FFMIN(0.7f, lambda / 140.f);
 
     int refbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->ch_layout.nb_channels)
         * (lambda / 120.f);
 
     /** Keep this in sync with twoloop's cutoff selection */
@@ -564,7 +564,7 @@ static void search_for_pns(AACEncContext *s, AVCodecContext *avctx, SingleChanne
     int prev = -1000, prev_sf = -1;
     int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
-        : (avctx->bit_rate / avctx->channels);
+        : (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
     frame_bit_rate *= 1.15f;
 
@@ -693,14 +693,14 @@ static void mark_pns(AACEncContext *s, AVCodecContext *avctx, SingleChannelEleme
     const float pns_transient_energy_r = FFMIN(0.7f, lambda / 140.f);
 
     int refbits = avctx->bit_rate * 1024.0 / avctx->sample_rate
-        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->channels)
+        / ((avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : avctx->ch_layout.nb_channels)
         * (lambda / 120.f);
 
     /** Keep this in sync with twoloop's cutoff selection */
     float rate_bandwidth_multiplier = 1.5f;
     int frame_bit_rate = (avctx->flags & AV_CODEC_FLAG_QSCALE)
         ? (refbits * rate_bandwidth_multiplier * avctx->sample_rate / 1024)
-        : (avctx->bit_rate / avctx->channels);
+        : (avctx->bit_rate / avctx->ch_layout.nb_channels);
 
     frame_bit_rate *= 1.15f;
 

@@ -94,7 +94,7 @@ typedef struct AACQuantizeBandCostCacheEntry {
 } AACQuantizeBandCostCacheEntry;
 
 typedef struct AACPCEInfo {
-    int64_t layout;
+    AVChannelLayout layout;
     int num_ele[4];                              ///< front, side, back, lfe
     int pairing[3][8];                           ///< front, side, back
     int index[4][8];                             ///< front, side, back, lfe
@@ -139,7 +139,7 @@ typedef struct AACPCEInfo {
  */
 static const AACPCEInfo aac_pce_configs[] = {
     {
-        .layout = AV_CH_LAYOUT_MONO,
+        .layout = AV_CHANNEL_LAYOUT_MONO,
         .num_ele = { 1, 0, 0, 0 },
         .pairing = { { 0 }, },
         .index = { { 0 }, },
@@ -147,7 +147,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0 },
     },
     {
-        .layout = AV_CH_LAYOUT_STEREO,
+        .layout = AV_CHANNEL_LAYOUT_STEREO,
         .num_ele = { 1, 0, 0, 0 },
         .pairing = { { 1 }, },
         .index = { { 0 }, },
@@ -155,7 +155,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1 },
     },
     {
-        .layout = AV_CH_LAYOUT_2POINT1,
+        .layout = AV_CHANNEL_LAYOUT_2POINT1,
         .num_ele = { 1, 0, 0, 1 },
         .pairing = { { 1 }, },
         .index = { { 0 },{ 0 },{ 0 },{ 0 } },
@@ -163,7 +163,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2 },
     },
     {
-        .layout = AV_CH_LAYOUT_2_1,
+        .layout = AV_CHANNEL_LAYOUT_2_1,
         .num_ele = { 1, 0, 1, 0 },
         .pairing = { { 1 },{ 0 },{ 0 } },
         .index = { { 0 },{ 0 },{ 0 }, },
@@ -171,7 +171,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2 },
     },
     {
-        .layout = AV_CH_LAYOUT_SURROUND,
+        .layout = AV_CHANNEL_LAYOUT_SURROUND,
         .num_ele = { 2, 0, 0, 0 },
         .pairing = { { 1, 0 }, },
         .index = { { 0, 0 }, },
@@ -179,7 +179,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2 },
     },
     {
-        .layout = AV_CH_LAYOUT_3POINT1,
+        .layout = AV_CHANNEL_LAYOUT_3POINT1,
         .num_ele = { 2, 0, 0, 1 },
         .pairing = { { 1, 0 }, },
         .index = { { 0, 0 }, { 0 }, { 0 }, { 0 }, },
@@ -187,7 +187,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3 },
     },
     {
-        .layout = AV_CH_LAYOUT_4POINT0,
+        .layout = AV_CHANNEL_LAYOUT_4POINT0,
         .num_ele = { 2, 0, 1, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 0 }, },
         .index = { { 0, 0 }, { 0 }, { 1 } },
@@ -195,7 +195,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = {  0, 1, 2, 3 },
     },
     {
-        .layout = AV_CH_LAYOUT_4POINT1,
+        .layout = AV_CHANNEL_LAYOUT_4POINT1,
         .num_ele = { 2, 1, 1, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 0 }, },
         .index = { { 0, 0 }, { 1 }, { 2 }, { 0 } },
@@ -203,7 +203,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4 },
     },
     {
-        .layout = AV_CH_LAYOUT_2_2,
+        .layout = AV_CHANNEL_LAYOUT_2_2,
         .num_ele = { 1, 1, 0, 0 },
         .pairing = { { 1 }, { 1 }, },
         .index = { { 0 }, { 1 }, },
@@ -211,7 +211,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3 },
     },
     {
-        .layout = AV_CH_LAYOUT_QUAD,
+        .layout = AV_CHANNEL_LAYOUT_QUAD,
         .num_ele = { 1, 0, 1, 0 },
         .pairing = { { 1 }, { 0 }, { 1 }, },
         .index = { { 0 }, { 0 }, { 1 } },
@@ -219,7 +219,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3 },
     },
     {
-        .layout = AV_CH_LAYOUT_5POINT0,
+        .layout = AV_CHANNEL_LAYOUT_5POINT0,
         .num_ele = { 2, 1, 0, 0 },
         .pairing = { { 1, 0 }, { 1 }, },
         .index = { { 0, 0 }, { 1 } },
@@ -227,7 +227,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4 },
     },
     {
-        .layout = AV_CH_LAYOUT_5POINT1,
+        .layout = AV_CHANNEL_LAYOUT_5POINT1,
         .num_ele = { 2, 1, 1, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1 }, },
         .index = { { 0, 0 }, { 1 }, { 1 } },
@@ -235,7 +235,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5 },
     },
     {
-        .layout = AV_CH_LAYOUT_5POINT0_BACK,
+        .layout = AV_CHANNEL_LAYOUT_5POINT0_BACK,
         .num_ele = { 2, 0, 1, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1 } },
         .index = { { 0, 0 }, { 0 }, { 1 } },
@@ -243,7 +243,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4 },
     },
     {
-        .layout = AV_CH_LAYOUT_5POINT1_BACK,
+        .layout = AV_CHANNEL_LAYOUT_5POINT1_BACK,
         .num_ele = { 2, 1, 1, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1 }, },
         .index = { { 0, 0 }, { 1 }, { 1 } },
@@ -251,7 +251,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5 },
     },
     {
-        .layout = AV_CH_LAYOUT_6POINT0,
+        .layout = AV_CHANNEL_LAYOUT_6POINT0,
         .num_ele = { 2, 1, 1, 0 },
         .pairing = { { 1, 0 }, { 1 }, { 0 }, },
         .index = { { 0, 0 }, { 1 }, { 1 } },
@@ -259,7 +259,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5 },
     },
     {
-        .layout = AV_CH_LAYOUT_6POINT0_FRONT,
+        .layout = AV_CHANNEL_LAYOUT_6POINT0_FRONT,
         .num_ele = { 2, 1, 0, 0 },
         .pairing = { { 1, 1 }, { 1 } },
         .index = { { 1, 0 }, { 2 }, },
@@ -267,7 +267,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5 },
     },
     {
-        .layout = AV_CH_LAYOUT_HEXAGONAL,
+        .layout = AV_CHANNEL_LAYOUT_HEXAGONAL,
         .num_ele = { 2, 0, 2, 0 },
         .pairing = { { 1, 0 },{ 0 },{ 1, 0 }, },
         .index = { { 0, 0 },{ 0 },{ 1, 1 } },
@@ -275,7 +275,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5 },
     },
     {
-        .layout = AV_CH_LAYOUT_6POINT1,
+        .layout = AV_CHANNEL_LAYOUT_6POINT1,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 },{ 0 },{ 1, 0 }, },
         .index = { { 0, 0 },{ 1 },{ 1, 2 } },
@@ -283,7 +283,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6 },
     },
     {
-        .layout = AV_CH_LAYOUT_6POINT1_BACK,
+        .layout = AV_CHANNEL_LAYOUT_6POINT1_BACK,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1, 0 }, },
         .index = { { 0, 0 }, { 1 }, { 1, 2 } },
@@ -291,7 +291,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6 },
     },
     {
-        .layout = AV_CH_LAYOUT_6POINT1_FRONT,
+        .layout = AV_CHANNEL_LAYOUT_6POINT1_FRONT,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1, 0 }, },
         .index = { { 0, 0 }, { 1 }, { 1, 2 } },
@@ -299,7 +299,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6 },
     },
     {
-        .layout = AV_CH_LAYOUT_7POINT0,
+        .layout = AV_CHANNEL_LAYOUT_7POINT0,
         .num_ele = { 2, 1, 1, 0 },
         .pairing = { { 1, 0 }, { 1 }, { 1 }, },
         .index = { { 0, 0 }, { 1 }, { 2 }, },
@@ -307,7 +307,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6 },
     },
     {
-        .layout = AV_CH_LAYOUT_7POINT0_FRONT,
+        .layout = AV_CHANNEL_LAYOUT_7POINT0_FRONT,
         .num_ele = { 2, 1, 1, 0 },
         .pairing = { { 1, 0 }, { 1 }, { 1 }, },
         .index = { { 0, 0 }, { 1 }, { 2 }, },
@@ -315,7 +315,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6 },
     },
     {
-        .layout = AV_CH_LAYOUT_7POINT1,
+        .layout = AV_CHANNEL_LAYOUT_7POINT1,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1, 1 }, },
         .index = { { 0, 0 }, { 1 }, { 1, 2 }, { 0 } },
@@ -323,7 +323,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7 },
     },
     {
-        .layout = AV_CH_LAYOUT_7POINT1_WIDE,
+        .layout = AV_CHANNEL_LAYOUT_7POINT1_WIDE,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 }, { 0 },{  1, 1 }, },
         .index = { { 0, 0 }, { 1 }, { 1, 2 }, { 0 } },
@@ -331,7 +331,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7 },
     },
     {
-        .layout = AV_CH_LAYOUT_7POINT1_WIDE_BACK,
+        .layout = AV_CHANNEL_LAYOUT_7POINT1_WIDE_BACK,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 }, { 0 }, { 1, 1 }, },
         .index = { { 0, 0 }, { 1 }, { 1, 2 }, { 0 } },
@@ -339,7 +339,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7 },
     },
     {
-        .layout = AV_CH_LAYOUT_OCTAGONAL,
+        .layout = AV_CHANNEL_LAYOUT_OCTAGONAL,
         .num_ele = { 2, 1, 2, 0 },
         .pairing = { { 1, 0 }, { 1 }, { 1, 0 }, },
         .index = { { 0, 0 }, { 1 }, { 2, 1 } },
@@ -347,7 +347,8 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7 },
     },
     {   /* Meant for order 2/mixed ambisonics */
-        .layout = AV_CH_LAYOUT_OCTAGONAL | AV_CH_TOP_CENTER,
+        .layout = { .order = AV_CHANNEL_ORDER_NATIVE, .nb_channels = 9,
+                    .u.mask = AV_CH_LAYOUT_OCTAGONAL | AV_CH_TOP_CENTER },
         .num_ele = { 2, 2, 2, 0 },
         .pairing = { { 1, 0 }, { 1, 0 }, { 1, 0 }, },
         .index = { { 0, 0 }, { 1, 1 }, { 2, 2 } },
@@ -355,8 +356,9 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7, 8 },
     },
     {   /* Meant for order 2/mixed ambisonics */
-        .layout = AV_CH_LAYOUT_6POINT0_FRONT | AV_CH_BACK_CENTER |
-                  AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT | AV_CH_TOP_CENTER,
+        .layout = { .order = AV_CHANNEL_ORDER_NATIVE, .nb_channels = 10,
+                    .u.mask = AV_CH_LAYOUT_6POINT0_FRONT | AV_CH_BACK_CENTER |
+                              AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT | AV_CH_TOP_CENTER },
         .num_ele = { 2, 2, 2, 0 },
         .pairing = { { 1, 1 }, { 1, 0 }, { 1, 0 }, },
         .index = { { 0, 1 }, { 2, 0 }, { 3, 1 } },
@@ -364,7 +366,7 @@ static const AACPCEInfo aac_pce_configs[] = {
         .reorder_map = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
     },
     {
-        .layout = AV_CH_LAYOUT_HEXADECAGONAL,
+        .layout = AV_CHANNEL_LAYOUT_HEXADECAGONAL,
         .num_ele = { 4, 2, 4, 0 },
         .pairing = { { 1, 0, 1, 0 }, { 1, 1 }, { 1, 0, 1, 0 }, },
         .index = { { 0, 0, 1, 1 }, { 2, 3 }, { 4, 2, 5, 3 } },
