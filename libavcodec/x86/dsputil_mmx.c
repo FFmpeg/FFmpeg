@@ -29,6 +29,7 @@
 #include "libavcodec/h264dsp.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/simple_idct.h"
+#include "constants.h"
 #include "dsputil_mmx.h"
 #include "idct_xvid.h"
 

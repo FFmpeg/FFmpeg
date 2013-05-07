@@ -27,29 +27,7 @@
 
 #include "libavcodec/dsputil.h"
 #include "libavutil/x86/asm.h"
-
-extern const uint64_t ff_wtwo;
-
-extern const xmm_reg  ff_pw_3;
-extern const xmm_reg  ff_pw_4;
-extern const xmm_reg  ff_pw_5;
-extern const xmm_reg  ff_pw_8;
-extern const uint64_t ff_pw_15;
-extern const xmm_reg  ff_pw_16;
-extern const xmm_reg  ff_pw_18;
-extern const uint64_t ff_pw_20;
-extern const xmm_reg  ff_pw_32;
-extern const uint64_t ff_pw_42;
-extern const uint64_t ff_pw_53;
-extern const xmm_reg  ff_pw_64;
-extern const uint64_t ff_pw_96;
-extern const uint64_t ff_pw_128;
-extern const uint64_t ff_pw_255;
-
-extern const xmm_reg  ff_pb_1;
-extern const xmm_reg  ff_pb_3;
-extern const xmm_reg  ff_pb_F8;
-extern const uint64_t ff_pb_FC;
+#include "constants.h"
 
 #define SBUTTERFLY(a,b,t,n,m)\
     "mov" #m " " #a ", " #t "         \n\t" /* abcd */\
