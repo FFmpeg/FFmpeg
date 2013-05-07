@@ -133,6 +133,11 @@ static int decode_13(AVCodecContext *avctx, DxaDecContext *c, uint8_t* dst,
                     case 0x80: // motion compensation
                         x = (*mv) >> 4;    if(x & 8) x = 8 - x;
                         y = (*mv++) & 0xF; if(y & 8) y = 8 - y;
+                        if (i + 2*(k & 1) < -x || avctx->width  - i - 2*(k & 1) - 2 < x ||
+                            j +   (k & 2) < -y || avctx->height - j -   (k & 2) - 2 < y) {
+                            av_log(avctx, AV_LOG_ERROR, "MV %d %d out of bounds\n", x,y);
+                            return AVERROR_INVALIDDATA;
+                        }
                         tmp2 += x + y*stride;
                     case 0x00: // skip
                         tmp[d + 0         ] = tmp2[0];
