@@ -29,17 +29,6 @@
 #include "libavutil/x86/asm.h"
 #include "constants.h"
 
-#define SBUTTERFLY(a,b,t,n,m)\
-    "mov" #m " " #a ", " #t "         \n\t" /* abcd */\
-    "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
-    "punpckh" #n " " #b ", " #t "     \n\t" /* cgdh */\
-
-#define TRANSPOSE4(a,b,c,d,t)\
-    SBUTTERFLY(a,b,t,wd,q) /* a=aebf t=cgdh */\
-    SBUTTERFLY(c,d,b,wd,q) /* c=imjn b=kolp */\
-    SBUTTERFLY(a,c,d,dq,q) /* a=aeim d=bfjn */\
-    SBUTTERFLY(t,b,c,dq,q) /* t=cgko c=dhlp */
-
 #define MOVQ_WONE(regd) \
     __asm__ volatile ( \
     "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
