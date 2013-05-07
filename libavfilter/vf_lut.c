@@ -110,7 +110,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 #define YUV_FORMATS                                         \
     AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,    \
     AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,  AV_PIX_FMT_YUV440P,    \
-    AV_PIX_FMT_YUVA420P,                                       \
+    AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,   \
     AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ420P,   \
     AV_PIX_FMT_YUVJ440P
 
@@ -195,6 +195,8 @@ static int config_props(AVFilterLink *inlink)
     case AV_PIX_FMT_YUV440P:
     case AV_PIX_FMT_YUV444P:
     case AV_PIX_FMT_YUVA420P:
+    case AV_PIX_FMT_YUVA422P:
+    case AV_PIX_FMT_YUVA444P:
         min[Y] = min[U] = min[V] = 16;
         max[Y] = 235;
         max[U] = max[V] = 240;
