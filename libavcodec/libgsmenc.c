@@ -49,12 +49,6 @@ static av_cold int libgsm_encode_close(AVCodecContext *avctx) {
 }
 
 static av_cold int libgsm_encode_init(AVCodecContext *avctx) {
-    if (avctx->channels > 1) {
-        av_log(avctx, AV_LOG_ERROR, "Mono required for GSM, got %d channels\n",
-               avctx->channels);
-        return -1;
-    }
-
     if (avctx->sample_rate != 8000) {
         av_log(avctx, AV_LOG_ERROR, "Sample rate 8000Hz required for GSM, got %dHz\n",
                avctx->sample_rate);
@@ -132,7 +126,10 @@ const AVCodec ff_libgsm_encoder = {
     .encode2        = libgsm_encode_frame,
     .close          = libgsm_encode_close,
     .defaults       = libgsm_defaults,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts= (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+#endif
+    .ch_layouts     = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .wrapper_name   = "libgsm",
@@ -149,7 +146,10 @@ const AVCodec ff_libgsm_ms_encoder = {
     .encode2        = libgsm_encode_frame,
     .close          = libgsm_encode_close,
     .defaults       = libgsm_defaults,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts= (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+#endif
+    .ch_layouts     = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .wrapper_name   = "libgsm",
