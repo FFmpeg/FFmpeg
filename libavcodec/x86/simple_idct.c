@@ -22,7 +22,7 @@
 #include "libavcodec/simple_idct.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 #if HAVE_INLINE_ASM
 

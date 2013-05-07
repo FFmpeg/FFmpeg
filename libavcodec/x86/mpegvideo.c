@@ -24,7 +24,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideo.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 #if HAVE_INLINE_ASM
 

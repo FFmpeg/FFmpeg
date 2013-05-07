@@ -30,7 +30,7 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "libavcodec/mathops.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 void ff_get_pixels_mmx(int16_t *block, const uint8_t *pixels, int line_size);
 void ff_get_pixels_sse2(int16_t *block, const uint8_t *pixels, int line_size);

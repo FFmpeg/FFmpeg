@@ -30,7 +30,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/cpu.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 #if HAVE_YASM
 void ff_put_rv40_chroma_mc8_mmx  (uint8_t *dst, uint8_t *src,

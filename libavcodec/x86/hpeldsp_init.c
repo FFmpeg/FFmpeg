@@ -25,7 +25,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/hpeldsp.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
