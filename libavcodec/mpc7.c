@@ -79,8 +79,8 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     LOCAL_ALIGNED_16(uint8_t, buf, [16]);
 
     /* Musepack SV7 is always stereo */
-    if (avctx->channels != 2) {
-        avpriv_request_sample(avctx, "%d channels", avctx->channels);
+    if (avctx->ch_layout.nb_channels != 2) {
+        avpriv_request_sample(avctx, "%d channels", avctx->ch_layout.nb_channels);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -110,7 +110,8 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
     c->frames_to_skip = 0;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
-    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
 
     ff_thread_once(&init_static_once, mpc7_init_static);
 
