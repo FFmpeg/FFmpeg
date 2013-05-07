@@ -321,12 +321,6 @@ cglobal sbr_qmf_pre_shuffle, 1,4,7,z
     movq    [r2q], m2
     REP_RET
 
-%if WIN64 == 0
-
-%if WIN64
-%define NREGS 0
-%define NOISE_TABLE sbr_noise_table
-%else
 %ifdef PIC
 %define NREGS 1
 %if UNIX64
@@ -338,10 +332,9 @@ cglobal sbr_qmf_pre_shuffle, 1,4,7,z
 %define NREGS 0
 %define NOISE_TABLE sbr_noise_table
 %endif
-%endif
 
 %macro LOAD_NST  1
-%if NREGS
+%ifdef PIC
     lea  NOISE_TABLE, [%1]
     mova          m0, [kxq + NOISE_TABLE]
 %else
@@ -390,7 +383,7 @@ apply_noise_main:
 %endif
     dec    noiseq
     shl    count, 2
-%if NREGS
+%ifdef PIC
     lea NOISE_TABLE, [sbr_noise_table]
 %endif
     lea        Yq, [Yq + 2*count]
@@ -430,5 +423,3 @@ apply_noise_main:
     add    count, mmsize
     jl      .loop
     RET
-
-%endif ; WIN64 == 0
