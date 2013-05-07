@@ -130,8 +130,8 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    if (avctx->channels > 255) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d\n", avctx->channels);
+    if (avctx->ch_layout.nb_channels > 255) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d\n", avctx->ch_layout.nb_channels);
         return AVERROR(EINVAL);
     }
 
@@ -142,10 +142,10 @@ static av_cold int wavpack_encode_init(AVCodecContext *avctx)
         else
             block_samples = avctx->sample_rate;
 
-        while (block_samples * avctx->channels > WV_MAX_SAMPLES)
+        while (block_samples * avctx->ch_layout.nb_channels > WV_MAX_SAMPLES)
             block_samples /= 2;
 
-        while (block_samples * avctx->channels < 40000)
+        while (block_samples * avctx->ch_layout.nb_channels < 40000)
             block_samples *= 2;
         avctx->frame_size = block_samples;
     } else if (avctx->frame_size && (avctx->frame_size < 128 ||
@@ -2572,7 +2572,7 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
 
     s->ch_offset += 1 + !(s->flags & WV_MONO);
 
-    if (s->ch_offset == s->avctx->channels)
+    if (s->ch_offset == s->avctx->ch_layout.nb_channels)
         s->flags |= WV_FINAL_BLOCK;
 
     bytestream2_init_writer(&pb, out, out_size);
@@ -2587,11 +2587,12 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
     bytestream2_put_le32(&pb, crc);
 
     if (s->flags & WV_INITIAL_BLOCK &&
-        s->avctx->channel_layout != AV_CH_LAYOUT_MONO &&
-        s->avctx->channel_layout != AV_CH_LAYOUT_STEREO) {
+        s->avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE &&
+        s->avctx->ch_layout.u.mask != AV_CH_LAYOUT_MONO &&
+        s->avctx->ch_layout.u.mask != AV_CH_LAYOUT_STEREO) {
         put_metadata_block(&pb, WP_ID_CHANINFO, 5);
-        bytestream2_put_byte(&pb, s->avctx->channels);
-        bytestream2_put_le32(&pb, s->avctx->channel_layout);
+        bytestream2_put_byte(&pb, s->avctx->ch_layout.nb_channels);
+        bytestream2_put_le32(&pb, s->avctx->ch_layout.u.mask);
         bytestream2_put_byte(&pb, 0);
     }
 
@@ -2862,20 +2863,20 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                           sizeof(int32_t) * s->block_samples);
     if (!s->samples[0])
         return AVERROR(ENOMEM);
-    if (avctx->channels > 1) {
+    if (avctx->ch_layout.nb_channels > 1) {
         av_fast_padded_malloc(&s->samples[1], &s->samples_size[1],
                               sizeof(int32_t) * s->block_samples);
         if (!s->samples[1])
             return AVERROR(ENOMEM);
     }
 
-    buf_size = s->block_samples * avctx->channels * 8
-             + 200 * avctx->channels /* for headers */;
+    buf_size = s->block_samples * avctx->ch_layout.nb_channels * 8
+             + 200 * avctx->ch_layout.nb_channels /* for headers */;
     if ((ret = ff_alloc_packet(avctx, avpkt, buf_size)) < 0)
         return ret;
     buf = avpkt->data;
 
-    for (s->ch_offset = 0; s->ch_offset < avctx->channels;) {
+    for (s->ch_offset = 0; s->ch_offset < avctx->ch_layout.nb_channels;) {
         set_samplerate(s);
 
         switch (s->avctx->sample_fmt) {
@@ -2885,7 +2886,7 @@ static int wavpack_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
 
         fill_buffer(s, frame->extended_data[s->ch_offset], s->samples[0], s->block_samples);
-        if (avctx->channels - s->ch_offset == 1) {
+        if (avctx->ch_layout.nb_channels - s->ch_offset == 1) {
             s->flags |= WV_MONO;
         } else {
             s->flags |= WV_CROSS_DECORR;

@@ -1415,25 +1415,23 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 size = bytestream2_get_byte(&gb);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chan  += 1;
-                if (avctx->channels != chan)
+                if (avctx->ch_layout.nb_channels != chan)
                     av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
-                           " instead of %i.\n", chan, avctx->channels);
+                           " instead of %i.\n", chan, avctx->ch_layout.nb_channels);
                 chmask = bytestream2_get_le24(&gb);
                 break;
             case 5:
                 size = bytestream2_get_byte(&gb);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chan  += 1;
-                if (avctx->channels != chan)
+                if (avctx->ch_layout.nb_channels != chan)
                     av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
-                           " instead of %i.\n", chan, avctx->channels);
+                           " instead of %i.\n", chan, avctx->ch_layout.nb_channels);
                 chmask = bytestream2_get_le32(&gb);
                 break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "Invalid channel info size %d\n",
                        size);
-                chan   = avctx->channels;
-                chmask = avctx->channel_layout;
             }
             break;
         case WP_ID_SAMPLE_RATE:
@@ -1497,8 +1495,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     }
 
     if (!wc->ch_offset) {
-        int      new_channels = avctx->channels;
-        uint64_t new_chmask   = avctx->channel_layout;
+        AVChannelLayout new_ch_layout = { 0 };
         int new_samplerate;
         int sr = (s->frame_flags >> 23) & 0xf;
         if (sr == 0xf) {
@@ -1515,36 +1512,37 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         new_samplerate *= rate_x;
 
         if (multiblock) {
-            if (chan)
-                new_channels = chan;
-            if (chmask)
-                new_chmask = chmask;
+            if (chmask) {
+                av_channel_layout_from_mask(&new_ch_layout, chmask);
+                if (chan && new_ch_layout.nb_channels != chan) {
+                    av_log(avctx, AV_LOG_ERROR, "Channel mask does not match the channel count\n");
+                    return AVERROR_INVALIDDATA;
+                }
+            } else {
+                ret = av_channel_layout_copy(&new_ch_layout, &avctx->ch_layout);
+                if (ret < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "Error copying channel layout\n");
+                    return ret;
+                }
+            }
         } else {
-            new_channels = s->stereo ? 2 : 1;
-            new_chmask   = s->stereo ? AV_CH_LAYOUT_STEREO :
-                                       AV_CH_LAYOUT_MONO;
-        }
-
-        if (new_chmask &&
-            av_get_channel_layout_nb_channels(new_chmask) != new_channels) {
-            av_log(avctx, AV_LOG_ERROR, "Channel mask does not match the channel count\n");
-            return AVERROR_INVALIDDATA;
+            av_channel_layout_default(&new_ch_layout, s->stereo + 1);
         }
 
         /* clear DSD state if stream properties change */
-        if (new_channels   != wc->dsd_channels      ||
-            new_chmask     != avctx->channel_layout ||
+        if (new_ch_layout.nb_channels != wc->dsd_channels ||
+            av_channel_layout_compare(&new_ch_layout, &avctx->ch_layout) ||
             new_samplerate != avctx->sample_rate    ||
             !!got_dsd      != !!wc->dsdctx) {
-            ret = wv_dsd_reset(wc, got_dsd ? new_channels : 0);
+            ret = wv_dsd_reset(wc, got_dsd ? new_ch_layout.nb_channels : 0);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error reinitializing the DSD context\n");
                 return ret;
             }
             ff_thread_release_ext_buffer(avctx, &wc->curr_frame);
         }
-        avctx->channels            = new_channels;
-        avctx->channel_layout      = new_chmask;
+        av_channel_layout_uninit(&avctx->ch_layout);
+        av_channel_layout_copy(&avctx->ch_layout, &new_ch_layout);
         avctx->sample_rate         = new_samplerate;
         avctx->sample_fmt          = sample_fmt;
         avctx->bits_per_raw_sample = orig_bpp;
@@ -1563,7 +1561,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         ff_thread_finish_setup(avctx);
     }
 
-    if (wc->ch_offset + s->stereo >= avctx->channels) {
+    if (wc->ch_offset + s->stereo >= avctx->ch_layout.nb_channels) {
         av_log(avctx, AV_LOG_WARNING, "Too many channels coded in a packet.\n");
         return ((avctx->err_recognition & AV_EF_EXPLODE) || !wc->ch_offset) ? AVERROR_INVALIDDATA : 0;
     }
@@ -1673,7 +1671,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         buf_size -= frame_size;
     }
 
-    if (s->ch_offset != avctx->channels) {
+    if (s->ch_offset != avctx->ch_layout.nb_channels) {
         av_log(avctx, AV_LOG_ERROR, "Not enough channels coded in a packet.\n");
         ret = AVERROR_INVALIDDATA;
         goto error;
@@ -1683,7 +1681,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     ff_thread_release_ext_buffer(avctx, &s->prev_frame);
 
     if (s->modulation == MODULATION_DSD)
-        avctx->execute2(avctx, dsd_channel, s->frame, NULL, avctx->channels);
+        avctx->execute2(avctx, dsd_channel, s->frame, NULL, avctx->ch_layout.nb_channels);
 
     ff_thread_report_progress(&s->curr_frame, INT_MAX, 0);
 
