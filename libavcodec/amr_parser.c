@@ -63,9 +63,9 @@ static int amr_parse(AVCodecParserContext *s1,
     *poutbuf_size = 0;
     *poutbuf = NULL;
 
-    if (!avctx->channels) {
-        avctx->channels       = 1;
-        avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    if (!avctx->ch_layout.nb_channels) {
+        av_channel_layout_uninit(&avctx->ch_layout);
+        avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     }
 
     if (s1->flags & PARSER_FLAG_COMPLETE_FRAMES) {
@@ -73,7 +73,7 @@ static int amr_parse(AVCodecParserContext *s1,
     } else {
         int ch, offset = 0;
 
-        for (ch = s->current_channel; ch < avctx->channels; ch++) {
+        for (ch = s->current_channel; ch < avctx->ch_layout.nb_channels; ch++) {
             if (s->remaining >= 0) {
                 next = s->remaining;
             } else {
@@ -96,7 +96,7 @@ static int amr_parse(AVCodecParserContext *s1,
             }
         }
 
-        s->current_channel = ch % avctx->channels;
+        s->current_channel = ch % avctx->ch_layout.nb_channels;
         if (s->remaining < 0)
             next = offset;
 

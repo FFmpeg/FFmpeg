@@ -102,20 +102,20 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
     AMRWBChannelsContext *s = avctx->priv_data;
     int i;
 
-    if (avctx->channels > 2) {
+    if (avctx->ch_layout.nb_channels > 2) {
         avpriv_report_missing_feature(avctx, ">2 channel AMR");
         return AVERROR_PATCHWELCOME;
     }
 
-    if (!avctx->channels) {
-        avctx->channels       = 1;
-        avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    if (!avctx->ch_layout.nb_channels) {
+        av_channel_layout_uninit(&avctx->ch_layout);
+        avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     }
     if (!avctx->sample_rate)
         avctx->sample_rate = 16000;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
 
-    for (int ch = 0; ch < avctx->channels; ch++) {
+    for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
         AMRWBContext *ctx = &s->ch[ch];
 
         av_lfg_init(&ctx->prng, 1);
@@ -1115,7 +1115,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    for (int ch = 0; ch < avctx->channels; ch++) {
+    for (int ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
         AMRWBContext *ctx  = &s->ch[ch];
         AMRWBFrame   *cf   = &ctx->frame;
         int expected_fr_size, header_size;
