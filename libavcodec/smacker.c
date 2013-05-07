@@ -572,11 +572,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
-    if (avctx->channels < 1 || avctx->channels > 2) {
+    int channels = avctx->ch_layout.nb_channels;
+    if (channels < 1 || channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
-    avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_default(&avctx->ch_layout, channels);
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
 
     return 0;
@@ -623,7 +625,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     }
     stereo = get_bits1(&gb);
     bits = get_bits1(&gb);
-    if (stereo ^ (avctx->channels != 1)) {
+    if (stereo ^ (avctx->ch_layout.nb_channels != 1)) {
         av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
         return AVERROR_INVALIDDATA;
     }
@@ -633,8 +635,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* get output buffer */
-    frame->nb_samples = unp_size / (avctx->channels * (bits + 1));
-    if (unp_size % (avctx->channels * (bits + 1))) {
+    frame->nb_samples = unp_size / (avctx->ch_layout.nb_channels * (bits + 1));
+    if (unp_size % (avctx->ch_layout.nb_channels * (bits + 1))) {
         av_log(avctx, AV_LOG_ERROR,
                "The buffer does not contain an integer number of samples\n");
         return AVERROR_INVALIDDATA;
