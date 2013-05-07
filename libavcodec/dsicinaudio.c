@@ -80,8 +80,8 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     cin->initial_decode_frame = 1;
     cin->delta                = 0;
     avctx->sample_fmt         = AV_SAMPLE_FMT_S16;
-    avctx->channels           = 1;
-    avctx->channel_layout     = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout          = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     return 0;
 }
