@@ -4596,6 +4596,42 @@ kerndeint=map=1
 @end example
 @end itemize
 
+@section lut3d
+
+Apply a 3D LUT to an input video.
+
+The filter accepts the following options:
+
+@table @option
+@item file
+Set the 3D LUT file name.
+
+Currently supported formats:
+@table @samp
+@item 3dl
+AfterEffects
+@item cube
+Iridas
+@item dat
+DaVinci
+@item m3d
+Pandora
+@end table
+@item interp
+Select interpolation mode.
+
+Available values are:
+
+@table @samp
+@item nearest
+Use values from the nearest defined point.
+@item trilinear
+Interpolate values using the 8 points defining a cube.
+@item tetrahedral
+Interpolate values using a tetrahedron.
+@end table
+@end table
+
 @section lut, lutrgb, lutyuv
 
 Compute a look-up table for binding each pixel component input value

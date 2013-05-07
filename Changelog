@@ -52,6 +52,7 @@ version <next>:
 - Escape 130 video decoder
 - FTP protocol support
 - V4L2 output device
+- 3D LUT filter (lut3d)
 
 
 version 1.2:
