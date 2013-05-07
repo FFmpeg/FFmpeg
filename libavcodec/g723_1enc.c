@@ -99,11 +99,6 @@ static av_cold int g723_1_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->channels != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
-        return AVERROR(EINVAL);
-    }
-
     if (avctx->bit_rate == 6300) {
         p->cur_rate = RATE_6300;
     } else if (avctx->bit_rate == 5300) {
@@ -1255,6 +1250,9 @@ const AVCodec ff_g723_1_encoder = {
     .defaults       = defaults,
     .sample_fmts    = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
+    },
+    .ch_layouts     = (const AVChannelLayout[]){
+        AV_CHANNEL_LAYOUT_MONO, { 0 }
     },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -37,7 +37,7 @@ static int g723_1_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     int next = END_NOT_FOUND;
 
     if (buf_size > 0)
-        next = frame_size[buf[0] & 3] * FFMAX(1, avctx->channels);
+        next = frame_size[buf[0] & 3] * FFMAX(1, avctx->ch_layout.nb_channels);
 
     if (ff_combine_frame(pc, next, &buf, &buf_size) < 0 || !buf_size) {
         *poutbuf      = NULL;
