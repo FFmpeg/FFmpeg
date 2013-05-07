@@ -381,8 +381,10 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
     int packet_size = s->streams[0]->codec->block_align;
     int ret = av_get_packet(s->pb, pkt, packet_size);
 
-    if (ret <= 0)
-        return AVERROR(EIO);
+    if (ret < 0)
+        return ret;
+    if (!ret)
+        return AVERROR_EOF;
 
     pkt->stream_index = 0;
 
