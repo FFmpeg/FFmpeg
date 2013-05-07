@@ -147,6 +147,13 @@ int sws_isSupportedInput(enum AVPixelFormat pix_fmt);
 int sws_isSupportedOutput(enum AVPixelFormat pix_fmt);
 
 /**
+ * @param[in]  pix_fmt the pixel format
+ * @return a positive value if an endianness conversion for pix_fmt is
+ * supported, 0 otherwise.
+ */
+int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt);
+
+/**
  * Allocate an empty SwsContext. This must be filled and passed to
  * sws_init_context(). For filling see AVOptions, options.c and
  * sws_setColorspaceDetails().

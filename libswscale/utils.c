@@ -72,7 +72,9 @@ const char *swscale_license(void)
 #define RET 0xC3 // near return opcode for x86
 
 typedef struct FormatEntry {
-    int is_supported_in, is_supported_out;
+    uint8_t is_supported_in         :1;
+    uint8_t is_supported_out        :1;
+    uint8_t is_supported_endianness :1;
 } FormatEntry;
 
 static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
@@ -213,6 +215,12 @@ int sws_isSupportedOutput(enum AVPixelFormat pix_fmt)
 {
     return (unsigned)pix_fmt < AV_PIX_FMT_NB ?
            format_entries[pix_fmt].is_supported_out : 0;
+}
+
+int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt)
+{
+    return (unsigned)pix_fmt < AV_PIX_FMT_NB ?
+           format_entries[pix_fmt].is_supported_endianness : 0;
 }
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
@@ -1077,6 +1085,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         c->dstFormat= dstFormat;
     }
 
+    if (!(unscaled && sws_isSupportedEndiannessConversion(srcFormat) &&
+          av_pix_fmt_swap_endianness(srcFormat) == dstFormat)) {
     if (!sws_isSupportedInput(srcFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n",
                av_get_pix_fmt_name(srcFormat));
@@ -1086,6 +1096,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         av_log(c, AV_LOG_ERROR, "%s is not supported as output pixel format\n",
                av_get_pix_fmt_name(dstFormat));
         return AVERROR(EINVAL);
+    }
     }
 
     i = flags & (SWS_POINT         |
