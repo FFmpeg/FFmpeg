@@ -471,6 +471,7 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
     }
 
     if (s->keyframe) {
+        s->gce_prev_disposal = GCE_DISPOSAL_NONE;
         if ((ret = gif_read_header1(s)) < 0)
             return ret;
 
