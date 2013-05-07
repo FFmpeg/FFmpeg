@@ -38,13 +38,13 @@ static int amr_decode_fix_avctx(AVCodecContext *avctx)
     if (!avctx->sample_rate)
         avctx->sample_rate = 8000 * is_amr_wb;
 
-    if (avctx->channels > 1) {
+    if (avctx->ch_layout.nb_channels > 1) {
         avpriv_report_missing_feature(avctx, "multi-channel AMR");
         return AVERROR_PATCHWELCOME;
     }
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
     return 0;
 }
@@ -201,7 +201,7 @@ static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    if (avctx->channels != 1) {
+    if (avctx->ch_layout.nb_channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
         return AVERROR(ENOSYS);
     }
