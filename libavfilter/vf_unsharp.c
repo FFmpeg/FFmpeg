@@ -114,9 +114,9 @@ static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     int i, plane_w[3], plane_h[3];
     UnsharpFilterParam *fp[3];
     plane_w[0] = inlink->w;
-    plane_w[1] = plane_w[2] = SHIFTUP(inlink->w, unsharp->hsub);
+    plane_w[1] = plane_w[2] = FF_CEIL_RSHIFT(inlink->w, unsharp->hsub);
     plane_h[0] = inlink->h;
-    plane_h[1] = plane_h[2] = SHIFTUP(inlink->h, unsharp->vsub);
+    plane_h[1] = plane_h[2] = FF_CEIL_RSHIFT(inlink->h, unsharp->vsub);
     fp[0] = &unsharp->luma;
     fp[1] = fp[2] = &unsharp->chroma;
     for (i = 0; i < 3; i++) {
@@ -207,7 +207,7 @@ static int config_props(AVFilterLink *link)
     ret = init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
     if (ret < 0)
         return ret;
-    ret = init_filter_param(link->dst, &unsharp->chroma, "chroma", SHIFTUP(link->w, unsharp->hsub));
+    ret = init_filter_param(link->dst, &unsharp->chroma, "chroma", FF_CEIL_RSHIFT(link->w, unsharp->hsub));
     if (ret < 0)
         return ret;
 

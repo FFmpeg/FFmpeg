@@ -24,6 +24,7 @@
  */
 
 #include "unsharp_opencl.h"
+#include "libavutil/common.h"
 #include "libavutil/opencl_internal.h"
 
 #define PLANE_NUM 3
@@ -152,8 +153,8 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     AVFilterLink *link = ctx->inputs[0];
     UnsharpContext *unsharp = ctx->priv;
     cl_int status;
-    int cw = SHIFTUP(link->w, unsharp->hsub);
-    int ch = SHIFTUP(link->h, unsharp->vsub);
+    int cw = FF_CEIL_RSHIFT(link->w, unsharp->hsub);
+    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
     const size_t global_work_size = link->w * link->h + 2 * ch * cw;
     FFOpenclParam opencl_param = {0};
 
@@ -245,7 +246,7 @@ int ff_opencl_unsharp_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFra
     int ret = 0;
     AVFilterLink *link = ctx->inputs[0];
     UnsharpContext *unsharp = ctx->priv;
-    int ch = SHIFTUP(link->h, unsharp->vsub);
+    int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
 
     if ((!unsharp->opencl_ctx.cl_inbuf) || (!unsharp->opencl_ctx.cl_outbuf)) {
         unsharp->opencl_ctx.in_plane_size[0]  = (in->linesize[0] * in->height);

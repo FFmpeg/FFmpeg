@@ -30,9 +30,6 @@
 #define MIN_MATRIX_SIZE 3
 #define MAX_MATRIX_SIZE 63
 
-/* right-shift and round-up */
-#define SHIFTUP(x,shift) (-((-(x))>>(shift)))
-
 #if CONFIG_OPENCL
 
 typedef struct {
