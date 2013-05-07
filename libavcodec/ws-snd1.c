@@ -43,8 +43,8 @@ static const int8_t ws_adpcm_4bit[] = {
 
 static av_cold int ws_snd_decode_init(AVCodecContext *avctx)
 {
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_U8;
 
     return 0;
