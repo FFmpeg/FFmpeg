@@ -31,8 +31,8 @@ static const int bmv_aud_mults[16] = {
 
 static av_cold int bmv_aud_decode_init(AVCodecContext *avctx)
 {
-    avctx->channels       = 2;
-    avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     return 0;
