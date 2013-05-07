@@ -169,8 +169,8 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
     c->frames = 1 << (get_bits(&gb, 3) * 2);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
-    avctx->channel_layout = (channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-    avctx->channels = channels;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_default(&avctx->ch_layout, channels);
 
     ff_thread_once(&init_static_once, mpc8_init_static);
 
@@ -358,7 +358,7 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
 
     ff_mpc_dequantize_and_synth(c, maxband - 1,
                                 (int16_t **)frame->extended_data,
-                                avctx->channels);
+                                avctx->ch_layout.nb_channels);
 
     c->cur_frame++;
 
