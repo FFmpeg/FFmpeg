@@ -241,4 +241,15 @@ int av_pix_fmt_count_planes(enum AVPixelFormat pix_fmt);
 
 void ff_check_pixfmt_descriptors(void);
 
+/**
+ * Utility function to swap the endianness of a pixel format.
+ *
+ * @param[in]  pix_fmt the pixel format
+ *
+ * @return pixel format with swapped endianness if it exists,
+ * otherwise AV_PIX_FMT_NONE
+ */
+enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt);
+
+
 #endif /* AVUTIL_PIXDESC_H */
