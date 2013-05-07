@@ -56,7 +56,8 @@ static av_cold int cng_decode_init(AVCodecContext *avctx)
     CNGContext *p = avctx->priv_data;
 
     avctx->sample_fmt  = AV_SAMPLE_FMT_S16;
-    avctx->channels    = 1;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout   = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_rate = 8000;
 
     p->order            = 12;

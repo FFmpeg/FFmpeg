@@ -48,11 +48,6 @@ static av_cold int cng_encode_init(AVCodecContext *avctx)
     CNGContext *p = avctx->priv_data;
     int ret;
 
-    if (avctx->channels != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono supported\n");
-        return AVERROR(EINVAL);
-    }
-
     avctx->frame_size = 640;
     p->order = 10;
     if ((ret = ff_lpc_init(&p->lpc, avctx->frame_size, p->order, FF_LPC_TYPE_LEVINSON)) < 0)
@@ -113,5 +108,6 @@ const AVCodec ff_comfortnoise_encoder = {
     .close          = cng_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
+    .ch_layouts     = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
