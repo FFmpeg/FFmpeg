@@ -41,8 +41,8 @@ static int cook_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
     CookParseContext *s = s1->priv_data;
 
     if (!s->duration &&
-                avctx->extradata && avctx->extradata_size >= 8 && avctx->channels)
-        s->duration = AV_RB16(avctx->extradata + 4) / avctx->channels;
+        avctx->extradata && avctx->extradata_size >= 8 && avctx->ch_layout.nb_channels)
+        s->duration = AV_RB16(avctx->extradata + 4) / avctx->ch_layout.nb_channels;
 
     s1->duration = s->duration;
 
