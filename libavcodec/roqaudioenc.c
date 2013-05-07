@@ -54,8 +54,9 @@ static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
 static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
 {
     ROQDPCMContext *context = avctx->priv_data;
+    int channels = avctx->ch_layout.nb_channels;
 
-    if (avctx->channels > 2) {
+    if (channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Audio must be mono or stereo\n");
         return AVERROR(EINVAL);
     }
@@ -65,10 +66,10 @@ static av_cold int roq_dpcm_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = ROQ_FRAME_SIZE;
-    avctx->bit_rate   = (ROQ_HEADER_SIZE + ROQ_FRAME_SIZE * avctx->channels) *
+    avctx->bit_rate   = (ROQ_HEADER_SIZE + ROQ_FRAME_SIZE * channels) *
                         (22050 / ROQ_FRAME_SIZE) * 8;
 
-    context->frame_buffer = av_malloc(8 * ROQ_FRAME_SIZE * avctx->channels *
+    context->frame_buffer = av_malloc(8 * ROQ_FRAME_SIZE * channels *
                                       sizeof(*context->frame_buffer));
     if (!context->frame_buffer)
         return AVERROR(ENOMEM);
@@ -123,17 +124,18 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     int i, stereo, data_size, ret;
     const int16_t *in = frame ? (const int16_t *)frame->data[0] : NULL;
+    int channels = avctx->ch_layout.nb_channels;
     uint8_t *out;
     ROQDPCMContext *context = avctx->priv_data;
 
-    stereo = (avctx->channels == 2);
+    stereo = (channels == 2);
 
     if (!in && context->input_frames >= 8)
         return 0;
 
     if (in && context->input_frames < 8) {
-        memcpy(&context->frame_buffer[context->buffered_samples * avctx->channels],
-               in, avctx->frame_size * avctx->channels * sizeof(*in));
+        memcpy(&context->frame_buffer[context->buffered_samples * channels],
+               in, avctx->frame_size * channels * sizeof(*in));
         context->buffered_samples += avctx->frame_size;
         if (context->input_frames == 0)
             context->first_pts = frame->pts;
@@ -151,9 +153,9 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     if (context->input_frames == 7)
-        data_size = avctx->channels * context->buffered_samples;
+        data_size = channels * context->buffered_samples;
     else
-        data_size = avctx->channels * avctx->frame_size;
+        data_size = channels * avctx->frame_size;
 
     ret = ff_get_encode_buffer(avctx, avpkt, ROQ_HEADER_SIZE + data_size, 0);
     if (ret < 0)
@@ -175,7 +177,7 @@ static int roq_dpcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         *out++ = dpcm_predict(&context->lastSample[i & 1], *in++);
 
     avpkt->pts      = context->input_frames <= 7 ? context->first_pts : frame->pts;
-    avpkt->duration = data_size / avctx->channels;
+    avpkt->duration = data_size / channels;
 
     context->input_frames++;
     if (!in)
