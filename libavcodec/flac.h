@@ -131,7 +131,7 @@ int ff_flac_get_max_frame_size(int blocksize, int ch, int bps);
 int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
                                 FLACFrameInfo *fi, int log_level_offset);
 
-void ff_flac_set_channel_layout(AVCodecContext *avctx);
+void ff_flac_set_channel_layout(AVCodecContext *avctx, int channels);
 
 /**
  * Parse the metadata block parameters from the header.

@@ -628,11 +628,8 @@ static int get_best_header(FLACParseContext *fpc, const uint8_t **poutbuf,
         check_header_mismatch(fpc, header, child, 0);
     }
 
-    if (header->fi.channels != fpc->avctx->channels ||
-        !fpc->avctx->channel_layout) {
-        fpc->avctx->channels = header->fi.channels;
-        ff_flac_set_channel_layout(fpc->avctx);
-    }
+    ff_flac_set_channel_layout(fpc->avctx, header->fi.channels);
+
     fpc->avctx->sample_rate = header->fi.samplerate;
     fpc->pc->duration       = header->fi.blocksize;
     *poutbuf = flac_fifo_read_wrap(fpc, header->offset, *poutbuf_size,
