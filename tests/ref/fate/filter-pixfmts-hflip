@@ -43,6 +43,8 @@ rgb565be            6727e71974c8e5dad157925c10ee1532
 rgb565le            b0a2b4817775289cfc415bb951f9ae0c
 rgb8                22fdbd14ce296c1afa9bb4a6ea09b3fe
 rgba                a37789c4df73c3bd8648ad1fe9d3f991
+xyz12be             4738d2cb5321376d5eed70930f47a953
+xyz12le             51288f3440c8584406b332545d69c5a9
 yuv410p             a1280c2b9b562dba3c2d35a1e5fc4b23
 yuv411p             6bf10756ac5c7841db63a97106ff911b
 yuv420p             45f4a06481f2cd8e28fb29c7c151e110
