@@ -64,12 +64,13 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 {
     TSContext *c = avctx->priv_data;
 
-    if (avctx->channels != 1) {
-        avpriv_request_sample(avctx, "Channel count %d", avctx->channels);
+    if (avctx->ch_layout.nb_channels != 1) {
+        avpriv_request_sample(avctx, "Channel count %d", avctx->ch_layout.nb_channels);
         return AVERROR_PATCHWELCOME;
     }
 
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
     ff_bswapdsp_init(&c->bdsp);
