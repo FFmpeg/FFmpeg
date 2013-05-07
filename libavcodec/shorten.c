@@ -344,6 +344,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         s->channels = get_uint(s, CHANSIZE);
         if (s->channels <= 0 || s->channels > MAX_CHANNELS) {
             av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
+            s->channels = 0;
             return -1;
         }
 
