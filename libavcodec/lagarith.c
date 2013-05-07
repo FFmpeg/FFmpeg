@@ -556,6 +556,28 @@ static int lag_decode_frame(AVCodecContext *avctx,
             }
         }
         break;
+    case FRAME_SOLID_COLOR:
+        if (avctx->bits_per_coded_sample == 24) {
+            avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        } else {
+            avctx->pix_fmt = AV_PIX_FMT_RGB32;
+            offset_gu |= 0xFFU << 24;
+        }
+
+        if ((ret = ff_thread_get_buffer(avctx, &frame,0)) < 0)
+            return ret;
+
+        dst = p->data[0];
+        for (j = 0; j < avctx->height; j++) {
+            for (i = 0; i < avctx->width; i++)
+                if (avctx->bits_per_coded_sample == 24) {
+                    AV_WB24(dst + i * 3, offset_gu);
+                } else {
+                    AV_WN32(dst + i * 4, offset_gu);
+                }
+            dst += p->linesize[0];
+        }
+        break;
     case FRAME_ARITH_RGBA:
         avctx->pix_fmt = AV_PIX_FMT_RGB32;
         planes = 4;
