@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/channel_layout.h"
+
 enum AlacRawDataBlockType {
     /* At the moment, only SCE, CPE, LFE, and END are recognized. */
     TYPE_SCE,
@@ -39,7 +41,7 @@ enum AlacRawDataBlockType {
 
 extern const uint8_t ff_alac_channel_layout_offsets[ALAC_MAX_CHANNELS][ALAC_MAX_CHANNELS];
 
-extern const uint64_t ff_alac_channel_layouts[ALAC_MAX_CHANNELS + 1];
+extern const AVChannelLayout ff_alac_ch_layouts[ALAC_MAX_CHANNELS + 1];
 
 extern const enum AlacRawDataBlockType ff_alac_channel_elements[ALAC_MAX_CHANNELS][5];
 
