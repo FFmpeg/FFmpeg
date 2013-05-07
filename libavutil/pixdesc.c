@@ -28,6 +28,7 @@
 #include "pixdesc.h"
 
 #include "intreadwrite.h"
+#include "avstring.h"
 
 void av_read_image_line(uint16_t *dst,
                         const uint8_t *data[4], const int linesize[4],
@@ -1911,47 +1912,18 @@ void ff_check_pixfmt_descriptors(void){
 
 enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
 {
-#define PIX_FMT_SWAP_ENDIANNESS(fmt)                                           \
-    case AV_PIX_FMT_ ## fmt ## BE: return AV_PIX_FMT_ ## fmt ## LE;            \
-    case AV_PIX_FMT_ ## fmt ## LE: return AV_PIX_FMT_ ## fmt ## BE
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    char name[16];
+    int i;
 
-    switch (pix_fmt) {
-    PIX_FMT_SWAP_ENDIANNESS(GRAY16);
-    PIX_FMT_SWAP_ENDIANNESS(RGB48);
-    PIX_FMT_SWAP_ENDIANNESS(RGB565);
-    PIX_FMT_SWAP_ENDIANNESS(RGB555);
-    PIX_FMT_SWAP_ENDIANNESS(RGB444);
-    PIX_FMT_SWAP_ENDIANNESS(BGR48);
-    PIX_FMT_SWAP_ENDIANNESS(BGR565);
-    PIX_FMT_SWAP_ENDIANNESS(BGR555);
-    PIX_FMT_SWAP_ENDIANNESS(BGR444);
-
-    PIX_FMT_SWAP_ENDIANNESS(YUV420P9);
-    PIX_FMT_SWAP_ENDIANNESS(YUV422P9);
-    PIX_FMT_SWAP_ENDIANNESS(YUV444P9);
-    PIX_FMT_SWAP_ENDIANNESS(YUV420P10);
-    PIX_FMT_SWAP_ENDIANNESS(YUV422P10);
-    PIX_FMT_SWAP_ENDIANNESS(YUV444P10);
-    PIX_FMT_SWAP_ENDIANNESS(YUV420P16);
-    PIX_FMT_SWAP_ENDIANNESS(YUV422P16);
-    PIX_FMT_SWAP_ENDIANNESS(YUV444P16);
-
-    PIX_FMT_SWAP_ENDIANNESS(GBRP9);
-    PIX_FMT_SWAP_ENDIANNESS(GBRP10);
-    PIX_FMT_SWAP_ENDIANNESS(GBRP16);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA420P9);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA422P9);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA444P9);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA420P10);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA422P10);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA444P10);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA420P16);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA422P16);
-    PIX_FMT_SWAP_ENDIANNESS(YUVA444P16);
-
-    PIX_FMT_SWAP_ENDIANNESS(XYZ12);
-    default:
+    if (!desc || strlen(desc->name) < 2)
         return AV_PIX_FMT_NONE;
-    }
-#undef PIX_FMT_SWAP_ENDIANNESS
+    av_strlcpy(name, desc->name, sizeof(name));
+    i = strlen(name) - 2;
+    if (strcmp(name + i, "be") && strcmp(name + i, "le"))
+        return AV_PIX_FMT_NONE;
+
+    name[i] ^= 'b' ^ 'l';
+
+    return get_pix_fmt_internal(name);
 }
