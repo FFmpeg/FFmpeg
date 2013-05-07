@@ -381,6 +381,11 @@ const AVCodec ff_adpcm_g722_encoder = {
     .close           = g722_encode_close,
     .encode2         = g722_encode_frame,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = (const uint64_t[]){ AV_CH_LAYOUT_MONO, 0 },
+#endif
+    .ch_layouts     = (const AVChannelLayout[]){
+        AV_CHANNEL_LAYOUT_MONO, { 0 }
+    },
     .caps_internal   = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
 };
