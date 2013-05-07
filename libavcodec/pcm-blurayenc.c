@@ -61,7 +61,7 @@ static av_cold int pcm_bluray_encode_init(AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    switch (avctx->channel_layout) {
+    switch (avctx->ch_layout.u.mask) {
     case AV_CH_LAYOUT_MONO:
         ch_layout = 1;
         break;
@@ -112,7 +112,7 @@ static int pcm_bluray_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     PutByteContext pb;
     int ret;
 
-    num_dest_channels = FFALIGN(avctx->channels, 2);
+    num_dest_channels = FFALIGN(avctx->ch_layout.nb_channels, 2);
     sample_size = (num_dest_channels *
                    (avctx->sample_fmt == AV_SAMPLE_FMT_S16 ? 16 : 24)) >> 3;
     samples = frame->nb_samples;
@@ -130,7 +130,7 @@ static int pcm_bluray_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
     bytestream2_init_writer(&pb, avpkt->data + 4, avpkt->size - 4);
 
-    switch (avctx->channel_layout) {
+    switch (avctx->ch_layout.u.mask) {
     /* cases with same number of source and coded channels */
     case AV_CH_LAYOUT_STEREO:
     case AV_CH_LAYOUT_4POINT0:
@@ -158,10 +158,10 @@ static int pcm_bluray_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         if (AV_SAMPLE_FMT_S16 == avctx->sample_fmt) {
             do {
 #if HAVE_BIGENDIAN
-                bytestream2_put_bufferu(&pb, (const uint8_t *)src16, avctx->channels * 2);
-                src16 += avctx->channels;
+                bytestream2_put_bufferu(&pb, (const uint8_t *)src16, avctx->ch_layout.nb_channels * 2);
+                src16 += avctx->ch_layout.nb_channels;
 #else
-                channel = avctx->channels;
+                channel = avctx->ch_layout.nb_channels;
                 do {
                     bytestream2_put_be16u(&pb, *src16++);
                 } while (--channel);
@@ -170,7 +170,7 @@ static int pcm_bluray_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             } while (--samples);
         } else {
             do {
-                channel = avctx->channels;
+                channel = avctx->ch_layout.nb_channels;
                 do {
                     bytestream2_put_be24u(&pb, (*src32++) >> 8);
                 } while (--channel);
@@ -278,6 +278,7 @@ const AVCodec ff_pcm_bluray_encoder = {
     .init                  = pcm_bluray_encode_init,
     .encode2               = pcm_bluray_encode_frame,
     .supported_samplerates = (const int[]) { 48000, 96000, 192000, 0 },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = (const uint64_t[]) {
         AV_CH_LAYOUT_MONO,
         AV_CH_LAYOUT_STEREO,
@@ -290,6 +291,19 @@ const AVCodec ff_pcm_bluray_encoder = {
         AV_CH_LAYOUT_7POINT0,
         AV_CH_LAYOUT_7POINT1,
         0 },
+#endif
+    .ch_layouts     = (const AVChannelLayout[]) {
+        AV_CHANNEL_LAYOUT_MONO,
+        AV_CHANNEL_LAYOUT_STEREO,
+        AV_CHANNEL_LAYOUT_SURROUND,
+        AV_CHANNEL_LAYOUT_2_1,
+        AV_CHANNEL_LAYOUT_4POINT0,
+        AV_CHANNEL_LAYOUT_2_2,
+        AV_CHANNEL_LAYOUT_5POINT0,
+        AV_CHANNEL_LAYOUT_5POINT1,
+        AV_CHANNEL_LAYOUT_7POINT0,
+        AV_CHANNEL_LAYOUT_7POINT1,
+        { 0 } },
     .sample_fmts           = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE },
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,

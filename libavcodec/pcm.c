@@ -56,7 +56,7 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
 #endif
 
     avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
-    avctx->block_align           = avctx->channels * avctx->bits_per_coded_sample / 8;
+    avctx->block_align           = avctx->ch_layout.nb_channels * avctx->bits_per_coded_sample / 8;
     avctx->bit_rate              = avctx->block_align * 8LL * avctx->sample_rate;
 
     return 0;
@@ -80,8 +80,8 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
     }
 
 #define ENCODE_PLANAR(type, endian, dst, n, shift, offset)              \
-    n /= avctx->channels;                                               \
-    for (c = 0; c < avctx->channels; c++) {                             \
+    n /= avctx->ch_layout.nb_channels;                                  \
+    for (c = 0; c < avctx->ch_layout.nb_channels; c++) {                \
         int i;                                                          \
         samples_ ## type = (const type *) frame->extended_data[c];      \
         for (i = n; i > 0; i--) {                                       \
@@ -104,7 +104,7 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     const uint32_t *samples_uint32_t;
 
     sample_size = av_get_bits_per_sample(avctx->codec->id) / 8;
-    n           = frame->nb_samples * avctx->channels;
+    n           = frame->nb_samples * avctx->ch_layout.nb_channels;
     samples     = (const short *)frame->data[0];
 
     if ((ret = ff_get_encode_buffer(avctx, avpkt, n * sample_size, 0)) < 0)
@@ -207,8 +207,8 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
     case AV_CODEC_ID_PCM_S32LE_PLANAR:
 #endif /* HAVE_BIGENDIAN */
-        n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++) {
+        n /= avctx->ch_layout.nb_channels;
+        for (c = 0; c < avctx->ch_layout.nb_channels; c++) {
             const uint8_t *src = frame->extended_data[c];
             bytestream_put_buffer(&dst, src, n * sample_size);
         }
@@ -252,7 +252,7 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
     AVFloatDSPContext *fdsp;
     int i;
 
-    if (avctx->channels <= 0) {
+    if (avctx->ch_layout.nb_channels <= 0) {
         av_log(avctx, AV_LOG_ERROR, "PCM channels out of bounds\n");
         return AVERROR(EINVAL);
     }
@@ -312,8 +312,8 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
     }
 
 #define DECODE_PLANAR(size, endian, src, dst, n, shift, offset)                \
-    n /= avctx->channels;                                                      \
-    for (c = 0; c < avctx->channels; c++) {                                    \
+    n /= channels;                                                             \
+    for (c = 0; c < avctx->ch_layout.nb_channels; c++) {                       \
         int i;                                                                 \
         dst = frame->extended_data[c];                                         \
         for (i = n; i > 0; i--) {                                              \
@@ -330,6 +330,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
     PCMDecode *s       = avctx->priv_data;
     AVFrame *frame     = data;
+    int channels       = avctx->ch_layout.nb_channels;
     int sample_size, c, n, ret, samples_per_block;
     uint8_t *samples;
     int32_t *dst_int32_t;
@@ -349,7 +350,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR(EINVAL);
     }
 
-    if (avctx->channels == 0) {
+    if (channels == 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR(EINVAL);
     }
@@ -359,7 +360,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR(EINVAL);
     }
 
-    n = avctx->channels * sample_size;
+    n = channels * sample_size;
 
     if (n && buf_size % n) {
         if (buf_size < n) {
@@ -374,7 +375,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     n = buf_size / sample_size;
 
     /* get output buffer */
-    frame->nb_samples = n * samples_per_block / avctx->channels;
+    frame->nb_samples = n * samples_per_block / channels;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     samples = frame->data[0];
@@ -429,8 +430,8 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_CODEC_ID_PCM_S8_PLANAR:
-        n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++) {
+        n /= avctx->ch_layout.nb_channels;
+        for (c = 0; c < avctx->ch_layout.nb_channels; c++) {
             int i;
             samples = frame->extended_data[c];
             for (i = n; i > 0; i--)
@@ -494,8 +495,8 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_S16LE_PLANAR:
     case AV_CODEC_ID_PCM_S32LE_PLANAR:
 #endif /* HAVE_BIGENDIAN */
-        n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++) {
+        n /= avctx->ch_layout.nb_channels;
+        for (c = 0; c < avctx->ch_layout.nb_channels; c++) {
             samples = frame->extended_data[c];
             bytestream_get_buffer(&src, samples, n * sample_size);
         }
@@ -511,8 +512,8 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
     case AV_CODEC_ID_PCM_LXF:
     {
         int i;
-        n /= avctx->channels;
-        for (c = 0; c < avctx->channels; c++) {
+        n /= channels;
+        for (c = 0; c < channels; c++) {
             dst_int32_t = (int32_t *)frame->extended_data[c];
             for (i = 0; i < n; i++) {
                 // extract low 20 bits and expand to 32 bits
@@ -540,7 +541,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         avctx->codec_id == AV_CODEC_ID_PCM_F24LE) {
         s->vector_fmul_scalar((float *)frame->extended_data[0],
                               (const float *)frame->extended_data[0],
-                              s->scale, FFALIGN(frame->nb_samples * avctx->channels, 4));
+                              s->scale, FFALIGN(frame->nb_samples * avctx->ch_layout.nb_channels, 4));
         emms_c();
     }
 
