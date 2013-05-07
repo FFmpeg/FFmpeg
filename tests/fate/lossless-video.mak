@@ -19,6 +19,9 @@ fate-lagarith-yuy2: CMD = framecrc -i $(SAMPLES)/lagarith/lag-yuy2.avi
 FATE_LAGARITH += fate-lagarith-yv12
 fate-lagarith-yv12: CMD = framecrc -i $(SAMPLES)/lagarith/lag-yv12.avi
 
+FATE_LAGARITH += fate-lagarith-red
+fate-lagarith-red: CMD = framecrc -i $(SAMPLES)/lagarith/lagarith-red.avi
+
 FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, LAGARITH) += $(FATE_LAGARITH)
 fate-lagarith: $(FATE_LAGARITH)
 
