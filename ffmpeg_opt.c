@@ -1719,7 +1719,6 @@ static int open_output_file(OptionsContext *o, const char *filename)
     } else {
         for (i = 0; i < o->nb_stream_maps; i++) {
             StreamMap *map = &o->stream_maps[i];
-            int src_idx = input_files[map->file_index]->ist_index + map->stream_index;
 
             if (map->disabled)
                 continue;
@@ -1747,6 +1746,8 @@ loop_end:
                 }
                 init_output_filter(ofilter, o, oc);
             } else {
+                int src_idx = input_files[map->file_index]->ist_index + map->stream_index;
+
                 ist = input_streams[input_files[map->file_index]->ist_index + map->stream_index];
                 if(o->subtitle_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
                     continue;
