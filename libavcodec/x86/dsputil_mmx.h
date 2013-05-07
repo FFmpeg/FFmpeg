@@ -110,6 +110,27 @@ void ff_add_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_s
 void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
 void ff_put_signed_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels, int line_size);
 
+void ff_clear_block_mmx(int16_t *block);
+void ff_clear_block_sse(int16_t *block);
+void ff_clear_blocks_mmx(int16_t *blocks);
+void ff_clear_blocks_sse(int16_t *blocks);
+
+void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w);
+
+void ff_add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
+                                        const uint8_t *diff, int w,
+                                        int *left, int *left_top);
+
+void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
+                       int w, int h, int sides);
+
+void ff_gmc_mmx(uint8_t *dst, uint8_t *src,
+                int stride, int h, int ox, int oy,
+                int dxx, int dxy, int dyx, int dyy,
+                int shift, int r, int width, int height);
+
+void ff_vector_clipf_sse(float *dst, const float *src,
+                         float min, float max, int len);
 
 void ff_avg_pixels8_mmx(uint8_t *block, const uint8_t *pixels,
                         ptrdiff_t line_size, int h);
