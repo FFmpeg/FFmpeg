@@ -67,8 +67,8 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
     RA288Context *ractx = avctx->priv_data;
     AVFloatDSPContext *fdsp;
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     if (avctx->block_align != 38) {
