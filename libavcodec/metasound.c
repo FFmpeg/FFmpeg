@@ -65,8 +65,9 @@ static void decode_ppc(TwinVQContext *tctx, int period_coef, int g_coef,
                        const float *shape, float *speech)
 {
     const TwinVQModeTab *mtab = tctx->mtab;
+    int channels     = tctx->avctx->ch_layout.nb_channels;
     int isampf       = tctx->avctx->sample_rate / 1000;
-    int ibps         = tctx->avctx->bit_rate / (1000 * tctx->avctx->channels);
+    int ibps         = tctx->avctx->bit_rate / (1000 * channels);
     int width;
 
     float ratio = (float)mtab->size / isampf;
@@ -75,7 +76,7 @@ static void decode_ppc(TwinVQContext *tctx, int period_coef, int g_coef,
 
     float pgain_base, pgain_step, ppc_gain;
 
-    if (tctx->avctx->channels == 1) {
+    if (channels == 1) {
         min_period = log2(ratio * 0.2);
         max_period = min_period + log2(6);
     } else {
@@ -85,7 +86,7 @@ static void decode_ppc(TwinVQContext *tctx, int period_coef, int g_coef,
     period_range = max_period - min_period;
     period       = min_period + period_coef * period_range /
                    ((1 << mtab->ppc_period_bit) - 1);
-    if (tctx->avctx->channels == 1)
+    if (channels == 1)
         period = powf(2.0, period);
     else
         period = (int)(period * 400 + 0.5) / 400.0;
@@ -103,7 +104,7 @@ static void decode_ppc(TwinVQContext *tctx, int period_coef, int g_coef,
     if (isampf == 22 && ibps == 32)
         width = (int)((2.0 / period + 1) * width + 0.5);
 
-    pgain_base = tctx->avctx->channels == 2 ? 25000.0 : 20000.0;
+    pgain_base = channels == 2 ? 25000.0 : 20000.0;
     pgain_step = pgain_base / ((1 << mtab->pgain_bit) - 1);
     ppc_gain   = 1.0 / 8192 *
                  twinvq_mulawinv(pgain_step * g_coef + pgain_step / 2,
@@ -123,8 +124,9 @@ static void dec_bark_env(TwinVQContext *tctx, const uint8_t *in, int use_hist,
     int bark_n_coef = mtab->fmode[ftype].bark_n_coef;
     int fw_cb_len   = mtab->fmode[ftype].bark_env_size / bark_n_coef;
     int idx         = 0;
+    int channels    = tctx->avctx->ch_layout.nb_channels;
 
-    if (tctx->avctx->channels == 1)
+    if (channels == 1)
         val = 0.5;
     for (i = 0; i < fw_cb_len; i++)
         for (j = 0; j < bark_n_coef; j++, idx++) {
@@ -132,7 +134,7 @@ static void dec_bark_env(TwinVQContext *tctx, const uint8_t *in, int use_hist,
                          (1.0 / 2048);
             float st;
 
-            if (tctx->avctx->channels == 1)
+            if (channels == 1)
                 st = use_hist ?
                     tmp2 + val * hist[idx] + 1.0 : tmp2 + 1.0;
             else
@@ -167,7 +169,7 @@ static int metasound_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
 {
     TwinVQFrameData     *bits;
     const TwinVQModeTab *mtab = tctx->mtab;
-    int channels              = tctx->avctx->channels;
+    int channels              = tctx->avctx->ch_layout.nb_channels;
     int sub;
     GetBitContext gb;
     int i, j, k, ret;
@@ -276,6 +278,7 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
     TwinVQContext *tctx = avctx->priv_data;
     uint32_t tag;
     const MetasoundProps *props = codec_props;
+    int channels;
 
     if (!avctx->extradata || avctx->extradata_size < 16) {
         av_log(avctx, AV_LOG_ERROR, "Missing or incomplete extradata\n");
@@ -291,7 +294,7 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
         }
         if (props->tag == tag) {
             avctx->sample_rate = props->sample_rate;
-            avctx->channels    = props->channels;
+            channels           = props->channels;
             avctx->bit_rate    = props->bit_rate * 1000;
             isampf             = avctx->sample_rate / 1000;
             break;
@@ -299,17 +302,17 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
         props++;
     }
 
-    if (avctx->channels <= 0 || avctx->channels > TWINVQ_CHANNELS_MAX) {
+    if (channels <= 0 || channels > TWINVQ_CHANNELS_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %i\n",
-               avctx->channels);
+               channels);
         return AVERROR_INVALIDDATA;
     }
-    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO
-                                                 : AV_CH_LAYOUT_STEREO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_default(&avctx->ch_layout, channels);
 
-    ibps = avctx->bit_rate / (1000 * avctx->channels);
+    ibps = avctx->bit_rate / (1000 * channels);
 
-    switch ((avctx->channels << 16) + (isampf << 8) + ibps) {
+    switch ((channels << 16) + (isampf << 8) + ibps) {
     case (1 << 16) + ( 8 << 8) +  6:
         tctx->mtab = &ff_metasound_mode0806;
         break;
