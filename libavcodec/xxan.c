@@ -298,7 +298,7 @@ static int xan_decode_frame_type0(AVCodecContext *avctx, AVPacket *avpkt)
         corr_end = avpkt->size;
         if (chroma_off > corr_off)
             corr_end = chroma_off;
-        dec_size = xan_unpack(s->scratch_buffer, s->buffer_size,
+        dec_size = xan_unpack(s->scratch_buffer, s->buffer_size / 2,
                               avpkt->data + 8 + corr_off,
                               corr_end - corr_off);
         if (dec_size < 0)
