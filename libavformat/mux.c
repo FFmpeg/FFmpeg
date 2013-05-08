@@ -584,6 +584,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
 #endif
     pkt->buf       = NULL;
     av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-allocated memory
+    av_copy_packet_side_data(&this_pktl->pkt, &this_pktl->pkt); // copy side data
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
         next_point = &(st->last_in_packet_buffer->next);

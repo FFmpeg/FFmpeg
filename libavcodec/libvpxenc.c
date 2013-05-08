@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 
@@ -43,6 +44,8 @@
 struct FrameListData {
     void *buf;                       /**< compressed data buffer */
     size_t sz;                       /**< length of compressed data */
+    void *buf_alpha;
+    size_t sz_alpha;
     int64_t pts;                     /**< time stamp to show frame
                                           (in timebase units) */
     unsigned long duration;          /**< duration to show frame
@@ -58,6 +61,9 @@ typedef struct VP8EncoderContext {
     AVClass *class;
     struct vpx_codec_ctx encoder;
     struct vpx_image rawimg;
+    struct vpx_codec_ctx encoder_alpha;
+    struct vpx_image rawimg_alpha;
+    uint8_t is_alpha;
     struct vpx_fixed_buf twopass_stats;
     int deadline; //i.e., RT/GOOD/BEST
     uint64_t sse[4];
@@ -186,6 +192,8 @@ static void coded_frame_add(void *list, struct FrameListData *cx_frame)
 static av_cold void free_coded_frame(struct FrameListData *cx_frame)
 {
     av_freep(&cx_frame->buf);
+    if (cx_frame->buf_alpha)
+        av_freep(&cx_frame->buf_alpha);
     av_freep(&cx_frame);
 }
 
@@ -226,6 +234,8 @@ static av_cold int vp8_free(AVCodecContext *avctx)
     VP8Context *ctx = avctx->priv_data;
 
     vpx_codec_destroy(&ctx->encoder);
+    if (ctx->is_alpha)
+        vpx_codec_destroy(&ctx->encoder_alpha);
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->coded_frame);
     av_freep(&avctx->stats_out);
@@ -238,11 +248,15 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 {
     VP8Context *ctx = avctx->priv_data;
     struct vpx_codec_enc_cfg enccfg;
+    struct vpx_codec_enc_cfg enccfg_alpha;
     vpx_codec_flags_t flags = (avctx->flags & CODEC_FLAG_PSNR) ? VPX_CODEC_USE_PSNR : 0;
     int res;
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", vpx_codec_build_config());
+
+    if (avctx->pix_fmt == AV_PIX_FMT_YUVA420P)
+        ctx->is_alpha = 1;
 
     if ((res = vpx_codec_enc_config_default(iface, &enccfg, 0)) != VPX_CODEC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Failed to get config: %s\n",
@@ -377,6 +391,15 @@ static av_cold int vpx_init(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
+    if (ctx->is_alpha) {
+        enccfg_alpha = enccfg;
+        res = vpx_codec_enc_init(&ctx->encoder_alpha, iface, &enccfg_alpha, flags);
+        if (res != VPX_CODEC_OK) {
+            log_encoder_error(avctx, "Failed to initialize alpha encoder");
+            return AVERROR(EINVAL);
+        }
+    }
+
     //codec control failures are currently treated only as warnings
     av_log(avctx, AV_LOG_DEBUG, "vpx_codec_control\n");
     if (ctx->cpu_used != INT_MIN)
@@ -404,6 +427,10 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     vpx_img_wrap(&ctx->rawimg, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
 
+    if (ctx->is_alpha)
+        vpx_img_wrap(&ctx->rawimg_alpha, VPX_IMG_FMT_I420, avctx->width, avctx->height, 1,
+                     (unsigned char*)1);
+
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
@@ -415,6 +442,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 
 static inline void cx_pktcpy(struct FrameListData *dst,
                              const struct vpx_codec_cx_pkt *src,
+                             const struct vpx_codec_cx_pkt *src_alpha,
                              VP8Context *ctx)
 {
     dst->pts      = src->data.frame.pts;
@@ -438,6 +466,14 @@ static inline void cx_pktcpy(struct FrameListData *dst,
     } else {
         dst->frame_number = -1;   /* sanity marker */
     }
+    if (src_alpha) {
+        dst->buf_alpha = src_alpha->data.frame.buf;
+        dst->sz_alpha = src_alpha->data.frame.sz;
+    }
+    else {
+        dst->buf_alpha = NULL;
+        dst->sz_alpha = 0;
+    }
 }
 
 /**
@@ -451,6 +487,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
                       AVPacket *pkt, AVFrame *coded_frame)
 {
     int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz);
+    uint8_t *side_data;
     if (ret >= 0) {
         memcpy(pkt->data, cx_frame->buf, pkt->size);
         pkt->pts = pkt->dts    = cx_frame->pts;
@@ -475,6 +512,18 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
             }
             cx_frame->have_sse = 0;
         }
+        if (cx_frame->sz_alpha > 0) {
+            side_data = av_packet_new_side_data(pkt,
+                                                AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                                cx_frame->sz_alpha + 8);
+            if(side_data == NULL) {
+                av_free_packet(pkt);
+                av_free(pkt);
+                return AVERROR(ENOMEM);
+            }
+            AV_WB64(side_data, 1);
+            memcpy(side_data + 8, cx_frame->buf_alpha, cx_frame->sz_alpha);
+        }
     } else {
         return ret;
     }
@@ -494,7 +543,9 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
 {
     VP8Context *ctx = avctx->priv_data;
     const struct vpx_codec_cx_pkt *pkt;
+    const struct vpx_codec_cx_pkt *pkt_alpha = NULL;
     const void *iter = NULL;
+    const void *iter_alpha = NULL;
     int size = 0;
 
     if (ctx->coded_frame_list) {
@@ -509,7 +560,9 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
 
     /* consume all available output from the encoder before returning. buffers
        are only good through the next vpx_codec call */
-    while ((pkt = vpx_codec_get_cx_data(&ctx->encoder, &iter))) {
+    while ((pkt = vpx_codec_get_cx_data(&ctx->encoder, &iter)) &&
+            (!ctx->is_alpha ||
+             (ctx->is_alpha && (pkt_alpha = vpx_codec_get_cx_data(&ctx->encoder_alpha, &iter_alpha))))) {
         switch (pkt->kind) {
         case VPX_CODEC_CX_FRAME_PKT:
             if (!size) {
@@ -518,7 +571,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                 /* avoid storing the frame when the list is empty and we haven't yet
                    provided a frame for output */
                 av_assert0(!ctx->coded_frame_list);
-                cx_pktcpy(&cx_frame, pkt, ctx);
+                cx_pktcpy(&cx_frame, pkt, pkt_alpha, ctx);
                 size = storeframe(avctx, &cx_frame, pkt_out, coded_frame);
                 if (size < 0)
                     return size;
@@ -531,7 +584,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                            "Frame queue element alloc failed\n");
                     return AVERROR(ENOMEM);
                 }
-                cx_pktcpy(cx_frame, pkt, ctx);
+                cx_pktcpy(cx_frame, pkt, pkt_alpha, ctx);
                 cx_frame->buf = av_malloc(cx_frame->sz);
 
                 if (!cx_frame->buf) {
@@ -542,6 +595,17 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out,
                     return AVERROR(ENOMEM);
                 }
                 memcpy(cx_frame->buf, pkt->data.frame.buf, pkt->data.frame.sz);
+                if (ctx->is_alpha) {
+                    cx_frame->buf_alpha = av_malloc(cx_frame->sz_alpha);
+                    if (!cx_frame->buf_alpha) {
+                        av_log(avctx, AV_LOG_ERROR,
+                               "Data buffer alloc (%zu bytes) failed\n",
+                               cx_frame->sz_alpha);
+                        av_free(cx_frame);
+                        return AVERROR(ENOMEM);
+                    }
+                    memcpy(cx_frame->buf_alpha, pkt_alpha->data.frame.buf, pkt_alpha->data.frame.sz);
+                }
                 coded_frame_add(&ctx->coded_frame_list, cx_frame);
             }
             break;
@@ -580,6 +644,7 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
 {
     VP8Context *ctx = avctx->priv_data;
     struct vpx_image *rawimg = NULL;
+    struct vpx_image *rawimg_alpha = NULL;
     int64_t timestamp = 0;
     int res, coded_size;
     vpx_enc_frame_flags_t flags = 0;
@@ -592,6 +657,17 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         rawimg->stride[VPX_PLANE_Y] = frame->linesize[0];
         rawimg->stride[VPX_PLANE_U] = frame->linesize[1];
         rawimg->stride[VPX_PLANE_V] = frame->linesize[2];
+        if (ctx->is_alpha) {
+            uint8_t *u_plane, *v_plane;
+            rawimg_alpha = &ctx->rawimg_alpha;
+            rawimg_alpha->planes[VPX_PLANE_Y] = frame->data[3];
+            u_plane = av_malloc(frame->linesize[1] * frame->height);
+            memset(u_plane, 0x80, frame->linesize[1] * frame->height);
+            rawimg_alpha->planes[VPX_PLANE_U] = u_plane;
+            v_plane = av_malloc(frame->linesize[2] * frame->height);
+            memset(v_plane, 0x80, frame->linesize[2] * frame->height);
+            rawimg_alpha->planes[VPX_PLANE_V] = v_plane;
+        }
         timestamp                   = frame->pts;
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= VPX_EFLAG_FORCE_KF;
@@ -603,6 +679,16 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         log_encoder_error(avctx, "Error encoding frame");
         return AVERROR_INVALIDDATA;
     }
+
+    if (ctx->is_alpha) {
+        res = vpx_codec_encode(&ctx->encoder_alpha, rawimg_alpha, timestamp,
+                               avctx->ticks_per_frame, flags, ctx->deadline);
+        if (res != VPX_CODEC_OK) {
+            log_encoder_error(avctx, "Error encoding alpha frame");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
     coded_size = queue_frames(avctx, pkt, avctx->coded_frame);
 
     if (!frame && avctx->flags & CODEC_FLAG_PASS1) {
@@ -616,6 +702,11 @@ static int vp8_encode(AVCodecContext *avctx, AVPacket *pkt,
         }
         av_base64_encode(avctx->stats_out, b64_size, ctx->twopass_stats.buf,
                          ctx->twopass_stats.sz);
+    }
+
+    if (rawimg_alpha) {
+        av_free(rawimg_alpha->planes[VPX_PLANE_U]);
+        av_free(rawimg_alpha->planes[VPX_PLANE_V]);
     }
 
     *got_packet = !!coded_size;
@@ -692,7 +783,7 @@ AVCodec ff_libvpx_vp8_encoder = {
     .encode2        = vp8_encode,
     .close          = vp8_free,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .priv_class     = &class_vp8,
     .defaults       = defaults,
