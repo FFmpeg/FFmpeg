@@ -308,3 +308,28 @@ AVFilter avfilter_vf_extractplanes = {
     .outputs       = NULL,
     .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
+
+#if CONFIG_ALPHAEXTRACT_FILTER
+
+static int init_alphaextract(AVFilterContext *ctx)
+{
+    ExtractPlanesContext *e = ctx->priv;
+
+    e->requested_planes = PLANE_A;
+
+    return init(ctx);
+}
+
+AVFilter avfilter_vf_alphaextract = {
+    .name           = "alphaextract",
+    .description    = NULL_IF_CONFIG_SMALL("Extract an alpha channel as a "
+                      "grayscale image component."),
+    .priv_size      = sizeof(ExtractPlanesContext),
+    .init           = init_alphaextract,
+    .uninit         = uninit,
+    .query_formats  = query_formats,
+    .inputs         = extractplanes_inputs,
+    .outputs        = NULL,
+    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+};
+#endif  /* CONFIG_ALPHAEXTRACT_FILTER */
