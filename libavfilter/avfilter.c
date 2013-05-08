@@ -510,7 +510,7 @@ static void *filter_child_next(void *obj, void *prev)
 
 static const AVClass *filter_child_class_next(const AVClass *prev)
 {
-    AVFilter *f = NULL;
+    const AVFilter *f = NULL;
 
     /* find the filter that corresponds to prev */
     while (prev && (f = avfilter_next(f)))
