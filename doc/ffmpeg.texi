@@ -532,10 +532,6 @@ list separated with slashes. Two first values are the beginning and
 end frame numbers, last one is quantizer to use if positive, or quality
 factor if negative.
 
-@item -deinterlace
-Deinterlace pictures.
-This option is deprecated since the deinterlacing is very low quality.
-Use the yadif filter with @code{-filter:v yadif}.
 @item -ilme
 Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
 Use this option if your input file is interlaced and you want
