@@ -662,6 +662,12 @@ static int mkv_write_tracks(AVFormatContext *s)
                         put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, st_mode);
                 }
 
+                if ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
+                    (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0)) ||
+                    (codec->pix_fmt == AV_PIX_FMT_YUVA420P)) {
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEOALPHAMODE, 1);
+                }
+
                 if (st->sample_aspect_ratio.num) {
                     int64_t d_width = av_rescale(codec->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
                     if (d_width > INT_MAX) {
@@ -1136,9 +1142,10 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    uint8_t *data = NULL;
-    int offset = 0, size = pkt->size;
+    uint8_t *data = NULL, *side_data = NULL;
+    int offset = 0, size = pkt->size, side_data_size = 0;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
+    uint64_t additional_id = 0;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
@@ -1156,14 +1163,46 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         offset = 8;
     }
 
-    put_ebml_id(pb, blockid);
-    put_ebml_num(pb, size+4, 0);
-    avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
-    avio_wb16(pb, ts - mkv->cluster_pts);
-    avio_w8(pb, flags);
-    avio_write(pb, data + offset, size);
-    if (data != pkt->data)
-        av_free(data);
+    side_data = av_packet_get_side_data(pkt,
+                                        AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
+                                        &side_data_size);
+    if (side_data) {
+        additional_id = AV_RB64(side_data);
+        side_data += 8;
+        side_data_size -= 8;
+    }
+
+    if (side_data_size && additional_id == 1) {
+        ebml_master block_group, block_additions, block_more;
+        block_group = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, 0);
+        put_ebml_id(pb, MATROSKA_ID_BLOCK);
+        put_ebml_num(pb, size+4, 0);
+        avio_w8(pb, 0x80 | (pkt->stream_index + 1)); // track number
+        avio_wb16(pb, ts - mkv->cluster_pts);
+        avio_w8(pb, flags);
+        avio_write(pb, data + offset, size);
+        if (data != pkt->data)
+            av_free(data);
+        block_additions = start_ebml_master(pb, MATROSKA_ID_BLOCKADDITIONS, 0);
+        block_more = start_ebml_master(pb, MATROSKA_ID_BLOCKMORE, 0);
+        put_ebml_uint(pb, MATROSKA_ID_BLOCKADDID, 1);
+        put_ebml_id(pb, MATROSKA_ID_BLOCKADDITIONAL);
+        put_ebml_num(pb, side_data_size, 0);
+        avio_write(pb, side_data, side_data_size);
+        end_ebml_master(pb, block_more);
+        end_ebml_master(pb, block_additions);
+        end_ebml_master(pb, block_group);
+    }
+    else {
+        put_ebml_id(pb, blockid);
+        put_ebml_num(pb, size+4, 0);
+        avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+        avio_wb16(pb, ts - mkv->cluster_pts);
+        avio_w8(pb, flags);
+        avio_write(pb, data + offset, size);
+        if (data != pkt->data)
+            av_free(data);
+    }
 }
 
 static int srt_get_duration(uint8_t **buf)
