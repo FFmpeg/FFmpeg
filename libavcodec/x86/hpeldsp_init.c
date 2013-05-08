@@ -77,8 +77,12 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #define avg_pixels8_mmx         ff_avg_pixels8_mmx
 #define avg_pixels8_x2_mmx      ff_avg_pixels8_x2_mmx
 #define avg_pixels16_mmx        ff_avg_pixels16_mmx
+#define avg_pixels8_xy2_mmx     ff_avg_pixels8_xy2_mmx
+#define avg_pixels16_xy2_mmx    ff_avg_pixels16_xy2_mmx
 #define put_pixels8_mmx         ff_put_pixels8_mmx
 #define put_pixels16_mmx        ff_put_pixels16_mmx
+#define put_pixels8_xy2_mmx     ff_put_pixels8_xy2_mmx
+#define put_pixels16_xy2_mmx    ff_put_pixels16_xy2_mmx
 #define avg_no_rnd_pixels16_mmx ff_avg_pixels16_mmx
 #define put_no_rnd_pixels8_mmx  ff_put_pixels8_mmx
 #define put_no_rnd_pixels16_mmx ff_put_pixels16_mmx
@@ -91,13 +95,16 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
 #define PAVGB(a, b, c, e)               PAVGB_MMX_NO_RND(a, b, c, e)
+#define STATIC static
 
+#include "rnd_template.c"
 #include "hpeldsp_rnd_template.c"
 
 #undef DEF
 #undef SET_RND
 #undef PAVGBP
 #undef PAVGB
+#undef STATIC
 /***********************************/
 /* MMX rounding */
 

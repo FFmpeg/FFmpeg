@@ -102,21 +102,6 @@ void ff_put_no_rnd_mpeg4_qpel8_v_lowpass_mmxext(uint8_t *dst, uint8_t *src,
 #if HAVE_INLINE_ASM
 
 /***********************************/
-/* MMX rounding */
-
-#define DEF(x, y) x ## _ ## y ## _mmx
-#define SET_RND  MOVQ_WTWO
-#define PAVGBP(a, b, c, d, e, f)        PAVGBP_MMX(a, b, c, d, e, f)
-#define PAVGB(a, b, c, e)               PAVGB_MMX(a, b, c, e)
-
-#include "rnd_template.c"
-
-#undef DEF
-#undef SET_RND
-#undef PAVGBP
-#undef PAVGB
-
-/***********************************/
 /* standard MMX */
 
 void ff_put_pixels_clamped_mmx(const int16_t *block, uint8_t *pixels,
@@ -898,19 +883,19 @@ QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, mmxext)
 #if HAVE_INLINE_ASM
 void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  put_pixels8_xy2_mmx(dst, src, stride, 8);
+    ff_put_pixels8_xy2_mmx(dst, src, stride, 8);
 }
 void ff_put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  put_pixels16_xy2_mmx(dst, src, stride, 16);
+    ff_put_pixels16_xy2_mmx(dst, src, stride, 16);
 }
 void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  avg_pixels8_xy2_mmx(dst, src, stride, 8);
+    ff_avg_pixels8_xy2_mmx(dst, src, stride, 8);
 }
 void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
 {
-  avg_pixels16_xy2_mmx(dst, src, stride, 16);
+    ff_avg_pixels16_xy2_mmx(dst, src, stride, 16);
 }
 
 typedef void emulated_edge_mc_func(uint8_t *dst, const uint8_t *src,
