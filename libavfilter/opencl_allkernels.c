@@ -21,8 +21,8 @@
 #include "opencl_allkernels.h"
 #if CONFIG_OPENCL
 #include "libavutil/opencl.h"
-#include "deshake_kernel.h"
-#include "unsharp_kernel.h"
+#include "deshake_opencl_kernel.h"
+#include "unsharp_opencl_kernel.h"
 #endif
 
 #define OPENCL_REGISTER_KERNEL_CODE(X, x)                                              \

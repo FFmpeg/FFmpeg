@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_DESHAKE_KERNEL_H
-#define AVFILTER_DESHAKE_KERNEL_H
+#ifndef AVFILTER_DESHAKE_OPENCL_KERNEL_H
+#define AVFILTER_DESHAKE_OPENCL_KERNEL_H
 
 #include "libavutil/opencl.h"
 
@@ -214,4 +214,4 @@ kernel void avfilter_transform(global  unsigned char *src,
 }
 );
 
-#endif /* AVFILTER_DESHAKE_KERNEL_H */
+#endif /* AVFILTER_DESHAKE_OPENCL_KERNEL_H */

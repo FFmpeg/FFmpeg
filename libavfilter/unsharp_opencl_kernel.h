@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_UNSHARP_KERNEL_H
-#define AVFILTER_UNSHARP_KERNEL_H
+#ifndef AVFILTER_UNSHARP_OPENCL_KERNEL_H
+#define AVFILTER_UNSHARP_OPENCL_KERNEL_H
 
 #include "libavutil/opencl.h"
 
@@ -134,4 +134,4 @@ kernel void unsharp(global  unsigned char *src,
 
 );
 
-#endif /* AVFILTER_UNSHARP_KERNEL_H */
+#endif /* AVFILTER_UNSHARP_OPENCL_KERNEL_H */
