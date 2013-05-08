@@ -3484,6 +3484,13 @@ int av_dup_packet(AVPacket *pkt);
 int av_copy_packet(AVPacket *dst, AVPacket *src);
 
 /**
+ * Copy packet side data
+ *
+ * @return 0 on success, negative AVERROR on fail
+ */
+int av_copy_packet_side_data(AVPacket *dst, AVPacket *src);
+
+/**
  * Free a packet.
  *
  * @param pkt packet to free
