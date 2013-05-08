@@ -4710,14 +4710,14 @@ Cflags: -I\${includedir}
 EOF
 }
 
-libavfilter_pc_deps="libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-enabled libavfilter_deps_avcodec    && prepend libavfilter_pc_deps "libavcodec${build_suffix} = $LIBAVCODEC_VERSION,"
-enabled libavfilter_deps_avformat   && prepend libavfilter_pc_deps "libavformat${build_suffix} = $LIBAVFORMAT_VERSION,"
-enabled libavfilter_deps_avresample && prepend libavfilter_pc_deps "libavresample${build_suffix} = $LIBAVRESAMPLE_VERSION,"
-enabled libavfilter_deps_swscale    && prepend libavfilter_pc_deps "libswscale${build_suffix} = $LIBSWSCALE_VERSION,"
-enabled libavfilter_deps_swresample && prepend libavfilter_pc_deps "libswresample${build_suffix} = $LIBSWRESAMPLE_VERSION,"
-enabled libavfilter_deps_postproc   && prepend libavfilter_pc_deps "libpostproc${build_suffix} = $LIBPOSTPROC_VERSION,"
-libavfilter_pc_deps=${libavfilter_pc_deps%, }
+lavfi_libs="libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+enabled libavfilter_deps_avcodec    && prepend lavfi_libs "libavcodec${build_suffix} = $LIBAVCODEC_VERSION,"
+enabled libavfilter_deps_avformat   && prepend lavfi_libs "libavformat${build_suffix} = $LIBAVFORMAT_VERSION,"
+enabled libavfilter_deps_avresample && prepend lavfi_libs "libavresample${build_suffix} = $LIBAVRESAMPLE_VERSION,"
+enabled libavfilter_deps_swscale    && prepend lavfi_libs "libswscale${build_suffix} = $LIBSWSCALE_VERSION,"
+enabled libavfilter_deps_swresample && prepend lavfi_libs "libswresample${build_suffix} = $LIBSWRESAMPLE_VERSION,"
+enabled libavfilter_deps_postproc   && prepend lavfi_libs "libpostproc${build_suffix} = $LIBPOSTPROC_VERSION,"
+lavfi_libs=${lavfi_libs%, }
 
 libavdevice_pc_deps="libavformat${build_suffix} = $LIBAVFORMAT_VERSION"
 enabled lavfi_indev && prepend libavdevice_pc_deps "libavfilter${build_suffix} = $LIBAVFILTER_VERSION,"
@@ -4726,7 +4726,7 @@ pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" "$LIB
 pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec${build_suffix} = $LIBAVCODEC_VERSION"
 pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$libavdevice_pc_deps"
-pkgconfig_generate libavfilter "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$libavfilter_pc_deps"
+pkgconfig_generate libavfilter "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$lavfi_libs"
 pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VERSION" "" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
 pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
 pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
