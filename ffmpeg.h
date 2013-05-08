@@ -178,6 +178,8 @@ typedef struct OptionsContext {
     int        nb_passlogfiles;
     SpecifierOpt *guess_layout_max;
     int        nb_guess_layout_max;
+    SpecifierOpt *apad;
+    int        nb_apad;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -356,6 +358,7 @@ typedef struct OutputStream {
     AVDictionary *opts;
     AVDictionary *swr_opts;
     AVDictionary *resample_opts;
+    char *apad;
     int finished;        /* no more packets should be written for this stream */
     int unavailable;                     /* true if the steram is unavailable (possibly temporarily) */
     int stream_copy;

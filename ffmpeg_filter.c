@@ -424,6 +424,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
     OutputStream *ost = ofilter->ost;
     AVCodecContext *codec  = ost->st->codec;
     AVFilterContext *last_filter = out->filter_ctx;
+    OutputFile *of = output_files[ost->file_index];
     int pad_idx = out->pad_idx;
     char *sample_fmts, *sample_rates, *channel_layouts;
     char name[255];
@@ -517,6 +518,20 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 
         snprintf(args, sizeof(args), "%f", audio_volume / 256.);
         AUTO_INSERT_FILTER("-vol", "volume", args);
+    }
+
+    if (ost->apad && of->shortest) {
+        char args[256];
+        int i;
+
+        for (i=0; i<of->ctx->nb_streams; i++)
+            if (of->ctx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                break;
+
+        if (i<of->ctx->nb_streams) {
+            snprintf(args, sizeof(args), "%s", ost->apad);
+            AUTO_INSERT_FILTER("-apad", "apad", args);
+        }
     }
 
     ret = insert_trim(ost, &last_filter, &pad_idx);
