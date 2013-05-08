@@ -1,2 +1,2 @@
 sws_flags=+accurate_rnd+bitexact;
-format=gray, perms=random, gradfun=10:8
+format=gray, perms=random, gradfun=10:8:enable='not(between(n,5,10))'
