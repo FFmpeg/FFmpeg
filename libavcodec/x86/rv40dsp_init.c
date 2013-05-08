@@ -188,6 +188,29 @@ QPEL_FUNCS_SET (OP, 3, 2, OPT)
 
 #endif /* HAVE_YASM */
 
+#if HAVE_MMX_INLINE
+static void put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src,
+                                    ptrdiff_t stride)
+{
+    ff_put_pixels8_xy2_mmx(dst, src, stride, 8);
+}
+static void put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src,
+                                     ptrdiff_t stride)
+{
+    ff_put_pixels16_xy2_mmx(dst, src, stride, 16);
+}
+static void avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src,
+                                    ptrdiff_t stride)
+{
+    ff_avg_pixels8_xy2_mmx(dst, src, stride, 8);
+}
+static void avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src,
+                                     ptrdiff_t stride)
+{
+    ff_avg_pixels16_xy2_mmx(dst, src, stride, 16);
+}
+#endif /* HAVE_MMX_INLINE */
+
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
 #if HAVE_YASM
@@ -197,10 +220,10 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
 #if HAVE_MMX_INLINE
-        c->put_pixels_tab[0][15] = ff_put_rv40_qpel16_mc33_mmx;
-        c->put_pixels_tab[1][15] = ff_put_rv40_qpel8_mc33_mmx;
-        c->avg_pixels_tab[0][15] = ff_avg_rv40_qpel16_mc33_mmx;
-        c->avg_pixels_tab[1][15] = ff_avg_rv40_qpel8_mc33_mmx;
+        c->put_pixels_tab[0][15] = put_rv40_qpel16_mc33_mmx;
+        c->put_pixels_tab[1][15] = put_rv40_qpel8_mc33_mmx;
+        c->avg_pixels_tab[0][15] = avg_rv40_qpel16_mc33_mmx;
+        c->avg_pixels_tab[1][15] = avg_rv40_qpel8_mc33_mmx;
 #endif /* HAVE_MMX_INLINE */
 #if ARCH_X86_32
         QPEL_MC_SET(put_, _mmx)

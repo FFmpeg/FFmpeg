@@ -881,23 +881,6 @@ QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, mmxext)
 
 
 #if HAVE_INLINE_ASM
-void ff_put_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_put_pixels8_xy2_mmx(dst, src, stride, 8);
-}
-void ff_put_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_put_pixels16_xy2_mmx(dst, src, stride, 16);
-}
-void ff_avg_rv40_qpel8_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_avg_pixels8_xy2_mmx(dst, src, stride, 8);
-}
-void ff_avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src, ptrdiff_t stride)
-{
-    ff_avg_pixels16_xy2_mmx(dst, src, stride, 16);
-}
-
 typedef void emulated_edge_mc_func(uint8_t *dst, const uint8_t *src,
                                    ptrdiff_t linesize, int block_w, int block_h,
                                    int src_x, int src_y, int w, int h);
