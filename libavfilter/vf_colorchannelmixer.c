@@ -91,27 +91,16 @@ static int config_output(AVFilterLink *outlink)
     ColorChannelMixerContext *cm = ctx->priv;
     int i, j, size, *buffer;
 
+    ff_fill_rgba_map(cm->rgba_map, outlink->format);
+
     switch (outlink->format) {
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_BGR48:
     case AV_PIX_FMT_RGBA64:
     case AV_PIX_FMT_BGRA64:
-        if (outlink->format == AV_PIX_FMT_RGB48 ||
-            outlink->format == AV_PIX_FMT_RGBA64) {
-            cm->rgba_map[R] = 0;
-            cm->rgba_map[G] = 1;
-            cm->rgba_map[B] = 2;
-            cm->rgba_map[A] = 3;
-        } else {
-            cm->rgba_map[R] = 2;
-            cm->rgba_map[G] = 1;
-            cm->rgba_map[B] = 0;
-            cm->rgba_map[A] = 3;
-        }
         size = 65536;
         break;
     default:
-        ff_fill_rgba_map(cm->rgba_map, outlink->format);
         size = 256;
     }
 
