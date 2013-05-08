@@ -300,7 +300,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 FF_CEIL_RSHIFT(in->width,  (!!c * hqdn3d->hsub)),
                 FF_CEIL_RSHIFT(in->height, (!!c * hqdn3d->vsub)),
                 in->linesize[c], out->linesize[c],
-                hqdn3d->coefs[c?2:0], hqdn3d->coefs[c?3:1]);
+                hqdn3d->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
+                hqdn3d->coefs[c ? CHROMA_TMP     : LUMA_TMP]);
     }
 
     if (!direct)
