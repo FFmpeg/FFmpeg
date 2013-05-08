@@ -28,7 +28,6 @@
 #include "libavcodec/dsputil.h"
 #include "libavutil/x86/asm.h"
 
-extern const uint64_t ff_bone;
 extern const uint64_t ff_wtwo;
 
 extern const xmm_reg  ff_pw_3;
@@ -49,7 +48,6 @@ extern const uint64_t ff_pw_255;
 
 extern const xmm_reg  ff_pb_1;
 extern const xmm_reg  ff_pb_3;
-extern const uint64_t ff_pb_3F;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
 
@@ -81,17 +79,10 @@ extern const double ff_pd_2[2];
         "paddb   %%"#regd", %%"#regd"   \n\t" ::)
 
 #ifndef PIC
-#define MOVQ_BONE(regd) __asm__ volatile ("movq %0, %%"#regd" \n\t" :: "m"(ff_bone))
 #define MOVQ_WTWO(regd) __asm__ volatile ("movq %0, %%"#regd" \n\t" :: "m"(ff_wtwo))
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
-#define MOVQ_BONE(regd)                                 \
-    __asm__ volatile (                                  \
-        "pcmpeqd  %%"#regd", %%"#regd"  \n\t"           \
-        "psrlw          $15, %%"#regd"  \n\t"           \
-        "packuswb %%"#regd", %%"#regd"  \n\t" ::)
-
 #define MOVQ_WTWO(regd)                                 \
     __asm__ volatile (                                  \
         "pcmpeqd %%"#regd", %%"#regd"   \n\t"           \
