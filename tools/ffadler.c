@@ -36,15 +36,15 @@
 
 #define SIZE 65536
 
-int main(int argc, char **argv)
+static int check(char *file)
 {
     uint8_t buffer[SIZE];
     uint32_t checksum = 1;
     int fd;
     int ret = 0;
 
-    if (argc > 1) fd = open(argv[1], O_RDONLY);
-    else          fd = 0;
+    if (file) fd = open(file, O_RDONLY);
+    else      fd = 0;
     if (fd == -1) {
         printf("A32=OPEN-FAILED-%d\n", errno);
         ret = 1;
@@ -65,9 +65,23 @@ int main(int argc, char **argv)
 
     printf("A32=0x%08x", checksum);
 end:
-    if (argc > 1)
-        printf(" *%s", argv[1]);
+    if (file)
+        printf(" *%s", file);
     printf("\n");
+
+    return ret;
+}
+
+int main(int argc, char **argv)
+{
+    int i;
+    int ret = 0;
+
+    for (i = 1; i<argc; i++)
+        ret |= check(argv[i]);
+
+    if (argc == 1)
+        ret |= check(NULL);
 
     return ret;
 }
