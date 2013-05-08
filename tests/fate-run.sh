@@ -146,18 +146,16 @@ enc_dec(){
     tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
 }
 
-regtest(){
-    t="${test#$2-}"
-    ref=${base}/ref/$2/$t
-    ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$samples"
-}
-
 lavffatetest(){
-    regtest lavf lavf-fate tests/vsynth1
+    t="${test#lavf-fate-}"
+    ref=${base}/ref/lavf-fate/$t
+    ${base}/lavf-regression.sh $t lavf-fate tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$samples"
 }
 
 lavftest(){
-    regtest lavf lavf tests/vsynth1
+    t="${test#lavf-}"
+    ref=${base}/ref/lavf/$t
+    ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$samples"
 }
 
 video_filter(){
