@@ -2178,8 +2178,9 @@ swscale_deps="avutil"
 
 # programs
 ffmpeg_deps="avcodec avfilter avformat swscale swresample"
-ffmpeg_select="format_filter aformat_filter
-               setpts_filter null_filter anull_filter"
+ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
+               null_filter
+               setpts_filter trim_filter"
 ffplay_deps="avcodec avformat swscale swresample sdl"
 ffplay_select="rdft crop_filter"
 ffprobe_deps="avcodec avformat"
