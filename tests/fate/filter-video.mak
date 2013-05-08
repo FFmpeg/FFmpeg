@@ -83,7 +83,7 @@ FATE_TRIM += fate-filter-trim-mixed
 fate-filter-trim-mixed: CMD = framecrc -i $(SRC) -vf trim=start=0.2:end=0.4:start_frame=1:end_frame=3
 
 FATE_TRIM += fate-filter-trim-time
-fate-filter-trim-time: CMD = framecrc -i $(SRC) -vf trim=0:0.075
+fate-filter-trim-time: CMD = framecrc -i $(SRC) -vf trim=0:0.09
 
 FATE_FILTER_VSYNTH-$(CONFIG_TRIM_FILTER) += $(FATE_TRIM)
 
