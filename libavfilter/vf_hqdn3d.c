@@ -274,13 +274,14 @@ static int config_input(AVFilterLink *inlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    HQDN3DContext *hqdn3d = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx  = inlink->dst;
+    HQDN3DContext *hqdn3d = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     AVFrame *out;
     int direct, c;
 
-    if (av_frame_is_writable(in)) {
+    if (av_frame_is_writable(in) && !ctx->is_disabled) {
         direct = 1;
         out = in;
     } else {
@@ -302,6 +303,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 in->linesize[c], out->linesize[c],
                 hqdn3d->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
                 hqdn3d->coefs[c ? CHROMA_TMP     : LUMA_TMP]);
+    }
+
+    if (ctx->is_disabled) {
+        av_frame_free(&out);
+        return ff_filter_frame(outlink, in);
     }
 
     if (!direct)
@@ -358,4 +364,5 @@ AVFilter avfilter_vf_hqdn3d = {
 
     .inputs    = avfilter_vf_hqdn3d_inputs,
     .outputs   = avfilter_vf_hqdn3d_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
