@@ -570,6 +570,7 @@ struct AVFilterContext {
     char *enable_str;               ///< enable expression string
     void *enable;                   ///< parsed expression (AVExpr*)
     double *var_values;             ///< variable values for the enable expression
+    int is_disabled;                ///< the enabled state from the last expression evaluation
 };
 
 /**

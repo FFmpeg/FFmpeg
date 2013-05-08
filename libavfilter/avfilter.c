@@ -993,7 +993,9 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         dstctx->var_values[VAR_N] = link->frame_count;
         dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
         dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
-        if (!av_expr_eval(dstctx->enable, dstctx->var_values, NULL))
+
+        dstctx->is_disabled = !av_expr_eval(dstctx->enable, dstctx->var_values, NULL);
+        if (dstctx->is_disabled)
             filter_frame = dst->passthrough_filter_frame ? dst->passthrough_filter_frame
                                                          : default_filter_frame;
     }
