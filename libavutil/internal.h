@@ -112,6 +112,11 @@
 
 #include "libm.h"
 
+#if defined(_MSC_VER) && !CONFIG_SHARED
+#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")
+#pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_snprintf")
+#endif
+
 /**
  * Return NULL if CONFIG_SMALL is true, otherwise the argument
  * without modification. Used to disable the definition of strings
