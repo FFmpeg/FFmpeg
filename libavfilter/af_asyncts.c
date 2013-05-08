@@ -237,18 +237,23 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *buf)
         }
 
         if (s->first_frame && delta > 0) {
+            int planar = av_sample_fmt_is_planar(buf_out->format);
+            int planes = planar ?  nb_channels : 1;
+            int block_size = av_get_bytes_per_sample(buf_out->format) *
+                             (planar ? 1 : nb_channels);
+
             int ch;
 
             av_samples_set_silence(buf_out->extended_data, 0, delta,
                                    nb_channels, buf->format);
 
-            for (ch = 0; ch < nb_channels; ch++)
-                buf_out->extended_data[ch] += delta;
+            for (ch = 0; ch < planes; ch++)
+                buf_out->extended_data[ch] += delta * block_size;
 
             avresample_read(s->avr, buf_out->extended_data, out_size);
 
-            for (ch = 0; ch < nb_channels; ch++)
-                buf_out->extended_data[ch] -= delta;
+            for (ch = 0; ch < planes; ch++)
+                buf_out->extended_data[ch] -= delta * block_size;
         } else {
             avresample_read(s->avr, buf_out->extended_data, out_size);
 
