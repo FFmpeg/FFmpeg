@@ -260,5 +260,5 @@ AVFilter avfilter_vf_gradfun = {
     .query_formats = query_formats,
     .inputs        = avfilter_vf_gradfun_inputs,
     .outputs       = avfilter_vf_gradfun_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

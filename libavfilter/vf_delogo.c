@@ -271,5 +271,5 @@ AVFilter avfilter_vf_delogo = {
 
     .inputs    = avfilter_vf_delogo_inputs,
     .outputs   = avfilter_vf_delogo_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

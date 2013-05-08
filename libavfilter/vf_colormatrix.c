@@ -385,5 +385,5 @@ AVFilter avfilter_vf_colormatrix = {
     .inputs        = colormatrix_inputs,
     .outputs       = colormatrix_outputs,
     .priv_class    = &colormatrix_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

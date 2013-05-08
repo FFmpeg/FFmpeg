@@ -316,5 +316,5 @@ AVFilter avfilter_vf_unsharp = {
 
     .inputs    = avfilter_vf_unsharp_inputs,
     .outputs   = avfilter_vf_unsharp_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

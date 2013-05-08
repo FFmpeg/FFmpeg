@@ -209,5 +209,5 @@ AVFilter avfilter_vf_colorbalance = {
     .query_formats = query_formats,
     .inputs        = colorbalance_inputs,
     .outputs       = colorbalance_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -296,5 +296,5 @@ AVFilter avfilter_af_volume = {
     .init           = init,
     .inputs         = avfilter_af_volume_inputs,
     .outputs        = avfilter_af_volume_outputs,
-    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

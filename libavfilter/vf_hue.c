@@ -373,5 +373,5 @@ AVFilter avfilter_vf_hue = {
     .inputs          = hue_inputs,
     .outputs         = hue_outputs,
     .priv_class      = &hue_class,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
