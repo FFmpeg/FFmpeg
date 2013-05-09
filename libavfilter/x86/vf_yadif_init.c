@@ -23,7 +23,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/x86/dsputil_mmx.h"
 #include "libavfilter/yadif.h"
 
 void ff_yadif_filter_line_mmxext(void *dst, void *prev, void *cur,
