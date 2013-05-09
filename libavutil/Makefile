@@ -81,6 +81,7 @@ OBJS = adler32.o                                                        \
        file.o                                                           \
        float_dsp.o                                                      \
        frame.o                                                          \
+       hash.o                                                           \
        hmac.o                                                           \
        imgutils.o                                                       \
        intfloat_readwrite.o                                             \
