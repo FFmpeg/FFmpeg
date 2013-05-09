@@ -1323,6 +1323,7 @@ yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
     int i;
     int step = (target == AV_PIX_FMT_RGB24 || target == AV_PIX_FMT_BGR24) ? 3 : 4;
     int err[4] = {0};
+    int A = 0; //init to silence warning
 
     if(   target == AV_PIX_FMT_BGR4_BYTE || target == AV_PIX_FMT_RGB4_BYTE
        || target == AV_PIX_FMT_BGR8      || target == AV_PIX_FMT_RGB8)
@@ -1333,7 +1334,6 @@ yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
         int Y = 1<<9;
         int U = (1<<9)-(128 << 19);
         int V = (1<<9)-(128 << 19);
-        int A;
 
         for (j = 0; j < lumFilterSize; j++) {
             Y += lumSrc[j][i] * lumFilter[j];
@@ -1379,6 +1379,7 @@ yuv2rgb_full_2_c_template(SwsContext *c, const int16_t *buf[2],
     int i;
     int step = (target == AV_PIX_FMT_RGB24 || target == AV_PIX_FMT_BGR24) ? 3 : 4;
     int err[4] = {0};
+    int A = 0; // init to silcene warning
 
     if(   target == AV_PIX_FMT_BGR4_BYTE || target == AV_PIX_FMT_RGB4_BYTE
        || target == AV_PIX_FMT_BGR8      || target == AV_PIX_FMT_RGB8)
@@ -1388,7 +1389,6 @@ yuv2rgb_full_2_c_template(SwsContext *c, const int16_t *buf[2],
         int Y = ( buf0[i] * yalpha1  +  buf1[i] * yalpha             ) >> 10; //FIXME rounding
         int U = (ubuf0[i] * uvalpha1 + ubuf1[i] * uvalpha-(128 << 19)) >> 10;
         int V = (vbuf0[i] * uvalpha1 + vbuf1[i] * uvalpha-(128 << 19)) >> 10;
-        int A;
 
         if (hasAlpha) {
             A = (abuf0[i] * yalpha1 + abuf1[i] * yalpha + (1<<18)) >> 19;
@@ -1421,11 +1421,11 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
         step = 1;
 
     if (uvalpha < 2048) {
+        int A = 0; //init to silence warning
         for (i = 0; i < dstW; i++) {
             int Y = buf0[i] << 2;
             int U = (ubuf0[i] - (128<<7)) << 2;
             int V = (vbuf0[i] - (128<<7)) << 2;
-            int A;
 
             if (hasAlpha) {
                 A = (abuf0[i] + 64) >> 7;
@@ -1438,11 +1438,11 @@ yuv2rgb_full_1_c_template(SwsContext *c, const int16_t *buf0,
         }
     } else {
         const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
+        int A = 0; //init to silence warning
         for (i = 0; i < dstW; i++) {
             int Y = buf0[i] << 2;
             int U = (ubuf0[i] + ubuf1[i] - (128<<8)) << 1;
             int V = (vbuf0[i] + vbuf1[i] - (128<<8)) << 1;
-            int A;
 
             if (hasAlpha) {
                 A = (abuf0[i] + 64) >> 7;
