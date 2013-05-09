@@ -344,7 +344,7 @@ static int cache_close(URLContext *h)
 }
 
 static const AVOption options[] = {
-  {"cache_clk", "callback when cache updated", offsetof(CacheContext, callback), AV_OPT_TYPE_INT, {0}, 0, INT_MAX},
+  {"cache_clk", "callback when cache updated", offsetof(CacheContext, callback), AV_OPT_TYPE_INT64, {0}, LONG_MIN, LONG_MAX},
   {NULL}
 };
 
