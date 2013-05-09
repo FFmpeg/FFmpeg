@@ -468,27 +468,14 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
         for (i = 0; i < tmp; i++) {
             int v = 1 << (filter_quant - 1);
 
-            if (!(filter_order & 15)) {
+            if (filter_order & -16)
                 v += s->dsp.scalarproduct_int16(&s->residues[i], s->filter,
-                                                filter_order);
-            } else if (filter_order & 4) {
-                for (j = 0; j < filter_order; j += 4) {
-                    v += s->residues[i + j + 3] * s->filter[j + 3] +
-                         s->residues[i + j + 2] * s->filter[j + 2] +
-                         s->residues[i + j + 1] * s->filter[j + 1] +
-                         s->residues[i + j    ] * s->filter[j    ];
-                }
-            } else {
-                for (j = 0; j < filter_order; j += 8) {
-                    v += s->residues[i + j + 7] * s->filter[j + 7] +
-                         s->residues[i + j + 6] * s->filter[j + 6] +
-                         s->residues[i + j + 5] * s->filter[j + 5] +
-                         s->residues[i + j + 4] * s->filter[j + 4] +
-                         s->residues[i + j + 3] * s->filter[j + 3] +
-                         s->residues[i + j + 2] * s->filter[j + 2] +
-                         s->residues[i + j + 1] * s->filter[j + 1] +
-                         s->residues[i + j    ] * s->filter[j    ];
-                }
+                                                filter_order & -16);
+            for (j = filter_order & -16; j < filter_order; j += 4) {
+                v += s->residues[i + j + 3] * s->filter[j + 3] +
+                     s->residues[i + j + 2] * s->filter[j + 2] +
+                     s->residues[i + j + 1] * s->filter[j + 1] +
+                     s->residues[i + j    ] * s->filter[j    ];
             }
             v = (av_clip(v >> filter_quant, -8192, 8191) << dshift) - *decoded;
             *decoded++ = v;
