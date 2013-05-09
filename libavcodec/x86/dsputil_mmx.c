@@ -475,7 +475,7 @@ static void ff_put_pixels16_mmxext(uint8_t *block, const uint8_t *pixels,
     ff_put_pixels8_mmxext(block + 8, pixels + 8, line_size, h);
 }
 
-#define QPEL_OP(OPNAME, ROUNDER, RND, MMX)                              \
+#define QPEL_OP(OPNAME, RND, MMX)                                       \
 static void OPNAME ## qpel8_mc00_ ## MMX (uint8_t *dst, uint8_t *src,   \
                                           ptrdiff_t stride)             \
 {                                                                       \
@@ -856,9 +856,9 @@ static void OPNAME ## qpel16_mc22_ ## MMX(uint8_t *dst, uint8_t *src,   \
                                                     stride, 16);        \
 }
 
-QPEL_OP(put_,          ff_pw_16, _,        mmxext)
-QPEL_OP(avg_,          ff_pw_16, _,        mmxext)
-QPEL_OP(put_no_rnd_,   ff_pw_15, _no_rnd_, mmxext)
+QPEL_OP(put_,        _,        mmxext)
+QPEL_OP(avg_,        _,        mmxext)
+QPEL_OP(put_no_rnd_, _no_rnd_, mmxext)
 #endif /* HAVE_YASM */
 
 
