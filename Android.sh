@@ -38,20 +38,14 @@ FFMPEG_FLAGS="--target-os=linux \
   --disable-ffprobe \
   --disable-ffserver \
   --disable-avdevice \
-  --disable-avfilter \
-  --disable-encoders  \
+  --disable-postproc \
+  --disable-encoders \
   --disable-muxers \
   --disable-filters \
   --disable-devices \
-  --disable-everything \
   --enable-openssl \
-  --enable-protocols  \
-  --enable-parsers \
-  --enable-demuxers \
-  --enable-decoders \
-  --enable-bsfs \
-  --enable-network \
-  --enable-swscale  \
+  --enable-filter=atempo \
+  --enable-filter=volume \
   --disable-demuxer=sbg \
   --disable-demuxer=dts \
   --disable-parser=dca \
@@ -100,12 +94,12 @@ for version in neon armv7; do
   [ $PIPESTATUS == 0 ] || exit 1
 
   make clean
+  find . -name "*.o" -type f -delete
   make -j7 || exit 1
-  make install || exit 1
 
   rm libavcodec/inverse.o
-  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS \
-    $SSL_OBJS libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libswresample/*.o libswscale/*.o
+  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswscale/*.o
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so
