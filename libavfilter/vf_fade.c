@@ -233,8 +233,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 /* chroma planes */
                 for (plane = 1; plane < 3; plane++) {
                     for (i = 0; i < frame->height; i++) {
+                        const int width = FF_CEIL_RSHIFT(inlink->w, fade->hsub);
                         p = frame->data[plane] + (i >> fade->vsub) * frame->linesize[plane];
-                        for (j = 0; j < inlink->w >> fade->hsub; j++) {
+                        for (j = 0; j < width; j++) {
                             /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
                              * representation of 128.5. The .5 is for rounding
                              * purposes. */

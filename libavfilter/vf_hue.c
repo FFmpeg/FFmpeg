@@ -305,7 +305,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     process_chrominance(outpic->data[1], outpic->data[2], outpic->linesize[1],
                         inpic->data[1],  inpic->data[2],  inpic->linesize[1],
-                        inlink->w >> hue->hsub, inlink->h >> hue->vsub,
+                        FF_CEIL_RSHIFT(inlink->w, hue->hsub),
+                        FF_CEIL_RSHIFT(inlink->h, hue->vsub),
                         hue->hue_cos, hue->hue_sin);
 
     if (!direct)

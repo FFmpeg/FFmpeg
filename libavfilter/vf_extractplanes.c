@@ -171,8 +171,8 @@ static int config_output(AVFilterLink *outlink)
     const int output = outlink->srcpad - ctx->output_pads;
 
     if (e->map[output] == 1 || e->map[output] == 2) {
-        outlink->h = inlink->h >> desc->log2_chroma_h;
-        outlink->w = inlink->w >> desc->log2_chroma_w;
+        outlink->h = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+        outlink->w = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     }
 
     return 0;

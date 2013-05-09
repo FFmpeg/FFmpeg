@@ -228,9 +228,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         apply_delogo(out->data[plane], out->linesize[plane],
                      in ->data[plane], in ->linesize[plane],
-                     inlink->w>>hsub, inlink->h>>vsub,
+                     FF_CEIL_RSHIFT(inlink->w, hsub),
+                     FF_CEIL_RSHIFT(inlink->h, vsub),
                      delogo->x>>hsub, delogo->y>>vsub,
-                     delogo->w>>hsub, delogo->h>>vsub,
+                     FF_CEIL_RSHIFT(delogo->w, hsub),
+                     FF_CEIL_RSHIFT(delogo->h, vsub),
                      delogo->band>>FFMIN(hsub, vsub),
                      delogo->show, direct);
     }

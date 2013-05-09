@@ -297,8 +297,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (c = 0; c < 3; c++) {
         denoise(hqdn3d, in->data[c], out->data[c],
                 hqdn3d->line, &hqdn3d->frame_prev[c],
-                in->width  >> (!!c * hqdn3d->hsub),
-                in->height >> (!!c * hqdn3d->vsub),
+                FF_CEIL_RSHIFT(in->width,  (!!c * hqdn3d->hsub)),
+                FF_CEIL_RSHIFT(in->height, (!!c * hqdn3d->vsub)),
                 in->linesize[c], out->linesize[c],
                 hqdn3d->coefs[c?2:0], hqdn3d->coefs[c?3:1]);
     }

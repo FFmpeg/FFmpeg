@@ -122,7 +122,8 @@ static int decimate_frame(AVFilterContext *ctx,
         int hsub = plane == 1 || plane == 2 ? decimate->hsub : 0;
         if (diff_planes(ctx,
                         cur->data[plane], ref->data[plane], ref->linesize[plane],
-                        ref->width>>hsub, ref->height>>vsub))
+                        FF_CEIL_RSHIFT(ref->width,  hsub),
+                        FF_CEIL_RSHIFT(ref->height, vsub)))
             return 0;
     }
 

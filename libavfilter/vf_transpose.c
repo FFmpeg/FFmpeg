@@ -163,8 +163,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int vsub = plane == 1 || plane == 2 ? trans->vsub : 0;
         int pixstep = trans->pixsteps[plane];
         int inh  = in->height  >> vsub;
-        int outw = out->width  >> hsub;
-        int outh = out->height >> vsub;
+        int outw = FF_CEIL_RSHIFT(out->width,  hsub);
+        int outh = FF_CEIL_RSHIFT(out->height, vsub);
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;
