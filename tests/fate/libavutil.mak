@@ -54,6 +54,10 @@ FATE_LIBAVUTIL += fate-md5
 fate-md5: libavutil/md5-test$(EXESUF)
 fate-md5: CMD = run libavutil/md5-test
 
+FATE_LIBAVUTIL += fate-murmur3
+fate-murmur3: libavutil/murmur3-test$(EXESUF)
+fate-murmur3: CMD = run libavutil/murmur3-test
+
 FATE_LIBAVUTIL += fate-parseutils
 fate-parseutils: libavutil/parseutils-test$(EXESUF)
 fate-parseutils: CMD = run libavutil/parseutils-test

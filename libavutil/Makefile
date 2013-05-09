@@ -34,6 +34,7 @@ HEADERS = adler32.h                                                     \
           mathematics.h                                                 \
           md5.h                                                         \
           mem.h                                                         \
+          murmur3.h                                                     \
           dict.h                                                        \
           old_pix_fmts.h                                                \
           opt.h                                                         \
@@ -91,6 +92,7 @@ OBJS = adler32.o                                                        \
        mathematics.o                                                    \
        md5.o                                                            \
        mem.o                                                            \
+       murmur3.o                                                        \
        dict.o                                                           \
        opt.o                                                            \
        parseutils.o                                                     \
@@ -137,6 +139,7 @@ TESTPROGS = adler32                                                     \
             lfg                                                         \
             lls                                                         \
             md5                                                         \
+            murmur3                                                     \
             opt                                                         \
             pca                                                         \
             parseutils                                                  \
