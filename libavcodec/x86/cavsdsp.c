@@ -28,6 +28,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/cavsdsp.h"
+#include "constants.h"
 #include "dsputil_mmx.h"
 #include "config.h"
 

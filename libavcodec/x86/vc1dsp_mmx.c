@@ -28,8 +28,9 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "dsputil_mmx.h"
 #include "libavcodec/vc1dsp.h"
+#include "constants.h"
+#include "dsputil_mmx.h"
 #include "vc1dsp.h"
 
 #if HAVE_INLINE_ASM
