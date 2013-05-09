@@ -46,7 +46,7 @@ static int check(char *file)
     if (file) fd = open(file, O_RDONLY);
     else      fd = 0;
     if (fd == -1) {
-        printf("A32=OPEN-FAILED-%d\n", errno);
+        printf("A32=OPEN-FAILED-%d", errno);
         ret = 1;
         goto end;
     }
@@ -54,7 +54,7 @@ static int check(char *file)
     for (;;) {
         ssize_t size = read(fd, buffer, SIZE);
         if (size < 0) {
-            printf("A32=0x%08x+READ-FAILED-%d\n", checksum, errno);
+            printf("A32=0x%08x+READ-FAILED-%d", checksum, errno);
             ret = 2;
             goto end;
         } else if(!size)
