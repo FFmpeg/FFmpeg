@@ -1062,7 +1062,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
         dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
-        dstctx->is_disabled = !av_expr_eval(dstctx->enable, dstctx->var_values, NULL);
+        dstctx->is_disabled = fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) < 0.5;
         if (dstctx->is_disabled &&
             (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
             filter_frame = default_filter_frame;
