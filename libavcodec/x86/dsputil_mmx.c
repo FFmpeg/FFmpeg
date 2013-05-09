@@ -51,9 +51,6 @@ DECLARE_ALIGNED(16, const xmm_reg,  ff_pw_1019) = { 0x03FB03FB03FB03FBULL, 0x03F
 
 DECLARE_ALIGNED(8,  const uint64_t, ff_pb_FC)   =   0xFCFCFCFCFCFCFCFCULL;
 
-DECLARE_ALIGNED(16, const double, ff_pd_1)[2] = { 1.0, 1.0 };
-DECLARE_ALIGNED(16, const double, ff_pd_2)[2] = { 2.0, 2.0 };
-
 
 void ff_put_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,
                               int dstStride, int src1Stride, int h);

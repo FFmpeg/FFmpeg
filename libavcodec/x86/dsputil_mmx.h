@@ -51,9 +51,6 @@ extern const xmm_reg  ff_pb_3;
 extern const xmm_reg  ff_pb_F8;
 extern const uint64_t ff_pb_FC;
 
-extern const double ff_pd_1[2];
-extern const double ff_pd_2[2];
-
 #define SBUTTERFLY(a,b,t,n,m)\
     "mov" #m " " #a ", " #t "         \n\t" /* abcd */\
     "punpckl" #n " " #b ", " #a "     \n\t" /* aebf */\
