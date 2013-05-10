@@ -205,6 +205,7 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_PICT_TYPE_B]  = AV_PICTURE_TYPE_B;
     select->var_values[VAR_PICT_TYPE_SI] = AV_PICTURE_TYPE_SI;
     select->var_values[VAR_PICT_TYPE_SP] = AV_PICTURE_TYPE_SP;
+    select->var_values[VAR_PICT_TYPE_BI] = AV_PICTURE_TYPE_BI;
 
     select->var_values[VAR_INTERLACE_TYPE_P] = INTERLACE_TYPE_P;
     select->var_values[VAR_INTERLACE_TYPE_T] = INTERLACE_TYPE_T;
