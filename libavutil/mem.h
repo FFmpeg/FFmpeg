@@ -203,7 +203,7 @@ void av_freep(void *ptr);
  * structures, and the element to add must be a pointer to an already
  * allocated structure.
  *
- * The array is reallocated when its sizes reaches powers of 2.
+ * The array is reallocated when its size reaches powers of 2.
  * Therefore, the amortized cost of adding an element is constant.
  *
  * In case of success, the pointer to the array is updated in order to
