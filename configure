@@ -140,10 +140,10 @@ Component options:
   --disable-fft            disable FFT code
 
 Hardware accelerators:
-  --enable-dxva2           enable DXVA2 code
+  --disable-dxva2          disable DXVA2 code [autodetect]
   --enable-vaapi           enable VAAPI code
   --enable-vda             enable VDA code
-  --enable-vdpau           enable VDPAU code
+  --disable-vdpau          disable VDPAU code [autodetect]
 
 Individual component options:
   --disable-everything     disable all components listed below
@@ -184,11 +184,11 @@ Individual component options:
 
 External library support:
   --enable-avisynth        enable reading of AVISynth script files [no]
-  --enable-bzlib           enable bzlib [autodetect]
+  --disable-bzlib          disable bzlib [autodetect]
   --enable-fontconfig      enable fontconfig
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
-  --enable-iconv           enable iconv [autodetect]
+  --disable-iconv          disable iconv [autodetect]
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -235,7 +235,7 @@ External library support:
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing [no]
-  --enable-zlib            enable zlib [autodetect]
+  --disable-zlib           disable zlib [autodetect]
 
 Advanced options (experts only):
   --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]
