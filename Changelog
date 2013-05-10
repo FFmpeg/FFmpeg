@@ -43,6 +43,7 @@ version <next>:
 - ADPCM DTK decoder
 - ADP demuxer
 - RSD demuxer
+- RedSpark demuxer
 
 
 version 1.2:
