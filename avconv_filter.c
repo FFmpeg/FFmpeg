@@ -246,7 +246,7 @@ static int configure_output_video_filter(FilterGraph *fg, OutputFilter *ofilter,
         char args[255];
         AVFilterContext *filter;
 
-        snprintf(args, sizeof(args), "%d:%d:flags=0x%X",
+        snprintf(args, sizeof(args), "%d:%d:0x%X",
                  codec->width,
                  codec->height,
                  (unsigned)ost->sws_flags);
