@@ -1734,31 +1734,6 @@ anullsrc=r=48000:cl=mono
 @end example
 @end itemize
 
-@section abuffer
-Buffer audio frames, and make them available to the filter chain.
-
-This source is not intended to be part of user-supplied graph descriptions but
-for insertion by calling programs through the interface defined in
-@file{libavfilter/buffersrc.h}.
-
-It accepts the following named parameters:
-@table @option
-
-@item time_base
-Timebase which will be used for timestamps of submitted frames. It must be
-either a floating-point number or in @var{numerator}/@var{denominator} form.
-
-@item sample_rate
-Audio sample rate.
-
-@item sample_fmt
-Name of the sample format, as returned by @code{av_get_sample_fmt_name()}.
-
-@item channel_layout
-Channel layout of the audio data, in the form that can be accepted by
-@code{av_get_channel_layout()}.
-@end table
-
 All the parameters need to be explicitly defined.
 
 @section flite
