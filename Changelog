@@ -44,6 +44,7 @@ version <next>:
 - ADP demuxer
 - RSD demuxer
 - RedSpark demuxer
+- ADPCM IMA Radical decoder
 
 
 version 1.2:
