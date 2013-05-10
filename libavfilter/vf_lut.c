@@ -305,13 +305,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         for (plane = 0; plane < 4 && in->data[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? lut->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? lut->hsub : 0;
+            int h = FF_CEIL_RSHIFT(inlink->h, vsub);
+            int w = FF_CEIL_RSHIFT(inlink->w, hsub);
 
             inrow  = in ->data[plane];
             outrow = out->data[plane];
 
-            for (i = 0; i < (in->height + (1<<vsub) - 1)>>vsub; i ++) {
+            for (i = 0; i < h; i++) {
                 const uint8_t *tab = lut->lut[plane];
-                int w = (inlink->w + (1<<hsub) - 1)>>hsub;
                 for (j = 0; j < w; j++)
                     outrow[j] = tab[inrow[j]];
                 inrow  += in ->linesize[plane];
