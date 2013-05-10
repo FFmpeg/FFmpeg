@@ -478,7 +478,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int x, y, direct = 0;
     AVFilterContext *ctx = inlink->dst;
     CurvesContext *curves = ctx->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     uint8_t *dst;
     const uint8_t *src;
