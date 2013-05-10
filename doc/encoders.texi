@@ -777,6 +777,19 @@ Override the x264 configuration using a :-separated list of key=value parameters
 Encoding avpresets for common usages are provided so they can be used with the
 general presets system (e.g. passing the @code{-pre} option).
 
+@section png
+
+PNG image encoder.
+
+@subsection Private options
+
+@table @option
+@item dpi @var{integer}
+Set physical density of pixels, in dots per inch, unset by default
+@item dpm @var{integer}
+Set physical density of pixels, in dots per meter, unset by default
+@end table
+
 @section ProRes
 
 Apple ProRes encoder.
