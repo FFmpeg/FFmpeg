@@ -14,7 +14,7 @@ export CC="ccache arm-linux-androideabi-gcc"
 export LD=arm-linux-androideabi-ld
 export AR=arm-linux-androideabi-ar
 
-CFLAGS="-O3 -Wall -mthumb -pipe -fpic -fasm \
+CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
   -finline-limit=300 -ffast-math \
   -fstrict-aliasing -Werror=strict-aliasing \
   -fmodulo-sched -fmodulo-sched-allow-regmoves \
@@ -44,8 +44,11 @@ FFMPEG_FLAGS="--target-os=linux \
   --disable-filters \
   --disable-devices \
   --enable-openssl \
+  --enable-filter=abuffersink \
   --enable-filter=atempo \
   --enable-filter=volume \
+  --enable-filter=aresample \
+  --enable-filter=aconvert \
   --disable-demuxer=sbg \
   --disable-demuxer=dts \
   --disable-parser=dca \
