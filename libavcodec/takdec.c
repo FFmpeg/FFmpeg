@@ -372,7 +372,7 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
 {
     GetBitContext *gb = &s->gb;
     int x, y, i, j, ret = 0;
-    int dshift, size, filter_quant, filter_order;
+    int dshift, size, filter_quant, filter_order, filter_order16;
     int tfilter[MAX_PREDICTORS];
 
     if (!get_bits1(gb))
@@ -445,6 +445,9 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
         tfilter[i] = s->predictors[i] << 6;
     }
 
+    filter_order16 = FFALIGN(filter_order, 16);
+    AV_ZERO128(s->filter + filter_order16 - 16);
+    AV_ZERO128(s->filter + filter_order16 -  8);
     x = 1 << (32 - (15 - filter_quant));
     y = 1 << ((15 - filter_quant) - 1);
     for (i = 0, j = filter_order - 1; i < filter_order / 2; i++, j--) {
@@ -467,15 +470,8 @@ static int decode_subframe(TAKDecContext *s, int32_t *decoded,
         for (i = 0; i < tmp; i++) {
             int v = 1 << (filter_quant - 1);
 
-            if (filter_order & -16)
-                v += s->adsp.scalarproduct_int16(&s->residues[i], s->filter,
-                                                 filter_order & -16);
-            for (j = filter_order & -16; j < filter_order; j += 4) {
-                v += s->residues[i + j + 3] * s->filter[j + 3] +
-                     s->residues[i + j + 2] * s->filter[j + 2] +
-                     s->residues[i + j + 1] * s->filter[j + 1] +
-                     s->residues[i + j    ] * s->filter[j    ];
-            }
+            v += s->adsp.scalarproduct_int16(&s->residues[i], s->filter,
+                                             filter_order16);
             v = (av_clip_intp2(v >> filter_quant, 13) << dshift) - *decoded;
             *decoded++ = v;
             s->residues[filter_order + i] = v >> dshift;
@@ -596,6 +592,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
         dval1        = get_bits1(gb);
         dval2        = get_bits1(gb);
 
+        AV_ZERO128(s->filter + 8);
         for (i = 0; i < filter_order; i++) {
             if (!(i & 3))
                 code_size = 14 - get_bits(gb, 3);
@@ -638,20 +635,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
             for (i = 0; i < tmp; i++) {
                 int v = 1 << 9;
 
-                if (filter_order == 16) {
-                    v += s->adsp.scalarproduct_int16(&s->residues[i], s->filter,
-                                                     filter_order);
-                } else {
-                    v += s->residues[i + 7] * s->filter[7] +
-                         s->residues[i + 6] * s->filter[6] +
-                         s->residues[i + 5] * s->filter[5] +
-                         s->residues[i + 4] * s->filter[4] +
-                         s->residues[i + 3] * s->filter[3] +
-                         s->residues[i + 2] * s->filter[2] +
-                         s->residues[i + 1] * s->filter[1] +
-                         s->residues[i    ] * s->filter[0];
-                }
-
+                v += s->adsp.scalarproduct_int16(&s->residues[i], s->filter, 16);
                 v = (av_clip_intp2(v >> 10, 13) << dshift) - *p1;
                 *p1++ = v;
             }
