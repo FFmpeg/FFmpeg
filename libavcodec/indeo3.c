@@ -267,9 +267,7 @@ static int copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
             w -= 2;
             src += 8;
             dst += 8;
-        }
-
-        if (w >= 1) {
+        } else if (w >= 1) {
             ctx->hdsp.put_pixels_tab[2][0](dst, src, plane->pitch, h);
             w--;
             src += 4;
