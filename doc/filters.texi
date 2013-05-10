@@ -347,282 +347,6 @@ aconvert=u8:auto
 @end example
 @end itemize
 
-@section allpass
-
-Apply a two-pole all-pass filter with central frequency (in Hz)
-@var{frequency}, and filter-width @var{width}.
-An all-pass filter changes the audio's frequency to phase relationship
-without changing its frequency to amplitude relationship.
-
-The filter accepts the following options:
-
-@table @option
-@item frequency, f
-Set frequency in Hz.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Specify the band-width of a filter in width_type units.
-@end table
-
-@section highpass
-
-Apply a high-pass filter with 3dB point frequency.
-The filter can be either single-pole, or double-pole (the default).
-The filter roll off at 6dB per pole per octave (20dB per pole per decade).
-
-The filter accepts the following options:
-
-@table @option
-@item frequency, f
-Set frequency in Hz. Default is 3000.
-
-@item poles, p
-Set number of poles. Default is 2.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Specify the band-width of a filter in width_type units.
-Applies only to double-pole filter.
-The default is 0.707q and gives a Butterworth response.
-@end table
-
-@section lowpass
-
-Apply a low-pass filter with 3dB point frequency.
-The filter can be either single-pole or double-pole (the default).
-The filter roll off at 6dB per pole per octave (20dB per pole per decade).
-
-The filter accepts the following options:
-
-@table @option
-@item frequency, f
-Set frequency in Hz. Default is 500.
-
-@item poles, p
-Set number of poles. Default is 2.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Specify the band-width of a filter in width_type units.
-Applies only to double-pole filter.
-The default is 0.707q and gives a Butterworth response.
-@end table
-
-@section bass
-
-Boost or cut the bass (lower) frequencies of the audio using a two-pole
-shelving filter with a response similar to that of a standard
-hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
-
-The filter accepts the following options:
-
-@table @option
-@item gain, g
-Give the gain at 0 Hz. Its useful range is about -20
-(for a large cut) to +20 (for a large boost).
-Beware of clipping when using a positive gain.
-
-@item frequency, f
-Set the filter's central frequency and so can be used
-to extend or reduce the frequency range to be boosted or cut.
-The default value is @code{100} Hz.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Determine how steep is the filter's shelf transition.
-@end table
-
-@section treble
-
-Boost or cut treble (upper) frequencies of the audio using a two-pole
-shelving filter with a response similar to that of a standard
-hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
-
-The filter accepts the following options:
-
-@table @option
-@item gain, g
-Give the gain at whichever is the lower of ~22 kHz and the
-Nyquist frequency. Its useful range is about -20 (for a large cut)
-to +20 (for a large boost). Beware of clipping when using a positive gain.
-
-@item frequency, f
-Set the filter's central frequency and so can be used
-to extend or reduce the frequency range to be boosted or cut.
-The default value is @code{3000} Hz.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Determine how steep is the filter's shelf transition.
-@end table
-
-@section bandpass
-
-Apply a two-pole Butterworth band-pass filter with central
-frequency @var{frequency}, and (3dB-point) band-width width.
-The @var{csg} option selects a constant skirt gain (peak gain = Q)
-instead of the default: constant 0dB peak gain.
-The filter roll off at 6dB per octave (20dB per decade).
-
-The filter accepts the following options:
-
-@table @option
-@item frequency, f
-Set the filter's central frequency. Default is @code{3000}.
-
-@item csg
-Constant skirt gain if set to 1. Defaults to 0.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Specify the band-width of a filter in width_type units.
-@end table
-
-@section bandreject
-
-Apply a two-pole Butterworth band-reject filter with central
-frequency @var{frequency}, and (3dB-point) band-width @var{width}.
-The filter roll off at 6dB per octave (20dB per decade).
-
-The filter accepts the following options:
-
-@table @option
-@item frequency, f
-Set the filter's central frequency. Default is @code{3000}.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Specify the band-width of a filter in width_type units.
-@end table
-
-@section biquad
-
-Apply a biquad IIR filter with the given coefficients.
-Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
-are the numerator and denominator coefficients respectively.
-
-@section equalizer
-
-Apply a two-pole peaking equalisation (EQ) filter. With this
-filter, the signal-level at and around a selected frequency can
-be increased or decreased, whilst (unlike bandpass and bandreject
-filters) that at all other frequencies is unchanged.
-
-In order to produce complex equalisation curves, this filter can
-be given several times, each with a different central frequency.
-
-The filter accepts the following options:
-
-@table @option
-@item frequency, f
-Set the filter's central frequency in Hz.
-
-@item width_type
-Set method to specify band-width of filter.
-@table @option
-@item h
-Hz
-@item q
-Q-Factor
-@item o
-octave
-@item s
-slope
-@end table
-
-@item width, w
-Specify the band-width of a filter in width_type units.
-
-@item gain, g
-Set the required gain or attenuation in dB.
-Beware of clipping when using a positive gain.
-@end table
-
 @section afade
 
 Apply fade-in/out effect to input audio.
@@ -737,6 +461,36 @@ For example to force the output to either unsigned 8-bit or signed 16-bit stereo
 @example
 aformat=sample_fmts=u8|s16:channel_layouts=stereo
 @end example
+
+@section allpass
+
+Apply a two-pole all-pass filter with central frequency (in Hz)
+@var{frequency}, and filter-width @var{width}.
+An all-pass filter changes the audio's frequency to phase relationship
+without changing its frequency to amplitude relationship.
+
+The filter accepts the following options:
+
+@table @option
+@item frequency, f
+Set frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
 
 @section amerge
 
@@ -1071,6 +825,39 @@ amovie=file.ogg [a] ; amovie=file.mp3 [b] ;
 [a2] [b2] amerge
 @end example
 
+@section asyncts
+
+Synchronize audio data with timestamps by squeezing/stretching it and/or
+dropping samples/adding silence when needed.
+
+This filter is not built by default, please use @ref{aresample} to do squeezing/stretching.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item compensate
+Enable stretching/squeezing the data to make it match the timestamps. Disabled
+by default. When disabled, time gaps are covered with silence.
+
+@item min_delta
+Minimum difference between timestamps and audio data (in seconds) to trigger
+adding/dropping samples. Default value is 0.1. If you get non-perfect sync with
+this filter, try setting this parameter to 0.
+
+@item max_comp
+Maximum compensation in samples per second. Relevant only with compensate=1.
+Default value 500.
+
+@item first_pts
+Assume the first pts should be this value. The time base is 1 / sample rate.
+This allows for padding/trimming at the start of stream. By default, no
+assumption is made about the first frame's expected pts, so no padding or
+trimming is done. For example, this could be set to 0 to pad the beginning with
+silence if an audio stream starts after the video stream or to trim any samples
+with a negative pts due to encoder delay.
+
+@end table
+
 @section atempo
 
 Adjust audio tempo.
@@ -1095,6 +882,236 @@ atempo=1.25
 @end example
 @end itemize
 
+@section atrim
+
+Trim the input so that the output contains one continuous subpart of the input.
+
+This filter accepts the following options:
+@table @option
+@item start
+Timestamp (in seconds) of the start of the kept section. I.e. the audio sample
+with the timestamp @var{start} will be the first sample in the output.
+
+@item end
+Timestamp (in seconds) of the first audio sample that will be dropped. I.e. the
+audio sample immediately preceding the one with the timestamp @var{end} will be
+the last sample in the output.
+
+@item start_pts
+Same as @var{start}, except this option sets the start timestamp in samples
+instead of seconds.
+
+@item end_pts
+Same as @var{end}, except this option sets the end timestamp in samples instead
+of seconds.
+
+@item duration
+Maximum duration of the output in seconds.
+
+@item start_sample
+Number of the first sample that should be passed to output.
+
+@item end_sample
+Number of the first sample that should be dropped.
+@end table
+
+Note that the first two sets of the start/end options and the @option{duration}
+option look at the frame timestamp, while the _sample options simply count the
+samples that pass through the filter. So start/end_pts and start/end_sample will
+give different results when the timestamps are wrong, inexact or do not start at
+zero. Also note that this filter does not modify the timestamps. If you wish
+that the output timestamps start at zero, insert the asetpts filter after the
+atrim filter.
+
+If multiple start or end options are set, this filter tries to be greedy and
+keep all samples that match at least one of the specified constraints. To keep
+only the part that matches all the constraints at once, chain multiple atrim
+filters.
+
+The defaults are such that all the input is kept. So it is possible to set e.g.
+just the end values to keep everything before the specified time.
+
+Examples:
+@itemize
+@item
+drop everything except the second minute of input
+@example
+ffmpeg -i INPUT -af atrim=60:120
+@end example
+
+@item
+keep only the first 1000 samples
+@example
+ffmpeg -i INPUT -af atrim=end_sample=1000
+@end example
+
+@end itemize
+
+@section bandpass
+
+Apply a two-pole Butterworth band-pass filter with central
+frequency @var{frequency}, and (3dB-point) band-width width.
+The @var{csg} option selects a constant skirt gain (peak gain = Q)
+instead of the default: constant 0dB peak gain.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts the following options:
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item csg
+Constant skirt gain if set to 1. Defaults to 0.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section bandreject
+
+Apply a two-pole Butterworth band-reject filter with central
+frequency @var{frequency}, and (3dB-point) band-width @var{width}.
+The filter roll off at 6dB per octave (20dB per decade).
+
+The filter accepts the following options:
+
+@table @option
+@item frequency, f
+Set the filter's central frequency. Default is @code{3000}.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+@end table
+
+@section bass
+
+Boost or cut the bass (lower) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
+
+The filter accepts the following options:
+
+@table @option
+@item gain, g
+Give the gain at 0 Hz. Its useful range is about -20
+(for a large cut) to +20 (for a large boost).
+Beware of clipping when using a positive gain.
+
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{100} Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Determine how steep is the filter's shelf transition.
+@end table
+
+@section biquad
+
+Apply a biquad IIR filter with the given coefficients.
+Where @var{b0}, @var{b1}, @var{b2} and @var{a0}, @var{a1}, @var{a2}
+are the numerator and denominator coefficients respectively.
+
+@section channelmap
+
+Remap input channels to new locations.
+
+This filter accepts the following named parameters:
+@table @option
+@item channel_layout
+Channel layout of the output stream.
+
+@item map
+Map channels from input to output. The argument is a '|'-separated list of
+mappings, each in the @code{@var{in_channel}-@var{out_channel}} or
+@var{in_channel} form. @var{in_channel} can be either the name of the input
+channel (e.g. FL for front left) or its index in the input channel layout.
+@var{out_channel} is the name of the output channel or its index in the output
+channel layout. If @var{out_channel} is not given then it is implicitly an
+index, starting with zero and increasing by one for each mapping.
+@end table
+
+If no mapping is present, the filter will implicitly map input channels to
+output channels preserving index.
+
+For example, assuming a 5.1+downmix input MOV file
+@example
+ffmpeg -i in.mov -filter 'channelmap=map=DL-FL|DR-FR' out.wav
+@end example
+will create an output WAV file tagged as stereo from the downmix channels of
+the input.
+
+To fix a 5.1 WAV improperly encoded in AAC's native channel order
+@example
+ffmpeg -i in.wav -filter 'channelmap=1|2|0|5|3|4:channel_layout=5.1' out.wav
+@end example
+
+@section channelsplit
+
+Split each channel in input audio stream into a separate output stream.
+
+This filter accepts the following named parameters:
+@table @option
+@item channel_layout
+Channel layout of the input stream. Default is "stereo".
+@end table
+
+For example, assuming a stereo input MP3 file
+@example
+ffmpeg -i in.mp3 -filter_complex channelsplit out.mkv
+@end example
+will create an output Matroska file with two audio streams, one containing only
+the left channel and the other the right channel.
+
+To split a 5.1 WAV file into per-channel files
+@example
+ffmpeg -i in.wav -filter_complex
+'channelsplit=channel_layout=5.1[FL][FR][FC][LFE][SL][SR]'
+-map '[FL]' front_left.wav -map '[FR]' front_right.wav -map '[FC]'
+front_center.wav -map '[LFE]' lfe.wav -map '[SL]' side_left.wav -map '[SR]'
+side_right.wav
+@end example
+
 @section earwax
 
 Make audio easier to listen to on headphones.
@@ -1105,6 +1122,149 @@ inside your head (standard for headphones) to outside and in front of
 the listener (standard for speakers).
 
 Ported from SoX.
+
+@section equalizer
+
+Apply a two-pole peaking equalisation (EQ) filter. With this
+filter, the signal-level at and around a selected frequency can
+be increased or decreased, whilst (unlike bandpass and bandreject
+filters) that at all other frequencies is unchanged.
+
+In order to produce complex equalisation curves, this filter can
+be given several times, each with a different central frequency.
+
+The filter accepts the following options:
+
+@table @option
+@item frequency, f
+Set the filter's central frequency in Hz.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+
+@item gain, g
+Set the required gain or attenuation in dB.
+Beware of clipping when using a positive gain.
+@end table
+
+@section highpass
+
+Apply a high-pass filter with 3dB point frequency.
+The filter can be either single-pole, or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts the following options:
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 3000.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
+
+@section join
+
+Join multiple input streams into one multi-channel stream.
+
+The filter accepts the following named parameters:
+@table @option
+
+@item inputs
+Number of input streams. Defaults to 2.
+
+@item channel_layout
+Desired output channel layout. Defaults to stereo.
+
+@item map
+Map channels from inputs to output. The argument is a '|'-separated list of
+mappings, each in the @code{@var{input_idx}.@var{in_channel}-@var{out_channel}}
+form. @var{input_idx} is the 0-based index of the input stream. @var{in_channel}
+can be either the name of the input channel (e.g. FL for front left) or its
+index in the specified input stream. @var{out_channel} is the name of the output
+channel.
+@end table
+
+The filter will attempt to guess the mappings when those are not specified
+explicitly. It does so by first trying to find an unused matching input channel
+and if that fails it picks the first unused input channel.
+
+E.g. to join 3 inputs (with properly set channel layouts)
+@example
+ffmpeg -i INPUT1 -i INPUT2 -i INPUT3 -filter_complex join=inputs=3 OUTPUT
+@end example
+
+To build a 5.1 output from 6 single-channel streams:
+@example
+ffmpeg -i fl -i fr -i fc -i sl -i sr -i lfe -filter_complex
+'join=inputs=6:channel_layout=5.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-SL|4.0-SR|5.0-LFE'
+out
+@end example
+
+@section lowpass
+
+Apply a low-pass filter with 3dB point frequency.
+The filter can be either single-pole or double-pole (the default).
+The filter roll off at 6dB per pole per octave (20dB per pole per decade).
+
+The filter accepts the following options:
+
+@table @option
+@item frequency, f
+Set frequency in Hz. Default is 500.
+
+@item poles, p
+Set number of poles. Default is 2.
+
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
+@end table
+
+@item width, w
+Specify the band-width of a filter in width_type units.
+Applies only to double-pole filter.
+The default is 0.707q and gives a Butterworth response.
+@end table
 
 @section pan
 
@@ -1196,6 +1356,11 @@ front left and right:
 pan="stereo: c0=FR : c1=FR"
 @end example
 
+@section resample
+
+Convert the audio sample format, sample rate and channel layout. This filter is
+not meant to be used directly.
+
 @section silencedetect
 
 Detect silence in an audio stream.
@@ -1234,200 +1399,41 @@ ffmpeg -i silence.mp3 -af silencedetect=noise=0.0001 -f null -
 @end example
 @end itemize
 
-@section asyncts
-Synchronize audio data with timestamps by squeezing/stretching it and/or
-dropping samples/adding silence when needed.
+@section treble
 
-This filter is not built by default, please use @ref{aresample} to do squeezing/stretching.
+Boost or cut treble (upper) frequencies of the audio using a two-pole
+shelving filter with a response similar to that of a standard
+hi-fi's tone-controls. This is also known as shelving equalisation (EQ).
 
-The filter accepts the following named parameters:
+The filter accepts the following options:
+
 @table @option
+@item gain, g
+Give the gain at whichever is the lower of ~22 kHz and the
+Nyquist frequency. Its useful range is about -20 (for a large cut)
+to +20 (for a large boost). Beware of clipping when using a positive gain.
 
-@item compensate
-Enable stretching/squeezing the data to make it match the timestamps. Disabled
-by default. When disabled, time gaps are covered with silence.
+@item frequency, f
+Set the filter's central frequency and so can be used
+to extend or reduce the frequency range to be boosted or cut.
+The default value is @code{3000} Hz.
 
-@item min_delta
-Minimum difference between timestamps and audio data (in seconds) to trigger
-adding/dropping samples. Default value is 0.1. If you get non-perfect sync with
-this filter, try setting this parameter to 0.
-
-@item max_comp
-Maximum compensation in samples per second. Relevant only with compensate=1.
-Default value 500.
-
-@item first_pts
-Assume the first pts should be this value. The time base is 1 / sample rate.
-This allows for padding/trimming at the start of stream. By default, no
-assumption is made about the first frame's expected pts, so no padding or
-trimming is done. For example, this could be set to 0 to pad the beginning with
-silence if an audio stream starts after the video stream or to trim any samples
-with a negative pts due to encoder delay.
-
+@item width_type
+Set method to specify band-width of filter.
+@table @option
+@item h
+Hz
+@item q
+Q-Factor
+@item o
+octave
+@item s
+slope
 @end table
 
-@section atrim
-Trim the input so that the output contains one continuous subpart of the input.
-
-This filter accepts the following options:
-@table @option
-@item start
-Timestamp (in seconds) of the start of the kept section. I.e. the audio sample
-with the timestamp @var{start} will be the first sample in the output.
-
-@item end
-Timestamp (in seconds) of the first audio sample that will be dropped. I.e. the
-audio sample immediately preceding the one with the timestamp @var{end} will be
-the last sample in the output.
-
-@item start_pts
-Same as @var{start}, except this option sets the start timestamp in samples
-instead of seconds.
-
-@item end_pts
-Same as @var{end}, except this option sets the end timestamp in samples instead
-of seconds.
-
-@item duration
-Maximum duration of the output in seconds.
-
-@item start_sample
-Number of the first sample that should be passed to output.
-
-@item end_sample
-Number of the first sample that should be dropped.
+@item width, w
+Determine how steep is the filter's shelf transition.
 @end table
-
-Note that the first two sets of the start/end options and the @option{duration}
-option look at the frame timestamp, while the _sample options simply count the
-samples that pass through the filter. So start/end_pts and start/end_sample will
-give different results when the timestamps are wrong, inexact or do not start at
-zero. Also note that this filter does not modify the timestamps. If you wish
-that the output timestamps start at zero, insert the asetpts filter after the
-atrim filter.
-
-If multiple start or end options are set, this filter tries to be greedy and
-keep all samples that match at least one of the specified constraints. To keep
-only the part that matches all the constraints at once, chain multiple atrim
-filters.
-
-The defaults are such that all the input is kept. So it is possible to set e.g.
-just the end values to keep everything before the specified time.
-
-Examples:
-@itemize
-@item
-drop everything except the second minute of input
-@example
-ffmpeg -i INPUT -af atrim=60:120
-@end example
-
-@item
-keep only the first 1000 samples
-@example
-ffmpeg -i INPUT -af atrim=end_sample=1000
-@end example
-
-@end itemize
-
-@section channelsplit
-Split each channel in input audio stream into a separate output stream.
-
-This filter accepts the following named parameters:
-@table @option
-@item channel_layout
-Channel layout of the input stream. Default is "stereo".
-@end table
-
-For example, assuming a stereo input MP3 file
-@example
-ffmpeg -i in.mp3 -filter_complex channelsplit out.mkv
-@end example
-will create an output Matroska file with two audio streams, one containing only
-the left channel and the other the right channel.
-
-To split a 5.1 WAV file into per-channel files
-@example
-ffmpeg -i in.wav -filter_complex
-'channelsplit=channel_layout=5.1[FL][FR][FC][LFE][SL][SR]'
--map '[FL]' front_left.wav -map '[FR]' front_right.wav -map '[FC]'
-front_center.wav -map '[LFE]' lfe.wav -map '[SL]' side_left.wav -map '[SR]'
-side_right.wav
-@end example
-
-@section channelmap
-Remap input channels to new locations.
-
-This filter accepts the following named parameters:
-@table @option
-@item channel_layout
-Channel layout of the output stream.
-
-@item map
-Map channels from input to output. The argument is a '|'-separated list of
-mappings, each in the @code{@var{in_channel}-@var{out_channel}} or
-@var{in_channel} form. @var{in_channel} can be either the name of the input
-channel (e.g. FL for front left) or its index in the input channel layout.
-@var{out_channel} is the name of the output channel or its index in the output
-channel layout. If @var{out_channel} is not given then it is implicitly an
-index, starting with zero and increasing by one for each mapping.
-@end table
-
-If no mapping is present, the filter will implicitly map input channels to
-output channels preserving index.
-
-For example, assuming a 5.1+downmix input MOV file
-@example
-ffmpeg -i in.mov -filter 'channelmap=map=DL-FL|DR-FR' out.wav
-@end example
-will create an output WAV file tagged as stereo from the downmix channels of
-the input.
-
-To fix a 5.1 WAV improperly encoded in AAC's native channel order
-@example
-ffmpeg -i in.wav -filter 'channelmap=1|2|0|5|3|4:channel_layout=5.1' out.wav
-@end example
-
-@section join
-Join multiple input streams into one multi-channel stream.
-
-The filter accepts the following named parameters:
-@table @option
-
-@item inputs
-Number of input streams. Defaults to 2.
-
-@item channel_layout
-Desired output channel layout. Defaults to stereo.
-
-@item map
-Map channels from inputs to output. The argument is a '|'-separated list of
-mappings, each in the @code{@var{input_idx}.@var{in_channel}-@var{out_channel}}
-form. @var{input_idx} is the 0-based index of the input stream. @var{in_channel}
-can be either the name of the input channel (e.g. FL for front left) or its
-index in the specified input stream. @var{out_channel} is the name of the output
-channel.
-@end table
-
-The filter will attempt to guess the mappings when those are not specified
-explicitly. It does so by first trying to find an unused matching input channel
-and if that fails it picks the first unused input channel.
-
-E.g. to join 3 inputs (with properly set channel layouts)
-@example
-ffmpeg -i INPUT1 -i INPUT2 -i INPUT3 -filter_complex join=inputs=3 OUTPUT
-@end example
-
-To build a 5.1 output from 6 single-channel streams:
-@example
-ffmpeg -i fl -i fr -i fc -i sl -i sr -i lfe -filter_complex
-'join=inputs=6:channel_layout=5.1:map=0.0-FL|1.0-FR|2.0-FC|3.0-SL|4.0-SR|5.0-LFE'
-out
-@end example
-
-@section resample
-Convert the audio sample format, sample rate and channel layout. This filter is
-not meant to be used directly.
 
 @section volume
 
