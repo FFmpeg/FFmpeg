@@ -1235,7 +1235,7 @@ int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,
  *               "all" sends to all filters
  *               otherwise it can be a filter or filter instance name
  *               which will send the command to all matching filters.
- * @param cmd    the command to sent, for handling simplicity all commands must be alphanumeric only
+ * @param cmd    the command to send, for handling simplicity all commands must be alphanumeric only
  * @param arg    the argument for the command
  * @param res    a buffer with size res_size where the filter(s) can return a response.
  *
