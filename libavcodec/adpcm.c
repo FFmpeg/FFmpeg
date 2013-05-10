@@ -592,6 +592,10 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         break;
     }
     case AV_CODEC_ID_ADPCM_THP:
+        if (avctx->extradata) {
+            nb_samples = buf_size / (8 * ch) * 14;
+            break;
+        }
         has_coded_samples = 1;
         bytestream2_skip(gb, 4); // channel size
         *coded_samples  = bytestream2_get_be32(gb);
@@ -1325,6 +1329,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         int table[6][16];
         int ch;
 
+        if (avctx->extradata) {
+            GetByteContext tb;
+            if (avctx->extradata_size < 32 * avctx->channels) {
+                av_log(avctx, AV_LOG_ERROR, "Missing coeff table\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            bytestream2_init(&tb, avctx->extradata, avctx->extradata_size);
+            for (i = 0; i < avctx->channels; i++)
+                for (n = 0; n < 16; n++)
+                    table[i][n] = sign_extend(bytestream2_get_be16u(&tb), 16);
+        } else {
         for (i = 0; i < avctx->channels; i++)
             for (n = 0; n < 16; n++)
                 table[i][n] = sign_extend(bytestream2_get_be16u(&gb), 16);
@@ -1333,6 +1349,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         for (i = 0; i < avctx->channels; i++) {
             c->status[i].sample1 = sign_extend(bytestream2_get_be16u(&gb), 16);
             c->status[i].sample2 = sign_extend(bytestream2_get_be16u(&gb), 16);
+        }
         }
 
         for (ch = 0; ch < avctx->channels; ch++) {
