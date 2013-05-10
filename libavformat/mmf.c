@@ -21,8 +21,8 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
-#include "internal.h"
 #include "avio_internal.h"
+#include "internal.h"
 #include "pcm.h"
 #include "rawenc.h"
 #include "riff.h"
@@ -37,7 +37,7 @@ static const int mmf_rates[] = { 4000, 8000, 11025, 22050, 44100 };
 
 static int mmf_rate(int code)
 {
-    if((code < 0) || (code > 4))
+    if ((code < 0) || (code > 4))
         return -1;
     return mmf_rates[code];
 }
@@ -46,8 +46,8 @@ static int mmf_rate(int code)
 static int mmf_rate_code(int rate)
 {
     int i;
-    for(i = 0; i < 5; i++)
-        if(mmf_rates[i] == rate)
+    for (i = 0; i < 5; i++)
+        if (mmf_rates[i] == rate)
             return i;
     return -1;
 }
@@ -74,8 +74,9 @@ static int mmf_write_header(AVFormatContext *s)
                           "VN:"LIBAVFORMAT_IDENT",";
 
     rate = mmf_rate_code(s->streams[0]->codec->sample_rate);
-    if(rate < 0) {
-        av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d, supported are 4000, 8000, 11025, 22050 and 44100\n", s->streams[0]->codec->sample_rate);
+    if (rate < 0) {
+        av_log(s, AV_LOG_ERROR, "Unsupported sample rate %d, supported are 4000, 8000, 11025, 22050 and 44100\n",
+               s->streams[0]->codec->sample_rate);
         return AVERROR(EINVAL);
     }
 
@@ -129,7 +130,7 @@ static int mmf_write_header(AVFormatContext *s)
 /* Write a variable-length symbol */
 static void put_varlength(AVIOContext *pb, int val)
 {
-    if(val < 128)
+    if (val < 128)
         avio_w8(pb, val);
     else {
         val -= 128;
@@ -151,7 +152,7 @@ static int mmf_write_trailer(AVFormatContext *s)
         end_tag_be(pb, mmf->atrpos);
         end_tag_be(pb, 8);
 
-        pos = avio_tell(pb);
+        pos  = avio_tell(pb);
         size = pos - mmf->awapos;
 
         /* Fill Atsq chunk */
@@ -206,11 +207,13 @@ static int mmf_read_header(AVFormatContext *s)
     avio_skip(pb, 4); /* file_size */
 
     /* Skip some unused chunks that may or may not be present */
-    for(;; avio_skip(pb, size)) {
-        tag = avio_rl32(pb);
+    for (;; avio_skip(pb, size)) {
+        tag  = avio_rl32(pb);
         size = avio_rb32(pb);
-        if(tag == MKTAG('C','N','T','I')) continue;
-        if(tag == MKTAG('O','P','D','A')) continue;
+        if (tag == MKTAG('C', 'N', 'T', 'I'))
+            continue;
+        if (tag == MKTAG('O', 'P', 'D', 'A'))
+            continue;
         break;
     }
 
@@ -227,8 +230,8 @@ static int mmf_read_header(AVFormatContext *s)
     avio_r8(pb); /* format type */
     avio_r8(pb); /* sequence type */
     params = avio_r8(pb); /* (channel << 7) | (format << 4) | rate */
-    rate = mmf_rate(params & 0x0f);
-    if(rate  < 0) {
+    rate   = mmf_rate(params & 0x0f);
+    if (rate < 0) {
         av_log(s, AV_LOG_ERROR, "Invalid sample rate\n");
         return AVERROR_INVALIDDATA;
     }
@@ -237,11 +240,13 @@ static int mmf_read_header(AVFormatContext *s)
     avio_r8(pb); /* time base g */
 
     /* Skip some unused chunks that may or may not be present */
-    for(;; avio_skip(pb, size)) {
-        tag = avio_rl32(pb);
+    for (;; avio_skip(pb, size)) {
+        tag  = avio_rl32(pb);
         size = avio_rb32(pb);
-        if(tag == MKTAG('A','t','s','q')) continue;
-        if(tag == MKTAG('A','s','p','I')) continue;
+        if (tag == MKTAG('A', 't', 's', 'q'))
+            continue;
+        if (tag == MKTAG('A', 's', 'p', 'I'))
+            continue;
         break;
     }
 
@@ -256,13 +261,14 @@ static int mmf_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = AV_CODEC_ID_ADPCM_YAMAHA;
-    st->codec->sample_rate = rate;
-    st->codec->channels = (params >> 7) + 1;
-    st->codec->channel_layout = params >> 7 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+    st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_id              = AV_CODEC_ID_ADPCM_YAMAHA;
+    st->codec->sample_rate           = rate;
+    st->codec->channels              = (params >> 7) + 1;
+    st->codec->channel_layout        = params >> 7 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     st->codec->bits_per_coded_sample = 4;
-    st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_coded_sample;
+    st->codec->bit_rate              = st->codec->sample_rate *
+                                       st->codec->bits_per_coded_sample;
 
     avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
@@ -271,8 +277,7 @@ static int mmf_read_header(AVFormatContext *s)
 
 #define MAX_SIZE 4096
 
-static int mmf_read_packet(AVFormatContext *s,
-                           AVPacket *pkt)
+static int mmf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MMFContext *mmf = s->priv_data;
     int64_t left, size;
@@ -303,17 +308,18 @@ AVInputFormat ff_mmf_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
 };
 #endif
+
 #if CONFIG_MMF_MUXER
 AVOutputFormat ff_mmf_muxer = {
-    .name              = "mmf",
-    .long_name         = NULL_IF_CONFIG_SMALL("Yamaha SMAF"),
-    .mime_type         = "application/vnd.smaf",
-    .extensions        = "mmf",
-    .priv_data_size    = sizeof(MMFContext),
-    .audio_codec       = AV_CODEC_ID_ADPCM_YAMAHA,
-    .video_codec       = AV_CODEC_ID_NONE,
-    .write_header      = mmf_write_header,
-    .write_packet      = ff_raw_write_packet,
-    .write_trailer     = mmf_write_trailer,
+    .name           = "mmf",
+    .long_name      = NULL_IF_CONFIG_SMALL("Yamaha SMAF"),
+    .mime_type      = "application/vnd.smaf",
+    .extensions     = "mmf",
+    .priv_data_size = sizeof(MMFContext),
+    .audio_codec    = AV_CODEC_ID_ADPCM_YAMAHA,
+    .video_codec    = AV_CODEC_ID_NONE,
+    .write_header   = mmf_write_header,
+    .write_packet   = ff_raw_write_packet,
+    .write_trailer  = mmf_write_trailer,
 };
 #endif
