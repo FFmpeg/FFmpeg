@@ -1498,13 +1498,14 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
     int hasAlpha = (desc->flags & PIX_FMT_ALPHA) && alpSrc;
     uint16_t **dest16 = (uint16_t**)dest;
     int SH = 22 + 7 - desc->comp[0].depth_minus1;
+    int A = 0; // init to silence warning
 
     for (i = 0; i < dstW; i++) {
         int j;
         int Y = 1 << 9;
         int U = (1 << 9) - (128 << 19);
         int V = (1 << 9) - (128 << 19);
-        int R, G, B, A;
+        int R, G, B;
 
         for (j = 0; j < lumFilterSize; j++)
             Y += lumSrc[j][i] * lumFilter[j];
