@@ -5214,6 +5214,32 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 
 @end itemize
 
+@section owdenoise
+
+Overcomplete Wavelet denoiser.
+
+The filter accepts the following options:
+
+@table @option
+@item depth
+Set depth.
+
+Larger depth values will denoise lower frequency components more, but
+slow down filtering.
+
+Default is @code{8}.
+
+@item luma_strength
+Set luma strength.
+
+Default is @code{1.0}
+
+@item chroma_strength
+Set chroma strength.
+
+Default is @code{1.0}
+@end table
+
 @section pad
 
 Add paddings to the input image, and place the original input at the

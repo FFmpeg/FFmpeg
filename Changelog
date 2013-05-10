@@ -47,6 +47,7 @@ version <next>:
 - ADPCM IMA Radical decoder
 - zmq filters
 - DCT denoiser filter (dctdnoiz)
+- Wavelet denoiser filter ported from libmpcodecs as owdenoise (formerly "ow")
 
 
 version 1.2:
