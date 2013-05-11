@@ -963,7 +963,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         avctx->time_base.den = avctx->sample_rate;
     }
 
-    if (HAVE_THREADS && !avctx->thread_opaque) {
+    if (HAVE_THREADS) {
         ret = ff_thread_init(avctx);
         if (ret < 0) {
             goto free_and_end;
