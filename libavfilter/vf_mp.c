@@ -530,8 +530,6 @@ mp_image_t* ff_vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgty
   return mpi;
 }
 
-static void dummy_free(void *opaque, uint8_t *data){}
-
 int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     MPContext *m= (MPContext*)(((uint8_t*)vf) - offsetof(MPContext, vf));
     AVFilterLink *outlink     = m->avfctx->outputs[0];
