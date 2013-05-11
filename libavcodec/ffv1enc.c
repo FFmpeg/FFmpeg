@@ -795,7 +795,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
-    avctx->coded_frame = s->picture.f;
     if (!s->transparency)
         s->plane_count = 2;
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
