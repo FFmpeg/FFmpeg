@@ -641,7 +641,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     int i, j, k, m, ret;
 
-    if ((ret = ffv1_common_init(avctx)) < ret)
+    if ((ret = ffv1_common_init(avctx)) < 0)
         return ret;
 
     s->version = 0;
