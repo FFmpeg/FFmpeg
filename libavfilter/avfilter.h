@@ -401,6 +401,11 @@ enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
  * the options supplied to it.
  */
 #define AVFILTER_FLAG_DYNAMIC_OUTPUTS       (1 << 1)
+/**
+ * The filter supports multithreading by splitting frames into multiple parts
+ * and processing them concurrently.
+ */
+#define AVFILTER_FLAG_SLICE_THREADS         (1 << 2)
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -472,6 +477,13 @@ typedef struct AVFilter {
     struct AVFilter *next;
 } AVFilter;
 
+/**
+ * Process multiple parts of the frame concurrently.
+ */
+#define AVFILTER_THREAD_SLICE (1 << 0)
+
+typedef struct AVFilterInternal AVFilterInternal;
+
 /** An instance of a filter */
 struct AVFilterContext {
     const AVClass *av_class;              ///< needed for av_log()
@@ -497,6 +509,29 @@ struct AVFilterContext {
     void *priv;                     ///< private data for use by the filter
 
     struct AVFilterGraph *graph;    ///< filtergraph this filter belongs to
+
+    /**
+     * Type of multithreading being allowed/used. A combination of
+     * AVFILTER_THREAD_* flags.
+     *
+     * May be set by the caller before initializing the filter to forbid some
+     * or all kinds of multithreading for this filter. The default is allowing
+     * everything.
+     *
+     * When the filter is initialized, this field is combined using bit AND with
+     * AVFilterGraph.thread_type to get the final mask used for determining
+     * allowed threading types. I.e. a threading type needs to be set in both
+     * to be allowed.
+     *
+     * After the filter is initialzed, libavfilter sets this field to the
+     * threading type that is actually used (0 for no multithreading).
+     */
+    int thread_type;
+
+    /**
+     * An opaque struct for libavfilter internal use.
+     */
+    AVFilterInternal *internal;
 };
 
 /**
@@ -793,6 +828,8 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src);
  */
 const AVClass *avfilter_get_class(void);
 
+typedef struct AVFilterGraphInternal AVFilterGraphInternal;
+
 typedef struct AVFilterGraph {
     const AVClass *av_class;
 #if FF_API_FOO_COUNT
@@ -809,6 +846,32 @@ typedef struct AVFilterGraph {
 #if FF_API_FOO_COUNT
     unsigned nb_filters;
 #endif
+
+    /**
+     * Type of multithreading allowed for filters in this graph. A combination
+     * of AVFILTER_THREAD_* flags.
+     *
+     * May be set by the caller at any point, the setting will apply to all
+     * filters initialized after that. The default is allowing everything.
+     *
+     * When a filter in this graph is initialized, this field is combined using
+     * bit AND with AVFilterContext.thread_type to get the final mask used for
+     * determining allowed threading types. I.e. a threading type needs to be
+     * set in both to be allowed.
+     */
+    int thread_type;
+
+    /**
+     * Maximum number of threads used by filters in this graph. May be set by
+     * the caller before adding any filters to the filtergraph. Zero (the
+     * default) means that the number of threads is determined automatically.
+     */
+    int nb_threads;
+
+    /**
+     * Opaque object for libavfilter internal use.
+     */
+    AVFilterGraphInternal *internal;
 } AVFilterGraph;
 
 /**

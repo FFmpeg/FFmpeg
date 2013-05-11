@@ -1284,6 +1284,9 @@ static void show_help_filter(const char *name)
 
     printf("Filter %s [%s]:\n", f->name, f->description);
 
+    if (f->flags & AVFILTER_FLAG_SLICE_THREADS)
+        printf("    slice threading supported\n");
+
     printf("    Inputs:\n");
     count = avfilter_pad_count(f->inputs);
     for (i = 0; i < count; i++) {

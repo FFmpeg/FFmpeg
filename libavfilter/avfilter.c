@@ -352,13 +352,36 @@ static const AVClass *filter_child_class_next(const AVClass *prev)
     return NULL;
 }
 
+#define OFFSET(x) offsetof(AVFilterContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "thread_type", "Allowed thread types", OFFSET(thread_type), AV_OPT_TYPE_FLAGS,
+        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, FLAGS, "thread_type" },
+        { "slice", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AVFILTER_THREAD_SLICE }, .unit = "thread_type" },
+    { NULL },
+};
+
 static const AVClass avfilter_class = {
     .class_name = "AVFilter",
     .item_name  = filter_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .child_next = filter_child_next,
     .child_class_next = filter_child_class_next,
+    .option           = options,
 };
+
+static int default_execute(AVFilterContext *ctx, action_func *func, void *arg,
+                           int *ret, int nb_jobs)
+{
+    int i;
+
+    for (i = 0; i < nb_jobs; i++) {
+        int r = func(ctx, arg, i, nb_jobs);
+        if (ret)
+            ret[i] = r;
+    }
+    return 0;
+}
 
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 {
@@ -380,10 +403,16 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
             goto err;
     }
 
+    av_opt_set_defaults(ret);
     if (filter->priv_class) {
         *(const AVClass**)ret->priv = filter->priv_class;
         av_opt_set_defaults(ret->priv);
     }
+
+    ret->internal = av_mallocz(sizeof(*ret->internal));
+    if (!ret->internal)
+        goto err;
+    ret->internal->execute = default_execute;
 
     ret->nb_inputs = avfilter_pad_count(filter->inputs);
     if (ret->nb_inputs ) {
@@ -421,6 +450,7 @@ err:
     av_freep(&ret->output_pads);
     ret->nb_outputs = 0;
     av_freep(&ret->priv);
+    av_freep(&ret->internal);
     av_free(ret);
     return NULL;
 }
@@ -478,6 +508,7 @@ void avfilter_free(AVFilterContext *filter)
     av_freep(&filter->inputs);
     av_freep(&filter->outputs);
     av_freep(&filter->priv);
+    av_freep(&filter->internal);
     av_free(filter);
 }
 
@@ -524,6 +555,21 @@ int avfilter_init_filter(AVFilterContext *filter, const char *args, void *opaque
 int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 {
     int ret = 0;
+
+    ret = av_opt_set_dict(ctx, options);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error applying generic filter options.\n");
+        return ret;
+    }
+
+    if (ctx->filter->flags & AVFILTER_FLAG_SLICE_THREADS &&
+        ctx->thread_type & ctx->graph->thread_type & AVFILTER_THREAD_SLICE &&
+        ctx->graph->internal->thread_execute) {
+        ctx->thread_type       = AVFILTER_THREAD_SLICE;
+        ctx->internal->execute = ctx->graph->internal->thread_execute;
+    } else {
+        ctx->thread_type = 0;
+    }
 
     if (ctx->filter->priv_class) {
         ret = av_opt_set_dict(ctx->priv, options);

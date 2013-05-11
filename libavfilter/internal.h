@@ -25,6 +25,7 @@
  */
 
 #include "avfilter.h"
+#include "thread.h"
 
 #if !FF_API_AVFILTERPAD_PUBLIC
 /**
@@ -116,6 +117,17 @@ struct AVFilterPad {
     int needs_fifo;
 };
 #endif
+
+struct AVFilterGraphInternal {
+    void *thread;
+    int (*thread_execute)(AVFilterContext *ctx, action_func *func, void *arg,
+                          int *ret, int nb_jobs);
+};
+
+struct AVFilterInternal {
+    int (*execute)(AVFilterContext *ctx, action_func *func, void *arg,
+                   int *ret, int nb_jobs);
+};
 
 /** default handler for freeing audio/video buffer when there are no references left */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);

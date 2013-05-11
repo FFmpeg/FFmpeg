@@ -92,5 +92,7 @@ OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
+OBJS-$(HAVE_THREADS)                         += pthread.o
+
 TOOLS     = graph2dot
 TESTPROGS = filtfmts

@@ -13,6 +13,13 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-05-xx - xxxxxxx - lavfi 3.10.0 - avfilter.h
+  Add support for slice multithreading to lavfi. Filters supporting threading
+  are marked with AVFILTER_FLAG_SLICE_THREADS.
+  New fields AVFilterContext.thread_type, AVFilterGraph.thread_type and
+  AVFilterGraph.nb_threads (accessible directly or through AVOptions) may be
+  used to configure multithreading.
+
 2013-xx-xx - xxxxxxx - lavu 52.12.0 - cpu.h
   Add av_cpu_count() function for getting the number of logical CPUs.
 
