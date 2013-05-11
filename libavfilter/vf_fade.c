@@ -92,39 +92,70 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
+                             int nb_jobs)
 {
-    FadeContext *s = inlink->dst->priv;
-    uint8_t *p;
+    FadeContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int slice_h     = frame->height / nb_jobs;
+    int slice_start = jobnr * slice_h;
+    int slice_end   = (jobnr == nb_jobs - 1) ? frame->height : (jobnr + 1) * slice_h;
+    int i, j;
+
+    for (i = slice_start; i < slice_end; i++) {
+        uint8_t *p = frame->data[0] + i * frame->linesize[0];
+        for (j = 0; j < frame->width * s->bpp; j++) {
+            /* s->factor is using 16 lower-order bits for decimal
+             * places. 32768 = 1 << 15, it is an integer representation
+             * of 0.5 and is for rounding. */
+            *p = (*p * s->factor + 32768) >> 16;
+            p++;
+        }
+    }
+
+    return 0;
+}
+
+static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
+                               int nb_jobs)
+{
+    FadeContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int slice_h     = FFALIGN(frame->height / nb_jobs, 1 << s->vsub);
+    int slice_start = jobnr * slice_h;
+    int slice_end   = (jobnr == nb_jobs - 1) ? frame->height : (jobnr + 1) * slice_h;
     int i, j, plane;
 
-    if (s->factor < UINT16_MAX) {
-        /* luma or rgb plane */
-        for (i = 0; i < frame->height; i++) {
-            p = frame->data[0] + i * frame->linesize[0];
-            for (j = 0; j < inlink->w * s->bpp; j++) {
-                /* s->factor is using 16 lower-order bits for decimal
-                 * places. 32768 = 1 << 15, it is an integer representation
-                 * of 0.5 and is for rounding. */
-                *p = (*p * s->factor + 32768) >> 16;
+    for (plane = 1; plane < 3; plane++) {
+        for (i = slice_start; i < slice_end; i++) {
+            uint8_t *p = frame->data[plane] + (i >> s->vsub) * frame->linesize[plane];
+            for (j = 0; j < frame->width >> s->hsub; j++) {
+                /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
+                 * representation of 128.5. The .5 is for rounding
+                 * purposes. */
+                *p = ((*p - 128) * s->factor + 8421367) >> 16;
                 p++;
             }
         }
+    }
+
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+{
+    AVFilterContext *ctx = inlink->dst;
+    FadeContext *s       = ctx->priv;
+
+    if (s->factor < UINT16_MAX) {
+        /* luma or rgb plane */
+        ctx->internal->execute(ctx, filter_slice_luma, frame, NULL,
+                               FFMIN(frame->height, ctx->graph->nb_threads));
 
         if (frame->data[1] && frame->data[2]) {
             /* chroma planes */
-            for (plane = 1; plane < 3; plane++) {
-                for (i = 0; i < frame->height; i++) {
-                    p = frame->data[plane] + (i >> s->vsub) * frame->linesize[plane];
-                    for (j = 0; j < inlink->w >> s->hsub; j++) {
-                        /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
-                         * representation of 128.5. The .5 is for rounding
-                         * purposes. */
-                        *p = ((*p - 128) * s->factor + 8421367) >> 16;
-                        p++;
-                    }
-                }
-            }
+            ctx->internal->execute(ctx, filter_slice_chroma, frame, NULL,
+                                   FFMIN(frame->height, ctx->graph->nb_threads));
         }
     }
 
@@ -187,4 +218,5 @@ AVFilter avfilter_vf_fade = {
 
     .inputs    = avfilter_vf_fade_inputs,
     .outputs   = avfilter_vf_fade_outputs,
+    .flags     = AVFILTER_FLAG_SLICE_THREADS,
 };
