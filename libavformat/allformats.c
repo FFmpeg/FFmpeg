@@ -65,6 +65,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(AC3,              ac3);
     REGISTER_DEMUXER (ACT,              act);
     REGISTER_DEMUXER (ADF,              adf);
+    REGISTER_DEMUXER (ADP,              adp);
     REGISTER_MUXER   (ADTS,             adts);
     REGISTER_MUXDEMUX(ADX,              adx);
     REGISTER_DEMUXER (AEA,              aea);
@@ -232,10 +233,12 @@ void av_register_all(void)
     REGISTER_DEMUXER (R3D,              r3d);
     REGISTER_MUXDEMUX(RAWVIDEO,         rawvideo);
     REGISTER_DEMUXER (REALTEXT,         realtext);
+    REGISTER_DEMUXER (REDSPARK,         redspark);
     REGISTER_DEMUXER (RL2,              rl2);
     REGISTER_MUXDEMUX(RM,               rm);
     REGISTER_MUXDEMUX(ROQ,              roq);
     REGISTER_DEMUXER (RPL,              rpl);
+    REGISTER_DEMUXER (RSD,              rsd);
     REGISTER_MUXDEMUX(RSO,              rso);
     REGISTER_MUXDEMUX(RTP,              rtp);
     REGISTER_MUXDEMUX(RTSP,             rtsp);

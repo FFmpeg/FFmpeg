@@ -16,6 +16,9 @@ fate-adpcm-creative-8-2.6bit: CMD = md5 -i $(SAMPLES)/creative/BBC_3BIT.VOC -f s
 FATE_ADPCM-$(call DEMDEC, VOC, ADPCM_SBPRO_4) += fate-adpcm-creative-8-4bit
 fate-adpcm-creative-8-4bit: CMD = md5 -i $(SAMPLES)/creative/BBC_4BIT.VOC -f s16le
 
+FATE_ADPCM-$(call DEMDEC, ADP, ADPCM_DTK) += fate-adpcm-dtk
+fate-adpcm-dtk: CMD = framecrc -i $(SAMPLES)/adp/shakespr_partial.adp -f s16le
+
 FATE_ADPCM-$(call DEMDEC, EA, ADPCM_EA) += fate-adpcm-ea-1
 fate-adpcm-ea-1: CMD = framecrc -i $(SAMPLES)/ea-wve/networkBackbone-partial.wve -frames:a 26 -vn
 
@@ -57,6 +60,9 @@ fate-adpcm-ima-iss: CMD = md5 -i $(SAMPLES)/funcom-iss/0004010100.iss -f s16le
 
 FATE_ADPCM-$(call DEMDEC, WAV, ADPCM_IMA_OKI) += fate-adpcm-ima-oki
 fate-adpcm-ima-oki: CMD = md5 -i $(SAMPLES)/oki/test.wav -f s16le
+
+FATE_ADPCM-$(call DEMDEC, RSD, ADPCM_IMA_RAD) += fate-adpcm-ima-rad
+fate-adpcm-ima-rad: CMD = md5 -i $(SAMPLES)/rsd/hit_run_partial.rsd -f s16le
 
 FATE_ADPCM-$(call DEMDEC, SMJPEG, ADPCM_IMA_SMJPEG) += fate-adpcm-ima-smjpeg
 fate-adpcm-ima-smjpeg: CMD = framecrc -i $(SAMPLES)/smjpeg/scenwin.mjpg -vn

@@ -147,6 +147,8 @@ library:
     @tab Multimedia format used in game Heart Of Darkness.
 @item Apple HTTP Live Streaming @tab   @tab X
 @item Artworx Data Format       @tab   @tab X
+@item ADP                       @tab   @tab X
+    @tab Audio format used on the Nintendo Gamecube.
 @item AFC                       @tab   @tab X
     @tab Audio format used on the Nintendo Gamecube.
 @item ASF                       @tab X @tab X
@@ -348,11 +350,13 @@ library:
     @tab File format used by RED Digital cameras, contains JPEG 2000 frames and PCM audio.
 @item RealMedia                 @tab X @tab X
 @item Redirector                @tab   @tab X
+@item RedSpark                  @tab   @tab X
 @item Renderware TeXture Dictionary @tab   @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RPL/ARMovie               @tab   @tab X
 @item Lego Mindstorms RSO       @tab X @tab X
+@item RSD                       @tab   @tab X
 @item RTMP                      @tab X @tab X
     @tab Output is performed by publishing stream to RTMP server
 @item RTP                       @tab X @tab X
@@ -768,9 +772,11 @@ following image formats are supported:
     @tab Used in some Sega Saturn console games.
 @item ADPCM IMA Duck DK4     @tab     @tab  X
     @tab Used in some Sega Saturn console games.
+@item ADPCM IMA Radical      @tab     @tab  X
 @item ADPCM Microsoft        @tab  X  @tab  X
 @item ADPCM MS IMA           @tab  X  @tab  X
 @item ADPCM Nintendo Gamecube AFC  @tab     @tab  X
+@item ADPCM Nintendo Gamecube DTK  @tab     @tab  X
 @item ADPCM Nintendo Gamecube THP  @tab     @tab  X
 @item ADPCM QT IMA           @tab  X  @tab  X
 @item ADPCM SEGA CRI ADX     @tab  X  @tab  X
