@@ -6476,6 +6476,42 @@ stereo3d=abl:sbsr
 @end example
 @end itemize
 
+@section spp
+
+Apply a simple postprocessing filter that compresses and decompresses the image
+at several (or - in the case of @option{quality} level @code{6} - all) shifts
+and average the results.
+
+The filter accepts the following options:
+
+@table @option
+@item quality
+Set quality. This option defines the number of levels for averaging. It accepts
+an integer in the range 0-6. If set to @code{0}, the filter will have no
+effect. A value of @code{6} means the higher quality. For each increment of
+that value the speed drops by a factor of approximately 2.  Default value is
+@code{3}.
+
+@item qp
+Force a constant quantization parameter. If not set, the filter will use the QP
+from the video stream (if available).
+
+@item mode
+Set thresholding mode. Available modes are:
+
+@table @samp
+@item hard
+Set hard thresholding (default).
+@item soft
+Set soft thresholding (better de-ringing effect, but likely blurrier).
+@end table
+
+@item use_bframe_qp
+Enable the use of the QP from the B-Frames if set to @code{1}. Using this
+option may cause flicker since the B-Frames have often larger QP. Default is
+@code{0} (not enabled).
+@end table
+
 @anchor{subtitles}
 @section subtitles
 
