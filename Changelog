@@ -16,7 +16,10 @@ version 0.8.7:
 - rv10: check that extradata is large enough
 - xmv: check audio track parameters validity
 - xmv: do not leak memory in the error paths in xmv_read_header()
-
+- aac: check the maximum number of channels
+- indeo3: fix off by one in MV validity check, Bug #503
+- id3v2: check for end of file while unescaping tags
+- wav: Always seek to an even offset, Bug #500, LP: #1174737
 
 version 0.8.6:
 
