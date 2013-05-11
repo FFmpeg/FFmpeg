@@ -1468,8 +1468,13 @@ display:
             av_diff = 0;
             if (is->audio_st && is->video_st)
                 av_diff = get_clock(&is->audclk) - get_clock(&is->vidclk);
-            printf("%7.2f A-V:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
+            else if (is->video_st)
+                av_diff = get_master_clock(is) - get_clock(&is->vidclk);
+            else if (is->audio_st)
+                av_diff = get_master_clock(is) - get_clock(&is->audclk);
+            printf("%7.2f %s:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
+                   (is->audio_st && is->video_st) ? "A-V" : (is->video_st ? "M-V" : (is->audio_st ? "M-A" : "   ")),
                    av_diff,
                    is->frame_drops_early + is->frame_drops_late,
                    aqsize / 1024,
