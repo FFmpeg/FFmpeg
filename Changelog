@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.6:
+- aac: check the maximum number of channels to avoid invalid writes
+- indeo3: fix off by one in MV validity check
+- id3v2: check for end of file while unescaping tags to avoid invalid
+  writes, reported by Google Security Team
+- afifo: fix request_samples on the last frame in certain cases
+- hls, segment: fix splitting for audio-only streams
+- wav: Always seek to an even offset, Bug #500, LP: #1174737
+- swscale: Use alpha from the right row in yuva2rgba_c, Bug #504
+- indeo3: use unaligned reads on reference blocks, Bug #503
+- oma: properly forward errors in oma_read_packet
+- af_asyncts: fix offset calculation
+
 version 9.5:
 
 Most of the following fixes resulted from test samples that the Google
