@@ -436,14 +436,14 @@ static AVFilter *first_filter;
 
 AVFilter *avfilter_get_by_name(const char *name)
 {
-    AVFilter *f = NULL;
+    const AVFilter *f = NULL;
 
     if (!name)
         return NULL;
 
     while ((f = avfilter_next(f)))
         if (!strcmp(f->name, name))
-            return f;
+            return (AVFilter *)f;
 
     return NULL;
 }
