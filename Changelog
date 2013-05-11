@@ -1,6 +1,35 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.8:
+- indeo5: update AVCodecContext width/height on size change, CVE-2012-2787
+- oggdec: make sure the private parse data is cleaned up, CVE-2012-2882
+- vorbisdec: Error on bark_map_size equal to 0, CVE-2013-0894
+- wmaprodec: return an error, not 0, when the input is too small
+- wmadec: require block_align to be set
+- xxan: fix invalid memory access in xan_decode_frame_type0()
+- h264: check for luma and chroma bit depth being equal, CVE-2013-2277
+- matroskadec: request a read buffer for the wav header
+- shorten: validate that the channel count in the header is not <= 0
+- shorten: set invalid channels count to 0
+- shorten: report meaningful errors
+- shorten: use the unsigned type where needed
+- dsputil: fix invalid array indexing
+- parser: fix large overreads
+- lavf: fix arithmetic overflows in avformat_seek_file()
+- atrac3: avoid oversized shifting in decode_bytes()
+- flacdec: simplify bounds checking in flac_probe()
+- lzo: fix overflow checking in copy_backptr()
+- wmaprodec: require block_align to be set
+- iff: validate CMAP palette size, CVE-2013-2495
+- avfiltergraph: check for sws opts being non-NULL before using them.
+- dfa: check for invalid access in decode_wdlt()
+- lavf: make sure stream probe data gets freed
+- rv10: check that extradata is large enough
+- qdm2: check that the FFT size is a power of 2
+- oggdec: fix faulty cleanup prototype
+- aac: check the maximum number of channels
+
 version 0.7.7:
 
 Security Updates:
