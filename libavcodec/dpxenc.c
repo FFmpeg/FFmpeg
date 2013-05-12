@@ -26,7 +26,6 @@
 #include "internal.h"
 
 typedef struct DPXContext {
-    AVFrame picture;
     int big_endian;
     int bits_per_component;
     int descriptor;
@@ -36,10 +35,6 @@ typedef struct DPXContext {
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     DPXContext *s = avctx->priv_data;
-
-    avctx->coded_frame = &s->picture;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
 
     s->big_endian         = 1;
     s->bits_per_component = 8;
