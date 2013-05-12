@@ -81,6 +81,8 @@ struct variant {
     AVFormatContext *ctx;
     AVPacket pkt;
     int stream_offset;
+    int64_t input_size;
+    int64_t input_offset;
 
     int finished;
     int target_duration;
@@ -402,6 +404,8 @@ static int open_input(HLSContext *c, struct variant *var)
       ret = AVERROR(ENOSYS);
 
 cleanup:
+    var->input_size = ffurl_size(var->input);
+    var->input_offset = 0;
     av_dict_free(&opts);
     return ret;
 }
@@ -453,9 +457,14 @@ reload:
         if (ret < 0)
           goto reload;
     }
-    ret = ffurl_read(v->input, buf, buf_size);
-    if (ret > 0)
+
+    if (v->input_size < 0 || v->input_offset < v->input_size) {
+      ret = ffurl_read(v->input, buf, buf_size);
+      if (ret > 0) {
+        v->input_offset += ret;
         return ret;
+      }
+    }
     ffurl_close(v->input);
     v->input = NULL;
     v->cur_seq_no++;
