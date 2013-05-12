@@ -34,6 +34,7 @@ FFMPEG_FLAGS="--target-os=linux \
   --enable-cross-compile \
   --enable-shared \
   --disable-static \
+  --disable-runtime-cpudetect
   --disable-symver \
   --disable-doc \
   --disable-ffplay \

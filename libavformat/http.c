@@ -40,7 +40,7 @@
 #define BUFFER_SIZE MAX_URL_SIZE
 #define MAX_REDIRECTS 8
 
-#define DEFAULT_UA "Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; zh-cn) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5"
+#define IPAD_UA "Mozilla/5.0 (iPad; CPU OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25"
 
 typedef struct {
     const AVClass *class;
@@ -189,7 +189,7 @@ static int http_open_cnx(URLContext *h)
             goto fail;
     }
     if (s->http_code == 403 && !change_ua) {
-      av_opt_set(s, "user-agent", DEFAULT_UA, 0);
+      av_opt_set(s, "user-agent", IPAD_UA, 0);
       ffurl_closep(&s->hd);
       memset(&s->auth_state, 0, sizeof(s->auth_state));
       attempts = 0;
