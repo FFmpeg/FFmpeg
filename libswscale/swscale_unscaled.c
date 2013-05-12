@@ -324,11 +324,11 @@ static int packed_16bpc_bswap(SwsContext *c, const uint8_t *src[],
     int i, j, p;
 
     for (p = 0; p < 4; p++) {
-        int srcstr = srcStride[p] >> 1;
-        int dststr = dstStride[p] >> 1;
+        int srcstr = srcStride[p] / 2;
+        int dststr = dstStride[p] / 2;
         uint16_t       *dstPtr =       (uint16_t *) dst[p];
         const uint16_t *srcPtr = (const uint16_t *) src[p];
-        int min_stride         = FFMIN(srcstr, dststr);
+        int min_stride         = FFMIN(FFABS(srcstr), FFABS(dststr));
         if(!dstPtr || !srcPtr)
             continue;
         for (i = 0; i < (srcSliceH >> c->chrDstVSubSample); i++) {
