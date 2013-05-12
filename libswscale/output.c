@@ -707,16 +707,10 @@ yuv2rgba64_X_c_template(SwsContext *c, const int16_t *lumFilter,
                 A1 += alpSrc[j][i * 2]     * (unsigned)lumFilter[j];
                 A2 += alpSrc[j][i * 2 + 1] * (unsigned)lumFilter[j];
             }
-            A1 >>= 14; // 10
-            A1 += 0x10000;
-            A2 >>= 14;
-            A2 += 0x10000;
-            A1 -= c->yuv2rgb_y_offset;
-            A2 -= c->yuv2rgb_y_offset;
-            A1 *= c->yuv2rgb_y_coeff;
-            A2 *= c->yuv2rgb_y_coeff;
-            A1 += 1 << 13; // 21
-            A2 += 1 << 13;
+            A1 >>= 1;
+            A1 += 0x20002000;
+            A2 >>= 1;
+            A2 += 0x20002000;
         }
 
         // 8bit: 12+15=27; 16-bit: 12+19=31
@@ -789,13 +783,9 @@ yuv2rgba64_2_c_template(SwsContext *c, const int32_t *buf[2],
         B =                            U * c->yuv2rgb_u2b_coeff;
 
         if (hasAlpha) {
-            A1 = (abuf0[i * 2    ] * yalpha1 + abuf1[i * 2    ] * yalpha) >> 14;
-            A2 = (abuf0[i * 2 + 1] * yalpha1 + abuf1[i * 2 + 1] * yalpha) >> 14;
+            A1 = (abuf0[i * 2    ] * yalpha1 + abuf1[i * 2    ] * yalpha) >> 1;
+            A2 = (abuf0[i * 2 + 1] * yalpha1 + abuf1[i * 2 + 1] * yalpha) >> 1;
 
-            A1 -= c->yuv2rgb_y_offset;
-            A2 -= c->yuv2rgb_y_offset;
-            A1 *= c->yuv2rgb_y_coeff;
-            A2 *= c->yuv2rgb_y_coeff;
             A1 += 1 << 13;
             A2 += 1 << 13;
         }
@@ -838,13 +828,9 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             Y2 += 1 << 13;
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] >> 2;
-                A2 = abuf0[i * 2 + 1] >> 2;
+                A1 = abuf0[i * 2    ] << 11;
+                A2 = abuf0[i * 2 + 1] << 11;
 
-                A1 -= c->yuv2rgb_y_offset;
-                A2 -= c->yuv2rgb_y_offset;
-                A1 *= c->yuv2rgb_y_coeff;
-                A2 *= c->yuv2rgb_y_coeff;
                 A1 += 1 << 13;
                 A2 += 1 << 13;
             }
@@ -881,13 +867,9 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             Y2 += 1 << 13;
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] >> 2;
-                A2 = abuf0[i * 2 + 1] >> 2;
+                A1 = abuf0[i * 2    ] << 11;
+                A2 = abuf0[i * 2 + 1] << 11;
 
-                A1 -= c->yuv2rgb_y_offset;
-                A2 -= c->yuv2rgb_y_offset;
-                A1 *= c->yuv2rgb_y_coeff;
-                A2 *= c->yuv2rgb_y_coeff;
                 A1 += 1 << 13;
                 A2 += 1 << 13;
             }
