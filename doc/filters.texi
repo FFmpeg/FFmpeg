@@ -2149,13 +2149,16 @@ corresponding value set for @option{luma_radius}.
 
 The expressions can contain the following constants:
 @table @option
-@item w, h
+@item w
+@item h
 the input width and height in pixels
 
-@item cw, ch
+@item cw
+@item ch
 the input chroma image width and height in pixels
 
-@item hsub, vsub
+@item hsub
+@item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
@@ -2367,20 +2370,25 @@ The @var{out_w}, @var{out_h}, @var{x}, @var{y} parameters are
 expressions containing the following constants:
 
 @table @option
-@item x, y
+@item x
+@item y
 the computed values for @var{x} and @var{y}. They are evaluated for
 each new frame.
 
-@item in_w, in_h
+@item in_w
+@item in_h
 the input width and height
 
-@item iw, ih
+@item iw
+@item ih
 same as @var{in_w} and @var{in_h}
 
-@item out_w, out_h
+@item out_w
+@item out_h
 the output (cropped) width and height
 
-@item ow, oh
+@item ow
+@item oh
 same as @var{out_w} and @var{out_h}
 
 @item a
@@ -2392,7 +2400,8 @@ input sample aspect ratio
 @item dar
 input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 
-@item hsub, vsub
+@item hsub
+@item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 
@@ -2695,11 +2704,13 @@ pixels. Just set a rectangle covering the logo and watch it disappear
 This filter accepts the following options:
 @table @option
 
-@item x, y
+@item x
+@item y
 Specify the top left corner coordinates of the logo. They must be
 specified.
 
-@item w, h
+@item w
+@item h
 Specify the width and height of the logo to clear. They must be
 specified.
 
@@ -2813,7 +2824,8 @@ Draw a colored box on the input image.
 This filter accepts the following options:
 
 @table @option
-@item x, y
+@item x
+@item y
 Specify the top left corner coordinates of the box. Default to 0.
 
 @item width, w
@@ -2951,7 +2963,8 @@ can be a color name (e.g. "yellow") or a string in the 0xRRGGBB[AA]
 form (e.g. "0xff00ff"), possibly followed by an alpha specifier.
 The default value of @var{shadowcolor} is "black".
 
-@item shadowx, shadowy
+@item shadowx
+@item shadowy
 The x and y offsets for the text shadow position with respect to the
 position of the text. They can be either positive or negative
 values. Default value for both is "0".
@@ -2987,7 +3000,8 @@ If both @var{text} and @var{textfile} are specified, an error is thrown.
 If set to 1, the @var{textfile} will be reloaded before each frame.
 Be sure to update it atomically, or it may be read partially, or even fail.
 
-@item x, y
+@item x
+@item y
 The expressions which specify the offsets where text will be drawn
 within the video frame. They are relative to the top/left border of the
 output image.
@@ -3004,7 +3018,8 @@ following constants and functions:
 @item dar
 input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
 
-@item hsub, vsub
+@item hsub
+@item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 
@@ -3057,7 +3072,8 @@ the height of the rendered text
 @item text_w, tw
 the width of the rendered text
 
-@item x, y
+@item x
+@item y
 the x and y offset coordinates where the text is drawn.
 
 These parameters allow the @var{x} and @var{y} expressions to refer
@@ -3212,7 +3228,8 @@ Detect and draw edges. The filter uses the Canny Edge Detection algorithm.
 The filter accepts the following options:
 
 @table @option
-@item low, high
+@item low
+@item high
 Set low and high threshold values used by the Canny thresholding
 algorithm.
 
@@ -4496,7 +4513,8 @@ The @var{lut} filter requires either YUV or RGB pixel formats in input,
 The expressions can contain the following constants and functions:
 
 @table @option
-@item w, h
+@item w
+@item h
 the input width and height
 
 @item val
@@ -5125,20 +5143,25 @@ The value for the @var{width}, @var{height}, @var{x}, and @var{y}
 options are expressions containing the following constants:
 
 @table @option
-@item in_w, in_h
+@item in_w
+@item in_h
 the input video width and height
 
-@item iw, ih
+@item iw
+@item ih
 same as @var{in_w} and @var{in_h}
 
-@item out_w, out_h
+@item out_w
+@item out_h
 the output width and height, that is the size of the padded area as
 specified by the @var{width} and @var{height} expressions
 
-@item ow, oh
+@item ow
+@item oh
 same as @var{out_w} and @var{out_h}
 
-@item x, y
+@item x
+@item y
 x and y offsets as specified by the @var{x} and @var{y}
 expressions, or NAN if not yet specified
 
@@ -5151,7 +5174,8 @@ input sample aspect ratio
 @item dar
 input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 
-@item hsub, vsub
+@item hsub
+@item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
@@ -5480,16 +5504,20 @@ The values of the @var{w} and @var{h} options are expressions
 containing the following constants:
 
 @table @option
-@item in_w, in_h
+@item in_w
+@item in_h
 the input width and height
 
-@item iw, ih
+@item iw
+@item ih
 same as @var{in_w} and @var{in_h}
 
-@item out_w, out_h
+@item out_w
+@item out_h
 the output (cropped) width and height
 
-@item ow, oh
+@item ow
+@item oh
 same as @var{out_w} and @var{out_h}
 
 @item a
@@ -5501,7 +5529,8 @@ input sample aspect ratio
 @item dar
 input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 
-@item hsub, vsub
+@item hsub
+@item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
