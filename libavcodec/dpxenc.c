@@ -35,40 +35,27 @@ typedef struct DPXContext {
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     DPXContext *s = avctx->priv_data;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
-    s->big_endian         = 1;
-    s->bits_per_component = 8;
-    s->descriptor         = 50; /* RGB */
-    s->planar             = 0;
+    s->big_endian         = !!(desc->flags & PIX_FMT_BE);
+    s->bits_per_component = desc->comp[0].depth_minus1 + 1;
+    s->descriptor         = (desc->flags & PIX_FMT_ALPHA) ? 51 : 50;
+    s->planar             = !!(desc->flags & PIX_FMT_PLANAR);
 
     switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_GBRP10BE:
+    case AV_PIX_FMT_GBRP10LE:
+    case AV_PIX_FMT_GBRP12BE:
+    case AV_PIX_FMT_GBRP12LE:
     case AV_PIX_FMT_RGB24:
-        break;
+    case AV_PIX_FMT_RGBA64BE:
+    case AV_PIX_FMT_RGBA64LE:
     case AV_PIX_FMT_RGBA:
-        s->descriptor = 51; /* RGBA */
         break;
     case AV_PIX_FMT_RGB48LE:
-        s->big_endian = 0;
     case AV_PIX_FMT_RGB48BE:
-        s->bits_per_component = avctx->bits_per_raw_sample ? avctx->bits_per_raw_sample : 16;
-        break;
-    case AV_PIX_FMT_RGBA64LE:
-        s->big_endian = 0;
-    case AV_PIX_FMT_RGBA64BE:
-        s->descriptor = 51;
-        s->bits_per_component = 16;
-        break;
-    case AV_PIX_FMT_GBRP10LE:
-        s->big_endian = 0;
-    case AV_PIX_FMT_GBRP10BE:
-        s->bits_per_component = 10;
-        s->planar = 1;
-        break;
-    case AV_PIX_FMT_GBRP12LE:
-        s->big_endian = 0;
-    case AV_PIX_FMT_GBRP12BE:
-        s->bits_per_component = 12;
-        s->planar = 1;
+        if (avctx->bits_per_raw_sample)
+            s->bits_per_component = avctx->bits_per_raw_sample;
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
