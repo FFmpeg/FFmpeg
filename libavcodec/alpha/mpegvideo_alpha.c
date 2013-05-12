@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
+#include "libavutil/attributes.h"
 #include "libavcodec/mpegvideo.h"
 #include "asm.h"
 
-static void dct_unquantize_h263_axp(DCTELEM *block, int n_coeffs,
+static void dct_unquantize_h263_axp(int16_t *block, int n_coeffs,
                                     uint64_t qscale, uint64_t qadd)
 {
     uint64_t qmul = qscale << 1;
@@ -69,12 +69,12 @@ static void dct_unquantize_h263_axp(DCTELEM *block, int n_coeffs,
     }
 }
 
-static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
+static void dct_unquantize_h263_intra_axp(MpegEncContext *s, int16_t *block,
                                     int n, int qscale)
 {
     int n_coeffs;
     uint64_t qadd;
-    DCTELEM block0 = block[0];
+    int16_t block0 = block[0];
 
     if (!s->h263_aic) {
         if (n < 4)
@@ -96,14 +96,14 @@ static void dct_unquantize_h263_intra_axp(MpegEncContext *s, DCTELEM *block,
     block[0] = block0;
 }
 
-static void dct_unquantize_h263_inter_axp(MpegEncContext *s, DCTELEM *block,
+static void dct_unquantize_h263_inter_axp(MpegEncContext *s, int16_t *block,
                                     int n, int qscale)
 {
     int n_coeffs = s->inter_scantable.raster_end[s->block_last_index[n]];
     dct_unquantize_h263_axp(block, n_coeffs, qscale, (qscale - 1) | 1);
 }
 
-void ff_MPV_common_init_axp(MpegEncContext *s)
+av_cold void ff_MPV_common_init_axp(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_axp;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_axp;

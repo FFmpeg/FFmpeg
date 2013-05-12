@@ -56,10 +56,10 @@ static int h261_probe(AVProbeData *p)
         }
     }
     if(valid_psc > 2*invalid_psc + 6){
-        return 50;
+        return AVPROBE_SCORE_EXTENSION;
     }else if(valid_psc > 2*invalid_psc + 2)
-        return 25;
+        return AVPROBE_SCORE_EXTENSION / 2;
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h261, "raw H.261", h261_probe, "h261", CODEC_ID_H261)
+FF_DEF_RAWVIDEO_DEMUXER(h261, "raw H.261", h261_probe, "h261", AV_CODEC_ID_H261)

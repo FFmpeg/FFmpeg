@@ -20,13 +20,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "bytestream.h"
-#include "libavutil/lzo.h" // for av_memcpy_backptr
+#include "internal.h"
+
+#include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
 typedef struct DfaContext {
-    AVFrame pic;
-
     uint32_t pal[256];
     uint8_t *frame_buf;
 } DfaContext;
@@ -35,9 +37,14 @@ static av_cold int dfa_decode_init(AVCodecContext *avctx)
 {
     DfaContext *s = avctx->priv_data;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
-    s->frame_buf = av_mallocz(avctx->width * avctx->height + AV_LZO_OUTPUT_PADDING);
+    if (!avctx->width || !avctx->height)
+        return AVERROR_INVALIDDATA;
+
+    av_assert0(av_image_check_size(avctx->width, avctx->height, 0, avctx) >= 0);
+
+    s->frame_buf = av_mallocz(avctx->width * avctx->height);
     if (!s->frame_buf)
         return AVERROR(ENOMEM);
 
@@ -118,9 +125,7 @@ static int decode_dsw1(GetByteContext *gb, uint8_t *frame, int width, int height
             count = ((v >> 13) + 2) << 1;
             if (frame - frame_start < offset || frame_end - frame < count)
                 return AVERROR_INVALIDDATA;
-            // can't use av_memcpy_backptr() since it can overwrite following pixels
-            for (v = 0; v < count; v++)
-                frame[v] = frame[v - offset];
+            av_memcpy_backptr(frame, offset, count);
             frame += count;
         } else if (bitbuf & (mask << 1)) {
             frame += bytestream2_get_le16(gb);
@@ -149,8 +154,7 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
             bitbuf = bytestream2_get_le16u(gb);
             mask = 1;
         }
-        if (frame_end - frame < width + 2)
-            return AVERROR_INVALIDDATA;
+
         if (bitbuf & mask) {
             v = bytestream2_get_le16(gb);
             offset = (v & 0x1FFF) << 2;
@@ -164,9 +168,12 @@ static int decode_dds1(GetByteContext *gb, uint8_t *frame, int width, int height
                 frame += 2;
             }
         } else if (bitbuf & (mask << 1)) {
-            frame += bytestream2_get_le16(gb) * 2;
+            v = bytestream2_get_le16(gb)*2;
+            if (frame - frame_end < v)
+                return AVERROR_INVALIDDATA;
+            frame += v;
         } else {
-            if (frame_end - frame < width + 2)
+            if (frame_end - frame < width + 3)
                 return AVERROR_INVALIDDATA;
             frame[0] = frame[1] =
             frame[width] = frame[width + 1] =  bytestream2_get_byte(gb);
@@ -247,13 +254,16 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
             y        += skip_lines;
             segments = bytestream2_get_le16(gb);
         }
+
         if (frame_end <= frame)
-            return -1;
+            return AVERROR_INVALIDDATA;
         if (segments & 0x8000) {
             frame[width - 1] = segments & 0xFF;
             segments = bytestream2_get_le16(gb);
         }
         line_ptr = frame;
+        if (frame_end - frame < width)
+            return AVERROR_INVALIDDATA;
         frame += width;
         y++;
         while (segments--) {
@@ -281,9 +291,26 @@ static int decode_wdlt(GetByteContext *gb, uint8_t *frame, int width, int height
     return 0;
 }
 
-static int decode_unk6(GetByteContext *gb, uint8_t *frame, int width, int height)
+static int decode_tdlt(GetByteContext *gb, uint8_t *frame, int width, int height)
 {
-    return AVERROR_PATCHWELCOME;
+    const uint8_t *frame_end = frame + width * height;
+    uint32_t segments = bytestream2_get_le32(gb);
+    int skip, copy;
+
+    while (segments--) {
+        if (bytestream2_get_bytes_left(gb) < 2)
+            return AVERROR_INVALIDDATA;
+        copy = bytestream2_get_byteu(gb) * 2;
+        skip = bytestream2_get_byteu(gb) * 2;
+        if (frame_end - frame < copy + skip ||
+            bytestream2_get_bytes_left(gb) < copy)
+            return AVERROR_INVALIDDATA;
+        frame += skip;
+        bytestream2_get_buffer(gb, frame, copy);
+        frame += copy;
+    }
+
+    return 0;
 }
 
 static int decode_blck(GetByteContext *gb, uint8_t *frame, int width, int height)
@@ -297,17 +324,18 @@ typedef int (*chunk_decoder)(GetByteContext *gb, uint8_t *frame, int width, int 
 
 static const chunk_decoder decoder[8] = {
     decode_copy, decode_tsw1, decode_bdlt, decode_wdlt,
-    decode_unk6, decode_dsw1, decode_blck, decode_dds1,
+    decode_tdlt, decode_dsw1, decode_blck, decode_dds1,
 };
 
 static const char* chunk_name[8] = {
-    "COPY", "TSW1", "BDLT", "WDLT", "????", "DSW1", "BLCK", "DDS1"
+    "COPY", "TSW1", "BDLT", "WDLT", "TDLT", "DSW1", "BLCK", "DDS1"
 };
 
 static int dfa_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
+    AVFrame *frame = data;
     DfaContext *s = avctx->priv_data;
     GetByteContext gb;
     const uint8_t *buf = avpkt->data;
@@ -315,14 +343,10 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     uint8_t *dst;
     int ret;
     int i, pal_elems;
+    int version = avctx->extradata_size==2 ? AV_RL16(avctx->extradata) : 0;
 
-    if (s->pic.data[0])
-        avctx->release_buffer(avctx, &s->pic);
-
-    if ((ret = avctx->get_buffer(avctx, &s->pic))) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     while (bytestream2_get_bytes_left(&gb) > 0) {
@@ -335,9 +359,9 @@ static int dfa_decode_frame(AVCodecContext *avctx,
             pal_elems = FFMIN(chunk_size / 3, 256);
             for (i = 0; i < pal_elems; i++) {
                 s->pal[i] = bytestream2_get_be24(&gb) << 2;
-                s->pal[i] |= 0xFF << 24 | (s->pal[i] >> 6) & 0x30303;
+                s->pal[i] |= 0xFFU << 24 | (s->pal[i] >> 6) & 0x30303;
             }
-            s->pic.palette_has_changed = 1;
+            frame->palette_has_changed = 1;
         } else if (chunk_type <= 9) {
             if (decoder[chunk_type - 2](&gb, s->frame_buf, avctx->width, avctx->height)) {
                 av_log(avctx, AV_LOG_ERROR, "Error decoding %s chunk\n",
@@ -352,16 +376,23 @@ static int dfa_decode_frame(AVCodecContext *avctx,
     }
 
     buf = s->frame_buf;
-    dst = s->pic.data[0];
+    dst = frame->data[0];
     for (i = 0; i < avctx->height; i++) {
-        memcpy(dst, buf, avctx->width);
-        dst += s->pic.linesize[0];
-        buf += avctx->width;
+        if(version == 0x100) {
+            int j;
+            for(j = 0; j < avctx->width; j++) {
+                dst[j] = buf[ (i&3)*(avctx->width /4) + (j/4) +
+                             ((j&3)*(avctx->height/4) + (i/4))*avctx->width];
+            }
+        } else {
+            memcpy(dst, buf, avctx->width);
+            buf += avctx->width;
+        }
+        dst += frame->linesize[0];
     }
-    memcpy(s->pic.data[1], s->pal, sizeof(s->pal));
+    memcpy(frame->data[1], s->pal, sizeof(s->pal));
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = s->pic;
+    *got_frame = 1;
 
     return avpkt->size;
 }
@@ -369,9 +400,6 @@ static int dfa_decode_frame(AVCodecContext *avctx,
 static av_cold int dfa_decode_end(AVCodecContext *avctx)
 {
     DfaContext *s = avctx->priv_data;
-
-    if (s->pic.data[0])
-        avctx->release_buffer(avctx, &s->pic);
 
     av_freep(&s->frame_buf);
 
@@ -381,7 +409,7 @@ static av_cold int dfa_decode_end(AVCodecContext *avctx)
 AVCodec ff_dfa_decoder = {
     .name           = "dfa",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_DFA,
+    .id             = AV_CODEC_ID_DFA,
     .priv_data_size = sizeof(DfaContext),
     .init           = dfa_decode_init,
     .close          = dfa_decode_end,

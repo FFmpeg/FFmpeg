@@ -23,7 +23,6 @@
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 
 #define LXF_MAX_PACKET_HEADER_SIZE 256
 #define LXF_HEADER_DATA_SIZE    120
@@ -33,22 +32,21 @@
 #define LXF_MAX_AUDIO_PACKET    (8008*15*4) ///< 15-channel 32-bit NTSC audio frame
 
 static const AVCodecTag lxf_tags[] = {
-    { CODEC_ID_MJPEG,       0 },
-    { CODEC_ID_MPEG1VIDEO,  1 },
-    { CODEC_ID_MPEG2VIDEO,  2 },    //MpMl, 4:2:0
-    { CODEC_ID_MPEG2VIDEO,  3 },    //MpPl, 4:2:2
-    { CODEC_ID_DVVIDEO,     4 },    //DV25
-    { CODEC_ID_DVVIDEO,     5 },    //DVCPRO
-    { CODEC_ID_DVVIDEO,     6 },    //DVCPRO50
-    { CODEC_ID_RAWVIDEO,    7 },    //PIX_FMT_ARGB, where alpha is used for chroma keying
-    { CODEC_ID_RAWVIDEO,    8 },    //16-bit chroma key
-    { CODEC_ID_MPEG2VIDEO,  9 },    //4:2:2 CBP ("Constrained Bytes per Gop")
-    { CODEC_ID_NONE,        0 },
+    { AV_CODEC_ID_MJPEG,       0 },
+    { AV_CODEC_ID_MPEG1VIDEO,  1 },
+    { AV_CODEC_ID_MPEG2VIDEO,  2 },    //MpMl, 4:2:0
+    { AV_CODEC_ID_MPEG2VIDEO,  3 },    //MpPl, 4:2:2
+    { AV_CODEC_ID_DVVIDEO,     4 },    //DV25
+    { AV_CODEC_ID_DVVIDEO,     5 },    //DVCPRO
+    { AV_CODEC_ID_DVVIDEO,     6 },    //DVCPRO50
+    { AV_CODEC_ID_RAWVIDEO,    7 },    //AV_PIX_FMT_ARGB, where alpha is used for chroma keying
+    { AV_CODEC_ID_RAWVIDEO,    8 },    //16-bit chroma key
+    { AV_CODEC_ID_MPEG2VIDEO,  9 },    //4:2:2 CBP ("Constrained Bytes per Gop")
+    { AV_CODEC_ID_NONE,        0 },
 };
 
 typedef struct {
     int channels;                       ///< number of audio channels. zero means no audio
-    uint8_t temp[LXF_MAX_AUDIO_PACKET]; ///< temp buffer for de-planarizing the audio data
     int frame_number;                   ///< current video frame
     uint32_t video_format, packet_type, extended_size;
 } LXFDemuxContext;
@@ -132,7 +130,7 @@ static int get_packet_header(AVFormatContext *s)
     version     = bytestream_get_le32(&p);
     header_size = bytestream_get_le32(&p);
     if (version > 1)
-        av_log_ask_for_sample(s, "Unknown format version %i\n", version);
+        avpriv_request_sample(s, "format version %i", version);
     if (header_size < (version ? 72 : 60) ||
         header_size > LXF_MAX_PACKET_HEADER_SIZE ||
         (header_size & 3)) {
@@ -165,7 +163,7 @@ static int get_packet_header(AVFormatContext *s)
         break;
     case 1:
         //audio
-        if (!(st = s->streams[1])) {
+        if (!s->streams || !(st = s->streams[1])) {
             av_log(s, AV_LOG_INFO, "got audio packet, but no audio stream present\n");
             break;
         }
@@ -185,10 +183,10 @@ static int get_packet_header(AVFormatContext *s)
         }
 
         switch (st->codec->bits_per_coded_sample) {
-        case 16: st->codec->codec_id = CODEC_ID_PCM_S16LE; break;
-        case 20: st->codec->codec_id = CODEC_ID_PCM_LXF;   break;
-        case 24: st->codec->codec_id = CODEC_ID_PCM_S24LE; break;
-        case 32: st->codec->codec_id = CODEC_ID_PCM_S32LE; break;
+        case 16: st->codec->codec_id = AV_CODEC_ID_PCM_S16LE_PLANAR; break;
+        case 20: st->codec->codec_id = AV_CODEC_ID_PCM_LXF;   break;
+        case 24: st->codec->codec_id = AV_CODEC_ID_PCM_S24LE_PLANAR; break;
+        case 32: st->codec->codec_id = AV_CODEC_ID_PCM_S32LE_PLANAR; break;
         default:
             av_log(s, AV_LOG_WARNING,
                    "only 16-, 20-, 24- and 32-bit PCM currently supported\n");
@@ -272,7 +270,7 @@ static int lxf_read_header(AVFormatContext *s)
     if ((video_params >> 22) & 1)
         av_log(s, AV_LOG_WARNING, "VBI data not yet supported\n");
 
-    if ((lxf->channels = (disk_params >> 2) & 0xF)) {
+    if ((lxf->channels = 1 << (disk_params >> 4 & 3) + 1)) {
         if (!(st = avformat_new_stream(s, NULL)))
             return AVERROR(ENOMEM);
 
@@ -288,28 +286,10 @@ static int lxf_read_header(AVFormatContext *s)
     return 0;
 }
 
-/**
- * De-planerize the PCM data in lxf->temp
- * FIXME: remove this once support for planar audio is added to libavcodec
- *
- * @param[out] out where to write the de-planerized data to
- * @param[in] bytes the total size of the PCM data
- */
-static void deplanarize(LXFDemuxContext *lxf, AVStream *ast, uint8_t *out, int bytes)
-{
-    int x, y, z, i, bytes_per_sample = ast->codec->bits_per_coded_sample >> 3;
-
-    for (z = i = 0; z < lxf->channels; z++)
-        for (y = 0; y < bytes / bytes_per_sample / lxf->channels; y++)
-            for (x = 0; x < bytes_per_sample; x++, i++)
-                out[x + bytes_per_sample*(z + y*lxf->channels)] = lxf->temp[i];
-}
-
 static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     LXFDemuxContext *lxf = s->priv_data;
     AVIOContext   *pb  = s->pb;
-    uint8_t *buf;
     AVStream *ast = NULL;
     uint32_t stream;
     int ret, ret2;
@@ -339,20 +319,14 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if ((ret2 = av_new_packet(pkt, ret)) < 0)
         return ret2;
 
-    //read non-20-bit audio data into lxf->temp so we can deplanarize it
-    buf = ast && ast->codec->codec_id != CODEC_ID_PCM_LXF ? lxf->temp : pkt->data;
-
-    if ((ret2 = avio_read(pb, buf, ret)) != ret) {
+    if ((ret2 = avio_read(pb, pkt->data, ret)) != ret) {
         av_free_packet(pkt);
         return ret2 < 0 ? ret2 : AVERROR_EOF;
     }
 
     pkt->stream_index = stream;
 
-    if (ast) {
-        if(ast->codec->codec_id != CODEC_ID_PCM_LXF)
-            deplanarize(lxf, ast, pkt->data, ret);
-    } else {
+    if (!ast) {
         //picture type (0 = closed I, 1 = open I, 2 = P, 3 = B)
         if (((lxf->video_format >> 22) & 0x3) < 2)
             pkt->flags |= AV_PKT_FLAG_KEY;
@@ -365,7 +339,7 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_lxf_demuxer = {
     .name           = "lxf",
-    .long_name      = NULL_IF_CONFIG_SMALL("VR native stream format (LXF)"),
+    .long_name      = NULL_IF_CONFIG_SMALL("VR native stream (LXF)"),
     .priv_data_size = sizeof(LXFDemuxContext),
     .read_probe     = lxf_probe,
     .read_header    = lxf_read_header,

@@ -127,7 +127,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
 AVCodec ff_h263i_decoder = {
     .name           = "h263i",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H263I,
+    .id             = AV_CODEC_ID_H263I,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_h263_decode_init,
     .close          = ff_h263_decode_end,

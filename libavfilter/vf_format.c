@@ -23,7 +23,13 @@
  * format and noformat video filters
  */
 
+#include <string.h>
+
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/opt.h"
+
 #include "avfilter.h"
 #include "internal.h"
 #include "formats.h"
@@ -31,30 +37,32 @@
 #include "video.h"
 
 typedef struct {
+    const AVClass *class;
+    char *pix_fmts;
     /**
      * List of flags telling if a given image format has been listed
      * as argument to the filter.
      */
-    int listed_pix_fmt_flags[PIX_FMT_NB];
+    int listed_pix_fmt_flags[AV_PIX_FMT_NB];
 } FormatContext;
 
-#define PIX_FMT_NAME_MAXSIZE 32
+#define AV_PIX_FMT_NAME_MAXSIZE 32
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     FormatContext *format = ctx->priv;
     const char *cur, *sep;
-    char             pix_fmt_name[PIX_FMT_NAME_MAXSIZE];
+    char             pix_fmt_name[AV_PIX_FMT_NAME_MAXSIZE];
     int              pix_fmt_name_len, ret;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     /* parse the list of formats */
-    for (cur = args; cur; cur = sep ? sep+1 : NULL) {
-        if (!(sep = strchr(cur, ':')))
+    for (cur = format->pix_fmts; cur; cur = sep ? sep + 1 : NULL) {
+        if (!(sep = strchr(cur, '|')))
             pix_fmt_name_len = strlen(cur);
         else
             pix_fmt_name_len = sep - cur;
-        if (pix_fmt_name_len >= PIX_FMT_NAME_MAXSIZE) {
+        if (pix_fmt_name_len >= AV_PIX_FMT_NAME_MAXSIZE) {
             av_log(ctx, AV_LOG_ERROR, "Format name too long\n");
             return -1;
         }
@@ -74,17 +82,23 @@ static av_cold int init(AVFilterContext *ctx, const char *args)
 static AVFilterFormats *make_format_list(FormatContext *format, int flag)
 {
     AVFilterFormats *formats;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 
     formats = av_mallocz(sizeof(AVFilterFormats));
-    formats->formats = av_malloc(sizeof(enum PixelFormat) * PIX_FMT_NB);
+    formats->formats = av_malloc(sizeof(enum AVPixelFormat) * AV_PIX_FMT_NB);
 
-    for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
+    for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
         if (format->listed_pix_fmt_flags[pix_fmt] == flag)
             formats->formats[formats->format_count++] = pix_fmt;
 
     return formats;
 }
+
+#define OFFSET(x) offsetof(FormatContext, x)
+static const AVOption options[] = {
+    { "pix_fmts", "A '|'-separated list of pixel formats", OFFSET(pix_fmts), AV_OPT_TYPE_STRING, .flags = AV_OPT_FLAG_VIDEO_PARAM },
+    { NULL },
+};
 
 #if CONFIG_FORMAT_FILTER
 static int query_formats_format(AVFilterContext *ctx)
@@ -92,6 +106,30 @@ static int query_formats_format(AVFilterContext *ctx)
     ff_set_common_formats(ctx, make_format_list(ctx->priv, 1));
     return 0;
 }
+
+static const AVClass format_class = {
+    .class_name = "format",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVFilterPad avfilter_vf_format_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_format_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_format = {
     .name      = "format",
@@ -102,17 +140,10 @@ AVFilter avfilter_vf_format = {
     .query_formats = query_formats_format,
 
     .priv_size = sizeof(FormatContext),
+    .priv_class = &format_class,
 
-    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer= ff_null_get_video_buffer,
-                                    .start_frame     = ff_null_start_frame,
-                                    .draw_slice      = ff_null_draw_slice,
-                                    .end_frame       = ff_null_end_frame, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO },
-                                  { .name = NULL}},
+    .inputs    = avfilter_vf_format_inputs,
+    .outputs   = avfilter_vf_format_outputs,
 };
 #endif /* CONFIG_FORMAT_FILTER */
 
@@ -123,6 +154,30 @@ static int query_formats_noformat(AVFilterContext *ctx)
     return 0;
 }
 
+static const AVClass noformat_class = {
+    .class_name = "noformat",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVFilterPad avfilter_vf_noformat_inputs[] = {
+    {
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = ff_null_get_video_buffer,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_noformat_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO
+    },
+    { NULL }
+};
+
 AVFilter avfilter_vf_noformat = {
     .name      = "noformat",
     .description = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
@@ -132,16 +187,9 @@ AVFilter avfilter_vf_noformat = {
     .query_formats = query_formats_noformat,
 
     .priv_size = sizeof(FormatContext),
+    .priv_class = &noformat_class,
 
-    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO,
-                                    .get_video_buffer= ff_null_get_video_buffer,
-                                    .start_frame     = ff_null_start_frame,
-                                    .draw_slice      = ff_null_draw_slice,
-                                    .end_frame       = ff_null_end_frame, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
-                                    .type            = AVMEDIA_TYPE_VIDEO },
-                                  { .name = NULL}},
+    .inputs    = avfilter_vf_noformat_inputs,
+    .outputs   = avfilter_vf_noformat_outputs,
 };
 #endif /* CONFIG_NOFORMAT_FILTER */

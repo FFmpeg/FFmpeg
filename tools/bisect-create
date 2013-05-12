@@ -39,4 +39,8 @@ case "$1" in
             git bisect skip || break
         done
     ;;
+    run)
+       shift # remove "run" from arguments
+       git bisect run sh -c "ls \`cat tools/bisect.need\` > /dev/null 2> /dev/null || exit 125; \"\$@\"" sh "$@"
+    ;;
 esac

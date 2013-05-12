@@ -24,10 +24,6 @@
 
 #include "avcodec.h"
 
-typedef struct BMPContext {
-    AVFrame picture;
-} BMPContext;
-
 typedef enum {
     BMP_RGB         =0,
     BMP_RLE8        =1,

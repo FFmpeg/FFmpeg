@@ -1,5 +1,5 @@
 /*
- * MQ-coder
+ * MQ-coder: structures, common and decoder functions
  * Copyright (c) 2007 Kamil Nowosad
  *
  * This file is part of FFmpeg.
@@ -28,16 +28,16 @@
  * @author Kamil Nowosad
  */
 
-#include "avcodec.h"
+#include <stdint.h>
 
 #define MQC_CX_UNI 17
 #define MQC_CX_RL  18
 
-extern uint16_t  ff_mqc_qe[2*47];
-extern uint8_t ff_mqc_nlps[2*47];
-extern uint8_t ff_mqc_nmps[2*47];
+extern uint16_t ff_mqc_qe[2 * 47];
+extern uint8_t  ff_mqc_nlps[2 * 47];
+extern uint8_t  ff_mqc_nmps[2 * 47];
 
-typedef struct {
+typedef struct MqcState {
     uint8_t *bp, *bpstart;
     unsigned int a;
     unsigned int c;
@@ -61,15 +61,27 @@ int ff_mqc_flush(MqcState *mqc);
 
 /* decoder */
 
-/** initialize the decoder */
+/**
+ * Initialize MQ-decoder.
+ * @param mqc   MQ decoder state
+ * @param bp    byte poiter
+ */
 void ff_mqc_initdec(MqcState *mqc, uint8_t *bp);
 
-/** returns decoded bit with context cx */
+/**
+ * MQ decoder.
+ * @param mqc       MQ decoder state
+ * @param cxstate   Context
+ * @return          Decision (0 ot 1)
+ */
 int ff_mqc_decode(MqcState *mqc, uint8_t *cxstate);
 
 /* common */
 
-/** initialize the contexts */
+/**
+ * MQ-coder context initialisations.
+ * @param mqc       MQ-coder context
+ */
 void ff_mqc_init_contexts(MqcState *mqc);
 
 #endif /* AVCODEC_MQC_H */

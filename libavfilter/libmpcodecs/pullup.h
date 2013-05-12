@@ -83,20 +83,20 @@ struct pullup_context
 };
 
 
-struct pullup_buffer *pullup_lock_buffer(struct pullup_buffer *b, int parity);
-void pullup_release_buffer(struct pullup_buffer *b, int parity);
-struct pullup_buffer *pullup_get_buffer(struct pullup_context *c, int parity);
+struct pullup_buffer *ff_pullup_lock_buffer(struct pullup_buffer *b, int parity);
+void ff_pullup_release_buffer(struct pullup_buffer *b, int parity);
+struct pullup_buffer *ff_pullup_get_buffer(struct pullup_context *c, int parity);
 
-void pullup_submit_field(struct pullup_context *c, struct pullup_buffer *b, int parity);
-void pullup_flush_fields(struct pullup_context *c);
+void ff_pullup_submit_field(struct pullup_context *c, struct pullup_buffer *b, int parity);
+void ff_pullup_flush_fields(struct pullup_context *c);
 
-struct pullup_frame *pullup_get_frame(struct pullup_context *c);
-void pullup_pack_frame(struct pullup_context *c, struct pullup_frame *fr);
-void pullup_release_frame(struct pullup_frame *fr);
+struct pullup_frame *ff_pullup_get_frame(struct pullup_context *c);
+void ff_pullup_pack_frame(struct pullup_context *c, struct pullup_frame *fr);
+void ff_pullup_release_frame(struct pullup_frame *fr);
 
-struct pullup_context *pullup_alloc_context(void);
-void pullup_preinit_context(struct pullup_context *c);
-void pullup_init_context(struct pullup_context *c);
-void pullup_free_context(struct pullup_context *c);
+struct pullup_context *ff_pullup_alloc_context(void);
+void ff_pullup_preinit_context(struct pullup_context *c);
+void ff_pullup_init_context(struct pullup_context *c);
+void ff_pullup_free_context(struct pullup_context *c);
 
 #endif /* MPLAYER_PULLUP_H */

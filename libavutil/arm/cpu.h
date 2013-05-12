@@ -25,7 +25,7 @@
 #define have_armv5te(flags) (HAVE_ARMV5TE && ((flags) & AV_CPU_FLAG_ARMV5TE))
 #define have_armv6(flags)   (HAVE_ARMV6   && ((flags) & AV_CPU_FLAG_ARMV6))
 #define have_armv6t2(flags) (HAVE_ARMV6T2 && ((flags) & AV_CPU_FLAG_ARMV6T2))
-#define have_vfp(flags)     (HAVE_ARMVFP  && ((flags) & AV_CPU_FLAG_VFP))
+#define have_vfp(flags)     (HAVE_VFP     && ((flags) & AV_CPU_FLAG_VFP))
 #define have_vfpv3(flags)   (HAVE_VFPV3   && ((flags) & AV_CPU_FLAG_VFPV3))
 #define have_neon(flags)    (HAVE_NEON    && ((flags) & AV_CPU_FLAG_NEON))
 

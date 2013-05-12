@@ -23,16 +23,17 @@
 #include "config.h"
 #include <xvid.h>
 #include <unistd.h>
+#include "libavutil/attributes.h"
 #include "libavutil/file.h"
 #include "avcodec.h"
 #include "libxvid.h"
-//#include "dsputil.h"
 #include "mpegvideo.h"
 
 #undef NDEBUG
 #include <assert.h>
 
-int ff_xvid_rate_control_init(MpegEncContext *s){
+av_cold int ff_xvid_rate_control_init(MpegEncContext *s)
+{
     char *tmp_name;
     int fd, i;
     xvid_plg_create_t xvid_plg_create = { 0 };
@@ -57,6 +58,8 @@ int ff_xvid_rate_control_init(MpegEncContext *s){
 
         if (write(fd, tmp, strlen(tmp)) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error %s writing 2pass logfile\n", strerror(errno));
+            av_free(tmp_name);
+            close(fd);
             return AVERROR(errno);
         }
     }
@@ -133,7 +136,8 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
         return xvid_plg_data.quant * FF_QP2LAMBDA;
 }
 
-void ff_xvid_rate_control_uninit(MpegEncContext *s){
+av_cold void ff_xvid_rate_control_uninit(MpegEncContext *s)
+{
     xvid_plg_destroy_t xvid_plg_destroy;
 
     xvid_plugin_2pass2(s->rc_context.non_lavc_opaque, XVID_PLG_DESTROY, &xvid_plg_destroy, NULL);

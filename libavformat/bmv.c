@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -47,17 +48,18 @@ static int bmv_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_BMV_VIDEO;
+    st->codec->codec_id   = AV_CODEC_ID_BMV_VIDEO;
     st->codec->width      = 640;
     st->codec->height     = 429;
-    st->codec->pix_fmt    = PIX_FMT_PAL8;
+    st->codec->pix_fmt    = AV_PIX_FMT_PAL8;
     avpriv_set_pts_info(st, 16, 1, 12);
     ast = avformat_new_stream(s, 0);
     if (!ast)
         return AVERROR(ENOMEM);
     ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id        = CODEC_ID_BMV_AUDIO;
+    ast->codec->codec_id        = AV_CODEC_ID_BMV_AUDIO;
     ast->codec->channels        = 2;
+    ast->codec->channel_layout  = AV_CH_LAYOUT_STEREO;
     ast->codec->sample_rate     = 22050;
     avpriv_set_pts_info(ast, 16, 1, 22050);
 

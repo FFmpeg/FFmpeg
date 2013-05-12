@@ -20,9 +20,11 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct ASSContext{
     unsigned int extra_index;
+    int write_ts; // 0: ssa (timing in payload), 1: ass (matroska like)
 }ASSContext;
 
 static int write_header(AVFormatContext *s)
@@ -31,10 +33,13 @@ static int write_header(AVFormatContext *s)
     AVCodecContext *avctx= s->streams[0]->codec;
     uint8_t *last= NULL;
 
-    if(s->nb_streams != 1 || avctx->codec_id != CODEC_ID_SSA){
+    if (s->nb_streams != 1 || (avctx->codec_id != AV_CODEC_ID_SSA &&
+                               avctx->codec_id != AV_CODEC_ID_ASS)) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
         return -1;
     }
+    ass->write_ts = avctx->codec_id == AV_CODEC_ID_ASS;
+    avpriv_set_pts_info(s->streams[0], 64, 1, 100);
 
     while(ass->extra_index < avctx->extradata_size){
         uint8_t *p  = avctx->extradata + ass->extra_index;
@@ -57,10 +62,31 @@ static int write_header(AVFormatContext *s)
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    avio_write(s->pb, pkt->data, pkt->size);
+    ASSContext *ass = s->priv_data;
 
-    avio_flush(s->pb);
+    if (ass->write_ts) {
+        long int layer;
+        char *p;
+        int64_t start = pkt->pts;
+        int64_t end   = start + pkt->duration;
+        int hh1, mm1, ss1, ms1;
+        int hh2, mm2, ss2, ms2;
 
+        p = pkt->data + strcspn(pkt->data, ",") + 1; // skip ReadOrder
+        layer = strtol(p, &p, 10);
+        if (*p == ',')
+            p++;
+        hh1 = (int)(start / 360000);    mm1 = (int)(start / 6000) % 60;
+        hh2 = (int)(end   / 360000);    mm2 = (int)(end   / 6000) % 60;
+        ss1 = (int)(start / 100) % 60;  ms1 = (int)(start % 100);
+        ss2 = (int)(end   / 100) % 60;  ms2 = (int)(end   % 100);
+        if (hh1 > 9) hh1 = 9, mm1 = 59, ss1 = 59, ms1 = 99;
+        if (hh2 > 9) hh2 = 9, mm2 = 59, ss2 = 59, ms2 = 99;
+        avio_printf(s->pb, "Dialogue: %ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s\r\n",
+                    layer, hh1, mm1, ss1, ms1, hh2, mm2, ss2, ms2, p);
+    } else {
+        avio_write(s->pb, pkt->data, pkt->size);
+    }
     return 0;
 }
 
@@ -72,20 +98,18 @@ static int write_trailer(AVFormatContext *s)
     avio_write(s->pb, avctx->extradata      + ass->extra_index,
                       avctx->extradata_size - ass->extra_index);
 
-    avio_flush(s->pb);
-
     return 0;
 }
 
 AVOutputFormat ff_ass_muxer = {
     .name           = "ass",
-    .long_name      = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .mime_type      = "text/x-ssa",
     .extensions     = "ass,ssa",
     .priv_data_size = sizeof(ASSContext),
-    .subtitle_codec = CODEC_ID_SSA,
+    .subtitle_codec = AV_CODEC_ID_SSA,
     .write_header   = write_header,
     .write_packet   = write_packet,
     .write_trailer  = write_trailer,
-    .flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS,
+    .flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS | AVFMT_TS_NONSTRICT,
 };

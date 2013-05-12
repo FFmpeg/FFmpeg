@@ -22,9 +22,9 @@
 #define AVCODEC_WMV2_H
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "intrax8.h"
+#include "wmv2dsp.h"
 
 #define SKIP_TYPE_NONE 0
 #define SKIP_TYPE_MPEG 1
@@ -35,6 +35,7 @@
 typedef struct Wmv2Context{
     MpegEncContext s;
     IntraX8Context x8;
+    WMV2DSPContext wdsp;
     int j_type_bit;
     int j_type;
     int abt_flag;
@@ -50,7 +51,7 @@ typedef struct Wmv2Context{
     int hshift;
 
     ScanTable abt_scantable[2];
-    DECLARE_ALIGNED(16, DCTELEM, abt_block2)[6][64];
+    DECLARE_ALIGNED(16, int16_t, abt_block2)[6][64];
 }Wmv2Context;
 
 void ff_wmv2_common_init(Wmv2Context * w);

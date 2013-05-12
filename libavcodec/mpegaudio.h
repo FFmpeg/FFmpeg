@@ -52,6 +52,8 @@
 #define WFRAC_BITS  16   /* fractional bits for window */
 #endif
 
+#define IMDCT_SCALAR 1.759
+
 #define FRAC_ONE    (1 << FRAC_BITS)
 
 #define FIX(a)   ((int)((a) * FRAC_ONE))

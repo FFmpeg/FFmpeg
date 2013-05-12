@@ -22,6 +22,7 @@
 #ifndef AVFORMAT_RTMPPKT_H
 #define AVFORMAT_RTMPPKT_H
 
+#include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "url.h"
 
@@ -203,6 +204,15 @@ void ff_amf_write_number(uint8_t **dst, double num);
 void ff_amf_write_string(uint8_t **dst, const char *str);
 
 /**
+ * Write a string consisting of two parts in AMF format to a buffer.
+ *
+ * @param dst pointer to the input buffer (will be modified)
+ * @param str1 first string to write, may be null
+ * @param str2 second string to write, may be null
+ */
+void ff_amf_write_string2(uint8_t **dst, const char *str1, const char *str2);
+
+/**
  * Write AMF NULL value to buffer.
  *
  * @param dst pointer to the input buffer (will be modified)
@@ -230,6 +240,48 @@ void ff_amf_write_field_name(uint8_t **dst, const char *str);
  * @param dst pointer to the input buffer (will be modified)
  */
 void ff_amf_write_object_end(uint8_t **dst);
+
+/**
+ * Read AMF boolean value.
+ *
+ *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
+ *@param[out]    val 0 or 1
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_bool(GetByteContext *gbc, int *val);
+
+/**
+ * Read AMF number value.
+ *
+ *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
+ *@param[out]    val read value
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_number(GetByteContext *gbc, double *val);
+
+/**
+ * Read AMF string value.
+ *
+ * Appends a trailing null byte to output string in order to
+ * ease later parsing.
+ *
+ *@param[in,out] gbc     GetByteContext initialized with AMF-formatted data
+ *@param[out]    str     read string
+ *@param[in]     strsize buffer size available to store the read string
+ *@param[out]    length  read string length
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_string(GetByteContext *gbc, uint8_t *str,
+                       int strsize, int *length);
+
+/**
+ * Read AMF NULL value.
+ *
+ *@param[in,out] gbc GetByteContext initialized with AMF-formatted data
+ *@return 0 on success or an AVERROR code on failure
+*/
+int ff_amf_read_null(GetByteContext *gbc);
+
 
 /** @} */ // AMF funcs
 

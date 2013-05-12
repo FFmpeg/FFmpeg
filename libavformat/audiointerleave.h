@@ -26,7 +26,7 @@
 #include "libavutil/fifo.h"
 #include "avformat.h"
 
-typedef struct {
+typedef struct AudioInterleaveContext {
     AVFifoBuffer *fifo;
     unsigned fifo_size;           ///< size of currently allocated FIFO
     uint64_t dts;                 ///< current dts

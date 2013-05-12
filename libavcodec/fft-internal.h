@@ -36,7 +36,7 @@
 
 #else
 
-#include "libavutil/intmath.h"
+#include "fft.h"
 #include "mathops.h"
 
 void ff_mdct_calcw_c(FFTContext *s, FFTDouble *output, const FFTSample *input);

@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavcodec/avcodec.h"
 #include "mov_chan.h"
 
@@ -426,28 +426,29 @@ static const enum MovChannelLayoutTag mov_ch_layouts_wav[] = {
     MOV_CH_LAYOUT_MPEG_7_1_A,
     MOV_CH_LAYOUT_MPEG_7_1_C,
     MOV_CH_LAYOUT_SMPTE_DTV,
+    0,
 };
 
 static const struct {
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
     const enum MovChannelLayoutTag *layouts;
 } mov_codec_ch_layouts[] = {
-    { CODEC_ID_AAC,     mov_ch_layouts_aac      },
-    { CODEC_ID_AC3,     mov_ch_layouts_ac3      },
-    { CODEC_ID_ALAC,    mov_ch_layouts_alac     },
-    { CODEC_ID_PCM_U8,    mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S8,    mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S16LE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S16BE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S24LE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S24BE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S32LE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_S32BE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_F32LE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_F32BE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_F64LE, mov_ch_layouts_wav    },
-    { CODEC_ID_PCM_F64BE, mov_ch_layouts_wav    },
-    { CODEC_ID_NONE,    NULL                    },
+    { AV_CODEC_ID_AAC,     mov_ch_layouts_aac      },
+    { AV_CODEC_ID_AC3,     mov_ch_layouts_ac3      },
+    { AV_CODEC_ID_ALAC,    mov_ch_layouts_alac     },
+    { AV_CODEC_ID_PCM_U8,    mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S8,    mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S16LE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S16BE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S24LE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S24BE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S32LE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_S32BE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_F32LE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_F32BE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_F64LE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_PCM_F64BE, mov_ch_layouts_wav    },
+    { AV_CODEC_ID_NONE,    NULL                    },
 };
 
 uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
@@ -490,7 +491,7 @@ static uint32_t mov_get_channel_label(uint32_t label)
     return 0;
 }
 
-uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
+uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
                                        uint64_t channel_layout,
                                        uint32_t *bitmap)
 {
@@ -499,11 +500,11 @@ uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
     const enum MovChannelLayoutTag *layouts = NULL;
 
     /* find the layout list for the specified codec */
-    for (i = 0; mov_codec_ch_layouts[i].codec_id != CODEC_ID_NONE; i++) {
+    for (i = 0; mov_codec_ch_layouts[i].codec_id != AV_CODEC_ID_NONE; i++) {
         if (mov_codec_ch_layouts[i].codec_id == codec_id)
             break;
     }
-    if (mov_codec_ch_layouts[i].codec_id != CODEC_ID_NONE)
+    if (mov_codec_ch_layouts[i].codec_id != AV_CODEC_ID_NONE)
         layouts = mov_codec_ch_layouts[i].layouts;
 
     if (layouts) {
@@ -543,9 +544,9 @@ uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
     return tag;
 }
 
-int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
+int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+                     int64_t size)
 {
-    AVIOContext *pb = s->pb;
     uint32_t layout_tag, bitmap, num_descr, label_mask;
     int i;
 
@@ -570,6 +571,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
         avio_rl32(pb);                      // mCoordinates[0]
         avio_rl32(pb);                      // mCoordinates[1]
         avio_rl32(pb);                      // mCoordinates[2]
+        size -= 20;
         if (layout_tag == 0) {
             uint32_t mask_incr = mov_get_channel_label(label);
             if (mask_incr == 0) {
@@ -579,10 +581,12 @@ int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size)
             label_mask |= mask_incr;
         }
     }
-    if (layout_tag == 0)
+    if (layout_tag == 0) {
+        if (label_mask)
             st->codec->channel_layout = label_mask;
-    else
+    } else
         st->codec->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
+    avio_skip(pb, size - 12);
 
     return 0;
 }

@@ -144,8 +144,8 @@ int main(int argc, char **argv)
     int nb_channels = 2;
     char *ext;
 
-    if (argc < 2 || argc > 4) {
-        printf("usage: %s file [<sample rate> [<channels>]]\n"
+    if (argc < 2 || argc > 5) {
+        printf("usage: %s file [<sample rate> [<channels>] [<random seed>]]\n"
                "generate a test raw 16 bit audio stream\n"
                "If the file extension is .wav a WAVE header will be added.\n"
                "default: 44100 Hz stereo\n", argv[0]);
@@ -168,6 +168,9 @@ int main(int argc, char **argv)
         }
     }
 
+    if (argc > 4)
+        seed = atoi(argv[4]);
+
     outfile = fopen(argv[1], "wb");
     if (!outfile) {
         perror(argv[1]);
@@ -186,7 +189,7 @@ int main(int argc, char **argv)
         a += (1000 * FRAC_ONE) / sample_rate;
     }
 
-    /* 1 second of varing frequency between 100 and 10000 Hz */
+    /* 1 second of varying frequency between 100 and 10000 Hz */
     a = 0;
     for (i = 0; i < 1 * sample_rate; i++) {
         v = (int_cos(a) * 10000) >> FRAC_BITS;

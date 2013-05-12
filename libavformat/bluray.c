@@ -43,10 +43,10 @@ typedef struct {
 
 #define OFFSET(x) offsetof(BlurayContext, x)
 static const AVOption options[] = {
-{"playlist", "", OFFSET(playlist), AV_OPT_TYPE_INT, { .dbl=-1 }, -1,  99999, AV_OPT_FLAG_DECODING_PARAM },
-{"angle",    "", OFFSET(angle),    AV_OPT_TYPE_INT, { .dbl=0 },   0,   0xfe, AV_OPT_FLAG_DECODING_PARAM },
-{"chapter",  "", OFFSET(chapter),  AV_OPT_TYPE_INT, { .dbl=1 },   1, 0xfffe, AV_OPT_FLAG_DECODING_PARAM },
-/*{"region",   "bluray player region code (1 = region A, 2 = region B, 4 = region C)", OFFSET(region), AV_OPT_TYPE_INT, { .dbl=0 }, 0, 3, AV_OPT_FLAG_DECODING_PARAM },*/
+{"playlist", "", OFFSET(playlist), AV_OPT_TYPE_INT, { .i64=-1 }, -1,  99999, AV_OPT_FLAG_DECODING_PARAM },
+{"angle",    "", OFFSET(angle),    AV_OPT_TYPE_INT, { .i64=0 },   0,   0xfe, AV_OPT_FLAG_DECODING_PARAM },
+{"chapter",  "", OFFSET(chapter),  AV_OPT_TYPE_INT, { .i64=1 },   1, 0xfffe, AV_OPT_FLAG_DECODING_PARAM },
+/*{"region",   "bluray player region code (1 = region A, 2 = region B, 4 = region C)", OFFSET(region), AV_OPT_TYPE_INT, { .i64=0 }, 0, 3, AV_OPT_FLAG_DECODING_PARAM },*/
 {NULL}
 };
 
@@ -93,7 +93,7 @@ static int check_disc_info(URLContext *h)
                    "Media stream encrypted with BD+, install and configure libbdplus");
         } else {
         */
-            av_log(h, AV_LOG_ERROR, "Unable to decrypt BD+ encrypted media");
+            av_log(h, AV_LOG_ERROR, "Unable to decrypt BD+ encrypted media\n");
         /*}*/
         return -1;
     }

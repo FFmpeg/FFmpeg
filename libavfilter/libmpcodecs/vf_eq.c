@@ -129,7 +129,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
 {
         mp_image_t *dmpi;
 
-        dmpi=vf_get_image(vf->next, mpi->imgfmt,
+        dmpi=ff_vf_get_image(vf->next, mpi->imgfmt,
                           MP_IMGTYPE_EXPORT, 0,
                           mpi->w, mpi->h);
 
@@ -151,7 +151,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts)
                         vf->priv->contrast);
         }
 
-        return vf_next_put_image(vf,dmpi, pts);
+        return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static int control(struct vf_instance *vf, int request, void* data)
@@ -182,7 +182,7 @@ static int control(struct vf_instance *vf, int request, void* data)
                 }
                 break;
         }
-        return vf_next_control(vf, request, data);
+        return ff_vf_next_control(vf, request, data);
 }
 
 static int query_format(struct vf_instance *vf, unsigned int fmt)
@@ -201,7 +201,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt)
         case IMGFMT_444P:
         case IMGFMT_422P:
         case IMGFMT_411P:
-                return vf_next_query_format(vf, fmt);
+                return ff_vf_next_query_format(vf, fmt);
         }
         return 0;
 }
@@ -225,13 +225,13 @@ static int vf_open(vf_instance_t *vf, char *args)
 
         process = process_C;
 #if HAVE_MMX
-        if(gCpuCaps.hasMMX) process = process_MMX;
+        if(ff_gCpuCaps.hasMMX) process = process_MMX;
 #endif
 
         return 1;
 }
 
-const vf_info_t vf_info_eq = {
+const vf_info_t ff_vf_info_eq = {
         "soft video equalizer",
         "eq",
         "Richard Felker",

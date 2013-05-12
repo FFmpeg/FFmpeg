@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "rtpenc.h"
 
@@ -72,7 +73,7 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size)
         uint8_t *ptr     = s->buf_ptr + 2 + size; // what we're going to write
         int remaining    = end_ptr - ptr;
 
-        assert(s->num_frames <= s->max_frames_per_packet);
+        av_assert1(s->num_frames <= s->max_frames_per_packet);
         if ((s->num_frames > 0 && remaining < 0) ||
             s->num_frames == s->max_frames_per_packet) {
             // send previous packets now; no room for new data

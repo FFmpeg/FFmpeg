@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/samplefmt.h"
 #include "avcodec.h"

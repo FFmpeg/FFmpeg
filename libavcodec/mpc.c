@@ -26,16 +26,16 @@
  * divided into 32 subbands.
  */
 
+#include "libavutil/attributes.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "mpegaudiodsp.h"
 #include "mpegaudio.h"
 
 #include "mpc.h"
 #include "mpcdata.h"
 
-void ff_mpc_init(void)
+av_cold void ff_mpc_init(void)
 {
     ff_mpa_synth_init_fixed(ff_mpa_synth_window_fixed);
 }
@@ -43,28 +43,24 @@ void ff_mpc_init(void)
 /**
  * Process decoded Musepack data and produce PCM
  */
-static void mpc_synth(MPCContext *c, int16_t *out, int channels)
+static void mpc_synth(MPCContext *c, int16_t **out, int channels)
 {
     int dither_state = 0;
     int i, ch;
-    OUT_INT samples[MPA_MAX_CHANNELS * MPA_FRAME_SIZE], *samples_ptr;
 
     for(ch = 0;  ch < channels; ch++){
-        samples_ptr = samples + ch;
         for(i = 0; i < SAMPLES_PER_BAND; i++) {
             ff_mpa_synth_filter_fixed(&c->mpadsp,
                                 c->synth_buf[ch], &(c->synth_buf_offset[ch]),
                                 ff_mpa_synth_window_fixed, &dither_state,
-                                samples_ptr, channels,
+                                out[ch] + 32 * i, 1,
                                 c->sb_samples[ch][i]);
-            samples_ptr += 32 * channels;
         }
     }
-    for(i = 0; i < MPC_FRAME_SIZE*channels; i++)
-        *out++=samples[i];
 }
 
-void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, void *data, int channels)
+void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, int16_t **out,
+                                 int channels)
 {
     int i, j, ch;
     Band *bands = c->bands;
@@ -100,5 +96,5 @@ void ff_mpc_dequantize_and_synth(MPCContext * c, int maxband, void *data, int ch
         }
     }
 
-    mpc_synth(c, data, channels);
+    mpc_synth(c, out, channels);
 }

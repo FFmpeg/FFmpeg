@@ -61,6 +61,6 @@ AVInputFormat ff_ingenient_demuxer = {
     .read_packet    = ingenient_read_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "cgi", // FIXME
-    .raw_codec_id   = CODEC_ID_MJPEG,
+    .raw_codec_id   = AV_CODEC_ID_MJPEG,
     .priv_class     = &ingenient_demuxer_class,
 };

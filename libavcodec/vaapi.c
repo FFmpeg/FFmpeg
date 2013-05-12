@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "h264.h"
 #include "vaapi_internal.h"
 
 /**
@@ -40,7 +41,7 @@ static void destroy_buffers(VADisplay display, VABufferID *buffers, unsigned int
     }
 }
 
-static int render_picture(struct vaapi_context *vactx, VASurfaceID surface)
+int ff_vaapi_render_picture(struct vaapi_context *vactx, VASurfaceID surface)
 {
     VABufferID va_buffers[3];
     unsigned int n_va_buffers = 0;
@@ -77,7 +78,7 @@ static int render_picture(struct vaapi_context *vactx, VASurfaceID surface)
     return 0;
 }
 
-static int commit_slices(struct vaapi_context *vactx)
+int ff_vaapi_commit_slices(struct vaapi_context *vactx)
 {
     VABufferID *slice_buf_ids;
     VABufferID slice_param_buf_id, slice_data_buf_id;
@@ -152,7 +153,7 @@ VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, co
     if (!vactx->slice_data)
         vactx->slice_data = buffer;
     if (vactx->slice_data + vactx->slice_data_size != buffer) {
-        if (commit_slices(vactx) < 0)
+        if (ff_vaapi_commit_slices(vactx) < 0)
             return NULL;
         vactx->slice_data = buffer;
     }
@@ -175,23 +176,12 @@ VASliceParameterBufferBase *ff_vaapi_alloc_slice(struct vaapi_context *vactx, co
     return slice_param;
 }
 
-int ff_vaapi_common_end_frame(MpegEncContext *s)
+void ff_vaapi_common_end_frame(AVCodecContext *avctx)
 {
-    struct vaapi_context * const vactx = s->avctx->hwaccel_context;
-    int ret = -1;
+    struct vaapi_context * const vactx = avctx->hwaccel_context;
 
-    av_dlog(s->avctx, "ff_vaapi_common_end_frame()\n");
+    av_dlog(avctx, "ff_vaapi_common_end_frame()\n");
 
-    if (commit_slices(vactx) < 0)
-        goto done;
-    if (vactx->n_slice_buf_ids > 0) {
-        if (render_picture(vactx, ff_vaapi_get_surface_id(s->current_picture_ptr)) < 0)
-            goto done;
-        ff_draw_horiz_band(s, 0, s->avctx->height);
-    }
-    ret = 0;
-
-done:
     destroy_buffers(vactx->display, &vactx->pic_param_buf_id, 1);
     destroy_buffers(vactx->display, &vactx->iq_matrix_buf_id, 1);
     destroy_buffers(vactx->display, &vactx->bitplane_buf_id, 1);
@@ -202,6 +192,27 @@ done:
     vactx->slice_buf_ids_alloc = 0;
     vactx->slice_count         = 0;
     vactx->slice_params_alloc  = 0;
+}
+
+int ff_vaapi_mpeg_end_frame(AVCodecContext *avctx)
+{
+    struct vaapi_context * const vactx = avctx->hwaccel_context;
+    MpegEncContext *s = avctx->priv_data;
+    int ret;
+
+    ret = ff_vaapi_commit_slices(vactx);
+    if (ret < 0)
+        goto finish;
+
+    ret = ff_vaapi_render_picture(vactx,
+                                  ff_vaapi_get_surface_id(s->current_picture_ptr));
+    if (ret < 0)
+        goto finish;
+
+    ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
+
+finish:
+    ff_vaapi_common_end_frame(avctx);
     return ret;
 }
 

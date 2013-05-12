@@ -19,12 +19,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "mpegvideo_arm.h"
 
-void ff_dct_unquantize_h263_armv5te(DCTELEM *block, int qmul, int qadd, int count);
+void ff_dct_unquantize_h263_armv5te(int16_t *block, int qmul, int qadd, int count);
 
 #ifdef ENABLE_ARM_TESTS
 /**
@@ -32,7 +33,7 @@ void ff_dct_unquantize_h263_armv5te(DCTELEM *block, int qmul, int qadd, int coun
  * have optimized implementations for each architecture. Is also used as a reference
  * implementation in regression tests
  */
-static inline void dct_unquantize_h263_helper_c(DCTELEM *block, int qmul, int qadd, int count)
+static inline void dct_unquantize_h263_helper_c(int16_t *block, int qmul, int qadd, int count)
 {
     int i, level;
     for (i = 0; i < count; i++) {
@@ -50,12 +51,12 @@ static inline void dct_unquantize_h263_helper_c(DCTELEM *block, int qmul, int qa
 #endif
 
 static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
-                                  DCTELEM *block, int n, int qscale)
+                                  int16_t *block, int n, int qscale)
 {
     int level, qmul, qadd;
     int nCoeffs;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     qmul = qscale << 1;
 
@@ -79,12 +80,12 @@ static void dct_unquantize_h263_intra_armv5te(MpegEncContext *s,
 }
 
 static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
-                                  DCTELEM *block, int n, int qscale)
+                                  int16_t *block, int n, int qscale)
 {
     int qmul, qadd;
     int nCoeffs;
 
-    assert(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0);
 
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
@@ -94,7 +95,7 @@ static void dct_unquantize_h263_inter_armv5te(MpegEncContext *s,
     ff_dct_unquantize_h263_armv5te(block, qmul, qadd, nCoeffs + 1);
 }
 
-void ff_MPV_common_init_armv5te(MpegEncContext *s)
+av_cold void ff_MPV_common_init_armv5te(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_armv5te;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_armv5te;

@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "internal.h"
@@ -59,17 +60,17 @@ static int mpc_read_header(AVFormatContext *s)
 
     if(avio_rl24(s->pb) != MKTAG('M', 'P', '+', 0)){
         av_log(s, AV_LOG_ERROR, "Not a Musepack file\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     c->ver = avio_r8(s->pb);
     if(c->ver != 0x07 && c->ver != 0x17){
         av_log(s, AV_LOG_ERROR, "Can demux Musepack SV7, got version %02X\n", c->ver);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     c->fcount = avio_rl32(s->pb);
     if((int64_t)c->fcount * sizeof(MPCFrame) >= UINT_MAX){
         av_log(s, AV_LOG_ERROR, "Too many frames, seeking is not possible\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if(c->fcount){
         c->frames = av_malloc(c->fcount * sizeof(MPCFrame));
@@ -89,8 +90,9 @@ static int mpc_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_MUSEPACK7;
+    st->codec->codec_id = AV_CODEC_ID_MUSEPACK7;
     st->codec->channels = 2;
+    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
     st->codec->bits_per_coded_sample = 16;
 
     st->codec->extradata_size = 16;
@@ -122,7 +124,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos;
 
     if (c->curframe >= c->fcount && c->fcount)
-        return -1;
+        return AVERROR_EOF;
 
     if(c->curframe != c->lastframe + 1){
         avio_seek(s->pb, c->frames[c->curframe].pos, SEEK_SET);
@@ -151,8 +153,8 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     c->curbits = (curbits + size2) & 0x1F;
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(EIO);
+    if ((ret = av_new_packet(pkt, size)) < 0)
+        return ret;
 
     pkt->data[0] = curbits;
     pkt->data[1] = (c->curframe > c->fcount) && c->fcount;
@@ -166,7 +168,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
         avio_seek(s->pb, -4, SEEK_CUR);
     if(ret < size){
         av_free_packet(pkt);
-        return AVERROR(EIO);
+        return ret < 0 ? ret : AVERROR(EIO);
     }
     pkt->size = ret + 4;
 
@@ -194,11 +196,11 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     MPCContext *c = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
     int ret;
-    int index = av_index_search_timestamp(st, timestamp - DELAY_FRAMES, flags);
+    int index = av_index_search_timestamp(st, FFMAX(timestamp - DELAY_FRAMES, 0), flags);
     uint32_t lastframe;
 
     /* if found, seek there */
-    if (index >= 0){
+    if (index >= 0 && st->index_entries[st->nb_index_entries-1].timestamp >= timestamp - DELAY_FRAMES){
         c->curframe = st->index_entries[index].pos;
         return 0;
     }
@@ -214,7 +216,7 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         ret = av_read_frame(s, pkt);
         if (ret < 0){
             c->curframe = lastframe;
-            return -1;
+            return ret;
         }
         av_free_packet(pkt);
     }

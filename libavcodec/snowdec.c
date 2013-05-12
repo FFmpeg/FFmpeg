@@ -23,7 +23,8 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
-#include "dwt.h"
+#include "snow_dwt.h"
+#include "internal.h"
 #include "snow.h"
 
 #include "rangecoder.h"
@@ -292,15 +293,15 @@ static int decode_header(SnowContext *s){
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
 
         if(s->chroma_h_shift == 1 && s->chroma_v_shift==1){
-            s->avctx->pix_fmt= PIX_FMT_YUV420P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
         }else if(s->chroma_h_shift == 0 && s->chroma_v_shift==0){
-            s->avctx->pix_fmt= PIX_FMT_YUV444P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV444P;
         }else if(s->chroma_h_shift == 2 && s->chroma_v_shift==2){
-            s->avctx->pix_fmt= PIX_FMT_YUV410P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV410P;
         } else {
             av_log(s, AV_LOG_ERROR, "unsupported color subsample mode %d %d\n", s->chroma_h_shift, s->chroma_v_shift);
             s->chroma_h_shift = s->chroma_v_shift = 1;
-            s->avctx->pix_fmt= PIX_FMT_YUV420P;
+            s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
             return AVERROR_INVALIDDATA;
         }
 
@@ -344,7 +345,7 @@ static int decode_header(SnowContext *s){
         return -1;
     }
     if(FFMIN(s->avctx-> width>>s->chroma_h_shift,
-             s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 0){
+             s->avctx->height>>s->chroma_v_shift) >> (s->spatial_decomposition_count-1) <= 1){
         av_log(s->avctx, AV_LOG_ERROR, "spatial_decomposition_count %d too large for size\n", s->spatial_decomposition_count);
         return -1;
     }
@@ -390,7 +391,9 @@ static int decode_blocks(SnowContext *s){
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt){
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SnowContext *s = avctx->priv_data;
@@ -413,7 +416,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ff_slice_buffer_destroy(&s->sb);
     if ((res = ff_slice_buffer_init(&s->sb, s->plane[0].height,
                                     (MB_SIZE >> s->block_max_depth) +
-                                    s->spatial_decomposition_count * 8 + 1,
+                                    s->spatial_decomposition_count * 11 + 1,
                                     s->plane[0].width,
                                     s->spatial_idwt_buffer)) < 0)
         return res;
@@ -467,7 +470,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         {
         const int mb_h= s->b_height << s->block_max_depth;
         const int block_size = MB_SIZE >> s->block_max_depth;
-        const int block_w    = plane_index ? block_size>>s->chroma_h_shift : block_size;
         const int block_h    = plane_index ? block_size>>s->chroma_v_shift : block_size;
         int mb_y;
         DWTCompose cs[MAX_DECOMPOSITIONS];
@@ -549,11 +551,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ff_snow_release_buffer(avctx);
 
     if(!(s->avctx->debug&2048))
-        *picture= s->current_picture;
+        av_frame_ref(picture, &s->current_picture);
     else
-        *picture= s->mconly_picture;
+        av_frame_ref(picture, &s->mconly_picture);
 
-    *data_size = sizeof(AVFrame);
+    *got_frame = 1;
 
     bytes_read= c->bytestream - c->bytestream_start;
     if(bytes_read ==0) av_log(s->avctx, AV_LOG_ERROR, "error at end of frame\n"); //FIXME
@@ -575,7 +577,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_snow_decoder = {
     .name           = "snow",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SNOW,
+    .id             = AV_CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
     .init           = decode_init,
     .close          = decode_end,

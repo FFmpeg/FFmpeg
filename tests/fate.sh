@@ -50,6 +50,7 @@ configure()(
         ${cpu:+--cpu="$cpu"}                                            \
         ${cross_prefix:+--cross-prefix="$cross_prefix"}                 \
         ${cc:+--cc="$cc"}                                               \
+        ${ld:+--ld="$ld"}                                               \
         ${target_os:+--target-os="$target_os"}                          \
         ${sysroot:+--sysroot="$sysroot"}                                \
         ${target_exec:+--target-exec="$target_exec"}                    \

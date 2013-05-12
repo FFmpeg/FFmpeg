@@ -23,6 +23,7 @@
  * tile video filter
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
@@ -31,30 +32,54 @@
 #include "internal.h"
 
 typedef struct {
+    const AVClass *class;
     unsigned w, h;
+    unsigned margin;
+    unsigned padding;
     unsigned current;
+    unsigned nb_frames;
     FFDrawContext draw;
     FFDrawColor blank;
+    AVFrame *out_ref;
 } TileContext;
 
 #define REASONABLE_SIZE 1024
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+#define OFFSET(x) offsetof(TileContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption tile_options[] = {
+    { "layout", "set grid size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE,
+        {.str = "6x5"}, 0, 0, FLAGS },
+    { "nb_frames", "set maximum number of frame to render", OFFSET(nb_frames),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, FLAGS },
+    { "margin",  "set outer border margin in pixels",    OFFSET(margin),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
+    { "padding", "set inner border thickness in pixels", OFFSET(padding),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
+    {NULL},
+};
+
+AVFILTER_DEFINE_CLASS(tile);
+
+static av_cold int init(AVFilterContext *ctx)
 {
     TileContext *tile = ctx->priv;
-    int r;
-    char dummy;
 
-    if (!args)
-        args = "6x5";
-    r = sscanf(args, "%ux%u%c", &tile->w, &tile->h, &dummy);
-    if (r != 2 || !tile->w || !tile->h)
-        return AVERROR(EINVAL);
     if (tile->w > REASONABLE_SIZE || tile->h > REASONABLE_SIZE) {
         av_log(ctx, AV_LOG_ERROR, "Tile size %ux%u is insane.\n",
                tile->w, tile->h);
         return AVERROR(EINVAL);
     }
+
+    if (tile->nb_frames == 0) {
+        tile->nb_frames = tile->w * tile->h;
+    } else if (tile->nb_frames > tile->w * tile->h) {
+        av_log(ctx, AV_LOG_ERROR, "nb_frames must be less than or equal to %dx%d=%d\n",
+               tile->w, tile->h, tile->w * tile->h);
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
@@ -67,124 +92,143 @@ static int query_formats(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    TileContext *tile   = ctx->priv;
+    TileContext *tile    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    const unsigned total_margin_w = (tile->w - 1) * tile->padding + 2*tile->margin;
+    const unsigned total_margin_h = (tile->h - 1) * tile->padding + 2*tile->margin;
 
-    if (inlink->w > INT_MAX / tile->w) {
+    if (inlink->w > (INT_MAX - total_margin_w) / tile->w) {
         av_log(ctx, AV_LOG_ERROR, "Total width %ux%u is too much.\n",
                tile->w, inlink->w);
         return AVERROR(EINVAL);
     }
-    if (inlink->h > INT_MAX / tile->h) {
+    if (inlink->h > (INT_MAX - total_margin_h) / tile->h) {
         av_log(ctx, AV_LOG_ERROR, "Total height %ux%u is too much.\n",
                tile->h, inlink->h);
         return AVERROR(EINVAL);
     }
-    outlink->w = tile->w * inlink->w;
-    outlink->h = tile->h * inlink->h;
+    outlink->w = tile->w * inlink->w + total_margin_w;
+    outlink->h = tile->h * inlink->h + total_margin_h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = av_mul_q(inlink->frame_rate,
-                                   (AVRational){ 1, tile->w * tile->h });
+                                   (AVRational){ 1, tile->nb_frames });
     ff_draw_init(&tile->draw, inlink->format, 0);
     /* TODO make the color an option, or find an unified way of choosing it */
     ff_draw_color(&tile->draw, &tile->blank, (uint8_t[]){ 0, 0, 0, -1 });
 
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
+
     return 0;
 }
 
-/* Note: direct rendering is not possible since there is no guarantee that
- * buffers are fed to start_frame in the order they were obtained from
- * get_buffer (think B-frames). */
-
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
+static void get_current_tile_pos(AVFilterContext *ctx, unsigned *x, unsigned *y)
 {
-    AVFilterContext *ctx  = inlink->dst;
     TileContext *tile    = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
+    AVFilterLink *inlink = ctx->inputs[0];
+    const unsigned tx = tile->current % tile->w;
+    const unsigned ty = tile->current / tile->w;
 
-    if (tile->current)
-        return;
-    outlink->out_buf = ff_get_video_buffer(outlink, AV_PERM_WRITE,
-                                                 outlink->w, outlink->h);
-    avfilter_copy_buffer_ref_props(outlink->out_buf, picref);
-    outlink->out_buf->video->w = outlink->w;
-    outlink->out_buf->video->h = outlink->h;
-    ff_start_frame(outlink, outlink->out_buf);
+    *x = tile->margin + (inlink->w + tile->padding) * tx;
+    *y = tile->margin + (inlink->h + tile->padding) * ty;
 }
 
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    AVFilterContext *ctx  = inlink->dst;
-    TileContext *tile    = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    unsigned x0 = inlink->w * (tile->current % tile->w);
-    unsigned y0 = inlink->h * (tile->current / tile->w);
-
-    ff_copy_rectangle2(&tile->draw,
-                       outlink->out_buf->data, outlink->out_buf->linesize,
-                       inlink ->cur_buf->data, inlink ->cur_buf->linesize,
-                       x0, y0 + y, 0, y, inlink->cur_buf->video->w, h);
-    /* TODO if tile->w == 1 && slice_dir is always 1, we could draw_slice
-     * immediately. */
-}
-
-static void draw_blank_frame(AVFilterContext *ctx)
+static void draw_blank_frame(AVFilterContext *ctx, AVFrame *out_buf)
 {
     TileContext *tile    = ctx->priv;
-    AVFilterLink *inlink  = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
-    unsigned x0 = inlink->w * (tile->current % tile->w);
-    unsigned y0 = inlink->h * (tile->current / tile->w);
+    AVFilterLink *inlink = ctx->inputs[0];
+    unsigned x0, y0;
 
+    get_current_tile_pos(ctx, &x0, &y0);
     ff_fill_rectangle(&tile->draw, &tile->blank,
-                      outlink->out_buf->data, outlink->out_buf->linesize,
+                      out_buf->data, out_buf->linesize,
                       x0, y0, inlink->w, inlink->h);
     tile->current++;
 }
-static void end_last_frame(AVFilterContext *ctx)
+static int end_last_frame(AVFilterContext *ctx)
 {
-    TileContext *tile    = ctx->priv;
+    TileContext *tile     = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out_buf = tile->out_ref;
+    int ret;
 
-    while (tile->current < tile->w * tile->h)
-        draw_blank_frame(ctx);
-    ff_draw_slice(outlink, 0, outlink->out_buf->video->h, 1);
-    ff_end_frame(outlink);
+    while (tile->current < tile->nb_frames)
+        draw_blank_frame(ctx, out_buf);
+    ret = ff_filter_frame(outlink, out_buf);
     tile->current = 0;
+    return ret;
 }
 
-static void end_frame(AVFilterLink *inlink)
+/* Note: direct rendering is not possible since there is no guarantee that
+ * buffers are fed to filter_frame in the order they were obtained from
+ * get_buffer (think B-frames). */
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx  = inlink->dst;
-    TileContext *tile    = ctx->priv;
+    TileContext *tile     = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    unsigned x0, y0;
 
-    avfilter_unref_buffer(inlink->cur_buf);
-    if (++tile->current == tile->w * tile->h)
-        end_last_frame(ctx);
+    if (!tile->current) {
+        tile->out_ref = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!tile->out_ref)
+            return AVERROR(ENOMEM);
+        av_frame_copy_props(tile->out_ref, picref);
+        tile->out_ref->width  = outlink->w;
+        tile->out_ref->height = outlink->h;
+
+        /* fill surface once for margin/padding */
+        if (tile->margin || tile->padding)
+            ff_fill_rectangle(&tile->draw, &tile->blank,
+                              tile->out_ref->data,
+                              tile->out_ref->linesize,
+                              0, 0, outlink->w, outlink->h);
+    }
+
+    get_current_tile_pos(ctx, &x0, &y0);
+    ff_copy_rectangle2(&tile->draw,
+                       tile->out_ref->data, tile->out_ref->linesize,
+                       picref->data, picref->linesize,
+                       x0, y0, 0, 0, inlink->w, inlink->h);
+
+    av_frame_free(&picref);
+    if (++tile->current == tile->nb_frames)
+        return end_last_frame(ctx);
+
+    return 0;
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    TileContext *tile   = ctx->priv;
+    TileContext *tile    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     int r;
 
-    while (1) {
-        r = ff_request_frame(inlink);
-        if (r < 0) {
-            if (r == AVERROR_EOF && tile->current)
-                end_last_frame(ctx);
-            else
-                return r;
-            break;
-        }
-        if (!tile->current) /* done */
-            break;
-    }
-    return 0;
+    r = ff_request_frame(inlink);
+    if (r == AVERROR_EOF && tile->current)
+        r = end_last_frame(ctx);
+    return r;
 }
 
+static const AVFilterPad tile_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad tile_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_props,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_tile = {
     .name          = "tile",
@@ -192,20 +236,7 @@ AVFilter avfilter_vf_tile = {
     .init          = init,
     .query_formats = query_formats,
     .priv_size     = sizeof(TileContext),
-    .inputs = (const AVFilterPad[]) {
-        { .name        = "default",
-          .type        = AVMEDIA_TYPE_VIDEO,
-          .start_frame = start_frame,
-          .draw_slice  = draw_slice,
-          .end_frame   = end_frame,
-          .min_perms   = AV_PERM_READ, },
-        { .name = NULL }
-    },
-    .outputs = (const AVFilterPad[]) {
-        { .name          = "default",
-          .type          = AVMEDIA_TYPE_VIDEO,
-          .config_props  = config_props,
-          .request_frame = request_frame },
-        { .name = NULL }
-    },
+    .inputs        = tile_inputs,
+    .outputs       = tile_outputs,
+    .priv_class    = &tile_class,
 };

@@ -25,6 +25,7 @@
 #include <AL/alc.h>
 
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
 
@@ -48,7 +49,7 @@ typedef struct {
 
 typedef struct {
     ALCenum al_fmt;
-    enum CodecID codec_id;
+    enum AVCodecID codec_id;
     int channels;
 } al_format_info;
 
@@ -62,10 +63,10 @@ typedef struct {
 static inline al_format_info* get_al_format_info(ALCenum al_fmt)
 {
     static al_format_info info_table[] = {
-        [AL_FORMAT_MONO8-LOWEST_AL_FORMAT]    = {AL_FORMAT_MONO8, CODEC_ID_PCM_U8, 1},
-        [AL_FORMAT_MONO16-LOWEST_AL_FORMAT]   = {AL_FORMAT_MONO16, AV_NE (CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE), 1},
-        [AL_FORMAT_STEREO8-LOWEST_AL_FORMAT]  = {AL_FORMAT_STEREO8, CODEC_ID_PCM_U8, 2},
-        [AL_FORMAT_STEREO16-LOWEST_AL_FORMAT] = {AL_FORMAT_STEREO16, AV_NE (CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE), 2},
+        [AL_FORMAT_MONO8-LOWEST_AL_FORMAT]    = {AL_FORMAT_MONO8, AV_CODEC_ID_PCM_U8, 1},
+        [AL_FORMAT_MONO16-LOWEST_AL_FORMAT]   = {AL_FORMAT_MONO16, AV_NE (AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE), 1},
+        [AL_FORMAT_STEREO8-LOWEST_AL_FORMAT]  = {AL_FORMAT_STEREO8, AV_CODEC_ID_PCM_U8, 2},
+        [AL_FORMAT_STEREO16-LOWEST_AL_FORMAT] = {AL_FORMAT_STEREO16, AV_NE (AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE), 2},
     };
 
     return &info_table[al_fmt-LOWEST_AL_FORMAT];
@@ -222,12 +223,12 @@ static int read_close(AVFormatContext* ctx)
 #define OFFSET(x) offsetof(al_data, x)
 
 static const AVOption options[] = {
-    {"channels", "set number of channels",     OFFSET(channels),     AV_OPT_TYPE_INT, {.dbl=2},     1, 2,      AV_OPT_FLAG_DECODING_PARAM },
-    {"sample_rate", "set sample rate",         OFFSET(sample_rate),  AV_OPT_TYPE_INT, {.dbl=44100}, 1, 192000, AV_OPT_FLAG_DECODING_PARAM },
-    {"sample_size", "set sample size",         OFFSET(sample_size),  AV_OPT_TYPE_INT, {.dbl=16},    8, 16,     AV_OPT_FLAG_DECODING_PARAM },
-    {"list_devices", "list available devices", OFFSET(list_devices), AV_OPT_TYPE_INT, {.dbl=0},     0, 1,      AV_OPT_FLAG_DECODING_PARAM, "list_devices"  },
-    {"true",  "", 0, AV_OPT_TYPE_CONST, {.dbl=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
-    {"false", "", 0, AV_OPT_TYPE_CONST, {.dbl=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    {"channels", "set number of channels",     OFFSET(channels),     AV_OPT_TYPE_INT, {.i64=2},     1, 2,      AV_OPT_FLAG_DECODING_PARAM },
+    {"sample_rate", "set sample rate",         OFFSET(sample_rate),  AV_OPT_TYPE_INT, {.i64=44100}, 1, 192000, AV_OPT_FLAG_DECODING_PARAM },
+    {"sample_size", "set sample size",         OFFSET(sample_size),  AV_OPT_TYPE_INT, {.i64=16},    8, 16,     AV_OPT_FLAG_DECODING_PARAM },
+    {"list_devices", "list available devices", OFFSET(list_devices), AV_OPT_TYPE_INT, {.i64=0},     0, 1,      AV_OPT_FLAG_DECODING_PARAM, "list_devices"  },
+    {"true",  "", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
+    {"false", "", 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "list_devices" },
     {NULL},
 };
 

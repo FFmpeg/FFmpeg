@@ -1,0 +1,146 @@
+@chapter Format Options
+@c man begin FORMAT OPTIONS
+
+The libavformat library provides some generic global options, which
+can be set on all the muxers and demuxers. In addition each muxer or
+demuxer may support so-called private options, which are specific for
+that component.
+
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{AVFormatContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
+The list of supported options follows:
+
+@table @option
+@item avioflags @var{flags} (@emph{input/output})
+Possible values:
+@table @samp
+@item direct
+Reduce buffering.
+@end table
+
+@item probesize @var{integer} (@emph{input})
+Set probing size in bytes, i.e. the size of the data to analyze to get
+stream information. A higher value will allow to detect more
+information in case it is dispersed into the stream, but will increase
+latency. Must be an integer not lesser than 32. It is 5000000 by default.
+
+@item packetsize @var{integer} (@emph{output})
+Set packet size.
+
+@item fflags @var{flags} (@emph{input/output})
+Set format flags.
+
+Possible values:
+@table @samp
+@item ignidx
+Ignore index.
+@item genpts
+Generate PTS.
+@item nofillin
+Do not fill in missing values that can be exactly calculated.
+@item noparse
+Disable AVParsers, this needs @code{+nofillin} too.
+@item igndts
+Ignore DTS.
+@item discardcorrupt
+Discard corrupted frames.
+@item sortdts
+Try to interleave output packets by DTS.
+@item keepside
+Do not merge side data.
+@item latm
+Enable RTP MP4A-LATM payload.
+@item nobuffer
+Reduce the latency introduced by optional buffering
+@end table
+
+@item analyzeduration @var{integer} (@emph{input})
+Specify how many microseconds are analyzed to probe the input. A
+higher value will allow to detect more accurate information, but will
+increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
+
+@item cryptokey @var{hexadecimal string} (@emph{input})
+Set decryption key.
+
+@item indexmem @var{integer} (@emph{input})
+Set max memory used for timestamp index (per stream).
+
+@item rtbufsize @var{integer} (@emph{input})
+Set max memory used for buffering real-time frames.
+
+@item fdebug @var{flags} (@emph{input/output})
+Print specific debug info.
+
+Possible values:
+@table @samp
+@item ts
+@end table
+
+@item max_delay @var{integer} (@emph{input/output})
+Set maximum muxing or demuxing delay in microseconds.
+
+@item fpsprobesize @var{integer} (@emph{input})
+Set number of frames used to probe fps.
+
+@item audio_preload @var{integer} (@emph{output})
+Set microseconds by which audio packets should be interleaved earlier.
+
+@item chunk_duration @var{integer} (@emph{output})
+Set microseconds for each chunk.
+
+@item chunk_size @var{integer} (@emph{output})
+Set size in bytes for each chunk.
+
+@item err_detect, f_err_detect @var{flags} (@emph{input})
+Set error detection flags. @code{f_err_detect} is deprecated and
+should be used only via the @command{ffmpeg} tool.
+
+Possible values:
+@table @samp
+@item crccheck
+Verify embedded CRCs.
+@item bitstream
+Detect bitstream specification deviations.
+@item buffer
+Detect improper bitstream length.
+@item explode
+Abort decoding on minor error detection.
+@item careful
+Consider things that violate the spec and have not been seen in the
+wild as errors.
+@item compliant
+Consider all spec non compliancies as errors.
+@item aggressive
+Consider things that a sane encoder should not do as an error.
+@end table
+
+@item use_wallclock_as_timestamps @var{integer} (@emph{input})
+Use wallclock as timestamps.
+
+@item avoid_negative_ts @var{integer} (@emph{output})
+Shift timestamps to make them positive. A value of 1 enables shifting,
+a value of 0 disables it, the default value of -1 enables shifting
+when required by the target format.
+
+When shifting is enabled, all output timestamps are shifted by the
+same amount. Audio, video, and subtitles desynching and relative
+timestamp differences are preserved compared to how they would have
+been without shifting.
+
+Also note that this affects only leading negative timestamps, and not
+non-monotonic negative timestamps.
+
+@item flush_packets @var{integer} (@emph{output})
+Flush the underlying I/O stream after each packet. Default 1 enables it, and
+has the effect of reducing the latency; 0 disables it and may slightly
+increase performance in some cases.
+@end table
+
+@c man end FORMAT OPTIONS
+
+@include demuxers.texi
+@include muxers.texi
+@include metadata.texi

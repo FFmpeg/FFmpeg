@@ -205,7 +205,7 @@ static int check_diff(FFTSample *tab1, FFTSample *tab2, int n, double scale)
         error+= e*e;
         if(e>max) max= e;
     }
-    av_log(NULL, AV_LOG_INFO, "max:%f e:%g\n", max, sqrt(error)/n);
+    av_log(NULL, AV_LOG_INFO, "max:%f e:%g\n", max, sqrt(error/n));
     return err;
 }
 
@@ -288,10 +288,12 @@ int main(int argc, char **argv)
             scale = atof(optarg);
             break;
         case 'c':
-            cpuflags = av_parse_cpu_flags(optarg);
-            if (cpuflags < 0)
+            cpuflags = av_get_cpu_flags();
+
+            if (av_parse_cpu_caps(&cpuflags, optarg) < 0)
                 return 1;
-            av_set_cpu_flags_mask(cpuflags);
+
+            av_force_cpu_flags(cpuflags);
             break;
         }
     }

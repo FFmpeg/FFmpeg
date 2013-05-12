@@ -23,6 +23,8 @@
 * function definitions common to libschroedinger decoder and encoder
 */
 
+#include "libavutil/attributes.h"
+#include "libavutil/mem.h"
 #include "libschroedinger.h"
 
 static const SchroVideoFormatInfo ff_schro_video_format_info[] = {
@@ -45,7 +47,7 @@ static const SchroVideoFormatInfo ff_schro_video_format_info[] = {
     { 4096, 2160, 24,    1   },
 };
 
-static unsigned int get_video_format_idx(AVCodecContext *avccontext)
+static unsigned int get_video_format_idx(AVCodecContext *avctx)
 {
     unsigned int ret_idx = 0;
     unsigned int idx;
@@ -54,18 +56,18 @@ static unsigned int get_video_format_idx(AVCodecContext *avccontext)
 
     for (idx = 1; idx < num_formats; ++idx) {
         const SchroVideoFormatInfo *vf = &ff_schro_video_format_info[idx];
-        if (avccontext->width  == vf->width &&
-            avccontext->height == vf->height) {
+        if (avctx->width  == vf->width &&
+            avctx->height == vf->height) {
             ret_idx = idx;
-            if (avccontext->time_base.den == vf->frame_rate_num &&
-                avccontext->time_base.num == vf->frame_rate_denom)
+            if (avctx->time_base.den == vf->frame_rate_num &&
+                avctx->time_base.num == vf->frame_rate_denom)
                 return idx;
         }
     }
     return ret_idx;
 }
 
-void ff_schro_queue_init(FFSchroQueue *queue)
+av_cold void ff_schro_queue_init(FFSchroQueue *queue)
 {
     queue->p_head = queue->p_tail = NULL;
     queue->size = 0;
@@ -135,12 +137,12 @@ static const SchroVideoFormatEnum ff_schro_video_formats[]={
     SCHRO_VIDEO_FORMAT_DC4K_24    ,
 };
 
-SchroVideoFormatEnum ff_get_schro_video_format_preset(AVCodecContext *avccontext)
+SchroVideoFormatEnum ff_get_schro_video_format_preset(AVCodecContext *avctx)
 {
     unsigned int num_formats = sizeof(ff_schro_video_formats) /
                                sizeof(ff_schro_video_formats[0]);
 
-    unsigned int idx = get_video_format_idx(avccontext);
+    unsigned int idx = get_video_format_idx(avctx);
 
     return (idx < num_formats) ? ff_schro_video_formats[idx] :
                                  SCHRO_VIDEO_FORMAT_CUSTOM;
@@ -174,7 +176,7 @@ static void free_schro_frame(SchroFrame *frame, void *priv)
     av_freep(&p_pic);
 }
 
-SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
+SchroFrame *ff_create_schro_frame(AVCodecContext *avctx,
                                   SchroFrameFormat schro_frame_fmt)
 {
     AVPicture *p_pic;
@@ -183,13 +185,13 @@ SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
     int y_height, uv_height;
     int i;
 
-    y_width   = avccontext->width;
-    y_height  = avccontext->height;
+    y_width   = avctx->width;
+    y_height  = avctx->height;
     uv_width  = y_width  >> (SCHRO_FRAME_FORMAT_H_SHIFT(schro_frame_fmt));
     uv_height = y_height >> (SCHRO_FRAME_FORMAT_V_SHIFT(schro_frame_fmt));
 
     p_pic = av_mallocz(sizeof(AVPicture));
-    if (!p_pic || avpicture_alloc(p_pic, avccontext->pix_fmt, y_width, y_height) < 0) {
+    if (!p_pic || avpicture_alloc(p_pic, avctx->pix_fmt, y_width, y_height) < 0) {
         av_free(p_pic);
         return NULL;
     }

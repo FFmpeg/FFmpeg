@@ -23,7 +23,7 @@
 #define AVFORMAT_VOC_H
 
 #include "avformat.h"
-#include "riff.h"    /* for CodecTag */
+#include "internal.h"
 
 typedef struct voc_dec_context {
     int64_t remaining_size;

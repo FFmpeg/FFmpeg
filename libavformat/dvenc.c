@@ -41,6 +41,8 @@
 #include "libavutil/opt.h"
 #include "libavutil/timecode.h"
 
+#define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+
 struct DVMuxContext {
     AVClass          *av_class;
     const DVprofile*  sys;           /* current DV profile, e.g.: 525/60, 625/50 */
@@ -49,9 +51,9 @@ struct DVMuxContext {
     AVFifoBuffer     *audio_data[2]; /* FIFO for storing excessive amounts of PCM */
     int               frames;        /* current frame number */
     int64_t           start_time;    /* recording start time */
-    int               has_audio;     /* frame under contruction has audio */
-    int               has_video;     /* frame under contruction has video */
-    uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
+    int               has_audio;     /* frame under construction has audio */
+    int               has_video;     /* frame under construction has video */
+    uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under construction */
     AVTimecode        tc;            /* timecode context */
 };
 
@@ -121,7 +123,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
                  (1 << 3) | /* recording mode: 1 -- original */
                   7;
         buf[3] = (1 << 7) | /* direction: 1 -- forward */
-                 (c->sys->pix_fmt == PIX_FMT_YUV420P ? 0x20 : /* speed */
+                 (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0x20 : /* speed */
                                                        c->sys->ltc_divisor * 4);
         buf[4] = (1 << 7) | /* reserved -- always 1 */
                   0x7f;     /* genre category */
@@ -241,7 +243,7 @@ static int dv_assemble_frame(DVMuxContext *c, AVStream* st,
         for (i = 0; i < c->n_ast && st != c->ast[i]; i++);
 
           /* FIXME: we have to have more sensible approach than this one */
-        if (av_fifo_size(c->audio_data[i]) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
+        if (av_fifo_size(c->audio_data[i]) + data_size >= 100*MAX_AUDIO_FRAME_SIZE)
             av_log(st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
         av_fifo_generic_write(c->audio_data[i], data, data_size, NULL);
 
@@ -304,10 +306,10 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
     }
 
     /* Some checks -- DV format is very picky about its incoming streams */
-    if (!vst || vst->codec->codec_id != CODEC_ID_DVVIDEO)
+    if (!vst || vst->codec->codec_id != AV_CODEC_ID_DVVIDEO)
         goto bail_out;
     for (i=0; i<c->n_ast; i++) {
-        if (c->ast[i] && (c->ast[i]->codec->codec_id    != CODEC_ID_PCM_S16LE ||
+        if (c->ast[i] && (c->ast[i]->codec->codec_id    != AV_CODEC_ID_PCM_S16LE ||
                           c->ast[i]->codec->sample_rate != 48000 ||
                           c->ast[i]->codec->channels    != 2))
             goto bail_out;
@@ -329,7 +331,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         c->start_time = ff_iso8601_to_unix_time(t->value);
 
     for (i=0; i < c->n_ast; i++) {
-        if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*AVCODEC_MAX_AUDIO_FRAME_SIZE))) {
+        if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*MAX_AUDIO_FRAME_SIZE))) {
             while (i > 0) {
                 i--;
                 av_fifo_free(c->audio_data[i]);
@@ -374,8 +376,8 @@ static int dv_write_header(AVFormatContext *s)
                 break;
         }
     }
-    if (tcr)
-        return av_timecode_init_from_string(&dvc->tc, rate, tcr->value, s);
+    if (tcr && av_timecode_init_from_string(&dvc->tc, rate, tcr->value, s) >= 0)
+        return 0;
     return av_timecode_init(&dvc->tc, rate, 0, 0, s);
 }
 
@@ -388,7 +390,6 @@ static int dv_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                               pkt->data, pkt->size, &frame);
     if (fsize > 0) {
         avio_write(s->pb, frame, fsize);
-        avio_flush(s->pb);
     }
     return 0;
 }
@@ -407,11 +408,11 @@ static int dv_write_trailer(struct AVFormatContext *s)
 
 AVOutputFormat ff_dv_muxer = {
     .name              = "dv",
-    .long_name         = NULL_IF_CONFIG_SMALL("DV video format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
     .extensions        = "dv",
     .priv_data_size    = sizeof(DVMuxContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_DVVIDEO,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_DVVIDEO,
     .write_header      = dv_write_header,
     .write_packet      = dv_write_packet,
     .write_trailer     = dv_write_trailer,

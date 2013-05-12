@@ -22,7 +22,7 @@
 #include "lavfutils.h"
 
 int ff_load_image(uint8_t *data[4], int linesize[4],
-                  int *w, int *h, enum PixelFormat *pix_fmt,
+                  int *w, int *h, enum AVPixelFormat *pix_fmt,
                   const char *filename, void *log_ctx)
 {
     AVInputFormat *iformat = NULL;
@@ -85,10 +85,8 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
     av_image_copy(data, linesize, (const uint8_t **)frame->data, frame->linesize, *pix_fmt, *w, *h);
 
 end:
-    if (codec_ctx)
-        avcodec_close(codec_ctx);
-    if (format_ctx)
-        avformat_close_input(&format_ctx);
+    avcodec_close(codec_ctx);
+    avformat_close_input(&format_ctx);
     av_freep(&frame);
 
     if (ret < 0)

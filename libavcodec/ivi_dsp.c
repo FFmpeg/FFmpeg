@@ -27,20 +27,19 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
-#include "dwt.h"
 #include "ivi_common.h"
 #include "ivi_dsp.h"
 
 void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
-                        const int dst_pitch, const int num_bands)
+                        const int dst_pitch)
 {
     int             x, y, indx;
     int32_t         p0, p1, p2, p3, tmp0, tmp1, tmp2;
     int32_t         b0_1, b0_2, b1_1, b1_2, b1_3, b2_1, b2_2, b2_3, b2_4, b2_5, b2_6;
     int32_t         b3_1, b3_2, b3_3, b3_4, b3_5, b3_6, b3_7, b3_8, b3_9;
     int32_t         pitch, back_pitch;
-    const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    const short     *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    const int       num_bands = 4;
 
     /* all bands should have the same pitch */
     pitch = plane->bands[0].pitch;
@@ -189,10 +188,10 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
 }
 
 void ff_ivi_recompose_haar(const IVIPlaneDesc *plane, uint8_t *dst,
-                           const int dst_pitch, const int num_bands)
+                           const int dst_pitch)
 {
     int             x, y, indx, b0, b1, b2, b3, p0, p1, p2, p3;
-    const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    const short     *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
     int32_t         pitch;
 
     /* all bands should have the same pitch */
@@ -304,6 +303,60 @@ void ff_ivi_inverse_haar_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
     /* apply the InvHaar8 to all rows */
 #define COMPENSATE(x) (x)
     src = tmp;
+    for (i = 0; i < 8; i++) {
+        if (   !src[0] && !src[1] && !src[2] && !src[3]
+            && !src[4] && !src[5] && !src[6] && !src[7]) {
+            memset(out, 0, 8 * sizeof(out[0]));
+        } else {
+            INV_HAAR8(src[0], src[1], src[2], src[3],
+                      src[4], src[5], src[6], src[7],
+                      out[0], out[1], out[2], out[3],
+                      out[4], out[5], out[6], out[7],
+                      t0, t1, t2, t3, t4, t5, t6, t7, t8);
+        }
+        src += 8;
+        out += pitch;
+    }
+#undef  COMPENSATE
+}
+
+void ff_ivi_inverse_haar_1x8(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags)
+{
+    int     i;
+    const int32_t *src;
+    int     t0, t1, t2, t3, t4, t5, t6, t7, t8;
+
+    /* apply the InvHaar8 to all columns */
+#define COMPENSATE(x) (x)
+    src = in;
+    for (i = 0; i < 8; i++) {
+        if (flags[i]) {
+            INV_HAAR8(src[ 0], src[ 8], src[16], src[24],
+                      src[32], src[40], src[48], src[56],
+                      out[ 0], out[pitch], out[2*pitch], out[3*pitch],
+                      out[4*pitch], out[5*pitch], out[6*pitch], out[7*pitch],
+                      t0, t1, t2, t3, t4, t5, t6, t7, t8);
+        } else
+            out[      0]= out[  pitch]= out[2*pitch]= out[3*pitch]=
+            out[4*pitch]= out[5*pitch]= out[6*pitch]= out[7*pitch]= 0;
+
+        src++;
+        out++;
+    }
+#undef  COMPENSATE
+}
+
+void ff_ivi_inverse_haar_8x1(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags)
+{
+    int     i;
+    const int32_t *src;
+    int     t0, t1, t2, t3, t4, t5, t6, t7, t8;
+
+    /* apply the InvHaar8 to all rows */
+#define COMPENSATE(x) (x)
+    src = in;
     for (i = 0; i < 8; i++) {
         if (   !src[0] && !src[1] && !src[2] && !src[3]
             && !src[4] && !src[5] && !src[6] && !src[7]) {

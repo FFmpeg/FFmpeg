@@ -52,7 +52,6 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     dst = pkt->data;
 
-    avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
@@ -86,10 +85,10 @@ static av_cold int v308_encode_close(AVCodecContext *avctx)
 AVCodec ff_v308_encoder = {
     .name         = "v308",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_V308,
+    .id           = AV_CODEC_ID_V308,
     .init         = v308_encode_init,
     .encode2      = v308_encode_frame,
     .close        = v308_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV444P, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:4:4"),
 };

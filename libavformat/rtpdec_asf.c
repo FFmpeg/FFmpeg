@@ -168,7 +168,8 @@ struct PayloadContext {
 static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                                AVStream *st, AVPacket *pkt,
                                uint32_t *timestamp,
-                               const uint8_t *buf, int len, int flags)
+                               const uint8_t *buf, int len, uint16_t seq,
+                               int flags)
 {
     AVIOContext *pb = &asf->pb;
     int res, mflags, len_off;
@@ -298,7 +299,7 @@ static void asfrtp_free_context(PayloadContext *asf)
 RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
-    .codec_id         = CODEC_ID_NONE, \
+    .codec_id         = AV_CODEC_ID_NONE, \
     .parse_sdp_a_line = asfrtp_parse_sdp_line, \
     .alloc            = asfrtp_new_context, \
     .free             = asfrtp_free_context, \

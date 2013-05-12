@@ -54,7 +54,7 @@ static int h264_probe(AVProbeData *p)
             case     1:   sli++; break;
             case     5:   idr++; break;
             case     7:
-                if(p->buf[i+2]&0x03)
+                if (p->buf[i + 2] & 0x03)
                     return 0;
                 sps++;
                 break;
@@ -63,8 +63,8 @@ static int h264_probe(AVProbeData *p)
         }
     }
     if(sps && pps && (idr||sli>3) && res<(sps+pps+idr))
-        return AVPROBE_SCORE_MAX/2+1; // +1 for .mpg
+        return AVPROBE_SCORE_EXTENSION + 1; // 1 more than .mpg
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h264 , "raw H.264 video format", h264_probe, "h26l,h264,264", CODEC_ID_H264)
+FF_DEF_RAWVIDEO_DEMUXER(h264 , "raw H.264 video", h264_probe, "h26l,h264,264", AV_CODEC_ID_H264)

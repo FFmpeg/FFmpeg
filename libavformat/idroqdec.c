@@ -27,6 +27,7 @@
  *   http://www.csse.monash.edu.au/~timf/
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -130,7 +131,7 @@ static int roq_read_packet(AVFormatContext *s,
                 avpriv_set_pts_info(st, 63, 1, roq->frame_rate);
                 roq->video_stream_index = st->index;
                 st->codec->codec_type   = AVMEDIA_TYPE_VIDEO;
-                st->codec->codec_id     = CODEC_ID_ROQ;
+                st->codec->codec_id     = AV_CODEC_ID_ROQ;
                 st->codec->codec_tag    = 0;  /* no fourcc */
 
                 if (avio_read(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != RoQ_CHUNK_PREAMBLE_SIZE)
@@ -176,9 +177,16 @@ static int roq_read_packet(AVFormatContext *s,
                 avpriv_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
                 roq->audio_stream_index = st->index;
                 st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id = CODEC_ID_ROQ_DPCM;
+                st->codec->codec_id = AV_CODEC_ID_ROQ_DPCM;
                 st->codec->codec_tag = 0;  /* no tag */
-                st->codec->channels = roq->audio_channels = chunk_type == RoQ_SOUND_STEREO ? 2 : 1;
+                if (chunk_type == RoQ_SOUND_STEREO) {
+                    st->codec->channels       = 2;
+                    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                } else {
+                    st->codec->channels       = 1;
+                    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                }
+                roq->audio_channels    = st->codec->channels;
                 st->codec->sample_rate = RoQ_AUDIO_SAMPLE_RATE;
                 st->codec->bits_per_coded_sample = 16;
                 st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
@@ -221,7 +229,7 @@ static int roq_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_roq_demuxer = {
     .name           = "roq",
-    .long_name      = NULL_IF_CONFIG_SMALL("id RoQ format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("id RoQ"),
     .priv_data_size = sizeof(RoqDemuxContext),
     .read_probe     = roq_probe,
     .read_header    = roq_read_header,

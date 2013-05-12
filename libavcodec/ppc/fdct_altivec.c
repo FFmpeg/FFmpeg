@@ -23,7 +23,6 @@
 #include <altivec.h>
 #endif
 #include "libavutil/common.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
 #define vs16(v) ((vector signed short)(v))

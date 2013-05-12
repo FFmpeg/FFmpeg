@@ -59,17 +59,17 @@ static int config(struct vf_instance *vf,
     }
 //printf("hX %d %d %d\n", vf->priv->width,vf->priv->height,vf->priv->stridefactor);
 
-    return vf_next_config(vf, vf->priv->width, vf->priv->height,
+    return ff_vf_next_config(vf, vf->priv->width, vf->priv->height,
         (d_width*vf->priv->stridefactor)>>1, 2*d_height/vf->priv->stridefactor, flags, outfmt);
 }
 
 static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     if(mpi->flags&MP_IMGFLAG_DIRECT){
         // we've used DR, so we're ready...
-        return vf_next_put_image(vf,(mp_image_t*)mpi->priv, pts);
+        return ff_vf_next_put_image(vf,(mp_image_t*)mpi->priv, pts);
     }
 
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         MP_IMGTYPE_EXPORT, MP_IMGFLAG_ACCEPT_STRIDE,
         vf->priv->width, vf->priv->height);
 
@@ -84,7 +84,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     } else
         vf->dmpi->planes[1]=mpi->planes[1]; // passthru bgr8 palette!!!
 
-    return vf_next_put_image(vf,vf->dmpi, pts);
+    return ff_vf_next_put_image(vf,vf->dmpi, pts);
 }
 
 //===========================================================================//
@@ -104,7 +104,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_fil = {
+const vf_info_t ff_vf_info_fil = {
     "fast (de)interleaver",
     "fil",
     "Michael Niedermayer",

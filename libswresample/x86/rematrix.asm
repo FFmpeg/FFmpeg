@@ -18,7 +18,6 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
 %include "libavutil/x86/x86util.asm"
 
 
@@ -243,7 +242,7 @@ MIX1_INT16 a
 MIX2_INT16 u
 MIX2_INT16 a
 
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 MIX2_FLT u
 MIX2_FLT a

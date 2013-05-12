@@ -213,13 +213,13 @@ static int config(struct vf_instance *vf, int width, int height, int d_width, in
             vf->priv->plane[i][j]= malloc(vf->priv->stride*h*sizeof(vf->priv->plane[0][0][0]));
     }
 
-    return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+    return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags | MP_IMGFLAG_READABLE, mpi->width, mpi->height);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -238,11 +238,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
         // no DR, so get a new image! hope we'll get DR buffer:
-        dmpi=vf_get_image(vf->next,mpi->imgfmt,
+        dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
             MP_IMGTYPE_TEMP,
             MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
             mpi->width,mpi->height);
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
     }else{
         dmpi=vf->dmpi;
     }
@@ -251,7 +251,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     filter(vf->priv, dmpi->planes[1], mpi->planes[1], dmpi->stride[1], mpi->stride[1], mpi->w>>mpi->chroma_x_shift, mpi->h>>mpi->chroma_y_shift, 0);
     filter(vf->priv, dmpi->planes[2], mpi->planes[2], dmpi->stride[2], mpi->stride[2], mpi->w>>mpi->chroma_x_shift, mpi->h>>mpi->chroma_y_shift, 0);
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -283,7 +283,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_444P:
         case IMGFMT_422P:
         case IMGFMT_411P:
-            return vf_next_query_format(vf,fmt);
+            return ff_vf_next_query_format(vf,fmt);
     }
     return 0;
 }
@@ -312,7 +312,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_ow = {
+const vf_info_t ff_vf_info_ow = {
     "overcomplete wavelet denoiser",
     "ow",
     "Michael Niedermayer",

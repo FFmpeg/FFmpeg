@@ -24,10 +24,11 @@
  * RV30/40 decoder common data
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "error_resilience.h"
 #include "mpegvideo.h"
 #include "golomb.h"
 #include "internal.h"
@@ -214,9 +215,9 @@ static int rv34_decode_cbp(GetBitContext *gb, RV34VLC *vlc, int table)
 }
 
 /**
- * Get one coefficient value from the bistream and store it.
+ * Get one coefficient value from the bitstream and store it.
  */
-static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *gb, VLC* vlc, int q)
+static inline void decode_coeff(int16_t *dst, int coef, int esc, GetBitContext *gb, VLC* vlc, int q)
 {
     if(coef){
         if(coef == esc){
@@ -236,7 +237,7 @@ static inline void decode_coeff(DCTELEM *dst, int coef, int esc, GetBitContext *
 /**
  * Decode 2x2 subblock of coefficients.
  */
-static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc, int q)
+static inline void decode_subblock(int16_t *dst, int code, const int is_block2, GetBitContext *gb, VLC *vlc, int q)
 {
     int flags = modulo_three_table[code];
 
@@ -254,13 +255,13 @@ static inline void decode_subblock(DCTELEM *dst, int code, const int is_block2, 
 /**
  * Decode a single coefficient.
  */
-static inline void decode_subblock1(DCTELEM *dst, int code, GetBitContext *gb, VLC *vlc, int q)
+static inline void decode_subblock1(int16_t *dst, int code, GetBitContext *gb, VLC *vlc, int q)
 {
     int coeff = modulo_three_table[code] >> 6;
     decode_coeff(dst, coeff, 3, gb, vlc, q);
 }
 
-static inline void decode_subblock3(DCTELEM *dst, int code, GetBitContext *gb, VLC *vlc,
+static inline void decode_subblock3(int16_t *dst, int code, GetBitContext *gb, VLC *vlc,
                                     int q_dc, int q_ac1, int q_ac2)
 {
     int flags = modulo_three_table[code];
@@ -282,7 +283,7 @@ static inline void decode_subblock3(DCTELEM *dst, int code, GetBitContext *gb, V
  *  o--o
  */
 
-static int rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
+static int rv34_decode_block(int16_t *dst, GetBitContext *gb, RV34VLC *rvlc, int fc, int sc, int q_dc, int q_ac1, int q_ac2)
 {
     int code, pattern, has_ac = 1;
 
@@ -357,7 +358,7 @@ static int rv34_decode_intra_mb_header(RV34DecContext *r, int8_t *intra_types)
 
     r->is16 = get_bits1(gb);
     if(r->is16){
-        s->current_picture_ptr->f.mb_type[mb_pos] = MB_TYPE_INTRA16x16;
+        s->current_picture_ptr->mb_type[mb_pos] = MB_TYPE_INTRA16x16;
         r->block_type = RV34_MB_TYPE_INTRA16x16;
         t = get_bits(gb, 2);
         fill_rectangle(intra_types, 4, 4, r->intra_types_stride, t, sizeof(intra_types[0]));
@@ -367,7 +368,7 @@ static int rv34_decode_intra_mb_header(RV34DecContext *r, int8_t *intra_types)
             if(!get_bits1(gb))
                 av_log(s->avctx, AV_LOG_ERROR, "Need DQUANT\n");
         }
-        s->current_picture_ptr->f.mb_type[mb_pos] = MB_TYPE_INTRA;
+        s->current_picture_ptr->mb_type[mb_pos] = MB_TYPE_INTRA;
         r->block_type = RV34_MB_TYPE_INTRA;
         if(r->decode_intra_types(r, gb, intra_types) < 0)
             return -1;
@@ -393,7 +394,7 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
     r->block_type = r->decode_mb_info(r);
     if(r->block_type == -1)
         return -1;
-    s->current_picture_ptr->f.mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
+    s->current_picture_ptr->mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
     r->mb_type[mb_pos] = r->block_type;
     if(r->block_type == RV34_MB_SKIP){
         if(s->pict_type == AV_PICTURE_TYPE_P)
@@ -401,7 +402,7 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
         if(s->pict_type == AV_PICTURE_TYPE_B)
             r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
     }
-    r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->f.mb_type[mb_pos]);
+    r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
     rv34_decode_mv(r, r->block_type);
     if(r->block_type == RV34_MB_SKIP){
         fill_rectangle(intra_types, 4, 4, r->intra_types_stride, 0, sizeof(intra_types[0]));
@@ -410,7 +411,7 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
     r->chroma_vlc = 1;
     r->luma_vlc   = 0;
 
-    if(IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos])){
+    if(IS_INTRA(s->current_picture_ptr->mb_type[mb_pos])){
         if(r->is16){
             t = get_bits(gb, 2);
             fill_rectangle(intra_types, 4, 4, r->intra_types_stride, t, sizeof(intra_types[0]));
@@ -475,27 +476,27 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
         c_off = -1;
 
     if(avail[-1]){
-        A[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-1][0];
-        A[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-1][1];
+        A[0] = s->current_picture_ptr->motion_val[0][mv_pos-1][0];
+        A[1] = s->current_picture_ptr->motion_val[0][mv_pos-1][1];
     }
     if(avail[-4]){
-        B[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride][0];
-        B[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride][1];
+        B[0] = s->current_picture_ptr->motion_val[0][mv_pos-s->b8_stride][0];
+        B[1] = s->current_picture_ptr->motion_val[0][mv_pos-s->b8_stride][1];
     }else{
         B[0] = A[0];
         B[1] = A[1];
     }
     if(!avail[c_off-4]){
         if(avail[-4] && (avail[-1] || r->rv30)){
-            C[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride-1][0];
-            C[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride-1][1];
+            C[0] = s->current_picture_ptr->motion_val[0][mv_pos-s->b8_stride-1][0];
+            C[1] = s->current_picture_ptr->motion_val[0][mv_pos-s->b8_stride-1][1];
         }else{
             C[0] = A[0];
             C[1] = A[1];
         }
     }else{
-        C[0] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride+c_off][0];
-        C[1] = s->current_picture_ptr->f.motion_val[0][mv_pos-s->b8_stride+c_off][1];
+        C[0] = s->current_picture_ptr->motion_val[0][mv_pos-s->b8_stride+c_off][0];
+        C[1] = s->current_picture_ptr->motion_val[0][mv_pos-s->b8_stride+c_off][1];
     }
     mx = mid_pred(A[0], B[0], C[0]);
     my = mid_pred(A[1], B[1], C[1]);
@@ -503,8 +504,8 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
     my += r->dmv[dmv_no][1];
     for(j = 0; j < part_sizes_h[block_type]; j++){
         for(i = 0; i < part_sizes_w[block_type]; i++){
-            s->current_picture_ptr->f.motion_val[0][mv_pos + i + j*s->b8_stride][0] = mx;
-            s->current_picture_ptr->f.motion_val[0][mv_pos + i + j*s->b8_stride][1] = my;
+            s->current_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][0] = mx;
+            s->current_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][1] = my;
         }
     }
 }
@@ -555,25 +556,25 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     int i, j;
     Picture *cur_pic = s->current_picture_ptr;
     const int mask = dir ? MB_TYPE_L1 : MB_TYPE_L0;
-    int type = cur_pic->f.mb_type[mb_pos];
+    int type = cur_pic->mb_type[mb_pos];
 
     if((r->avail_cache[6-1] & type) & mask){
-        A[0] = cur_pic->f.motion_val[dir][mv_pos - 1][0];
-        A[1] = cur_pic->f.motion_val[dir][mv_pos - 1][1];
+        A[0] = cur_pic->motion_val[dir][mv_pos - 1][0];
+        A[1] = cur_pic->motion_val[dir][mv_pos - 1][1];
         has_A = 1;
     }
     if((r->avail_cache[6-4] & type) & mask){
-        B[0] = cur_pic->f.motion_val[dir][mv_pos - s->b8_stride][0];
-        B[1] = cur_pic->f.motion_val[dir][mv_pos - s->b8_stride][1];
+        B[0] = cur_pic->motion_val[dir][mv_pos - s->b8_stride][0];
+        B[1] = cur_pic->motion_val[dir][mv_pos - s->b8_stride][1];
         has_B = 1;
     }
     if(r->avail_cache[6-4] && (r->avail_cache[6-2] & type) & mask){
-        C[0] = cur_pic->f.motion_val[dir][mv_pos - s->b8_stride + 2][0];
-        C[1] = cur_pic->f.motion_val[dir][mv_pos - s->b8_stride + 2][1];
+        C[0] = cur_pic->motion_val[dir][mv_pos - s->b8_stride + 2][0];
+        C[1] = cur_pic->motion_val[dir][mv_pos - s->b8_stride + 2][1];
         has_C = 1;
     }else if((s->mb_x+1) == s->mb_width && (r->avail_cache[6-5] & type) & mask){
-        C[0] = cur_pic->f.motion_val[dir][mv_pos - s->b8_stride - 1][0];
-        C[1] = cur_pic->f.motion_val[dir][mv_pos - s->b8_stride - 1][1];
+        C[0] = cur_pic->motion_val[dir][mv_pos - s->b8_stride - 1][0];
+        C[1] = cur_pic->motion_val[dir][mv_pos - s->b8_stride - 1][1];
         has_C = 1;
     }
 
@@ -584,12 +585,12 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
 
     for(j = 0; j < 2; j++){
         for(i = 0; i < 2; i++){
-            cur_pic->f.motion_val[dir][mv_pos + i + j*s->b8_stride][0] = mx;
-            cur_pic->f.motion_val[dir][mv_pos + i + j*s->b8_stride][1] = my;
+            cur_pic->motion_val[dir][mv_pos + i + j*s->b8_stride][0] = mx;
+            cur_pic->motion_val[dir][mv_pos + i + j*s->b8_stride][1] = my;
         }
     }
     if(block_type == RV34_MB_B_BACKWARD || block_type == RV34_MB_B_FORWARD){
-        ZERO8x2(cur_pic->f.motion_val[!dir][mv_pos], s->b8_stride);
+        ZERO8x2(cur_pic->motion_val[!dir][mv_pos], s->b8_stride);
     }
 }
 
@@ -606,27 +607,27 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     int* avail = r->avail_cache + avail_indexes[0];
 
     if(avail[-1]){
-        A[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - 1][0];
-        A[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - 1][1];
+        A[0] = s->current_picture_ptr->motion_val[0][mv_pos - 1][0];
+        A[1] = s->current_picture_ptr->motion_val[0][mv_pos - 1][1];
     }
     if(avail[-4]){
-        B[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride][0];
-        B[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride][1];
+        B[0] = s->current_picture_ptr->motion_val[0][mv_pos - s->b8_stride][0];
+        B[1] = s->current_picture_ptr->motion_val[0][mv_pos - s->b8_stride][1];
     }else{
         B[0] = A[0];
         B[1] = A[1];
     }
     if(!avail[-4 + 2]){
         if(avail[-4] && (avail[-1])){
-            C[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride - 1][0];
-            C[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride - 1][1];
+            C[0] = s->current_picture_ptr->motion_val[0][mv_pos - s->b8_stride - 1][0];
+            C[1] = s->current_picture_ptr->motion_val[0][mv_pos - s->b8_stride - 1][1];
         }else{
             C[0] = A[0];
             C[1] = A[1];
         }
     }else{
-        C[0] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride + 2][0];
-        C[1] = s->current_picture_ptr->f.motion_val[0][mv_pos - s->b8_stride + 2][1];
+        C[0] = s->current_picture_ptr->motion_val[0][mv_pos - s->b8_stride + 2][0];
+        C[1] = s->current_picture_ptr->motion_val[0][mv_pos - s->b8_stride + 2][1];
     }
     mx = mid_pred(A[0], B[0], C[0]);
     my = mid_pred(A[1], B[1], C[1]);
@@ -635,8 +636,8 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     for(j = 0; j < 2; j++){
         for(i = 0; i < 2; i++){
             for(k = 0; k < 2; k++){
-                s->current_picture_ptr->f.motion_val[k][mv_pos + i + j*s->b8_stride][0] = mx;
-                s->current_picture_ptr->f.motion_val[k][mv_pos + i + j*s->b8_stride][1] = my;
+                s->current_picture_ptr->motion_val[k][mv_pos + i + j*s->b8_stride][0] = mx;
+                s->current_picture_ptr->motion_val[k][mv_pos + i + j*s->b8_stride][1] = my;
             }
         }
     }
@@ -674,24 +675,24 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
 
     if(thirdpel){
         int chroma_mx, chroma_my;
-        mx = (s->current_picture_ptr->f.motion_val[dir][mv_pos][0] + (3 << 24)) / 3 - (1 << 24);
-        my = (s->current_picture_ptr->f.motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
-        lx = (s->current_picture_ptr->f.motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
-        ly = (s->current_picture_ptr->f.motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
-        chroma_mx = s->current_picture_ptr->f.motion_val[dir][mv_pos][0] / 2;
-        chroma_my = s->current_picture_ptr->f.motion_val[dir][mv_pos][1] / 2;
+        mx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) / 3 - (1 << 24);
+        my = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
+        lx = (s->current_picture_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
+        ly = (s->current_picture_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
+        chroma_mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] / 2;
+        chroma_my = s->current_picture_ptr->motion_val[dir][mv_pos][1] / 2;
         umx = (chroma_mx + (3 << 24)) / 3 - (1 << 24);
         umy = (chroma_my + (3 << 24)) / 3 - (1 << 24);
         uvmx = chroma_coeffs[(chroma_mx + (3 << 24)) % 3];
         uvmy = chroma_coeffs[(chroma_my + (3 << 24)) % 3];
     }else{
         int cx, cy;
-        mx = s->current_picture_ptr->f.motion_val[dir][mv_pos][0] >> 2;
-        my = s->current_picture_ptr->f.motion_val[dir][mv_pos][1] >> 2;
-        lx = s->current_picture_ptr->f.motion_val[dir][mv_pos][0] & 3;
-        ly = s->current_picture_ptr->f.motion_val[dir][mv_pos][1] & 3;
-        cx = s->current_picture_ptr->f.motion_val[dir][mv_pos][0] / 2;
-        cy = s->current_picture_ptr->f.motion_val[dir][mv_pos][1] / 2;
+        mx = s->current_picture_ptr->motion_val[dir][mv_pos][0] >> 2;
+        my = s->current_picture_ptr->motion_val[dir][mv_pos][1] >> 2;
+        lx = s->current_picture_ptr->motion_val[dir][mv_pos][0] & 3;
+        ly = s->current_picture_ptr->motion_val[dir][mv_pos][1] & 3;
+        cx = s->current_picture_ptr->motion_val[dir][mv_pos][0] / 2;
+        cy = s->current_picture_ptr->motion_val[dir][mv_pos][1] / 2;
         umx = cx >> 2;
         umy = cy >> 2;
         uvmx = (cx & 3) << 1;
@@ -704,7 +705,7 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
         /* wait for the referenced mb row to be finished */
         int mb_row = s->mb_y + ((yoff + my + 5 + 8 * height) >> 4);
-        AVFrame *f = dir ? &s->next_picture_ptr->f : &s->last_picture_ptr->f;
+        ThreadFrame *f = dir ? &s->next_picture_ptr->tf : &s->last_picture_ptr->tf;
         ff_thread_await_progress(f, mb_row, 0);
     }
 
@@ -725,12 +726,12 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
         uint8_t *uvbuf = s->edge_emu_buffer + 22 * s->linesize;
 
         srcY -= 2 + 2*s->linesize;
-        s->dsp.emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, (width<<3)+6, (height<<3)+6,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, (width<<3)+6, (height<<3)+6,
                             src_x - 2, src_y - 2, s->h_edge_pos, s->v_edge_pos);
         srcY = s->edge_emu_buffer + 2 + 2*s->linesize;
-        s->dsp.emulated_edge_mc(uvbuf     , srcU, s->uvlinesize, (width<<2)+1, (height<<2)+1,
+        s->vdsp.emulated_edge_mc(uvbuf     , srcU, s->uvlinesize, (width<<2)+1, (height<<2)+1,
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
-        s->dsp.emulated_edge_mc(uvbuf + 16, srcV, s->uvlinesize, (width<<2)+1, (height<<2)+1,
+        s->vdsp.emulated_edge_mc(uvbuf + 16, srcV, s->uvlinesize, (width<<2)+1, (height<<2)+1,
                             uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         srcU = uvbuf;
         srcV = uvbuf + 16;
@@ -853,11 +854,11 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
     switch(block_type){
     case RV34_MB_TYPE_INTRA:
     case RV34_MB_TYPE_INTRA16x16:
-        ZERO8x2(s->current_picture_ptr->f.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+        ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         return 0;
     case RV34_MB_SKIP:
         if(s->pict_type == AV_PICTURE_TYPE_P){
-            ZERO8x2(s->current_picture_ptr->f.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
             rv34_mc_1mv (r, block_type, 0, 0, 0, 2, 2, 0);
             break;
         }
@@ -865,23 +866,23 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         //surprisingly, it uses motion scheme from next reference frame
         /* wait for the current mb row to be finished */
         if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-            ff_thread_await_progress(&s->next_picture_ptr->f, FFMAX(0, s->mb_y-1), 0);
+            ff_thread_await_progress(&s->next_picture_ptr->tf, FFMAX(0, s->mb_y-1), 0);
 
-        next_bt = s->next_picture_ptr->f.mb_type[s->mb_x + s->mb_y * s->mb_stride];
+        next_bt = s->next_picture_ptr->mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
-            ZERO8x2(s->current_picture_ptr->f.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
-            ZERO8x2(s->current_picture_ptr->f.motion_val[1][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->current_picture_ptr->motion_val[1][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         }else
             for(j = 0; j < 2; j++)
                 for(i = 0; i < 2; i++)
                     for(k = 0; k < 2; k++)
                         for(l = 0; l < 2; l++)
-                            s->current_picture_ptr->f.motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_picture_ptr->f.motion_val[0][mv_pos + i + j*s->b8_stride][k]);
+                            s->current_picture_ptr->motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_picture_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k]);
         if(!(IS_16X8(next_bt) || IS_8X16(next_bt) || IS_8X8(next_bt))) //we can use whole macroblock MC
             rv34_mc_2mv(r, block_type);
         else
             rv34_mc_2mv_skip(r);
-        ZERO8x2(s->current_picture_ptr->f.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+        ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         break;
     case RV34_MB_P_16x16:
     case RV34_MB_P_MIX16x16:
@@ -994,7 +995,7 @@ static inline void rv34_process_block(RV34DecContext *r,
                                       int fc, int sc, int q_dc, int q_ac)
 {
     MpegEncContext *s = &r->s;
-    DCTELEM *ptr = s->block[0];
+    int16_t *ptr = s->block[0];
     int has_ac = rv34_decode_block(ptr, &s->gb, r->cur_vlcs,
                                    fc, sc, q_dc, q_ac, q_ac);
     if(has_ac){
@@ -1007,13 +1008,13 @@ static inline void rv34_process_block(RV34DecContext *r,
 
 static void rv34_output_i16x16(RV34DecContext *r, int8_t *intra_types, int cbp)
 {
-    LOCAL_ALIGNED_16(DCTELEM, block16, [16]);
+    LOCAL_ALIGNED_16(int16_t, block16, [16]);
     MpegEncContext *s    = &r->s;
     GetBitContext  *gb   = &s->gb;
     int             q_dc = rv34_qscale_tab[ r->luma_dc_quant_i[s->qscale] ],
                     q_ac = rv34_qscale_tab[s->qscale];
     uint8_t        *dst  = s->dest[0];
-    DCTELEM        *ptr  = s->block[0];
+    int16_t        *ptr  = s->block[0];
     int i, j, itype, has_ac;
 
     memset(block16, 0, 16 * sizeof(*block16));
@@ -1149,7 +1150,7 @@ static int rv34_set_deblock_coef(RV34DecContext *r)
     MpegEncContext *s = &r->s;
     int hmvmask = 0, vmvmask = 0, i, j;
     int midx = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
-    int16_t (*motion_val)[2] = &s->current_picture_ptr->f.motion_val[0][midx];
+    int16_t (*motion_val)[2] = &s->current_picture_ptr->motion_val[0][midx];
     for(j = 0; j < 16; j += 8){
         for(i = 0; i < 2; i++){
             if(is_mv_diff_gt_3(motion_val + i, 1))
@@ -1179,7 +1180,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
     MpegEncContext *s   = &r->s;
     GetBitContext  *gb  = &s->gb;
     uint8_t        *dst = s->dest[0];
-    DCTELEM        *ptr = s->block[0];
+    int16_t        *ptr = s->block[0];
     int          mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int cbp, cbp2;
     int q_dc, q_ac, has_ac;
@@ -1192,26 +1193,26 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
     dist = (s->mb_x - s->resync_mb_x) + (s->mb_y - s->resync_mb_y) * s->mb_width;
     if(s->mb_x && dist)
         r->avail_cache[5] =
-        r->avail_cache[9] = s->current_picture_ptr->f.mb_type[mb_pos - 1];
+        r->avail_cache[9] = s->current_picture_ptr->mb_type[mb_pos - 1];
     if(dist >= s->mb_width)
         r->avail_cache[2] =
-        r->avail_cache[3] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride];
+        r->avail_cache[3] = s->current_picture_ptr->mb_type[mb_pos - s->mb_stride];
     if(((s->mb_x+1) < s->mb_width) && dist >= s->mb_width - 1)
-        r->avail_cache[4] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride + 1];
+        r->avail_cache[4] = s->current_picture_ptr->mb_type[mb_pos - s->mb_stride + 1];
     if(s->mb_x && dist > s->mb_width)
-        r->avail_cache[1] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride - 1];
+        r->avail_cache[1] = s->current_picture_ptr->mb_type[mb_pos - s->mb_stride - 1];
 
     s->qscale = r->si.quant;
     cbp = cbp2 = rv34_decode_inter_mb_header(r, intra_types);
     r->cbp_luma  [mb_pos] = cbp;
     r->cbp_chroma[mb_pos] = cbp >> 16;
     r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r) | r->cbp_luma[mb_pos];
-    s->current_picture_ptr->f.qscale_table[mb_pos] = s->qscale;
+    s->current_picture_ptr->qscale_table[mb_pos] = s->qscale;
 
     if(cbp == -1)
         return -1;
 
-    if (IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos])){
+    if (IS_INTRA(s->current_picture_ptr->mb_type[mb_pos])){
         if(r->is16) rv34_output_i16x16(r, intra_types, cbp);
         else        rv34_output_intra(r, intra_types, cbp);
         return 0;
@@ -1219,7 +1220,7 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
 
     if(r->is16){
         // Only for RV34_MB_P_MIX16x16
-        LOCAL_ALIGNED_16(DCTELEM, block16, [16]);
+        LOCAL_ALIGNED_16(int16_t, block16, [16]);
         memset(block16, 0, 16 * sizeof(*block16));
         q_dc = rv34_qscale_tab[ r->luma_dc_quant_p[s->qscale] ];
         q_ac = rv34_qscale_tab[s->qscale];
@@ -1294,21 +1295,21 @@ static int rv34_decode_intra_macroblock(RV34DecContext *r, int8_t *intra_types)
     dist = (s->mb_x - s->resync_mb_x) + (s->mb_y - s->resync_mb_y) * s->mb_width;
     if(s->mb_x && dist)
         r->avail_cache[5] =
-        r->avail_cache[9] = s->current_picture_ptr->f.mb_type[mb_pos - 1];
+        r->avail_cache[9] = s->current_picture_ptr->mb_type[mb_pos - 1];
     if(dist >= s->mb_width)
         r->avail_cache[2] =
-        r->avail_cache[3] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride];
+        r->avail_cache[3] = s->current_picture_ptr->mb_type[mb_pos - s->mb_stride];
     if(((s->mb_x+1) < s->mb_width) && dist >= s->mb_width - 1)
-        r->avail_cache[4] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride + 1];
+        r->avail_cache[4] = s->current_picture_ptr->mb_type[mb_pos - s->mb_stride + 1];
     if(s->mb_x && dist > s->mb_width)
-        r->avail_cache[1] = s->current_picture_ptr->f.mb_type[mb_pos - s->mb_stride - 1];
+        r->avail_cache[1] = s->current_picture_ptr->mb_type[mb_pos - s->mb_stride - 1];
 
     s->qscale = r->si.quant;
     cbp = rv34_decode_intra_mb_header(r, intra_types);
     r->cbp_luma  [mb_pos] = cbp;
     r->cbp_chroma[mb_pos] = cbp >> 16;
     r->deblock_coefs[mb_pos] = 0xFFFF;
-    s->current_picture_ptr->f.qscale_table[mb_pos] = s->qscale;
+    s->current_picture_ptr->qscale_table[mb_pos] = s->qscale;
 
     if(cbp == -1)
         return -1;
@@ -1433,7 +1434,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         else
             res = rv34_decode_intra_macroblock(r, r->intra_types + s->mb_x * 4 + 4);
         if(res < 0){
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_ERROR);
+            ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_ERROR);
             return -1;
         }
         if (++s->mb_x == s->mb_width) {
@@ -1448,7 +1449,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
                 r->loop_filter(r, s->mb_y - 2);
 
             if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-                ff_thread_report_progress(&s->current_picture_ptr->f,
+                ff_thread_report_progress(&s->current_picture_ptr->tf,
                                           s->mb_y - 2, 0);
 
         }
@@ -1456,7 +1457,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             s->first_slice_line=0;
         s->mb_num_left--;
     }
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
+    ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
     return s->mb_y == s->mb_height;
 }
@@ -1483,22 +1484,22 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     r->s.avctx = avctx;
     avctx->flags |= CODEC_FLAG_EMU_EDGE;
     r->s.flags |= CODEC_FLAG_EMU_EDGE;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->has_b_frames = 1;
     s->low_delay = 0;
 
     if ((ret = ff_MPV_common_init(s)) < 0)
         return ret;
 
-    ff_h264_pred_init(&r->h, CODEC_ID_RV40, 8, 1);
+    ff_h264_pred_init(&r->h, AV_CODEC_ID_RV40, 8, 1);
 
 #if CONFIG_RV30_DECODER
-    if (avctx->codec_id == CODEC_ID_RV30)
-        ff_rv30dsp_init(&r->rdsp, &r->s.dsp);
+    if (avctx->codec_id == AV_CODEC_ID_RV30)
+        ff_rv30dsp_init(&r->rdsp);
 #endif
 #if CONFIG_RV40_DECODER
-    if (avctx->codec_id == CODEC_ID_RV40)
-        ff_rv40dsp_init(&r->rdsp, &r->s.dsp);
+    if (avctx->codec_id == AV_CODEC_ID_RV40)
+        ff_rv40dsp_init(&r->rdsp);
 #endif
 
     if ((ret = rv34_decoder_alloc(r)) < 0)
@@ -1506,6 +1507,8 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 
     if(!intra_vlcs[0].cbppattern[0].bits)
         rv34_init_tables();
+
+    avctx->internal->allocate_progress = 1;
 
     return 0;
 }
@@ -1524,6 +1527,7 @@ int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx)
         if ((err = rv34_decoder_alloc(r)) < 0)
             return err;
     }
+
     return 0;
 }
 
@@ -1537,10 +1541,9 @@ int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecConte
         return 0;
 
     if (s->height != s1->height || s->width != s1->width) {
-        ff_MPV_common_end(s);
         s->height = s1->height;
         s->width  = s1->width;
-        if ((err = ff_MPV_common_init(s)) < 0)
+        if ((err = ff_MPV_common_frame_size_change(s)) < 0)
             return err;
         if ((err = rv34_decoder_realloc(r)) < 0)
             return err;
@@ -1568,26 +1571,40 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
 {
     RV34DecContext *r = avctx->priv_data;
     MpegEncContext *s = &r->s;
-    int got_picture = 0;
+    int got_picture = 0, ret;
 
-    ff_er_frame_end(s);
+    ff_er_frame_end(&s->er);
     ff_MPV_frame_end(s);
     s->mb_num_left = 0;
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-        ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
+        ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
 
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-        *pict = s->current_picture_ptr->f;
+        if ((ret = av_frame_ref(pict, &s->current_picture_ptr->f)) < 0)
+            return ret;
+        ff_print_debug_info(s, s->current_picture_ptr, pict);
+        ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_QSCALE_TYPE_MPEG1);
         got_picture = 1;
     } else if (s->last_picture_ptr != NULL) {
-        *pict = s->last_picture_ptr->f;
+        if ((ret = av_frame_ref(pict, &s->last_picture_ptr->f)) < 0)
+            return ret;
+        ff_print_debug_info(s, s->last_picture_ptr, pict);
+        ff_mpv_export_qp_table(s, pict, s->last_picture_ptr, FF_QSCALE_TYPE_MPEG1);
         got_picture = 1;
     }
-    if (got_picture)
-        ff_print_debug_info(s, pict);
 
     return got_picture;
+}
+
+static AVRational update_sar(int old_w, int old_h, AVRational sar, int new_w, int new_h)
+{
+    // attempt to keep aspect during typical resolution switches
+    if (!sar.num)
+        sar = (AVRational){1, 1};
+
+    sar = av_mul_q(sar, (AVRational){new_h * old_w, new_w * old_h});
+    return sar;
 }
 
 int ff_rv34_decode_frame(AVCodecContext *avctx,
@@ -1600,7 +1617,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = &r->s;
     AVFrame *pict = data;
     SliceInfo si;
-    int i;
+    int i, ret;
     int slice_count;
     const uint8_t *slices_hdr = NULL;
     int last = 0;
@@ -1609,7 +1626,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay==0 && s->next_picture_ptr) {
-            *pict = s->next_picture_ptr->f;
+            if ((ret = av_frame_ref(pict, &s->next_picture_ptr->f)) < 0)
+                return ret;
             s->next_picture_ptr = NULL;
 
             *got_picture_ptr = 1;
@@ -1650,29 +1668,28 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     /* first slice */
     if (si.start == 0) {
         if (s->mb_num_left > 0) {
-            av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.",
+            av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
-            ff_er_frame_end(s);
+            ff_er_frame_end(&s->er);
             ff_MPV_frame_end(s);
         }
 
         if (s->width != si.width || s->height != si.height) {
             int err;
 
-            if (HAVE_THREADS &&
-                (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
-                av_log_missing_feature(s->avctx, "Width/height changing with "
-                                       "frame threading is", 0);
-                return AVERROR_PATCHWELCOME;
-            }
-
             av_log(s->avctx, AV_LOG_WARNING, "Changing dimensions to %dx%d\n",
                    si.width, si.height);
-            ff_MPV_common_end(s);
+
+            if (av_image_check_size(si.width, si.height, 0, s->avctx))
+                return AVERROR_INVALIDDATA;
+
+            s->avctx->sample_aspect_ratio = update_sar(
+                s->width, s->height, s->avctx->sample_aspect_ratio,
+                si.width, si.height);
             s->width  = si.width;
             s->height = si.height;
             avcodec_set_dimensions(s->avctx, s->width, s->height);
-            if ((err = ff_MPV_common_init(s)) < 0)
+            if ((err = ff_MPV_common_frame_size_change(s)) < 0)
                 return err;
             if ((err = rv34_decoder_realloc(r)) < 0)
                 return err;
@@ -1680,7 +1697,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         s->pict_type = si.type ? si.type : AV_PICTURE_TYPE_I;
         if (ff_MPV_frame_start(s, s->avctx) < 0)
             return -1;
-        ff_er_frame_start(s);
+        ff_mpeg_er_frame_start(s);
         if (!r->tmp_b_block_base) {
             int i;
 
@@ -1773,16 +1790,19 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             if(s->avctx->skip_loop_filter != AVDISCARD_ALL && r->loop_filter)
                 r->loop_filter(r, s->mb_height - 1);
 
-            *got_picture_ptr = finish_frame(avctx, pict);
+            ret = finish_frame(avctx, pict);
+            if (ret < 0)
+                return ret;
+            *got_picture_ptr = ret;
         } else if (HAVE_THREADS &&
                    (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
             av_log(avctx, AV_LOG_INFO, "marking unfished frame as finished\n");
             /* always mark the current frame as finished, frame-mt supports
              * only complete frames */
-            ff_er_frame_end(s);
+            ff_er_frame_end(&s->er);
             ff_MPV_frame_end(s);
             s->mb_num_left = 0;
-            ff_thread_report_progress(&s->current_picture_ptr->f, INT_MAX, 0);
+            ff_thread_report_progress(&s->current_picture_ptr->tf, INT_MAX, 0);
             return AVERROR_INVALIDDATA;
         }
     }

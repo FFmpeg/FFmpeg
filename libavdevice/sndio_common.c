@@ -84,7 +84,7 @@ av_cold int ff_sndio_open(AVFormatContext *s1, int is_output,
         }
     }
 
-    s->codec_id    = par.le ? CODEC_ID_PCM_S16LE : CODEC_ID_PCM_S16BE;
+    s->codec_id    = par.le ? AV_CODEC_ID_PCM_S16LE : AV_CODEC_ID_PCM_S16BE;
     s->channels    = is_output ? par.pchan : par.rchan;
     s->sample_rate = par.rate;
     s->bps         = par.bps;

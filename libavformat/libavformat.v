@@ -20,14 +20,11 @@ LIBAVFORMAT_$MAJOR {
                 ffurl_seek;
                 ffurl_size;
                 ffurl_write;
+                ffurl_protocol_next;
                 url_open;
                 url_close;
                 url_write;
-                url_get_max_packet_size;
                 #those are deprecated, remove on next bump
-                find_info_tag;
-                parse_date;
-                dump_format;
                 url_*;
                 ff_timefilter_destroy;
                 ff_timefilter_new;
@@ -35,9 +32,6 @@ LIBAVFORMAT_$MAJOR {
                 ff_timefilter_reset;
                 get_*;
                 put_*;
-                udp_set_remote_url;
-                udp_get_local_port;
-                init_checksum;
-                init_put_byte;
+                ff_codec_get_id;
         local: *;
 };

@@ -24,10 +24,7 @@
 
 #include "parser.h"
 #include "dca.h"
-#include "dcadata.h"
-#include "dca_parser.h"
 #include "get_bits.h"
-#include "put_bits.h"
 
 typedef struct DCAParseContext {
     ParseContext pc;
@@ -102,41 +99,6 @@ static av_cold int dca_parse_init(AVCodecParserContext * s)
     return 0;
 }
 
-int ff_dca_convert_bitstream(const uint8_t *src, int src_size, uint8_t *dst,
-                             int max_size)
-{
-    uint32_t mrk;
-    int i, tmp;
-    const uint16_t *ssrc = (const uint16_t *) src;
-    uint16_t *sdst = (uint16_t *) dst;
-    PutBitContext pb;
-
-    if ((unsigned) src_size > (unsigned) max_size)
-        src_size = max_size;
-
-    mrk = AV_RB32(src);
-    switch (mrk) {
-    case DCA_MARKER_RAW_BE:
-        memcpy(dst, src, src_size);
-        return src_size;
-    case DCA_MARKER_RAW_LE:
-        for (i = 0; i < (src_size + 1) >> 1; i++)
-            *sdst++ = av_bswap16(*ssrc++);
-        return src_size;
-    case DCA_MARKER_14B_BE:
-    case DCA_MARKER_14B_LE:
-        init_put_bits(&pb, dst, max_size);
-        for (i = 0; i < (src_size + 1) >> 1; i++, src += 2) {
-            tmp = ((mrk == DCA_MARKER_14B_BE) ? AV_RB16(src) : AV_RL16(src)) & 0x3FFF;
-            put_bits(&pb, 14, tmp);
-        }
-        flush_put_bits(&pb);
-        return (put_bits_count(&pb) + 7) >> 3;
-    default:
-        return AVERROR_INVALIDDATA;
-    }
-}
-
 static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
                             int *sample_rate)
 {
@@ -160,7 +122,7 @@ static int dca_parse_params(const uint8_t *buf, int buf_size, int *duration,
 
     skip_bits(&gb, 20);
     sr_code = get_bits(&gb, 4);
-    *sample_rate = dca_sample_rates[sr_code];
+    *sample_rate = avpriv_dca_sample_rates[sr_code];
     if (*sample_rate == 0)
         return AVERROR_INVALIDDATA;
 
@@ -191,8 +153,7 @@ static int dca_parse(AVCodecParserContext * s,
     /* read the duration and sample rate from the frame header */
     if (!dca_parse_params(buf, buf_size, &duration, &sample_rate)) {
         s->duration = duration;
-        if (!avctx->sample_rate)
-            avctx->sample_rate = sample_rate;
+        avctx->sample_rate = sample_rate;
     } else
         s->duration = 0;
 
@@ -202,7 +163,7 @@ static int dca_parse(AVCodecParserContext * s,
 }
 
 AVCodecParser ff_dca_parser = {
-    .codec_ids      = { CODEC_ID_DTS },
+    .codec_ids      = { AV_CODEC_ID_DTS },
     .priv_data_size = sizeof(DCAParseContext),
     .parser_init    = dca_parse_init,
     .parser_parse   = dca_parse,

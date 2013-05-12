@@ -1,0 +1,37 @@
+#!/bin/sh
+
+srcdir=${0%/*}/..
+
+while read -r field equal value; do
+  case "$field $equal" in
+    ".id =")
+      eval "known_${value%,}=1"
+      ;;
+  esac
+done < $srcdir/libavcodec/codec_desc.c
+
+known_AV_CODEC_ID_NONE=1
+known_AV_CODEC_ID_FIRST_AUDIO=1
+known_AV_CODEC_ID_FIRST_SUBTITLE=1
+known_AV_CODEC_ID_FIRST_UNKNOWN=1
+known_AV_CODEC_ID_TTF=1
+known_AV_CODEC_ID_PROBE=1
+known_AV_CODEC_ID_MPEG2TS=1
+known_AV_CODEC_ID_MPEG4SYSTEMS=1
+known_AV_CODEC_ID_FFMETADATA=1
+
+in=0
+while read -r line; do
+  case "$in-$line" in
+    0-"enum AVCodecID"*) in=1;;
+    1-*"};"*)            in=0;;
+    1-*AV_CODEC_ID_*,*)
+      cid="${line%%[, =]*}"
+      eval "known=\$known_$cid"
+      case "$known" in
+        1) ;;
+        *) echo "$cid missing";;
+      esac
+      ;;
+  esac
+done < $srcdir/libavcodec/avcodec.h

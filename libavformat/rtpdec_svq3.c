@@ -41,7 +41,8 @@ struct PayloadContext {
 static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
                               AVStream *st, AVPacket *pkt,
                               uint32_t *timestamp,
-                              const uint8_t *buf, int len, int flags)
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
     int config_packet, start_packet, end_packet;
 
@@ -68,12 +69,12 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
         AV_WB32(st->codec->extradata + 4, len);
         memcpy(st->codec->extradata + 8, buf, len);
 
-        /* We set codec_id to CODEC_ID_NONE initially to
+        /* We set codec_id to AV_CODEC_ID_NONE initially to
          * delay decoder initialization since extradata is
          * carried within the RTP stream, not SDP. Here,
-         * by setting codec_id to CODEC_ID_SVQ3, we are signalling
+         * by setting codec_id to AV_CODEC_ID_SVQ3, we are signalling
          * to the decoder that it is OK to initialize. */
-        st->codec->codec_id = CODEC_ID_SVQ3;
+        st->codec->codec_id = AV_CODEC_ID_SVQ3;
 
         return AVERROR(EAGAIN);
     }
@@ -97,12 +98,11 @@ static int svq3_parse_packet (AVFormatContext *s, PayloadContext *sv,
     avio_write(sv->pktbuf, buf, len);
 
     if (end_packet) {
-        av_init_packet(pkt);
-        pkt->stream_index = st->index;
+        int ret = ff_rtp_finalize_packet(pkt, &sv->pktbuf, st->index);
+        if (ret < 0)
+            return ret;
+
         *timestamp        = sv->timestamp;
-        pkt->size         = avio_close_dyn_buf(sv->pktbuf, &pkt->data);
-        pkt->destruct     = av_destruct_packet;
-        sv->pktbuf        = NULL;
         return 0;
     }
 
@@ -127,7 +127,7 @@ static void svq3_extradata_free(PayloadContext *sv)
 RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
-    .codec_id         = CODEC_ID_NONE,      // see if (config_packet) above
+    .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above
     .alloc            = svq3_extradata_new,
     .free             = svq3_extradata_free,
     .parse_packet     = svq3_parse_packet,

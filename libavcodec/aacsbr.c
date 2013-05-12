@@ -33,6 +33,7 @@
 #include "fft.h"
 #include "aacps.h"
 #include "sbrdsp.h"
+#include "libavutil/internal.h"
 #include "libavutil/libm.h"
 #include "libavutil/avassert.h"
 
@@ -42,6 +43,10 @@
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
 #define NOISE_FLOOR_OFFSET 6.0f
+
+#if ARCH_MIPS
+#include "mips/aacsbr_mips.h"
+#endif /* ARCH_MIPS */
 
 /**
  * SBR VLC tables
@@ -76,7 +81,6 @@ enum {
 static VLC vlc_sbr[10];
 static const int8_t vlc_sbr_lav[10] =
     { 60, 60, 24, 24, 31, 31, 12, 12, 31, 12 };
-static const DECLARE_ALIGNED(16, float, zero64)[64];
 
 #define SBR_INIT_VLC_STATIC(num, size) \
     INIT_VLC_STATIC(&vlc_sbr[num], 9, sbr_tmp[num].table_size / sbr_tmp[num].elem_size,     \
@@ -86,6 +90,8 @@ static const DECLARE_ALIGNED(16, float, zero64)[64];
 
 #define SBR_VLC_ROW(name) \
     { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
+
+static void aacsbr_func_ptr_init(AACSBRContext *c);
 
 av_cold void ff_aac_sbr_init(void)
 {
@@ -142,7 +148,6 @@ static void sbr_turnoff(SpectralBandReplication *sbr) {
 
 av_cold void ff_aac_sbr_ctx_init(AACContext *ac, SpectralBandReplication *sbr)
 {
-    float mdct_scale;
     if(sbr->mdct.mdct_bits)
         return;
     sbr->kx[0] = sbr->kx[1];
@@ -152,11 +157,11 @@ av_cold void ff_aac_sbr_ctx_init(AACContext *ac, SpectralBandReplication *sbr)
     /* SBR requires samples to be scaled to +/-32768.0 to work correctly.
      * mdct scale factors are adjusted to scale up from +/-1.0 at analysis
      * and scale back down at synthesis. */
-    mdct_scale = ac->avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? 32768.0f : 1.0f;
-    ff_mdct_init(&sbr->mdct,     7, 1, 1.0 / (64 * mdct_scale));
-    ff_mdct_init(&sbr->mdct_ana, 7, 1, -2.0 * mdct_scale);
+    ff_mdct_init(&sbr->mdct,     7, 1, 1.0 / (64 * 32768.0));
+    ff_mdct_init(&sbr->mdct_ana, 7, 1, -2.0 * 32768.0);
     ff_ps_ctx_init(&sbr->ps);
     ff_sbrdsp_init(&sbr->dsp);
+    aacsbr_func_ptr_init(&sbr->c);
 }
 
 av_cold void ff_aac_sbr_ctx_close(SpectralBandReplication *sbr)
@@ -340,9 +345,6 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
     } else
         temp = 5000;
 
-    start_min = ((temp << 7) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
-    stop_min  = ((temp << 8) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
-
     switch (sbr->sample_rate) {
     case 16000:
         sbr_offset_ptr = sbr_offset[0];
@@ -367,6 +369,9 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
                "Unsupported sample rate for SBR: %d\n", sbr->sample_rate);
         return -1;
     }
+
+    start_min = ((temp << 7) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
+    stop_min  = ((temp << 8) + (sbr->sample_rate >> 1)) / sbr->sample_rate;
 
     sbr->k[0] = start_min + sbr_offset_ptr[spectrum->bs_start_freq];
 
@@ -394,6 +399,8 @@ static int sbr_make_f_master(AACContext *ac, SpectralBandReplication *sbr,
         max_qmf_subbands = 35;
     } else if (sbr->sample_rate >= 48000)
         max_qmf_subbands = 32;
+    else
+        av_assert0(0);
 
     if (sbr->k[2] - sbr->k[0] > max_qmf_subbands) {
         av_log(ac->avctx, AV_LOG_ERROR,
@@ -555,7 +562,7 @@ static int sbr_hf_calc_npatches(AACContext *ac, SpectralBandReplication *sbr)
             k = sbr->n_master;
     } while (sb != sbr->kx[1] + sbr->m[1]);
 
-    if (sbr->patch_num_subbands[sbr->num_patches-1] < 3 && sbr->num_patches > 1)
+    if (sbr->num_patches > 1 && sbr->patch_num_subbands[sbr->num_patches-1] < 3)
         sbr->num_patches--;
 
     return 0;
@@ -749,7 +756,7 @@ static int read_sbr_grid(AACContext *ac, SpectralBandReplication *sbr,
         if (ch_data->bs_frame_class == FIXFIX) {
             idx = ch_data->bs_num_env >> 1;
         } else if (ch_data->bs_frame_class & 1) { // FIXVAR or VARVAR
-            idx = ch_data->bs_num_env - FFMAX(bs_pointer - 1, 1);
+            idx = ch_data->bs_num_env - FFMAX((int)bs_pointer - 1, 1);
         } else { // VARFIX
             if (!bs_pointer)
                 idx = 1;
@@ -926,7 +933,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
 #if 1
             *num_bits_left -= ff_ps_read_data(ac->avctx, gb, &sbr->ps, *num_bits_left);
 #else
-            av_log_missing_feature(ac->avctx, "Parametric Stereo is", 0);
+            avpriv_report_missing_feature(ac->avctx, "Parametric Stereo");
             skip_bits_long(gb, *num_bits_left); // bs_fill_bits
             *num_bits_left = 0;
 #endif
@@ -935,7 +942,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
     default:
         // some files contain 0-padding
         if (bs_extension_id || *num_bits_left > 16 || show_bits(gb, *num_bits_left))
-            av_log_missing_feature(ac->avctx, "Reserved SBR extensions are", 1);
+            avpriv_request_sample(ac->avctx, "Reserved SBR extensions");
         skip_bits_long(gb, *num_bits_left); // bs_fill_bits
         *num_bits_left = 0;
         break;
@@ -1124,7 +1131,12 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (k = 0; k < sbr->n[sbr->data[0].bs_freq_res[e]]; k++) {
                 float temp1 = exp2f(sbr->data[0].env_facs[e][k] * alpha + 7.0f);
                 float temp2 = exp2f((pan_offset - sbr->data[1].env_facs[e][k]) * alpha);
-                float fac   = temp1 / (1.0f + temp2);
+                float fac;
+                if (temp1 > 1E20) {
+                    av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
+                    temp1 = 1;
+                }
+                fac   = temp1 / (1.0f + temp2);
                 sbr->data[0].env_facs[e][k] = fac;
                 sbr->data[1].env_facs[e][k] = fac * temp2;
             }
@@ -1133,7 +1145,12 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (k = 0; k < sbr->n_q; k++) {
                 float temp1 = exp2f(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs[e][k] + 1);
                 float temp2 = exp2f(12 - sbr->data[1].noise_facs[e][k]);
-                float fac   = temp1 / (1.0f + temp2);
+                float fac;
+                if (temp1 > 1E20) {
+                    av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
+                    temp1 = 1;
+                }
+                fac = temp1 / (1.0f + temp2);
                 sbr->data[0].noise_facs[e][k] = fac;
                 sbr->data[1].noise_facs[e][k] = fac * temp2;
             }
@@ -1142,9 +1159,15 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
         for (ch = 0; ch < (id_aac == TYPE_CPE) + 1; ch++) {
             float alpha = sbr->data[ch].bs_amp_res ? 1.0f : 0.5f;
             for (e = 1; e <= sbr->data[ch].bs_num_env; e++)
-                for (k = 0; k < sbr->n[sbr->data[ch].bs_freq_res[e]]; k++)
+                for (k = 0; k < sbr->n[sbr->data[ch].bs_freq_res[e]]; k++){
                     sbr->data[ch].env_facs[e][k] =
                         exp2f(alpha * sbr->data[ch].env_facs[e][k] + 6.0f);
+                    if (sbr->data[ch].env_facs[e][k] > 1E20) {
+                        av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
+                        sbr->data[ch].env_facs[e][k] = 1;
+                    }
+                }
+
             for (e = 1; e <= sbr->data[ch].bs_num_noise; e++)
                 for (k = 0; k < sbr->n_q; k++)
                     sbr->data[ch].noise_facs[e][k] =
@@ -1159,12 +1182,12 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
  * @param   x       pointer to the beginning of the first sample window
  * @param   W       array of complex-valued samples split into subbands
  */
-static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct,
+#ifndef sbr_qmf_analysis
+static void sbr_qmf_analysis(AVFloatDSPContext *dsp, FFTContext *mdct,
                              SBRDSPContext *sbrdsp, const float *in, float *x,
-                             float z[320], float W[2][32][32][2])
+                             float z[320], float W[2][32][32][2], int buf_idx)
 {
     int i;
-    memcpy(W[0], W[1], sizeof(W[0]));
     memcpy(x    , x+1024, (320-32)*sizeof(x[0]));
     memcpy(x+288, in,         1024*sizeof(x[0]));
     for (i = 0; i < 32; i++) { // numTimeSlots*RATE = 16*2 as 960 sample frames
@@ -1173,17 +1196,19 @@ static void sbr_qmf_analysis(DSPContext *dsp, FFTContext *mdct,
         sbrdsp->sum64x5(z);
         sbrdsp->qmf_pre_shuffle(z);
         mdct->imdct_half(mdct, z, z+64);
-        sbrdsp->qmf_post_shuffle(W[1][i], z);
+        sbrdsp->qmf_post_shuffle(W[buf_idx][i], z);
         x += 32;
     }
 }
+#endif
 
 /**
  * Synthesis QMF Bank (14496-3 sp04 p206) and Downsampled Synthesis QMF Bank
  * (14496-3 sp04 p206)
  */
-static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
-                              SBRDSPContext *sbrdsp,
+#ifndef sbr_qmf_synthesis
+static void sbr_qmf_synthesis(FFTContext *mdct,
+                              SBRDSPContext *sbrdsp, AVFloatDSPContext *dsp,
                               float *out, float X[2][38][64],
                               float mdct_buf[2][64],
                               float *v0, int *v_off, const unsigned int div)
@@ -1214,7 +1239,7 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
             mdct->imdct_half(mdct, mdct_buf[1], X[1][i]);
             sbrdsp->qmf_deint_bfly(v, mdct_buf[1], mdct_buf[0]);
         }
-        dsp->vector_fmul_add(out, v                , sbr_qmf_window               , zero64, 64 >> div);
+        dsp->vector_fmul    (out, v                , sbr_qmf_window                       , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 192 >> div), sbr_qmf_window + ( 64 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 256 >> div), sbr_qmf_window + (128 >> div), out   , 64 >> div);
         dsp->vector_fmul_add(out, v + ( 448 >> div), sbr_qmf_window + (192 >> div), out   , 64 >> div);
@@ -1227,6 +1252,7 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
         out += 64 >> div;
     }
 }
+#endif
 
 /** High Frequency Generation (14496-3 sp04 p214+) and Inverse Filtering
  * (14496-3 sp04 p214)
@@ -1309,7 +1335,8 @@ static void sbr_chirp(SpectralBandReplication *sbr, SBRData *ch_data)
 
 /// Generate the subband filtered lowband
 static int sbr_lf_gen(AACContext *ac, SpectralBandReplication *sbr,
-                      float X_low[32][40][2], const float W[2][32][32][2])
+                      float X_low[32][40][2], const float W[2][32][32][2],
+                      int buf_idx)
 {
     int i, k;
     const int t_HFGen = 8;
@@ -1317,14 +1344,15 @@ static int sbr_lf_gen(AACContext *ac, SpectralBandReplication *sbr,
     memset(X_low, 0, 32*sizeof(*X_low));
     for (k = 0; k < sbr->kx[1]; k++) {
         for (i = t_HFGen; i < i_f + t_HFGen; i++) {
-            X_low[k][i][0] = W[1][i - t_HFGen][k][0];
-            X_low[k][i][1] = W[1][i - t_HFGen][k][1];
+            X_low[k][i][0] = W[buf_idx][i - t_HFGen][k][0];
+            X_low[k][i][1] = W[buf_idx][i - t_HFGen][k][1];
         }
     }
+    buf_idx = 1-buf_idx;
     for (k = 0; k < sbr->kx[0]; k++) {
         for (i = 0; i < t_HFGen; i++) {
-            X_low[k][i][0] = W[0][i + i_f - t_HFGen][k][0];
-            X_low[k][i][1] = W[0][i + i_f - t_HFGen][k][1];
+            X_low[k][i][0] = W[buf_idx][i + i_f - t_HFGen][k][0];
+            X_low[k][i][1] = W[buf_idx][i + i_f - t_HFGen][k][1];
         }
     }
     return 0;
@@ -1670,13 +1698,13 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
     }
     for (ch = 0; ch < nch; ch++) {
         /* decode channel */
-        sbr_qmf_analysis(&ac->dsp, &sbr->mdct_ana, &sbr->dsp, ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
+        sbr_qmf_analysis(&ac->fdsp, &sbr->mdct_ana, &sbr->dsp, ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
                          (float*)sbr->qmf_filter_scratch,
-                         sbr->data[ch].W);
-        sbr_lf_gen(ac, sbr, sbr->X_low, sbr->data[ch].W);
+                         sbr->data[ch].W, sbr->data[ch].Ypos);
+        sbr->c.sbr_lf_gen(ac, sbr, sbr->X_low, sbr->data[ch].W, sbr->data[ch].Ypos);
         sbr->data[ch].Ypos ^= 1;
         if (sbr->start) {
-            sbr_hf_inverse_filter(&sbr->dsp, sbr->alpha0, sbr->alpha1, sbr->X_low, sbr->k[0]);
+            sbr->c.sbr_hf_inverse_filter(&sbr->dsp, sbr->alpha0, sbr->alpha1, sbr->X_low, sbr->k[0]);
             sbr_chirp(sbr, &sbr->data[ch]);
             sbr_hf_gen(ac, sbr, sbr->X_high, sbr->X_low, sbr->alpha0, sbr->alpha1,
                        sbr->data[ch].bw_array, sbr->data[ch].t_env,
@@ -1687,14 +1715,14 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
             if (!err) {
                 sbr_env_estimate(sbr->e_curr, sbr->X_high, sbr, &sbr->data[ch]);
                 sbr_gain_calc(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
-                sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
+                sbr->c.sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
                                 sbr->X_high, sbr, &sbr->data[ch],
                                 sbr->data[ch].e_a);
             }
         }
 
         /* synthesis */
-        sbr_x_gen(sbr, sbr->X[ch],
+        sbr->c.sbr_x_gen(sbr, sbr->X[ch],
                   sbr->data[ch].Y[1-sbr->data[ch].Ypos],
                   sbr->data[ch].Y[  sbr->data[ch].Ypos],
                   sbr->X_low, ch);
@@ -1709,13 +1737,26 @@ void ff_sbr_apply(AACContext *ac, SpectralBandReplication *sbr, int id_aac,
         nch = 2;
     }
 
-    sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, L, sbr->X[0], sbr->qmf_filter_scratch,
+    sbr_qmf_synthesis(&sbr->mdct, &sbr->dsp, &ac->fdsp,
+                      L, sbr->X[0], sbr->qmf_filter_scratch,
                       sbr->data[0].synthesis_filterbank_samples,
                       &sbr->data[0].synthesis_filterbank_samples_offset,
                       downsampled);
     if (nch == 2)
-        sbr_qmf_synthesis(&ac->dsp, &sbr->mdct, &sbr->dsp, R, sbr->X[1], sbr->qmf_filter_scratch,
+        sbr_qmf_synthesis(&sbr->mdct, &sbr->dsp, &ac->fdsp,
+                          R, sbr->X[1], sbr->qmf_filter_scratch,
                           sbr->data[1].synthesis_filterbank_samples,
                           &sbr->data[1].synthesis_filterbank_samples_offset,
                           downsampled);
+}
+
+static void aacsbr_func_ptr_init(AACSBRContext *c)
+{
+    c->sbr_lf_gen            = sbr_lf_gen;
+    c->sbr_hf_assemble       = sbr_hf_assemble;
+    c->sbr_x_gen             = sbr_x_gen;
+    c->sbr_hf_inverse_filter = sbr_hf_inverse_filter;
+
+    if(ARCH_MIPS)
+        ff_aacsbr_func_ptr_init_mips(c);
 }

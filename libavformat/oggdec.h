@@ -51,6 +51,11 @@ struct ogg_codec {
      * 0 if granule is the end time of the associated packet.
      */
     int granule_is_start;
+    /**
+     * Number of expected headers
+     */
+    int nb_header;
+    void (*cleanup)(AVFormatContext *s, int idx);
 };
 
 struct ogg_stream {
@@ -63,6 +68,7 @@ struct ogg_stream {
     unsigned int pduration;
     uint32_t serial;
     uint64_t granule;
+    uint64_t start_granule;
     int64_t lastpts;
     int64_t lastdts;
     int64_t sync_pos;   ///< file offset of the first page needed to reconstruct the current packet
@@ -76,6 +82,8 @@ struct ogg_stream {
     int page_end;   ///< current packet is the last one completed in the page
     int keyframe_seek;
     int got_start;
+    int got_data;   ///< 1 if the stream got some data (non-initial packets), 0 otherwise
+    int nb_header; ///< set to the number of parsed headers
     void *private;
 };
 
@@ -92,12 +100,15 @@ struct ogg {
     int nstreams;
     int headers;
     int curidx;
+    int64_t page_pos;                   ///< file offset of the current page
     struct ogg_state *state;
 };
 
 #define OGG_FLAG_CONT 1
 #define OGG_FLAG_BOS  2
 #define OGG_FLAG_EOS  4
+
+#define OGG_NOGRANULE_VALUE (-1ull)
 
 extern const struct ogg_codec ff_celt_codec;
 extern const struct ogg_codec ff_dirac_codec;
@@ -108,6 +119,7 @@ extern const struct ogg_codec ff_ogm_text_codec;
 extern const struct ogg_codec ff_ogm_video_codec;
 extern const struct ogg_codec ff_old_dirac_codec;
 extern const struct ogg_codec ff_old_flac_codec;
+extern const struct ogg_codec ff_opus_codec;
 extern const struct ogg_codec ff_skeleton_codec;
 extern const struct ogg_codec ff_speex_codec;
 extern const struct ogg_codec ff_theora_codec;

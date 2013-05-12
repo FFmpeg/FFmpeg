@@ -22,10 +22,11 @@
 #include "libavutil/bswap.h"
 #include "libavutil/crc.h"
 #include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
-#include "libavcodec/mpegvideo.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "mpegts.h"
@@ -92,34 +93,34 @@ typedef struct MpegTSWrite {
 
 static const AVOption options[] = {
     { "mpegts_transport_stream_id", "Set transport_stream_id field.",
-      offsetof(MpegTSWrite, transport_stream_id), AV_OPT_TYPE_INT, {.dbl = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, transport_stream_id), AV_OPT_TYPE_INT, {.i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
     { "mpegts_original_network_id", "Set original_network_id field.",
-      offsetof(MpegTSWrite, original_network_id), AV_OPT_TYPE_INT, {.dbl = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, original_network_id), AV_OPT_TYPE_INT, {.i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
     { "mpegts_service_id", "Set service_id field.",
-      offsetof(MpegTSWrite, service_id), AV_OPT_TYPE_INT, {.dbl = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, service_id), AV_OPT_TYPE_INT, {.i64 = 0x0001 }, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
     { "mpegts_pmt_start_pid", "Set the first pid of the PMT.",
-      offsetof(MpegTSWrite, pmt_start_pid), AV_OPT_TYPE_INT, {.dbl = 0x1000 }, 0x0010, 0x1f00, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, pmt_start_pid), AV_OPT_TYPE_INT, {.i64 = 0x1000 }, 0x0010, 0x1f00, AV_OPT_FLAG_ENCODING_PARAM},
     { "mpegts_start_pid", "Set the first pid.",
-      offsetof(MpegTSWrite, start_pid), AV_OPT_TYPE_INT, {.dbl = 0x0100 }, 0x0100, 0x0f00, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, start_pid), AV_OPT_TYPE_INT, {.i64 = 0x0100 }, 0x0100, 0x0f00, AV_OPT_FLAG_ENCODING_PARAM},
     {"mpegts_m2ts_mode", "Enable m2ts mode.",
-        offsetof(MpegTSWrite, m2ts_mode), AV_OPT_TYPE_INT, {.dbl = -1 },
+        offsetof(MpegTSWrite, m2ts_mode), AV_OPT_TYPE_INT, {.i64 = -1 },
         -1,1, AV_OPT_FLAG_ENCODING_PARAM},
-    { "muxrate", NULL, offsetof(MpegTSWrite, mux_rate), AV_OPT_TYPE_INT, {1}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "muxrate", NULL, offsetof(MpegTSWrite, mux_rate), AV_OPT_TYPE_INT, {.i64 = 1}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "pes_payload_size", "Minimum PES packet payload in bytes",
-      offsetof(MpegTSWrite, pes_payload_size), AV_OPT_TYPE_INT, {DEFAULT_PES_PAYLOAD_SIZE}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
-    { "mpegts_flags", "MPEG-TS muxing flags", offsetof(MpegTSWrite, flags), AV_OPT_TYPE_FLAGS, {.dbl = 0}, 0, INT_MAX,
+      offsetof(MpegTSWrite, pes_payload_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT_PES_PAYLOAD_SIZE}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+    { "mpegts_flags", "MPEG-TS muxing flags", offsetof(MpegTSWrite, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
-      0, AV_OPT_TYPE_CONST, {.dbl = MPEGTS_FLAG_REEMIT_PAT_PMT}, 0, INT_MAX,
+      0, AV_OPT_TYPE_CONST, {.i64 = MPEGTS_FLAG_REEMIT_PAT_PMT}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags"},
     { "latm", "Use LATM packetization for AAC",
-      0, AV_OPT_TYPE_CONST, {.dbl = MPEGTS_FLAG_AAC_LATM}, 0, INT_MAX,
+      0, AV_OPT_TYPE_CONST, {.i64 = MPEGTS_FLAG_AAC_LATM}, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags"},
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
-      offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mpegts_copyts", "dont offset dts/pts",
-      offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.dbl=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -278,30 +279,33 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         MpegTSWriteStream *ts_st = st->priv_data;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
         switch(st->codec->codec_id) {
-        case CODEC_ID_MPEG1VIDEO:
-        case CODEC_ID_MPEG2VIDEO:
+        case AV_CODEC_ID_MPEG1VIDEO:
+        case AV_CODEC_ID_MPEG2VIDEO:
             stream_type = STREAM_TYPE_VIDEO_MPEG2;
             break;
-        case CODEC_ID_MPEG4:
+        case AV_CODEC_ID_MPEG4:
             stream_type = STREAM_TYPE_VIDEO_MPEG4;
             break;
-        case CODEC_ID_H264:
+        case AV_CODEC_ID_H264:
             stream_type = STREAM_TYPE_VIDEO_H264;
             break;
-        case CODEC_ID_DIRAC:
+        case AV_CODEC_ID_CAVS:
+            stream_type = STREAM_TYPE_VIDEO_CAVS;
+            break;
+        case AV_CODEC_ID_DIRAC:
             stream_type = STREAM_TYPE_VIDEO_DIRAC;
             break;
-        case CODEC_ID_MP2:
-        case CODEC_ID_MP3:
+        case AV_CODEC_ID_MP2:
+        case AV_CODEC_ID_MP3:
             stream_type = STREAM_TYPE_AUDIO_MPEG1;
             break;
-        case CODEC_ID_AAC:
+        case AV_CODEC_ID_AAC:
             stream_type = (ts->flags & MPEGTS_FLAG_AAC_LATM) ? STREAM_TYPE_AUDIO_AAC_LATM : STREAM_TYPE_AUDIO_AAC;
             break;
-        case CODEC_ID_AAC_LATM:
+        case AV_CODEC_ID_AAC_LATM:
             stream_type = STREAM_TYPE_AUDIO_AAC_LATM;
             break;
-        case CODEC_ID_AC3:
+        case AV_CODEC_ID_AC3:
             stream_type = STREAM_TYPE_AUDIO_AC3;
             break;
         default:
@@ -316,12 +320,12 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if(st->codec->codec_id==CODEC_ID_EAC3){
+            if(st->codec->codec_id==AV_CODEC_ID_EAC3){
                 *q++=0x7a; // EAC3 descriptor see A038 DVB SI
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
             }
-            if(st->codec->codec_id==CODEC_ID_S302M){
+            if(st->codec->codec_id==AV_CODEC_ID_S302M){
                 *q++ = 0x05; /* MPEG-2 registration descriptor*/
                 *q++ = 4;
                 *q++ = 'B';
@@ -598,7 +602,7 @@ static int mpegts_write_header(AVFormatContext *s)
             service->pcr_pid = ts_st->pid;
             pcr_st = st;
         }
-        if (st->codec->codec_id == CODEC_ID_AAC &&
+        if (st->codec->codec_id == AV_CODEC_ID_AAC &&
             st->codec->extradata_size > 0)
         {
             AVStream *ast;
@@ -669,10 +673,10 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->sdt_packet_count = ts->sdt_packet_period-1;
 
     if (ts->mux_rate == 1)
-        av_log(s, AV_LOG_INFO, "muxrate VBR, ");
+        av_log(s, AV_LOG_VERBOSE, "muxrate VBR, ");
     else
-        av_log(s, AV_LOG_INFO, "muxrate %d, ", ts->mux_rate);
-    av_log(s, AV_LOG_INFO, "pcr every %d pkts, "
+        av_log(s, AV_LOG_VERBOSE, "muxrate %d, ", ts->mux_rate);
+    av_log(s, AV_LOG_VERBOSE, "pcr every %d pkts, "
            "sdt every %d, pat/pmt every %d pkts\n",
            service->pcr_packet_period,
            ts->sdt_packet_period, ts->pat_packet_period);
@@ -912,15 +916,19 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = 0x01;
             private_code = 0;
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-                if (st->codec->codec_id == CODEC_ID_DIRAC) {
+                if (st->codec->codec_id == AV_CODEC_ID_DIRAC) {
                     *q++ = 0xfd;
                 } else
                     *q++ = 0xe0;
             } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-                       (st->codec->codec_id == CODEC_ID_MP2 ||
-                        st->codec->codec_id == CODEC_ID_MP3 ||
-                        st->codec->codec_id == CODEC_ID_AAC)) {
+                       (st->codec->codec_id == AV_CODEC_ID_MP2 ||
+                        st->codec->codec_id == AV_CODEC_ID_MP3 ||
+                        st->codec->codec_id == AV_CODEC_ID_AAC)) {
                 *q++ = 0xc0;
+            } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                        st->codec->codec_id == AV_CODEC_ID_AC3 &&
+                        ts->m2ts_mode) {
+                *q++ = 0xfd;
             } else {
                 *q++ = 0xbd;
                 if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
@@ -938,7 +946,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 flags |= 0x40;
             }
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-                st->codec->codec_id == CODEC_ID_DIRAC) {
+                st->codec->codec_id == AV_CODEC_ID_DIRAC) {
                 /* set PES_extension_flag */
                 pes_extension = 1;
                 flags |= 0x01;
@@ -949,6 +957,17 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 * one byte for extension id
                 */
                 header_len += 3;
+            }
+            /* for Blu-ray AC3 Audio the PES Extension flag should be as follow
+             * otherwise it will not play sound on blu-ray
+             */
+            if (ts->m2ts_mode &&
+                st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                st->codec->codec_id == AV_CODEC_ID_AC3) {
+                        /* set PES_extension_flag */
+                        pes_extension = 1;
+                        flags |= 0x01;
+                        header_len += 3;
             }
             len = payload_size + header_len + 3;
             if (private_code != 0)
@@ -972,7 +991,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 write_pts(q, 1, dts);
                 q += 5;
             }
-            if (pes_extension && st->codec->codec_id == CODEC_ID_DIRAC) {
+            if (pes_extension && st->codec->codec_id == AV_CODEC_ID_DIRAC) {
                 flags = 0x01;  /* set PES_extension_flag_2 */
                 *q++ = flags;
                 *q++ = 0x80 | 0x01;  /* marker bit + extension length */
@@ -982,6 +1001,17 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 */
                 *q++ = 0x00 | 0x60;
             }
+            /* For Blu-ray AC3 Audio Setting extended flags */
+          if (ts->m2ts_mode &&
+              pes_extension &&
+              st->codec->codec_id == AV_CODEC_ID_AC3) {
+                      flags = 0x01; /* set PES_extension_flag_2 */
+                      *q++ = flags;
+                      *q++ = 0x80 | 0x01; /* marker bit + extension length */
+                      *q++ = 0x00 | 0x71; /* for AC3 Audio (specifically on blue-rays) */
+              }
+
+
             if (private_code != 0)
                 *q++ = private_code;
             is_start = 0;
@@ -1055,24 +1085,27 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (ts_st->first_pts_check && pts == AV_NOPTS_VALUE) {
-        av_log(s, AV_LOG_ERROR, "first pts value must set\n");
+        av_log(s, AV_LOG_ERROR, "first pts value must be set\n");
         return AVERROR_INVALIDDATA;
     }
     ts_st->first_pts_check = 0;
 
-    if (st->codec->codec_id == CODEC_ID_H264) {
+    if (st->codec->codec_id == AV_CODEC_ID_H264) {
         const uint8_t *p = buf, *buf_end = p+size;
         uint32_t state = -1;
 
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
+            if (!st->nb_frames) {
             av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
                    "no startcode found, use the h264_mp4toannexb bitstream filter (-bsf h264_mp4toannexb)\n");
             return AVERROR(EINVAL);
+            }
+            av_log(s, AV_LOG_WARNING, "H.264 bitstream error, startcode missing\n");
         }
 
         do {
-            p = avpriv_mpv_find_start_code(p, buf_end, &state);
-            //av_log(s, AV_LOG_INFO, "nal %d\n", state & 0x1f);
+            p = avpriv_find_start_code(p, buf_end, &state);
+            av_dlog(s, "nal %d\n", state & 0x1f);
         } while (p < buf_end && (state & 0x1f) != 9 &&
                  (state & 0x1f) != 5 && (state & 0x1f) != 1);
 
@@ -1087,7 +1120,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             buf  = data;
             size = pkt->size+6;
         }
-    } else if (st->codec->codec_id == CODEC_ID_AAC) {
+    } else if (st->codec->codec_id == AV_CODEC_ID_AAC) {
         if (pkt->size < 2) {
             av_log(s, AV_LOG_ERROR, "AAC packet too short\n");
             return AVERROR_INVALIDDATA;
@@ -1128,7 +1161,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             AVStream *st2 = s->streams[i];
             MpegTSWriteStream *ts_st2 = st2->priv_data;
             if(   ts_st2->payload_size
-               && ts_st2->payload_dts == AV_NOPTS_VALUE || dts - ts_st2->payload_dts > delay/2){
+               && (ts_st2->payload_dts == AV_NOPTS_VALUE || dts - ts_st2->payload_dts > delay/2)){
                 mpegts_write_pes(s, st2, ts_st2->payload, ts_st2->payload_size,
                                 ts_st2->payload_pts, ts_st2->payload_dts,
                                 ts_st2->payload_flags & AV_PKT_FLAG_KEY);
@@ -1225,12 +1258,12 @@ static int mpegts_write_end(AVFormatContext *s)
 
 AVOutputFormat ff_mpegts_muxer = {
     .name              = "mpegts",
-    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-TS (MPEG-2 Transport Stream)"),
     .mime_type         = "video/x-mpegts",
     .extensions        = "ts,m2t,m2ts,mts",
     .priv_data_size    = sizeof(MpegTSWrite),
-    .audio_codec       = CODEC_ID_MP2,
-    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .audio_codec       = AV_CODEC_ID_MP2,
+    .video_codec       = AV_CODEC_ID_MPEG2VIDEO,
     .write_header      = mpegts_write_header,
     .write_packet      = mpegts_write_packet,
     .write_trailer     = mpegts_write_end,

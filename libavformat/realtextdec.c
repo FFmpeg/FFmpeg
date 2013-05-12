@@ -41,7 +41,7 @@ static int realtext_probe(AVProbeData *p)
 
     if (AV_RB24(ptr) == 0xEFBBBF)
         ptr += 3;  /* skip UTF-8 BOM */
-    return !av_strncasecmp(ptr, "<window", 7) ? AVPROBE_SCORE_MAX/2 : 0;
+    return !av_strncasecmp(ptr, "<window", 7) ? AVPROBE_SCORE_EXTENSION : 0;
 }
 
 static int read_ts(const char *s)
@@ -68,7 +68,7 @@ static int realtext_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = CODEC_ID_REALTEXT;
+    st->codec->codec_id   = AV_CODEC_ID_REALTEXT;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -125,6 +125,14 @@ static int realtext_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ff_subtitles_queue_read_packet(&rt->q, pkt);
 }
 
+static int realtext_read_seek(AVFormatContext *s, int stream_index,
+                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    RealTextContext *rt = s->priv_data;
+    return ff_subtitles_queue_seek(&rt->q, s, stream_index,
+                                   min_ts, ts, max_ts, flags);
+}
+
 static int realtext_read_close(AVFormatContext *s)
 {
     RealTextContext *rt = s->priv_data;
@@ -139,7 +147,7 @@ AVInputFormat ff_realtext_demuxer = {
     .read_probe     = realtext_probe,
     .read_header    = realtext_read_header,
     .read_packet    = realtext_read_packet,
+    .read_seek2     = realtext_read_seek,
     .read_close     = realtext_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "rt",
 };

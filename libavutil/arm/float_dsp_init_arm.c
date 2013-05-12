@@ -18,11 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/float_dsp.h"
 #include "cpu.h"
 #include "float_dsp_arm.h"
 
-void ff_float_dsp_init_arm(AVFloatDSPContext *fdsp)
+av_cold void ff_float_dsp_init_arm(AVFloatDSPContext *fdsp)
 {
     int cpu_flags = av_get_cpu_flags();
 

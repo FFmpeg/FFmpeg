@@ -211,4 +211,6 @@ av_cold void ff_psdsp_init(PSDSPContext *s)
 
     if (ARCH_ARM)
         ff_psdsp_init_arm(s);
+    if (ARCH_MIPS)
+        ff_psdsp_init_mips(s);
 }

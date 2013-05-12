@@ -19,21 +19,35 @@
 #ifndef AVCODEC_VP3DSP_H
 #define AVCODEC_VP3DSP_H
 
+#include <stddef.h>
 #include <stdint.h>
-#include "dsputil.h"
 
 typedef struct VP3DSPContext {
-    void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*idct_add)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*idct_dc_add)(uint8_t *dest, int line_size, const DCTELEM *block);
+    /**
+     * Copy 8xH pixels from source to destination buffer using a bilinear
+     * filter with no rounding (i.e. *dst = (*a + *b) >> 1).
+     *
+     * @param dst destination buffer, aligned by 8
+     * @param a first source buffer, no alignment
+     * @param b second source buffer, no alignment
+     * @param stride distance between two lines in source/dest buffers
+     * @param h height
+     */
+    void (*put_no_rnd_pixels_l2)(uint8_t *dst,
+                                 const uint8_t *a,
+                                 const uint8_t *b,
+                                 ptrdiff_t stride, int h);
+
+    void (*idct_put)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_add)(uint8_t *dest, int line_size, int16_t *block);
+    void (*idct_dc_add)(uint8_t *dest, int line_size, int16_t *block);
     void (*v_loop_filter)(uint8_t *src, int stride, int *bounding_values);
     void (*h_loop_filter)(uint8_t *src, int stride, int *bounding_values);
-
-    int idct_perm;
 } VP3DSPContext;
 
 void ff_vp3dsp_init(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_arm(VP3DSPContext *c, int flags);
+void ff_vp3dsp_init_bfin(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags);
 

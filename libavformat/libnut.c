@@ -39,9 +39,9 @@ typedef struct {
 } NUTContext;
 
 static const AVCodecTag nut_tags[] = {
-    { CODEC_ID_MPEG4,  MKTAG('m', 'p', '4', 'v') },
-    { CODEC_ID_MP3,    MKTAG('m', 'p', '3', ' ') },
-    { CODEC_ID_VORBIS, MKTAG('v', 'r', 'b', 's') },
+    { AV_CODEC_ID_MPEG4,  MKTAG('m', 'p', '4', 'v') },
+    { AV_CODEC_ID_MP3,    MKTAG('m', 'p', '3', ' ') },
+    { AV_CODEC_ID_VORBIS, MKTAG('v', 'r', 'b', 's') },
     { 0, 0 },
 };
 
@@ -159,8 +159,8 @@ AVOutputFormat ff_libnut_muxer = {
     .mime_type         = "video/x-nut",
     .extensions        = "nut",
     .priv_data_size    = sizeof(NUTContext),
-    .audio_codec       = CODEC_ID_VORBIS,
-    .video_codec       = CODEC_ID_MPEG4,
+    .audio_codec       = AV_CODEC_ID_VORBIS,
+    .video_codec       = AV_CODEC_ID_MPEG4,
     .write_header      = nut_write_header,
     .write_packet      = nut_write_packet,
     .write_trailer     = nut_write_trailer,
@@ -247,14 +247,14 @@ static int nut_read_header(AVFormatContext * avf) {
         switch(s[i].type) {
         case NUT_AUDIO_CLASS:
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            if (st->codec->codec_id == CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, st->codec->codec_tag);
+            if (st->codec->codec_id == AV_CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, st->codec->codec_tag);
 
             st->codec->channels = s[i].channel_count;
             st->codec->sample_rate = s[i].samplerate_num / s[i].samplerate_denom;
             break;
         case NUT_VIDEO_CLASS:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            if (st->codec->codec_id == CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, st->codec->codec_tag);
+            if (st->codec->codec_id == AV_CODEC_ID_NONE) st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, st->codec->codec_tag);
 
             st->codec->width = s[i].width;
             st->codec->height = s[i].height;
@@ -262,7 +262,7 @@ static int nut_read_header(AVFormatContext * avf) {
             st->sample_aspect_ratio.den = s[i].sample_height;
             break;
         }
-        if (st->codec->codec_id == CODEC_ID_NONE) av_log(avf, AV_LOG_ERROR, "Unknown codec?!\n");
+        if (st->codec->codec_id == AV_CODEC_ID_NONE) av_log(avf, AV_LOG_ERROR, "Unknown codec?!\n");
     }
 
     return 0;

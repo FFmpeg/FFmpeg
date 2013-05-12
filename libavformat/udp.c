@@ -32,6 +32,9 @@
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
+#include "libavutil/log.h"
+#include "libavutil/time.h"
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -39,6 +42,10 @@
 
 #if HAVE_PTHREAD_CANCEL
 #include <pthread.h>
+#endif
+
+#ifndef HAVE_PTHREAD_CANCEL
+#define HAVE_PTHREAD_CANCEL 0
 #endif
 
 #ifndef IPV6_ADD_MEMBERSHIP
@@ -50,6 +57,7 @@
 #define UDP_MAX_PKT_SIZE 65536
 
 typedef struct {
+    const AVClass *class;
     int udp_fd;
     int ttl;
     int buffer_size;
@@ -73,7 +81,35 @@ typedef struct {
 #endif
     uint8_t tmp[UDP_MAX_PKT_SIZE+4];
     int remaining_in_dg;
+    char *local_addr;
+    int packet_size;
+    int timeout;
 } UDPContext;
+
+#define OFFSET(x) offsetof(UDPContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+{"buffer_size", "Socket buffer size in bytes", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
+{"localport", "Set local port to bind to", OFFSET(local_port), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
+{"localaddr", "Choose local IP address", OFFSET(local_addr), AV_OPT_TYPE_STRING, {.str = ""}, 0, 0, D|E },
+{"pkt_size", "Set size of UDP packets", OFFSET(packet_size), AV_OPT_TYPE_INT, {.i64 = 1472}, 0, INT_MAX, D|E },
+{"reuse", "Explicitly allow or disallow reusing UDP sockets", OFFSET(reuse_socket), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
+{"ttl", "Set the time to live value (for multicast only)", OFFSET(ttl), AV_OPT_TYPE_INT, {.i64 = 16}, 0, INT_MAX, E },
+{"connect", "Should connect() be called on socket", OFFSET(is_connected), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
+/* TODO 'sources', 'block' option */
+{"fifo_size", "Set the UDP receiving circular buffer size, expressed as a number of packets with size of 188 bytes", OFFSET(circular_buffer_size), AV_OPT_TYPE_INT, {.i64 = 7*4096}, 0, INT_MAX, D },
+{"overrun_nonfatal", "Survive in case of UDP receiving circular buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
+{"timeout", "In read mode: if no data arrived in more than this time interval, raise error", OFFSET(timeout), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D },
+{NULL}
+};
+
+static const AVClass udp_context_class = {
+    .class_name     = "udp",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
 
 static void log_net_error(void *ctx, int level, const char* prefix)
 {
@@ -277,7 +313,7 @@ static int udp_set_url(struct sockaddr_storage *addr,
 }
 
 static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
-                             int *addr_len, const char *localaddr)
+                             socklen_t *addr_len, const char *localaddr)
 {
     int udp_fd = -1;
     struct addrinfo *res0 = NULL, *res = NULL;
@@ -407,8 +443,12 @@ static void *circular_buffer_task( void *_URLContext)
     int old_cancelstate;
 
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
-    ff_socket_nonblock(s->udp_fd, 0);
     pthread_mutex_lock(&s->mutex);
+    if (ff_socket_nonblock(s->udp_fd, 0) < 0) {
+        av_log(h, AV_LOG_ERROR, "Failed to set blocking mode");
+        s->circular_buffer_error = AVERROR(EIO);
+        goto end;
+    }
     while(1) {
         int len;
 
@@ -465,20 +505,16 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     const char *p;
     char buf[256];
     struct sockaddr_storage my_addr;
-    int len;
+    socklen_t len;
     int reuse_specified = 0;
     int i, include = 0, num_sources = 0;
     char *sources[32];
 
     h->is_streamed = 1;
-    h->max_packet_size = 1472;
 
     is_output = !(flags & AVIO_FLAG_READ);
-
-    s->ttl = 16;
-    s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
-
-    s->circular_buffer_size = 7*188*4096;
+    if (!s->buffer_size) /* if not set explicitly */
+        s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
 
     p = strchr(uri, '?');
     if (p) {
@@ -508,7 +544,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             s->local_port = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
-            h->max_packet_size = strtol(buf, NULL, 10);
+            s->packet_size = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "buffer_size", p)) {
             s->buffer_size = strtol(buf, NULL, 10);
@@ -517,7 +553,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             s->is_connected = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
-            s->circular_buffer_size = strtol(buf, NULL, 10)*188;
+            s->circular_buffer_size = strtol(buf, NULL, 10);
             if (!HAVE_PTHREAD_CANCEL)
                 av_log(h, AV_LOG_WARNING,
                        "'circular_buffer_size' option was set but it is not supported "
@@ -545,7 +581,13 @@ static int udp_open(URLContext *h, const char *uri, int flags)
                     break;
             }
         }
+        if (!is_output && av_find_info_tag(buf, sizeof(buf), "timeout", p))
+            s->timeout = strtol(buf, NULL, 10);
     }
+    /* handling needed to support options picking from both AVOption and URL */
+    s->circular_buffer_size *= 188;
+    h->max_packet_size = s->packet_size;
+    h->rw_timeout = s->timeout;
 
     /* fill the dest addr */
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
@@ -562,7 +604,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     if ((s->is_multicast || !s->local_port) && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
-    udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
+    udp_fd = udp_socket_create(s, &my_addr, &len, localaddr[0] ? localaddr : s->local_addr);
     if (udp_fd < 0)
         goto fail;
 
@@ -729,8 +771,10 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                 int64_t t = av_gettime() + 100000;
                 struct timespec tv = { .tv_sec  =  t / 1000000,
                                        .tv_nsec = (t % 1000000) * 1000 };
-                if (pthread_cond_timedwait(&s->cond, &s->mutex, &tv) < 0)
+                if (pthread_cond_timedwait(&s->cond, &s->mutex, &tv) < 0) {
+                    pthread_mutex_unlock(&s->mutex);
                     return AVERROR(errno == ETIMEDOUT ? EAGAIN : errno);
+                }
                 nonblock = 1;
             }
         } while( 1);
@@ -782,10 +826,9 @@ static int udp_close(URLContext *h)
         ret = pthread_join(s->circular_buffer_thread, NULL);
         if (ret != 0)
             av_log(h, AV_LOG_ERROR, "pthread_join(): %s\n", strerror(ret));
+        pthread_mutex_destroy(&s->mutex);
+        pthread_cond_destroy(&s->cond);
     }
-
-    pthread_mutex_destroy(&s->mutex);
-    pthread_cond_destroy(&s->cond);
 #endif
     av_fifo_free(s->fifo);
     return 0;
@@ -799,5 +842,6 @@ URLProtocol ff_udp_protocol = {
     .url_close           = udp_close,
     .url_get_file_handle = udp_get_file_handle,
     .priv_data_size      = sizeof(UDPContext),
+    .priv_data_class     = &udp_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
 };

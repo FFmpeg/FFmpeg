@@ -21,7 +21,7 @@
 
 #include <string.h>
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/bprint.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -45,7 +45,7 @@ static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
 
         case AVMEDIA_TYPE_AUDIO:
             av_get_channel_layout_string(layout, sizeof(layout),
-                                         -1, link->channel_layout);
+                                         link->channels, link->channel_layout);
             format = av_x_if_null(av_get_sample_fmt_name(link->format), "?");
             av_bprintf(buf, "[%dHz %s:%s]",
                        (int)link->sample_rate, format, layout);
@@ -62,7 +62,7 @@ static void avfilter_graph_dump_to_buf(AVBPrint *buf, AVFilterGraph *graph)
 {
     unsigned i, j, x, e;
 
-    for (i = 0; i < graph->filter_count; i++) {
+    for (i = 0; i < graph->nb_filters; i++) {
         AVFilterContext *filter = graph->filters[i];
         unsigned max_src_name = 0, max_dst_name = 0;
         unsigned max_in_name  = 0, max_out_name = 0;

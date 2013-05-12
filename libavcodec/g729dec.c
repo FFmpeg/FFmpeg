@@ -26,6 +26,8 @@
 #include "libavutil/avutil.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "internal.h"
+
 
 #include "g729.h"
 #include "lsp.h"
@@ -99,7 +101,6 @@ typedef struct {
 
 typedef struct {
     DSPContext dsp;
-    AVFrame frame;
 
     /// past excitation signal buffer
     int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
@@ -187,10 +188,10 @@ static inline int get_parity(uint8_t value)
    return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
-/*
+/**
  * Decodes LSF (Line Spectral Frequencies) from L0-L3 (3.2.4).
- * @param lsfq [out] (2.13) quantized LSF coefficients
- * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param[out] lsfq (2.13) quantized LSF coefficients
+ * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
  * @param ma_predictor switched MA predictor of LSP quantizer
  * @param vq_1st first stage vector of quantizer
  * @param vq_2nd_low second stage lower vector of LSP quantizer
@@ -232,8 +233,8 @@ static void lsf_decode(int16_t* lsfq, int16_t* past_quantizer_outputs[MA_NP + 1]
 
 /**
  * Restores past LSP quantizer output using LSF from previous frame
- * @param lsfq [in/out] (2.13) quantized LSF coefficients
- * @param past_quantizer_outputs [in/out] (2.13) quantizer outputs from previous frames
+ * @param[in,out] lsfq (2.13) quantized LSF coefficients
+ * @param[in,out] past_quantizer_outputs (2.13) quantizer outputs from previous frames
  * @param ma_predictor_prev MA predictor from previous frame
  * @param lsfq_prev (2.13) quantized LSF coefficients from previous frame
  */
@@ -256,7 +257,7 @@ static void lsf_restore_from_previous(int16_t* lsfq,
 
 /**
  * Constructs new excitation signal and applies phase filter to it
- * @param out[out] constructed speech signal
+ * @param[out] out constructed speech signal
  * @param in original excitation signal
  * @param fc_cur (2.13) original fixed-codebook vector
  * @param gain_code (14.1) gain code
@@ -383,9 +384,6 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     ff_dsputil_init(&ctx->dsp, avctx);
     ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
 
-    avcodec_get_frame_defaults(&ctx->frame);
-    avctx->coded_frame = &ctx->frame;
-
     return 0;
 }
 
@@ -416,13 +414,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int j, ret;
     int gain_before, gain_after;
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
+    AVFrame *frame = data;
 
-    ctx->frame.nb_samples = SUBFRAME_SIZE<<1;
-    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    frame->nb_samples = SUBFRAME_SIZE<<1;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
-    out_frame = (int16_t*) ctx->frame.data[0];
+    out_frame = (int16_t*) frame->data[0];
 
     if (buf_size == 10) {
         packet_type = FORMAT_G729_8K;
@@ -508,6 +505,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         /* Round pitch delay to nearest (used everywhere except ff_acelp_interpolate). */
         pitch_delay_int[i]  = (pitch_delay_3x + 1) / 3;
+        if (pitch_delay_int[i] > PITCH_DELAY_MAX) {
+            av_log(avctx, AV_LOG_WARNING, "pitch_delay_int %d is too large\n", pitch_delay_int[i]);
+            pitch_delay_int[i] = PITCH_DELAY_MAX;
+        }
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);
@@ -710,14 +711,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
     *got_frame_ptr = 1;
-    *(AVFrame*)data = ctx->frame;
     return buf_size;
 }
 
 AVCodec ff_g729_decoder = {
     .name           = "g729",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_G729,
+    .id             = AV_CODEC_ID_G729,
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,

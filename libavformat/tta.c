@@ -36,7 +36,7 @@ static int tta_probe(AVProbeData *p)
     const uint8_t *d = p->buf;
 
     if (d[0] == 'T' && d[1] == 'T' && d[2] == 'A' && d[3] == '1')
-        return 80;
+        return AVPROBE_SCORE_EXTENSION + 30;
     return 0;
 }
 
@@ -44,8 +44,9 @@ static int tta_read_header(AVFormatContext *s)
 {
     TTAContext *c = s->priv_data;
     AVStream *st;
-    int i, channels, bps, samplerate, datalen;
+    int i, channels, bps, samplerate;
     uint64_t framepos, start_offset;
+    uint32_t datalen;
 
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
@@ -64,9 +65,9 @@ static int tta_read_header(AVFormatContext *s)
     }
 
     datalen = avio_rl32(s->pb);
-    if(datalen < 0){
-        av_log(s, AV_LOG_ERROR, "nonsense datalen\n");
-        return -1;
+    if (!datalen) {
+        av_log(s, AV_LOG_ERROR, "invalid datalen\n");
+        return AVERROR_INVALIDDATA;
     }
 
     avio_skip(s->pb, 4); // header crc
@@ -102,7 +103,7 @@ static int tta_read_header(AVFormatContext *s)
     avio_skip(s->pb, 4); // seektable crc
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_TTA;
+    st->codec->codec_id = AV_CODEC_ID_TTA;
     st->codec->channels = channels;
     st->codec->sample_rate = samplerate;
     st->codec->bits_per_coded_sample = bps;
@@ -160,7 +161,7 @@ static int tta_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 AVInputFormat ff_tta_demuxer = {
     .name           = "tta",
-    .long_name      = NULL_IF_CONFIG_SMALL("True Audio"),
+    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
     .priv_data_size = sizeof(TTAContext),
     .read_probe     = tta_probe,
     .read_header    = tta_read_header,

@@ -26,6 +26,7 @@
  */
 
 #include <stdint.h>
+#include "common.h"
 #include "mathematics.h"
 #include "intfloat_readwrite.h"
 
@@ -88,7 +89,7 @@ AVExtFloat av_dbl2ext(double d){
             ext.mantissa[i] = m>>(56-(i<<3));
     } else if (f != 0.0) {
         ext.exponent[0] = 0x7f; ext.exponent[1] = 0xff;
-        if (f != INFINITY)
+        if (!isinf(f))
             ext.mantissa[0] = ~0;
     }
     if (d < 0)

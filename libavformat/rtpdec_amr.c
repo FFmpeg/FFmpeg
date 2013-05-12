@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "rtpdec_formats.h"
 #include "libavutil/avstring.h"
@@ -50,13 +51,10 @@ static void amr_free_context(PayloadContext *data)
     av_free(data);
 }
 
-static int amr_handle_packet(AVFormatContext *ctx,
-                             PayloadContext *data,
-                             AVStream *st,
-                             AVPacket * pkt,
-                             uint32_t * timestamp,
-                             const uint8_t * buf,
-                             int len, int flags)
+static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
+                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     const uint8_t *frame_sizes = NULL;
     int frames;
@@ -64,9 +62,9 @@ static int amr_handle_packet(AVFormatContext *ctx,
     const uint8_t *speech_data;
     uint8_t *ptr;
 
-    if (st->codec->codec_id == CODEC_ID_AMR_NB) {
+    if (st->codec->codec_id == AV_CODEC_ID_AMR_NB) {
         frame_sizes = frame_sizes_nb;
-    } else if (st->codec->codec_id == CODEC_ID_AMR_WB) {
+    } else if (st->codec->codec_id == AV_CODEC_ID_AMR_WB) {
         frame_sizes = frame_sizes_wb;
     } else {
         av_log(ctx, AV_LOG_ERROR, "Bad codec ID\n");
@@ -77,6 +75,7 @@ static int amr_handle_packet(AVFormatContext *ctx,
         av_log(ctx, AV_LOG_ERROR, "Only mono AMR is supported\n");
         return AVERROR_INVALIDDATA;
     }
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
 
     /* The AMR RTP packet consists of one header byte, followed
      * by one TOC byte for each AMR frame in the packet, followed
@@ -192,7 +191,7 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
 RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
     .enc_name         = "AMR",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_AMR_NB,
+    .codec_id         = AV_CODEC_ID_AMR_NB,
     .parse_sdp_a_line = amr_parse_sdp_line,
     .alloc            = amr_new_context,
     .free             = amr_free_context,
@@ -202,7 +201,7 @@ RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
 RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
     .enc_name         = "AMR-WB",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_AMR_WB,
+    .codec_id         = AV_CODEC_ID_AMR_WB,
     .parse_sdp_a_line = amr_parse_sdp_line,
     .alloc            = amr_new_context,
     .free             = amr_free_context,

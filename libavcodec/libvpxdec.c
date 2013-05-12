@@ -27,17 +27,19 @@
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 
+#include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct VP8DecoderContext {
     struct vpx_codec_ctx decoder;
 } VP8Context;
 
-static av_cold int vp8_init(AVCodecContext *avctx)
+static av_cold int vpx_init(AVCodecContext *avctx,
+                            const struct vpx_codec_iface *iface)
 {
     VP8Context *ctx = avctx->priv_data;
-    const struct vpx_codec_iface *iface = &vpx_codec_vp8_dx_algo;
     struct vpx_codec_dec_cfg deccfg = {
         /* token partitions+1 would be a decent choice */
         .threads = FFMIN(avctx->thread_count, 16)
@@ -53,17 +55,18 @@ static av_cold int vp8_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     return 0;
 }
 
 static int vp8_decode(AVCodecContext *avctx,
-                      void *data, int *data_size, AVPacket *avpkt)
+                      void *data, int *got_frame, AVPacket *avpkt)
 {
     VP8Context *ctx = avctx->priv_data;
     AVFrame *picture = data;
     const void *iter = NULL;
     struct vpx_image *img;
+    int ret;
 
     if (vpx_codec_decode(&ctx->decoder, avpkt->data, avpkt->size, NULL, 0) !=
         VPX_CODEC_OK) {
@@ -91,15 +94,11 @@ static int vp8_decode(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             avcodec_set_dimensions(avctx, img->d_w, img->d_h);
         }
-        picture->data[0]     = img->planes[0];
-        picture->data[1]     = img->planes[1];
-        picture->data[2]     = img->planes[2];
-        picture->data[3]     = NULL;
-        picture->linesize[0] = img->stride[0];
-        picture->linesize[1] = img->stride[1];
-        picture->linesize[2] = img->stride[2];
-        picture->linesize[3] = 0;
-        *data_size           = sizeof(AVPicture);
+        if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
+            return ret;
+        av_image_copy(picture->data, picture->linesize, img->planes,
+                      img->stride, avctx->pix_fmt, img->d_w, img->d_h);
+        *got_frame           = 1;
     }
     return avpkt->size;
 }
@@ -111,14 +110,40 @@ static av_cold int vp8_free(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_libvpx_decoder = {
+#if CONFIG_LIBVPX_VP8_DECODER
+static av_cold int vp8_init(AVCodecContext *avctx)
+{
+    return vpx_init(avctx, &vpx_codec_vp8_dx_algo);
+}
+
+AVCodec ff_libvpx_vp8_decoder = {
     .name           = "libvpx",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VP8,
+    .id             = AV_CODEC_ID_VP8,
     .priv_data_size = sizeof(VP8Context),
     .init           = vp8_init,
     .close          = vp8_free,
     .decode         = vp8_decode,
-    .capabilities   = CODEC_CAP_AUTO_THREADS,
+    .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
 };
+#endif /* CONFIG_LIBVPX_VP8_DECODER */
+
+#if CONFIG_LIBVPX_VP9_DECODER
+static av_cold int vp9_init(AVCodecContext *avctx)
+{
+    return vpx_init(avctx, &vpx_codec_vp9_dx_algo);
+}
+
+AVCodec ff_libvpx_vp9_decoder = {
+    .name           = "libvpx-vp9",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_VP9,
+    .priv_data_size = sizeof(VP8Context),
+    .init           = vp9_init,
+    .close          = vp8_free,
+    .decode         = vp8_decode,
+    .capabilities   = CODEC_CAP_AUTO_THREADS | CODEC_CAP_EXPERIMENTAL,
+    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
+};
+#endif /* CONFIG_LIBVPX_VP9_DECODER */

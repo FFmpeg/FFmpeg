@@ -1,0 +1,27 @@
+Testing av_get_token()
+|''| -> || + ||
+|| -> || + ||
+|:| -> || + |:|
+|\| -> |\| + ||
+|'| -> || + ||
+|    ''    :| -> || + |:|
+|    ''  ''  :| -> |  | + |:|
+|foo   '' :| -> |foo   | + |:|
+|'foo'| -> |foo| + ||
+|foo     | -> |foo| + ||
+|  '  foo  '  | -> |  foo  | + ||
+|foo\| -> |foo\| + ||
+|foo':  blah:blah| -> |foo:  blah:blah| + ||
+|foo\:  blah:blah| -> |foo:  blah| + |:blah|
+|foo'| -> |foo| + ||
+|'foo :  '  :blahblah| -> |foo :  | + |:blahblah|
+|\ :blah| -> | | + |:blah|
+|     foo| -> |foo| + ||
+|      foo       | -> |foo| + ||
+|      foo     \ | -> |foo      | + ||
+|foo ':blah| -> |foo :blah| + ||
+| foo   bar    :   blahblah| -> |foo   bar| + |:   blahblah|
+|\f\o\o| -> |foo| + ||
+|'foo : \ \  '   : blahblah| -> |foo : \ \  | + |: blahblah|
+|'\fo\o:': blahblah| -> |\fo\o:| + |: blahblah|
+|\'fo\o\:':  foo  '  :blahblah| -> |'foo::  foo  | + |:blahblah|

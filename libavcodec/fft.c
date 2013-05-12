@@ -65,8 +65,8 @@ COSTABLE_CONST FFTSample * const FFT_NAME(ff_cos_tabs)[] = {
     FFT_NAME(ff_cos_65536),
 };
 
-static void ff_fft_permute_c(FFTContext *s, FFTComplex *z);
-static void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
+static void fft_permute_c(FFTContext *s, FFTComplex *z);
+static void fft_calc_c(FFTContext *s, FFTComplex *z);
 
 static int split_radix_permutation(int i, int n, int inverse)
 {
@@ -149,8 +149,8 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     s->inverse = inverse;
     s->fft_permutation = FF_FFT_PERM_DEFAULT;
 
-    s->fft_permute = ff_fft_permute_c;
-    s->fft_calc    = ff_fft_calc_c;
+    s->fft_permute = fft_permute_c;
+    s->fft_calc    = fft_calc_c;
 #if CONFIG_MDCT
     s->imdct_calc  = ff_imdct_calc_c;
     s->imdct_half  = ff_imdct_half_c;
@@ -159,9 +159,10 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
 
 #if CONFIG_FFT_FLOAT
     if (ARCH_ARM)     ff_fft_init_arm(s);
-    if (HAVE_ALTIVEC) ff_fft_init_altivec(s);
-    if (HAVE_MMX)     ff_fft_init_mmx(s);
+    if (ARCH_PPC)     ff_fft_init_ppc(s);
+    if (ARCH_X86)     ff_fft_init_x86(s);
     if (CONFIG_MDCT)  s->mdct_calcw = s->mdct_calc;
+    if (HAVE_MIPSFPU) ff_fft_init_mips(s);
 #else
     if (CONFIG_MDCT)  s->mdct_calcw = ff_mdct_calcw_c;
     if (ARCH_ARM)     ff_fft_fixed_init_arm(s);
@@ -189,7 +190,7 @@ av_cold int ff_fft_init(FFTContext *s, int nbits, int inverse)
     return -1;
 }
 
-static void ff_fft_permute_c(FFTContext *s, FFTComplex *z)
+static void fft_permute_c(FFTContext *s, FFTComplex *z)
 {
     int j, np;
     const uint16_t *revtab = s->revtab;
@@ -346,7 +347,7 @@ static void (* const fft_dispatch[])(FFTComplex*) = {
     fft2048, fft4096, fft8192, fft16384, fft32768, fft65536,
 };
 
-static void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
+static void fft_calc_c(FFTContext *s, FFTComplex *z)
 {
     fft_dispatch[s->nbits-2](z);
 }

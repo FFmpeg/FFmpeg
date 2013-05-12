@@ -33,7 +33,7 @@ static int dirac_header(AVFormatContext *s, int idx)
     GetBitContext gb;
 
     // already parsed the header
-    if (st->codec->codec_id == CODEC_ID_DIRAC)
+    if (st->codec->codec_id == AV_CODEC_ID_DIRAC)
         return 0;
 
     init_get_bits(&gb, os->buf + os->pstart + 13, (os->psize - 13) * 8);
@@ -41,7 +41,7 @@ static int dirac_header(AVFormatContext *s, int idx)
         return -1;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_DIRAC;
+    st->codec->codec_id = AV_CODEC_ID_DIRAC;
     // dirac in ogg always stores timestamps as though the video were interlaced
     avpriv_set_pts_info(st, 64, st->codec->time_base.num, 2*st->codec->time_base.den);
     return 1;
@@ -79,7 +79,7 @@ static int old_dirac_header(AVFormatContext *s, int idx)
         return 0;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_DIRAC;
+    st->codec->codec_id = AV_CODEC_ID_DIRAC;
     avpriv_set_pts_info(st, 64, AV_RB32(buf+12), AV_RB32(buf+8));
     return 1;
 }
@@ -104,6 +104,7 @@ const struct ogg_codec ff_dirac_codec = {
     .header = dirac_header,
     .gptopts = dirac_gptopts,
     .granule_is_start = 1,
+    .nb_header = 1,
 };
 
 const struct ogg_codec ff_old_dirac_codec = {
@@ -112,4 +113,5 @@ const struct ogg_codec ff_old_dirac_codec = {
     .header = old_dirac_header,
     .gptopts = old_dirac_gptopts,
     .granule_is_start = 1,
+    .nb_header = 1,
 };

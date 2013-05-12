@@ -20,12 +20,12 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "dct32.h"
 #include "mathops.h"
 #include "mpegaudiodsp.h"
 #include "mpegaudio.h"
-#include "mpegaudiodata.h"
 
 #if CONFIG_FLOAT
 #define RENAME(n) n##_float
@@ -221,7 +221,7 @@ av_cold void RENAME(ff_mpa_synth_init)(MPA_INT *window)
             window[512+128+16*i+j] = window[64*i+48-j];
 }
 
-void RENAME(ff_init_mpadsp_tabs)(void)
+av_cold void RENAME(ff_init_mpadsp_tabs)(void)
 {
     int i, j;
     /* compute mdct windows */
@@ -243,7 +243,7 @@ void RENAME(ff_init_mpadsp_tabs)(void)
                 else if (i <  18) d = 1;
             }
             //merge last stage of imdct into the window coefficients
-            d *= 0.5 / cos(M_PI * (2 * i + 19) / 72);
+            d *= 0.5 * IMDCT_SCALAR / cos(M_PI * (2 * i + 19) / 72);
 
             if (j == 2)
                 RENAME(ff_mdct_win)[j][i/3] = FIXHR((d / (1<<5)));

@@ -235,7 +235,7 @@
 
 /**
  * Pack two delta values (a,b) into one 16bit word
- * according with endianess of the host machine.
+ * according with endianness of the host machine.
  */
 #if HAVE_BIGENDIAN
 #define PD(a,b) (((a) << 8) + (b))
@@ -282,7 +282,7 @@ static const int16_t delta_tab_3_5[79]  = { TAB_3_5 };
 
 /**
  * Pack four delta values (a,a,b,b) into one 32bit word
- * according with endianess of the host machine.
+ * according with endianness of the host machine.
  */
 #if HAVE_BIGENDIAN
 #define PD(a,b) (((a) << 24) + ((a) << 16) + ((b) << 8) + (b))
@@ -320,7 +320,7 @@ static const int32_t delta_tab_3_4_m10[79]  = { TAB_3_4 };
 static const int32_t delta_tab_3_5_m10[79]  = { TAB_3_5 };
 
 
-typedef struct {
+typedef struct vqEntry {
     const int16_t  *deltas;     ///< delta tables for 4x4 block modes
     const int32_t  *deltas_m10; ///< delta tables for 8x8 block modes
     uint8_t        num_dyads;   ///< number of two-pixel deltas

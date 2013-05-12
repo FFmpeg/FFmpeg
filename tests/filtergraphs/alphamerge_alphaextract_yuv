@@ -1,0 +1,4 @@
+sws_flags=+accurate_rnd+bitexact;
+format=yuv420p, split, alphamerge, split [x][y];
+[y]        alphaextract [alpha];
+[x][alpha] alphamerge

@@ -18,13 +18,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/internal.h"
 #include "avfilter.h"
 #include "internal.h"
 
-static int null_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
+static int null_filter_frame(AVFilterLink *link, AVFrame *frame)
 {
+    av_frame_free(&frame);
     return 0;
 }
+
+static const AVFilterPad avfilter_asink_anullsink_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = null_filter_frame,
+    },
+    { NULL },
+};
 
 AVFilter avfilter_asink_anullsink = {
     .name        = "anullsink",
@@ -32,13 +43,6 @@ AVFilter avfilter_asink_anullsink = {
 
     .priv_size = 0,
 
-    .inputs    = (const AVFilterPad[]) {
-        {
-            .name            = "default",
-            .type            = AVMEDIA_TYPE_AUDIO,
-            .filter_samples  = null_filter_samples,
-        },
-        { .name = NULL},
-    },
-    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
+    .inputs    = avfilter_asink_anullsink_inputs,
+    .outputs   = NULL,
 };

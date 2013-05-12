@@ -29,6 +29,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
+#include "internal.h"
+#include "mathops.h"
 
 typedef struct {
     AVCodecContext *avctx;
@@ -78,10 +80,10 @@ static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
     return 0;
 }
 
-static void vble_restore_plane(VBLEContext *ctx, GetBitContext *gb, int plane,
+static void vble_restore_plane(VBLEContext *ctx, AVFrame *pic,
+                               GetBitContext *gb, int plane,
                                int offset, int width, int height)
 {
-    AVFrame *pic = ctx->avctx->coded_frame;
     uint8_t *dst = pic->data[plane];
     uint8_t *val = ctx->val + offset;
     int stride = pic->linesize[plane];
@@ -109,28 +111,26 @@ static void vble_restore_plane(VBLEContext *ctx, GetBitContext *gb, int plane,
     }
 }
 
-static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int vble_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     VBLEContext *ctx = avctx->priv_data;
-    AVFrame *pic = avctx->coded_frame;
+    AVFrame *pic     = data;
     GetBitContext gb;
     const uint8_t *src = avpkt->data;
     int version;
     int offset = 0;
     int width_uv = avctx->width / 2, height_uv = avctx->height / 2;
+    int ret;
 
-    pic->reference = 0;
-
-    /* Clear buffer if need be */
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
+    if (avpkt->size < 4 || avpkt->size - 4 > INT_MAX/8) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid packet size\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /* Allocate buffer */
-    if (avctx->get_buffer(avctx, pic) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
-        return AVERROR(ENOMEM);
-    }
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
 
     /* Set flags */
     pic->key_frame = 1;
@@ -139,10 +139,8 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     /* Version should always be 1 */
     version = AV_RL32(src);
 
-    if (version != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported VBLE Version: %d\n", version);
-        return AVERROR_INVALIDDATA;
-    }
+    if (version != 1)
+        av_log(avctx, AV_LOG_WARNING, "Unsupported VBLE Version: %d\n", version);
 
     init_get_bits(&gb, src + 4, (avpkt->size - 4) * 8);
 
@@ -153,19 +151,18 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     /* Restore planes. Should be almost identical to Huffyuv's. */
-    vble_restore_plane(ctx, &gb, 0, offset, avctx->width, avctx->height);
+    vble_restore_plane(ctx, pic, &gb, 0, offset, avctx->width, avctx->height);
 
     /* Chroma */
     if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
         offset += avctx->width * avctx->height;
-        vble_restore_plane(ctx, &gb, 1, offset, width_uv, height_uv);
+        vble_restore_plane(ctx, pic, &gb, 1, offset, width_uv, height_uv);
 
         offset += width_uv * height_uv;
-        vble_restore_plane(ctx, &gb, 2, offset, width_uv, height_uv);
+        vble_restore_plane(ctx, pic, &gb, 2, offset, width_uv, height_uv);
     }
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame *)data = *pic;
+    *got_frame       = 1;
 
     return avpkt->size;
 }
@@ -173,12 +170,6 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 static av_cold int vble_decode_close(AVCodecContext *avctx)
 {
     VBLEContext *ctx = avctx->priv_data;
-    AVFrame *pic = avctx->coded_frame;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-
-    av_freep(&avctx->coded_frame);
     av_freep(&ctx->val);
 
     return 0;
@@ -192,14 +183,8 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
     ctx->avctx = avctx;
     ff_dsputil_init(&ctx->dsp, avctx);
 
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->bits_per_raw_sample = 8;
-    avctx->coded_frame = avcodec_alloc_frame();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
 
     ctx->size = avpicture_get_size(avctx->pix_fmt,
                                    avctx->width, avctx->height);
@@ -218,7 +203,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 AVCodec ff_vble_decoder = {
     .name           = "vble",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VBLE,
+    .id             = AV_CODEC_ID_VBLE,
     .priv_data_size = sizeof(VBLEContext),
     .init           = vble_decode_init,
     .close          = vble_decode_close,

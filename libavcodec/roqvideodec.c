@@ -25,12 +25,10 @@
  *   http://www.csse.monash.edu.au/~timf/
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "roqvideo.h"
 
 static void roqvideo_decode_frame(RoqContext *ri)
@@ -153,7 +151,7 @@ static void roqvideo_decode_frame(RoqContext *ri)
                     }
                     break;
                 default:
-                    av_log(ri->avctx, AV_LOG_ERROR, "Unknown vq code: %d\n", vqid);
+                    av_assert2(0);
             }
         }
 
@@ -173,31 +171,41 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
     RoqContext *s = avctx->priv_data;
 
     s->avctx = avctx;
+
+    if (avctx->width % 16 || avctx->height % 16) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Dimensions must be a multiple of 16\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->width = avctx->width;
     s->height = avctx->height;
-    avcodec_get_frame_defaults(&s->frames[0]);
-    avcodec_get_frame_defaults(&s->frames[1]);
-    s->last_frame    = &s->frames[0];
-    s->current_frame = &s->frames[1];
-    avctx->pix_fmt = PIX_FMT_YUV444P;
+
+    s->last_frame    = av_frame_alloc();
+    s->current_frame = av_frame_alloc();
+    if (!s->current_frame || !s->last_frame) {
+        av_frame_free(&s->current_frame);
+        av_frame_free(&s->last_frame);
+        return AVERROR(ENOMEM);
+    }
+
+    avctx->pix_fmt = AV_PIX_FMT_YUV444P;
 
     return 0;
 }
 
 static int roq_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     RoqContext *s = avctx->priv_data;
     int copy= !s->current_frame->data[0];
+    int ret;
 
-    s->current_frame->reference = 3;
-    if (avctx->reget_buffer(avctx, s->current_frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0)
+        return ret;
 
     if(copy)
         av_picture_copy((AVPicture*)s->current_frame, (AVPicture*)s->last_frame,
@@ -206,8 +214,9 @@ static int roq_decode_frame(AVCodecContext *avctx,
     bytestream2_init(&s->gb, buf, buf_size);
     roqvideo_decode_frame(s);
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = *s->current_frame;
+    if ((ret = av_frame_ref(data, s->current_frame)) < 0)
+        return ret;
+    *got_frame      = 1;
 
     /* shuffle frames */
     FFSWAP(AVFrame *, s->current_frame, s->last_frame);
@@ -219,11 +228,8 @@ static av_cold int roq_decode_end(AVCodecContext *avctx)
 {
     RoqContext *s = avctx->priv_data;
 
-    /* release the last frame */
-    if (s->last_frame->data[0])
-        avctx->release_buffer(avctx, s->last_frame);
-    if (s->current_frame->data[0])
-        avctx->release_buffer(avctx, s->current_frame);
+    av_frame_free(&s->current_frame);
+    av_frame_free(&s->last_frame);
 
     return 0;
 }
@@ -231,7 +237,7 @@ static av_cold int roq_decode_end(AVCodecContext *avctx)
 AVCodec ff_roq_decoder = {
     .name           = "roqvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ROQ,
+    .id             = AV_CODEC_ID_ROQ,
     .priv_data_size = sizeof(RoqContext),
     .init           = roq_decode_init,
     .close          = roq_decode_end,

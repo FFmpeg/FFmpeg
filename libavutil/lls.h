@@ -23,6 +23,8 @@
 #ifndef AVUTIL_LLS_H
 #define AVUTIL_LLS_H
 
+#include "version.h"
+
 #define MAX_VARS 32
 
 //FIXME avoid direct access to LLSModel from outside
@@ -30,16 +32,23 @@
 /**
  * Linear least squares model.
  */
-typedef struct LLSModel{
-    double covariance[MAX_VARS+1][MAX_VARS+1];
+typedef struct LLSModel {
+    double covariance[MAX_VARS + 1][MAX_VARS + 1];
     double coeff[MAX_VARS][MAX_VARS];
     double variance[MAX_VARS];
     int indep_count;
-}LLSModel;
+} LLSModel;
 
+void avpriv_init_lls(LLSModel *m, int indep_count);
+void avpriv_update_lls(LLSModel *m, double *param, double decay);
+void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order);
+double avpriv_evaluate_lls(LLSModel *m, double *param, int order);
+
+#if FF_API_LLS_PRIVATE
 void av_init_lls(LLSModel *m, int indep_count);
 void av_update_lls(LLSModel *m, double *param, double decay);
 void av_solve_lls(LLSModel *m, double threshold, int min_order);
 double av_evaluate_lls(LLSModel *m, double *param, int order);
+#endif /* FF_API_LLS_PRIVATE */
 
 #endif /* AVUTIL_LLS_H */

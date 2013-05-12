@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include "libavutil/bswap.h"
 #include "libavutil/avstring.h"
+#include "libavutil/channel_layout.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
@@ -55,10 +56,21 @@ static int speex_header(AVFormatContext *s, int idx) {
     if (spxp->seq == 0) {
         int frames_per_packet;
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = CODEC_ID_SPEEX;
+        st->codec->codec_id = AV_CODEC_ID_SPEEX;
+
+        if (os->psize < 68) {
+            av_log(s, AV_LOG_ERROR, "speex packet too small\n");
+            return AVERROR_INVALIDDATA;
+        }
 
         st->codec->sample_rate = AV_RL32(p + 36);
         st->codec->channels = AV_RL32(p + 48);
+        if (st->codec->channels < 1 || st->codec->channels > 2) {
+            av_log(s, AV_LOG_ERROR, "invalid channel count. Speex must be mono or stereo.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        st->codec->channel_layout = st->codec->channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                               AV_CH_LAYOUT_STEREO;
 
         spxp->packet_size  = AV_RL32(p + 56);
         frames_per_packet  = AV_RL32(p + 64);
@@ -122,5 +134,6 @@ const struct ogg_codec ff_speex_codec = {
     .magic = "Speex   ",
     .magicsize = 8,
     .header = speex_header,
-    .packet = speex_packet
+    .packet = speex_packet,
+    .nb_header = 2,
 };

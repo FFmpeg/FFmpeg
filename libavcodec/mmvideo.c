@@ -34,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #define MM_PREAMBLE_SIZE    6
 
@@ -58,10 +59,9 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     avcodec_get_frame_defaults(&s->frame);
-    s->frame.reference = 3;
 
     return 0;
 }
@@ -72,7 +72,7 @@ static int mm_decode_pal(MmContext *s)
 
     bytestream2_skip(&s->gb, 4);
     for (i = 0; i < 128; i++) {
-        s->palette[i] = 0xFF << 24 | bytestream2_get_be24(&s->gb);
+        s->palette[i] = 0xFFU << 24 | bytestream2_get_be24(&s->gb);
         s->palette[i+128] = s->palette[i]<<2;
     }
 
@@ -104,6 +104,9 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
         if (half_horiz)
             run_length *=2;
 
+        if (run_length > s->avctx->width - x)
+            return AVERROR_INVALIDDATA;
+
         if (color) {
             memset(s->frame.data[0] + y*s->frame.linesize[0] + x, color, run_length);
             if (half_vert)
@@ -120,7 +123,7 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
     return 0;
 }
 
-/*
+/**
  * @param half_horiz Half horizontal resolution (0 or 1)
  * @param half_vert Half vertical resolution (0 or 1)
  */
@@ -151,6 +154,8 @@ static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
             int replace_array = bytestream2_get_byte(&s->gb);
             for(j=0; j<8; j++) {
                 int replace = (replace_array >> (7-j)) & 1;
+                if (x + half_horiz >= s->avctx->width)
+                    return AVERROR_INVALIDDATA;
                 if (replace) {
                     int color = bytestream2_get_byte(&data_ptr);
                     s->frame.data[0][y*s->frame.linesize[0] + x] = color;
@@ -173,7 +178,7 @@ static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
 }
 
 static int mm_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
+                            void *data, int *got_frame,
                             AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -188,13 +193,11 @@ static int mm_decode_frame(AVCodecContext *avctx,
     buf_size -= MM_PREAMBLE_SIZE;
     bytestream2_init(&s->gb, buf, buf_size);
 
-    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
-    }
+    if ((res = ff_reget_buffer(avctx, &s->frame)) < 0)
+        return res;
 
     switch(type) {
-    case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return buf_size;
+    case MM_TYPE_PALETTE   : res = mm_decode_pal(s); return avpkt->size;
     case MM_TYPE_INTRA     : res = mm_decode_intra(s, 0, 0); break;
     case MM_TYPE_INTRA_HH  : res = mm_decode_intra(s, 1, 0); break;
     case MM_TYPE_INTRA_HHV : res = mm_decode_intra(s, 1, 1); break;
@@ -210,18 +213,19 @@ static int mm_decode_frame(AVCodecContext *avctx,
 
     memcpy(s->frame.data[1], s->palette, AVPALETTE_SIZE);
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = s->frame;
+    if ((res = av_frame_ref(data, &s->frame)) < 0)
+        return res;
 
-    return buf_size;
+    *got_frame      = 1;
+
+    return avpkt->size;
 }
 
 static av_cold int mm_decode_end(AVCodecContext *avctx)
 {
     MmContext *s = avctx->priv_data;
 
-    if(s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     return 0;
 }
@@ -229,7 +233,7 @@ static av_cold int mm_decode_end(AVCodecContext *avctx)
 AVCodec ff_mmvideo_decoder = {
     .name           = "mmvideo",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MMVIDEO,
+    .id             = AV_CODEC_ID_MMVIDEO,
     .priv_data_size = sizeof(MmContext),
     .init           = mm_decode_init,
     .close          = mm_decode_end,

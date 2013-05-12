@@ -31,6 +31,7 @@
  *  http://wiki.multimedia.cx/index.php?title=American_Laser_Games_MM
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -78,7 +79,7 @@ static int probe(AVProbeData *p)
         return 0;
 
     /* only return half certainty since this check is a bit sketchy */
-    return AVPROBE_SCORE_MAX / 2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int read_header(AVFormatContext *s)
@@ -109,7 +110,7 @@ static int read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_MMVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_MMVIDEO;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = width;
     st->codec->height = height;
@@ -122,8 +123,9 @@ static int read_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_tag = 0; /* no fourcc */
-        st->codec->codec_id = CODEC_ID_PCM_U8;
+        st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         st->codec->channels = 1;
+        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
         st->codec->sample_rate = 8000;
         avpriv_set_pts_info(st, 64, 1, 8000); /* 8000 hz */
     }
@@ -187,7 +189,7 @@ static int read_packet(AVFormatContext *s,
 
 AVInputFormat ff_mm_demuxer = {
     .name           = "mm",
-    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM"),
     .priv_data_size = sizeof(MmDemuxContext),
     .read_probe     = probe,
     .read_header    = read_header,

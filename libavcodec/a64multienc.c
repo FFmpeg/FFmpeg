@@ -24,17 +24,42 @@
  * a64 video encoder - multicolor modes
  */
 
-#include "a64enc.h"
 #include "a64colors.h"
 #include "a64tables.h"
 #include "elbg.h"
 #include "internal.h"
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
 #define DITHERSTEPS   8
 #define CHARSET_CHARS 256
 #define INTERLACED    1
 #define CROP_SCREENS  1
+
+#define C64XRES 320
+#define C64YRES 200
+
+typedef struct A64Context {
+    /* general variables */
+    AVFrame picture;
+
+    /* variables for multicolor modes */
+    AVLFG randctx;
+    int mc_lifetime;
+    int mc_use_5col;
+    unsigned mc_frame_counter;
+    int *mc_meta_charset;
+    int *mc_charmap;
+    int *mc_best_cb;
+    int mc_luma_vals[5];
+    uint8_t *mc_charset;
+    uint8_t *mc_colram;
+    uint8_t *mc_palette;
+    int mc_pal_size;
+
+    /* pts of the next packet that will be output */
+    int64_t next_pts;
+} A64Context;
 
 /* gray gradient */
 static const int mc_colors[5]={0x0,0xb,0xc,0xf,0x1};
@@ -187,7 +212,7 @@ static av_cold int a64multi_init_encoder(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_INFO, "charset lifetime set to %d frame(s)\n", c->mc_lifetime);
 
     c->mc_frame_counter = 0;
-    c->mc_use_5col      = avctx->codec->id == CODEC_ID_A64_MULTI5;
+    c->mc_use_5col      = avctx->codec->id == AV_CODEC_ID_A64_MULTI5;
     c->mc_pal_size      = 4 + c->mc_use_5col;
 
     /* precalc luma values for later use */
@@ -372,12 +397,12 @@ static int a64multi_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_a64multi_encoder = {
     .name           = "a64multi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_A64_MULTI,
+    .id             = AV_CODEC_ID_A64_MULTI,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_init_encoder,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
-    .pix_fmts       = (const enum PixelFormat[]) {PIX_FMT_GRAY8, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64"),
     .capabilities   = CODEC_CAP_DELAY,
 };
@@ -386,12 +411,12 @@ AVCodec ff_a64multi_encoder = {
 AVCodec ff_a64multi5_encoder = {
     .name           = "a64multi5",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_A64_MULTI5,
+    .id             = AV_CODEC_ID_A64_MULTI5,
     .priv_data_size = sizeof(A64Context),
     .init           = a64multi_init_encoder,
     .encode2        = a64multi_encode_frame,
     .close          = a64multi_close_encoder,
-    .pix_fmts       = (const enum PixelFormat[]) {PIX_FMT_GRAY8, PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]) {AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Multicolor charset for Commodore 64, extended with 5th color (colram)"),
     .capabilities   = CODEC_CAP_DELAY,
 };

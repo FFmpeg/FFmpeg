@@ -67,7 +67,7 @@
         vsub.s32        q15, q14, q9    @ z0 - z3
 .endm
 
-/* void rv34_idct_add_c(uint8_t *dst, int stride, DCTELEM *block) */
+/* void rv34_idct_add_c(uint8_t *dst, int stride, int16_t *block) */
 function ff_rv34_idct_add_neon, export=1
         mov             r3,  r0
         rv34_inv_transform   r2
@@ -97,7 +97,7 @@ function ff_rv34_idct_add_neon, export=1
         bx              lr
 endfunc
 
-/* void rv34_inv_transform_noround_neon(DCTELEM *block); */
+/* void rv34_inv_transform_noround_neon(int16_t *block); */
 function ff_rv34_inv_transform_noround_neon, export=1
         rv34_inv_transform   r0
         vshl.s32        q11, q2,  #1
@@ -142,7 +142,7 @@ function ff_rv34_idct_dc_add_neon, export=1
         bx              lr
 endfunc
 
-/* void rv34_inv_transform_dc_noround_c(DCTELEM *block) */
+/* void rv34_inv_transform_dc_noround_c(int16_t *block) */
 function ff_rv34_inv_transform_noround_dc_neon, export=1
         vld1.16         {d28[]}, [r0,:16]       @ block[0]
         vmov.i16        d4,  #251

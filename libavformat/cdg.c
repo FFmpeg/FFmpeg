@@ -36,7 +36,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_CDGRAPHICS;
+    vst->codec->codec_id   = AV_CODEC_ID_CDGRAPHICS;
 
     /// 75 sectors/sec * 4 packets/sector = 300 packets/sec
     avpriv_set_pts_info(vst, 32, 1, 300);
@@ -71,7 +71,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_cdg_demuxer = {
     .name           = "cdg",
-    .long_name      = NULL_IF_CONFIG_SMALL("CD Graphics Format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("CD Graphics"),
     .read_header    = read_header,
     .read_packet    = read_packet,
     .flags          = AVFMT_GENERIC_INDEX,

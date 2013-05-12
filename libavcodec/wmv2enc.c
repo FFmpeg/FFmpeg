@@ -19,7 +19,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "msmpeg4.h"
 #include "msmpeg4data.h"
@@ -148,7 +147,7 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
  * useless M$ crap features. It is duplicated here in case someone wants
  * to add support for these crap features. */
 void ff_wmv2_encode_mb(MpegEncContext * s,
-                       DCTELEM block[6][64],
+                       int16_t block[6][64],
                        int motion_x, int motion_y)
 {
     Wmv2Context * const w= (Wmv2Context*)s;
@@ -214,11 +213,11 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
 AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_WMV2,
+    .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
     .init           = wmv2_encode_init,
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
 };

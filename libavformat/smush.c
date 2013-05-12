@@ -32,8 +32,10 @@ typedef struct {
 
 static int smush_read_probe(AVProbeData *p)
 {
-    if ((AV_RL32(p->buf) == MKTAG('S', 'A', 'N', 'M') ||
-         AV_RL32(p->buf) == MKTAG('A', 'N', 'I', 'M'))) {
+    if (((AV_RL32(p->buf) == MKTAG('S', 'A', 'N', 'M') &&
+          AV_RL32(p->buf + 8) == MKTAG('S', 'H', 'D', 'R')) ||
+         (AV_RL32(p->buf) == MKTAG('A', 'N', 'I', 'M') &&
+          AV_RL32(p->buf + 8) == MKTAG('A', 'H', 'D', 'R')))) {
         return AVPROBE_SCORE_MAX;
     }
 
@@ -79,7 +81,7 @@ static int smush_read_header(AVFormatContext *ctx)
             return AVERROR_INVALIDDATA;
 
         smush->version = 1;
-        avio_skip(pb, 2); // skip version
+        subversion     = avio_rl16(pb);
         nframes = avio_rl32(pb);
         avio_skip(pb, 2); // skip pad
         width  = avio_rl16(pb);
@@ -135,7 +137,7 @@ static int smush_read_header(AVFormatContext *ctx)
     vst->duration          =
     vst->nb_frames         = nframes;
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_SANM;
+    vst->codec->codec_id   = AV_CODEC_ID_SANM;
     vst->codec->codec_tag  = 0;
     vst->codec->width      = width;
     vst->codec->height     = height;
@@ -162,7 +164,7 @@ static int smush_read_header(AVFormatContext *ctx)
 
         ast->start_time         = 0;
         ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id    = CODEC_ID_VIMA;
+        ast->codec->codec_id    = AV_CODEC_ID_VIMA;
         ast->codec->codec_tag   = 0;
         ast->codec->sample_rate = sample_rate;
         ast->codec->channels    = channels;
@@ -209,7 +211,7 @@ static int smush_read_packet(AVFormatContext *ctx, AVPacket *pkt)
         case MKBETAG('W', 'a', 'v', 'e'):
             if (size < 13)
                 return AVERROR_INVALIDDATA;
-            if (av_get_packet(pb, pkt, size) < 0)
+            if (av_get_packet(pb, pkt, size) < 13)
                 return AVERROR(EIO);
 
             pkt->stream_index = smush->audio_stream_index;

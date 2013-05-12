@@ -25,8 +25,9 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "dsputil.h"
 #include "faandct.h"
+#include "libavutil/internal.h"
+#include "libavutil/libm.h"
 
 #define FLOAT float
 
@@ -62,7 +63,7 @@ B6*B0, B6*B1, B6*B2, B6*B3, B6*B4, B6*B5, B6*B6, B6*B7,
 B7*B0, B7*B1, B7*B2, B7*B3, B7*B4, B7*B5, B7*B6, B7*B7,
 };
 
-static av_always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
+static av_always_inline void row_fdct(FLOAT temp[64], int16_t *data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;
@@ -117,7 +118,7 @@ static av_always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
     }
 }
 
-void ff_faandct(DCTELEM * data)
+void ff_faandct(int16_t *data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;
@@ -177,7 +178,7 @@ void ff_faandct(DCTELEM * data)
     }
 }
 
-void ff_faandct248(DCTELEM * data)
+void ff_faandct248(int16_t *data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;

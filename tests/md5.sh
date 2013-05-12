@@ -1,6 +1,6 @@
 # try to find an md5 program
 
-if [ X"$(echo | md5sum 2> /dev/null)" != X ]; then
+if [ X"$(echo | md5sum -b 2> /dev/null)" != X ]; then
     do_md5sum() { md5sum -b $1; }
 elif [ X"$(echo | command md5 2> /dev/null)" != X ]; then
     do_md5sum() { command md5 $1 | sed 's#MD5 (\(.*\)) = \(.*\)#\2 *\1#'; }

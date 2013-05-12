@@ -18,11 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#if HAVE_UNISTD_H
 #include <unistd.h>             /* getopt */
+#endif
+#include <stdio.h>
+#include <string.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/audioconvert.h"
-#include "libavfilter/avfiltergraph.h"
+#include "libavfilter/avfilter.h"
+
+#if !HAVE_GETOPT
+#include "compat/getopt.c"
+#endif
 
 static void usage(void)
 {
@@ -48,7 +58,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
     fprintf(outfile, "node [shape=box]\n");
     fprintf(outfile, "rankdir=LR\n");
 
-    for (i = 0; i < graph->filter_count; i++) {
+    for (i = 0; i < graph->nb_filters; i++) {
         char filter_ctx_label[128];
         const AVFilterContext *filter_ctx = graph->filters[i];
 
@@ -72,9 +82,10 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                         link->srcpad->name, link->dstpad->name);
 
                 if (link->type == AVMEDIA_TYPE_VIDEO) {
+                    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
                     fprintf(outfile,
                             "fmt:%s w:%d h:%d tb:%d/%d",
-                            av_pix_fmt_descriptors[link->format].name,
+                            desc->name,
                             link->w, link->h,
                             link->time_base.num, link->time_base.den);
                 } else if (link->type == AVMEDIA_TYPE_AUDIO) {
@@ -87,7 +98,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                             link->sample_rate, buf,
                             link->time_base.num, link->time_base.den);
                 }
-                fprintf(outfile, "\n]");
+                fprintf(outfile, "\" ];\n");
             }
         }
     }

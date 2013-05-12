@@ -83,8 +83,8 @@ AVOutputFormat ff_sndio_muxer = {
     /* XXX: we make the assumption that the soundcard accepts this format */
     /* XXX: find better solution with "preinit" method, needed also in
        other formats */
-    .audio_codec    = AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE),
-    .video_codec    = CODEC_ID_NONE,
+    .audio_codec    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .video_codec    = AV_CODEC_ID_NONE,
     .write_header   = audio_write_header,
     .write_packet   = audio_write_packet,
     .write_trailer  = audio_write_trailer,

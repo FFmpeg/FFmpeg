@@ -138,14 +138,14 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
     unsigned int width= FFABS(pic->linesize[0]) / (depth >> 3);
 
     output     = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
-    output_end = pic->data[0] +  avctx->height      * pic->linesize[0];
+    output_end = output + FFABS(pic->linesize[0]);
+
     while (bytestream2_get_bytes_left(gb) > 0) {
         p1 = bytestream2_get_byteu(gb);
         if(p1 == 0) { //Escape code
             p2 = bytestream2_get_byte(gb);
             if(p2 == 0) { //End-of-line
-                output = pic->data[0] + (--line) * pic->linesize[0];
-                if (line < 0) {
+                if (--line < 0) {
                     if (bytestream2_get_be16(gb) == 1) { // end-of-picture
                         return 0;
                     } else {
@@ -155,6 +155,8 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
                         return AVERROR_INVALIDDATA;
                     }
                 }
+                output = pic->data[0] + line * pic->linesize[0];
+                output_end = output + FFABS(pic->linesize[0]);
                 pos = 0;
                 continue;
             } else if(p2 == 1) { //End-of-picture
@@ -169,11 +171,11 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
                     return -1;
                 }
                 output = pic->data[0] + line * pic->linesize[0] + pos * (depth >> 3);
+                output_end = pic->data[0] + line * pic->linesize[0] + FFABS(pic->linesize[0]);
                 continue;
             }
             // Copy data
-            if ((pic->linesize[0] > 0 && output + p2 * (depth >> 3) > output_end) ||
-                (pic->linesize[0] < 0 && output + p2 * (depth >> 3) < output_end)) {
+            if (output + p2 * (depth >> 3) > output_end) {
                 bytestream2_skip(gb, 2 * (depth >> 3));
                 continue;
             } else if (bytestream2_get_bytes_left(gb) < p2 * (depth >> 3)) {
@@ -203,36 +205,39 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             pos += p2;
         } else { //run of pixels
             uint8_t pix[3]; //original pixel
-            switch(depth){
-            case  8: pix[0] = bytestream2_get_byte(gb);
-                     break;
-            case 16: pix16  = bytestream2_get_le16(gb);
-                     break;
-            case 24: pix[0] = bytestream2_get_byte(gb);
-                     pix[1] = bytestream2_get_byte(gb);
-                     pix[2] = bytestream2_get_byte(gb);
-                     break;
-            case 32: pix32  = bytestream2_get_le32(gb);
-                     break;
-            }
-            if ((pic->linesize[0] > 0 && output + p1 * (depth >> 3) > output_end) ||
-                (pic->linesize[0] < 0 && output + p1 * (depth >> 3) < output_end))
+            if (output + p1 * (depth >> 3) > output_end)
                 continue;
-            for(i = 0; i < p1; i++) {
-                switch(depth){
-                case  8: *output++ = pix[0];
-                         break;
-                case 16: *(uint16_t*)output = pix16;
-                         output += 2;
-                         break;
-                case 24: *output++ = pix[0];
-                         *output++ = pix[1];
-                         *output++ = pix[2];
-                         break;
-                case 32: *(uint32_t*)output = pix32;
-                         output += 4;
-                         break;
+
+            switch(depth){
+            case  8:
+                pix[0] = bytestream2_get_byte(gb);
+                for(i = 0; i < p1; i++)
+                        *output++ = pix[0];
+                break;
+            case 16:
+                pix16  = bytestream2_get_le16(gb);
+                for(i = 0; i < p1; i++) {
+                        *(uint16_t*)output = pix16;
+                        output += 2;
                 }
+                break;
+            case 24:
+                pix[0] = bytestream2_get_byte(gb);
+                pix[1] = bytestream2_get_byte(gb);
+                pix[2] = bytestream2_get_byte(gb);
+                for(i = 0; i < p1; i++) {
+                        *output++ = pix[0];
+                        *output++ = pix[1];
+                        *output++ = pix[2];
+                }
+                break;
+            case 32:
+                pix32  = bytestream2_get_le32(gb);
+                for(i = 0; i < p1; i++) {
+                        *(uint32_t*)output = pix32;
+                        output += 4;
+                }
+                break;
             }
             pos += p1;
         }

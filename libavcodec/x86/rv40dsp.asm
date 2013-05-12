@@ -21,8 +21,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
 
@@ -241,7 +240,7 @@ INIT_MMX  mmx
 FILTER_V  put
 FILTER_H  put
 
-INIT_MMX  mmx2
+INIT_MMX  mmxext
 FILTER_V  avg
 FILTER_H  avg
 
@@ -487,7 +486,7 @@ cglobal rv40_weight_func_%1_%2, 6, 7, 8
     REP_RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 RV40_WEIGHT   rnd,    8, 3
 RV40_WEIGHT   rnd,   16, 4
 RV40_WEIGHT   nornd,  8, 3

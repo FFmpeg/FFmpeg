@@ -19,7 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 
 /* parser definition */
@@ -77,7 +80,7 @@ static av_cold void dvdsub_parse_close(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_dvdsub_parser = {
-    .codec_ids      = { CODEC_ID_DVD_SUBTITLE },
+    .codec_ids      = { AV_CODEC_ID_DVD_SUBTITLE },
     .priv_data_size = sizeof(DVDSubParseContext),
     .parser_init    = dvdsub_parse_init,
     .parser_parse   = dvdsub_parse,

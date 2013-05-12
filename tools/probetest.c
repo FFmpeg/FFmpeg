@@ -63,6 +63,16 @@ int main(int argc, char **argv)
     if(argc >= 3)
         max_size = atoi(argv[2]);
 
+    if (max_size > 1000000000U/8) {
+        fprintf(stderr, "max_size out of bounds\n");
+        return 1;
+    }
+
+    if (retry_count > 1000000000U) {
+        fprintf(stderr, "retry_count out of bounds\n");
+        return 1;
+    }
+
     avcodec_register_all();
     av_register_all();
 
@@ -73,6 +83,8 @@ int main(int argc, char **argv)
         pd.buf_size = size;
         pd.buf      = av_realloc(pd.buf, size + AVPROBE_PADDING_SIZE);
         pd.filename = "";
+
+        memset(pd.buf, 0, size + AVPROBE_PADDING_SIZE);
 
         fprintf(stderr, "testing size=%d\n", size);
 

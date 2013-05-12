@@ -26,6 +26,8 @@
 
 #include "iirfilter.h"
 #include <math.h>
+#include "libavutil/attributes.h"
+#include "libavutil/common.h"
 
 /**
  * IIR filter global parameters
@@ -47,10 +49,11 @@ typedef struct FFIIRFilterState{
 /// maximum supported filter order
 #define MAXORDER 30
 
-static int butterworth_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
-                                   enum IIRFilterMode filt_mode,
-                                   int order, float cutoff_ratio,
-                                   float stopband)
+static av_cold int butterworth_init_coeffs(void *avc,
+                                           struct FFIIRFilterCoeffs *c,
+                                           enum IIRFilterMode filt_mode,
+                                           int order, float cutoff_ratio,
+                                           float stopband)
 {
     int i, j;
     double wa;
@@ -112,9 +115,9 @@ static int butterworth_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
     return 0;
 }
 
-static int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
-                              enum IIRFilterMode filt_mode, int order,
-                              float cutoff_ratio, float stopband)
+static av_cold int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
+                                      enum IIRFilterMode filt_mode, int order,
+                                      float cutoff_ratio, float stopband)
 {
     double cos_w0, sin_w0;
     double a0, x0, x1;
@@ -310,8 +313,14 @@ av_cold void ff_iir_filter_free_coeffs(struct FFIIRFilterCoeffs *coeffs)
     av_free(coeffs);
 }
 
+void ff_iir_filter_init(FFIIRFilterContext *f) {
+    f->filter_flt = ff_iir_filter_flt;
+
+    if (HAVE_MIPSFPU)
+        ff_iir_filter_init_mips(f);
+}
+
 #ifdef TEST
-#undef printf
 #include <stdio.h>
 
 #define FILT_ORDER 4

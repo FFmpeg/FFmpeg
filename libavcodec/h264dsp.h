@@ -29,8 +29,6 @@
 
 #include <stdint.h>
 
-#include "dsputil.h"
-
 typedef void (*h264_weight_func)(uint8_t *block, int stride, int height,
                                  int log2_denom, int weight, int offset);
 typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src,
@@ -80,29 +78,33 @@ typedef struct H264DSPContext {
 
     /* IDCT */
     void (*h264_idct_add)(uint8_t *dst /*align 4*/,
-                          DCTELEM *block /*align 16*/, int stride);
+                          int16_t *block /*align 16*/, int stride);
     void (*h264_idct8_add)(uint8_t *dst /*align 8*/,
-                           DCTELEM *block /*align 16*/, int stride);
+                           int16_t *block /*align 16*/, int stride);
     void (*h264_idct_dc_add)(uint8_t *dst /*align 4*/,
-                             DCTELEM *block /*align 16*/, int stride);
+                             int16_t *block /*align 16*/, int stride);
     void (*h264_idct8_dc_add)(uint8_t *dst /*align 8*/,
-                              DCTELEM *block /*align 16*/, int stride);
+                              int16_t *block /*align 16*/, int stride);
 
     void (*h264_idct_add16)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                            DCTELEM *block /*align 16*/, int stride,
+                            int16_t *block /*align 16*/, int stride,
                             const uint8_t nnzc[15 * 8]);
     void (*h264_idct8_add4)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                            DCTELEM *block /*align 16*/, int stride,
+                            int16_t *block /*align 16*/, int stride,
                             const uint8_t nnzc[15 * 8]);
     void (*h264_idct_add8)(uint8_t **dst /*align 16*/, const int *blockoffset,
-                           DCTELEM *block /*align 16*/, int stride,
+                           int16_t *block /*align 16*/, int stride,
                            const uint8_t nnzc[15 * 8]);
     void (*h264_idct_add16intra)(uint8_t *dst /*align 16*/, const int *blockoffset,
-                                 DCTELEM *block /*align 16*/,
+                                 int16_t *block /*align 16*/,
                                  int stride, const uint8_t nnzc[15 * 8]);
-    void (*h264_luma_dc_dequant_idct)(DCTELEM *output,
-                                      DCTELEM *input /*align 16*/, int qmul);
-    void (*h264_chroma_dc_dequant_idct)(DCTELEM *block, int qmul);
+    void (*h264_luma_dc_dequant_idct)(int16_t *output,
+                                      int16_t *input /*align 16*/, int qmul);
+    void (*h264_chroma_dc_dequant_idct)(int16_t *block, int qmul);
+
+    /* bypass-transform */
+    void (*h264_add_pixels8_clear)(uint8_t *dst, int16_t *block, int stride);
+    void (*h264_add_pixels4_clear)(uint8_t *dst, int16_t *block, int stride);
 } H264DSPContext;
 
 void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,

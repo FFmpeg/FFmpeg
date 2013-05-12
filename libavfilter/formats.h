@@ -69,13 +69,44 @@ struct AVFilterFormats {
     struct AVFilterFormats ***refs; ///< references to this list
 };
 
+/**
+ * A list of supported channel layouts.
+ *
+ * The list works the same as AVFilterFormats, except for the following
+ * differences:
+ * - A list with all_layouts = 1 means all channel layouts with a known
+ *   disposition; nb_channel_layouts must then be 0.
+ * - A list with all_counts = 1 means all channel counts, with a known or
+ *   unknown disposition; nb_channel_layouts must then be 0 and all_layouts 1.
+ * - The list must not contain a layout with a known disposition and a
+ *   channel count with unknown disposition with the same number of channels
+ *   (e.g. AV_CH_LAYOUT_STEREO and FF_COUNT2LAYOUT(2).
+ */
 typedef struct AVFilterChannelLayouts {
     uint64_t *channel_layouts;  ///< list of channel layouts
     int    nb_channel_layouts;  ///< number of channel layouts
+    char all_layouts;           ///< accept any known channel layout
+    char all_counts;            ///< accept any channel layout or count
 
     unsigned refcount;          ///< number of references to this list
     struct AVFilterChannelLayouts ***refs; ///< references to this list
 } AVFilterChannelLayouts;
+
+/**
+ * Encode a channel count as a channel layout.
+ * FF_COUNT2LAYOUT(c) means any channel layout with c channels, with a known
+ * or unknown disposition.
+ * The result is only valid inside AVFilterChannelLayouts and immediately
+ * related functions.
+ */
+#define FF_COUNT2LAYOUT(c) (0x8000000000000000ULL | (c))
+
+/**
+ * Decode a channel count encoded as a channel layout.
+ * Return 0 if the channel layout was a real one.
+ */
+#define FF_LAYOUT2COUNT(l) (((l) & 0x8000000000000000ULL) ? \
+                           (int)((l) & 0x7FFFFFFF) : 0)
 
 /**
  * Return a channel layouts/samplerates list which contains the intersection of
@@ -92,10 +123,16 @@ AVFilterFormats *ff_merge_samplerates(AVFilterFormats *a,
 
 /**
  * Construct an empty AVFilterChannelLayouts/AVFilterFormats struct --
- * representing any channel layout/sample rate.
+ * representing any channel layout (with known disposition)/sample rate.
  */
 AVFilterChannelLayouts *ff_all_channel_layouts(void);
 AVFilterFormats *ff_all_samplerates(void);
+
+/**
+ * Construct an AVFilterChannelLayouts coding for any channel layout, with
+ * known or unknown disposition.
+ */
+AVFilterChannelLayouts *ff_all_channel_counts(void);
 
 AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts);
 
@@ -135,6 +172,14 @@ void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
 
 int ff_default_query_formats(AVFilterContext *ctx);
 
+/**
+ * Set the formats list to all existing formats.
+ * This function behaves like ff_default_query_formats(), except it also
+ * accepts channel layouts with unknown disposition. It should only be used
+ * with audio filters.
+ */
+int ff_query_formats_all(AVFilterContext *ctx);
+
 
 /**
  * Create a list of supported formats. This is intended for use in
@@ -173,7 +218,8 @@ AVFilterFormats *ff_planar_sample_fmts(void);
  * If a and b do not share any common formats, neither is modified, and NULL
  * is returned.
  */
-AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
+AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
+                                  enum AVMediaType type);
 
 /**
  * Add *ref as a new reference to formats.

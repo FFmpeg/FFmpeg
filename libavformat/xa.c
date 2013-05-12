@@ -59,7 +59,7 @@ static int xa_probe(AVProbeData *p)
     if (!channels || channels > 8 || !srate || srate > 192000 ||
         bits_per_sample < 4 || bits_per_sample > 32)
         return 0;
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int xa_read_header(AVFormatContext *s)
@@ -74,7 +74,7 @@ static int xa_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id     = CODEC_ID_ADPCM_EA_MAXIS_XA;
+    st->codec->codec_id     = AV_CODEC_ID_ADPCM_EA_MAXIS_XA;
     avio_skip(pb, 4);       /* Skip the XA ID */
     xa->out_size            =  avio_rl32(pb);
     avio_skip(pb, 2);       /* Skip the tag */
@@ -120,7 +120,7 @@ static int xa_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_xa_demuxer = {
     .name           = "xa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Maxis XA File Format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Maxis XA"),
     .priv_data_size = sizeof(MaxisXADemuxContext),
     .read_probe     = xa_probe,
     .read_header    = xa_read_header,

@@ -25,19 +25,17 @@
  * divided into 32 subbands.
  */
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "mpegaudiodsp.h"
-#include "libavutil/audioconvert.h"
 
 #include "mpc.h"
 #include "mpc7data.h"
-
-#define BANDS            32
-#define SAMPLES_PER_BAND 36
-#define MPC_FRAME_SIZE   (BANDS * SAMPLES_PER_BAND)
 
 static VLC scfi_vlc, dscf_vlc, hdr_vlc, quant_vlc[MPC7_QUANT_VLC_TABLES][2];
 
@@ -63,8 +61,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
 
     /* Musepack SV7 is always stereo */
     if (avctx->channels != 2) {
-        av_log_ask_for_sample(avctx, "Unsupported number of channels: %d\n",
-                              avctx->channels);
+        avpriv_request_sample(avctx, "%d channels", avctx->channels);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -94,7 +91,7 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
             c->IS, c->MSS, c->gapless, c->lastframelen, c->maxbands);
     c->frames_to_skip = 0;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
     avctx->channel_layout = AV_CH_LAYOUT_STEREO;
 
     if(vlc_initialized) return 0;
@@ -136,9 +133,6 @@ static av_cold int mpc7_decode_init(AVCodecContext * avctx)
         }
     }
     vlc_initialized = 1;
-
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
 
     return 0;
 }
@@ -199,6 +193,7 @@ static int get_scale_idx(GetBitContext *gb, int ref)
 static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size;
     MPCContext *c = avctx->priv_data;
@@ -228,11 +223,9 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
     buf_size  -= 4;
 
     /* get output buffer */
-    c->frame.nb_samples = MPC_FRAME_SIZE;
-    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    frame->nb_samples = MPC_FRAME_SIZE;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     av_fast_padded_malloc(&c->bits, &c->buf_size, buf_size);
     if (!c->bits)
@@ -297,9 +290,9 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         for(ch = 0; ch < 2; ch++)
             idx_to_quant(c, &gb, bands[i].res[ch], c->Q[ch] + off);
 
-    ff_mpc_dequantize_and_synth(c, mb, c->frame.data[0], 2);
+    ff_mpc_dequantize_and_synth(c, mb, (int16_t **)frame->extended_data, 2);
     if(last_frame)
-        c->frame.nb_samples = c->lastframelen;
+        frame->nb_samples = c->lastframelen;
 
     bits_used = get_bits_count(&gb);
     bits_avail = buf_size * 8;
@@ -313,8 +306,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx, void *data,
         return avpkt->size;
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = c->frame;
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }
@@ -338,7 +330,7 @@ static av_cold int mpc7_decode_close(AVCodecContext *avctx)
 AVCodec ff_mpc7_decoder = {
     .name           = "mpc7",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_MUSEPACK7,
+    .id             = AV_CODEC_ID_MUSEPACK7,
     .priv_data_size = sizeof(MPCContext),
     .init           = mpc7_decode_init,
     .close          = mpc7_decode_close,
@@ -346,4 +338,6 @@ AVCodec ff_mpc7_decoder = {
     .flush          = mpc7_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV7"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
+                                                      AV_SAMPLE_FMT_NONE },
 };

@@ -24,10 +24,10 @@
  * Video4Linux2 grab interface
  *
  * Part of this file is based on the V4L2 video capture example
- * (http://v4l2spec.bytesex.org/v4l2spec/capture.c)
+ * (http://linuxtv.org/downloads/v4l-dvb-apis/capture-example.html)
  *
  * Thanks to Michael Niedermayer for providing the mapping between
- * V4L2_PIX_FMT_* and PIX_FMT_*
+ * V4L2_PIX_FMT_* and AV_PIX_FMT_*
  */
 
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
@@ -46,6 +46,7 @@
 #endif
 #include <linux/videodev2.h>
 #endif
+#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
@@ -54,6 +55,7 @@
 #include "timefilter.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/time.h"
 #include "libavutil/avstring.h"
 
 #if CONFIG_LIBV4L2
@@ -109,57 +111,67 @@ struct video_data {
     int64_t last_time_m;
 
     int buffers;
+    volatile int buffers_queued;
     void **buf_start;
     unsigned int *buf_len;
     char *standard;
+    v4l2_std_id std_id;
     int channel;
     char *pixel_format; /**< Set by a private option. */
     int list_format;    /**< Set by a private option. */
+    int list_standard;  /**< Set by a private option. */
     char *framerate;    /**< Set by a private option. */
 };
 
 struct buff_data {
+    struct video_data *s;
     int index;
-    int fd;
 };
 
 struct fmt_map {
-    enum PixelFormat ff_fmt;
-    enum CodecID codec_id;
+    enum AVPixelFormat ff_fmt;
+    enum AVCodecID codec_id;
     uint32_t v4l2_fmt;
 };
 
 static struct fmt_map fmt_conversion_table[] = {
     //ff_fmt           codec_id           v4l2_fmt
-    { PIX_FMT_YUV420P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV420  },
-    { PIX_FMT_YUV420P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YVU420  },
-    { PIX_FMT_YUV422P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV422P },
-    { PIX_FMT_YUYV422, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUYV    },
-    { PIX_FMT_UYVY422, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_UYVY    },
-    { PIX_FMT_YUV411P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV411P },
-    { PIX_FMT_YUV410P, CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV410  },
-    { PIX_FMT_RGB555LE,CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB555  },
-    { PIX_FMT_RGB555BE,CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB555X },
-    { PIX_FMT_RGB565LE,CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB565  },
-    { PIX_FMT_RGB565BE,CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB565X },
-    { PIX_FMT_BGR24,   CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR24   },
-    { PIX_FMT_RGB24,   CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB24   },
-    { PIX_FMT_BGR0,    CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR32   },
-    { PIX_FMT_0RGB,    CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB32   },
-    { PIX_FMT_GRAY8,   CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_GREY    },
-    { PIX_FMT_NV12,    CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
-    { PIX_FMT_NONE,    CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
-    { PIX_FMT_NONE,    CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
+    { AV_PIX_FMT_YUV420P, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV420  },
+    { AV_PIX_FMT_YUV420P, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YVU420  },
+    { AV_PIX_FMT_YUV422P, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV422P },
+    { AV_PIX_FMT_YUYV422, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUYV    },
+    { AV_PIX_FMT_UYVY422, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_UYVY    },
+    { AV_PIX_FMT_YUV411P, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV411P },
+    { AV_PIX_FMT_YUV410P, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YUV410  },
+    { AV_PIX_FMT_YUV410P, AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_YVU410  },
+    { AV_PIX_FMT_RGB555LE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB555  },
+    { AV_PIX_FMT_RGB555BE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB555X },
+    { AV_PIX_FMT_RGB565LE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB565  },
+    { AV_PIX_FMT_RGB565BE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB565X },
+    { AV_PIX_FMT_BGR24,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR24   },
+    { AV_PIX_FMT_RGB24,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB24   },
+    { AV_PIX_FMT_BGR0,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_BGR32   },
+    { AV_PIX_FMT_0RGB,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_RGB32   },
+    { AV_PIX_FMT_GRAY8,   AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_GREY    },
+#ifdef V4L2_PIX_FMT_Y16
+    { AV_PIX_FMT_GRAY16LE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_Y16     },
+#endif
+    { AV_PIX_FMT_NV12,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
+    { AV_PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
+    { AV_PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
+#ifdef V4L2_PIX_FMT_H264
+    { AV_PIX_FMT_NONE,    AV_CODEC_ID_H264,     V4L2_PIX_FMT_H264    },
+#endif
+#ifdef V4L2_PIX_FMT_CPIA1
+    { AV_PIX_FMT_NONE,    AV_CODEC_ID_CPIA,     V4L2_PIX_FMT_CPIA1   },
+#endif
 };
 
 static int device_open(AVFormatContext *ctx)
 {
     struct v4l2_capability cap;
     int fd;
-#if CONFIG_LIBV4L2
-    int fd_libv4l;
-#endif
-    int res, err;
+    int ret;
     int flags = O_RDWR;
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
@@ -168,48 +180,32 @@ static int device_open(AVFormatContext *ctx)
 
     fd = v4l2_open(ctx->filename, flags, 0);
     if (fd < 0) {
-        err = errno;
-
-        av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s : %s\n",
-               ctx->filename, strerror(err));
-
-        return AVERROR(err);
+        ret = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "Cannot open video device %s: %s\n",
+               ctx->filename, av_err2str(ret));
+        return ret;
     }
-#if CONFIG_LIBV4L2
-    fd_libv4l = v4l2_fd_open(fd, 0);
-    if (fd < 0) {
-        err = AVERROR(errno);
-        av_log(ctx, AV_LOG_ERROR, "Cannot open video device with libv4l neither %s : %s\n",
-               ctx->filename, strerror(errno));
-        return err;
-    }
-    fd = fd_libv4l;
-#endif
 
-    res = v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap);
-    if (res < 0) {
-        err = errno;
+    if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &cap) < 0) {
+        ret = AVERROR(errno);
         av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYCAP): %s\n",
-               strerror(err));
-
+               av_err2str(ret));
         goto fail;
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "[%d]Capabilities: %x\n",
+    av_log(ctx, AV_LOG_VERBOSE, "fd:%d capabilities:%x\n",
            fd, cap.capabilities);
 
     if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
         av_log(ctx, AV_LOG_ERROR, "Not a video capture device.\n");
-        err = ENODEV;
-
+        ret = AVERROR(ENODEV);
         goto fail;
     }
 
     if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
         av_log(ctx, AV_LOG_ERROR,
                "The device does not support the streaming I/O method.\n");
-        err = ENOSYS;
-
+        ret = AVERROR(ENOSYS);
         goto fail;
     }
 
@@ -217,7 +213,7 @@ static int device_open(AVFormatContext *ctx)
 
 fail:
     v4l2_close(fd);
-    return AVERROR(err);
+    return ret;
 }
 
 static int device_init(AVFormatContext *ctx, int *width, int *height,
@@ -228,14 +224,15 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
     struct v4l2_pix_format *pix = &fmt.fmt.pix;
 
-    int res;
+    int res = 0;
 
     pix->width = *width;
     pix->height = *height;
     pix->pixelformat = pix_fmt;
     pix->field = V4L2_FIELD_ANY;
 
-    res = v4l2_ioctl(fd, VIDIOC_S_FMT, &fmt);
+    if (v4l2_ioctl(fd, VIDIOC_S_FMT, &fmt) < 0)
+        res = AVERROR(errno);
 
     if ((*width != fmt.fmt.pix.width) || (*height != fmt.fmt.pix.height)) {
         av_log(ctx, AV_LOG_INFO,
@@ -250,11 +247,12 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
                "The V4L2 driver changed the pixel format "
                "from 0x%08X to 0x%08X\n",
                pix_fmt, fmt.fmt.pix.pixelformat);
-        res = -1;
+        res = AVERROR(EINVAL);
     }
 
     if (fmt.fmt.pix.field == V4L2_FIELD_INTERLACED) {
-        av_log(ctx, AV_LOG_DEBUG, "The V4L2 driver using the interlaced mode");
+        av_log(ctx, AV_LOG_DEBUG,
+               "The V4L2 driver is using the interlaced mode\n");
         s->interlaced = 1;
     }
 
@@ -277,14 +275,14 @@ static int first_field(int fd)
     return 1;
 }
 
-static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt, enum CodecID codec_id)
+static uint32_t fmt_ff2v4l(enum AVPixelFormat pix_fmt, enum AVCodecID codec_id)
 {
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
-        if ((codec_id == CODEC_ID_NONE ||
+        if ((codec_id == AV_CODEC_ID_NONE ||
              fmt_conversion_table[i].codec_id == codec_id) &&
-            (pix_fmt == PIX_FMT_NONE ||
+            (pix_fmt == AV_PIX_FMT_NONE ||
              fmt_conversion_table[i].ff_fmt == pix_fmt)) {
             return fmt_conversion_table[i].v4l2_fmt;
         }
@@ -293,7 +291,7 @@ static uint32_t fmt_ff2v4l(enum PixelFormat pix_fmt, enum CodecID codec_id)
     return 0;
 }
 
-static enum PixelFormat fmt_v4l2ff(uint32_t v4l2_fmt, enum CodecID codec_id)
+static enum AVPixelFormat fmt_v4l2ff(uint32_t v4l2_fmt, enum AVCodecID codec_id)
 {
     int i;
 
@@ -304,10 +302,10 @@ static enum PixelFormat fmt_v4l2ff(uint32_t v4l2_fmt, enum CodecID codec_id)
         }
     }
 
-    return PIX_FMT_NONE;
+    return AV_PIX_FMT_NONE;
 }
 
-static enum CodecID fmt_v4l2codec(uint32_t v4l2_fmt)
+static enum AVCodecID fmt_v4l2codec(uint32_t v4l2_fmt)
 {
     int i;
 
@@ -317,7 +315,7 @@ static enum CodecID fmt_v4l2codec(uint32_t v4l2_fmt)
         }
     }
 
-    return CODEC_ID_NONE;
+    return AV_CODEC_ID_NONE;
 }
 
 #if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
@@ -325,7 +323,7 @@ static void list_framesizes(AVFormatContext *ctx, int fd, uint32_t pixelformat)
 {
     struct v4l2_frmsizeenum vfse = { .pixel_format = pixelformat };
 
-    while(!ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
+    while(!v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
         switch (vfse.type) {
         case V4L2_FRMSIZE_TYPE_DISCRETE:
             av_log(ctx, AV_LOG_INFO, " %ux%u",
@@ -350,22 +348,22 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
 {
     struct v4l2_fmtdesc vfd = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
 
-    while(!ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
-        enum CodecID codec_id = fmt_v4l2codec(vfd.pixelformat);
-        enum PixelFormat pix_fmt = fmt_v4l2ff(vfd.pixelformat, codec_id);
+    while(!v4l2_ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
+        enum AVCodecID codec_id = fmt_v4l2codec(vfd.pixelformat);
+        enum AVPixelFormat pix_fmt = fmt_v4l2ff(vfd.pixelformat, codec_id);
 
         vfd.index++;
 
         if (!(vfd.flags & V4L2_FMT_FLAG_COMPRESSED) &&
             type & V4L_RAWFORMATS) {
             const char *fmt_name = av_get_pix_fmt_name(pix_fmt);
-            av_log(ctx, AV_LOG_INFO, "R : %9s : %20s :",
+            av_log(ctx, AV_LOG_INFO, "Raw       : %9s : %20s :",
                    fmt_name ? fmt_name : "Unsupported",
                    vfd.description);
         } else if (vfd.flags & V4L2_FMT_FLAG_COMPRESSED &&
                    type & V4L_COMPFORMATS) {
-            AVCodec *codec = avcodec_find_encoder(codec_id);
-            av_log(ctx, AV_LOG_INFO, "C : %9s : %20s :",
+            AVCodec *codec = avcodec_find_decoder(codec_id);
+            av_log(ctx, AV_LOG_INFO, "Compressed: %9s : %20s :",
                    codec ? codec->name : "Unsupported",
                    vfd.description);
         } else {
@@ -373,15 +371,37 @@ static void list_formats(AVFormatContext *ctx, int fd, int type)
         }
 
 #ifdef V4L2_FMT_FLAG_EMULATED
-        if (vfd.flags & V4L2_FMT_FLAG_EMULATED) {
-            av_log(ctx, AV_LOG_WARNING, "%s", "Emulated");
-            continue;
-        }
+        if (vfd.flags & V4L2_FMT_FLAG_EMULATED)
+            av_log(ctx, AV_LOG_INFO, " Emulated :");
 #endif
 #if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
         list_framesizes(ctx, fd, vfd.pixelformat);
 #endif
         av_log(ctx, AV_LOG_INFO, "\n");
+    }
+}
+
+static void list_standards(AVFormatContext *ctx)
+{
+    int ret;
+    struct video_data *s = ctx->priv_data;
+    struct v4l2_standard standard;
+
+    if (s->std_id == 0)
+        return;
+
+    for (standard.index = 0; ; standard.index++) {
+        if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
+            ret = AVERROR(errno);
+            if (ret == AVERROR(EINVAL)) {
+                break;
+            } else {
+                av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", av_err2str(ret));
+                return;
+            }
+        }
+        av_log(ctx, AV_LOG_INFO, "%2d, %16llx, %s\n",
+               standard.index, standard.id, standard.name);
     }
 }
 
@@ -395,14 +415,10 @@ static int mmap_init(AVFormatContext *ctx)
         .memory = V4L2_MEMORY_MMAP
     };
 
-    res = v4l2_ioctl(s->fd, VIDIOC_REQBUFS, &req);
-    if (res < 0) {
-        if (errno == EINVAL) {
-            av_log(ctx, AV_LOG_ERROR, "Device does not support mmap\n");
-        } else {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS)\n");
-        }
-        return AVERROR(errno);
+    if (v4l2_ioctl(s->fd, VIDIOC_REQBUFS, &req) < 0) {
+        res = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_REQBUFS): %s\n", av_err2str(res));
+        return res;
     }
 
     if (req.count < 2) {
@@ -428,55 +444,59 @@ static int mmap_init(AVFormatContext *ctx)
             .index  = i,
             .memory = V4L2_MEMORY_MMAP
         };
-        res = v4l2_ioctl(s->fd, VIDIOC_QUERYBUF, &buf);
-        if (res < 0) {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF)\n");
-            return AVERROR(errno);
+        if (v4l2_ioctl(s->fd, VIDIOC_QUERYBUF, &buf) < 0) {
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QUERYBUF): %s\n", av_err2str(res));
+            return res;
         }
 
         s->buf_len[i] = buf.length;
         if (s->frame_size > 0 && s->buf_len[i] < s->frame_size) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Buffer len [%d] = %d != %d\n",
+                   "buf_len[%d] = %d < expected frame size %d\n",
                    i, s->buf_len[i], s->frame_size);
-
-            return -1;
+            return AVERROR(ENOMEM);
         }
         s->buf_start[i] = v4l2_mmap(NULL, buf.length,
                                PROT_READ | PROT_WRITE, MAP_SHARED,
                                s->fd, buf.m.offset);
 
         if (s->buf_start[i] == MAP_FAILED) {
-            av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
-            return AVERROR(errno);
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "mmap: %s\n", av_err2str(res));
+            return res;
         }
     }
 
     return 0;
 }
 
-static void mmap_release_buffer(AVPacket *pkt)
+#if FF_API_DESTRUCT_PACKET
+static void dummy_release_buffer(AVPacket *pkt)
+{
+    av_assert0(0);
+}
+#endif
+
+static void mmap_release_buffer(void *opaque, uint8_t *data)
 {
     struct v4l2_buffer buf = { 0 };
-    int res, fd;
-    struct buff_data *buf_descriptor = pkt->priv;
-
-    if (pkt->data == NULL)
-        return;
+    int res;
+    struct buff_data *buf_descriptor = opaque;
+    struct video_data *s = buf_descriptor->s;
 
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = buf_descriptor->index;
-    fd = buf_descriptor->fd;
     av_free(buf_descriptor);
 
-    res = v4l2_ioctl(fd, VIDIOC_QBUF, &buf);
-    if (res < 0)
+    if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
+        res = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
-               strerror(errno));
+               av_err2str(res));
+    }
 
-    pkt->data = NULL;
-    pkt->size = 0;
+    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
 }
 
 #if HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
@@ -505,8 +525,8 @@ static int init_convert_timestamp(AVFormatContext *ctx, int64_t ts)
     now = av_gettime_monotonic();
     if (s->ts_mode == V4L_TS_MONO2ABS ||
         (ts <= now + 1 * AV_TIME_BASE && ts >= now - 10 * AV_TIME_BASE)) {
-        int64_t period = av_rescale_q(1, ctx->streams[0]->codec->time_base,
-                                      AV_TIME_BASE_Q);
+        AVRational tb = {AV_TIME_BASE, 1};
+        int64_t period = av_rescale_q(1, tb, ctx->streams[0]->avg_frame_rate);
         av_log(ctx, AV_LOG_INFO, "Detected monotonic timestamps, converting\n");
         /* microseconds instead of seconds, MHz instead of Hz */
         s->timefilter = ff_timefilter_new(1, period, 1.0E-6);
@@ -546,7 +566,6 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         .type   = V4L2_BUF_TYPE_VIDEO_CAPTURE,
         .memory = V4L2_MEMORY_MMAP
     };
-    struct buff_data *buf_descriptor;
     int res;
 
     /* FIXME: Some special treatment might be needed in case of loss of signal... */
@@ -556,41 +575,86 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             pkt->size = 0;
             return AVERROR(EAGAIN);
         }
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n",
-               strerror(errno));
-
-        return AVERROR(errno);
+        res = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_DQBUF): %s\n", av_err2str(res));
+        return res;
     }
-    av_assert0(buf.index < s->buffers);
+
+    if (buf.index >= s->buffers) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid buffer index received.\n");
+        return AVERROR(EINVAL);
+    }
+    avpriv_atomic_int_add_and_fetch(&s->buffers_queued, -1);
+    // always keep at least one buffer queued
+    av_assert0(avpriv_atomic_int_get(&s->buffers_queued) >= 1);
+
+    /* CPIA is a compressed format and we don't know the exact number of bytes
+     * used by a frame, so set it here as the driver announces it.
+     */
+    if (ctx->video_codec_id == AV_CODEC_ID_CPIA)
+        s->frame_size = buf.bytesused;
+
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR,
                "The v4l2 frame is %d bytes, but %d bytes are expected\n",
                buf.bytesused, s->frame_size);
-
         return AVERROR_INVALIDDATA;
     }
 
     /* Image is at s->buff_start[buf.index] */
-    pkt->data= s->buf_start[buf.index];
-    pkt->size = buf.bytesused;
-    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
-    res = convert_timestamp(ctx, &pkt->pts);
-    if (res < 0)
-        return res;
-    pkt->destruct = mmap_release_buffer;
-    buf_descriptor = av_malloc(sizeof(struct buff_data));
-    if (buf_descriptor == NULL) {
-        /* Something went wrong... Since av_malloc() failed, we cannot even
-         * allocate a buffer for memcopying into it
-         */
-        av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
-        res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
+    if (avpriv_atomic_int_get(&s->buffers_queued) == FFMAX(s->buffers / 8, 1)) {
+        /* when we start getting low on queued buffers, fall back on copying data */
+        res = av_new_packet(pkt, buf.bytesused);
+        if (res < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error allocating a packet.\n");
+            if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) == 0)
+                avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+            return res;
+        }
+        memcpy(pkt->data, s->buf_start[buf.index], buf.bytesused);
 
-        return AVERROR(ENOMEM);
+        if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+            av_free_packet(pkt);
+            return res;
+        }
+        avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+    } else {
+        struct buff_data *buf_descriptor;
+
+        pkt->data     = s->buf_start[buf.index];
+        pkt->size     = buf.bytesused;
+#if FF_API_DESTRUCT_PACKET
+        pkt->destruct = dummy_release_buffer;
+#endif
+
+        buf_descriptor = av_malloc(sizeof(struct buff_data));
+        if (buf_descriptor == NULL) {
+            /* Something went wrong... Since av_malloc() failed, we cannot even
+             * allocate a buffer for memcpying into it
+             */
+            av_log(ctx, AV_LOG_ERROR, "Failed to allocate a buffer descriptor\n");
+            if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) == 0)
+                avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+
+            return AVERROR(ENOMEM);
+        }
+        buf_descriptor->index = buf.index;
+        buf_descriptor->s     = s;
+
+        pkt->buf = av_buffer_create(pkt->data, pkt->size, mmap_release_buffer,
+                                    buf_descriptor, 0);
+        if (!pkt->buf) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to create a buffer\n");
+            if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) == 0)
+                avpriv_atomic_int_add_and_fetch(&s->buffers_queued, 1);
+            av_freep(&buf_descriptor);
+            return AVERROR(ENOMEM);
+        }
     }
-    buf_descriptor->fd = s->fd;
-    buf_descriptor->index = buf.index;
-    pkt->priv = buf_descriptor;
+    pkt->pts = buf.timestamp.tv_sec * INT64_C(1000000) + buf.timestamp.tv_usec;
+    convert_timestamp(ctx, &pkt->pts);
 
     return s->buf_len[buf.index];
 }
@@ -608,22 +672,19 @@ static int mmap_start(AVFormatContext *ctx)
             .memory = V4L2_MEMORY_MMAP
         };
 
-        res = v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf);
-        if (res < 0) {
-            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n",
-                   strerror(errno));
-
-            return AVERROR(errno);
+        if (v4l2_ioctl(s->fd, VIDIOC_QBUF, &buf) < 0) {
+            res = AVERROR(errno);
+            av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_QBUF): %s\n", av_err2str(res));
+            return res;
         }
     }
+    s->buffers_queued = s->buffers;
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    res = v4l2_ioctl(s->fd, VIDIOC_STREAMON, &type);
-    if (res < 0) {
-        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n",
-               strerror(errno));
-
-        return AVERROR(errno);
+    if (v4l2_ioctl(s->fd, VIDIOC_STREAMON, &type) < 0) {
+        res = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "ioctl(VIDIOC_STREAMON): %s\n", av_err2str(res));
+        return res;
     }
 
     return 0;
@@ -649,14 +710,11 @@ static void mmap_close(struct video_data *s)
 static int v4l2_set_parameters(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
-    struct v4l2_input input = { 0 };
     struct v4l2_standard standard = { 0 };
     struct v4l2_streamparm streamparm = { 0 };
-    struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
+    struct v4l2_fract *tpf;
     AVRational framerate_q = { 0 };
     int i, ret;
-
-    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if (s->framerate &&
         (ret = av_parse_video_rate(&framerate_q, s->framerate)) < 0) {
@@ -665,113 +723,149 @@ static int v4l2_set_parameters(AVFormatContext *s1)
         return ret;
     }
 
-    /* set tv video input */
-    input.index = s->channel;
-    if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
-        av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl enum input failed:\n");
-        return AVERROR(EIO);
-    }
-
-    av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set input_id: %d, input: %s\n",
-            s->channel, input.name);
-    if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &input.index) < 0) {
-        av_log(s1, AV_LOG_ERROR,
-               "The V4L2 driver ioctl set input(%d) failed\n",
-                s->channel);
-        return AVERROR(EIO);
-    }
-
     if (s->standard) {
-        av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
-               s->standard);
-        /* set tv standard */
-        for(i=0;;i++) {
-            standard.index = i;
-            ret = v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
-            if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
-                break;
-        }
-        if (ret < 0) {
-            av_log(s1, AV_LOG_ERROR, "Unknown standard '%s'\n", s->standard);
-            return ret;
-        }
+        if (s->std_id) {
+            ret = 0;
+            av_log(s1, AV_LOG_DEBUG, "Setting standard: %s\n", s->standard);
+            /* set tv standard */
+            for (i = 0; ; i++) {
+                standard.index = i;
+                if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
+                    ret = AVERROR(errno);
+                    break;
+                }
+                if (!av_strcasecmp(standard.name, s->standard))
+                    break;
+            }
+            if (ret < 0) {
+                av_log(s1, AV_LOG_ERROR, "Unknown or unsupported standard '%s'\n", s->standard);
+                return ret;
+            }
 
-        av_log(s1, AV_LOG_DEBUG,
-               "The V4L2 driver set standard: %s, id: %"PRIu64"\n",
-               s->standard, (uint64_t)standard.id);
-        if (v4l2_ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
-            av_log(s1, AV_LOG_ERROR,
-                   "The V4L2 driver ioctl set standard(%s) failed\n",
-                   s->standard);
-            return AVERROR(EIO);
+            if (v4l2_ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
+                ret = AVERROR(errno);
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_STD): %s\n", av_err2str(ret));
+                return ret;
+            }
+        } else {
+            av_log(s1, AV_LOG_WARNING,
+                   "This device does not support any standard\n");
         }
+    }
+
+    /* get standard */
+    if (v4l2_ioctl(s->fd, VIDIOC_G_STD, &s->std_id) == 0) {
+        tpf = &standard.frameperiod;
+        for (i = 0; ; i++) {
+            standard.index = i;
+            if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
+                ret = AVERROR(errno);
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", av_err2str(ret));
+                return ret;
+            }
+            if (standard.id == s->std_id) {
+                av_log(s1, AV_LOG_DEBUG,
+                       "Current standard: %s, id: %"PRIu64", frameperiod: %d/%d\n",
+                       standard.name, (uint64_t)standard.id, tpf->numerator, tpf->denominator);
+                break;
+            }
+        }
+    } else {
+        tpf = &streamparm.parm.capture.timeperframe;
+    }
+
+    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) < 0) {
+        ret = AVERROR(errno);
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", av_err2str(ret));
+        return ret;
     }
 
     if (framerate_q.num && framerate_q.den) {
-        av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
-               framerate_q.den, framerate_q.num);
-        tpf->numerator   = framerate_q.den;
-        tpf->denominator = framerate_q.num;
+        if (streamparm.parm.capture.capability & V4L2_CAP_TIMEPERFRAME) {
+            tpf = &streamparm.parm.capture.timeperframe;
 
-        if (v4l2_ioctl(s->fd, VIDIOC_S_PARM, &streamparm) != 0) {
-            av_log(s1, AV_LOG_ERROR,
-                   "ioctl set time per frame(%d/%d) failed\n",
+            av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
                    framerate_q.den, framerate_q.num);
-            return AVERROR(EIO);
-        }
+            tpf->numerator   = framerate_q.den;
+            tpf->denominator = framerate_q.num;
 
-        if (framerate_q.num != tpf->denominator ||
-            framerate_q.den != tpf->numerator) {
-            av_log(s1, AV_LOG_INFO,
-                   "The driver changed the time per frame from "
-                   "%d/%d to %d/%d\n",
-                   framerate_q.den, framerate_q.num,
-                   tpf->numerator, tpf->denominator);
-        }
-    } else {
-        if (v4l2_ioctl(s->fd, VIDIOC_G_PARM, &streamparm) != 0) {
-            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n",
-                   strerror(errno));
-            return AVERROR(errno);
+            if (v4l2_ioctl(s->fd, VIDIOC_S_PARM, &streamparm) < 0) {
+                ret = AVERROR(errno);
+                av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_PARM): %s\n", av_err2str(ret));
+                return ret;
+            }
+
+            if (framerate_q.num != tpf->denominator ||
+                framerate_q.den != tpf->numerator) {
+                av_log(s1, AV_LOG_INFO,
+                       "The driver changed the time per frame from "
+                       "%d/%d to %d/%d\n",
+                       framerate_q.den, framerate_q.num,
+                       tpf->numerator, tpf->denominator);
+            }
+        } else {
+            av_log(s1, AV_LOG_WARNING,
+                   "The driver does not allow to change time per frame\n");
         }
     }
-    s1->streams[0]->codec->time_base.den = tpf->denominator;
-    s1->streams[0]->codec->time_base.num = tpf->numerator;
+    s1->streams[0]->avg_frame_rate.num = tpf->denominator;
+    s1->streams[0]->avg_frame_rate.den = tpf->numerator;
+    s1->streams[0]->r_frame_rate = s1->streams[0]->avg_frame_rate;
 
     return 0;
 }
 
-static uint32_t device_try_init(AVFormatContext *s1,
-                                enum PixelFormat pix_fmt,
-                                int *width,
-                                int *height,
-                                enum CodecID *codec_id)
+static int device_try_init(AVFormatContext *s1,
+                           enum AVPixelFormat pix_fmt,
+                           int *width,
+                           int *height,
+                           uint32_t *desired_format,
+                           enum AVCodecID *codec_id)
 {
-    uint32_t desired_format = fmt_ff2v4l(pix_fmt, s1->video_codec_id);
+    int ret, i;
 
-    if (desired_format == 0 ||
-        device_init(s1, width, height, desired_format) < 0) {
-        int i;
+    *desired_format = fmt_ff2v4l(pix_fmt, s1->video_codec_id);
 
-        desired_format = 0;
-        for (i = 0; i<FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
-            if (s1->video_codec_id == CODEC_ID_NONE ||
-                fmt_conversion_table[i].codec_id == s1->video_codec_id) {
-                desired_format = fmt_conversion_table[i].v4l2_fmt;
-                if (device_init(s1, width, height, desired_format) >= 0) {
-                    break;
-                }
-                desired_format = 0;
-            }
+    if (*desired_format) {
+        ret = device_init(s1, width, height, *desired_format);
+        if (ret < 0) {
+            *desired_format = 0;
+            if (ret != AVERROR(EINVAL))
+                return ret;
         }
     }
 
-    if (desired_format != 0) {
-        *codec_id = fmt_v4l2codec(desired_format);
-        av_assert0(*codec_id != CODEC_ID_NONE);
+    if (!*desired_format) {
+        for (i = 0; i<FF_ARRAY_ELEMS(fmt_conversion_table); i++) {
+            if (s1->video_codec_id == AV_CODEC_ID_NONE ||
+                fmt_conversion_table[i].codec_id == s1->video_codec_id) {
+                av_log(s1, AV_LOG_DEBUG, "Trying to set codec:%s pix_fmt:%s\n",
+                       avcodec_get_name(fmt_conversion_table[i].codec_id),
+                       (char *)av_x_if_null(av_get_pix_fmt_name(fmt_conversion_table[i].ff_fmt), "none"));
+
+                *desired_format = fmt_conversion_table[i].v4l2_fmt;
+                ret = device_init(s1, width, height, *desired_format);
+                if (ret >= 0)
+                    break;
+                else if (ret != AVERROR(EINVAL))
+                    return ret;
+                *desired_format = 0;
+            }
+        }
+
+        if (*desired_format == 0) {
+            av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
+                   "codec '%s' (id %d), pixel format '%s' (id %d)\n",
+                   avcodec_get_name(s1->video_codec_id), s1->video_codec_id,
+                   (char *)av_x_if_null(av_get_pix_fmt_name(pix_fmt), "none"), pix_fmt);
+            ret = AVERROR(EINVAL);
+        }
     }
 
-    return desired_format;
+    *codec_id = fmt_v4l2codec(*desired_format);
+    av_assert0(*codec_id != AV_CODEC_ID_NONE);
+    return ret;
 }
 
 static int v4l2_read_header(AVFormatContext *s1)
@@ -780,25 +874,60 @@ static int v4l2_read_header(AVFormatContext *s1)
     AVStream *st;
     int res = 0;
     uint32_t desired_format;
-    enum CodecID codec_id;
-    enum PixelFormat pix_fmt = PIX_FMT_NONE;
+    enum AVCodecID codec_id = AV_CODEC_ID_NONE;
+    enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
+    struct v4l2_input input = { 0 };
 
     st = avformat_new_stream(s1, NULL);
-    if (!st) {
-        res = AVERROR(ENOMEM);
-        goto out;
-    }
+    if (!st)
+        return AVERROR(ENOMEM);
+
+#if CONFIG_LIBV4L2
+    /* silence libv4l2 logging. if fopen() fails v4l2_log_file will be NULL
+       and errors will get sent to stderr */
+    v4l2_log_file = fopen("/dev/null", "w");
+#endif
 
     s->fd = device_open(s1);
-    if (s->fd < 0) {
-        res = s->fd;
-        goto out;
+    if (s->fd < 0)
+        return s->fd;
+
+    if (s->channel != -1) {
+        /* set video input */
+        av_log(s1, AV_LOG_DEBUG, "Selecting input_channel: %d\n", s->channel);
+        if (v4l2_ioctl(s->fd, VIDIOC_S_INPUT, &s->channel) < 0) {
+            res = AVERROR(errno);
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_S_INPUT): %s\n", av_err2str(res));
+            return res;
+        }
+    } else {
+        /* get current video input */
+        if (v4l2_ioctl(s->fd, VIDIOC_G_INPUT, &s->channel) < 0) {
+            res = AVERROR(errno);
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_INPUT): %s\n", av_err2str(res));
+            return res;
+        }
     }
+
+    /* enum input */
+    input.index = s->channel;
+    if (v4l2_ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
+        res = AVERROR(errno);
+        av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMINPUT): %s\n", av_err2str(res));
+        return res;
+    }
+    s->std_id = input.std;
+    av_log(s1, AV_LOG_DEBUG, "Current input_channel: %d, input_name: %s\n",
+           s->channel, input.name);
 
     if (s->list_format) {
         list_formats(s1, s->fd, s->list_format);
-        res = AVERROR_EXIT;
-        goto out;
+        return AVERROR_EXIT;
+    }
+
+    if (s->list_standard) {
+        list_standards(s1);
+        return AVERROR_EXIT;
     }
 
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
@@ -811,26 +940,23 @@ static int v4l2_read_header(AVFormatContext *s1)
 
         pix_fmt = av_get_pix_fmt(s->pixel_format);
 
-        if (pix_fmt == PIX_FMT_NONE && !codec) {
+        if (pix_fmt == AV_PIX_FMT_NONE && !codec) {
             av_log(s1, AV_LOG_ERROR, "No such input format: %s.\n",
                    s->pixel_format);
 
-            res = AVERROR(EINVAL);
-            goto out;
+            return AVERROR(EINVAL);
         }
     }
 
     if (!s->width && !s->height) {
-        struct v4l2_format fmt;
+        struct v4l2_format fmt = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
 
         av_log(s1, AV_LOG_VERBOSE,
                "Querying the device for the current frame size\n");
-        fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         if (v4l2_ioctl(s->fd, VIDIOC_G_FMT, &fmt) < 0) {
-            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n",
-                   strerror(errno));
             res = AVERROR(errno);
-            goto out;
+            av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_FMT): %s\n", av_err2str(res));
+            return res;
         }
 
         s->width  = fmt.fmt.pix.width;
@@ -839,23 +965,26 @@ static int v4l2_read_header(AVFormatContext *s1)
                "Setting frame size to %dx%d\n", s->width, s->height);
     }
 
-    desired_format = device_try_init(s1, pix_fmt, &s->width, &s->height,
-                                     &codec_id);
-    if (desired_format == 0) {
-        av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
-               "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, pix_fmt);
+    res = device_try_init(s1, pix_fmt, &s->width, &s->height, &desired_format, &codec_id);
+    if (res < 0) {
         v4l2_close(s->fd);
-
-        res = AVERROR(EIO);
-        goto out;
+        return res;
     }
+
+    /* If no pixel_format was specified, the codec_id was not known up
+     * until now. Set video_codec_id in the context, as codec_id will
+     * not be available outside this function
+     */
+    if (codec_id != AV_CODEC_ID_NONE && s1->video_codec_id == AV_CODEC_ID_NONE)
+        s1->video_codec_id = codec_id;
+
     if ((res = av_image_check_size(s->width, s->height, 0, s1)) < 0)
-        goto out;
+        return res;
 
     s->frame_format = desired_format;
 
     if ((res = v4l2_set_parameters(s1)) < 0)
-        goto out;
+        return res;
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);
     s->frame_size =
@@ -864,24 +993,25 @@ static int v4l2_read_header(AVFormatContext *s1)
     if ((res = mmap_init(s1)) ||
         (res = mmap_start(s1)) < 0) {
         v4l2_close(s->fd);
-        goto out;
+        return res;
     }
 
     s->top_field_first = first_field(s->fd);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = codec_id;
-    if (codec_id == CODEC_ID_RAWVIDEO)
+    if (codec_id == AV_CODEC_ID_RAWVIDEO)
         st->codec->codec_tag =
             avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
     if (desired_format == V4L2_PIX_FMT_YVU420)
         st->codec->codec_tag = MKTAG('Y', 'V', '1', '2');
+    else if (desired_format == V4L2_PIX_FMT_YVU410)
+        st->codec->codec_tag = MKTAG('Y', 'V', 'U', '9');
     st->codec->width = s->width;
     st->codec->height = s->height;
-    st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
+    st->codec->bit_rate = s->frame_size * av_q2d(st->avg_frame_rate) * 8;
 
-out:
-    return res;
+    return 0;
 }
 
 static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
@@ -907,6 +1037,10 @@ static int v4l2_read_close(AVFormatContext *s1)
 {
     struct video_data *s = s1->priv_data;
 
+    if (avpriv_atomic_int_get(&s->buffers_queued) != s->buffers)
+        av_log(s1, AV_LOG_WARNING, "Some buffers are still owned by the caller on "
+               "close.\n");
+
     mmap_close(s);
 
     v4l2_close(s->fd);
@@ -917,21 +1051,27 @@ static int v4l2_read_close(AVFormatContext *s1)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "standard",     "TV standard, used only by analog frame grabber",            OFFSET(standard),     AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0,       DEC },
-    { "channel",      "TV channel, used only by frame grabber",                    OFFSET(channel),      AV_OPT_TYPE_INT,    {.dbl = 0 },    0, INT_MAX, DEC },
-    { "video_size",   "A string describing frame size, such as 640x480 or hd720.", OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  0, 0,       DEC },
-    { "pixel_format", "Preferred pixel format",                                    OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
-    { "input_format", "Preferred pixel format (for raw video) or codec name",      OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
-    { "framerate",    "",                                                          OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
-    { "list_formats", "List available formats and exit",                           OFFSET(list_format),  AV_OPT_TYPE_INT,    {.dbl = 0 },  0, INT_MAX, DEC, "list_formats" },
-    { "all",          "Show all available formats",                                OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_ALLFORMATS  },    0, INT_MAX, DEC, "list_formats" },
-    { "raw",          "Show only non-compressed formats",                          OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_RAWFORMATS  },    0, INT_MAX, DEC, "list_formats" },
-    { "compressed",   "Show only compressed formats",                              OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.dbl = V4L_COMPFORMATS },    0, INT_MAX, DEC, "list_formats" },
-    { "timestamps",   "Kind of timestamps for grabbed frames",                     OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.dbl = 0 }, 0, 2, DEC, "timestamps" },
-    { "default",      "Use timestamps from the kernel",                            OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.dbl = V4L_TS_DEFAULT  }, 0, 2, DEC, "timestamps" },
-    { "abs",          "Use absolute timestamps (wall clock)",                      OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.dbl = V4L_TS_ABS      }, 0, 2, DEC, "timestamps" },
-    { "mono2abs",     "Force conversion from monotonic to absolute timestamps",    OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.dbl = V4L_TS_MONO2ABS }, 0, 2, DEC, "timestamps" },
-    { "ts",           "Kind of timestamps for grabbed frames",                     OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.dbl = 0 }, 0, 2, DEC, "timestamps" },
+    { "standard",     "set TV standard, used only by analog frame grabber",       OFFSET(standard),     AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0,       DEC },
+    { "channel",      "set TV channel, used only by frame grabber",               OFFSET(channel),      AV_OPT_TYPE_INT,    {.i64 = -1 },  -1, INT_MAX, DEC },
+    { "video_size",   "set frame size",                                           OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL},  0, 0,   DEC },
+    { "pixel_format", "set preferred pixel format",                               OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+    { "input_format", "set preferred pixel format (for raw video) or codec name", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+    { "framerate",    "set frame rate",                                           OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       DEC },
+
+    { "list_formats", "list available formats and exit",                          OFFSET(list_format),  AV_OPT_TYPE_INT,    {.i64 = 0 },  0, INT_MAX, DEC, "list_formats" },
+    { "all",          "show all available formats",                               OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_ALLFORMATS  },    0, INT_MAX, DEC, "list_formats" },
+    { "raw",          "show only non-compressed formats",                         OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_RAWFORMATS  },    0, INT_MAX, DEC, "list_formats" },
+    { "compressed",   "show only compressed formats",                             OFFSET(list_format),  AV_OPT_TYPE_CONST,  {.i64 = V4L_COMPFORMATS },    0, INT_MAX, DEC, "list_formats" },
+
+    { "list_standards", "list supported standards and exit",                      OFFSET(list_standard), AV_OPT_TYPE_INT,   {.i64 = 0 },  0, 1, DEC, "list_standards" },
+    { "all",            "show all supported standards",                           OFFSET(list_standard), AV_OPT_TYPE_CONST, {.i64 = 1 },  0, 0, DEC, "list_standards" },
+
+    { "timestamps",   "set type of timestamps for grabbed frames",                OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, 2, DEC, "timestamps" },
+    { "ts",           "set type of timestamps for grabbed frames",                OFFSET(ts_mode),      AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, 2, DEC, "timestamps" },
+    { "default",      "use timestamps from the kernel",                           OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.i64 = V4L_TS_DEFAULT  }, 0, 2, DEC, "timestamps" },
+    { "abs",          "use absolute timestamps (wall clock)",                     OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.i64 = V4L_TS_ABS      }, 0, 2, DEC, "timestamps" },
+    { "mono2abs",     "force conversion from monotonic to absolute timestamps",   OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.i64 = V4L_TS_MONO2ABS }, 0, 2, DEC, "timestamps" },
+
     { NULL },
 };
 

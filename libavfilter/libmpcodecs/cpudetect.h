@@ -19,8 +19,6 @@
 #ifndef MPLAYER_CPUDETECT_H
 #define MPLAYER_CPUDETECT_H
 
-//#include "config.h"
-
 #define CPUTYPE_I386    3
 #define CPUTYPE_I486    4
 #define CPUTYPE_I586    5
@@ -40,20 +38,23 @@ typedef struct cpucaps_s {
     int hasSSE2;
     int hasSSE3;
     int hasSSSE3;
+    int hasSSE4;
+    int hasSSE42;
     int hasSSE4a;
+    int hasAVX;
     int isX86;
     unsigned cl_size; /* size of cache line */
     int hasAltiVec;
     int hasTSC;
 } CpuCaps;
 
-extern CpuCaps gCpuCaps;
+extern CpuCaps ff_gCpuCaps;
 
-void do_cpuid(unsigned int ax, unsigned int *p);
+void ff_do_cpuid(unsigned int ax, unsigned int *p);
 
-void GetCpuCaps(CpuCaps *caps);
+void ff_GetCpuCaps(CpuCaps *caps);
 
 /* returned value is malloc()'ed so free() it after use */
-char *GetCpuFriendlyName(unsigned int regs[], unsigned int regs2[]);
+char *ff_GetCpuFriendlyName(unsigned int regs[], unsigned int regs2[]);
 
 #endif /* MPLAYER_CPUDETECT_H */

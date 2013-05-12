@@ -49,7 +49,7 @@ uint64_t ff_mov_get_channel_layout(uint32_t tag, uint32_t bitmap);
  * @param[out] bitmap          channel bitmap
  * @return                     channel layout tag
  */
-uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
+uint32_t ff_mov_get_channel_layout_tag(enum AVCodecID codec_id,
                                        uint64_t channel_layout,
                                        uint32_t *bitmap);
 
@@ -57,10 +57,12 @@ uint32_t ff_mov_get_channel_layout_tag(enum CodecID codec_id,
  * Read 'chan' tag from the input stream.
  *
  * @param s     AVFormatContext
+ * @param pb    AVIOContext
  * @param st    The stream to set codec values for
  * @param size  Remaining size in the 'chan' tag
  * @return      0 if ok, or negative AVERROR code on failure
  */
-int ff_mov_read_chan(AVFormatContext *s, AVStream *st, int64_t size);
+int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
+                     int64_t size);
 
 #endif /* AVFORMAT_MOV_CHAN_H */

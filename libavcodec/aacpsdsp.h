@@ -49,5 +49,6 @@ typedef struct PSDSPContext {
 
 void ff_psdsp_init(PSDSPContext *s);
 void ff_psdsp_init_arm(PSDSPContext *s);
+void ff_psdsp_init_mips(PSDSPContext *s);
 
 #endif /* LIBAVCODEC_AACPSDSP_H */

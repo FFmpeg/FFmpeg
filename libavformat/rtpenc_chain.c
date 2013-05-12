@@ -23,10 +23,12 @@
 #include "avio_internal.h"
 #include "rtpenc_chain.h"
 #include "avio_internal.h"
+#include "rtp.h"
 #include "libavutil/opt.h"
 
 int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
-                          AVStream *st, URLContext *handle, int packet_size)
+                          AVStream *st, URLContext *handle, int packet_size,
+                          int idx)
 {
     AVFormatContext *rtpctx = NULL;
     int ret;
@@ -58,6 +60,14 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     /* Copy other stream parameters. */
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
     rtpctx->flags |= s->flags & AVFMT_FLAG_MP4A_LATM;
+
+    /* Get the payload type from the codec */
+    if (st->id < RTP_PT_PRIVATE)
+        rtpctx->streams[0]->id =
+            ff_rtp_get_payload_type(s, st->codec, idx);
+    else
+        rtpctx->streams[0]->id = st->id;
+
 
     if (av_opt_get(s, "rtpflags", AV_OPT_SEARCH_CHILDREN, &rtpflags) >= 0)
         av_dict_set(&opts, "rtpflags", rtpflags, AV_DICT_DONT_STRDUP_VAL);

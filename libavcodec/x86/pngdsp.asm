@@ -21,14 +21,13 @@
 ;* 51, Inc., Foundation Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
 
 cextern pw_255
 
-SECTION_TEXT 16
+SECTION_TEXT
 
 ; %1 = nr. of xmm registers used
 %macro ADD_BYTES_FN 1
@@ -167,7 +166,7 @@ cglobal add_png_paeth_prediction, 5, 7, %1, dst, src, top, w, bpp, end, cntr
     RET
 %endmacro
 
-INIT_MMX mmx2
+INIT_MMX mmxext
 ADD_PAETH_PRED_FN 0
 
 INIT_MMX ssse3

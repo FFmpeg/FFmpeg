@@ -20,6 +20,8 @@
  */
 
 #include <string.h>
+
+#include "libavutil/channel_layout.h"
 #include "avformat.h"
 
 static int apc_probe(AVProbeData *p)
@@ -44,7 +46,7 @@ static int apc_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_ADPCM_IMA_APC;
+    st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_APC;
 
     avio_rl32(pb); /* number of samples */
     st->codec->sample_rate = avio_rl32(pb);
@@ -58,9 +60,13 @@ static int apc_read_header(AVFormatContext *s)
     /* initial predictor values for adpcm decoder */
     avio_read(pb, st->codec->extradata, 2 * 4);
 
-    st->codec->channels = 1;
-    if (avio_rl32(pb))
-        st->codec->channels = 2;
+    if (avio_rl32(pb)) {
+        st->codec->channels       = 2;
+        st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+    } else {
+        st->codec->channels       = 1;
+        st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    }
 
     st->codec->bits_per_coded_sample = 4;
     st->codec->bit_rate = st->codec->bits_per_coded_sample * st->codec->channels
@@ -83,7 +89,7 @@ static int apc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_apc_demuxer = {
     .name           = "apc",
-    .long_name      = NULL_IF_CONFIG_SMALL("CRYO APC format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("CRYO APC"),
     .read_probe     = apc_probe,
     .read_header    = apc_read_header,
     .read_packet    = apc_read_packet,

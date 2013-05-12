@@ -1,0 +1,3 @@
+sws_flags=+accurate_rnd+bitexact;
+[1:v] scale=50:50 [over];
+[0:v][over] overlay=20:20

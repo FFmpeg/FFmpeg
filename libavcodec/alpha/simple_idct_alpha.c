@@ -26,7 +26,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
 #include "dsputil_alpha.h"
 #include "asm.h"
 
@@ -44,7 +43,7 @@
 #define COL_SHIFT 20
 
 /* 0: all entries 0, 1: only first entry nonzero, 2: otherwise  */
-static inline int idct_row(DCTELEM *row)
+static inline int idct_row(int16_t *row)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3, t;
     uint64_t l, r, t2;
@@ -152,7 +151,7 @@ static inline int idct_row(DCTELEM *row)
     return 2;
 }
 
-static inline void idct_col(DCTELEM *col)
+static inline void idct_col(int16_t *col)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
 
@@ -229,7 +228,7 @@ static inline void idct_col(DCTELEM *col)
 
 /* If all rows but the first one are zero after row transformation,
    all rows will be identical after column transformation.  */
-static inline void idct_col2(DCTELEM *col)
+static inline void idct_col2(int16_t *col)
 {
     int i;
     uint64_t l, r;
@@ -251,7 +250,7 @@ static inline void idct_col2(DCTELEM *col)
     stq(l, col + 14 * 4); stq(r, col + 15 * 4);
 }
 
-void ff_simple_idct_axp(DCTELEM *block)
+void ff_simple_idct_axp(int16_t *block)
 {
 
     int i;
@@ -291,13 +290,13 @@ void ff_simple_idct_axp(DCTELEM *block)
     }
 }
 
-void ff_simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct_put_axp(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_simple_idct_axp(block);
     put_pixels_clamped_axp_p(block, dest, line_size);
 }
 
-void ff_simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block)
+void ff_simple_idct_add_axp(uint8_t *dest, int line_size, int16_t *block)
 {
     ff_simple_idct_axp(block);
     add_pixels_clamped_axp_p(block, dest, line_size);

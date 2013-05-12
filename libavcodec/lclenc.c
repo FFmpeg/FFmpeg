@@ -45,6 +45,8 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "lcl.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 #include <zlib.h>
 
@@ -86,7 +88,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
-    if(avctx->pix_fmt != PIX_FMT_BGR24){
+    if(avctx->pix_fmt != AV_PIX_FMT_BGR24){
         av_log(avctx, AV_LOG_ERROR, "Format not supported!\n");
         return -1;
     }
@@ -138,8 +140,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->extradata= av_mallocz(8);
     avctx->coded_frame= &c->pic;
 
-    // Will be user settable someday
-    c->compression = 6;
+    c->compression = avctx->compression_level == FF_COMPRESSION_DEFAULT ?
+                            COMP_ZLIB_NORMAL :
+                            av_clip(avctx->compression_level, 0, 9);
     c->flags = 0;
     c->imgtype = IMGTYPE_RGB24;
     avctx->bits_per_coded_sample= 24;
@@ -184,11 +187,11 @@ static av_cold int encode_end(AVCodecContext *avctx)
 AVCodec ff_zlib_encoder = {
     .name           = "zlib",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ZLIB,
+    .id             = AV_CODEC_ID_ZLIB,
     .priv_data_size = sizeof(LclEncContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
 };

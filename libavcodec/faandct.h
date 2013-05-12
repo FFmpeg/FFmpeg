@@ -29,9 +29,9 @@
 #ifndef AVCODEC_FAANDCT_H
 #define AVCODEC_FAANDCT_H
 
-#include "dsputil.h"
+#include <stdint.h>
 
-void ff_faandct(DCTELEM * data);
-void ff_faandct248(DCTELEM * data);
+void ff_faandct(int16_t *data);
+void ff_faandct248(int16_t *data);
 
 #endif /* AVCODEC_FAANDCT_H */

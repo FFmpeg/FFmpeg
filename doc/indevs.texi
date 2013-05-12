@@ -86,7 +86,7 @@ fail to open.
 Set the video size in the captured video.
 
 @item framerate
-Set the framerate in the captured video.
+Set the frame rate in the captured video.
 
 @item sample_rate
 Set the sample rate (in Hz) of the captured audio.
@@ -111,6 +111,19 @@ defaults to 0).
 @item audio_device_number
 Set audio device number for devices with same name (starts at 0,
 defaults to 0).
+
+@item pixel_format
+Select pixel format to be used by DirectShow. This may only be set when
+the video codec is not set or set to rawvideo.
+
+@item audio_buffer_size
+Set audio device buffer size in milliseconds (which can directly
+impact latency, depending on the device).
+Defaults to using the audio device's
+default buffer size (typically some multiple of 500ms).
+Setting this value too low can degrade performance.
+See also
+@url{http://msdn.microsoft.com/en-us/library/windows/desktop/dd377582(v=vs.85).aspx}
 
 @end table
 
@@ -211,6 +224,13 @@ Set maxiumum size of buffer for incoming data, in frames. For DV, this
 is an exact value. For HDV, it is not frame exact, since HDV does
 not have a fixed frame size.
 
+@item dvguid
+Select the capture device by specifying it's GUID. Capturing will only
+be performed from the specified device and fails if no device with the
+given GUID is found. This is useful to select the input if multiple
+devices are connected at the same time.
+Look at /sys/bus/firewire/devices to find out the GUIDs.
+
 @end table
 
 @subsection Examples
@@ -307,6 +327,12 @@ label, but all the others need to be specified explicitly.
 
 If not specified defaults to the filename specified for the input
 device.
+
+@item graph_file
+Set the filename of the filtergraph to be read and sent to the other
+filters. Syntax of the filtergraph is the same as the one specified by
+the option @var{graph}.
+
 @end table
 
 @subsection Examples
@@ -315,14 +341,14 @@ device.
 @item
 Create a color video stream and play it back with @command{ffplay}:
 @example
-ffplay -f lavfi -graph "color=pink [out0]" dummy
+ffplay -f lavfi -graph "color=c=pink [out0]" dummy
 @end example
 
 @item
 As the previous example, but use filename for specifying the graph
 description, and omit the "out0" label:
 @example
-ffplay -f lavfi color=pink
+ffplay -f lavfi color=c=pink
 @end example
 
 @item
@@ -557,9 +583,15 @@ command:
 ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
 
-@section video4linux2
+@section video4linux2, v4l2
 
 Video4Linux2 input video device.
+
+"v4l2" can be used as alias for "video4linux2".
+
+If FFmpeg is built with v4l-utils support (by using the
+@code{--enable-libv4l2} configure option), the device will always rely
+on libv4l2.
 
 The name of the device to grab is a file device node, usually Linux
 systems tend to automatically create such nodes when the device
@@ -568,10 +600,10 @@ kind @file{/dev/video@var{N}}, where @var{N} is a number associated to
 the device.
 
 Video4Linux2 devices usually support a limited set of
-@var{width}x@var{height} sizes and framerates. You can check which are
+@var{width}x@var{height} sizes and frame rates. You can check which are
 supported using @command{-list_formats all} for Video4Linux2 devices.
-
-Some usage examples of the video4linux2 devices with ffmpeg and ffplay:
+Some devices, like TV cards, support one or more standards. It is possible
+to list all the supported standards using @command{-list_standards all}.
 
 The time base for the timestamps is 1 microsecond. Depending on the kernel
 version and configuration, the timestamps may be derived from the real time
@@ -580,19 +612,94 @@ boot time, unaffected by NTP or manual changes to the clock). The
 @option{-timestamps abs} or @option{-ts abs} option can be used to force
 conversion into the real time clock.
 
-Note that if FFmpeg is build with v4l-utils support ("--enable-libv4l2"
-option), it will always be used.
+Some usage examples of the video4linux2 device with @command{ffmpeg}
+and @command{ffplay}:
+@itemize
+@item
+Grab and show the input of a video4linux2 device:
 @example
-# Grab and show the input of a video4linux2 device.
 ffplay -f video4linux2 -framerate 30 -video_size hd720 /dev/video0
-
-# Grab and record the input of a video4linux2 device, leave the
-framerate and size as previously set.
-ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
 @end example
 
-"v4l" and "v4l2" can be used as aliases for the respective "video4linux" and
-"video4linux2".
+@item
+Grab and record the input of a video4linux2 device, leave the
+frame rate and size as previously set:
+@example
+ffmpeg -f video4linux2 -input_format mjpeg -i /dev/video0 out.mpeg
+@end example
+@end itemize
+
+For more information about Video4Linux, check @url{http://linuxtv.org/}.
+
+@subsection Options
+
+@table @option
+@item standard
+Set the standard. Must be the name of a supported standard. To get a
+list of the supported standards, use the @option{list_standards}
+option.
+
+@item channel
+Set the input channel number. Default to -1, which means using the
+previously selected channel.
+
+@item video_size
+Set the video frame size. The argument must be a string in the form
+@var{WIDTH}x@var{HEIGHT} or a valid size abbreviation.
+
+@item pixel_format
+Select the pixel format (only valid for raw video input).
+
+@item input_format
+Set the preferred pixel format (for raw video) or a codec name.
+This option allows to select the input format, when several are
+available.
+
+@item framerate
+Set the preferred video frame rate.
+
+@item list_formats
+List available formats (supported pixel formats, codecs, and frame
+sizes) and exit.
+
+Available values are:
+@table @samp
+@item all
+Show all available (compressed and non-compressed) formats.
+
+@item raw
+Show only raw video (non-compressed) formats.
+
+@item compressed
+Show only compressed formats.
+@end table
+
+@item list_standards
+List supported standards and exit.
+
+Available values are:
+@table @samp
+@item all
+Show all supported standards.
+@end table
+
+@item timestamps, ts
+Set type of timestamps for grabbed frames.
+
+Available values are:
+@table @samp
+@item default
+Use timestamps from the kernel.
+
+@item abs
+Use absolute timestamps (wall clock).
+
+@item mono2abs
+Force conversion from monotonic to absolute timestamps.
+@end table
+
+Default value is @code{default}.
+@end table
 
 @section vfwcap
 
@@ -630,17 +737,23 @@ properties of your X11 display (e.g. grep for "name" or "dimensions").
 For example to grab from @file{:0.0} using @command{ffmpeg}:
 @example
 ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
+@end example
 
-# Grab at position 10,20.
+Grab at position @code{10,20}:
+@example
 ffmpeg -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
 @end example
 
-@subsection @var{follow_mouse} AVOption
+@subsection Options
 
-The syntax is:
-@example
--follow_mouse centered|@var{PIXELS}
-@end example
+@table @option
+@item draw_mouse
+Specify whether to draw the mouse pointer. A value of @code{0} specify
+not to draw the pointer. Default value is @code{1}.
+
+@item follow_mouse
+Make the grabbed area follow the mouse. The argument can be
+@code{centered} or a number of pixels @var{PIXELS}.
 
 When it is specified with "centered", the grabbing region follows the mouse
 pointer and keeps the pointer at the center of region; otherwise, the region
@@ -650,28 +763,36 @@ zero) to the edge of region.
 For example:
 @example
 ffmpeg -f x11grab -follow_mouse centered -r 25 -s cif -i :0.0 out.mpg
+@end example
 
-# Follows only when the mouse pointer reaches within 100 pixels to edge
+To follow only when the mouse pointer reaches within 100 pixels to edge:
+@example
 ffmpeg -f x11grab -follow_mouse 100 -r 25 -s cif -i :0.0 out.mpg
 @end example
 
-@subsection @var{show_region} AVOption
+@item framerate
+Set the grabbing frame rate. Default value is @code{ntsc},
+corresponding to a frame rate of @code{30000/1001}.
 
-The syntax is:
-@example
--show_region 1
-@end example
+@item show_region
+Show grabbed region on screen.
 
-If @var{show_region} AVOption is specified with @var{1}, then the grabbing
-region will be indicated on screen. With this option, it's easy to know what is
-being grabbed if only a portion of the screen is grabbed.
+If @var{show_region} is specified with @code{1}, then the grabbing
+region will be indicated on screen. With this option, it is easy to
+know what is being grabbed if only a portion of the screen is grabbed.
 
 For example:
 @example
 ffmpeg -f x11grab -show_region 1 -r 25 -s cif -i :0.0+10,20 out.mpg
-
-# With follow_mouse
-ffmpeg -f x11grab -follow_mouse centered -show_region 1  -r 25 -s cif -i :0.0 out.mpg
 @end example
+
+With @var{follow_mouse}:
+@example
+ffmpeg -f x11grab -follow_mouse centered -show_region 1 -r 25 -s cif -i :0.0 out.mpg
+@end example
+
+@item video_size
+Set the video frame size. Default value is @code{vga}.
+@end table
 
 @c man end INPUT DEVICES

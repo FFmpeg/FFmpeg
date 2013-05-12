@@ -11,7 +11,7 @@
  * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/eval.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "internal.h"
@@ -45,10 +46,12 @@ enum var_name {
 };
 
 typedef struct {
+    const AVClass *class;
     AVExpr *expr;
+    char *expr_str;
     double var_values[VAR_NB];
     struct buf_queue {
-        AVFilterBufferRef *buf[QUEUE_SIZE];
+        AVFrame *buf[QUEUE_SIZE];
         unsigned tail, nb;
         /* buf[tail] is the oldest,
            buf[(tail + nb) % QUEUE_SIZE] is where the next is added */
@@ -58,18 +61,25 @@ typedef struct {
     int eof; /* bitmask, one bit for each stream */
 } AStreamSyncContext;
 
-static const char *default_expr = "t1-t2";
+#define OFFSET(x) offsetof(AStreamSyncContext, x)
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption astreamsync_options[] = {
+    { "expr", "set stream selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "t1-t2" }, .flags = FLAGS },
+    { "e",    "set stream selection expression", OFFSET(expr_str), AV_OPT_TYPE_STRING, { .str = "t1-t2" }, .flags = FLAGS },
+    { NULL }
+};
 
-static av_cold int init(AVFilterContext *ctx, const char *args0)
+AVFILTER_DEFINE_CLASS(astreamsync);
+
+static av_cold int init(AVFilterContext *ctx)
 {
     AStreamSyncContext *as = ctx->priv;
-    const char *expr = args0 ? args0 : default_expr;
     int r, i;
 
-    r = av_expr_parse(&as->expr, expr, var_names,
+    r = av_expr_parse(&as->expr, as->expr_str, var_names,
                       NULL, NULL, NULL, NULL, 0, ctx);
     if (r < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error in expression \"%s\"\n", expr);
+        av_log(ctx, AV_LOG_ERROR, "Error in expression \"%s\"\n", as->expr_str);
         return r;
     }
     for (i = 0; i < 42; i++)
@@ -111,18 +121,18 @@ static int send_out(AVFilterContext *ctx, int out_id)
 {
     AStreamSyncContext *as = ctx->priv;
     struct buf_queue *queue = &as->queue[out_id];
-    AVFilterBufferRef *buf = queue->buf[queue->tail];
+    AVFrame *buf = queue->buf[queue->tail];
     int ret;
 
     queue->buf[queue->tail] = NULL;
     as->var_values[VAR_B1 + out_id]++;
-    as->var_values[VAR_S1 + out_id] += buf->audio->nb_samples;
+    as->var_values[VAR_S1 + out_id] += buf->nb_samples;
     if (buf->pts != AV_NOPTS_VALUE)
         as->var_values[VAR_T1 + out_id] =
             av_q2d(ctx->outputs[out_id]->time_base) * buf->pts;
-    as->var_values[VAR_T1 + out_id] += buf->audio->nb_samples /
+    as->var_values[VAR_T1 + out_id] += buf->nb_samples /
                                    (double)ctx->inputs[out_id]->sample_rate;
-    ret = ff_filter_samples(ctx->outputs[out_id], buf);
+    ret = ff_filter_frame(ctx->outputs[out_id], buf);
     queue->nb--;
     queue->tail = (queue->tail + 1) % QUEUE_SIZE;
     if (as->req[out_id])
@@ -167,7 +177,7 @@ static int request_frame(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
+static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterContext *ctx = inlink->dst;
     AStreamSyncContext *as = ctx->priv;
@@ -180,34 +190,51 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    AStreamSyncContext *as = ctx->priv;
+
+    av_expr_free(as->expr);
+    as->expr = NULL;
+}
+
+static const AVFilterPad astreamsync_inputs[] = {
+    {
+        .name         = "in1",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+    },{
+        .name         = "in2",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad astreamsync_outputs[] = {
+    {
+        .name          = "out1",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },{
+        .name          = "out2",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_output,
+        .request_frame = request_frame,
+    },
+    { NULL }
+};
+
 AVFilter avfilter_af_astreamsync = {
     .name          = "astreamsync",
     .description   = NULL_IF_CONFIG_SMALL("Copy two streams of audio data "
                                           "in a configurable order."),
     .priv_size     = sizeof(AStreamSyncContext),
     .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {
-        { .name             = "in1",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
-        { .name             = "in2",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .filter_samples   = filter_samples,
-          .min_perms        = AV_PERM_READ, },
-        { .name = NULL }
-    },
-    .outputs   = (const AVFilterPad[]) {
-        { .name             = "out1",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_output,
-          .request_frame    = request_frame, },
-        { .name             = "out2",
-          .type             = AVMEDIA_TYPE_AUDIO,
-          .config_props     = config_output,
-          .request_frame    = request_frame, },
-        { .name = NULL }
-    },
+    .inputs        = astreamsync_inputs,
+    .outputs       = astreamsync_outputs,
+    .priv_class    = &astreamsync_class,
 };

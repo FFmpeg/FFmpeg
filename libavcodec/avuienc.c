@@ -70,7 +70,6 @@ static int avui_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         dst += avctx->width * skip;
     }
 
-    avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
@@ -103,11 +102,11 @@ static av_cold int avui_encode_close(AVCodecContext *avctx)
 AVCodec ff_avui_encoder = {
     .name         = "avui",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_AVUI,
+    .id           = AV_CODEC_ID_AVUI,
     .init         = avui_encode_init,
     .encode2      = avui_encode_frame,
     .close        = avui_encode_close,
     .capabilities = CODEC_CAP_EXPERIMENTAL,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_UYVY422, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
 };

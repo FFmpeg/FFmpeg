@@ -21,8 +21,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
 
@@ -38,31 +37,57 @@ SECTION_RODATA
 
 rgb_Yrnd:        times 4 dd 0x80100        ;  16.5 << 15
 rgb_UVrnd:       times 4 dd 0x400100       ; 128.5 << 15
-bgr_Ycoeff_12x4: times 2 dw BY, GY, 0, BY
-bgr_Ycoeff_3x56: times 2 dw RY, 0, GY, RY
-rgb_Ycoeff_12x4: times 2 dw RY, GY, 0, RY
-rgb_Ycoeff_3x56: times 2 dw BY, 0, GY, BY
-bgr_Ucoeff_12x4: times 2 dw BU, GU, 0, BU
-bgr_Ucoeff_3x56: times 2 dw RU, 0, GU, RU
-rgb_Ucoeff_12x4: times 2 dw RU, GU, 0, RU
-rgb_Ucoeff_3x56: times 2 dw BU, 0, GU, BU
-bgr_Vcoeff_12x4: times 2 dw BV, GV, 0, BV
-bgr_Vcoeff_3x56: times 2 dw RV, 0, GV, RV
-rgb_Vcoeff_12x4: times 2 dw RV, GV, 0, RV
-rgb_Vcoeff_3x56: times 2 dw BV, 0, GV, BV
+%define bgr_Ycoeff_12x4 16*4 + 16* 0 + tableq
+%define bgr_Ycoeff_3x56 16*4 + 16* 1 + tableq
+%define rgb_Ycoeff_12x4 16*4 + 16* 2 + tableq
+%define rgb_Ycoeff_3x56 16*4 + 16* 3 + tableq
+%define bgr_Ucoeff_12x4 16*4 + 16* 4 + tableq
+%define bgr_Ucoeff_3x56 16*4 + 16* 5 + tableq
+%define rgb_Ucoeff_12x4 16*4 + 16* 6 + tableq
+%define rgb_Ucoeff_3x56 16*4 + 16* 7 + tableq
+%define bgr_Vcoeff_12x4 16*4 + 16* 8 + tableq
+%define bgr_Vcoeff_3x56 16*4 + 16* 9 + tableq
+%define rgb_Vcoeff_12x4 16*4 + 16*10 + tableq
+%define rgb_Vcoeff_3x56 16*4 + 16*11 + tableq
 
-rgba_Ycoeff_rb:  times 4 dw RY, BY
-rgba_Ycoeff_br:  times 4 dw BY, RY
-rgba_Ycoeff_ga:  times 4 dw GY, 0
-rgba_Ycoeff_ag:  times 4 dw 0,  GY
-rgba_Ucoeff_rb:  times 4 dw RU, BU
-rgba_Ucoeff_br:  times 4 dw BU, RU
-rgba_Ucoeff_ga:  times 4 dw GU, 0
-rgba_Ucoeff_ag:  times 4 dw 0,  GU
-rgba_Vcoeff_rb:  times 4 dw RV, BV
-rgba_Vcoeff_br:  times 4 dw BV, RV
-rgba_Vcoeff_ga:  times 4 dw GV, 0
-rgba_Vcoeff_ag:  times 4 dw 0,  GV
+%define rgba_Ycoeff_rb 16*4 + 16*12 + tableq
+%define rgba_Ycoeff_br 16*4 + 16*13 + tableq
+%define rgba_Ycoeff_ga 16*4 + 16*14 + tableq
+%define rgba_Ycoeff_ag 16*4 + 16*15 + tableq
+%define rgba_Ucoeff_rb 16*4 + 16*16 + tableq
+%define rgba_Ucoeff_br 16*4 + 16*17 + tableq
+%define rgba_Ucoeff_ga 16*4 + 16*18 + tableq
+%define rgba_Ucoeff_ag 16*4 + 16*19 + tableq
+%define rgba_Vcoeff_rb 16*4 + 16*20 + tableq
+%define rgba_Vcoeff_br 16*4 + 16*21 + tableq
+%define rgba_Vcoeff_ga 16*4 + 16*22 + tableq
+%define rgba_Vcoeff_ag 16*4 + 16*23 + tableq
+
+; bgr_Ycoeff_12x4: times 2 dw BY, GY, 0, BY
+; bgr_Ycoeff_3x56: times 2 dw RY, 0, GY, RY
+; rgb_Ycoeff_12x4: times 2 dw RY, GY, 0, RY
+; rgb_Ycoeff_3x56: times 2 dw BY, 0, GY, BY
+; bgr_Ucoeff_12x4: times 2 dw BU, GU, 0, BU
+; bgr_Ucoeff_3x56: times 2 dw RU, 0, GU, RU
+; rgb_Ucoeff_12x4: times 2 dw RU, GU, 0, RU
+; rgb_Ucoeff_3x56: times 2 dw BU, 0, GU, BU
+; bgr_Vcoeff_12x4: times 2 dw BV, GV, 0, BV
+; bgr_Vcoeff_3x56: times 2 dw RV, 0, GV, RV
+; rgb_Vcoeff_12x4: times 2 dw RV, GV, 0, RV
+; rgb_Vcoeff_3x56: times 2 dw BV, 0, GV, BV
+
+; rgba_Ycoeff_rb:  times 4 dw RY, BY
+; rgba_Ycoeff_br:  times 4 dw BY, RY
+; rgba_Ycoeff_ga:  times 4 dw GY, 0
+; rgba_Ycoeff_ag:  times 4 dw 0,  GY
+; rgba_Ucoeff_rb:  times 4 dw RU, BU
+; rgba_Ucoeff_br:  times 4 dw BU, RU
+; rgba_Ucoeff_ga:  times 4 dw GU, 0
+; rgba_Ucoeff_ag:  times 4 dw 0,  GU
+; rgba_Vcoeff_rb:  times 4 dw RV, BV
+; rgba_Vcoeff_br:  times 4 dw BV, RV
+; rgba_Vcoeff_ga:  times 4 dw GV, 0
+; rgba_Vcoeff_ag:  times 4 dw 0,  GV
 
 shuf_rgb_12x4:   db 0, 0x80, 1, 0x80,  2, 0x80,  3, 0x80, \
                     6, 0x80, 7, 0x80,  8, 0x80,  9, 0x80
@@ -83,7 +108,7 @@ SECTION .text
 ; %1 = nr. of XMM registers
 ; %2 = rgb or bgr
 %macro RGB24_TO_Y_FN 2-3
-cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, u3
+cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, table
 %if mmsize == 8
     mova           m5, [%2_Ycoeff_12x4]
     mova           m6, [%2_Ycoeff_3x56]
@@ -99,7 +124,7 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, u3
 %define coeff2 [%2_Ycoeff_3x56]
 %endif ; x86-32/64 && mmsize == 8/16
 %if (ARCH_X86_64 || mmsize == 8) && %0 == 3
-    jmp mangle(program_name %+ _ %+ %3 %+ 24ToY %+ SUFFIX).body
+    jmp mangle(private_prefix %+ _ %+ %3 %+ 24ToY %+ SUFFIX).body
 %else ; (ARCH_X86_64 && %0 == 3) || mmsize == 8
 .body:
 %if cpuflag(ssse3)
@@ -172,7 +197,7 @@ cglobal %2 %+ 24ToY, 6, 6, %1, dst, src, u1, u2, w, u3
 ; %1 = nr. of XMM registers
 ; %2 = rgb or bgr
 %macro RGB24_TO_UV_FN 2-3
-cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
+cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
 %if ARCH_X86_64
     mova           m8, [%2_Ucoeff_12x4]
     mova           m9, [%2_Ucoeff_3x56]
@@ -189,7 +214,7 @@ cglobal %2 %+ 24ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
 %define coeffV2 [%2_Vcoeff_3x56]
 %endif ; x86-32/64
 %if ARCH_X86_64 && %0 == 3
-    jmp mangle(program_name %+ _ %+ %3 %+ 24ToUV %+ SUFFIX).body
+    jmp mangle(private_prefix %+ _ %+ %3 %+ 24ToUV %+ SUFFIX).body
 %else ; ARCH_X86_64 && %0 == 3
 .body:
 %if cpuflag(ssse3)
@@ -304,7 +329,7 @@ RGB24_FUNCS 10, 12
 INIT_XMM ssse3
 RGB24_FUNCS 11, 13
 
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 RGB24_FUNCS 11, 13
 %endif
@@ -312,11 +337,11 @@ RGB24_FUNCS 11, 13
 ; %1 = nr. of XMM registers
 ; %2-5 = rgba, bgra, argb or abgr (in individual characters)
 %macro RGB32_TO_Y_FN 5-6
-cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, u3
+cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
     mova           m5, [rgba_Ycoeff_%2%4]
     mova           m6, [rgba_Ycoeff_%3%5]
 %if %0 == 6
-    jmp mangle(program_name %+ _ %+ %6 %+ ToY %+ SUFFIX).body
+    jmp mangle(private_prefix %+ _ %+ %6 %+ ToY %+ SUFFIX).body
 %else ; %0 == 6
 .body:
 %if ARCH_X86_64
@@ -355,7 +380,7 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, u3
 ; %1 = nr. of XMM registers
 ; %2-5 = rgba, bgra, argb or abgr (in individual characters)
 %macro RGB32_TO_UV_FN 5-6
-cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
+cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
 %if ARCH_X86_64
     mova           m8, [rgba_Ucoeff_%2%4]
     mova           m9, [rgba_Ucoeff_%3%5]
@@ -372,7 +397,7 @@ cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, u3
 %define coeffV2 [rgba_Vcoeff_%3%5]
 %endif ; x86-64/32
 %if ARCH_X86_64 && %0 == 6
-    jmp mangle(program_name %+ _ %+ %6 %+ ToUV %+ SUFFIX).body
+    jmp mangle(private_prefix %+ _ %+ %6 %+ ToUV %+ SUFFIX).body
 %else ; ARCH_X86_64 && %0 == 6
 .body:
 %if ARCH_X86_64
@@ -450,7 +475,7 @@ RGB32_FUNCS 0, 0
 INIT_XMM sse2
 RGB32_FUNCS 8, 12
 
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 RGB32_FUNCS 8, 12
 %endif
@@ -660,7 +685,7 @@ YUYV_TO_UV_FN 3, uyvy
 NVXX_TO_UV_FN 5, nv12
 NVXX_TO_UV_FN 5, nv21
 
-%if HAVE_AVX
+%if HAVE_AVX_EXTERNAL
 INIT_XMM avx
 ; in theory, we could write a yuy2-to-y using vpand (i.e. AVX), but
 ; that's not faster in practice

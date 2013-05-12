@@ -53,7 +53,7 @@ typedef struct DVprofile {
     AVRational       sar[2];                /* sample aspect ratios for 4:3 and 16:9 */
     DVwork_chunk    *work_chunks;           /* each thread gets its own chunk of frame to work on */
     uint32_t        *idct_factor;           /* set of iDCT factor tables */
-    enum PixelFormat pix_fmt;               /* picture pixel format */
+    enum AVPixelFormat pix_fmt;             /* picture pixel format */
     int              bpm;                   /* blocks per macroblock */
     const uint8_t   *block_sizes;           /* AC block sizes, in bits */
     int              audio_stride;          /* size of audio_shuffle table */

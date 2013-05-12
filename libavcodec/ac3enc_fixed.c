@@ -38,7 +38,7 @@
 static const AVClass ac3enc_class = {
     .class_name = "Fixed-Point AC-3 Encoder",
     .item_name  = av_default_item_name,
-    .option     = ac3fixed_options,
+    .option     = ac3_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -155,12 +155,12 @@ static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
 AVCodec ff_ac3_fixed_encoder = {
     .name            = "ac3_fixed",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_AC3,
+    .id              = AV_CODEC_ID_AC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ac3_fixed_encode_init,
     .encode2         = ff_ac3_fixed_encode_frame,
     .close           = ff_ac3_encode_close,
-    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .priv_class      = &ac3enc_class,

@@ -81,20 +81,20 @@ enum var_name {
 #define OFFSET(x) offsetof(ModPlugContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    {"noise_reduction", "Enable noise reduction 0(off)-1(on)",  OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.dbl = 0}, 0,       1, D},
-    {"reverb_depth",    "Reverb level 0(quiet)-100(loud)",      OFFSET(reverb_depth),    AV_OPT_TYPE_INT, {.dbl = 0}, 0,     100, D},
-    {"reverb_delay",    "Reverb delay in ms, usually 40-200ms", OFFSET(reverb_delay),    AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, D},
-    {"bass_amount",     "XBass level 0(quiet)-100(loud)",       OFFSET(bass_amount),     AV_OPT_TYPE_INT, {.dbl = 0}, 0,     100, D},
-    {"bass_range",      "XBass cutoff in Hz 10-100",            OFFSET(bass_range),      AV_OPT_TYPE_INT, {.dbl = 0}, 0,     100, D},
-    {"surround_depth",  "Surround level 0(quiet)-100(heavy)",   OFFSET(surround_depth),  AV_OPT_TYPE_INT, {.dbl = 0}, 0,     100, D},
-    {"surround_delay",  "Surround delay in ms, usually 5-40ms", OFFSET(surround_delay),  AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, D},
+    {"noise_reduction", "Enable noise reduction 0(off)-1(on)",  OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.i64 = 0}, 0,       1, D},
+    {"reverb_depth",    "Reverb level 0(quiet)-100(loud)",      OFFSET(reverb_depth),    AV_OPT_TYPE_INT, {.i64 = 0}, 0,     100, D},
+    {"reverb_delay",    "Reverb delay in ms, usually 40-200ms", OFFSET(reverb_delay),    AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D},
+    {"bass_amount",     "XBass level 0(quiet)-100(loud)",       OFFSET(bass_amount),     AV_OPT_TYPE_INT, {.i64 = 0}, 0,     100, D},
+    {"bass_range",      "XBass cutoff in Hz 10-100",            OFFSET(bass_range),      AV_OPT_TYPE_INT, {.i64 = 0}, 0,     100, D},
+    {"surround_depth",  "Surround level 0(quiet)-100(heavy)",   OFFSET(surround_depth),  AV_OPT_TYPE_INT, {.i64 = 0}, 0,     100, D},
+    {"surround_delay",  "Surround delay in ms, usually 5-40ms", OFFSET(surround_delay),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D},
     {"max_size",        "Max file size supported (in bytes). Default is 5MB. Set to 0 for no limit (not recommended)",
-     OFFSET(max_size), AV_OPT_TYPE_INT, {.dbl = FF_MODPLUG_DEF_FILE_SIZE}, 0, FF_MODPLUG_MAX_FILE_SIZE, D},
+     OFFSET(max_size), AV_OPT_TYPE_INT, {.i64 = FF_MODPLUG_DEF_FILE_SIZE}, 0, FF_MODPLUG_MAX_FILE_SIZE, D},
     {"video_stream_expr", "Color formula",                                  OFFSET(color_eval),     AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, D},
-    {"video_stream",      "Make demuxer output a video stream",             OFFSET(video_stream),   AV_OPT_TYPE_INT, {.dbl = 0},   0,   1, D},
-    {"video_stream_w",    "Video stream width in char (one char = 8x8px)",  OFFSET(w),              AV_OPT_TYPE_INT, {.dbl = 30}, 20, 512, D},
-    {"video_stream_h",    "Video stream height in char (one char = 8x8px)", OFFSET(h),              AV_OPT_TYPE_INT, {.dbl = 30}, 20, 512, D},
-    {"video_stream_ptxt", "Print speed, tempo, order, ... in video stream", OFFSET(print_textinfo), AV_OPT_TYPE_INT, {.dbl = 1},   0,   1, D},
+    {"video_stream",      "Make demuxer output a video stream",             OFFSET(video_stream),   AV_OPT_TYPE_INT, {.i64 = 0},   0,   1, D},
+    {"video_stream_w",    "Video stream width in char (one char = 8x8px)",  OFFSET(w),              AV_OPT_TYPE_INT, {.i64 = 30}, 20, 512, D},
+    {"video_stream_h",    "Video stream height in char (one char = 8x8px)", OFFSET(h),              AV_OPT_TYPE_INT, {.i64 = 30}, 20, 512, D},
+    {"video_stream_ptxt", "Print speed, tempo, order, ... in video stream", OFFSET(print_textinfo), AV_OPT_TYPE_INT, {.i64 = 1},   0,   1, D},
     {NULL},
 };
 
@@ -224,7 +224,7 @@ static int modplug_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, 1000);
     st->duration = ModPlug_GetLength(modplug->f);
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id    = CODEC_ID_PCM_S16LE;
+    st->codec->codec_id    = AV_CODEC_ID_PCM_S16LE;
     st->codec->channels    = settings.mChannels;
     st->codec->sample_rate = settings.mFrequency;
 
@@ -238,7 +238,7 @@ static int modplug_read_header(AVFormatContext *s)
         avpriv_set_pts_info(vst, 64, 1, 1000);
         vst->duration = st->duration;
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        vst->codec->codec_id   = CODEC_ID_XBIN;
+        vst->codec->codec_id   = AV_CODEC_ID_XBIN;
         vst->codec->width      = modplug->w << 3;
         vst->codec->height     = modplug->h << 3;
         modplug->linesize = modplug->w * 3;

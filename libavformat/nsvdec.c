@@ -2,6 +2,8 @@
  * NSV demuxer
  * Copyright (c) 2004 The FFmpeg Project
  *
+ * first version by Francois Revol <revol@free.fr>
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -23,7 +25,6 @@
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 
@@ -38,7 +39,6 @@
 #define NSV_MAX_RESYNC_TRIES 300
 
 /*
- * First version by Francois Revol - revol@free.fr
  * References:
  * (1) http://www.multimedia.cx/nsv-format.txt
  * seems someone came to the same conclusions as me, and updated it:
@@ -100,8 +100,8 @@ struct NSVs_header {
     uint32_t chunk_tag; /* 'NSVs' */
     uint32_t v4cc;      /* or 'NONE' */
     uint32_t a4cc;      /* or 'NONE' */
-    uint16_t vwidth;    /* assert(vwidth%16==0) */
-    uint16_t vheight;   /* assert(vheight%16==0) */
+    uint16_t vwidth;    /* av_assert(vwidth%16==0) */
+    uint16_t vheight;   /* av_assert(vheight%16==0) */
     uint8_t framerate;  /* value = (framerate&0x80)?frtable[frameratex0x7f]:framerate */
     uint16_t unknown;
 };
@@ -184,33 +184,33 @@ typedef struct {
 } NSVContext;
 
 static const AVCodecTag nsv_codec_video_tags[] = {
-    { CODEC_ID_VP3, MKTAG('V', 'P', '3', ' ') },
-    { CODEC_ID_VP3, MKTAG('V', 'P', '3', '0') },
-    { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
-    { CODEC_ID_VP5, MKTAG('V', 'P', '5', ' ') },
-    { CODEC_ID_VP5, MKTAG('V', 'P', '5', '0') },
-    { CODEC_ID_VP6, MKTAG('V', 'P', '6', ' ') },
-    { CODEC_ID_VP6, MKTAG('V', 'P', '6', '0') },
-    { CODEC_ID_VP6, MKTAG('V', 'P', '6', '1') },
-    { CODEC_ID_VP6, MKTAG('V', 'P', '6', '2') },
-    { CODEC_ID_VP8, MKTAG('V', 'P', '8', '0') },
+    { AV_CODEC_ID_VP3, MKTAG('V', 'P', '3', ' ') },
+    { AV_CODEC_ID_VP3, MKTAG('V', 'P', '3', '0') },
+    { AV_CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') },
+    { AV_CODEC_ID_VP5, MKTAG('V', 'P', '5', ' ') },
+    { AV_CODEC_ID_VP5, MKTAG('V', 'P', '5', '0') },
+    { AV_CODEC_ID_VP6, MKTAG('V', 'P', '6', ' ') },
+    { AV_CODEC_ID_VP6, MKTAG('V', 'P', '6', '0') },
+    { AV_CODEC_ID_VP6, MKTAG('V', 'P', '6', '1') },
+    { AV_CODEC_ID_VP6, MKTAG('V', 'P', '6', '2') },
+    { AV_CODEC_ID_VP8, MKTAG('V', 'P', '8', '0') },
 /*
-    { CODEC_ID_VP4, MKTAG('V', 'P', '4', ' ') },
-    { CODEC_ID_VP4, MKTAG('V', 'P', '4', '0') },
+    { AV_CODEC_ID_VP4, MKTAG('V', 'P', '4', ' ') },
+    { AV_CODEC_ID_VP4, MKTAG('V', 'P', '4', '0') },
 */
-    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') }, /* cf sample xvid decoder from nsv_codec_sdk.zip */
-    { CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', '3') },
-    { CODEC_ID_NONE, 0 },
+    { AV_CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') }, /* cf sample xvid decoder from nsv_codec_sdk.zip */
+    { AV_CODEC_ID_RAWVIDEO, MKTAG('R', 'G', 'B', '3') },
+    { AV_CODEC_ID_NONE, 0 },
 };
 
 static const AVCodecTag nsv_codec_audio_tags[] = {
-    { CODEC_ID_MP3,       MKTAG('M', 'P', '3', ' ') },
-    { CODEC_ID_AAC,       MKTAG('A', 'A', 'C', ' ') },
-    { CODEC_ID_AAC,       MKTAG('A', 'A', 'C', 'P') },
-    { CODEC_ID_AAC,       MKTAG('V', 'L', 'B', ' ') },
-    { CODEC_ID_SPEEX,     MKTAG('S', 'P', 'X', ' ') },
-    { CODEC_ID_PCM_U16LE, MKTAG('P', 'C', 'M', ' ') },
-    { CODEC_ID_NONE,      0 },
+    { AV_CODEC_ID_MP3,       MKTAG('M', 'P', '3', ' ') },
+    { AV_CODEC_ID_AAC,       MKTAG('A', 'A', 'C', ' ') },
+    { AV_CODEC_ID_AAC,       MKTAG('A', 'A', 'C', 'P') },
+    { AV_CODEC_ID_AAC,       MKTAG('V', 'L', 'B', ' ') },
+    { AV_CODEC_ID_SPEEX,     MKTAG('S', 'P', 'X', ' ') },
+    { AV_CODEC_ID_PCM_U16LE, MKTAG('P', 'C', 'M', ' ') },
+    { AV_CODEC_ID_NONE,      0 },
 };
 
 //static int nsv_load_index(AVFormatContext *s);
@@ -252,7 +252,7 @@ static int nsv_resync(AVFormatContext *s)
             nsv->state = NSV_FOUND_BEEF;
             return 0;
         }
-        /* we read as big endian, thus the MK*BE* */
+        /* we read as big-endian, thus the MK*BE* */
         if (v == TB_NSVF) { /* NSVf */
             av_dlog(s, "NSV resynced on NSVf after %d bytes\n", i+1);
             nsv->state = NSV_FOUND_NSVF;
@@ -653,9 +653,12 @@ null_chunk_retry:
                 if (bps != 16) {
                     av_dlog(s, "NSV AUDIO bit/sample != 16 (%d)!!!\n", bps);
                 }
-                bps /= channels; // ???
+                if(channels)
+                    bps /= channels; // ???
+                else
+                    av_log(s, AV_LOG_WARNING, "Channels is 0\n");
                 if (bps == 8)
-                    st[NSV_ST_AUDIO]->codec->codec_id = CODEC_ID_PCM_U8;
+                    st[NSV_ST_AUDIO]->codec->codec_id = AV_CODEC_ID_PCM_U8;
                 samplerate /= 4;/* UGH ??? XXX */
                 channels = 1;
                 st[NSV_ST_AUDIO]->codec->channels = channels;
@@ -783,7 +786,7 @@ static int nsv_probe(AVProbeData *p)
     }
     /* so we'll have more luck on extension... */
     if (av_match_ext(p->filename, "nsv"))
-        return AVPROBE_SCORE_MAX/2;
+        return AVPROBE_SCORE_EXTENSION;
     /* FIXME: add mime-type check */
     return score;
 }

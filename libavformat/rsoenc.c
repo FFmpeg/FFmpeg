@@ -49,7 +49,7 @@ static int rso_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
+    if (enc->codec_id == AV_CODEC_ID_ADPCM_IMA_WAV) {
         av_log(s, AV_LOG_ERROR, "ADPCM in RSO not implemented\n");
         return AVERROR_PATCHWELCOME;
     }
@@ -95,17 +95,15 @@ static int rso_write_trailer(AVFormatContext *s)
     avio_wb16(pb, coded_file_size);
     avio_seek(pb, file_size, SEEK_SET);
 
-    avio_flush(pb);
-
     return 0;
 }
 
 AVOutputFormat ff_rso_muxer = {
     .name           =   "rso",
-    .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO format"),
+    .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO"),
     .extensions     =   "rso",
-    .audio_codec    =   CODEC_ID_PCM_U8,
-    .video_codec    =   CODEC_ID_NONE,
+    .audio_codec    =   AV_CODEC_ID_PCM_U8,
+    .video_codec    =   AV_CODEC_ID_NONE,
     .write_header   =   rso_write_header,
     .write_packet   =   rso_write_packet,
     .write_trailer  =   rso_write_trailer,

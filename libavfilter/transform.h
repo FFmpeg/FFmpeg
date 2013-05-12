@@ -116,8 +116,9 @@ void avfilter_mul_matrix(const float *m1, float scalar, float *result);
  * @param matrix      9-item affine transformation matrix
  * @param interpolate pixel interpolation method
  * @param fill        edge fill method
+ * @return negative on error
  */
-void avfilter_transform(const uint8_t *src, uint8_t *dst,
+int avfilter_transform(const uint8_t *src, uint8_t *dst,
                         int src_stride, int dst_stride,
                         int width, int height, const float *matrix,
                         enum InterpolateMethod interpolate,

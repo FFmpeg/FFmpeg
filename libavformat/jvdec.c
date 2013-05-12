@@ -25,6 +25,7 @@
  * @author Peter Ross <pross@xvid.org>
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -75,7 +76,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     vst->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id    = CODEC_ID_JV;
+    vst->codec->codec_id    = AV_CODEC_ID_JV;
     vst->codec->codec_tag   = 0; /* no fourcc */
     vst->codec->width       = avio_rl16(pb);
     vst->codec->height      = avio_rl16(pb);
@@ -87,10 +88,11 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 4);
 
     ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-    ast->codec->codec_id    = CODEC_ID_PCM_U8;
+    ast->codec->codec_id    = AV_CODEC_ID_PCM_U8;
     ast->codec->codec_tag   = 0; /* no fourcc */
     ast->codec->sample_rate = avio_rl16(pb);
     ast->codec->channels    = 1;
+    ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
     avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
 
     avio_skip(pb, 10);

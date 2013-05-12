@@ -34,6 +34,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "hpeldsp.h"
 
 #define MAX_COMPONENTS 4
 
@@ -91,12 +92,13 @@ typedef struct MJpegDecodeContext {
     int got_picture;                                ///< we found a SOF and picture is valid, too.
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
-    DECLARE_ALIGNED(16, DCTELEM, block)[64];
-    DCTELEM (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
+    DECLARE_ALIGNED(16, int16_t, block)[64];
+    int16_t (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
     uint8_t *last_nnz[MAX_COMPONENTS];
     uint64_t coefs_finished[MAX_COMPONENTS]; ///< bitmask of which coefs have been completely decoded (progressive mode)
     ScanTable scantable;
     DSPContext dsp;
+    HpelDSPContext hdsp;
 
     int restart_interval;
     int restart_count;
@@ -119,7 +121,7 @@ typedef struct MJpegDecodeContext {
 int ff_mjpeg_decode_init(AVCodecContext *avctx);
 int ff_mjpeg_decode_end(AVCodecContext *avctx);
 int ff_mjpeg_decode_frame(AVCodecContext *avctx,
-                          void *data, int *data_size,
+                          void *data, int *got_frame,
                           AVPacket *avpkt);
 int ff_mjpeg_decode_dqt(MJpegDecodeContext *s);
 int ff_mjpeg_decode_dht(MJpegDecodeContext *s);

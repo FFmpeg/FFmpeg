@@ -26,6 +26,7 @@
 
 #include "avutil.h"
 #include "audio_fifo.h"
+#include "common.h"
 #include "fifo.h"
 #include "mem.h"
 #include "samplefmt.h"

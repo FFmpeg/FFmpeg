@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 Michael Niedermayer (michaelni@gmx.at)
+ * Copyright (C) 2011-2013 Michael Niedermayer (michaelni@gmx.at)
  *
  * This file is part of libswresample
  *
@@ -18,24 +18,85 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef SWRESAMPLE_SWRESAMPLE_H
+#define SWRESAMPLE_SWRESAMPLE_H
+
 /**
  * @file
+ * @ingroup lswr
  * libswresample public header
  */
 
-#ifndef SWR_H
-#define SWR_H
+/**
+ * @defgroup lswr Libswresample
+ * @{
+ *
+ * Libswresample (lswr) is a library that handles audio resampling, sample
+ * format conversion and mixing.
+ *
+ * Interaction with lswr is done through SwrContext, which is
+ * allocated with swr_alloc() or swr_alloc_set_opts(). It is opaque, so all parameters
+ * must be set with the @ref avoptions API.
+ *
+ * For example the following code will setup conversion from planar float sample
+ * format to interleaved signed 16-bit integer, downsampling from 48kHz to
+ * 44.1kHz and downmixing from 5.1 channels to stereo (using the default mixing
+ * matrix):
+ * @code
+ * SwrContext *swr = swr_alloc();
+ * av_opt_set_int(swr, "in_channel_layout",  AV_CH_LAYOUT_5POINT1, 0);
+ * av_opt_set_int(swr, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
+ * av_opt_set_int(swr, "in_sample_rate",     48000,                0);
+ * av_opt_set_int(swr, "out_sample_rate",    44100,                0);
+ * av_opt_set_sample_fmt(swr, "in_sample_fmt",  AV_SAMPLE_FMT_FLTP, 0);
+ * av_opt_set_sample_fmt(swr, "out_sample_fmt", AV_SAMPLE_FMT_S16,  0);
+ * @endcode
+ *
+ * Once all values have been set, it must be initialized with swr_init(). If
+ * you need to change the conversion parameters, you can change the parameters
+ * as described above, or by using swr_alloc_set_opts(), then call swr_init()
+ * again.
+ *
+ * The conversion itself is done by repeatedly calling swr_convert().
+ * Note that the samples may get buffered in swr if you provide insufficient
+ * output space or if sample rate conversion is done, which requires "future"
+ * samples. Samples that do not require future input can be retrieved at any
+ * time by using swr_convert() (in_count can be set to 0).
+ * At the end of conversion the resampling buffer can be flushed by calling
+ * swr_convert() with NULL in and 0 in_count.
+ *
+ * The delay between input and output, can at any time be found by using
+ * swr_get_delay().
+ *
+ * The following code demonstrates the conversion loop assuming the parameters
+ * from above and caller-defined functions get_input() and handle_output():
+ * @code
+ * uint8_t **input;
+ * int in_samples;
+ *
+ * while (get_input(&input, &in_samples)) {
+ *     uint8_t *output;
+ *     int out_samples = av_rescale_rnd(swr_get_delay(swr, 48000) +
+ *                                      in_samples, 44100, 48000, AV_ROUND_UP);
+ *     av_samples_alloc(&output, NULL, 2, out_samples,
+ *                      AV_SAMPLE_FMT_S16, 0);
+ *     out_samples = swr_convert(swr, &output, out_samples,
+ *                                      input, in_samples);
+ *     handle_output(output, out_samples);
+ *     av_freep(&output);
+ *  }
+ *  @endcode
+ *
+ * When the conversion is finished, the conversion
+ * context and everything associated with it must be freed with swr_free().
+ * There will be no memory leak if the data is not completely flushed before
+ * swr_free().
+ */
 
-#include <inttypes.h>
+#include <stdint.h>
 #include "libavutil/samplefmt.h"
 
-#define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 15
-#define LIBSWRESAMPLE_VERSION_MICRO 100
-
-#define LIBSWRESAMPLE_VERSION_INT  AV_VERSION_INT(LIBSWRESAMPLE_VERSION_MAJOR, \
-                                                  LIBSWRESAMPLE_VERSION_MINOR, \
-                                                  LIBSWRESAMPLE_VERSION_MICRO)
+#include "libswresample/version.h"
 
 #if LIBSWRESAMPLE_VERSION_MAJOR < 1
 #define SWR_CH_MAX 32   ///< Maximum number of channels
@@ -50,7 +111,30 @@ enum SwrDitherType {
     SWR_DITHER_RECTANGULAR,
     SWR_DITHER_TRIANGULAR,
     SWR_DITHER_TRIANGULAR_HIGHPASS,
+
+    SWR_DITHER_NS = 64,         ///< not part of API/ABI
+    SWR_DITHER_NS_LIPSHITZ,
+    SWR_DITHER_NS_F_WEIGHTED,
+    SWR_DITHER_NS_MODIFIED_E_WEIGHTED,
+    SWR_DITHER_NS_IMPROVED_E_WEIGHTED,
+    SWR_DITHER_NS_SHIBATA,
+    SWR_DITHER_NS_LOW_SHIBATA,
+    SWR_DITHER_NS_HIGH_SHIBATA,
     SWR_DITHER_NB,              ///< not part of API/ABI
+};
+
+/** Resampling Engines */
+enum SwrEngine {
+    SWR_ENGINE_SWR,             /**< SW Resampler */
+    SWR_ENGINE_SOXR,            /**< SoX Resampler */
+    SWR_ENGINE_NB,              ///< not part of API/ABI
+};
+
+/** Resampling Filter Types */
+enum SwrFilterType {
+    SWR_FILTER_TYPE_CUBIC,              /**< Cubic */
+    SWR_FILTER_TYPE_BLACKMAN_NUTTALL,   /**< Blackman Nuttall Windowed Sinc */
+    SWR_FILTER_TYPE_KAISER,             /**< Kaiser Windowed Sinc */
 };
 
 typedef struct SwrContext SwrContext;
@@ -134,7 +218,7 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
 
 /**
  * Convert the next timestamp from input to output
- * timestampe are in 1/(in_sample_rate * out_sample_rate) units.
+ * timestamps are in 1/(in_sample_rate * out_sample_rate) units.
  *
  * @note There are 2 slightly differently behaving modes.
  *       First is when automatic timestamp compensation is not used, (min_compensation >= FLT_MAX)
@@ -142,8 +226,8 @@ int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
  *       Second is when automatic timestamp compensation is used, (min_compensation < FLT_MAX)
  *              in this case the output timestamps will match output sample numbers
  *
- * @param pts   timstamp for the next input sample, INT64_MIN if unknown
- * @returns the output timestamp for the next output sample
+ * @param pts   timestamp for the next input sample, INT64_MIN if unknown
+ * @return the output timestamp for the next output sample
  */
 int64_t swr_next_pts(struct SwrContext *s, int64_t pts);
 
@@ -189,6 +273,10 @@ int swr_inject_silence(struct SwrContext *s, int count);
  * Swresample can buffer data if more input has been provided than available
  * output space, also converting between sample rates needs a delay.
  * This function returns the sum of all such delays.
+ * The exact delay is not necessarily an integer value in either input or
+ * output sample rate. Especially when downsampling by a large value, the
+ * output sample rate may be a poor choice to represent the delay, similarly
+ * for upsampling and the input sample rate.
  *
  * @param s     swr context
  * @param base  timebase in which the returned delay will be
@@ -216,4 +304,8 @@ const char *swresample_configuration(void);
  */
 const char *swresample_license(void);
 
-#endif
+/**
+ * @}
+ */
+
+#endif /* SWRESAMPLE_SWRESAMPLE_H */

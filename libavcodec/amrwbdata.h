@@ -66,7 +66,7 @@ enum Mode {
 
 /* All decoded parameters in these structs must be 2 bytes long
  * because of the direct indexing at the frame parsing */
-typedef struct {
+typedef struct AMRWBSubFrame {
     uint16_t adap;                         ///< adaptive codebook index
     uint16_t ltp;                          ///< ltp-filtering flag
     uint16_t vq_gain;                      ///< VQ adaptive and innovative gains
@@ -75,7 +75,7 @@ typedef struct {
     uint16_t pul_il[4];                    ///< LSBs part of codebook index
 } AMRWBSubFrame;
 
-typedef struct {
+typedef struct AMRWBFrame {
     uint16_t vad;                          ///< voice activity detection flag
     uint16_t isp_id[7];                    ///< index of ISP subvectors
     AMRWBSubFrame subframe[4];             ///< data for subframes

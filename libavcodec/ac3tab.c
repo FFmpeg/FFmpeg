@@ -24,7 +24,7 @@
  * tables taken directly from the AC-3 spec.
  */
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "avcodec.h"
 #include "ac3tab.h"
 

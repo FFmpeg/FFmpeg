@@ -20,6 +20,7 @@
 
 #include "avformat.h"
 #include "subtitles.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 
 AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
@@ -49,7 +50,6 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
         sub = &subs[q->nb_subs++];
         if (av_new_packet(sub, len) < 0)
             return NULL;
-        sub->destruct = NULL;
         sub->flags |= AV_PKT_FLAG_KEY;
         sub->pts = sub->dts = 0;
         memcpy(sub->data, event, len);
@@ -85,9 +85,49 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)
 
     if (q->current_sub_idx == q->nb_subs)
         return AVERROR_EOF;
-    *pkt = *sub;
+    av_copy_packet(pkt, sub);
+
     pkt->dts = pkt->pts;
     q->current_sub_idx++;
+    return 0;
+}
+
+int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int stream_index,
+                            int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
+{
+    if (flags & AVSEEK_FLAG_BYTE) {
+        return AVERROR(ENOSYS);
+    } else if (flags & AVSEEK_FLAG_FRAME) {
+        if (ts < 0 || ts >= q->nb_subs)
+            return AVERROR(ERANGE);
+        q->current_sub_idx = ts;
+    } else {
+        int i, idx = -1;
+        int64_t min_ts_diff = INT64_MAX;
+        int64_t ts_selected;
+        /* TODO: q->subs[] is sorted by pts so we could do a binary search */
+        for (i = 0; i < q->nb_subs; i++) {
+            int64_t pts = q->subs[i].pts;
+            uint64_t ts_diff = FFABS(pts - ts);
+            if (pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
+                min_ts_diff = ts_diff;
+                idx = i;
+            }
+        }
+        if (idx < 0)
+            return AVERROR(ERANGE);
+        /* look back in the latest subtitles for overlapping subtitles */
+        ts_selected = q->subs[idx].pts;
+        for (i = idx - 1; i >= 0; i--) {
+            if (q->subs[i].duration <= 0)
+                continue;
+            if (q->subs[i].pts > ts_selected - q->subs[i].duration)
+                idx = i;
+            else
+                break;
+        }
+        q->current_sub_idx = idx;
+    }
     return 0;
 }
 
@@ -96,7 +136,7 @@ void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q)
     int i;
 
     for (i = 0; i < q->nb_subs; i++)
-        av_destruct_packet(&q->subs[i]);
+        av_free_packet(&q->subs[i]);
     av_freep(&q->subs);
     q->nb_subs = q->allocated_size = q->current_sub_idx = 0;
 }
@@ -131,15 +171,61 @@ const char *ff_smil_get_attr_ptr(const char *s, const char *attr)
 
     while (*s) {
         while (*s) {
-            if (!in_quotes && isspace(*s))
+            if (!in_quotes && av_isspace(*s))
                 break;
             in_quotes ^= *s == '"'; // XXX: support escaping?
             s++;
         }
-        while (isspace(*s))
+        while (av_isspace(*s))
             s++;
         if (!av_strncasecmp(s, attr, len) && s[len] == '=')
             return s + len + 1 + (s[len + 1] == '"');
     }
     return NULL;
+}
+
+static inline int is_eol(char c)
+{
+    return c == '\r' || c == '\n';
+}
+
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
+{
+    char eol_buf[5];
+    int n = 0, i = 0, nb_eol = 0;
+
+    av_bprint_clear(buf);
+
+    for (;;) {
+        char c = avio_r8(pb);
+
+        if (!c)
+            break;
+
+        /* ignore all initial line breaks */
+        if (n == 0 && is_eol(c))
+            continue;
+
+        /* line break buffering: we don't want to add the trailing \r\n */
+        if (is_eol(c)) {
+            nb_eol += c == '\n';
+            if (nb_eol == 2)
+                break;
+            eol_buf[i++] = c;
+            if (i == sizeof(eol_buf) - 1)
+                break;
+            continue;
+        }
+
+        /* only one line break followed by data: we flush the line breaks
+         * buffer */
+        if (i) {
+            eol_buf[i] = 0;
+            av_bprintf(buf, "%s", eol_buf);
+            i = nb_eol = 0;
+        }
+
+        av_bprint_chars(buf, c, 1);
+        n++;
+    }
 }

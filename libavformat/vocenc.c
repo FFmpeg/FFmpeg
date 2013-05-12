@@ -30,12 +30,18 @@ typedef struct voc_enc_context {
 static int voc_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
+    AVCodecContext *enc = s->streams[0]->codec;
     const int header_size = 26;
     const int version = 0x0114;
 
     if (s->nb_streams != 1
         || s->streams[0]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
         return AVERROR_PATCHWELCOME;
+
+    if (!enc->codec_tag && enc->codec_id != AV_CODEC_ID_PCM_U8) {
+        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
+        return AVERROR(EINVAL);
+    }
 
     avio_write(pb, ff_voc_magic, sizeof(ff_voc_magic) - 1);
     avio_wl16(pb, header_size);
@@ -91,12 +97,12 @@ static int voc_write_trailer(AVFormatContext *s)
 
 AVOutputFormat ff_voc_muxer = {
     .name              = "voc",
-    .long_name         = NULL_IF_CONFIG_SMALL("Creative Voice file format"),
+    .long_name         = NULL_IF_CONFIG_SMALL("Creative Voice"),
     .mime_type         = "audio/x-voc",
     .extensions        = "voc",
     .priv_data_size    = sizeof(VocEncContext),
-    .audio_codec       = CODEC_ID_PCM_S16LE,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_PCM_S16LE,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = voc_write_header,
     .write_packet      = voc_write_packet,
     .write_trailer     = voc_write_trailer,

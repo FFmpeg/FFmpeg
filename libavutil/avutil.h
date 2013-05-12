@@ -26,7 +26,7 @@
  * external API header
  */
 
-/*
+/**
  * @mainpage
  *
  * @section ffmpeg_intro Introduction
@@ -35,12 +35,13 @@
  * provided by FFmpeg.
  *
  * @li @ref libavc "libavcodec" encoding/decoding library
- * @li @subpage libavfilter graph based frame editing library
+ * @li @ref lavfi "libavfilter" graph based frame editing library
  * @li @ref libavf "libavformat" I/O and muxing/demuxing library
  * @li @ref lavd "libavdevice" special devices muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
- * @li @subpage libpostproc post processing library
- * @li @subpage libswscale  color conversion and scaling library
+ * @li @ref lswr "libswresample" audio resampling, format conversion and mixing
+ * @li @ref lpp  "libpostproc" post processing library
+ * @li @ref lsws "libswscale" color conversion and scaling library
  */
 
 /**
@@ -107,43 +108,6 @@
  * @}
  */
 
-
-/**
- * @defgroup preproc_misc Preprocessor String Macros
- *
- * String manipulation macros
- *
- * @{
- */
-
-#define AV_STRINGIFY(s)         AV_TOSTRING(s)
-#define AV_TOSTRING(s) #s
-
-#define AV_GLUE(a, b) a ## b
-#define AV_JOIN(a, b) AV_GLUE(a, b)
-
-#define AV_PRAGMA(s) _Pragma(#s)
-
-/**
- * @}
- */
-
-/**
- * @defgroup version_utils Library Version Macros
- *
- * Useful to check and match library version in order to maintain
- * backward compatibility.
- *
- * @{
- */
-
-#define AV_VERSION_INT(a, b, c) (a<<16 | b<<8 | c)
-#define AV_VERSION_DOT(a, b, c) a ##.## b ##.## c
-#define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
-
-/**
- * @}
- */
 
 /**
  * @addtogroup lavu_ver
@@ -223,7 +187,7 @@ const char *av_get_media_type_string(enum AVMediaType media_type);
  * either pts or dts.
  */
 
-#define AV_NOPTS_VALUE          INT64_C(0x8000000000000000)
+#define AV_NOPTS_VALUE          ((int64_t)UINT64_C(0x8000000000000000))
 
 /**
  * Internal time base represented as integer
@@ -287,6 +251,27 @@ static inline void *av_x_if_null(const void *p, const void *x)
 {
     return (void *)(intptr_t)(p ? p : x);
 }
+
+/**
+ * Compute the length of an integer list.
+ *
+ * @param elsize  size in bytes of each list element (only 1, 2, 4 or 8)
+ * @param term    list terminator (usually 0 or -1)
+ * @param list    pointer to the list
+ * @return  length of the list, in elements, not counting the terminator
+ */
+unsigned av_int_list_length_for_size(unsigned elsize,
+                                     const void *list, uint64_t term) av_pure;
+
+/**
+ * Compute the length of an integer list.
+ *
+ * @param term  list terminator (usually 0 or -1)
+ * @param list  pointer to the list
+ * @return  length of the list, in elements, not counting the terminator
+ */
+#define av_int_list_length(list, term) \
+    av_int_list_length_for_size(sizeof(*(list)), list, term)
 
 /**
  * @}

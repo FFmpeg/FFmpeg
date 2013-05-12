@@ -22,6 +22,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "internal.h"
 
 #define MAX_HUFF_CODES 16
 
@@ -67,7 +68,7 @@ static av_cold int mp_decode_init(AVCodecContext *avctx)
     mp->offset_bits_len = av_log2(avctx->width * avctx->height) + 1;
     mp->vpt = av_mallocz(avctx->height * sizeof(YuvPixel));
     mp->hpt = av_mallocz(h4 * w4 / 16 * sizeof(YuvPixel));
-    avctx->pix_fmt = PIX_FMT_RGB555;
+    avctx->pix_fmt = AV_PIX_FMT_RGB555;
     avcodec_get_frame_defaults(&mp->frame);
     return 0;
 }
@@ -101,38 +102,48 @@ static void mp_read_changes_map(MotionPixelsContext *mp, GetBitContext *gb, int 
     }
 }
 
-static void mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int code)
+static int mp_get_code(MotionPixelsContext *mp, GetBitContext *gb, int size, int code)
 {
     while (get_bits1(gb)) {
         ++size;
         if (size > mp->max_codes_bits) {
             av_log(mp->avctx, AV_LOG_ERROR, "invalid code size %d/%d\n", size, mp->max_codes_bits);
-            return;
+            return AVERROR_INVALIDDATA;
         }
         code <<= 1;
-        mp_get_code(mp, gb, size, code + 1);
+        if (mp_get_code(mp, gb, size, code + 1) < 0)
+            return AVERROR_INVALIDDATA;
     }
     if (mp->current_codes_count >= MAX_HUFF_CODES) {
         av_log(mp->avctx, AV_LOG_ERROR, "too many codes\n");
-        return;
+        return AVERROR_INVALIDDATA;
     }
+
     mp->codes[mp->current_codes_count  ].code = code;
     mp->codes[mp->current_codes_count++].size = size;
+    return 0;
 }
 
-static void mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
+static int mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
 {
     if (mp->codes_count == 1) {
         mp->codes[0].delta = get_bits(gb, 4);
     } else {
         int i;
+        int ret;
 
         mp->max_codes_bits = get_bits(gb, 4);
         for (i = 0; i < mp->codes_count; ++i)
             mp->codes[i].delta = get_bits(gb, 4);
         mp->current_codes_count = 0;
-        mp_get_code(mp, gb, 0, 0);
+        if ((ret = mp_get_code(mp, gb, 0, 0)) < 0)
+            return ret;
+        if (mp->current_codes_count < mp->codes_count) {
+            av_log(mp->avctx, AV_LOG_ERROR, "too few codes\n");
+            return AVERROR_INVALIDDATA;
+        }
    }
+   return 0;
 }
 
 static int mp_gradient(MotionPixelsContext *mp, int component, int v)
@@ -220,6 +231,8 @@ static void mp_decode_frame_helper(MotionPixelsContext *mp, GetBitContext *gb)
     YuvPixel p;
     int y, y0;
 
+    av_assert1(mp->changes_map[0]);
+
     for (y = 0; y < mp->avctx->height; ++y) {
         if (mp->changes_map[y * mp->avctx->width] != 0) {
             memset(mp->gradient_scale, 1, sizeof(mp->gradient_scale));
@@ -243,21 +256,17 @@ static void mp_decode_frame_helper(MotionPixelsContext *mp, GetBitContext *gb)
 }
 
 static int mp_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
+                                 void *data, int *got_frame,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     MotionPixelsContext *mp = avctx->priv_data;
     GetBitContext gb;
-    int i, count1, count2, sz;
+    int i, count1, count2, sz, ret;
 
-    mp->frame.reference = 3;
-    mp->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &mp->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_reget_buffer(avctx, &mp->frame)) < 0)
+        return ret;
 
     /* le32 bitstream msb first */
     av_fast_malloc(&mp->bswapbuf, &mp->bswapbuf_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -285,7 +294,8 @@ static int mp_decode_frame(AVCodecContext *avctx,
         *(uint16_t *)mp->frame.data[0] = get_bits(&gb, 15);
         mp->changes_map[0] = 1;
     }
-    mp_read_codes_table(mp, &gb);
+    if (mp_read_codes_table(mp, &gb) < 0)
+        goto end;
 
     sz = get_bits(&gb, 18);
     if (avctx->extradata[0] != 5)
@@ -301,8 +311,9 @@ static int mp_decode_frame(AVCodecContext *avctx,
     ff_free_vlc(&mp->vlc);
 
 end:
-    *data_size = sizeof(AVFrame);
-    *(AVFrame *)data = mp->frame;
+    if ((ret = av_frame_ref(data, &mp->frame)) < 0)
+        return ret;
+    *got_frame       = 1;
     return buf_size;
 }
 
@@ -314,8 +325,7 @@ static av_cold int mp_decode_end(AVCodecContext *avctx)
     av_freep(&mp->vpt);
     av_freep(&mp->hpt);
     av_freep(&mp->bswapbuf);
-    if (mp->frame.data[0])
-        avctx->release_buffer(avctx, &mp->frame);
+    av_frame_unref(&mp->frame);
 
     return 0;
 }
@@ -323,7 +333,7 @@ static av_cold int mp_decode_end(AVCodecContext *avctx)
 AVCodec ff_motionpixels_decoder = {
     .name           = "motionpixels",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MOTIONPIXELS,
+    .id             = AV_CODEC_ID_MOTIONPIXELS,
     .priv_data_size = sizeof(MotionPixelsContext),
     .init           = mp_decode_init,
     .close          = mp_decode_end,

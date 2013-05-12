@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/mem.h"
 #include "avfft.h"
 #include "fft.h"
@@ -44,7 +45,7 @@ void av_fft_calc(FFTContext *s, FFTComplex *z)
     s->fft_calc(s, z);
 }
 
-void av_fft_end(FFTContext *s)
+av_cold void av_fft_end(FFTContext *s)
 {
     if (s) {
         ff_fft_end(s);
@@ -79,7 +80,7 @@ void av_mdct_calc(FFTContext *s, FFTSample *output, const FFTSample *input)
     s->mdct_calc(s, output, input);
 }
 
-void av_mdct_end(FFTContext *s)
+av_cold void av_mdct_end(FFTContext *s)
 {
     if (s) {
         ff_mdct_end(s);
@@ -106,7 +107,7 @@ void av_rdft_calc(RDFTContext *s, FFTSample *data)
     s->rdft_calc(s, data);
 }
 
-void av_rdft_end(RDFTContext *s)
+av_cold void av_rdft_end(RDFTContext *s)
 {
     if (s) {
         ff_rdft_end(s);
@@ -133,7 +134,7 @@ void av_dct_calc(DCTContext *s, FFTSample *data)
     s->dct_calc(s, data);
 }
 
-void av_dct_end(DCTContext *s)
+av_cold void av_dct_end(DCTContext *s)
 {
     if (s) {
         ff_dct_end(s);

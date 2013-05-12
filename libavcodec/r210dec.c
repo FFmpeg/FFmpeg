@@ -21,41 +21,35 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "libavutil/bswap.h"
+#include "libavutil/common.h"
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    avctx->pix_fmt             = PIX_FMT_RGB48;
+    avctx->pix_fmt             = AV_PIX_FMT_RGB48;
     avctx->bits_per_raw_sample = 10;
-
-    avctx->coded_frame         = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    int h, w;
-    AVFrame *pic = avctx->coded_frame;
+    int h, w, ret;
+    AVFrame *pic = data;
     const uint32_t *src = (const uint32_t *)avpkt->data;
     int aligned_width = FFALIGN(avctx->width,
-                                avctx->codec_id == CODEC_ID_R10K ? 1 : 64);
+                                avctx->codec_id == AV_CODEC_ID_R10K ? 1 : 64);
     uint8_t *dst_line;
-
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
 
     if (avpkt->size < 4 * aligned_width * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "packet too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
-    pic->reference = 0;
-    if (avctx->get_buffer(avctx, pic) < 0)
-        return -1;
+    if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+        return ret;
 
     pic->pict_type = AV_PICTURE_TYPE_I;
     pic->key_frame = 1;
@@ -66,12 +60,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (w = 0; w < avctx->width; w++) {
             uint32_t pixel;
             uint16_t r, g, b;
-            if (avctx->codec_id==CODEC_ID_AVRP) {
+            if (avctx->codec_id==AV_CODEC_ID_AVRP) {
                 pixel = av_le2ne32(*src++);
             } else {
                 pixel = av_be2ne32(*src++);
             }
-            if (avctx->codec_id==CODEC_ID_R210) {
+            if (avctx->codec_id==AV_CODEC_ID_R210) {
                 b =  pixel <<  6;
                 g = (pixel >>  4) & 0xffc0;
                 r = (pixel >> 14) & 0xffc0;
@@ -88,29 +82,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         dst_line += pic->linesize[0];
     }
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = *avctx->coded_frame;
+    *got_frame      = 1;
 
     return avpkt->size;
-}
-
-static av_cold int decode_close(AVCodecContext *avctx)
-{
-    AVFrame *pic = avctx->coded_frame;
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
-    av_freep(&avctx->coded_frame);
-
-    return 0;
 }
 
 #if CONFIG_R210_DECODER
 AVCodec ff_r210_decoder = {
     .name           = "r210",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_R210,
+    .id             = AV_CODEC_ID_R210,
     .init           = decode_init,
-    .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
@@ -120,9 +102,8 @@ AVCodec ff_r210_decoder = {
 AVCodec ff_r10k_decoder = {
     .name           = "r10k",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_R10K,
+    .id             = AV_CODEC_ID_R10K,
     .init           = decode_init,
-    .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
@@ -132,9 +113,8 @@ AVCodec ff_r10k_decoder = {
 AVCodec ff_avrp_decoder = {
     .name           = "avrp",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AVRP,
+    .id             = AV_CODEC_ID_AVRP,
     .init           = decode_init,
-    .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),

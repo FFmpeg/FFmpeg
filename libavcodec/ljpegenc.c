@@ -31,7 +31,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "internal.h"
 #include "mpegvideo.h"
 #include "mjpeg.h"
@@ -51,18 +50,28 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
     const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
     int ret, max_pkt_size = FF_MIN_BUFFER_SIZE;
 
-    if (avctx->pix_fmt == PIX_FMT_BGRA)
+    if (avctx->pix_fmt == AV_PIX_FMT_BGRA)
         max_pkt_size += width * height * 3 * 4;
     else {
         max_pkt_size += mb_width * mb_height * 3 * 4
                         * s->mjpeg_hsample[0] * s->mjpeg_vsample[0];
     }
+
+    if (!s->edge_emu_buffer &&
+        (ret = ff_mpv_frame_size_alloc(s, pict->linesize[0])) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "failed to allocate context scratch buffers.\n");
+        return ret;
+    }
+
     if ((ret = ff_alloc_packet2(avctx, pkt, max_pkt_size)) < 0)
         return ret;
 
     init_put_bits(&s->pb, pkt->data, pkt->size);
 
-    *p = *pict;
+    av_frame_unref(p);
+    ret = av_frame_ref(p, pict);
+    if (ret < 0)
+        return ret;
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
@@ -70,9 +79,9 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
 
     s->header_bits= put_bits_count(&s->pb);
 
-    if(avctx->pix_fmt == PIX_FMT_BGR0
-        || avctx->pix_fmt == PIX_FMT_BGRA
-        || avctx->pix_fmt == PIX_FMT_BGR24){
+    if(avctx->pix_fmt == AV_PIX_FMT_BGR0
+        || avctx->pix_fmt == AV_PIX_FMT_BGRA
+        || avctx->pix_fmt == AV_PIX_FMT_BGR24){
         int x, y, i;
         const int linesize= p->linesize[0];
         uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
@@ -95,7 +104,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                 top[i]= left[i]= topleft[i]= buffer[0][i];
             }
             for(x = 0; x < width; x++) {
-                if(avctx->pix_fmt == PIX_FMT_BGR24){
+                if(avctx->pix_fmt == AV_PIX_FMT_BGR24){
                     buffer[x][1] = ptr[3*x+0] - ptr[3*x+1] + 0x100;
                     buffer[x][2] = ptr[3*x+2] - ptr[3*x+1] + 0x100;
                     buffer[x][0] = (ptr[3*x+0] + 2*ptr[3*x+1] + ptr[3*x+2])>>2;
@@ -180,7 +189,6 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
                                 int pred;
 
                                 ptr = p->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
-//printf("%d %d %d %d %8X\n", mb_x, mb_y, x, y, ptr);
                                 PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
 
                                 if(i==0)
@@ -214,15 +222,15 @@ static int encode_picture_lossless(AVCodecContext *avctx, AVPacket *pkt,
 AVCodec ff_ljpeg_encoder = { //FIXME avoid MPV_* lossless JPEG should not need them
     .name           = "ljpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_LJPEG,
+    .id             = AV_CODEC_ID_LJPEG,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_MPV_encode_init,
     .encode2        = encode_picture_lossless,
     .close          = ff_MPV_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){
-        PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_BGR0,
-        PIX_FMT_YUVJ420P, PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P,
-        PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P,
-        PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){
+        AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_NONE},
     .long_name      = NULL_IF_CONFIG_SMALL("Lossless JPEG"),
 };

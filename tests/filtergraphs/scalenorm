@@ -1,0 +1,4 @@
+sws_flags=+accurate_rnd+bitexact;
+testsrc=s=128x96  : d=1:r=5, format=yuv420p [a];
+testsrc=s=160x120 : d=1:r=5                 [b];
+[a][b] concat=unsafe=1, scale=flags=+accurate_rnd+bitexact

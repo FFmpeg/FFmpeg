@@ -37,9 +37,9 @@ static int dnxhd_probe(AVProbeData *p)
     if (!w || !h)
         return 0;
     compression_id = AV_RB32(p->buf + 0x28);
-    if (compression_id < 1237 || compression_id > 1253)
+    if (compression_id < 1235 || compression_id > 1253)
         return 0;
     return AVPROBE_SCORE_MAX;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(dnxhd, "raw DNxHD (SMPTE VC-3)", dnxhd_probe, NULL, CODEC_ID_DNXHD)
+FF_DEF_RAWVIDEO_DEMUXER(dnxhd, "raw DNxHD (SMPTE VC-3)", dnxhd_probe, NULL, AV_CODEC_ID_DNXHD)

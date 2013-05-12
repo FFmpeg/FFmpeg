@@ -25,33 +25,11 @@
 
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
+#include "internal.h"
 #include "audio_data.h"
 
 typedef void (mix_func)(uint8_t **src, void **matrix, int len, int out_ch,
                         int in_ch);
-
-typedef struct AudioMix {
-    AVAudioResampleContext *avr;
-    enum AVSampleFormat fmt;
-    enum AVMixCoeffType coeff_type;
-    uint64_t in_layout;
-    uint64_t out_layout;
-    int in_channels;
-    int out_channels;
-
-    int ptr_align;
-    int samples_align;
-    int has_optimized_func;
-    const char *func_descr;
-    const char *func_descr_generic;
-    mix_func *mix;
-    mix_func *mix_generic;
-
-    int16_t *matrix_q8[AVRESAMPLE_MAX_CHANNELS];
-    int32_t *matrix_q15[AVRESAMPLE_MAX_CHANNELS];
-    float   *matrix_flt[AVRESAMPLE_MAX_CHANNELS];
-    void   **matrix;
-} AudioMix;
 
 /**
  * Set mixing function if the parameters match.
@@ -69,7 +47,7 @@ typedef struct AudioMix {
  * @param in_channels    number of input channels, or 0 for any number of channels
  * @param out_channels   number of output channels, or 0 for any number of channels
  * @param ptr_align      buffer pointer alignment, in bytes
- * @param sample_align   buffer size alignment, in samples
+ * @param samples_align  buffer size alignment, in samples
  * @param descr          function type description (e.g. "C" or "SSE")
  * @param mix_func       mixing function pointer
  */
@@ -79,27 +57,35 @@ void ff_audio_mix_set_func(AudioMix *am, enum AVSampleFormat fmt,
                            const char *descr, void *mix_func);
 
 /**
- * Initialize the AudioMix context in the AVAudioResampleContext.
+ * Allocate and initialize an AudioMix context.
  *
  * The parameters in the AVAudioResampleContext are used to initialize the
- * AudioMix context and set the mixing matrix.
+ * AudioMix context.
  *
  * @param avr  AVAudioResampleContext
- * @return     0 on success, negative AVERROR code on failure
+ * @return     newly-allocated AudioMix context.
  */
-int ff_audio_mix_init(AVAudioResampleContext *avr);
+AudioMix *ff_audio_mix_alloc(AVAudioResampleContext *avr);
 
 /**
- * Close an AudioMix context.
- *
- * This clears and frees the mixing matrix arrays.
+ * Free an AudioMix context.
  */
-void ff_audio_mix_close(AudioMix *am);
+void ff_audio_mix_free(AudioMix **am);
 
 /**
  * Apply channel mixing to audio data using the current mixing matrix.
  */
 int ff_audio_mix(AudioMix *am, AudioData *src);
+
+/**
+ * Get the current mixing matrix.
+ */
+int ff_audio_mix_get_matrix(AudioMix *am, double *matrix, int stride);
+
+/**
+ * Set the current mixing matrix.
+ */
+int ff_audio_mix_set_matrix(AudioMix *am, const double *matrix, int stride);
 
 /* arch-specific initialization functions */
 

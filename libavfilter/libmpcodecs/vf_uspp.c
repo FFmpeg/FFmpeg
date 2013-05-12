@@ -30,12 +30,13 @@
 #include "mp_msg.h"
 #include "cpudetect.h"
 
+#include "libavutil/mem.h"
 #include "libavcodec/avcodec.h"
 
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
-#include "vd_ffmpeg.h"
+#include "av_helpers.h"
 #include "libvo/fastmemcpy.h"
 
 #define XMIN(a,b) ((a) < (b) ? (a) : (b))
@@ -94,7 +95,9 @@ static const uint8_t offset[511][2]= {
 { 7, 1}, {15, 1}, { 7, 9}, {15, 9}, { 7, 3}, {15, 3}, { 7,11}, {15,11},
 { 7, 5}, {15, 5}, { 7,13}, {15,13}, { 7, 7}, {15, 7}, { 7,15}, {15,15},
 
-{ 0, 0}, { 8, 0}, { 0, 8}, { 8, 8}, { 4, 4}, {12, 4}, { 4,12}, {12,12}, { 0, 4}, { 8, 4}, { 0,12}, { 8,12}, { 4, 0}, {12, 0}, { 4, 8}, {12, 8}, { 2, 2}, {10, 2}, { 2,10}, {10,10}, { 6, 6}, {14, 6}, { 6,14}, {14,14}, { 2, 6}, {10, 6}, { 2,14}, {10,14}, { 6, 2}, {14, 2}, { 6,10}, {14,10}, { 0, 2}, { 8, 2}, { 0,10}, { 8,10}, { 4, 6}, {12, 6}, { 4,14}, {12,14}, { 0, 6}, { 8, 6}, { 0,14}, { 8,14}, { 4, 2}, {12, 2}, { 4,10}, {12,10}, { 2, 0}, {10, 0}, { 2, 8}, {10, 8}, { 6, 4}, {14, 4}, { 6,12}, {14,12}, { 2, 4}, {10, 4}, { 2,12}, {10,12}, { 6, 0}, {14, 0}, { 6, 8}, {14, 8}, { 1, 1}, { 9, 1}, { 1, 9}, { 9, 9}, { 5, 5}, {13, 5}, { 5,13}, {13,13}, { 1, 5}, { 9, 5}, { 1,13}, { 9,13}, { 5, 1}, {13, 1}, { 5, 9}, {13, 9}, { 3, 3}, {11, 3}, { 3,11}, {11,11}, { 7, 7}, {15, 7}, { 7,15}, {15,15}, { 3, 7}, {11, 7}, { 3,15}, {11,15}, { 7, 3}, {15, 3}, { 7,11}, {15,11}, { 1, 3}, { 9, 3}, { 1,11}, { 9,11}, { 5, 7}, {13, 7}, { 5,15}, {13,15}, { 1, 7}, { 9, 7}, { 1,15}, { 9,15}, { 5, 3}, {13, 3}, { 5,11}, {13,11}, { 3, 1}, {11,1}, { 3, 9}, {11, 9}, { 7, 5}, {15, 5}, { 7,13}, {15,13}, { 3, 5}, {11, 5}, { 3,13}, {11,13}, { 7, 1}, {15, 1}, { 7, 9}, {15, 9}, { 0, 1}, { 8, 1}, { 0, 9}, { 8, 9}, { 4, 5}, {12, 5}, { 4,13}, {12,13}, { 0, 5}, { 8, 5}, { 0,13}, { 8,13}, { 4, 1}, {12, 1}, { 4, 9}, {12, 9}, { 2, 3}, {10, 3}, { 2,11}, {10,11}, { 6, 7}, {14, 7}, { 6,15}, {14,15}, { 2, 7}, {10, 7}, { 2,15}, {10,15}, { 6, 3}, {14, 3}, { 6,11}, {14,11}, { 0, 3}, { 8, 3}, { 0,11}, { 8,11}, { 4, 7}, {12, 7}, { 4,15}, {12,15}, { 0, 7}, { 8, 7}, { 0,15}, { 8,15}, { 4, 3}, {12, 3}, { 4,11}, {12,11}, { 2, 1}, {10, 1}, { 2, 9}, {10, 9}, { 6, 5}, {14, 5}, { 6,13}, {14,13}, { 2, 5}, {10, 5}, { 2,13}, {10,13}, { 6, 1}, {14, 1}, { 6, 9}, {14, 9}, { 1, 0}, { 9, 0}, { 1, 8}, { 9, 8}, { 5, 4}, {13, 4}, { 5,12}, {13,12}, { 1, 4}, { 9, 4}, { 1,12}, { 9,12}, { 5, 0}, {13, 0}, { 5, 8}, {13, 8}, { 3, 2}, {11, 2}, { 3,10}, {11,10}, { 7, 6}, {15, 6}, { 7,14}, {15,14}, { 3, 6}, {11, 6}, { 3,14}, {11,14}, { 7, 2}, {15, 2}, { 7,10}, {15,10}, { 1, 2}, { 9, 2}, { 1,10}, {9,10}, { 5, 6}, {13, 6}, { 5,14}, {13,14}, { 1, 6}, { 9, 6}, { 1,14}, { 9,14}, { 5, 2}, {13, 2}, { 5,10}, {13,10}, { 3, 0}, {11, 0}, { 3, 8}, {11, 8}, { 7, 4}, {15, 4}, { 7,12}, {15,12}, { 3, 4}, {11, 4}, { 3,12}, {11,12}, { 7, 0}, {15, 0}, { 7, 8}, {15, 8},
+{ 0, 0}, { 8, 0}, { 0, 8}, { 8, 8}, { 4, 4}, {12, 4}, { 4,12}, {12,12}, { 0, 4}, { 8, 4}, { 0,12}, { 8,12}, { 4, 0}, {12, 0}, { 4, 8}, {12, 8}, { 2, 2}, {10, 2}, { 2,10}, {10,10}, { 6, 6}, {14, 6}, { 6,14}, {14,14}, { 2, 6}, {10, 6}, { 2,14}, {10,14}, { 6, 2}, {14, 2}, { 6,10}, {14,10}, { 0, 2}, { 8, 2}, { 0,10}, { 8,10}, { 4, 6}, {12, 6}, { 4,14}, {12,14}, { 0, 6}, { 8, 6}, { 0,14}, { 8,14}, { 4, 2}, {12, 2}, { 4,10}, {12,10}, { 2, 0}, {10, 0}, { 2, 8}, {10, 8}, { 6, 4}, {14, 4}, { 6,12}, {14,12}, { 2, 4}, {10, 4}, { 2,12}, {10,12}, { 6, 0}, {14, 0}, { 6, 8}, {14, 8}, { 1, 1}, { 9, 1}, { 1, 9}, { 9, 9}, { 5, 5}, {13, 5}, { 5,13}, {13,13}, { 1, 5}, { 9, 5}, { 1,13}, { 9,13}, { 5, 1}, {13, 1}, { 5, 9}, {13, 9}, { 3, 3}, {11, 3}, { 3,11}, {11,11}, { 7, 7}, {15, 7}, { 7,15}, {15,15}, { 3, 7}, {11, 7}, { 3,15}, {11,15}, { 7, 3}, {15, 3}, { 7,11}, {15,11}, { 1, 3}, { 9, 3}, { 1,11}, { 9,11}, { 5, 7}, {13, 7}, { 5,15}, {13,15}, { 1, 7}, { 9, 7}, { 1,15}, { 9,15}, { 5, 3}, {13, 3}, { 5,11}, {13,11}, { 3, 1}, {11, 1}
+, { 3, 9}, {11, 9}, { 7, 5}, {15, 5}, { 7,13}, {15,13}, { 3, 5}, {11, 5}, { 3,13}, {11,13}, { 7, 1}, {15, 1}, { 7, 9}, {15, 9}, { 0, 1}, { 8, 1}, { 0, 9}, { 8, 9}, { 4, 5}, {12, 5}, { 4,13}, {12,13}, { 0, 5}, { 8, 5}, { 0,13}, { 8,13}, { 4, 1}, {12, 1}, { 4, 9}, {12, 9}, { 2, 3}, {10, 3}, { 2,11}, {10,11}, { 6, 7}, {14, 7}, { 6,15}, {14,15}, { 2, 7}, {10, 7}, { 2,15}, {10,15}, { 6, 3}, {14, 3}, { 6,11}, {14,11}, { 0, 3}, { 8, 3}, { 0,11}, { 8,11}, { 4, 7}, {12, 7}, { 4,15}, {12,15}, { 0, 7}, { 8, 7}, { 0,15}, { 8,15}, { 4, 3}, {12, 3}, { 4,11}, {12,11}, { 2, 1}, {10, 1}, { 2, 9}, {10, 9}, { 6, 5}, {14, 5}, { 6,13}, {14,13}, { 2, 5}, {10, 5}, { 2,13}, {10,13}, { 6, 1}, {14, 1}, { 6, 9}, {14, 9}, { 1, 0}, { 9, 0}, { 1, 8}, { 9, 8}, { 5, 4}, {13, 4}, { 5,12}, {13,12}, { 1, 4}, { 9, 4}, { 1,12}, { 9,12}, { 5, 0}, {13, 0}, { 5, 8}, {13, 8}, { 3, 2}, {11, 2}, { 3,10}, {11,10}, { 7, 6}, {15, 6}, { 7,14}, {15,14}, { 3, 6}, {11, 6}, { 3,14}, {11,14}, { 7, 2}, {15, 2}, { 7,10}, {15,10}, { 1, 2}, { 9, 2}, { 1,10}, { 9,
+10}, { 5, 6}, {13, 6}, { 5,14}, {13,14}, { 1, 6}, { 9, 6}, { 1,14}, { 9,14}, { 5, 2}, {13, 2}, { 5,10}, {13,10}, { 3, 0}, {11, 0}, { 3, 8}, {11, 8}, { 7, 4}, {15, 4}, { 7,12}, {15,12}, { 3, 4}, {11, 4}, { 3,12}, {11,12}, { 7, 0}, {15, 0}, { 7, 8}, {15, 8},
 };
 
 struct vf_priv_s {
@@ -201,6 +204,8 @@ static void filter(struct vf_priv_s *p, uint8_t *dst[3], uint8_t *src[3], int ds
 
     for(j=0; j<3; j++){
         int is_chroma= !!j;
+        if (!dst[j])
+            continue; // HACK avoid crash for Y8 colourspace
         store_slice_c(dst[j], p->temp[j], dst_stride[j], p->temp_stride[j], width>>is_chroma, height>>is_chroma, 8-p->log2_count);
     }
 }
@@ -209,7 +214,7 @@ static int config(struct vf_instance *vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt){
         int i;
-        AVCodec *enc= avcodec_find_encoder(CODEC_ID_SNOW);
+        AVCodec *enc= avcodec_find_encoder(AV_CODEC_ID_SNOW);
 
         for(i=0; i<3; i++){
             int is_chroma= !!i;
@@ -222,19 +227,22 @@ static int config(struct vf_instance *vf,
         }
         for(i=0; i< (1<<vf->priv->log2_count); i++){
             AVCodecContext *avctx_enc;
+            AVDictionary *opts = NULL;
 
             avctx_enc=
-            vf->priv->avctx_enc[i]= avcodec_alloc_context();
+            vf->priv->avctx_enc[i]= avcodec_alloc_context3(NULL);
             avctx_enc->width = width + BLOCK;
             avctx_enc->height = height + BLOCK;
             avctx_enc->time_base= (AVRational){1,25};  // meaningless
             avctx_enc->gop_size = 300;
             avctx_enc->max_b_frames= 0;
-            avctx_enc->pix_fmt = PIX_FMT_YUV420P;
+            avctx_enc->pix_fmt = AV_PIX_FMT_YUV420P;
             avctx_enc->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
             avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
             avctx_enc->global_quality= 123;
-            avcodec_open(avctx_enc, enc);
+            av_dict_set(&opts, "no_bitstream", "1", 0);
+            avcodec_open2(avctx_enc, enc, &opts);
+            av_dict_free(&opts);
             assert(avctx_enc->codec);
         }
         vf->priv->frame= avcodec_alloc_frame();
@@ -243,13 +251,13 @@ static int config(struct vf_instance *vf,
         vf->priv->outbuf_size= (width + BLOCK)*(height + BLOCK)*10;
         vf->priv->outbuf= malloc(vf->priv->outbuf_size);
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags | MP_IMGFLAG_READABLE, mpi->width, mpi->height);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -268,11 +276,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
         // no DR, so get a new image! hope we'll get DR buffer:
-        dmpi=vf_get_image(vf->next,mpi->imgfmt,
+        dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
             MP_IMGTYPE_TEMP,
             MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
             mpi->width,mpi->height);
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
     }else{
         dmpi=vf->dmpi;
     }
@@ -289,13 +297,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     }
 
 #if HAVE_MMX
-    if(gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
+    if(ff_gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
 #endif
 #if HAVE_MMX2
-    if(gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
+    if(ff_gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
 #endif
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -324,7 +332,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_IYUV:
         case IMGFMT_Y800:
         case IMGFMT_Y8:
-            return vf_next_query_format(vf,fmt);
+            return ff_vf_next_query_format(vf,fmt);
     }
     return 0;
 }
@@ -338,7 +346,7 @@ static int control(struct vf_instance *vf, int request, void* data){
         //FIXME we have to realloc a few things here
         return CONTROL_TRUE;
     }
-    return vf_next_control(vf,request,data);
+    return ff_vf_next_control(vf,request,data);
 }
 
 static int vf_open(vf_instance_t *vf, char *args){
@@ -354,7 +362,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     vf->priv=malloc(sizeof(struct vf_priv_s));
     memset(vf->priv, 0, sizeof(struct vf_priv_s));
 
-    init_avcodec();
+    ff_init_avcodec();
 
     vf->priv->log2_count= 4;
 
@@ -367,7 +375,7 @@ static int vf_open(vf_instance_t *vf, char *args){
         vf->priv->qp = 0;
 
 // #if HAVE_MMX
-//     if(gCpuCaps.hasMMX){
+//     if(ff_gCpuCaps.hasMMX){
 //         store_slice= store_slice_mmx;
 //     }
 // #endif
@@ -375,7 +383,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_uspp = {
+const vf_info_t ff_vf_info_uspp = {
     "ultra simple/slow postprocess",
     "uspp",
     "Michael Niedermayer",

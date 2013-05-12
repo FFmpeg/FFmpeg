@@ -20,7 +20,6 @@
 
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "mpegvideo_arm.h"
 #include "asm-offsets.h"
@@ -34,12 +33,12 @@ CHK_OFFS(MpegEncContext, inter_scantable.raster_end, INTER_SCANTAB_RASTER_END);
 CHK_OFFS(MpegEncContext, h263_aic,         H263_AIC);
 #endif
 
-void ff_dct_unquantize_h263_inter_neon(MpegEncContext *s, DCTELEM *block,
+void ff_dct_unquantize_h263_inter_neon(MpegEncContext *s, int16_t *block,
                                        int n, int qscale);
-void ff_dct_unquantize_h263_intra_neon(MpegEncContext *s, DCTELEM *block,
+void ff_dct_unquantize_h263_intra_neon(MpegEncContext *s, int16_t *block,
                                        int n, int qscale);
 
-void ff_MPV_common_init_arm(MpegEncContext *s)
+av_cold void ff_MPV_common_init_arm(MpegEncContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 

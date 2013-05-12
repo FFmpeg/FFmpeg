@@ -19,8 +19,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION_RODATA
 pw_row_coeffs:  times 4 dw 13
@@ -46,7 +45,7 @@ SECTION .text
 %endmacro
 
 %macro rv34_idct 1
-cglobal rv34_idct_%1_mmx2, 1, 2, 0
+cglobal rv34_idct_%1, 1, 2, 0
     movsx   r1, word [r0]
     IDCT_DC r1
     movd    m0, r1d
@@ -58,14 +57,15 @@ cglobal rv34_idct_%1_mmx2, 1, 2, 0
     REP_RET
 %endmacro
 
-INIT_MMX
+INIT_MMX mmxext
 %define IDCT_DC IDCT_DC_ROUND
 rv34_idct dc
 %define IDCT_DC IDCT_DC_NOROUND
 rv34_idct dc_noround
 
 ; ff_rv34_idct_dc_add_mmx(uint8_t *dst, int stride, int dc);
-cglobal rv34_idct_dc_add_mmx, 3, 3
+INIT_MMX mmx
+cglobal rv34_idct_dc_add, 3, 3
     ; calculate DC
     IDCT_DC_ROUND r2
     pxor       m1, m1
@@ -133,7 +133,7 @@ cglobal rv34_idct_dc_add_mmx, 3, 3
     mova        mm5, [pd_512]           ; 0x200
 %endmacro
 
-; ff_rv34_idct_add_mmx2(uint8_t *dst, ptrdiff_t stride, DCTELEM *block);
+; ff_rv34_idct_add_mmxext(uint8_t *dst, ptrdiff_t stride, int16_t *block);
 %macro COL_TRANSFORM  4
     pshufw      mm3, %2, 0xDD        ; col. 1,3,1,3
     pshufw       %2, %2, 0x88        ; col. 0,2,0,2
@@ -154,7 +154,7 @@ cglobal rv34_idct_dc_add_mmx, 3, 3
     packuswb     %2, %2
     movd         %1, %2
 %endmacro
-INIT_MMX mmx2
+INIT_MMX mmxext
 cglobal rv34_idct_add, 3,3,0, d, s, b
     ROW_TRANSFORM       bq
     COL_TRANSFORM     [dq], mm0, [pw_col_coeffs+ 0], [pw_col_coeffs+ 8]
@@ -167,8 +167,8 @@ cglobal rv34_idct_add, 3,3,0, d, s, b
     ret
 
 ; ff_rv34_idct_dc_add_sse4(uint8_t *dst, int stride, int dc);
-INIT_XMM
-cglobal rv34_idct_dc_add_sse4, 3, 3, 6
+INIT_XMM sse4
+cglobal rv34_idct_dc_add, 3, 3, 6
     ; load data
     IDCT_DC_ROUND r2
     pxor       m1, m1
