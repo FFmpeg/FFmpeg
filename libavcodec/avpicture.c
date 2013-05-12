@@ -75,7 +75,7 @@ int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt,
         }
     }
 
-    if (desc->flags & PIX_FMT_PAL)
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL)
         memcpy((unsigned char *)(((size_t)dest + 3) & ~3),
                src->data[1], 256 * 4);
 
@@ -92,7 +92,7 @@ int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height)
         return AVERROR(EINVAL);
     if ((ret = av_image_check_size(width, height, 0, NULL)) < 0)
         return ret;
-    if (desc->flags & PIX_FMT_PSEUDOPAL)
+    if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
         // do not include palette for these pseudo-paletted formats
         return width * height;
     return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);

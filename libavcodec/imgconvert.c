@@ -60,7 +60,7 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
 
 static int is_gray(const AVPixFmtDescriptor *desc)
 {
-    return desc->nb_components - (desc->flags & PIX_FMT_ALPHA) == 1;
+    return desc->nb_components - (desc->flags & AV_PIX_FMT_FLAG_ALPHA) == 1;
 }
 
 int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
@@ -86,11 +86,11 @@ int avcodec_get_pix_fmt_loss(enum AVPixelFormat dst_pix_fmt,
         dst_desc->log2_chroma_h > src_desc->log2_chroma_h)
         loss |= FF_LOSS_RESOLUTION;
 
-    if ((src_desc->flags & PIX_FMT_RGB) != (dst_desc->flags & PIX_FMT_RGB))
+    if ((src_desc->flags & AV_PIX_FMT_FLAG_RGB) != (dst_desc->flags & AV_PIX_FMT_FLAG_RGB))
         loss |= FF_LOSS_COLORSPACE;
 
-    if (has_alpha && !(dst_desc->flags & PIX_FMT_ALPHA) &&
-         (dst_desc->flags & PIX_FMT_ALPHA))
+    if (has_alpha && !(dst_desc->flags & AV_PIX_FMT_FLAG_ALPHA) &&
+         (dst_desc->flags & AV_PIX_FMT_FLAG_ALPHA))
         loss |= FF_LOSS_ALPHA;
 
     if (dst_pix_fmt == AV_PIX_FMT_PAL8 && !is_gray(src_desc))
@@ -260,8 +260,8 @@ void ff_shrink88(uint8_t *dst, int dst_wrap,
 /* return true if yuv planar */
 static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
 {
-    return (!(desc->flags & PIX_FMT_RGB) &&
-             (desc->flags & PIX_FMT_PLANAR));
+    return (!(desc->flags & AV_PIX_FMT_FLAG_RGB) &&
+             (desc->flags & AV_PIX_FMT_FLAG_PLANAR));
 }
 
 int av_picture_crop(AVPicture *dst, const AVPicture *src,

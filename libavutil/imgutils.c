@@ -55,7 +55,7 @@ int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane)
     if (!desc)
         return AVERROR(EINVAL);
 
-    if (desc->flags & PIX_FMT_BITSTREAM)
+    if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM)
         return (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
 
     av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
@@ -72,10 +72,10 @@ int av_image_fill_linesizes(int linesizes[4], enum AVPixelFormat pix_fmt, int wi
 
     memset(linesizes, 0, 4*sizeof(linesizes[0]));
 
-    if (!desc || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return AVERROR(EINVAL);
 
-    if (desc->flags & PIX_FMT_BITSTREAM) {
+    if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM) {
         if (width > (INT_MAX -7) / (desc->comp[0].step_minus1+1))
             return AVERROR(EINVAL);
         linesizes[0] = (width * (desc->comp[0].step_minus1+1) + 7) >> 3;
@@ -102,7 +102,7 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     memset(data     , 0, sizeof(data[0])*4);
 
-    if (!desc || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return AVERROR(EINVAL);
 
     data[0] = ptr;
@@ -110,8 +110,8 @@ int av_image_fill_pointers(uint8_t *data[4], enum AVPixelFormat pix_fmt, int hei
         return AVERROR(EINVAL);
     size[0] = linesizes[0] * height;
 
-    if (desc->flags & PIX_FMT_PAL ||
-        desc->flags & PIX_FMT_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
         size[0] = (size[0] + 3) & ~3;
         data[1] = ptr + size[0]; /* palette is stored here as 256 32 bits words */
         return size[0] + 256 * 4;
@@ -203,7 +203,7 @@ int av_image_alloc(uint8_t *pointers[4], int linesizes[4],
         av_free(buf);
         return ret;
     }
-    if (desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL)
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
         avpriv_set_systematic_pal2((uint32_t*)pointers[1], pix_fmt);
 
     return ret;
@@ -247,11 +247,11 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
 
-    if (!desc || desc->flags & PIX_FMT_HWACCEL)
+    if (!desc || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return;
 
-    if (desc->flags & PIX_FMT_PAL ||
-        desc->flags & PIX_FMT_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
         av_image_copy_plane(dst_data[0], dst_linesizes[0],
                             src_data[0], src_linesizes[0],
                             width, height);

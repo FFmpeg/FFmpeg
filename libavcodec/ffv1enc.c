@@ -875,7 +875,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
     int x            = fs->slice_x;
     int y            = fs->slice_y;
     AVFrame *const p = &f->picture;
-    const int ps     = (av_pix_fmt_desc_get(c->pix_fmt)->flags & PIX_FMT_PLANAR)
+    const int ps     = (av_pix_fmt_desc_get(c->pix_fmt)->flags & AV_PIX_FMT_FLAG_PLANAR)
                        ? (f->bits_per_raw_sample > 8) + 1
                        : 4;
 
