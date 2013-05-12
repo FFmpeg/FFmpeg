@@ -57,7 +57,7 @@ static int redspark_read_header(AVFormatContext *s)
     RedSparkContext *redspark = s->priv_data;
     AVCodecContext *codec;
     GetByteContext gbc;
-    int i, coef_off;
+    int i, coef_off, ret = 0;
     uint32_t key, data;
     uint8_t *header, *pbc;
     AVStream *st;
@@ -67,7 +67,7 @@ static int redspark_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     codec = st->codec;
 
-    header = av_malloc(HEADER_SIZE);
+    header = av_malloc(HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!header)
         return AVERROR(ENOMEM);
     pbc = header;
@@ -91,15 +91,18 @@ static int redspark_read_header(AVFormatContext *s)
     codec->sample_rate = bytestream2_get_be32u(&gbc);
     if (codec->sample_rate <= 0 || codec->sample_rate > 96000) {
         av_log(s, AV_LOG_ERROR, "Invalid sample rate: %d\n", codec->sample_rate);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     st->duration = bytestream2_get_be32u(&gbc) * 14;
     redspark->samples_count = 0;
     bytestream2_skipu(&gbc, 10);
     codec->channels = bytestream2_get_byteu(&gbc);
-    if (!codec->channels)
-        return AVERROR_INVALIDDATA;
+    if (!codec->channels) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     coef_off = 0x54 + codec->channels * 8;
     if (bytestream2_get_byteu(&gbc)) // Loop flag
@@ -107,20 +110,27 @@ static int redspark_read_header(AVFormatContext *s)
 
     codec->extradata_size = 32 * codec->channels;
     codec->extradata = av_malloc(codec->extradata_size);
-    if (!codec->extradata)
-        return AVERROR(ENOMEM);
+    if (!codec->extradata) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     /* Get the ADPCM table */
     bytestream2_seek(&gbc, coef_off, SEEK_SET);
     for (i = 0; i < codec->channels; i++) {
-        if (bytestream2_get_bufferu(&gbc, codec->extradata + i * 32, 32) != 32)
-            return AVERROR_INVALIDDATA;
+        if (bytestream2_get_bufferu(&gbc, codec->extradata + i * 32, 32) != 32) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
         bytestream2_skipu(&gbc, 14);
     }
 
     avpriv_set_pts_info(st, 64, 1, codec->sample_rate);
 
-    return 0;
+fail:
+    av_free(header);
+
+    return ret;
 }
 
 static int redspark_read_packet(AVFormatContext *s, AVPacket *pkt)
