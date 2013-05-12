@@ -22,7 +22,7 @@
 #include "oma.h"
 #include "libavcodec/avcodec.h"
 
-const uint16_t ff_oma_srate_tab[8] = { 320, 441, 480, 882, 960, 0, 0, 0};
+const uint16_t ff_oma_srate_tab[8] = { 320, 441, 480, 882, 960, 0 };
 
 const AVCodecTag ff_oma_codec_tags[] = {
     { AV_CODEC_ID_ATRAC3,      OMA_CODECID_ATRAC3  },
