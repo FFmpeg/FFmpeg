@@ -133,7 +133,7 @@ void *av_malloc(size_t size)
     }
 #if CONFIG_MEMORY_POISONING
     if (ptr)
-        memset(ptr, 0x2a, size);
+        memset(ptr, FF_MEMORY_POISON, size);
 #endif
     return ptr;
 }

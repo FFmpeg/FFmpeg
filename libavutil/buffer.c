@@ -288,7 +288,7 @@ static void pool_release_buffer(void *opaque, uint8_t *data)
     AVBufferPool *pool = buf->pool;
 
     if(CONFIG_MEMORY_POISONING)
-        memset(buf->data, 0x2a, pool->size);
+        memset(buf->data, FF_MEMORY_POISON, pool->size);
 
     add_to_pool(buf);
     if (!avpriv_atomic_int_add_and_fetch(&pool->refcount, -1))
