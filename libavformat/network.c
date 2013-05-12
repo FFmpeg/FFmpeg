@@ -26,7 +26,7 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #else
-#include "libavcodec/w32pthreads.h"
+#include "compat/w32pthreads.h"
 #endif
 #endif
 

@@ -58,7 +58,7 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #elif HAVE_W32THREADS
-#include "w32pthreads.h"
+#include "compat/w32pthreads.h"
 #endif
 
 typedef int (action_func)(AVCodecContext *c, void *arg);

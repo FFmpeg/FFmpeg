@@ -84,7 +84,7 @@ FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.avpreset)
 
-SKIPHEADERS = cmdutils_common_opts.h
+SKIPHEADERS = cmdutils_common_opts.h compat/w32pthreads.h
 
 include $(SRC_PATH)/common.mak
 

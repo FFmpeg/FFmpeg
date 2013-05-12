@@ -36,7 +36,7 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #elif HAVE_W32THREADS
-#include "w32pthreads.h"
+#include "compat/w32pthreads.h"
 #endif
 
 #define VP8_MAX_QUANT 127

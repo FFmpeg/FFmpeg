@@ -679,7 +679,6 @@ SKIPHEADERS-$(CONFIG_MPEG_XVMC_DECODER) += xvmc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
-SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
 EXAMPLES = api
 
