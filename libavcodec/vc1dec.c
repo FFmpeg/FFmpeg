@@ -624,7 +624,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
             ty = (chosen_mv[f][0][1] + chosen_mv[f][1][1]) / 2;
             break;
         default:
-            av_assert2(0);
+            av_assert0(0);
         }
         s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
         s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
@@ -1666,7 +1666,7 @@ static inline void vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
     MpegEncContext *s = &v->s;
     int xy, wrap, off = 0;
     int A[2], B[2], C[2];
-    int px, py;
+    int px = 0, py = 0;
     int a_valid = 0, b_valid = 0, c_valid = 0;
     int field_a, field_b, field_c; // 0: same, 1: opposit
     int total_valid, num_samefield, num_oppfield;
@@ -1804,8 +1804,7 @@ static inline void vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
                 else if (b_valid) { px = B[0]; py = B[1]; }
                 else if (c_valid) { px = C[0]; py = C[1]; }
                 else av_assert2(0);
-            } else
-                px = py = 0;
+            }
         }
     } else {
         if (a_valid)
@@ -1858,13 +1857,12 @@ static inline void vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
                 } else if (c_valid) {
                     px = C[0];
                     py = C[1];
-                } else px = py = 0;
+                }
             }
         } else if (total_valid == 1) {
             px = (a_valid) ? A[0] : ((b_valid) ? B[0] : C[0]);
             py = (a_valid) ? A[1] : ((b_valid) ? B[1] : C[1]);
-        } else
-            px = py = 0;
+        }
     }
 
     /* store MV using signed modulus of MV range defined in 4.11 */
