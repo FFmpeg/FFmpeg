@@ -3288,7 +3288,7 @@ EOF
 esac
 
 enable $subarch
-enabled spic && enable pic
+enabled spic && enable_weak pic
 
 # OS specific
 case $target_os in
@@ -3564,7 +3564,7 @@ esc(){
 
 echo "config:$arch:$subarch:$cpu:$target_os:$(esc $cc_ident):$(esc $FFMPEG_CONFIGURATION)" >config.fate
 
-check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable pic
+check_cpp_condition stdlib.h "defined(__PIC__) || defined(__pic__) || defined(PIC)" && enable_weak pic
 
 set_default $PATHS_LIST
 set_default nm
@@ -3610,14 +3610,15 @@ enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
-enable_pic() {
+enable_weak_pic() {
+    disabled pic && return
     enable pic
     add_cppflags -DPIC
     add_cflags   -fPIC
     add_asflags  -fPIC
 }
 
-enabled pic && enable_pic
+enabled pic && enable_weak_pic
 
 check_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
@@ -3689,7 +3690,7 @@ EOF
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
     check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
 
-    enabled_all armv6t2 shared !pic && enable_pic
+    enabled_all armv6t2 shared !pic && enable_weak_pic
 
 elif enabled mips; then
 
