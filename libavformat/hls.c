@@ -404,8 +404,10 @@ static int open_input(HLSContext *c, struct variant *var)
       ret = AVERROR(ENOSYS);
 
 cleanup:
-    var->input_size = ffurl_size(var->input);
-    var->input_offset = 0;
+    if (var->input) {
+      var->input_size = ffurl_size(var->input);
+      var->input_offset = 0;
+    }
     av_dict_free(&opts);
     return ret;
 }
@@ -455,7 +457,8 @@ reload:
 
         ret = open_input(c, v);
         if (ret < 0)
-          goto reload;
+          return ret;
+          /*goto reload;*/
     }
 
     if (v->input_size < 0 || v->input_offset < v->input_size) {
