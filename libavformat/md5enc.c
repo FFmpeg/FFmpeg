@@ -58,7 +58,7 @@ static const AVOption hash_options[] = {
     { NULL },
 };
 
-static const AVClass hashenc_class = {
+static const AVClass md5enc_class = {
     .class_name = "hash encoder class",
     .item_name  = av_default_item_name,
     .option     = hash_options,
@@ -106,7 +106,7 @@ AVOutputFormat ff_md5_muxer = {
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
-    .priv_class        = &hashenc_class,
+    .priv_class        = &md5enc_class,
 };
 #endif
 
@@ -140,6 +140,13 @@ static int framemd5_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
+static const AVClass framemd5_class = {
+    .class_name = "hash encoder class",
+    .item_name  = av_default_item_name,
+    .option     = hash_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_framemd5_muxer = {
     .name              = "framemd5",
     .long_name         = NULL_IF_CONFIG_SMALL("Per-frame MD5 testing"),
@@ -151,6 +158,6 @@ AVOutputFormat ff_framemd5_muxer = {
     .write_trailer     = framemd5_write_trailer,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
-    .priv_class        = &hashenc_class,
+    .priv_class        = &framemd5_class,
 };
 #endif
