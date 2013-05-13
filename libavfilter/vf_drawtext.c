@@ -136,9 +136,6 @@ typedef struct {
     int max_glyph_h;                ///< max glyph height
     int shadowx, shadowy;
     unsigned int fontsize;          ///< font size to use
-    char *fontcolor_string;         ///< font color as string
-    char *boxcolor_string;          ///< box color as string
-    char *shadowcolor_string;       ///< shadow color as string
 
     short int draw_box;             ///< draw box around text - true or false
     int use_kerning;                ///< font kerning is used - true/false
@@ -176,9 +173,9 @@ static const AVOption drawtext_options[]= {
     {"fontfile",    "set font file",        OFFSET(fontfile),           AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
     {"text",        "set text",             OFFSET(text),               AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
     {"textfile",    "set text file",        OFFSET(textfile),           AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX, FLAGS},
-    {"fontcolor",   "set foreground color", OFFSET(fontcolor_string),   AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
-    {"boxcolor",    "set box color",        OFFSET(boxcolor_string),    AV_OPT_TYPE_STRING, {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS},
-    {"shadowcolor", "set shadow color",     OFFSET(shadowcolor_string), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"fontcolor",   "set foreground color", OFFSET(fontcolor.rgba),     AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"boxcolor",    "set box color",        OFFSET(boxcolor.rgba),      AV_OPT_TYPE_COLOR,  {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS},
+    {"shadowcolor", "set shadow color",     OFFSET(shadowcolor.rgba),   AV_OPT_TYPE_COLOR,  {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS},
     {"box",         "set box",              OFFSET(draw_box),           AV_OPT_TYPE_INT,    {.i64=0},     0,        1       , FLAGS},
     {"fontsize",    "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.i64=0},     0,        INT_MAX , FLAGS},
     {"x",           "set x expression",     OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX, FLAGS},
@@ -456,24 +453,6 @@ static av_cold int init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR,
                "Either text, a valid file or a timecode must be provided\n");
         return AVERROR(EINVAL);
-    }
-
-    if ((err = av_parse_color(s->fontcolor.rgba, s->fontcolor_string, -1, ctx))) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid font color '%s'\n", s->fontcolor_string);
-        return err;
-    }
-
-    if ((err = av_parse_color(s->boxcolor.rgba, s->boxcolor_string, -1, ctx))) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid box color '%s'\n", s->boxcolor_string);
-        return err;
-    }
-
-    if ((err = av_parse_color(s->shadowcolor.rgba, s->shadowcolor_string, -1, ctx))) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid shadow color '%s'\n", s->shadowcolor_string);
-        return err;
     }
 
     if ((err = FT_Init_FreeType(&(s->library)))) {
