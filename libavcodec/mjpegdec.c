@@ -266,6 +266,13 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4)
             return -1;
+        if (!s->h_count[i] || !s->v_count[i]) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid sampling factor in component %d %d:%d\n",
+                   i, s->h_count[i], s->v_count[i]);
+            return AVERROR_INVALIDDATA;
+        }
+
         av_log(s->avctx, AV_LOG_DEBUG, "component %d %d:%d id: %d quant:%d\n",
                i, s->h_count[i], s->v_count[i],
                s->component_id[i], s->quant_index[i]);
