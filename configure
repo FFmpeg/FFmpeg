@@ -1416,7 +1416,6 @@ HAVE_LIST="
     CL_cl_h
     clock_gettime
     closesocket
-    cmov
     CommandLineToArgvW
     cpunop
     CryptGenRandom
@@ -1451,6 +1450,7 @@ HAVE_LIST="
     glob
     gnu_as
     gsm_h
+    i686
     ibm_asm
     inet_aton
     io_h
@@ -1659,7 +1659,7 @@ ppc4xx_deps="ppc"
 
 vis_deps="sparc"
 
-x86_64_suggest="cmov fast_cmov"
+x86_64_suggest="fast_cmov i686"
 
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
@@ -3194,21 +3194,21 @@ elif enabled x86; then
             cpuflags="-march=$cpu"
             disable mmx
         ;;
-        # targets that do NOT support conditional mov (cmov)
+        # targets that do NOT support nopl and conditional mov (cmov)
         pentium-mmx|k6|k6-[23]|winchip-c6|winchip2|c3)
             cpuflags="-march=$cpu"
-            disable cmov
+            disable i686
         ;;
-        # targets that do support conditional mov (cmov)
+        # targets that do support nopl and conditional mov (cmov)
         i686|pentiumpro|pentium[23]|pentium-m|athlon|athlon-tbird|athlon-4|athlon-[mx]p|athlon64*|k8*|opteron*|athlon-fx|core2|corei7*|amdfam10|barcelona|atom|bdver*)
             cpuflags="-march=$cpu"
-            enable cmov
+            enable i686
             enable fast_cmov
         ;;
         # targets that do support conditional mov but on which it's slow
         pentium4|pentium4m|prescott|nocona)
             cpuflags="-march=$cpu"
-            enable cmov
+            enable i686
             disable fast_cmov
         ;;
     esac
@@ -4393,7 +4393,7 @@ if enabled x86; then
     echo "SSSE3 enabled             ${ssse3-no}"
     echo "AVX enabled               ${avx-no}"
     echo "FMA4 enabled              ${fma4-no}"
-    echo "CMOV enabled              ${cmov-no}"
+    echo "i686 features enabled     ${i686-no}"
     echo "CMOV is fast              ${fast_cmov-no}"
     echo "EBX available             ${ebx_available-no}"
     echo "EBP available             ${ebp_available-no}"
