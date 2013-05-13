@@ -2870,6 +2870,45 @@ drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=max
 @end example
 @end itemize
 
+@section drawgrid
+
+Draw a grid on the input image.
+
+This filter accepts the following options:
+
+@table @option
+@item x
+@item y
+Specify the coordinates of some point of grid intersection (meant to configure offset). Both default to 0.
+
+@item width, w
+@item height, h
+Specify the width and height of the grid cell, if 0 they are interpreted as the
+input width and height, respectively, minus @code{thickness}, so image gets
+framed. Default to 0.
+
+@item color, c
+Specify the color of the grid, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence. If the special
+value @code{invert} is used, the grid color is the same as the
+video with inverted luma.
+Note that you can append opacity value (in range of 0.0 - 1.0)
+to color name after @@ sign.
+
+@item thickness, t
+Set the thickness of the grid line. Default value is @code{1}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Draw a grid with cell 100x100 pixels, thickness 2 pixels, with color red and an opacity of 50%:
+@example
+drawgrid=width=100:height=100:thickness=2:color=red@@0.5
+@end example
+@end itemize
+
 @anchor{drawtext}
 @section drawtext
 
