@@ -265,7 +265,7 @@ static int cdg_decode_frame(AVCodecContext *avctx,
     int buf_size       = avpkt->size;
     int ret;
     uint8_t command, inst;
-    uint8_t cdg_data[CDG_DATA_SIZE];
+    uint8_t cdg_data[CDG_DATA_SIZE] = {0};
     AVFrame *frame = data;
     CDGraphicsContext *cc = avctx->priv_data;
 
