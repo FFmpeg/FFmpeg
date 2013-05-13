@@ -644,7 +644,7 @@ int main(void){
     int skip = 0;
 
     for (i=0; i<AV_PIX_FMT_NB*2; i++) {
-        AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if(!desc || !desc->name) {
             skip ++;
             continue;
