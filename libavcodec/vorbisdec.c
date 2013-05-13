@@ -422,6 +422,11 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
         }
 
 // Initialize VLC table
+        if (entries <= 0) {
+            av_log(vc->avctx, AV_LOG_ERROR, "Invalid codebook entry count\n");
+            ret = AVERROR_INVALIDDATA;
+            goto error;
+        }
         if (ff_vorbis_len2vlc(tmp_vlc_bits, tmp_vlc_codes, entries)) {
             av_log(vc->avctx, AV_LOG_ERROR, " Invalid code lengths while generating vlcs. \n");
             ret = AVERROR_INVALIDDATA;
