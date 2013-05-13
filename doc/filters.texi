@@ -3855,6 +3855,22 @@ Alternatively, the options can be specified as a flat string:
 
 See also the @ref{setpts} filter.
 
+@subsection Examples
+
+@itemize
+@item
+A typical usage in order to set the fps to 25:
+@example
+fps=fps=25
+@end example
+
+@item
+Sets the fps to 24, using abbreviation and rounding method to round to nearest:
+@example
+fps=fps=film:round=near
+@end example
+@end itemize
+
 @section framestep
 
 Select one frame every N-th frame.
