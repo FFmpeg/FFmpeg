@@ -31,7 +31,7 @@
 
 #include "avcodec.h"
 
-typedef struct {
+typedef struct SchroVideoFormatInfo {
     uint16_t width;
     uint16_t height;
     uint16_t frame_rate_num;
@@ -101,20 +101,20 @@ void *ff_schro_queue_pop(FFSchroQueue *queue);
 void ff_schro_queue_free(FFSchroQueue *queue, void (*free_func)(void *));
 
 static const struct {
-    enum PixelFormat  ff_pix_fmt;
+    enum AVPixelFormat  ff_pix_fmt;
     SchroChromaFormat schro_pix_fmt;
     SchroFrameFormat  schro_frame_fmt;
 } schro_pixel_format_map[] = {
-    { PIX_FMT_YUV420P, SCHRO_CHROMA_420, SCHRO_FRAME_FORMAT_U8_420 },
-    { PIX_FMT_YUV422P, SCHRO_CHROMA_422, SCHRO_FRAME_FORMAT_U8_422 },
-    { PIX_FMT_YUV444P, SCHRO_CHROMA_444, SCHRO_FRAME_FORMAT_U8_444 },
+    { AV_PIX_FMT_YUV420P, SCHRO_CHROMA_420, SCHRO_FRAME_FORMAT_U8_420 },
+    { AV_PIX_FMT_YUV422P, SCHRO_CHROMA_422, SCHRO_FRAME_FORMAT_U8_422 },
+    { AV_PIX_FMT_YUV444P, SCHRO_CHROMA_444, SCHRO_FRAME_FORMAT_U8_444 },
 };
 
 /**
 * Returns the video format preset matching the input video dimensions and
 * time base.
 */
-SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avccontext);
+SchroVideoFormatEnum ff_get_schro_video_format_preset (AVCodecContext *avctx);
 
 /**
 * Sets the Schroedinger frame format corresponding to the Schro chroma format
@@ -127,7 +127,7 @@ int ff_get_schro_frame_format(SchroChromaFormat schro_chroma_fmt,
 * Create a Schro frame based on the dimensions and frame format
 * passed. Returns a pointer to a frame on success, NULL on failure.
 */
-SchroFrame *ff_create_schro_frame(AVCodecContext *avccontext,
+SchroFrame *ff_create_schro_frame(AVCodecContext *avctx,
                                   SchroFrameFormat schro_frame_fmt);
 
 #endif /* AVCODEC_LIBSCHROEDINGER_H */

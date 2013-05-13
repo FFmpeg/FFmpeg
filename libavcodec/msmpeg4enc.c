@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mem.h"
 #include "mpegvideo.h"
@@ -45,7 +46,7 @@
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 /* build the table which associate a (x,y) motion vector to a vlc */
-static void init_mv_table(MVTable *tab)
+static av_cold void init_mv_table(MVTable *tab)
 {
     int i, x, y;
 
@@ -193,9 +194,6 @@ static void find_best_tables(MpegEncContext * s)
         }
     }
 
-//    printf("type:%d, best:%d, qp:%d, var:%d, mcvar:%d, size:%d //\n",
-//           s->pict_type, best, s->qscale, s->mb_var_sum, s->mc_mb_var_sum, best_size);
-
     if(s->pict_type==AV_PICTURE_TYPE_P) chroma_best= best;
 
     memset(s->ac_stats, 0, sizeof(int)*(MAX_LEVEL+1)*(MAX_RUN+1)*2*2*2);
@@ -233,7 +231,8 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->per_mb_rl_table = 0;
     if(s->msmpeg4_version==4)
         s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==AV_PICTURE_TYPE_P);
-//printf("%d %d %d %d %d\n", s->pict_type, s->bit_rate, s->inter_intra_pred, s->width, s->height);
+    av_dlog(s, "%d %d %d %d %d\n", s->pict_type, s->bit_rate,
+            s->inter_intra_pred, s->width, s->height);
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         s->slice_height= s->mb_height/1;
@@ -371,7 +370,7 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
 }
 
 void ff_msmpeg4_encode_mb(MpegEncContext * s,
-                          DCTELEM block[6][64],
+                          int16_t block[6][64],
                           int motion_x, int motion_y)
 {
     int cbp, coded_cbp, i;
@@ -496,7 +495,7 @@ void ff_msmpeg4_encode_mb(MpegEncContext * s,
 static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
 {
     int sign, code;
-    int pred, extquant;
+    int pred, av_uninit(extquant);
     int extrabits = 0;
 
     int16_t *dc_val;
@@ -572,7 +571,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
 /* Encoding of a block. Very similar to MPEG4 except for a different
    escape coding (same as H263) and more vlc tables.
  */
-void ff_msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
+void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
 {
     int level, run, last, i, j, last_index;
     int last_non_zero, sign, slevel;

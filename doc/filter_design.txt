@@ -12,28 +12,172 @@ Format negotiation
 ==================
 
   The query_formats method should set, for each input and each output links,
-  the list supported formats.
+  the list of supported formats.
 
   For video links, that means pixel format. For audio links, that means
-  channel layout, and sample format (the sample packing is implied by the
-  sample format).
+  channel layout, sample format (the sample packing is implied by the sample
+  format) and sample rate.
 
   The lists are not just lists, they are references to shared objects. When
   the negotiation mechanism computes the intersection of the formats
-  supported at each ends of a link, all references to both lists are
-  replaced with a reference to the intersection. And when a single format is
+  supported at each end of a link, all references to both lists are replaced
+  with a reference to the intersection. And when a single format is
   eventually chosen for a link amongst the remaining list, again, all
   references to the list are updated.
 
   That means that if a filter requires that its input and output have the
-  same format amongst a supported list, all it have to do is use a reference
+  same format amongst a supported list, all it has to do is use a reference
   to the same list of formats.
+
+  query_formats can leave some formats unset and return AVERROR(EAGAIN) to
+  cause the negotiation mechanism to try again later. That can be used by
+  filters with complex requirements to use the format negotiated on one link
+  to set the formats supported on another.
 
 
 Buffer references ownership and permissions
 ===========================================
 
-  TODO
+  Principle
+  ---------
+
+    Audio and video data are voluminous; the buffer and buffer reference
+    mechanism is intended to avoid, as much as possible, expensive copies of
+    that data while still allowing the filters to produce correct results.
+
+    The data is stored in buffers represented by AVFilterBuffer structures.
+    They must not be accessed directly, but through references stored in
+    AVFilterBufferRef structures. Several references can point to the
+    same buffer; the buffer is automatically deallocated once all
+    corresponding references have been destroyed.
+
+    The characteristics of the data (resolution, sample rate, etc.) are
+    stored in the reference; different references for the same buffer can
+    show different characteristics. In particular, a video reference can
+    point to only a part of a video buffer.
+
+    A reference is usually obtained as input to the start_frame or
+    filter_frame method or requested using the ff_get_video_buffer or
+    ff_get_audio_buffer functions. A new reference on an existing buffer can
+    be created with the avfilter_ref_buffer. A reference is destroyed using
+    the avfilter_unref_bufferp function.
+
+  Reference ownership
+  -------------------
+
+    At any time, a reference “belongs” to a particular piece of code,
+    usually a filter. With a few caveats that will be explained below, only
+    that piece of code is allowed to access it. It is also responsible for
+    destroying it, although this is sometimes done automatically (see the
+    section on link reference fields).
+
+    Here are the (fairly obvious) rules for reference ownership:
+
+    * A reference received by the filter_frame method (or its start_frame
+      deprecated version) belongs to the corresponding filter.
+
+      Special exception: for video references: the reference may be used
+      internally for automatic copying and must not be destroyed before
+      end_frame; it can be given away to ff_start_frame.
+
+    * A reference passed to ff_filter_frame (or the deprecated
+      ff_start_frame) is given away and must no longer be used.
+
+    * A reference created with avfilter_ref_buffer belongs to the code that
+      created it.
+
+    * A reference obtained with ff_get_video_buffer or ff_get_audio_buffer
+      belongs to the code that requested it.
+
+    * A reference given as return value by the get_video_buffer or
+      get_audio_buffer method is given away and must no longer be used.
+
+  Link reference fields
+  ---------------------
+
+    The AVFilterLink structure has a few AVFilterBufferRef fields. The
+    cur_buf and out_buf were used with the deprecated
+    start_frame/draw_slice/end_frame API and should no longer be used.
+    src_buf, cur_buf_copy and partial_buf are used by libavfilter internally
+    and must not be accessed by filters.
+
+  Reference permissions
+  ---------------------
+
+    The AVFilterBufferRef structure has a perms field that describes what
+    the code that owns the reference is allowed to do to the buffer data.
+    Different references for the same buffer can have different permissions.
+
+    For video filters that implement the deprecated
+    start_frame/draw_slice/end_frame API, the permissions only apply to the
+    parts of the buffer that have already been covered by the draw_slice
+    method.
+
+    The value is a binary OR of the following constants:
+
+    * AV_PERM_READ: the owner can read the buffer data; this is essentially
+      always true and is there for self-documentation.
+
+    * AV_PERM_WRITE: the owner can modify the buffer data.
+
+    * AV_PERM_PRESERVE: the owner can rely on the fact that the buffer data
+      will not be modified by previous filters.
+
+    * AV_PERM_REUSE: the owner can output the buffer several times, without
+      modifying the data in between.
+
+    * AV_PERM_REUSE2: the owner can output the buffer several times and
+      modify the data in between (useless without the WRITE permissions).
+
+    * AV_PERM_ALIGN: the owner can access the data using fast operations
+      that require data alignment.
+
+    The READ, WRITE and PRESERVE permissions are about sharing the same
+    buffer between several filters to avoid expensive copies without them
+    doing conflicting changes on the data.
+
+    The REUSE and REUSE2 permissions are about special memory for direct
+    rendering. For example a buffer directly allocated in video memory must
+    not modified once it is displayed on screen, or it will cause tearing;
+    it will therefore not have the REUSE2 permission.
+
+    The ALIGN permission is about extracting part of the buffer, for
+    copy-less padding or cropping for example.
+
+
+    References received on input pads are guaranteed to have all the
+    permissions stated in the min_perms field and none of the permissions
+    stated in the rej_perms.
+
+    References obtained by ff_get_video_buffer and ff_get_audio_buffer are
+    guaranteed to have at least all the permissions requested as argument.
+
+    References created by avfilter_ref_buffer have the same permissions as
+    the original reference minus the ones explicitly masked; the mask is
+    usually ~0 to keep the same permissions.
+
+    Filters should remove permissions on reference they give to output
+    whenever necessary. It can be automatically done by setting the
+    rej_perms field on the output pad.
+
+    Here are a few guidelines corresponding to common situations:
+
+    * Filters that modify and forward their frame (like drawtext) need the
+      WRITE permission.
+
+    * Filters that read their input to produce a new frame on output (like
+      scale) need the READ permission on input and and must request a buffer
+      with the WRITE permission.
+
+    * Filters that intend to keep a reference after the filtering process
+      is finished (after filter_frame returns) must have the PRESERVE
+      permission on it and remove the WRITE permission if they create a new
+      reference to give it away.
+
+    * Filters that intend to modify a reference they have kept after the end
+      of the filtering process need the REUSE2 permission and must remove
+      the PRESERVE permission if they create a new reference to give it
+      away.
 
 
 Frame scheduling
@@ -45,11 +189,11 @@ Frame scheduling
   Simple filters that output one frame for each input frame should not have
   to worry about it.
 
-  start_frame / filter_samples
-  ----------------------------
+  filter_frame
+  ------------
 
-    These methods are called when a frame is pushed to the filter's input.
-    They can be called at any time except in a reentrant way.
+    This method is called when a frame is pushed to the filter's input. It
+    can be called at any time except in a reentrant way.
 
     If the input frame is enough to produce output, then the filter should
     push the output frames on the output link immediately.
@@ -60,7 +204,7 @@ Frame scheduling
     filter; these buffered frames must be flushed immediately if a new input
     produces new output.
 
-    (Example: framerate-doubling filter: start_frame must (1) flush the
+    (Example: frame rate-doubling filter: filter_frame must (1) flush the
     second copy of the previous frame, if it is still there, (2) push the
     first copy of the incoming frame, (3) keep the second copy for later.)
 
@@ -70,7 +214,7 @@ Frame scheduling
     request_frame method or the application.
 
     If a filter has several inputs, the filter must be ready for frames
-    arriving randomly on any input. Therefore, any filter with several input
+    arriving randomly on any input. Therefore, any filter with several inputs
     will most likely require some kind of queuing mechanism. It is perfectly
     acceptable to have a limited queue and to drop frames when the inputs
     are too unbalanced.
@@ -80,12 +224,12 @@ Frame scheduling
 
     This method is called when a frame is wanted on an output.
 
-    For an input, it should directly call start_frame or filter_samples on
-    the corresponding output.
+    For an input, it should directly call filter_frame on the corresponding
+    output.
 
     For a filter, if there are queued frames already ready, one of these
     frames should be pushed. If not, the filter should request a frame on
-    one of its input, repeatedly until at least one frame has been pushed.
+    one of its inputs, repeatedly until at least one frame has been pushed.
 
     Return values:
     if request_frame could produce a frame, it should return 0;
@@ -102,7 +246,7 @@ Frame scheduling
         }
         while (!frame_pushed) {
             input = input_where_a_frame_is_most_needed();
-            ret = avfilter_request_frame(input);
+            ret = ff_request_frame(input);
             if (ret == AVERROR_EOF) {
                 process_eof_on_input();
             } else if (ret < 0) {
@@ -113,4 +257,14 @@ Frame scheduling
 
     Note that, except for filters that can have queued frames, request_frame
     does not push frames: it requests them to its input, and as a reaction,
-    the start_frame / filter_samples method will be called and do the work.
+    the filter_frame method will be called and do the work.
+
+Legacy API
+==========
+
+  Until libavfilter 3.23, the filter_frame method was split:
+
+  - for video filters, it was made of start_frame, draw_slice (that could be
+    called several times on distinct parts of the frame) and end_frame;
+
+  - for audio filters, it was called filter_samples.

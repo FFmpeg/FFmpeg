@@ -32,7 +32,7 @@ typedef struct {
     int continue_pes;
 } PVAContext;
 
-static int pva_check(uint8_t *p) {
+static int pva_check(const uint8_t *p) {
     int length = AV_RB16(p + 6);
     if (AV_RB16(p) != PVA_MAGIC || !p[2] || p[2] > 2 || p[4] != 0x55 ||
         (p[5] & 0xe0) || length > PVA_MAX_PAYLOAD_LENGTH)
@@ -41,7 +41,7 @@ static int pva_check(uint8_t *p) {
 }
 
 static int pva_probe(AVProbeData * pd) {
-    unsigned char *buf = pd->buf;
+    const unsigned char *buf = pd->buf;
     int len = pva_check(buf);
 
     if (len < 0)
@@ -49,7 +49,7 @@ static int pva_probe(AVProbeData * pd) {
 
     if (pd->buf_size >= len + 8 &&
         pva_check(buf + len) >= 0)
-        return AVPROBE_SCORE_MAX / 2;
+        return AVPROBE_SCORE_EXTENSION;
 
     return AVPROBE_SCORE_MAX / 4;
 }
@@ -60,7 +60,7 @@ static int pva_read_header(AVFormatContext *s) {
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_MPEG2VIDEO;
+    st->codec->codec_id   = AV_CODEC_ID_MPEG2VIDEO;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
     avpriv_set_pts_info(st, 32, 1, 90000);
     av_add_index_entry(st, 0, 0, 0, 0, AVINDEX_KEYFRAME);
@@ -68,7 +68,7 @@ static int pva_read_header(AVFormatContext *s) {
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = CODEC_ID_MP2;
+    st->codec->codec_id   = AV_CODEC_ID_MP2;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
     avpriv_set_pts_info(st, 33, 1, 90000);
     av_add_index_entry(st, 0, 0, 0, 0, AVINDEX_KEYFRAME);
@@ -216,7 +216,7 @@ static int64_t pva_read_timestamp(struct AVFormatContext *s, int stream_index,
 
 AVInputFormat ff_pva_demuxer = {
     .name           = "pva",
-    .long_name      = NULL_IF_CONFIG_SMALL("TechnoTrend PVA file and stream format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("TechnoTrend PVA"),
     .priv_data_size = sizeof(PVAContext),
     .read_probe     = pva_probe,
     .read_header    = pva_read_header,

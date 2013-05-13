@@ -56,6 +56,7 @@
 
 #include <string.h>
 
+#include "libavutil/attributes.h"
 #include "roqvideo.h"
 #include "bytestream.h"
 #include "elbg.h"
@@ -936,7 +937,23 @@ static void roq_encode_video(RoqContext *enc)
     enc->framesSinceKeyframe++;
 }
 
-static int roq_encode_init(AVCodecContext *avctx)
+static av_cold int roq_encode_end(AVCodecContext *avctx)
+{
+    RoqContext *enc = avctx->priv_data;
+
+    av_frame_free(&enc->current_frame);
+    av_frame_free(&enc->last_frame);
+
+    av_free(enc->tmpData);
+    av_free(enc->this_motion4);
+    av_free(enc->last_motion4);
+    av_free(enc->this_motion8);
+    av_free(enc->last_motion8);
+
+    return 0;
+}
+
+static av_cold int roq_encode_init(AVCodecContext *avctx)
 {
     RoqContext *enc = avctx->priv_data;
 
@@ -957,8 +974,12 @@ static int roq_encode_init(AVCodecContext *avctx)
     enc->framesSinceKeyframe = 0;
     enc->first_frame = 1;
 
-    enc->last_frame    = &enc->frames[0];
-    enc->current_frame = &enc->frames[1];
+    enc->last_frame    = av_frame_alloc();
+    enc->current_frame = av_frame_alloc();
+    if (!enc->last_frame || !enc->current_frame) {
+        roq_encode_end(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     enc->tmpData      = av_malloc(sizeof(RoqTempdata));
 
@@ -1031,11 +1052,9 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (enc->first_frame) {
         /* Alloc memory for the reconstruction data (we must know the stride
          for that) */
-        if (avctx->get_buffer(avctx, enc->current_frame) ||
-            avctx->get_buffer(avctx, enc->last_frame)) {
-            av_log(avctx, AV_LOG_ERROR, "  RoQ: get_buffer() failed\n");
-            return -1;
-        }
+        if ((ret = ff_get_buffer(avctx, enc->current_frame, 0)) < 0 ||
+            (ret = ff_get_buffer(avctx, enc->last_frame,    0)) < 0)
+            return ret;
 
         /* Before the first video frame, write a "video info" chunk */
         roq_write_video_info_chunk(enc);
@@ -1054,32 +1073,16 @@ static int roq_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static int roq_encode_end(AVCodecContext *avctx)
-{
-    RoqContext *enc = avctx->priv_data;
-
-    avctx->release_buffer(avctx, enc->last_frame);
-    avctx->release_buffer(avctx, enc->current_frame);
-
-    av_free(enc->tmpData);
-    av_free(enc->this_motion4);
-    av_free(enc->last_motion4);
-    av_free(enc->this_motion8);
-    av_free(enc->last_motion8);
-
-    return 0;
-}
-
 AVCodec ff_roq_encoder = {
     .name                 = "roqvideo",
     .type                 = AVMEDIA_TYPE_VIDEO,
-    .id                   = CODEC_ID_ROQ,
+    .id                   = AV_CODEC_ID_ROQ,
     .priv_data_size       = sizeof(RoqContext),
     .init                 = roq_encode_init,
     .encode2              = roq_encode_frame,
     .close                = roq_encode_end,
     .supported_framerates = (const AVRational[]){ {30,1}, {0,0} },
-    .pix_fmts             = (const enum PixelFormat[]){ PIX_FMT_YUV444P,
-                                                        PIX_FMT_NONE },
+    .pix_fmts             = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P,
+                                                        AV_PIX_FMT_NONE },
     .long_name            = NULL_IF_CONFIG_SMALL("id RoQ video"),
 };

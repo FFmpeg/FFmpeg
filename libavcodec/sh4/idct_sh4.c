@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/dsputil.h"
 #include "dsputil_sh4.h"
 #include "sh4.h"
 
@@ -89,7 +88,7 @@ static const float odd_table[] __attribute__ ((aligned(8))) = {
 
 //optimized
 
-void ff_idct_sh4(DCTELEM *block)
+void ff_idct_sh4(int16_t *block)
 {
         DEFREG;
 

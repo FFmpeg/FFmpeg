@@ -52,7 +52,7 @@ static int rv34_parse(AVCodecParserContext *s,
     }
 
     hdr = AV_RB32(buf + 9 + *buf * 8);
-    if (avctx->codec_id == CODEC_ID_RV30) {
+    if (avctx->codec_id == AV_CODEC_ID_RV30) {
         type = (hdr >> 27) & 3;
         pts  = (hdr >>  7) & 0x1FFF;
     } else {
@@ -78,7 +78,7 @@ static int rv34_parse(AVCodecParserContext *s,
 
 #if CONFIG_RV30_PARSER
 AVCodecParser ff_rv30_parser = {
-    .codec_ids      = { CODEC_ID_RV30 },
+    .codec_ids      = { AV_CODEC_ID_RV30 },
     .priv_data_size = sizeof(RV34ParseContext),
     .parser_parse   = rv34_parse,
 };
@@ -86,7 +86,7 @@ AVCodecParser ff_rv30_parser = {
 
 #if CONFIG_RV40_PARSER
 AVCodecParser ff_rv40_parser = {
-    .codec_ids      = { CODEC_ID_RV40 },
+    .codec_ids      = { AV_CODEC_ID_RV40 },
     .priv_data_size = sizeof(RV34ParseContext),
     .parser_parse   = rv34_parse,
 };

@@ -31,8 +31,8 @@
  * special FLIs from the PC games "Magic Carpet" and "X-COM: Terror from the Deep".
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/audioconvert.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -110,7 +110,7 @@ static int flic_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     flic->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_FLIC;
+    st->codec->codec_id = AV_CODEC_ID_FLIC;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = AV_RL16(&header[0x08]);
     st->codec->height = AV_RL16(&header[0x0A]);
@@ -154,11 +154,10 @@ static int flic_read_header(AVFormatContext *s)
         /* all audio frames are the same size, so use the size of the first chunk for block_align */
         ast->codec->block_align = AV_RL32(&preamble[0]);
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id = CODEC_ID_PCM_U8;
+        ast->codec->codec_id = AV_CODEC_ID_PCM_U8;
         ast->codec->codec_tag = 0;
         ast->codec->sample_rate = FLIC_TFTD_SAMPLE_RATE;
         ast->codec->channels = 1;
-        ast->codec->sample_fmt = AV_SAMPLE_FMT_U8;
         ast->codec->bit_rate = st->codec->sample_rate * 8;
         ast->codec->bits_per_coded_sample = 8;
         ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
@@ -187,7 +186,7 @@ static int flic_read_header(AVFormatContext *s)
                (magic_number == FLIC_FILE_MAGIC_3)) {
         avpriv_set_pts_info(st, 64, speed, 1000);
     } else {
-        av_log(s, AV_LOG_INFO, "Invalid or unsupported magic chunk in file\n");
+        av_log(s, AV_LOG_ERROR, "Invalid or unsupported magic chunk in file\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -262,7 +261,7 @@ static int flic_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_flic_demuxer = {
     .name           = "flic",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation"),
     .priv_data_size = sizeof(FlicDemuxContext),
     .read_probe     = flic_probe,
     .read_header    = flic_read_header,

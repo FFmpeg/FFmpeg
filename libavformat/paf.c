@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavcodec/paf.h"
 #include "avformat.h"
 #include "internal.h"
@@ -107,7 +108,7 @@ static int read_header(AVFormatContext *s)
     avio_skip(pb, 4);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_tag  = 0;
-    vst->codec->codec_id   = CODEC_ID_PAF_VIDEO;
+    vst->codec->codec_id   = AV_CODEC_ID_PAF_VIDEO;
     avpriv_set_pts_info(vst, 64, 1, 10);
 
     ast = avformat_new_stream(s, 0);
@@ -117,8 +118,9 @@ static int read_header(AVFormatContext *s)
     ast->start_time         = 0;
     ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     ast->codec->codec_tag   = 0;
-    ast->codec->codec_id    = CODEC_ID_PAF_AUDIO;
+    ast->codec->codec_id    = AV_CODEC_ID_PAF_AUDIO;
     ast->codec->channels    = 2;
+    ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
     ast->codec->sample_rate = 22050;
     avpriv_set_pts_info(ast, 64, 1, 22050);
 
@@ -200,7 +202,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(ENOMEM);
 
         memcpy(pkt->data, p->temp_audio_frame, p->audio_size);
-        pkt->duration     = PAF_SOUND_SAMPLES * p->audio_size / PAF_SOUND_FRAME_SIZE;
+        pkt->duration     = PAF_SOUND_SAMPLES * (p->audio_size / PAF_SOUND_FRAME_SIZE);
         pkt->flags       |= AV_PKT_FLAG_KEY;
         pkt->stream_index = 1;
         p->got_audio      = 0;
@@ -212,8 +214,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         if (p->current_frame_block >= p->frame_blks)
             return AVERROR_INVALIDDATA;
 
-        offset = p->blocks_offset_table[p->current_frame_block] & ~(1 << 31);
-        if (p->blocks_offset_table[p->current_frame_block] & (1 << 31)) {
+        offset = p->blocks_offset_table[p->current_frame_block] & ~(1U << 31);
+        if (p->blocks_offset_table[p->current_frame_block] & (1U << 31)) {
             if (offset > p->audio_size - p->buffer_size)
                 return AVERROR_INVALIDDATA;
 

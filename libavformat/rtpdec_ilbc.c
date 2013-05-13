@@ -68,6 +68,6 @@ static int ilbc_parse_sdp_line(AVFormatContext *s, int st_index,
 RTPDynamicProtocolHandler ff_ilbc_dynamic_handler = {
     .enc_name         = "iLBC",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_ILBC,
+    .codec_id         = AV_CODEC_ID_ILBC,
     .parse_sdp_a_line = ilbc_parse_sdp_line,
 };

@@ -25,35 +25,42 @@
  * G.723.1 compatible decoder
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
+#include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
+#include "libavutil/opt.h"
+#include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "acelp_vectors.h"
 #include "celp_filters.h"
 #include "celp_math.h"
-#include "lsp.h"
-#include "libavutil/lzo.h"
 #include "g723_1_data.h"
+#include "internal.h"
+
+#define CNG_RANDOM_SEED 12345
 
 typedef struct g723_1_context {
-    AVFrame frame;
+    AVClass *class;
+
     G723_1_Subframe subframe[4];
-    FrameType cur_frame_type;
-    FrameType past_frame_type;
-    Rate cur_rate;
+    enum FrameType cur_frame_type;
+    enum FrameType past_frame_type;
+    enum Rate cur_rate;
     uint8_t lsp_index[LSP_BANDS];
     int pitch_lag[2];
     int erased_frames;
 
     int16_t prev_lsp[LPC_ORDER];
+    int16_t sid_lsp[LPC_ORDER];
     int16_t prev_excitation[PITCH_MAX];
-    int16_t excitation[PITCH_MAX + FRAME_LEN];
+    int16_t excitation[PITCH_MAX + FRAME_LEN + 4];
     int16_t synth_mem[LPC_ORDER];
     int16_t fir_mem[LPC_ORDER];
     int     iir_mem[LPC_ORDER];
 
     int random_seed;
+    int cng_random_seed;
     int interp_index;
     int interp_gain;
     int sid_gain;
@@ -61,7 +68,9 @@ typedef struct g723_1_context {
     int reflection_coef;
     int pf_gain;                 ///< formant postfilter
                                  ///< gain scaling unit memory
+    int postfilter;
 
+    int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
     int16_t prev_data[HALF_FRAME_LEN];
     int16_t prev_weight_sig[PITCH_MAX];
 
@@ -76,14 +85,18 @@ typedef struct g723_1_context {
 
 static av_cold int g723_1_decode_init(AVCodecContext *avctx)
 {
-    G723_1_Context *p  = avctx->priv_data;
+    G723_1_Context *p = avctx->priv_data;
 
-    avctx->sample_fmt  = AV_SAMPLE_FMT_S16;
-    p->pf_gain         = 1 << 12;
-    memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(int16_t));
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
+    avctx->channels       = 1;
+    p->pf_gain            = 1 << 12;
 
-    avcodec_get_frame_defaults(&p->frame);
-    avctx->coded_frame = &p->frame;
+    memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
+    memcpy(p->sid_lsp,  dc_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
+
+    p->cng_random_seed = CNG_RANDOM_SEED;
+    p->past_frame_type = SID_FRAME;
 
     return 0;
 }
@@ -108,7 +121,7 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
     info_bits = get_bits(&gb, 2);
 
     if (info_bits == 3) {
-        p->cur_frame_type = UntransmittedFrame;
+        p->cur_frame_type = UNTRANSMITTED_FRAME;
         return 0;
     }
 
@@ -118,14 +131,14 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
     p->lsp_index[0] = get_bits(&gb, 8);
 
     if (info_bits == 2) {
-        p->cur_frame_type = SIDFrame;
+        p->cur_frame_type = SID_FRAME;
         p->subframe[0].amp_index = get_bits(&gb, 6);
         return 0;
     }
 
     /* Extract the info common to both rates */
-    p->cur_rate       = info_bits ? Rate5k3 : Rate6k3;
-    p->cur_frame_type = ActiveFrame;
+    p->cur_rate       = info_bits ? RATE_5300 : RATE_6300;
+    p->cur_frame_type = ACTIVE_FRAME;
 
     p->pitch_lag[0] = get_bits(&gb, 7);
     if (p->pitch_lag[0] > 123)       /* test if forbidden code */
@@ -146,9 +159,9 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
         temp = get_bits(&gb, 12);
         ad_cb_len = 170;
         p->subframe[i].dirac_train = 0;
-        if (p->cur_rate == Rate6k3 && p->pitch_lag[i >> 1] < SUBFRAME_LEN - 2) {
+        if (p->cur_rate == RATE_6300 && p->pitch_lag[i >> 1] < SUBFRAME_LEN - 2) {
             p->subframe[i].dirac_train = temp >> 11;
-            temp &= 0x7ff;
+            temp &= 0x7FF;
             ad_cb_len = 85;
         }
         p->subframe[i].ad_cb_gain = FASTDIV(temp, GAIN_LEVELS);
@@ -165,7 +178,7 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
     p->subframe[2].grid_index = get_bits1(&gb);
     p->subframe[3].grid_index = get_bits1(&gb);
 
-    if (p->cur_rate == Rate6k3) {
+    if (p->cur_rate == RATE_6300) {
         skip_bits1(&gb);  /* skip reserved bit */
 
         /* Compute pulse_pos index using the 13-bit combined position index */
@@ -192,7 +205,7 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
         p->subframe[1].pulse_sign = get_bits(&gb, 5);
         p->subframe[2].pulse_sign = get_bits(&gb, 6);
         p->subframe[3].pulse_sign = get_bits(&gb, 5);
-    } else { /* Rate5k3 */
+    } else { /* 5300 bps */
         p->subframe[0].pulse_pos  = get_bits(&gb, 12);
         p->subframe[1].pulse_pos  = get_bits(&gb, 12);
         p->subframe[2].pulse_pos  = get_bits(&gb, 12);
@@ -210,8 +223,10 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
 /**
  * Bitexact implementation of sqrt(val/2).
  */
-static int16_t square_root(int val)
+static int16_t square_root(unsigned val)
 {
+    av_assert2(!(val & 0x80000000));
+
     return (ff_sqrt(val << 1) >> 1) & (~1);
 }
 
@@ -219,49 +234,32 @@ static int16_t square_root(int val)
  * Calculate the number of left-shifts required for normalizing the input.
  *
  * @param num   input number
- * @param width width of the input, 16 bits(0) / 32 bits(1)
+ * @param width width of the input, 15 or 31 bits
  */
 static int normalize_bits(int num, int width)
 {
-    int i = 0;
-    int bits = (width) ? 31 : 15;
-
-    if (num) {
-        if (num == -1)
-            return bits;
-        if (num < 0)
-            num = ~num;
-        i= bits - av_log2(num) - 1;
-        i= FFMAX(i, 0);
-    }
-    return i;
+    return width - av_log2(num) - 1;
 }
 
-#define normalize_bits_int16(num) normalize_bits(num, 0)
-#define normalize_bits_int32(num) normalize_bits(num, 1)
-#define dot_product(a,b,c,d) (ff_dot_product(a,b,c)<<(d))
+#define normalize_bits_int16(num) normalize_bits(num, 15)
+#define normalize_bits_int32(num) normalize_bits(num, 31)
 
 /**
  * Scale vector contents based on the largest of their absolutes.
  */
-static int scale_vector(int16_t *vector, int length)
+static int scale_vector(int16_t *dst, const int16_t *vector, int length)
 {
-    int bits, scale, max = 0;
+    int bits, max = 0;
     int i;
 
-    const int16_t shift_table[16] = {
-        0x0001, 0x0002, 0x0004, 0x0008, 0x0010, 0x0020, 0x0040, 0x0080,
-        0x0100, 0x0200, 0x0400, 0x0800, 0x1000, 0x2000, 0x4000, 0x7fff
-    };
+    for (i = 0; i < length; i++)
+        max |= FFABS(vector[i]);
+
+    bits= 14 - av_log2_16bit(max);
+    bits= FFMAX(bits, 0);
 
     for (i = 0; i < length; i++)
-        max = FFMAX(max, FFABS(vector[i]));
-
-    bits  = normalize_bits(max, 0);
-    scale = shift_table[bits];
-
-    for (i = 0; i < length; i++)
-        vector[i] = (vector[i] * scale) >> 3;
+        dst[i] = vector[i] << bits >> 3;
 
     return bits - 3;
 }
@@ -333,7 +331,7 @@ static void inverse_quant(int16_t *cur_lsp, int16_t *prev_lsp,
             break;
     }
     if (!stable)
-        memcpy(cur_lsp, prev_lsp, LPC_ORDER * sizeof(int16_t));
+        memcpy(cur_lsp, prev_lsp, LPC_ORDER * sizeof(*cur_lsp));
 }
 
 /**
@@ -358,13 +356,13 @@ static void lsp2lpc(int16_t *lpc)
 
     /* Calculate negative cosine */
     for (j = 0; j < LPC_ORDER; j++) {
-        int index     = lpc[j] >> 7;
+        int index     = (lpc[j] >> 7) & 0x1FF;
         int offset    = lpc[j] & 0x7f;
-        int64_t temp1 = cos_tab[index] << 16;
+        int temp1     = cos_tab[index] << 16;
         int temp2     = (cos_tab[index + 1] - cos_tab[index]) *
                           ((offset << 8) + 0x80) << 1;
 
-        lpc[j] = -(av_clipl_int32(((temp1 + temp2) << 1) + (1 << 15)) >> 16);
+        lpc[j] = -(av_sat_dadd32(1 << 15, temp1 + temp2) >> 16);
     }
 
     /*
@@ -432,7 +430,7 @@ static void lsp_interpolate(int16_t *lpc, int16_t *cur_lsp, int16_t *prev_lsp)
                                  8192, 8192, 1 << 13, 14, LPC_ORDER);
     ff_acelp_weighted_vector_sum(lpc + 2 * LPC_ORDER, cur_lsp, prev_lsp,
                                  12288, 4096, 1 << 13, 14, LPC_ORDER);
-    memcpy(lpc + 3 * LPC_ORDER, cur_lsp, LPC_ORDER * sizeof(int16_t));
+    memcpy(lpc + 3 * LPC_ORDER, cur_lsp, LPC_ORDER * sizeof(*lpc));
 
     for (i = 0; i < SUBFRAMES; i++) {
         lsp2lpc(lpc_ptr);
@@ -448,7 +446,7 @@ static void gen_dirac_train(int16_t *buf, int pitch_lag)
     int16_t vector[SUBFRAME_LEN];
     int i, j;
 
-    memcpy(vector, buf, SUBFRAME_LEN * sizeof(int16_t));
+    memcpy(vector, buf, SUBFRAME_LEN * sizeof(*vector));
     for (i = pitch_lag; i < SUBFRAME_LEN; i += pitch_lag) {
         for (j = 0; j < SUBFRAME_LEN - i; j++)
             buf[i + j] += vector[j];
@@ -464,42 +462,42 @@ static void gen_dirac_train(int16_t *buf, int pitch_lag)
  * @param pitch_lag closed loop pitch lag
  * @param index     current subframe index
  */
-static void gen_fcb_excitation(int16_t *vector, G723_1_Subframe subfrm,
-                               Rate cur_rate, int pitch_lag, int index)
+static void gen_fcb_excitation(int16_t *vector, G723_1_Subframe *subfrm,
+                               enum Rate cur_rate, int pitch_lag, int index)
 {
     int temp, i, j;
 
-    memset(vector, 0, SUBFRAME_LEN * sizeof(int16_t));
+    memset(vector, 0, SUBFRAME_LEN * sizeof(*vector));
 
-    if (cur_rate == Rate6k3) {
-        if (subfrm.pulse_pos >= max_pos[index])
+    if (cur_rate == RATE_6300) {
+        if (subfrm->pulse_pos >= max_pos[index])
             return;
 
         /* Decode amplitudes and positions */
         j = PULSE_MAX - pulses[index];
-        temp = subfrm.pulse_pos;
+        temp = subfrm->pulse_pos;
         for (i = 0; i < SUBFRAME_LEN / GRID_SIZE; i++) {
             temp -= combinatorial_table[j][i];
             if (temp >= 0)
                 continue;
             temp += combinatorial_table[j++][i];
-            if (subfrm.pulse_sign & (1 << (PULSE_MAX - j))) {
-                vector[subfrm.grid_index + GRID_SIZE * i] =
-                                        -fixed_cb_gain[subfrm.amp_index];
+            if (subfrm->pulse_sign & (1 << (PULSE_MAX - j))) {
+                vector[subfrm->grid_index + GRID_SIZE * i] =
+                                        -fixed_cb_gain[subfrm->amp_index];
             } else {
-                vector[subfrm.grid_index + GRID_SIZE * i] =
-                                         fixed_cb_gain[subfrm.amp_index];
+                vector[subfrm->grid_index + GRID_SIZE * i] =
+                                         fixed_cb_gain[subfrm->amp_index];
             }
             if (j == PULSE_MAX)
                 break;
         }
-        if (subfrm.dirac_train == 1)
+        if (subfrm->dirac_train == 1)
             gen_dirac_train(vector, pitch_lag);
-    } else { /* Rate5k3 */
-        int cb_gain  = fixed_cb_gain[subfrm.amp_index];
-        int cb_shift = subfrm.grid_index;
-        int cb_sign  = subfrm.pulse_sign;
-        int cb_pos   = subfrm.pulse_pos;
+    } else { /* 5300 bps */
+        int cb_gain  = fixed_cb_gain[subfrm->amp_index];
+        int cb_shift = subfrm->grid_index;
+        int cb_sign  = subfrm->pulse_sign;
+        int cb_pos   = subfrm->pulse_pos;
         int offset, beta, lag;
 
         for (i = 0; i < 8; i += 2) {
@@ -510,9 +508,9 @@ static void gen_fcb_excitation(int16_t *vector, G723_1_Subframe subfrm,
         }
 
         /* Enhance harmonic components */
-        lag  = pitch_contrib[subfrm.ad_cb_gain << 1] + pitch_lag +
-               subfrm.ad_cb_lag - 1;
-        beta = pitch_contrib[(subfrm.ad_cb_gain << 1) + 1];
+        lag  = pitch_contrib[subfrm->ad_cb_gain << 1] + pitch_lag +
+               subfrm->ad_cb_lag - 1;
+        beta = pitch_contrib[(subfrm->ad_cb_gain << 1) + 1];
 
         if (lag < SUBFRAME_LEN - 2) {
             for (i = lag; i < SUBFRAME_LEN; i++)
@@ -537,58 +535,66 @@ static void get_residual(int16_t *residual, int16_t *prev_excitation, int lag)
         residual[i] = prev_excitation[offset + (i - 2) % lag];
 }
 
+static int dot_product(const int16_t *a, const int16_t *b, int length)
+{
+    int sum = ff_dot_product(a,b,length);
+    return av_sat_add32(sum, sum);
+}
+
 /**
  * Generate adaptive codebook excitation.
  */
 static void gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
-                               int pitch_lag, G723_1_Subframe subfrm,
-                               Rate cur_rate)
+                               int pitch_lag, G723_1_Subframe *subfrm,
+                               enum Rate cur_rate)
 {
     int16_t residual[SUBFRAME_LEN + PITCH_ORDER - 1];
     const int16_t *cb_ptr;
-    int lag = pitch_lag + subfrm.ad_cb_lag - 1;
+    int lag = pitch_lag + subfrm->ad_cb_lag - 1;
 
     int i;
-    int64_t sum;
+    int sum;
 
     get_residual(residual, prev_excitation, lag);
 
     /* Select quantization table */
-    if (cur_rate == Rate6k3 && pitch_lag < SUBFRAME_LEN - 2) {
+    if (cur_rate == RATE_6300 && pitch_lag < SUBFRAME_LEN - 2) {
         cb_ptr = adaptive_cb_gain85;
     } else
         cb_ptr = adaptive_cb_gain170;
 
     /* Calculate adaptive vector */
-    cb_ptr += subfrm.ad_cb_gain * 20;
+    cb_ptr += subfrm->ad_cb_gain * 20;
     for (i = 0; i < SUBFRAME_LEN; i++) {
         sum = ff_dot_product(residual + i, cb_ptr, PITCH_ORDER);
-        vector[i] = av_clipl_int32((sum << 2) + (1 << 15)) >> 16;
+        vector[i] = av_sat_dadd32(1 << 15, av_sat_add32(sum, sum)) >> 16;
     }
 }
 
 /**
  * Estimate maximum auto-correlation around pitch lag.
  *
- * @param p         the context
+ * @param buf       buffer with offset applied
  * @param offset    offset of the excitation vector
  * @param ccr_max   pointer to the maximum auto-correlation
  * @param pitch_lag decoded pitch lag
  * @param length    length of autocorrelation
  * @param dir       forward lag(1) / backward lag(-1)
  */
-static int autocorr_max(G723_1_Context *p, int offset, int *ccr_max,
+static int autocorr_max(const int16_t *buf, int offset, int *ccr_max,
                         int pitch_lag, int length, int dir)
 {
     int limit, ccr, lag = 0;
-    int16_t *buf = p->excitation + offset;
     int i;
 
     pitch_lag = FFMIN(PITCH_MAX - 3, pitch_lag);
-    limit     = FFMIN(FRAME_LEN + PITCH_MAX - offset - length, pitch_lag + 3);
+    if (dir > 0)
+        limit = FFMIN(FRAME_LEN + PITCH_MAX - offset - length, pitch_lag + 3);
+    else
+        limit = pitch_lag + 3;
 
     for (i = pitch_lag - 3; i <= limit; i++) {
-        ccr = ff_dot_product(buf, buf + dir * i, length)<<1;
+        ccr = dot_product(buf, buf + dir * i, length);
 
         if (ccr > *ccr_max) {
             *ccr_max = ccr;
@@ -608,11 +614,11 @@ static int autocorr_max(G723_1_Context *p, int offset, int *ccr_max,
  * @param ccr      cross-correlation
  * @param res_eng  residual energy
  */
-static void comp_ppf_gains(int lag, PPFParam *ppf, Rate cur_rate,
+static void comp_ppf_gains(int lag, PPFParam *ppf, enum Rate cur_rate,
                            int tgt_eng, int ccr, int res_eng)
 {
     int pf_residual;     /* square of postfiltered residual */
-    int64_t temp1, temp2;
+    int temp1, temp2;
 
     ppf->index = lag;
 
@@ -629,7 +635,7 @@ static void comp_ppf_gains(int lag, PPFParam *ppf, Rate cur_rate,
         /* pf_res^2 = tgt_eng + 2*ccr*gain + res_eng*gain^2 */
         temp1       = (tgt_eng << 15) + (ccr * ppf->opt_gain << 1);
         temp2       = (ppf->opt_gain * ppf->opt_gain >> 15) * res_eng;
-        pf_residual = av_clipl_int32(temp1 + temp2 + (1 << 15)) >> 16;
+        pf_residual = av_sat_add32(temp1, temp2 + (1 << 15)) >> 16;
 
         if (tgt_eng >= pf_residual << 1) {
             temp1 = 0x7fff;
@@ -657,12 +663,12 @@ static void comp_ppf_gains(int lag, PPFParam *ppf, Rate cur_rate,
  * @param cur_rate  current bitrate
  */
 static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
-                           PPFParam *ppf, Rate cur_rate)
+                           PPFParam *ppf, enum Rate cur_rate)
 {
 
     int16_t scale;
     int i;
-    int64_t temp1, temp2;
+    int temp1, temp2;
 
     /*
      * 0 - target energy
@@ -672,10 +678,10 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
      * 4 - backward residual energy
      */
     int energy[5] = {0, 0, 0, 0, 0};
-    int16_t *buf  = p->excitation + offset;
-    int fwd_lag   = autocorr_max(p, offset, &energy[1], pitch_lag,
+    int16_t *buf  = p->audio + LPC_ORDER + offset;
+    int fwd_lag   = autocorr_max(buf, offset, &energy[1], pitch_lag,
                                  SUBFRAME_LEN, 1);
-    int back_lag  = autocorr_max(p, offset, &energy[3], pitch_lag,
+    int back_lag  = autocorr_max(buf, offset, &energy[3], pitch_lag,
                                  SUBFRAME_LEN, -1);
 
     ppf->index    = 0;
@@ -687,26 +693,24 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
         return;
 
     /* Compute target energy */
-    energy[0] = ff_dot_product(buf, buf, SUBFRAME_LEN)<<1;
+    energy[0] = dot_product(buf, buf, SUBFRAME_LEN);
 
     /* Compute forward residual energy */
     if (fwd_lag)
-        energy[2] = ff_dot_product(buf + fwd_lag, buf + fwd_lag,
-                                   SUBFRAME_LEN)<<1;
+        energy[2] = dot_product(buf + fwd_lag, buf + fwd_lag, SUBFRAME_LEN);
 
     /* Compute backward residual energy */
     if (back_lag)
-        energy[4] = ff_dot_product(buf - back_lag, buf - back_lag,
-                                   SUBFRAME_LEN)<<1;
+        energy[4] = dot_product(buf - back_lag, buf - back_lag, SUBFRAME_LEN);
 
     /* Normalize and shorten */
     temp1 = 0;
     for (i = 0; i < 5; i++)
         temp1 = FFMAX(energy[i], temp1);
 
-    scale = normalize_bits(temp1, 1);
+    scale = normalize_bits(temp1, 31);
     for (i = 0; i < 5; i++)
-        energy[i] = av_clipl_int32(energy[i] << scale) >> 16;
+        energy[i] = (energy[i] << scale) >> 16;
 
     if (fwd_lag && !back_lag) {  /* Case 1 */
         comp_ppf_gains(fwd_lag,  ppf, cur_rate, energy[0], energy[1],
@@ -746,28 +750,28 @@ static int comp_interp_index(G723_1_Context *p, int pitch_lag,
                              int *exc_eng, int *scale)
 {
     int offset = PITCH_MAX + 2 * SUBFRAME_LEN;
-    int16_t *buf = p->excitation + offset;
+    int16_t *buf = p->audio + LPC_ORDER;
 
     int index, ccr, tgt_eng, best_eng, temp;
 
-    *scale = scale_vector(p->excitation, FRAME_LEN + PITCH_MAX);
+    *scale = scale_vector(buf, p->excitation, FRAME_LEN + PITCH_MAX);
+    buf   += offset;
 
     /* Compute maximum backward cross-correlation */
     ccr   = 0;
-    index = autocorr_max(p, offset, &ccr, pitch_lag, SUBFRAME_LEN * 2, -1);
-    ccr   = av_clipl_int32((int64_t)ccr + (1 << 15)) >> 16;
+    index = autocorr_max(buf, offset, &ccr, pitch_lag, SUBFRAME_LEN * 2, -1);
+    ccr   = av_sat_add32(ccr, 1 << 15) >> 16;
 
     /* Compute target energy */
-    tgt_eng  = ff_dot_product(buf, buf, SUBFRAME_LEN * 2)<<1;
-    *exc_eng = av_clipl_int32(tgt_eng + (1 << 15)) >> 16;
+    tgt_eng  = dot_product(buf, buf, SUBFRAME_LEN * 2);
+    *exc_eng = av_sat_add32(tgt_eng, 1 << 15) >> 16;
 
     if (ccr <= 0)
         return 0;
 
     /* Compute best energy */
-    best_eng = ff_dot_product(buf - index, buf - index,
-                              SUBFRAME_LEN * 2)<<1;
-    best_eng = av_clipl_int32((int64_t)best_eng + (1 << 15)) >> 16;
+    best_eng = dot_product(buf - index, buf - index, SUBFRAME_LEN * 2);
+    best_eng = av_sat_add32(best_eng, 1 << 15) >> 16;
 
     temp = best_eng * *exc_eng >> 3;
 
@@ -794,16 +798,15 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
         int16_t *vector_ptr = buf + PITCH_MAX;
         /* Attenuate */
         for (i = 0; i < lag; i++)
-            vector_ptr[i - lag] = vector_ptr[i - lag] * 3 >> 2;
-        av_memcpy_backptr((uint8_t*)vector_ptr, lag * sizeof(int16_t),
-                          FRAME_LEN * sizeof(int16_t));
-        memcpy(out, vector_ptr, FRAME_LEN * sizeof(int16_t));
+            out[i] = vector_ptr[i - lag] * 3 >> 2;
+        av_memcpy_backptr((uint8_t*)(out + lag), lag * sizeof(*out),
+                          (FRAME_LEN - lag) * sizeof(*out));
     } else {  /* Unvoiced */
         for (i = 0; i < FRAME_LEN; i++) {
             *rseed = *rseed * 521 + 259;
             out[i] = gain * *rseed >> 15;
         }
-        memset(buf, 0, (FRAME_LEN + PITCH_MAX) * sizeof(int16_t));
+        memset(buf, 0, (FRAME_LEN + PITCH_MAX) * sizeof(*buf));
     }
 }
 
@@ -849,14 +852,14 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
     num   = energy;
     denom = 0;
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        int64_t temp = buf[i] >> 2;
-        temp  = av_clipl_int32(MUL64(temp, temp) << 1);
-        denom = av_clipl_int32(denom + temp);
+        int temp = buf[i] >> 2;
+        temp *= temp;
+        denom = av_sat_dadd32(denom, temp);
     }
 
     if (num && denom) {
-        bits1   = normalize_bits(num, 1);
-        bits2   = normalize_bits(denom, 1);
+        bits1   = normalize_bits(num,   31);
+        bits2   = normalize_bits(denom, 31);
         num     = num << bits1 >> 1;
         denom <<= bits2;
 
@@ -870,7 +873,7 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
     }
 
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        p->pf_gain = ((p->pf_gain << 4) - p->pf_gain + gain + (1 << 3)) >> 4;
+        p->pf_gain = (15 * p->pf_gain + gain + (1 << 3)) >> 4;
         buf[i]     = av_clip_int16((buf[i] * (p->pf_gain + (p->pf_gain >> 4)) +
                                    (1 << 10)) >> 11);
     }
@@ -881,16 +884,18 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
  *
  * @param p   the context
  * @param lpc quantized lpc coefficients
- * @param buf output buffer
+ * @param buf input buffer
+ * @param dst output buffer
  */
-static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
+static void formant_postfilter(G723_1_Context *p, int16_t *lpc,
+                               int16_t *buf, int16_t *dst)
 {
-    int16_t filter_coef[2][LPC_ORDER], *buf_ptr;
+    int16_t filter_coef[2][LPC_ORDER];
     int filter_signal[LPC_ORDER + FRAME_LEN], *signal_ptr;
     int i, j, k;
 
-    memcpy(buf, p->fir_mem, LPC_ORDER * sizeof(int16_t));
-    memcpy(filter_signal, p->iir_mem, LPC_ORDER * sizeof(int));
+    memcpy(buf, p->fir_mem, LPC_ORDER * sizeof(*buf));
+    memcpy(filter_signal, p->iir_mem, LPC_ORDER * sizeof(*filter_signal));
 
     for (i = LPC_ORDER, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++) {
         for (k = 0; k < LPC_ORDER; k++) {
@@ -901,43 +906,38 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         }
         iir_filter(filter_coef[0], filter_coef[1], buf + i,
                    filter_signal + i, 1);
+        lpc += LPC_ORDER;
     }
 
     memcpy(p->fir_mem, buf + FRAME_LEN, LPC_ORDER * sizeof(int16_t));
     memcpy(p->iir_mem, filter_signal + FRAME_LEN, LPC_ORDER * sizeof(int));
 
-    buf_ptr    = buf + LPC_ORDER;
+    buf += LPC_ORDER;
     signal_ptr = filter_signal + LPC_ORDER;
     for (i = 0; i < SUBFRAMES; i++) {
-        int16_t temp_vector[SUBFRAME_LEN];
-        int16_t temp;
+        int temp;
         int auto_corr[2];
         int scale, energy;
 
         /* Normalize */
-        memcpy(temp_vector, buf_ptr, SUBFRAME_LEN * sizeof(int16_t));
-        scale = scale_vector(temp_vector, SUBFRAME_LEN);
+        scale = scale_vector(dst, buf, SUBFRAME_LEN);
 
         /* Compute auto correlation coefficients */
-        auto_corr[0] = ff_dot_product(temp_vector, temp_vector + 1,
-                                      SUBFRAME_LEN - 1)<<1;
-        auto_corr[1] = ff_dot_product(temp_vector, temp_vector,
-                                      SUBFRAME_LEN)<<1;
+        auto_corr[0] = dot_product(dst, dst + 1, SUBFRAME_LEN - 1);
+        auto_corr[1] = dot_product(dst, dst,     SUBFRAME_LEN);
 
         /* Compute reflection coefficient */
         temp = auto_corr[1] >> 16;
         if (temp) {
             temp = (auto_corr[0] >> 2) / temp;
         }
-        p->reflection_coef = ((p->reflection_coef << 2) - p->reflection_coef +
-                              temp + 2) >> 2;
-        temp = (p->reflection_coef * 0xffffc >> 3) & 0xfffc;
+        p->reflection_coef = (3 * p->reflection_coef + temp + 2) >> 2;
+        temp = -p->reflection_coef >> 1 & ~3;
 
         /* Compensation filter */
         for (j = 0; j < SUBFRAME_LEN; j++) {
-            buf_ptr[j] = av_clipl_int32(signal_ptr[j] +
-                                        ((signal_ptr[j - 1] >> 16) *
-                                         temp << 1)) >> 16;
+            dst[j] = av_sat_dadd32(signal_ptr[j],
+                                   (signal_ptr[j - 1] >> 16) * temp) >> 16;
         }
 
         /* Compute normalized signal energy */
@@ -947,156 +947,399 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
         } else
             energy = auto_corr[1] >> temp;
 
-        gain_scale(p, buf_ptr, energy);
+        gain_scale(p, dst, energy);
 
-        buf_ptr    += SUBFRAME_LEN;
+        buf        += SUBFRAME_LEN;
         signal_ptr += SUBFRAME_LEN;
+        dst        += SUBFRAME_LEN;
     }
+}
+
+static int sid_gain_to_lsp_index(int gain)
+{
+    if (gain < 0x10)
+        return gain << 6;
+    else if (gain < 0x20)
+        return gain - 8 << 7;
+    else
+        return gain - 20 << 8;
+}
+
+static inline int cng_rand(int *state, int base)
+{
+    *state = (*state * 521 + 259) & 0xFFFF;
+    return (*state & 0x7FFF) * base >> 15;
+}
+
+static int estimate_sid_gain(G723_1_Context *p)
+{
+    int i, shift, seg, seg2, t, val, val_add, x, y;
+
+    shift = 16 - p->cur_gain * 2;
+    if (shift > 0)
+        t = p->sid_gain << shift;
+    else
+        t = p->sid_gain >> -shift;
+    x = t * cng_filt[0] >> 16;
+
+    if (x >= cng_bseg[2])
+        return 0x3F;
+
+    if (x >= cng_bseg[1]) {
+        shift = 4;
+        seg   = 3;
+    } else {
+        shift = 3;
+        seg   = (x >= cng_bseg[0]);
+    }
+    seg2 = FFMIN(seg, 3);
+
+    val     = 1 << shift;
+    val_add = val >> 1;
+    for (i = 0; i < shift; i++) {
+        t = seg * 32 + (val << seg2);
+        t *= t;
+        if (x >= t)
+            val += val_add;
+        else
+            val -= val_add;
+        val_add >>= 1;
+    }
+
+    t = seg * 32 + (val << seg2);
+    y = t * t - x;
+    if (y <= 0) {
+        t = seg * 32 + (val + 1 << seg2);
+        t = t * t - x;
+        val = (seg2 - 1 << 4) + val;
+        if (t >= y)
+            val++;
+    } else {
+        t = seg * 32 + (val - 1 << seg2);
+        t = t * t - x;
+        val = (seg2 - 1 << 4) + val;
+        if (t >= y)
+            val--;
+    }
+
+    return val;
+}
+
+static void generate_noise(G723_1_Context *p)
+{
+    int i, j, idx, t;
+    int off[SUBFRAMES];
+    int signs[SUBFRAMES / 2 * 11], pos[SUBFRAMES / 2 * 11];
+    int tmp[SUBFRAME_LEN * 2];
+    int16_t *vector_ptr;
+    int64_t sum;
+    int b0, c, delta, x, shift;
+
+    p->pitch_lag[0] = cng_rand(&p->cng_random_seed, 21) + 123;
+    p->pitch_lag[1] = cng_rand(&p->cng_random_seed, 19) + 123;
+
+    for (i = 0; i < SUBFRAMES; i++) {
+        p->subframe[i].ad_cb_gain = cng_rand(&p->cng_random_seed, 50) + 1;
+        p->subframe[i].ad_cb_lag  = cng_adaptive_cb_lag[i];
+    }
+
+    for (i = 0; i < SUBFRAMES / 2; i++) {
+        t = cng_rand(&p->cng_random_seed, 1 << 13);
+        off[i * 2]     =   t       & 1;
+        off[i * 2 + 1] = ((t >> 1) & 1) + SUBFRAME_LEN;
+        t >>= 2;
+        for (j = 0; j < 11; j++) {
+            signs[i * 11 + j] = (t & 1) * 2 - 1 << 14;
+            t >>= 1;
+        }
+    }
+
+    idx = 0;
+    for (i = 0; i < SUBFRAMES; i++) {
+        for (j = 0; j < SUBFRAME_LEN / 2; j++)
+            tmp[j] = j;
+        t = SUBFRAME_LEN / 2;
+        for (j = 0; j < pulses[i]; j++, idx++) {
+            int idx2 = cng_rand(&p->cng_random_seed, t);
+
+            pos[idx]  = tmp[idx2] * 2 + off[i];
+            tmp[idx2] = tmp[--t];
+        }
+    }
+
+    vector_ptr = p->audio + LPC_ORDER;
+    memcpy(vector_ptr, p->prev_excitation,
+           PITCH_MAX * sizeof(*p->excitation));
+    for (i = 0; i < SUBFRAMES; i += 2) {
+        gen_acb_excitation(vector_ptr, vector_ptr,
+                           p->pitch_lag[i >> 1], &p->subframe[i],
+                           p->cur_rate);
+        gen_acb_excitation(vector_ptr + SUBFRAME_LEN,
+                           vector_ptr + SUBFRAME_LEN,
+                           p->pitch_lag[i >> 1], &p->subframe[i + 1],
+                           p->cur_rate);
+
+        t = 0;
+        for (j = 0; j < SUBFRAME_LEN * 2; j++)
+            t |= FFABS(vector_ptr[j]);
+        t = FFMIN(t, 0x7FFF);
+        if (!t) {
+            shift = 0;
+        } else {
+            shift = -10 + av_log2(t);
+            if (shift < -2)
+                shift = -2;
+        }
+        sum = 0;
+        if (shift < 0) {
+           for (j = 0; j < SUBFRAME_LEN * 2; j++) {
+               t      = vector_ptr[j] << -shift;
+               sum   += t * t;
+               tmp[j] = t;
+           }
+        } else {
+           for (j = 0; j < SUBFRAME_LEN * 2; j++) {
+               t      = vector_ptr[j] >> shift;
+               sum   += t * t;
+               tmp[j] = t;
+           }
+        }
+
+        b0 = 0;
+        for (j = 0; j < 11; j++)
+            b0 += tmp[pos[(i / 2) * 11 + j]] * signs[(i / 2) * 11 + j];
+        b0 = b0 * 2 * 2979LL + (1 << 29) >> 30; // approximated division by 11
+
+        c = p->cur_gain * (p->cur_gain * SUBFRAME_LEN >> 5);
+        if (shift * 2 + 3 >= 0)
+            c >>= shift * 2 + 3;
+        else
+            c <<= -(shift * 2 + 3);
+        c = (av_clipl_int32(sum << 1) - c) * 2979LL >> 15;
+
+        delta = b0 * b0 * 2 - c;
+        if (delta <= 0) {
+            x = -b0;
+        } else {
+            delta = square_root(delta);
+            x     = delta - b0;
+            t     = delta + b0;
+            if (FFABS(t) < FFABS(x))
+                x = -t;
+        }
+        shift++;
+        if (shift < 0)
+           x >>= -shift;
+        else
+           x <<= shift;
+        x = av_clip(x, -10000, 10000);
+
+        for (j = 0; j < 11; j++) {
+            idx = (i / 2) * 11 + j;
+            vector_ptr[pos[idx]] = av_clip_int16(vector_ptr[pos[idx]] +
+                                                 (x * signs[idx] >> 15));
+        }
+
+        /* copy decoded data to serve as a history for the next decoded subframes */
+        memcpy(vector_ptr + PITCH_MAX, vector_ptr,
+               sizeof(*vector_ptr) * SUBFRAME_LEN * 2);
+        vector_ptr += SUBFRAME_LEN * 2;
+    }
+    /* Save the excitation for the next frame */
+    memcpy(p->prev_excitation, p->audio + LPC_ORDER + FRAME_LEN,
+           PITCH_MAX * sizeof(*p->excitation));
 }
 
 static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
     G723_1_Context *p  = avctx->priv_data;
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int16_t *out;
     int dec_mode       = buf[0] & 3;
 
     PPFParam ppf[SUBFRAMES];
     int16_t cur_lsp[LPC_ORDER];
     int16_t lpc[SUBFRAMES * LPC_ORDER];
     int16_t acb_vector[SUBFRAME_LEN];
-    int16_t *vector_ptr;
+    int16_t *out;
     int bad_frame = 0, i, j, ret;
+    int16_t *audio = p->audio;
 
-    if (!buf_size || buf_size < frame_size[dec_mode]) {
+    if (buf_size < frame_size[dec_mode]) {
+        if (buf_size)
+            av_log(avctx, AV_LOG_WARNING,
+                   "Expected %d bytes, got %d - skipping packet\n",
+                   frame_size[dec_mode], buf_size);
         *got_frame_ptr = 0;
         return buf_size;
     }
 
     if (unpack_bitstream(p, buf, buf_size) < 0) {
-        bad_frame         = 1;
-        p->cur_frame_type = p->past_frame_type == ActiveFrame ?
-                            ActiveFrame : UntransmittedFrame;
+        bad_frame = 1;
+        if (p->past_frame_type == ACTIVE_FRAME)
+            p->cur_frame_type = ACTIVE_FRAME;
+        else
+            p->cur_frame_type = UNTRANSMITTED_FRAME;
     }
 
-    p->frame.nb_samples = FRAME_LEN + LPC_ORDER;
-    if ((ret = avctx->get_buffer(avctx, &p->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    frame->nb_samples = FRAME_LEN;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
-    out= (int16_t*)p->frame.data[0];
 
+    out = (int16_t *)frame->data[0];
 
-    if(p->cur_frame_type == ActiveFrame) {
-        if (!bad_frame) {
+    if (p->cur_frame_type == ACTIVE_FRAME) {
+        if (!bad_frame)
             p->erased_frames = 0;
-        } else if(p->erased_frames != 3)
+        else if (p->erased_frames != 3)
             p->erased_frames++;
 
         inverse_quant(cur_lsp, p->prev_lsp, p->lsp_index, bad_frame);
         lsp_interpolate(lpc, cur_lsp, p->prev_lsp);
 
         /* Save the lsp_vector for the next frame */
-        memcpy(p->prev_lsp, cur_lsp, LPC_ORDER * sizeof(int16_t));
+        memcpy(p->prev_lsp, cur_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
 
         /* Generate the excitation for the frame */
-        memcpy(p->excitation, p->prev_excitation, PITCH_MAX * sizeof(int16_t));
-        vector_ptr = p->excitation + PITCH_MAX;
+        memcpy(p->excitation, p->prev_excitation,
+               PITCH_MAX * sizeof(*p->excitation));
         if (!p->erased_frames) {
+            int16_t *vector_ptr = p->excitation + PITCH_MAX;
+
             /* Update interpolation gain memory */
             p->interp_gain = fixed_cb_gain[(p->subframe[2].amp_index +
                                             p->subframe[3].amp_index) >> 1];
             for (i = 0; i < SUBFRAMES; i++) {
-                gen_fcb_excitation(vector_ptr, p->subframe[i], p->cur_rate,
+                gen_fcb_excitation(vector_ptr, &p->subframe[i], p->cur_rate,
                                    p->pitch_lag[i >> 1], i);
                 gen_acb_excitation(acb_vector, &p->excitation[SUBFRAME_LEN * i],
-                                   p->pitch_lag[i >> 1], p->subframe[i],
+                                   p->pitch_lag[i >> 1], &p->subframe[i],
                                    p->cur_rate);
                 /* Get the total excitation */
                 for (j = 0; j < SUBFRAME_LEN; j++) {
-                    vector_ptr[j] = av_clip_int16(vector_ptr[j] << 1);
-                    vector_ptr[j] = av_clip_int16(vector_ptr[j] +
-                                                  acb_vector[j]);
+                    int v = av_clip_int16(vector_ptr[j] << 1);
+                    vector_ptr[j] = av_clip_int16(v + acb_vector[j]);
                 }
                 vector_ptr += SUBFRAME_LEN;
             }
 
             vector_ptr = p->excitation + PITCH_MAX;
 
-            /* Save the excitation */
-            memcpy(out, vector_ptr, FRAME_LEN * sizeof(int16_t));
-
             p->interp_index = comp_interp_index(p, p->pitch_lag[1],
                                                 &p->sid_gain, &p->cur_gain);
 
-            for (i = PITCH_MAX, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-                comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
-                               ppf + j, p->cur_rate);
-
-            /* Restore the original excitation */
-            memcpy(p->excitation, p->prev_excitation,
-                   PITCH_MAX * sizeof(int16_t));
-            memcpy(vector_ptr, out, FRAME_LEN * sizeof(int16_t));
-
             /* Peform pitch postfiltering */
-            for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-                ff_acelp_weighted_vector_sum(out + LPC_ORDER + i, vector_ptr + i,
-                                             vector_ptr + i + ppf[j].index,
-                                             ppf[j].sc_gain, ppf[j].opt_gain,
-                                             1 << 14, 15, SUBFRAME_LEN);
+            if (p->postfilter) {
+                i = PITCH_MAX;
+                for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
+                    comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
+                                   ppf + j, p->cur_rate);
+
+                for (i = 0, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
+                    ff_acelp_weighted_vector_sum(p->audio + LPC_ORDER + i,
+                                                 vector_ptr + i,
+                                                 vector_ptr + i + ppf[j].index,
+                                                 ppf[j].sc_gain,
+                                                 ppf[j].opt_gain,
+                                                 1 << 14, 15, SUBFRAME_LEN);
+            } else {
+                audio = vector_ptr - LPC_ORDER;
+            }
+
+            /* Save the excitation for the next frame */
+            memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
+                   PITCH_MAX * sizeof(*p->excitation));
         } else {
             p->interp_gain = (p->interp_gain * 3 + 2) >> 2;
             if (p->erased_frames == 3) {
                 /* Mute output */
                 memset(p->excitation, 0,
-                       (FRAME_LEN + PITCH_MAX) * sizeof(int16_t));
-                memset(out, 0, (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
+                       (FRAME_LEN + PITCH_MAX) * sizeof(*p->excitation));
+                memset(p->prev_excitation, 0,
+                       PITCH_MAX * sizeof(*p->excitation));
+                memset(frame->data[0], 0,
+                       (FRAME_LEN + LPC_ORDER) * sizeof(int16_t));
             } else {
+                int16_t *buf = p->audio + LPC_ORDER;
+
                 /* Regenerate frame */
-                residual_interp(p->excitation, out + LPC_ORDER, p->interp_index,
+                residual_interp(p->excitation, buf, p->interp_index,
                                 p->interp_gain, &p->random_seed);
+
+                /* Save the excitation for the next frame */
+                memcpy(p->prev_excitation, buf + (FRAME_LEN - PITCH_MAX),
+                       PITCH_MAX * sizeof(*p->excitation));
             }
         }
-        /* Save the excitation for the next frame */
-        memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
-               PITCH_MAX * sizeof(int16_t));
+        p->cng_random_seed = CNG_RANDOM_SEED;
     } else {
-        memset(out, 0, sizeof(int16_t)*FRAME_LEN);
-        av_log(avctx, AV_LOG_WARNING,
-               "G.723.1: Comfort noise generation not supported yet\n");
-        return frame_size[dec_mode];
+        if (p->cur_frame_type == SID_FRAME) {
+            p->sid_gain = sid_gain_to_lsp_index(p->subframe[0].amp_index);
+            inverse_quant(p->sid_lsp, p->prev_lsp, p->lsp_index, 0);
+        } else if (p->past_frame_type == ACTIVE_FRAME) {
+            p->sid_gain = estimate_sid_gain(p);
+        }
+
+        if (p->past_frame_type == ACTIVE_FRAME)
+            p->cur_gain = p->sid_gain;
+        else
+            p->cur_gain = (p->cur_gain * 7 + p->sid_gain) >> 3;
+        generate_noise(p);
+        lsp_interpolate(lpc, p->sid_lsp, p->prev_lsp);
+        /* Save the lsp_vector for the next frame */
+        memcpy(p->prev_lsp, p->sid_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
     }
 
     p->past_frame_type = p->cur_frame_type;
 
-    memcpy(out, p->synth_mem, LPC_ORDER * sizeof(int16_t));
+    memcpy(p->audio, p->synth_mem, LPC_ORDER * sizeof(*p->audio));
     for (i = LPC_ORDER, j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
-        ff_celp_lp_synthesis_filter(out + i, &lpc[j * LPC_ORDER],
-                                    out + i, SUBFRAME_LEN, LPC_ORDER,
+        ff_celp_lp_synthesis_filter(p->audio + i, &lpc[j * LPC_ORDER],
+                                    audio + i, SUBFRAME_LEN, LPC_ORDER,
                                     0, 1, 1 << 12);
-    memcpy(p->synth_mem, out + FRAME_LEN, LPC_ORDER * sizeof(int16_t));
+    memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
-    formant_postfilter(p, lpc, out);
+    if (p->postfilter) {
+        formant_postfilter(p, lpc, p->audio, out);
+    } else { // if output is not postfiltered it should be scaled by 2
+        for (i = 0; i < FRAME_LEN; i++)
+            out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
+    }
 
-    memmove(out, out + LPC_ORDER, sizeof(int16_t)*FRAME_LEN);
-    p->frame.nb_samples = FRAME_LEN;
-    *(AVFrame*)data = p->frame;
     *got_frame_ptr = 1;
 
     return frame_size[dec_mode];
 }
 
+#define OFFSET(x) offsetof(G723_1_Context, x)
+#define AD     AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "postfilter", "postfilter on/off", OFFSET(postfilter), AV_OPT_TYPE_INT,
+      { .i64 = 1 }, 0, 1, AD },
+    { NULL }
+};
+
+
+static const AVClass g723_1dec_class = {
+    .class_name = "G.723.1 decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_g723_1_decoder = {
     .name           = "g723_1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_G723_1,
+    .id             = AV_CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_decode_init,
     .decode         = g723_1_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .priv_class     = &g723_1dec_class,
 };
 
 #if CONFIG_G723_1_ENCODER
@@ -1118,7 +1361,7 @@ static av_cold int g723_1_encode_init(AVCodecContext *avctx)
     }
 
     if (avctx->bit_rate == 6300) {
-        p->cur_rate = Rate6k3;
+        p->cur_rate = RATE_6300;
     } else if (avctx->bit_rate == 5300) {
         av_log(avctx, AV_LOG_ERROR, "Bitrate not supported yet, use 6.3k\n");
         return AVERROR_PATCHWELCOME;
@@ -1161,15 +1404,14 @@ static void comp_autocorr(int16_t *buf, int16_t *autocorr)
     int i, scale, temp;
     int16_t vector[LPC_FRAME];
 
-    memcpy(vector, buf, LPC_FRAME * sizeof(int16_t));
-    scale_vector(vector, LPC_FRAME);
+    scale_vector(vector, buf, LPC_FRAME);
 
     /* Apply the Hamming window */
     for (i = 0; i < LPC_FRAME; i++)
         vector[i] = (vector[i] * hamming_window[i] + (1 << 14)) >> 15;
 
     /* Compute the first autocorrelation coefficient */
-    temp = dot_product(vector, vector, LPC_FRAME, 0);
+    temp = ff_dot_product(vector, vector, LPC_FRAME);
 
     /* Apply a white noise correlation factor of (1025/1024) */
     temp += temp >> 10;
@@ -1184,7 +1426,7 @@ static void comp_autocorr(int16_t *buf, int16_t *autocorr)
         memset(autocorr + 1, 0, LPC_ORDER * sizeof(int16_t));
     } else {
         for (i = 1; i <= LPC_ORDER; i++) {
-           temp = dot_product(vector, vector + i, LPC_FRAME - i, 0);
+           temp = ff_dot_product(vector, vector + i, LPC_FRAME - i);
            temp = MULL2((temp << scale), binomial_window[i - 1]);
            autocorr[i] = av_clipl_int32((int64_t)temp + (1 << 15)) >> 16;
         }
@@ -1364,8 +1606,8 @@ static void lpc2lsp(int16_t *lpc, int16_t *prev_lsp, int16_t *lsp)
             temp[j] = (weight[j + (offset)] * lsp_band##num[i][j] +\
                       (1 << 14)) >> 15;\
         }\
-        error =  dot_product(lsp + (offset), temp, size, 1) << 1;\
-        error -= dot_product(lsp_band##num[i], temp, size, 1);\
+        error =  dot_product(lsp + (offset), temp, size) << 1;\
+        error -= dot_product(lsp_band##num[i], temp, size);\
         if (error > max) {\
             max = error;\
             lsp_index[num] = i;\
@@ -1470,7 +1712,7 @@ static int estimate_pitch(int16_t *buf, int start)
 
     int i;
 
-    orig_eng = dot_product(buf + offset, buf + offset, HALF_FRAME_LEN, 0);
+    orig_eng = ff_dot_product(buf + offset, buf + offset, HALF_FRAME_LEN);
 
     for (i = PITCH_MIN; i <= PITCH_MAX - 3; i++) {
         offset--;
@@ -1478,7 +1720,7 @@ static int estimate_pitch(int16_t *buf, int start)
         /* Update energy and compute correlation */
         orig_eng += buf[offset] * buf[offset] -
                     buf[offset + HALF_FRAME_LEN] * buf[offset + HALF_FRAME_LEN];
-        ccr      =  dot_product(buf + start, buf + offset, HALF_FRAME_LEN, 0);
+        ccr      =  ff_dot_product(buf + start, buf + offset, HALF_FRAME_LEN);
         if (ccr <= 0)
             continue;
 
@@ -1539,13 +1781,13 @@ static void comp_harmonic_coeff(int16_t *buf, int16_t pitch_lag, HFParam *hf)
 
     for (i = 0, j = pitch_lag - 3; j <= pitch_lag + 3; i++, j++) {
         /* Compute residual energy */
-        energy[i << 1] = dot_product(buf - j, buf - j, SUBFRAME_LEN, 0);
+        energy[i << 1] = ff_dot_product(buf - j, buf - j, SUBFRAME_LEN);
         /* Compute correlation */
-        energy[(i << 1) + 1] = dot_product(buf, buf - j, SUBFRAME_LEN, 0);
+        energy[(i << 1) + 1] = ff_dot_product(buf, buf - j, SUBFRAME_LEN);
     }
 
     /* Compute target energy */
-    energy[14] = dot_product(buf, buf, SUBFRAME_LEN, 0);
+    energy[14] = ff_dot_product(buf, buf, SUBFRAME_LEN);
 
     /* Normalize */
     max = 0;
@@ -1603,7 +1845,7 @@ static void comp_harmonic_coeff(int16_t *buf, int16_t pitch_lag, HFParam *hf)
  *
  * @param hf filter parameters
  */
-static void harmonic_filter(HFParam *hf, int16_t *src, int16_t *dest)
+static void harmonic_filter(HFParam *hf, const int16_t *src, int16_t *dest)
 {
     int i;
 
@@ -1613,7 +1855,7 @@ static void harmonic_filter(HFParam *hf, int16_t *src, int16_t *dest)
     }
 }
 
-static void harmonic_noise_sub(HFParam *hf, int16_t *src, int16_t *dest)
+static void harmonic_noise_sub(HFParam *hf, const int16_t *src, int16_t *dest)
 {
     int i;
     for (i = 0; i < SUBFRAME_LEN; i++) {
@@ -1635,7 +1877,7 @@ static void harmonic_noise_sub(HFParam *hf, int16_t *src, int16_t *dest)
  */
 static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
                                  int16_t *perf_fir, int16_t *perf_iir,
-                                 int16_t *src, int16_t *dest, int scale)
+                                 const int16_t *src, int16_t *dest, int scale)
 {
     int i, j;
     int16_t buf_16[SUBFRAME_LEN + LPC_ORDER];
@@ -1676,7 +1918,7 @@ static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
  * @param index the current subframe index
  */
 static void acb_search(G723_1_Context *p, int16_t *residual,
-                       int16_t *impulse_resp, int16_t *buf,
+                       int16_t *impulse_resp, const int16_t *buf,
                        int index)
 {
 
@@ -1726,19 +1968,19 @@ static void acb_search(G723_1_Context *p, int16_t *residual,
 
         /* Compute crosscorrelation with the signal */
         for (j = 0; j < PITCH_ORDER; j++) {
-            temp = dot_product(buf, flt_buf[j], SUBFRAME_LEN, 0);
+            temp = ff_dot_product(buf, flt_buf[j], SUBFRAME_LEN);
             ccr_buf[count++] = av_clipl_int32(temp << 1);
         }
 
         /* Compute energies */
         for (j = 0; j < PITCH_ORDER; j++) {
             ccr_buf[count++] = dot_product(flt_buf[j], flt_buf[j],
-                                           SUBFRAME_LEN, 1);
+                                           SUBFRAME_LEN);
         }
 
         for (j = 1; j < PITCH_ORDER; j++) {
             for (k = 0; k < j; k++) {
-                temp = dot_product(flt_buf[j], flt_buf[k], SUBFRAME_LEN, 0);
+                temp = ff_dot_product(flt_buf[j], flt_buf[k], SUBFRAME_LEN);
                 ccr_buf[count++] = av_clipl_int32(temp<<2);
             }
         }
@@ -1795,7 +2037,7 @@ static void acb_search(G723_1_Context *p, int16_t *residual,
  *
  * @param buf target vector
  */
-static void sub_acb_contrib(int16_t *residual, int16_t *impulse_resp,
+static void sub_acb_contrib(const int16_t *residual, const int16_t *impulse_resp,
                             int16_t *buf)
 {
     int i, j;
@@ -1841,20 +2083,20 @@ static void get_fcb_param(FCBParam *optim, int16_t *impulse_resp,
         temp_corr[i] = impulse_r[i] >> 1;
 
     /* Compute impulse response autocorrelation */
-    temp = dot_product(temp_corr, temp_corr, SUBFRAME_LEN, 1);
+    temp = dot_product(temp_corr, temp_corr, SUBFRAME_LEN);
 
     scale = normalize_bits_int32(temp);
     impulse_corr[0] = av_clipl_int32((temp << scale) + (1 << 15)) >> 16;
 
     for (i = 1; i < SUBFRAME_LEN; i++) {
-        temp = dot_product(temp_corr + i, temp_corr, SUBFRAME_LEN - i, 1);
+        temp = dot_product(temp_corr + i, temp_corr, SUBFRAME_LEN - i);
         impulse_corr[i] = av_clipl_int32((temp << scale) + (1 << 15)) >> 16;
     }
 
     /* Compute crosscorrelation of impulse response with residual signal */
     scale -= 4;
     for (i = 0; i < SUBFRAME_LEN; i++){
-        temp = dot_product(buf + i, impulse_r, SUBFRAME_LEN - i, 1);
+        temp = dot_product(buf + i, impulse_r, SUBFRAME_LEN - i);
         if (scale < 0)
             ccr1[i] = temp >> -scale;
         else
@@ -2041,7 +2283,7 @@ static int pack_bitstream(G723_1_Context *p, unsigned char *frame, int size)
 
     init_put_bits(&pb, frame, size);
 
-    if (p->cur_rate == Rate6k3) {
+    if (p->cur_rate == RATE_6300) {
         info_bits = 0;
         put_bits(&pb, 2, info_bits);
     }
@@ -2059,7 +2301,7 @@ static int pack_bitstream(G723_1_Context *p, unsigned char *frame, int size)
     for (i = 0; i < SUBFRAMES; i++) {
         temp = p->subframe[i].ad_cb_gain * GAIN_LEVELS +
                p->subframe[i].amp_index;
-        if (p->cur_rate ==  Rate6k3)
+        if (p->cur_rate ==  RATE_6300)
             temp += p->subframe[i].dirac_train << 11;
         put_bits(&pb, 12, temp);
     }
@@ -2069,7 +2311,7 @@ static int pack_bitstream(G723_1_Context *p, unsigned char *frame, int size)
     put_bits(&pb, 1, p->subframe[2].grid_index);
     put_bits(&pb, 1, p->subframe[3].grid_index);
 
-    if (p->cur_rate == Rate6k3) {
+    if (p->cur_rate == RATE_6300) {
         skip_put_bits(&pb, 1); /* reserved bit */
 
         /* Write 13 bit combined position index */
@@ -2133,7 +2375,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     memcpy(vector, p->prev_weight_sig, sizeof(int16_t) * PITCH_MAX);
     memcpy(vector + PITCH_MAX, in, sizeof(int16_t) * FRAME_LEN);
 
-    scale_vector(vector, FRAME_LEN + PITCH_MAX);
+    scale_vector(vector, vector, FRAME_LEN + PITCH_MAX);
 
     p->pitch_lag[0] = estimate_pitch(vector, PITCH_MAX);
     p->pitch_lag[1] = estimate_pitch(vector, PITCH_MAX + HALF_FRAME_LEN);
@@ -2185,14 +2427,14 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
         acb_search(p, residual, impulse_resp, in, i);
         gen_acb_excitation(residual, p->prev_excitation,p->pitch_lag[i >> 1],
-                           p->subframe[i], p->cur_rate);
+                           &p->subframe[i], p->cur_rate);
         sub_acb_contrib(residual, impulse_resp, in);
 
         fcb_search(p, impulse_resp, in, i);
 
         /* Reconstruct the excitation */
         gen_acb_excitation(impulse_resp, p->prev_excitation, p->pitch_lag[i >> 1],
-                           p->subframe[i], Rate6k3);
+                           &p->subframe[i], RATE_6300);
 
         memmove(p->prev_excitation, p->prev_excitation + SUBFRAME_LEN,
                sizeof(int16_t) * (PITCH_MAX - SUBFRAME_LEN));
@@ -2214,7 +2456,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         offset += LPC_ORDER;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 24)))
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 24)) < 0)
         return ret;
 
     *got_packet_ptr = 1;
@@ -2225,7 +2467,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_g723_1_encoder = {
     .name           = "g723_1",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_G723_1,
+    .id             = AV_CODEC_ID_G723_1,
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
     .encode2        = g723_1_encode_frame,

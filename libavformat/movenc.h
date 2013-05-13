@@ -39,6 +39,7 @@
 #define MODE_3G2  0x10
 #define MODE_IPOD 0x20
 #define MODE_ISM  0x40
+#define MODE_F4V  0x80
 
 typedef struct MOVIentry {
     uint64_t     pos;
@@ -61,13 +62,13 @@ typedef struct HintSample {
     int own_data;
 } HintSample;
 
-typedef struct {
+typedef struct HintSampleQueue {
     int size;
     int len;
     HintSample *samples;
 } HintSampleQueue;
 
-typedef struct {
+typedef struct MOVFragmentInfo {
     int64_t offset;
     int64_t time;
     int64_t duration;
@@ -80,6 +81,7 @@ typedef struct MOVIndex {
     unsigned    timescale;
     uint64_t    time;
     int64_t     track_duration;
+    int         last_sample_is_subtitle_end;
     long        sample_count;
     long        sample_size;
     long        chunkCount;
@@ -92,6 +94,7 @@ typedef struct MOVIndex {
 #define MOV_TIMECODE_FLAG_ALLOWNEGATIVE 0x0004
     uint32_t    timecode_flags;
     int         language;
+    int         secondary;
     int         track_id;
     int         tag; ///< stsd fourcc
     AVCodecContext *enc;
@@ -142,6 +145,7 @@ typedef struct MOVMuxContext {
     int     mode;
     int64_t time;
     int     nb_streams;
+    int     nb_meta_tmcd;  ///< number of new created tmcd track based on metadata (aka not data copy)
     int     chapter_track; ///< qt chapter track number
     int64_t mdat_pos;
     uint64_t mdat_size;
@@ -149,7 +153,7 @@ typedef struct MOVMuxContext {
 
     int flags;
     int rtp_flags;
-    int reserved_moov_size;
+    int reserved_moov_size; ///< 0 for disabled, -1 for automatic, size otherwise
     int64_t reserved_moov_pos;
 
     int iods_skip;
@@ -162,6 +166,8 @@ typedef struct MOVMuxContext {
     int max_fragment_size;
     int ism_lookahead;
     AVIOContext *mdat_buf;
+
+    int use_editlist;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
@@ -171,6 +177,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_SEPARATE_MOOF 16
 #define FF_MOV_FLAG_FRAG_CUSTOM 32
 #define FF_MOV_FLAG_ISML 64
+#define FF_MOV_FLAG_FASTSTART 128
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

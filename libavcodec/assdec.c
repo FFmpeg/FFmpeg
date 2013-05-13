@@ -19,16 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "avcodec.h"
 #include "ass.h"
 #include "ass_split.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 static av_cold int ass_decode_init(AVCodecContext *avctx)
 {
-    avctx->subtitle_header = av_malloc(avctx->extradata_size);
+    avctx->subtitle_header = av_malloc(avctx->extradata_size + 1);
     if (!avctx->subtitle_header)
         return AVERROR(ENOMEM);
     memcpy(avctx->subtitle_header, avctx->extradata, avctx->extradata_size);
+    avctx->subtitle_header[avctx->extradata_size] = 0;
     avctx->subtitle_header_size = avctx->extradata_size;
     avctx->priv_data = ff_ass_split(avctx->extradata);
     if(!avctx->priv_data)
@@ -36,7 +41,15 @@ static av_cold int ass_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
+static int ass_decode_close(AVCodecContext *avctx)
+{
+    ff_ass_split_free(avctx->priv_data);
+    avctx->priv_data = NULL;
+    return 0;
+}
+
+#if CONFIG_SSA_DECODER
+static int ssa_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
                             AVPacket *avpkt)
 {
     const char *ptr = avpkt->data;
@@ -59,19 +72,49 @@ static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
     return avpkt->size;
 }
 
-static int ass_decode_close(AVCodecContext *avctx)
+AVCodec ff_ssa_decoder = {
+    .name         = "ssa",
+    .long_name    = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
+    .type         = AVMEDIA_TYPE_SUBTITLE,
+    .id           = AV_CODEC_ID_SSA,
+    .init         = ass_decode_init,
+    .decode       = ssa_decode_frame,
+    .close        = ass_decode_close,
+};
+#endif
+
+#if CONFIG_ASS_DECODER
+static int ass_decode_frame(AVCodecContext *avctx, void *data, int *got_sub_ptr,
+                            AVPacket *avpkt)
 {
-    ff_ass_split_free(avctx->priv_data);
-    avctx->priv_data = NULL;
-    return 0;
+    int ret;
+    AVSubtitle *sub = data;
+    const char *ptr = avpkt->data;
+    static const AVRational ass_tb = {1, 100};
+    const int ts_start    = av_rescale_q(avpkt->pts,      avctx->time_base, ass_tb);
+    const int ts_duration = av_rescale_q(avpkt->duration, avctx->time_base, ass_tb);
+
+    if (avpkt->size <= 0)
+        return avpkt->size;
+
+    ret = ff_ass_add_rect(sub, ptr, ts_start, ts_duration, 2);
+    if (ret < 0) {
+        if (ret == AVERROR_INVALIDDATA)
+            av_log(avctx, AV_LOG_ERROR, "Invalid ASS packet\n");
+        return ret;
+    }
+
+    *got_sub_ptr = avpkt->size > 0;
+    return avpkt->size;
 }
 
 AVCodec ff_ass_decoder = {
     .name         = "ass",
-    .long_name    = NULL_IF_CONFIG_SMALL("Advanced SubStation Alpha subtitle"),
+    .long_name    = NULL_IF_CONFIG_SMALL("ASS (Advanced SubStation Alpha) subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = CODEC_ID_SSA,
+    .id           = AV_CODEC_ID_ASS,
     .init         = ass_decode_init,
     .decode       = ass_decode_frame,
     .close        = ass_decode_close,
 };
+#endif

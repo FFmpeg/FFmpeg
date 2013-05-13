@@ -54,6 +54,7 @@ Known Issues:
 #include "mp_msg.h"
 #include "cpudetect.h"
 
+#include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
@@ -66,7 +67,7 @@ Known Issues:
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
-#include "vd_ffmpeg.h"
+#include "av_helpers.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
@@ -182,10 +183,11 @@ static int config(struct vf_instance *vf,
         int width, int height, int d_width, int d_height,
         unsigned int flags, unsigned int outfmt){
         int i;
-        AVCodec *enc= avcodec_find_encoder(CODEC_ID_SNOW);
+        AVCodec *enc= avcodec_find_encoder(AV_CODEC_ID_SNOW);
 
         for(i=0; i<3; i++){
             AVCodecContext *avctx_enc;
+            AVDictionary *opts = NULL;
 #if 0
             int is_chroma= !!i;
             int w= ((width  + 31) & (~31))>>is_chroma;
@@ -196,17 +198,17 @@ static int config(struct vf_instance *vf,
             vf->priv->src [i]= malloc(vf->priv->temp_stride[i]*h*sizeof(uint8_t));
 #endif
             avctx_enc=
-            vf->priv->avctx_enc= avcodec_alloc_context();
+            vf->priv->avctx_enc= avcodec_alloc_context3(enc);
             avctx_enc->width = width;
             avctx_enc->height = height;
             avctx_enc->time_base= (AVRational){1,25};  // meaningless
             avctx_enc->gop_size = 300;
             avctx_enc->max_b_frames= 0;
-            avctx_enc->pix_fmt = PIX_FMT_YUV420P;
+            avctx_enc->pix_fmt = AV_PIX_FMT_YUV420P;
             avctx_enc->flags = CODEC_FLAG_QSCALE | CODEC_FLAG_LOW_DELAY;
             avctx_enc->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
             avctx_enc->global_quality= 1;
-            avctx_enc->flags2= CODEC_FLAG2_MEMC_ONLY;
+            av_dict_set(&opts, "memc_only", "1", 0);
             avctx_enc->me_cmp=
             avctx_enc->me_sub_cmp= FF_CMP_SAD; //SSE;
             avctx_enc->mb_cmp= FF_CMP_SSE;
@@ -224,7 +226,8 @@ static int config(struct vf_instance *vf,
                 avctx_enc->flags |= CODEC_FLAG_QPEL;
             }
 
-            avcodec_open(avctx_enc, enc);
+            avcodec_open2(avctx_enc, enc, &opts);
+            av_dict_free(&opts);
 
         }
         vf->priv->frame= avcodec_alloc_frame();
@@ -232,14 +235,14 @@ static int config(struct vf_instance *vf,
         vf->priv->outbuf_size= width*height*10;
         vf->priv->outbuf= malloc(vf->priv->outbuf_size);
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
 return; //caused problems, dunno why
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags | MP_IMGFLAG_READABLE, mpi->width, mpi->height);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -258,18 +261,18 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
     if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
         // no DR, so get a new image! hope we'll get DR buffer:
-        dmpi=vf_get_image(vf->next,mpi->imgfmt,
+        dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
             MP_IMGTYPE_TEMP,
             MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
             mpi->width,mpi->height);
-        vf_clone_mpi_attributes(dmpi, mpi);
+        ff_vf_clone_mpi_attributes(dmpi, mpi);
     }else{
         dmpi=vf->dmpi;
     }
 
     filter(vf->priv, dmpi->planes, mpi->planes, dmpi->stride, mpi->stride, mpi->w, mpi->h);
 
-    return vf_next_put_image(vf,dmpi, pts);
+    return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -301,7 +304,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_IYUV:
         case IMGFMT_Y800:
         case IMGFMT_Y8:
-            return vf_next_query_format(vf,fmt);
+            return ff_vf_next_query_format(vf,fmt);
     }
     return 0;
 }
@@ -316,7 +319,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     vf->priv=malloc(sizeof(struct vf_priv_s));
     memset(vf->priv, 0, sizeof(struct vf_priv_s));
 
-    init_avcodec();
+    ff_init_avcodec();
 
     vf->priv->mode=0;
     vf->priv->parity= -1;
@@ -327,7 +330,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_mcdeint = {
+const vf_info_t ff_vf_info_mcdeint = {
     "motion compensating deinterlacer",
     "mcdeint",
     "Michael Niedermayer",

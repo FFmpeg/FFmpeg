@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -337,11 +338,11 @@ static av_cold int encode_end(AVCodecContext *avctx)
 AVCodec ff_zmbv_encoder = {
     .name           = "zmbv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ZMBV,
+    .id             = AV_CODEC_ID_ZMBV,
     .priv_data_size = sizeof(ZmbvEncContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_PAL8, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
 };

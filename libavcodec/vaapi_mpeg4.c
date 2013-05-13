@@ -60,7 +60,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     pic_param->forward_reference_picture                = VA_INVALID_ID;
     pic_param->backward_reference_picture               = VA_INVALID_ID;
     pic_param->vol_fields.value                         = 0; /* reset all bits */
-    pic_param->vol_fields.bits.short_video_header       = avctx->codec->id == CODEC_ID_H263;
+    pic_param->vol_fields.bits.short_video_header       = avctx->codec->id == AV_CODEC_ID_H263;
     pic_param->vol_fields.bits.chroma_format            = CHROMA_420;
     pic_param->vol_fields.bits.interlaced               = !s->progressive_sequence;
     pic_param->vol_fields.bits.obmc_disable             = 1;
@@ -115,11 +115,6 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     return 0;
 }
 
-static int vaapi_mpeg4_end_frame(AVCodecContext *avctx)
-{
-    return ff_vaapi_common_end_frame(avctx->priv_data);
-}
-
 static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext * const s = avctx->priv_data;
@@ -132,7 +127,7 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
      * a single slice param. So fake macroblock_number for FFmpeg so
      * that we don't call vaapi_mpeg4_decode_slice() again
      */
-    if (avctx->codec->id == CODEC_ID_H263)
+    if (avctx->codec->id == AV_CODEC_ID_H263)
         size = s->gb.buffer_end - buffer;
 
     /* Fill in VASliceParameterBufferMPEG4 */
@@ -143,7 +138,7 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     slice_param->macroblock_number      = s->mb_y * s->mb_width + s->mb_x;
     slice_param->quant_scale            = s->qscale;
 
-    if (avctx->codec->id == CODEC_ID_H263)
+    if (avctx->codec->id == AV_CODEC_ID_H263)
         s->mb_y = s->mb_height;
 
     return 0;
@@ -153,10 +148,10 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 AVHWAccel ff_mpeg4_vaapi_hwaccel = {
     .name           = "mpeg4_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG4,
-    .pix_fmt        = PIX_FMT_VAAPI_VLD,
+    .id             = AV_CODEC_ID_MPEG4,
+    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
     .start_frame    = vaapi_mpeg4_start_frame,
-    .end_frame      = vaapi_mpeg4_end_frame,
+    .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_mpeg4_decode_slice,
 };
 #endif
@@ -165,10 +160,10 @@ AVHWAccel ff_mpeg4_vaapi_hwaccel = {
 AVHWAccel ff_h263_vaapi_hwaccel = {
     .name           = "h263_vaapi",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_H263,
-    .pix_fmt        = PIX_FMT_VAAPI_VLD,
+    .id             = AV_CODEC_ID_H263,
+    .pix_fmt        = AV_PIX_FMT_VAAPI_VLD,
     .start_frame    = vaapi_mpeg4_start_frame,
-    .end_frame      = vaapi_mpeg4_end_frame,
+    .end_frame      = ff_vaapi_mpeg_end_frame,
     .decode_slice   = vaapi_mpeg4_decode_slice,
 };
 #endif

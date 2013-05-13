@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "url.h"
 #include "libavutil/avstring.h"
+#include "libavutil/parseutils.h"
 #if CONFIG_GNUTLS
 #include <gnutls/gnutls.h>
 #define TLS_read(c, buf, size)  gnutls_record_recv(c->session, buf, size)
@@ -103,31 +104,86 @@ static int do_tls_poll(URLContext *h, int ret)
     return 0;
 }
 
+static void set_options(URLContext *h, const char *uri)
+{
+    TLSContext *c = h->priv_data;
+    char buf[1024], key[1024];
+    int has_cert, has_key, verify = 0;
+#if CONFIG_GNUTLS
+    int ret;
+#endif
+    const char *p = strchr(uri, '?');
+    if (!p)
+        return;
+
+    if (av_find_info_tag(buf, sizeof(buf), "cafile", p)) {
+#if CONFIG_GNUTLS
+        ret = gnutls_certificate_set_x509_trust_file(c->cred, buf, GNUTLS_X509_FMT_PEM);
+        if (ret < 0)
+            av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
+#elif CONFIG_OPENSSL
+        if (!SSL_CTX_load_verify_locations(c->ctx, buf, NULL))
+            av_log(h, AV_LOG_ERROR, "SSL_CTX_load_verify_locations %s\n", ERR_error_string(ERR_get_error(), NULL));
+#endif
+    }
+
+    if (av_find_info_tag(buf, sizeof(buf), "verify", p)) {
+        char *endptr = NULL;
+        verify = strtol(buf, &endptr, 10);
+        if (buf == endptr)
+            verify = 1;
+    }
+
+    has_cert = av_find_info_tag(buf, sizeof(buf), "cert", p);
+    has_key  = av_find_info_tag(key, sizeof(key), "key", p);
+#if CONFIG_GNUTLS
+    if (has_cert && has_key) {
+        ret = gnutls_certificate_set_x509_key_file(c->cred, buf, key, GNUTLS_X509_FMT_PEM);
+        if (ret < 0)
+            av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
+    } else if (has_cert ^ has_key) {
+        av_log(h, AV_LOG_ERROR, "cert and key required\n");
+    }
+    gnutls_certificate_set_verify_flags(c->cred, verify);
+#elif CONFIG_OPENSSL
+    if (has_cert && !SSL_CTX_use_certificate_chain_file(c->ctx, buf))
+        av_log(h, AV_LOG_ERROR, "SSL_CTX_use_certificate_chain_file %s\n", ERR_error_string(ERR_get_error(), NULL));
+    if (has_key && !SSL_CTX_use_PrivateKey_file(c->ctx, key, SSL_FILETYPE_PEM))
+        av_log(h, AV_LOG_ERROR, "SSL_CTX_use_PrivateKey_file %s\n", ERR_error_string(ERR_get_error(), NULL));
+    if (verify)
+        SSL_CTX_set_verify(c->ctx, SSL_VERIFY_PEER|SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 0);
+#endif
+}
+
 static int tls_open(URLContext *h, const char *uri, int flags)
 {
     TLSContext *c = h->priv_data;
     int ret;
     int port;
-    char buf[200], host[200];
+    char buf[200], host[200], path[1024];
     int numerichost = 0;
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
     int use_proxy;
+    int server = 0;
+    const char *p = strchr(uri, '?');
+    if (p && av_find_info_tag(buf, sizeof(buf), "listen", p))
+        server = 1;
 
     ff_tls_init();
 
-    proxy_path = getenv("http_proxy");
-    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
-        av_strstart(proxy_path, "http://", NULL);
-
-    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, NULL);
+    av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, path, sizeof(path), uri);
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, "%s", path);
 
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(host, NULL, &hints, &ai)) {
         numerichost = 1;
         freeaddrinfo(ai);
     }
+
+    proxy_path = getenv("http_proxy");
+    use_proxy = !ff_http_match_no_proxy(getenv("no_proxy"), host) &&
+                proxy_path != NULL && av_strstart(proxy_path, "http://", NULL);
 
     if (use_proxy) {
         char proxy_host[200], proxy_auth[200], dest[200];
@@ -147,11 +203,11 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     c->fd = ffurl_get_file_handle(c->tcp);
 
 #if CONFIG_GNUTLS
-    gnutls_init(&c->session, GNUTLS_CLIENT);
+    gnutls_init(&c->session, server ? GNUTLS_SERVER : GNUTLS_CLIENT);
     if (!numerichost)
         gnutls_server_name_set(c->session, GNUTLS_NAME_DNS, host, strlen(host));
     gnutls_certificate_allocate_credentials(&c->cred);
-    gnutls_certificate_set_verify_flags(c->cred, 0);
+    set_options(h, uri);
     gnutls_credentials_set(c->session, GNUTLS_CRD_CERTIFICATE, c->cred);
     gnutls_transport_set_ptr(c->session, (gnutls_transport_ptr_t)
                                          (intptr_t) c->fd);
@@ -164,12 +220,13 @@ static int tls_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 #elif CONFIG_OPENSSL
-    c->ctx = SSL_CTX_new(TLSv1_client_method());
+    c->ctx = SSL_CTX_new(server ? TLSv1_server_method() : TLSv1_client_method());
     if (!c->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
         goto fail;
     }
+    set_options(h, uri);
     c->ssl = SSL_new(c->ctx);
     if (!c->ssl) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
@@ -177,10 +234,10 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
     SSL_set_fd(c->ssl, c->fd);
-    if (!numerichost)
+    if (!server && !numerichost)
         SSL_set_tlsext_host_name(c->ssl, host);
     while (1) {
-        ret = SSL_connect(c->ssl);
+        ret = server ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
         if (ret > 0)
             break;
         if (ret == 0) {
@@ -209,7 +266,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
         if (ret > 0)
             return ret;
         if (ret == 0)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if ((ret = do_tls_poll(h, ret)) < 0)
             return ret;
     }
@@ -224,7 +281,7 @@ static int tls_write(URLContext *h, const uint8_t *buf, int size)
         if (ret > 0)
             return ret;
         if (ret == 0)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         if ((ret = do_tls_poll(h, ret)) < 0)
             return ret;
     }

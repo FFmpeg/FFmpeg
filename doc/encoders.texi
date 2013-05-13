@@ -420,6 +420,46 @@ Selected by Encoder (default)
 A description of some of the currently available video encoders
 follows.
 
+@section libtheora
+
+Theora format supported through libtheora.
+
+Requires the presence of the libtheora headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libtheora}.
+
+@subsection Options
+
+The following global options are mapped to internal libtheora options
+which affect the quality and the bitrate of the encoded stream.
+
+@table @option
+@item b
+Set the video bitrate, only works if the @code{qscale} flag in
+@option{flags} is not enabled.
+
+@item flags
+Used to enable constant quality mode encoding through the
+@option{qscale} flag, and to enable the @code{pass1} and @code{pass2}
+modes.
+
+@item g
+Set the GOP size.
+
+@item global_quality
+Set the global quality in lambda units, only works if the
+@code{qscale} flag in @option{flags} is enabled. The value is clipped
+in the [0 - 10*@code{FF_QP2LAMBDA}] range, and then multiplied for 6.3
+to get a value in the native libtheora range [0-63]. A higher value
+corresponds to a higher quality.
+
+For example, to set maximum constant quality encoding with
+@command{ffmpeg}:
+@example
+ffmpeg -i INPUT -flags:v qscale -global_quality:v "10*QP2LAMBDA" -codec:v libtheora OUTPUT.ogg
+@end example
+@end table
+
 @section libvpx
 
 VP8 format supported through libvpx.
@@ -541,47 +581,183 @@ For more information about libvpx see:
 
 @section libx264
 
-H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 format supported through
-libx264.
+x264 H.264/MPEG-4 AVC encoder wrapper
 
 Requires the presence of the libx264 headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libx264}.
 
-@subsection Options
+x264 supports an impressive number of features, including 8x8 and 4x4 adaptive
+spatial transform, adaptive B-frame placement, CAVLC/CABAC entropy coding,
+interlacing (MBAFF), lossless mode, psy optimizations for detail retention
+(adaptive quantization, psy-RD, psy-trellis).
 
+The FFmpeg wrapper provides a mapping for most of them using global options
+that match those of the encoders and provides private options for the unique
+encoder options. Additionally an expert override is provided to directly pass
+a list of key=value tuples as accepted by x264_param_parse.
+
+@subsection Option Mapping
+
+The following options are supported by the x264 wrapper, the x264-equivalent
+options follow the FFmpeg ones.
+
+@multitable @columnfractions .2 .2
+@item b                 @tab bitrate
+FFmpeg @code{b} option is expressed in bits/s, x264 @code{bitrate} in kilobits/s.
+@item bf                @tab bframes
+Maximum number of B-frames.
+@item g                 @tab keyint
+Maximum GOP size.
+@item qmin              @tab qpmin
+@item qmax              @tab qpmax
+@item qdiff             @tab qpstep
+@item qblur             @tab qblur
+@item qcomp             @tab qcomp
+@item refs              @tab ref
+@item sc_threshold      @tab scenecut
+@item trellis           @tab trellis
+@item nr                @tab nr
+Noise reduction.
+@item me_range          @tab merange
+@item me_method         @tab me
+@item subq              @tab subme
+@item b_strategy        @tab b-adapt
+@item keyint_min        @tab keyint-min
+@item coder             @tab cabac
+Set coder to @code{ac} to use CABAC.
+@item cmp               @tab chroma-me
+Set to @code{chroma} to use chroma motion estimation.
+@item threads           @tab threads
+@item thread_type       @tab sliced_threads
+Set to @code{slice} to use sliced threading instead of frame threading.
+@item flags -cgop       @tab open-gop
+Set @code{-cgop} to use recovery points to close GOPs.
+@item rc_init_occupancy @tab vbv-init
+Initial buffer occupancy.
+@end multitable
+
+@subsection Private Options
 @table @option
+@item -preset @var{string}
+Set the encoding preset (cf. x264 --fullhelp).
+@item -tune @var{string}
+Tune the encoding params (cf. x264 --fullhelp).
+@item -profile @var{string}
+Set profile restrictions (cf. x264 --fullhelp).
+@item -fastfirstpass @var{integer}
+Use fast settings when encoding first pass.
+@item -crf @var{float}
+Select the quality for constant quality mode.
+@item -crf_max @var{float}
+In CRF mode, prevents VBV from lowering quality beyond this point.
+@item -qp @var{integer}
+Constant quantization parameter rate control method.
+@item -aq-mode @var{integer}
+AQ method
 
-@item preset @var{preset_name}
-Set the encoding preset.
+Possible values:
+@table @samp
+@item none
 
-@item tune @var{tune_name}
-Tune the encoding params.
+@item variance
+Variance AQ (complexity mask).
+@item autovariance
+Auto-variance AQ (experimental).
+@end table
+@item -aq-strength @var{float}
+AQ strength, reduces blocking and blurring in flat and textured areas.
+@item -psy @var{integer}
+Use psychovisual optimizations.
+@item -psy-rd @var{string}
+Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.
+@item -rc-lookahead @var{integer}
+Number of frames to look ahead for frametype and ratecontrol.
+@item -weightb @var{integer}
+Weighted prediction for B-frames.
+@item -weightp @var{integer}
+Weighted prediction analysis method.
 
-@item fastfirstpass @var{bool}
-Use fast settings when encoding first pass, default value is 1.
+Possible values:
+@table @samp
+@item none
 
-@item profile @var{profile_name}
-Set profile restrictions.
+@item simple
 
-@item level @var{level}
-Specify level (as defined by Annex A).
-Deprecated in favor of @var{x264opts}.
+@item smart
 
-@item passlogfile @var{filename}
-Specify filename for 2 pass stats.
-Deprecated in favor of @var{x264opts} (see @var{stats} libx264 option).
+@end table
+@item -ssim @var{integer}
+Calculate and print SSIM stats.
+@item -intra-refresh @var{integer}
+Use Periodic Intra Refresh instead of IDR frames.
+@item -b-bias @var{integer}
+Influences how often B-frames are used.
+@item -b-pyramid @var{integer}
+Keep some B-frames as references.
 
-@item wpredp @var{wpred_type}
-Specify Weighted prediction for P-frames.
-Deprecated in favor of @var{x264opts} (see @var{weightp} libx264 option).
+Possible values:
+@table @samp
+@item none
+
+@item strict
+Strictly hierarchical pyramid.
+@item normal
+Non-strict (not Blu-ray compatible).
+@end table
+@item -mixed-refs @var{integer}
+One reference per partition, as opposed to one reference per macroblock.
+@item -8x8dct @var{integer}
+High profile 8x8 transform.
+@item -fast-pskip @var{integer}
+@item -aud @var{integer}
+Use access unit delimiters.
+@item -mbtree @var{integer}
+Use macroblock tree ratecontrol.
+@item -deblock @var{string}
+Loop filter parameters, in <alpha:beta> form.
+@item -cplxblur @var{float}
+Reduce fluctuations in QP (before curve compression).
+@item -partitions @var{string}
+A comma-separated list of partitions to consider, possible values: p8x8, p4x4, b8x8, i8x8, i4x4, none, all.
+@item -direct-pred @var{integer}
+Direct MV prediction mode
+
+Possible values:
+@table @samp
+@item none
+
+@item spatial
+
+@item temporal
+
+@item auto
+
+@end table
+@item -slice-max-size @var{integer}
+Limit the size of each slice in bytes.
+@item -stats @var{string}
+Filename for 2 pass stats.
+@item -nal-hrd @var{integer}
+Signal HRD information (requires vbv-bufsize; cbr not allowed in .mp4).
+
+Possible values:
+@table @samp
+@item none
+
+@item vbr
+
+@item cbr
+
+@end table
 
 @item x264opts @var{options}
-Allow to set any x264 option, see x264 --fullhelp for a list.
+Allow to set any x264 option, see @code{x264 --fullhelp} for a list.
 
 @var{options} is a list of @var{key}=@var{value} couples separated by
-":".
-@end table
+":". In @var{filter} and @var{psy-rd} options that use ":" as a separator
+themselves, use "," instead. They accept it as well since long ago but this
+is kept undocumented for some reason.
 
 For example to specify libx264 encoding options with @command{ffmpeg}:
 @example
@@ -590,5 +766,76 @@ ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 
 For more information about libx264 and the supported options see:
 @url{http://www.videolan.org/developers/x264.html}
+
+@item -x264-params @var{string}
+Override the x264 configuration using a :-separated list of key=value parameters.
+@example
+-x264-params level=30:bframes=0:weightp=0:cabac=0:ref=1:vbv-maxrate=768:vbv-bufsize=2000:analyse=all:me=umh:no-fast-pskip=1:subq=6:8x8dct=0:trellis=0
+@end example
+@end table
+
+Encoding avpresets for common usages are provided so they can be used with the
+general presets system (e.g. passing the @code{-pre} option).
+
+@section ProRes
+
+Apple ProRes encoder.
+
+FFmpeg contains 2 ProRes encoders, the prores-aw and prores-ks encoder.
+The used encoder can be choosen with the @code{-vcodec} option.
+
+@subsection Private Options for prores-ks
+
+@table @option
+@item profile @var{integer}
+Select the ProRes profile to encode
+@table @samp
+@item proxy
+@item lt
+@item standard
+@item hq
+@end table
+
+@item quant_mat @var{integer}
+Select quantization matrix.
+@table @samp
+@item auto
+@item default
+@item proxy
+@item lt
+@item standard
+@item hq
+@end table
+If set to @var{auto}, the matrix matching the profile will be picked.
+If not set, the matrix providing the highest quality, @var{default}, will be
+picked.
+
+@item bits_per_mb @var{integer}
+How many bits to allot for coding one macroblock. Different profiles use
+between 200 and 2400 bits per macroblock, the maximum is 8000.
+
+@item mbs_per_slice @var{integer}
+Number of macroblocks in each slice (1-8); the default value (8)
+should be good in almost all situations.
+
+@item vendor @var{string}
+Override the 4-byte vendor ID.
+A custom vendor ID like @var{apl0} would claim the stream was produced by
+the Apple encoder.
+
+@end table
+
+@subsection Speed considerations
+
+In the default mode of operation the encoder has to honor frame constraints
+(i.e. not produc frames with size bigger than requested) while still making
+output picture as good as possible.
+A frame containing a lot of small details is harder to compress and the encoder
+would spend more time searching for appropriate quantizers for each slice.
+
+Setting a higher @option{bits_per_mb} limit will improve the speed.
+
+For the fastest encoding speed set the @option{qscale} parameter (4 is the
+recommended value) and do not set a size constraint.
 
 @c man end VIDEO ENCODERS

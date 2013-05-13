@@ -35,10 +35,24 @@ enum {
      */
     AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT = 1,
 
+#if FF_API_AVFILTERBUFFER
     /**
-     * Do not copy buffer data.
+     * Ignored
      */
     AV_BUFFERSRC_FLAG_NO_COPY = 2,
+#endif
+
+    /**
+     * Immediately push the frame to the output.
+     */
+    AV_BUFFERSRC_FLAG_PUSH = 4,
+
+    /**
+     * Keep a reference to the frame.
+     * If the frame if reference-counted, create a new reference; otherwise
+     * copy the frame data.
+     */
+    AV_BUFFERSRC_FLAG_KEEP_REF = 8,
 
 };
 
@@ -63,14 +77,15 @@ int av_buffersrc_add_ref(AVFilterContext *buffer_src,
  */
 unsigned av_buffersrc_get_nb_failed_requests(AVFilterContext *buffer_src);
 
-#ifdef FF_API_BUFFERSRC_BUFFER
+#if FF_API_AVFILTERBUFFER
 /**
  * Add a buffer to the filtergraph s.
  *
  * @param buf buffer containing frame data to be passed down the filtergraph.
  * This function will take ownership of buf, the user must not free it.
  * A NULL buf signals EOF -- i.e. no more frames will be sent to this filter.
- * @deprecated Use av_buffersrc_add_ref(s, picref, AV_BUFFERSRC_FLAG_NO_COPY) instead.
+ *
+ * @deprecated use av_buffersrc_write_frame() or av_buffersrc_add_frame()
  */
 attribute_deprecated
 int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
@@ -80,11 +95,54 @@ int av_buffersrc_buffer(AVFilterContext *s, AVFilterBufferRef *buf);
  * Add a frame to the buffer source.
  *
  * @param s an instance of the buffersrc filter.
- * @param frame frame to be added.
+ * @param frame frame to be added. If the frame is reference counted, this
+ * function will make a new reference to it. Otherwise the frame data will be
+ * copied.
  *
- * @warning frame data will be memcpy()ed, which may be a big performance
- *          hit. Use av_buffersrc_buffer() to avoid copying the data.
+ * @return 0 on success, a negative AVERROR on error
+ *
+ * This function is equivalent to av_buffersrc_add_frame_flags() with the
+ * AV_BUFFERSRC_FLAG_KEEP_REF flag.
  */
-int av_buffersrc_write_frame(AVFilterContext *s, AVFrame *frame);
+int av_buffersrc_write_frame(AVFilterContext *s, const AVFrame *frame);
+
+/**
+ * Add a frame to the buffer source.
+ *
+ * @param s an instance of the buffersrc filter.
+ * @param frame frame to be added. If the frame is reference counted, this
+ * function will take ownership of the reference(s) and reset the frame.
+ * Otherwise the frame data will be copied. If this function returns an error,
+ * the input frame is not touched.
+ *
+ * @return 0 on success, a negative AVERROR on error.
+ *
+ * @note the difference between this function and av_buffersrc_write_frame() is
+ * that av_buffersrc_write_frame() creates a new reference to the input frame,
+ * while this function takes ownership of the reference passed to it.
+ *
+ * This function is equivalent to av_buffersrc_add_frame_flags() without the
+ * AV_BUFFERSRC_FLAG_KEEP_REF flag.
+ */
+int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame);
+
+/**
+ * Add a frame to the buffer source.
+ *
+ * By default, if the frame is reference-counted, this function will take
+ * ownership of the reference(s) and reset the frame. This can be controled
+ * using the flags.
+ *
+ * If this function returns an error, the input frame is not touched.
+ *
+ * @param buffer_src  pointer to a buffer source context
+ * @param frame       a frame, or NULL to mark EOF
+ * @param flags       a combination of AV_BUFFERSRC_FLAG_*
+ * @return            >= 0 in case of success, a negative AVERROR code
+ *                    in case of failure
+ */
+int av_buffersrc_add_frame_flags(AVFilterContext *buffer_src,
+                                 AVFrame *frame, int flags);
+
 
 #endif /* AVFILTER_BUFFERSRC_H */

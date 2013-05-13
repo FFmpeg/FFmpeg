@@ -60,6 +60,7 @@ struct xvid_context {
     char *twopassbuffer;           /**< Character buffer for two-pass */
     char *old_twopassbuffer;       /**< Old character buffer (two-pass) */
     char *twopassfile;             /**< second pass temp file name */
+    int twopassfd;
     unsigned char *intra_matrix;   /**< P-Frame Quant Matrix */
     unsigned char *inter_matrix;   /**< I-Frame Quant Matrix */
 };
@@ -71,6 +72,8 @@ struct xvid_ff_pass1 {
     int     version;                /**< Xvid version */
     struct xvid_context *context;   /**< Pointer to private context */
 };
+
+static int xvid_encode_close(AVCodecContext *avctx);
 
 /*
  * Xvid 2-Pass Kludge Section
@@ -342,14 +345,6 @@ static void xvid_correct_framerate(AVCodecContext *avctx)
     }
 }
 
-/**
- * Create the private context for the encoder.
- * All buffers are allocated, settings are loaded from the user,
- * and the encoder context created.
- *
- * @param avctx AVCodecContext pointer to context
- * @return Returns 0 on success, -1 on failure
- */
 static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     int xerr, i;
     int xvid_flags = avctx->flags;
@@ -363,6 +358,8 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_gbl_init_t xvid_gbl_init     = { 0 };
     xvid_enc_create_t xvid_enc_create = { 0 };
     xvid_enc_plugin_t plugins[7];
+
+    x->twopassfd = -1;
 
     /* Bring in VOP flags from ffmpeg command-line */
     x->vop_flags = XVID_VOP_HALFPEL; /* Bare minimum quality */
@@ -482,7 +479,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         if( x->twopassbuffer == NULL || x->old_twopassbuffer == NULL ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot allocate 2-pass log buffers\n");
-            return -1;
+            goto fail;
         }
         x->twopassbuffer[0] = x->old_twopassbuffer[0] = 0;
 
@@ -497,24 +494,23 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write 2-pass pipe\n");
-            return -1;
+            goto fail;
         }
+        x->twopassfd = fd;
 
         if( avctx->stats_in == NULL ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: No 2-pass information loaded for second pass\n");
-            return -1;
+            goto fail;
         }
 
         if( strlen(avctx->stats_in) >
               write(fd, avctx->stats_in, strlen(avctx->stats_in)) ) {
-            close(fd);
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write to 2-pass pipe\n");
-            return -1;
+            goto fail;
         }
 
-        close(fd);
         rc2pass2.filename = x->twopassfile;
         plugins[xvid_enc_create.num_plugins].func = xvid_plugin_2pass2;
         plugins[xvid_enc_create.num_plugins].param = &rc2pass2;
@@ -594,7 +590,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     if( xvid_flags & CODEC_FLAG_GLOBAL_HEADER ) {
         /* In this case, we are claiming to be MPEG4 */
         x->quicktime_format = 1;
-        avctx->codec_id = CODEC_ID_MPEG4;
+        avctx->codec_id = AV_CODEC_ID_MPEG4;
     } else {
         /* We are claiming to be Xvid */
         x->quicktime_format = 0;
@@ -612,24 +608,18 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
     if( xerr ) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Could not create encoder reference\n");
-        return -1;
+        goto fail;
     }
 
     x->encoder_handle = xvid_enc_create.handle;
     avctx->coded_frame = &x->encoded_picture;
 
     return 0;
+fail:
+    xvid_encode_close(avctx);
+    return -1;
 }
 
-/**
- * Encode a single frame.
- *
- * @param avctx AVCodecContext pointer to context
- * @param frame Pointer to encoded frame buffer
- * @param buf_size Size of encoded frame buffer
- * @param data Pointer to AVFrame of unencoded frame
- * @return Returns 0 on success, -1 on failure
- */
 static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                              const AVFrame *picture, int *got_packet)
 {
@@ -656,7 +646,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     xvid_enc_frame.length    = pkt->size;
 
     /* Initialize input image fields */
-    if( avctx->pix_fmt != PIX_FMT_YUV420P ) {
+    if( avctx->pix_fmt != AV_PIX_FMT_YUV420P ) {
         av_log(avctx, AV_LOG_ERROR, "Xvid: Color spaces other than 420p not supported\n");
         return -1;
     }
@@ -747,42 +737,39 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 }
 
-/**
- * Destroy the private context for the encoder.
- * All buffers are freed, and the Xvid encoder context is destroyed.
- *
- * @param avctx AVCodecContext pointer to context
- * @return Returns 0, success guaranteed
- */
 static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     struct xvid_context *x = avctx->priv_data;
 
-    xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
+    if(x->encoder_handle)
+        xvid_encore(x->encoder_handle, XVID_ENC_DESTROY, NULL, NULL);
+    x->encoder_handle = NULL;
 
     av_freep(&avctx->extradata);
     if( x->twopassbuffer != NULL ) {
-        av_free(x->twopassbuffer);
-        av_free(x->old_twopassbuffer);
+        av_freep(&x->twopassbuffer);
+        av_freep(&x->old_twopassbuffer);
         avctx->stats_out = NULL;
     }
-    av_free(x->twopassfile);
-    av_free(x->intra_matrix);
-    av_free(x->inter_matrix);
+    if (x->twopassfd>=0) {
+        unlink(x->twopassfile);
+        close(x->twopassfd);
+        x->twopassfd = -1;
+    }
+    av_freep(&x->twopassfile);
+    av_freep(&x->intra_matrix);
+    av_freep(&x->inter_matrix);
 
     return 0;
 }
 
-/**
- * Xvid codec definition for libavcodec.
- */
 AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG4,
+    .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(struct xvid_context),
     .init           = xvid_encode_init,
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_YUV420P, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };

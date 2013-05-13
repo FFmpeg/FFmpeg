@@ -50,7 +50,7 @@ do_image_formats()
     outfile="$datadir/images/$1/"
     mkdir -p "$outfile"
     file=${outfile}%02d.$1
-    run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS -t 0.5 -y -qscale 10 $target_path/$file
+    run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS -frames 13 -y -qscale 10 $target_path/$file
     do_md5sum ${outfile}02.$1
     do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
     echo $(wc -c ${outfile}02.$1)
@@ -99,7 +99,11 @@ do_lavf swf "" "-an"
 fi
 
 if [ -n "$do_ffm" ] ; then
-do_lavf ffm "-ab 64k"
+do_lavf ffm
+fi
+
+if [ -n "$do_flm" ] ; then
+do_lavf flm "" "-pix_fmt rgba"
 fi
 
 if [ -n "$do_flv_fmt" ] ; then
@@ -107,8 +111,9 @@ do_lavf flv "" "-an"
 fi
 
 if [ -n "$do_mov" ] ; then
-do_lavf mov "" "-movflags +rtphint -acodec pcm_alaw -vcodec mpeg4"
-do_lavf_timecode mov "-acodec pcm_alaw -vcodec mpeg4"
+mov_common_opt="-acodec pcm_alaw -vcodec mpeg4"
+do_lavf mov "" "-movflags +rtphint $mov_common_opt"
+do_lavf_timecode mov "-movflags +faststart $mov_common_opt"
 fi
 
 if [ -n "$do_ismv" ] ; then
@@ -132,6 +137,8 @@ do_lavf nut "" "-acodec mp2 -ab 64k"
 fi
 
 if [ -n "$do_mkv" ] ; then
+do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4 \
+ -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap"
 do_lavf mkv "" "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 
@@ -173,18 +180,9 @@ do_streamed_images ppm
 fi
 
 if [ -n "$do_gif" ] ; then
-# this tests the gif muxer
 file=${outfile}lavf.gif
 do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10 -pix_fmt rgb24
 do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt rgb24
-# and this the gif encoder
-do_image_formats gif "" "-pix_fmt rgb24"
-do_image_formats gif "-pix_fmt rgb4_byte" "-pix_fmt rgb24"
-do_image_formats gif "-pix_fmt bgr4_byte" "-pix_fmt rgb24"
-do_image_formats gif "-pix_fmt rgb8" "-pix_fmt rgb24"
-do_image_formats gif "-pix_fmt bgr8" "-pix_fmt rgb24"
-do_image_formats gif "-pix_fmt gray" "-pix_fmt rgb24"
-do_image_formats gif "-pix_fmt pal8" "-pix_fmt rgb24"
 fi
 
 if [ -n "$do_yuv4mpeg" ] ; then
@@ -235,6 +233,11 @@ fi
 
 if [ -n "$do_pam" ] ; then
 do_image_formats pam
+do_image_formats pam "-pix_fmt rgba"
+do_image_formats pam "-pix_fmt gray"
+do_image_formats pam "-pix_fmt gray16be"
+do_image_formats pam "-pix_fmt rgb48be"
+do_image_formats pam "-pix_fmt monob"
 fi
 
 if [ -n "$do_pcx" ] ; then
@@ -249,6 +252,13 @@ fi
 
 if [ -n "$do_xwd" ] ; then
 do_image_formats xwd
+do_image_formats xwd "-pix_fmt rgba"
+do_image_formats xwd "-pix_fmt rgb565be"
+do_image_formats xwd "-pix_fmt rgb555be"
+do_image_formats xwd "-pix_fmt rgb8"
+do_image_formats xwd "-pix_fmt rgb4_byte"
+do_image_formats xwd "-pix_fmt gray"
+do_image_formats xwd "-pix_fmt monow"
 fi
 
 if [ -n "$do_sunrast" ] ; then
@@ -297,12 +307,28 @@ if [ -n "$do_rso" ] ; then
 do_audio_only rso
 fi
 
+if [ -n "$do_smjpeg" ] ; then
+do_lavf smjpeg "" "-f smjpeg"
+fi
+
 if [ -n "$do_sox" ] ; then
 do_audio_only sox
 fi
 
 if [ -n "$do_caf" ] ; then
 do_audio_only caf
+fi
+
+if [ -n "$do_ast" ] ; then
+do_audio_only ast "-ac 2" "-loopstart 1 -loopend 10"
+fi
+
+if [ -n "$do_ircam" ] ; then
+do_audio_only ircam
+fi
+
+if [ -n "$do_w64" ] ; then
+do_audio_only w64
 fi
 
 # pix_fmt conversions

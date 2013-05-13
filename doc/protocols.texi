@@ -75,6 +75,15 @@ ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
 Note that you may need to escape the character "|" which is special for
 many shells.
 
+@section data
+
+Data in-line in the URI. See @url{http://en.wikipedia.org/wiki/Data_URI_scheme}.
+
+For example, to convert a GIF file given inline with @command{ffmpeg}:
+@example
+ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP///////////////ywAAAAACAAIAAADF0gEDLojDgdGiJdJqUX02iB4E8Q9jUMkADs=" smiley.png
+@end example
+
 @section file
 
 File access protocol.
@@ -118,6 +127,63 @@ m3u8 files.
 @section http
 
 HTTP (Hyper Text Transfer Protocol).
+
+This protocol accepts the following options.
+
+@table @option
+@item seekable
+Control seekability of connection. If set to 1 the resource is
+supposed to be seekable, if set to 0 it is assumed not to be seekable,
+if set to -1 it will try to autodetect if it is seekable. Default
+value is -1.
+
+@item chunked_post
+If set to 1 use chunked transfer-encoding for posts, default is 1.
+
+@item headers
+Set custom HTTP headers, can override built in default headers. The
+value must be a string encoding the headers.
+
+@item content_type
+Force a content type.
+
+@item user-agent
+Override User-Agent header. If not specified the protocol will use a
+string describing the libavformat build.
+
+@item multiple_requests
+Use persistent connections if set to 1. By default it is 0.
+
+@item post_data
+Set custom HTTP post data.
+
+@item timeout
+Set timeout of socket I/O operations used by the underlying low level
+operation. By default it is set to -1, which means that the timeout is
+not specified.
+
+@item mime_type
+Set MIME type.
+
+@item cookies
+Set the cookies to be sent in future requests. The format of each cookie is the
+same as the value of a Set-Cookie HTTP response field. Multiple cookies can be
+delimited by a newline character.
+@end table
+
+@subsection HTTP Cookies
+
+Some HTTP requests will be denied unless cookie values are passed in with the
+request. The @option{cookies} option allows these cookies to be specified. At
+the very least, each cookie must specify a value along with a path and domain.
+HTTP requests that match both the domain and path will automatically include the
+cookie value in the HTTP Cookie header field. Multiple cookies can be delimited
+by a newline.
+
+The required syntax to play a stream specifying a cookie is:
+@example
+ffplay -cookies "nlqptid=nltid=tsn; path=/; domain=somedomain.com;" http://somedomain.com/somestream.m3u8
+@end example
 
 @section mmst
 
@@ -218,6 +284,11 @@ application specified in @var{app}, may be prefixed by "mp4:". You
 can override the value parsed from the URI through the @code{rtmp_playpath}
 option, too.
 
+@item listen
+Act as a server, listening for an incoming connection.
+
+@item timeout
+Maximum time to wait for the incoming connection. Implies listen.
 @end table
 
 Additionally, the following parameters can be set via command line options
@@ -259,15 +330,33 @@ playpath. If a live stream of that name is not found, it plays the
 recorded stream. The other possible values are @code{live} and
 @code{recorded}.
 
+@item rtmp_pageurl
+URL of the web page in which the media was embedded. By default no
+value will be sent.
+
 @item rtmp_playpath
 Stream identifier to play or to publish. This option overrides the
 parameter specified in the URI.
 
+@item rtmp_subscribe
+Name of live stream to subscribe to. By default no value will be sent.
+It is only sent if the option is specified or if rtmp_live
+is set to live.
+
+@item rtmp_swfhash
+SHA256 hash of the decompressed SWF file (32 bytes).
+
+@item rtmp_swfsize
+Size of the decompressed SWF file, required for SWFVerification.
+
 @item rtmp_swfurl
 URL of the SWF player for the media. By default no value will be sent.
 
+@item rtmp_swfverify
+URL to player swf file, compute hash/size automatically.
+
 @item rtmp_tcurl
-URL of the target stream.
+URL of the target stream. Defaults to proto://host[:port]/app.
 
 @end table
 
@@ -276,6 +365,15 @@ For example to read with @command{ffplay} a multimedia resource named
 @example
 ffplay rtmp://myserver/vod/sample
 @end example
+
+@section rtmpe
+
+Encrypted Real-Time Messaging Protocol.
+
+The Encrypted Real-Time Messaging Protocol (RTMPE) is used for
+streaming multimedia content within standard cryptographic primitives,
+consisting of Diffie-Hellman key exchange and HMACSHA256, generating
+a pair of RC4 keys.
 
 @section rtmps
 
@@ -290,6 +388,14 @@ Real-Time Messaging Protocol tunneled through HTTP.
 
 The Real-Time Messaging Protocol tunneled through HTTP (RTMPT) is used
 for streaming multimedia content within HTTP requests to traverse
+firewalls.
+
+@section rtmpte
+
+Encrypted Real-Time Messaging Protocol tunneled through HTTP.
+
+The Encrypted Real-Time Messaging Protocol tunneled through HTTP (RTMPTE)
+is used for streaming multimedia content within HTTP requests to traverse
 firewalls.
 
 @section rtmpts
@@ -432,6 +538,11 @@ To receive a stream in realtime:
 ffmpeg -rtsp_flags listen -i rtsp://ownaddress/live.sdp @var{output}
 @end example
 
+@table @option
+@item stimeout
+Socket IO timeout in micro seconds.
+@end table
+
 @section sap
 
 Session Announcement Protocol (RFC 2974). This is not technically a
@@ -538,12 +649,59 @@ tcp://@var{hostname}:@var{port}[?@var{options}]
 @item listen
 Listen for an incoming connection
 
+@item timeout=@var{microseconds}
+In read mode: if no data arrived in more than this time interval, raise error.
+In write mode: if socket cannot be written in more than this time interval, raise error.
+This also sets timeout on TCP connection establishing.
+
 @example
 ffmpeg -i @var{input} -f @var{format} tcp://@var{hostname}:@var{port}?listen
 ffplay tcp://@var{hostname}:@var{port}
 @end example
 
 @end table
+
+@section tls
+
+Transport Layer Security/Secure Sockets Layer
+
+The required syntax for a TLS/SSL url is:
+@example
+tls://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@table @option
+
+@item listen
+Act as a server, listening for an incoming connection.
+
+@item cafile=@var{filename}
+Certificate authority file. The file must be in OpenSSL PEM format.
+
+@item cert=@var{filename}
+Certificate file. The file must be in OpenSSL PEM format.
+
+@item key=@var{filename}
+Private key file.
+
+@item verify=@var{0|1}
+Verify the peer's certificate.
+
+@end table
+
+Example command lines:
+
+To create a TLS/SSL server that serves an input stream.
+
+@example
+ffmpeg -i @var{input} -f @var{format} tls://@var{hostname}:@var{port}?listen&cert=@var{server.crt}&key=@var{server.key}
+@end example
+
+To play back a stream from the TLS/SSL server using @command{ffplay}:
+
+@example
+ffplay tls://@var{hostname}:@var{port}
+@end example
 
 @section udp
 
@@ -612,6 +770,9 @@ packets with size of 188 bytes. If not specified defaults to 7*4096.
 @item overrun_nonfatal=@var{1|0}
 Survive in case of UDP receiving circular buffer overrun. Default
 value is 0.
+
+@item timeout=@var{microseconds}
+In read mode: if no data arrived in more than this time interval, raise error.
 @end table
 
 Some usage examples of the UDP protocol with @command{ffmpeg} follow.

@@ -35,7 +35,7 @@
 #define LMLM4_MAX_PACKET_SIZE   1024 * 1024
 
 static int lmlm4_probe(AVProbeData * pd) {
-    unsigned char *buf = pd->buf;
+    const unsigned char *buf = pd->buf;
     unsigned int frame_type, packet_size;
 
     frame_type  = AV_RB16(buf+2);
@@ -64,14 +64,14 @@ static int lmlm4_read_header(AVFormatContext *s) {
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_MPEG4;
+    st->codec->codec_id   = AV_CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     avpriv_set_pts_info(st, 64, 1001, 30000);
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = CODEC_ID_MP2;
+    st->codec->codec_id   = AV_CODEC_ID_MP2;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
 
     /* the parameters will be extracted from the compressed bitstream */
@@ -93,8 +93,8 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
         av_log(s, AV_LOG_ERROR, "invalid or unsupported frame_type\n");
         return AVERROR(EIO);
     }
-    if (packet_size > LMLM4_MAX_PACKET_SIZE) {
-        av_log(s, AV_LOG_ERROR, "packet size exceeds maximum\n");
+    if (packet_size > LMLM4_MAX_PACKET_SIZE || packet_size<=8) {
+        av_log(s, AV_LOG_ERROR, "packet size %d is invalid\n", packet_size);
         return AVERROR(EIO);
     }
 
@@ -120,7 +120,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt) {
 
 AVInputFormat ff_lmlm4_demuxer = {
     .name           = "lmlm4",
-    .long_name      = NULL_IF_CONFIG_SMALL("lmlm4 raw format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("raw lmlm4"),
     .read_probe     = lmlm4_probe,
     .read_header    = lmlm4_read_header,
     .read_packet    = lmlm4_read_packet,

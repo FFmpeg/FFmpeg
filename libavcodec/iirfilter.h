@@ -47,6 +47,29 @@ enum IIRFilterMode{
     FF_FILTER_MODE_BANDSTOP,
 };
 
+typedef struct FFIIRFilterContext {
+    /**
+    * Perform IIR filtering on floating-point input samples.
+    *
+    * @param coeffs pointer to filter coefficients
+    * @param state  pointer to filter state
+    * @param size   input length
+    * @param src    source samples
+    * @param sstep  source stride
+    * @param dst    filtered samples (destination may be the same as input)
+    * @param dstep  destination stride
+    */
+    void (*filter_flt)(const struct FFIIRFilterCoeffs *coeffs,
+                        struct FFIIRFilterState *state, int size,
+                        const float *src, int sstep, float *dst, int dstep);
+} FFIIRFilterContext;
+
+/**
+ * Initialize FFIIRFilterContext
+ */
+void ff_iir_filter_init(FFIIRFilterContext *f);
+void ff_iir_filter_init_mips(FFIIRFilterContext *f);
+
 /**
  * Initialize filter coefficients.
  *

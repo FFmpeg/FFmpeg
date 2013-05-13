@@ -30,7 +30,7 @@
 #ifndef AVCODEC_AACDECTAB_H
 #define AVCODEC_AACDECTAB_H
 
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 #include "aac.h"
 
 #include <stdint.h>

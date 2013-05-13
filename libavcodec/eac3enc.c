@@ -25,6 +25,8 @@
  */
 
 #define CONFIG_AC3ENC_FLOAT 1
+
+#include "libavutil/attributes.h"
 #include "ac3enc.h"
 #include "eac3enc.h"
 #include "eac3_data.h"
@@ -36,7 +38,7 @@
 static const AVClass eac3enc_class = {
     .class_name = "E-AC-3 Encoder",
     .item_name  = av_default_item_name,
-    .option     = eac3_options,
+    .option     = ac3_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -47,7 +49,7 @@ static const AVClass eac3enc_class = {
 static int8_t eac3_frame_expstr_index_tab[3][4][4][4][4][4];
 
 
-void ff_eac3_exponent_init(void)
+av_cold void ff_eac3_exponent_init(void)
 {
     int i;
 
@@ -253,12 +255,12 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 AVCodec ff_eac3_encoder = {
     .name            = "eac3",
     .type            = AVMEDIA_TYPE_AUDIO,
-    .id              = CODEC_ID_EAC3,
+    .id              = AV_CODEC_ID_EAC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ff_ac3_encode_init,
     .encode2         = ff_ac3_float_encode_frame,
     .close           = ff_ac3_encode_close,
-    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
+    .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .priv_class      = &eac3enc_class,

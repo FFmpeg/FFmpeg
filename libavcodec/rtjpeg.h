@@ -24,14 +24,18 @@
 
 #include <stdint.h>
 #include "dsputil.h"
+#include "libavutil/mem.h"
 
-typedef struct {
+#define RTJPEG_FILE_VERSION 0
+#define RTJPEG_HEADER_SIZE 12
+
+typedef struct RTJpegContext {
     int w, h;
     DSPContext *dsp;
     uint8_t scan[64];
     uint32_t lquant[64];
     uint32_t cquant[64];
-    DECLARE_ALIGNED(16, DCTELEM, block)[64];
+    DECLARE_ALIGNED(16, int16_t, block)[64];
 } RTJpegContext;
 
 void ff_rtjpeg_decode_init(RTJpegContext *c, DSPContext *dsp,

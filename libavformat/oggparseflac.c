@@ -59,7 +59,7 @@ flac_header (AVFormatContext * s, int idx)
         avpriv_flac_parse_streaminfo(st->codec, &si, streaminfo_start);
 
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = CODEC_ID_FLAC;
+        st->codec->codec_id = AV_CODEC_ID_FLAC;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
         st->codec->extradata =
@@ -80,7 +80,7 @@ old_flac_header (AVFormatContext * s, int idx)
 {
     AVStream *st = s->streams[idx];
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_FLAC;
+    st->codec->codec_id = AV_CODEC_ID_FLAC;
 
     return 0;
 }
@@ -88,11 +88,13 @@ old_flac_header (AVFormatContext * s, int idx)
 const struct ogg_codec ff_flac_codec = {
     .magic = "\177FLAC",
     .magicsize = 5,
-    .header = flac_header
+    .header = flac_header,
+    .nb_header = 2,
 };
 
 const struct ogg_codec ff_old_flac_codec = {
     .magic = "fLaC",
     .magicsize = 4,
-    .header = old_flac_header
+    .header = old_flac_header,
+    .nb_header = 0,
 };

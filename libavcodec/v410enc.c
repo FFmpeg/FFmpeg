@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -53,7 +54,6 @@ static int v410_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     dst = pkt->data;
 
-    avctx->coded_frame->reference = 0;
     avctx->coded_frame->key_frame = 1;
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
@@ -89,10 +89,10 @@ static av_cold int v410_encode_close(AVCodecContext *avctx)
 AVCodec ff_v410_encoder = {
     .name         = "v410",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_V410,
+    .id           = AV_CODEC_ID_V410,
     .init         = v410_encode_init,
     .encode2      = v410_encode_frame,
     .close        = v410_encode_close,
-    .pix_fmts     = (const enum PixelFormat[]){ PIX_FMT_YUV444P10, PIX_FMT_NONE },
+    .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE },
     .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed 4:4:4 10-bit"),
 };

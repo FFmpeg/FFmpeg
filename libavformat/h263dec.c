@@ -55,13 +55,11 @@ static int h263_probe(AVProbeData *p)
                 last_gn= gn;
         }
     }
-//av_log(NULL, AV_LOG_ERROR, "h263_probe: psc:%d invalid:%d res_change:%d\n", valid_psc, invalid_psc, res_change);
-//h263_probe: psc:3 invalid:0 res_change:0 (1588/recent_ffmpeg_parses_mpg_incorrectly.mpg)
     if(valid_psc > 2*invalid_psc + 2*res_change + 3){
-        return 50;
+        return AVPROBE_SCORE_EXTENSION;
     }else if(valid_psc > 2*invalid_psc)
-        return 25;
+        return AVPROBE_SCORE_EXTENSION / 2;
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h263, "raw H.263", h263_probe, NULL, CODEC_ID_H263)
+FF_DEF_RAWVIDEO_DEMUXER(h263, "raw H.263", h263_probe, NULL, AV_CODEC_ID_H263)

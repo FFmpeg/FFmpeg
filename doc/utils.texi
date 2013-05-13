@@ -1,0 +1,592 @@
+@chapter Syntax
+@c man begin SYNTAX
+
+This section documents the syntax and formats employed by the FFmpeg
+libraries and tools.
+
+@anchor{quoting_and_escaping}
+@section Quoting and escaping
+
+FFmpeg adopts the following quoting and escaping mechanism, unless
+explicitly specified. The following rules are applied:
+
+@itemize
+@item
+@code{'} and @code{\} are special characters (respectively used for
+quoting and escaping). In addition to them, there might be other
+special characters depending on the specific syntax where the escaping
+and quoting are employed.
+
+@item
+A special character is escaped by prefixing it with a '\'.
+
+@item
+All characters enclosed between '' are included literally in the
+parsed string. The quote character @code{'} itself cannot be quoted,
+so you may need to close the quote and escape it.
+
+@item
+Leading and trailing whitespaces, unless escaped or quoted, are
+removed from the parsed string.
+@end itemize
+
+Note that you may need to add a second level of escaping when using
+the command line or a script, which depends on the syntax of the
+adopted shell language.
+
+The function @code{av_get_token} defined in
+@file{libavutil/avstring.h} can be used to parse a token quoted or
+escaped according to the rules defined above.
+
+The tool @file{tools/ffescape} in the FFmpeg source tree can be used
+to automatically quote or escape a string in a script.
+
+@subsection Examples
+
+@itemize
+@item
+Escape the string @code{Crime d'Amour} containing the @code{'} special
+character:
+@example
+Crime d\'Amour
+@end example
+
+@item
+The string above contains a quote, so the @code{'} needs to be escaped
+when quoting it:
+@example
+'Crime d'\''Amour'
+@end example
+
+@item
+Include leading or trailing whitespaces using quoting:
+@example
+'  this string starts and ends with whitespaces  '
+@end example
+
+@item
+Escaping and quoting can be mixed together:
+@example
+' The string '\'string\'' is a string '
+@end example
+
+@item
+To include a literal @code{\} you can use either escaping or quoting:
+@example
+'c:\foo' can be written as c:\\foo
+@end example
+@end itemize
+
+@anchor{date syntax}
+@section Date
+
+The accepted syntax is:
+@example
+[(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH:MM:SS[.m...]]])|(HHMMSS[.m...]]]))[Z]
+now
+@end example
+
+If the value is "now" it takes the current time.
+
+Time is local time unless Z is appended, in which case it is
+interpreted as UTC.
+If the year-month-day part is not specified it takes the current
+year-month-day.
+
+@anchor{time duration syntax}
+@section Time duration
+
+The accepted syntax is:
+@example
+[-][HH:]MM:SS[.m...]
+[-]S+[.m...]
+@end example
+
+@var{HH} expresses the number of hours, @var{MM} the number a of minutes
+and @var{SS} the number of seconds.
+
+@anchor{video size syntax}
+@section Video size
+Specify the size of the sourced video, it may be a string of the form
+@var{width}x@var{height}, or the name of a size abbreviation.
+
+The following abbreviations are recognized:
+@table @samp
+@item ntsc
+720x480
+@item pal
+720x576
+@item qntsc
+352x240
+@item qpal
+352x288
+@item sntsc
+640x480
+@item spal
+768x576
+@item film
+352x240
+@item ntsc-film
+352x240
+@item sqcif
+128x96
+@item qcif
+176x144
+@item cif
+352x288
+@item 4cif
+704x576
+@item 16cif
+1408x1152
+@item qqvga
+160x120
+@item qvga
+320x240
+@item vga
+640x480
+@item svga
+800x600
+@item xga
+1024x768
+@item uxga
+1600x1200
+@item qxga
+2048x1536
+@item sxga
+1280x1024
+@item qsxga
+2560x2048
+@item hsxga
+5120x4096
+@item wvga
+852x480
+@item wxga
+1366x768
+@item wsxga
+1600x1024
+@item wuxga
+1920x1200
+@item woxga
+2560x1600
+@item wqsxga
+3200x2048
+@item wquxga
+3840x2400
+@item whsxga
+6400x4096
+@item whuxga
+7680x4800
+@item cga
+320x200
+@item ega
+640x350
+@item hd480
+852x480
+@item hd720
+1280x720
+@item hd1080
+1920x1080
+@item 2k
+2048x1080
+@item 2kflat
+1998x1080
+@item 2kscope
+2048x858
+@item 4k
+4096x2160
+@item 4kflat
+3996x2160
+@item 4kscope
+4096x1716
+@end table
+
+@anchor{video rate syntax}
+@section Video rate
+
+Specify the frame rate of a video, expressed as the number of frames
+generated per second. It has to be a string in the format
+@var{frame_rate_num}/@var{frame_rate_den}, an integer number, a float
+number or a valid video frame rate abbreviation.
+
+The following abbreviations are recognized:
+@table @samp
+@item ntsc
+30000/1001
+@item pal
+25/1
+@item qntsc
+30000/1001
+@item qpal
+25/1
+@item sntsc
+30000/1001
+@item spal
+25/1
+@item film
+24/1
+@item ntsc-film
+24000/1001
+@end table
+
+@anchor{ratio syntax}
+@section Ratio
+
+A ratio can be expressed as an expression, or in the form
+@var{numerator}:@var{denominator}.
+
+Note that a ratio with infinite (1/0) or negative value is
+considered valid, so you should check on the returned value if you
+want to exclude those values.
+
+The undefined value can be expressed using the "0:0" string.
+
+@anchor{color syntax}
+@section Color
+
+It can be the name of a color (case insensitive match) or a
+[0x|#]RRGGBB[AA] sequence, possibly followed by "@@" and a string
+representing the alpha component.
+
+The alpha component may be a string composed by "0x" followed by an
+hexadecimal number or a decimal number between 0.0 and 1.0, which
+represents the opacity value (0x00/0.0 means completely transparent,
+0xff/1.0 completely opaque).
+If the alpha component is not specified then 0xff is assumed.
+
+The string "random" will result in a random color.
+
+@c man end SYNTAX
+
+@chapter Expression Evaluation
+@c man begin EXPRESSION EVALUATION
+
+When evaluating an arithmetic expression, FFmpeg uses an internal
+formula evaluator, implemented through the @file{libavutil/eval.h}
+interface.
+
+An expression may contain unary, binary operators, constants, and
+functions.
+
+Two expressions @var{expr1} and @var{expr2} can be combined to form
+another expression "@var{expr1};@var{expr2}".
+@var{expr1} and @var{expr2} are evaluated in turn, and the new
+expression evaluates to the value of @var{expr2}.
+
+The following binary operators are available: @code{+}, @code{-},
+@code{*}, @code{/}, @code{^}.
+
+The following unary operators are available: @code{+}, @code{-}.
+
+The following functions are available:
+@table @option
+@item abs(x)
+Compute absolute value of @var{x}.
+
+@item acos(x)
+Compute arccosine of @var{x}.
+
+@item asin(x)
+Compute arcsine of @var{x}.
+
+@item atan(x)
+Compute arctangent of @var{x}.
+
+@item between(x, min, max)
+Return 1 if @var{x} is greater than or equal to @var{min} and lesser than or
+equal to @var{max}, 0 otherwise.
+
+@item bitand(x, y)
+@item bitor(x, y)
+Compute bitwise and/or operation on @var{x} and @var{y}.
+
+The results of the evaluation of @var{x} and @var{y} are converted to
+integers before executing the bitwise operation.
+
+Note that both the conversion to integer and the conversion back to
+floating point can lose precision. Beware of unexpected results for
+large numbers (usually 2^53 and larger).
+
+@item ceil(expr)
+Round the value of expression @var{expr} upwards to the nearest
+integer. For example, "ceil(1.5)" is "2.0".
+
+@item cos(x)
+Compute cosine of @var{x}.
+
+@item cosh(x)
+Compute hyperbolic cosine of @var{x}.
+
+@item eq(x, y)
+Return 1 if @var{x} and @var{y} are equivalent, 0 otherwise.
+
+@item exp(x)
+Compute exponential of @var{x} (with base @code{e}, the Euler's number).
+
+@item floor(expr)
+Round the value of expression @var{expr} downwards to the nearest
+integer. For example, "floor(-1.5)" is "-2.0".
+
+@item gauss(x)
+Compute Gauss function of @var{x}, corresponding to
+@code{exp(-x*x/2) / sqrt(2*PI)}.
+
+@item gcd(x, y)
+Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
+@var{y} are 0 or either or both are less than zero then behavior is undefined.
+
+@item gt(x, y)
+Return 1 if @var{x} is greater than @var{y}, 0 otherwise.
+
+@item gte(x, y)
+Return 1 if @var{x} is greater than or equal to @var{y}, 0 otherwise.
+
+@item hypot(x, y)
+This function is similar to the C function with the same name; it returns
+"sqrt(@var{x}*@var{x} + @var{y}*@var{y})", the length of the hypotenuse of a
+right triangle with sides of length @var{x} and @var{y}, or the distance of the
+point (@var{x}, @var{y}) from the origin.
+
+@item if(x, y)
+Evaluate @var{x}, and if the result is non-zero return the result of
+the evaluation of @var{y}, return 0 otherwise.
+
+@item if(x, y, z)
+Evaluate @var{x}, and if the result is non-zero return the evaluation
+result of @var{y}, otherwise the evaluation result of @var{z}.
+
+@item ifnot(x, y)
+Evaluate @var{x}, and if the result is zero return the result of the
+evaluation of @var{y}, return 0 otherwise.
+
+@item ifnot(x, y, z)
+Evaluate @var{x}, and if the result is zero return the evaluation
+result of @var{y}, otherwise the evaluation result of @var{z}.
+
+@item isinf(x)
+Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
+
+@item isnan(x)
+Return 1.0 if @var{x} is NAN, 0.0 otherwise.
+
+@item ld(var)
+Allow to load the value of the internal variable with number
+@var{var}, which was previously stored with st(@var{var}, @var{expr}).
+The function returns the loaded value.
+
+@item log(x)
+Compute natural logarithm of @var{x}.
+
+@item lt(x, y)
+Return 1 if @var{x} is lesser than @var{y}, 0 otherwise.
+
+@item lte(x, y)
+Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
+
+@item max(x, y)
+Return the maximum between @var{x} and @var{y}.
+
+@item min(x, y)
+Return the maximum between @var{x} and @var{y}.
+
+@item mod(x, y)
+Compute the remainder of division of @var{x} by @var{y}.
+
+@item not(expr)
+Return 1.0 if @var{expr} is zero, 0.0 otherwise.
+
+@item pow(x, y)
+Compute the power of @var{x} elevated @var{y}, it is equivalent to
+"(@var{x})^(@var{y})".
+
+@item print(t)
+@item print(t, l)
+Print the value of expression @var{t} with loglevel @var{l}. If
+@var{l} is not specified then a default log level is used.
+Returns the value of the expression printed.
+
+Prints t with loglevel l
+
+@item random(x)
+Return a pseudo random value between 0.0 and 1.0. @var{x} is the index of the
+internal variable which will be used to save the seed/state.
+
+@item root(expr, max)
+Find an input value for which the function represented by @var{expr}
+with argument @var{ld(0)} is 0 in the interval 0..@var{max}.
+
+The expression in @var{expr} must denote a continuous function or the
+result is undefined.
+
+@var{ld(0)} is used to represent the function input value, which means
+that the given expression will be evaluated multiple times with
+various input values that the expression can access through
+@code{ld(0)}. When the expression evaluates to 0 then the
+corresponding input value will be returned.
+
+@item sin(x)
+Compute sine of @var{x}.
+
+@item sinh(x)
+Compute hyperbolic sine of @var{x}.
+
+@item sqrt(expr)
+Compute the square root of @var{expr}. This is equivalent to
+"(@var{expr})^.5".
+
+@item squish(x)
+Compute expression @code{1/(1 + exp(4*x))}.
+
+@item st(var, expr)
+Allow to store the value of the expression @var{expr} in an internal
+variable. @var{var} specifies the number of the variable where to
+store the value, and it is a value ranging from 0 to 9. The function
+returns the value stored in the internal variable.
+Note, Variables are currently not shared between expressions.
+
+@item tan(x)
+Compute tangent of @var{x}.
+
+@item tanh(x)
+Compute hyperbolic tangent of @var{x}.
+
+@item taylor(expr, x)
+@item taylor(expr, x, id)
+Evaluate a Taylor series at @var{x}, given an expression representing
+the @code{ld(id)}-th derivative of a function at 0.
+
+When the series does not converge the result is undefined.
+
+@var{ld(id)} is used to represent the derivative order in @var{expr},
+which means that the given expression will be evaluated multiple times
+with various input values that the expression can access through
+@code{ld(id)}. If @var{id} is not specified then 0 is assumed.
+
+Note, when you have the derivatives at y instead of 0,
+@code{taylor(expr, x-y)} can be used.
+
+@item time(0)
+Return the current (wallclock) time in seconds.
+
+@item trunc(expr)
+Round the value of expression @var{expr} towards zero to the nearest
+integer. For example, "trunc(-1.5)" is "-1.0".
+
+@item while(cond, expr)
+Evaluate expression @var{expr} while the expression @var{cond} is
+non-zero, and returns the value of the last @var{expr} evaluation, or
+NAN if @var{cond} was always false.
+@end table
+
+The following constants are available:
+@table @option
+@item PI
+area of the unit disc, approximately 3.14
+@item E
+exp(1) (Euler's number), approximately 2.718
+@item PHI
+golden ratio (1+sqrt(5))/2, approximately 1.618
+@end table
+
+Assuming that an expression is considered "true" if it has a non-zero
+value, note that:
+
+@code{*} works like AND
+
+@code{+} works like OR
+
+For example the construct:
+@example
+if (A AND B) then C
+@end example
+is equivalent to:
+@example
+if(A*B, C)
+@end example
+
+In your C code, you can extend the list of unary and binary functions,
+and define recognized constants, so that they are available for your
+expressions.
+
+The evaluator also recognizes the International System unit prefixes.
+If 'i' is appended after the prefix, binary prefixes are used, which
+are based on powers of 1024 instead of powers of 1000.
+The 'B' postfix multiplies the value by 8, and can be appended after a
+unit prefix or used alone. This allows using for example 'KB', 'MiB',
+'G' and 'B' as number postfix.
+
+The list of available International System prefixes follows, with
+indication of the corresponding powers of 10 and of 2.
+@table @option
+@item y
+10^-24 / 2^-80
+@item z
+10^-21 / 2^-70
+@item a
+10^-18 / 2^-60
+@item f
+10^-15 / 2^-50
+@item p
+10^-12 / 2^-40
+@item n
+10^-9 / 2^-30
+@item u
+10^-6 / 2^-20
+@item m
+10^-3 / 2^-10
+@item c
+10^-2
+@item d
+10^-1
+@item h
+10^2
+@item k
+10^3 / 2^10
+@item K
+10^3 / 2^10
+@item M
+10^6 / 2^20
+@item G
+10^9 / 2^30
+@item T
+10^12 / 2^40
+@item P
+10^15 / 2^40
+@item E
+10^18 / 2^50
+@item Z
+10^21 / 2^60
+@item Y
+10^24 / 2^70
+@end table
+
+@c man end
+
+@chapter OpenCL Options
+@c man begin OPENCL OPTIONS
+
+When FFmpeg is configured with @code{--enable-opencl}, it is possible
+to set the options for the global OpenCL context.
+
+The list of supported options follows:
+
+@table @option
+@item build_options
+Set build options used to compile the registered kernels.
+
+See reference "OpenCL Specification Version: 1.2 chapter 5.6.4".
+
+@item platform_idx
+Select the index of the platform to run OpenCL code.
+
+The specified index must be one of the indexes in the device list
+which can be obtained with @code{av_opencl_get_device_list()}.
+
+@item device_idx
+Select the index of the device used to run OpenCL code.
+
+The specifed index must be one of the indexes in the device list which
+can be obtained with @code{av_opencl_get_device_list()}.
+
+@end table
+
+@c man end OPENCL OPTIONS

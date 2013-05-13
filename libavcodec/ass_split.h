@@ -124,7 +124,7 @@ typedef struct {
     void (*text)(void *priv, const char *text, int len);
     void (*new_line)(void *priv, int forced);
     void (*style)(void *priv, char style, int close);
-    void (*color)(void *priv, unsigned int color, unsigned int color_id);
+    void (*color)(void *priv, unsigned int /* color */, unsigned int color_id);
     void (*alpha)(void *priv, int alpha, int alpha_id);
     void (*font_name)(void *priv, const char *name);
     void (*font_size)(void *priv, int size);
@@ -167,6 +167,6 @@ int ff_ass_split_override_codes(const ASSCodesCallbacks *callbacks, void *priv,
  * @param style name of the style to search for.
  * @return the ASSStyle corresponding to style, or NULL if style can't be found
  */
-ASSStyle *ass_style_get(ASSSplitContext *ctx, const char *style);
+ASSStyle *ff_ass_style_get(ASSSplitContext *ctx, const char *style);
 
 #endif /* AVCODEC_ASS_SPLIT_H */

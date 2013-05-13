@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "adx.h"
@@ -46,13 +47,18 @@ int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
     offset = AV_RB16(buf + 2) + 4;
 
+    if (offset < 6) {
+        av_log(avctx, AV_LOG_ERROR, "offset is prior data\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     /* if copyright string is within the provided data, validate it */
     if (bufsize >= offset && memcmp(buf + offset - 6, "(c)CRI", 6))
         return AVERROR_INVALIDDATA;
 
     /* check for encoding=3 block_size=18, sample_size=4 */
     if (buf[4] != 3 || buf[5] != 18 || buf[6] != 4) {
-        av_log_ask_for_sample(avctx, "unsupported ADX format\n");
+        avpriv_request_sample(avctx, "Support for this ADX format");
         return AVERROR_PATCHWELCOME;
     }
 

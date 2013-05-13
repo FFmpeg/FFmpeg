@@ -80,6 +80,6 @@ FATE_VORBIS += fate-vorbis-20
 fate-vorbis-20: CMD = pcm -i $(SAMPLES)/vorbis/6.ogg
 fate-vorbis-20: REF = $(SAMPLES)/vorbis/6.pcm
 
-FATE_SAMPLES_AVCONV += $(FATE_VORBIS)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, OGG, VORBIS) += $(FATE_VORBIS)
 fate-vorbis: $(FATE_VORBIS)
 $(FATE_VORBIS): CMP = oneoff

@@ -30,7 +30,6 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "ivi_dsp.h"
 #include "ivi_common.h"
 #include "indeo4data.h"
@@ -57,8 +56,8 @@ static const struct {
     int             is_2d_trans;
 } transforms[18] = {
     { ff_ivi_inverse_haar_8x8,  ff_ivi_dc_haar_2d,       1 },
-    { NULL, NULL, 0 }, /* inverse Haar 8x1 */
-    { NULL, NULL, 0 }, /* inverse Haar 1x8 */
+    { ff_ivi_inverse_haar_8x1,  ff_ivi_dc_haar_2d,       1 },
+    { ff_ivi_inverse_haar_1x8,  ff_ivi_dc_haar_2d,       1 },
     { ff_ivi_put_pixels_8x8,    ff_ivi_put_dc_pixel_8x8, 1 },
     { ff_ivi_inverse_slant_8x8, ff_ivi_dc_slant_2d,      1 },
     { ff_ivi_row_slant8,        ff_ivi_dc_row_slant,     1 },
@@ -197,6 +196,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* decode subdivision of the planes */
     pic_conf.luma_bands = decode_plane_subdivision(&ctx->gb);
+    pic_conf.chroma_bands = 0;
     if (pic_conf.luma_bands)
         pic_conf.chroma_bands = decode_plane_subdivision(&ctx->gb);
     ctx->is_scalable = pic_conf.luma_bands != 1 || pic_conf.chroma_bands != 1;
@@ -331,12 +331,12 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             transform_id = get_bits(&ctx->gb, 5);
             if (transform_id >= FF_ARRAY_ELEMS(transforms) ||
                 !transforms[transform_id].inv_trans) {
-                av_log_ask_for_sample(avctx, "Unimplemented transform: %d!\n", transform_id);
+                avpriv_request_sample(avctx, "Transform %d", transform_id);
                 return AVERROR_PATCHWELCOME;
             }
             if ((transform_id >= 7 && transform_id <= 9) ||
                  transform_id == 17) {
-                av_log_ask_for_sample(avctx, "DCT transform not supported yet!\n");
+                avpriv_request_sample(avctx, "DCT transform");
                 return AVERROR_PATCHWELCOME;
             }
 
@@ -364,6 +364,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 return AVERROR_INVALIDDATA;
             }
             band->scan = scan_index_to_tab[scan_indx];
+            band->scan_size = band->blk_size;
 
             quant_mat = get_bits(&ctx->gb, 5);
             if (quant_mat == 31) {
@@ -381,6 +382,15 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             band->quant_mat = 0;
             return AVERROR_INVALIDDATA;
         }
+        if (band->scan_size != band->blk_size) {
+            av_log(avctx, AV_LOG_ERROR, "mismatching scan table!\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (band->transform_size == 8 && band->blk_size < 8) {
+            av_log(avctx, AV_LOG_ERROR, "mismatching transform_size!\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         /* decode block huffman codebook */
         if (ff_ivi_dec_huff_desc(&ctx->gb, get_bits1(&ctx->gb), IVI_BLK_HUFF,
                                  &band->blk_vlc, avctx))
@@ -624,7 +634,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->pic_conf.pic_width  = 0;
     ctx->pic_conf.pic_height = 0;
 
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
     ctx->decode_pic_hdr   = decode_pic_hdr;
     ctx->decode_band_hdr  = decode_band_hdr;
@@ -639,10 +649,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 AVCodec ff_indeo4_decoder = {
     .name           = "indeo4",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_INDEO4,
+    .id             = AV_CODEC_ID_INDEO4,
     .priv_data_size = sizeof(IVI45DecContext),
     .init           = decode_init,
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo Video Interactive 4"),
+    .capabilities   = CODEC_CAP_DR1,
 };

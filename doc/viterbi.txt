@@ -85,8 +85,8 @@ here are some edges we could choose from:
      /        \
     O-----2--4--O
 
-Finding the new best pathes and scores for each point of our new column is
-trivial given we know the previous column best pathes and scores:
+Finding the new best paths and scores for each point of our new column is
+trivial given we know the previous column best paths and scores:
 
     O-----0-----8
      \

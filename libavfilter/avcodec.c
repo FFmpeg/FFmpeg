@@ -25,35 +25,10 @@
 
 #include "avcodec.h"
 #include "libavutil/avassert.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 
-int avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
-{
-    dst->pts    = src->pts;
-    dst->pos    = av_frame_get_pkt_pos(src);
-    dst->format = src->format;
-
-    switch (dst->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        dst->video->w                   = src->width;
-        dst->video->h                   = src->height;
-        dst->video->sample_aspect_ratio = src->sample_aspect_ratio;
-        dst->video->interlaced          = src->interlaced_frame;
-        dst->video->top_field_first     = src->top_field_first;
-        dst->video->key_frame           = src->key_frame;
-        dst->video->pict_type           = src->pict_type;
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        dst->audio->sample_rate         = src->sample_rate;
-        dst->audio->channel_layout      = src->channel_layout;
-        break;
-    default:
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
-
+#if FF_API_AVFILTERBUFFER
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms)
 {
@@ -63,21 +38,49 @@ AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame
                                                   frame->format);
     if (!picref)
         return NULL;
-    avfilter_copy_frame_props(picref, frame);
+    if (avfilter_copy_frame_props(picref, frame) < 0) {
+        picref->buf->data[0] = NULL;
+        avfilter_unref_bufferp(&picref);
+    }
     return picref;
 }
 
 AVFilterBufferRef *avfilter_get_audio_buffer_ref_from_frame(const AVFrame *frame,
                                                             int perms)
 {
-    AVFilterBufferRef *picref =
-        avfilter_get_audio_buffer_ref_from_arrays((uint8_t **)frame->data, frame->linesize[0], perms,
-                                                  frame->nb_samples, frame->format,
-                                                  av_frame_get_channel_layout(frame));
-    if (!picref)
+    AVFilterBufferRef *samplesref;
+    int channels = av_frame_get_channels(frame);
+    int64_t layout = av_frame_get_channel_layout(frame);
+
+    if (layout && av_get_channel_layout_nb_channels(layout) != av_frame_get_channels(frame)) {
+        av_log(0, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
         return NULL;
-    avfilter_copy_frame_props(picref, frame);
-    return picref;
+    }
+
+    samplesref = avfilter_get_audio_buffer_ref_from_arrays_channels(
+        (uint8_t **)frame->extended_data, frame->linesize[0], perms,
+        frame->nb_samples, frame->format, channels, layout);
+    if (!samplesref)
+        return NULL;
+    if (avfilter_copy_frame_props(samplesref, frame) < 0) {
+        samplesref->buf->data[0] = NULL;
+        avfilter_unref_bufferp(&samplesref);
+    }
+    return samplesref;
+}
+
+AVFilterBufferRef *avfilter_get_buffer_ref_from_frame(enum AVMediaType type,
+                                                      const AVFrame *frame,
+                                                      int perms)
+{
+    switch (type) {
+    case AVMEDIA_TYPE_VIDEO:
+        return avfilter_get_video_buffer_ref_from_frame(frame, perms);
+    case AVMEDIA_TYPE_AUDIO:
+        return avfilter_get_audio_buffer_ref_from_frame(frame, perms);
+    default:
+        return NULL;
+    }
 }
 
 int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
@@ -117,12 +120,13 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
             if (!dst->extended_data)
                 return AVERROR(ENOMEM);
             memcpy(dst->extended_data, src->extended_data,
-                   planes * sizeof(dst->extended_data));
+                   planes * sizeof(*dst->extended_data));
         } else
             dst->extended_data = dst->data;
         dst->nb_samples          = src->audio->nb_samples;
         av_frame_set_sample_rate   (dst, src->audio->sample_rate);
         av_frame_set_channel_layout(dst, src->audio->channel_layout);
+        av_frame_set_channels      (dst, src->audio->channels);
         break;
     default:
         return AVERROR(EINVAL);
@@ -130,8 +134,9 @@ int avfilter_copy_buf_props(AVFrame *dst, const AVFilterBufferRef *src)
 
     return 0;
 }
+#endif
 
-#ifdef FF_API_FILL_FRAME
+#if FF_API_FILL_FRAME
 int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
                                               const AVFilterBufferRef *samplesref)
 {

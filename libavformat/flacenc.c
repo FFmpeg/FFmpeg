@@ -69,6 +69,15 @@ static int flac_write_header(struct AVFormatContext *s)
     int ret;
     AVCodecContext *codec = s->streams[0]->codec;
 
+    if (s->nb_streams > 1) {
+        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
+        return AVERROR(EINVAL);
+    }
+    if (codec->codec_id != AV_CODEC_ID_FLAC) {
+        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
+        return AVERROR(EINVAL);
+    }
+
     ret = ff_flac_write_header(s->pb, codec, 0);
     if (ret)
         return ret;
@@ -113,7 +122,6 @@ static int flac_write_trailer(struct AVFormatContext *s)
 static int flac_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     avio_write(s->pb, pkt->data, pkt->size);
-    avio_flush(s->pb);
     return 0;
 }
 
@@ -122,8 +130,8 @@ AVOutputFormat ff_flac_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("raw FLAC"),
     .mime_type         = "audio/x-flac",
     .extensions        = "flac",
-    .audio_codec       = CODEC_ID_FLAC,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_FLAC,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = flac_write_header,
     .write_packet      = flac_write_packet,
     .write_trailer     = flac_write_trailer,

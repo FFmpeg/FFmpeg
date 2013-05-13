@@ -210,7 +210,8 @@ static int return_stored_frame(AVFormatContext *ctx, PayloadContext *data,
 
 static int qcelp_parse_packet(AVFormatContext *ctx, PayloadContext *data,
                               AVStream *st, AVPacket *pkt, uint32_t *timestamp,
-                              const uint8_t *buf, int len, int flags)
+                              const uint8_t *buf, int len, uint16_t seq,
+                              int flags)
 {
     if (buf)
         return store_packet(ctx, data, st, pkt, timestamp, buf, len);
@@ -221,7 +222,7 @@ static int qcelp_parse_packet(AVFormatContext *ctx, PayloadContext *data,
 RTPDynamicProtocolHandler ff_qcelp_dynamic_handler = {
     .enc_name           = "x-Purevoice",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
-    .codec_id           = CODEC_ID_QCELP,
+    .codec_id           = AV_CODEC_ID_QCELP,
     .static_payload_id  = 12,
     .alloc              = qcelp_new_context,
     .free               = qcelp_free_context,

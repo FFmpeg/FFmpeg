@@ -26,6 +26,8 @@
 
 #include <stddef.h>
 
+#include "libavutil/attributes.h"
+
 #undef PREFETCH
 #undef MOVNTQ
 #undef EMMS
@@ -35,7 +37,7 @@
 #if COMPILE_TEMPLATE_AMD3DNOW
 #define PREFETCH  "prefetch"
 #define PAVGB     "pavgusb"
-#elif COMPILE_TEMPLATE_MMX2
+#elif COMPILE_TEMPLATE_MMXEXT
 #define PREFETCH "prefetchnta"
 #define PAVGB     "pavgb"
 #else
@@ -49,7 +51,7 @@
 #define EMMS     "emms"
 #endif
 
-#if COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMXEXT
 #define MOVNTQ "movntq"
 #define SFENCE "sfence"
 #else
@@ -73,25 +75,24 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, int sr
     __asm__ volatile("movq        %0, %%mm7"::"m"(mask32a):"memory");
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "punpckldq    3%1, %%mm0    \n\t"
-            "movd         6%1, %%mm1    \n\t"
-            "punpckldq    9%1, %%mm1    \n\t"
-            "movd        12%1, %%mm2    \n\t"
-            "punpckldq   15%1, %%mm2    \n\t"
-            "movd        18%1, %%mm3    \n\t"
-            "punpckldq   21%1, %%mm3    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movd        (%1), %%mm0    \n\t"
+            "punpckldq  3(%1), %%mm0    \n\t"
+            "movd       6(%1), %%mm1    \n\t"
+            "punpckldq  9(%1), %%mm1    \n\t"
+            "movd      12(%1), %%mm2    \n\t"
+            "punpckldq 15(%1), %%mm2    \n\t"
+            "movd      18(%1), %%mm3    \n\t"
+            "punpckldq 21(%1), %%mm3    \n\t"
             "por        %%mm7, %%mm0    \n\t"
             "por        %%mm7, %%mm1    \n\t"
             "por        %%mm7, %%mm2    \n\t"
             "por        %%mm7, %%mm3    \n\t"
-            MOVNTQ"     %%mm0,   %0     \n\t"
-            MOVNTQ"     %%mm1,  8%0     \n\t"
-            MOVNTQ"     %%mm2, 16%0     \n\t"
-            MOVNTQ"     %%mm3, 24%0"
-            :"=m"(*dest)
-            :"m"(*s)
+            MOVNTQ"     %%mm0,   (%0)   \n\t"
+            MOVNTQ"     %%mm1,  8(%0)   \n\t"
+            MOVNTQ"     %%mm2, 16(%0)   \n\t"
+            MOVNTQ"     %%mm3, 24(%0)"
+            :: "r"(dest), "r"(s)
             :"memory");
         dest += 32;
         s += 24;
@@ -128,19 +129,16 @@ static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, int sr
             "movq       %%mm4, %%mm3    \n\t" \
             "psllq        $48, %%mm2    \n\t" \
             "psllq        $32, %%mm3    \n\t" \
-            "pand "MANGLE(mask24hh)", %%mm2\n\t" \
-            "pand "MANGLE(mask24hhh)", %%mm3\n\t" \
             "por        %%mm2, %%mm0    \n\t" \
             "psrlq        $16, %%mm1    \n\t" \
             "psrlq        $32, %%mm4    \n\t" \
             "psllq        $16, %%mm5    \n\t" \
             "por        %%mm3, %%mm1    \n\t" \
-            "pand  "MANGLE(mask24hhhh)", %%mm5\n\t" \
             "por        %%mm5, %%mm4    \n\t" \
  \
-            MOVNTQ"     %%mm0,   %0     \n\t" \
-            MOVNTQ"     %%mm1,  8%0     \n\t" \
-            MOVNTQ"     %%mm4, 16%0"
+            MOVNTQ"     %%mm0,   (%0)    \n\t" \
+            MOVNTQ"     %%mm1,  8(%0)    \n\t" \
+            MOVNTQ"     %%mm4, 16(%0)"
 
 
 static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, int src_size)
@@ -154,18 +152,17 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 31;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movq          %1, %%mm0    \n\t"
-            "movq         8%1, %%mm1    \n\t"
-            "movq        16%1, %%mm4    \n\t"
-            "movq        24%1, %%mm5    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movq        (%1), %%mm0    \n\t"
+            "movq       8(%1), %%mm1    \n\t"
+            "movq      16(%1), %%mm4    \n\t"
+            "movq      24(%1), %%mm5    \n\t"
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm1, %%mm3    \n\t"
             "movq       %%mm4, %%mm6    \n\t"
             "movq       %%mm5, %%mm7    \n\t"
             STORE_BGR24_MMX
-            :"=m"(*dest)
-            :"m"(*s)
+            :: "r"(dest), "r"(s)
             :"memory");
         dest += 24;
         s += 32;
@@ -183,7 +180,7 @@ static inline void RENAME(rgb32tobgr24)(const uint8_t *src, uint8_t *dst, int sr
 /*
  original by Strepto/Astral
  ported to gcc & bugfixed: A'rpi
- MMX2, 3DNOW optimization by Nick Kurshev
+ MMXEXT, 3DNOW optimization by Nick Kurshev
  32-bit C version, and and&add trick by Michael Niedermayer
 */
 static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, int src_size)
@@ -198,19 +195,18 @@ static inline void RENAME(rgb15to16)(const uint8_t *src, uint8_t *dst, int src_s
     mm_end = end - 15;
     while (s<mm_end) {
         __asm__ volatile(
-            PREFETCH"  32%1         \n\t"
-            "movq        %1, %%mm0  \n\t"
-            "movq       8%1, %%mm2  \n\t"
+            PREFETCH" 32(%1)        \n\t"
+            "movq      (%1), %%mm0  \n\t"
+            "movq     8(%1), %%mm2  \n\t"
             "movq     %%mm0, %%mm1  \n\t"
             "movq     %%mm2, %%mm3  \n\t"
             "pand     %%mm4, %%mm0  \n\t"
             "pand     %%mm4, %%mm2  \n\t"
             "paddw    %%mm1, %%mm0  \n\t"
             "paddw    %%mm3, %%mm2  \n\t"
-            MOVNTQ"   %%mm0,  %0    \n\t"
-            MOVNTQ"   %%mm2, 8%0"
-            :"=m"(*d)
-            :"m"(*s)
+            MOVNTQ"   %%mm0,  (%0)  \n\t"
+            MOVNTQ"   %%mm2, 8(%0)"
+            :: "r"(d), "r"(s)
         );
         d+=16;
         s+=16;
@@ -243,9 +239,9 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, int src_s
     mm_end = end - 15;
     while (s<mm_end) {
         __asm__ volatile(
-            PREFETCH"  32%1         \n\t"
-            "movq        %1, %%mm0  \n\t"
-            "movq       8%1, %%mm2  \n\t"
+            PREFETCH" 32(%1)        \n\t"
+            "movq      (%1), %%mm0  \n\t"
+            "movq     8(%1), %%mm2  \n\t"
             "movq     %%mm0, %%mm1  \n\t"
             "movq     %%mm2, %%mm3  \n\t"
             "psrlq       $1, %%mm0  \n\t"
@@ -256,10 +252,9 @@ static inline void RENAME(rgb16to15)(const uint8_t *src, uint8_t *dst, int src_s
             "pand     %%mm6, %%mm3  \n\t"
             "por      %%mm1, %%mm0  \n\t"
             "por      %%mm3, %%mm2  \n\t"
-            MOVNTQ"   %%mm0,  %0    \n\t"
-            MOVNTQ"   %%mm2, 8%0"
-            :"=m"(*d)
-            :"m"(*s)
+            MOVNTQ"   %%mm0,  (%0)  \n\t"
+            MOVNTQ"   %%mm2, 8(%0)"
+            :: "r"(d), "r"(s)
         );
         d+=16;
         s+=16;
@@ -287,7 +282,6 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, int src_s
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
     mm_end = end - 15;
-#if 1 //is faster only if multiplies are reasonably fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     __asm__ volatile(
         "movq           %3, %%mm5   \n\t"
         "movq           %4, %%mm6   \n\t"
@@ -322,47 +316,6 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, int src_s
         : "+r" (d), "+r"(s)
         : "r" (mm_end), "m" (mask3216g), "m" (mask3216br), "m" (mul3216)
     );
-#else
-    __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm__ volatile(
-        "movq    %0, %%mm7    \n\t"
-        "movq    %1, %%mm6    \n\t"
-        ::"m"(red_16mask),"m"(green_16mask));
-    while (s < mm_end) {
-        __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         4%1, %%mm3    \n\t"
-            "punpckldq    8%1, %%mm0    \n\t"
-            "punpckldq   12%1, %%mm3    \n\t"
-            "movq       %%mm0, %%mm1    \n\t"
-            "movq       %%mm0, %%mm2    \n\t"
-            "movq       %%mm3, %%mm4    \n\t"
-            "movq       %%mm3, %%mm5    \n\t"
-            "psrlq         $3, %%mm0    \n\t"
-            "psrlq         $3, %%mm3    \n\t"
-            "pand          %2, %%mm0    \n\t"
-            "pand          %2, %%mm3    \n\t"
-            "psrlq         $5, %%mm1    \n\t"
-            "psrlq         $5, %%mm4    \n\t"
-            "pand       %%mm6, %%mm1    \n\t"
-            "pand       %%mm6, %%mm4    \n\t"
-            "psrlq         $8, %%mm2    \n\t"
-            "psrlq         $8, %%mm5    \n\t"
-            "pand       %%mm7, %%mm2    \n\t"
-            "pand       %%mm7, %%mm5    \n\t"
-            "por        %%mm1, %%mm0    \n\t"
-            "por        %%mm4, %%mm3    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "por        %%mm5, %%mm3    \n\t"
-            "psllq        $16, %%mm3    \n\t"
-            "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
-        d += 4;
-        s += 16;
-    }
-#endif
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
     while (s < end) {
@@ -386,11 +339,11 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 15;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         4%1, %%mm3    \n\t"
-            "punpckldq    8%1, %%mm0    \n\t"
-            "punpckldq   12%1, %%mm3    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movd        (%1), %%mm0    \n\t"
+            "movd       4(%1), %%mm3    \n\t"
+            "punpckldq  8(%1), %%mm0    \n\t"
+            "punpckldq 12(%1), %%mm3    \n\t"
             "movq       %%mm0, %%mm1    \n\t"
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm3, %%mm4    \n\t"
@@ -413,8 +366,8 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
             "psllq        $16, %%mm3    \n\t"
             "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
+            MOVNTQ"     %%mm0, (%0)     \n\t"
+            :: "r"(d),"r"(s),"m"(blue_16mask):"memory");
         d += 4;
         s += 16;
     }
@@ -434,7 +387,6 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, int src_s
     uint16_t *d = (uint16_t *)dst;
     end = s + src_size;
     mm_end = end - 15;
-#if 1 //is faster only if multiplies are reasonably fast (FIXME figure out on which CPUs this is faster, on Athlon it is slightly faster)
     __asm__ volatile(
         "movq           %3, %%mm5   \n\t"
         "movq           %4, %%mm6   \n\t"
@@ -469,47 +421,6 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, int src_s
         : "+r" (d), "+r"(s)
         : "r" (mm_end), "m" (mask3215g), "m" (mask3216br), "m" (mul3215)
     );
-#else
-    __asm__ volatile(PREFETCH"    %0"::"m"(*src):"memory");
-    __asm__ volatile(
-        "movq          %0, %%mm7    \n\t"
-        "movq          %1, %%mm6    \n\t"
-        ::"m"(red_15mask),"m"(green_15mask));
-    while (s < mm_end) {
-        __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         4%1, %%mm3    \n\t"
-            "punpckldq    8%1, %%mm0    \n\t"
-            "punpckldq   12%1, %%mm3    \n\t"
-            "movq       %%mm0, %%mm1    \n\t"
-            "movq       %%mm0, %%mm2    \n\t"
-            "movq       %%mm3, %%mm4    \n\t"
-            "movq       %%mm3, %%mm5    \n\t"
-            "psrlq         $3, %%mm0    \n\t"
-            "psrlq         $3, %%mm3    \n\t"
-            "pand          %2, %%mm0    \n\t"
-            "pand          %2, %%mm3    \n\t"
-            "psrlq         $6, %%mm1    \n\t"
-            "psrlq         $6, %%mm4    \n\t"
-            "pand       %%mm6, %%mm1    \n\t"
-            "pand       %%mm6, %%mm4    \n\t"
-            "psrlq         $9, %%mm2    \n\t"
-            "psrlq         $9, %%mm5    \n\t"
-            "pand       %%mm7, %%mm2    \n\t"
-            "pand       %%mm7, %%mm5    \n\t"
-            "por        %%mm1, %%mm0    \n\t"
-            "por        %%mm4, %%mm3    \n\t"
-            "por        %%mm2, %%mm0    \n\t"
-            "por        %%mm5, %%mm3    \n\t"
-            "psllq        $16, %%mm3    \n\t"
-            "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
-        d += 4;
-        s += 16;
-    }
-#endif
     __asm__ volatile(SFENCE:::"memory");
     __asm__ volatile(EMMS:::"memory");
     while (s < end) {
@@ -533,11 +444,11 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 15;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         4%1, %%mm3    \n\t"
-            "punpckldq    8%1, %%mm0    \n\t"
-            "punpckldq   12%1, %%mm3    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movd        (%1), %%mm0    \n\t"
+            "movd       4(%1), %%mm3    \n\t"
+            "punpckldq  8(%1), %%mm0    \n\t"
+            "punpckldq 12(%1), %%mm3    \n\t"
             "movq       %%mm0, %%mm1    \n\t"
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm3, %%mm4    \n\t"
@@ -560,8 +471,8 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
             "psllq        $16, %%mm3    \n\t"
             "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+            MOVNTQ"     %%mm0, (%0)     \n\t"
+            ::"r"(d),"r"(s),"m"(blue_15mask):"memory");
         d += 4;
         s += 16;
     }
@@ -588,11 +499,11 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 11;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         3%1, %%mm3    \n\t"
-            "punpckldq    6%1, %%mm0    \n\t"
-            "punpckldq    9%1, %%mm3    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movd        (%1), %%mm0    \n\t"
+            "movd       3(%1), %%mm3    \n\t"
+            "punpckldq  6(%1), %%mm0    \n\t"
+            "punpckldq  9(%1), %%mm3    \n\t"
             "movq       %%mm0, %%mm1    \n\t"
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm3, %%mm4    \n\t"
@@ -615,8 +526,8 @@ static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
             "psllq        $16, %%mm3    \n\t"
             "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
+            MOVNTQ"     %%mm0, (%0)     \n\t"
+            ::"r"(d),"r"(s),"m"(blue_16mask):"memory");
         d += 4;
         s += 12;
     }
@@ -645,11 +556,11 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, int src_s
     mm_end = end - 15;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         3%1, %%mm3    \n\t"
-            "punpckldq    6%1, %%mm0    \n\t"
-            "punpckldq    9%1, %%mm3    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movd        (%1), %%mm0    \n\t"
+            "movd       3(%1), %%mm3    \n\t"
+            "punpckldq  6(%1), %%mm0    \n\t"
+            "punpckldq  9(%1), %%mm3    \n\t"
             "movq       %%mm0, %%mm1    \n\t"
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm3, %%mm4    \n\t"
@@ -672,8 +583,8 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, int src_s
             "por        %%mm5, %%mm3    \n\t"
             "psllq        $16, %%mm3    \n\t"
             "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
+            MOVNTQ"     %%mm0, (%0)     \n\t"
+            ::"r"(d),"r"(s),"m"(blue_16mask):"memory");
         d += 4;
         s += 12;
     }
@@ -702,11 +613,11 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 11;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movd          %1, %%mm0    \n\t"
-            "movd         3%1, %%mm3    \n\t"
-            "punpckldq    6%1, %%mm0    \n\t"
-            "punpckldq    9%1, %%mm3    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movd        (%1), %%mm0    \n\t"
+            "movd       3(%1), %%mm3    \n\t"
+            "punpckldq  6(%1), %%mm0    \n\t"
+            "punpckldq  9(%1), %%mm3    \n\t"
             "movq       %%mm0, %%mm1    \n\t"
             "movq       %%mm0, %%mm2    \n\t"
             "movq       %%mm3, %%mm4    \n\t"
@@ -729,8 +640,8 @@ static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
             "psllq        $16, %%mm3    \n\t"
             "por        %%mm3, %%mm0    \n\t"
-            MOVNTQ"     %%mm0, %0       \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+            MOVNTQ"     %%mm0, (%0)     \n\t"
+            ::"r"(d),"r"(s),"m"(blue_15mask):"memory");
         d += 4;
         s += 12;
     }
@@ -759,11 +670,11 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, int src_s
     mm_end = end - 15;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"   32%1            \n\t"
-            "movd         %1, %%mm0     \n\t"
-            "movd        3%1, %%mm3     \n\t"
-            "punpckldq   6%1, %%mm0     \n\t"
-            "punpckldq   9%1, %%mm3     \n\t"
+            PREFETCH" 32(%1)            \n\t"
+            "movd       (%1), %%mm0     \n\t"
+            "movd      3(%1), %%mm3     \n\t"
+            "punpckldq 6(%1), %%mm0     \n\t"
+            "punpckldq 9(%1), %%mm3     \n\t"
             "movq      %%mm0, %%mm1     \n\t"
             "movq      %%mm0, %%mm2     \n\t"
             "movq      %%mm3, %%mm4     \n\t"
@@ -786,8 +697,8 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, int src_s
             "por       %%mm5, %%mm3     \n\t"
             "psllq       $16, %%mm3     \n\t"
             "por       %%mm3, %%mm0     \n\t"
-            MOVNTQ"    %%mm0, %0        \n\t"
-            :"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+            MOVNTQ"    %%mm0, (%0)      \n\t"
+            ::"r"(d),"r"(s),"m"(blue_15mask):"memory");
         d += 4;
         s += 12;
     }
@@ -812,10 +723,10 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 7;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movq          %1, %%mm0    \n\t"
-            "movq          %1, %%mm1    \n\t"
-            "movq          %1, %%mm2    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movq        (%1), %%mm0    \n\t"
+            "movq        (%1), %%mm1    \n\t"
+            "movq        (%1), %%mm2    \n\t"
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
@@ -844,9 +755,9 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "movq       %%mm0, %%mm6    \n\t"
             "movq       %%mm3, %%mm7    \n\t"
 
-            "movq         8%1, %%mm0    \n\t"
-            "movq         8%1, %%mm1    \n\t"
-            "movq         8%1, %%mm2    \n\t"
+            "movq       8(%1), %%mm0    \n\t"
+            "movq       8(%1), %%mm1    \n\t"
+            "movq       8(%1), %%mm2    \n\t"
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
@@ -873,7 +784,7 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
 
             :"=m"(*d)
-            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mmx_null)
+            :"r"(s),"m"(mask15b),"m"(mask15g),"m"(mask15r), "m"(mmx_null)
             :"memory");
         /* borrowed 32 to 24 */
         __asm__ volatile(
@@ -889,8 +800,7 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
 
             STORE_BGR24_MMX
 
-            :"=m"(*d)
-            :"m"(*s)
+            :: "r"(d), "m"(*s)
             :"memory");
         d += 24;
         s += 8;
@@ -917,10 +827,10 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
     mm_end = end - 7;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movq          %1, %%mm0    \n\t"
-            "movq          %1, %%mm1    \n\t"
-            "movq          %1, %%mm2    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movq        (%1), %%mm0    \n\t"
+            "movq        (%1), %%mm1    \n\t"
+            "movq        (%1), %%mm2    \n\t"
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
@@ -950,9 +860,9 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "movq       %%mm0, %%mm6    \n\t"
             "movq       %%mm3, %%mm7    \n\t"
 
-            "movq         8%1, %%mm0    \n\t"
-            "movq         8%1, %%mm1    \n\t"
-            "movq         8%1, %%mm2    \n\t"
+            "movq       8(%1), %%mm0    \n\t"
+            "movq       8(%1), %%mm1    \n\t"
+            "movq       8(%1), %%mm2    \n\t"
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
@@ -979,7 +889,7 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm4, %%mm3    \n\t"
             "por        %%mm5, %%mm3    \n\t"
             :"=m"(*d)
-            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null)
+            :"r"(s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null)
             :"memory");
         /* borrowed 32 to 24 */
         __asm__ volatile(
@@ -995,8 +905,7 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
 
             STORE_BGR24_MMX
 
-            :"=m"(*d)
-            :"m"(*s)
+            :: "r"(d), "m"(*s)
             :"memory");
         d += 24;
         s += 8;
@@ -1028,8 +937,8 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
     "movq       %%mm0, %%mm3    \n\t"                               \
     "punpcklwd  %%mm2, %%mm0    \n\t" /* FF R1 G1 B1 FF R0 G0 B0 */ \
     "punpckhwd  %%mm2, %%mm3    \n\t" /* FF R3 G3 B3 FF R2 G2 B2 */ \
-    MOVNTQ"     %%mm0,  %0      \n\t"                               \
-    MOVNTQ"     %%mm3, 8%0      \n\t"                               \
+    MOVNTQ"     %%mm0,  (%0)    \n\t"                               \
+    MOVNTQ"     %%mm3, 8(%0)    \n\t"                               \
 
 static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, int src_size)
 {
@@ -1044,10 +953,10 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, int src_s
     mm_end = end - 3;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movq          %1, %%mm0    \n\t"
-            "movq          %1, %%mm1    \n\t"
-            "movq          %1, %%mm2    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movq        (%1), %%mm0    \n\t"
+            "movq        (%1), %%mm1    \n\t"
+            "movq        (%1), %%mm2    \n\t"
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
@@ -1056,8 +965,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, int src_s
             "pmulhw        %5, %%mm1    \n\t"
             "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             PACK_RGB32
-            :"=m"(*d)
-            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mul15_mid)
+            ::"r"(d),"r"(s),"m"(mask15b),"m"(mask15g),"m"(mask15r) ,"m"(mul15_mid)
             :"memory");
         d += 16;
         s += 4;
@@ -1087,10 +995,10 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, int src_s
     mm_end = end - 3;
     while (s < mm_end) {
         __asm__ volatile(
-            PREFETCH"    32%1           \n\t"
-            "movq          %1, %%mm0    \n\t"
-            "movq          %1, %%mm1    \n\t"
-            "movq          %1, %%mm2    \n\t"
+            PREFETCH"  32(%1)           \n\t"
+            "movq        (%1), %%mm0    \n\t"
+            "movq        (%1), %%mm1    \n\t"
+            "movq        (%1), %%mm2    \n\t"
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
@@ -1100,8 +1008,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, int src_s
             "pmulhw        "MANGLE(mul16_mid)", %%mm1    \n\t"
             "pmulhw        "MANGLE(mul15_hi)", %%mm2    \n\t"
             PACK_RGB32
-            :"=m"(*d)
-            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mul15_mid)
+            ::"r"(d),"r"(s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mul15_mid)
             :"memory");
         d += 16;
         s += 4;
@@ -1136,7 +1043,7 @@ static inline void RENAME(shuffle_bytes_2103)(const uint8_t *src, uint8_t *dst, 
         PREFETCH"     32(%1, %0)        \n\t"
         "movq           (%1, %0), %%mm0 \n\t"
         "movq          8(%1, %0), %%mm1 \n\t"
-# if COMPILE_TEMPLATE_MMX2
+# if COMPILE_TEMPLATE_MMXEXT
         "pshufw      $177, %%mm0, %%mm3 \n\t"
         "pshufw      $177, %%mm1, %%mm5 \n\t"
         "pand       %%mm7, %%mm0        \n\t"
@@ -1500,7 +1407,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 }
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
-#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
+#if COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW
 static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, int srcWidth, int srcHeight, int srcStride, int dstStride)
 {
     int x,y;
@@ -1590,7 +1497,7 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, int srcWid
                      SFENCE"     \n\t"
                      :::"memory");
 }
-#endif /* COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW */
+#endif /* COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW */
 
 #if !COMPILE_TEMPLATE_AMD3DNOW
 /**
@@ -1705,10 +1612,15 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
  * others are ignored in the C version.
  * FIXME: Write HQ version.
  */
+#if HAVE_7REGS
 static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                        int width, int height,
-                                       int lumStride, int chromStride, int srcStride)
+                                       int lumStride, int chromStride, int srcStride,
+                                       int32_t *rgb2yuv)
 {
+#define BGR2Y_IDX "16*4+16*32"
+#define BGR2U_IDX "16*4+16*33"
+#define BGR2V_IDX "16*4+16*34"
     int y;
     const x86_reg chromWidth= width>>1;
     for (y=0; y<height-2; y+=2) {
@@ -1716,7 +1628,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         for (i=0; i<2; i++) {
             __asm__ volatile(
                 "mov                        %2, %%"REG_a"   \n\t"
-                "movq  "MANGLE(ff_bgr2YCoeff)", %%mm6       \n\t"
+                "movq          "BGR2Y_IDX"(%3), %%mm6       \n\t"
                 "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
                 "pxor                    %%mm7, %%mm7       \n\t"
                 "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
@@ -1735,12 +1647,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 "pmaddwd                 %%mm6, %%mm1       \n\t"
                 "pmaddwd                 %%mm6, %%mm2       \n\t"
                 "pmaddwd                 %%mm6, %%mm3       \n\t"
-#ifndef FAST_BGR2YV12
                 "psrad                      $8, %%mm0       \n\t"
                 "psrad                      $8, %%mm1       \n\t"
                 "psrad                      $8, %%mm2       \n\t"
                 "psrad                      $8, %%mm3       \n\t"
-#endif
                 "packssdw                %%mm1, %%mm0       \n\t"
                 "packssdw                %%mm3, %%mm2       \n\t"
                 "pmaddwd                 %%mm5, %%mm0       \n\t"
@@ -1760,12 +1670,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 "pmaddwd                 %%mm6, %%mm1       \n\t"
                 "pmaddwd                 %%mm6, %%mm2       \n\t"
                 "pmaddwd                 %%mm6, %%mm3       \n\t"
-#ifndef FAST_BGR2YV12
                 "psrad                      $8, %%mm4       \n\t"
                 "psrad                      $8, %%mm1       \n\t"
                 "psrad                      $8, %%mm2       \n\t"
                 "psrad                      $8, %%mm3       \n\t"
-#endif
                 "packssdw                %%mm1, %%mm4       \n\t"
                 "packssdw                %%mm3, %%mm2       \n\t"
                 "pmaddwd                 %%mm5, %%mm4       \n\t"
@@ -1780,7 +1688,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                 MOVNTQ"                  %%mm0, (%1, %%"REG_a") \n\t"
                 "add                        $8,      %%"REG_a"  \n\t"
                 " js                        1b                  \n\t"
-                : : "r" (src+width*3), "r" (ydst+width), "g" ((x86_reg)-width)
+                : : "r" (src+width*3), "r" (ydst+width), "g" ((x86_reg)-width), "r"(rgb2yuv)
                 : "%"REG_a, "%"REG_d
             );
             ydst += lumStride;
@@ -1790,7 +1698,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
         __asm__ volatile(
             "mov                        %4, %%"REG_a"   \n\t"
             "movq       "MANGLE(ff_w1111)", %%mm5       \n\t"
-            "movq  "MANGLE(ff_bgr2UCoeff)", %%mm6       \n\t"
+            "movq          "BGR2U_IDX"(%5), %%mm6       \n\t"
             "pxor                    %%mm7, %%mm7       \n\t"
             "lea (%%"REG_a", %%"REG_a", 2), %%"REG_d"   \n\t"
             "add                 %%"REG_d", %%"REG_d"   \n\t"
@@ -1798,7 +1706,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "1:                                         \n\t"
             PREFETCH"    64(%0, %%"REG_d")              \n\t"
             PREFETCH"    64(%1, %%"REG_d")              \n\t"
-#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
+#if COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW
             "movq          (%0, %%"REG_d"), %%mm0       \n\t"
             "movq          (%1, %%"REG_d"), %%mm1       \n\t"
             "movq         6(%0, %%"REG_d"), %%mm2       \n\t"
@@ -1839,19 +1747,17 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "psrlw                      $2, %%mm0       \n\t"
             "psrlw                      $2, %%mm2       \n\t"
 #endif
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm1       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm3       \n\t"
 
             "pmaddwd                 %%mm0, %%mm1       \n\t"
             "pmaddwd                 %%mm2, %%mm3       \n\t"
             "pmaddwd                 %%mm6, %%mm0       \n\t"
             "pmaddwd                 %%mm6, %%mm2       \n\t"
-#ifndef FAST_BGR2YV12
             "psrad                      $8, %%mm0       \n\t"
             "psrad                      $8, %%mm1       \n\t"
             "psrad                      $8, %%mm2       \n\t"
             "psrad                      $8, %%mm3       \n\t"
-#endif
             "packssdw                %%mm2, %%mm0       \n\t"
             "packssdw                %%mm3, %%mm1       \n\t"
             "pmaddwd                 %%mm5, %%mm0       \n\t"
@@ -1859,7 +1765,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "packssdw                %%mm1, %%mm0       \n\t" // V1 V0 U1 U0
             "psraw                      $7, %%mm0       \n\t"
 
-#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
+#if COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW
             "movq        12(%0, %%"REG_d"), %%mm4       \n\t"
             "movq        12(%1, %%"REG_d"), %%mm1       \n\t"
             "movq        18(%0, %%"REG_d"), %%mm2       \n\t"
@@ -1901,19 +1807,17 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "psrlw                      $2, %%mm4       \n\t"
             "psrlw                      $2, %%mm2       \n\t"
 #endif
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm1       \n\t"
-            "movq  "MANGLE(ff_bgr2VCoeff)", %%mm3       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm1       \n\t"
+            "movq          "BGR2V_IDX"(%5), %%mm3       \n\t"
 
             "pmaddwd                 %%mm4, %%mm1       \n\t"
             "pmaddwd                 %%mm2, %%mm3       \n\t"
             "pmaddwd                 %%mm6, %%mm4       \n\t"
             "pmaddwd                 %%mm6, %%mm2       \n\t"
-#ifndef FAST_BGR2YV12
             "psrad                      $8, %%mm4       \n\t"
             "psrad                      $8, %%mm1       \n\t"
             "psrad                      $8, %%mm2       \n\t"
             "psrad                      $8, %%mm3       \n\t"
-#endif
             "packssdw                %%mm2, %%mm4       \n\t"
             "packssdw                %%mm3, %%mm1       \n\t"
             "pmaddwd                 %%mm5, %%mm4       \n\t"
@@ -1932,7 +1836,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
             "movd                    %%mm0, (%3, %%"REG_a") \n\t"
             "add                        $4, %%"REG_a"       \n\t"
             " js                        1b                  \n\t"
-            : : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth)
+            : : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth), "r"(rgb2yuv)
             : "%"REG_a, "%"REG_d
         );
 
@@ -1945,8 +1849,9 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                      SFENCE"     \n\t"
                      :::"memory");
 
-     rgb24toyv12_c(src, ydst, udst, vdst, width, height-y, lumStride, chromStride, srcStride);
+     ff_rgb24toyv12_c(src, ydst, udst, vdst, width, height-y, lumStride, chromStride, srcStride, rgb2yuv);
 }
+#endif /* HAVE_7REGS */
 #endif /* !COMPILE_TEMPLATE_SSE2 */
 
 #if !COMPILE_TEMPLATE_AMD3DNOW
@@ -2029,8 +1934,8 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                                        int srcStride1, int srcStride2,
                                        int dstStride1, int dstStride2)
 {
-    x86_reg y;
-    int x,w,h;
+    x86_reg x, y;
+    int w,h;
     w=width/2; h=height/2;
     __asm__ volatile(
         PREFETCH" %0    \n\t"
@@ -2042,11 +1947,11 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
         x=0;
         for (;x<w-31;x+=32) {
             __asm__ volatile(
-                PREFETCH"   32%1        \n\t"
-                "movq         %1, %%mm0 \n\t"
-                "movq        8%1, %%mm2 \n\t"
-                "movq       16%1, %%mm4 \n\t"
-                "movq       24%1, %%mm6 \n\t"
+                PREFETCH"   32(%1,%2)        \n\t"
+                "movq         (%1,%2), %%mm0 \n\t"
+                "movq        8(%1,%2), %%mm2 \n\t"
+                "movq       16(%1,%2), %%mm4 \n\t"
+                "movq       24(%1,%2), %%mm6 \n\t"
                 "movq      %%mm0, %%mm1 \n\t"
                 "movq      %%mm2, %%mm3 \n\t"
                 "movq      %%mm4, %%mm5 \n\t"
@@ -2059,16 +1964,15 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                 "punpckhbw %%mm5, %%mm5 \n\t"
                 "punpcklbw %%mm6, %%mm6 \n\t"
                 "punpckhbw %%mm7, %%mm7 \n\t"
-                MOVNTQ"    %%mm0,   %0  \n\t"
-                MOVNTQ"    %%mm1,  8%0  \n\t"
-                MOVNTQ"    %%mm2, 16%0  \n\t"
-                MOVNTQ"    %%mm3, 24%0  \n\t"
-                MOVNTQ"    %%mm4, 32%0  \n\t"
-                MOVNTQ"    %%mm5, 40%0  \n\t"
-                MOVNTQ"    %%mm6, 48%0  \n\t"
-                MOVNTQ"    %%mm7, 56%0"
-                :"=m"(d[2*x])
-                :"m"(s1[x])
+                MOVNTQ"    %%mm0,   (%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm1,  8(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm2, 16(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm3, 24(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm4, 32(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm5, 40(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm6, 48(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm7, 56(%0,%2,2)"
+                :: "r"(d), "r"(s1), "r"(x)
                 :"memory");
         }
         for (;x<w;x++) d[2*x]=d[2*x+1]=s1[x];
@@ -2079,11 +1983,11 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
         x=0;
         for (;x<w-31;x+=32) {
             __asm__ volatile(
-                PREFETCH"   32%1        \n\t"
-                "movq         %1, %%mm0 \n\t"
-                "movq        8%1, %%mm2 \n\t"
-                "movq       16%1, %%mm4 \n\t"
-                "movq       24%1, %%mm6 \n\t"
+                PREFETCH"   32(%1,%2)        \n\t"
+                "movq         (%1,%2), %%mm0 \n\t"
+                "movq        8(%1,%2), %%mm2 \n\t"
+                "movq       16(%1,%2), %%mm4 \n\t"
+                "movq       24(%1,%2), %%mm6 \n\t"
                 "movq      %%mm0, %%mm1 \n\t"
                 "movq      %%mm2, %%mm3 \n\t"
                 "movq      %%mm4, %%mm5 \n\t"
@@ -2096,16 +2000,15 @@ static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                 "punpckhbw %%mm5, %%mm5 \n\t"
                 "punpcklbw %%mm6, %%mm6 \n\t"
                 "punpckhbw %%mm7, %%mm7 \n\t"
-                MOVNTQ"    %%mm0,   %0  \n\t"
-                MOVNTQ"    %%mm1,  8%0  \n\t"
-                MOVNTQ"    %%mm2, 16%0  \n\t"
-                MOVNTQ"    %%mm3, 24%0  \n\t"
-                MOVNTQ"    %%mm4, 32%0  \n\t"
-                MOVNTQ"    %%mm5, 40%0  \n\t"
-                MOVNTQ"    %%mm6, 48%0  \n\t"
-                MOVNTQ"    %%mm7, 56%0"
-                :"=m"(d[2*x])
-                :"m"(s2[x])
+                MOVNTQ"    %%mm0,   (%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm1,  8(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm2, 16(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm3, 24(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm4, 32(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm5, 40(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm6, 48(%0,%2,2)  \n\t"
+                MOVNTQ"    %%mm7, 56(%0,%2,2)"
+                :: "r"(d), "r"(s2), "r"(x)
                 :"memory");
         }
         for (;x<w;x++) d[2*x]=d[2*x+1]=s2[x];
@@ -2451,7 +2354,7 @@ static void RENAME(yuyvtoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth= -((-width)>>1);
+    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_even)(src, ydst, width);
@@ -2477,7 +2380,7 @@ static void RENAME(yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth= -((-width)>>1);
+    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_even)(src, ydst, width);
@@ -2501,7 +2404,7 @@ static void RENAME(uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth= -((-width)>>1);
+    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_even)(src+1, ydst, width);
@@ -2527,7 +2430,7 @@ static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
                                  int lumStride, int chromStride, int srcStride)
 {
     int y;
-    const int chromWidth= -((-width)>>1);
+    const int chromWidth = FF_CEIL_RSHIFT(width, 1);
 
     for (y=0; y<height; y++) {
         RENAME(extract_even)(src+1, ydst, width);
@@ -2547,7 +2450,7 @@ static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
 #endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 #endif /* !COMPILE_TEMPLATE_SSE2 */
 
-static inline void RENAME(rgb2rgb_init)(void)
+static av_cold void RENAME(rgb2rgb_init)(void)
 {
 #if !COMPILE_TEMPLATE_SSE2
 #if !COMPILE_TEMPLATE_AMD3DNOW
@@ -2578,16 +2481,18 @@ static inline void RENAME(rgb2rgb_init)(void)
     yvu9_to_yuy2       = RENAME(yvu9_to_yuy2);
     uyvytoyuv422       = RENAME(uyvytoyuv422);
     yuyvtoyuv422       = RENAME(yuyvtoyuv422);
-#endif /* !COMPILE_TEMPLATE_SSE2 */
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
-#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
+#if COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW
     planar2x           = RENAME(planar2x);
-#endif /* COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW */
-    rgb24toyv12        = RENAME(rgb24toyv12);
+#endif /* COMPILE_TEMPLATE_MMXEXT || COMPILE_TEMPLATE_AMD3DNOW */
+#if HAVE_7REGS
+    ff_rgb24toyv12     = RENAME(rgb24toyv12);
+#endif /* HAVE_7REGS */
 
     yuyvtoyuv420       = RENAME(yuyvtoyuv420);
     uyvytoyuv420       = RENAME(uyvytoyuv420);
-#endif /* COMPILE_TEMPLATE_SSE2 */
+#endif /* !COMPILE_TEMPLATE_SSE2 */
 
 #if !COMPILE_TEMPLATE_AMD3DNOW
     interleaveBytes    = RENAME(interleaveBytes);

@@ -27,7 +27,7 @@ const int ff_flac_sample_rate_table[16] =
   8000, 16000, 22050, 24000, 32000, 44100, 48000, 96000,
   0, 0, 0, 0 };
 
-const int16_t ff_flac_blocksize_table[16] = {
+const int32_t ff_flac_blocksize_table[16] = {
      0,    192, 576<<0, 576<<1, 576<<2, 576<<3,      0,      0,
 256<<0, 256<<1, 256<<2, 256<<3, 256<<4, 256<<5, 256<<6, 256<<7
 };

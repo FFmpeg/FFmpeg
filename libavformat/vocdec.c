@@ -137,12 +137,12 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
 
     if (tmp_codec >= 0) {
         tmp_codec = ff_codec_get_id(ff_voc_codec_tags, tmp_codec);
-        if (dec->codec_id == CODEC_ID_NONE)
+        if (dec->codec_id == AV_CODEC_ID_NONE)
             dec->codec_id = tmp_codec;
         else if (dec->codec_id != tmp_codec)
             av_log(s, AV_LOG_WARNING, "Ignoring mid-stream change in audio codec\n");
-        if (dec->codec_id == CODEC_ID_NONE) {
-            if (s->audio_codec_id == CODEC_ID_NONE) {
+        if (dec->codec_id == AV_CODEC_ID_NONE) {
+            if (s->audio_codec_id == AV_CODEC_ID_NONE) {
                 av_log(s, AV_LOG_ERROR, "unknown codec tag\n");
                 return AVERROR(EINVAL);
             }
@@ -166,7 +166,7 @@ static int voc_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_voc_demuxer = {
     .name           = "voc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Creative Voice file format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Creative Voice"),
     .priv_data_size = sizeof(VocDecContext),
     .read_probe     = voc_probe,
     .read_header    = voc_read_header,

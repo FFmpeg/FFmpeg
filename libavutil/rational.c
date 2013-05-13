@@ -148,7 +148,7 @@ int av_find_nearest_q_idx(AVRational q, const AVRational* q_list)
 #ifdef TEST
 int main(void)
 {
-    AVRational a,b;
+    AVRational a,b,r;
     for (a.num = -2; a.num <= 2; a.num++) {
         for (a.den = -2; a.den <= 2; a.den++) {
             for (b.num = -2; b.num <= 2; b.num++) {
@@ -160,8 +160,11 @@ int main(void)
                     else if (d < 0)  d = -1;
                     else if (d != d) d = INT_MIN;
                     if (c != d)
-                        av_log(0, AV_LOG_ERROR, "%d/%d %d/%d, %d %f\n", a.num,
+                        av_log(NULL, AV_LOG_ERROR, "%d/%d %d/%d, %d %f\n", a.num,
                                a.den, b.num, b.den, c,d);
+                    r = av_sub_q(av_add_q(b,a), b);
+                    if(b.den && (r.num*a.den != a.num*r.den || !r.num != !a.num || !r.den != !a.den))
+                        av_log(NULL, AV_LOG_ERROR, "%d/%d ", r.num, r.den);
                 }
             }
         }

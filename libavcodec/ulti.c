@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #include "ulti_cb.h"
 
@@ -49,10 +50,11 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     s->blocks = (s->width / 8) * (s->height / 8);
-    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV410P;
     avctx->coded_frame = &s->frame;
     avctx->coded_frame = (AVFrame*) &s->frame;
     s->ulti_codebook = ulti_codebook;
+    avcodec_get_frame_defaults(&s->frame);
 
     return 0;
 }
@@ -61,8 +63,7 @@ static av_cold int ulti_decode_end(AVCodecContext *avctx){
     UltimotionDecodeContext *s = avctx->priv_data;
     AVFrame *pic = &s->frame;
 
-    if (pic->data[0])
-        avctx->release_buffer(avctx, pic);
+    av_frame_unref(pic);
 
     return 0;
 }
@@ -210,7 +211,7 @@ static void ulti_grad(AVFrame *frame, int x, int y, uint8_t *Y, int chroma, int 
 }
 
 static int ulti_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -222,16 +223,12 @@ static int ulti_decode_frame(AVCodecContext *avctx,
     int blocks = 0;
     int done = 0;
     int x = 0, y = 0;
-    int i;
+    int i, ret;
     int skip;
     int tmp;
 
-    s->frame.reference = 3;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
+        return ret;
 
     bytestream2_init(&s->gb, buf, buf_size);
 
@@ -407,8 +404,9 @@ static int ulti_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *data_size=sizeof(AVFrame);
-    *(AVFrame*)data= s->frame;
+    *got_frame = 1;
+    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+        return ret;
 
     return buf_size;
 
@@ -421,7 +419,7 @@ err:
 AVCodec ff_ulti_decoder = {
     .name           = "ultimotion",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_ULTI,
+    .id             = AV_CODEC_ID_ULTI,
     .priv_data_size = sizeof(UltimotionDecodeContext),
     .init           = ulti_decode_init,
     .close          = ulti_decode_end,

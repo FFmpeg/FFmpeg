@@ -141,8 +141,9 @@ static int parse_setup_header(AVCodecContext *avctx, VorbisParseContext *s,
      * we may need to approach this the long way and parse the whole Setup
      * header, but I hope very much that it never comes to that. */
     if (last_mode_count > 2) {
-        av_log_ask_for_sample(avctx, "%d modes found. This is either a false "
-                              "positive or a sample from an unknown encoder.\n",
+        avpriv_request_sample(avctx,
+                              "%d modes (either a false positive or a "
+                              "sample from an unknown encoder)",
                               last_mode_count);
     }
     /* We're limiting the mode count to 63 so that we know that the previous
@@ -263,7 +264,7 @@ end:
 }
 
 AVCodecParser ff_vorbis_parser = {
-    .codec_ids      = { CODEC_ID_VORBIS },
+    .codec_ids      = { AV_CODEC_ID_VORBIS },
     .priv_data_size = sizeof(VorbisParseContext),
     .parser_parse   = vorbis_parse,
 };

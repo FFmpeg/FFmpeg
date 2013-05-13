@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/mpegaudiodsp.h"
 #include "config.h"
@@ -27,7 +28,7 @@
 void ff_mpadsp_apply_window_fixed_armv6(int32_t *synth_buf, int32_t *window,
                                         int *dither, int16_t *out, int incr);
 
-void ff_mpadsp_init_arm(MPADSPContext *s)
+av_cold void ff_mpadsp_init_arm(MPADSPContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 

@@ -19,9 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <string.h>
+
 #include "avcodec.h"
 #include "psymodel.h"
 #include "iirfilter.h"
+#include "libavutil/mem.h"
 
 extern const FFPsyModel ff_aac_psy_model;
 
@@ -51,7 +54,7 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
     }
 
     switch (ctx->avctx->codec_id) {
-    case CODEC_ID_AAC:
+    case AV_CODEC_ID_AAC:
         ctx->model = &ff_aac_psy_model;
         break;
     }
@@ -85,6 +88,7 @@ typedef struct FFPsyPreprocessContext{
     float stereo_att;
     struct FFIIRFilterCoeffs *fcoeffs;
     struct FFIIRFilterState **fstate;
+    struct FFIIRFilterContext fiir;
 }FFPsyPreprocessContext;
 
 #define FILT_ORDER 4
@@ -100,7 +104,10 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     if (avctx->cutoff > 0)
         cutoff_coeff = 2.0 * avctx->cutoff / avctx->sample_rate;
 
-    if (cutoff_coeff)
+    if (!cutoff_coeff && avctx->codec_id == AV_CODEC_ID_AAC)
+        cutoff_coeff = 2.0 * AAC_CUTOFF(avctx) / avctx->sample_rate;
+
+    if (cutoff_coeff && cutoff_coeff < 0.98)
     ctx->fcoeffs = ff_iir_filter_init_coeffs(avctx, FF_FILTER_TYPE_BUTTERWORTH,
                                              FF_FILTER_MODE_LOWPASS, FILT_ORDER,
                                              cutoff_coeff, 0.0, 0.0);
@@ -109,6 +116,9 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
         for (i = 0; i < avctx->channels; i++)
             ctx->fstate[i] = ff_iir_filter_init_state(FILT_ORDER);
     }
+
+    ff_iir_filter_init(&ctx->fiir);
+
     return ctx;
 }
 
@@ -116,11 +126,12 @@ void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, float **audio, int ch
 {
     int ch;
     int frame_size = ctx->avctx->frame_size;
+    FFIIRFilterContext *iir = &ctx->fiir;
 
     if (ctx->fstate) {
         for (ch = 0; ch < channels; ch++)
-            ff_iir_filter_flt(ctx->fcoeffs, ctx->fstate[ch], frame_size,
-                              &audio[ch][frame_size], 1, &audio[ch][frame_size], 1);
+            iir->filter_flt(ctx->fcoeffs, ctx->fstate[ch], frame_size,
+                            &audio[ch][frame_size], 1, &audio[ch][frame_size], 1);
     }
 }
 

@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "pcm.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/audioconvert.h"
 
 #define AT1_SU_SIZE     212
 
@@ -67,7 +67,7 @@ static int aea_read_header(AVFormatContext *s)
 
 
     st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id       = CODEC_ID_ATRAC1;
+    st->codec->codec_id       = AV_CODEC_ID_ATRAC1;
     st->codec->sample_rate    = 44100;
     st->codec->bit_rate       = 292000;
 

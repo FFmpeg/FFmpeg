@@ -1,0 +1,43 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg Scaler Documentation
+@titlepage
+@center @titlefont{FFmpeg Scaler Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The FFmpeg rescaler provides an high-level interface to the libswscale
+library image conversion utilities. In particular it allows to perform
+image rescaling and pixel format conversion.
+
+@c man end DESCRIPTION
+
+@include scaler.texi
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{libswscale.html,libswscale}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1), libswscale(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename ffmpeg-scaler
+@settitle FFmpeg video scaling and pixel format converter
+
+@end ignore
+
+@bye

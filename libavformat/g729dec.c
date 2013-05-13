@@ -39,7 +39,7 @@ static int g729_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_G729;
+    st->codec->codec_id = AV_CODEC_ID_G729;
     st->codec->sample_rate = 8000;
     st->codec->channels = 1;
 
@@ -80,7 +80,7 @@ static int g729_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 static const AVOption g729_options[] = {
-    { "bit_rate", "", offsetof(G729DemuxerContext, bit_rate), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "bit_rate", "", offsetof(G729DemuxerContext, bit_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

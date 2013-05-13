@@ -56,7 +56,7 @@
 
 @ idct
 
-@ void vp8_luma_dc_wht(DCTELEM block[4][4][16], DCTELEM dc[16])
+@ void vp8_luma_dc_wht(int16_t block[4][4][16], int16_t dc[16])
 function ff_vp8_luma_dc_wht_armv6, export=1
         push            {r4-r10, lr}
 
@@ -118,20 +118,20 @@ function ff_vp8_luma_dc_wht_armv6, export=1
         usub16          r4,  r4,  r6            @ block[0,1][3]
         usub16          r5,  r5,  r12           @ block[2,3][3]
 
-#if HAVE_ARMV6T2
+#if HAVE_ARMV6T2_EXTERNAL
         sbfx            r6,  r8,  #3,  #13
         sbfx            r12, r7,  #3,  #13
         sbfx            r1,  r9,  #3,  #13
         sbfx            r10, r4,  #3,  #13
 #else
-        sxth            r8,  r8
-        sxth            r7,  r7
-        sxth            r9,  r9
-        sxth            r4,  r4
-        asr             r8,  #3                 @ block[0][0]
-        asr             r7,  #3                 @ block[0][1]
-        asr             r9,  #3                 @ block[0][2]
-        asr             r4,  #3                 @ block[0][3]
+        sxth            r6,  r8
+        sxth            r12, r7
+        sxth            r1,  r9
+        sxth            r10, r4
+        asr             r6,  #3                 @ block[0][0]
+        asr             r12, #3                 @ block[0][1]
+        asr             r1,  #3                 @ block[0][2]
+        asr             r10, #3                 @ block[0][3]
 #endif
 
         strh            r6,  [r0], #32
@@ -151,7 +151,7 @@ function ff_vp8_luma_dc_wht_armv6, export=1
         strh            r4,  [r0], #32
         asr             r10, r5,  #19           @ block[3][3]
 
-#if HAVE_ARMV6T2
+#if HAVE_ARMV6T2_EXTERNAL
         sbfx            r2,  r2,  #3,  #13
         sbfx            lr,  lr,  #3,  #13
         sbfx            r3,  r3,  #3,  #13
@@ -179,7 +179,7 @@ function ff_vp8_luma_dc_wht_armv6, export=1
         pop             {r4-r10, pc}
 endfunc
 
-@ void vp8_luma_dc_wht_dc(DCTELEM block[4][4][16], DCTELEM dc[16])
+@ void vp8_luma_dc_wht_dc(int16_t block[4][4][16], int16_t dc[16])
 function ff_vp8_luma_dc_wht_dc_armv6, export=1
         ldrsh           r2,  [r1]
         mov             r3,  #0
@@ -192,7 +192,7 @@ function ff_vp8_luma_dc_wht_dc_armv6, export=1
         bx              lr
 endfunc
 
-@ void vp8_idct_add(uint8_t *dst, DCTELEM block[16], int stride)
+@ void vp8_idct_add(uint8_t *dst, int16_t block[16], int stride)
 function ff_vp8_idct_add_armv6, export=1
         push            {r4-r12, lr}
         sub             sp,  sp,  #32
@@ -284,7 +284,7 @@ function ff_vp8_idct_add_armv6, export=1
         sxth            r12, r12
         ldr             r9,  [r0, r2]
         sxth            r1,  r1
-#if HAVE_ARMV6T2
+#if HAVE_ARMV6T2_EXTERNAL
         sbfx            r7,  r7,  #3,  #13
         sbfx            r10, r10, #3,  #13
 #else
@@ -314,7 +314,7 @@ function ff_vp8_idct_add_armv6, export=1
         pop             {r4-r12, pc}
 endfunc
 
-@ void vp8_idct_dc_add(uint8_t *dst, DCTELEM block[16], int stride)
+@ void vp8_idct_dc_add(uint8_t *dst, int16_t block[16], int stride)
 function ff_vp8_idct_dc_add_armv6, export=1
         push            {r4-r6, lr}
         add             r6,  r0,  r2,  lsl #1
@@ -355,7 +355,7 @@ function ff_vp8_idct_dc_add_armv6, export=1
         pop             {r4-r6, pc}
 endfunc
 
-@ void vp8_idct_dc_add4uv(uint8_t *dst, DCTELEM block[4][16], int stride)
+@ void vp8_idct_dc_add4uv(uint8_t *dst, int16_t block[4][16], int stride)
 function ff_vp8_idct_dc_add4uv_armv6, export=1
         push            {r4, lr}
 
@@ -371,7 +371,7 @@ function ff_vp8_idct_dc_add4uv_armv6, export=1
         pop             {r4, pc}
 endfunc
 
-@ void vp8_idct_dc_add4y(uint8_t *dst, DCTELEM block[4][16], int stride)
+@ void vp8_idct_dc_add4y(uint8_t *dst, int16_t block[4][16], int stride)
 function ff_vp8_idct_dc_add4y_armv6, export=1
         push            {r4, lr}
 
@@ -1226,7 +1226,13 @@ vp8_mc_1                bilin,  8, v
 vp8_mc_1                bilin,  4, h
 vp8_mc_1                bilin,  4, v
 
-#define TMPSIZE \size * (8 - 8*(\size > 4) + \ytaps - 1)
+/* True relational expressions have the value -1 in the GNU assembler,
+   +1 in Apple's. */
+#ifdef __APPLE__
+#   define TMPSIZE \size * (8 + 8*(\size > 4) + \ytaps - 1)
+#else
+#   define TMPSIZE \size * (8 - 8*(\size > 4) + \ytaps - 1)
+#endif
 
 .macro  vp8_mc_hv       name, size, h, v, ytaps
 function ff_put_vp8_\name\size\()_\h\v\()_armv6, export=1

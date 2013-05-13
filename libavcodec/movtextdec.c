@@ -65,15 +65,25 @@ static int mov_text_decode_frame(AVCodecContext *avctx,
     const char *ptr = avpkt->data;
     const char *end;
 
-    if (!ptr || avpkt->size <= 2)
-        return 0;
+    if (!ptr || avpkt->size < 2)
+        return AVERROR_INVALIDDATA;
+
+    /*
+     * A packet of size two with value zero is an empty subtitle
+     * used to mark the end of the previous non-empty subtitle.
+     * We can just drop them here as we have duration information
+     * already. If the value is non-zero, then it's technically a
+     * bad packet.
+     */
+    if (avpkt->size == 2)
+        return AV_RB16(ptr) == 0 ? 0 : AVERROR_INVALIDDATA;
 
     /*
      * The first two bytes of the packet are the length of the text string
      * In complex cases, there are style descriptors appended to the string
      * so we can't just assume the packet size is the string size.
      */
-    end = ptr + FFMAX(2 + AV_RB16(ptr), avpkt->size);
+    end = ptr + FFMIN(2 + AV_RB16(ptr), avpkt->size);
     ptr += 2;
 
     ts_start = av_rescale_q(avpkt->pts,
@@ -100,7 +110,7 @@ AVCodec ff_movtext_decoder = {
     .name         = "mov_text",
     .long_name    = NULL_IF_CONFIG_SMALL("3GPP Timed Text subtitle"),
     .type         = AVMEDIA_TYPE_SUBTITLE,
-    .id           = CODEC_ID_MOV_TEXT,
+    .id           = AV_CODEC_ID_MOV_TEXT,
     .init         = mov_text_init,
     .decode       = mov_text_decode_frame,
 };

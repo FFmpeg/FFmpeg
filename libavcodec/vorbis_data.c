@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "dsputil.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "vorbis.h"
-#include "libavutil/audioconvert.h"
 
 const uint8_t ff_vorbis_channel_layout_offsets[8][8] = {
     { 0 },

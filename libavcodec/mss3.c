@@ -27,6 +27,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "dsputil.h"
+#include "internal.h"
 #include "mss34dsp.h"
 
 #define HEADER_SIZE 27
@@ -295,7 +296,7 @@ static void rac_normalise(RangeCoder *c)
             c->low |= *c->src++;
         } else if (!c->low) {
             c->got_error = 1;
-            return;
+            c->low = 1;
         }
         if (c->range >= RAC_BOTTOM)
             return;
@@ -674,7 +675,7 @@ static av_cold void init_coders(MSS3Context *ctx)
     }
 }
 
-static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -730,18 +731,14 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return buf_size;
     c->got_error = 0;
 
-    c->pic.reference    = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                          FF_BUFFER_HINTS_REUSABLE;
-    if ((ret = avctx->reget_buffer(avctx, &c->pic)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
+    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0)
         return ret;
-    }
     c->pic.key_frame = keyframe;
     c->pic.pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     if (!bytestream2_get_bytes_left(&gb)) {
-        *data_size = sizeof(AVFrame);
-        *(AVFrame*)data = c->pic;
+        if ((ret = av_frame_ref(data, &c->pic)) < 0)
+            return ret;
+        *got_frame      = 1;
 
         return buf_size;
     }
@@ -798,8 +795,10 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         dst[2] += c->pic.linesize[2] * 8;
     }
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = c->pic;
+    if ((ret = av_frame_ref(data, &c->pic)) < 0)
+        return ret;
+
+    *got_frame      = 1;
 
     return buf_size;
 }
@@ -835,8 +834,7 @@ static av_cold int mss3_decode_init(AVCodecContext *avctx)
         }
     }
 
-    avctx->pix_fmt     = PIX_FMT_YUV420P;
-    avctx->coded_frame = &c->pic;
+    avctx->pix_fmt     = AV_PIX_FMT_YUV420P;
 
     init_coders(c);
 
@@ -848,8 +846,7 @@ static av_cold int mss3_decode_end(AVCodecContext *avctx)
     MSS3Context * const c = avctx->priv_data;
     int i;
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_unref(&c->pic);
     for (i = 0; i < 3; i++)
         av_freep(&c->dct_coder[i].prev_dc);
 
@@ -859,7 +856,7 @@ static av_cold int mss3_decode_end(AVCodecContext *avctx)
 AVCodec ff_msa1_decoder = {
     .name           = "msa1",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MSA1,
+    .id             = AV_CODEC_ID_MSA1,
     .priv_data_size = sizeof(MSS3Context),
     .init           = mss3_decode_init,
     .close          = mss3_decode_end,

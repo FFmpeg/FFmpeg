@@ -29,81 +29,101 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "internal.h"
 #include "msrledec.h"
 
 typedef struct AascContext {
     AVCodecContext *avctx;
     GetByteContext gb;
-    AVFrame frame;
+    AVFrame *frame;
+
+    uint32_t palette[AVPALETTE_COUNT];
+    int palette_size;
 } AascContext;
 
 static av_cold int aasc_decode_init(AVCodecContext *avctx)
 {
     AascContext *s = avctx->priv_data;
+    uint8_t *ptr;
+    int i;
 
     s->avctx = avctx;
     switch (avctx->bits_per_coded_sample) {
+    case 8:
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
+
+        ptr = avctx->extradata;
+        s->palette_size = FFMIN(avctx->extradata_size, AVPALETTE_SIZE);
+        for (i = 0; i < s->palette_size / 4; i++) {
+            s->palette[i] = 0xFFU << 24 | AV_RL32(ptr);
+            ptr += 4;
+        }
+        break;
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
         break;
     case 24:
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", avctx->bits_per_coded_sample);
         return -1;
     }
-    avcodec_get_frame_defaults(&s->frame);
+
+    s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
 
 static int aasc_decode_frame(AVCodecContext *avctx,
-                              void *data, int *data_size,
+                              void *data, int *got_frame,
                               AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    AascContext *s = avctx->priv_data;
-    int compr, i, stride;
+    int buf_size       = avpkt->size;
+    AascContext *s     = avctx->priv_data;
+    int compr, i, stride, psize, ret;
 
-    s->frame.reference = 3;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "frame too short\n");
+        return AVERROR_INVALIDDATA;
     }
 
-    compr = AV_RL32(buf);
-    buf += 4;
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+        return ret;
+
+    compr     = AV_RL32(buf);
+    buf      += 4;
     buf_size -= 4;
+    psize = avctx->bits_per_coded_sample / 8;
     switch (avctx->codec_tag) {
     case MKTAG('A', 'A', 'S', '4'):
         bytestream2_init(&s->gb, buf - 4, buf_size + 4);
-        ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, &s->gb);
+        ff_msrle_decode(avctx, (AVPicture*)s->frame, 8, &s->gb);
         break;
     case MKTAG('A', 'A', 'S', 'C'):
-    switch(compr){
+    switch (compr) {
     case 0:
-        stride = (avctx->width * 3 + 3) & ~3;
-        for(i = avctx->height - 1; i >= 0; i--){
-            if(avctx->width*3 > buf_size){
+        stride = (avctx->width * psize + psize) & ~psize;
+        for (i = avctx->height - 1; i >= 0; i--) {
+            if (avctx->width * psize > buf_size) {
                 av_log(avctx, AV_LOG_ERROR, "Next line is beyond buffer bounds\n");
                 break;
             }
-            memcpy(s->frame.data[0] + i*s->frame.linesize[0], buf, avctx->width*3);
+            memcpy(s->frame->data[0] + i * s->frame->linesize[0], buf, avctx->width * psize);
             buf += stride;
             buf_size -= stride;
         }
         break;
     case 1:
         bytestream2_init(&s->gb, buf, buf_size);
-        ff_msrle_decode(avctx, (AVPicture*)&s->frame, 8, &s->gb);
+        ff_msrle_decode(avctx, (AVPicture*)s->frame, 8, &s->gb);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown compression type %d\n", compr);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
         break;
     default:
@@ -111,8 +131,12 @@ static int aasc_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = s->frame;
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
+        memcpy(s->frame->data[1], s->palette, s->palette_size);
+
+    *got_frame = 1;
+    if ((ret = av_frame_ref(data, s->frame)) < 0)
+        return ret;
 
     /* report that the buffer was completely consumed */
     return buf_size;
@@ -122,9 +146,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
 {
     AascContext *s = avctx->priv_data;
 
-    /* release the last frame */
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_free(&s->frame);
 
     return 0;
 }
@@ -132,7 +154,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
 AVCodec ff_aasc_decoder = {
     .name           = "aasc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_AASC,
+    .id             = AV_CODEC_ID_AASC,
     .priv_data_size = sizeof(AascContext),
     .init           = aasc_decode_init,
     .close          = aasc_decode_end,

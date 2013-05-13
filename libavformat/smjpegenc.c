@@ -26,7 +26,6 @@
 
 #include "avformat.h"
 #include "internal.h"
-#include "riff.h"
 #include "smjpeg.h"
 
 typedef struct SMJPEGMuxContext {
@@ -67,7 +66,7 @@ static int smjpeg_write_header(AVFormatContext *s)
             avio_wl32(pb, SMJPEG_SND);
             avio_wb32(pb, 8);
             avio_wb16(pb, codec->sample_rate);
-            avio_w8(pb, av_get_bits_per_sample(codec->codec_id));
+            avio_w8(pb, codec->bits_per_coded_sample);
             avio_w8(pb, codec->channels);
             avio_wl32(pb, tag);
             avpriv_set_pts_info(st, 32, 1, 1000);
@@ -110,7 +109,6 @@ static int smjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wb32(pb, pkt->pts);
     avio_wb32(pb, pkt->size);
     avio_write(pb, pkt->data, pkt->size);
-    avio_flush(pb);
 
     smc->duration = FFMAX(smc->duration, pkt->pts + pkt->duration);
     return 0;
@@ -130,7 +128,6 @@ static int smjpeg_write_trailer(AVFormatContext *s)
     }
 
     avio_wl32(pb, SMJPEG_DONE);
-    avio_flush(pb);
 
     return 0;
 }
@@ -139,8 +136,8 @@ AVOutputFormat ff_smjpeg_muxer = {
     .name           = "smjpeg",
     .long_name      = NULL_IF_CONFIG_SMALL("Loki SDL MJPEG"),
     .priv_data_size = sizeof(SMJPEGMuxContext),
-    .audio_codec    = CODEC_ID_PCM_S16LE,
-    .video_codec    = CODEC_ID_MJPEG,
+    .audio_codec    = AV_CODEC_ID_PCM_S16LE,
+    .video_codec    = AV_CODEC_ID_MJPEG,
     .write_header   = smjpeg_write_header,
     .write_packet   = smjpeg_write_packet,
     .write_trailer  = smjpeg_write_trailer,

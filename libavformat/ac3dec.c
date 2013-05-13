@@ -24,34 +24,52 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
+static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
-    uint8_t *buf, *buf2, *end;
+    const uint8_t *buf, *buf2, *end;
     AC3HeaderInfo hdr;
     GetBitContext gbc;
-    enum CodecID codec_id = CODEC_ID_AC3;
+    enum AVCodecID codec_id = AV_CODEC_ID_AC3;
 
     max_frames = 0;
     buf = p->buf;
     end = buf + p->buf_size;
 
     for(; buf < end; buf++) {
-        if(buf > p->buf && (buf[0] != 0x0B || buf[1] != 0x77) )
+        if(buf > p->buf && !(buf[0] == 0x0B && buf[1] == 0x77)
+                        && !(buf[0] == 0x77 && buf[1] == 0x0B) )
             continue;
         buf2 = buf;
 
         for(frames = 0; buf2 < end; frames++) {
+            uint8_t buf3[4096];
+            int i;
             if(!memcmp(buf2, "\x1\x10\0\0\0\0\0\0", 8))
                 buf2+=16;
-            init_get_bits(&gbc, buf2, 54);
+            if (buf[0] == 0x77 && buf[1] == 0x0B) {
+                for(i=0; i<8; i+=2) {
+                    buf3[i  ] = buf[i+1];
+                    buf3[i+1] = buf[i  ];
+                }
+                init_get_bits(&gbc, buf3, 54);
+            }else
+                init_get_bits(&gbc, buf2, 54);
             if(avpriv_ac3_parse_header(&gbc, &hdr) < 0)
                 break;
-            if(buf2 + hdr.frame_size > end ||
-               av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
+            if(buf2 + hdr.frame_size > end)
+                break;
+            if (buf[0] == 0x77 && buf[1] == 0x0B) {
+                av_assert0(hdr.frame_size <= sizeof(buf3));
+                for(i=8; i<hdr.frame_size; i+=2) {
+                    buf3[i  ] = buf[i+1];
+                    buf3[i+1] = buf[i  ];
+                }
+            }
+            if(av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, gbc.buffer + 2, hdr.frame_size - 2))
                 break;
             if (hdr.bitstream_id > 10)
-                codec_id = CODEC_ID_EAC3;
+                codec_id = AV_CODEC_ID_EAC3;
             buf2 += hdr.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
@@ -61,9 +79,9 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
     if(codec_id != expected_codec_id) return 0;
     // keep this in sync with mp3 probe, both need to avoid
     // issues with MPEG-files!
-    if   (first_frames>=4) return AVPROBE_SCORE_MAX/2+1;
-    else if(max_frames>200)return AVPROBE_SCORE_MAX/2;
-    else if(max_frames>=4) return AVPROBE_SCORE_MAX/4;
+    if   (first_frames>=4) return AVPROBE_SCORE_EXTENSION + 1;
+    else if(max_frames>200)return AVPROBE_SCORE_EXTENSION;
+    else if(max_frames>=4) return AVPROBE_SCORE_EXTENSION/2;
     else if(max_frames>=1) return 1;
     else                   return 0;
 }
@@ -71,7 +89,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 #if CONFIG_AC3_DEMUXER
 static int ac3_probe(AVProbeData *p)
 {
-    return ac3_eac3_probe(p, CODEC_ID_AC3);
+    return ac3_eac3_probe(p, AV_CODEC_ID_AC3);
 }
 
 AVInputFormat ff_ac3_demuxer = {
@@ -82,14 +100,14 @@ AVInputFormat ff_ac3_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
-    .raw_codec_id   = CODEC_ID_AC3,
+    .raw_codec_id   = AV_CODEC_ID_AC3,
 };
 #endif
 
 #if CONFIG_EAC3_DEMUXER
 static int eac3_probe(AVProbeData *p)
 {
-    return ac3_eac3_probe(p, CODEC_ID_EAC3);
+    return ac3_eac3_probe(p, AV_CODEC_ID_EAC3);
 }
 
 AVInputFormat ff_eac3_demuxer = {
@@ -100,6 +118,6 @@ AVInputFormat ff_eac3_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "eac3",
-    .raw_codec_id   = CODEC_ID_EAC3,
+    .raw_codec_id   = AV_CODEC_ID_EAC3,
 };
 #endif

@@ -1,0 +1,1069 @@
+@chapter Codec Options
+@c man begin CODEC OPTIONS
+
+libavcodec provides some generic global options, which can be set on
+all the encoders and decoders. In addition each codec may support
+so-called private options, which are specific for a given codec.
+
+Sometimes, a global option may only affect a specific kind of codec,
+and may be unsensical or ignored by another, so you need to be aware
+of the meaning of the specified options. Also some options are
+meant only for decoding or encoding.
+
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{AVCodecContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
+The list of supported options follow:
+
+@table @option
+@item b @var{integer} (@emph{encoding,audio,video})
+Set bitrate in bits/s. Default value is 200K.
+
+@item ab @var{integer} (@emph{encoding,audio})
+Set audio bitrate (in bits/s). Default value is 128K.
+
+@item bt @var{integer} (@emph{encoding,video})
+Set video bitrate tolerance (in bits/s). In 1-pass mode, bitrate
+tolerance specifies how far ratecontrol is willing to deviate from the
+target average bitrate value. This is not related to min/max
+bitrate. Lowering tolerance too much has an adverse effect on quality.
+
+@item flags @var{flags} (@emph{decoding/encoding,audio,video,subtitles})
+Set generic flags.
+
+Possible values:
+@table @samp
+@item mv4
+Use four motion vector by macroblock (mpeg4).
+@item qpel
+Use 1/4 pel motion compensation.
+@item loop
+Use loop filter.
+@item qscale
+Use fixed qscale.
+@item gmc
+Use gmc.
+@item mv0
+Always try a mb with mv=<0,0>.
+@item input_preserved
+
+@item pass1
+Use internal 2pass ratecontrol in first pass mode.
+@item pass2
+Use internal 2pass ratecontrol in second pass mode.
+@item gray
+Only decode/encode grayscale.
+@item emu_edge
+Do not draw edges.
+@item psnr
+Set error[?] variables during encoding.
+@item truncated
+
+@item naq
+Normalize adaptive quantization.
+@item ildct
+Use interlaced DCT.
+@item low_delay
+Force low delay.
+@item global_header
+Place global headers in extradata instead of every keyframe.
+@item bitexact
+Use only bitexact stuff (except (I)DCT).
+@item aic
+Apply H263 advanced intra coding / mpeg4 ac prediction.
+@item cbp
+Deprecated, use mpegvideo private options instead.
+@item qprd
+Deprecated, use mpegvideo private options instead.
+@item ilme
+Apply interlaced motion estimation.
+@item cgop
+Use closed gop.
+@end table
+
+@item sub_id @var{integer}
+Deprecated, currently unused.
+
+@item me_method @var{integer} (@emph{encoding,video})
+Set motion estimation method.
+
+Possible values:
+@table @samp
+@item zero
+zero motion estimation (fastest)
+@item full
+full motion estimation (slowest)
+@item epzs
+EPZS motion estimation (default)
+@item esa
+esa motion estimation (alias for full)
+@item tesa
+tesa motion estimation
+@item dia
+dia motion estimation (alias for epzs)
+@item log
+log motion estimation
+@item phods
+phods motion estimation
+@item x1
+X1 motion estimation
+@item hex
+hex motion estimation
+@item umh
+umh motion estimation
+@item iter
+iter motion estimation
+@end table
+
+@item extradata_size @var{integer}
+Set extradata size.
+
+@item time_base @var{rational number}
+Set codec time base.
+
+It is the fundamental unit of time (in seconds) in terms of which
+frame timestamps are represented. For fixed-fps content, timebase
+should be @code{1 / frame_rate} and timestamp increments should be
+identically 1.
+
+@item g @var{integer} (@emph{encoding,video})
+Set the group of picture size. Default value is 12.
+
+@item ar @var{integer} (@emph{decoding/encoding,audio})
+Set audio sampling rate (in Hz).
+
+@item ac @var{integer} (@emph{decoding/encoding,audio})
+Set number of audio channels.
+
+@item cutoff @var{integer} (@emph{encoding,audio})
+Set cutoff bandwidth.
+
+@item frame_size @var{integer} (@emph{encoding,audio})
+Set audio frame size.
+
+Each submitted frame except the last must contain exactly frame_size
+samples per channel. May be 0 when the codec has
+CODEC_CAP_VARIABLE_FRAME_SIZE set, in that case the frame size is not
+restricted. It is set by some decoders to indicate constant frame
+size.
+
+@item frame_number @var{integer}
+Set the frame number.
+
+@item delay @var{integer}
+
+@item qcomp @var{float} (@emph{encoding,video})
+Set video quantizer scale compression (VBR). It is used as a constant
+in the ratecontrol equation. Recommended range for default rc_eq:
+0.0-1.0.
+
+@item qblur @var{float} (@emph{encoding,video})
+Set video quantizer scale blur (VBR).
+
+@item qmin @var{integer} (@emph{encoding,video})
+Set min video quantizer scale (VBR). Must be included between -1 and
+69, default value is 2.
+
+@item qmax @var{integer} (@emph{encoding,video})
+Set max video quantizer scale (VBR). Must be included between -1 and
+1024, default value is 31.
+
+@item qdiff @var{integer} (@emph{encoding,video})
+Set max difference between the quantizer scale (VBR).
+
+@item bf @var{integer} (@emph{encoding,video})
+Set max number of B frames.
+
+@item b_qfactor @var{float} (@emph{encoding,video})
+Set qp factor between P and B frames.
+
+@item rc_strategy @var{integer} (@emph{encoding,video})
+Set ratecontrol method.
+
+@item b_strategy @var{integer} (@emph{encoding,video})
+Set strategy to choose between I/P/B-frames.
+
+@item ps @var{integer} (@emph{encoding,video})
+Set RTP payload size in bytes.
+
+@item mv_bits @var{integer}
+@item header_bits @var{integer}
+@item i_tex_bits @var{integer}
+@item p_tex_bits @var{integer}
+@item i_count @var{integer}
+@item p_count @var{integer}
+@item skip_count @var{integer}
+@item misc_bits @var{integer}
+@item frame_bits @var{integer}
+@item codec_tag @var{integer}
+@item bug @var{flags} (@emph{decoding,video})
+Workaround not auto detected encoder bugs.
+
+Possible values:
+@table @samp
+@item autodetect
+
+@item old_msmpeg4
+some old lavc generated msmpeg4v3 files (no autodetection)
+@item xvid_ilace
+Xvid interlacing bug (autodetected if fourcc==XVIX)
+@item ump4
+(autodetected if fourcc==UMP4)
+@item no_padding
+padding bug (autodetected)
+@item amv
+
+@item ac_vlc
+illegal vlc bug (autodetected per fourcc)
+@item qpel_chroma
+
+@item std_qpel
+old standard qpel (autodetected per fourcc/version)
+@item qpel_chroma2
+
+@item direct_blocksize
+direct-qpel-blocksize bug (autodetected per fourcc/version)
+@item edge
+edge padding bug (autodetected per fourcc/version)
+@item hpel_chroma
+
+@item dc_clip
+
+@item ms
+Workaround various bugs in microsoft broken decoders.
+@item trunc
+trancated frames
+@end table
+
+@item lelim @var{integer} (@emph{encoding,video})
+Set single coefficient elimination threshold for luminance (negative
+values also consider DC coefficient).
+
+@item celim @var{integer} (@emph{encoding,video})
+Set single coefficient elimination threshold for chrominance (negative
+values also consider dc coefficient)
+
+@item strict @var{integer} (@emph{decoding/encoding,audio,video})
+Specify how strictly to follow the standards.
+
+Possible values:
+@table @samp
+@item very
+strictly conform to a older more strict version of the spec or reference software
+@item strict
+strictly conform to all the things in the spec no matter what consequences
+@item normal
+
+@item unofficial
+allow unofficial extensions
+@item experimental
+allow non standardized experimental things
+@end table
+
+@item b_qoffset @var{float} (@emph{encoding,video})
+Set QP offset between P and B frames.
+
+@item err_detect @var{flags} (@emph{decoding,audio,video})
+Set error detection flags.
+
+Possible values:
+@table @samp
+@item crccheck
+verify embedded CRCs
+@item bitstream
+detect bitstream specification deviations
+@item buffer
+detect improper bitstream length
+@item explode
+abort decoding on minor error detection
+@item careful
+consider things that violate the spec and have not been seen in the wild as errors
+@item compliant
+consider all spec non compliancies as errors
+@item aggressive
+consider things that a sane encoder should not do as an error
+@end table
+
+@item has_b_frames @var{integer}
+
+@item block_align @var{integer}
+
+@item mpeg_quant @var{integer} (@emph{encoding,video})
+Use MPEG quantizers instead of H.263.
+
+@item qsquish @var{float} (@emph{encoding,video})
+How to keep quantizer between qmin and qmax (0 = clip, 1 = use
+differentiable function).
+
+@item rc_qmod_amp @var{float} (@emph{encoding,video})
+Set experimental quantizer modulation.
+
+@item rc_qmod_freq @var{integer} (@emph{encoding,video})
+Set experimental quantizer modulation.
+
+@item rc_override_count @var{integer}
+
+@item rc_eq @var{string} (@emph{encoding,video})
+Set rate control equation. When computing the expression, besides the
+standard functions defined in the section 'Expression Evaluation', the
+following functions are available: bits2qp(bits), qp2bits(qp). Also
+the following constants are available: iTex pTex tex mv fCode iCount
+mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex
+avgTex.
+
+@item maxrate @var{integer} (@emph{encoding,audio,video})
+Set max bitrate tolerance (in bits/s). Requires bufsize to be set.
+
+@item minrate @var{integer} (@emph{encoding,audio,video})
+Set min bitrate tolerance (in bits/s). Most useful in setting up a CBR
+encode. It is of little use elsewise.
+
+@item bufsize @var{integer} (@emph{encoding,audio,video})
+Set ratecontrol buffer size (in bits).
+
+@item rc_buf_aggressivity @var{float} (@emph{encoding,video})
+Currently useless.
+
+@item i_qfactor @var{float} (@emph{encoding,video})
+Set QP factor between P and I frames.
+
+@item i_qoffset @var{float} (@emph{encoding,video})
+Set QP offset between P and I frames.
+
+@item rc_init_cplx @var{float} (@emph{encoding,video})
+Set initial complexity for 1-pass encoding.
+
+@item dct @var{integer} (@emph{encoding,video})
+Set DCT algorithm.
+
+Possible values:
+@table @samp
+@item auto
+autoselect a good one (default)
+@item fastint
+fast integer
+@item int
+accurate integer
+@item mmx
+
+@item altivec
+
+@item faan
+floating point AAN DCT
+@end table
+
+@item lumi_mask @var{float} (@emph{encoding,video})
+Compress bright areas stronger than medium ones.
+
+@item tcplx_mask @var{float} (@emph{encoding,video})
+Set temporal complexity masking.
+
+@item scplx_mask @var{float} (@emph{encoding,video})
+Set spatial complexity masking.
+
+@item p_mask @var{float} (@emph{encoding,video})
+Set inter masking.
+
+@item dark_mask @var{float} (@emph{encoding,video})
+Compress dark areas stronger than medium ones.
+
+@item idct @var{integer} (@emph{decoding/encoding,video})
+Select IDCT implementation.
+
+Possible values:
+@table @samp
+@item auto
+
+@item int
+
+@item simple
+
+@item simplemmx
+
+@item libmpeg2mmx
+
+@item mmi
+
+@item arm
+
+@item altivec
+
+@item sh4
+
+@item simplearm
+
+@item simplearmv5te
+
+@item simplearmv6
+
+@item simpleneon
+
+@item simplealpha
+
+@item h264
+
+@item vp3
+
+@item ipp
+
+@item xvidmmx
+
+@item faani
+floating point AAN IDCT
+@end table
+
+@item slice_count @var{integer}
+
+@item ec @var{flags} (@emph{decoding,video})
+Set error concealment strategy.
+
+Possible values:
+@table @samp
+@item guess_mvs
+iterative motion vector (MV) search (slow)
+@item deblock
+use strong deblock filter for damaged MBs
+@end table
+
+@item bits_per_coded_sample @var{integer}
+
+@item pred @var{integer} (@emph{encoding,video})
+Set prediction method.
+
+Possible values:
+@table @samp
+@item left
+
+@item plane
+
+@item median
+
+@end table
+
+@item aspect @var{rational number} (@emph{encoding,video})
+Set sample aspect ratio.
+
+@item debug @var{flags} (@emph{decoding/encoding,audio,video,subtitles})
+Print specific debug info.
+
+Possible values:
+@table @samp
+@item pict
+picture info
+@item rc
+rate control
+@item bitstream
+
+@item mb_type
+macroblock (MB) type
+@item qp
+per-block quantization parameter (QP)
+@item mv
+motion vector
+@item dct_coeff
+
+@item skip
+
+@item startcode
+
+@item pts
+
+@item er
+error recognition
+@item mmco
+memory management control operations (H.264)
+@item bugs
+
+@item vis_qp
+visualize quantization parameter (QP), lower QP are tinted greener
+@item vis_mb_type
+visualize block types
+@item buffers
+picture buffer allocations
+@item thread_ops
+threading operations
+@end table
+
+@item vismv @var{integer} (@emph{decoding,video})
+Visualize motion vectors (MVs).
+
+Possible values:
+@table @samp
+@item pf
+forward predicted MVs of P-frames
+@item bf
+forward predicted MVs of B-frames
+@item bb
+backward predicted MVs of B-frames
+@end table
+
+@item cmp @var{integer} (@emph{encoding,video})
+Set full pel me compare function.
+
+Possible values:
+@table @samp
+@item sad
+sum of absolute differences, fast (default)
+@item sse
+sum of squared errors
+@item satd
+sum of absolute Hadamard transformed differences
+@item dct
+sum of absolute DCT transformed differences
+@item psnr
+sum of squared quantization errors (avoid, low quality)
+@item bit
+number of bits needed for the block
+@item rd
+rate distortion optimal, slow
+@item zero
+0
+@item vsad
+sum of absolute vertical differences
+@item vsse
+sum of squared vertical differences
+@item nsse
+noise preserving sum of squared differences
+@item w53
+5/3 wavelet, only used in snow
+@item w97
+9/7 wavelet, only used in snow
+@item dctmax
+
+@item chroma
+
+@end table
+
+@item subcmp @var{integer} (@emph{encoding,video})
+Set sub pel me compare function.
+
+Possible values:
+@table @samp
+@item sad
+sum of absolute differences, fast (default)
+@item sse
+sum of squared errors
+@item satd
+sum of absolute Hadamard transformed differences
+@item dct
+sum of absolute DCT transformed differences
+@item psnr
+sum of squared quantization errors (avoid, low quality)
+@item bit
+number of bits needed for the block
+@item rd
+rate distortion optimal, slow
+@item zero
+0
+@item vsad
+sum of absolute vertical differences
+@item vsse
+sum of squared vertical differences
+@item nsse
+noise preserving sum of squared differences
+@item w53
+5/3 wavelet, only used in snow
+@item w97
+9/7 wavelet, only used in snow
+@item dctmax
+
+@item chroma
+
+@end table
+
+@item mbcmp @var{integer} (@emph{encoding,video})
+Set macroblock compare function.
+
+Possible values:
+@table @samp
+@item sad
+sum of absolute differences, fast (default)
+@item sse
+sum of squared errors
+@item satd
+sum of absolute Hadamard transformed differences
+@item dct
+sum of absolute DCT transformed differences
+@item psnr
+sum of squared quantization errors (avoid, low quality)
+@item bit
+number of bits needed for the block
+@item rd
+rate distortion optimal, slow
+@item zero
+0
+@item vsad
+sum of absolute vertical differences
+@item vsse
+sum of squared vertical differences
+@item nsse
+noise preserving sum of squared differences
+@item w53
+5/3 wavelet, only used in snow
+@item w97
+9/7 wavelet, only used in snow
+@item dctmax
+
+@item chroma
+
+@end table
+
+@item ildctcmp @var{integer} (@emph{encoding,video})
+Set interlaced dct compare function.
+
+Possible values:
+@table @samp
+@item sad
+sum of absolute differences, fast (default)
+@item sse
+sum of squared errors
+@item satd
+sum of absolute Hadamard transformed differences
+@item dct
+sum of absolute DCT transformed differences
+@item psnr
+sum of squared quantization errors (avoid, low quality)
+@item bit
+number of bits needed for the block
+@item rd
+rate distortion optimal, slow
+@item zero
+0
+@item vsad
+sum of absolute vertical differences
+@item vsse
+sum of squared vertical differences
+@item nsse
+noise preserving sum of squared differences
+@item w53
+5/3 wavelet, only used in snow
+@item w97
+9/7 wavelet, only used in snow
+@item dctmax
+
+@item chroma
+
+@end table
+
+@item dia_size @var{integer} (@emph{encoding,video})
+Set diamond type & size for motion estimation.
+
+@item last_pred @var{integer} (@emph{encoding,video})
+Set amount of motion predictors from the previous frame.
+
+@item preme @var{integer} (@emph{encoding,video})
+Set pre motion estimation.
+
+@item precmp @var{integer} (@emph{encoding,video})
+Set pre motion estimation compare function.
+
+Possible values:
+@table @samp
+@item sad
+sum of absolute differences, fast (default)
+@item sse
+sum of squared errors
+@item satd
+sum of absolute Hadamard transformed differences
+@item dct
+sum of absolute DCT transformed differences
+@item psnr
+sum of squared quantization errors (avoid, low quality)
+@item bit
+number of bits needed for the block
+@item rd
+rate distortion optimal, slow
+@item zero
+0
+@item vsad
+sum of absolute vertical differences
+@item vsse
+sum of squared vertical differences
+@item nsse
+noise preserving sum of squared differences
+@item w53
+5/3 wavelet, only used in snow
+@item w97
+9/7 wavelet, only used in snow
+@item dctmax
+
+@item chroma
+
+@end table
+
+@item pre_dia_size @var{integer} (@emph{encoding,video})
+Set diamond type & size for motion estimation pre-pass.
+
+@item subq @var{integer} (@emph{encoding,video})
+Set sub pel motion estimation quality.
+
+@item dtg_active_format @var{integer}
+
+@item me_range @var{integer} (@emph{encoding,video})
+Set limit motion vectors range (1023 for DivX player).
+
+@item ibias @var{integer} (@emph{encoding,video})
+Set intra quant bias.
+
+@item pbias @var{integer} (@emph{encoding,video})
+Set inter quant bias.
+
+@item color_table_id @var{integer}
+
+@item global_quality @var{integer} (@emph{encoding,audio,video})
+
+@item coder @var{integer} (@emph{encoding,video})
+
+Possible values:
+@table @samp
+@item vlc
+variable length coder / huffman coder
+@item ac
+arithmetic coder
+@item raw
+raw (no encoding)
+@item rle
+run-length coder
+@item deflate
+deflate-based coder
+@end table
+
+@item context @var{integer} (@emph{encoding,video})
+Set context model.
+
+@item slice_flags @var{integer}
+
+@item xvmc_acceleration @var{integer}
+
+@item mbd @var{integer} (@emph{encoding,video})
+Set macroblock decision algorithm (high quality mode).
+
+Possible values:
+@table @samp
+@item simple
+use mbcmp (default)
+@item bits
+use fewest bits
+@item rd
+use best rate distortion
+@end table
+
+@item stream_codec_tag @var{integer}
+
+@item sc_threshold @var{integer} (@emph{encoding,video})
+Set scene change threshold.
+
+@item lmin @var{integer} (@emph{encoding,video})
+Set min lagrange factor (VBR).
+
+@item lmax @var{integer} (@emph{encoding,video})
+Set max lagrange factor (VBR).
+
+@item nr @var{integer} (@emph{encoding,video})
+Set noise reduction.
+
+@item rc_init_occupancy @var{integer} (@emph{encoding,video})
+Set number of bits which should be loaded into the rc buffer before
+decoding starts.
+
+@item inter_threshold @var{integer} (@emph{encoding,video})
+
+@item flags2 @var{flags} (@emph{decoding/encoding,audio,video})
+
+Possible values:
+@table @samp
+@item fast
+allow non spec compliant speedup tricks
+@item sgop
+Deprecated, use mpegvideo private options instead
+@item noout
+skip bitstream encoding
+@item local_header
+place global headers at every keyframe instead of in extradata
+@item chunks
+Frame data might be split into multiple chunks
+@item showall
+Show all frames before the first keyframe
+@item skiprd
+Deprecated, use mpegvideo private options instead
+@end table
+
+@item error @var{integer} (@emph{encoding,video})
+
+@item qns @var{integer} (@emph{encoding,video})
+Deprecated, use mpegvideo private options instead.
+
+@item threads @var{integer} (@emph{decoding/encoding,video})
+
+Possible values:
+@table @samp
+@item auto
+detect a good number of threads
+@end table
+
+@item me_threshold @var{integer} (@emph{encoding,video})
+Set motion estimation threshold.
+
+@item mb_threshold @var{integer} (@emph{encoding,video})
+Set macroblock threshold.
+
+@item dc @var{integer} (@emph{encoding,video})
+Set intra_dc_precision.
+
+@item nssew @var{integer} (@emph{encoding,video})
+Set nsse weight.
+
+@item skip_top @var{integer} (@emph{decoding,video})
+Set number of macroblock rows at the top which are skipped.
+
+@item skip_bottom @var{integer} (@emph{decoding,video})
+Set number of macroblock rows at the bottom which are skipped.
+
+@item profile @var{integer} (@emph{encoding,audio,video})
+
+Possible values:
+@table @samp
+@item unknown
+
+@item aac_main
+
+@item aac_low
+
+@item aac_ssr
+
+@item aac_ltp
+
+@item aac_he
+
+@item aac_he_v2
+
+@item aac_ld
+
+@item aac_eld
+
+@item dts
+
+@item dts_es
+
+@item dts_96_24
+
+@item dts_hd_hra
+
+@item dts_hd_ma
+
+@end table
+
+@item level @var{integer} (@emph{encoding,audio,video})
+
+Possible values:
+@table @samp
+@item unknown
+
+@end table
+
+@item lowres @var{integer} (@emph{decoding,audio,video})
+Decode at 1= 1/2, 2=1/4, 3=1/8 resolutions.
+
+@item skip_threshold @var{integer} (@emph{encoding,video})
+Set frame skip threshold.
+
+@item skip_factor @var{integer} (@emph{encoding,video})
+Set frame skip factor.
+
+@item skip_exp @var{integer} (@emph{encoding,video})
+Set frame skip exponent.
+
+@item skipcmp @var{integer} (@emph{encoding,video})
+Set frame skip compare function.
+
+Possible values:
+@table @samp
+@item sad
+sum of absolute differences, fast (default)
+@item sse
+sum of squared errors
+@item satd
+sum of absolute Hadamard transformed differences
+@item dct
+sum of absolute DCT transformed differences
+@item psnr
+sum of squared quantization errors (avoid, low quality)
+@item bit
+number of bits needed for the block
+@item rd
+rate distortion optimal, slow
+@item zero
+0
+@item vsad
+sum of absolute vertical differences
+@item vsse
+sum of squared vertical differences
+@item nsse
+noise preserving sum of squared differences
+@item w53
+5/3 wavelet, only used in snow
+@item w97
+9/7 wavelet, only used in snow
+@item dctmax
+
+@item chroma
+
+@end table
+
+@item border_mask @var{float} (@emph{encoding,video})
+Increase the quantizer for macroblocks close to borders.
+
+@item mblmin @var{integer} (@emph{encoding,video})
+Set min macroblock lagrange factor (VBR).
+
+@item mblmax @var{integer} (@emph{encoding,video})
+Set max macroblock lagrange factor (VBR).
+
+@item mepc @var{integer} (@emph{encoding,video})
+Set motion estimation bitrate penalty compensation (1.0 = 256).
+
+@item skip_loop_filter @var{integer} (@emph{decoding,video})
+@item skip_idct        @var{integer} (@emph{decoding,video})
+@item skip_frame       @var{integer} (@emph{decoding,video})
+
+Make decoder discard processing depending on the frame type selected
+by the option value.
+
+@option{skip_loop_filter} skips frame loop filtering, @option{skip_idct}
+skips frame IDCT/dequantization, @option{skip_frame} skips decoding.
+
+Possible values:
+@table @samp
+@item none
+Discard no frame.
+
+@item default
+Discard useless frames like 0-sized frames.
+
+@item noref
+Discard all non-reference frames.
+
+@item bidir
+Discard all bidirectional frames.
+
+@item nokey
+Discard all frames excepts keyframes.
+
+@item all
+Discard all frames.
+@end table
+
+Default value is @samp{default}.
+
+@item bidir_refine @var{integer} (@emph{encoding,video})
+Refine the two motion vectors used in bidirectional macroblocks.
+
+@item brd_scale @var{integer} (@emph{encoding,video})
+Downscale frames for dynamic B-frame decision.
+
+@item keyint_min @var{integer} (@emph{encoding,video})
+Set minimum interval between IDR-frames.
+
+@item refs @var{integer} (@emph{encoding,video})
+Set reference frames to consider for motion compensation.
+
+@item chromaoffset @var{integer} (@emph{encoding,video})
+Set chroma qp offset from luma.
+
+@item trellis @var{integer} (@emph{encoding,audio,video})
+Set rate-distortion optimal quantization.
+
+@item sc_factor @var{integer} (@emph{encoding,video})
+Set value multiplied by qscale for each frame and added to
+scene_change_score.
+
+@item mv0_threshold @var{integer} (@emph{encoding,video})
+@item b_sensitivity @var{integer} (@emph{encoding,video})
+Adjust sensitivity of b_frame_strategy 1.
+
+@item compression_level @var{integer} (@emph{encoding,audio,video})
+@item min_prediction_order @var{integer} (@emph{encoding,audio})
+@item max_prediction_order @var{integer} (@emph{encoding,audio})
+@item timecode_frame_start @var{integer} (@emph{encoding,video})
+Set GOP timecode frame start number, in non drop frame format.
+
+@item request_channels @var{integer} (@emph{decoding,audio})
+Set desired number of audio channels.
+
+@item bits_per_raw_sample @var{integer}
+@item channel_layout @var{integer} (@emph{decoding/encoding,audio})
+
+Possible values:
+@table @samp
+@end table
+@item request_channel_layout @var{integer} (@emph{decoding,audio})
+
+Possible values:
+@table @samp
+@end table
+@item rc_max_vbv_use @var{float} (@emph{encoding,video})
+@item rc_min_vbv_use @var{float} (@emph{encoding,video})
+@item ticks_per_frame @var{integer} (@emph{decoding/encoding,audio,video})
+@item color_primaries @var{integer} (@emph{decoding/encoding,video})
+@item color_trc @var{integer} (@emph{decoding/encoding,video})
+@item colorspace @var{integer} (@emph{decoding/encoding,video})
+@item color_range @var{integer} (@emph{decoding/encoding,video})
+@item chroma_sample_location @var{integer} (@emph{decoding/encoding,video})
+
+@item log_level_offset @var{integer}
+Set the log level offset.
+
+@item slices @var{integer} (@emph{encoding,video})
+Number of slices, used in parallelized encoding.
+
+@item thread_type @var{flags} (@emph{decoding/encoding,video})
+Select multithreading type.
+
+Possible values:
+@table @samp
+@item slice
+
+@item frame
+
+@end table
+@item audio_service_type @var{integer} (@emph{encoding,audio})
+Set audio service type.
+
+Possible values:
+@table @samp
+@item ma
+Main Audio Service
+@item ef
+Effects
+@item vi
+Visually Impaired
+@item hi
+Hearing Impaired
+@item di
+Dialogue
+@item co
+Commentary
+@item em
+Emergency
+@item vo
+Voice Over
+@item ka
+Karaoke
+@end table
+
+@item request_sample_fmt @var{sample_fmt} (@emph{decoding,audio})
+Set sample format audio decoders should prefer. Default value is
+@code{none}.
+
+@item pkt_timebase @var{rational number}
+
+@item sub_charenc @var{encoding} (@emph{decoding,subtitles})
+Set the input subtitles character encoding.
+@end table
+
+@c man end CODEC OPTIONS
+
+@include decoders.texi
+@include encoders.texi

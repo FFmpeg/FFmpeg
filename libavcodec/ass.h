@@ -76,7 +76,9 @@ int ff_ass_subtitle_header_default(AVCodecContext *avctx);
  * @param ts_start start timestamp for this dialog (in 1/100 second unit)
  * @param duration duration for this dialog (in 1/100 second unit), can be -1
  *                 to last until the end of the presentation
- * @param raw when set to 1, it indicates that dialog contains a whole ASS
+ * @param raw when set to 2, it indicates that dialog contains an ASS
+ *                           dialog line as muxed in Matroska
+ *            when set to 1, it indicates that dialog contains a whole SSA
  *                           dialog line which should be copied as is.
  *            when set to 0, it indicates that dialog contains only the Text
  *                           part of the ASS dialog line, the rest of the line

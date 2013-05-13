@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include "avutil.h"
+#include "attributes.h"
 
 typedef struct AVFifoBuffer {
     uint8_t *buffer;
@@ -139,16 +140,5 @@ static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
         ptr = f->end - (f->buffer - ptr);
     return ptr;
 }
-
-#if FF_API_AV_FIFO_PEEK
-/**
- * @deprecated Use av_fifo_peek2() instead.
- */
-attribute_deprecated
-static inline uint8_t av_fifo_peek(AVFifoBuffer *f, int offs)
-{
-    return *av_fifo_peek2(f, offs);
-}
-#endif
 
 #endif /* AVUTIL_FIFO_H */

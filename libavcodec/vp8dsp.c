@@ -26,9 +26,10 @@
 
 #include "dsputil.h"
 #include "vp8dsp.h"
+#include "libavutil/common.h"
 
 // TODO: Maybe add dequant
-static void vp8_luma_dc_wht_c(DCTELEM block[4][4][16], DCTELEM dc[16])
+static void vp8_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
 {
     int i, t0, t1, t2, t3;
 
@@ -61,7 +62,7 @@ static void vp8_luma_dc_wht_c(DCTELEM block[4][4][16], DCTELEM dc[16])
     }
 }
 
-static void vp8_luma_dc_wht_dc_c(DCTELEM block[4][4][16], DCTELEM dc[16])
+static void vp8_luma_dc_wht_dc_c(int16_t block[4][4][16], int16_t dc[16])
 {
     int i, val = (dc[0] + 3) >> 3;
     dc[0] = 0;
@@ -77,10 +78,10 @@ static void vp8_luma_dc_wht_dc_c(DCTELEM block[4][4][16], DCTELEM dc[16])
 #define MUL_20091(a) ((((a)*20091) >> 16) + (a))
 #define MUL_35468(a)  (((a)*35468) >> 16)
 
-static void vp8_idct_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
+static void vp8_idct_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
 {
     int i, t0, t1, t2, t3;
-    DCTELEM tmp[16];
+    int16_t tmp[16];
 
     for (i = 0; i < 4; i++) {
         t0 = block[0*4+i] + block[2*4+i];
@@ -112,7 +113,7 @@ static void vp8_idct_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
     }
 }
 
-static void vp8_idct_dc_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
+static void vp8_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
 {
     int i, dc = (block[0] + 4) >> 3;
     block[0] = 0;
@@ -126,7 +127,7 @@ static void vp8_idct_dc_add_c(uint8_t *dst, DCTELEM block[16], ptrdiff_t stride)
     }
 }
 
-static void vp8_idct_dc_add4uv_c(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t stride)
+static void vp8_idct_dc_add4uv_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
 {
     vp8_idct_dc_add_c(dst+stride*0+0, block[0], stride);
     vp8_idct_dc_add_c(dst+stride*0+4, block[1], stride);
@@ -134,7 +135,7 @@ static void vp8_idct_dc_add4uv_c(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t s
     vp8_idct_dc_add_c(dst+stride*4+4, block[3], stride);
 }
 
-static void vp8_idct_dc_add4y_c(uint8_t *dst, DCTELEM block[4][16], ptrdiff_t stride)
+static void vp8_idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride)
 {
     vp8_idct_dc_add_c(dst+ 0, block[0], stride);
     vp8_idct_dc_add_c(dst+ 4, block[1], stride);
@@ -159,7 +160,7 @@ static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride, int is4
 {
     LOAD_PIXELS
     int a, f1, f2;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     a = 3*(q0 - p0);
 
@@ -214,7 +215,7 @@ static av_always_inline int hev(uint8_t *p, ptrdiff_t stride, int thresh)
 static av_always_inline void filter_mbedge(uint8_t *p, ptrdiff_t stride)
 {
     int a0, a1, a2, w;
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     LOAD_PIXELS
 
@@ -336,7 +337,7 @@ PUT_PIXELS(4)
 static void put_vp8_epel ## SIZE ## _h ## TAPS ## _c(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[mx-1]; \
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
     int x, y; \
 \
     for (y = 0; y < h; y++) { \
@@ -350,7 +351,7 @@ static void put_vp8_epel ## SIZE ## _h ## TAPS ## _c(uint8_t *dst, ptrdiff_t dst
 static void put_vp8_epel ## SIZE ## _v ## TAPS ## _c(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[my-1]; \
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
     int x, y; \
 \
     for (y = 0; y < h; y++) { \
@@ -364,7 +365,7 @@ static void put_vp8_epel ## SIZE ## _v ## TAPS ## _c(uint8_t *dst, ptrdiff_t dst
 static void put_vp8_epel ## SIZE ## _h ## HTAPS ## v ## VTAPS ## _c(uint8_t *dst, ptrdiff_t dststride, uint8_t *src, ptrdiff_t srcstride, int h, int mx, int my) \
 { \
     const uint8_t *filter = subpel_filters[mx-1]; \
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP; \
     int x, y; \
     uint8_t tmp_array[(2*SIZE+VTAPS-1)*SIZE]; \
     uint8_t *tmp = tmp_array; \
@@ -520,10 +521,10 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     VP8_BILINEAR_MC_FUNC(1, 8);
     VP8_BILINEAR_MC_FUNC(2, 4);
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_vp8dsp_init_x86(dsp);
-    if (HAVE_ALTIVEC)
-        ff_vp8dsp_init_altivec(dsp);
     if (ARCH_ARM)
         ff_vp8dsp_init_arm(dsp);
+    if (ARCH_PPC)
+        ff_vp8dsp_init_ppc(dsp);
 }

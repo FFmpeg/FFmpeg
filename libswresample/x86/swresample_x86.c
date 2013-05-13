@@ -30,7 +30,7 @@ PROTO4(_pack_2ch)
 PROTO4(_pack_6ch)
 PROTO4(_unpack_2ch)
 
-void swri_audio_convert_init_x86(struct AudioConvert *ac,
+av_cold void swri_audio_convert_init_x86(struct AudioConvert *ac,
                                  enum AVSampleFormat out_fmt,
                                  enum AVSampleFormat in_fmt,
                                  int channels){
@@ -125,7 +125,7 @@ MULTI_CAPS_FUNC(AV_CPU_FLAG_SSE2, sse2)
                 ac->simd_f =  ff_pack_6ch_float_to_int32_a_sse4;
         }
     }
-    if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
+    if(HAVE_AVX_EXTERNAL && mm_flags & AV_CPU_FLAG_AVX) {
         if(   out_fmt == AV_SAMPLE_FMT_FLT  && in_fmt == AV_SAMPLE_FMT_S32 || out_fmt == AV_SAMPLE_FMT_FLTP && in_fmt == AV_SAMPLE_FMT_S32P)
             ac->simd_f =  ff_int32_to_float_a_avx;
         if(channels == 6) {
@@ -149,7 +149,7 @@ D(int16, mmx)
 D(int16, sse2)
 
 
-void swri_rematrix_init_x86(struct SwrContext *s){
+av_cold void swri_rematrix_init_x86(struct SwrContext *s){
     int mm_flags = av_get_cpu_flags();
     int nb_in  = av_get_channel_layout_nb_channels(s->in_ch_layout);
     int nb_out = av_get_channel_layout_nb_channels(s->out_ch_layout);
@@ -185,7 +185,7 @@ void swri_rematrix_init_x86(struct SwrContext *s){
             s->mix_1_1_simd = ff_mix_1_1_a_float_sse;
             s->mix_2_1_simd = ff_mix_2_1_a_float_sse;
         }
-        if(HAVE_AVX && mm_flags & AV_CPU_FLAG_AVX) {
+        if(HAVE_AVX_EXTERNAL && mm_flags & AV_CPU_FLAG_AVX) {
             s->mix_1_1_simd = ff_mix_1_1_a_float_avx;
             s->mix_2_1_simd = ff_mix_2_1_a_float_avx;
         }

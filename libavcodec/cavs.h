@@ -22,9 +22,11 @@
 #ifndef AVCODEC_CAVS_H
 #define AVCODEC_CAVS_H
 
-#include "dsputil.h"
-#include "mpegvideo.h"
 #include "cavsdsp.h"
+#include "dsputil.h"
+#include "h264chroma.h"
+#include "get_bits.h"
+#include "videodsp.h"
 
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
@@ -152,16 +154,26 @@ struct dec_2dvlc {
   int8_t max_run;
 };
 
-typedef struct {
-    MpegEncContext s;
-    CAVSDSPContext cdsp;
-    Picture picture; ///< currently decoded frame
-    Picture DPB[2];  ///< reference frames
+typedef struct AVSFrame {
+    AVFrame *f;
+    int poc;
+} AVSFrame;
+
+typedef struct AVSContext {
+    AVCodecContext *avctx;
+    DSPContext       dsp;
+    H264ChromaContext h264chroma;
+    VideoDSPContext vdsp;
+    CAVSDSPContext  cdsp;
+    GetBitContext gb;
+    AVSFrame cur;     ///< currently decoded frame
+    AVSFrame DPB[2];  ///< reference frames
     int dist[2];     ///< temporal distances from current frame to ref frames
+    int low_delay;
     int profile, level;
     int aspect_ratio;
     int mb_width, mb_height;
-    int pic_type;
+    int width, height;
     int stream_revision; ///<0 for samples from 2006, 1 for rm52j encoder
     int progressive;
     int pic_structure;
@@ -221,44 +233,15 @@ typedef struct {
     int direct_den[2]; ///< for scaling in direct B block
     int scale_den[2];  ///< for scaling neighbouring MVs
 
+    uint8_t *edge_emu_buffer;
+
     int got_keyframe;
-    DCTELEM *block;
+    int16_t *block;
 } AVSContext;
 
-extern const uint8_t     ff_cavs_dequant_shift[64];
-extern const uint16_t    ff_cavs_dequant_mul[64];
-extern const struct dec_2dvlc ff_cavs_intra_dec[7];
-extern const struct dec_2dvlc ff_cavs_inter_dec[7];
-extern const struct dec_2dvlc ff_cavs_chroma_dec[5];
-extern const uint8_t     ff_cavs_chroma_qp[64];
-extern const uint8_t     ff_cavs_scan3x3[4];
 extern const uint8_t     ff_cavs_partition_flags[30];
-extern const int8_t      ff_left_modifier_l[8];
-extern const int8_t      ff_top_modifier_l[8];
-extern const int8_t      ff_left_modifier_c[7];
-extern const int8_t      ff_top_modifier_c[7];
 extern const cavs_vector ff_cavs_intra_mv;
-extern const cavs_vector ff_cavs_un_mv;
 extern const cavs_vector ff_cavs_dir_mv;
-
-static inline void modify_pred(const int8_t *mod_table, int *mode)
-{
-    *mode = mod_table[*mode];
-    if(*mode < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Illegal intra prediction mode\n");
-        *mode = 0;
-    }
-}
-
-static inline void set_intra_mode_default(AVSContext *h) {
-    if(h->stream_revision > 0) {
-        h->pred_mode_Y[3] =  h->pred_mode_Y[6] = NOT_AVAIL;
-        h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = NOT_AVAIL;
-    } else {
-        h->pred_mode_Y[3] =  h->pred_mode_Y[6] = INTRA_L_LP;
-        h->top_pred_Y[h->mbx*2+0] = h->top_pred_Y[h->mbx*2+1] = INTRA_L_LP;
-    }
-}
 
 static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
     switch(size) {
@@ -274,35 +257,6 @@ static inline void set_mvs(cavs_vector *mv, enum cavs_block size) {
     }
 }
 
-static inline void set_mv_intra(AVSContext *h) {
-    h->mv[MV_FWD_X0] = ff_cavs_intra_mv;
-    set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
-    h->mv[MV_BWD_X0] = ff_cavs_intra_mv;
-    set_mvs(&h->mv[MV_BWD_X0], BLK_16X16);
-    if(h->pic_type != AV_PICTURE_TYPE_B)
-        h->col_type_base[h->mbidx] = I_8X8;
-}
-
-static inline int dequant(AVSContext *h, DCTELEM *level_buf, uint8_t *run_buf,
-                          DCTELEM *dst, int mul, int shift, int coeff_num) {
-    int round = 1 << (shift - 1);
-    int pos = -1;
-    const uint8_t *scantab = h->scantable.permutated;
-
-    /* inverse scan and dequantization */
-    while(--coeff_num >= 0){
-        pos += run_buf[coeff_num];
-        if(pos > 63) {
-            av_log(h->s.avctx, AV_LOG_ERROR,
-                "position out of block bounds at pic %d MB(%d,%d)\n",
-                h->picture.poc, h->mbx, h->mby);
-            return -1;
-        }
-        dst[scantab[pos]] = (level_buf[coeff_num]*mul + round) >> shift;
-    }
-    return 0;
-}
-
 void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type);
 void ff_cavs_load_intra_pred_luma(AVSContext *h, uint8_t *top, uint8_t **left,
                                   int block);
@@ -313,7 +267,7 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
                 enum cavs_mv_pred mode, enum cavs_block size, int ref);
 void ff_cavs_init_mb(AVSContext *h);
 int  ff_cavs_next_mb(AVSContext *h);
-void ff_cavs_init_pic(AVSContext *h);
+int ff_cavs_init_pic(AVSContext *h);
 void ff_cavs_init_top_lines(AVSContext *h);
 int ff_cavs_init(AVCodecContext *avctx);
 int ff_cavs_end (AVCodecContext *avctx);

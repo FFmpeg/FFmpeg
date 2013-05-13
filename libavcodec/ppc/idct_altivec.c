@@ -42,7 +42,6 @@
 #include <altivec.h>
 #endif
 #include "libavutil/ppc/types_altivec.h"
-#include "libavcodec/dsputil.h"
 #include "dsputil_altivec.h"
 
 #define IDCT_HALF                                       \

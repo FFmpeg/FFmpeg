@@ -94,7 +94,7 @@ static int wsvqa_read_header(AVFormatContext *s)
     st->start_time = 0;
     wsvqa->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_WS_VQA;
+    st->codec->codec_id = AV_CODEC_ID_WS_VQA;
     st->codec->codec_tag = 0;  /* no fourcc */
 
     /* skip to the start of the VQA header */
@@ -211,15 +211,15 @@ static int wsvqa_read_packet(AVFormatContext *s,
                     switch (chunk_type) {
                     case SND0_TAG:
                         if (wsvqa->bps == 16)
-                            st->codec->codec_id = CODEC_ID_PCM_S16LE;
+                            st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
                         else
-                            st->codec->codec_id = CODEC_ID_PCM_U8;
+                            st->codec->codec_id = AV_CODEC_ID_PCM_U8;
                         break;
                     case SND1_TAG:
-                        st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
+                        st->codec->codec_id = AV_CODEC_ID_WESTWOOD_SND1;
                         break;
                     case SND2_TAG:
-                        st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+                        st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
                         st->codec->extradata_size = 2;
                         st->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
                         if (!st->codec->extradata)
@@ -233,7 +233,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
                 switch (chunk_type) {
                 case SND1_TAG:
                     /* unpacked size is stored in header */
-                    pkt->duration = AV_RL16(pkt->data) / wsvqa->channels;
+                    if(pkt->data)
+                        pkt->duration = AV_RL16(pkt->data) / wsvqa->channels;
                     break;
                 case SND2_TAG:
                     /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
@@ -268,7 +269,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_wsvqa_demuxer = {
     .name           = "wsvqa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA"),
     .priv_data_size = sizeof(WsVqaDemuxContext),
     .read_probe     = wsvqa_probe,
     .read_header    = wsvqa_read_header,

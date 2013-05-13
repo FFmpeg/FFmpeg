@@ -21,13 +21,12 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/log.h"
 #include "avcodec.h"
+#include "internal.h"
+#include "mathops.h"
 
 #define AES3_HEADER_LEN 4
-
-typedef struct S302MDecodeContext {
-    AVFrame frame;
-} S302MDecodeContext;
 
 static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
                                     int buf_size)
@@ -92,7 +91,7 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
 static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                               int *got_frame_ptr, AVPacket *avpkt)
 {
-    S302MDecodeContext *s = avctx->priv_data;
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int block_size, ret;
@@ -106,72 +105,56 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     block_size = (avctx->bits_per_coded_sample + 4) / 4;
-    s->frame.nb_samples = 2 * (buf_size / block_size) / avctx->channels;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    frame->nb_samples = 2 * (buf_size / block_size) / avctx->channels;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
-    buf_size = (s->frame.nb_samples * avctx->channels / 2) * block_size;
+    buf_size = (frame->nb_samples * avctx->channels / 2) * block_size;
 
     if (avctx->bits_per_coded_sample == 24) {
-        uint32_t *o = (uint32_t *)s->frame.data[0];
+        uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 6; buf_size -= 7) {
-            *o++ = (av_reverse[buf[2]]        << 24) |
-                   (av_reverse[buf[1]]        << 16) |
-                   (av_reverse[buf[0]]        <<  8);
-            *o++ = (av_reverse[buf[6] & 0xf0] << 28) |
-                   (av_reverse[buf[5]]        << 20) |
-                   (av_reverse[buf[4]]        << 12) |
-                   (av_reverse[buf[3] & 0x0f] <<  4);
+            *o++ = (ff_reverse[buf[2]]        << 24) |
+                   (ff_reverse[buf[1]]        << 16) |
+                   (ff_reverse[buf[0]]        <<  8);
+            *o++ = (ff_reverse[buf[6] & 0xf0] << 28) |
+                   (ff_reverse[buf[5]]        << 20) |
+                   (ff_reverse[buf[4]]        << 12) |
+                   (ff_reverse[buf[3] & 0x0f] <<  4);
             buf += 7;
         }
     } else if (avctx->bits_per_coded_sample == 20) {
-        uint32_t *o = (uint32_t *)s->frame.data[0];
+        uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 5; buf_size -= 6) {
-            *o++ = (av_reverse[buf[2] & 0xf0] << 28) |
-                   (av_reverse[buf[1]]        << 20) |
-                   (av_reverse[buf[0]]        << 12);
-            *o++ = (av_reverse[buf[5] & 0xf0] << 28) |
-                   (av_reverse[buf[4]]        << 20) |
-                   (av_reverse[buf[3]]        << 12);
+            *o++ = (ff_reverse[buf[2] & 0xf0] << 28) |
+                   (ff_reverse[buf[1]]        << 20) |
+                   (ff_reverse[buf[0]]        << 12);
+            *o++ = (ff_reverse[buf[5] & 0xf0] << 28) |
+                   (ff_reverse[buf[4]]        << 20) |
+                   (ff_reverse[buf[3]]        << 12);
             buf += 6;
         }
     } else {
-        uint16_t *o = (uint16_t *)s->frame.data[0];
+        uint16_t *o = (uint16_t *)frame->data[0];
         for (; buf_size > 4; buf_size -= 5) {
-            *o++ = (av_reverse[buf[1]]        <<  8) |
-                    av_reverse[buf[0]];
-            *o++ = (av_reverse[buf[4] & 0xf0] << 12) |
-                   (av_reverse[buf[3]]        <<  4) |
-                   (av_reverse[buf[2]]        >>  4);
+            *o++ = (ff_reverse[buf[1]]        <<  8) |
+                    ff_reverse[buf[0]];
+            *o++ = (ff_reverse[buf[4] & 0xf0] << 12) |
+                   (ff_reverse[buf[3]]        <<  4) |
+                   (ff_reverse[buf[2]]        >>  4);
             buf += 5;
         }
     }
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }
 
-static int s302m_decode_init(AVCodecContext *avctx)
-{
-    S302MDecodeContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
-    return 0;
-}
-
-
 AVCodec ff_s302m_decoder = {
     .name           = "s302m",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_S302M,
-    .priv_data_size = sizeof(S302MDecodeContext),
-    .init           = s302m_decode_init,
+    .id             = AV_CODEC_ID_S302M,
     .decode         = s302m_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 302M"),

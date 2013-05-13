@@ -158,19 +158,18 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     avio_write(pb, pkt->data, pkt->size);
-    avio_flush(pb);
 
     return 0;
 }
 
 AVOutputFormat ff_adts_muxer = {
     .name              = "adts",
-    .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC"),
+    .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC (Advanced Audio Coding)"),
     .mime_type         = "audio/aac",
     .extensions        = "aac,adts",
     .priv_data_size    = sizeof(ADTSContext),
-    .audio_codec       = CODEC_ID_AAC,
-    .video_codec       = CODEC_ID_NONE,
+    .audio_codec       = AV_CODEC_ID_AAC,
+    .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = adts_write_header,
     .write_packet      = adts_write_packet,
 };

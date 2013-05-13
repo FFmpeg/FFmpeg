@@ -96,7 +96,7 @@ static void srt_stack_push_pop(SRTContext *s, const char c, int close)
 
 static void srt_style_apply(SRTContext *s, const char *style)
 {
-    ASSStyle *st = ass_style_get(s->ass_ctx, style);
+    ASSStyle *st = ff_ass_style_get(s->ass_ctx, style);
     if (st) {
         int c = st->primary_color & 0xFFFFFF;
         if (st->font_name && strcmp(st->font_name, ASS_DEFAULT_FONT) ||
@@ -203,6 +203,8 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
                         int t1, int t2)
 {
     SRTContext *s = priv;
+
+    if (s->avctx->codec->id == AV_CODEC_ID_SRT) {
     char buffer[32];
     int len = snprintf(buffer, sizeof(buffer),
                        "  X1:%03u X2:%03u Y1:%03u Y2:%03u", x1, x2, y1, y2);
@@ -211,12 +213,16 @@ static void srt_move_cb(void *priv, int x1, int y1, int x2, int y2,
         memcpy(s->dialog_start, buffer, len);
         s->ptr += len;
     }
+    }
 }
 
 static void srt_end_cb(void *priv)
 {
+    SRTContext *s = priv;
+
     srt_stack_push_pop(priv, 0, 1);
-    srt_print(priv, "\r\n\r\n");
+    if (s->avctx->codec->id == AV_CODEC_ID_SRT)
+        srt_print(priv, "\r\n\r\n");
 }
 
 static const ASSCodesCallbacks srt_callbacks = {
@@ -233,10 +239,9 @@ static const ASSCodesCallbacks srt_callbacks = {
 };
 
 static int srt_encode_frame(AVCodecContext *avctx,
-                            unsigned char *buf, int bufsize, void *data)
+                            unsigned char *buf, int bufsize, const AVSubtitle *sub)
 {
     SRTContext *s = avctx->priv_data;
-    AVSubtitle *sub = data;
     ASSDialog *dialog;
     int i, len, num;
 
@@ -252,18 +257,20 @@ static int srt_encode_frame(AVCodecContext *avctx,
 
         dialog = ff_ass_split_dialog(s->ass_ctx, sub->rects[i]->ass, 0, &num);
         for (; dialog && num--; dialog++) {
-            int sh, sm, ss, sc = 10 * dialog->start;
-            int eh, em, es, ec = 10 * dialog->end;
-            sh = sc/3600000;  sc -= 3600000*sh;
-            sm = sc/  60000;  sc -=   60000*sm;
-            ss = sc/   1000;  sc -=    1000*ss;
-            eh = ec/3600000;  ec -= 3600000*eh;
-            em = ec/  60000;  ec -=   60000*em;
-            es = ec/   1000;  ec -=    1000*es;
-            srt_print(s,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n",
-                      ++s->count, sh, sm, ss, sc, eh, em, es, ec);
+            if (avctx->codec->id == AV_CODEC_ID_SRT) {
+                int sh, sm, ss, sc = 10 * dialog->start;
+                int eh, em, es, ec = 10 * dialog->end;
+                sh = sc/3600000;  sc -= 3600000*sh;
+                sm = sc/  60000;  sc -=   60000*sm;
+                ss = sc/   1000;  sc -=    1000*ss;
+                eh = ec/3600000;  ec -= 3600000*eh;
+                em = ec/  60000;  ec -=   60000*em;
+                es = ec/   1000;  ec -=    1000*es;
+                srt_print(s,"%d\r\n%02d:%02d:%02d,%03d --> %02d:%02d:%02d,%03d\r\n",
+                          ++s->count, sh, sm, ss, sc, eh, em, es, ec);
+                s->dialog_start = s->ptr - 2;
+            }
             s->alignment_applied = 0;
-            s->dialog_start = s->ptr - 2;
             srt_style_apply(s, dialog->style);
             ff_ass_split_override_codes(&srt_callbacks, s, dialog->text);
         }
@@ -289,13 +296,29 @@ static int srt_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#if CONFIG_SRT_ENCODER
+/* deprecated encoder */
 AVCodec ff_srt_encoder = {
     .name           = "srt",
-    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle with embedded timing"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_SRT,
+    .id             = AV_CODEC_ID_SRT,
     .priv_data_size = sizeof(SRTContext),
     .init           = srt_encode_init,
-    .encode         = srt_encode_frame,
+    .encode_sub     = srt_encode_frame,
     .close          = srt_encode_close,
 };
+#endif
+
+#if CONFIG_SUBRIP_ENCODER
+AVCodec ff_subrip_encoder = {
+    .name           = "subrip",
+    .long_name      = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+    .type           = AVMEDIA_TYPE_SUBTITLE,
+    .id             = AV_CODEC_ID_SUBRIP,
+    .priv_data_size = sizeof(SRTContext),
+    .init           = srt_encode_init,
+    .encode_sub     = srt_encode_frame,
+    .close          = srt_encode_close,
+};
+#endif

@@ -27,6 +27,7 @@
  * @see http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -56,7 +57,7 @@ typedef struct BVID_DemuxContext
 
 static int vid_probe(AVProbeData *p)
 {
-    // little endian VID tag, file starts with "VID\0"
+    // little-endian VID tag, file starts with "VID\0"
     if (AV_RL32(p->buf) != MKTAG('V', 'I', 'D', 0))
         return 0;
 
@@ -107,12 +108,13 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
             return AVERROR(ENOMEM);
         vid->video_index = st->index;
         if (vid->audio_index < 0) {
-            av_log_ask_for_sample(s, "No audio packet before first video "
-                                  "packet. Using default video time base.\n");
+            avpriv_request_sample(s, "Using default video time base since "
+                                  "having no audio packet before the first "
+                                  "video packet");
         }
         avpriv_set_pts_info(st, 64, 185, vid->sample_rate);
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = CODEC_ID_BETHSOFTVID;
+        st->codec->codec_id   = AV_CODEC_ID_BETHSOFTVID;
         st->codec->width      = vid->width;
         st->codec->height     = vid->height;
     }
@@ -187,7 +189,8 @@ static int read_frame(BVID_DemuxContext *vid, AVIOContext *pb, AVPacket *pkt,
     if (vid->palette) {
         uint8_t *pdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
                                                  BVID_PALETTE_SIZE);
-        memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
+        if (pdata)
+            memcpy(pdata, vid->palette, BVID_PALETTE_SIZE);
         av_freep(&vid->palette);
     }
 
@@ -208,7 +211,7 @@ static int vid_read_packet(AVFormatContext *s,
     int ret_value;
 
     if(vid->is_finished || url_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     block_type = avio_r8(pb);
     switch(block_type){
@@ -237,8 +240,9 @@ static int vid_read_packet(AVFormatContext *s,
                     return AVERROR(ENOMEM);
                 vid->audio_index                 = st->index;
                 st->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id              = CODEC_ID_PCM_U8;
+                st->codec->codec_id              = AV_CODEC_ID_PCM_U8;
                 st->codec->channels              = 1;
+                st->codec->channel_layout        = AV_CH_LAYOUT_MONO;
                 st->codec->bits_per_coded_sample = 8;
                 st->codec->sample_rate           = vid->sample_rate;
                 st->codec->bit_rate              = 8 * st->codec->sample_rate;
@@ -283,7 +287,7 @@ static int vid_read_close(AVFormatContext *s)
 
 AVInputFormat ff_bethsoftvid_demuxer = {
     .name           = "bethsoftvid",
-    .long_name      = NULL_IF_CONFIG_SMALL("Bethesda Softworks VID format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Bethesda Softworks VID"),
     .priv_data_size = sizeof(BVID_DemuxContext),
     .read_probe     = vid_probe,
     .read_header    = vid_read_header,

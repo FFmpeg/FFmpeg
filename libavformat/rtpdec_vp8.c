@@ -1,6 +1,7 @@
 /*
  * RTP VP8 Depacketizer
  * Copyright (c) 2010 Josh Allmann
+ * Copyright (c) 2012 Martin Storsjo
  *
  * This file is part of FFmpeg.
  *
@@ -23,7 +24,7 @@
  * @file
  * @brief RTP support for the VP8 payload
  * @author Josh Allmann <joshua.allmann@gmail.com>
- * @see http://www.webmproject.org/code/specs/rtp/
+ * @see http://tools.ietf.org/html/draft-ietf-payload-vp8-05
  */
 
 #include "libavcodec/bytestream.h"
@@ -32,95 +33,234 @@
 
 struct PayloadContext {
     AVIOContext *data;
-    uint32_t       timestamp;
-    int is_keyframe;
+    uint32_t     timestamp;
+    int          is_keyframe;
+    /* If sequence_ok is set, we keep returning data (even if we might have
+     * lost some data, but we haven't lost any too critical data that would
+     * cause the decoder to desynchronize and output random garbage).
+     */
+    int          sequence_ok;
+    int          first_part_size;
+    uint16_t     prev_seq;
+    int          prev_pictureid;
+    int          broken_frame;
+    /* If sequence_dirty is set, we have lost some data (critical or
+     * non-critical) and decoding will have some sort of artefacts, and
+     * we thus should request a new keyframe.
+     */
+    int          sequence_dirty;
+    int          got_keyframe;
 };
 
-static void prepare_packet(AVPacket *pkt, PayloadContext *vp8, int stream)
+static void vp8_free_buffer(PayloadContext *vp8)
 {
-    av_init_packet(pkt);
-    pkt->stream_index = stream;
-    pkt->flags        = vp8->is_keyframe ? AV_PKT_FLAG_KEY : 0;
-    pkt->size         = avio_close_dyn_buf(vp8->data, &pkt->data);
-    pkt->destruct     = av_destruct_packet;
-    vp8->data         = NULL;
+    uint8_t *tmp;
+    if (!vp8->data)
+        return;
+    avio_close_dyn_buf(vp8->data, &tmp);
+    av_free(tmp);
+    vp8->data = NULL;
 }
 
-static int vp8_handle_packet(AVFormatContext *ctx,
-                             PayloadContext *vp8,
-                             AVStream *st,
-                             AVPacket *pkt,
-                             uint32_t *timestamp,
-                             const uint8_t *buf,
-                             int len, int flags)
+static int vp8_broken_sequence(AVFormatContext *ctx, PayloadContext *vp8,
+                               const char *msg)
 {
-    int start_packet, end_packet, has_au, ret = AVERROR(EAGAIN);
+    vp8->sequence_ok = 0;
+    av_log(ctx, AV_LOG_WARNING, "%s", msg);
+    vp8_free_buffer(vp8);
+    return AVERROR(EAGAIN);
+}
+
+static int vp8_handle_packet(AVFormatContext *ctx, PayloadContext *vp8,
+                             AVStream *st, AVPacket *pkt, uint32_t *timestamp,
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
+{
+    int start_partition, end_packet;
+    int extended_bits, part_id;
+    int pictureid_present = 0, tl0picidx_present = 0, tid_present = 0,
+        keyidx_present = 0;
+    int pictureid = -1, pictureid_mask = 0;
+    int returned_old_frame = 0;
+    uint32_t old_timestamp = 0;
 
     if (!buf) {
-        // only called when vp8_handle_packet returns 1
-        if (!vp8->data) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid VP8 data passed\n");
-            return AVERROR_INVALIDDATA;
-        }
-        prepare_packet(pkt, vp8, st->index);
-        *timestamp = vp8->timestamp;
-        return 0;
-    }
-
-    start_packet = *buf & 1;
-    end_packet   = flags & RTP_FLAG_MARKER;
-    has_au       = *buf & 2;
-    buf++;
-    len--;
-
-    if (start_packet) {
-        int res;
-        uint32_t ts = *timestamp;
         if (vp8->data) {
-            // missing end marker; return old frame anyway. untested
-            prepare_packet(pkt, vp8, st->index);
-            *timestamp = vp8->timestamp; // reset timestamp from old frame
-
-            // if current frame fits into one rtp packet, need to hold
-            // that for the next av_get_packet call
-            ret = end_packet ? 1 : 0;
+            int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
+            if (ret < 0)
+                return ret;
+            *timestamp = vp8->timestamp;
+            if (vp8->sequence_dirty)
+                pkt->flags |= AV_PKT_FLAG_CORRUPT;
+            return 0;
         }
-        if ((res = avio_open_dyn_buf(&vp8->data)) < 0)
-            return res;
-        vp8->is_keyframe = *buf & 1;
-        vp8->timestamp   = ts;
-     }
-
-    if (!vp8->data || vp8->timestamp != *timestamp && ret == AVERROR(EAGAIN)) {
-        av_log(ctx, AV_LOG_WARNING,
-               "Received no start marker; dropping frame\n");
         return AVERROR(EAGAIN);
     }
 
-    // cycle through VP8AU headers if needed
-    // not tested with actual VP8AUs
-    while (len) {
-        int au_len = len;
-        if (has_au && len > 2) {
-            au_len = AV_RB16(buf);
+    if (len < 1)
+        return AVERROR_INVALIDDATA;
+
+    extended_bits   = buf[0] & 0x80;
+    start_partition = buf[0] & 0x10;
+    part_id         = buf[0] & 0x0f;
+    end_packet      = flags & RTP_FLAG_MARKER;
+    buf++;
+    len--;
+    if (extended_bits) {
+        if (len < 1)
+            return AVERROR_INVALIDDATA;
+        pictureid_present = buf[0] & 0x80;
+        tl0picidx_present = buf[0] & 0x40;
+        tid_present       = buf[0] & 0x20;
+        keyidx_present    = buf[0] & 0x10;
+        buf++;
+        len--;
+    }
+    if (pictureid_present) {
+        if (len < 1)
+            return AVERROR_INVALIDDATA;
+        if (buf[0] & 0x80) {
+            if (len < 2)
+                return AVERROR_INVALIDDATA;
+            pictureid = AV_RB16(buf) & 0x7fff;
+            pictureid_mask = 0x7fff;
             buf += 2;
             len -= 2;
-            if (buf + au_len > buf + len) {
-                av_log(ctx, AV_LOG_ERROR, "Invalid VP8AU length\n");
-                return AVERROR_INVALIDDATA;
+        } else {
+            pictureid = buf[0] & 0x7f;
+            pictureid_mask = 0x7f;
+            buf++;
+            len--;
+        }
+    }
+    if (tl0picidx_present) {
+        // Ignoring temporal level zero index
+        buf++;
+        len--;
+    }
+    if (tid_present || keyidx_present) {
+        // Ignoring temporal layer index, layer sync bit and keyframe index
+        buf++;
+        len--;
+    }
+    if (len < 1)
+        return AVERROR_INVALIDDATA;
+
+    if (start_partition && part_id == 0 && len >= 3) {
+        int res;
+        int non_key = buf[0] & 0x01;
+        if (!non_key) {
+            vp8_free_buffer(vp8);
+            // Keyframe, decoding ok again
+            vp8->sequence_ok = 1;
+            vp8->sequence_dirty = 0;
+            vp8->got_keyframe = 1;
+        } else {
+            int can_continue = vp8->data && !vp8->is_keyframe &&
+                               avio_tell(vp8->data) >= vp8->first_part_size;
+            if (!vp8->sequence_ok)
+                return AVERROR(EAGAIN);
+            if (!vp8->got_keyframe)
+                return vp8_broken_sequence(ctx, vp8, "Keyframe missing\n");
+            if (pictureid >= 0) {
+                if (pictureid != ((vp8->prev_pictureid + 1) & pictureid_mask)) {
+                    return vp8_broken_sequence(ctx, vp8,
+                                               "Missed a picture, sequence broken\n");
+                } else {
+                    if (vp8->data && !can_continue)
+                        return vp8_broken_sequence(ctx, vp8,
+                                                   "Missed a picture, sequence broken\n");
+                }
+            } else {
+                uint16_t expected_seq = vp8->prev_seq + 1;
+                int16_t diff = seq - expected_seq;
+                if (vp8->data) {
+                    // No picture id, so we can't know if missed packets
+                    // contained any new frames. If diff == 0, we did get
+                    // later packets from the same frame (matching timestamp),
+                    // so we know we didn't miss any frame. If diff == 1 and
+                    // we still have data (not flushed by the end of frame
+                    // marker), the single missed packet must have been part
+                    // of the same frame.
+                    if ((diff == 0 || diff == 1) && can_continue) {
+                        // Proceed with what we have
+                    } else {
+                        return vp8_broken_sequence(ctx, vp8,
+                                                   "Missed too much, sequence broken\n");
+                    }
+                } else {
+                    if (diff != 0)
+                        return vp8_broken_sequence(ctx, vp8,
+                                                   "Missed unknown data, sequence broken\n");
+                }
+            }
+            if (vp8->data) {
+                vp8->sequence_dirty = 1;
+                if (avio_tell(vp8->data) >= vp8->first_part_size) {
+                    int ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
+                    if (ret < 0)
+                        return ret;
+                    pkt->flags |= AV_PKT_FLAG_CORRUPT;
+                    returned_old_frame = 1;
+                    old_timestamp = vp8->timestamp;
+                } else {
+                    // Shouldn't happen
+                    vp8_free_buffer(vp8);
+                }
             }
         }
+        vp8->first_part_size = (AV_RL16(&buf[1]) << 3 | buf[0] >> 5) + 3;
+        if ((res = avio_open_dyn_buf(&vp8->data)) < 0)
+            return res;
+        vp8->timestamp = *timestamp;
+        vp8->broken_frame = 0;
+        vp8->prev_pictureid = pictureid;
+        vp8->is_keyframe = !non_key;
+    } else {
+        uint16_t expected_seq = vp8->prev_seq + 1;
 
-        avio_write(vp8->data, buf, au_len);
-        buf += au_len;
-        len -= au_len;
+        if (!vp8->sequence_ok)
+            return AVERROR(EAGAIN);
+
+        if (vp8->timestamp != *timestamp) {
+            // Missed the start of the new frame, sequence broken
+            return vp8_broken_sequence(ctx, vp8,
+                                       "Received no start marker; dropping frame\n");
+        }
+
+        if (seq != expected_seq) {
+            if (vp8->is_keyframe) {
+                return vp8_broken_sequence(ctx, vp8,
+                                           "Missed part of a keyframe, sequence broken\n");
+            } else if (vp8->data && avio_tell(vp8->data) >= vp8->first_part_size) {
+                vp8->broken_frame = 1;
+                vp8->sequence_dirty = 1;
+            } else {
+                return vp8_broken_sequence(ctx, vp8,
+                                           "Missed part of the first partition, sequence broken\n");
+            }
+        }
     }
 
-    if (ret != AVERROR(EAGAIN)) // did we miss a end marker?
-        return ret;
+    if (!vp8->data)
+        return vp8_broken_sequence(ctx, vp8, "Received no start marker\n");
+
+    vp8->prev_seq = seq;
+    if (!vp8->broken_frame)
+        avio_write(vp8->data, buf, len);
+
+    if (returned_old_frame) {
+        *timestamp = old_timestamp;
+        return end_packet ? 1 : 0;
+    }
 
     if (end_packet) {
-        prepare_packet(pkt, vp8, st->index);
+        int ret;
+        ret = ff_rtp_finalize_packet(pkt, &vp8->data, st->index);
+        if (ret < 0)
+            return ret;
+        if (vp8->sequence_dirty)
+            pkt->flags |= AV_PKT_FLAG_CORRUPT;
         return 0;
     }
 
@@ -129,26 +269,30 @@ static int vp8_handle_packet(AVFormatContext *ctx,
 
 static PayloadContext *vp8_new_context(void)
 {
-    av_log(NULL, AV_LOG_ERROR, "RTP VP8 payload implementation is incompatible "
-                               "with the latest spec drafts.\n");
-    return av_mallocz(sizeof(PayloadContext));
+    PayloadContext *vp8 = av_mallocz(sizeof(PayloadContext));
+    if (!vp8)
+        return NULL;
+    vp8->sequence_ok = 1;
+    return vp8;
 }
 
 static void vp8_free_context(PayloadContext *vp8)
 {
-    if (vp8->data) {
-        uint8_t *tmp;
-        avio_close_dyn_buf(vp8->data, &tmp);
-        av_free(tmp);
-    }
+    vp8_free_buffer(vp8);
     av_free(vp8);
+}
+
+static int vp8_need_keyframe(PayloadContext *vp8)
+{
+    return vp8->sequence_dirty || !vp8->sequence_ok;
 }
 
 RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .enc_name       = "VP8",
     .codec_type     = AVMEDIA_TYPE_VIDEO,
-    .codec_id       = CODEC_ID_VP8,
+    .codec_id       = AV_CODEC_ID_VP8,
     .alloc          = vp8_new_context,
     .free           = vp8_free_context,
     .parse_packet   = vp8_handle_packet,
+    .need_keyframe  = vp8_need_keyframe,
 };

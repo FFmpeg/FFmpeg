@@ -28,12 +28,6 @@
 
 /* Generic tables */
 
-static const uint32_t dca_sample_rates[16] =
-{
-    0, 8000, 16000, 32000, 0, 0, 11025, 22050, 44100, 0, 0,
-    12000, 24000, 48000, 96000, 192000
-};
-
 static const uint32_t dca_bit_rates[32] =
 {
     32000, 56000, 64000, 96000, 112000, 128000,

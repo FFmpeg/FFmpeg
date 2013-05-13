@@ -23,9 +23,8 @@
 
 #include "libavutil/samplefmt.h"
 #include "avresample.h"
+#include "internal.h"
 #include "audio_data.h"
-
-typedef struct AudioConvert AudioConvert;
 
 /**
  * Set conversion function if the parameters match.
@@ -42,7 +41,7 @@ typedef struct AudioConvert AudioConvert;
  * @param in_fmt         input sample format
  * @param channels       number of channels, or 0 for any number of channels
  * @param ptr_align      buffer pointer alignment, in bytes
- * @param sample_align   buffer size alignment, in samples
+ * @param samples_align  buffer size alignment, in samples
  * @param descr          function type description (e.g. "C" or "SSE")
  * @param conv           conversion function pointer
  */
@@ -54,16 +53,28 @@ void ff_audio_convert_set_func(AudioConvert *ac, enum AVSampleFormat out_fmt,
 /**
  * Allocate and initialize AudioConvert context for sample format conversion.
  *
- * @param avr      AVAudioResampleContext
- * @param out_fmt  output sample format
- * @param in_fmt   input sample format
- * @param channels number of channels
- * @return         newly-allocated AudioConvert context
+ * @param avr         AVAudioResampleContext
+ * @param out_fmt     output sample format
+ * @param in_fmt      input sample format
+ * @param channels    number of channels
+ * @param sample_rate sample rate (used for dithering)
+ * @param apply_map   apply channel map during conversion
+ * @return            newly-allocated AudioConvert context
  */
 AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
                                      enum AVSampleFormat out_fmt,
                                      enum AVSampleFormat in_fmt,
-                                     int channels);
+                                     int channels, int sample_rate,
+                                     int apply_map);
+
+/**
+ * Free AudioConvert.
+ *
+ * The AudioConvert must have been previously allocated with ff_audio_convert_alloc().
+ *
+ * @param ac  AudioConvert struct
+ */
+void ff_audio_convert_free(AudioConvert **ac);
 
 /**
  * Convert audio data from one sample format to another.
@@ -72,16 +83,20 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
  * examined to determine whether to use the generic or optimized conversion
  * function (when available).
  *
+ * The number of samples to convert is determined by in->nb_samples. The output
+ * buffer must be large enough to handle this many samples. out->nb_samples is
+ * set by this function before a successful return.
+ *
  * @param ac     AudioConvert context
  * @param out    output audio data
  * @param in     input audio data
- * @param len    number of samples to convert
  * @return       0 on success, negative AVERROR code on failure
  */
-int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in, int len);
+int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in);
 
 /* arch-specific initialization functions */
 
+void ff_audio_convert_init_arm(AudioConvert *ac);
 void ff_audio_convert_init_x86(AudioConvert *ac);
 
 #endif /* AVRESAMPLE_AUDIO_CONVERT_H */

@@ -146,7 +146,7 @@ static inline int mirror(int v, int m)
     return v;
 }
 
-void avfilter_transform(const uint8_t *src, uint8_t *dst,
+int avfilter_transform(const uint8_t *src, uint8_t *dst,
                         int src_stride, int dst_stride,
                         int width, int height, const float *matrix,
                         enum InterpolateMethod interpolate,
@@ -167,6 +167,8 @@ void avfilter_transform(const uint8_t *src, uint8_t *dst,
         case INTERPOLATE_BIQUADRATIC:
             func = interpolate_biquadratic;
             break;
+        default:
+            return AVERROR(EINVAL);
     }
 
     for (y = 0; y < height; y++) {
@@ -195,5 +197,6 @@ void avfilter_transform(const uint8_t *src, uint8_t *dst,
             dst[y * dst_stride + x] = func(x_s, y_s, src, width, height, src_stride, def);
         }
     }
+    return 0;
 }
 

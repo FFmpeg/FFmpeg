@@ -26,6 +26,7 @@
  */
 
 #include <string.h>
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
 #include "rtp.h"
@@ -193,7 +194,7 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
     for (n = 0; n < 0x80; n++)
         if (qdm->len[n] > 0)
             break;
-    assert(n < 0x80);
+    av_assert0(n < 0x80);
 
     if ((res = av_new_packet(pkt, qdm->block_size)) < 0)
         return res;
@@ -237,7 +238,8 @@ static int qdm2_restore_block(PayloadContext *qdm, AVStream *st, AVPacket *pkt)
 static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
                              AVStream *st, AVPacket *pkt,
                              uint32_t *timestamp,
-                             const uint8_t *buf, int len, int flags)
+                             const uint8_t *buf, int len, uint16_t seq,
+                             int flags)
 {
     int res = AVERROR_INVALIDDATA, n;
     const uint8_t *end = buf + len, *p = buf;
@@ -259,14 +261,14 @@ static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
                 return res;
             p += res;
 
-            /* We set codec_id to CODEC_ID_NONE initially to
+            /* We set codec_id to AV_CODEC_ID_NONE initially to
              * delay decoder initialization since extradata is
              * carried within the RTP stream, not SDP. Here,
-             * by setting codec_id to CODEC_ID_QDM2, we are signalling
+             * by setting codec_id to AV_CODEC_ID_QDM2, we are signalling
              * to the decoder that it is OK to initialize. */
-            st->codec->codec_id = CODEC_ID_QDM2;
+            st->codec->codec_id = AV_CODEC_ID_QDM2;
         }
-        if (st->codec->codec_id == CODEC_ID_NONE)
+        if (st->codec->codec_id == AV_CODEC_ID_NONE)
             return AVERROR(EAGAIN);
 
         /* subpackets */
@@ -310,7 +312,7 @@ static void qdm2_extradata_free(PayloadContext *qdm)
 RTPDynamicProtocolHandler ff_qdm2_dynamic_handler = {
     .enc_name         = "X-QDM",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
-    .codec_id         = CODEC_ID_NONE,
+    .codec_id         = AV_CODEC_ID_NONE,
     .alloc            = qdm2_extradata_new,
     .free             = qdm2_extradata_free,
     .parse_packet     = qdm2_parse_packet,

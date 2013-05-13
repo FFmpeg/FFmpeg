@@ -53,7 +53,8 @@ theora_header (AVFormatContext * s, int idx)
         os->private = thp;
     }
 
-    if (os->buf[os->pstart] == 0x80) {
+    switch (os->buf[os->pstart]) {
+    case 0x80: {
         GetBitContext gb;
         int width, height;
         AVRational timebase;
@@ -107,11 +108,19 @@ theora_header (AVFormatContext * s, int idx)
         thp->gpmask = (1 << thp->gpshift) - 1;
 
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id = CODEC_ID_THEORA;
+        st->codec->codec_id = AV_CODEC_ID_THEORA;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
-
-    } else if (os->buf[os->pstart] == 0x83) {
-        ff_vorbis_comment (s, &st->metadata, os->buf + os->pstart + 7, os->psize - 8);
+    }
+    break;
+    case 0x81:
+        ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7, os->psize - 7);
+    case 0x82:
+        if (!thp->version)
+            return -1;
+        break;
+    default:
+        av_log(s, AV_LOG_ERROR, "Unknown header type %X\n", os->buf[os->pstart]);
+        return -1;
     }
 
     st->codec->extradata = av_realloc (st->codec->extradata,
@@ -192,5 +201,6 @@ const struct ogg_codec ff_theora_codec = {
     .magicsize = 7,
     .header = theora_header,
     .packet = theora_packet,
-    .gptopts = theora_gptopts
+    .gptopts = theora_gptopts,
+    .nb_header = 3,
 };

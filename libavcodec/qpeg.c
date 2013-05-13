@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 typedef struct QpegContext{
     AVCodecContext *avctx;
@@ -249,7 +250,7 @@ static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     uint8_t ctable[128];
@@ -257,7 +258,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *  p = &a->pic;
     AVFrame * ref= &a->ref;
     uint8_t* outdata;
-    int delta;
+    int delta, ret;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
 
     if (avpkt->size < 0x86) {
@@ -267,15 +268,11 @@ static int decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&a->buffer, avpkt->data, avpkt->size);
 
-    if(ref->data[0])
-        avctx->release_buffer(avctx, ref);
-    FFSWAP(AVFrame, *ref, *p);
+    av_frame_unref(ref);
+    av_frame_move_ref(ref, p);
 
-    p->reference= 3;
-    if(avctx->get_buffer(avctx, p) < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF)) < 0)
+        return ret;
     outdata = a->pic.data[0];
     bytestream2_skip(&a->buffer, 4);
     bytestream2_get_buffer(&a->buffer, ctable, 128);
@@ -295,10 +292,24 @@ static int decode_frame(AVCodecContext *avctx,
     }
     memcpy(a->pic.data[1], a->pal, AVPALETTE_SIZE);
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = a->pic;
+    if ((ret = av_frame_ref(data, &a->pic)) < 0)
+        return ret;
+
+    *got_frame      = 1;
 
     return avpkt->size;
+}
+
+static void decode_flush(AVCodecContext *avctx){
+    QpegContext * const a = avctx->priv_data;
+    int i, pal_size;
+    const uint8_t *pal_src;
+
+    pal_size = FFMIN(1024U, avctx->extradata_size);
+    pal_src = avctx->extradata + avctx->extradata_size - pal_size;
+
+    for (i=0; i<pal_size/4; i++)
+        a->pal[i] = 0xFFU<<24 | AV_RL32(pal_src+4*i);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
@@ -307,7 +318,11 @@ static av_cold int decode_init(AVCodecContext *avctx){
     avcodec_get_frame_defaults(&a->pic);
     avcodec_get_frame_defaults(&a->ref);
     a->avctx = avctx;
-    avctx->pix_fmt= PIX_FMT_PAL8;
+    avctx->pix_fmt= AV_PIX_FMT_PAL8;
+
+    decode_flush(avctx);
+
+    avcodec_get_frame_defaults(&a->pic);
 
     return 0;
 }
@@ -317,10 +332,8 @@ static av_cold int decode_end(AVCodecContext *avctx){
     AVFrame * const p = &a->pic;
     AVFrame * const ref= &a->ref;
 
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
-    if(ref->data[0])
-        avctx->release_buffer(avctx, ref);
+    av_frame_unref(p);
+    av_frame_unref(ref);
 
     return 0;
 }
@@ -328,11 +341,12 @@ static av_cold int decode_end(AVCodecContext *avctx){
 AVCodec ff_qpeg_decoder = {
     .name           = "qpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_QPEG,
+    .id             = AV_CODEC_ID_QPEG,
     .priv_data_size = sizeof(QpegContext),
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
+    .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Q-team QPEG"),
 };

@@ -20,6 +20,7 @@
  */
 #include "avcodec.h"
 #include "rle.h"
+#include "libavutil/common.h"
 
 /**
  * Count up to 127 consecutive pixels which are either all the same or

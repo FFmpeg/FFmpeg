@@ -117,11 +117,6 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     }
     avctx->frame_size = BLOCK_SAMPLES;
 
-#if FF_API_OLD_ENCODE_AUDIO
-    avcodec_get_frame_defaults(&c->frame);
-    avctx->coded_frame = &c->frame;
-#endif
-
     /* the cutoff can be adjusted, but this seems to work pretty well */
     c->cutoff = 500;
     ff_adx_calculate_coeffs(c->cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
@@ -164,7 +159,7 @@ static int adx_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 AVCodec ff_adpcm_adx_encoder = {
     .name           = "adpcm_adx",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_ADPCM_ADX,
+    .id             = AV_CODEC_ID_ADPCM_ADX,
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_encode_init,
     .encode2        = adx_encode_frame,

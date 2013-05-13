@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!--
+    This file is part of FFmpeg.
+
+    All scripts contained in this file can be considered public domain.
+  -->
+<title>FFmpeg bookmarklets</title>
+<meta charset="UTF-8">
+<script type="text/javascript">
+function convert(js) {
+  js = js.replace(/\/\*.*?\*\//g, ""); /* comments */
+  js = js.replace(/\s+/g, " ");
+  js = js.replace(/\s+\z/, "");
+  js = "(function(){" + js + "})();void 0";
+  return "javascript:" + escape(js);
+}
+function init() {
+  var pre = document.getElementsByTagName("pre");
+  for (var i = 0; pre.length > i; i++) {
+    document.getElementById(pre[i].id + "-link").href = convert(pre[i].textContent);
+  }
+}
+</script>
+<style type="text/css">
+pre { border: solid black 1px; padding: 0.2ex; font-size: 80% }
+</style>
+</head>
+<body onload="init()">
+
+<h1>Introduction</h1>
+
+The scripts in this page are
+<a href="http://en.wikipedia.org/wiki/Bookmarklet">bookmarklets</a>: store
+their link version in a bookmark, and later activate the bookmark on a page
+to run the script.
+
+<h1>TED Talks captions</h1>
+
+<p><a id="ted_talks_captions-link" href="#">Get links to the captions</a></p>
+
+<pre id="ted_talks_captions">
+d = window.open("", "sub", "width=256,height=512,resizable=yes,scrollbars=yes").document;
+l = document.getElementById("languageCode").getElementsByTagName("option");
+for (i = 1; i &lt; l.length ; i++) {
+  d.body.appendChild(p = d.createElement("p"));
+  p.appendChild(a = d.createElement("a"));
+  a.appendChild(d.createTextNode(l[i].textContent));
+  a.href="http://www.ted.com/talks/subtitles/id/" + talkID+"/lang/" + l[i].value;
+}
+</pre>
+
+</body>
+</html>

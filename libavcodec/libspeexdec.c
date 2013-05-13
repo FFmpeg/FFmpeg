@@ -22,14 +22,16 @@
 #include <speex/speex_header.h>
 #include <speex/speex_stereo.h>
 #include <speex/speex_callbacks.h>
+
+#include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
 #include "avcodec.h"
+#include "internal.h"
 
 typedef struct {
-    AVFrame frame;
     SpeexBits bits;
     SpeexStereoState stereo;
     void *dec_state;
-    SpeexHeader *header;
     int frame_size;
 } LibSpeexContext;
 
@@ -38,46 +40,68 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
 {
     LibSpeexContext *s = avctx->priv_data;
     const SpeexMode *mode;
-
-    // defaults in the case of a missing header
-    if (avctx->sample_rate <= 8000)
-        mode = &speex_nb_mode;
-    else if (avctx->sample_rate <= 16000)
-        mode = &speex_wb_mode;
-    else
-        mode = &speex_uwb_mode;
-
-    if (avctx->extradata_size >= 80)
-        s->header = speex_packet_to_header(avctx->extradata, avctx->extradata_size);
+    SpeexHeader *header = NULL;
+    int spx_mode;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    if (s->header) {
-        avctx->sample_rate = s->header->rate;
-        avctx->channels    = s->header->nb_channels;
-        s->frame_size      = s->header->frame_size;
-
-        mode = speex_lib_get_mode(s->header->mode);
-        if (!mode) {
-            av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", s->header->mode);
+    if (avctx->extradata && avctx->extradata_size >= 80) {
+        header = speex_packet_to_header(avctx->extradata,
+                                        avctx->extradata_size);
+        if (!header)
+            av_log(avctx, AV_LOG_WARNING, "Invalid Speex header\n");
+    }
+    if (avctx->codec_tag == MKTAG('S', 'P', 'X', 'N')) {
+        if (!avctx->extradata || avctx->extradata && avctx->extradata_size < 47) {
+            av_log(avctx, AV_LOG_ERROR, "Missing or invalid extradata.\n");
             return AVERROR_INVALIDDATA;
         }
-    } else
-        av_log(avctx, AV_LOG_INFO, "Missing Speex header, assuming defaults.\n");
-
-    if (avctx->channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "Only stereo and mono are supported.\n");
-        return AVERROR(EINVAL);
+        if (avctx->extradata[37] != 10) {
+            av_log(avctx, AV_LOG_ERROR, "Unsupported quality mode.\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        spx_mode           = 0;
+    } else if (header) {
+        avctx->sample_rate = header->rate;
+        avctx->channels    = header->nb_channels;
+        spx_mode           = header->mode;
+        speex_header_free(header);
+    } else {
+        switch (avctx->sample_rate) {
+        case 8000:  spx_mode = 0; break;
+        case 16000: spx_mode = 1; break;
+        case 32000: spx_mode = 2; break;
+        default:
+            /* libspeex can handle any mode if initialized as ultra-wideband */
+            av_log(avctx, AV_LOG_WARNING, "Invalid sample rate: %d\n"
+                                          "Decoding as 32kHz ultra-wideband\n",
+                                          avctx->sample_rate);
+            spx_mode = 2;
+        }
     }
+
+    mode = speex_lib_get_mode(spx_mode);
+    if (!mode) {
+        av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", spx_mode);
+        return AVERROR_INVALIDDATA;
+    }
+    s->frame_size      =  160 << spx_mode;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000 << spx_mode;
+
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        /* libspeex can handle mono or stereo if initialized as stereo */
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel count: %d.\n"
+                                    "Decoding as stereo.\n", avctx->channels);
+        avctx->channels = 2;
+    }
+    avctx->channel_layout = avctx->channels == 2 ? AV_CH_LAYOUT_STEREO :
+                                                   AV_CH_LAYOUT_MONO;
 
     speex_bits_init(&s->bits);
     s->dec_state = speex_decoder_init(mode);
     if (!s->dec_state) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing libspeex decoder.\n");
         return -1;
-    }
-
-    if (!s->header) {
-        speex_decoder_ctl(s->dec_state, SPEEX_GET_FRAME_SIZE, &s->frame_size);
     }
 
     if (avctx->channels == 2) {
@@ -89,9 +113,6 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
         speex_decoder_ctl(s->dec_state, SPEEX_SET_HANDLER, &callback);
     }
 
-    avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame = &s->frame;
-
     return 0;
 }
 
@@ -101,21 +122,22 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibSpeexContext *s = avctx->priv_data;
+    AVFrame *frame     = data;
     int16_t *output;
     int ret, consumed = 0;
 
     /* get output buffer */
-    s->frame.nb_samples = s->frame_size;
-    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    frame->nb_samples = s->frame_size;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
-    output = (int16_t *)s->frame.data[0];
+    output = (int16_t *)frame->data[0];
 
-    /* if there is not enough data left for the smallest possible frame,
-       reset the libspeex buffer using the current packet, otherwise ignore
-       the current packet and keep decoding frames from the libspeex buffer. */
-    if (speex_bits_remaining(&s->bits) < 43) {
+    /* if there is not enough data left for the smallest possible frame or the
+       next 5 bits are a terminator code, reset the libspeex buffer using the
+       current packet, otherwise ignore the current packet and keep decoding
+       frames from the libspeex buffer. */
+    if (speex_bits_remaining(&s->bits) < 5 ||
+        speex_bits_peek_unsigned(&s->bits, 5) == 0xF) {
         /* check for flush packet */
         if (!buf || !buf_size) {
             *got_frame_ptr = 0;
@@ -135,8 +157,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx, void *data,
     if (avctx->channels == 2)
         speex_decode_stereo_int(output, s->frame_size, &s->stereo);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = s->frame;
+    *got_frame_ptr = 1;
 
     return consumed;
 }
@@ -145,7 +166,6 @@ static av_cold int libspeex_decode_close(AVCodecContext *avctx)
 {
     LibSpeexContext *s = avctx->priv_data;
 
-    speex_header_free(s->header);
     speex_bits_destroy(&s->bits);
     speex_decoder_destroy(s->dec_state);
 
@@ -161,7 +181,7 @@ static av_cold void libspeex_decode_flush(AVCodecContext *avctx)
 AVCodec ff_libspeex_decoder = {
     .name           = "libspeex",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_SPEEX,
+    .id             = AV_CODEC_ID_SPEEX,
     .priv_data_size = sizeof(LibSpeexContext),
     .init           = libspeex_decode_init,
     .close          = libspeex_decode_close,

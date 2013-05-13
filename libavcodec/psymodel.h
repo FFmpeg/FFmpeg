@@ -29,6 +29,8 @@
 /** maximum number of channels */
 #define PSY_MAX_CHANS 20
 
+#define AAC_CUTOFF(s) (s->bit_rate ? FFMIN3(4000 + s->bit_rate/8, 12000 + s->bit_rate/32, s->sample_rate / 2) : (s->sample_rate / 2))
+
 /**
  * single band psychoacoustic information
  */
@@ -137,9 +139,9 @@ typedef struct FFPsyModel {
  *
  * @return zero if successful, a negative value if not
  */
-av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
-                        const uint8_t **bands, const int* num_bands,
-                        int num_groups, const uint8_t *group_map);
+int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
+                const uint8_t **bands, const int *num_bands,
+                int num_groups, const uint8_t *group_map);
 
 /**
  * Determine what group a channel belongs to.
@@ -156,7 +158,7 @@ FFPsyChannelGroup *ff_psy_find_group(FFPsyContext *ctx, int channel);
  *
  * @param ctx model context
  */
-av_cold void ff_psy_end(FFPsyContext *ctx);
+void ff_psy_end(FFPsyContext *ctx);
 
 
 /**************************************************************************
@@ -168,7 +170,7 @@ struct FFPsyPreprocessContext;
 /**
  * psychoacoustic model audio preprocessing initialization
  */
-av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *avctx);
+struct FFPsyPreprocessContext *ff_psy_preprocess_init(AVCodecContext *avctx);
 
 /**
  * Preprocess several channel in audio frame in order to compress it better.
@@ -182,6 +184,6 @@ void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, float **audio, int ch
 /**
  * Cleanup audio preprocessing module.
  */
-av_cold void ff_psy_preprocess_end(struct FFPsyPreprocessContext *ctx);
+void ff_psy_preprocess_end(struct FFPsyPreprocessContext *ctx);
 
 #endif /* AVCODEC_PSYMODEL_H */

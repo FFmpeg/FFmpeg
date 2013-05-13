@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/time.h"
 #include "avformat.h"
 
 #include "internal.h"
@@ -75,8 +76,8 @@ static inline int read_line(AVFormatContext *s, char *rbuf, const int rbufsize,
 
     do {
         ret = ffurl_read_complete(rt->rtsp_hd, rbuf + idx, 1);
-        if (ret < 0)
-            return ret;
+        if (ret <= 0)
+            return ret ? ret : AVERROR_EOF;
         if (rbuf[idx] == '\r') {
             /* Ignore */
         } else if (rbuf[idx] == '\n') {
@@ -435,7 +436,7 @@ static inline int parse_command_line(AVFormatContext *s, const char *line,
         if (*methodcode == ANNOUNCE) {
             av_log(s, AV_LOG_INFO,
                    "Updating control URI to %s\n", uri);
-            strcpy(rt->control_uri, uri);
+            av_strlcpy(rt->control_uri, uri, sizeof(rt->control_uri));
         }
     }
 
@@ -620,6 +621,10 @@ static int rtsp_listen(AVFormatContext *s)
     /* ff_url_join. No authorization by now (NULL) */
     ff_url_join(rt->control_uri, sizeof(rt->control_uri), "rtsp", NULL, host,
                 port, "%s", path);
+
+    if (port < 0)
+        port = RTSP_DEFAULT_PORT;
+
     /* Create TCP connection */
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, host, port,
                 "?listen&listen_timeout=%d", rt->initial_timeout * 1000);
@@ -918,7 +923,7 @@ static const AVClass rtsp_demuxer_class = {
 
 AVInputFormat ff_rtsp_demuxer = {
     .name           = "rtsp",
-    .long_name      = NULL_IF_CONFIG_SMALL("RTSP input format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("RTSP input"),
     .priv_data_size = sizeof(RTSPState),
     .read_probe     = rtsp_probe,
     .read_header    = rtsp_read_header,

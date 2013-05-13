@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "png.h"
 #include "pngdsp.h"
@@ -39,10 +40,10 @@ static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w)
         dst[i] = src1[i] + src2[i];
 }
 
-void ff_pngdsp_init(PNGDSPContext *dsp)
+av_cold void ff_pngdsp_init(PNGDSPContext *dsp)
 {
     dsp->add_bytes_l2         = add_bytes_l2_c;
     dsp->add_paeth_prediction = ff_add_png_paeth_prediction;
 
-    if (HAVE_MMX) ff_pngdsp_init_x86(dsp);
+    if (ARCH_X86) ff_pngdsp_init_x86(dsp);
 }

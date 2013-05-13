@@ -55,6 +55,7 @@
 #ifndef AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H
 #define AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H
 
+#if HAVE_INLINE_ASM
 static void compute_antialias_mips_float(MPADecodeContext *s,
                                         GranuleDef *g)
 {
@@ -175,8 +176,10 @@ static void compute_antialias_mips_float(MPADecodeContext *s,
           [out1] "=&f" (out1), [out2] "=&f" (out2),
           [out3] "=&f" (out3), [out4] "=&f" (out4)
         : [csa] "r" (csa), [ptr_end] "r" (ptr_end)
+        : "memory"
     );
 }
 #define compute_antialias compute_antialias_mips_float
+#endif /* HAVE_INLINE_ASM */
 
 #endif /* AVCODEC_MIPS_COMPUTE_ANTIALIAS_FLOAT_H */

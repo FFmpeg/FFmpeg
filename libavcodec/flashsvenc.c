@@ -278,11 +278,11 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 AVCodec ff_flashsv_encoder = {
     .name           = "flashsv",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_FLASHSV,
+    .id             = AV_CODEC_ID_FLASHSV,
     .priv_data_size = sizeof(FlashSVContext),
     .init           = flashsv_encode_init,
     .encode2        = flashsv_encode_frame,
     .close          = flashsv_encode_end,
-    .pix_fmts       = (const enum PixelFormat[]){ PIX_FMT_BGR24, PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Flash Screen Video"),
 };

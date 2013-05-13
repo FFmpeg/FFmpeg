@@ -184,6 +184,12 @@ Evaluating 'not(NAN)'
 Evaluating 'not(0)'
 'not(0)' -> 1.000000
 
+Evaluating '6.0206dB'
+'6.0206dB' -> 2.000000
+
+Evaluating '-3.0103dB'
+'-3.0103dB' -> 0.707107
+
 Evaluating 'pow(0,1.23)'
 'pow(0,1.23)' -> 0.000000
 
@@ -199,11 +205,23 @@ Evaluating 'pow(-1,1.23)'
 Evaluating 'if(1, 2)'
 'if(1, 2)' -> 2.000000
 
+Evaluating 'if(1, 1, 2)'
+'if(1, 1, 2)' -> 1.000000
+
+Evaluating 'if(0, 1, 2)'
+'if(0, 1, 2)' -> 2.000000
+
 Evaluating 'ifnot(0, 23)'
 'ifnot(0, 23)' -> 23.000000
 
 Evaluating 'ifnot(1, NaN) + if(0, 1)'
 'ifnot(1, NaN) + if(0, 1)' -> 0.000000
+
+Evaluating 'ifnot(1, 1, 2)'
+'ifnot(1, 1, 2)' -> 2.000000
+
+Evaluating 'ifnot(0, 1, 2)'
+'ifnot(0, 1, 2)' -> 1.000000
 
 Evaluating 'taylor(1, 1)'
 'taylor(1, 1)' -> 2.718282
@@ -216,6 +234,39 @@ Evaluating 'root(sin(ld(0))-1, 2)'
 
 Evaluating 'root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)'
 'root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)' -> 60.965601
+
+Evaluating '7000000B*random(0)'
+'7000000B*random(0)' -> 0.003078
+
+Evaluating 'squish(2)'
+'squish(2)' -> 0.000335
+
+Evaluating 'gauss(0.1)'
+'gauss(0.1)' -> 0.396953
+
+Evaluating 'hypot(4,3)'
+'hypot(4,3)' -> 5.000000
+
+Evaluating 'gcd(30,55)*print(min(9,1))'
+'gcd(30,55)*print(min(9,1))' -> 5.000000
+
+Evaluating 'bitor(42, 12)'
+'bitor(42, 12)' -> 46.000000
+
+Evaluating 'bitand(42, 12)'
+'bitand(42, 12)' -> 8.000000
+
+Evaluating 'bitand(NAN, 1)'
+'bitand(NAN, 1)' -> nan
+
+Evaluating 'between(10, -3, 10)'
+'between(10, -3, 10)' -> 1.000000
+
+Evaluating 'between(-4, -2, -1)'
+'between(-4, -2, -1)' -> 0.000000
+
+Evaluating 'between(1,2)'
+'between(1,2)' -> nan
 
 12.700000 == 12.7
 0.931323 == 0.931322575

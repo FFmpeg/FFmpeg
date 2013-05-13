@@ -99,6 +99,7 @@ static av_always_inline void ff_lsp2polyf_mips(const double *lsp, double *f, int
               [tmp]"=&f"(tmp), [f_j]"=&f"(f_j), [p_f]"+r"(p_f),
               [j]"+r"(j), [p_fi]"+r"(p_fi)
             : [i]"r"(i)
+            : "memory"
         );
         f[1] += val;
     }

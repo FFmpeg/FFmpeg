@@ -23,7 +23,6 @@
 #ifndef AVCODEC_DXVA_INTERNAL_H
 #define AVCODEC_DXVA_INTERNAL_H
 
-#define _WIN32_WINNT 0x0600
 #define COBJMACROS
 
 #include "config.h"
@@ -47,7 +46,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *, struct dxva_context *,
                            unsigned mb_count);
 
 
-int ff_dxva2_common_end_frame(AVCodecContext *, MpegEncContext *,
+int ff_dxva2_common_end_frame(AVCodecContext *, Picture *,
                               const void *pp, unsigned pp_size,
                               const void *qm, unsigned qm_size,
                               int (*commit_bs_si)(AVCodecContext *,

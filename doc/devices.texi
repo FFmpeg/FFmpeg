@@ -1,0 +1,21 @@
+@chapter Device Options
+@c man begin DEVICE OPTIONS
+
+The libavdevice library provides the same interface as
+libavformat. Namely, an input device is considered like a demuxer, and
+an output device like a muxer, and the interface and generic device
+options are the same provided by libavformat (see the ffmpeg-formats
+manual).
+
+In addition each input or output device may support so-called private
+options, which are specific for that component.
+
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the device
+@code{AVFormatContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
+@c man end DEVICE OPTIONS
+
+@include indevs.texi
+@include outdevs.texi

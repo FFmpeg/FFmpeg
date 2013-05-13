@@ -38,9 +38,7 @@ static const uint8_t ff_png_pass_xshift[NB_PASSES] = {
 
 void *ff_png_zalloc(void *opaque, unsigned int items, unsigned int size)
 {
-    if(items >= UINT_MAX / size)
-        return NULL;
-    return av_malloc(items * size);
+    return av_mallocz_array(items, size);
 }
 
 void ff_png_zfree(void *opaque, void *ptr)

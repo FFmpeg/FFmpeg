@@ -35,11 +35,11 @@ static int rt_event_to_ass(AVBPrint *buf, const char *p)
 
     while (*p) {
         if (*p != '<') {
-            if (!isspace(*p))
+            if (!av_isspace(*p))
                 av_bprint_chars(buf, *p, 1);
             else if (!prev_chr_is_space)
                 av_bprint_chars(buf, ' ', 1);
-            prev_chr_is_space = isspace(*p);
+            prev_chr_is_space = av_isspace(*p);
         } else {
             const char *end = strchr(p, '>');
             if (!end)
@@ -65,7 +65,7 @@ static int realtext_decode_frame(AVCodecContext *avctx,
 
     av_bprint_init(&buf, 0, 4096);
     // note: no need to rescale pts & duration since they are in the same
-    // timebase than ASS (1/100)
+    // timebase as ASS (1/100)
     if (ptr && avpkt->size > 0 && !rt_event_to_ass(&buf, ptr))
         ff_ass_add_rect(sub, buf.str, avpkt->pts, avpkt->duration, 0);
     *got_sub_ptr = sub->num_rects > 0;
@@ -77,7 +77,7 @@ AVCodec ff_realtext_decoder = {
     .name           = "realtext",
     .long_name      = NULL_IF_CONFIG_SMALL("RealText subtitle"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
-    .id             = CODEC_ID_REALTEXT,
+    .id             = AV_CODEC_ID_REALTEXT,
     .decode         = realtext_decode_frame,
     .init           = ff_ass_subtitle_header_default,
 };

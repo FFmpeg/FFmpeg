@@ -29,8 +29,14 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if HAVE_IO_H
+#include <io.h>
+#endif
+#include <stdarg.h>
 #include <stdlib.h>
 #include "avutil.h"
+#include "common.h"
+#include "internal.h"
 #include "log.h"
 
 #define LINE_SZ 1024
@@ -38,9 +44,8 @@
 static int av_log_level = AV_LOG_INFO;
 static int flags;
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
-#include <io.h>
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] = 12,
     [AV_LOG_FATAL  /8] = 12,
@@ -96,11 +101,10 @@ static const uint32_t color[16 + AV_CLASS_CATEGORY_NB] = {
 #endif
 static int use_color = -1;
 
-#undef fprintf
 static void colored_fputs(int level, const char *str)
 {
     if (use_color < 0) {
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#if HAVE_SETCONSOLETEXTATTRIBUTE
         CONSOLE_SCREEN_BUFFER_INFO con_info;
         con = GetStdHandle(STD_ERROR_HANDLE);
         use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
@@ -176,7 +180,7 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
             if (parent && *parent) {
                 snprintf(part[0], part_size, "[%s @ %p] ",
                          (*parent)->item_name(parent), parent);
-                if(type) type[0] = get_category(((uint8_t *) ptr) + avc->parent_log_context_offset);
+                if(type) type[0] = get_category(parent);
             }
         }
         snprintf(part[1], part_size, "[%s @ %p] ",
@@ -186,7 +190,8 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
 
     vsnprintf(part[2], part_size, fmt, vl);
 
-    *print_prefix = strlen(part[2]) && part[2][strlen(part[2]) - 1] == '\n';
+    if(*part[0] || *part[1] || *part[2])
+        *print_prefix = strlen(part[2]) && part[2][strlen(part[2]) - 1] == '\n';
 }
 
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
@@ -217,8 +222,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         is_atty = isatty(2) ? 1 : -1;
 #endif
 
-#undef fprintf
-    if (print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev)){
+    if (print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev) && *line){
         count++;
         if (is_atty == 1)
             fprintf(stderr, "    Last message repeated %d times\r", count);
@@ -276,4 +280,35 @@ void av_log_set_flags(int arg)
 void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
 {
     av_log_callback = callback;
+}
+
+static void missing_feature_sample(int sample, void *avc, const char *msg, va_list argument_list)
+{
+    av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
+    av_log(avc, AV_LOG_WARNING, " is not implemented. Update your FFmpeg "
+           "version to the newest one from Git. If the problem still "
+           "occurs, it means that your file has a feature which has not "
+           "been implemented.\n");
+    if (sample)
+        av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
+               "of this file to ftp://upload.ffmpeg.org/MPlayer/incoming/ "
+               "and contact the ffmpeg-devel mailing list.\n");
+}
+
+void avpriv_request_sample(void *avc, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    missing_feature_sample(1, avc, msg, argument_list);
+    va_end(argument_list);
+}
+
+void avpriv_report_missing_feature(void *avc, const char *msg, ...)
+{
+    va_list argument_list;
+
+    va_start(argument_list, msg);
+    missing_feature_sample(0, avc, msg, argument_list);
+    va_end(argument_list);
 }

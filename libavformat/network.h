@@ -22,10 +22,12 @@
 #define AVFORMAT_NETWORK_H
 
 #include <errno.h>
+#include <stdint.h>
 
 #include "config.h"
 #include "libavutil/error.h"
 #include "os_support.h"
+#include "avio.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -79,6 +81,18 @@ void ff_tls_init(void);
 void ff_tls_deinit(void);
 
 int ff_network_wait_fd(int fd, int write);
+
+/**
+ * This works similarly to ff_network_wait_fd, but waits up to 'timeout' microseconds
+ * Uses ff_network_wait_fd in a loop
+ *
+ * @fd Socket descriptor
+ * @write Set 1 to wait for socket able to be read, 0 to be written
+ * @timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
+ * @param int_cb Interrupt callback, is checked after each ff_network_wait_fd call
+ * @return 0 if data can be read/written, AVERROR(ETIMEDOUT) if timeout expired, or negative error code
+ */
+int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
 
 int ff_inet_aton (const char * str, struct in_addr * add);
 
@@ -185,6 +199,14 @@ int ff_getnameinfo(const struct sockaddr *sa, int salen,
 const char *ff_gai_strerror(int ecode);
 #undef gai_strerror
 #define gai_strerror ff_gai_strerror
+#endif
+
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
 #endif
 
 #ifndef INET6_ADDRSTRLEN

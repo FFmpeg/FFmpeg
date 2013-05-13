@@ -20,13 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
-#include "libavcodec/dsputil.h"
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_bfin.h"
 
 static int dct_quantize_bfin (MpegEncContext *s,
-                              DCTELEM *block, int n,
+                              int16_t *block, int n,
                               int qscale, int *overflow)
 {
     int last_non_zero, q, start_i;
@@ -146,7 +146,7 @@ static int dct_quantize_bfin (MpegEncContext *s,
     return last_non_zero;
 }
 
-void ff_MPV_common_init_bfin (MpegEncContext *s)
+av_cold void ff_MPV_common_init_bfin (MpegEncContext *s)
 {
 /*     s->dct_quantize= dct_quantize_bfin; */
 }

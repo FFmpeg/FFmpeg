@@ -76,9 +76,9 @@ void shuffle_bytes_1230(const uint8_t *src, uint8_t *dst, int src_size);
 void shuffle_bytes_3012(const uint8_t *src, uint8_t *dst, int src_size);
 void shuffle_bytes_3210(const uint8_t *src, uint8_t *dst, int src_size);
 
-void rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
-                   uint8_t *vdst, int width, int height, int lumStride,
-                   int chromStride, int srcStride);
+void ff_rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
+                      uint8_t *vdst, int width, int height, int lumStride,
+                      int chromStride, int srcStride, int32_t *rgb2yuv);
 
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
@@ -124,9 +124,10 @@ extern void (*yuv422ptouyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uin
  * Chrominance data is only taken from every second line, others are ignored.
  * FIXME: Write high quality version.
  */
-extern void (*rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                           int width, int height,
-                           int lumStride, int chromStride, int srcStride);
+extern void (*ff_rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                              int width, int height,
+                              int lumStride, int chromStride, int srcStride,
+                              int32_t *rgb2yuv);
 extern void (*planar2x)(const uint8_t *src, uint8_t *dst, int width, int height,
                         int srcStride, int dstStride);
 

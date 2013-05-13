@@ -25,8 +25,8 @@
 #define AVCODEC_SIPR_H
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "acelp_pitch_delay.h"
+#include "libavutil/mem.h"
 
 #define LP_FILTER_ORDER_16k  16
 #define L_SUBFR_16k          80
@@ -64,7 +64,6 @@ typedef struct SiprParameters {
 
 typedef struct SiprContext {
     AVCodecContext *avctx;
-    AVFrame frame;
 
     SiprMode mode;
 

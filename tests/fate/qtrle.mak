@@ -19,5 +19,5 @@ fate-qtrle-24bit: CMD = framecrc -i $(SAMPLES)/qtrle/aletrek-rle.mov
 FATE_QTRLE += fate-qtrle-32bit
 fate-qtrle-32bit: CMD = framecrc -i $(SAMPLES)/qtrle/ultra_demo_720_480_32bpp_rle.mov -pix_fmt rgb24
 
-FATE_SAMPLES_AVCONV += $(FATE_QTRLE)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, MOV, QTRLE) += $(FATE_QTRLE)
 fate-qtrle: $(FATE_QTRLE)

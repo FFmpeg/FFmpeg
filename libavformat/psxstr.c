@@ -29,6 +29,7 @@
  * RIFF headers, followed by CD sectors.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -64,12 +65,12 @@ typedef struct StrDemuxContext {
     StrChannel channels[32];
 } StrDemuxContext;
 
-static const char sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
+static const uint8_t sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
 
 static int str_probe(AVProbeData *p)
 {
-    uint8_t *sector= p->buf;
-    uint8_t *end= sector + p->buf_size;
+    const uint8_t *sector= p->buf;
+    const uint8_t *end= sector + p->buf_size;
     int aud=0, vid=0;
 
     if (p->buf_size < RAW_CD_SECTOR_SIZE)
@@ -125,7 +126,7 @@ static int str_probe(AVProbeData *p)
     }
     /* MPEG files (like those ripped from VCDs) can also look like this;
      * only return half certainty */
-    if(vid+aud > 3)  return 50;
+    if(vid+aud > 3)  return AVPROBE_SCORE_EXTENSION;
     else if(vid+aud) return 1;
     else             return 0;
 }
@@ -204,7 +205,7 @@ static int str_read_packet(AVFormatContext *s,
                     str->channels[channel].video_stream_index = st->index;
 
                     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-                    st->codec->codec_id   = CODEC_ID_MDEC;
+                    st->codec->codec_id   = AV_CODEC_ID_MDEC;
                     st->codec->codec_tag  = 0;  /* no fourcc */
                     st->codec->width      = AV_RL16(&sector[0x28]);
                     st->codec->height     = AV_RL16(&sector[0x2A]);
@@ -234,6 +235,10 @@ static int str_read_packet(AVFormatContext *s,
                     *ret_pkt = *pkt;
                     pkt->data= NULL;
                     pkt->size= -1;
+                    pkt->buf = NULL;
+#if FF_API_DESTRUCT_PACKET
+                    pkt->destruct = NULL;
+#endif
                     return 0;
                 }
 
@@ -251,9 +256,15 @@ static int str_read_packet(AVFormatContext *s,
                 str->channels[channel].audio_stream_index = st->index;
 
                 st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-                st->codec->codec_id    = CODEC_ID_ADPCM_XA;
+                st->codec->codec_id    = AV_CODEC_ID_ADPCM_XA;
                 st->codec->codec_tag   = 0;  /* no fourcc */
-                st->codec->channels    = (fmt&1)?2:1;
+                if (fmt & 1) {
+                    st->codec->channels       = 2;
+                    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+                } else {
+                    st->codec->channels       = 1;
+                    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+                }
                 st->codec->sample_rate = (fmt&4)?18900:37800;
             //    st->codec->bit_rate = 0; //FIXME;
                 st->codec->block_align = 128;
@@ -296,7 +307,7 @@ static int str_read_close(AVFormatContext *s)
 
 AVInputFormat ff_str_demuxer = {
     .name           = "psxstr",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony Playstation STR format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony Playstation STR"),
     .priv_data_size = sizeof(StrDemuxContext),
     .read_probe     = str_probe,
     .read_header    = str_read_header,

@@ -61,9 +61,9 @@ function ff_dct_unquantize_h263_armv5te, export=1
         mov             ip, #0
         subs            r3, r3, #2
         ble             2f
-        ldrd            r4, [r0, #0]
+        ldrd            r4, r5, [r0, #0]
 1:
-        ldrd            r6, [r0, #8]
+        ldrd            r6, r7, [r0, #8]
 
         dequant_t       r9, r4, r1, r2, r9
         dequant_t       lr, r5, r1, r2, lr
@@ -87,7 +87,7 @@ function ff_dct_unquantize_h263_armv5te, export=1
 
         subs            r3, r3, #8
         it              gt
-        ldrdgt          r4, [r0, #0] /* load data early to avoid load/use pipeline stall */
+        ldrdgt          r4, r5, [r0, #0] /* load data early to avoid load/use pipeline stall */
         bgt             1b
 
         adds            r3, r3, #2

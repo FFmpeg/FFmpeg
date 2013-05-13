@@ -37,6 +37,7 @@
 #include "mp_msg.h"
 #include "cpudetect.h"
 
+#include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
@@ -49,7 +50,7 @@
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
-#include "vd_ffmpeg.h"
+#include "av_helpers.h"
 #include "libvo/fastmemcpy.h"
 
 #define XMIN(a,b) ((a) < (b) ? (a) : (b))
@@ -105,7 +106,7 @@ struct vf_priv_s {
 
 #define SHIFT 22
 
-static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void hardthresh_c(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int i;
         int bias= 0; //FIXME
         unsigned int threshold1, threshold2;
@@ -113,7 +114,7 @@ static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
         threshold1= qp*((1<<4) - bias) - 1;
         threshold2= (threshold1<<1);
 
-        memset(dst, 0, 64*sizeof(DCTELEM));
+        memset(dst, 0, 64*sizeof(int16_t));
         dst[0]= (src[0] + 4)>>3;
 
         for(i=1; i<64; i++){
@@ -125,7 +126,7 @@ static void hardthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
         }
 }
 
-static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void softthresh_c(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int i;
         int bias= 0; //FIXME
         unsigned int threshold1, threshold2;
@@ -133,7 +134,7 @@ static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
         threshold1= qp*((1<<4) - bias) - 1;
         threshold2= (threshold1<<1);
 
-        memset(dst, 0, 64*sizeof(DCTELEM));
+        memset(dst, 0, 64*sizeof(int16_t));
         dst[0]= (src[0] + 4)>>3;
 
         for(i=1; i<64; i++){
@@ -149,7 +150,7 @@ static void softthresh_c(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *perm
 }
 
 #if HAVE_MMX
-static void hardthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void hardthresh_mmx(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int bias= 0; //FIXME
         unsigned int threshold1;
 
@@ -217,7 +218,7 @@ static void hardthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
         dst[0]= (src[0] + 4)>>3;
 }
 
-static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation){
+static void softthresh_mmx(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation){
         int bias= 0; //FIXME
         unsigned int threshold1;
 
@@ -294,7 +295,7 @@ static void softthresh_mmx(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *pe
 }
 #endif
 
-static inline void add_block(int16_t *dst, int stride, DCTELEM block[64]){
+static inline void add_block(int16_t *dst, int stride, int16_t block[64]){
         int y;
 
         for(y=0; y<8; y++){
@@ -372,15 +373,15 @@ static void store_slice_mmx(uint8_t *dst, int16_t *src, int dst_stride, int src_
 
 static void (*store_slice)(uint8_t *dst, int16_t *src, int dst_stride, int src_stride, int width, int height, int log2_scale)= store_slice_c;
 
-static void (*requantize)(DCTELEM dst[64], DCTELEM src[64], int qp, uint8_t *permutation)= hardthresh_c;
+static void (*requantize)(int16_t dst[64], int16_t src[64], int qp, uint8_t *permutation)= hardthresh_c;
 
 static void filter(struct vf_priv_s *p, uint8_t *dst, uint8_t *src, int dst_stride, int src_stride, int width, int height, uint8_t *qp_store, int qp_stride, int is_luma){
         int x, y, i;
         const int count= 1<<p->log2_count;
         const int stride= is_luma ? p->temp_stride : ((width+16+15)&(~15));
         uint64_t __attribute__((aligned(16))) block_align[32];
-        DCTELEM *block = (DCTELEM *)block_align;
-        DCTELEM *block2= (DCTELEM *)(block_align+16);
+        int16_t *block = (int16_t *)block_align;
+        int16_t *block2= (int16_t *)(block_align+16);
 
         if (!src || !dst) return; // HACK avoid crash for Y8 colourspace
         for(y=0; y<height; y++){
@@ -445,13 +446,13 @@ static int config(struct vf_instance *vf,
         vf->priv->temp= malloc(vf->priv->temp_stride*h*sizeof(int16_t));
         vf->priv->src = malloc(vf->priv->temp_stride*h*sizeof(uint8_t));
 
-        return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
+        return ff_vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
 }
 
 static void get_image(struct vf_instance *vf, mp_image_t *mpi){
     if(mpi->flags&MP_IMGFLAG_PRESERVE) return; // don't change
     // ok, we can do pp in-place (or pp disabled):
-    vf->dmpi=vf_get_image(vf->next,mpi->imgfmt,
+    vf->dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
         mpi->type, mpi->flags | MP_IMGFLAG_READABLE, mpi->width, mpi->height);
     mpi->planes[0]=vf->dmpi->planes[0];
     mpi->stride[0]=vf->dmpi->stride[0];
@@ -470,11 +471,11 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 
         if(!(mpi->flags&MP_IMGFLAG_DIRECT)){
                 // no DR, so get a new image! hope we'll get DR buffer:
-                dmpi=vf_get_image(vf->next,mpi->imgfmt,
+                dmpi=ff_vf_get_image(vf->next,mpi->imgfmt,
                     MP_IMGTYPE_TEMP,
                     MP_IMGFLAG_ACCEPT_STRIDE|MP_IMGFLAG_PREFER_ALIGNED_STRIDE,
                     mpi->width,mpi->height);
-                vf_clone_mpi_attributes(dmpi, mpi);
+                ff_vf_clone_mpi_attributes(dmpi, mpi);
         }else{
            dmpi=vf->dmpi;
         }
@@ -508,13 +509,13 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
         }
 
 #if HAVE_MMX
-        if(gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
+        if(ff_gCpuCaps.hasMMX) __asm__ volatile ("emms\n\t");
 #endif
 #if HAVE_MMX2
-        if(gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
+        if(ff_gCpuCaps.hasMMX2) __asm__ volatile ("sfence\n\t");
 #endif
 
-        return vf_next_put_image(vf,dmpi, pts);
+        return ff_vf_next_put_image(vf,dmpi, pts);
 }
 
 static void uninit(struct vf_instance *vf){
@@ -547,7 +548,7 @@ static int query_format(struct vf_instance *vf, unsigned int fmt){
         case IMGFMT_444P:
         case IMGFMT_422P:
         case IMGFMT_411P:
-            return vf_next_query_format(vf,fmt);
+            return ff_vf_next_query_format(vf,fmt);
     }
     return 0;
 }
@@ -560,7 +561,7 @@ static int control(struct vf_instance *vf, int request, void* data){
         vf->priv->log2_count= *((unsigned int*)data);
         return CONTROL_TRUE;
     }
-    return vf_next_control(vf,request,data);
+    return ff_vf_next_control(vf,request,data);
 }
 
 static int vf_open(vf_instance_t *vf, char *args){
@@ -576,10 +577,10 @@ static int vf_open(vf_instance_t *vf, char *args){
     vf->priv=malloc(sizeof(struct vf_priv_s));
     memset(vf->priv, 0, sizeof(struct vf_priv_s));
 
-    init_avcodec();
+    ff_init_avcodec();
 
-    vf->priv->avctx= avcodec_alloc_context();
-    dsputil_init(&vf->priv->dsp, vf->priv->avctx);
+    vf->priv->avctx= avcodec_alloc_context3(NULL);
+    ff_dsputil_init(&vf->priv->dsp, vf->priv->avctx);
 
     vf->priv->log2_count= 3;
 
@@ -598,7 +599,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     }
 
 #if HAVE_MMX
-    if(gCpuCaps.hasMMX){
+    if(ff_gCpuCaps.hasMMX){
         store_slice= store_slice_mmx;
         switch(vf->priv->mode&3){
             case 0: requantize= hardthresh_mmx; break;
@@ -610,7 +611,7 @@ static int vf_open(vf_instance_t *vf, char *args){
     return 1;
 }
 
-const vf_info_t vf_info_spp = {
+const vf_info_t ff_vf_info_spp = {
     "simple postprocess",
     "spp",
     "Michael Niedermayer",

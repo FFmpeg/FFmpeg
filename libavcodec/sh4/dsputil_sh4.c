@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/dsputil.h"
 #include "dsputil_sh4.h"
@@ -47,15 +48,15 @@ static void memzero_align8(void *dst,size_t size)
         fp_single_leave(fpscr);
 }
 
-static void clear_blocks_sh4(DCTELEM *blocks)
+static void clear_blocks_sh4(int16_t *blocks)
 {
-        memzero_align8(blocks,sizeof(DCTELEM)*6*64);
+        memzero_align8(blocks,sizeof(int16_t)*6*64);
 }
 
-static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+static void idct_put(uint8_t *dest, int line_size, int16_t *block)
 {
         int i;
-        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+        const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
         ff_idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[block[0]];
@@ -70,10 +71,10 @@ static void idct_put(uint8_t *dest, int line_size, DCTELEM *block)
                 block+=8;
         }
 }
-static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+static void idct_add(uint8_t *dest, int line_size, int16_t *block)
 {
         int i;
-        uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+        const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
         ff_idct_sh4(block);
         for(i=0;i<8;i++) {
                 dest[0] = cm[dest[0]+block[0]];
@@ -89,11 +90,10 @@ static void idct_add(uint8_t *dest, int line_size, DCTELEM *block)
         }
 }
 
-void ff_dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_sh4(DSPContext *c, AVCodecContext *avctx)
 {
         const int idct_algo= avctx->idct_algo;
         const int high_bit_depth = avctx->bits_per_raw_sample > 8;
-        ff_dsputil_init_align(c,avctx);
 
         if (!high_bit_depth)
         c->clear_blocks = clear_blocks_sh4;

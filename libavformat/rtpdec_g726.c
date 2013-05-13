@@ -18,11 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "avformat.h"
 #include "rtpdec_formats.h"
 
 #define RTP_G726_HANDLER(bitrate) \
-static int g726_ ## bitrate ##_init(AVFormatContext *s, int st_index, PayloadContext *data) \
+static av_cold int g726_ ## bitrate ##_init(AVFormatContext *s, int st_index, \
+                                            PayloadContext *data) \
 { \
     AVStream *stream = s->streams[st_index]; \
     AVCodecContext *codec = stream->codec; \
@@ -36,7 +38,7 @@ static int g726_ ## bitrate ##_init(AVFormatContext *s, int st_index, PayloadCon
 RTPDynamicProtocolHandler ff_g726_ ## bitrate ## _dynamic_handler = { \
     .enc_name   = "G726-" #bitrate, \
     .codec_type = AVMEDIA_TYPE_AUDIO, \
-    .codec_id   = CODEC_ID_ADPCM_G726, \
+    .codec_id   = AV_CODEC_ID_ADPCM_G726, \
     .init       = g726_ ## bitrate ## _init, \
 }
 

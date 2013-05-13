@@ -60,16 +60,16 @@ typedef struct {
 static const struct {
     int palette;
     int depth;
-    enum PixelFormat pix_fmt;
+    enum AVPixelFormat pix_fmt;
 } video_formats [] = {
-    {.palette = VIDEO_PALETTE_YUV420P, .depth = 12, .pix_fmt = PIX_FMT_YUV420P },
-    {.palette = VIDEO_PALETTE_YUV422,  .depth = 16, .pix_fmt = PIX_FMT_YUYV422 },
-    {.palette = VIDEO_PALETTE_UYVY,    .depth = 16, .pix_fmt = PIX_FMT_UYVY422 },
-    {.palette = VIDEO_PALETTE_YUYV,    .depth = 16, .pix_fmt = PIX_FMT_YUYV422 },
+    {.palette = VIDEO_PALETTE_YUV420P, .depth = 12, .pix_fmt = AV_PIX_FMT_YUV420P },
+    {.palette = VIDEO_PALETTE_YUV422,  .depth = 16, .pix_fmt = AV_PIX_FMT_YUYV422 },
+    {.palette = VIDEO_PALETTE_UYVY,    .depth = 16, .pix_fmt = AV_PIX_FMT_UYVY422 },
+    {.palette = VIDEO_PALETTE_YUYV,    .depth = 16, .pix_fmt = AV_PIX_FMT_YUYV422 },
     /* NOTE: v4l uses BGR24, not RGB24 */
-    {.palette = VIDEO_PALETTE_RGB24,   .depth = 24, .pix_fmt = PIX_FMT_BGR24   },
-    {.palette = VIDEO_PALETTE_RGB565,  .depth = 16, .pix_fmt = PIX_FMT_BGR565  },
-    {.palette = VIDEO_PALETTE_GREY,    .depth = 8,  .pix_fmt = PIX_FMT_GRAY8   },
+    {.palette = VIDEO_PALETTE_RGB24,   .depth = 24, .pix_fmt = AV_PIX_FMT_BGR24   },
+    {.palette = VIDEO_PALETTE_RGB565,  .depth = 16, .pix_fmt = AV_PIX_FMT_BGR565  },
+    {.palette = VIDEO_PALETTE_GREY,    .depth = 8,  .pix_fmt = AV_PIX_FMT_GRAY8   },
 };
 
 
@@ -241,7 +241,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->fd = video_fd;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
     st->codec->width = s->video_win.width;
     st->codec->height = s->video_win.height;
     st->codec->time_base = s->time_base;
@@ -337,10 +337,10 @@ static int grab_read_close(AVFormatContext *s1)
 }
 
 static const AVOption options[] = {
-    { "standard", "", offsetof(VideoData, standard), AV_OPT_TYPE_INT, {.dbl = VIDEO_MODE_NTSC}, VIDEO_MODE_PAL, VIDEO_MODE_NTSC, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "PAL",   "", 0, AV_OPT_TYPE_CONST, {.dbl = VIDEO_MODE_PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "SECAM", "", 0, AV_OPT_TYPE_CONST, {.dbl = VIDEO_MODE_SECAM}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "NTSC",  "", 0, AV_OPT_TYPE_CONST, {.dbl = VIDEO_MODE_NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "standard", "", offsetof(VideoData, standard), AV_OPT_TYPE_INT, {.i64 = VIDEO_MODE_NTSC}, VIDEO_MODE_PAL, VIDEO_MODE_NTSC, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "PAL",   "", 0, AV_OPT_TYPE_CONST, {.i64 = VIDEO_MODE_PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "SECAM", "", 0, AV_OPT_TYPE_CONST, {.i64 = VIDEO_MODE_SECAM}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "NTSC",  "", 0, AV_OPT_TYPE_CONST, {.i64 = VIDEO_MODE_NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { NULL },
 };
 

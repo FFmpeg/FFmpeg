@@ -17,7 +17,9 @@
  */
 
 #include "libavresample/avresample.h"
+#include "libavutil/attributes.h"
 #include "libavutil/audio_fifo.h"
+#include "libavutil/common.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -32,48 +34,44 @@ typedef struct ASyncContext {
     AVAudioResampleContext *avr;
     int64_t pts;            ///< timestamp in samples of the first sample in fifo
     int min_delta;          ///< pad/trim min threshold in samples
+    int first_frame;        ///< 1 until filter_frame() has processed at least 1 frame with a pts != AV_NOPTS_VALUE
+    int64_t first_pts;      ///< user-specified first expected pts, in samples
+    int comp;               ///< current resample compensation
 
     /* options */
     int resample;
     float min_delta_sec;
     int max_comp;
 
-    /* set by filter_samples() to signal an output frame to request_frame() */
+    /* set by filter_frame() to signal an output frame to request_frame() */
     int got_output;
 } ASyncContext;
 
 #define OFFSET(x) offsetof(ASyncContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption asyncts_options[] = {
-    { "compensate", "Stretch/squeeze the data to make it match the timestamps", OFFSET(resample),      AV_OPT_TYPE_INT,   { 0 },   0, 1,       A },
+    { "compensate", "Stretch/squeeze the data to make it match the timestamps", OFFSET(resample),      AV_OPT_TYPE_INT,   { .i64 = 0 },   0, 1,       A|F },
     { "min_delta",  "Minimum difference between timestamps and audio data "
-                    "(in seconds) to trigger padding/trimmin the data.",        OFFSET(min_delta_sec), AV_OPT_TYPE_FLOAT, { 0.1 }, 0, INT_MAX, A },
-    { "max_comp",   "Maximum compensation in samples per second.",              OFFSET(max_comp),      AV_OPT_TYPE_INT,   { 500 }, 0, INT_MAX, A },
+                    "(in seconds) to trigger padding/trimmin the data.",        OFFSET(min_delta_sec), AV_OPT_TYPE_FLOAT, { .dbl = 0.1 }, 0, INT_MAX, A|F },
+    { "max_comp",   "Maximum compensation in samples per second.",              OFFSET(max_comp),      AV_OPT_TYPE_INT,   { .i64 = 500 }, 0, INT_MAX, A|F },
+    { "first_pts",  "Assume the first pts should be this value.",               OFFSET(first_pts),     AV_OPT_TYPE_INT64, { .i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, A|F },
     { NULL },
 };
 
 AVFILTER_DEFINE_CLASS(asyncts);
 
-static int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     ASyncContext *s = ctx->priv;
-    int ret;
 
-    s->class = &asyncts_class;
-    av_opt_set_defaults(s);
-
-    if ((ret = av_set_options_string(s, args, "=", ":")) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing options string '%s'.\n", args);
-        return ret;
-    }
-    av_opt_free(s);
-
-    s->pts = AV_NOPTS_VALUE;
+    s->pts         = AV_NOPTS_VALUE;
+    s->first_frame = 1;
 
     return 0;
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     ASyncContext *s = ctx->priv;
 
@@ -111,6 +109,26 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
+/* get amount of data currently buffered, in samples */
+static int64_t get_delay(ASyncContext *s)
+{
+    return avresample_available(s->avr) + avresample_get_delay(s->avr);
+}
+
+static void handle_trimming(AVFilterContext *ctx)
+{
+    ASyncContext *s = ctx->priv;
+
+    if (s->pts < s->first_pts) {
+        int delta = FFMIN(s->first_pts - s->pts, avresample_available(s->avr));
+        av_log(ctx, AV_LOG_VERBOSE, "Trimming %d samples from start\n",
+               delta);
+        avresample_read(s->avr, NULL, delta);
+        s->pts += delta;
+    } else if (s->first_frame)
+        s->pts = s->first_pts;
+}
+
 static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
@@ -123,56 +141,61 @@ static int request_frame(AVFilterLink *link)
         ret = ff_request_frame(ctx->inputs[0]);
 
     /* flush the fifo */
-    if (ret == AVERROR_EOF && (nb_samples = avresample_get_delay(s->avr))) {
-        AVFilterBufferRef *buf = ff_get_audio_buffer(link, AV_PERM_WRITE,
-                                                     nb_samples);
-        if (!buf)
-            return AVERROR(ENOMEM);
-        avresample_convert(s->avr, (void**)buf->extended_data, buf->linesize[0],
-                           nb_samples, NULL, 0, 0);
-        buf->pts = s->pts;
-        return ff_filter_samples(link, buf);
+    if (ret == AVERROR_EOF) {
+        if (s->first_pts != AV_NOPTS_VALUE)
+            handle_trimming(ctx);
+
+        if (nb_samples = get_delay(s)) {
+            AVFrame *buf = ff_get_audio_buffer(link, nb_samples);
+            if (!buf)
+                return AVERROR(ENOMEM);
+            ret = avresample_convert(s->avr, buf->extended_data,
+                                     buf->linesize[0], nb_samples, NULL, 0, 0);
+            if (ret <= 0) {
+                av_frame_free(&buf);
+                return (ret < 0) ? ret : AVERROR_EOF;
+            }
+
+            buf->pts = s->pts;
+            return ff_filter_frame(link, buf);
+        }
     }
 
     return ret;
 }
 
-static int write_to_fifo(ASyncContext *s, AVFilterBufferRef *buf)
+static int write_to_fifo(ASyncContext *s, AVFrame *buf)
 {
-    int ret = avresample_convert(s->avr, NULL, 0, 0, (void**)buf->extended_data,
-                                 buf->linesize[0], buf->audio->nb_samples);
-    avfilter_unref_buffer(buf);
+    int ret = avresample_convert(s->avr, NULL, 0, 0, buf->extended_data,
+                                 buf->linesize[0], buf->nb_samples);
+    av_frame_free(&buf);
     return ret;
 }
 
-/* get amount of data currently buffered, in samples */
-static int64_t get_delay(ASyncContext *s)
-{
-    return avresample_available(s->avr) + avresample_get_delay(s->avr);
-}
-
-static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext  *ctx = inlink->dst;
     ASyncContext       *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    int nb_channels = av_get_channel_layout_nb_channels(buf->audio->channel_layout);
+    int nb_channels = av_get_channel_layout_nb_channels(buf->channel_layout);
     int64_t pts = (buf->pts == AV_NOPTS_VALUE) ? buf->pts :
                   av_rescale_q(buf->pts, inlink->time_base, outlink->time_base);
     int out_size, ret;
     int64_t delta;
+    int64_t new_pts;
 
-    /* buffer data until we get the first timestamp */
-    if (s->pts == AV_NOPTS_VALUE) {
+    /* buffer data until we get the next timestamp */
+    if (s->pts == AV_NOPTS_VALUE || pts == AV_NOPTS_VALUE) {
         if (pts != AV_NOPTS_VALUE) {
             s->pts = pts - get_delay(s);
         }
         return write_to_fifo(s, buf);
     }
 
-    /* now wait for the next timestamp */
-    if (pts == AV_NOPTS_VALUE) {
-        return write_to_fifo(s, buf);
+    if (s->first_pts != AV_NOPTS_VALUE) {
+        handle_trimming(ctx);
+        if (!avresample_available(s->avr))
+            return write_to_fifo(s, buf);
     }
 
     /* when we have two timestamps, compute how many samples would we have
@@ -180,38 +203,62 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     delta    = pts - s->pts - get_delay(s);
     out_size = avresample_available(s->avr);
 
-    if (labs(delta) > s->min_delta) {
+    if (labs(delta) > s->min_delta ||
+        (s->first_frame && delta && s->first_pts != AV_NOPTS_VALUE)) {
         av_log(ctx, AV_LOG_VERBOSE, "Discontinuity - %"PRId64" samples.\n", delta);
-        out_size += delta;
+        out_size = av_clipl_int32((int64_t)out_size + delta);
     } else {
         if (s->resample) {
-            int comp = av_clip(delta, -s->max_comp, s->max_comp);
-            av_log(ctx, AV_LOG_VERBOSE, "Compensating %d samples per second.\n", comp);
-            avresample_set_compensation(s->avr, delta, inlink->sample_rate);
+            // adjust the compensation if delta is non-zero
+            int delay = get_delay(s);
+            int comp = s->comp + av_clip(delta * inlink->sample_rate / delay,
+                                         -s->max_comp, s->max_comp);
+            if (comp != s->comp) {
+                av_log(ctx, AV_LOG_VERBOSE, "Compensating %d samples per second.\n", comp);
+                if (avresample_set_compensation(s->avr, comp, inlink->sample_rate) == 0) {
+                    s->comp = comp;
+                }
+            }
         }
+        // adjust PTS to avoid monotonicity errors with input PTS jitter
+        pts -= delta;
         delta = 0;
     }
 
     if (out_size > 0) {
-        AVFilterBufferRef *buf_out = ff_get_audio_buffer(outlink, AV_PERM_WRITE,
-                                                         out_size);
+        AVFrame *buf_out = ff_get_audio_buffer(outlink, out_size);
         if (!buf_out) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
 
-        avresample_read(s->avr, (void**)buf_out->extended_data, out_size);
-        buf_out->pts = s->pts;
+        if (s->first_frame && delta > 0) {
+            int ch;
 
-        if (delta > 0) {
-            av_samples_set_silence(buf_out->extended_data, out_size - delta,
-                                   delta, nb_channels, buf->format);
+            av_samples_set_silence(buf_out->extended_data, 0, delta,
+                                   nb_channels, buf->format);
+
+            for (ch = 0; ch < nb_channels; ch++)
+                buf_out->extended_data[ch] += delta;
+
+            avresample_read(s->avr, buf_out->extended_data, out_size);
+
+            for (ch = 0; ch < nb_channels; ch++)
+                buf_out->extended_data[ch] -= delta;
+        } else {
+            avresample_read(s->avr, buf_out->extended_data, out_size);
+
+            if (delta > 0) {
+                av_samples_set_silence(buf_out->extended_data, out_size - delta,
+                                       delta, nb_channels, buf->format);
+            }
         }
-        ret = ff_filter_samples(outlink, buf_out);
+        buf_out->pts = s->pts;
+        ret = ff_filter_frame(outlink, buf_out);
         if (ret < 0)
             goto fail;
         s->got_output = 1;
-    } else {
+    } else if (avresample_available(s->avr)) {
         av_log(ctx, AV_LOG_WARNING, "Non-monotonous timestamps, dropping "
                "whole buffer.\n");
     }
@@ -219,15 +266,43 @@ static int filter_samples(AVFilterLink *inlink, AVFilterBufferRef *buf)
     /* drain any remaining buffered data */
     avresample_read(s->avr, NULL, avresample_available(s->avr));
 
-    s->pts = pts - avresample_get_delay(s->avr);
-    ret = avresample_convert(s->avr, NULL, 0, 0, (void**)buf->extended_data,
-                             buf->linesize[0], buf->audio->nb_samples);
+    new_pts = pts - avresample_get_delay(s->avr);
+    /* check for s->pts monotonicity */
+    if (new_pts > s->pts) {
+        s->pts = new_pts;
+        ret = avresample_convert(s->avr, NULL, 0, 0, buf->extended_data,
+                                 buf->linesize[0], buf->nb_samples);
+    } else {
+        av_log(ctx, AV_LOG_WARNING, "Non-monotonous timestamps, dropping "
+               "whole buffer.\n");
+        ret = 0;
+    }
 
+    s->first_frame = 0;
 fail:
-    avfilter_unref_buffer(buf);
+    av_frame_free(&buf);
 
     return ret;
 }
+
+static const AVFilterPad avfilter_af_asyncts_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_AUDIO,
+        .filter_frame   = filter_frame
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_af_asyncts_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .config_props  = config_props,
+        .request_frame = request_frame
+    },
+    { NULL }
+};
 
 AVFilter avfilter_af_asyncts = {
     .name        = "asyncts",
@@ -237,14 +312,8 @@ AVFilter avfilter_af_asyncts = {
     .uninit      = uninit,
 
     .priv_size   = sizeof(ASyncContext),
+    .priv_class  = &asyncts_class,
 
-    .inputs      = (const AVFilterPad[]) {{ .name           = "default",
-                                            .type           = AVMEDIA_TYPE_AUDIO,
-                                            .filter_samples = filter_samples },
-                                          { NULL }},
-    .outputs     = (const AVFilterPad[]) {{ .name           = "default",
-                                            .type           = AVMEDIA_TYPE_AUDIO,
-                                            .config_props   = config_props,
-                                            .request_frame  = request_frame },
-                                          { NULL }},
+    .inputs      = avfilter_af_asyncts_inputs,
+    .outputs     = avfilter_af_asyncts_outputs,
 };

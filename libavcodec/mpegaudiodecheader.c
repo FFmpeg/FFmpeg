@@ -122,16 +122,16 @@ int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_r
 
     switch(s->layer) {
     case 1:
-        avctx->codec_id = CODEC_ID_MP1;
+        avctx->codec_id = AV_CODEC_ID_MP1;
         *frame_size = 384;
         break;
     case 2:
-        avctx->codec_id = CODEC_ID_MP2;
+        avctx->codec_id = AV_CODEC_ID_MP2;
         *frame_size = 1152;
         break;
     default:
     case 3:
-        avctx->codec_id = CODEC_ID_MP3;
+        avctx->codec_id = AV_CODEC_ID_MP3;
         if (s->lsf)
             *frame_size = 576;
         else

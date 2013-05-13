@@ -33,6 +33,7 @@
  * qualify a file. Refer to wsaud_probe() for the precise parameters.
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -68,8 +69,6 @@ static int wsaud_probe(AVProbeData *p)
     if (p->buf[10] & 0xFC)
         return 0;
 
-    /* note: only check for WS IMA (type 99) right now since there is no
-     * support for type 1 */
     if (p->buf[11] != 99 && p->buf[11] != 1)
         return 0;
 
@@ -78,7 +77,7 @@ static int wsaud_probe(AVProbeData *p)
         return 0;
 
     /* return 1/2 certainty since this file check is a little sketchy */
-    return AVPROBE_SCORE_MAX / 2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int wsaud_read_header(AVFormatContext *s)
@@ -103,23 +102,25 @@ static int wsaud_read_header(AVFormatContext *s)
     switch (codec) {
     case  1:
         if (channels != 1) {
-            av_log_ask_for_sample(s, "Stereo WS-SND1 is not supported.\n");
+            avpriv_request_sample(s, "Stereo WS-SND1");
             return AVERROR_PATCHWELCOME;
         }
-        st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;
+        st->codec->codec_id = AV_CODEC_ID_WESTWOOD_SND1;
         break;
     case 99:
-        st->codec->codec_id = CODEC_ID_ADPCM_IMA_WS;
+        st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
         st->codec->bits_per_coded_sample = 4;
         st->codec->bit_rate = channels * sample_rate * 4;
         break;
     default:
-        av_log_ask_for_sample(s, "Unknown codec: %d\n", codec);
+        avpriv_request_sample(s, "Unknown codec: %d", codec);
         return AVERROR_PATCHWELCOME;
     }
     avpriv_set_pts_info(st, 64, 1, sample_rate);
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->channels    = channels;
+    st->codec->channel_layout = channels == 1 ? AV_CH_LAYOUT_MONO :
+                                                AV_CH_LAYOUT_STEREO;
     st->codec->sample_rate = sample_rate;
 
     return 0;
@@ -144,7 +145,7 @@ static int wsaud_read_packet(AVFormatContext *s,
 
     chunk_size = AV_RL16(&preamble[0]);
 
-    if (st->codec->codec_id == CODEC_ID_WESTWOOD_SND1) {
+    if (st->codec->codec_id == AV_CODEC_ID_WESTWOOD_SND1) {
         /* For Westwood SND1 audio we need to add the output size and input
            size to the start of the packet to match what is in VQA.
            Specifically, this is needed to signal when a packet should be
@@ -173,7 +174,7 @@ static int wsaud_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_wsaud_demuxer = {
     .name           = "wsaud",
-    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios audio format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios audio"),
     .read_probe     = wsaud_probe,
     .read_header    = wsaud_read_header,
     .read_packet    = wsaud_read_packet,

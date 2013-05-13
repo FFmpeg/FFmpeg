@@ -45,7 +45,7 @@ static int read_header(AVFormatContext *s)
 
     avio_seek(pb, avio_size(pb) - 36, SEEK_SET);
     if (avio_rb32(pb) != RAND_TAG) {
-        av_log(s, AV_LOG_ERROR, "magic number not found");
+        av_log(s, AV_LOG_ERROR, "magic number not found\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -55,14 +55,14 @@ static int read_header(AVFormatContext *s)
 
     st->nb_frames = avio_rb32(pb);
     if (avio_rb16(pb) != 0) {
-        av_log_ask_for_sample(s, "unsupported packing method\n");
-        return AVERROR_INVALIDDATA;
+        avpriv_request_sample(s, "Unsupported packing method");
+        return AVERROR_PATCHWELCOME;
     }
 
     avio_skip(pb, 2);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_RAWVIDEO;
-    st->codec->pix_fmt    = PIX_FMT_RGBA;
+    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
+    st->codec->pix_fmt    = AV_PIX_FMT_RGBA;
     st->codec->codec_tag  = 0; /* no fourcc */
     st->codec->width      = avio_rb16(pb);
     st->codec->height     = avio_rb16(pb);

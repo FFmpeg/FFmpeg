@@ -43,6 +43,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "libavutil/channel_layout.h"
+#include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "libavutil/common.h"
 #include "libavutil/avassert.h"
@@ -53,6 +55,7 @@
 #include "acelp_pitch_delay.h"
 #include "lsp.h"
 #include "amr.h"
+#include "internal.h"
 
 #include "amrnbdata.h"
 
@@ -95,7 +98,6 @@
 #define AMR_AGC_ALPHA      0.9
 
 typedef struct AMRContext {
-    AVFrame                         avframe; ///< AVFrame for decoded samples
     AMRNBFrame                        frame; ///< decoded AMR parameters (lsf coefficients, codebook indexes, etc)
     uint8_t             bad_frame_indicator; ///< bad frame ? 1 : 0
     enum Mode                cur_frame_mode;
@@ -160,7 +162,16 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
     AMRContext *p = avctx->priv_data;
     int i;
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    if (avctx->channels > 1) {
+        avpriv_report_missing_feature(avctx, "multi-channel AMR");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    avctx->channels       = 1;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    if (!avctx->sample_rate)
+        avctx->sample_rate = 8000;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     // p->excitation always points to the same position in p->excitation_buf
     p->excitation = &p->excitation_buf[PITCH_DELAY_MAX + LP_FILTER_ORDER + 1];
@@ -172,9 +183,6 @@ static av_cold int amrnb_decode_init(AVCodecContext *avctx)
 
     for (i = 0; i < 4; i++)
         p->prediction_error[i] = MIN_ENERGY;
-
-    avcodec_get_frame_defaults(&p->avframe);
-    avctx->coded_frame = &p->avframe;
 
     ff_acelp_filter_init(&p->acelpf_ctx);
     ff_acelp_vectors_init(&p->acelpv_ctx);
@@ -491,7 +499,7 @@ static void decode_8_pulses_31bits(const int16_t *fixed_index,
 static void decode_fixed_sparse(AMRFixed *fixed_sparse, const uint16_t *pulses,
                                 const enum Mode mode, const int subframe)
 {
-    av_assert1(MODE_4k75 <= mode && mode <= MODE_12k2);
+    av_assert1(MODE_4k75 <= (signed)mode && mode <= MODE_12k2);
 
     if (mode == MODE_12k2) {
         ff_decode_10_pulses_35bits(pulses, fixed_sparse, gray_decode, 5, 3);
@@ -798,7 +806,7 @@ static int synthesis(AMRContext *p, float *lpc,
     // emphasize pitch vector contribution
     if (p->pitch_gain[4] > 0.5 && !overflow) {
         float energy = p->celpm_ctx.dot_productf(excitation, excitation,
-                                       AMR_SUBFRAME_SIZE);
+                                                    AMR_SUBFRAME_SIZE);
         float pitch_factor =
             p->pitch_gain[4] *
             (p->cur_frame_mode == MODE_12k2 ?
@@ -899,7 +907,7 @@ static void postfilter(AMRContext *p, float *lpc, float *buf_out)
     float *samples          = p->samples_in + LP_FILTER_ORDER; // Start of input
 
     float speech_gain       = p->celpm_ctx.dot_productf(samples, samples,
-                                              AMR_SUBFRAME_SIZE);
+                                                           AMR_SUBFRAME_SIZE);
 
     float pole_out[AMR_SUBFRAME_SIZE + LP_FILTER_ORDER];  // Output of pole filter
     const float *gamma_n, *gamma_d;                       // Formant filter factor table
@@ -942,6 +950,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 {
 
     AMRContext *p = avctx->priv_data;        // pointer to private data
+    AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     float *buf_out;                          // pointer to the output data buffer
@@ -953,12 +962,10 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
     const float *synth_fixed_vector;         // pointer to the fixed vector that synthesis should use
 
     /* get output buffer */
-    p->avframe.nb_samples = AMR_BLOCK_SIZE;
-    if ((ret = avctx->get_buffer(avctx, &p->avframe)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    frame->nb_samples = AMR_BLOCK_SIZE;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
-    buf_out = (float *)p->avframe.data[0];
+    buf_out = (float *)frame->data[0];
 
     p->cur_frame_mode = unpack_bitstream(p, buf, buf_size);
     if (p->cur_frame_mode == NO_DATA) {
@@ -966,9 +973,9 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
     if (p->cur_frame_mode == MODE_DTX) {
-        av_log_missing_feature(avctx, "dtx mode", 0);
+        avpriv_report_missing_feature(avctx, "dtx mode");
         av_log(avctx, AV_LOG_INFO, "Note: libopencore_amrnb supports dtx\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (p->cur_frame_mode == MODE_12k2) {
@@ -1005,8 +1012,10 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 
         p->fixed_gain[4] =
             ff_amr_set_fixed_gain(fixed_gain_factor,
-                       p->celpm_ctx.dot_productf(p->fixed_vector, p->fixed_vector,
-                                       AMR_SUBFRAME_SIZE)/AMR_SUBFRAME_SIZE,
+                       p->celpm_ctx.dot_productf(p->fixed_vector,
+                                                               p->fixed_vector,
+                                                               AMR_SUBFRAME_SIZE) /
+                                  AMR_SUBFRAME_SIZE,
                        p->prediction_error,
                        energy_mean[p->cur_frame_mode], energy_pred_fac);
 
@@ -1064,8 +1073,7 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
     p->acelpv_ctx.weighted_vector_sumf(p->lsf_avg, p->lsf_avg, p->lsf_q[3],
                             0.84, 0.16, LP_FILTER_ORDER);
 
-    *got_frame_ptr   = 1;
-    *(AVFrame *)data = p->avframe;
+    *got_frame_ptr = 1;
 
     /* return the amount of bytes consumed if everything was OK */
     return frame_sizes_nb[p->cur_frame_mode] + 1; // +7 for rounding and +8 for TOC
@@ -1075,12 +1083,12 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data,
 AVCodec ff_amrnb_decoder = {
     .name           = "amrnb",
     .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = CODEC_ID_AMR_NB,
+    .id             = AV_CODEC_ID_AMR_NB,
     .priv_data_size = sizeof(AMRContext),
     .init           = amrnb_decode_init,
     .decode         = amrnb_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Adaptive Multi-Rate NarrowBand"),
+    .long_name      = NULL_IF_CONFIG_SMALL("AMR-NB (Adaptive Multi-Rate NarrowBand)"),
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
 };

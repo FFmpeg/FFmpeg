@@ -15,10 +15,12 @@ PROGS-$(CONFIG_FFPLAY)   += ffplay
 PROGS-$(CONFIG_FFPROBE)  += ffprobe
 PROGS-$(CONFIG_FFSERVER) += ffserver
 
-PROGS      := $(PROGS-yes:%=%$(EXESUF))
+PROGS      := $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
 INSTPROGS   = $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
-OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
-TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
+
+OBJS        = cmdutils.o $(EXEOBJS)
+OBJS-ffmpeg = ffmpeg_opt.o ffmpeg_filter.o
+TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
@@ -40,7 +42,7 @@ FFLIBS-$(CONFIG_SWSCALE)  += swscale
 FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) $(SRC_PATH)/doc/ffprobe.xsd
-EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/Makefile
+EXAMPLES_FILES := $(wildcard $(SRC_PATH)/doc/examples/*.c) $(SRC_PATH)/doc/examples/Makefile $(SRC_PATH)/doc/examples/README
 
 SKIPHEADERS = cmdutils_common_opts.h
 
@@ -51,14 +53,14 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 
 all: $(PROGS)
 
-$(PROGS): %$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
-	$(CP) $< $@$(PROGSSUF)
-	$(STRIP) $@$(PROGSSUF)
+$(PROGS): %$(EXESUF): %_g$(EXESUF)
+	$(CP) $< $@
+	$(STRIP) $@
 
-$(TOOLS): %$(EXESUF): %.o
-	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
+$(TOOLS): %$(EXESUF): %.o $(EXEOBJS)
+	$(LD) $(LDFLAGS) $(LD_O) $^ $(ELIBS)
 
-tools/cws2fws$(EXESUF): ELIBS = -lz
+tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
@@ -67,11 +69,12 @@ config.h: .config
 	@-tput sgr0 2>/dev/null
 
 SUBDIR_VARS := CLEANFILES EXAMPLES FFLIBS HOSTPROGS TESTPROGS TOOLS      \
-               ARCH_HEADERS BUILT_HEADERS SKIPHEADERS                    \
-               ALTIVEC-OBJS ARMV5TE-OBJS ARMV6-OBJS ARMVFP-OBJS MMI-OBJS \
-               MMX-OBJS NEON-OBJS VIS-OBJS YASM-OBJS                     \
+               HEADERS ARCH_HEADERS BUILT_HEADERS SKIPHEADERS            \
+               ARMV5TE-OBJS ARMV6-OBJS VFP-OBJS NEON-OBJS                \
+               ALTIVEC-OBJS VIS-OBJS                                     \
+               MMX-OBJS YASM-OBJS                                        \
                MIPSFPU-OBJS MIPSDSPR2-OBJS MIPSDSPR1-OBJS MIPS32R2-OBJS  \
-               OBJS TESTOBJS
+               OBJS HOSTOBJS TESTOBJS
 
 define RESET
 $(1) :=
@@ -88,12 +91,19 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
-ffplay.o: CFLAGS += $(SDL_CFLAGS)
-ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
-ffserver_g$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
+define DOPROG
+OBJS-$(1) += $(1).o cmdutils.o $(EXEOBJS)
+$(1)$(PROGSSUF)_g$(EXESUF): $$(OBJS-$(1))
+$$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
+$(1)$(PROGSSUF)_g$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))
+$(1)$(PROGSSUF)_g$(EXESUF): FF_EXTRALIBS += $(LIBS-$(1))
+-include $$(OBJS-$(1):.o=.d)
+endef
 
-%$(PROGSSUF)_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
+$(foreach P,$(PROGS-yes),$(eval $(call DOPROG,$(P))))
+
+%$(PROGSSUF)_g$(EXESUF): %.o $(FF_DEP_LIBS)
+	$(LD) $(LDFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 
@@ -143,26 +153,16 @@ uninstall-data:
 clean::
 	$(RM) $(ALLPROGS) $(ALLPROGS_G)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) $(TOOLS)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
-	$(RM) coverage.info
 	$(RM) -r coverage-html
+	$(RM) -rf coverage.info lcov
 
 distclean::
 	$(RM) $(DISTCLEANSUFFIXES)
-	$(RM) config.* .version version.h libavutil/avconfig.h
+	$(RM) config.* .config libavutil/avconfig.h .version version.h libavcodec/codec_names.h
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
-
-# Without the sed genthml thinks "libavutil" and "./libavutil" are two different things
-coverage.info: $(wildcard *.gcda *.gcno */*.gcda */*.gcno */*/*.gcda */*/*.gcno)
-	$(Q)lcov -c -d . -b . | sed -e 's#/./#/#g' > $@
-
-coverage-html: coverage.info
-	$(Q)mkdir -p $@
-	$(Q)genhtml -o $@ $<
-	$(Q)touch $@
 
 check: all alltools examples testprogs fate
 

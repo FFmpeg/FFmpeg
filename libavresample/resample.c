@@ -19,9 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "internal.h"
+#include "resample.h"
 #include "audio_data.h"
 
 struct ResampleContext {
@@ -67,9 +69,7 @@ struct ResampleContext {
 #include "resample_template.c"
 
 
-/**
- * 0th order modified bessel function of the first kind.
- */
+/* 0th order modified bessel function of the first kind. */
 static double bessel(double x)
 {
     double v     = 1;
@@ -86,18 +86,7 @@ static double bessel(double x)
     return v;
 }
 
-/**
- * Build a polyphase filterbank.
- *
- * @param[out] filter       filter coefficients
- * @param      factor       resampling factor
- * @param      tap_count    tap count
- * @param      phase_count  phase count
- * @param      scale        wanted sum of coefficients for each filter
- * @param      filter_type  filter type
- * @param      kaiser_beta  kaiser window beta
- * @return                  0 on success, negative AVERROR code on failure
- */
+/* Build a polyphase filterbank. */
 static int build_filter(ResampleContext *c)
 {
     int ph, i;
@@ -267,10 +256,12 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
     if (!compensation_distance && sample_delta)
         return AVERROR(EINVAL);
 
-    /* if resampling was not enabled previously, re-initialize the
-       AVAudioResampleContext and force resampling */
     if (!avr->resample_needed) {
+#if FF_API_RESAMPLE_CLOSE_OPEN
+        /* if resampling was not enabled previously, re-initialize the
+           AVAudioResampleContext and force resampling */
         int fifo_samples;
+        int restore_matrix = 0;
         double matrix[AVRESAMPLE_MAX_CHANNELS * AVRESAMPLE_MAX_CHANNELS] = { 0 };
 
         /* buffer any remaining samples in the output FIFO before closing */
@@ -286,9 +277,12 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
                 goto reinit_fail;
         }
         /* save the channel mixing matrix */
-        ret = avresample_get_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
-        if (ret < 0)
-            goto reinit_fail;
+        if (avr->am) {
+            ret = avresample_get_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
+            if (ret < 0)
+                goto reinit_fail;
+            restore_matrix = 1;
+        }
 
         /* close the AVAudioResampleContext */
         avresample_close(avr);
@@ -296,9 +290,11 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
         avr->force_resampling = 1;
 
         /* restore the channel mixing matrix */
-        ret = avresample_set_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
-        if (ret < 0)
-            goto reinit_fail;
+        if (restore_matrix) {
+            ret = avresample_set_matrix(avr, matrix, AVRESAMPLE_MAX_CHANNELS);
+            if (ret < 0)
+                goto reinit_fail;
+        }
 
         /* re-open the AVAudioResampleContext */
         ret = avresample_open(avr);
@@ -313,6 +309,10 @@ int avresample_set_compensation(AVAudioResampleContext *avr, int sample_delta,
                 goto reinit_fail;
             ff_audio_data_free(&fifo_buf);
         }
+#else
+        av_log(avr, AV_LOG_ERROR, "Unable to set resampling compensation\n");
+        return AVERROR(EINVAL);
+#endif
     }
     c = avr->resample;
     c->compensation_distance = compensation_distance;
@@ -406,10 +406,9 @@ static int resample(ResampleContext *c, void *dst, const void *src,
     return dst_index;
 }
 
-int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src,
-                      int *consumed)
+int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src)
 {
-    int ch, in_samples, in_leftover, out_samples = 0;
+    int ch, in_samples, in_leftover, consumed = 0, out_samples = 0;
     int ret = AVERROR(EINVAL);
 
     in_samples  = src ? src->nb_samples : 0;
@@ -442,7 +441,7 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src,
     /* resample each channel plane */
     for (ch = 0; ch < c->buffer->channels; ch++) {
         out_samples = resample(c, (void *)dst->data[ch],
-                               (const void *)c->buffer->data[ch], consumed,
+                               (const void *)c->buffer->data[ch], &consumed,
                                c->buffer->nb_samples, dst->allocated_samples,
                                ch + 1 == c->buffer->channels);
     }
@@ -452,7 +451,7 @@ int ff_audio_resample(ResampleContext *c, AudioData *dst, AudioData *src,
     }
 
     /* drain consumed samples from the internal buffer */
-    ff_audio_data_drain(c->buffer, *consumed);
+    ff_audio_data_drain(c->buffer, consumed);
 
     av_dlog(c->avr, "resampled %d in + %d leftover to %d out + %d leftover\n",
             in_samples, in_leftover, out_samples, c->buffer->nb_samples);

@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
 
 /* Parser (mostly) copied from dvdsub.c */
@@ -172,7 +171,7 @@ static av_cold void dvbsub_parse_close(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_dvbsub_parser = {
-    .codec_ids      = { CODEC_ID_DVB_SUBTITLE },
+    .codec_ids      = { AV_CODEC_ID_DVB_SUBTITLE },
     .priv_data_size = sizeof(DVBSubParseContext),
     .parser_init    = dvbsub_parse_init,
     .parser_parse   = dvbsub_parse,

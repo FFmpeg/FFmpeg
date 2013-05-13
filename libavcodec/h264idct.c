@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#include "h264idct.h"
+
 #define BIT_DEPTH 8
 #include "h264idct_template.c"
 #undef BIT_DEPTH

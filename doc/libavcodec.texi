@@ -1,0 +1,48 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Libavcodec Documentation
+@titlepage
+@center @titlefont{Libavcodec Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The libavcodec library provides a generic encoding/decoding framework
+and contains multiple decoders and encoders for audio, video and
+subtitle streams, and several bitstream filters.
+
+The shared architecture provides various services ranging from bit
+stream I/O to DSP optimizations, and makes it suitable for
+implementing robust and fast codecs as well as for experimentation.
+
+@c man end DESCRIPTION
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-codecs.html,ffmpeg-codecs}, @url{ffmpeg-bitstream-filters.html,bitstream-filters},
+@url{libavutil.html,libavutil}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-codecs(1), ffmpeg-bitstream-filters(1),
+libavutil(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename libavcodec
+@settitle media streams decoding and encoding library
+
+@end ignore
+
+@bye

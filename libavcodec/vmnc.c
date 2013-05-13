@@ -28,8 +28,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "internal.h"
 
 enum EncTypes {
     MAGIC_WMVd = 0x574D5664,
@@ -284,21 +286,18 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, const uint8_t* src, int 
     return src - ssrc;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     VmncContext * const c = avctx->priv_data;
     uint8_t *outptr;
     const uint8_t *src = buf;
-    int dx, dy, w, h, depth, enc, chunks, res, size_left;
+    int dx, dy, w, h, depth, enc, chunks, res, size_left, ret;
 
-    c->pic.reference = 3;
-    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
-    if(avctx->reget_buffer(avctx, &c->pic) < 0){
-        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0)
+        return ret;
 
     c->pic.key_frame = 0;
     c->pic.pict_type = AV_PICTURE_TYPE_P;
@@ -331,6 +330,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     src += 2;
     chunks = AV_RB16(src); src += 2;
     while(chunks--) {
+        if(buf_size - (src - buf) < 12) {
+            av_log(avctx, AV_LOG_ERROR, "Premature end of data!\n");
+            return -1;
+        }
         dx = AV_RB16(src); src += 2;
         dy = AV_RB16(src); src += 2;
         w  = AV_RB16(src); src += 2;
@@ -340,6 +343,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         size_left = buf_size - (src - buf);
         switch(enc) {
         case MAGIC_WMVd: // cursor
+            if (w*(int64_t)h*c->bpp2 > INT_MAX/2 - 2) {
+                av_log(avctx, AV_LOG_ERROR, "dimensions too large\n");
+                return AVERROR_INVALIDDATA;
+            }
             if(size_left < 2 + w * h * c->bpp2 * 2) {
                 av_log(avctx, AV_LOG_ERROR, "Premature end of data! (need %i got %i)\n", 2 + w * h * c->bpp2 * 2, size_left);
                 return -1;
@@ -445,8 +452,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             put_cursor(outptr, c->pic.linesize[0], c, c->cur_x, c->cur_y);
         }
     }
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = c->pic;
+    *got_frame      = 1;
+    if ((ret = av_frame_ref(data, &c->pic)) < 0)
+        return ret;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -474,18 +482,20 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     switch(c->bpp){
     case 8:
-        avctx->pix_fmt = PIX_FMT_PAL8;
+        avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
     case 16:
-        avctx->pix_fmt = PIX_FMT_RGB555;
+        avctx->pix_fmt = AV_PIX_FMT_RGB555;
         break;
     case 32:
-        avctx->pix_fmt = PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_RGB32;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported bitdepth %i\n", c->bpp);
         return AVERROR_INVALIDDATA;
     }
+
+    avcodec_get_frame_defaults(&c->pic);
 
     return 0;
 }
@@ -501,8 +511,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     VmncContext * const c = avctx->priv_data;
 
-    if (c->pic.data[0])
-        avctx->release_buffer(avctx, &c->pic);
+    av_frame_unref(&c->pic);
 
     av_free(c->curbits);
     av_free(c->curmask);
@@ -513,7 +522,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 AVCodec ff_vmnc_decoder = {
     .name           = "vmnc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_VMNC,
+    .id             = AV_CODEC_ID_VMNC,
     .priv_data_size = sizeof(VmncContext),
     .init           = decode_init,
     .close          = decode_end,

@@ -26,9 +26,6 @@
 #include "libavfilter/avfilter.h"
 #include "libavfilter/formats.h"
 
-#undef fprintf
-#undef printf
-
 static void print_formats(AVFilterContext *filter_ctx)
 {
     int i, j;
@@ -45,6 +42,7 @@ static void print_formats(AVFilterContext *filter_ctx)
                        av_get_pix_fmt_name(fmts->formats[j]));          \
         } else if (filter_ctx->inout##puts[i]->type == AVMEDIA_TYPE_AUDIO) { \
             AVFilterFormats *fmts;                                      \
+            AVFilterChannelLayouts *layouts;                            \
                                                                         \
             fmts = filter_ctx->inout##puts[i]->outin##_formats;         \
             for (j = 0; j < fmts->format_count; j++)                    \
@@ -52,11 +50,11 @@ static void print_formats(AVFilterContext *filter_ctx)
                        i, filter_ctx->filter->inout##puts[i].name,      \
                        av_get_sample_fmt_name(fmts->formats[j]));       \
                                                                         \
-            fmts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
-            for (j = 0; j < fmts->format_count; j++) {                  \
+            layouts = filter_ctx->inout##puts[i]->outin##_channel_layouts; \
+            for (j = 0; j < layouts->nb_channel_layouts; j++) {                  \
                 char buf[256];                                          \
                 av_get_channel_layout_string(buf, sizeof(buf), -1,      \
-                                             fmts->formats[j]);         \
+                                             layouts->channel_layouts[j]);         \
                 printf(#INOUT "PUT[%d] %s: chlayout:%s\n",              \
                        i, filter_ctx->filter->inout##puts[i].name, buf); \
             }                                                           \
@@ -77,13 +75,13 @@ int main(int argc, char **argv)
 
     av_log_set_level(AV_LOG_DEBUG);
 
-    if (!argv[1]) {
+    if (argc < 2) {
         fprintf(stderr, "Missing filter name as argument\n");
         return 1;
     }
 
     filter_name = argv[1];
-    if (argv[2])
+    if (argc > 2)
         filter_args = argv[2];
 
     avfilter_register_all();
@@ -99,7 +97,7 @@ int main(int argc, char **argv)
                 filter_name);
         return 1;
     }
-    if (avfilter_init_filter(filter_ctx, filter_args, NULL) < 0) {
+    if (avfilter_init_str(filter_ctx, filter_args) < 0) {
         fprintf(stderr, "Impossible to init filter '%s' with arguments '%s'\n",
                 filter_name, filter_args);
         return 1;

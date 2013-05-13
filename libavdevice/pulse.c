@@ -33,7 +33,7 @@
 #include "libavformat/internal.h"
 #include "libavutil/opt.h"
 
-#define DEFAULT_CODEC_ID AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE)
+#define DEFAULT_CODEC_ID AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE)
 
 typedef struct PulseData {
     AVClass *class;
@@ -51,17 +51,17 @@ typedef struct PulseData {
 
 static pa_sample_format_t codec_id_to_pulse_format(int codec_id) {
     switch (codec_id) {
-    case CODEC_ID_PCM_U8:    return PA_SAMPLE_U8;
-    case CODEC_ID_PCM_ALAW:  return PA_SAMPLE_ALAW;
-    case CODEC_ID_PCM_MULAW: return PA_SAMPLE_ULAW;
-    case CODEC_ID_PCM_S16LE: return PA_SAMPLE_S16LE;
-    case CODEC_ID_PCM_S16BE: return PA_SAMPLE_S16BE;
-    case CODEC_ID_PCM_F32LE: return PA_SAMPLE_FLOAT32LE;
-    case CODEC_ID_PCM_F32BE: return PA_SAMPLE_FLOAT32BE;
-    case CODEC_ID_PCM_S32LE: return PA_SAMPLE_S32LE;
-    case CODEC_ID_PCM_S32BE: return PA_SAMPLE_S32BE;
-    case CODEC_ID_PCM_S24LE: return PA_SAMPLE_S24LE;
-    case CODEC_ID_PCM_S24BE: return PA_SAMPLE_S24BE;
+    case AV_CODEC_ID_PCM_U8:    return PA_SAMPLE_U8;
+    case AV_CODEC_ID_PCM_ALAW:  return PA_SAMPLE_ALAW;
+    case AV_CODEC_ID_PCM_MULAW: return PA_SAMPLE_ULAW;
+    case AV_CODEC_ID_PCM_S16LE: return PA_SAMPLE_S16LE;
+    case AV_CODEC_ID_PCM_S16BE: return PA_SAMPLE_S16BE;
+    case AV_CODEC_ID_PCM_F32LE: return PA_SAMPLE_FLOAT32LE;
+    case AV_CODEC_ID_PCM_F32BE: return PA_SAMPLE_FLOAT32BE;
+    case AV_CODEC_ID_PCM_S32LE: return PA_SAMPLE_S32LE;
+    case AV_CODEC_ID_PCM_S32BE: return PA_SAMPLE_S32BE;
+    case AV_CODEC_ID_PCM_S24LE: return PA_SAMPLE_S24LE;
+    case AV_CODEC_ID_PCM_S24BE: return PA_SAMPLE_S24BE;
     default:                 return PA_SAMPLE_INVALID;
     }
 }
@@ -72,8 +72,8 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     AVStream *st;
     char *device = NULL;
     int ret;
-    enum CodecID codec_id =
-        s->audio_codec_id == CODEC_ID_NONE ? DEFAULT_CODEC_ID : s->audio_codec_id;
+    enum AVCodecID codec_id =
+        s->audio_codec_id == AV_CODEC_ID_NONE ? DEFAULT_CODEC_ID : s->audio_codec_id;
     const pa_sample_spec ss = { codec_id_to_pulse_format(codec_id),
                                 pd->sample_rate,
                                 pd->channels };
@@ -164,10 +164,10 @@ static const AVOption options[] = {
     { "server",        "pulse server name",                              OFFSET(server),        AV_OPT_TYPE_STRING, {.str = NULL},     0, 0, D },
     { "name",          "application name",                               OFFSET(name),          AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, D },
     { "stream_name",   "stream description",                             OFFSET(stream_name),   AV_OPT_TYPE_STRING, {.str = "record"}, 0, 0, D },
-    { "sample_rate",   "sample rate in Hz",                              OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.dbl = 48000},    1, INT_MAX, D },
-    { "channels",      "number of audio channels",                       OFFSET(channels),      AV_OPT_TYPE_INT,    {.dbl = 2},        1, INT_MAX, D },
-    { "frame_size",    "number of bytes per frame",                      OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.dbl = 1024},     1, INT_MAX, D },
-    { "fragment_size", "buffering size, affects latency and cpu usage",  OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.dbl = -1},      -1, INT_MAX, D },
+    { "sample_rate",   "sample rate in Hz",                              OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.i64 = 48000},    1, INT_MAX, D },
+    { "channels",      "number of audio channels",                       OFFSET(channels),      AV_OPT_TYPE_INT,    {.i64 = 2},        1, INT_MAX, D },
+    { "frame_size",    "number of bytes per frame",                      OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.i64 = 1024},     1, INT_MAX, D },
+    { "fragment_size", "buffering size, affects latency and cpu usage",  OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.i64 = -1},      -1, INT_MAX, D },
     { NULL },
 };
 

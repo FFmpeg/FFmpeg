@@ -18,6 +18,8 @@ CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
   -finline-limit=300 -ffast-math \
   -fstrict-aliasing -Werror=strict-aliasing \
   -fmodulo-sched -fmodulo-sched-allow-regmoves \
+  -fgraphite -fgraphite-identity -floop-block -floop-flatten \
+  -floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
   -Wno-psabi -Wa,--noexecstack \
   -D__ARM_ARCH_5__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5TE__ \
   -DANDROID -DNDEBUG \
@@ -26,11 +28,13 @@ CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
 LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
 FFMPEG_FLAGS="--target-os=linux \
-  --arch=arm \
+  --arch=armv7-a \
+  --cpu=cortex-a8 \
   --cross-prefix=arm-linux-androideabi- \
   --enable-cross-compile \
   --enable-shared \
   --disable-static \
+  --disable-runtime-cpudetect
   --disable-symver \
   --disable-doc \
   --disable-ffplay \
@@ -41,19 +45,13 @@ FFMPEG_FLAGS="--target-os=linux \
   --disable-postproc \
   --disable-encoders \
   --disable-muxers \
-  --disable-filters \
   --disable-devices \
-  --enable-openssl \
-  --enable-filter=abuffersink \
-  --enable-filter=atempo \
-  --enable-filter=volume \
-  --enable-filter=aresample \
-  --enable-filter=aconvert \
   --disable-demuxer=sbg \
   --disable-demuxer=dts \
   --disable-parser=dca \
   --disable-decoder=dca \
   --disable-decoder=svq3 \
+  --enable-openssl \
   --enable-asm \
   --enable-version3"
 
@@ -100,9 +98,9 @@ for version in neon armv7; do
   find . -name "*.o" -type f -delete
   make -j7 || exit 1
 
-  rm libavcodec/inverse.o
+  rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
   $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
-    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswscale/*.o
+    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so

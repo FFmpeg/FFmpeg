@@ -38,5 +38,5 @@ AVOutputFormat ff_jacosub_muxer = {
     .write_header   = jacosub_write_header,
     .write_packet   = ff_raw_write_packet,
     .flags          = AVFMT_TS_NONSTRICT,
-    .subtitle_codec = CODEC_ID_JACOSUB,
+    .subtitle_codec = AV_CODEC_ID_JACOSUB,
 };

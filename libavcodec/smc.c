@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 
 #define CPAIR 2
 #define CQUAD 4
@@ -401,7 +402,7 @@ static void smc_decode_stream(SmcContext *s)
             break;
 
         case 0xF0:
-            av_log_missing_feature(s->avctx, "0xF0 opcode", 1);
+            avpriv_request_sample(s->avctx, "0xF0 opcode");
             break;
         }
     }
@@ -414,32 +415,27 @@ static av_cold int smc_decode_init(AVCodecContext *avctx)
     SmcContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    avctx->pix_fmt = PIX_FMT_PAL8;
+    avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
     avcodec_get_frame_defaults(&s->frame);
-    s->frame.data[0] = NULL;
 
     return 0;
 }
 
 static int smc_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+                             void *data, int *got_frame,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     SmcContext *s = avctx->priv_data;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+    int ret;
 
     bytestream2_init(&s->gb, buf, buf_size);
 
-    s->frame.reference = 3;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
-                            FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
-    if (avctx->reget_buffer(avctx, &s->frame)) {
-        av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
-    }
+    if ((ret = ff_reget_buffer(avctx, &s->frame)) < 0)
+        return ret;
 
     if (pal) {
         s->frame.palette_has_changed = 1;
@@ -448,8 +444,9 @@ static int smc_decode_frame(AVCodecContext *avctx,
 
     smc_decode_stream(s);
 
-    *data_size = sizeof(AVFrame);
-    *(AVFrame*)data = s->frame;
+    *got_frame      = 1;
+    if ((ret = av_frame_ref(data, &s->frame)) < 0)
+        return ret;
 
     /* always report that the buffer was completely consumed */
     return buf_size;
@@ -459,8 +456,7 @@ static av_cold int smc_decode_end(AVCodecContext *avctx)
 {
     SmcContext *s = avctx->priv_data;
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    av_frame_unref(&s->frame);
 
     return 0;
 }
@@ -468,7 +464,7 @@ static av_cold int smc_decode_end(AVCodecContext *avctx)
 AVCodec ff_smc_decoder = {
     .name           = "smc",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_SMC,
+    .id             = AV_CODEC_ID_SMC,
     .priv_data_size = sizeof(SmcContext),
     .init           = smc_decode_init,
     .close          = smc_decode_end,

@@ -55,6 +55,13 @@ void ff_subtitles_queue_finalize(FFDemuxSubtitlesQueue *q);
 int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt);
 
 /**
+ * Update current_sub_idx to emulate a seek. Except the first parameter, it
+ * matches AVInputFormat->read_seek2 prototypes.
+ */
+int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int stream_index,
+                            int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
+
+/**
  * Remove and destroy all the subtitles packets.
  */
 void ff_subtitles_queue_clean(FFDemuxSubtitlesQueue *q);
@@ -73,5 +80,20 @@ int ff_smil_extract_next_chunk(AVIOContext *pb, AVBPrint *buf, char *c);
  * @param attr the attribute to look for
  */
 const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
+
+/**
+ * @brief Read a subtitles chunk.
+ *
+ * A chunk is defined by a multiline "event", ending with a second line break.
+ * The trailing line breaks are trimmed. CRLF are supported.
+ * Example: "foo\r\nbar\r\n\r\nnext" will print "foo\r\nbar" into buf, and pb
+ * will focus on the 'n' of the "next" string.
+ *
+ * @param pb  I/O context
+ * @param buf an initialized buf where the chunk is written
+ *
+ * @note buf is cleared before writing into it.
+ */
+void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
 
 #endif /* AVFORMAT_SUBTITLES_H */

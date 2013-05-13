@@ -63,7 +63,7 @@ static int celt_header(AVFormatContext *s, int idx)
         /* unused bytes per packet field skipped */
         extra_headers    = AV_RL32(p + 56);
         st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id       = CODEC_ID_CELT;
+        st->codec->codec_id       = AV_CODEC_ID_CELT;
         st->codec->sample_rate    = sample_rate;
         st->codec->channels       = nb_channels;
         st->codec->frame_size     = frame_size;
@@ -93,4 +93,5 @@ const struct ogg_codec ff_celt_codec = {
     .magic     = "CELT    ",
     .magicsize = 8,
     .header    = celt_header,
+    .nb_header = 2,
 };

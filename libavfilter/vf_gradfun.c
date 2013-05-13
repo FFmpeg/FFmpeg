@@ -33,8 +33,11 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "gradfun.h"
@@ -55,7 +58,7 @@ DECLARE_ALIGNED(16, static const uint16_t, dither)[8][8] = {
 void ff_gradfun_filter_line_c(uint8_t *dst, const uint8_t *src, const uint16_t *dc, int width, int thresh, const uint16_t *dithers)
 {
     int x;
-    for (x = 0; x < width; x++, dc += x & 1) {
+    for (x = 0; x < width; dc += x & 1, x++) {
         int pix = src[x] << 7;
         int delta = dc[0] - pix;
         int m = abs(delta) * thresh >> 16;
@@ -118,26 +121,20 @@ static void filter(GradFunContext *ctx, uint8_t *dst, const uint8_t *src, int wi
     }
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args)
+static av_cold int init(AVFilterContext *ctx)
 {
     GradFunContext *gf = ctx->priv;
-    float thresh = 1.2;
-    int radius = 16;
 
-    if (args)
-        sscanf(args, "%f:%d", &thresh, &radius);
+    gf->thresh  = (1 << 15) / gf->strength;
+    gf->radius  = av_clip((gf->radius + 1) & ~1, 4, 32);
 
-    thresh = av_clipf(thresh, 0.51, 255);
-    gf->thresh = (1 << 15) / thresh;
-    gf->radius = av_clip((radius + 1) & ~1, 4, 32);
-
-    gf->blur_line = ff_gradfun_blur_line_c;
+    gf->blur_line   = ff_gradfun_blur_line_c;
     gf->filter_line = ff_gradfun_filter_line_c;
 
-    if (HAVE_MMX)
+    if (ARCH_X86)
         ff_gradfun_init_x86(gf);
 
-    av_log(ctx, AV_LOG_VERBOSE, "threshold:%.2f radius:%d\n", thresh, gf->radius);
+    av_log(ctx, AV_LOG_VERBOSE, "threshold:%.2f radius:%d\n", gf->strength, gf->radius);
 
     return 0;
 }
@@ -150,12 +147,13 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = {
-        PIX_FMT_YUV410P,            PIX_FMT_YUV420P,
-        PIX_FMT_GRAY8,              PIX_FMT_NV12,
-        PIX_FMT_NV21,               PIX_FMT_YUV444P,
-        PIX_FMT_YUV422P,            PIX_FMT_YUV411P,
-        PIX_FMT_NONE
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_YUV410P,            AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_GRAY8,              AV_PIX_FMT_NV12,
+        AV_PIX_FMT_NV21,               AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUV422P,            AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_YUV440P,
+        AV_PIX_FMT_NONE
     };
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
@@ -166,48 +164,42 @@ static int query_formats(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     GradFunContext *gf = inlink->dst->priv;
-    int hsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_w;
-    int vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int hsub = desc->log2_chroma_w;
+    int vsub = desc->log2_chroma_h;
 
     gf->buf = av_mallocz((FFALIGN(inlink->w, 16) * (gf->radius + 1) / 2 + 32) * sizeof(uint16_t));
     if (!gf->buf)
         return AVERROR(ENOMEM);
 
-    gf->chroma_w = -((-inlink->w) >> hsub);
-    gf->chroma_h = -((-inlink->h) >> vsub);
+    gf->chroma_w = FF_CEIL_RSHIFT(inlink->w, hsub);
+    gf->chroma_h = FF_CEIL_RSHIFT(inlink->h, vsub);
     gf->chroma_r = av_clip(((((gf->radius >> hsub) + (gf->radius >> vsub)) / 2 ) + 1) & ~1, 4, 32);
 
     return 0;
 }
 
-static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
-{
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpicref;
-
-    if (inpicref->perms & AV_PERM_PRESERVE) {
-        outpicref = ff_get_video_buffer(outlink, AV_PERM_WRITE, outlink->w, outlink->h);
-        avfilter_copy_buffer_ref_props(outpicref, inpicref);
-        outpicref->video->w = outlink->w;
-        outpicref->video->h = outlink->h;
-    } else
-        outpicref = inpicref;
-
-    outlink->out_buf = outpicref;
-    ff_start_frame(outlink, avfilter_ref_buffer(outpicref, ~0));
-}
-
-static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
-
-static void end_frame(AVFilterLink *inlink)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     GradFunContext *gf = inlink->dst->priv;
-    AVFilterBufferRef *inpic = inlink->cur_buf;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFilterBufferRef *outpic = outlink->out_buf;
-    int p;
+    AVFrame *out;
+    int p, direct;
 
-    for (p = 0; p < 4 && inpic->data[p]; p++) {
+    if (av_frame_is_writable(in)) {
+        direct = 1;
+        out = in;
+    } else {
+        direct = 0;
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&in);
+            return AVERROR(ENOMEM);
+        }
+        av_frame_copy_props(out, in);
+    }
+
+    for (p = 0; p < 4 && in->data[p]; p++) {
         int w = inlink->w;
         int h = inlink->h;
         int r = gf->radius;
@@ -218,35 +210,55 @@ static void end_frame(AVFilterLink *inlink)
         }
 
         if (FFMIN(w, h) > 2 * r)
-            filter(gf, outpic->data[p], inpic->data[p], w, h, outpic->linesize[p], inpic->linesize[p], r);
-        else if (outpic->data[p] != inpic->data[p])
-            av_image_copy_plane(outpic->data[p], outpic->linesize[p], inpic->data[p], inpic->linesize[p], w, h);
+            filter(gf, out->data[p], in->data[p], w, h, out->linesize[p], in->linesize[p], r);
+        else if (out->data[p] != in->data[p])
+            av_image_copy_plane(out->data[p], out->linesize[p], in->data[p], in->linesize[p], w, h);
     }
 
-    ff_draw_slice(outlink, 0, inlink->h, 1);
-    ff_end_frame(outlink);
-    avfilter_unref_buffer(inpic);
-    if (outpic != inpic)
-        avfilter_unref_buffer(outpic);
+    if (!direct)
+        av_frame_free(&in);
+
+    return ff_filter_frame(outlink, out);
 }
+
+#define OFFSET(x) offsetof(GradFunContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption gradfun_options[] = {
+    { "strength", "The maximum amount by which the filter will change any one pixel.", OFFSET(strength), AV_OPT_TYPE_FLOAT, { .dbl = 1.2 }, 0.51, 64, FLAGS },
+    { "radius",   "The neighborhood to fit the gradient to.",                          OFFSET(radius),   AV_OPT_TYPE_INT,   { .i64 = 16  }, 4,    32, FLAGS },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(gradfun);
+
+static const AVFilterPad avfilter_vf_gradfun_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
+    },
+    { NULL }
+};
+
+static const AVFilterPad avfilter_vf_gradfun_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
 
 AVFilter avfilter_vf_gradfun = {
     .name          = "gradfun",
     .description   = NULL_IF_CONFIG_SMALL("Debands video quickly using gradients."),
     .priv_size     = sizeof(GradFunContext),
+    .priv_class    = &gradfun_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO,
-                                    .config_props     = config_input,
-                                    .start_frame      = start_frame,
-                                    .draw_slice       = null_draw_slice,
-                                    .end_frame        = end_frame,
-                                    .min_perms        = AV_PERM_READ, },
-                                  { .name = NULL}},
-    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
-                                    .type             = AVMEDIA_TYPE_VIDEO, },
-                                  { .name = NULL}},
+    .inputs        = avfilter_vf_gradfun_inputs,
+    .outputs       = avfilter_vf_gradfun_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
 };

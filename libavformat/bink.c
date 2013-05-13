@@ -28,6 +28,7 @@
  *  http://wiki.multimedia.cx/index.php?title=Bink_Container
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -111,9 +112,10 @@ static int read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
     avpriv_set_pts_info(vst, 64, fps_den, fps_num);
+    vst->avg_frame_rate = av_inv_q(vst->time_base);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
+    vst->codec->codec_id   = AV_CODEC_ID_BINKVIDEO;
     vst->codec->extradata  = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!vst->codec->extradata)
         return AVERROR(ENOMEM);
@@ -142,8 +144,14 @@ static int read_header(AVFormatContext *s)
             avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             flags = avio_rl16(pb);
             ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
-                                   CODEC_ID_BINKAUDIO_DCT : CODEC_ID_BINKAUDIO_RDFT;
-            ast->codec->channels = flags & BINK_AUD_STEREO ? 2 : 1;
+                                   AV_CODEC_ID_BINKAUDIO_DCT : AV_CODEC_ID_BINKAUDIO_RDFT;
+            if (flags & BINK_AUD_STEREO) {
+                ast->codec->channels       = 2;
+                ast->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            } else {
+                ast->codec->channels       = 1;
+                ast->codec->channel_layout = AV_CH_LAYOUT_MONO;
+            }
             ast->codec->extradata = av_mallocz(4 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!ast->codec->extradata)
                 return AVERROR(ENOMEM);
@@ -194,7 +202,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         AVStream *st = s->streams[0]; // stream 0 is video stream with index
 
         if (bink->video_pts >= st->duration)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
 
         index_entry = av_index_search_timestamp(st, bink->video_pts,
                                                 AVSEEK_FLAG_ANY);

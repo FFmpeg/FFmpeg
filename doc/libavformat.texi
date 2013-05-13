@@ -1,0 +1,48 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Libavformat Documentation
+@titlepage
+@center @titlefont{Libavformat Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Description
+@c man begin DESCRIPTION
+
+The libavformat library provides a generic framework for multiplexing
+and demultiplexing (muxing and demuxing) audio, video and subtitle
+streams. It encompasses multiple muxers and demuxers for multimedia
+container formats.
+
+It also supports several input and output protocols to access a media
+resource.
+
+@c man end DESCRIPTION
+
+@chapter See Also
+
+@ifhtml
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg-formats.html,ffmpeg-formats}, @url{ffmpeg-protocols.html,ffmpeg-protocols},
+@url{libavutil.html,libavutil}, @url{libavcodec.html,libavcodec}
+@end ifhtml
+
+@ifnothtml
+ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg-formats(1), ffmpeg-protocols(1),
+libavutil(3), libavcodec(3)
+@end ifnothtml
+
+@include authors.texi
+
+@ignore
+
+@setfilename libavformat
+@settitle multimedia muxing and demuxing library
+
+@end ignore
+
+@bye

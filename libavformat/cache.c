@@ -239,7 +239,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
     c->fdw = open(c->cache_path, O_RDWR | O_BINARY | O_CREAT, 0600);
     c->fdr = open(c->cache_path, O_RDWR | O_BINARY, 0600);
     if (c->fdw != -1 && c->fdr != -1 && ftruncate64(c->fdw, c->length) == 0) {
-      char index_path[dlen + 4];
+      char *index_path = av_mallocz(dlen + 4);
       snprintf(index_path, dlen + 4, "%s.ssi", c->cache_path);
       c->fdi = open(index_path, O_RDWR | O_BINARY | O_CREAT, 0600);
       c->segs = segments_load(c, c->fdi);
@@ -256,6 +256,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
       pthread_create(&c->thread, NULL, cache_fill_thread, c);
       c->cache_fill = 1;
       av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d, %"PRId64"\n", index_path, url, opened, c->length);
+      av_free(index_path);
     } else {
       close(c->fdw);
       close(c->fdr);

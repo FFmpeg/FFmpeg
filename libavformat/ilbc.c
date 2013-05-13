@@ -36,7 +36,7 @@ static int ilbc_write_header(AVFormatContext *s)
     }
     enc = s->streams[0]->codec;
 
-    if (enc->codec_id != CODEC_ID_ILBC) {
+    if (enc->codec_id != AV_CODEC_ID_ILBC) {
         av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
         return AVERROR(EINVAL);
     }
@@ -56,7 +56,6 @@ static int ilbc_write_header(AVFormatContext *s)
 static int ilbc_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     avio_write(s->pb, pkt->data, pkt->size);
-    avio_flush(s->pb);
     return 0;
 }
 
@@ -80,7 +79,7 @@ static int ilbc_read_header(AVFormatContext *s)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_id = CODEC_ID_ILBC;
+    st->codec->codec_id = AV_CODEC_ID_ILBC;
     st->codec->sample_rate = 8000;
     st->codec->channels = 1;
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -122,7 +121,7 @@ static int ilbc_read_packet(AVFormatContext *s,
 
 AVInputFormat ff_ilbc_demuxer = {
     .name         = "ilbc",
-    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage file format"),
+    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
     .read_probe   = ilbc_probe,
     .read_header  = ilbc_read_header,
     .read_packet  = ilbc_read_packet,
@@ -131,10 +130,10 @@ AVInputFormat ff_ilbc_demuxer = {
 
 AVOutputFormat ff_ilbc_muxer = {
     .name         = "ilbc",
-    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage file format"),
+    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
     .mime_type    = "audio/iLBC",
     .extensions   = "lbc",
-    .audio_codec  = CODEC_ID_ILBC,
+    .audio_codec  = AV_CODEC_ID_ILBC,
     .write_header = ilbc_write_header,
     .write_packet = ilbc_write_packet,
     .flags        = AVFMT_NOTIMESTAMPS,

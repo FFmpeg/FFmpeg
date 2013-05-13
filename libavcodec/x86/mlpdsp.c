@@ -19,27 +19,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/x86_cpu.h"
-#include "libavcodec/dsputil.h"
+#include "libavutil/attributes.h"
+#include "libavutil/x86/asm.h"
+#include "libavcodec/mlpdsp.h"
 #include "libavcodec/mlp.h"
 
-#if HAVE_7REGS
+#if HAVE_7REGS && HAVE_INLINE_ASM
 
-extern void ff_mlp_firorder_8;
-extern void ff_mlp_firorder_7;
-extern void ff_mlp_firorder_6;
-extern void ff_mlp_firorder_5;
-extern void ff_mlp_firorder_4;
-extern void ff_mlp_firorder_3;
-extern void ff_mlp_firorder_2;
-extern void ff_mlp_firorder_1;
-extern void ff_mlp_firorder_0;
+extern char ff_mlp_firorder_8;
+extern char ff_mlp_firorder_7;
+extern char ff_mlp_firorder_6;
+extern char ff_mlp_firorder_5;
+extern char ff_mlp_firorder_4;
+extern char ff_mlp_firorder_3;
+extern char ff_mlp_firorder_2;
+extern char ff_mlp_firorder_1;
+extern char ff_mlp_firorder_0;
 
-extern void ff_mlp_iirorder_4;
-extern void ff_mlp_iirorder_3;
-extern void ff_mlp_iirorder_2;
-extern void ff_mlp_iirorder_1;
-extern void ff_mlp_iirorder_0;
+extern char ff_mlp_iirorder_4;
+extern char ff_mlp_iirorder_3;
+extern char ff_mlp_iirorder_2;
+extern char ff_mlp_iirorder_1;
+extern char ff_mlp_iirorder_0;
 
 static const void *firtable[9] = { &ff_mlp_firorder_0, &ff_mlp_firorder_1,
                                    &ff_mlp_firorder_2, &ff_mlp_firorder_3,
@@ -171,11 +172,11 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
     );
 }
 
-#endif /* HAVE_7REGS */
+#endif /* HAVE_7REGS && HAVE_INLINE_ASM */
 
-void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx)
+av_cold void ff_mlpdsp_init_x86(MLPDSPContext *c)
 {
-#if HAVE_7REGS
+#if HAVE_7REGS && HAVE_INLINE_ASM
     c->mlp_filter_channel = mlp_filter_channel_x86;
 #endif
 }

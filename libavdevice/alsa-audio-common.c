@@ -31,79 +31,76 @@
 #include <alsa/asoundlib.h>
 #include "avdevice.h"
 #include "libavutil/avassert.h"
-#include "libavutil/audioconvert.h"
+#include "libavutil/channel_layout.h"
 
 #include "alsa-audio.h"
 
 static av_cold snd_pcm_format_t codec_id_to_pcm_format(int codec_id)
 {
     switch(codec_id) {
-        case CODEC_ID_PCM_F64LE: return SND_PCM_FORMAT_FLOAT64_LE;
-        case CODEC_ID_PCM_F64BE: return SND_PCM_FORMAT_FLOAT64_BE;
-        case CODEC_ID_PCM_F32LE: return SND_PCM_FORMAT_FLOAT_LE;
-        case CODEC_ID_PCM_F32BE: return SND_PCM_FORMAT_FLOAT_BE;
-        case CODEC_ID_PCM_S32LE: return SND_PCM_FORMAT_S32_LE;
-        case CODEC_ID_PCM_S32BE: return SND_PCM_FORMAT_S32_BE;
-        case CODEC_ID_PCM_U32LE: return SND_PCM_FORMAT_U32_LE;
-        case CODEC_ID_PCM_U32BE: return SND_PCM_FORMAT_U32_BE;
-        case CODEC_ID_PCM_S24LE: return SND_PCM_FORMAT_S24_3LE;
-        case CODEC_ID_PCM_S24BE: return SND_PCM_FORMAT_S24_3BE;
-        case CODEC_ID_PCM_U24LE: return SND_PCM_FORMAT_U24_3LE;
-        case CODEC_ID_PCM_U24BE: return SND_PCM_FORMAT_U24_3BE;
-        case CODEC_ID_PCM_S16LE: return SND_PCM_FORMAT_S16_LE;
-        case CODEC_ID_PCM_S16BE: return SND_PCM_FORMAT_S16_BE;
-        case CODEC_ID_PCM_U16LE: return SND_PCM_FORMAT_U16_LE;
-        case CODEC_ID_PCM_U16BE: return SND_PCM_FORMAT_U16_BE;
-        case CODEC_ID_PCM_S8:    return SND_PCM_FORMAT_S8;
-        case CODEC_ID_PCM_U8:    return SND_PCM_FORMAT_U8;
-        case CODEC_ID_PCM_MULAW: return SND_PCM_FORMAT_MU_LAW;
-        case CODEC_ID_PCM_ALAW:  return SND_PCM_FORMAT_A_LAW;
+        case AV_CODEC_ID_PCM_F64LE: return SND_PCM_FORMAT_FLOAT64_LE;
+        case AV_CODEC_ID_PCM_F64BE: return SND_PCM_FORMAT_FLOAT64_BE;
+        case AV_CODEC_ID_PCM_F32LE: return SND_PCM_FORMAT_FLOAT_LE;
+        case AV_CODEC_ID_PCM_F32BE: return SND_PCM_FORMAT_FLOAT_BE;
+        case AV_CODEC_ID_PCM_S32LE: return SND_PCM_FORMAT_S32_LE;
+        case AV_CODEC_ID_PCM_S32BE: return SND_PCM_FORMAT_S32_BE;
+        case AV_CODEC_ID_PCM_U32LE: return SND_PCM_FORMAT_U32_LE;
+        case AV_CODEC_ID_PCM_U32BE: return SND_PCM_FORMAT_U32_BE;
+        case AV_CODEC_ID_PCM_S24LE: return SND_PCM_FORMAT_S24_3LE;
+        case AV_CODEC_ID_PCM_S24BE: return SND_PCM_FORMAT_S24_3BE;
+        case AV_CODEC_ID_PCM_U24LE: return SND_PCM_FORMAT_U24_3LE;
+        case AV_CODEC_ID_PCM_U24BE: return SND_PCM_FORMAT_U24_3BE;
+        case AV_CODEC_ID_PCM_S16LE: return SND_PCM_FORMAT_S16_LE;
+        case AV_CODEC_ID_PCM_S16BE: return SND_PCM_FORMAT_S16_BE;
+        case AV_CODEC_ID_PCM_U16LE: return SND_PCM_FORMAT_U16_LE;
+        case AV_CODEC_ID_PCM_U16BE: return SND_PCM_FORMAT_U16_BE;
+        case AV_CODEC_ID_PCM_S8:    return SND_PCM_FORMAT_S8;
+        case AV_CODEC_ID_PCM_U8:    return SND_PCM_FORMAT_U8;
+        case AV_CODEC_ID_PCM_MULAW: return SND_PCM_FORMAT_MU_LAW;
+        case AV_CODEC_ID_PCM_ALAW:  return SND_PCM_FORMAT_A_LAW;
         default:                 return SND_PCM_FORMAT_UNKNOWN;
     }
 }
 
-#define REORDER_OUT_50(NAME, TYPE) \
-static void alsa_reorder_ ## NAME ## _out_50(const void *in_v, void *out_v, int n) \
-{ \
-    const TYPE *in = in_v; \
-    TYPE      *out = out_v; \
-\
-    while (n-- > 0) { \
+#define MAKE_REORDER_FUNC(NAME, TYPE, CHANNELS, LAYOUT, MAP)                \
+static void alsa_reorder_ ## NAME ## _ ## LAYOUT(const void *in_v,          \
+                                                 void *out_v,               \
+                                                 int n)                     \
+{                                                                           \
+    const TYPE *in = in_v;                                                  \
+    TYPE      *out = out_v;                                                 \
+                                                                            \
+    while (n-- > 0) {                                                       \
+        MAP                                                                 \
+        in  += CHANNELS;                                                    \
+        out += CHANNELS;                                                    \
+    }                                                                       \
+}
+
+#define MAKE_REORDER_FUNCS(CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(int8,  int8_t,  CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(int16, int16_t, CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(int32, int32_t, CHANNELS, LAYOUT, MAP) \
+    MAKE_REORDER_FUNC(f32,   float,   CHANNELS, LAYOUT, MAP)
+
+MAKE_REORDER_FUNCS(5, out_50, \
         out[0] = in[0]; \
         out[1] = in[1]; \
         out[2] = in[3]; \
         out[3] = in[4]; \
         out[4] = in[2]; \
-        in  += 5; \
-        out += 5; \
-    } \
-}
+        );
 
-#define REORDER_OUT_51(NAME, TYPE) \
-static void alsa_reorder_ ## NAME ## _out_51(const void *in_v, void *out_v, int n) \
-{ \
-    const TYPE *in = in_v; \
-    TYPE      *out = out_v; \
-\
-    while (n-- > 0) { \
+MAKE_REORDER_FUNCS(6, out_51, \
         out[0] = in[0]; \
         out[1] = in[1]; \
         out[2] = in[4]; \
         out[3] = in[5]; \
         out[4] = in[2]; \
         out[5] = in[3]; \
-        in  += 6; \
-        out += 6; \
-    } \
-}
+        );
 
-#define REORDER_OUT_71(NAME, TYPE) \
-static void alsa_reorder_ ## NAME ## _out_71(const void *in_v, void *out_v, int n) \
-{ \
-    const TYPE *in = in_v; \
-    TYPE      *out = out_v; \
-\
-    while (n-- > 0) { \
+MAKE_REORDER_FUNCS(8, out_71, \
         out[0] = in[0]; \
         out[1] = in[1]; \
         out[2] = in[4]; \
@@ -112,23 +109,7 @@ static void alsa_reorder_ ## NAME ## _out_71(const void *in_v, void *out_v, int 
         out[5] = in[3]; \
         out[6] = in[6]; \
         out[7] = in[7]; \
-        in  += 8; \
-        out += 8; \
-    } \
-}
-
-REORDER_OUT_50(int8, int8_t)
-REORDER_OUT_51(int8, int8_t)
-REORDER_OUT_71(int8, int8_t)
-REORDER_OUT_50(int16, int16_t)
-REORDER_OUT_51(int16, int16_t)
-REORDER_OUT_71(int16, int16_t)
-REORDER_OUT_50(int32, int32_t)
-REORDER_OUT_51(int32, int32_t)
-REORDER_OUT_71(int32, int32_t)
-REORDER_OUT_50(f32, float)
-REORDER_OUT_51(f32, float)
-REORDER_OUT_71(f32, float)
+        );
 
 #define FORMAT_I8  0
 #define FORMAT_I16 1
@@ -156,20 +137,20 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
         return 0;
 
     switch (codec_id) {
-    case CODEC_ID_PCM_S8:
-    case CODEC_ID_PCM_U8:
-    case CODEC_ID_PCM_ALAW:
-    case CODEC_ID_PCM_MULAW: format = FORMAT_I8;  break;
-    case CODEC_ID_PCM_S16LE:
-    case CODEC_ID_PCM_S16BE:
-    case CODEC_ID_PCM_U16LE:
-    case CODEC_ID_PCM_U16BE: format = FORMAT_I16; break;
-    case CODEC_ID_PCM_S32LE:
-    case CODEC_ID_PCM_S32BE:
-    case CODEC_ID_PCM_U32LE:
-    case CODEC_ID_PCM_U32BE: format = FORMAT_I32; break;
-    case CODEC_ID_PCM_F32LE:
-    case CODEC_ID_PCM_F32BE: format = FORMAT_F32; break;
+    case AV_CODEC_ID_PCM_S8:
+    case AV_CODEC_ID_PCM_U8:
+    case AV_CODEC_ID_PCM_ALAW:
+    case AV_CODEC_ID_PCM_MULAW: format = FORMAT_I8;  break;
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S16BE:
+    case AV_CODEC_ID_PCM_U16LE:
+    case AV_CODEC_ID_PCM_U16BE: format = FORMAT_I16; break;
+    case AV_CODEC_ID_PCM_S32LE:
+    case AV_CODEC_ID_PCM_S32BE:
+    case AV_CODEC_ID_PCM_U32LE:
+    case AV_CODEC_ID_PCM_U32BE: format = FORMAT_I32; break;
+    case AV_CODEC_ID_PCM_F32LE:
+    case AV_CODEC_ID_PCM_F32BE: format = FORMAT_F32; break;
     default:                 return AVERROR(ENOSYS);
     }
 
@@ -185,7 +166,7 @@ static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout,
 
 av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
                          unsigned int *sample_rate,
-                         int channels, enum CodecID *codec_id)
+                         int channels, enum AVCodecID *codec_id)
 {
     AlsaData *s = ctx->priv_data;
     const char *audio_device;
@@ -199,7 +180,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     if (ctx->filename[0] == 0) audio_device = "default";
     else                       audio_device = ctx->filename;
 
-    if (*codec_id == CODEC_ID_NONE)
+    if (*codec_id == AV_CODEC_ID_NONE)
         *codec_id = DEFAULT_CODEC_ID;
     format = codec_id_to_pcm_format(*codec_id);
     if (format == SND_PCM_FORMAT_UNKNOWN) {

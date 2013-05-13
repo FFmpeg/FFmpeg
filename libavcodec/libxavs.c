@@ -28,6 +28,8 @@
 #include <xavs.h>
 #include "avcodec.h"
 #include "internal.h"
+#include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #define END_OF_STREAM 0x001
@@ -386,19 +388,19 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(XavsContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           AV_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
-    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        AV_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
-    { "b-bias",        "Influences how often B-frames are used",          OFFSET(b_bias),        AV_OPT_TYPE_INT,    {INT_MIN}, INT_MIN, INT_MAX, VE },
-    { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), AV_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
-    { "direct-pred",   "Direct MV prediction mode",                       OFFSET(direct_pred),   AV_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "direct-pred" },
-    { "none",          NULL,      0,    AV_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_NONE },     0, 0, VE, "direct-pred" },
-    { "spatial",       NULL,      0,    AV_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
-    { "temporal",      NULL,      0,    AV_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
-    { "auto",          NULL,      0,    AV_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
-    { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           AV_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
-    { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        AV_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
-    { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), AV_OPT_TYPE_INT, {-1}, -1, 1, VE },
-    { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    AV_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           AV_OPT_TYPE_FLOAT,  {.dbl = -1 }, -1, FLT_MAX, VE },
+    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, INT_MAX, VE },
+    { "b-bias",        "Influences how often B-frames are used",          OFFSET(b_bias),        AV_OPT_TYPE_INT,    {.i64 = INT_MIN}, INT_MIN, INT_MAX, VE },
+    { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), AV_OPT_TYPE_FLOAT,  {.dbl = -1 }, -1, FLT_MAX, VE},
+    { "direct-pred",   "Direct MV prediction mode",                       OFFSET(direct_pred),   AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, INT_MAX, VE, "direct-pred" },
+    { "none",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_DIRECT_PRED_NONE },     0, 0, VE, "direct-pred" },
+    { "spatial",       NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
+    { "temporal",      NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
+    { "auto",          NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
+    { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 1, VE},
+    { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 1, VE},
+    { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE },
+    { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    AV_OPT_TYPE_INT,    {.i64 = -1 }, -1, 1, VE},
     { NULL },
 };
 
@@ -417,14 +419,14 @@ static const AVCodecDefault xavs_defaults[] = {
 AVCodec ff_libxavs_encoder = {
     .name           = "libxavs",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_CAVS,
+    .id             = AV_CODEC_ID_CAVS,
     .priv_data_size = sizeof(XavsContext),
     .init           = XAVS_init,
     .encode2        = XAVS_frame,
     .close          = XAVS_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
-    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libxavs - the Chinese Audio Video Standard Encoder"),
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .long_name      = NULL_IF_CONFIG_SMALL("libxavs Chinese AVS (Audio Video Standard)"),
     .priv_class     = &class,
     .defaults       = xavs_defaults,
 };

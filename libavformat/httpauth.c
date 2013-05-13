@@ -25,8 +25,8 @@
 #include "internal.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/md5.h"
+#include "urldecode.h"
 #include "avformat.h"
-#include <ctype.h>
 
 static void handle_basic_params(HTTPAuthState *state, const char *key,
                                 int key_len, char **dest, int *dest_len)
@@ -79,8 +79,8 @@ static void choose_qop(char *qop, int size)
     char *ptr = strstr(qop, "auth");
     char *end = ptr + strlen("auth");
 
-    if (ptr && (!*end || isspace(*end) || *end == ',') &&
-        (ptr == qop || isspace(ptr[-1]) || ptr[-1] == ',')) {
+    if (ptr && (!*end || av_isspace(*end) || *end == ',') &&
+        (ptr == qop || av_isspace(ptr[-1]) || ptr[-1] == ',')) {
         av_strlcpy(qop, "auth", size);
     } else {
         qop[0] = 0;
@@ -158,7 +158,7 @@ static char *make_digest_auth(HTTPAuthState *state, const char *username,
     ff_data_to_hex(cnonce, (const uint8_t*) cnonce_buf, sizeof(cnonce_buf), 1);
     cnonce[2*sizeof(cnonce_buf)] = 0;
 
-    md5ctx = av_malloc(av_md5_size);
+    md5ctx = av_md5_alloc();
     if (!md5ctx)
         return NULL;
 
@@ -251,18 +251,28 @@ char *ff_http_auth_create_response(HTTPAuthState *state, const char *auth,
         return NULL;
 
     if (state->auth_type == HTTP_AUTH_BASIC) {
-        int auth_b64_len = AV_BASE64_SIZE(strlen(auth));
-        int len = auth_b64_len + 30;
-        char *ptr;
-        authstr = av_malloc(len);
-        if (!authstr)
+        int auth_b64_len, len;
+        char *ptr, *decoded_auth = ff_urldecode(auth);
+
+        if (!decoded_auth)
             return NULL;
+
+        auth_b64_len = AV_BASE64_SIZE(strlen(decoded_auth));
+        len = auth_b64_len + 30;
+
+        authstr = av_malloc(len);
+        if (!authstr) {
+            av_free(decoded_auth);
+            return NULL;
+        }
+
         snprintf(authstr, len, "Authorization: Basic ");
         ptr = authstr + strlen(authstr);
-        av_base64_encode(ptr, auth_b64_len, auth, strlen(auth));
+        av_base64_encode(ptr, auth_b64_len, decoded_auth, strlen(decoded_auth));
         av_strlcat(ptr, "\r\n", len - (ptr - authstr));
+        av_free(decoded_auth);
     } else if (state->auth_type == HTTP_AUTH_DIGEST) {
-        char *username = av_strdup(auth), *password;
+        char *username = ff_urldecode(auth), *password;
 
         if (!username)
             return NULL;

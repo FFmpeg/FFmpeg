@@ -64,13 +64,13 @@ static int mtv_probe(AVProbeData *p)
     if(!AV_RL16(&p->buf[52]) || !AV_RL16(&p->buf[54]))
     {
         if(!!AV_RL16(&p->buf[56]))
-            return AVPROBE_SCORE_MAX/2;
+            return AVPROBE_SCORE_EXTENSION;
         else
             return 0;
     }
 
     if(p->buf[51] != 16)
-        return AVPROBE_SCORE_MAX/4; // But we are going to assume 16bpp anyway ..
+        return AVPROBE_SCORE_EXTENSION / 2; // But we are going to assume 16bpp anyway ..
 
     return AVPROBE_SCORE_MAX;
 }
@@ -114,8 +114,8 @@ static int mtv_read_header(AVFormatContext *s)
     audio_subsegments = avio_rl16(pb);
 
     if (audio_subsegments == 0) {
-        av_log_ask_for_sample(s, "MTV files without audio are not supported\n");
-        return AVERROR_INVALIDDATA;
+        avpriv_request_sample(s, "MTV files without audio");
+        return AVERROR_PATCHWELCOME;
     }
 
     mtv->full_segment_size =
@@ -135,8 +135,8 @@ static int mtv_read_header(AVFormatContext *s)
 
     avpriv_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id        = CODEC_ID_RAWVIDEO;
-    st->codec->pix_fmt         = PIX_FMT_RGB565BE;
+    st->codec->codec_id        = AV_CODEC_ID_RAWVIDEO;
+    st->codec->pix_fmt         = AV_PIX_FMT_RGB565BE;
     st->codec->width           = mtv->img_width;
     st->codec->height          = mtv->img_height;
     st->codec->sample_rate     = mtv->video_fps;
@@ -151,7 +151,7 @@ static int mtv_read_header(AVFormatContext *s)
 
     avpriv_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
     st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id        = CODEC_ID_MP3;
+    st->codec->codec_id        = AV_CODEC_ID_MP3;
     st->codec->bit_rate        = mtv->audio_br;
     st->need_parsing           = AVSTREAM_PARSE_FULL;
 
@@ -195,7 +195,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 AVInputFormat ff_mtv_demuxer = {
     .name           = "mtv",
-    .long_name      = NULL_IF_CONFIG_SMALL("MTV format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("MTV"),
     .priv_data_size = sizeof(MTVDemuxContext),
     .read_probe     = mtv_probe,
     .read_header    = mtv_read_header,

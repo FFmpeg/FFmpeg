@@ -55,6 +55,7 @@
 #ifndef AVCODEC_MIPS_COMPUTE_ANTIALIAS_FIXED_H
 #define AVCODEC_MIPS_COMPUTE_ANTIALIAS_FIXED_H
 
+#if HAVE_INLINE_ASM
 static void compute_antialias_mips_fixed(MPADecodeContext *s,
                                         GranuleDef *g)
 {
@@ -236,11 +237,14 @@ static void compute_antialias_mips_fixed(MPADecodeContext *s,
               [temp_reg5] "=&r" (temp_reg5), [temp_reg6] "=&r" (temp_reg6)
             : [csa] "r" (csa), [ptr] "r" (ptr),
               [MAX_lo] "r" (MAX_lo)
+            : "memory", "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo",
+              "$ac3hi", "$ac3lo"
          );
 
         ptr += 18;
     }
 }
 #define compute_antialias compute_antialias_mips_fixed
+#endif /* HAVE_INLINE_ASM */
 
 #endif /* AVCODEC_MIPS_COMPUTE_ANTIALIAS_FIXED_H */

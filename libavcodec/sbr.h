@@ -34,10 +34,12 @@
 #include "aacps.h"
 #include "sbrdsp.h"
 
+typedef struct AACContext AACContext;
+
 /**
  * Spectral Band Replication header - spectrum parameters that invoke a reset if they differ from the previous header.
  */
-typedef struct {
+typedef struct SpectrumParameters {
     uint8_t bs_start_freq;
     uint8_t bs_stop_freq;
     uint8_t bs_xover_band;
@@ -57,7 +59,7 @@ typedef struct {
 /**
  * Spectral Band Replication per channel data
  */
-typedef struct {
+typedef struct SBRData {
     /**
      * @name Main bitstream data variables
      * @{
@@ -108,10 +110,31 @@ typedef struct {
     /** @} */
 } SBRData;
 
+typedef struct SpectralBandReplication SpectralBandReplication;
+
+/**
+ * aacsbr functions pointers
+ */
+typedef struct AACSBRContext {
+    int (*sbr_lf_gen)(AACContext *ac, SpectralBandReplication *sbr,
+                      float X_low[32][40][2], const float W[2][32][32][2],
+                      int buf_idx);
+    void (*sbr_hf_assemble)(float Y1[38][64][2],
+                            const float X_high[64][40][2],
+                            SpectralBandReplication *sbr, SBRData *ch_data,
+                            const int e_a[2]);
+    int (*sbr_x_gen)(SpectralBandReplication *sbr, float X[2][38][64],
+                     const float Y0[38][64][2], const float Y1[38][64][2],
+                     const float X_low[32][40][2], int ch);
+    void (*sbr_hf_inverse_filter)(SBRDSPContext *dsp,
+                                  float (*alpha0)[2], float (*alpha1)[2],
+                                  const float X_low[32][40][2], int k0);
+} AACSBRContext;
+
 /**
  * Spectral Band Replication
  */
-typedef struct {
+struct SpectralBandReplication {
     int                sample_rate;
     int                start;
     int                reset;
@@ -153,7 +176,7 @@ typedef struct {
     ///Frequency borders for noise floors
     uint16_t           f_tablenoise[6];
     ///Frequency borders for the limiter
-    uint16_t           f_tablelim[29];
+    uint16_t           f_tablelim[30];
     unsigned           num_patches;
     uint8_t            patch_num_subbands[6];
     uint8_t            patch_start_subband[6];
@@ -184,6 +207,7 @@ typedef struct {
     FFTContext         mdct_ana;
     FFTContext         mdct;
     SBRDSPContext      dsp;
-} SpectralBandReplication;
+    AACSBRContext      c;
+};
 
 #endif /* AVCODEC_SBR_H */

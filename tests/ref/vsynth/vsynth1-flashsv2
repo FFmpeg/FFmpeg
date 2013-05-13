@@ -1,0 +1,4 @@
+adbbdd25c1ed2f87ea589d2314307cdf *tests/data/fate/vsynth1-flashsv2.flv
+9368395 tests/data/fate/vsynth1-flashsv2.flv
+efa88d09115a2e947eff00ee435ba3f3 *tests/data/fate/vsynth1-flashsv2.out.rawvideo
+stddev:    3.47 PSNR: 37.31 MAXDIFF:   49 bytes:  7603200/  7603200

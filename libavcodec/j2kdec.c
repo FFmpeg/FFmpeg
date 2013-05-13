@@ -29,6 +29,8 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
+#include "thread.h"
 #include "j2k.h"
 #include "libavutil/common.h"
 
@@ -48,7 +50,7 @@ typedef struct {
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame picture;
+    AVFrame *picture;
     GetByteContext g;
 
     int width, height; ///< image width and height
@@ -69,7 +71,7 @@ typedef struct {
 
     int bit_index;
 
-    int16_t curtileno;
+    int curtileno;
 
     J2kTile *tile;
 } J2kDecoderContext;
@@ -167,6 +169,9 @@ static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold
     J2kTgtNode *stack[30];
     int sp = -1, curval = 0;
 
+    if(!node)
+        return AVERROR(EINVAL);
+
     while(node && !node->vis){
         stack[++sp] = node;
         node = node->parent;
@@ -201,6 +206,7 @@ static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold
 static int get_siz(J2kDecoderContext *s)
 {
     int i, ret;
+    ThreadFrame frame = { .f = s->picture };
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
@@ -260,31 +266,29 @@ static int get_siz(J2kDecoderContext *s)
     switch(s->ncomponents){
     case 1:
         if (s->precision > 8) {
-            s->avctx->pix_fmt = PIX_FMT_GRAY16;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
         } else {
-            s->avctx->pix_fmt = PIX_FMT_GRAY8;
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         }
         break;
     case 3:
         if (s->precision > 8) {
-            s->avctx->pix_fmt = PIX_FMT_RGB48;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
         } else {
-            s->avctx->pix_fmt = PIX_FMT_RGB24;
+            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         }
         break;
     case 4:
-        s->avctx->pix_fmt = PIX_FMT_RGBA;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     }
 
-    if (s->picture.data[0])
-        s->avctx->release_buffer(s->avctx, &s->picture);
 
-    if ((ret = s->avctx->get_buffer(s->avctx, &s->picture)) < 0)
+    if ((ret = ff_thread_get_buffer(s->avctx, &frame, 0)) < 0)
         return ret;
 
-    s->picture.pict_type = AV_PICTURE_TYPE_I;
-    s->picture.key_frame = 1;
+    s->picture->pict_type = AV_PICTURE_TYPE_I;
+    s->picture->key_frame = 1;
 
     return 0;
 }
@@ -833,7 +837,7 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
                                 int *ptr = t1.data[y-yy0];
                                 for (x = xx0; x < xx1; x+=s->cdx[compno]){
                                     int tmp = ((int64_t)*ptr++) * ((int64_t)band->stepsize) >> 13, tmp2;
-                                    tmp2 = FFABS(tmp>>1) + FFABS(tmp&1);
+                                    tmp2 = FFABS(tmp>>1) + (tmp&1);
                                     comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] = tmp < 0 ? -tmp2 : tmp2;
                                 }
                             }
@@ -855,7 +859,7 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++){
             y = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            line = s->picture.data[0] + y * s->picture.linesize[0];
+            line = s->picture->data[0] + y * s->picture->linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]){
                 uint8_t *dst;
 
@@ -871,13 +875,13 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
                     *dst = *src[compno]++;
                     dst += s->ncomponents;
                 }
-                line += s->picture.linesize[0];
+                line += s->picture->linesize[0];
             }
         }
     } else {
         for (compno = 0; compno < s->ncomponents; compno++) {
             y = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            line = s->picture.data[0] + y * s->picture.linesize[0];
+            line = s->picture->data[0] + y * s->picture->linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint16_t *dst;
 
@@ -892,7 +896,7 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
                     *dst = val;
                     dst += s->ncomponents;
                 }
-                line += s->picture.linesize[0];
+                line += s->picture->linesize[0];
             }
         }
     }
@@ -1014,12 +1018,14 @@ static int jp2_find_codestream(J2kDecoderContext *s)
 }
 
 static int decode_frame(AVCodecContext *avctx,
-                        void *data, int *data_size,
+                        void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     J2kDecoderContext *s = avctx->priv_data;
     AVFrame *picture = data;
     int tileno, ret;
+
+    s->picture = picture;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
@@ -1057,8 +1063,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     cleanup(s);
 
-    *data_size = sizeof(AVPicture);
-    *picture = s->picture;
+    *got_frame = 1;
 
     return bytestream2_tell(&s->g);
 
@@ -1072,32 +1077,19 @@ static av_cold int j2kdec_init(AVCodecContext *avctx)
     J2kDecoderContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    avcodec_get_frame_defaults((AVFrame*)&s->picture);
-    avctx->coded_frame = (AVFrame*)&s->picture;
 
     ff_j2k_init_tier1_luts();
 
     return 0;
 }
 
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    J2kDecoderContext *s = avctx->priv_data;
-
-    if (s->picture.data[0])
-        avctx->release_buffer(avctx, &s->picture);
-
-    return 0;
-}
-
-AVCodec ff_jpeg2000_decoder = {
+AVCodec ff_j2k_decoder = {
     .name           = "j2k",
     .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_JPEG2000,
+    .id             = AV_CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(J2kDecoderContext),
     .init           = j2kdec_init,
-    .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_EXPERIMENTAL,
+    .capabilities   = CODEC_CAP_EXPERIMENTAL | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
 };

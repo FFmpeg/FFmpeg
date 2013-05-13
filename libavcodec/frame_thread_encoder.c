@@ -92,12 +92,15 @@ static void * attribute_align_arg worker(void *v){
 
         ret = avcodec_encode_video2(avctx, pkt, frame, &got_packet);
         pthread_mutex_lock(&c->buffer_mutex);
-        c->parent_avctx->release_buffer(c->parent_avctx, frame);
+        av_frame_unref(frame);
         pthread_mutex_unlock(&c->buffer_mutex);
-        av_freep(&frame);
-        if(!got_packet)
-            continue;
-        av_dup_packet(pkt);
+        av_frame_free(&frame);
+        if(got_packet) {
+            av_dup_packet(pkt);
+        } else {
+            pkt->data = NULL;
+            pkt->size = 0;
+        }
         pthread_mutex_lock(&c->finished_task_mutex);
         c->finished_tasks[task.index].outdata = pkt; pkt = NULL;
         c->finished_tasks[task.index].return_code = ret;
@@ -113,7 +116,7 @@ end:
     return NULL;
 }
 
-int ff_frame_thread_encoder_init(AVCodecContext *avctx){
+int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
     int i=0;
     ThreadContext *c;
 
@@ -151,24 +154,26 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx){
     pthread_cond_init(&c->finished_task_cond, NULL);
 
     for(i=0; i<avctx->thread_count ; i++){
+        AVDictionary *tmp = NULL;
+        void *tmpv;
         AVCodecContext *thread_avctx = avcodec_alloc_context3(avctx->codec);
         if(!thread_avctx)
             goto fail;
+        tmpv = thread_avctx->priv_data;
         *thread_avctx = *avctx;
+        thread_avctx->priv_data = tmpv;
         thread_avctx->internal = NULL;
-        thread_avctx->priv_data = av_malloc(avctx->codec->priv_data_size);
-        if(!thread_avctx->priv_data) {
-            av_freep(&thread_avctx);
-            goto fail;
-        }
         memcpy(thread_avctx->priv_data, avctx->priv_data, avctx->codec->priv_data_size);
         thread_avctx->thread_count = 1;
         thread_avctx->active_thread_type &= ~FF_THREAD_FRAME;
 
-        //FIXME pass private options to encoder
-        if(avcodec_open2(thread_avctx, avctx->codec, NULL) < 0) {
+        av_dict_copy(&tmp, options, 0);
+        av_dict_set(&tmp, "threads", "1", 0);
+        if(avcodec_open2(thread_avctx, avctx->codec, &tmp) < 0) {
+            av_dict_free(&tmp);
             goto fail;
         }
+        av_dict_free(&tmp);
         av_assert0(!thread_avctx->internal->frame_thread_encoder);
         thread_avctx->internal->frame_thread_encoder = c;
         if(pthread_create(&c->worker[i], NULL, worker, thread_avctx)) {
@@ -217,15 +222,17 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
 
     if(frame){
         if(!(avctx->flags & CODEC_FLAG_INPUT_PRESERVED)){
-            AVFrame *new = avcodec_alloc_frame();
+            AVFrame *new = av_frame_alloc();
             if(!new)
                 return AVERROR(ENOMEM);
             pthread_mutex_lock(&c->buffer_mutex);
-            ret = c->parent_avctx->get_buffer(c->parent_avctx, new);
+            ret = ff_get_buffer(c->parent_avctx, new, 0);
             pthread_mutex_unlock(&c->buffer_mutex);
             if(ret<0)
                 return ret;
             new->pts = frame->pts;
+            new->quality = frame->quality;
+            new->pict_type = frame->pict_type;
             av_image_copy(new->data, new->linesize, (const uint8_t **)frame->data, frame->linesize,
                           avctx->pix_fmt, avctx->width, avctx->height);
             frame = new;
@@ -253,11 +260,11 @@ int ff_thread_video_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVF
     }
     task = c->finished_tasks[c->finished_task_index];
     *pkt = *(AVPacket*)(task.outdata);
-    c->finished_tasks[c->finished_task_index].outdata= NULL;
+    if(pkt->data)
+        *got_packet_ptr = 1;
+    av_freep(&c->finished_tasks[c->finished_task_index].outdata);
     c->finished_task_index = (c->finished_task_index+1) % BUFFER_SIZE;
     pthread_mutex_unlock(&c->finished_task_mutex);
-
-    *got_packet_ptr = 1;
 
     return task.return_code;
 }

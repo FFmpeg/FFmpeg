@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 #include "celp_filters.h"
+#include "mathops.h"
 #include "ra144.h"
 
 const int16_t ff_gain_val_tab[256][3] = {
@@ -1503,8 +1504,8 @@ const int16_t * const ff_lpc_refl_cb[10]={
     lpc_refl_cb6, lpc_refl_cb7, lpc_refl_cb8, lpc_refl_cb9, lpc_refl_cb10
 };
 
-static void ff_add_wav(int16_t *dest, int n, int skip_first, int *m, const int16_t *s1,
-                       const int8_t *s2, const int8_t *s3)
+static void add_wav(int16_t *dest, int n, int skip_first, int *m,
+                    const int16_t *s1, const int8_t *s2, const int8_t *s3)
 {
     int i;
     int v[3];
@@ -1565,8 +1566,15 @@ int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
         if (!b)
             b = -2;
 
-        for (j=0; j <= i; j++)
-            bp1[j] = ((bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12)) * (0x1000000 / b)) >> 12;
+        b = 0x1000000 / b;
+        for (j=0; j <= i; j++) {
+#if CONFIG_FTRAPV
+            int a = bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12);
+            if((int)(a*(unsigned)b) != a*(int64_t)b)
+                return 1;
+#endif
+            bp1[j] = ((bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12)) * b) >> 12;
+        }
 
         if ((unsigned) bp1[i] + 0x1000 > 0x1fff)
             return 1;
@@ -1686,12 +1694,12 @@ int ff_irms(const int16_t *data)
     return 0x20000000 / (ff_t_sqrt(sum) >> 8);
 }
 
-void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
+void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
                            int cba_idx, int cb1_idx, int cb2_idx,
                            int gval, int gain)
 {
-    uint16_t buffer_a[BLOCKSIZE];
-    uint16_t *block;
+    int16_t buffer_a[BLOCKSIZE];
+    int16_t *block;
     int m[3];
 
     if (cba_idx) {
@@ -1708,8 +1716,8 @@ void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
 
     block = ractx->adapt_cb + BUFFERSIZE - BLOCKSIZE;
 
-    ff_add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
-               ff_cb1_vects[cb1_idx], ff_cb2_vects[cb2_idx]);
+    add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
+            ff_cb1_vects[cb1_idx], ff_cb2_vects[cb2_idx]);
 
     memcpy(ractx->curr_sblock, ractx->curr_sblock + BLOCKSIZE,
            LPC_ORDER*sizeof(*ractx->curr_sblock));

@@ -27,6 +27,7 @@
  *   http://www.pcisys.net/~melanson/codecs/
  */
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -169,7 +170,7 @@ static int wc3_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id = CODEC_ID_XAN_WC3;
+    st->codec->codec_id = AV_CODEC_ID_XAN_WC3;
     st->codec->codec_tag = 0;  /* no fourcc */
     st->codec->width = wc3->width;
     st->codec->height = wc3->height;
@@ -180,9 +181,10 @@ static int wc3_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
     wc3->audio_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id = CODEC_ID_PCM_S16LE;
+    st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
     st->codec->codec_tag = 1;
     st->codec->channels = WC3_AUDIO_CHANNELS;
+    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
     st->codec->bits_per_coded_sample = WC3_AUDIO_BITS;
     st->codec->sample_rate = WC3_SAMPLE_RATE;
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
@@ -293,7 +295,7 @@ static int wc3_read_close(AVFormatContext *s)
 
 AVInputFormat ff_wc3_demuxer = {
     .name           = "wc3movie",
-    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie"),
     .priv_data_size = sizeof(Wc3DemuxContext),
     .read_probe     = wc3_probe,
     .read_header    = wc3_read_header,

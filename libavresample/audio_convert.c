@@ -22,12 +22,14 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
 #include "audio_convert.h"
 #include "audio_data.h"
+#include "dither.h"
 
 enum ConvFuncType {
     CONV_FUNC_TYPE_FLAT,
@@ -45,8 +47,10 @@ typedef void (conv_func_deinterleave)(uint8_t **out, const uint8_t *in, int len,
 
 struct AudioConvert {
     AVAudioResampleContext *avr;
+    DitherContext *dc;
     enum AVSampleFormat in_fmt;
     enum AVSampleFormat out_fmt;
+    int apply_map;
     int channels;
     int planes;
     int ptr_align;
@@ -245,10 +249,19 @@ static void set_generic_function(AudioConvert *ac)
     SET_CONV_FUNC_GROUP(AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBL)
 }
 
+void ff_audio_convert_free(AudioConvert **ac)
+{
+    if (!*ac)
+        return;
+    ff_dither_free(&(*ac)->dc);
+    av_freep(ac);
+}
+
 AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
                                      enum AVSampleFormat out_fmt,
                                      enum AVSampleFormat in_fmt,
-                                     int channels)
+                                     int channels, int sample_rate,
+                                     int apply_map)
 {
     AudioConvert *ac;
     int in_planar, out_planar;
@@ -261,6 +274,19 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
     ac->out_fmt  = out_fmt;
     ac->in_fmt   = in_fmt;
     ac->channels = channels;
+    ac->apply_map = apply_map;
+
+    if (avr->dither_method != AV_RESAMPLE_DITHER_NONE          &&
+        av_get_packed_sample_fmt(out_fmt) == AV_SAMPLE_FMT_S16 &&
+        av_get_bytes_per_sample(in_fmt) > 2) {
+        ac->dc = ff_dither_alloc(avr, out_fmt, in_fmt, channels, sample_rate,
+                                 apply_map);
+        if (!ac->dc) {
+            av_free(ac);
+            return NULL;
+        }
+        return ac;
+    }
 
     in_planar  = av_sample_fmt_is_planar(in_fmt);
     out_planar = av_sample_fmt_is_planar(out_fmt);
@@ -275,15 +301,28 @@ AudioConvert *ff_audio_convert_alloc(AVAudioResampleContext *avr,
 
     set_generic_function(ac);
 
+    if (ARCH_ARM)
+        ff_audio_convert_init_arm(ac);
     if (ARCH_X86)
         ff_audio_convert_init_x86(ac);
 
     return ac;
 }
 
-int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in, int len)
+int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in)
 {
     int use_generic = 1;
+    int len         = in->nb_samples;
+    int p;
+
+    if (ac->dc) {
+        /* dithered conversion */
+        av_dlog(ac->avr, "%d samples - audio_convert: %s to %s (dithered)\n",
+                len, av_get_sample_fmt_name(ac->in_fmt),
+                av_get_sample_fmt_name(ac->out_fmt));
+
+        return ff_convert_dither(ac->dc, out, in);
+    }
 
     /* determine whether to use the optimized function based on pointer and
        samples alignment in both the input and output */
@@ -301,32 +340,73 @@ int ff_audio_convert(AudioConvert *ac, AudioData *out, AudioData *in, int len)
             av_get_sample_fmt_name(ac->out_fmt),
             use_generic ? ac->func_descr_generic : ac->func_descr);
 
-    switch (ac->func_type) {
-    case CONV_FUNC_TYPE_FLAT: {
-        int p;
-        if (!in->is_planar)
-            len *= in->channels;
-        if (use_generic) {
-            for (p = 0; p < ac->planes; p++)
-                ac->conv_flat_generic(out->data[p], in->data[p], len);
-        } else {
-            for (p = 0; p < ac->planes; p++)
-                ac->conv_flat(out->data[p], in->data[p], len);
+    if (ac->apply_map) {
+        ChannelMapInfo *map = &ac->avr->ch_map_info;
+
+        if (!av_sample_fmt_is_planar(ac->out_fmt)) {
+            av_log(ac->avr, AV_LOG_ERROR, "cannot remap packed format during conversion\n");
+            return AVERROR(EINVAL);
         }
-        break;
-    }
-    case CONV_FUNC_TYPE_INTERLEAVE:
-        if (use_generic)
-            ac->conv_interleave_generic(out->data[0], in->data, len, ac->channels);
-        else
-            ac->conv_interleave(out->data[0], in->data, len, ac->channels);
-        break;
-    case CONV_FUNC_TYPE_DEINTERLEAVE:
-        if (use_generic)
-            ac->conv_deinterleave_generic(out->data, in->data[0], len, ac->channels);
-        else
-            ac->conv_deinterleave(out->data, in->data[0], len, ac->channels);
-        break;
+
+        if (map->do_remap) {
+            if (av_sample_fmt_is_planar(ac->in_fmt)) {
+                conv_func_flat *convert = use_generic ? ac->conv_flat_generic :
+                                                        ac->conv_flat;
+
+                for (p = 0; p < ac->planes; p++)
+                    if (map->channel_map[p] >= 0)
+                        convert(out->data[p], in->data[map->channel_map[p]], len);
+            } else {
+                uint8_t *data[AVRESAMPLE_MAX_CHANNELS];
+                conv_func_deinterleave *convert = use_generic ?
+                                                  ac->conv_deinterleave_generic :
+                                                  ac->conv_deinterleave;
+
+                for (p = 0; p < ac->channels; p++)
+                    data[map->input_map[p]] = out->data[p];
+
+                convert(data, in->data[0], len, ac->channels);
+            }
+        }
+        if (map->do_copy || map->do_zero) {
+            for (p = 0; p < ac->planes; p++) {
+                if (map->channel_copy[p])
+                    memcpy(out->data[p], out->data[map->channel_copy[p]],
+                           len * out->stride);
+                else if (map->channel_zero[p])
+                    av_samples_set_silence(&out->data[p], 0, len, 1, ac->out_fmt);
+            }
+        }
+    } else {
+        switch (ac->func_type) {
+        case CONV_FUNC_TYPE_FLAT: {
+            if (!in->is_planar)
+                len *= in->channels;
+            if (use_generic) {
+                for (p = 0; p < ac->planes; p++)
+                    ac->conv_flat_generic(out->data[p], in->data[p], len);
+            } else {
+                for (p = 0; p < ac->planes; p++)
+                    ac->conv_flat(out->data[p], in->data[p], len);
+            }
+            break;
+        }
+        case CONV_FUNC_TYPE_INTERLEAVE:
+            if (use_generic)
+                ac->conv_interleave_generic(out->data[0], in->data, len,
+                                            ac->channels);
+            else
+                ac->conv_interleave(out->data[0], in->data, len, ac->channels);
+            break;
+        case CONV_FUNC_TYPE_DEINTERLEAVE:
+            if (use_generic)
+                ac->conv_deinterleave_generic(out->data, in->data[0], len,
+                                              ac->channels);
+            else
+                ac->conv_deinterleave(out->data, in->data[0], len,
+                                      ac->channels);
+            break;
+        }
     }
 
     out->nb_samples = in->nb_samples;

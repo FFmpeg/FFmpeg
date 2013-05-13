@@ -42,6 +42,17 @@
 #ifndef AVCODEC_SPARC_VIS_H
 #define AVCODEC_SPARC_VIS_H
 
+#define ACCEL_SPARC_VIS 1
+#define ACCEL_SPARC_VIS2 2
+
+static inline int vis_level(void)
+{
+    int accel = 0;
+    accel |= ACCEL_SPARC_VIS;
+    accel |= ACCEL_SPARC_VIS2;
+    return accel;
+}
+
 #define vis_opc_base    ((0x1 << 31) | (0x36 << 19))
 #define vis_opf(X)      ((X) << 5)
 #define vis_sreg(X)     (X)

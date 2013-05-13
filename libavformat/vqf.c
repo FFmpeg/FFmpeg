@@ -43,7 +43,7 @@ static int vqf_probe(AVProbeData *probe_packet)
     if (!memcmp(probe_packet->buf + 4, "00052200", 8))
         return AVPROBE_SCORE_MAX;
 
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static void add_metadata(AVFormatContext *s, uint32_t tag,
@@ -105,7 +105,7 @@ static int vqf_read_header(AVFormatContext *s)
     header_size = avio_rb32(s->pb);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id   = CODEC_ID_TWINVQ;
+    st->codec->codec_id   = AV_CODEC_ID_TWINVQ;
     st->start_time = 0;
 
     do {
@@ -131,6 +131,11 @@ static int vqf_read_header(AVFormatContext *s)
             read_bitrate        = AV_RB32(comm_chunk + 4);
             rate_flag           = AV_RB32(comm_chunk + 8);
             avio_skip(s->pb, len-12);
+
+            if (st->codec->channels <= 0) {
+                av_log(s, AV_LOG_ERROR, "Invalid number of channels\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             st->codec->bit_rate              = read_bitrate*1000;
             break;
@@ -175,6 +180,10 @@ static int vqf_read_header(AVFormatContext *s)
         break;
     default:
         st->codec->sample_rate = rate_flag*1000;
+        if (st->codec->sample_rate <= 0) {
+            av_log(s, AV_LOG_ERROR, "sample rate %d is invalid\n", st->codec->sample_rate);
+            return -1;
+        }
         break;
     }
 

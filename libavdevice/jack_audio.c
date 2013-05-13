@@ -27,6 +27,7 @@
 #include "libavutil/log.h"
 #include "libavutil/fifo.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
@@ -242,9 +243,9 @@ static int audio_read_header(AVFormatContext *context)
 
     stream->codec->codec_type   = AVMEDIA_TYPE_AUDIO;
 #if HAVE_BIGENDIAN
-    stream->codec->codec_id     = CODEC_ID_PCM_F32BE;
+    stream->codec->codec_id     = AV_CODEC_ID_PCM_F32BE;
 #else
-    stream->codec->codec_id     = CODEC_ID_PCM_F32LE;
+    stream->codec->codec_id     = AV_CODEC_ID_PCM_F32LE;
 #endif
     stream->codec->sample_rate  = self->sample_rate;
     stream->codec->channels     = self->nports;
@@ -319,7 +320,7 @@ static int audio_read_close(AVFormatContext *context)
 
 #define OFFSET(x) offsetof(JackData, x)
 static const AVOption options[] = {
-    { "channels", "Number of audio channels.", OFFSET(nports), AV_OPT_TYPE_INT, { 2 }, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels", "Number of audio channels.", OFFSET(nports), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

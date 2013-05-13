@@ -60,7 +60,7 @@ static int dts_probe(AVProbeData *p)
     max = markers[2] > markers[max] ? 2 : max;
     if (markers[max] > 3 && p->buf_size / markers[max] < 32*1024 &&
         markers[max] * 4 > sum * 3)
-        return AVPROBE_SCORE_MAX/2+1;
+        return AVPROBE_SCORE_EXTENSION + 1;
 
     return 0;
 }
@@ -73,5 +73,5 @@ AVInputFormat ff_dts_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "dts",
-    .raw_codec_id   = CODEC_ID_DTS,
+    .raw_codec_id   = AV_CODEC_ID_DTS,
 };

@@ -44,7 +44,7 @@ static int probe(AVProbeData *p)
             return 0;
         i+=j;
     }
-    return AVPROBE_SCORE_MAX/2;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int read_header(AVFormatContext *s)
@@ -56,7 +56,7 @@ static int read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id=CODEC_ID_G729;
+    st->codec->codec_id=AV_CODEC_ID_G729;
     st->codec->sample_rate=8000;
     st->codec->block_align = 16;
     st->codec->channels=1;
@@ -90,7 +90,8 @@ static int read_packet(AVFormatContext *s,
     if(ret != 8 * packet_size * sizeof(uint16_t))
         return AVERROR(EIO);
 
-    av_new_packet(pkt, packet_size);
+    if (av_new_packet(pkt, packet_size) < 0)
+        return AVERROR(ENOMEM);
 
     init_put_bits(&pbo, pkt->data, packet_size);
     for(j=0; j < packet_size; j++)
@@ -118,7 +119,7 @@ static int write_header(AVFormatContext *s)
 {
     AVCodecContext *enc = s->streams[0]->codec;
 
-    enc->codec_id = CODEC_ID_G729;
+    enc->codec_id = AV_CODEC_ID_G729;
     enc->channels = 1;
     enc->bits_per_coded_sample = 16;
     enc->block_align = (enc->bits_per_coded_sample * enc->channels) >> 3;
@@ -138,7 +139,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     init_get_bits(&gb, pkt->data, 8*10);
     for(i=0; i< 8 * 10; i++)
         avio_wl16(pb, get_bits1(&gb) ? BIT_1 : BIT_0);
-    avio_flush(pb);
 
     return 0;
 }
@@ -148,8 +148,8 @@ AVOutputFormat ff_bit_muxer = {
     .long_name    = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
     .mime_type    = "audio/bit",
     .extensions   = "bit",
-    .audio_codec  = CODEC_ID_G729,
-    .video_codec  = CODEC_ID_NONE,
+    .audio_codec  = AV_CODEC_ID_G729,
+    .video_codec  = AV_CODEC_ID_NONE,
     .write_header = write_header,
     .write_packet = write_packet,
 };

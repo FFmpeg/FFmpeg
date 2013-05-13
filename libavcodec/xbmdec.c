@@ -22,12 +22,12 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "mathops.h"
+#include "libavutil/avstring.h"
 
 static av_cold int xbm_decode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
 
     return 0;
 }
@@ -44,9 +44,9 @@ static int convert(uint8_t x)
 }
 
 static int xbm_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame, AVPacket *avpkt)
 {
-    AVFrame *p = avctx->coded_frame;
+    AVFrame *p = data;
     const uint8_t *end, *ptr = avpkt->data;
     uint8_t *dst;
     int ret, linesize, i, j;
@@ -57,7 +57,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         int number, len;
 
         ptr += strcspn(ptr, "#");
-        if (sscanf(ptr, "#define %256s %u", name, &number) != 2) {
+        if (sscanf(ptr, "#define %255s %u", name, &number) != 2) {
             av_log(avctx, AV_LOG_ERROR, "Unexpected preprocessor directive\n");
             return AVERROR_INVALIDDATA;
         }
@@ -74,13 +74,7 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         ptr += strcspn(ptr, "\n\r") + 1;
     }
 
-    avctx->pix_fmt = PIX_FMT_MONOWHITE;
-
-    if (p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference = 0;
-    if ((ret = avctx->get_buffer(avctx, p)) < 0)
+    if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     // goto start of image data
@@ -93,12 +87,12 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
             uint8_t val;
 
             ptr += strcspn(ptr, "x") + 1;
-            if (ptr < end && isxdigit(*ptr)) {
+            if (ptr < end && av_isxdigit(*ptr)) {
                 val = convert(*ptr);
                 ptr++;
-                if (isxdigit(*ptr))
+                if (av_isxdigit(*ptr))
                     val = (val << 4) + convert(*ptr);
-                *dst++ = av_reverse[val];
+                *dst++ = ff_reverse[val];
             } else {
                 av_log(avctx, AV_LOG_ERROR, "Unexpected data at '%.8s'\n", ptr);
                 return AVERROR_INVALIDDATA;
@@ -109,28 +103,16 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
     p->key_frame = 1;
     p->pict_type = AV_PICTURE_TYPE_I;
 
-    *data_size       = sizeof(AVFrame);
-    *(AVFrame *)data = *p;
+    *got_frame       = 1;
 
     return avpkt->size;
-}
-
-static av_cold int xbm_decode_close(AVCodecContext *avctx)
-{
-    if (avctx->coded_frame->data[0])
-        avctx->release_buffer(avctx, avctx->coded_frame);
-
-    av_freep(&avctx->coded_frame);
-
-    return 0;
 }
 
 AVCodec ff_xbm_decoder = {
     .name         = "xbm",
     .type         = AVMEDIA_TYPE_VIDEO,
-    .id           = CODEC_ID_XBM,
+    .id           = AV_CODEC_ID_XBM,
     .init         = xbm_decode_init,
-    .close        = xbm_decode_close,
     .decode       = xbm_decode_frame,
     .capabilities = CODEC_CAP_DR1,
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),

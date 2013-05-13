@@ -61,8 +61,8 @@ static int cavsvideo_probe(AVProbeData *p)
         }
     }
     if(seq && seq*9<=pic*10)
-        return AVPROBE_SCORE_MAX/2;
+        return AVPROBE_SCORE_EXTENSION;
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(cavsvideo, "raw Chinese AVS video", cavsvideo_probe, NULL, CODEC_ID_CAVS)
+FF_DEF_RAWVIDEO_DEMUXER(cavsvideo, "raw Chinese AVS (Audio Video Standard)", cavsvideo_probe, NULL, AV_CODEC_ID_CAVS)

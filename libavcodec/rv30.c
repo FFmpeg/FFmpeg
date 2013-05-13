@@ -25,7 +25,6 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "mpegvideo.h"
 #include "golomb.h"
 
@@ -78,8 +77,8 @@ static int rv30_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
 
     for(i = 0; i < 4; i++, dst += r->intra_types_stride - 4){
         for(j = 0; j < 4; j+= 2){
-            int code = svq3_get_ue_golomb(gb) << 1;
-            if(code >= 81U*2U){
+            unsigned code = svq3_get_ue_golomb(gb) << 1;
+            if (code > 80U*2U) {
                 av_log(r->s.avctx, AV_LOG_ERROR, "Incorrect intra prediction code\n");
                 return -1;
             }
@@ -106,9 +105,9 @@ static int rv30_decode_mb_info(RV34DecContext *r)
     static const int rv30_b_types[6] = { RV34_MB_SKIP, RV34_MB_B_DIRECT, RV34_MB_B_FORWARD, RV34_MB_B_BACKWARD, RV34_MB_TYPE_INTRA, RV34_MB_TYPE_INTRA16x16 };
     MpegEncContext *s = &r->s;
     GetBitContext *gb = &s->gb;
-    int code = svq3_get_ue_golomb(gb);
+    unsigned code     = svq3_get_ue_golomb(gb);
 
-    if(code > 11U){
+    if (code > 11) {
         av_log(s->avctx, AV_LOG_ERROR, "Incorrect MB type code\n");
         return -1;
     }
@@ -125,7 +124,7 @@ static int rv30_decode_mb_info(RV34DecContext *r)
 static inline void rv30_weak_loop_filter(uint8_t *src, const int step,
                                          const int stride, const int lim)
 {
-    uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
     int i, diff;
 
     for(i = 0; i < 4; i++){
@@ -147,7 +146,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
 
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        int mbtype = s->current_picture_ptr->f.mb_type[mb_pos];
+        int mbtype = s->current_picture_ptr->mb_type[mb_pos];
         if(IS_INTRA(mbtype) || IS_SEPARATE_DC(mbtype))
             r->deblock_coefs[mb_pos] = 0xFFFF;
         if(IS_INTRA(mbtype))
@@ -159,9 +158,9 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
      */
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos]];
+        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos]];
         if(mb_x)
-            left_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos - 1]];
+            left_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos - 1]];
         for(j = 0; j < 16; j += 4){
             Y = s->current_picture_ptr->f.data[0] + mb_x*16 + (row*16 + j) * s->linesize + 4 * !mb_x;
             for(i = !mb_x; i < 4; i++, Y += 4){
@@ -187,7 +186,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
                 for(i = !mb_x; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
-                    if(cur_cbp && (1 << ij))
+                    if (cur_cbp & (1 << ij))
                         loc_lim = cur_lim;
                     else if(!i && left_cbp & (1 << (ij + 1)))
                         loc_lim = left_lim;
@@ -201,9 +200,9 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
     }
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos]];
+        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos]];
         if(row)
-            top_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos - s->mb_stride]];
+            top_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos - s->mb_stride]];
         for(j = 4*!row; j < 16; j += 4){
             Y = s->current_picture_ptr->f.data[0] + mb_x*16 + (row*16 + j) * s->linesize;
             for(i = 0; i < 4; i++, Y += 4){
@@ -229,7 +228,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
                 for(i = 0; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
-                    if(r->cbp_chroma[mb_pos] && (1 << ij))
+                    if (r->cbp_chroma[mb_pos] & (1 << ij))
                         loc_lim = cur_lim;
                     else if(!j && top_cbp & (1 << (ij + 2)))
                         loc_lim = top_lim;
@@ -274,7 +273,7 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
 AVCodec ff_rv30_decoder = {
     .name                  = "rv30",
     .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = CODEC_ID_RV30,
+    .id                    = AV_CODEC_ID_RV30,
     .priv_data_size        = sizeof(RV34DecContext),
     .init                  = rv30_decode_init,
     .close                 = ff_rv34_decode_end,
