@@ -88,21 +88,10 @@ typedef struct {
     char *h_expr;           ///< height expression string
     char *x_expr;           ///< width  expression string
     char *y_expr;           ///< height expression string
-    char *color_str;
     uint8_t rgba_color[4];  ///< color for the padding area
     FFDrawContext draw;
     FFDrawColor color;
 } PadContext;
-
-static av_cold int init(AVFilterContext *ctx)
-{
-    PadContext *s = ctx->priv;
-
-    if (av_parse_color(s->rgba_color, s->color_str, -1, ctx) < 0)
-        return AVERROR(EINVAL);
-
-    return 0;
-}
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -378,7 +367,7 @@ static const AVOption pad_options[] = {
     { "h",      "set the pad area height expression",      OFFSET(h_expr), AV_OPT_TYPE_STRING, {.str = "ih"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "x",      "set the x offset expression for the input image position", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y",      "set the y offset expression for the input image position", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "color",  "set the color of the padded area border", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, .flags = FLAGS },
+    { "color",  "set the color of the padded area border", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
     { NULL },
 };
 
@@ -410,7 +399,6 @@ AVFilter avfilter_vf_pad = {
 
     .priv_size     = sizeof(PadContext),
     .priv_class    = &pad_class,
-    .init          = init,
     .query_formats = query_formats,
 
     .inputs    = avfilter_vf_pad_inputs,
