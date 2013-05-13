@@ -63,7 +63,6 @@ typedef struct {
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFrame *frame);
 
     /* only used by color */
-    char *color_str;
     FFDrawContext draw;
     FFDrawColor color;
     uint8_t color_rgba[4];
@@ -87,8 +86,8 @@ typedef struct {
 
 static const AVOption color_options[] = {
     /* only used by color */
-    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "color", "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",     "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
 
     COMMON_OPTIONS
     { NULL },
@@ -106,24 +105,11 @@ static const AVOption options[] = {
 static av_cold int init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
-    int ret = 0;
 
     if (test->nb_decimals && strcmp(ctx->filter->name, "testsrc")) {
         av_log(ctx, AV_LOG_WARNING,
                "Option 'decimals' is ignored with source '%s'\n",
                ctx->filter->name);
-    }
-
-    if (test->color_str) {
-        if (!strcmp(ctx->filter->name, "color")) {
-            ret = av_parse_color(test->color_rgba, test->color_str, -1, ctx);
-            if (ret < 0)
-                return ret;
-        } else {
-            av_log(ctx, AV_LOG_WARNING,
-                   "Option 'color' is ignored with source '%s'\n",
-                   ctx->filter->name);
-        }
     }
 
     test->time_base = av_inv_q(test->frame_rate);
@@ -241,8 +227,6 @@ static int color_config_props(AVFilterLink *inlink)
     if ((ret = config_props(inlink)) < 0)
         return ret;
 
-    av_log(ctx, AV_LOG_VERBOSE, "color:0x%02x%02x%02x%02x\n",
-           test->color_rgba[0], test->color_rgba[1], test->color_rgba[2], test->color_rgba[3]);
     return 0;
 }
 
@@ -253,17 +237,11 @@ static int color_process_command(AVFilterContext *ctx, const char *cmd, const ch
     int ret;
 
     if (!strcmp(cmd, "color") || !strcmp(cmd, "c")) {
-        char *color_str;
         uint8_t color_rgba[4];
 
         ret = av_parse_color(color_rgba, args, -1, ctx);
         if (ret < 0)
             return ret;
-        color_str = av_strdup(args);
-        if (!color_str)
-            return AVERROR(ENOMEM);
-        av_free(test->color_str);
-        test->color_str = color_str;
 
         memcpy(test->color_rgba, color_rgba, sizeof(color_rgba));
         ff_draw_color(&test->draw, &test->color, test->color_rgba);
