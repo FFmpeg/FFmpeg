@@ -29,4 +29,7 @@
 
 #include "rnd_template.c"
 
+PIXELS16(, ff_avg, , _xy2, _mmx)
+PIXELS16(, ff_put, , _xy2, _mmx)
+
 #endif /* HAVE_INLINE_ASM */
