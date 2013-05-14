@@ -412,14 +412,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         top_buf = ff_bufqueue_get(&b->queue_top);
         bottom_buf = ff_bufqueue_get(&b->queue_bottom);
 
-        out_buf = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-        if (!out_buf) {
-            return AVERROR(ENOMEM);
+        if (!ctx->is_disabled) {
+            out_buf = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+            if (!out_buf)
+                return AVERROR(ENOMEM);
+            av_frame_copy_props(out_buf, top_buf);
+            blend_frame(ctx, top_buf, bottom_buf, out_buf);
+        } else {
+            out_buf = av_frame_clone(top_buf);
+            if (!out_buf)
+                return AVERROR(ENOMEM);
         }
-        av_frame_copy_props(out_buf, top_buf);
 
         b->frame_requested = 0;
-        blend_frame(ctx, top_buf, bottom_buf, out_buf);
         ret = ff_filter_frame(outlink, out_buf);
         av_frame_free(&top_buf);
         av_frame_free(&bottom_buf);
@@ -460,4 +465,5 @@ AVFilter avfilter_vf_blend = {
     .inputs        = blend_inputs,
     .outputs       = blend_outputs,
     .priv_class    = &blend_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
