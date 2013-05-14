@@ -3424,6 +3424,7 @@ case $target_os in
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(FULLNAME).dll.a'
         objformat="win32"
         enable dos_paths
+        disable pic
         ;;
     *-dos|freedos|opendos)
         network_extralibs="-lsocket"
