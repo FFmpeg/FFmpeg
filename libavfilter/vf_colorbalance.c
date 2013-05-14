@@ -185,20 +185,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVFilterPad colorbalance_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_VIDEO,
-        .filter_frame   = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 static const AVFilterPad colorbalance_outputs[] = {
-     {
-         .name         = "default",
-         .type         = AVMEDIA_TYPE_VIDEO,
-         .config_props = config_output,
-     },
-     { NULL }
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+    },
+    { NULL }
 };
 
 AVFilter avfilter_vf_colorbalance = {

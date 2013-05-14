@@ -331,20 +331,20 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad colorchannelmixer_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_VIDEO,
-        .filter_frame   = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 static const AVFilterPad colorchannelmixer_outputs[] = {
-     {
-         .name         = "default",
-         .type         = AVMEDIA_TYPE_VIDEO,
-         .config_props = config_output,
-     },
-     { NULL }
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+    },
+    { NULL }
 };
 
 AVFilter avfilter_vf_colorchannelmixer = {

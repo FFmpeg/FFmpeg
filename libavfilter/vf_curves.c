@@ -532,11 +532,11 @@ static const AVFilterPad curves_inputs[] = {
 };
 
 static const AVFilterPad curves_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter avfilter_vf_curves = {
