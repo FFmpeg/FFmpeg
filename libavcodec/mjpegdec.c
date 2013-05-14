@@ -711,10 +711,9 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor,
 }
 
 static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
-                                 int point_transform)
+                                 int point_transform, int nb_components)
 {
     int i, mb_x, mb_y;
-    const int nb_components = 3;
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
@@ -1108,7 +1107,8 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
                 if (ljpeg_decode_rgb_scan(s, predictor, point_transform) < 0)
                     return -1;
             } else {
-                if (ljpeg_decode_yuv_scan(s, predictor, point_transform) < 0)
+                if (ljpeg_decode_yuv_scan(s, predictor, point_transform,
+                                          nb_components))
                     return -1;
             }
         }
