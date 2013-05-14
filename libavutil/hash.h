@@ -49,6 +49,18 @@ const char *av_hash_names(int i);
 const char *av_hash_get_name(const struct AVHashContext *ctx);
 
 /**
+ * Maximum value that av_hash_get_size will currently return.
+ *
+ * You can use this if you absolutely want or need to use static allocation
+ * and are fine with not supporting hashes newly added to libavutil without
+ * recompilation.
+ * Note that you still need to check against av_hash_get_size, adding new hashes
+ * with larger sizes will not be considered an ABI change and should not cause
+ * your code to overflow a buffer.
+ */
+#define AV_HASH_MAX_SIZE 32
+
+/**
  * Get the size of the resulting hash value in bytes.
  *
  * The pointer passed to av_hash_final have space for at least this many bytes.
