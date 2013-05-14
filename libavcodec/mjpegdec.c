@@ -1489,6 +1489,12 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             else if (start_code == COM)
                 mjpeg_decode_com(s);
 
+            if (!CONFIG_JPEGLS_DECODER &&
+                (start_code == SOF48 || start_code == LSE)) {
+                av_log(avctx, AV_LOG_ERROR, "JPEG-LS support not enabled.\n");
+                return AVERROR(ENOSYS);
+            }
+
             switch (start_code) {
             case SOI:
                 s->restart_interval = 0;
