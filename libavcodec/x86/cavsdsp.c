@@ -29,7 +29,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/cavsdsp.h"
 #include "constants.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 #include "config.h"
 
 #if HAVE_MMX_INLINE

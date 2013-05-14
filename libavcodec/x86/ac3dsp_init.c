@@ -22,7 +22,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 #include "libavcodec/ac3.h"
 #include "libavcodec/ac3dsp.h"
 

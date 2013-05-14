@@ -25,7 +25,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/simple_idct.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 #include "idct_xvid.h"
 
 void ff_put_pixels8_l2_mmxext(uint8_t *dst, uint8_t *src1, uint8_t *src2,

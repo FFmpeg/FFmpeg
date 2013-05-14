@@ -23,7 +23,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/h264dsp.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 /***********************************/
 /* IDCT */

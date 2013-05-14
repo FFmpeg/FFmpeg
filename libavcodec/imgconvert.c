@@ -41,7 +41,7 @@
 #include "libavutil/imgutils.h"
 
 #if HAVE_MMX_EXTERNAL
-#include "x86/dsputil_mmx.h"
+#include "x86/dsputil_x86.h"
 #endif
 
 #define FF_COLOR_NA      -1
