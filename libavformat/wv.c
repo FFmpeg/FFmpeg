@@ -73,8 +73,11 @@ static int wv_probe(AVProbeData *p)
     /* check file header */
     if (p->buf_size <= 32)
         return 0;
-    if (p->buf[0] == 'w' && p->buf[1] == 'v' &&
-        p->buf[2] == 'p' && p->buf[3] == 'k')
+    if (AV_RL32(&p->buf[0]) == MKTAG('w', 'v', 'p', 'k') &&
+        AV_RL32(&p->buf[4]) >= 24 &&
+        AV_RL32(&p->buf[4]) <= WV_BLOCK_LIMIT &&
+        AV_RL16(&p->buf[8]) >= 0x402 &&
+        AV_RL16(&p->buf[8]) <= 0x410)
         return AVPROBE_SCORE_MAX;
     else
         return 0;
