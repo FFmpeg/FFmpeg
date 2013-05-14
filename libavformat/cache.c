@@ -25,12 +25,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
 #include "os_support.h"
 #include "avformat.h"
 #include "url.h"
@@ -52,6 +54,17 @@
 
 #define BUFFER_SIZE 8192
 
+enum CACHE_TYPE {
+  CACHE_NOT_AVAILABLE = 1,
+  CACHE_UPDATE = 2,
+  CACHE_SPEED = 3,
+};
+
+enum CACHE_INFO {
+  CACHE_INFO_NO_SPACE = 1,
+  CACHE_INFO_STREAM_NOT_SUPPORT = 2,
+};
+
 typedef struct Segment {
   int64_t begin;
   int64_t end;
@@ -72,8 +85,15 @@ typedef struct CacheContext {
   int64_t length;
   pthread_t thread;
   pthread_mutex_t mutex; // protect fdw and inner
-  void (*callback)(int64_t *segs, int len);
+  void (*callback)(int type, int info, void *segs); // info or len
 } CacheContext;
+
+static int64_t get_free_space(int fd) {
+  struct statfs stat;
+  if (fstatfs(fd, &stat) == 0)
+    return (stat.f_bfree) * (stat.f_bsize);
+  return 0;
+}
 
 static Segment *segments_select(CacheContext *c, Segment **segs, int64_t position)
 {
@@ -180,24 +200,38 @@ static void* cache_fill_thread(void* arg)
 {
   uint8_t buf[BUFFER_SIZE];
   int r, w, len = 0, osl = 0;
+  int64_t rate_time = 0, rate_time_diff = 0;
   CacheContext *c = (CacheContext *)arg;
+
+  if ((get_free_space(c->fdi) <= 100) && c->callback) {
+    c->callback(CACHE_NOT_AVAILABLE, CACHE_INFO_NO_SPACE, NULL);
+    return NULL;
+  }
 
   while (c->cache_fill && c->seg->end - c->seg->begin < c->length) {
     if (c->seg->end < c->length) {
       pthread_mutex_lock(&c->mutex);
       r = ffurl_read(c->inner, buf, BUFFER_SIZE);
-      if(r > 0){
+      if(r > 0) {
         w = write(c->fdw, buf, r);
         av_assert0(w == r);
         c->seg->end += w;
         len += w;
         osl = c->num_segs;
         segments_balance(c, c->seg);
+
+        rate_time_diff = av_gettime() - rate_time;
+        if (rate_time_diff > 2000000 && c->callback && len > 0) {
+          c->callback(CACHE_SPEED, (len * (int64_t)1000000 / 1024 / rate_time_diff), NULL);
+          rate_time = av_gettime();
+        }
+
         if ((osl != c->num_segs || len > 102400) && c->segs_flat && c->num_segs > 0 && c->callback) {
           segments_dump(c, c->segs, c->fdi);
-          c->callback(c->segs_flat, c->num_segs);
+          c->callback(CACHE_UPDATE, c->num_segs , c->segs_flat);
           len = 0;
         }
+
         pthread_mutex_unlock(&c->mutex);
       } else {
         pthread_mutex_unlock(&c->mutex);
@@ -208,13 +242,18 @@ static void* cache_fill_thread(void* arg)
     }
   }
 
+  if (len > 0 && c->callback) {
+    c->callback(CACHE_SPEED, 0, NULL);
+  }
+
   if (len > 0 && c->segs_flat && c->num_segs > 0 && c->callback) {
     segments_dump(c, c->segs, c->fdi);
-    c->callback(c->segs_flat, c->num_segs);
+    c->callback(CACHE_UPDATE, c->num_segs, c->segs_flat);
   }
 
   return NULL;
 }
+
 
 static int cache_open(URLContext *h, const char *arg, int flags)
 {
@@ -247,7 +286,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
         c->seg = c->segs;
         if (c->segs_flat && c->num_segs > 0 && c->callback) {
           segments_dump(c, c->segs, c->fdi);
-          c->callback(c->segs_flat, c->num_segs);
+          c->callback(CACHE_UPDATE, c->num_segs,  c->segs_flat);
         }
       } else {
         c->seg = segments_select(c, &c->segs, 0);
@@ -365,3 +404,5 @@ URLProtocol ff_cache_protocol = {
   .priv_data_size      = sizeof(CacheContext),
   .priv_data_class     = &cache_context_class,
 };
+
+
