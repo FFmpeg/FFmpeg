@@ -34,7 +34,8 @@ OBJS-$(CONFIG_VP8_DECODER)             += x86/vp8dsp_init.o
 OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
-MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
+MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_init.o            \
+                                          x86/dsputil_mmx.o             \
                                           x86/fdct.o                    \
                                           x86/fpel_mmx.o                \
                                           x86/idct_mmx_xvid.o           \
