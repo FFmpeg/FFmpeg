@@ -762,6 +762,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
 {
     av_assert0(0);
+    return AVERROR_BUG;
 }
 #endif
 
