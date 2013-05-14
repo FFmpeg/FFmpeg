@@ -22,6 +22,9 @@ fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS
 FATE_SAMPLES_AVCONV-$(call DEMDEC, RPL, ESCAPE124) += fate-armovie-escape124
 fate-armovie-escape124: CMD = framecrc -i $(SAMPLES)/rpl/ESCAPE.RPL -pix_fmt rgb24
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, RPL, ESCAPE130) += fate-armovie-escape130
+fate-armovie-escape130: CMD = framecrc -i $(SAMPLES)/rpl/landing.rpl -an
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, AURA) += fate-auravision-v1
 fate-auravision-v1: CMD = framecrc -i $(SAMPLES)/auravision/SOUVIDEO.AVI -an
 
