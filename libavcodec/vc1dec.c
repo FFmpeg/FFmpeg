@@ -4619,7 +4619,8 @@ static void vc1_decode_p_blocks(VC1Context *v)
         break;
     }
 
-    apply_loop_filter   = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY);
+    apply_loop_filter   = s->loop_filter && !(s->avctx->skip_loop_filter >= AVDISCARD_NONKEY) &&
+                          v->fcm == PROGRESSIVE;
     s->first_slice_line = 1;
     memset(v->cbp_base, 0, sizeof(v->cbp_base[0])*2*s->mb_stride);
     for (s->mb_y = s->start_mb_y; s->mb_y < s->end_mb_y; s->mb_y++) {
@@ -4633,7 +4634,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
             else if (v->fcm == ILACE_FRAME)
                 vc1_decode_p_mb_intfr(v);
             else vc1_decode_p_mb(v);
-            if (s->mb_y != s->start_mb_y && apply_loop_filter && v->fcm == PROGRESSIVE)
+            if (s->mb_y != s->start_mb_y && apply_loop_filter)
                 vc1_apply_p_loop_filter(v);
             if (get_bits_count(&s->gb) > v->bits || get_bits_count(&s->gb) < 0) {
                 // TODO: may need modification to handle slice coding
