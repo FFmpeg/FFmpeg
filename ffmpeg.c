@@ -162,6 +162,8 @@ static struct termios oldtty;
 static int restore_tty;
 #endif
 
+static void free_input_threads(void);
+
 
 /* sub2video hack:
    Convert subtitles to video with alpha to insert them in filter graphs.
@@ -457,6 +459,9 @@ static void exit_program(void)
         av_freep(&output_streams[i]->logfile_prefix);
         av_freep(&output_streams[i]);
     }
+#if HAVE_PTHREADS
+    free_input_threads();
+#endif
     for (i = 0; i < nb_input_files; i++) {
         avformat_close_input(&input_files[i]->ctx);
         av_freep(&input_files[i]);
