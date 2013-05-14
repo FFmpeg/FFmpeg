@@ -2214,6 +2214,16 @@ case "$toolchain" in
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
     ;;
+    gcc-asan)
+        cc_default="gcc"
+        add_cflags  -fsanitize=address
+        add_ldflags -fsanitize=address
+    ;;
+    gcc-tsan)
+        cc_default="gcc"
+        add_cflags  -fsanitize=thread -pie -fPIC
+        add_ldflags -fsanitize=thread -pie -fPIC
+    ;;
     valgrind-massif)
         target_exec_default="valgrind"
         target_exec_args="--alloc-fn=av_malloc --alloc-fn=av_mallocz"
