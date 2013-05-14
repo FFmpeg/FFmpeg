@@ -56,7 +56,7 @@ struct {
     [MD5]     = {"MD5",     16},
     [MURMUR3] = {"murmur3", 16},
     [SHA160]  = {"SHA160",  20},
-    [SHA224]  = {"SHA240",  28},
+    [SHA224]  = {"SHA224",  28},
     [SHA256]  = {"SHA256",  32},
     [CRC32]   = {"CRC32",    4},
     [ADLER32] = {"adler32",  4},
