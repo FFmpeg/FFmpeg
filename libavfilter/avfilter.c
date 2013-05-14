@@ -555,7 +555,7 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
 
 #if FF_API_OLD_FILTER_OPTS
         if (!strcmp(filter->filter->name, "scale") &&
-            strchr(args, ':') < strchr(args, '=')) {
+            strchr(args, ':') && strchr(args, ':') < strchr(args, '=')) {
             /* old w:h:flags=<flags> syntax */
             char *copy = av_strdup(args);
             char *p;
