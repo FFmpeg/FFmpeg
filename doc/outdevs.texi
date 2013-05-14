@@ -26,7 +26,7 @@ ALSA (Advanced Linux Sound Architecture) output device.
 
 CACA output device.
 
-This output devices allows to show a video stream in CACA window.
+This output device allows to show a video stream in CACA window.
 Only one CACA window is allowed per application, so you can
 have only one instance of this output device in an application.
 
@@ -112,7 +112,7 @@ OSS (Open Sound System) output device.
 
 SDL (Simple DirectMedia Layer) output device.
 
-This output devices allows to show a video stream in an SDL
+This output device allows to show a video stream in an SDL
 window. Only one SDL window is allowed per application, so you can
 have only one instance of this output device in an application.
 
