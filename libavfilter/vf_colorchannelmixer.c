@@ -113,25 +113,25 @@ static int config_output(AVFilterLink *outlink)
             cm->lut[i][j] = buffer;
 
     for (i = 0; i < size; i++) {
-        cm->lut[R][R][i] = i * cm->rr;
-        cm->lut[R][G][i] = i * cm->rg;
-        cm->lut[R][B][i] = i * cm->rb;
-        cm->lut[R][A][i] = i * cm->ra;
+        cm->lut[R][R][i] = round(i * cm->rr);
+        cm->lut[R][G][i] = round(i * cm->rg);
+        cm->lut[R][B][i] = round(i * cm->rb);
+        cm->lut[R][A][i] = round(i * cm->ra);
 
-        cm->lut[G][R][i] = i * cm->gr;
-        cm->lut[G][G][i] = i * cm->gg;
-        cm->lut[G][B][i] = i * cm->gb;
-        cm->lut[G][A][i] = i * cm->ga;
+        cm->lut[G][R][i] = round(i * cm->gr);
+        cm->lut[G][G][i] = round(i * cm->gg);
+        cm->lut[G][B][i] = round(i * cm->gb);
+        cm->lut[G][A][i] = round(i * cm->ga);
 
-        cm->lut[B][R][i] = i * cm->br;
-        cm->lut[B][G][i] = i * cm->bg;
-        cm->lut[B][B][i] = i * cm->bb;
-        cm->lut[B][A][i] = i * cm->ba;
+        cm->lut[B][R][i] = round(i * cm->br);
+        cm->lut[B][G][i] = round(i * cm->bg);
+        cm->lut[B][B][i] = round(i * cm->bb);
+        cm->lut[B][A][i] = round(i * cm->ba);
 
-        cm->lut[A][R][i] = i * cm->ar;
-        cm->lut[A][G][i] = i * cm->ag;
-        cm->lut[A][B][i] = i * cm->ab;
-        cm->lut[A][A][i] = i * cm->aa;
+        cm->lut[A][R][i] = round(i * cm->ar);
+        cm->lut[A][G][i] = round(i * cm->ag);
+        cm->lut[A][B][i] = round(i * cm->ab);
+        cm->lut[A][A][i] = round(i * cm->aa);
     }
 
     return 0;
