@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2008 Affine Systems, Inc (Michael Sullivan, Bobby Impollonia)
+ * Copyright (c) 2013 Andrey Utkin <andrey.krieger.utkin gmail com>
  *
  * This file is part of FFmpeg.
  *
@@ -20,8 +21,8 @@
 
 /**
  * @file
- * Box drawing filter. Also a nice template for a filter that needs to
- * write in the input frame.
+ * Box and grid drawing filters. Also a nice template for a filter
+ * that needs to write in the input frame.
  */
 
 #include "libavutil/colorspace.h"
@@ -135,6 +136,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define OFFSET(x) offsetof(DrawBoxContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
+#if CONFIG_DRAWBOX_FILTER
+
 static const AVOption drawbox_options[] = {
     { "x",      "Horizontal position of the left box edge", OFFSET(x),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
     { "y",      "Vertical position of the top box edge",    OFFSET(y),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
@@ -151,7 +154,7 @@ static const AVOption drawbox_options[] = {
 
 AVFILTER_DEFINE_CLASS(drawbox);
 
-static const AVFilterPad avfilter_vf_drawbox_inputs[] = {
+static const AVFilterPad drawbox_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
@@ -163,7 +166,7 @@ static const AVFilterPad avfilter_vf_drawbox_inputs[] = {
     { NULL }
 };
 
-static const AVFilterPad avfilter_vf_drawbox_outputs[] = {
+static const AVFilterPad drawbox_outputs[] = {
     {
         .name = "default",
         .type = AVMEDIA_TYPE_VIDEO,
@@ -179,7 +182,115 @@ AVFilter avfilter_vf_drawbox = {
     .init      = init,
 
     .query_formats   = query_formats,
-    .inputs    = avfilter_vf_drawbox_inputs,
-    .outputs   = avfilter_vf_drawbox_outputs,
+    .inputs    = drawbox_inputs,
+    .outputs   = drawbox_outputs,
     .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
+#endif /* CONFIG_DRAWBOX_FILTER */
+
+#if CONFIG_DRAWGRID_FILTER
+static av_pure av_always_inline int pixel_belongs_to_grid(DrawBoxContext *drawgrid, int x, int y)
+{
+    // x is horizontal (width) coord,
+    // y is vertical (height) coord
+    int x_modulo;
+    int y_modulo;
+
+    // Abstract from the offset
+    x -= drawgrid->x;
+    y -= drawgrid->y;
+
+    x_modulo = x % drawgrid->w;
+    y_modulo = y % drawgrid->h;
+
+    // If x or y got negative, fix values to preserve logics
+    if (x_modulo < 0)
+        x_modulo += drawgrid->w;
+    if (y_modulo < 0)
+        y_modulo += drawgrid->h;
+
+    return x_modulo < drawgrid->thickness  // Belongs to vertical line
+        || y_modulo < drawgrid->thickness;  // Belongs to horizontal line
+}
+
+static int drawgrid_filter_frame(AVFilterLink *inlink, AVFrame *frame)
+{
+    DrawBoxContext *drawgrid = inlink->dst->priv;
+    int plane, x, y;
+    uint8_t *row[4];
+
+    for (y = 0; y < frame->height; y++) {
+        row[0] = frame->data[0] + y * frame->linesize[0];
+
+        for (plane = 1; plane < 3; plane++)
+            row[plane] = frame->data[plane] +
+                 frame->linesize[plane] * (y >> drawgrid->vsub);
+
+        if (drawgrid->invert_color) {
+            for (x = 0; x < frame->width; x++)
+                if (pixel_belongs_to_grid(drawgrid, x, y))
+                    row[0][x] = 0xff - row[0][x];
+        } else {
+            for (x = 0; x < frame->width; x++) {
+                double alpha = (double)drawgrid->yuv_color[A] / 255;
+
+                if (pixel_belongs_to_grid(drawgrid, x, y)) {
+                    row[0][x                  ] = (1 - alpha) * row[0][x                  ] + alpha * drawgrid->yuv_color[Y];
+                    row[1][x >> drawgrid->hsub] = (1 - alpha) * row[1][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[U];
+                    row[2][x >> drawgrid->hsub] = (1 - alpha) * row[2][x >> drawgrid->hsub] + alpha * drawgrid->yuv_color[V];
+                }
+            }
+        }
+    }
+
+    return ff_filter_frame(inlink->dst->outputs[0], frame);
+}
+
+static const AVOption drawgrid_options[] = {
+    { "x",         "set horizontal offset",   OFFSET(x),         AV_OPT_TYPE_INT,    { .i64 = 0 },       INT_MIN,  INT_MAX,  FLAGS },
+    { "y",         "set vertical offset",     OFFSET(y),         AV_OPT_TYPE_INT,    { .i64 = 0 },       INT_MIN,  INT_MAX,  FLAGS },
+    { "width",     "set width of grid cell",  OFFSET(w),         AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
+    { "w",         "set width of grid cell",  OFFSET(w),         AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
+    { "height",    "set height of grid cell", OFFSET(h),         AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
+    { "h",         "set height of grid cell", OFFSET(h),         AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
+    { "color",     "set color of the grid",   OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",         "set color of the grid",   OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "thickness", "set grid line thickness", OFFSET(thickness), AV_OPT_TYPE_INT,    {.i64=1},           0,        INT_MAX,  FLAGS },
+    { "t",         "set grid line thickness", OFFSET(thickness), AV_OPT_TYPE_INT,    {.i64=1},           0,        INT_MAX,  FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(drawgrid);
+
+static const AVFilterPad drawgrid_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .config_props   = config_input,
+        .filter_frame   = drawgrid_filter_frame,
+        .needs_writable = 1,
+    },
+    { NULL }
+};
+
+static const AVFilterPad drawgrid_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
+AVFilter avfilter_vf_drawgrid = {
+    .name          = "drawgrid",
+    .description   = NULL_IF_CONFIG_SMALL("Draw a colored grid on the input video."),
+    .priv_size     = sizeof(DrawBoxContext),
+    .priv_class    = &drawgrid_class,
+    .init          = init,
+    .query_formats = query_formats,
+    .inputs        = drawgrid_inputs,
+    .outputs       = drawgrid_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+};
+
+#endif  /* CONFIG_DRAWGRID_FILTER */
