@@ -155,7 +155,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     X264Context *x4 = ctx->priv_data;
     x264_nal_t *nal;
     int nnal, i, ret;
-    x264_picture_t pic_out;
+    x264_picture_t pic_out = {0};
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
