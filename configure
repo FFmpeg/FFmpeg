@@ -2084,6 +2084,8 @@ v4l2_indev_deps_any="linux_videodev2_h sys_videoio_h"
 v4l2_outdev_deps_any="linux_videodev2_h sys_videoio_h"
 vfwcap_indev_deps="capCreateCaptureWindow vfwcap_defines"
 vfwcap_indev_extralibs="-lavicap32"
+xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
+xv_outdev_extralibs="-lXv"
 x11grab_indev_deps="x11grab"
 
 # protocols
@@ -3982,6 +3984,7 @@ check_func_headers windows.h SetConsoleTextAttribute
 check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
+check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv
 
 check_header cl/cl.h
 check_header direct.h

@@ -58,6 +58,7 @@ version <next>:
 - Hald CLUT support (generation and filtering)
 - VC-1 interlaced B-frame support
 - support for WavPack muxing (raw and in Matroska)
+- XVideo output device
 
 
 version 1.2:
