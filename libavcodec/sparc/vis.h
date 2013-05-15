@@ -173,32 +173,6 @@ static inline void vis_set_gsr(unsigned int _val)
 #define vis_st64(rs1,mem)               vis_r2m(std, rs1, mem)
 #define vis_st64_2(rs1,mem1,mem2)       vis_r2m_2(std, rs1, mem1, mem2)
 
-#define vis_ldblk(mem, rd) \
-do {        register void *__mem __asm__("g1"); \
-        __mem = &(mem); \
-        __asm__ volatile(".word 0xc1985e00 | %1" \
-                             : \
-                             : "r" (__mem), \
-                               "i" (vis_rd_d(rd)) \
-                             : "memory"); \
-} while (0)
-
-#define vis_stblk(rd, mem) \
-do {        register void *__mem __asm__("g1"); \
-        __mem = &(mem); \
-        __asm__ volatile(".word 0xc1b85e00 | %1" \
-                             : \
-                             : "r" (__mem), \
-                               "i" (vis_rd_d(rd)) \
-                             : "memory"); \
-} while (0)
-
-#define vis_membar_storestore()        \
-        __asm__ volatile(".word 0x8143e008" : : : "memory")
-
-#define vis_membar_sync()        \
-        __asm__ volatile(".word 0x8143e040" : : : "memory")
-
 /* 16 and 32 bit partitioned addition and subtraction.  The normal
  * versions perform 4 16-bit or 2 32-bit additions or subtractions.
  * The 's' versions perform 2 16-bit or 1 32-bit additions or
@@ -261,38 +235,6 @@ static inline void vis_alignaddr_g0(void *_ptr)
                              : "=&r" (ptr)
                              : "0" (ptr),
                                "i" (vis_opc_base | vis_opf(0x18) |
-                                    vis_rs1_s(1) |
-                                    vis_rs2_s(0) |
-                                    vis_rd_s(0)));
-}
-
-static inline void *vis_alignaddrl(void *_ptr)
-{
-        register void *ptr __asm__("g1");
-
-        ptr = _ptr;
-
-        __asm__ volatile(".word %2"
-                             : "=&r" (ptr)
-                             : "0" (ptr),
-                               "i" (vis_opc_base | vis_opf(0x19) |
-                                    vis_rs1_s(1) |
-                                    vis_rs2_s(0) |
-                                    vis_rd_s(1)));
-
-        return ptr;
-}
-
-static inline void vis_alignaddrl_g0(void *_ptr)
-{
-        register void *ptr __asm__("g1");
-
-        ptr = _ptr;
-
-        __asm__ volatile(".word %2"
-                             : "=&r" (ptr)
-                             : "0" (ptr),
-                               "i" (vis_opc_base | vis_opf(0x19) |
                                     vis_rs1_s(1) |
                                     vis_rs2_s(0) |
                                     vis_rd_s(0)));
