@@ -180,7 +180,8 @@ char *av_get_pix_fmt_string (char *buf, int buf_size, enum AVPixelFormat pix_fmt
 
 /**
  * Return the number of bits per pixel used by the pixel format
- * described by pixdesc.
+ * described by pixdesc. Note that this is not the same as the number
+ * of bits per sample.
  *
  * The returned number of bits refers to the number of bits actually
  * used for storing the pixel information, that is padding bits are

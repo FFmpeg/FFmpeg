@@ -406,13 +406,9 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
-                    av_strlcpy(scale_args, "0:0", sizeof(scale_args));
-                    if (graph->scale_sws_opts) {
-                        av_strlcat(scale_args, ":", sizeof(scale_args));
-                        av_strlcat(scale_args, graph->scale_sws_opts, sizeof(scale_args));
-                    }
+
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
-                                                            inst_name, scale_args, NULL,
+                                                            inst_name, graph->scale_sws_opts, NULL,
                                                             graph)) < 0)
                         return ret;
                     break;
