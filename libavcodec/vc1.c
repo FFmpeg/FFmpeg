@@ -1249,7 +1249,8 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         } else if (v->fcm == ILACE_FRAME) {
             if (v->extended_dmv)
                 v->dmvrange = get_unary(gb, 0, 3);
-            get_bits1(gb); /* intcomp - present but shall always be 0 */
+            if (get_bits1(gb)) /* intcomp - present but shall always be 0 */
+                av_log(v->s.avctx, AV_LOG_WARNING, "Intensity compensation set for B picture\n");
             v->intcomp          = 0;
             v->mv_mode          = MV_PMODE_1MV;
             v->fourmvswitch     = 0;
