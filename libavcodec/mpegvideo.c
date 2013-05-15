@@ -59,10 +59,6 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
 static void dct_unquantize_h263_inter_c(MpegEncContext *s,
                                   int16_t *block, int n, int qscale);
 
-
-/* enable all paranoid tests for rounding, overflows, etc... */
-//#define PARANOID
-
 //#define DEBUG
 
 
