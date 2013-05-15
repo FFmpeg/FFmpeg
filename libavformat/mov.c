@@ -25,7 +25,6 @@
 
 #include <limits.h>
 
-//#define DEBUG
 //#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/attributes.h"

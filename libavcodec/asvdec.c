@@ -33,9 +33,6 @@
 #include "mathops.h"
 #include "mpeg12data.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 #define VLC_BITS 6
 #define ASV2_LEVEL_VLC_BITS 10
 

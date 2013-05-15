@@ -27,7 +27,6 @@
  * h263 bitstream encoder.
  */
 
-//#define DEBUG
 #include <limits.h>
 
 #include "libavutil/attributes.h"
@@ -39,9 +38,6 @@
 #include "flv.h"
 #include "mpeg4video.h"
 #include "internal.h"
-
-//#undef NDEBUG
-//#include <assert.h>
 
 /**
  * Table of number of bits a motion vector component needs.

@@ -23,7 +23,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//#define DEBUG
 #define RC_VARIANCE 1 // use variance or ssd for fast rc
 
 #include "libavutil/attributes.h"

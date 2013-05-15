@@ -28,8 +28,6 @@
  * @todo support more than one output stream
  */
 
-/* #define DEBUG */
-
 #include <float.h>
 
 #include "libavutil/attributes.h"

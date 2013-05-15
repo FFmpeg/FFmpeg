@@ -25,7 +25,6 @@
  * MPEG-1/2 decoder
  */
 
-//#define DEBUG
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "internal.h"
@@ -40,9 +39,6 @@
 #include "vdpau_internal.h"
 #include "xvmc_internal.h"
 #include "thread.h"
-
-//#undef NDEBUG
-//#include <assert.h>
 
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;

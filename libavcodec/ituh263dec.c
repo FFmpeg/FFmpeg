@@ -27,7 +27,6 @@
  * h263 decoder.
  */
 
-//#define DEBUG
 #include <limits.h>
 
 #include "libavutil/attributes.h"
@@ -40,9 +39,6 @@
 #include "unary.h"
 #include "flv.h"
 #include "mpeg4video.h"
-
-//#undef NDEBUG
-//#include <assert.h>
 
 // The defines below define the number of bits that are read at once for
 // reading vlc values. Changing these may improve speed and data cache needs

@@ -23,8 +23,6 @@
  * libopencv wrapper functions
  */
 
-/* #define DEBUG */
-
 #include <opencv/cv.h>
 #include <opencv/cxcore.h>
 #include "libavutil/avstring.h"

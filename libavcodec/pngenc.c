@@ -29,8 +29,6 @@
 
 #include <zlib.h>
 
-//#define DEBUG
-
 #define IOBUF_SIZE 4096
 
 typedef struct PNGEncContext {

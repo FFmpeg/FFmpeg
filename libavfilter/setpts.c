@@ -24,8 +24,6 @@
  * video presentation timestamp (PTS) modification filter
  */
 
-/* #define DEBUG */
-
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"

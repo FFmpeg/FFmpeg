@@ -26,8 +26,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avstring.h"
 
-//#define DEBUG
-
 typedef struct DVDSubContext {
     uint32_t palette[16];
     int      has_palette;

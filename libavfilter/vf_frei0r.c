@@ -22,8 +22,6 @@
  * frei0r wrapper
  */
 
-/* #define DEBUG */
-
 #include <dlfcn.h>
 #include <frei0r.h>
 #include <stdio.h>

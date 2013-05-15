@@ -32,8 +32,6 @@
 #include "mpeg4video.h"
 #include "h263.h"
 
-//#define DEBUG
-
 #define RV_GET_MAJOR_VER(x)  ((x) >> 28)
 #define RV_GET_MINOR_VER(x) (((x) >> 20) & 0xFF)
 #define RV_GET_MICRO_VER(x) (((x) >> 12) & 0xFF)

@@ -48,8 +48,6 @@
 #include <zlib.h>
 #endif
 
-//#define DEBUG
-
 #define APP_MAX_LENGTH 128
 #define PLAYPATH_MAX_LENGTH 256
 #define TCURL_MAX_LENGTH 512

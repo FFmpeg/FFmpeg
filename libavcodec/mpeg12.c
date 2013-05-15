@@ -25,7 +25,6 @@
  * MPEG-1/2 decoder
  */
 
-//#define DEBUG
 #include "libavutil/attributes.h"
 #include "internal.h"
 #include "avcodec.h"
@@ -39,9 +38,6 @@
 #include "vdpau_internal.h"
 #include "xvmc_internal.h"
 #include "thread.h"
-
-//#undef NDEBUG
-//#include <assert.h>
 
 uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 

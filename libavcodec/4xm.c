@@ -32,9 +32,6 @@
 #include "get_bits.h"
 #include "internal.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 #define BLOCK_TYPE_VLC_BITS 5
 #define ACDC_VLC_BITS 9
 

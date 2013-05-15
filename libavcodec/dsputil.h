@@ -34,9 +34,6 @@
 #include "avcodec.h"
 #include "rnd_avg.h"
 
-
-//#define DEBUG
-
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
