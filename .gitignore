@@ -67,6 +67,7 @@
 /tools/fourcc2pixfmt
 /tools/ffescape
 /tools/ffeval
+/tools/ffhash
 /tools/graph2dot
 /tools/ismindex
 /tools/pktdumper

@@ -1,6 +1,7 @@
 /*
-* Copyright (c) 2002 Fabrice Bellard
-* Copyright (c) 2013 Michael Niedermayer
+ * Copyright (c) 2002 Fabrice Bellard
+ * Copyright (c) 2013 Michael Niedermayer
+ * Copyright (c) 2013 James Almer
  *
  * This file is part of FFmpeg.
  *
@@ -20,7 +21,9 @@
  */
 
 #include "config.h"
-#include "libavutil/adler32.h"
+#include "libavutil/error.h"
+#include "libavutil/hash.h"
+#include "libavutil/mem.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -36,34 +39,64 @@
 
 #define SIZE 65536
 
+static struct AVHashContext *hash;
+static uint8_t *res;
+
+static void usage(void)
+{
+    int i = 0;
+    const char *name;
+
+    printf("usage: ffhash [algorithm] [input]...\n");
+    printf("Supported hash algorithms:");
+    do {
+        name = av_hash_names(i);
+        if (name)
+            printf(" %s", name);
+        i++;
+    } while(name);
+    printf("\n");
+}
+
+static void finish(void)
+{
+    int i, len = av_hash_get_size(hash);
+
+    printf("%s=0x", av_hash_get_name(hash));
+    av_hash_final(hash, res);
+    for (i = 0; i < len; i++)
+        printf("%02x", res[i]);
+}
+
 static int check(char *file)
 {
     uint8_t buffer[SIZE];
-    uint32_t checksum = 1;
     int fd;
     int ret = 0;
 
     if (file) fd = open(file, O_RDONLY);
     else      fd = 0;
     if (fd == -1) {
-        printf("A32=OPEN-FAILED-%d", errno);
+        printf("%s=OPEN-FAILED: %s:", av_hash_get_name(hash), strerror(errno));
         ret = 1;
         goto end;
     }
 
+    av_hash_init(hash);
     for (;;) {
         ssize_t size = read(fd, buffer, SIZE);
         if (size < 0) {
-            printf("A32=0x%08x+READ-FAILED-%d", checksum, errno);
+            finish();
+            printf("+READ-FAILED: %s", strerror(errno));
             ret = 2;
             goto end;
         } else if(!size)
             break;
-        checksum = av_adler32_update(checksum, buffer, size);
+        av_hash_update(hash, buffer, size);
     }
     close(fd);
 
-    printf("A32=0x%08x", checksum);
+    finish();
 end:
     if (file)
         printf(" *%s", file);
@@ -77,11 +110,36 @@ int main(int argc, char **argv)
     int i;
     int ret = 0;
 
-    for (i = 1; i<argc; i++)
+    if (argc == 1) {
+        usage();
+        return 0;
+    }
+
+    if ((ret = av_hash_alloc(&hash, argv[1])) < 0) {
+        switch(ret) {
+        case AVERROR(EINVAL):
+            printf("Invalid hash type: %s\n", argv[1]);
+            break;
+        case AVERROR(ENOMEM):
+            printf("%s\n", strerror(errno));
+            break;
+        }
+        return 1;
+    }
+    res = av_malloc(av_hash_get_size(hash));
+    if (!res) {
+        printf("%s\n", strerror(errno));
+        return 1;
+    }
+
+    for (i = 2; i < argc; i++)
         ret |= check(argv[i]);
 
-    if (argc == 1)
+    if (argc < 3)
         ret |= check(NULL);
+
+    av_hash_freep(&hash);
+    av_freep(&res);
 
     return ret;
 }
