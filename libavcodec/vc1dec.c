@@ -6140,7 +6140,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 //      return -1;
         if(s->er.error_occurred && s->pict_type == AV_PICTURE_TYPE_B)
             goto err;
-        if(!v->field_mode)
+        if (!v->field_mode)
             ff_er_frame_end(&s->er);
     }
 
