@@ -88,7 +88,7 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & PIX_FMT_PAL) && !(desc->flags & PIX_FMT_HWACCEL))
+        if (!(desc->flags & AV_PIX_FMT_FLAG_PAL) && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             ff_add_format(&formats, fmt);
     }
 
@@ -106,7 +106,7 @@ static int config_input(AVFilterLink *inlink)
         il->nb_planes = FFMAX(il->nb_planes, desc->comp[i].plane);
     il->nb_planes++;
 
-    il->has_alpha = !!(desc->flags & PIX_FMT_ALPHA);
+    il->has_alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     if ((ret = av_image_fill_linesizes(il->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 

@@ -59,7 +59,7 @@
 #endif
 
 #define pixdesc_has_alpha(pixdesc) \
-    ((pixdesc)->nb_components == 2 || (pixdesc)->nb_components == 4 || (pixdesc)->flags & PIX_FMT_PAL)
+    ((pixdesc)->nb_components == 2 || (pixdesc)->nb_components == 4 || (pixdesc)->flags & AV_PIX_FMT_FLAG_PAL)
 
 
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
@@ -654,7 +654,7 @@ int main(void){
             skip = 0;
         }
         av_log(NULL, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(desc), av_get_padded_bits_per_pixel(desc), get_color_type(desc));
-        if ((!(desc->flags & PIX_FMT_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
+        if ((!(desc->flags & AV_PIX_FMT_FLAG_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
             av_log(NULL, AV_LOG_ERROR, "Alpha flag mismatch\n");
             err = 1;
         }

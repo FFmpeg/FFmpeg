@@ -804,7 +804,7 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
         for (xp=0; xp+2<stride; xp+=3) {
             int x, y, z, r, g, b;
 
-            if (desc->flags & PIX_FMT_BE) {
+            if (desc->flags & AV_PIX_FMT_FLAG_BE) {
                 x = AV_RB16(src + xp + 0);
                 y = AV_RB16(src + xp + 1);
                 z = AV_RB16(src + xp + 2);
@@ -835,7 +835,7 @@ static void xyz12Torgb48(struct SwsContext *c, uint16_t *dst,
             b = av_clip_c(b,0,4095);
 
             // convert from sRGBlinear to RGB and scale from 12bit to 16bit
-            if (desc->flags & PIX_FMT_BE) {
+            if (desc->flags & AV_PIX_FMT_FLAG_BE) {
                 AV_WB16(dst + xp + 0, c->rgbgamma[r] << 4);
                 AV_WB16(dst + xp + 1, c->rgbgamma[g] << 4);
                 AV_WB16(dst + xp + 2, c->rgbgamma[b] << 4);

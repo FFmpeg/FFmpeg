@@ -1717,7 +1717,7 @@ yuv2gbrp_full_X_c(SwsContext *c, const int16_t *lumFilter,
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(c->dstFormat);
     int i;
-    int hasAlpha = (desc->flags & PIX_FMT_ALPHA) && alpSrc;
+    int hasAlpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) && alpSrc;
     uint16_t **dest16 = (uint16_t**)dest;
     int SH = 22 + 7 - desc->comp[0].depth_minus1;
     int A = 0; // init to silence warning

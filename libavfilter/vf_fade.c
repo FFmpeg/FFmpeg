@@ -127,7 +127,7 @@ static int config_props(AVFilterLink *inlink)
     fade->vsub = pixdesc->log2_chroma_h;
 
     fade->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
-    fade->alpha &= pixdesc->flags & PIX_FMT_ALPHA;
+    fade->alpha &= pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA;
     fade->is_packed_rgb = ff_fill_rgba_map(fade->rgba_map, inlink->format) >= 0;
 
     /* use CCIR601/709 black level for studio-level pixel non-alpha components */

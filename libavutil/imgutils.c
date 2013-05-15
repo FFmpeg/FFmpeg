@@ -76,7 +76,7 @@ int av_image_get_linesize(enum AVPixelFormat pix_fmt, int width, int plane)
     int max_step     [4];       /* max pixel step for each plane */
     int max_step_comp[4];       /* the component for each plane which has the max pixel step */
 
-    if ((unsigned)pix_fmt >= AV_PIX_FMT_NB || desc->flags & PIX_FMT_HWACCEL)
+    if ((unsigned)pix_fmt >= AV_PIX_FMT_NB || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return AVERROR(EINVAL);
 
     av_image_fill_max_pixsteps(max_step, max_step_comp, desc);
@@ -324,7 +324,7 @@ int av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height, 
         return AVERROR(EINVAL);
     if (av_image_check_size(width, height, 0, NULL) < 0)
         return AVERROR(EINVAL);
-    if (desc->flags & PIX_FMT_PSEUDOPAL)
+    if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
         // do not include palette for these pseudo-paletted formats
         return width * height;
     return av_image_fill_arrays(data, linesize, NULL, pix_fmt, width, height, align);
@@ -358,7 +358,7 @@ int av_image_copy_to_buffer(uint8_t *dst, int dst_size,
         }
     }
 
-    if (desc->flags & PIX_FMT_PAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
         uint32_t *d32 = (uint32_t *)(((size_t)dst + 3) & ~3);
         for (i = 0; i<256; i++)
             AV_WL32(d32 + i, AV_RN32(src_data[1] + 4*i));

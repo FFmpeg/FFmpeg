@@ -60,7 +60,7 @@ static int write_header(AVFormatContext *s)
                          && s->nb_streams == 1
                          && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO
                          && desc
-                         &&(desc->flags & PIX_FMT_PLANAR)
+                         &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
                          && desc->nb_components >= 3;
     return 0;
 }

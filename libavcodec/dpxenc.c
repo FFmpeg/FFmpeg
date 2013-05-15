@@ -37,10 +37,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     DPXContext *s = avctx->priv_data;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
-    s->big_endian         = !!(desc->flags & PIX_FMT_BE);
+    s->big_endian         = !!(desc->flags & AV_PIX_FMT_FLAG_BE);
     s->bits_per_component = desc->comp[0].depth_minus1 + 1;
-    s->descriptor         = (desc->flags & PIX_FMT_ALPHA) ? 51 : 50;
-    s->planar             = !!(desc->flags & PIX_FMT_PLANAR);
+    s->descriptor         = (desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? 51 : 50;
+    s->planar             = !!(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GBRP10BE:

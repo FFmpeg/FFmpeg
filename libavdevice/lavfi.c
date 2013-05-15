@@ -60,7 +60,7 @@ static int *create_all_formats(int n)
 
     for (i = 0; i < n; i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
-        if (!(desc->flags & PIX_FMT_HWACCEL))
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             count++;
     }
 
@@ -68,7 +68,7 @@ static int *create_all_formats(int n)
         return NULL;
     for (j = 0, i = 0; i < n; i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
-        if (!(desc->flags & PIX_FMT_HWACCEL))
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             fmts[j++] = i;
     }
     fmts[j] = -1;

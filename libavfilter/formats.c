@@ -112,10 +112,10 @@ AVFilterFormats *ff_merge_formats(AVFilterFormats *a, AVFilterFormats *b,
             for (j = 0; j < b->format_count; j++) {
                 const AVPixFmtDescriptor *adesc = av_pix_fmt_desc_get(a->formats[i]);
                 const AVPixFmtDescriptor *bdesc = av_pix_fmt_desc_get(b->formats[j]);
-                alpha2 |= adesc->flags & bdesc->flags & PIX_FMT_ALPHA;
+                alpha2 |= adesc->flags & bdesc->flags & AV_PIX_FMT_FLAG_ALPHA;
                 chroma2|= adesc->nb_components > 1 && bdesc->nb_components > 1;
                 if (a->formats[i] == b->formats[j]) {
-                    alpha1 |= adesc->flags & PIX_FMT_ALPHA;
+                    alpha1 |= adesc->flags & AV_PIX_FMT_FLAG_ALPHA;
                     chroma1|= adesc->nb_components > 1;
                 }
             }
