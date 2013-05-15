@@ -25,8 +25,8 @@ fate-filter-lavd-scalenorm: CMD = framecrc -f lavfi -graph_file $(SRC_PATH)/test
 FATE_FILTER_VSYNTH-$(CONFIG_BOXBLUR_FILTER) += fate-filter-boxblur
 fate-filter-boxblur: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf boxblur=2:1
 
-FATE_FILTER_VSYNTH-$(call ALLYES, COLORCHANNELMIXER_FILTER PERMS_FILTER) += fate-filter-colorchannelmixer
-fate-filter-colorchannelmixer: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf perms=random,colorchannelmixer=.31415927:.4:.31415927:0:.27182818:.8:.27182818:0:.2:.6:.2:0 -flags +bitexact -sws_flags +accurate_rnd+bitexact
+FATE_FILTER_VSYNTH-$(call ALLYES, COLORCHANNELMIXER_FILTER FORMAT_FILTER PERMS_FILTER) += fate-filter-colorchannelmixer
+fate-filter-colorchannelmixer: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf format=rgb24,perms=random,colorchannelmixer=.31415927:.4:.31415927:0:.27182818:.8:.27182818:0:.2:.6:.2:0 -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_DRAWBOX_FILTER) += fate-filter-drawbox
 fate-filter-drawbox: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf drawbox=224:24:88:72:red@0.5
