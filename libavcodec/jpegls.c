@@ -31,7 +31,7 @@ void ff_jpegls_init_state(JLSState *state){
     int i;
 
     state->twonear = state->near * 2 + 1;
-    state->range = ((state->maxval + state->twonear - 1) / state->twonear) + 1;
+    state->range   = (state->maxval + state->twonear - 1) / state->twonear + 1;
 
     // QBPP = ceil(log2(RANGE))
     for(state->qbpp = 0; (1 << state->qbpp) < state->range; state->qbpp++);
@@ -39,10 +39,10 @@ void ff_jpegls_init_state(JLSState *state){
     if(state->bpp < 8)
         state->limit = 16 + 2 * state->bpp - state->qbpp;
     else
-        state->limit = (4 * state->bpp) - state->qbpp;
+        state->limit = 4 * state->bpp - state->qbpp;
 
     for(i = 0; i < 367; i++) {
-        state->A[i] = FFMAX((state->range + 32) >> 6, 2);
+        state->A[i] = FFMAX(state->range + 32 >> 6, 2);
         state->N[i] = 1;
     }
 
@@ -65,7 +65,7 @@ void ff_jpegls_reset_coding_parameters(JLSState *s, int reset_all){
     if(s->maxval==0 || reset_all) s->maxval= (1 << s->bpp) - 1;
 
     if(s->maxval >=128){
-        factor= (FFMIN(s->maxval, 4095) + 128)>>8;
+        factor = FFMIN(s->maxval, 4095) + 128 >> 8;
 
         if(s->T1==0     || reset_all)
             s->T1= iso_clip(factor*(basic_t1-2) + 2 + 3*s->near, s->near+1, s->maxval);

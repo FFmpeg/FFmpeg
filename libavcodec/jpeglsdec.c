@@ -98,7 +98,7 @@ static inline int ls_get_code_regular(GetBitContext *gb, JLSState *state, int Q)
 
     /* decode mapped error */
     if(ret & 1)
-        ret = -((ret + 1) >> 1);
+        ret = -(ret + 1 >> 1);
     else
         ret >>= 1;
 
@@ -136,7 +136,7 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state, int RI
     ret += RItype + map;
 
     if(ret & 1){
-        ret = map - ((ret + 1) >> 1);
+        ret = map - (ret + 1 >> 1);
         state->B[Q]++;
     } else {
         ret = ret >> 1;
@@ -186,7 +186,7 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s, void *
                     x += stride;
                 }
                 /* if EOL reached, we stop decoding */
-                if(r != (1 << ff_log2_run[state->run_index[comp]]))
+                if (r != 1 << ff_log2_run[state->run_index[comp]])
                     return;
                 if(state->run_index[comp] < 31)
                     state->run_index[comp]++;
