@@ -48,6 +48,7 @@ typedef struct HistogramContext {
     int            step;
     int            waveform_mode;
     int            display_mode;
+    int            levels_mode;
 } HistogramContext;
 
 #define OFFSET(x) offsetof(HistogramContext, x)
@@ -68,6 +69,9 @@ static const AVOption histogram_options[] = {
     { "display_mode", "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display_mode"},
     { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "display_mode" },
     { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display_mode" },
+    { "levels_mode", "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"},
+    { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "levels_mode" },
+    { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "levels_mode" },
     { NULL },
 };
 
@@ -198,7 +202,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 h->max_hval = FFMAX(h->max_hval, h->histogram[i]);
 
             for (i = 0; i < outlink->w; i++) {
-                int col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + h->max_hval - 1) / h->max_hval;
+                int col_height;
+
+                if (h->levels_mode)
+                    col_height = round(h->level_height * (1. - (log2(h->histogram[i] + 1) / log2(h->max_hval + 1))));
+                else
+                    col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + h->max_hval - 1) / h->max_hval;
 
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {

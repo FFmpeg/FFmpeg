@@ -4294,6 +4294,10 @@ components that are supposed to be identical, such as neutral whites, grays,
 or blacks.
 @end table
 Default is @code{parade}.
+
+@item levels_mode
+Set mode for @code{levels}. Can be either @code{linear}, or @code{logarithmic}.
+Default is @code{linear}.
 @end table
 
 @subsection Examples
