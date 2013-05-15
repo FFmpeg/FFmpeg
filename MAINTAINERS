@@ -411,6 +411,7 @@ Muxers/Demuxers:
 
 Protocols:
   bluray.c                              Petri Hintukainen
+  ftp.c                                 Lukasz Marek
   http.c                                Ronald S. Bultje
   mms*.c                                Ronald S. Bultje
   udp.c                                 Luca Abeni

@@ -100,6 +100,40 @@ The ff* tools default to the file protocol, that is a resource
 specified with the name "FILE.mpeg" is interpreted as the URL
 "file:FILE.mpeg".
 
+@section ftp
+
+FTP (File Transfer Protocol)
+
+Allow to read from or write to remote resources using FTP protocol.
+
+Following syntax is required.
+@example
+ftp://[user[:password]@@]server[:port]/path/to/remote/resource.mpeg
+@end example
+
+This protocol accepts the following options.
+
+@table @option
+@item timeout
+Set timeout of socket I/O operations used by the underlying low level
+operation. By default it is set to -1, which means that the timeout is
+not specified.
+
+@item ftp-anonymous-password
+Password used when login as anonymous user. Typically an e-mail address
+should be used.
+
+@item ftp-write-seekable
+Control seekability of connection during encoding. If set to 1 the
+resource is supposed to be seekable, if set to 0 it is assumed not
+to be seekable. Default value is 0.
+@end table
+
+NOTE: Protocol can be used as output, but it is recommended to not do
+it, unless special care is taken (tests, customized server configuration
+etc.). Different FTP servers behave in different way during seek
+operation. ff* tools may produce incomplete content due to server limitations.
+
 @section gopher
 
 Gopher protocol.

@@ -50,6 +50,7 @@ version <next>:
 - Wavelet denoiser filter ported from libmpcodecs as owdenoise (formerly "ow")
 - Apple Intermediate Codec decoder
 - Escape 130 video decoder
+- FTP protocol support
 
 
 version 1.2:
