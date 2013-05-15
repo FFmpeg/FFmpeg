@@ -147,7 +147,7 @@ static int config_input(AVFilterLink *inlink)
             s->color_dct[y][x] = dct_3x3[rgba_map[y]][rgba_map[x]];
 
     s->pr_width  = inlink->w - (inlink->w - BSIZE) % s->step;
-    s->pr_height = inlink->w - (inlink->h - BSIZE) % s->step;
+    s->pr_height = inlink->h - (inlink->h - BSIZE) % s->step;
     if (s->pr_width != inlink->w)
         av_log(ctx, AV_LOG_WARNING, "The last %d horizontal pixels won't be denoised\n",
                inlink->w - s->pr_width);
