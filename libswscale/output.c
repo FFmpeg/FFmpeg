@@ -682,9 +682,10 @@ yuv2rgba64_X_c_template(SwsContext *c, const int16_t *lumFilter,
                        int y, enum AVPixelFormat target, int hasAlpha)
 {
     int i;
+    int A1 = 0xffff<<14, A2 = 0xffff<<14;
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
-        int j, A1 = 0, A2 = 0;
+        int j;
         int Y1 = -0x40000000;
         int Y2 = -0x40000000;
         int U  = -128 << 23; // 19
@@ -762,7 +763,7 @@ yuv2rgba64_2_c_template(SwsContext *c, const int32_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int uvalpha1 = 4096 - uvalpha;
     int i;
-    int A1 = 0, A2 = 0; // Init to avoid compiler warnings
+    int A1 = 0xffff<<14, A2 = 0xffff<<14;
 
     for (i = 0; i < ((dstW + 1) >> 1); i++) {
         int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha) >> 14;
@@ -810,6 +811,7 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
 {
     const int32_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
     int i;
+    int A1 = 0xffff<<14, A2= 0xffff<<14;
 
     if (uvalpha < 2048) {
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
@@ -818,7 +820,6 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             int U  = (ubuf0[i] + (-128 << 11)) >> 2;
             int V  = (vbuf0[i] + (-128 << 11)) >> 2;
             int R, G, B;
-            int A1, A2;
 
             Y1 -= c->yuv2rgb_y_offset;
             Y2 -= c->yuv2rgb_y_offset;
@@ -851,13 +852,13 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
         }
     } else {
         const int32_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
+        int A1 = 0xffff<<14, A2 = 0xffff<<14;
         for (i = 0; i < ((dstW + 1) >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
             int U  = (ubuf0[i] + ubuf1[i] + (-128 << 12)) >> 3;
             int V  = (vbuf0[i] + vbuf1[i] + (-128 << 12)) >> 3;
             int R, G, B;
-            int A1, A2;
 
             Y1 -= c->yuv2rgb_y_offset;
             Y2 -= c->yuv2rgb_y_offset;
