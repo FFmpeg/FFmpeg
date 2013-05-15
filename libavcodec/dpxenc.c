@@ -114,11 +114,11 @@ static void encode_gbrp10(AVCodecContext *avctx, const AVPicture *pic, uint8_t *
             if (s->big_endian) {
                 value = (AV_RB16(src[0] + 2*x) << 12)
                       | (AV_RB16(src[1] + 2*x) << 2)
-                      | (AV_RB16(src[2] + 2*x) << 22);
+                      | ((unsigned)AV_RB16(src[2] + 2*x) << 22);
             } else {
                 value = (AV_RL16(src[0] + 2*x) << 12)
                       | (AV_RL16(src[1] + 2*x) << 2)
-                      | (AV_RL16(src[2] + 2*x) << 22);
+                      | ((unsigned)AV_RL16(src[2] + 2*x) << 22);
             }
             write32(dst, value);
             dst += 4;
