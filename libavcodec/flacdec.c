@@ -44,9 +44,6 @@
 #include "flacdata.h"
 #include "flacdsp.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 typedef struct FLACContext {
     FLACSTREAMINFO
 
@@ -129,8 +126,6 @@ static void dump_headers(AVCodecContext *avctx, FLACStreaminfo *s)
 static int allocate_buffers(FLACContext *s)
 {
     int buf_size;
-
-    assert(s->max_blocksize);
 
     buf_size = av_samples_get_buffer_size(NULL, s->channels, s->max_blocksize,
                                           AV_SAMPLE_FMT_S32P, 0);
