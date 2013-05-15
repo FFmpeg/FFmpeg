@@ -5464,11 +5464,11 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     // do parse frame header
     v->pic_header_flag = 0;
     if (v->profile < PROFILE_ADVANCED) {
-        if (ff_vc1_parse_frame_header(v, &s->gb) == -1) {
+        if (ff_vc1_parse_frame_header(v, &s->gb) < 0) {
             goto err;
         }
     } else {
-        if (ff_vc1_parse_frame_header_adv(v, &s->gb) == -1) {
+        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
             goto err;
         }
     }
