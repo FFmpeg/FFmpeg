@@ -1067,7 +1067,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
-    if (s->avctx->pix_fmt == PIX_FMT_BGRA) // RGBA -> BGRA
+    if (s->avctx->pix_fmt == AV_PIX_FMT_BGRA) // RGBA -> BGRA
         FFSWAP(float *, tile->comp[0].data, tile->comp[2].data);
 
     if (s->precision <= 8) {
@@ -1351,8 +1351,8 @@ AVCodec ff_jpeg2000_decoder = {
     .init_static_data = jpeg2000_init_static_data,
     .decode           = jpeg2000_decode_frame,
     .priv_class       = &class,
-    .pix_fmts         = (enum PixelFormat[]) { AV_PIX_FMT_XYZ12,
-                                               AV_PIX_FMT_GRAY8,
-                                               -1 },
+    .pix_fmts         = (enum AVPixelFormat[]) { AV_PIX_FMT_XYZ12,
+                                                 AV_PIX_FMT_GRAY8,
+                                                 -1 },
     .profiles         = NULL_IF_CONFIG_SMALL(profiles)
 };
