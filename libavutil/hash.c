@@ -96,7 +96,7 @@ int av_hash_alloc(AVHashContext **ctx, const char *name)
     case SHA160:
     case SHA224:
     case SHA256:  res->ctx = av_sha_alloc(); break;
-    case CRC32:   res->crctab = av_crc_get_table(AV_CRC_32_IEEE); break;
+    case CRC32:   res->crctab = av_crc_get_table(AV_CRC_32_IEEE_LE); break;
     case ADLER32: break;
     }
     if (i != ADLER32 && i != CRC32 && !res->ctx) {
@@ -115,7 +115,7 @@ void av_hash_init(AVHashContext *ctx)
     case SHA160:  av_sha_init(ctx->ctx, 160); break;
     case SHA224:  av_sha_init(ctx->ctx, 224); break;
     case SHA256:  av_sha_init(ctx->ctx, 256); break;
-    case CRC32:   ctx->crc = 0; break;
+    case CRC32:   ctx->crc = UINT32_MAX; break;
     case ADLER32: ctx->crc = 1; break;
     }
 }
@@ -141,7 +141,7 @@ void av_hash_final(AVHashContext *ctx, uint8_t *dst)
     case SHA160:
     case SHA224:
     case SHA256:  av_sha_final(ctx->ctx, dst); break;
-    case CRC32:   AV_WL32(dst, ctx->crc); break;
+    case CRC32:   AV_WB32(dst, ctx->crc ^ UINT32_MAX); break;
     case ADLER32: AV_WB32(dst, ctx->crc); break;
     }
 }
