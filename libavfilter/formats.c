@@ -364,7 +364,7 @@ AVFilterFormats *ff_all_formats(enum AVMediaType type)
     for (fmt = 0; fmt < num_formats; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
         if ((type != AVMEDIA_TYPE_VIDEO) ||
-            (type == AVMEDIA_TYPE_VIDEO && !(desc->flags & PIX_FMT_HWACCEL)))
+            (type == AVMEDIA_TYPE_VIDEO && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)))
             ff_add_format(&ret, fmt);
     }
 

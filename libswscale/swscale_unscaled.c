@@ -615,7 +615,7 @@ static rgbConvFn findRgbConvFn(SwsContext *c)
 
 #define IS_NOT_NE(bpp, desc) \
     (((bpp + 7) >> 3) == 2 && \
-     (!(desc->flags & PIX_FMT_BE) != !HAVE_BIGENDIAN))
+     (!(desc->flags & AV_PIX_FMT_FLAG_BE) != !HAVE_BIGENDIAN))
 
 #define CONV_IS(src, dst) (srcFormat == AV_PIX_FMT_##src && dstFormat == AV_PIX_FMT_##dst)
 

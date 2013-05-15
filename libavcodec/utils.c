@@ -762,7 +762,7 @@ do {                                                                    \
             planes = av_pix_fmt_count_planes(frame->format);
             /* workaround for AVHWAccel plane count of 0, buf[0] is used as
                check for allocated buffers: make libavcodec happy */
-            if (desc && desc->flags & PIX_FMT_HWACCEL)
+            if (desc && desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
                 planes = 1;
             if (!desc || planes <= 0) {
                 ret = AVERROR(EINVAL);
@@ -919,7 +919,7 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
 static int is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    return desc->flags & PIX_FMT_HWACCEL;
+    return desc->flags & AV_PIX_FMT_FLAG_HWACCEL;
 }
 
 enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum AVPixelFormat *fmt)

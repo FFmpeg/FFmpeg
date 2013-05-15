@@ -285,7 +285,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     frame->data[0] += crop->y * frame->linesize[0];
     frame->data[0] += crop->x * crop->max_step[0];
 
-    if (!(desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL)) {
+    if (!(desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)) {
         for (i = 1; i < 3; i ++) {
             if (frame->data[i]) {
                 frame->data[i] += (crop->y >> crop->vsub) * frame->linesize[i];

@@ -77,7 +77,7 @@ static int get_color_type(const AVPixFmtDescriptor *desc) {
     if(desc->name && !strncmp(desc->name, "yuvj", 4))
         return FF_COLOR_YUV_JPEG;
 
-    if(desc->flags & PIX_FMT_RGB)
+    if(desc->flags & AV_PIX_FMT_FLAG_RGB)
         return  FF_COLOR_RGB;
 
     if(desc->nb_components == 0)
@@ -366,8 +366,8 @@ static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
     int i;
     int planes[4] = { 0 };
 
-    if (     desc->flags & PIX_FMT_RGB
-        || !(desc->flags & PIX_FMT_PLANAR))
+    if (     desc->flags & AV_PIX_FMT_FLAG_RGB
+        || !(desc->flags & AV_PIX_FMT_FLAG_PLANAR))
         return 0;
 
     /* set the used planes */

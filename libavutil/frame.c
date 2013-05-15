@@ -146,7 +146,7 @@ static int get_video_buffer(AVFrame *frame, int align)
 
         frame->data[i] = frame->buf[i]->data;
     }
-    if (desc->flags & PIX_FMT_PAL || desc->flags & PIX_FMT_PSEUDOPAL) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
         av_buffer_unref(&frame->buf[1]);
         frame->buf[1] = av_buffer_alloc(1024);
         if (!frame->buf[1])
