@@ -22,9 +22,6 @@
 #ifndef AVFORMAT_NUT_H
 #define AVFORMAT_NUT_H
 
-//#include <limits.h>
-//#include "libavutil/adler32.h"
-//#include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "internal.h"
 #include "metadata.h"
