@@ -873,7 +873,7 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         fcm = PROGRESSIVE;
     }
     if (!v->first_pic_header_flag && v->field_mode != field_mode)
-        return -1;
+        return AVERROR_INVALIDDATA;
     v->field_mode = field_mode;
     v->fcm = fcm;
 
