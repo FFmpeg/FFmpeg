@@ -300,6 +300,9 @@ static int cache_open(URLContext *h, const char *arg, int flags)
       close(c->fdw);
       close(c->fdr);
     }
+  } else {
+    if (c->callback)
+      c->callback(CACHE_NOT_AVAILABLE, CACHE_INFO_STREAM_NOT_SUPPORT, NULL);
   }
 
   return 0;
