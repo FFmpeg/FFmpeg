@@ -963,6 +963,11 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     int16_t *quant_matrix = s->quant_matrixes[s->quant_index[c]];
     GetBitContext mb_bitmask_gb;
 
+    if (ss < 0  || ss >= 64 ||
+        se < ss || se >= 64 ||
+        Ah < 0  || Al < 0)
+        return AVERROR_INVALIDDATA;
+
     if (mb_bitmask)
         init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width * s->mb_height);
 
