@@ -578,27 +578,27 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
 }
 
 /* fill lookup tables for intensity compensation */
-#define INIT_LUT(lumscale, lumshift, luty, lutuv, chain)   do {\
-    int scale, shift, i;                            \
-    if (!lumscale) {                                \
-        scale = -64;                                \
-        shift = (255 - lumshift * 2) << 6;          \
-        if (lumshift > 31)                          \
-            shift += 128 << 6;                      \
-    } else {                                        \
-        scale = lumscale + 32;                      \
-        if (lumshift > 31)                          \
-            shift = (lumshift - 64) << 6;           \
-        else                                        \
-            shift = lumshift << 6;                  \
-    }                                               \
-    for (i = 0; i < 256; i++) {                     \
-        int iy = chain ? luty[i] : i;               \
-        int iu = chain ? lutuv[i] : i;              \
-        luty[i]  = av_clip_uint8((scale * iy + shift + 32) >> 6);           \
-        lutuv[i] = av_clip_uint8((scale * (iu - 128) + 128*64 + 32) >> 6);  \
-    } \
-    }while(0)
+#define INIT_LUT(lumscale, lumshift, luty, lutuv, chain)   do {               \
+        int scale, shift, i;                                                  \
+        if (!lumscale) {                                                      \
+            scale = -64;                                                      \
+            shift = (255 - lumshift * 2) << 6;                                \
+            if (lumshift > 31)                                                \
+                shift += 128 << 6;                                            \
+        } else {                                                              \
+            scale = lumscale + 32;                                            \
+            if (lumshift > 31)                                                \
+                shift = (lumshift - 64) << 6;                                 \
+            else                                                              \
+                shift = lumshift << 6;                                        \
+        }                                                                     \
+        for (i = 0; i < 256; i++) {                                           \
+            int iy = chain ? luty[i] : i;                                     \
+            int iu = chain ? lutuv[i] : i;                                    \
+            luty[i]  = av_clip_uint8((scale * iy + shift + 32) >> 6);         \
+            lutuv[i] = av_clip_uint8((scale * (iu - 128) + 128*64 + 32) >> 6);\
+        }                                                                     \
+    } while(0)
 
 
 static void rotate_luts(VC1Context *v)
