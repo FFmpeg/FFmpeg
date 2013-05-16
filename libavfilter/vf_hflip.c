@@ -60,12 +60,12 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_props(AVFilterLink *inlink)
 {
-    FlipContext *flip = inlink->dst->priv;
+    FlipContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
-    av_image_fill_max_pixsteps(flip->max_step, NULL, pix_desc);
-    flip->hsub = pix_desc->log2_chroma_w;
-    flip->vsub = pix_desc->log2_chroma_h;
+    av_image_fill_max_pixsteps(s->max_step, NULL, pix_desc);
+    s->hsub = pix_desc->log2_chroma_w;
+    s->vsub = pix_desc->log2_chroma_h;
 
     return 0;
 }
@@ -73,7 +73,7 @@ static int config_props(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
-    FlipContext *flip     = ctx->priv;
+    FlipContext *s     = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     uint8_t *inrow, *outrow;
@@ -91,9 +91,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
     for (plane = 0; plane < 4 && in->data[plane]; plane++) {
-        const int width  = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->w, flip->hsub) : inlink->w;
-        const int height = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->h, flip->vsub) : inlink->h;
-        step = flip->max_step[plane];
+        const int width  = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->w, s->hsub) : inlink->w;
+        const int height = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->h, s->vsub) : inlink->h;
+        step = s->max_step[plane];
 
         outrow = out->data[plane];
         inrow  = in ->data[plane] + (width - 1) * step;
