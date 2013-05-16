@@ -36,8 +36,6 @@
  * http://www.engin.umd.umich.edu/~jwvm/ece581/21_GBlur.pdf
  */
 
-#include <float.h> /* DBL_MAX */
-
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
