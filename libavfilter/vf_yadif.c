@@ -187,8 +187,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
 
         if (i == 1 || i == 2) {
         /* Why is this not part of the per-plane description thing? */
-            w >>= yadif->csp->log2_chroma_w;
-            h >>= yadif->csp->log2_chroma_h;
+            w = FF_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
+            h = FF_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
         /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
