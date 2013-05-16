@@ -71,10 +71,13 @@ static void finish(void)
 static int check(char *file)
 {
     uint8_t buffer[SIZE];
-    int fd;
+    int fd, flags = O_RDONLY;
     int ret = 0;
 
-    if (file) fd = open(file, O_RDONLY);
+#ifdef O_BINARY
+    flags |= O_BINARY;
+#endif
+    if (file) fd = open(file, flags);
     else      fd = 0;
     if (fd == -1) {
         printf("%s=OPEN-FAILED: %s:", av_hash_get_name(hash), strerror(errno));
