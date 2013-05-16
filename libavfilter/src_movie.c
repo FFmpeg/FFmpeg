@@ -27,8 +27,6 @@
  * @todo support a PTS correction mechanism
  */
 
-/* #define DEBUG */
-
 #include <float.h>
 
 #include "libavutil/attributes.h"

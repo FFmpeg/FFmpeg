@@ -27,8 +27,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avstring.h"
 
-//#define DEBUG
-
 typedef struct DVDSubContext
 {
   AVClass *class;

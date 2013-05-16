@@ -23,8 +23,6 @@
  * video crop filter
  */
 
-/* #define DEBUG */
-
 #include <stdio.h>
 
 #include "avfilter.h"

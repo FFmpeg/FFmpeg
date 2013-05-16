@@ -49,8 +49,6 @@
 #include "rtpenc.h"
 #include "mpegts.h"
 
-//#define DEBUG
-
 /* Timeout values for socket poll, in ms,
  * and read_packet(), in seconds  */
 #define POLL_TIMEOUT_MS 100

@@ -52,16 +52,11 @@
 #include <limits.h>
 #include "sp5x.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 static int encode_picture(MpegEncContext *s, int picture_number);
 static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
 static void denoise_dct_c(MpegEncContext *s, int16_t *block);
 static int dct_quantize_trellis_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
-
-//#define DEBUG
 
 static uint8_t default_mv_penalty[MAX_FCODE + 1][MAX_MV * 2 + 1];
 static uint8_t default_fcode_tab[MAX_MV * 2 + 1];

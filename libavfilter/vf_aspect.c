@@ -77,9 +77,9 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
-    AspectContext *aspect = link->dst->priv;
+    AspectContext *s = link->dst->priv;
 
-    frame->sample_aspect_ratio = aspect->aspect;
+    frame->sample_aspect_ratio = s->aspect;
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
@@ -99,15 +99,15 @@ static inline void compute_dar(AVRational *dar, AVRational sar, int w, int h)
 
 static int setdar_config_props(AVFilterLink *inlink)
 {
-    AspectContext *aspect = inlink->dst->priv;
-    AVRational dar = aspect->aspect, old_dar;
+    AspectContext *s = inlink->dst->priv;
+    AVRational dar = s->aspect, old_dar;
     AVRational old_sar = inlink->sample_aspect_ratio;
 
-    if (aspect->aspect.num && aspect->aspect.den) {
-        av_reduce(&aspect->aspect.num, &aspect->aspect.den,
-                   aspect->aspect.num * inlink->h,
-                   aspect->aspect.den * inlink->w, INT_MAX);
-        inlink->sample_aspect_ratio = aspect->aspect;
+    if (s->aspect.num && s->aspect.den) {
+        av_reduce(&s->aspect.num, &s->aspect.den,
+                   s->aspect.num * inlink->h,
+                   s->aspect.den * inlink->w, INT_MAX);
+        inlink->sample_aspect_ratio = s->aspect;
     } else {
         inlink->sample_aspect_ratio = (AVRational){ 1, 1 };
         dar = (AVRational){ inlink->w, inlink->h };
@@ -171,14 +171,14 @@ AVFilter avfilter_vf_setdar = {
 
 static int setsar_config_props(AVFilterLink *inlink)
 {
-    AspectContext *aspect = inlink->dst->priv;
+    AspectContext *s = inlink->dst->priv;
     AVRational old_sar = inlink->sample_aspect_ratio;
     AVRational old_dar, dar;
 
-    inlink->sample_aspect_ratio = aspect->aspect;
+    inlink->sample_aspect_ratio = s->aspect;
 
     compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
-    compute_dar(&dar, aspect->aspect, inlink->w, inlink->h);
+    compute_dar(&dar, s->aspect, inlink->w, inlink->h);
     av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d sar:%d/%d dar:%d/%d -> sar:%d/%d dar:%d/%d\n",
            inlink->w, inlink->h, old_sar.num, old_sar.den, old_dar.num, old_dar.den,
            inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den, dar.num, dar.den);

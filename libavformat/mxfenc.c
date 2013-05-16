@@ -30,8 +30,6 @@
  * SMPTE RP224: Registry of SMPTE Universal Labels
  */
 
-//#define DEBUG
-
 #include <inttypes.h>
 #include <math.h>
 #include <time.h>

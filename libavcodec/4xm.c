@@ -24,6 +24,7 @@
  * 4XM codec.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/frame.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
@@ -32,7 +33,6 @@
 #include "get_bits.h"
 #include "internal.h"
 
-#include "libavutil/avassert.h"
 
 #define BLOCK_TYPE_VLC_BITS 5
 #define ACDC_VLC_BITS 9

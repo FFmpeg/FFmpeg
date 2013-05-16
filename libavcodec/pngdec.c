@@ -35,8 +35,6 @@
 
 #include <zlib.h>
 
-//#define DEBUG
-
 typedef struct PNGDecContext {
     PNGDSPContext dsp;
     AVCodecContext *avctx;

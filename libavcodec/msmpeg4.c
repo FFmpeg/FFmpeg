@@ -45,7 +45,6 @@
  *        - (encoding) select best mv table (two choices)
  *        - (encoding) select best vlc/dc table
  */
-//#define DEBUG
 
 /* This table is practically identical to the one from h263
  * except that it is inverted. */

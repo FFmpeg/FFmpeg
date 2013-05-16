@@ -42,9 +42,6 @@
 #include "thread.h"
 #include <limits.h>
 
-//#undef NDEBUG
-//#include <assert.h>
-
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
                                    int16_t *block, int n, int qscale);
 static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s,
@@ -59,9 +56,6 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
                                   int16_t *block, int n, int qscale);
 static void dct_unquantize_h263_inter_c(MpegEncContext *s,
                                   int16_t *block, int n, int qscale);
-
-//#define DEBUG
-
 
 static const uint8_t ff_default_chroma_qscale_table[32] = {
 //   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15

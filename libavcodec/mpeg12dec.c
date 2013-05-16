@@ -25,7 +25,6 @@
  * MPEG-1/2 decoder
  */
 
-//#define DEBUG
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "internal.h"

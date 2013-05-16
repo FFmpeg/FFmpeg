@@ -41,8 +41,6 @@
 #include "flv.h"
 #include "mpeg4video.h"
 
-//#define DEBUG
-
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;

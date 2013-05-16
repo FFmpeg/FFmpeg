@@ -28,7 +28,6 @@
  */
 
 #define BITSTREAM_READER_LE
-//#define DEBUG
 #include <limits.h>
 #include "avcodec.h"
 #include "get_bits.h"
