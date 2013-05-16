@@ -4246,7 +4246,8 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
     int fwd;
     int dmv_x[2], dmv_y[2], pred_flag[2];
     int bmvtype = BMV_TYPE_BACKWARD;
-    int idx_mbmode, interpmvp;
+    int idx_mbmode;
+    int av_uninit(interpmvp);
 
     mquant      = v->pq; /* Lossy initialization */
     s->mb_intra = 0;
