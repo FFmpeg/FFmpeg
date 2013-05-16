@@ -139,17 +139,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #if CONFIG_DRAWBOX_FILTER
 
 static const AVOption drawbox_options[] = {
-    { "x",      "Horizontal position of the left box edge", OFFSET(x),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
-    { "y",      "Vertical position of the top box edge",    OFFSET(y),         AV_OPT_TYPE_INT,    { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
-    { "width",  "Width of the box",                         OFFSET(w),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "w",      "Width of the box",                         OFFSET(w),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "height", "Height of the box",                        OFFSET(h),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "h",      "Height of the box",                        OFFSET(h),         AV_OPT_TYPE_INT,    { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "color",  "Color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, .flags = FLAGS },
-    { "c",      "Color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, .flags = FLAGS },
-    { "thickness",   "set the box maximum thickness",       OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
-    { "t",           "set the box maximum thickness",       OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
-    { NULL },
+    { "x",         "set horizontal position of the left box edge", OFFSET(x),         AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
+    { "y",         "set vertical position of the top box edge",    OFFSET(y),         AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
+    { "width",     "set width of the box",                         OFFSET(w),         AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "w",         "set width of the box",                         OFFSET(w),         AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "height",    "set height of the box",                        OFFSET(h),         AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "h",         "set height of the box",                        OFFSET(h),         AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "color",     "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",         "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "thickness", "set the box maximum thickness",                OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
+    { "t",         "set the box maximum thickness",                OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(drawbox);
