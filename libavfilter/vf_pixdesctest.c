@@ -59,6 +59,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink    = inlink->dst->outputs[0];
     AVFrame *out;
     int i, c, w = inlink->w, h = inlink->h;
+    const int cw = FF_CEIL_RSHIFT(w, priv->pix_desc->log2_chroma_w);
+    const int ch = FF_CEIL_RSHIFT(h, priv->pix_desc->log2_chroma_h);
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -69,12 +71,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
 
     for (i = 0; i < 4; i++) {
-        int h = outlink->h;
-        h = i == 1 || i == 2 ? h>>priv->pix_desc->log2_chroma_h : h;
+        const int h1 = i == 1 || i == 2 ? ch : h;
         if (out->data[i]) {
             uint8_t *data = out->data[i] +
-                (out->linesize[i] > 0 ? 0 : out->linesize[i] * (h-1));
-            memset(data, 0, FFABS(out->linesize[i]) * h);
+                (out->linesize[i] > 0 ? 0 : out->linesize[i] * (h1-1));
+            memset(data, 0, FFABS(out->linesize[i]) * h1);
         }
     }
 
@@ -84,8 +85,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
     for (c = 0; c < priv->pix_desc->nb_components; c++) {
-        int w1 = c == 1 || c == 2 ? w>>priv->pix_desc->log2_chroma_w : w;
-        int h1 = c == 1 || c == 2 ? h>>priv->pix_desc->log2_chroma_h : h;
+        const int w1 = c == 1 || c == 2 ? cw : w;
+        const int h1 = c == 1 || c == 2 ? ch : h;
 
         for (i = 0; i < h1; i++) {
             av_read_image_line(priv->line,
