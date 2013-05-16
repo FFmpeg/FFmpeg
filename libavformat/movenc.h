@@ -168,6 +168,7 @@ typedef struct MOVMuxContext {
     AVIOContext *mdat_buf;
 
     int use_editlist;
+    int video_track_timescale;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1

@@ -62,6 +62,7 @@ static const AVOption options[] = {
     { "frag_size", "Maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "ism_lookahead", "Number of lookahead entries for ISM files", offsetof(MOVMuxContext, ism_lookahead), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "use_editlist", "use edit list", offsetof(MOVMuxContext, use_editlist), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "video_track_timescale", "set timescale of all video tracks", offsetof(MOVMuxContext, video_track_timescale), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -3624,9 +3625,13 @@ static int mov_write_header(AVFormatContext *s)
                 }
                 track->height = track->tag>>24 == 'n' ? 486 : 576;
             }
-            track->timescale = st->codec->time_base.den;
-            while(track->timescale < 10000)
-                track->timescale *= 2;
+            if (mov->video_track_timescale) {
+                track->timescale = mov->video_track_timescale;
+            } else {
+                track->timescale = st->codec->time_base.den;
+                while(track->timescale < 10000)
+                    track->timescale *= 2;
+            }
             if (track->mode == MODE_MOV && track->timescale > 100000)
                 av_log(s, AV_LOG_WARNING,
                        "WARNING codec timebase is very high. If duration is too long,\n"
