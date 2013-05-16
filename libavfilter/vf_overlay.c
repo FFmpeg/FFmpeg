@@ -118,25 +118,25 @@ typedef struct {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
 
-    if (over->allow_packed_rgb) {
+    if (s->allow_packed_rgb) {
         av_log(ctx, AV_LOG_WARNING,
                "The rgb option is deprecated and is overriding the format option, use format instead\n");
-        over->format = OVERLAY_FORMAT_RGB;
+        s->format = OVERLAY_FORMAT_RGB;
     }
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
 
-    av_frame_free(&over->overpicref);
-    ff_bufqueue_discard_all(&over->queue_main);
-    ff_bufqueue_discard_all(&over->queue_over);
-    av_expr_free(over->x_pexpr); over->x_pexpr = NULL;
-    av_expr_free(over->y_pexpr); over->y_pexpr = NULL;
+    av_frame_free(&s->overpicref);
+    ff_bufqueue_discard_all(&s->queue_main);
+    ff_bufqueue_discard_all(&s->queue_over);
+    av_expr_free(s->x_pexpr); s->x_pexpr = NULL;
+    av_expr_free(s->y_pexpr); s->y_pexpr = NULL;
 }
 
 static inline int normalize_xy(double d, int chroma_sub)
@@ -148,13 +148,13 @@ static inline int normalize_xy(double d, int chroma_sub)
 
 static void eval_expr(AVFilterContext *ctx)
 {
-    OverlayContext  *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
 
-    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
-    over->var_values[VAR_Y] = av_expr_eval(over->y_pexpr, over->var_values, NULL);
-    over->var_values[VAR_X] = av_expr_eval(over->x_pexpr, over->var_values, NULL);
-    over->x = normalize_xy(over->var_values[VAR_X], over->hsub);
-    over->y = normalize_xy(over->var_values[VAR_Y], over->vsub);
+    s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, NULL);
+    s->var_values[VAR_Y] = av_expr_eval(s->y_pexpr, s->var_values, NULL);
+    s->var_values[VAR_X] = av_expr_eval(s->x_pexpr, s->var_values, NULL);
+    s->x = normalize_xy(s->var_values[VAR_X], s->hsub);
+    s->y = normalize_xy(s->var_values[VAR_Y], s->vsub);
 }
 
 static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *log_ctx)
@@ -181,31 +181,31 @@ static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
     int ret;
 
     if      (!strcmp(cmd, "x"))
-        ret = set_expr(&over->x_pexpr, args, cmd, ctx);
+        ret = set_expr(&s->x_pexpr, args, cmd, ctx);
     else if (!strcmp(cmd, "y"))
-        ret = set_expr(&over->y_pexpr, args, cmd, ctx);
+        ret = set_expr(&s->y_pexpr, args, cmd, ctx);
     else
         ret = AVERROR(ENOSYS);
 
     if (ret < 0)
         return ret;
 
-    if (over->eval_mode == EVAL_MODE_INIT) {
+    if (s->eval_mode == EVAL_MODE_INIT) {
         eval_expr(ctx);
         av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d\n",
-               over->var_values[VAR_X], over->x,
-               over->var_values[VAR_Y], over->y);
+               s->var_values[VAR_X], s->x,
+               s->var_values[VAR_Y], s->y);
     }
     return ret;
 }
 
 static int query_formats(AVFilterContext *ctx)
 {
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
 
     /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
     static const enum AVPixelFormat main_pix_fmts_yuv420[] = {
@@ -237,7 +237,7 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *main_formats;
     AVFilterFormats *overlay_formats;
 
-    switch (over->format) {
+    switch (s->format) {
     case OVERLAY_FORMAT_YUV420:
         main_formats    = ff_make_format_list(main_pix_fmts_yuv420);
         overlay_formats = ff_make_format_list(overlay_pix_fmts_yuv420);
@@ -269,56 +269,56 @@ static const enum AVPixelFormat alpha_pix_fmts[] = {
 
 static int config_input_main(AVFilterLink *inlink)
 {
-    OverlayContext *over = inlink->dst->priv;
+    OverlayContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
-    av_image_fill_max_pixsteps(over->main_pix_step,    NULL, pix_desc);
+    av_image_fill_max_pixsteps(s->main_pix_step,    NULL, pix_desc);
 
-    over->hsub = pix_desc->log2_chroma_w;
-    over->vsub = pix_desc->log2_chroma_h;
+    s->hsub = pix_desc->log2_chroma_w;
+    s->vsub = pix_desc->log2_chroma_h;
 
-    over->main_is_packed_rgb =
-        ff_fill_rgba_map(over->main_rgba_map, inlink->format) >= 0;
-    over->main_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
+    s->main_is_packed_rgb =
+        ff_fill_rgba_map(s->main_rgba_map, inlink->format) >= 0;
+    s->main_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
     return 0;
 }
 
 static int config_input_overlay(AVFilterLink *inlink)
 {
     AVFilterContext *ctx  = inlink->dst;
-    OverlayContext  *over = inlink->dst->priv;
+    OverlayContext  *s = inlink->dst->priv;
     int ret;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
 
-    av_image_fill_max_pixsteps(over->overlay_pix_step, NULL, pix_desc);
+    av_image_fill_max_pixsteps(s->overlay_pix_step, NULL, pix_desc);
 
     /* Finish the configuration by evaluating the expressions
        now when both inputs are configured. */
-    over->var_values[VAR_MAIN_W   ] = over->var_values[VAR_MW] = ctx->inputs[MAIN   ]->w;
-    over->var_values[VAR_MAIN_H   ] = over->var_values[VAR_MH] = ctx->inputs[MAIN   ]->h;
-    over->var_values[VAR_OVERLAY_W] = over->var_values[VAR_OW] = ctx->inputs[OVERLAY]->w;
-    over->var_values[VAR_OVERLAY_H] = over->var_values[VAR_OH] = ctx->inputs[OVERLAY]->h;
-    over->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
-    over->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
-    over->var_values[VAR_X]     = NAN;
-    over->var_values[VAR_Y]     = NAN;
-    over->var_values[VAR_N]     = 0;
-    over->var_values[VAR_T]     = NAN;
-    over->var_values[VAR_POS]   = NAN;
+    s->var_values[VAR_MAIN_W   ] = s->var_values[VAR_MW] = ctx->inputs[MAIN   ]->w;
+    s->var_values[VAR_MAIN_H   ] = s->var_values[VAR_MH] = ctx->inputs[MAIN   ]->h;
+    s->var_values[VAR_OVERLAY_W] = s->var_values[VAR_OW] = ctx->inputs[OVERLAY]->w;
+    s->var_values[VAR_OVERLAY_H] = s->var_values[VAR_OH] = ctx->inputs[OVERLAY]->h;
+    s->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
+    s->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
+    s->var_values[VAR_X]     = NAN;
+    s->var_values[VAR_Y]     = NAN;
+    s->var_values[VAR_N]     = 0;
+    s->var_values[VAR_T]     = NAN;
+    s->var_values[VAR_POS]   = NAN;
 
-    if ((ret = set_expr(&over->x_pexpr,      over->x_expr,      "x",      ctx)) < 0 ||
-        (ret = set_expr(&over->y_pexpr,      over->y_expr,      "y",      ctx)) < 0)
+    if ((ret = set_expr(&s->x_pexpr,      s->x_expr,      "x",      ctx)) < 0 ||
+        (ret = set_expr(&s->y_pexpr,      s->y_expr,      "y",      ctx)) < 0)
         return ret;
 
-    over->overlay_is_packed_rgb =
-        ff_fill_rgba_map(over->overlay_rgba_map, inlink->format) >= 0;
-    over->overlay_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
+    s->overlay_is_packed_rgb =
+        ff_fill_rgba_map(s->overlay_rgba_map, inlink->format) >= 0;
+    s->overlay_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
 
-    if (over->eval_mode == EVAL_MODE_INIT) {
+    if (s->eval_mode == EVAL_MODE_INIT) {
         eval_expr(ctx);
         av_log(ctx, AV_LOG_VERBOSE, "x:%f xi:%d y:%f yi:%d\n",
-               over->var_values[VAR_X], over->x,
-               over->var_values[VAR_Y], over->y);
+               s->var_values[VAR_X], s->x,
+               s->var_values[VAR_Y], s->y);
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
@@ -358,7 +358,7 @@ static void blend_image(AVFilterContext *ctx,
                         AVFrame *dst, AVFrame *src,
                         int x, int y)
 {
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
     int i, imax, j, jmax, k, kmax;
     const int src_w = src->width;
     const int src_h = src->height;
@@ -369,19 +369,19 @@ static void blend_image(AVFilterContext *ctx,
         y >= dst_h || y+dst_h < 0)
         return; /* no intersection */
 
-    if (over->main_is_packed_rgb) {
+    if (s->main_is_packed_rgb) {
         uint8_t alpha;          ///< the amount of overlay to blend on to main
-        const int dr = over->main_rgba_map[R];
-        const int dg = over->main_rgba_map[G];
-        const int db = over->main_rgba_map[B];
-        const int da = over->main_rgba_map[A];
-        const int dstep = over->main_pix_step[0];
-        const int sr = over->overlay_rgba_map[R];
-        const int sg = over->overlay_rgba_map[G];
-        const int sb = over->overlay_rgba_map[B];
-        const int sa = over->overlay_rgba_map[A];
-        const int sstep = over->overlay_pix_step[0];
-        const int main_has_alpha = over->main_has_alpha;
+        const int dr = s->main_rgba_map[R];
+        const int dg = s->main_rgba_map[G];
+        const int db = s->main_rgba_map[B];
+        const int da = s->main_rgba_map[A];
+        const int dstep = s->main_pix_step[0];
+        const int sr = s->overlay_rgba_map[R];
+        const int sg = s->overlay_rgba_map[G];
+        const int sb = s->overlay_rgba_map[B];
+        const int sa = s->overlay_rgba_map[A];
+        const int sstep = s->overlay_pix_step[0];
+        const int main_has_alpha = s->main_has_alpha;
         uint8_t *s, *sp, *d, *dp;
 
         i = FFMAX(-y, 0);
@@ -437,7 +437,7 @@ static void blend_image(AVFilterContext *ctx,
             sp += src->linesize[0];
         }
     } else {
-        const int main_has_alpha = over->main_has_alpha;
+        const int main_has_alpha = s->main_has_alpha;
         if (main_has_alpha) {
             uint8_t alpha;          ///< the amount of overlay to blend on to main
             uint8_t *s, *sa, *d, *da;
@@ -475,8 +475,8 @@ static void blend_image(AVFilterContext *ctx,
             }
         }
         for (i = 0; i < 3; i++) {
-            int hsub = i ? over->hsub : 0;
-            int vsub = i ? over->vsub : 0;
+            int hsub = i ? s->hsub : 0;
+            int vsub = i ? s->vsub : 0;
             int src_wp = FF_CEIL_RSHIFT(src_w, hsub);
             int src_hp = FF_CEIL_RSHIFT(src_h, vsub);
             int dst_wp = FF_CEIL_RSHIFT(dst_w, hsub);
@@ -544,7 +544,7 @@ static void blend_image(AVFilterContext *ctx,
 
 static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
 {
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFrame *next_overpic;
     int ret;
@@ -552,23 +552,23 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
     /* Discard obsolete overlay frames: if there is a next overlay frame with pts
      * before the main frame, we can drop the current overlay. */
     while (1) {
-        next_overpic = ff_bufqueue_peek(&over->queue_over, 0);
-        if (!next_overpic && over->overlay_eof && !over->repeatlast) {
-            av_frame_free(&over->overpicref);
+        next_overpic = ff_bufqueue_peek(&s->queue_over, 0);
+        if (!next_overpic && s->overlay_eof && !s->repeatlast) {
+            av_frame_free(&s->overpicref);
             break;
         }
         if (!next_overpic || av_compare_ts(next_overpic->pts, ctx->inputs[OVERLAY]->time_base,
                                            mainpic->pts     , ctx->inputs[MAIN]->time_base) > 0)
             break;
-        ff_bufqueue_get(&over->queue_over);
-        av_frame_free(&over->overpicref);
-        over->overpicref = next_overpic;
+        ff_bufqueue_get(&s->queue_over);
+        av_frame_free(&s->overpicref);
+        s->overpicref = next_overpic;
     }
 
     /* If there is no next frame and no EOF and the overlay frame is before
      * the main frame, we can not know yet if it will be superseded. */
-    if (!over->queue_over.available && !over->overlay_eof &&
-        (!over->overpicref || av_compare_ts(over->overpicref->pts, ctx->inputs[OVERLAY]->time_base,
+    if (!s->queue_over.available && !s->overlay_eof &&
+        (!s->overpicref || av_compare_ts(s->overpicref->pts, ctx->inputs[OVERLAY]->time_base,
                                             mainpic->pts         , ctx->inputs[MAIN]->time_base) < 0))
         return AVERROR(EAGAIN);
 
@@ -576,47 +576,47 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
      * time of the main frame. */
     av_dlog(ctx, "main_pts:%s main_pts_time:%s",
             av_ts2str(mainpic->pts), av_ts2timestr(mainpic->pts, &ctx->inputs[MAIN]->time_base));
-    if (over->overpicref)
+    if (s->overpicref)
         av_dlog(ctx, " over_pts:%s over_pts_time:%s",
-                av_ts2str(over->overpicref->pts), av_ts2timestr(over->overpicref->pts, &ctx->inputs[OVERLAY]->time_base));
+                av_ts2str(s->overpicref->pts), av_ts2timestr(s->overpicref->pts, &ctx->inputs[OVERLAY]->time_base));
     av_dlog(ctx, "\n");
 
-    if (over->overpicref) {
-        if (over->eval_mode == EVAL_MODE_FRAME) {
+    if (s->overpicref) {
+        if (s->eval_mode == EVAL_MODE_FRAME) {
             int64_t pos = av_frame_get_pkt_pos(mainpic);
 
-            over->var_values[VAR_N] = inlink->frame_count;
-            over->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
+            s->var_values[VAR_N] = inlink->frame_count;
+            s->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
                 NAN : mainpic->pts * av_q2d(inlink->time_base);
-            over->var_values[VAR_POS] = pos == -1 ? NAN : pos;
+            s->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
             eval_expr(ctx);
             av_log(ctx, AV_LOG_DEBUG, "n:%f t:%f pos:%f x:%f xi:%d y:%f yi:%d\n",
-                   over->var_values[VAR_N], over->var_values[VAR_T], over->var_values[VAR_POS],
-                   over->var_values[VAR_X], over->x,
-                   over->var_values[VAR_Y], over->y);
+                   s->var_values[VAR_N], s->var_values[VAR_T], s->var_values[VAR_POS],
+                   s->var_values[VAR_X], s->x,
+                   s->var_values[VAR_Y], s->y);
         }
         if (!ctx->is_disabled)
-            blend_image(ctx, mainpic, over->overpicref, over->x, over->y);
+            blend_image(ctx, mainpic, s->overpicref, s->x, s->y);
 
     }
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
     av_assert1(ret != AVERROR(EAGAIN));
-    over->frame_requested = 0;
+    s->frame_requested = 0;
     return ret;
 }
 
 static int try_filter_next_frame(AVFilterContext *ctx)
 {
-    OverlayContext *over = ctx->priv;
-    AVFrame *next_mainpic = ff_bufqueue_peek(&over->queue_main, 0);
+    OverlayContext *s = ctx->priv;
+    AVFrame *next_mainpic = ff_bufqueue_peek(&s->queue_main, 0);
     int ret;
 
     if (!next_mainpic)
         return AVERROR(EAGAIN);
     if ((ret = try_filter_frame(ctx, next_mainpic)) == AVERROR(EAGAIN))
         return ret;
-    ff_bufqueue_get(&over->queue_main);
+    ff_bufqueue_get(&s->queue_main);
     return ret;
 }
 
@@ -631,7 +631,7 @@ static int flush_frames(AVFilterContext *ctx)
 static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
     int ret;
 
     if ((ret = flush_frames(ctx)) < 0)
@@ -639,10 +639,10 @@ static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
     if ((ret = try_filter_frame(ctx, inpicref)) < 0) {
         if (ret != AVERROR(EAGAIN))
             return ret;
-        ff_bufqueue_add(ctx, &over->queue_main, inpicref);
+        ff_bufqueue_add(ctx, &s->queue_main, inpicref);
     }
 
-    if (!over->overpicref)
+    if (!s->overpicref)
         return 0;
     flush_frames(ctx);
 
@@ -652,12 +652,12 @@ static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
 static int filter_frame_over(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
     int ret;
 
     if ((ret = flush_frames(ctx)) < 0)
         return ret;
-    ff_bufqueue_add(ctx, &over->queue_over, inpicref);
+    ff_bufqueue_add(ctx, &s->queue_over, inpicref);
     ret = try_filter_next_frame(ctx);
     return ret == AVERROR(EAGAIN) ? 0 : ret;
 }
@@ -665,22 +665,22 @@ static int filter_frame_over(AVFilterLink *inlink, AVFrame *inpicref)
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    OverlayContext *over = ctx->priv;
+    OverlayContext *s = ctx->priv;
     int input, ret;
 
     if (!try_filter_next_frame(ctx))
         return 0;
-    over->frame_requested = 1;
-    while (over->frame_requested) {
+    s->frame_requested = 1;
+    while (s->frame_requested) {
         /* TODO if we had a frame duration, we could guess more accurately */
-        input = !over->overlay_eof && (over->queue_main.available ||
-                                       over->queue_over.available < 2) ?
+        input = !s->overlay_eof && (s->queue_main.available ||
+                                       s->queue_over.available < 2) ?
                 OVERLAY : MAIN;
         ret = ff_request_frame(ctx->inputs[input]);
         /* EOF on main is reported immediately */
         if (ret == AVERROR_EOF && input == OVERLAY) {
-            over->overlay_eof = 1;
-            if (over->shortest)
+            s->overlay_eof = 1;
+            if (s->shortest)
                 return ret;
             if ((ret = try_filter_next_frame(ctx)) != AVERROR(EAGAIN))
                 return ret;

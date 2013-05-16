@@ -97,13 +97,13 @@ static const AVOption options[] = {
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
     int i;
 
     for (i = 0; i < 4; i++) {
-        av_expr_free(lut->comp_expr[i]);
-        lut->comp_expr[i] = NULL;
-        av_freep(&lut->comp_expr_str[i]);
+        av_expr_free(s->comp_expr[i]);
+        s->comp_expr[i] = NULL;
+        av_freep(&s->comp_expr_str[i]);
     }
 }
 
@@ -125,10 +125,10 @@ static const enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, AV_
 
 static int query_formats(AVFilterContext *ctx)
 {
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
 
-    const enum AVPixelFormat *pix_fmts = lut->is_rgb ? rgb_pix_fmts :
-                                       lut->is_yuv ? yuv_pix_fmts : all_pix_fmts;
+    const enum AVPixelFormat *pix_fmts = s->is_rgb ? rgb_pix_fmts :
+                                       s->is_yuv ? yuv_pix_fmts : all_pix_fmts;
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
@@ -139,9 +139,9 @@ static int query_formats(AVFilterContext *ctx)
  */
 static double clip(void *opaque, double val)
 {
-    LutContext *lut = opaque;
-    double minval = lut->var_values[VAR_MINVAL];
-    double maxval = lut->var_values[VAR_MAXVAL];
+    LutContext *s = opaque;
+    double minval = s->var_values[VAR_MINVAL];
+    double maxval = s->var_values[VAR_MAXVAL];
 
     return av_clip(val, minval, maxval);
 }
@@ -152,10 +152,10 @@ static double clip(void *opaque, double val)
  */
 static double compute_gammaval(void *opaque, double gamma)
 {
-    LutContext *lut = opaque;
-    double val    = lut->var_values[VAR_CLIPVAL];
-    double minval = lut->var_values[VAR_MINVAL];
-    double maxval = lut->var_values[VAR_MAXVAL];
+    LutContext *s = opaque;
+    double val    = s->var_values[VAR_CLIPVAL];
+    double minval = s->var_values[VAR_MINVAL];
+    double maxval = s->var_values[VAR_MAXVAL];
 
     return pow((val-minval)/(maxval-minval), gamma) * (maxval-minval)+minval;
 }
@@ -175,17 +175,17 @@ static const char * const funcs1_names[] = {
 static int config_props(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     uint8_t rgba_map[4]; /* component index -> RGBA color index map */
     int min[4], max[4];
     int val, color, ret;
 
-    lut->hsub = desc->log2_chroma_w;
-    lut->vsub = desc->log2_chroma_h;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
-    lut->var_values[VAR_W] = inlink->w;
-    lut->var_values[VAR_H] = inlink->h;
+    s->var_values[VAR_W] = inlink->w;
+    s->var_values[VAR_H] = inlink->h;
 
     switch (inlink->format) {
     case AV_PIX_FMT_YUV410P:
@@ -207,49 +207,49 @@ static int config_props(AVFilterLink *inlink)
         max[0] = max[1] = max[2] = max[3] = 255;
     }
 
-    lut->is_yuv = lut->is_rgb = 0;
-    if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) lut->is_yuv = 1;
-    else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) lut->is_rgb = 1;
+    s->is_yuv = s->is_rgb = 0;
+    if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) s->is_yuv = 1;
+    else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) s->is_rgb = 1;
 
-    if (lut->is_rgb) {
+    if (s->is_rgb) {
         ff_fill_rgba_map(rgba_map, inlink->format);
-        lut->step = av_get_bits_per_pixel(desc) >> 3;
+        s->step = av_get_bits_per_pixel(desc) >> 3;
     }
 
     for (color = 0; color < desc->nb_components; color++) {
         double res;
-        int comp = lut->is_rgb ? rgba_map[color] : color;
+        int comp = s->is_rgb ? rgba_map[color] : color;
 
         /* create the parsed expression */
-        ret = av_expr_parse(&lut->comp_expr[color], lut->comp_expr_str[color],
+        ret = av_expr_parse(&s->comp_expr[color], s->comp_expr_str[color],
                             var_names, funcs1_names, funcs1, NULL, NULL, 0, ctx);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Error when parsing the expression '%s' for the component %d and color %d.\n",
-                   lut->comp_expr_str[comp], comp, color);
+                   s->comp_expr_str[comp], comp, color);
             return AVERROR(EINVAL);
         }
 
         /* compute the lut */
-        lut->var_values[VAR_MAXVAL] = max[color];
-        lut->var_values[VAR_MINVAL] = min[color];
+        s->var_values[VAR_MAXVAL] = max[color];
+        s->var_values[VAR_MINVAL] = min[color];
 
         for (val = 0; val < 256; val++) {
-            lut->var_values[VAR_VAL] = val;
-            lut->var_values[VAR_CLIPVAL] = av_clip(val, min[color], max[color]);
-            lut->var_values[VAR_NEGVAL] =
-                av_clip(min[color] + max[color] - lut->var_values[VAR_VAL],
+            s->var_values[VAR_VAL] = val;
+            s->var_values[VAR_CLIPVAL] = av_clip(val, min[color], max[color]);
+            s->var_values[VAR_NEGVAL] =
+                av_clip(min[color] + max[color] - s->var_values[VAR_VAL],
                         min[color], max[color]);
 
-            res = av_expr_eval(lut->comp_expr[color], lut->var_values, lut);
+            res = av_expr_eval(s->comp_expr[color], s->var_values, s);
             if (isnan(res)) {
                 av_log(ctx, AV_LOG_ERROR,
                        "Error when evaluating the expression '%s' for the value %d for the component %d.\n",
-                       lut->comp_expr_str[color], val, comp);
+                       s->comp_expr_str[color], val, comp);
                 return AVERROR(EINVAL);
             }
-            lut->lut[comp][val] = av_clip((int)res, min[color], max[color]);
-            av_log(ctx, AV_LOG_DEBUG, "val[%d][%d] = %d\n", comp, val, lut->lut[comp][val]);
+            s->lut[comp][val] = av_clip((int)res, min[color], max[color]);
+            av_log(ctx, AV_LOG_DEBUG, "val[%d][%d] = %d\n", comp, val, s->lut[comp][val]);
         }
     }
 
@@ -259,7 +259,7 @@ static int config_props(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     uint8_t *inrow, *outrow, *inrow0, *outrow0;
@@ -277,25 +277,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    if (lut->is_rgb) {
+    if (s->is_rgb) {
         /* packed */
         inrow0  = in ->data[0];
         outrow0 = out->data[0];
 
         for (i = 0; i < in->height; i ++) {
             int w = inlink->w;
-            const uint8_t (*tab)[256] = (const uint8_t (*)[256])lut->lut;
+            const uint8_t (*tab)[256] = (const uint8_t (*)[256])s->lut;
             inrow  = inrow0;
             outrow = outrow0;
             for (j = 0; j < w; j++) {
-                switch (lut->step) {
+                switch (s->step) {
                 case 4:  outrow[3] = tab[3][inrow[3]]; // Fall-through
                 case 3:  outrow[2] = tab[2][inrow[2]]; // Fall-through
                 case 2:  outrow[1] = tab[1][inrow[1]]; // Fall-through
                 default: outrow[0] = tab[0][inrow[0]];
                 }
-                outrow += lut->step;
-                inrow  += lut->step;
+                outrow += s->step;
+                inrow  += s->step;
             }
             inrow0  += in ->linesize[0];
             outrow0 += out->linesize[0];
@@ -303,8 +303,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     } else {
         /* planar */
         for (plane = 0; plane < 4 && in->data[plane]; plane++) {
-            int vsub = plane == 1 || plane == 2 ? lut->vsub : 0;
-            int hsub = plane == 1 || plane == 2 ? lut->hsub : 0;
+            int vsub = plane == 1 || plane == 2 ? s->vsub : 0;
+            int hsub = plane == 1 || plane == 2 ? s->hsub : 0;
             int h = FF_CEIL_RSHIFT(inlink->h, vsub);
             int w = FF_CEIL_RSHIFT(inlink->w, hsub);
 
@@ -312,7 +312,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             outrow = out->data[plane];
 
             for (i = 0; i < h; i++) {
-                const uint8_t *tab = lut->lut[plane];
+                const uint8_t *tab = s->lut[plane];
                 for (j = 0; j < w; j++)
                     outrow[j] = tab[inrow[j]];
                 inrow  += in ->linesize[plane];
@@ -377,9 +377,9 @@ AVFILTER_DEFINE_CLASS(lutyuv);
 
 static av_cold int lutyuv_init(AVFilterContext *ctx)
 {
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
 
-    lut->is_yuv = 1;
+    s->is_yuv = 1;
 
     return 0;
 }
@@ -394,9 +394,9 @@ AVFILTER_DEFINE_CLASS(lutrgb);
 
 static av_cold int lutrgb_init(AVFilterContext *ctx)
 {
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
 
-    lut->is_rgb = 1;
+    s->is_rgb = 1;
 
     return 0;
 }
@@ -415,15 +415,15 @@ AVFILTER_DEFINE_CLASS(negate);
 
 static av_cold int negate_init(AVFilterContext *ctx)
 {
-    LutContext *lut = ctx->priv;
+    LutContext *s = ctx->priv;
     int i;
 
-    av_log(ctx, AV_LOG_DEBUG, "negate_alpha:%d\n", lut->negate_alpha);
+    av_log(ctx, AV_LOG_DEBUG, "negate_alpha:%d\n", s->negate_alpha);
 
     for (i = 0; i < 4; i++) {
-        lut->comp_expr_str[i] = av_strdup((i == 3 && !lut->negate_alpha) ?
+        s->comp_expr_str[i] = av_strdup((i == 3 && !s->negate_alpha) ?
                                           "val" : "negval");
-        if (!lut->comp_expr_str[i]) {
+        if (!s->comp_expr_str[i]) {
             uninit(ctx);
             return AVERROR(ENOMEM);
         }
