@@ -25,9 +25,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/statfs.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <errno.h>
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
@@ -63,6 +63,7 @@ enum CACHE_TYPE {
 enum CACHE_INFO {
   CACHE_INFO_NO_SPACE = 1,
   CACHE_INFO_STREAM_NOT_SUPPORT = 2,
+  CACHE_INFO_CONNECT_FAILED = 3,
 };
 
 typedef struct Segment {
@@ -87,13 +88,6 @@ typedef struct CacheContext {
   pthread_mutex_t mutex; // protect fdw and inner
   void (*callback)(int type, int info, void *segs); // info or len
 } CacheContext;
-
-static int64_t get_free_space(int fd) {
-  struct statfs stat;
-  if (fstatfs(fd, &stat) == 0)
-    return (stat.f_bfree) * (stat.f_bsize);
-  return 0;
-}
 
 static Segment *segments_select(CacheContext *c, Segment **segs, int64_t position)
 {
@@ -203,11 +197,6 @@ static void* cache_fill_thread(void* arg)
   int64_t rate_time = 0, rate_time_diff = 0;
   CacheContext *c = (CacheContext *)arg;
 
-  if ((get_free_space(c->fdi) <= 100) && c->callback) {
-    c->callback(CACHE_NOT_AVAILABLE, CACHE_INFO_NO_SPACE, NULL);
-    return NULL;
-  }
-
   while (c->cache_fill && c->seg->end - c->seg->begin < c->length) {
     if (c->seg->end < c->length) {
       pthread_mutex_lock(&c->mutex);
@@ -242,7 +231,7 @@ static void* cache_fill_thread(void* arg)
     }
   }
 
-  if (len > 0 && c->callback) {
+  if (c->callback) {
     c->callback(CACHE_SPEED, 0, NULL);
   }
 
@@ -270,6 +259,8 @@ static int cache_open(URLContext *h, const char *arg, int flags)
 
   opened = ffurl_open(&c->inner, url, flags, &h->interrupt_callback, NULL);
   if (opened != 0) {
+    if (c->callback)
+      c->callback(CACHE_NOT_AVAILABLE, CACHE_INFO_CONNECT_FAILED, NULL);
     return opened;
   }
 
@@ -277,29 +268,34 @@ static int cache_open(URLContext *h, const char *arg, int flags)
   if (!c->inner->is_streamed && c->length > 1048576) {
     c->fdw = open(c->cache_path, O_RDWR | O_BINARY | O_CREAT, 0600);
     c->fdr = open(c->cache_path, O_RDWR | O_BINARY, 0600);
-    if (c->fdw != -1 && c->fdr != -1 && ftruncate64(c->fdw, c->length) == 0) {
-      char *index_path = av_mallocz(dlen + 4);
-      snprintf(index_path, dlen + 4, "%s.ssi", c->cache_path);
-      c->fdi = open(index_path, O_RDWR | O_BINARY | O_CREAT, 0600);
-      c->segs = segments_load(c, c->fdi);
-      if (c->segs) {
-        c->seg = c->segs;
-        if (c->segs_flat && c->num_segs > 0 && c->callback) {
-          segments_dump(c, c->segs, c->fdi);
-          c->callback(CACHE_UPDATE, c->num_segs,  c->segs_flat);
-        }
-      } else {
-        c->seg = segments_select(c, &c->segs, 0);
-      }
-      pthread_mutex_init(&c->mutex, NULL);
-      pthread_create(&c->thread, NULL, cache_fill_thread, c);
-      c->cache_fill = 1;
-      av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d, %"PRId64"\n", index_path, url, opened, c->length);
-      av_free(index_path);
-    } else {
+    char *index_path = av_mallocz(dlen + 4);
+    snprintf(index_path, dlen + 4, "%s.ssi", c->cache_path);
+    c->fdi = open(index_path, O_RDWR | O_BINARY | O_CREAT, 0600);
+    int fno = ftruncate64(c->fdw, c->length);
+    if (c->fdw == -1 || c->fdr == -1 || fno == -1) {
+      if (c->callback)
+        c->callback(CACHE_NOT_AVAILABLE, errno, NULL);
       close(c->fdw);
       close(c->fdr);
+      close(c->fdi);
+      return opened;
     }
+
+    c->segs = segments_load(c, c->fdi);
+    if (c->segs) {
+      c->seg = c->segs;
+      if (c->segs_flat && c->num_segs > 0 && c->callback) {
+        segments_dump(c, c->segs, c->fdi);
+        c->callback(CACHE_UPDATE, c->num_segs,  c->segs_flat);
+      }
+    } else {
+      c->seg = segments_select(c, &c->segs, 0);
+    }
+    pthread_mutex_init(&c->mutex, NULL);
+    pthread_create(&c->thread, NULL, cache_fill_thread, c);
+    c->cache_fill = 1;
+    av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d, %"PRId64"\n", index_path, url, opened, c->length);
+    av_free(index_path);
   } else {
     if (c->callback)
       c->callback(CACHE_NOT_AVAILABLE, CACHE_INFO_STREAM_NOT_SUPPORT, NULL);
