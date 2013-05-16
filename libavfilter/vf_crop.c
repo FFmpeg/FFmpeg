@@ -178,16 +178,20 @@ static int config_input(AVFilterLink *link)
 
     if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
                                       var_names, s->var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) goto fail_expr;
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail_expr;
     s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = res;
     if ((ret = av_expr_parse_and_eval(&res, (expr = s->h_expr),
                                       var_names, s->var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) goto fail_expr;
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail_expr;
     s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = res;
     /* evaluate again ow as it may depend on oh */
     if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
                                       var_names, s->var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) goto fail_expr;
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        goto fail_expr;
+
     s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = res;
     if (normalize_double(&s->w, s->var_values[VAR_OUT_W]) < 0 ||
         normalize_double(&s->h, s->var_values[VAR_OUT_H]) < 0) {

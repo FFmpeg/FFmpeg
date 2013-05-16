@@ -170,11 +170,11 @@ static int query_formats(AVFilterContext *ctx)
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    DelogoContext *delogo = ctx->priv;
+    DelogoContext *s = ctx->priv;
 
 #define CHECK_UNSET_OPT(opt)                                            \
-    if (delogo->opt == -1) {                                            \
-        av_log(delogo, AV_LOG_ERROR, "Option %s was not set.\n", #opt); \
+    if (s->opt == -1) {                                            \
+        av_log(s, AV_LOG_ERROR, "Option %s was not set.\n", #opt); \
         return AVERROR(EINVAL);                                         \
     }
     CHECK_UNSET_OPT(x);
@@ -182,25 +182,25 @@ static av_cold int init(AVFilterContext *ctx)
     CHECK_UNSET_OPT(w);
     CHECK_UNSET_OPT(h);
 
-    if (delogo->band < 0 || delogo->show) {
-        delogo->show = 1;
-        delogo->band = 4;
+    if (s->band < 0 || s->show) {
+        s->show = 1;
+        s->band = 4;
     }
 
     av_log(ctx, AV_LOG_VERBOSE, "x:%d y:%d, w:%d h:%d band:%d show:%d\n",
-           delogo->x, delogo->y, delogo->w, delogo->h, delogo->band, delogo->show);
+           s->x, s->y, s->w, s->h, s->band, s->show);
 
-    delogo->w += delogo->band*2;
-    delogo->h += delogo->band*2;
-    delogo->x -= delogo->band;
-    delogo->y -= delogo->band;
+    s->w += s->band*2;
+    s->h += s->band*2;
+    s->x -= s->band;
+    s->y -= s->band;
 
     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    DelogoContext *delogo = inlink->dst->priv;
+    DelogoContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFrame *out;
@@ -230,11 +230,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                      in ->data[plane], in ->linesize[plane],
                      FF_CEIL_RSHIFT(inlink->w, hsub),
                      FF_CEIL_RSHIFT(inlink->h, vsub),
-                     delogo->x>>hsub, delogo->y>>vsub,
-                     FF_CEIL_RSHIFT(delogo->w, hsub),
-                     FF_CEIL_RSHIFT(delogo->h, vsub),
-                     delogo->band>>FFMIN(hsub, vsub),
-                     delogo->show, direct);
+                     s->x>>hsub, s->y>>vsub,
+                     FF_CEIL_RSHIFT(s->w, hsub),
+                     FF_CEIL_RSHIFT(s->h, vsub),
+                     s->band>>FFMIN(hsub, vsub),
+                     s->show, direct);
     }
 
     if (!direct)

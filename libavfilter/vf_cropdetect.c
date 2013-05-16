@@ -86,12 +86,12 @@ static int checkline(void *ctx, const unsigned char *src, int stride, int len, i
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    CropDetectContext *cd = ctx->priv;
+    CropDetectContext *s = ctx->priv;
 
-    cd->frame_nb = -2;
+    s->frame_nb = -2;
 
     av_log(ctx, AV_LOG_VERBOSE, "limit:%d round:%d reset_count:%d\n",
-           cd->limit, cd->round, cd->reset_count);
+           s->limit, s->round, s->reset_count);
 
     return 0;
 }
@@ -99,15 +99,15 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    CropDetectContext *cd = ctx->priv;
+    CropDetectContext *s = ctx->priv;
 
-    av_image_fill_max_pixsteps(cd->max_pixsteps, NULL,
+    av_image_fill_max_pixsteps(s->max_pixsteps, NULL,
                                av_pix_fmt_desc_get(inlink->format));
 
-    cd->x1 = inlink->w - 1;
-    cd->y1 = inlink->h - 1;
-    cd->x2 = 0;
-    cd->y2 = 0;
+    s->x1 = inlink->w - 1;
+    s->y1 = inlink->h - 1;
+    s->x2 = 0;
+    s->y2 = 0;
 
     return 0;
 }
@@ -115,75 +115,75 @@ static int config_input(AVFilterLink *inlink)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    CropDetectContext *cd = ctx->priv;
-    int bpp = cd->max_pixsteps[0];
+    CropDetectContext *s = ctx->priv;
+    int bpp = s->max_pixsteps[0];
     int w, h, x, y, shrink_by;
 
     // ignore first 2 frames - they may be empty
-    if (++cd->frame_nb > 0) {
+    if (++s->frame_nb > 0) {
         // Reset the crop area every reset_count frames, if reset_count is > 0
-        if (cd->reset_count > 0 && cd->frame_nb > cd->reset_count) {
-            cd->x1 = frame->width  - 1;
-            cd->y1 = frame->height - 1;
-            cd->x2 = 0;
-            cd->y2 = 0;
-            cd->frame_nb = 1;
+        if (s->reset_count > 0 && s->frame_nb > s->reset_count) {
+            s->x1 = frame->width  - 1;
+            s->y1 = frame->height - 1;
+            s->x2 = 0;
+            s->y2 = 0;
+            s->frame_nb = 1;
         }
 
-        for (y = 0; y < cd->y1; y++) {
-            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > cd->limit) {
-                cd->y1 = y;
+        for (y = 0; y < s->y1; y++) {
+            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
+                s->y1 = y;
                 break;
             }
         }
 
-        for (y = frame->height - 1; y > cd->y2; y--) {
-            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > cd->limit) {
-                cd->y2 = y;
+        for (y = frame->height - 1; y > s->y2; y--) {
+            if (checkline(ctx, frame->data[0] + frame->linesize[0] * y, bpp, frame->width, bpp) > s->limit) {
+                s->y2 = y;
                 break;
             }
         }
 
-        for (y = 0; y < cd->x1; y++) {
-            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > cd->limit) {
-                cd->x1 = y;
+        for (y = 0; y < s->x1; y++) {
+            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
+                s->x1 = y;
                 break;
             }
         }
 
-        for (y = frame->width - 1; y > cd->x2; y--) {
-            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > cd->limit) {
-                cd->x2 = y;
+        for (y = frame->width - 1; y > s->x2; y--) {
+            if (checkline(ctx, frame->data[0] + bpp*y, frame->linesize[0], frame->height, bpp) > s->limit) {
+                s->x2 = y;
                 break;
             }
         }
 
         // round x and y (up), important for yuv colorspaces
         // make sure they stay rounded!
-        x = (cd->x1+1) & ~1;
-        y = (cd->y1+1) & ~1;
+        x = (s->x1+1) & ~1;
+        y = (s->y1+1) & ~1;
 
-        w = cd->x2 - x + 1;
-        h = cd->y2 - y + 1;
+        w = s->x2 - x + 1;
+        h = s->y2 - y + 1;
 
         // w and h must be divisible by 2 as well because of yuv
         // colorspace problems.
-        if (cd->round <= 1)
-            cd->round = 16;
-        if (cd->round % 2)
-            cd->round *= 2;
+        if (s->round <= 1)
+            s->round = 16;
+        if (s->round % 2)
+            s->round *= 2;
 
-        shrink_by = w % cd->round;
+        shrink_by = w % s->round;
         w -= shrink_by;
         x += (shrink_by/2 + 1) & ~1;
 
-        shrink_by = h % cd->round;
+        shrink_by = h % s->round;
         h -= shrink_by;
         y += (shrink_by/2 + 1) & ~1;
 
         av_log(ctx, AV_LOG_INFO,
                "x1:%d x2:%d y1:%d y2:%d w:%d h:%d x:%d y:%d pts:%"PRId64" t:%f crop=%d:%d:%d:%d\n",
-               cd->x1, cd->x2, cd->y1, cd->y2, w, h, x, y, frame->pts,
+               s->x1, s->x2, s->y1, s->y2, w, h, x, y, frame->pts,
                frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base),
                w, h, x, y);
     }
