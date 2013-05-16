@@ -5215,7 +5215,7 @@ testsrc=s=100x100, split=4 [in0][in1][in2][in3];
 
 @section owdenoise
 
-Overcomplete Wavelet denoiser.
+Apply Overcomplete Wavelet denoiser.
 
 The filter accepts the following options:
 
@@ -5226,17 +5226,17 @@ Set depth.
 Larger depth values will denoise lower frequency components more, but
 slow down filtering.
 
-Default is @code{8}.
+Must be an int in the range 8-16, default is @code{8}.
 
-@item luma_strength
+@item luma_strength, ls
 Set luma strength.
 
-Default is @code{1.0}
+Must be a double value in the range 0-1000, default is @code{1.0}.
 
-@item chroma_strength
+@item chroma_strength, cs
 Set chroma strength.
 
-Default is @code{1.0}
+Must be a double value in the range 0-1000, default is @code{1.0}.
 @end table
 
 @section pad
