@@ -68,17 +68,15 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    AVFilterContext   *ctx        = inlink->dst;
-    FieldOrderContext *fieldorder = ctx->priv;
+    AVFilterContext   *ctx = inlink->dst;
+    FieldOrderContext *s   = ctx->priv;
     int               plane;
 
     /** full an array with the number of bytes that the video
      *  data occupies per line for each plane of the input video */
     for (plane = 0; plane < 4; plane++) {
-        fieldorder->line_size[plane] = av_image_get_linesize(
-                inlink->format,
-                inlink->w,
-                plane);
+        s->line_size[plane] = av_image_get_linesize(inlink->format, inlink->w,
+                                                    plane);
     }
 
     return 0;
