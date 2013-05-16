@@ -49,7 +49,7 @@ static inline void ls_encode_regular(JLSState *state, PutBitContext *pb, int Q, 
 
     if(err < 0)
         err += state->range;
-    if(err >= ((state->range + 1) >> 1)) {
+    if (err >= (state->range + 1 >> 1)) {
         err -= state->range;
         val = 2 * FFABS(err) - 1 - map;
     } else
@@ -145,7 +145,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
             if(x >= w)
                 return;
             Rb = R(last, x);
-            RItype = (FFABS(Ra - Rb) <= state->near);
+            RItype = FFABS(Ra - Rb) <= state->near;
             pred = RItype ? Ra : Rb;
             err = R(cur, x) - pred;
 
@@ -166,7 +166,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
             }
             if(err < 0)
                 err += state->range;
-            if(err >= ((state->range + 1) >> 1))
+            if (err >= state->range + 1 >> 1)
                 err -= state->range;
 
             ls_encode_runterm(state, pb, RItype, err, ff_log2_run[state->run_index[comp]]);
