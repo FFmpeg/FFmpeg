@@ -63,6 +63,7 @@
 /tools/aviocat
 /tools/ffbisect
 /tools/bisect.need
+/tools/crypto_bench
 /tools/cws2fws
 /tools/fourcc2pixfmt
 /tools/ffescape
