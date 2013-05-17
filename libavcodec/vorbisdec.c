@@ -1370,7 +1370,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
 
     if (max_output > ch_left * vlen) {
         av_log(vc->avctx, AV_LOG_ERROR, "Insufficient output buffer\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     av_dlog(NULL, " residue type 0/1/2 decode begin, ch: %d  cpc %d  \n", ch, c_p_c);
@@ -1621,7 +1621,7 @@ static int vorbis_parse_audio_packet(vorbis_context *vc, float **floor_ptr)
         residue = &vc->residues[mapping->submap_residue[i]];
         if (ch_left < ch) {
             av_log(vc->avctx, AV_LOG_ERROR, "Too many channels in vorbis_floor_decode.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (ch) {
             ret = vorbis_residue_decode(vc, residue, ch, do_not_decode, ch_res_ptr, vlen, ch_left);
