@@ -96,6 +96,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER(A64MULTI,          a64multi);
     REGISTER_ENCODER(A64MULTI5,         a64multi5);
     REGISTER_DECODER(AASC,              aasc);
+    REGISTER_DECODER(AIC,               aic);
     REGISTER_ENCDEC (AMV,               amv);
     REGISTER_DECODER(ANM,               anm);
     REGISTER_DECODER(ANSI,              ansi);

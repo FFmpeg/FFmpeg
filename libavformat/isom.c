@@ -242,6 +242,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_PRORES, MKTAG('a', 'p', '4', 'h') }, /* Apple ProRes 4444 */
     { AV_CODEC_ID_FLIC,   MKTAG('f', 'l', 'i', 'c') },
 
+    { AV_CODEC_ID_AIC, MKTAG('i', 'c', 'o', 'd') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 
