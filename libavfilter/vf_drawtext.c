@@ -576,8 +576,6 @@ static int config_input(AVFilterLink *inlink)
     s->var_values[VAR_VSUB]  = 1 << s->dc.vsub_max;
     s->var_values[VAR_X]     = NAN;
     s->var_values[VAR_Y]     = NAN;
-    if (!s->reinit)
-        s->var_values[VAR_N] = 0;
     s->var_values[VAR_T]     = NAN;
 
     av_lfg_init(&s->prng, av_get_random_seed());
