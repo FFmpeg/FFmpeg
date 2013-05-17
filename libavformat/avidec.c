@@ -959,9 +959,9 @@ start_sync:
                || st->discard >= AVDISCARD_ALL){
                 if (!exit_early) {
                     ast->frame_offset += get_duration(ast, size);
+                    avio_skip(pb, size);
+                    goto start_sync;
                 }
-                avio_skip(pb, size);
-                goto start_sync;
             }
 
             if (d[2] == 'p' && d[3] == 'c' && size<=4*256+4) {
