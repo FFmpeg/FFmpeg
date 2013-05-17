@@ -166,14 +166,14 @@ static int modplug_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     ModPlug_Settings settings;
     ModPlugContext *modplug = s->priv_data;
-    int sz = avio_size(pb);
+    int64_t sz = avio_size(pb);
 
     if (sz < 0) {
         av_log(s, AV_LOG_WARNING, "Could not determine file size\n");
         sz = modplug->max_size;
     } else if (modplug->max_size && sz > modplug->max_size) {
         sz = modplug->max_size;
-        av_log(s, AV_LOG_WARNING, "Max file size reach%s, allocating %dB "
+        av_log(s, AV_LOG_WARNING, "Max file size reach%s, allocating %"PRIi64"B "
                "but demuxing is likely to fail due to incomplete buffer\n",
                sz == FF_MODPLUG_DEF_FILE_SIZE ? " (see -max_size)" : "", sz);
     }
