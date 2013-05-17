@@ -306,6 +306,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     av_dlog(s->avctx, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
             ilv, point_transform, s->bits, s->cur_scan);
     if (ilv == 0) { /* separate planes */
+        if (s->cur_scan > s->nb_components) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         off    = s->cur_scan - 1;
         stride = (s->nb_components > 1) ? 3 : 1;
         width  = s->width * stride;
