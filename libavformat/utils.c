@@ -1062,6 +1062,13 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         if (!out_pkt.size)
             continue;
 
+        if (pkt->side_data) {
+            out_pkt.side_data       = pkt->side_data;
+            out_pkt.side_data_elems = pkt->side_data_elems;
+            pkt->side_data       = NULL;
+            pkt->side_data_elems = 0;
+        }
+
         /* set the duration */
         out_pkt.duration = 0;
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
