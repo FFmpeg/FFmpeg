@@ -4245,7 +4245,6 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
     int dmv_x[2], dmv_y[2], pred_flag[2];
     int bmvtype = BMV_TYPE_BACKWARD;
     int idx_mbmode;
-    int av_uninit(interpmvp);
 
     mquant      = v->pq; /* Lossy initialization */
     s->mb_intra = 0;
@@ -4298,6 +4297,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
         else
             fwd = v->forward_mb_plane[mb_pos];
         if (idx_mbmode <= 5) { // 1-MV
+            int interpmvp = 0;
             dmv_x[0]     = dmv_x[1] = dmv_y[0] = dmv_y[1] = 0;
             pred_flag[0] = pred_flag[1] = 0;
             if (fwd)
@@ -4320,7 +4320,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
             if (bmvtype != BMV_TYPE_DIRECT && idx_mbmode & 1) {
                 get_mvdata_interlaced(v, &dmv_x[bmvtype == BMV_TYPE_BACKWARD], &dmv_y[bmvtype == BMV_TYPE_BACKWARD], &pred_flag[bmvtype == BMV_TYPE_BACKWARD]);
             }
-            if (bmvtype == BMV_TYPE_INTERPOLATED && interpmvp) {
+            if (interpmvp) {
                 get_mvdata_interlaced(v, &dmv_x[1], &dmv_y[1], &pred_flag[1]);
             }
             if (bmvtype == BMV_TYPE_DIRECT) {
