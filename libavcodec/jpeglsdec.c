@@ -71,13 +71,13 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
     case 2:
     case 3:
         av_log(s->avctx, AV_LOG_ERROR, "palette not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     case 4:
         av_log(s->avctx, AV_LOG_ERROR, "oversize image not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     default:
         av_log(s->avctx, AV_LOG_ERROR, "invalid id %d\n", id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 //    av_log(s->avctx, AV_LOG_DEBUG, "ID=%i, T=%i,%i,%i\n", id, s->t1, s->t2, s->t3);
 
@@ -324,11 +324,11 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
             last = cur;
             cur += s->picture_ptr->linesize[0];
         }
-    } else if(ilv == 2) { /* sample interleaving */
+    } else if (ilv == 2) { /* sample interleaving */
         av_log(s->avctx, AV_LOG_ERROR, "Sample interleaved images are not supported.\n");
         av_free(state);
         av_free(zero);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if(shift){ /* we need to do point transform or normalize samples */
