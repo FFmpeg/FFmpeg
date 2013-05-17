@@ -2275,7 +2275,9 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 sub->end_display_time = av_rescale_q(avpkt->duration,
                                                      avctx->pkt_timebase, ms);
             }
-
+#if 0
+            /* don't check character encoding, should implement UTF16 and other
+             * ASCII noncompatible encoding when read subtitle file in each codecs */
             for (i = 0; i < sub->num_rects; i++) {
                 if (sub->rects[i]->ass && !utf8_check(sub->rects[i]->ass)) {
                     av_log(avctx, AV_LOG_ERROR,
@@ -2285,6 +2287,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                     return AVERROR_INVALIDDATA;
                 }
             }
+#endif
 
             if (tmp.data != pkt_recoded.data) { // did we recode?
                 /* prevent from destroying side data from original packet */

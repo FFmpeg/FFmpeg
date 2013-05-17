@@ -35,6 +35,7 @@
 #include "libavutil/time.h"
 #include "os_support.h"
 #include "avformat.h"
+#include "cache.h"
 #include "url.h"
 
 #if HAVE_SETMODE
@@ -53,18 +54,6 @@
 #endif
 
 #define BUFFER_SIZE 8192
-
-enum CACHE_TYPE {
-  CACHE_NOT_AVAILABLE = 1,
-  CACHE_UPDATE = 2,
-  CACHE_SPEED = 3,
-};
-
-enum CACHE_INFO {
-  CACHE_INFO_NO_SPACE = 1,
-  CACHE_INFO_STREAM_NOT_SUPPORT = 2,
-  CACHE_INFO_CONNECT_FAILED = 3,
-};
 
 typedef struct Segment {
   int64_t begin;
@@ -273,10 +262,9 @@ static int cache_open(URLContext *h, const char *arg, int flags)
     char *index_path = av_mallocz(dlen + 4);
     snprintf(index_path, dlen + 4, "%s.ssi", c->cache_path);
     c->fdi = open(index_path, O_RDWR | O_BINARY | O_CREAT, 0600);
-    int fno = ftruncate64(c->fdw, c->length);
-    if (c->fdw == -1 || c->fdr == -1 || fno == -1) {
-      if (c->callback)
-        c->callback(CACHE_NOT_AVAILABLE, errno, NULL);
+    av_free(index_path);
+    if (c->fdw == -1 || c->fdr == -1 || c->fdi == -1 || ftruncate64(c->fdw, c->length) != 0) {
+      if (c->callback) c->callback(CACHE_NOT_AVAILABLE, errno, NULL);
       close(c->fdw);
       close(c->fdr);
       close(c->fdi);
@@ -296,8 +284,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
     pthread_mutex_init(&c->mutex, NULL);
     pthread_create(&c->thread, NULL, cache_fill_thread, c);
     c->cache_fill = 1;
-    av_log(NULL, AV_LOG_INFO, "cache_open: %s, %s, %d, %"PRId64"\n", index_path, url, opened, c->length);
-    av_free(index_path);
+    av_log(NULL, AV_LOG_INFO, "cache_open: %s, %d, %"PRId64"\n", url, opened, c->length);
   } else {
     if (c->callback)
       c->callback(CACHE_NOT_AVAILABLE, CACHE_INFO_STREAM_NOT_SUPPORT, NULL);
@@ -405,5 +392,3 @@ URLProtocol ff_cache_protocol = {
   .priv_data_size      = sizeof(CacheContext),
   .priv_data_class     = &cache_context_class,
 };
-
-
