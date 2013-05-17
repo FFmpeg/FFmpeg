@@ -252,6 +252,8 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
 
+    uninit(inlink->dst);
+
     s->hsub  = desc->log2_chroma_w;
     s->vsub  = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth_minus1+1;
