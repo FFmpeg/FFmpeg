@@ -1146,6 +1146,7 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     int offset = 0, size = pkt->size, side_data_size = 0;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
     uint64_t additional_id = 0;
+    ebml_master block_group, block_additions, block_more;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
            "pts %" PRId64 ", dts %" PRId64 ", duration %d, flags %d\n",
@@ -1173,16 +1174,20 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     }
 
     if (side_data_size && additional_id == 1) {
-        ebml_master block_group, block_additions, block_more;
         block_group = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, 0);
-        put_ebml_id(pb, MATROSKA_ID_BLOCK);
-        put_ebml_num(pb, size+4, 0);
-        avio_w8(pb, 0x80 | (pkt->stream_index + 1)); // track number
-        avio_wb16(pb, ts - mkv->cluster_pts);
-        avio_w8(pb, flags);
-        avio_write(pb, data + offset, size);
-        if (data != pkt->data)
-            av_free(data);
+        blockid = MATROSKA_ID_BLOCK;
+    }
+
+    put_ebml_id(pb, blockid);
+    put_ebml_num(pb, size+4, 0);
+    avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
+    avio_wb16(pb, ts - mkv->cluster_pts);
+    avio_w8(pb, flags);
+    avio_write(pb, data + offset, size);
+    if (data != pkt->data)
+        av_free(data);
+
+    if (side_data_size && additional_id == 1) {
         block_additions = start_ebml_master(pb, MATROSKA_ID_BLOCKADDITIONS, 0);
         block_more = start_ebml_master(pb, MATROSKA_ID_BLOCKMORE, 0);
         put_ebml_uint(pb, MATROSKA_ID_BLOCKADDID, 1);
@@ -1192,16 +1197,6 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         end_ebml_master(pb, block_more);
         end_ebml_master(pb, block_additions);
         end_ebml_master(pb, block_group);
-    }
-    else {
-        put_ebml_id(pb, blockid);
-        put_ebml_num(pb, size+4, 0);
-        avio_w8(pb, 0x80 | (pkt->stream_index + 1));     // this assumes stream_index is less than 126
-        avio_wb16(pb, ts - mkv->cluster_pts);
-        avio_w8(pb, flags);
-        avio_write(pb, data + offset, size);
-        if (data != pkt->data)
-            av_free(data);
     }
 }
 
