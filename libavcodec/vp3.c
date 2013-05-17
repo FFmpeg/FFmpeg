@@ -1632,16 +1632,16 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     y_fragment_count = s->fragment_width[0] * s->fragment_height[0];
     c_fragment_count = s->fragment_width[1] * s->fragment_height[1];
 
-    s->superblock_coding = av_malloc(s->superblock_count);
-    s->all_fragments = av_malloc(s->fragment_count * sizeof(Vp3Fragment));
-    s->coded_fragment_list[0] = av_malloc(s->fragment_count * sizeof(int));
-    s->dct_tokens_base = av_malloc(64*s->fragment_count * sizeof(*s->dct_tokens_base));
-    s->motion_val[0] = av_malloc(y_fragment_count * sizeof(*s->motion_val[0]));
-    s->motion_val[1] = av_malloc(c_fragment_count * sizeof(*s->motion_val[1]));
+    s->superblock_coding = av_mallocz(s->superblock_count);
+    s->all_fragments = av_mallocz(s->fragment_count * sizeof(Vp3Fragment));
+    s->coded_fragment_list[0] = av_mallocz(s->fragment_count * sizeof(int));
+    s->dct_tokens_base = av_mallocz(64*s->fragment_count * sizeof(*s->dct_tokens_base));
+    s->motion_val[0] = av_mallocz(y_fragment_count * sizeof(*s->motion_val[0]));
+    s->motion_val[1] = av_mallocz(c_fragment_count * sizeof(*s->motion_val[1]));
 
     /* work out the block mapping tables */
-    s->superblock_fragments = av_malloc(s->superblock_count * 16 * sizeof(int));
-    s->macroblock_coding = av_malloc(s->macroblock_count + 1);
+    s->superblock_fragments = av_mallocz(s->superblock_count * 16 * sizeof(int));
+    s->macroblock_coding = av_mallocz(s->macroblock_count + 1);
 
     if (!s->superblock_coding || !s->all_fragments || !s->dct_tokens_base ||
         !s->coded_fragment_list[0] || !s->superblock_fragments || !s->macroblock_coding ||
