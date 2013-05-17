@@ -223,12 +223,12 @@ static void* cache_fill_thread(void* arg)
   }
 
   if (c->callback) {
+    if (c->segs_flat && c->num_segs > 0) {
+      segments_dump(c, c->segs, c->fdi);
+      c->callback(CACHE_UPDATE, c->num_segs, c->segs_flat);
+    }
     c->callback(CACHE_SPEED, 0, NULL);
-  }
-
-  if (len > 0 && c->segs_flat && c->num_segs > 0 && c->callback) {
-    segments_dump(c, c->segs, c->fdi);
-    c->callback(CACHE_UPDATE, c->num_segs, c->segs_flat);
+    c->callback(CACHE_COMPLETE, 0, NULL);
   }
 
   return NULL;
