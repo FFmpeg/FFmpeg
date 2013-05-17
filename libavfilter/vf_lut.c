@@ -221,6 +221,8 @@ static int config_props(AVFilterLink *inlink)
         int comp = s->is_rgb ? rgba_map[color] : color;
 
         /* create the parsed expression */
+        av_expr_free(s->comp_expr[color]);
+        s->comp_expr[color] = NULL;
         ret = av_expr_parse(&s->comp_expr[color], s->comp_expr_str[color],
                             var_names, funcs1_names, funcs1, NULL, NULL, 0, ctx);
         if (ret < 0) {
