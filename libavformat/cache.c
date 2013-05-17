@@ -193,7 +193,7 @@ static void segments_free(Segment *segs)
 static void* cache_fill_thread(void* arg)
 {
   uint8_t buf[BUFFER_SIZE];
-  int r, w, len = 0, osl = 0;
+  int r, w, len = 0, osl = 0, olen = 0;
   int64_t rate_time = 0, rate_time_diff = 0;
   CacheContext *c = (CacheContext *)arg;
 
@@ -206,13 +206,15 @@ static void* cache_fill_thread(void* arg)
         av_assert0(w == r);
         c->seg->end += w;
         len += w;
+        olen += w;
         osl = c->num_segs;
         segments_balance(c, c->seg);
 
         rate_time_diff = av_gettime() - rate_time;
-        if (rate_time_diff > 2000000 && c->callback && len > 0) {
-          c->callback(CACHE_SPEED, (len * (int64_t)1000000 / 1024 / rate_time_diff), NULL);
+        if (rate_time_diff > 2000000 && c->callback && olen >= 0) {
+          c->callback(CACHE_SPEED, (olen * (int64_t)1000000 / 1024 / rate_time_diff), NULL);
           rate_time = av_gettime();
+          olen = 0;
         }
 
         if ((osl != c->num_segs || len > 102400) && c->segs_flat && c->num_segs > 0 && c->callback) {
