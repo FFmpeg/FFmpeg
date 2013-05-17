@@ -37,7 +37,8 @@
 
 typedef struct {
     const AVClass *class;
-    AVRational aspect;
+    AVRational dar;
+    AVRational sar;
     int max;
 #if FF_API_OLD_FILTER_OPTS
     float aspect_den;
@@ -61,16 +62,17 @@ static av_cold int init(AVFilterContext *ctx)
             av_log(ctx, AV_LOG_ERROR, "Unable to parse ratio numerator \"%s\"\n", s->ratio_str);
             return AVERROR(EINVAL);
         }
-        s->aspect = av_d2q(num / s->aspect_den, s->max);
+        s->sar = s->dar = av_d2q(num / s->aspect_den, s->max);
     } else
 #endif
     if (s->ratio_str) {
-        ret = av_parse_ratio(&s->aspect, s->ratio_str, s->max, 0, ctx);
-        if (ret < 0 || s->aspect.num < 0 || s->aspect.den <= 0) {
+        ret = av_parse_ratio(&s->sar, s->ratio_str, s->max, 0, ctx);
+        if (ret < 0 || s->sar.num < 0 || s->sar.den <= 0) {
             av_log(ctx, AV_LOG_ERROR,
                    "Invalid string '%s' for aspect ratio\n", s->ratio_str);
             return AVERROR(EINVAL);
         }
+        s->dar = s->sar;
     }
     return 0;
 }
@@ -79,7 +81,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AspectContext *s = link->dst->priv;
 
-    frame->sample_aspect_ratio = s->aspect;
+    frame->sample_aspect_ratio = s->sar;
     return ff_filter_frame(link->dst->outputs[0], frame);
 }
 
@@ -100,14 +102,16 @@ static inline void compute_dar(AVRational *dar, AVRational sar, int w, int h)
 static int setdar_config_props(AVFilterLink *inlink)
 {
     AspectContext *s = inlink->dst->priv;
-    AVRational dar = s->aspect, old_dar;
+    AVRational dar;
+    AVRational old_dar;
     AVRational old_sar = inlink->sample_aspect_ratio;
 
-    if (s->aspect.num && s->aspect.den) {
-        av_reduce(&s->aspect.num, &s->aspect.den,
-                   s->aspect.num * inlink->h,
-                   s->aspect.den * inlink->w, INT_MAX);
-        inlink->sample_aspect_ratio = s->aspect;
+    if (s->dar.num && s->dar.den) {
+        av_reduce(&s->sar.num, &s->sar.den,
+                   s->dar.num * inlink->h,
+                   s->dar.den * inlink->w, INT_MAX);
+        inlink->sample_aspect_ratio = s->sar;
+        dar = s->dar;
     } else {
         inlink->sample_aspect_ratio = (AVRational){ 1, 1 };
         dar = (AVRational){ inlink->w, inlink->h };
@@ -175,10 +179,10 @@ static int setsar_config_props(AVFilterLink *inlink)
     AVRational old_sar = inlink->sample_aspect_ratio;
     AVRational old_dar, dar;
 
-    inlink->sample_aspect_ratio = s->aspect;
+    inlink->sample_aspect_ratio = s->sar;
 
     compute_dar(&old_dar, old_sar, inlink->w, inlink->h);
-    compute_dar(&dar, s->aspect, inlink->w, inlink->h);
+    compute_dar(&dar, s->sar, inlink->w, inlink->h);
     av_log(inlink->dst, AV_LOG_VERBOSE, "w:%d h:%d sar:%d/%d dar:%d/%d -> sar:%d/%d dar:%d/%d\n",
            inlink->w, inlink->h, old_sar.num, old_sar.den, old_dar.num, old_dar.den,
            inlink->sample_aspect_ratio.num, inlink->sample_aspect_ratio.den, dar.num, dar.den);
