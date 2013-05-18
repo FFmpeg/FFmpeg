@@ -608,6 +608,7 @@ Select the ProRes profile to encode
 @item lt
 @item standard
 @item hq
+@item 4444
 @end table
 
 @item quant_mat @var{integer}
@@ -636,6 +637,11 @@ should be good in almost all situations.
 Override the 4-byte vendor ID.
 A custom vendor ID like @var{apl0} would claim the stream was produced by
 the Apple encoder.
+
+@item alpha_bits @var{integer}
+Specify number of bits for alpha component.
+Possible values are @var{0}, @var{8} and @var{16}.
+Use @var{0} to disable alpha plane coding.
 
 @end table
 
