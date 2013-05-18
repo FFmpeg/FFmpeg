@@ -23,6 +23,7 @@
 
 /**
  * @file
+ * @ingroup lavfi
  * Libavfilter version macros
  */
 

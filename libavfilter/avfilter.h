@@ -25,11 +25,11 @@
 /**
  * @file
  * @ingroup lavfi
- * external API header
+ * Main libavfilter public API header
  */
 
 /**
- * @defgroup lavfi Libavfilter
+ * @defgroup lavfi Libavfilter - graph-based frame editing library
  * @{
  */
 
@@ -1298,4 +1298,5 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph);
 /**
  * @}
  */
+
 #endif /* AVFILTER_AVFILTER_H */
