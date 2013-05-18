@@ -100,7 +100,7 @@ static int query_formats(AVFilterContext *ctx)
     int i, depth = 0, be = 0;
 
     if (!ctx->inputs[0]->in_formats ||
-        !ctx->inputs[0]->in_formats->format_count) {
+        !ctx->inputs[0]->in_formats->nb_formats) {
         return AVERROR(EAGAIN);
     }
 
@@ -111,7 +111,7 @@ static int query_formats(AVFilterContext *ctx)
     desc = av_pix_fmt_desc_get(avff->formats[0]);
     depth = desc->comp[0].depth_minus1;
     be = desc->flags & AV_PIX_FMT_FLAG_BE;
-    for (i = 1; i < avff->format_count; i++) {
+    for (i = 1; i < avff->nb_formats; i++) {
         desc = av_pix_fmt_desc_get(avff->formats[i]);
         if (depth != desc->comp[0].depth_minus1 ||
             be    != (desc->flags & AV_PIX_FMT_FLAG_BE)) {

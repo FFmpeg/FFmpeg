@@ -503,28 +503,28 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
             int has_alpha= av_pix_fmt_desc_get(ref->format)->nb_components % 2 == 0;
             enum AVPixelFormat best= AV_PIX_FMT_NONE;
             int i;
-            for (i=0; i<link->in_formats->format_count; i++) {
+            for (i=0; i<link->in_formats->nb_formats; i++) {
                 enum AVPixelFormat p = link->in_formats->formats[i];
                 best= avcodec_find_best_pix_fmt_of_2(best, p, ref->format, has_alpha, NULL);
             }
             av_log(link->src,AV_LOG_DEBUG, "picking %s out of %d ref:%s alpha:%d\n",
-                   av_get_pix_fmt_name(best), link->in_formats->format_count,
+                   av_get_pix_fmt_name(best), link->in_formats->nb_formats,
                    av_get_pix_fmt_name(ref->format), has_alpha);
             link->in_formats->formats[0] = best;
         }
     }
 
-    link->in_formats->format_count = 1;
+    link->in_formats->nb_formats = 1;
     link->format = link->in_formats->formats[0];
 
     if (link->type == AVMEDIA_TYPE_AUDIO) {
-        if (!link->in_samplerates->format_count) {
+        if (!link->in_samplerates->nb_formats) {
             av_log(link->src, AV_LOG_ERROR, "Cannot select sample rate for"
                    " the link between filters %s and %s.\n", link->src->name,
                    link->dst->name);
             return AVERROR(EINVAL);
         }
-        link->in_samplerates->format_count = 1;
+        link->in_samplerates->nb_formats = 1;
         link->sample_rate = link->in_samplerates->formats[0];
 
         if (link->in_channel_layouts->all_layouts) {
@@ -591,9 +591,9 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     int i, j, k, ret = 0;
 
     REDUCE_FORMATS(int,      AVFilterFormats,        formats,         formats,
-                   format_count, ff_add_format);
+                   nb_formats, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        samplerates,     formats,
-                   format_count, ff_add_format);
+                   nb_formats, ff_add_format);
 
     /* reduce channel layouts */
     for (i = 0; i < filter->nb_inputs; i++) {
@@ -656,7 +656,7 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         link = filter->inputs[i];
 
         if (link->type == AVMEDIA_TYPE_AUDIO &&
-            link->out_samplerates->format_count == 1)
+            link->out_samplerates->nb_formats== 1)
             break;
     }
     if (i == filter->nb_inputs)
@@ -669,10 +669,10 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         int best_idx, best_diff = INT_MAX;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
-            outlink->in_samplerates->format_count < 2)
+            outlink->in_samplerates->nb_formats < 2)
             continue;
 
-        for (j = 0; j < outlink->in_samplerates->format_count; j++) {
+        for (j = 0; j < outlink->in_samplerates->nb_formats; j++) {
             int diff = abs(sample_rate - outlink->in_samplerates->formats[j]);
 
             if (diff < best_diff) {
@@ -834,7 +834,7 @@ static void swap_sample_fmts_on_filter(AVFilterContext *filter)
         link = filter->inputs[i];
 
         if (link->type == AVMEDIA_TYPE_AUDIO &&
-            link->out_formats->format_count == 1)
+            link->out_formats->nb_formats == 1)
             break;
     }
     if (i == filter->nb_inputs)
@@ -848,10 +848,10 @@ static void swap_sample_fmts_on_filter(AVFilterContext *filter)
         int best_idx = -1, best_score = INT_MIN;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
-            outlink->in_formats->format_count < 2)
+            outlink->in_formats->nb_formats < 2)
             continue;
 
-        for (j = 0; j < outlink->in_formats->format_count; j++) {
+        for (j = 0; j < outlink->in_formats->nb_formats; j++) {
             int out_format = outlink->in_formats->formats[j];
             int out_bps    = av_get_bytes_per_sample(out_format);
             int score;
@@ -904,7 +904,7 @@ static int pick_formats(AVFilterGraph *graph)
             AVFilterContext *filter = graph->filters[i];
             if (filter->nb_inputs){
                 for (j = 0; j < filter->nb_inputs; j++){
-                    if(filter->inputs[j]->in_formats && filter->inputs[j]->in_formats->format_count == 1) {
+                    if(filter->inputs[j]->in_formats && filter->inputs[j]->in_formats->nb_formats == 1) {
                         if ((ret = pick_format(filter->inputs[j], NULL)) < 0)
                             return ret;
                         change = 1;
@@ -913,7 +913,7 @@ static int pick_formats(AVFilterGraph *graph)
             }
             if (filter->nb_outputs){
                 for (j = 0; j < filter->nb_outputs; j++){
-                    if(filter->outputs[j]->in_formats && filter->outputs[j]->in_formats->format_count == 1) {
+                    if(filter->outputs[j]->in_formats && filter->outputs[j]->in_formats->nb_formats == 1) {
                         if ((ret = pick_format(filter->outputs[j], NULL)) < 0)
                             return ret;
                         change = 1;
