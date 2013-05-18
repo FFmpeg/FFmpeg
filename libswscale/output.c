@@ -1149,9 +1149,15 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
         if (hasAlpha) {
             int sh = (target == AV_PIX_FMT_RGB32_1 || target == AV_PIX_FMT_BGR32_1) ? 0 : 24;
 
+            av_assert2((((r[Y1] + g[Y1] + b[Y1]) >> sh) & 0xFF) == 0);
             dest[i * 2 + 0] = r[Y1] + g[Y1] + b[Y1] + (A1 << sh);
             dest[i * 2 + 1] = r[Y2] + g[Y2] + b[Y2] + (A2 << sh);
         } else {
+#if ASSERT_LEVEL > 1
+            int sh = (target == AV_PIX_FMT_RGB32_1 || target == AV_PIX_FMT_BGR32_1) ? 0 : 24;
+
+            av_assert2((((r[Y1] + g[Y1] + b[Y1]) >> sh) & 0xFF) == 0xFF);
+#endif
             dest[i * 2 + 0] = r[Y1] + g[Y1] + b[Y1];
             dest[i * 2 + 1] = r[Y2] + g[Y2] + b[Y2];
         }
