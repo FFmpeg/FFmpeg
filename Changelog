@@ -49,6 +49,7 @@ version <next>:
 - DCT denoiser filter (dctdnoiz)
 - Wavelet denoiser filter ported from libmpcodecs as owdenoise (formerly "ow")
 - Apple Intermediate Codec decoder
+- Escape 130 video decoder
 
 
 version 1.2:
