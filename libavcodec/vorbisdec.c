@@ -1302,6 +1302,37 @@ static int vorbis_floor1_decode(vorbis_context *vc,
     return 0;
 }
 
+static av_always_inline int setup_classifs(vorbis_context *vc,
+                                           vorbis_residue *vr,
+                                           uint8_t *do_not_decode,
+                                           unsigned ch_used,
+                                           unsigned partition_count)
+{
+    int p, j, i;
+    unsigned c_p_c         = vc->codebooks[vr->classbook].dimensions;
+    unsigned inverse_class = ff_inverse[vr->classifications];
+    unsigned temp, temp2;
+    for (p = 0, j = 0; j < ch_used; ++j) {
+        if (!do_not_decode[j]) {
+            temp = get_vlc2(&vc->gb, vc->codebooks[vr->classbook].vlc.table,
+                                     vc->codebooks[vr->classbook].nb_bits, 3);
+
+            av_dlog(NULL, "Classword: %u\n", temp);
+
+            assert(vr->classifications > 1 && temp <= 65536); //needed for inverse[]
+
+            for (i = 0; i < c_p_c; ++i) {
+                temp2 = (((uint64_t)temp) * inverse_class) >> 32;
+                if (partition_count + c_p_c - 1 - i < vr->ptns_to_read)
+                    vr->classifs[p + partition_count + c_p_c - 1 - i] =
+                        temp - temp2 * vr->classifications;
+                temp = temp2;
+            }
+        }
+        p += vr->ptns_to_read;
+    }
+    return 0;
+}
 // Read and decode residue
 
 static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
@@ -1345,26 +1376,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
         voffset = vr->begin;
         for (partition_count = 0; partition_count < ptns_to_read;) {  // SPEC        error
             if (!pass) {
-                unsigned inverse_class = ff_inverse[vr->classifications];
-                for (j_times_ptns_to_read = 0, j = 0; j < ch_used; ++j) {
-                    if (!do_not_decode[j]) {
-                        unsigned temp = get_vlc2(gb, vc->codebooks[vr->classbook].vlc.table,
-                                                 vc->codebooks[vr->classbook].nb_bits, 3);
-
-                        av_dlog(NULL, "Classword: %u\n", temp);
-
-                        assert(vr->classifications > 1 && temp <= 65536); //needed for inverse[]
-                        for (i = 0; i < c_p_c; ++i) {
-                            unsigned temp2;
-
-                            temp2 = (((uint64_t)temp) * inverse_class) >> 32;
-                            if (partition_count + c_p_c - 1 - i < ptns_to_read)
-                                classifs[j_times_ptns_to_read + partition_count + c_p_c - 1 - i] = temp - temp2 * vr->classifications;
-                            temp = temp2;
-                        }
-                    }
-                    j_times_ptns_to_read += ptns_to_read;
-                }
+                setup_classifs(vc, vr, do_not_decode, ch_used, partition_count);
             }
             for (i = 0; (i < c_p_c) && (partition_count < ptns_to_read); ++i) {
                 for (j_times_ptns_to_read = 0, j = 0; j < ch_used; ++j) {
