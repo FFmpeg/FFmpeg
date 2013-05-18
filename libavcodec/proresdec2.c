@@ -591,7 +591,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
                             qmat_chroma_scaled, log2_chroma_blocks_per_mb);
     }
     /* decode alpha plane if available */
-    if (ctx->alpha_info && dest_a && a_data_size)
+    if (ctx->alpha_info && pic->data[3] && a_data_size)
         decode_slice_alpha(ctx, (uint16_t*)dest_a, luma_stride,
                            buf + y_data_size + u_data_size + v_data_size,
                            a_data_size, slice->mb_count);
