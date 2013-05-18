@@ -23,7 +23,8 @@
 
 /**
  * @file
- * external API header
+ * @ingroup libavc
+ * Libavcodec external API header
  */
 
 #include <errno.h>
