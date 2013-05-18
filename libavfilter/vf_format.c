@@ -81,15 +81,17 @@ static av_cold int init(AVFilterContext *ctx)
 
 static AVFilterFormats *make_format_list(FormatContext *s, int flag)
 {
-    AVFilterFormats *formats;
+    AVFilterFormats *formats = NULL;
     enum AVPixelFormat pix_fmt;
 
-    formats = av_mallocz(sizeof(AVFilterFormats));
-    formats->formats = av_malloc(sizeof(enum AVPixelFormat) * AV_PIX_FMT_NB);
-
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
-        if (s->listed_pix_fmt_flags[pix_fmt] == flag)
-            formats->formats[formats->nb_formats++] = pix_fmt;
+        if (s->listed_pix_fmt_flags[pix_fmt] == flag) {
+            int ret = ff_add_format(&formats, pix_fmt);
+            if (ret < 0) {
+                ff_formats_unref(&formats);
+                return NULL;
+            }
+        }
 
     return formats;
 }
