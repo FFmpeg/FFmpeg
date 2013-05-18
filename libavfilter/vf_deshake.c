@@ -355,6 +355,11 @@ static av_cold int init(AVFilterContext *ctx)
     deshake->blocksize /= 2;
     deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
 
+    if (deshake->rx % 16) {
+        av_log(ctx, AV_LOG_ERROR, "rx must be a multiple of 16\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (deshake->filename)
         deshake->fp = fopen(deshake->filename, "w");
     if (deshake->fp)
