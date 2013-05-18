@@ -277,7 +277,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     int i, t = 0;
     uint8_t *zero, *last, *cur;
     JLSState *state;
-    int off = 0, stride = 1, width, shift;
+    int off = 0, stride = 1, width, shift, ret = 0;
 
     zero = av_mallocz(s->picture.linesize[0]);
     last = zero;
@@ -353,9 +353,8 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         }
     } else if (ilv == 2) { /* sample interleaving */
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
-        av_free(state);
-        av_free(zero);
-        return AVERROR_PATCHWELCOME;
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
     }
 
     if (shift) { /* we need to do point transform or normalize samples */
@@ -381,10 +380,12 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
             }
         }
     }
+
+end:
     av_free(state);
     av_free(zero);
 
-    return 0;
+    return ret;
 }
 
 AVCodec ff_jpegls_decoder = {
