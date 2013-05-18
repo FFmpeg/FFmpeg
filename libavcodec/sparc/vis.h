@@ -150,12 +150,9 @@ static inline int vis_level(void)
 #define vis_m2r_2(op,mem1,mem2,rd) \
         __asm__ volatile (#op "\t[%0 + %1], %%f" #rd : : "r" (mem1), "r" (mem2) )
 
-static inline void vis_set_gsr(unsigned int _val)
+static inline void vis_set_gsr(unsigned int val)
 {
-        register unsigned int val __asm__("g1");
-
-        val = _val;
-        __asm__ volatile(".word 0xa7804000"
+        __asm__ volatile("mov %0,%%asr19"
                              : : "r" (val));
 }
 
@@ -208,36 +205,19 @@ static inline void vis_set_gsr(unsigned int _val)
 
 /* Alignment instructions.  */
 
-static inline const void *vis_alignaddr(const void *_ptr)
+static inline const void *vis_alignaddr(const void *ptr)
 {
-        register const void *ptr __asm__("g1");
-
-        ptr = _ptr;
-
-        __asm__ volatile(".word %2"
+        __asm__ volatile("alignaddr %0, %%g0, %0"
                              : "=&r" (ptr)
-                             : "0" (ptr),
-                               "i" (vis_opc_base | vis_opf(0x18) |
-                                    vis_rs1_s(1) |
-                                    vis_rs2_s(0) |
-                                    vis_rd_s(1)));
+                             : "0" (ptr));
 
         return ptr;
 }
 
-static inline void vis_alignaddr_g0(void *_ptr)
+static inline void vis_alignaddr_g0(void *ptr)
 {
-        register void *ptr __asm__("g1");
-
-        ptr = _ptr;
-
-        __asm__ volatile(".word %2"
-                             : "=&r" (ptr)
-                             : "0" (ptr),
-                               "i" (vis_opc_base | vis_opf(0x18) |
-                                    vis_rs1_s(1) |
-                                    vis_rs2_s(0) |
-                                    vis_rd_s(0)));
+        __asm__ volatile("alignaddr %0, %%g0, %%g0"
+                             : : "r" (ptr));
 }
 
 #define vis_faligndata(rs1,rs2,rd)        vis_dd2d(0x48, rs1, rs2, rd)
