@@ -11,4 +11,4 @@ fate-prores-422:       CMD = framecrc -i $(SAMPLES)/prores/Sequence_1-Apple_ProR
 fate-prores-422_hq:    CMD = framecrc -i $(SAMPLES)/prores/Sequence_1-Apple_ProRes_422_HQ.mov -pix_fmt yuv422p10le
 fate-prores-422_lt:    CMD = framecrc -i $(SAMPLES)/prores/Sequence_1-Apple_ProRes_422_LT.mov -pix_fmt yuv422p10le
 fate-prores-422_proxy: CMD = framecrc -i $(SAMPLES)/prores/Sequence_1-Apple_ProRes_422_Proxy.mov -pix_fmt yuv422p10le
-fate-prores-alpha:     CMD = framecrc -i $(SAMPLES)/prores/Sequence_1-Apple_ProRes_with_Alpha.mov -pix_fmt yuv444p10le
+fate-prores-alpha:     CMD = framecrc -i $(SAMPLES)/prores/Sequence_1-Apple_ProRes_with_Alpha.mov -pix_fmt yuva444p10le
