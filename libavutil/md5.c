@@ -84,7 +84,7 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
                                                                         \
         if (i < 32) {                                                   \
             if (i < 16) a += (d ^ (b & (c ^ d))) + X[       i  & 15];   \
-            else        a += (c ^ (d & (c ^ b))) + X[(1 + 5*i) & 15];   \
+            else        a += ((d & b) | (~d & c))+ X[(1 + 5*i) & 15];   \
         } else {                                                        \
             if (i < 48) a += (b ^ c ^ d)         + X[(5 + 3*i) & 15];   \
             else        a += (c ^ (b | ~d))      + X[(    7*i) & 15];   \
