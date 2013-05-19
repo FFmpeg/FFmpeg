@@ -918,7 +918,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (dst == src)
         return 0;
 
-    if (!fdst->quant_table_count) {
+    if (!fdst->picture.f) {
         memcpy(fdst, fsrc, sizeof(*fdst));
 
         for (i = 0; i < fdst->quant_table_count; i++) {
