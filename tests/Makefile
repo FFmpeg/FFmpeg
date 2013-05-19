@@ -1,7 +1,7 @@
 VREF = tests/vsynth1/00.pgm
 AREF = tests/data/asynth1.sw
 
-OBJDIRS += tests/data tests/vsynth1
+OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
@@ -19,6 +19,10 @@ tests/data/vsynth2.yuv: tests/rotozoom$(HOSTEXESUF) | tests/data
 	$(M)$< $(SRC_PATH)/tests/lena.pnm $@
 
 tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm: TAG = GEN
+
+tests/data/filtergraphs/%: TAG = COPY
+tests/data/filtergraphs/%: $(SRC_PATH)/tests/filtergraphs/% | tests/data/filtergraphs
+	$(M)cp $< $@
 
 CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
 
