@@ -807,13 +807,14 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     if (!wc->mkv_mode) {
         s->samples = AV_RL32(buf);
         buf       += 4;
+        if (s->samples != wc->samples) {
+            av_log(avctx, AV_LOG_ERROR, "mismatching sample count in block");
+            return AVERROR_INVALIDDATA;
+        }
+
         if (!s->samples) {
             *got_frame_ptr = 0;
             return 0;
-        }
-        if (s->samples > wc->samples) {
-            av_log(avctx, AV_LOG_ERROR, "too many samples in block");
-            return -1;
         }
     } else {
         s->samples = wc->samples;
