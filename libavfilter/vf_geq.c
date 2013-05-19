@@ -42,24 +42,26 @@ typedef struct {
     int is_rgb;
 } GEQContext;
 
+enum { Y = 0, U, V, A, G, B, R };
+
 #define OFFSET(x) offsetof(GEQContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption geq_options[] = {
-    { "lum_expr",   "set luminance expression",   OFFSET(expr_str[0]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "lum",        "set luminance expression",   OFFSET(expr_str[0]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "cb_expr",    "set chroma blue expression", OFFSET(expr_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "cb",         "set chroma blue expression", OFFSET(expr_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "cr_expr",    "set chroma red expression",  OFFSET(expr_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "cr",         "set chroma red expression",  OFFSET(expr_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "alpha_expr", "set alpha expression",       OFFSET(expr_str[3]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "a",          "set alpha expression",       OFFSET(expr_str[3]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "red_expr",   "set red expression",   OFFSET(expr_str[6]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "r",          "set red expression",   OFFSET(expr_str[6]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "green_expr", "set green expression", OFFSET(expr_str[4]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "g",          "set green expression", OFFSET(expr_str[4]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "blue_expr",  "set blue expression",  OFFSET(expr_str[5]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "b",          "set blue expression",  OFFSET(expr_str[5]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "lum_expr",   "set luminance expression",   OFFSET(expr_str[Y]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "lum",        "set luminance expression",   OFFSET(expr_str[Y]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cb_expr",    "set chroma blue expression", OFFSET(expr_str[U]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cb",         "set chroma blue expression", OFFSET(expr_str[U]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cr_expr",    "set chroma red expression",  OFFSET(expr_str[V]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cr",         "set chroma red expression",  OFFSET(expr_str[V]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "alpha_expr", "set alpha expression",       OFFSET(expr_str[A]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "a",          "set alpha expression",       OFFSET(expr_str[A]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "red_expr",   "set red expression",         OFFSET(expr_str[R]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "r",          "set red expression",         OFFSET(expr_str[R]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "green_expr", "set green expression",       OFFSET(expr_str[G]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "g",          "set green expression",       OFFSET(expr_str[G]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "blue_expr",  "set blue expression",        OFFSET(expr_str[B]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "b",          "set blue expression",        OFFSET(expr_str[B]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     {NULL},
 };
 
@@ -103,42 +105,42 @@ static av_cold int geq_init(AVFilterContext *ctx)
     GEQContext *geq = ctx->priv;
     int plane, ret = 0;
 
-    if (!geq->expr_str[0] && !geq->expr_str[4] && !geq->expr_str[5] && !geq->expr_str[6]) {
+    if (!geq->expr_str[Y] && !geq->expr_str[G] && !geq->expr_str[B] && !geq->expr_str[R]) {
         av_log(ctx, AV_LOG_ERROR, "A luminance or RGB expression is mandatory\n");
         ret = AVERROR(EINVAL);
         goto end;
     }
-    geq->is_rgb = !geq->expr_str[0];
+    geq->is_rgb = !geq->expr_str[Y];
 
-    if ((geq->expr_str[0] || geq->expr_str[1] || geq->expr_str[2]) && (geq->expr_str[4] || geq->expr_str[5] || geq->expr_str[6])) {
+    if ((geq->expr_str[Y] || geq->expr_str[U] || geq->expr_str[V]) && (geq->expr_str[G] || geq->expr_str[B] || geq->expr_str[R])) {
         av_log(ctx, AV_LOG_ERROR, "Either YCbCr or RGB but not both must be specified\n");
         ret = AVERROR(EINVAL);
         goto end;
     }
 
-    if (!geq->expr_str[1] && !geq->expr_str[2]) {
+    if (!geq->expr_str[U] && !geq->expr_str[V]) {
         /* No chroma at all: fallback on luma */
-        geq->expr_str[1] = av_strdup(geq->expr_str[0]);
-        geq->expr_str[2] = av_strdup(geq->expr_str[0]);
+        geq->expr_str[U] = av_strdup(geq->expr_str[Y]);
+        geq->expr_str[V] = av_strdup(geq->expr_str[Y]);
     } else {
         /* One chroma unspecified, fallback on the other */
-        if (!geq->expr_str[1]) geq->expr_str[1] = av_strdup(geq->expr_str[2]);
-        if (!geq->expr_str[2]) geq->expr_str[2] = av_strdup(geq->expr_str[1]);
+        if (!geq->expr_str[U]) geq->expr_str[U] = av_strdup(geq->expr_str[V]);
+        if (!geq->expr_str[V]) geq->expr_str[V] = av_strdup(geq->expr_str[U]);
     }
 
-    if (!geq->expr_str[3])
-        geq->expr_str[3] = av_strdup("255");
-    if (!geq->expr_str[4])
-        geq->expr_str[4] = av_strdup("g(X,Y)");
-    if (!geq->expr_str[5])
-        geq->expr_str[5] = av_strdup("b(X,Y)");
-    if (!geq->expr_str[6])
-        geq->expr_str[6] = av_strdup("r(X,Y)");
+    if (!geq->expr_str[A])
+        geq->expr_str[A] = av_strdup("255");
+    if (!geq->expr_str[G])
+        geq->expr_str[G] = av_strdup("g(X,Y)");
+    if (!geq->expr_str[B])
+        geq->expr_str[B] = av_strdup("b(X,Y)");
+    if (!geq->expr_str[R])
+        geq->expr_str[R] = av_strdup("r(X,Y)");
 
     if (geq->is_rgb ?
-            (!geq->expr_str[4] || !geq->expr_str[5] || !geq->expr_str[6])
+            (!geq->expr_str[G] || !geq->expr_str[B] || !geq->expr_str[R])
                     :
-            (!geq->expr_str[1] || !geq->expr_str[2] || !geq->expr_str[3])) {
+            (!geq->expr_str[U] || !geq->expr_str[V] || !geq->expr_str[A])) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
