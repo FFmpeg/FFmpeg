@@ -42,9 +42,6 @@
 #define V_MAX_VLCS (1 << 16)
 #define V_MAX_PARTITIONS (1 << 20)
 
-#undef NDEBUG
-#include <assert.h>
-
 typedef struct {
     uint8_t      dimensions;
     uint8_t      lookup_type;
@@ -1319,14 +1316,22 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
 
             av_dlog(NULL, "Classword: %u\n", temp);
 
-            assert(vr->classifications > 1 && temp <= 65536); //needed for inverse[]
+            if (temp <= 65536) {
+                for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
+                    temp2 = (((uint64_t)temp) * inverse_class) >> 32;
 
-            for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
-                temp2 = (((uint64_t)temp) * inverse_class) >> 32;
+                    if (i < vr->ptns_to_read)
+                        vr->classifs[p + i] = temp - temp2 * vr->classifications;
+                    temp = temp2;
+                }
+            } else {
+                for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
+                    temp2 = temp / vr->classifications;
 
-                if (i < vr->ptns_to_read)
-                    vr->classifs[p + i] = temp - temp2 * vr->classifications;
-                temp = temp2;
+                    if (i < vr->ptns_to_read)
+                        vr->classifs[p + i] = temp - temp2 * vr->classifications;
+                    temp = temp2;
+                }
             }
         }
         p += vr->ptns_to_read;
