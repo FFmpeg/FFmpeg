@@ -25,6 +25,9 @@ fate-ansi256: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/ansi256.a
 FATE_VIDEO-$(call DEMDEC, RPL, ESCAPE124) += fate-armovie-escape124
 fate-armovie-escape124: CMD = framecrc -i $(SAMPLES)/rpl/ESCAPE.RPL -pix_fmt rgb24
 
+FATE_VIDEO-$(call DEMDEC, RPL, ESCAPE130) += fate-armovie-escape130
+fate-armovie-escape130: CMD = framecrc -i $(SAMPLES)/rpl/landing.rpl -an
+
 FATE_VIDEO-$(call DEMDEC, AVI, AURA) += fate-auravision-v1
 fate-auravision-v1: CMD = framecrc -i $(SAMPLES)/auravision/SOUVIDEO.AVI -an
 
