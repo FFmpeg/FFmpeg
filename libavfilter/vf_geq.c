@@ -47,12 +47,18 @@ typedef struct {
 
 static const AVOption geq_options[] = {
     { "lum_expr",   "set luminance expression",   OFFSET(expr_str[0]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "lum",        "set luminance expression",   OFFSET(expr_str[0]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "cb_expr",    "set chroma blue expression", OFFSET(expr_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cb",         "set chroma blue expression", OFFSET(expr_str[1]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "cr_expr",    "set chroma red expression",  OFFSET(expr_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "cr",         "set chroma red expression",  OFFSET(expr_str[2]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "alpha_expr", "set alpha expression",       OFFSET(expr_str[3]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
-
+    { "a",          "set alpha expression",       OFFSET(expr_str[3]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "red_expr",   "set red expression",   OFFSET(expr_str[6]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "r",          "set red expression",   OFFSET(expr_str[6]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "green_expr", "set green expression", OFFSET(expr_str[4]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "g",          "set green expression", OFFSET(expr_str[4]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "blue_expr",  "set blue expression",  OFFSET(expr_str[5]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "b",          "set blue expression",  OFFSET(expr_str[5]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     {NULL},
 };

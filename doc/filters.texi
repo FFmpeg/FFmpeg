@@ -4003,27 +4003,28 @@ For more information see:
 The filter accepts the following options:
 
 @table @option
-@item lum_expr
+@item lum_expr, lum
 Set the luminance expression.
-@item cb_expr
+@item cb_expr, cb
 Set the chrominance blue expression.
-@item cr_expr
+@item cr_expr, cr
 Set the chrominance red expression.
-@item alpha_expr
+@item alpha_expr, a
 Set the alpha expression.
-@item r
+@item red_expr, r
 Set the red expression.
-@item g
+@item green_expr, g
 Set the green expression.
-@item b
+@item blue_expr, b
 Set the blue expression.
 @end table
 
-The colorspace is selected according to the specified options. If
-one of the @option{lum_expr}, @option{cb_expr}, or @option{cr_expr}
+The colorspace is selected according to the specified options. If one
+of the @option{lum_expr}, @option{cb_expr}, or @option{cr_expr}
 options is specified, the filter will automatically select a YCbCr
-colorspace. If one of the @option{r}, @option{g}, or @option{b}
-options is specified, it will select an RGB colorspace.
+colorspace. If one of the @option{red_expr}, @option{green_expr}, or
+@option{blue_expr} options is specified, it will select an RGB
+colorspace.
 
 If one of the chrominance expression is not defined, it falls back on the other
 one. If no alpha expression is specified it will evaluate to opaque value.
