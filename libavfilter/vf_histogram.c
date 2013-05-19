@@ -39,7 +39,6 @@ typedef struct HistogramContext {
     const AVClass *class;               ///< AVClass context for log and options purpose
     enum HistogramMode mode;
     unsigned       histogram[256];
-    unsigned       max_hval;
     int            ncomp;
     const uint8_t  *bg_color;
     const uint8_t  *fg_color;
@@ -191,6 +190,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     case MODE_LEVELS:
         for (k = 0; k < h->ncomp; k++) {
             int start = k * (h->level_height + h->scale_height) * h->display_mode;
+            double max_hval_log;
+            unsigned max_hval = 0;
 
             for (i = 0; i < in->height; i++) {
                 src = in->data[k] + i * in->linesize[k];
@@ -199,15 +200,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
 
             for (i = 0; i < 256; i++)
-                h->max_hval = FFMAX(h->max_hval, h->histogram[i]);
+                max_hval = FFMAX(max_hval, h->histogram[i]);
+            max_hval_log = log2(max_hval + 1);
 
             for (i = 0; i < outlink->w; i++) {
                 int col_height;
 
                 if (h->levels_mode)
-                    col_height = round(h->level_height * (1. - (log2(h->histogram[i] + 1) / log2(h->max_hval + 1))));
+                    col_height = round(h->level_height * (1. - (log2(h->histogram[i] + 1) / max_hval_log)));
                 else
-                    col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + h->max_hval - 1) / h->max_hval;
+                    col_height = h->level_height - (h->histogram[i] * (int64_t)h->level_height + max_hval - 1) / max_hval;
 
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {
@@ -222,7 +224,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             }
 
             memset(h->histogram, 0, 256 * sizeof(unsigned));
-            h->max_hval = 0;
         }
         break;
     case MODE_WAVEFORM:
