@@ -51,6 +51,7 @@ version <next>:
 - Apple Intermediate Codec decoder
 - Escape 130 video decoder
 - FTP protocol support
+- V4L2 output device
 
 
 version 1.2:

@@ -1000,7 +1000,7 @@ performance on systems without hardware floating point support).
 @item OSS               @tab X      @tab X
 @item Pulseaudio        @tab X      @tab
 @item SDL               @tab        @tab X
-@item Video4Linux2      @tab X      @tab
+@item Video4Linux2      @tab X      @tab X
 @item VfW capture       @tab X      @tab
 @item X11 grabbing      @tab X      @tab
 @end multitable
