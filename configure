@@ -2517,7 +2517,7 @@ case "$toolchain" in
     ;;
     valgrind-massif)
         target_exec_default=${valgrind:-"valgrind"}
-        target_exec_args="--tool=massif --alloc-fn=av_malloc --alloc-fn=av_mallocz"
+        target_exec_args="--tool=massif --alloc-fn=av_malloc --alloc-fn=av_mallocz --alloc-fn=av_calloc --alloc-fn=av_fast_padded_malloc --alloc-fn=av_fast_malloc --alloc-fn=av_realloc_f --alloc-fn=av_fast_realloc --alloc-fn=av_realloc"
     ;;
     valgrind-memcheck)
         target_exec_default=${valgrind:-"valgrind"}
