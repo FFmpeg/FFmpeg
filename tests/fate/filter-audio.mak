@@ -20,7 +20,7 @@ $(FATE_AMIX): CMP  = oneoff
 $(FATE_AMIX): CMP_UNIT = f32
 
 FATE_AFILTER-$(call FILTERDEMDECMUX, ASYNCTS, FLV, NELLYMOSER, PCM_S16LE) += fate-filter-asyncts
-fate-filter-asyncts: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
+fate-filter-asyncts: SRC = $(TARGET_SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
 fate-filter-asyncts: CMP = oneoff
 fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm

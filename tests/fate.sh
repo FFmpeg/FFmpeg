@@ -54,6 +54,7 @@ configure()(
         ${sysroot:+--sysroot="$sysroot"}                                \
         ${target_exec:+--target-exec="$target_exec"}                    \
         ${target_path:+--target-path="$target_path"}                    \
+        ${target_samples:+--target-samples="$target_samples"}           \
         ${extra_cflags:+--extra-cflags="$extra_cflags"}                 \
         ${extra_ldflags:+--extra-ldflags="$extra_ldflags"}              \
         ${extra_libs:+--extra-libs="$extra_libs"}                       \

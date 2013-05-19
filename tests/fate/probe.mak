@@ -15,4 +15,4 @@ fate-probe-format: $(FATE_PROBE_FORMAT)
 
 $(FATE_PROBE_FORMAT): avprobe$(EXESUF)
 $(FATE_PROBE_FORMAT): CMP = oneline
-fate-probe-format-%: CMD = probefmt $(SAMPLES)/probe-format/$(@:fate-probe-format-%=%)
+fate-probe-format-%: CMD = probefmt $(TARGET_SAMPLES)/probe-format/$(@:fate-probe-format-%=%)
