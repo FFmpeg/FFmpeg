@@ -1454,6 +1454,7 @@ int show_filters(void *optctx, const char *opt, const char *arg)
     const AVFilterPad *pad;
 
     printf("Filters:\n"
+           "  T = Timeline support\n"
            "  A = Audio input/output\n"
            "  V = Video input/output\n"
            "  N = Dynamic number and/or type of input/output\n"
@@ -1477,7 +1478,8 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                                   ( i && (filter->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS))) ? 'N' : '|';
         }
         *descr_cur = 0;
-        printf("%-16s %-10s %s\n", filter->name, descr, filter->description);
+        printf(" %c %-16s %-10s %s\n", filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE ? 'T' : '.',
+               filter->name, descr, filter->description);
     }
 #endif
     return 0;
