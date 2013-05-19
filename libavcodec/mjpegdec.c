@@ -1501,8 +1501,10 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
                 av_log(s->avctx, AV_LOG_INFO, "comment: '%s'\n", cbuf);
 
             /* buggy avid, it puts EOI only at every 10th frame */
-            if (!strcmp(cbuf, "AVID")) {
+            if (len > 3 && (!strncmp(cbuf, "AVID", 4))) {
                 s->buggy_avid = 1;
+                if (len > 14 && cbuf[12] == 1) /* 1 - NTSC, 2 - PAL */
+                    s->interlace_polarity = 1;
             } else if (!strcmp(cbuf, "CS=ITU601"))
                 s->cs_itu601 = 1;
             else if ((len > 31 && !strncmp(cbuf, "Intel(R) JPEG Library, version 1", 32)) ||
