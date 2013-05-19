@@ -4111,6 +4111,12 @@ Generate a quick emboss effect:
 @example
 format=gray,geq=lum_expr='(p(X,Y)+(256-p(X-4,Y-4)))/2'
 @end example
+
+@item
+Modify RGB components depending on pixel position:
+@example
+geq=r='X/W*r(X,Y)':g='(1-X/W)*g(X,Y)':b='(H-Y)/H*b(X,Y)'
+@end example
 @end itemize
 
 @section gradfun
