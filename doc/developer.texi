@@ -608,9 +608,10 @@ new test.
 
 The configure script provides a shortcut for using valgrind to spot bugs
 related to memory handling. Just add the option
-@code{--toolchain=valgrind-memcheck} to your configure line, and
-reasonable defaults will be set for running FATE under the supervision
-of the @strong{memcheck} tool of the valgrind suite.
+@code{--toolchain=valgrind-memcheck} or @code{--toolchain=valgrind-massif}
+to your configure line, and reasonable defaults will be set for running
+FATE under the supervision of either the @strong{memcheck} or the
+@strong{massif} tool of the valgrind suite.
 
 In case you need finer control over how valgrind is invoked, use the
 @code{--target-exec='valgrind <your_custom_valgrind_options>} option in

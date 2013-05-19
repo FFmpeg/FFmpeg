@@ -2515,6 +2515,10 @@ case "$toolchain" in
         add_cflags  -fsanitize=thread -pie
         add_ldflags -fsanitize=thread -pie
     ;;
+    valgrind-massif)
+        target_exec_default="valgrind"
+        target_exec_args="--alloc-fn=av_malloc --alloc-fn=av_mallocz"
+    ;;
     valgrind-memcheck)
         target_exec_default=${valgrind:-"valgrind"}
         target_exec_args="--error-exitcode=1 --malloc-fill=0x2a --track-origins=yes --leak-check=full --gen-suppressions=all --suppressions=$source_path/tests/fate-valgrind.supp"
