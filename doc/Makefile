@@ -99,7 +99,7 @@ endif
 uninstall: uninstall-man
 
 uninstall-man:
-	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
+	$(RM) $(addprefix "$(MANDIR)/man1/",$(MANPAGES))
 
 clean:: docclean
 
