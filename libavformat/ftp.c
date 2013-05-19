@@ -332,7 +332,7 @@ static int ftp_file_size(FTPContext *s)
     if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
         return err;
     if (ftp_status(s, NULL, NULL, NULL, &res, 213) == 213) {
-        s->filesize = atoll(&res[4]);
+        s->filesize = strtoll(&res[4], NULL, 10);
     } else {
         s->filesize = -1;
         av_free(res);
