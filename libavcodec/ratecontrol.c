@@ -920,7 +920,7 @@ static int init_pass2(MpegEncContext *s)
     double rate_factor          = 0;
     double step;
     const int filter_size = (int)(a->qblur * 4) | 1;
-    double expected_bits;
+    double expected_bits = 0; // init to silence gcc warning
     double *qscale, *blurred_qscale, qscale_sum;
 
     /* find complexity & const_bits & decide the pict_types */
