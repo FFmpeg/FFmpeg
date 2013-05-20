@@ -259,7 +259,9 @@ int av_frame_ref(AVFrame *dst, AVFrame *src)
     }
 
     /* ref the buffers */
-    for (i = 0; i < FF_ARRAY_ELEMS(src->buf) && src->buf[i]; i++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(src->buf); i++) {
+        if (!src->buf[i])
+            continue;
         dst->buf[i] = av_buffer_ref(src->buf[i]);
         if (!dst->buf[i]) {
             ret = AVERROR(ENOMEM);
@@ -366,8 +368,9 @@ int av_frame_is_writable(AVFrame *frame)
     if (!frame->buf[0])
         return 0;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(frame->buf) && frame->buf[i]; i++)
-        ret &= !!av_buffer_is_writable(frame->buf[i]);
+    for (i = 0; i < FF_ARRAY_ELEMS(frame->buf); i++)
+        if (frame->buf[i])
+            ret &= !!av_buffer_is_writable(frame->buf[i]);
     for (i = 0; i < frame->nb_extended_buf; i++)
         ret &= !!av_buffer_is_writable(frame->extended_buf[i]);
 
