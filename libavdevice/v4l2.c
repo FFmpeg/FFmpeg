@@ -34,14 +34,6 @@
 
 #if CONFIG_LIBV4L2
 #include <libv4l2.h>
-#else
-#define v4l2_open   open
-#define v4l2_close  close
-#define v4l2_dup    dup
-#define v4l2_ioctl  ioctl
-#define v4l2_read   read
-#define v4l2_mmap   mmap
-#define v4l2_munmap munmap
 #endif
 
 static const int desired_video_buffers = 256;
@@ -95,6 +87,15 @@ struct video_data {
     int list_format;    /**< Set by a private option. */
     int list_standard;  /**< Set by a private option. */
     char *framerate;    /**< Set by a private option. */
+
+    int use_libv4l2;
+    int (*open_f)(const char *file, int oflag, ...);
+    int (*close_f)(int fd);
+    int (*dup_f)(int fd);
+    int (*ioctl_f)(int fd, unsigned long int request, ...);
+    ssize_t (*read_f)(int fd, void *buffer, size_t n);
+    void *(*mmap_f)(void *start, size_t length, int prot, int flags, int fd, int64_t offset);
+    int (*munmap_f)(void *_start, size_t length);
 };
 
 struct buff_data {
@@ -104,10 +105,40 @@ struct buff_data {
 
 static int device_open(AVFormatContext *ctx)
 {
+    struct video_data *s = ctx->priv_data;
     struct v4l2_capability cap;
     int fd;
     int ret;
     int flags = O_RDWR;
+
+#define SET_WRAPPERS(prefix) do {       \
+    s->open_f   = prefix ## open;       \
+    s->close_f  = prefix ## close;      \
+    s->dup_f    = prefix ## dup;        \
+    s->ioctl_f  = prefix ## ioctl;      \
+    s->read_f   = prefix ## read;       \
+    s->mmap_f   = prefix ## mmap;       \
+    s->munmap_f = prefix ## munmap;     \
+} while (0)
+
+    if (s->use_libv4l2) {
+#if CONFIG_LIBV4L2
+        SET_WRAPPERS(v4l2_);
+#else
+        av_log(ctx, AV_LOG_ERROR, "libavdevice is not build with libv4l2 support.\n");
+        return AVERROR(EINVAL);
+#endif
+    } else {
+        SET_WRAPPERS();
+    }
+
+#define v4l2_open   s->open_f
+#define v4l2_close  s->close_f
+#define v4l2_dup    s->dup_f
+#define v4l2_ioctl  s->ioctl_f
+#define v4l2_read   s->read_f
+#define v4l2_mmap   s->mmap_f
+#define v4l2_munmap s->munmap_f
 
     if (ctx->flags & AVFMT_FLAG_NONBLOCK) {
         flags |= O_NONBLOCK;
@@ -194,7 +225,7 @@ static int device_init(AVFormatContext *ctx, int *width, int *height,
     return res;
 }
 
-static int first_field(int fd)
+static int first_field(const struct video_data *s, int fd)
 {
     int res;
     v4l2_std_id std;
@@ -213,6 +244,7 @@ static int first_field(int fd)
 #if HAVE_STRUCT_V4L2_FRMIVALENUM_DISCRETE
 static void list_framesizes(AVFormatContext *ctx, int fd, uint32_t pixelformat)
 {
+    const struct video_data *s = ctx->priv_data;
     struct v4l2_frmsizeenum vfse = { .pixel_format = pixelformat };
 
     while(!v4l2_ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &vfse)) {
@@ -238,6 +270,7 @@ static void list_framesizes(AVFormatContext *ctx, int fd, uint32_t pixelformat)
 
 static void list_formats(AVFormatContext *ctx, int fd, int type)
 {
+    const struct video_data *s = ctx->priv_data;
     struct v4l2_fmtdesc vfd = { .type = V4L2_BUF_TYPE_VIDEO_CAPTURE };
 
     while(!v4l2_ioctl(fd, VIDIOC_ENUM_FMT, &vfd)) {
@@ -777,7 +810,8 @@ static int v4l2_read_header(AVFormatContext *s1)
 #if CONFIG_LIBV4L2
     /* silence libv4l2 logging. if fopen() fails v4l2_log_file will be NULL
        and errors will get sent to stderr */
-    v4l2_log_file = fopen("/dev/null", "w");
+    if (s->use_libv4l2)
+        v4l2_log_file = fopen("/dev/null", "w");
 #endif
 
     s->fd = device_open(s1);
@@ -888,7 +922,7 @@ static int v4l2_read_header(AVFormatContext *s1)
         return res;
     }
 
-    s->top_field_first = first_field(s->fd);
+    s->top_field_first = first_field(s, s->fd);
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = codec_id;
@@ -963,7 +997,7 @@ static const AVOption options[] = {
     { "default",      "use timestamps from the kernel",                           OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.i64 = V4L_TS_DEFAULT  }, 0, 2, DEC, "timestamps" },
     { "abs",          "use absolute timestamps (wall clock)",                     OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.i64 = V4L_TS_ABS      }, 0, 2, DEC, "timestamps" },
     { "mono2abs",     "force conversion from monotonic to absolute timestamps",   OFFSET(ts_mode),      AV_OPT_TYPE_CONST,  {.i64 = V4L_TS_MONO2ABS }, 0, 2, DEC, "timestamps" },
-
+    { "use_libv4l2",  "use libv4l2 (v4l-utils) convertion functions",             OFFSET(use_libv4l2),  AV_OPT_TYPE_INT,    {.i64 = 0}, 0, 1, DEC },
     { NULL },
 };
 
