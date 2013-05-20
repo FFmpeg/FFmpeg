@@ -92,14 +92,19 @@ static const uint32_t T[64] = { // T[i]= fabs(sin(i+1)<<32)
         a = b + (a << t | a >> (32 - t));                               \
     } while (0)
 
-static void body(uint32_t ABCD[4], uint32_t X[16])
+static void body(uint32_t ABCD[4], uint32_t *src, int nblocks)
 {
     int i av_unused;
-    uint32_t t;
-    uint32_t a = ABCD[3];
-    uint32_t b = ABCD[2];
-    uint32_t c = ABCD[1];
-    uint32_t d = ABCD[0];
+    int n;
+    uint32_t a, b, c, d, t, *X;
+
+    for (n = 0; n < nblocks; n++) {
+        a = ABCD[3];
+        b = ABCD[2];
+        c = ABCD[1];
+        d = ABCD[0];
+
+        X = src + n * 16;
 
 #if HAVE_BIGENDIAN
     for (i = 0; i < 16; i++)
@@ -127,6 +132,7 @@ static void body(uint32_t ABCD[4], uint32_t X[16])
     ABCD[1] += c;
     ABCD[2] += b;
     ABCD[3] += a;
+    }
 }
 
 void av_md5_init(AVMD5 *ctx)
@@ -154,21 +160,20 @@ void av_md5_update(AVMD5 *ctx, const uint8_t *src, int len)
         len -= cnt;
         if (j + cnt < 64)
             return;
-        body(ctx->ABCD, (uint32_t *)ctx->block);
+        body(ctx->ABCD, (uint32_t *)ctx->block, 1);
     }
 
     end = src + (len & ~63);
     if (HAVE_BIGENDIAN || (!HAVE_FAST_UNALIGNED && ((intptr_t)src & 3))) {
        while (src < end) {
            memcpy(ctx->block, src, 64);
-           body(ctx->ABCD, (uint32_t *) ctx->block);
+           body(ctx->ABCD, (uint32_t *) ctx->block, 1);
            src += 64;
         }
     } else {
-        while (src < end) {
-            body(ctx->ABCD, (uint32_t *)src);
-            src += 64;
-        }
+        int nblocks = len / 64;
+        body(ctx->ABCD, (uint32_t *)src, nblocks);
+        src = end;
     }
     len &= 63;
     if (len > 0)
