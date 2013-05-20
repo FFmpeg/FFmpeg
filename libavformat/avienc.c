@@ -524,7 +524,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
 
 //    av_log(s, AV_LOG_DEBUG, "%"PRId64" %d %d\n", pkt->dts, avist->packet_count, stream_index);
-    while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avist->packet_count && enc->codec_id != CODEC_ID_XSUB){
+    while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avist->packet_count && enc->codec_id != CODEC_ID_XSUB && avist->packet_count){
         AVPacket empty_packet;
 
         if(pkt->dts - avist->packet_count > 60000){
