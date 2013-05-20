@@ -225,6 +225,18 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR,
     },
+    [AV_PIX_FMT_YUVJ411P] = {
+        .name = "yuvj411p",
+        .nb_components = 3,
+        .log2_chroma_w = 2,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 0, 1, 0, 7 },        /* Y */
+            { 1, 0, 1, 0, 7 },        /* U */
+            { 2, 0, 1, 0, 7 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
     [AV_PIX_FMT_GRAY8] = {
         .name = "gray",
         .nb_components = 1,
