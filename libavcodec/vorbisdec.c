@@ -1317,7 +1317,7 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                                            vorbis_residue *vr,
                                            uint8_t *do_not_decode,
                                            unsigned ch_used,
-                                           unsigned partition_count)
+                                           int partition_count)
 {
     int p, j, i;
     unsigned c_p_c         = vc->codebooks[vr->classbook].dimensions;
@@ -1357,10 +1357,10 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
 {
     GetBitContext *gb = &vc->gb;
     unsigned c_p_c        = vc->codebooks[vr->classbook].dimensions;
-    unsigned ptns_to_read = vr->ptns_to_read;
     uint8_t *classifs = vr->classifs;
     unsigned pass, ch_used, i, j, k, l;
     unsigned max_output = (ch - 1) * vlen;
+    int ptns_to_read = vr->ptns_to_read;
 
     if (vr_type == 2) {
         for (j = 1; j < ch; ++j)
@@ -1382,7 +1382,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
     av_dlog(NULL, " residue type 0/1/2 decode begin, ch: %d  cpc %d  \n", ch, c_p_c);
 
     for (pass = 0; pass <= vr->maxpass; ++pass) { // FIXME OPTIMIZE?
-        uint16_t voffset, partition_count, j_times_ptns_to_read;
+        int voffset, partition_count, j_times_ptns_to_read;
 
         voffset = vr->begin;
         for (partition_count = 0; partition_count < ptns_to_read;) {  // SPEC        error
