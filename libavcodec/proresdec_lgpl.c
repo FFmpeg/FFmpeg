@@ -559,6 +559,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     int slice_data_size, hdr_size;
     int y_data_size, u_data_size, v_data_size, a_data_size;
     int y_linesize, u_linesize, v_linesize, a_linesize;
+    int coff[4];
 
     buf             = ctx->slice_data[slice_num].index;
     slice_data_size = ctx->slice_data[slice_num + 1].index - buf;
@@ -579,13 +580,19 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
             y_data += y_linesize;
             u_data += u_linesize;
             v_data += v_linesize;
-            a_data += a_linesize;
+            if (a_data)
+                a_data += a_linesize;
         }
         y_linesize <<= 1;
         u_linesize <<= 1;
         v_linesize <<= 1;
         a_linesize <<= 1;
     }
+    y_data += (mb_y_pos << 4) * y_linesize + (mb_x_pos << 5);
+    u_data += (mb_y_pos << 4) * u_linesize + (mb_x_pos << ctx->mb_chroma_factor);
+    v_data += (mb_y_pos << 4) * v_linesize + (mb_x_pos << ctx->mb_chroma_factor);
+    if (a_data)
+        a_data += (mb_y_pos << 4) * a_linesize + (mb_x_pos << 5);
 
     if (slice_data_size < 6) {
         av_log(avctx, AV_LOG_ERROR, "slice data too small\n");
@@ -594,15 +601,18 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
 
     /* parse slice header */
     hdr_size    = buf[0] >> 3;
+    coff[0]     = hdr_size;
     y_data_size = AV_RB16(buf + 2);
+    coff[1]     = coff[0] + y_data_size;
     u_data_size = AV_RB16(buf + 4);
-    v_data_size = hdr_size > 7 ? AV_RB16(buf + 6) :
-        slice_data_size - y_data_size - u_data_size - hdr_size;
-    a_data_size = slice_data_size - y_data_size - u_data_size -
-                  v_data_size - hdr_size;
+    coff[2]     = coff[1] + u_data_size;
+    v_data_size = hdr_size > 7 ? AV_RB16(buf + 6) : slice_data_size - coff[2];
+    coff[3]     = coff[2] + v_data_size;
+    a_data_size = slice_data_size - coff[3];
 
-    if (hdr_size + y_data_size + u_data_size + v_data_size > slice_data_size ||
-        v_data_size < 0 || hdr_size < 6) {
+    /* if V or alpha component size is negative that means that previous
+       component sizes are too large */
+    if (v_data_size < 0 || a_data_size < 0 || hdr_size < 6) {
         av_log(avctx, AV_LOG_ERROR, "invalid data size\n");
         return AVERROR_INVALIDDATA;
     }
@@ -621,37 +631,29 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     }
 
     /* decode luma plane */
-    decode_slice_plane(ctx, td, buf + hdr_size, y_data_size,
-                       (uint16_t*) (y_data + (mb_y_pos << 4) * y_linesize +
-                                    (mb_x_pos << 5)), y_linesize,
+    decode_slice_plane(ctx, td, buf + coff[0], y_data_size,
+                       (uint16_t*) y_data, y_linesize,
                        mbs_per_slice, 4, slice_width_factor + 2,
                        td->qmat_luma_scaled, 0);
 
     /* decode U chroma plane */
-    decode_slice_plane(ctx, td, buf + hdr_size + y_data_size, u_data_size,
-                       (uint16_t*) (u_data + (mb_y_pos << 4) * u_linesize +
-                                    (mb_x_pos << ctx->mb_chroma_factor)),
-                       u_linesize, mbs_per_slice, ctx->num_chroma_blocks,
+    decode_slice_plane(ctx, td, buf + coff[1], u_data_size,
+                       (uint16_t*) u_data, u_linesize,
+                       mbs_per_slice, ctx->num_chroma_blocks,
                        slice_width_factor + ctx->chroma_factor - 1,
                        td->qmat_chroma_scaled, 1);
 
     /* decode V chroma plane */
-    decode_slice_plane(ctx, td, buf + hdr_size + y_data_size + u_data_size,
-                       v_data_size,
-                       (uint16_t*) (v_data + (mb_y_pos << 4) * v_linesize +
-                                    (mb_x_pos << ctx->mb_chroma_factor)),
-                       v_linesize, mbs_per_slice, ctx->num_chroma_blocks,
+    decode_slice_plane(ctx, td, buf + coff[2], v_data_size,
+                       (uint16_t*) v_data, v_linesize,
+                       mbs_per_slice, ctx->num_chroma_blocks,
                        slice_width_factor + ctx->chroma_factor - 1,
                        td->qmat_chroma_scaled, 1);
 
     /* decode alpha plane if available */
     if (a_data && a_data_size)
-        decode_alpha_plane(ctx, td,
-                           buf + hdr_size + y_data_size +
-                               u_data_size + v_data_size,
-                           a_data_size,
-                           (uint16_t*) (a_data + (mb_y_pos << 4) * a_linesize +
-                                        (mb_x_pos << 5)), a_linesize,
+        decode_alpha_plane(ctx, td, buf + coff[3], a_data_size,
+                           (uint16_t*) a_data, a_linesize,
                            mbs_per_slice);
 
     return 0;
