@@ -31,14 +31,9 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
-    unsigned int frame;
-} ShowInfoContext;
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    ShowInfoContext *showinfo = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     uint32_t plane_checksum[4] = {0}, checksum = 0;
     int i, plane, vsub = desc->log2_chroma_h;
@@ -59,10 +54,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%d pts:%s pts_time:%s pos:%"PRId64" "
+           "n:%"PRId64" pts:%s pts_time:%s pos:%"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
            "checksum:%08X plane_checksum:[%08X",
-           showinfo->frame,
+           inlink->frame_count,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), av_frame_get_pkt_pos(frame),
            desc->name,
            frame->sample_aspect_ratio.num, frame->sample_aspect_ratio.den,
@@ -77,7 +72,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         av_log(ctx, AV_LOG_INFO, " %08X", plane_checksum[plane]);
     av_log(ctx, AV_LOG_INFO, "]\n");
 
-    showinfo->frame++;
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
@@ -102,8 +96,6 @@ static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
 AVFilter avfilter_vf_showinfo = {
     .name        = "showinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
-
-    .priv_size = sizeof(ShowInfoContext),
 
     .inputs    = avfilter_vf_showinfo_inputs,
 
