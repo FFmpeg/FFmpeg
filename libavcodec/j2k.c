@@ -109,16 +109,16 @@ static int getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
 {
     int h, v, d;
 
-    h = ((flag & J2K_T1_SIG_E) ? 1:0)+
-        ((flag & J2K_T1_SIG_W) ? 1:0);
-    v = ((flag & J2K_T1_SIG_N) ? 1:0);
+    h = ((flag & JPEG2000_T1_SIG_E) ? 1:0)+
+        ((flag & JPEG2000_T1_SIG_W) ? 1:0);
+    v = ((flag & JPEG2000_T1_SIG_N) ? 1:0);
     if (!vert_causal_ctx_csty_symbol)
-         v = v + ((flag & J2K_T1_SIG_S) ? 1:0);
-    d = ((flag & J2K_T1_SIG_NE) ? 1:0)+
-        ((flag & J2K_T1_SIG_NW) ? 1:0);
+         v = v + ((flag & JPEG2000_T1_SIG_S) ? 1:0);
+    d = ((flag & JPEG2000_T1_SIG_NE) ? 1:0)+
+        ((flag & JPEG2000_T1_SIG_NW) ? 1:0);
     if (!vert_causal_ctx_csty_symbol)
-        d = d + ((flag & J2K_T1_SIG_SE) ? 1:0)+
-                ((flag & J2K_T1_SIG_SW) ? 1:0);
+        d = d + ((flag & JPEG2000_T1_SIG_SE) ? 1:0)+
+                ((flag & JPEG2000_T1_SIG_SW) ? 1:0);
     if (bandno < 3){
             if (bandno == 1)
                 FFSWAP(int, h, v);
@@ -159,10 +159,10 @@ static int getsgnctxno(int flag, uint8_t *xorbit)
     static const int ctxlbltab[3][3] = {{13, 12, 11}, {10, 9, 10}, {11, 12, 13}};
     static const int xorbittab[3][3] = {{1, 1, 1,}, {1, 0, 0}, {0, 0, 0}};
 
-    hcontrib = contribtab[flag & J2K_T1_SIG_E ? flag & J2K_T1_SGN_E ? 1:2:0]
-                         [flag & J2K_T1_SIG_W ? flag & J2K_T1_SGN_W ? 1:2:0]+1;
-    vcontrib = contribtab[flag & J2K_T1_SIG_S ? flag & J2K_T1_SGN_S ? 1:2:0]
-                         [flag & J2K_T1_SIG_N ? flag & J2K_T1_SGN_N ? 1:2:0]+1;
+    hcontrib = contribtab[flag & JPEG2000_T1_SIG_E ? flag & JPEG2000_T1_SGN_E ? 1:2:0]
+                         [flag & JPEG2000_T1_SIG_W ? flag & JPEG2000_T1_SGN_W ? 1:2:0]+1;
+    vcontrib = contribtab[flag & JPEG2000_T1_SIG_S ? flag & JPEG2000_T1_SGN_S ? 1:2:0]
+                         [flag & JPEG2000_T1_SIG_N ? flag & JPEG2000_T1_SGN_N ? 1:2:0]+1;
     *xorbit = xorbittab[hcontrib][vcontrib];
     return ctxlbltab[hcontrib][vcontrib];
 }
@@ -181,22 +181,22 @@ void ff_j2k_init_tier1_luts(void)
 void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative)
 {
     x++; y++;
-    t1->flags[y][x] |= J2K_T1_SIG;
+    t1->flags[y][x] |= JPEG2000_T1_SIG;
     if (negative){
-        t1->flags[y][x+1] |= J2K_T1_SIG_W | J2K_T1_SGN_W;
-        t1->flags[y][x-1] |= J2K_T1_SIG_E | J2K_T1_SGN_E;
-        t1->flags[y+1][x] |= J2K_T1_SIG_N | J2K_T1_SGN_N;
-        t1->flags[y-1][x] |= J2K_T1_SIG_S | J2K_T1_SGN_S;
+        t1->flags[y][x+1] |= JPEG2000_T1_SIG_W | JPEG2000_T1_SGN_W;
+        t1->flags[y][x-1] |= JPEG2000_T1_SIG_E | JPEG2000_T1_SGN_E;
+        t1->flags[y+1][x] |= JPEG2000_T1_SIG_N | JPEG2000_T1_SGN_N;
+        t1->flags[y-1][x] |= JPEG2000_T1_SIG_S | JPEG2000_T1_SGN_S;
     } else{
-        t1->flags[y][x+1] |= J2K_T1_SIG_W;
-        t1->flags[y][x-1] |= J2K_T1_SIG_E;
-        t1->flags[y+1][x] |= J2K_T1_SIG_N;
-        t1->flags[y-1][x] |= J2K_T1_SIG_S;
+        t1->flags[y][x+1] |= JPEG2000_T1_SIG_W;
+        t1->flags[y][x-1] |= JPEG2000_T1_SIG_E;
+        t1->flags[y+1][x] |= JPEG2000_T1_SIG_N;
+        t1->flags[y-1][x] |= JPEG2000_T1_SIG_S;
     }
-    t1->flags[y+1][x+1] |= J2K_T1_SIG_NW;
-    t1->flags[y+1][x-1] |= J2K_T1_SIG_NE;
-    t1->flags[y-1][x+1] |= J2K_T1_SIG_SW;
-    t1->flags[y-1][x-1] |= J2K_T1_SIG_SE;
+    t1->flags[y+1][x+1] |= JPEG2000_T1_SIG_NW;
+    t1->flags[y+1][x-1] |= JPEG2000_T1_SIG_NE;
+    t1->flags[y-1][x+1] |= JPEG2000_T1_SIG_SW;
+    t1->flags[y-1][x-1] |= JPEG2000_T1_SIG_SE;
 }
 
 int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, Jpeg2000QuantStyle *qntsty, int cbps, int dx, int dy)
@@ -251,7 +251,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
             int xi0, yi0, xi1, yi1;
             int cblkperprecw, cblkperprech;
 
-            if (qntsty->quantsty != J2K_QSTY_NONE){
+            if (qntsty->quantsty != JPEG2000_QSTY_NONE){
                 static const uint8_t lut_gain[2][4] = {{0, 0, 0, 0}, {0, 1, 1, 2}};
                 int numbps;
 

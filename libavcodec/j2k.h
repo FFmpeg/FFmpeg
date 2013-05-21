@@ -32,77 +32,77 @@
 #include "j2k_dwt.h"
 
 enum Jpeg2000Markers{
-    J2K_SOC = 0xff4f, ///< start of codestream
-    J2K_SIZ = 0xff51, ///< image and tile size
-    J2K_COD,          ///< coding style default
-    J2K_COC,          ///< coding style component
-    J2K_TLM = 0xff55, ///< packed packet headers, tile-part header
-    J2K_PLM = 0xff57, ///< tile-part lengths
-    J2K_PLT,          ///< packet length, main header
-    J2K_QCD = 0xff5c, ///< quantization default
-    J2K_QCC,          ///< quantization component
-    J2K_RGN,          ///< region of interest
-    J2K_POC,          ///< progression order change
-    J2K_PPM,          ///< packet length, tile-part header
-    J2K_PPT,          ///< packed packet headers, main header
-    J2K_CRG = 0xff63, ///< component registration
-    J2K_COM,          ///< comment
-    J2K_SOT = 0xff90, ///< start of tile-part
-    J2K_SOP,          ///< start of packet
-    J2K_EPH,          ///< end of packet header
-    J2K_SOD,          ///< start of data
-    J2K_EOC = 0xffd9, ///< end of codestream
+    JPEG2000_SOC = 0xff4f, ///< start of codestream
+    JPEG2000_SIZ = 0xff51, ///< image and tile size
+    JPEG2000_COD,          ///< coding style default
+    JPEG2000_COC,          ///< coding style component
+    JPEG2000_TLM = 0xff55, ///< packed packet headers, tile-part header
+    JPEG2000_PLM = 0xff57, ///< tile-part lengths
+    JPEG2000_PLT,          ///< packet length, main header
+    JPEG2000_QCD = 0xff5c, ///< quantization default
+    JPEG2000_QCC,          ///< quantization component
+    JPEG2000_RGN,          ///< region of interest
+    JPEG2000_POC,          ///< progression order change
+    JPEG2000_PPM,          ///< packet length, tile-part header
+    JPEG2000_PPT,          ///< packed packet headers, main header
+    JPEG2000_CRG = 0xff63, ///< component registration
+    JPEG2000_COM,          ///< comment
+    JPEG2000_SOT = 0xff90, ///< start of tile-part
+    JPEG2000_SOP,          ///< start of packet
+    JPEG2000_EPH,          ///< end of packet header
+    JPEG2000_SOD,          ///< start of data
+    JPEG2000_EOC = 0xffd9, ///< end of codestream
 };
 
 enum Jpeg2000Quantsty{ ///< quantization style
-    J2K_QSTY_NONE, ///< no quantization
-    J2K_QSTY_SI,   ///< scalar derived
-    J2K_QSTY_SE    ///< scalar expoounded
+    JPEG2000_QSTY_NONE, ///< no quantization
+    JPEG2000_QSTY_SI,   ///< scalar derived
+    JPEG2000_QSTY_SE    ///< scalar expoounded
 };
 
-#define J2K_MAX_CBLKW 64
-#define J2K_MAX_CBLKH 64
+#define JPEG2000_MAX_CBLKW 64
+#define JPEG2000_MAX_CBLKH 64
 
 // T1 flags
 // flags determining significance of neighbour coefficients
-#define J2K_T1_SIG_N  0x0001
-#define J2K_T1_SIG_E  0x0002
-#define J2K_T1_SIG_W  0x0004
-#define J2K_T1_SIG_S  0x0008
-#define J2K_T1_SIG_NE 0x0010
-#define J2K_T1_SIG_NW 0x0020
-#define J2K_T1_SIG_SE 0x0040
-#define J2K_T1_SIG_SW 0x0080
-#define J2K_T1_SIG_NB (J2K_T1_SIG_N | J2K_T1_SIG_E | J2K_T1_SIG_S | J2K_T1_SIG_W \
-                      |J2K_T1_SIG_NE | J2K_T1_SIG_NW | J2K_T1_SIG_SE | J2K_T1_SIG_SW)
+#define JPEG2000_T1_SIG_N  0x0001
+#define JPEG2000_T1_SIG_E  0x0002
+#define JPEG2000_T1_SIG_W  0x0004
+#define JPEG2000_T1_SIG_S  0x0008
+#define JPEG2000_T1_SIG_NE 0x0010
+#define JPEG2000_T1_SIG_NW 0x0020
+#define JPEG2000_T1_SIG_SE 0x0040
+#define JPEG2000_T1_SIG_SW 0x0080
+#define JPEG2000_T1_SIG_NB (JPEG2000_T1_SIG_N | JPEG2000_T1_SIG_E | JPEG2000_T1_SIG_S | JPEG2000_T1_SIG_W \
+                      |JPEG2000_T1_SIG_NE | JPEG2000_T1_SIG_NW | JPEG2000_T1_SIG_SE | JPEG2000_T1_SIG_SW)
 // flags determining sign bit of neighbour coefficients
-#define J2K_T1_SGN_N  0x0100
-#define J2K_T1_SGN_S  0x0200
-#define J2K_T1_SGN_W  0x0400
-#define J2K_T1_SGN_E  0x0800
+#define JPEG2000_T1_SGN_N  0x0100
+#define JPEG2000_T1_SGN_S  0x0200
+#define JPEG2000_T1_SGN_W  0x0400
+#define JPEG2000_T1_SGN_E  0x0800
 
-#define J2K_T1_VIS    0x1000
-#define J2K_T1_SIG    0x2000
-#define J2K_T1_REF    0x4000
+#define JPEG2000_T1_VIS    0x1000
+#define JPEG2000_T1_SIG    0x2000
+#define JPEG2000_T1_REF    0x4000
 
-#define J2K_T1_SGN    0x8000
+#define JPEG2000_T1_SGN    0x8000
 
 // Codeblock coding styles
-#define J2K_CBLK_BYPASS    0x01 // Selective arithmetic coding bypass
-#define J2K_CBLK_RESET     0x02 // Reset context probabilities
-#define J2K_CBLK_TERMALL   0x04 // Terminate after each coding pass
-#define J2K_CBLK_VSC       0x08 // Vertical stripe causal context formation
-#define J2K_CBLK_PREDTERM  0x10 // Predictable termination
-#define J2K_CBLK_SEGSYM    0x20 // Segmentation symbols present
+#define JPEG2000_CBLK_BYPASS    0x01 // Selective arithmetic coding bypass
+#define JPEG2000_CBLK_RESET     0x02 // Reset context probabilities
+#define JPEG2000_CBLK_TERMALL   0x04 // Terminate after each coding pass
+#define JPEG2000_CBLK_VSC       0x08 // Vertical stripe causal context formation
+#define JPEG2000_CBLK_PREDTERM  0x10 // Predictable termination
+#define JPEG2000_CBLK_SEGSYM    0x20 // Segmentation symbols present
 
 // Coding styles
-#define J2K_CSTY_PREC      0x01 // Precincts defined in coding style
-#define J2K_CSTY_SOP       0x02 // SOP marker present
-#define J2K_CSTY_EPH       0x04 // EPH marker present
+#define JPEG2000_CSTY_PREC      0x01 // Precincts defined in coding style
+#define JPEG2000_CSTY_SOP       0x02 // SOP marker present
+#define JPEG2000_CSTY_EPH       0x04 // EPH marker present
 
 typedef struct {
-    int data[J2K_MAX_CBLKW][J2K_MAX_CBLKH];
-    int flags[J2K_MAX_CBLKW+2][J2K_MAX_CBLKH+2];
+    int data[JPEG2000_MAX_CBLKW][JPEG2000_MAX_CBLKH];
+    int flags[JPEG2000_MAX_CBLKW+2][JPEG2000_MAX_CBLKH+2];
     MqcState mqc;
 } Jpeg2000T1Context;
 
