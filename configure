@@ -3210,6 +3210,9 @@ elif check_func_headers stdlib.h _get_doserrno; then
     check_cpp_condition stdlib.h "defined(_WIN32_WINNT)" || add_cppflags -D_WIN32_WINNT=0x0502
 elif check_cpp_condition stddef.h "defined __KLIBC__"; then
     libc_type=klibc
+elif check_cpp_condition sys/cdefs.h "defined __BIONIC__"; then
+    libc_type=bionic
+    add_compat strtod.o strtod=avpriv_strtod
 fi
 
 test -n "$libc_type" && enable $libc_type
