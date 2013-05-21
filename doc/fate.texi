@@ -159,6 +159,8 @@ extra_conf=     # extra configure options not covered above
 
 #make=          # name of GNU make if not 'make'
 makeopts=       # extra options passed to 'make'
+#makeopts_fate= # extra options passed to 'make' when running tests,
+                # defaulting to makeopts above if this is not set
 #tar=           # command to create a tar archive from its arguments on
                 # stdout, defaults to 'tar c'
 @end example
