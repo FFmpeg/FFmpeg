@@ -211,9 +211,9 @@ static int get_siz(Jpeg2000DecoderContext *s)
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
 
-                        bytestream2_get_be16u(&s->g); // Rsiz (skipped)
-             s->width = bytestream2_get_be32u(&s->g); // width
-            s->height = bytestream2_get_be32u(&s->g); // height
+                        bytestream2_get_be16u(&s->g); // Rsiz
+             s->width = bytestream2_get_be32u(&s->g); // Width
+            s->height = bytestream2_get_be32u(&s->g); // Height
     s->image_offset_x = bytestream2_get_be32u(&s->g); // X0Siz
     s->image_offset_y = bytestream2_get_be32u(&s->g); // Y0Siz
 
@@ -927,7 +927,7 @@ static int decode_codestream(Jpeg2000DecoderContext *s)
     for (;;){
         int oldpos, marker, len, ret = 0;
 
-        if (bytestream2_get_bytes_left(&s->g) < 2){
+        if (bytestream2_get_bytes_left(&s->g) < 2) {
             av_log(s->avctx, AV_LOG_ERROR, "Missing EOC\n");
             break;
         }
