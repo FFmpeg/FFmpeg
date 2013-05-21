@@ -122,7 +122,7 @@ static int build_huff_tree(VLC *vlc, Node *nodes, int head, int flags)
 
     get_tree_codes(bits, lens, xlat, nodes, head, 0, 0,
                    &pos, no_zero_count);
-    return ff_init_vlc_sparse(vlc, 9, pos, lens, 2, 2, bits, 4, 4, xlat, 1, 1, 0);
+    return ff_init_vlc_sparse(vlc, FF_HUFFMAN_BITS, pos, lens, 2, 2, bits, 4, 4, xlat, 1, 1, 0);
 }
 
 
