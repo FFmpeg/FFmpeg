@@ -280,7 +280,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     if (!yadif->cur)
         return 0;
 
-    if (yadif->deint && !yadif->cur->interlaced_frame) {
+    if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
         yadif->out  = av_frame_clone(yadif->cur);
         if (!yadif->out)
             return AVERROR(ENOMEM);
@@ -484,4 +484,5 @@ AVFilter avfilter_vf_yadif = {
 
     .inputs    = avfilter_vf_yadif_inputs,
     .outputs   = avfilter_vf_yadif_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
