@@ -42,11 +42,11 @@
 #define HAD_QCC 0x02
 
 typedef struct {
-   J2kComponent *comp;
+   Jpeg2000Component *comp;
    uint8_t properties[4];
-   J2kCodingStyle codsty[4];
-   J2kQuantStyle  qntsty[4];
-} J2kTile;
+   Jpeg2000CodingStyle codsty[4];
+   Jpeg2000QuantStyle  qntsty[4];
+} Jpeg2000Tile;
 
 typedef struct {
     AVCodecContext *avctx;
@@ -66,17 +66,17 @@ typedef struct {
     int numXtiles, numYtiles;
     int maxtilelen;
 
-    J2kCodingStyle codsty[4];
-    J2kQuantStyle  qntsty[4];
+    Jpeg2000CodingStyle codsty[4];
+    Jpeg2000QuantStyle  qntsty[4];
 
     int bit_index;
 
     int curtileno;
 
-    J2kTile *tile;
-} J2kDecoderContext;
+    Jpeg2000Tile *tile;
+} Jpeg2000DecoderContext;
 
-static int get_bits(J2kDecoderContext *s, int n)
+static int get_bits(Jpeg2000DecoderContext *s, int n)
 {
     int res = 0;
 
@@ -91,14 +91,14 @@ static int get_bits(J2kDecoderContext *s, int n)
     return res;
 }
 
-static void j2k_flush(J2kDecoderContext *s)
+static void j2k_flush(Jpeg2000DecoderContext *s)
 {
     if (bytestream2_get_byte(&s->g) == 0xff)
         bytestream2_skip(&s->g, 1);
     s->bit_index = 8;
 }
 #if 0
-void printcomp(J2kComponent *comp)
+void printcomp(Jpeg2000Component *comp)
 {
     int i;
     for (i = 0; i < comp->y1 - comp->y0; i++)
@@ -110,7 +110,7 @@ static void nspaces(FILE *fd, int n)
     while(n--) putc(' ', fd);
 }
 
-static void dump(J2kDecoderContext *s, FILE *fd)
+static void dump(Jpeg2000DecoderContext *s, FILE *fd)
 {
     int tileno, compno, reslevelno, bandno, precno;
     fprintf(fd, "XSiz = %d, YSiz = %d, tile_width = %d, tile_height = %d\n"
@@ -119,18 +119,18 @@ static void dump(J2kDecoderContext *s, FILE *fd)
             s->width, s->height, s->tile_width, s->tile_height,
             s->numXtiles, s->numYtiles, s->ncomponents);
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
-        J2kTile *tile = s->tile + tileno;
+        Jpeg2000Tile *tile = s->tile + tileno;
         nspaces(fd, 2);
         fprintf(fd, "tile %d:\n", tileno);
         for(compno = 0; compno < s->ncomponents; compno++){
-            J2kComponent *comp = tile->comp + compno;
+            Jpeg2000Component *comp = tile->comp + compno;
             nspaces(fd, 4);
             fprintf(fd, "component %d:\n", compno);
             nspaces(fd, 4);
             fprintf(fd, "x0 = %d, x1 = %d, y0 = %d, y1 = %d\n",
                         comp->x0, comp->x1, comp->y0, comp->y1);
             for(reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++){
-                J2kResLevel *reslevel = comp->reslevel + reslevelno;
+                Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
                 nspaces(fd, 6);
                 fprintf(fd, "reslevel %d:\n", reslevelno);
                 nspaces(fd, 6);
@@ -138,7 +138,7 @@ static void dump(J2kDecoderContext *s, FILE *fd)
                         reslevel->x0, reslevel->x1, reslevel->y0,
                         reslevel->y1, reslevel->nbands);
                 for(bandno = 0; bandno < reslevel->nbands; bandno++){
-                    J2kBand *band = reslevel->band + bandno;
+                    Jpeg2000Band *band = reslevel->band + bandno;
                     nspaces(fd, 8);
                     fprintf(fd, "band %d:\n", bandno);
                     nspaces(fd, 8);
@@ -149,7 +149,7 @@ static void dump(J2kDecoderContext *s, FILE *fd)
                                 band->codeblock_width, band->codeblock_height,
                                 band->cblknx, band->cblkny);
                     for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++){
-                        J2kPrec *prec = band->prec + precno;
+                        Jpeg2000Prec *prec = band->prec + precno;
                         nspaces(fd, 10);
                         fprintf(fd, "prec %d:\n", precno);
                         nspaces(fd, 10);
@@ -164,9 +164,9 @@ static void dump(J2kDecoderContext *s, FILE *fd)
 #endif
 
 /** decode the value stored in node */
-static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold)
+static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node, int threshold)
 {
-    J2kTgtNode *stack[30];
+    Jpeg2000TgtNode *stack[30];
     int sp = -1, curval = 0;
 
     if(!node)
@@ -203,7 +203,7 @@ static int tag_tree_decode(J2kDecoderContext *s, J2kTgtNode *node, int threshold
 
 /* marker segments */
 /** get sizes and offsets of image, tiles; number of components */
-static int get_siz(J2kDecoderContext *s)
+static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i, ret;
     ThreadFrame frame = { .f = s->picture };
@@ -245,17 +245,17 @@ static int get_siz(J2kDecoderContext *s)
     s->numXtiles = ff_j2k_ceildiv(s->width - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_j2k_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
-    if(s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(J2kTile))
+    if(s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(Jpeg2000Tile))
         return AVERROR(EINVAL);
 
-    s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(J2kTile));
+    s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(Jpeg2000Tile));
     if (!s->tile)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < s->numXtiles * s->numYtiles; i++){
-        J2kTile *tile = s->tile + i;
+        Jpeg2000Tile *tile = s->tile + i;
 
-        tile->comp = av_mallocz(s->ncomponents * sizeof(J2kComponent));
+        tile->comp = av_mallocz(s->ncomponents * sizeof(Jpeg2000Component));
         if (!tile->comp)
             return AVERROR(ENOMEM);
     }
@@ -294,7 +294,7 @@ static int get_siz(J2kDecoderContext *s)
 }
 
 /** get common part for COD and COC segments */
-static int get_cox(J2kDecoderContext *s, J2kCodingStyle *c)
+static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
 {
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
@@ -317,9 +317,9 @@ static int get_cox(J2kDecoderContext *s, J2kCodingStyle *c)
 }
 
 /** get coding parameters for a particular tile or whole image*/
-static int get_cod(J2kDecoderContext *s, J2kCodingStyle *c, uint8_t *properties)
+static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c, uint8_t *properties)
 {
-    J2kCodingStyle tmp;
+    Jpeg2000CodingStyle tmp;
     int compno;
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
@@ -341,13 +341,13 @@ static int get_cod(J2kDecoderContext *s, J2kCodingStyle *c, uint8_t *properties)
     get_cox(s, &tmp);
     for (compno = 0; compno < s->ncomponents; compno++){
         if (!(properties[compno] & HAD_COC))
-            memcpy(c + compno, &tmp, sizeof(J2kCodingStyle));
+            memcpy(c + compno, &tmp, sizeof(Jpeg2000CodingStyle));
     }
     return 0;
 }
 
 /** get coding parameters for a component in the whole image on a particular tile */
-static int get_coc(J2kDecoderContext *s, J2kCodingStyle *c, uint8_t *properties)
+static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c, uint8_t *properties)
 {
     int compno;
 
@@ -365,7 +365,7 @@ static int get_coc(J2kDecoderContext *s, J2kCodingStyle *c, uint8_t *properties)
 }
 
 /** get common part for QCD and QCC segments */
-static int get_qcx(J2kDecoderContext *s, int n, J2kQuantStyle *q)
+static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
 {
     int i, x;
 
@@ -408,21 +408,21 @@ static int get_qcx(J2kDecoderContext *s, int n, J2kQuantStyle *q)
 }
 
 /** get quantization parameters for a particular tile or a whole image */
-static int get_qcd(J2kDecoderContext *s, int n, J2kQuantStyle *q, uint8_t *properties)
+static int get_qcd(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q, uint8_t *properties)
 {
-    J2kQuantStyle tmp;
+    Jpeg2000QuantStyle tmp;
     int compno;
 
     if (get_qcx(s, n, &tmp))
         return -1;
     for (compno = 0; compno < s->ncomponents; compno++)
         if (!(properties[compno] & HAD_QCC))
-            memcpy(q + compno, &tmp, sizeof(J2kQuantStyle));
+            memcpy(q + compno, &tmp, sizeof(Jpeg2000QuantStyle));
     return 0;
 }
 
 /** get quantization parameters for a component in the whole image on in a particular tile */
-static int get_qcc(J2kDecoderContext *s, int n, J2kQuantStyle *q, uint8_t *properties)
+static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q, uint8_t *properties)
 {
     int compno;
 
@@ -435,7 +435,7 @@ static int get_qcc(J2kDecoderContext *s, int n, J2kQuantStyle *q, uint8_t *prope
 }
 
 /** get start of tile segment */
-static uint8_t get_sot(J2kDecoderContext *s)
+static uint8_t get_sot(Jpeg2000DecoderContext *s)
 {
     if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR(EINVAL);
@@ -449,30 +449,30 @@ static uint8_t get_sot(J2kDecoderContext *s)
     bytestream2_skipu(&s->g, 4); ///< Psot (ignored)
 
     if (!bytestream2_get_byteu(&s->g)){ ///< TPsot
-        J2kTile *tile = s->tile + s->curtileno;
+        Jpeg2000Tile *tile = s->tile + s->curtileno;
 
         /* copy defaults */
-        memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(J2kCodingStyle));
-        memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(J2kQuantStyle));
+        memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(Jpeg2000CodingStyle));
+        memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(Jpeg2000QuantStyle));
     }
     bytestream2_get_byteu(&s->g); ///< TNsot
 
     return 0;
 }
 
-static int init_tile(J2kDecoderContext *s, int tileno)
+static int init_tile(Jpeg2000DecoderContext *s, int tileno)
 {
     int compno,
         tilex = tileno % s->numXtiles,
         tiley = tileno / s->numXtiles;
-    J2kTile *tile = s->tile + tileno;
+    Jpeg2000Tile *tile = s->tile + tileno;
 
     if (!tile->comp)
         return AVERROR(ENOMEM);
     for (compno = 0; compno < s->ncomponents; compno++){
-        J2kComponent *comp = tile->comp + compno;
-        J2kCodingStyle *codsty = tile->codsty + compno;
-        J2kQuantStyle  *qntsty = tile->qntsty + compno;
+        Jpeg2000Component *comp = tile->comp + compno;
+        Jpeg2000CodingStyle *codsty = tile->codsty + compno;
+        Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
         int ret; // global bandno
 
         comp->coord[0][0] = FFMAX(tilex * s->tile_width + s->tile_offset_x, s->image_offset_x);
@@ -487,7 +487,7 @@ static int init_tile(J2kDecoderContext *s, int tileno)
 }
 
 /** read the number of coding passes */
-static int getnpasses(J2kDecoderContext *s)
+static int getnpasses(Jpeg2000DecoderContext *s)
 {
     int num;
     if (!get_bits(s, 1))
@@ -502,7 +502,7 @@ static int getnpasses(J2kDecoderContext *s)
     return num < 0 ? num : 37 + num;
 }
 
-static int getlblockinc(J2kDecoderContext *s)
+static int getlblockinc(Jpeg2000DecoderContext *s)
 {
     int res = 0, ret;
     while (ret = get_bits(s, 1)){
@@ -513,7 +513,7 @@ static int getlblockinc(J2kDecoderContext *s)
     return res;
 }
 
-static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLevel *rlevel, int precno,
+static int decode_packet(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty, Jpeg2000ResLevel *rlevel, int precno,
                          int layno, uint8_t *expn, int numgbits)
 {
     int bandno, cblkny, cblknx, cblkno, ret;
@@ -525,8 +525,8 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
         return ret;
 
     for (bandno = 0; bandno < rlevel->nbands; bandno++){
-        J2kBand *band = rlevel->band + bandno;
-        J2kPrec *prec = band->prec + precno;
+        Jpeg2000Band *band = rlevel->band + bandno;
+        Jpeg2000Prec *prec = band->prec + precno;
         int pos = 0;
 
         if (band->coord[0][0] == band->coord[0][1]
@@ -535,7 +535,7 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
 
         for (cblkny = prec->yi0; cblkny < prec->yi1; cblkny++)
             for(cblknx = prec->xi0, cblkno = cblkny * band->cblknx + cblknx; cblknx < prec->xi1; cblknx++, cblkno++, pos++){
-                J2kCblk *cblk = band->cblk + cblkno;
+                Jpeg2000Cblk *cblk = band->cblk + cblkno;
                 int incl, newpasses, llen;
 
                 if (cblk->npasses)
@@ -571,12 +571,12 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
     }
 
     for (bandno = 0; bandno < rlevel->nbands; bandno++){
-        J2kBand *band = rlevel->band + bandno;
+        Jpeg2000Band *band = rlevel->band + bandno;
         int yi, cblknw = band->prec[precno].xi1 - band->prec[precno].xi0;
         for (yi = band->prec[precno].yi0; yi < band->prec[precno].yi1; yi++){
             int xi;
             for (xi = band->prec[precno].xi0; xi < band->prec[precno].xi1; xi++){
-                J2kCblk *cblk = band->cblk + yi * cblknw + xi;
+                Jpeg2000Cblk *cblk = band->cblk + yi * cblknw + xi;
                 if (bytestream2_get_bytes_left(&s->g) < cblk->lengthinc)
                     return AVERROR(EINVAL);
                 bytestream2_get_bufferu(&s->g, cblk->data, cblk->lengthinc);
@@ -588,7 +588,7 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
     return 0;
 }
 
-static int jpeg2000_decode_packets(J2kDecoderContext *s, J2kTile *tile)
+static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int layno, reslevelno, compno, precno, ok_reslevel;
     s->bit_index = 8;
@@ -597,10 +597,10 @@ static int jpeg2000_decode_packets(J2kDecoderContext *s, J2kTile *tile)
         for (reslevelno = 0; ok_reslevel; reslevelno++){
             ok_reslevel = 0;
             for (compno = 0; compno < s->ncomponents; compno++){
-                J2kCodingStyle *codsty = tile->codsty + compno;
-                J2kQuantStyle  *qntsty = tile->qntsty + compno;
+                Jpeg2000CodingStyle *codsty = tile->codsty + compno;
+                Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
                 if (reslevelno < codsty->nreslevels){
-                    J2kResLevel *rlevel = tile->comp[compno].reslevel + reslevelno;
+                    Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel + reslevelno;
                     ok_reslevel = 1;
                     for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++){
                         if (decode_packet(s, codsty, rlevel, precno, layno, qntsty->expn +
@@ -615,7 +615,7 @@ static int jpeg2000_decode_packets(J2kDecoderContext *s, J2kTile *tile)
 }
 
 /* TIER-1 routines */
-static void decode_sigpass(J2kT1Context *t1, int width, int height, int bpno, int bandno, int bpass_csty_symbol,
+static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height, int bpno, int bandno, int bpass_csty_symbol,
                            int vert_causal_ctx_csty_symbol)
 {
     int mask = 3 << (bpno - 1), y0, x, y;
@@ -642,7 +642,7 @@ static void decode_sigpass(J2kT1Context *t1, int width, int height, int bpno, in
             }
 }
 
-static void decode_refpass(J2kT1Context *t1, int width, int height, int bpno)
+static void decode_refpass(Jpeg2000T1Context *t1, int width, int height, int bpno)
 {
     int phalf, nhalf;
     int y0, x, y;
@@ -662,7 +662,7 @@ static void decode_refpass(J2kT1Context *t1, int width, int height, int bpno)
             }
 }
 
-static void decode_clnpass(J2kDecoderContext *s, J2kT1Context *t1, int width, int height,
+static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1, int width, int height,
                            int bpno, int bandno, int seg_symbols)
 {
     int mask = 3 << (bpno - 1), y0, x, y, runlen, dec;
@@ -712,7 +712,7 @@ static void decode_clnpass(J2kDecoderContext *s, J2kT1Context *t1, int width, in
     }
 }
 
-static int decode_cblk(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kT1Context *t1, J2kCblk *cblk,
+static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty, Jpeg2000T1Context *t1, Jpeg2000Cblk *cblk,
                        int width, int height, int bandpos)
 {
     int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y, clnpass_cnt = 0;
@@ -755,7 +755,7 @@ static int decode_cblk(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kT1Contex
     return 0;
 }
 
-static void mct_decode(J2kDecoderContext *s, J2kTile *tile)
+static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int i, *src[3], i0, i1, i2, csize = 1;
 
@@ -786,21 +786,21 @@ static void mct_decode(J2kDecoderContext *s, J2kTile *tile)
     }
 }
 
-static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
+static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int compno, reslevelno, bandno;
     int x, y, *src[4];
     uint8_t *line;
-    J2kT1Context t1;
+    Jpeg2000T1Context t1;
 
     for (compno = 0; compno < s->ncomponents; compno++){
-        J2kComponent *comp = tile->comp + compno;
-        J2kCodingStyle *codsty = tile->codsty + compno;
+        Jpeg2000Component *comp = tile->comp + compno;
+        Jpeg2000CodingStyle *codsty = tile->codsty + compno;
 
         for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++){
-            J2kResLevel *rlevel = comp->reslevel + reslevelno;
+            Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
             for (bandno = 0; bandno < rlevel->nbands; bandno++){
-                J2kBand *band = rlevel->band + bandno;
+                Jpeg2000Band *band = rlevel->band + bandno;
                 int cblkx, cblky, cblkno=0, xx0, x0, xx1, y0, yy0, yy1, bandpos;
 
                 bandpos = bandno + (reslevelno > 0);
@@ -903,13 +903,13 @@ static int decode_tile(J2kDecoderContext *s, J2kTile *tile)
     return 0;
 }
 
-static void cleanup(J2kDecoderContext *s)
+static void cleanup(Jpeg2000DecoderContext *s)
 {
     int tileno, compno;
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
         for (compno = 0; compno < s->ncomponents; compno++){
-            J2kComponent *comp = s->tile[tileno].comp + compno;
-            J2kCodingStyle *codsty = s->tile[tileno].codsty + compno;
+            Jpeg2000Component *comp = s->tile[tileno].comp + compno;
+            Jpeg2000CodingStyle *codsty = s->tile[tileno].codsty + compno;
 
             ff_j2k_cleanup(comp, codsty);
         }
@@ -918,10 +918,10 @@ static void cleanup(J2kDecoderContext *s)
     av_freep(&s->tile);
 }
 
-static int decode_codestream(J2kDecoderContext *s)
+static int decode_codestream(Jpeg2000DecoderContext *s)
 {
-    J2kCodingStyle *codsty = s->codsty;
-    J2kQuantStyle  *qntsty = s->qntsty;
+    Jpeg2000CodingStyle *codsty = s->codsty;
+    Jpeg2000QuantStyle  *qntsty = s->qntsty;
     uint8_t *properties = s->properties;
 
     for (;;){
@@ -937,7 +937,7 @@ static int decode_codestream(J2kDecoderContext *s)
         oldpos = bytestream2_tell(&s->g);
 
         if (marker == J2K_SOD){
-            J2kTile *tile = s->tile + s->curtileno;
+            Jpeg2000Tile *tile = s->tile + s->curtileno;
             if (ret = init_tile(s, s->curtileno)) {
                 av_log(s->avctx, AV_LOG_ERROR, "tile initialization failed\n");
                 return ret;
@@ -994,7 +994,7 @@ static int decode_codestream(J2kDecoderContext *s)
     return 0;
 }
 
-static int jp2_find_codestream(J2kDecoderContext *s)
+static int jp2_find_codestream(Jpeg2000DecoderContext *s)
 {
     uint32_t atom_size, atom;
     int found_codestream = 0, search_range = 10;
@@ -1021,7 +1021,7 @@ static int decode_frame(AVCodecContext *avctx,
                         void *data, int *got_frame,
                         AVPacket *avpkt)
 {
-    J2kDecoderContext *s = avctx->priv_data;
+    Jpeg2000DecoderContext *s = avctx->priv_data;
     AVFrame *picture = data;
     int tileno, ret;
 
@@ -1074,7 +1074,7 @@ err_out:
 
 static av_cold int j2kdec_init(AVCodecContext *avctx)
 {
-    J2kDecoderContext *s = avctx->priv_data;
+    Jpeg2000DecoderContext *s = avctx->priv_data;
 
     s->avctx = avctx;
 
@@ -1087,7 +1087,7 @@ AVCodec ff_j2k_decoder = {
     .name           = "j2k",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEG2000,
-    .priv_data_size = sizeof(J2kDecoderContext),
+    .priv_data_size = sizeof(Jpeg2000DecoderContext),
     .init           = j2kdec_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_EXPERIMENTAL | CODEC_CAP_FRAME_THREADS,

@@ -64,12 +64,12 @@ static int tag_tree_size(int w, int h)
     return res + 1;
 }
 
-J2kTgtNode *ff_j2k_tag_tree_init(int w, int h)
+Jpeg2000TgtNode *ff_j2k_tag_tree_init(int w, int h)
 {
     int pw = w, ph = h;
-    J2kTgtNode *res, *t, *t2;
+    Jpeg2000TgtNode *res, *t, *t2;
 
-    t = res = av_mallocz(tag_tree_size(w, h)*sizeof(J2kTgtNode));
+    t = res = av_mallocz(tag_tree_size(w, h)*sizeof(Jpeg2000TgtNode));
 
     if (res == NULL)
         return NULL;
@@ -93,7 +93,7 @@ J2kTgtNode *ff_j2k_tag_tree_init(int w, int h)
     return res;
 }
 
-static void tag_tree_zero(J2kTgtNode *t, int w, int h)
+static void tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
 {
     int i, siz = tag_tree_size(w, h);
 
@@ -178,7 +178,7 @@ void ff_j2k_init_tier1_luts(void)
             ff_j2k_sgnctxno_lut[i][j] = getsgnctxno(i + (j << 8), &ff_j2k_xorbit_lut[i][j]);
 }
 
-void ff_j2k_set_significant(J2kT1Context *t1, int x, int y, int negative)
+void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative)
 {
     x++; y++;
     t1->flags[y][x] |= J2K_T1_SIG;
@@ -199,7 +199,7 @@ void ff_j2k_set_significant(J2kT1Context *t1, int x, int y, int negative)
     t1->flags[y-1][x-1] |= J2K_T1_SIG_SE;
 }
 
-int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantStyle *qntsty, int cbps, int dx, int dy)
+int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, Jpeg2000QuantStyle *qntsty, int cbps, int dx, int dy)
 {
     int reslevelno, bandno, gbandno = 0, ret, i, j, csize = 1;
 
@@ -211,13 +211,13 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
     comp->data = av_malloc(csize * sizeof(int));
     if (!comp->data)
         return AVERROR(ENOMEM);
-    comp->reslevel = av_malloc(codsty->nreslevels * sizeof(J2kResLevel));
+    comp->reslevel = av_malloc(codsty->nreslevels * sizeof(Jpeg2000ResLevel));
 
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++){
         int declvl = codsty->nreslevels - reslevelno;
-        J2kResLevel *reslevel = comp->reslevel + reslevelno;
+        Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
         for (i = 0; i < 2; i++)
             for (j = 0; j < 2; j++)
@@ -241,11 +241,11 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
             reslevel->num_precincts_y = ff_j2k_ceildivpow2(reslevel->coord[1][1], codsty->log2_prec_height)
                                         - (reslevel->coord[1][0] >> codsty->log2_prec_height);
 
-        reslevel->band = av_malloc(reslevel->nbands * sizeof(J2kBand));
+        reslevel->band = av_malloc(reslevel->nbands * sizeof(Jpeg2000Band));
         if (!reslevel->band)
             return AVERROR(ENOMEM);
         for (bandno = 0; bandno < reslevel->nbands; bandno++, gbandno++){
-            J2kBand *band = reslevel->band + bandno;
+            Jpeg2000Band *band = reslevel->band + bandno;
             int cblkno, precx, precy, precno;
             int x0, y0, x1, y1;
             int xi0, yi0, xi1, yi1;
@@ -285,15 +285,15 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
             band->cblknx = ff_j2k_ceildiv(band->cblknx, dx);
             band->cblkny = ff_j2k_ceildiv(band->cblkny, dy);
 
-            band->cblk = av_malloc(sizeof(J2kCblk) * band->cblknx * band->cblkny);
+            band->cblk = av_malloc(sizeof(Jpeg2000Cblk) * band->cblknx * band->cblkny);
             if (!band->cblk)
                 return AVERROR(ENOMEM);
-            band->prec = av_malloc(sizeof(J2kCblk) * reslevel->num_precincts_x * reslevel->num_precincts_y);
+            band->prec = av_malloc(sizeof(Jpeg2000Cblk) * reslevel->num_precincts_x * reslevel->num_precincts_y);
             if (!band->prec)
                 return AVERROR(ENOMEM);
 
             for (cblkno = 0; cblkno < band->cblknx * band->cblkny; cblkno++){
-                J2kCblk *cblk = band->cblk + cblkno;
+                Jpeg2000Cblk *cblk = band->cblk + cblkno;
                 cblk->zero = 0;
                 cblk->lblock = 3;
                 cblk->length = 0;
@@ -325,7 +325,7 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
             cblkperprecw = 1<<(codsty->log2_prec_width - codsty->log2_cblk_width);
             for (precx = 0, precno = 0; precx < reslevel->num_precincts_x; precx++){
                 for (precy = 0; precy < reslevel->num_precincts_y; precy++, precno = 0){
-                    J2kPrec *prec = band->prec + precno;
+                    Jpeg2000Prec *prec = band->prec + precno;
                     prec->xi0 = xi0;
                     prec->xi1 = xi1;
                     prec->cblkincl = ff_j2k_tag_tree_init(prec->xi1 - prec->xi0,
@@ -345,20 +345,20 @@ int ff_j2k_init_component(J2kComponent *comp, J2kCodingStyle *codsty, J2kQuantSt
     return 0;
 }
 
-void ff_j2k_reinit(J2kComponent *comp, J2kCodingStyle *codsty)
+void ff_j2k_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 {
     int reslevelno, bandno, cblkno, precno;
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++){
-        J2kResLevel *rlevel = comp->reslevel + reslevelno;
+        Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
         for (bandno = 0; bandno < rlevel->nbands; bandno++){
-            J2kBand *band = rlevel->band + bandno;
+            Jpeg2000Band *band = rlevel->band + bandno;
             for(precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++){
-                J2kPrec *prec = band->prec + precno;
+                Jpeg2000Prec *prec = band->prec + precno;
                 tag_tree_zero(prec->zerobits, prec->xi1 - prec->xi0, prec->yi1 - prec->yi0);
                 tag_tree_zero(prec->cblkincl, prec->xi1 - prec->xi0, prec->yi1 - prec->yi0);
             }
             for (cblkno = 0; cblkno < band->cblknx * band->cblkny; cblkno++){
-                J2kCblk *cblk = band->cblk + cblkno;
+                Jpeg2000Cblk *cblk = band->cblk + cblkno;
                 cblk->length = 0;
                 cblk->lblock = 3;
             }
@@ -366,16 +366,16 @@ void ff_j2k_reinit(J2kComponent *comp, J2kCodingStyle *codsty)
     }
 }
 
-void ff_j2k_cleanup(J2kComponent *comp, J2kCodingStyle *codsty)
+void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 {
     int reslevelno, bandno, precno;
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++){
-        J2kResLevel *reslevel = comp->reslevel + reslevelno;
+        Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
         for (bandno = 0; bandno < reslevel->nbands ; bandno++){
-            J2kBand *band = reslevel->band + bandno;
+            Jpeg2000Band *band = reslevel->band + bandno;
                 for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++){
-                    J2kPrec *prec = band->prec + precno;
+                    Jpeg2000Prec *prec = band->prec + precno;
                     av_freep(&prec->zerobits);
                     av_freep(&prec->cblkincl);
                 }
