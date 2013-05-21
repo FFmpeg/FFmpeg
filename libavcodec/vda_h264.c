@@ -28,6 +28,9 @@
 #include "libavutil/avutil.h"
 #include "h264.h"
 
+struct vda_buffer {
+    CVPixelBufferRef cv_buffer;
+};
 
 /* Decoder callback that adds the vda frame to the queue in display order. */
 static void vda_decoder_callback (void *vda_hw_ctx,
@@ -108,11 +111,20 @@ static int vda_h264_decode_slice(AVCodecContext *avctx,
     return 0;
 }
 
+static void vda_h264_release_buffer(void *opaque, uint8_t *data)
+{
+    struct vda_buffer *context = opaque;
+    CVPixelBufferRelease(context->cv_buffer);
+    av_free(context);
+}
+
 static int vda_h264_end_frame(AVCodecContext *avctx)
 {
     H264Context *h                      = avctx->priv_data;
     struct vda_context *vda_ctx         = avctx->hwaccel_context;
     AVFrame *frame                      = &h->cur_pic_ptr->f;
+    struct vda_buffer *context;
+    AVBufferRef *buffer;
     int status;
 
     if (!vda_ctx->decoder || !vda_ctx->priv_bitstream)
@@ -123,6 +135,20 @@ static int vda_h264_end_frame(AVCodecContext *avctx)
 
     if (status)
         av_log(avctx, AV_LOG_ERROR, "Failed to decode frame (%d)\n", status);
+
+    if (!vda_ctx->use_ref_buffer || status)
+        return status;
+
+    context = av_mallocz(sizeof(*context));
+    buffer = av_buffer_create(NULL, 0, vda_h264_release_buffer, context, 0);
+    if (!context || !buffer) {
+        CVPixelBufferRelease(vda_ctx->cv_buffer);
+        av_free(context);
+        return -1;
+    }
+
+    context->cv_buffer = vda_ctx->cv_buffer;
+    frame->buf[3] = buffer;
 
     return status;
 }

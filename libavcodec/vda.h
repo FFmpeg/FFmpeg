@@ -134,6 +134,17 @@ struct vda_context {
      * - decoding: Set/Unset by libavcodec.
      */
     int                 priv_allocated_size;
+
+    /**
+     * Use av_buffer to manage buffer.
+     * When the flag is set, the CVPixelBuffers returned by the decoder will
+     * be released automatically, so you have to retain them if necessary.
+     * Not setting this flag may cause memory leak.
+     *
+     * encoding: unused
+     * decoding: Set by user.
+     */
+    int                 use_ref_buffer;
 };
 
 /** Create the video decoder. */
