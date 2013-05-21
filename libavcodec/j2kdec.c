@@ -588,7 +588,7 @@ static int decode_packet(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kResLev
     return 0;
 }
 
-static int decode_packets(J2kDecoderContext *s, J2kTile *tile)
+static int jpeg2000_decode_packets(J2kDecoderContext *s, J2kTile *tile)
 {
     int layno, reslevelno, compno, precno, ok_reslevel;
     s->bit_index = 8;
@@ -942,7 +942,7 @@ static int decode_codestream(J2kDecoderContext *s)
                 av_log(s->avctx, AV_LOG_ERROR, "tile initialization failed\n");
                 return ret;
             }
-            if (ret = decode_packets(s, tile)) {
+            if (ret = jpeg2000_decode_packets(s, tile)) {
                 av_log(s->avctx, AV_LOG_ERROR, "packets decoding failed\n");
                 return ret;
             }
