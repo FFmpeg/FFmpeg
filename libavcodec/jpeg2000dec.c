@@ -176,6 +176,13 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->tile_offset_y  = bytestream_get_be32(&s->buf); // YT0Siz
     s->ncomponents    = bytestream_get_be16(&s->buf); // CSiz
 
+    if(s->ncomponents <= 0 || s->ncomponents > 4) {
+        av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", s->ncomponents);
+        return AVERROR(EINVAL);
+    }
+    if(s->tile_width<=0 || s->tile_height<=0)
+        return AVERROR(EINVAL);
+
     if (s->buf_end - s->buf < 2 * s->ncomponents)
         return AVERROR(EINVAL);
 
