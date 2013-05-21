@@ -67,6 +67,7 @@ compile()(
 )
 
 fate()(
+    test "$build_only" = "yes" && return
     cd ${build} || return
     ${make} ${makeopts} -k fate
 )
