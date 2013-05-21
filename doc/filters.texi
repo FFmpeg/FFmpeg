@@ -3068,6 +3068,10 @@ The x and y offsets for the text shadow position with respect to the
 position of the text. They can be either positive or negative
 values. Default value for both is "0".
 
+@item start_number
+The starting frame number for the n/frame_num variable. The default value
+is "0".
+
 @item tabsize
 The size in number of spaces to use for rendering the tab.
 Default value is 4.
