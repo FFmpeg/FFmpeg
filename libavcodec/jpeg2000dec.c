@@ -353,7 +353,7 @@ static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
 
     if (q->quantsty == JPEG2000_QSTY_NONE) {
         n -= 3;
-        if (s->buf_end - s->buf < n)
+        if (s->buf_end - s->buf < n || 32*3 < n)
             return AVERROR(EINVAL);
         for (i = 0; i < n; i++)
             q->expn[i] = bytestream_get_byte(&s->buf) >> 3;
@@ -370,7 +370,7 @@ static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
         }
     } else {
         n = (n - 3) >> 1;
-        if (s->buf_end - s->buf < n)
+        if (s->buf_end - s->buf < 2 * n || 32*3 < n)
             return AVERROR(EINVAL);
         for (i = 0; i < n; i++) {
             x          = bytestream_get_be16(&s->buf);
