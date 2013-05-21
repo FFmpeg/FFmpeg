@@ -102,6 +102,8 @@ static int vdadec_decode(AVCodecContext *avctx,
         AVBufferRef *buffer = pic->buf[0];
         VDABufferContext *context = av_buffer_get_opaque(buffer);
         CVPixelBufferRef cv_buffer = (CVPixelBufferRef)pic->data[3];
+
+        CVPixelBufferRetain(cv_buffer);
         CVPixelBufferLockBaseAddress(cv_buffer, 0);
         context->cv_buffer = cv_buffer;
         pic->format = ctx->pix_fmt;
@@ -202,6 +204,7 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
     vda_ctx->height = avctx->height;
     vda_ctx->format = 'avc1';
     vda_ctx->use_sync_decoding = 1;
+    vda_ctx->use_ref_buffer = 1;
     ctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
     switch (ctx->pix_fmt) {
     case AV_PIX_FMT_UYVY422:
