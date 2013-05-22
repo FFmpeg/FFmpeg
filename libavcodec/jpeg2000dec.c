@@ -1195,7 +1195,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR,
-                   "unsupported marker 0x%.4X at pos 0x%tX\n",
+                   "unsupported marker 0x%.4X at pos 0x%X\n",
                    marker, bytestream2_tell(&s->g) - 4);
             bytestream2_skip(&s->g, len - 2);
             break;
