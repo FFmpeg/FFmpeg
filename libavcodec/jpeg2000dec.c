@@ -406,7 +406,7 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
 }
 
 /* Get start of tile segment. */
-static uint8_t get_sot(Jpeg2000DecoderContext *s, int n)
+static int get_sot(Jpeg2000DecoderContext *s, int n)
 {
     Jpeg2000TilePart *tp;
     uint16_t Isot;

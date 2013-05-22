@@ -435,7 +435,7 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q, uint
 }
 
 /** get start of tile segment */
-static uint8_t get_sot(Jpeg2000DecoderContext *s)
+static int get_sot(Jpeg2000DecoderContext *s)
 {
     if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR(EINVAL);
