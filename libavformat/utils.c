@@ -1412,6 +1412,9 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             st->skip_to_keyframe = 0;
         if (st->skip_to_keyframe) {
             av_free_packet(&cur_pkt);
+            if (got_packet) {
+                *pkt = cur_pkt;
+            }
             got_packet = 0;
         }
     }
