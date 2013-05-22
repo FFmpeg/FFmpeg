@@ -94,7 +94,7 @@ static inline struct rgbvec lerp(const struct rgbvec *v0, const struct rgbvec *v
 
 #define NEAR(x) ((int)((x) + .5))
 #define PREV(x) ((int)(x))
-#define NEXT(x) ((int)(x) + 1)
+#define NEXT(x) (FFMIN((int)(x) + 1, lut3d->lutsize - 1))
 
 /**
  * Get the nearest defined point
