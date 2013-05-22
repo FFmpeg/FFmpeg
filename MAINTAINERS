@@ -217,6 +217,7 @@ Codecs:
   s3tc*                                 Ivo van Poorten
   smacker.c                             Kostya Shishkov
   smc.c                                 Mike Melanson
+  smvjpegdec.c                          Ash Hughes
   snow.c                                Michael Niedermayer, Loren Merritt
   sonic.c                               Alex Beregszaszi
   srt*                                  Aurelien Jacobs
@@ -463,6 +464,7 @@ GnuPG Fingerprints of maintainers and contributors
 
 Anssi Hannula                 1A92 FF42 2DD9 8D2E 8AF7 65A9 4278 C520 513D F3CB
 Anton Khirnov                 6D0C 6625 56F8 65D1 E5F5 814B B50A 1241 C067 07AB
+Ash Hughes                    694D 43D2 D180 C7C7 6421 ABD3 A641 D0B7 623D 6029
 Attila Kinali                 11F0 F9A6 A1D2 11F6 C745 D10C 6520 BCDD F2DF E765
 Baptiste Coudurier            8D77 134D 20CC 9220 201F C5DB 0AC9 325C 5C1A BAAA
 Ben Littler                   3EE3 3723 E560 3214 A8CD 4DEB 2CDB FCE7 768C 8D2C
