@@ -416,7 +416,11 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR(EINVAL);
 
-    Isot = bytestream2_get_be16u(&s->g);        // Isot
+    s->curtileno = Isot = bytestream2_get_be16u(&s->g);        // Isot
+    if((unsigned)s->curtileno >= s->numXtiles * s->numYtiles){
+        s->curtileno=0;
+        return AVERROR(EINVAL);
+    }
     if (Isot) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Not a DCINEMA JP2K file: more than one tile\n");
