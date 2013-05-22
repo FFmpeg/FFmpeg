@@ -201,7 +201,8 @@ static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
     int has_skips, coeff_type, coeff_bits, skip_type, skip_bits;
     const int num_coeffs = aic_num_band_coeffs[band];
     const uint8_t *scan = aic_scan[band];
-    int mb, idx, val;
+    int mb, idx;
+    unsigned val;
 
     has_skips  = get_bits1(gb);
     coeff_type = get_bits1(gb);
@@ -215,6 +216,8 @@ static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
             idx = -1;
             do {
                 GET_CODE(val, skip_type, skip_bits);
+                if (val >= 0x10000)
+                    return AVERROR_INVALIDDATA;
                 idx += val + 1;
                 if (idx >= num_coeffs)
                     break;
