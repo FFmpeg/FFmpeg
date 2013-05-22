@@ -1388,6 +1388,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
 {
     OutputFile *of = output_files[ost->file_index];
     int64_t ost_tb_start_time = av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
+    int64_t ist_tb_start_time = av_rescale_q(of->start_time, AV_TIME_BASE_Q, ist->st->time_base);
     AVPicture pict;
     AVPacket opkt;
 
@@ -1397,9 +1398,15 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         !ost->copy_initial_nonkeyframes)
         return;
 
-    if (!ost->frame_number && ist->pts < of->start_time &&
-        !ost->copy_prior_start)
-        return;
+    if (pkt->pts == AV_NOPTS_VALUE) {
+        if (!ost->frame_number && ist->pts < of->start_time &&
+            !ost->copy_prior_start)
+            return;
+    } else {
+        if (!ost->frame_number && pkt->pts < ist_tb_start_time &&
+            !ost->copy_prior_start)
+            return;
+    }
 
     if (of->recording_time != INT64_MAX &&
         ist->pts >= of->recording_time + of->start_time) {
