@@ -806,7 +806,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     memcpy(mpi->planes, inpic->data,     FFMIN(sizeof(inpic->data)    , sizeof(mpi->planes)));
     memcpy(mpi->stride, inpic->linesize, FFMIN(sizeof(inpic->linesize), sizeof(mpi->stride)));
 
-    //FIXME pass interleced & tff flags around
+    if (inpic->interlaced_frame)
+        mpi->fields |= MP_IMGFIELD_INTERLACED;
+    if (inpic->top_field_first)
+        mpi->fields |= MP_IMGFIELD_TOP_FIRST;
+    if (inpic->repeat_pict)
+        mpi->fields |= MP_IMGFIELD_REPEAT_FIRST;
 
     // mpi->flags|=MP_IMGFLAG_ALLOCATED; ?
     mpi->flags |= MP_IMGFLAG_READABLE;
