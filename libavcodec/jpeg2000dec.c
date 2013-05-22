@@ -432,6 +432,11 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     /* Read TNSot but not used */
     bytestream2_get_byteu(&s->g);               // TNsot
 
+    if (TPsot >= FF_ARRAY_ELEMS(s->tile[s->curtileno].tile_part)) {
+        av_log(s->avctx, AV_LOG_ERROR, "TPsot %d too big\n", TPsot);
+        return AVERROR_PATCHWELCOME;
+    }
+
     tp             = s->tile[s->curtileno].tile_part + TPsot;
     tp->tile_index = Isot;
     tp->tp_len     = Psot;
