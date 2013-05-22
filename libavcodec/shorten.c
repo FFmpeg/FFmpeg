@@ -437,7 +437,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
         buf_size       = FFMIN(buf_size, s->max_framesize - s->bitstream_size);
         input_buf_size = buf_size;
 
-        if (s->bitstream_index + s->bitstream_size + buf_size >
+        if (s->bitstream_index + s->bitstream_size + buf_size + FF_INPUT_BUFFER_PADDING_SIZE >
             s->allocated_bitstream_size) {
             memmove(s->bitstream, &s->bitstream[s->bitstream_index],
                     s->bitstream_size);
