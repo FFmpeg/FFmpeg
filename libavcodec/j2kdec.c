@@ -957,6 +957,8 @@ static int decode_codestream(Jpeg2000DecoderContext *s)
         switch (marker){
         case JPEG2000_SIZ:
             ret = get_siz(s);
+            if (!s->tile)
+                s->numXtiles = s->numYtiles = 0;
             break;
         case JPEG2000_COC:
             ret = get_coc(s, codsty, properties);
