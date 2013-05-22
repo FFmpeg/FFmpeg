@@ -192,6 +192,9 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
+    if(s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(Jpeg2000Tile))
+        return AVERROR(EINVAL);
+
     s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(*s->tile));
     if (!s->tile)
         return AVERROR(ENOMEM);
