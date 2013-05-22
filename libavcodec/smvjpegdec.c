@@ -52,7 +52,7 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
                                enum PixelFormat pix_fmt, int width, int height,
                                int nlines)
 {
-    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i, planes_nb = 0;
 
     if (desc->flags & PIX_FMT_HWACCEL)
