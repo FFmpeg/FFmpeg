@@ -577,7 +577,9 @@ static int decode_packet(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
             int xi;
             for (xi = band->prec[precno].xi0; xi < band->prec[precno].xi1; xi++){
                 Jpeg2000Cblk *cblk = band->cblk + yi * cblknw + xi;
-                if (bytestream2_get_bytes_left(&s->g) < cblk->lengthinc)
+                if (   bytestream2_get_bytes_left(&s->g) < cblk->lengthinc
+                    || sizeof(cblk->data) < cblk->lengthinc
+                )
                     return AVERROR(EINVAL);
                 bytestream2_get_bufferu(&s->g, cblk->data, cblk->lengthinc);
                 cblk->length += cblk->lengthinc;

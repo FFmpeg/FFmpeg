@@ -643,7 +643,9 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
         nb_code_blocks = prec->nb_codeblocks_height * prec->nb_codeblocks_width;
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
-            if (bytestream2_get_bytes_left(&s->g) < cblk->lengthinc)
+            if (   bytestream2_get_bytes_left(&s->g) < cblk->lengthinc
+                || sizeof(cblk->data) < cblk->lengthinc
+            )
                 return AVERROR(EINVAL);
             /* Code-block data can be empty. In that case initialize data
              * with 0xFFFF. */
