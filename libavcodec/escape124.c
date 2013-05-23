@@ -200,7 +200,6 @@ static int escape124_decode_frame(AVCodecContext *avctx,
                                   void *data, int *got_frame,
                                   AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     Escape124Context *s = avctx->priv_data;
     AVFrame *frame = data;
@@ -218,7 +217,8 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
     int ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
+        return ret;
 
     // This call also guards the potential depth reads for the
     // codebook unpacking.
