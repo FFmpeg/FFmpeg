@@ -74,10 +74,10 @@
  */
 typedef struct AVBPrint {
     FF_PAD_STRUCTURE(1024,
-    char *str;         /** string so far */
-    unsigned len;      /** length so far */
-    unsigned size;     /** allocated memory */
-    unsigned size_max; /** maximum allocated memory */
+    char *str;         /**< string so far */
+    unsigned len;      /**< length so far */
+    unsigned size;     /**< allocated memory */
+    unsigned size_max; /**< maximum allocated memory */
     char reserved_internal_buffer[1];
     )
 } AVBPrint;
