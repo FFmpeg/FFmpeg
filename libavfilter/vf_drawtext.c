@@ -664,7 +664,7 @@ static int func_eval_expr(AVFilterContext *ctx, AVBPrint *bp,
 static const struct drawtext_function {
     const char *name;
     unsigned argc_min, argc_max;
-    int tag; /** opaque argument to func */
+    int tag;                            /**< opaque argument to func */
     int (*func)(AVFilterContext *, AVBPrint *, char *, unsigned, char **, int);
 } functions[] = {
     { "expr",      1, 1, 0,   func_eval_expr },
