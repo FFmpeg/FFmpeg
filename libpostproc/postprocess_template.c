@@ -1875,40 +1875,40 @@ static inline void RENAME(deInterlaceMedian)(uint8_t src[], int stride)
 //      0       1       2       3       4       5       6       7       8       9
 //      %0      eax     eax+%1  eax+2%1 %0+4%1  edx     edx+%1  edx+2%1 %0+8%1  edx+4%1
 
-        "movq (%0), %%mm0                       \n\t" //
-        "movq (%%"REG_a", %1), %%mm2            \n\t" //
-        "movq (%%"REG_a"), %%mm1                \n\t" //
+        "movq (%0), %%mm0                       \n\t"
+        "movq (%%"REG_a", %1), %%mm2            \n\t"
+        "movq (%%"REG_a"), %%mm1                \n\t"
         "movq %%mm0, %%mm3                      \n\t"
-        "pmaxub %%mm1, %%mm0                    \n\t" //
-        "pminub %%mm3, %%mm1                    \n\t" //
-        "pmaxub %%mm2, %%mm1                    \n\t" //
+        "pmaxub %%mm1, %%mm0                    \n\t"
+        "pminub %%mm3, %%mm1                    \n\t"
+        "pmaxub %%mm2, %%mm1                    \n\t"
         "pminub %%mm1, %%mm0                    \n\t"
         "movq %%mm0, (%%"REG_a")                \n\t"
 
-        "movq (%0, %1, 4), %%mm0                \n\t" //
-        "movq (%%"REG_a", %1, 2), %%mm1         \n\t" //
+        "movq (%0, %1, 4), %%mm0                \n\t"
+        "movq (%%"REG_a", %1, 2), %%mm1         \n\t"
         "movq %%mm2, %%mm3                      \n\t"
-        "pmaxub %%mm1, %%mm2                    \n\t" //
-        "pminub %%mm3, %%mm1                    \n\t" //
-        "pmaxub %%mm0, %%mm1                    \n\t" //
+        "pmaxub %%mm1, %%mm2                    \n\t"
+        "pminub %%mm3, %%mm1                    \n\t"
+        "pmaxub %%mm0, %%mm1                    \n\t"
         "pminub %%mm1, %%mm2                    \n\t"
         "movq %%mm2, (%%"REG_a", %1, 2)         \n\t"
 
-        "movq (%%"REG_d"), %%mm2                \n\t" //
-        "movq (%%"REG_d", %1), %%mm1            \n\t" //
+        "movq (%%"REG_d"), %%mm2                \n\t"
+        "movq (%%"REG_d", %1), %%mm1            \n\t"
         "movq %%mm2, %%mm3                      \n\t"
-        "pmaxub %%mm0, %%mm2                    \n\t" //
-        "pminub %%mm3, %%mm0                    \n\t" //
-        "pmaxub %%mm1, %%mm0                    \n\t" //
+        "pmaxub %%mm0, %%mm2                    \n\t"
+        "pminub %%mm3, %%mm0                    \n\t"
+        "pmaxub %%mm1, %%mm0                    \n\t"
         "pminub %%mm0, %%mm2                    \n\t"
         "movq %%mm2, (%%"REG_d")                \n\t"
 
-        "movq (%%"REG_d", %1, 2), %%mm2         \n\t" //
-        "movq (%0, %1, 8), %%mm0                \n\t" //
+        "movq (%%"REG_d", %1, 2), %%mm2         \n\t"
+        "movq (%0, %1, 8), %%mm0                \n\t"
         "movq %%mm2, %%mm3                      \n\t"
-        "pmaxub %%mm0, %%mm2                    \n\t" //
-        "pminub %%mm3, %%mm0                    \n\t" //
-        "pmaxub %%mm1, %%mm0                    \n\t" //
+        "pmaxub %%mm0, %%mm2                    \n\t"
+        "pminub %%mm3, %%mm0                    \n\t"
+        "pmaxub %%mm1, %%mm0                    \n\t"
         "pminub %%mm0, %%mm2                    \n\t"
         "movq %%mm2, (%%"REG_d", %1, 2)         \n\t"
 
