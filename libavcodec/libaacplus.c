@@ -53,9 +53,9 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 
     s->aacplus_handle = aacplusEncOpen(avctx->sample_rate, avctx->channels,
                                        &s->samples_input, &s->max_output_bytes);
-    if(!s->aacplus_handle) {
-            av_log(avctx, AV_LOG_ERROR, "can't open encoder\n");
-            return -1;
+    if (!s->aacplus_handle) {
+        av_log(avctx, AV_LOG_ERROR, "can't open encoder\n");
+        return -1;
     }
 
     /* check aacplus version */
@@ -112,8 +112,8 @@ static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
     aacPlusAudioContext *s = avctx->priv_data;
 
     av_freep(&avctx->extradata);
-
     aacplusEncClose(s->aacplus_handle);
+
     return 0;
 }
 
