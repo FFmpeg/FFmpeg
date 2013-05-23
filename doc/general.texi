@@ -837,7 +837,6 @@ following image formats are supported:
 @item MLP (Meridian Lossless Packing)  @tab     @tab  X
     @tab Used in DVD-Audio discs.
 @item Monkey's Audio         @tab     @tab  X
-    @tab Only versions 3.97-3.99 are supported.
 @item MP1 (MPEG audio layer 1)  @tab     @tab IX
 @item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
     @tab libtwolame can be used alternatively for encoding.
