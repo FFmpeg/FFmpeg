@@ -200,6 +200,7 @@ static int decode_frame(AVCodecContext *avctx,
     f->key_frame = 1;
 
     avctx->pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
+    avctx->color_range = version & 1 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_JPEG;
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
