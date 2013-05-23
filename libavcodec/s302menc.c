@@ -46,8 +46,9 @@ static av_cold int s302m_encode_init(AVCodecContext *avctx)
         avctx->bits_per_raw_sample = 16;
         break;
     case AV_SAMPLE_FMT_S32:
-        if (avctx->bits_per_raw_sample > 24) {
-            av_log(avctx, AV_LOG_WARNING, "encoding as 24 bits-per-sample\n");
+        if (avctx->bits_per_raw_sample > 20) {
+            if (avctx->bits_per_raw_sample > 24) {
+                av_log(avctx, AV_LOG_WARNING, "encoding as 24 bits-per-sample\n");
             avctx->bits_per_raw_sample = 24;
         } else if (!avctx->bits_per_raw_sample) {
             avctx->bits_per_raw_sample = 24;
