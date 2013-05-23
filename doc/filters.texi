@@ -7421,7 +7421,7 @@ The sources accept the following options:
 @table @option
 
 @item color, c
-Specify the color of the source, only used in the @code{color}
+Specify the color of the source, only available in the @code{color}
 source. It can be the name of a color (case insensitive match) or a
 0xRRGGBB[AA] sequence, possibly followed by an alpha specifier. The
 default value is "black".
