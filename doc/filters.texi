@@ -7401,9 +7401,11 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @end example
 @end itemize
 
-@section color, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
+@section color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
 
 The @code{color} source provides an uniformly colored input.
+
+The @code{haldclutsrc} source provides an identity Hald CLUT.
 
 The @code{nullsrc} source returns unprocessed video frames. It is
 mainly useful to be employed in analysis / debugging tools, or as the
@@ -7433,10 +7435,18 @@ source. It can be the name of a color (case insensitive match) or a
 0xRRGGBB[AA] sequence, possibly followed by an alpha specifier. The
 default value is "black".
 
+@item level
+Specify the level of the Hald CLUT, only available in the @code{haldclutsrc}
+source. A level of @code{N} generates a picture of @code{N*N*N} by @code{N*N*N}
+pixels to be used as identity matrix for 3D lookup tables. Each component is
+coded on a @code{1/(N*N)} scale.
+
 @item size, s
 Specify the size of the sourced video, it may be a string of the form
 @var{width}x@var{height}, or the name of a size abbreviation. The
 default value is "320x240".
+
+This option is not available with the @code{haldclutsrc} filter.
 
 @item rate, r
 Specify the frame rate of the sourced video, as the number of frames
