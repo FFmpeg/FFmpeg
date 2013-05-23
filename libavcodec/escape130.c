@@ -191,7 +191,6 @@ static int decode_skip_count(GetBitContext* gb)
 static int escape130_decode_frame(AVCodecContext *avctx, void *data,
                                   int *got_frame, AVPacket *avpkt)
 {
-    const uint8_t *buf  = avpkt->data;
     int buf_size        = avpkt->size;
     Escape130Context *s = avctx->priv_data;
     AVFrame *pic        = data;
@@ -218,7 +217,9 @@ static int escape130_decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
-    init_get_bits(&gb, buf + 16, (buf_size - 16) * 8);
+    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
+        return ret;
+    skip_bits_long(&gb, 16 * 8);
 
     new_y  = s->new_y;
     new_cb = s->new_u;
