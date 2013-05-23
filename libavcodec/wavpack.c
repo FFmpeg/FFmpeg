@@ -1070,7 +1070,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 chmask = bytestream2_get_le24(&gb);
                 break;
             case 3:
-                chmask = bytestream2_get_le32(&gb);;
+                chmask = bytestream2_get_le32(&gb);
                 break;
             case 5:
                 bytestream2_skip(&gb, 1);
