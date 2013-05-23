@@ -47,11 +47,11 @@
  */
 
 typedef struct {
-    AVIOContext *pb_filesystem;  /** file system (AVFormatContext->pb) */
+    AVIOContext *pb_filesystem;  /**< file system (AVFormatContext->pb) */
 
-    int sector_bits;     /** sector shift bits; used to convert sector number into pb_filesystem offset */
-    uint32_t *sectors;   /** file allocation table */
-    int nb_sectors;      /** number of sectors */
+    int sector_bits;     /**< sector shift bits; used to convert sector number into pb_filesystem offset */
+    uint32_t *sectors;   /**< file allocation table */
+    int nb_sectors;      /**< number of sectors */
 
     int error;
     int64_t position;
@@ -306,10 +306,10 @@ typedef struct {
 } WtvStream;
 
 typedef struct {
-    AVIOContext *pb;       /** timeline file */
+    AVIOContext *pb;       /**< timeline file */
     int64_t epoch;
-    int64_t pts;             /** pts for next data chunk */
-    int64_t last_valid_pts;  /** latest valid pts, used for interative seeking */
+    int64_t pts;             /**< pts for next data chunk */
+    int64_t last_valid_pts;  /**< latest valid pts, used for interative seeking */
 
     /* maintain private seek index, as the AVIndexEntry->pos is relative to the
        start of the 'timeline' file, not the file system (AVFormatContext->pb) */
