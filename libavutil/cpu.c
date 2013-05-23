@@ -20,6 +20,24 @@
 #include "config.h"
 #include "opt.h"
 
+#if HAVE_SCHED_GETAFFINITY
+#define _GNU_SOURCE
+#include <sched.h>
+#endif
+#if HAVE_GETPROCESSAFFINITYMASK
+#include <windows.h>
+#endif
+#if HAVE_SYSCTL
+#if HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
+#if HAVE_SYSCONF
+#include <unistd.h>
+#endif
+
 static int cpuflags_mask = -1, checked;
 
 int av_get_cpu_flags(void)
@@ -107,6 +125,39 @@ int av_parse_cpu_flags(const char *s)
         return ret;
 
     return flags & INT_MAX;
+}
+
+int av_cpu_count(void)
+{
+    int ret, nb_cpus = 1;
+#if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
+    cpu_set_t cpuset;
+
+    CPU_ZERO(&cpuset);
+
+    ret = sched_getaffinity(0, sizeof(cpuset), &cpuset);
+    if (!ret) {
+        nb_cpus = CPU_COUNT(&cpuset);
+    }
+#elif HAVE_GETPROCESSAFFINITYMASK
+    DWORD_PTR proc_aff, sys_aff;
+    ret = GetProcessAffinityMask(GetCurrentProcess(), &proc_aff, &sys_aff);
+    if (ret)
+        nb_cpus = av_popcount64(proc_aff);
+#elif HAVE_SYSCTL && defined(HW_NCPU)
+    int mib[2] = { CTL_HW, HW_NCPU };
+    size_t len = sizeof(nb_cpus);
+
+    ret = sysctl(mib, 2, &nb_cpus, &len, NULL, 0);
+    if (ret == -1)
+        nb_cpus = 0;
+#elif HAVE_SYSCONF && defined(_SC_NPROC_ONLN)
+    nb_cpus = sysconf(_SC_NPROC_ONLN);
+#elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
+    nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+#endif
+
+    return nb_cpus;
 }
 
 #ifdef TEST
