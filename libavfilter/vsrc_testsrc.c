@@ -84,15 +84,6 @@ typedef struct {
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX, FLAGS },
 
 
-static const AVOption color_options[] = {
-    /* only used by color */
-    { "color", "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "c",     "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-
-    COMMON_OPTIONS
-    { NULL },
-};
-
 static const AVOption options[] = {
     COMMON_OPTIONS
     /* only used by testsrc */
@@ -185,6 +176,13 @@ static int request_frame(AVFilterLink *outlink)
 }
 
 #if CONFIG_COLOR_FILTER
+
+static const AVOption color_options[] = {
+    { "color", "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",     "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    COMMON_OPTIONS
+    { NULL }
+};
 
 AVFILTER_DEFINE_CLASS(color);
 
