@@ -448,6 +448,9 @@ void ff_mpeg_unref_picture(MpegEncContext *s, Picture *pic)
 
     av_buffer_unref(&pic->hwaccel_priv_buf);
 
+    if (pic->needs_realloc)
+        free_picture_tables(pic);
+
     memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
 }
 
