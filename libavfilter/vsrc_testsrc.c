@@ -55,12 +55,14 @@ typedef struct {
     int64_t pts;
     int64_t duration;           ///< duration expressed in microseconds
     AVRational sar;             ///< sample aspect ratio
-    int nb_decimals;
     int draw_once;              ///< draw only the first frame, always put out the same picture
     int draw_once_reset;        ///< draw only the first frame or in case of reset
     AVFrame *picref;            ///< cached reference containing the painted picture
 
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFrame *frame);
+
+    /* only used by testsrc */
+    int nb_decimals;
 
     /* only used by color */
     FFDrawContext draw;
@@ -86,22 +88,12 @@ typedef struct {
 
 static const AVOption options[] = {
     COMMON_OPTIONS
-    /* only used by testsrc */
-    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
-    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
-
-    { NULL },
+    { NULL }
 };
 
 static av_cold int init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
-
-    if (test->nb_decimals && strcmp(ctx->filter->name, "testsrc")) {
-        av_log(ctx, AV_LOG_WARNING,
-               "Option 'decimals' is ignored with source '%s'\n",
-               ctx->filter->name);
-    }
 
     test->time_base = av_inv_q(test->frame_rate);
     test->nb_frame = 0;
@@ -317,7 +309,13 @@ AVFilter avfilter_vsrc_nullsrc = {
 
 #if CONFIG_TESTSRC_FILTER
 
-#define testsrc_options options
+static const AVOption testsrc_options[] = {
+    COMMON_OPTIONS
+    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
+    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
+    { NULL }
+};
+
 AVFILTER_DEFINE_CLASS(testsrc);
 
 /**
