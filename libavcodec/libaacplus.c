@@ -46,6 +46,11 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if (avctx->profile != FF_PROFILE_AAC_LOW && avctx->profile != FF_PROFILE_UNKNOWN) {
+        av_log(avctx, AV_LOG_ERROR, "invalid AAC profile: %d, only LC supported\n", avctx->profile);
+        return -1;
+    }
+
     s->aacplus_handle = aacplusEncOpen(avctx->sample_rate, avctx->channels,
                                        &s->samples_input, &s->max_output_bytes);
     if(!s->aacplus_handle) {
@@ -55,13 +60,6 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
 
     /* check aacplus version */
     aacplus_cfg = aacplusEncGetCurrentConfiguration(s->aacplus_handle);
-
-    /* put the options in the configuration struct */
-    if(avctx->profile != FF_PROFILE_AAC_LOW && avctx->profile != FF_PROFILE_UNKNOWN) {
-            av_log(avctx, AV_LOG_ERROR, "invalid AAC profile: %d, only LC supported\n", avctx->profile);
-            aacplusEncClose(s->aacplus_handle);
-            return -1;
-    }
 
     aacplus_cfg->bitRate = avctx->bit_rate;
     aacplus_cfg->bandWidth = avctx->cutoff;
