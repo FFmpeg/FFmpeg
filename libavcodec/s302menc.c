@@ -83,7 +83,7 @@ static av_cold int s302m_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size             = 0;
-    avctx->coded_frame->key_frame = 1;
+//    avctx->coded_frame->key_frame = 1;
     avctx->bit_rate               = 48000 * avctx->channels *
                                     (avctx->bits_per_coded_sample + 4);
     s->framing_index              = 0;
@@ -94,29 +94,27 @@ static av_cold int s302m_encode_init(AVCodecContext *avctx)
 static int s302m_encode2_frame(AVCodecContext *avctx, AVPacket *avpkt, const AVFrame *frame,
                                 int *got_packet_ptr)
 {
-    int required_buffer_size;
-    int num_samples, c, channels, buf_size;
+    int num_samples, c, channels, buf_size, frame_size;
     uint8_t vucf;
     S302MContext *s;
     uint8_t *o;
     PutBitContext pb;
-    // compute the frame size based on the buffer size
-    // N+4 bits per sample (N bit data word + VUCF) * num_samples *
-    // buf-size should have an extra 4 bytes for the AES3_HEADER_LEN;
-    const int frame_size = buf_size - AES3_HEADER_LEN;
-    
-    s = avctx->priv_data;
-    o = avpkt->data;
 
-    buf_size = avpkt->size;
-
-    required_buffer_size = compute_buffer_size(avctx, frame->nb_samples);
-    if (ff_alloc_packet2(avctx, avpkt, required_buffer_size) < 0)
+    buf_size = compute_buffer_size(avctx, frame->nb_samples);
+    if (ff_alloc_packet2(avctx, avpkt, buf_size) < 0)
     {
         av_log(avctx, AV_LOG_ERROR, "Unable to alloc packet");
         *got_packet_ptr = 0;
         return -1;
     }
+
+    s = avctx->priv_data;
+    o = avpkt->data;
+
+    // compute the frame size based on the buffer size
+    // N+4 bits per sample (N bit data word + VUCF) * num_samples *
+    // buf-size should have an extra 4 bytes for the AES3_HEADER_LEN;
+    frame_size = buf_size - AES3_HEADER_LEN;
     
     num_samples = (frame_size * 8) /
                 (avctx->channels * (avctx->bits_per_coded_sample + 4));
