@@ -234,7 +234,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         if (!s->frame.data[0])
             return AVERROR_INVALIDDATA;
 
-        av_log(NULL, AV_LOG_DEBUG, "Skipping frame\n");
+        av_log(avctx, AV_LOG_DEBUG, "Skipping frame\n");
 
         *got_frame = 1;
         if ((ret = av_frame_ref(frame, &s->frame)) < 0)
@@ -352,7 +352,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         skip--;
     }
 
-    av_log(NULL, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_DEBUG,
            "Escape sizes: %i, %i, %i\n",
            frame_size, buf_size, get_bits_count(&gb) / 8);
 
