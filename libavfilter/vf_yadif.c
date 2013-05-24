@@ -190,9 +190,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     int refs = s->cur->linesize[td->plane];
     int df = (s->csp->comp[td->plane].depth_minus1 + 8) / 8;
     int pix_3 = 3 * df;
-    int slice_h = td->h / nb_jobs;
-    int slice_start = jobnr * slice_h;
-    int slice_end   = (jobnr == nb_jobs - 1) ? td->h : (jobnr + 1) * slice_h;
+    int slice_start = (td->h *  jobnr   ) / nb_jobs;
+    int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
     int y;
 
     /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
