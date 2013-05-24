@@ -163,9 +163,8 @@ static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
 {
     FadeContext *s = ctx->priv;
     AVFrame *frame = arg;
-    int slice_h     = frame->height / nb_jobs;
-    int slice_start = jobnr * slice_h;
-    int slice_end   = (jobnr == nb_jobs - 1) ? frame->height : (jobnr + 1) * slice_h;
+    int slice_start = (frame->height *  jobnr   ) / nb_jobs;
+    int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
     int i, j;
 
     for (i = slice_start; i < slice_end; i++) {
@@ -187,15 +186,15 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
 {
     FadeContext *s = ctx->priv;
     AVFrame *frame = arg;
-    int slice_h     = FFALIGN(frame->height / nb_jobs, 1 << s->vsub);
-    int slice_start = jobnr * slice_h;
-    int slice_end   = (jobnr == nb_jobs - 1) ? frame->height : (jobnr + 1) * slice_h;
     int i, j, plane;
     const int width = FF_CEIL_RSHIFT(frame->width, s->hsub);
+    const int height= FF_CEIL_RSHIFT(frame->height, s->vsub);
+    int slice_start = (height *  jobnr   ) / nb_jobs;
+    int slice_end   = (height * (jobnr+1)) / nb_jobs;
 
     for (plane = 1; plane < 3; plane++) {
         for (i = slice_start; i < slice_end; i++) {
-            uint8_t *p = frame->data[plane] + (i >> s->vsub) * frame->linesize[plane];
+            uint8_t *p = frame->data[plane] + i * frame->linesize[plane];
             for (j = 0; j < width; j++) {
                 /* 8421367 = ((128 << 1) + 1) << 15. It is an integer
                  * representation of 128.5. The .5 is for rounding
