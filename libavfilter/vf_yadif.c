@@ -31,6 +31,14 @@
 #undef NDEBUG
 #include <assert.h>
 
+typedef struct ThreadData {
+    AVFrame *frame;
+    int plane;
+    int w, h;
+    int parity;
+    int tff;
+} ThreadData;
+
 #define CHECK(j)\
     {   int score = FFABS(cur[mrefs - 1 + (j)] - cur[prefs - 1 - (j)])\
                   + FFABS(cur[mrefs  +(j)] - cur[prefs  -(j)])\
@@ -172,50 +180,67 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     FILTER(w - 3, w, 0)
 }
 
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    YADIFContext *s = ctx->priv;
+    ThreadData *td  = arg;
+    int refs = s->cur->linesize[td->plane];
+    int df = (s->csp->comp[td->plane].depth_minus1 + 8) / 8;
+    int pix_3 = 3 * df;
+    int slice_h = td->h / nb_jobs;
+    int slice_start = jobnr * slice_h;
+    int slice_end   = (jobnr == nb_jobs - 1) ? td->h : (jobnr + 1) * slice_h;
+    int y;
+
+    /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
+     * we need to call the c variant which avoids this for border pixels
+     */
+    for (y = slice_start; y < slice_end; y++) {
+        if ((y ^ td->parity) & 1) {
+            uint8_t *prev = &s->prev->data[td->plane][y * refs];
+            uint8_t *cur  = &s->cur ->data[td->plane][y * refs];
+            uint8_t *next = &s->next->data[td->plane][y * refs];
+            uint8_t *dst  = &td->frame->data[td->plane][y * td->frame->linesize[td->plane]];
+            int     mode  = y == 1 || y + 2 == td->h ? 2 : s->mode;
+            s->filter_line(dst + pix_3, prev + pix_3, cur + pix_3,
+                           next + pix_3, td->w - 6,
+                           y + 1 < td->h ? refs : -refs,
+                           y ? -refs : refs,
+                           td->parity ^ td->tff, mode);
+            s->filter_edges(dst, prev, cur, next, td->w,
+                            y + 1 < td->h ? refs : -refs,
+                            y ? -refs : refs,
+                            td->parity ^ td->tff, mode);
+        } else {
+            memcpy(&td->frame->data[td->plane][y * td->frame->linesize[td->plane]],
+                   &s->cur->data[td->plane][y * refs], td->w * df);
+        }
+    }
+    return 0;
+}
+
 static void filter(AVFilterContext *ctx, AVFrame *dstpic,
                    int parity, int tff)
 {
     YADIFContext *yadif = ctx->priv;
-    int y, i;
+    ThreadData td = { .frame = dstpic, .parity = parity, .tff = tff };
+    int i;
 
     for (i = 0; i < yadif->csp->nb_components; i++) {
         int w = dstpic->width;
         int h = dstpic->height;
-        int refs = yadif->cur->linesize[i];
-        int df = (yadif->csp->comp[i].depth_minus1 + 8) / 8;
-        int pix_3 = 3 * df;
 
         if (i == 1 || i == 2) {
-        /* Why is this not part of the per-plane description thing? */
             w = FF_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
             h = FF_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
-        /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
-         * we need to call the c variant which avoids this for border pixels
-         */
 
-        for (y = 0; y < h; y++) {
-            if ((y ^ parity) & 1) {
-                uint8_t *prev = &yadif->prev->data[i][y * refs];
-                uint8_t *cur  = &yadif->cur ->data[i][y * refs];
-                uint8_t *next = &yadif->next->data[i][y * refs];
-                uint8_t *dst  = &dstpic->data[i][y * dstpic->linesize[i]];
-                int     mode  = y == 1 || y + 2 == h ? 2 : yadif->mode;
-                yadif->filter_line(dst + pix_3, prev + pix_3, cur + pix_3,
-                                   next + pix_3, w - 6,
-                                   y + 1 < h ? refs : -refs,
-                                   y ? -refs : refs,
-                                   parity ^ tff, mode);
-                yadif->filter_edges(dst, prev, cur, next, w,
-                                    y + 1 < h ? refs : -refs,
-                                    y ? -refs : refs,
-                                    parity ^ tff, mode);
-            } else {
-                memcpy(&dstpic->data[i][y * dstpic->linesize[i]],
-                       &yadif->cur->data[i][y * refs], w * df);
-            }
-        }
+        td.w       = w;
+        td.h       = h;
+        td.plane   = i;
+
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ctx->graph->nb_threads));
     }
 
     emms_c();
@@ -484,5 +509,5 @@ AVFilter avfilter_vf_yadif = {
 
     .inputs    = avfilter_vf_yadif_inputs,
     .outputs   = avfilter_vf_yadif_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
