@@ -374,6 +374,7 @@ OBJS-$(CONFIG_TTA_DEMUXER)               += tta.o
 OBJS-$(CONFIG_TTY_DEMUXER)               += tty.o sauce.o
 OBJS-$(CONFIG_TXD_DEMUXER)               += txd.o
 OBJS-$(CONFIG_VC1_DEMUXER)               += rawdec.o
+OBJS-$(CONFIG_VC1_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_VC1T_DEMUXER)              += vc1test.o
 OBJS-$(CONFIG_VC1T_MUXER)                += vc1testenc.o
 OBJS-$(CONFIG_VIVO_DEMUXER)              += vivo.o
