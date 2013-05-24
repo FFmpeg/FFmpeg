@@ -804,7 +804,6 @@ SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
 SKIPHEADERS-$(HAVE_OS2THREADS)         += os2threads.h
-SKIPHEADERS-$(HAVE_W32THREADS)         += w32pthreads.h
 
 TESTPROGS = cabac                                                       \
             dct                                                         \
