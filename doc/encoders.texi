@@ -412,6 +412,35 @@ Selected by Encoder (default)
 
 @end table
 
+@section libmp3lame
+
+LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper
+
+Requires the presence of the libmp3lame headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libmp3lame}.
+
+@subsection Option Mapping
+
+The following options are supported by the libmp3lame wrapper,
+the LAME-equivalent options follow the FFmpeg ones.
+
+@multitable @columnfractions .2 .2
+@item FFmpeg            @tab LAME
+@item b                 @tab b
+FFmpeg @code{b} option is expressed in bits/s, lame @code{bitrate}
+in kilobits/s.
+@item q                 @tab V
+Quality setting for VBR.
+@item compression_level @tab q
+Algorithm quality. Valid options are integers from 0-9.
+@item reservoir         @tab N.A.
+Enable use of bit reservoir. LAME has this enabled by default.
+@item joint_stereo      @tab -m j
+Enables the the encoder to use (on a frame by frame basis) either L/R
+stereo or mid/side stereo.
+@end multitable
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
