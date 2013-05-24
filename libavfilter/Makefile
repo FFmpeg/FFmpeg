@@ -135,6 +135,7 @@ OBJS-$(CONFIG_FPS_FILTER)                    += vf_fps.o
 OBJS-$(CONFIG_FREI0R_FILTER)                 += vf_frei0r.o
 OBJS-$(CONFIG_GEQ_FILTER)                    += vf_geq.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
+OBJS-$(CONFIG_HALDCLUT_FILTER)               += vf_lut3d.o dualinput.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_HISTEQ_FILTER)                 += vf_histeq.o
 OBJS-$(CONFIG_HISTOGRAM_FILTER)              += vf_histogram.o

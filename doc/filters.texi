@@ -4177,6 +4177,79 @@ gradfun=radius=8
 
 @end itemize
 
+@anchor{haldclut}
+@section haldclut
+
+Apply a Hald CLUT to a video stream.
+
+First input is the video stream to process, and second one is the Hald CLUT.
+The Hald CLUT input can be a simple picture or a complete video stream.
+
+The filter accepts the following options:
+
+@table @option
+@item shortest
+Force termination when the shortest input terminates. Default is @code{0}.
+@item repeatlast
+Continue applying the last CLUT after the end of the stream. A value of
+@code{0} disable the filter after the last frame of the CLUT is reached.
+Default is @code{1}.
+@end table
+
+@code{haldclut} also has the same interpolation options as @ref{lut3d} (both
+filters share the same internals).
+
+More information about the Hald CLUT can be found on Eskil Steenberg's website
+(Hald CLUT author) at @url{http://www.quelsolaar.com/technology/clut.html}.
+
+@subsection Workflow examples
+
+@subsubsection Hald CLUT video stream
+
+Generate an identity Hald CLUT stream altered with various effects:
+@example
+ffmpeg -f lavfi -i @ref{haldclutsrc}=8 -vf "hue=H=2*PI*t:s=sin(2*PI*t)+1, curves=cross_process" -t 10 -c:v ffv1 clut.nut
+@end example
+
+Note: make sure you use a lossless codec.
+
+Then use it with @code{haldclut} to apply it on some random stream:
+@example
+ffmpeg -f lavfi -i mandelbrot -i clut.nut -filter_complex '[0][1] haldclut' -t 20 mandelclut.mkv
+@end example
+
+The Hald CLUT will be applied to the 10 first seconds (duration of
+@file{clut.nut}), then the latest picture of that CLUT stream will be applied
+to the remaining frames of the @code{mandelbrot} stream.
+
+@subsubsection Hald CLUT with preview
+
+A Hald CLUT is supposed to be a squared image of @code{Level*Level*Level} by
+@code{Level*Level*Level} pixels. For a given Hald CLUT, FFmpeg will select the
+biggest possible square starting at the top left of the picture. The remaining
+padding pixels (bottom or right) will be ignored. This area can be used to add
+a preview of the Hald CLUT.
+
+Typically, the following generated Hald CLUT will be supported by the
+@code{haldclut} filter:
+
+@example
+ffmpeg -f lavfi -i @ref{haldclutsrc}=8 -vf "
+   pad=iw+320 [padded_clut];
+   smptebars=s=320x256, split [a][b];
+   [padded_clut][a] overlay=W-320:h, curves=color_negative [main];
+   [main][b] overlay=W-320" -frames:v 1 clut.png
+@end example
+
+It contains the original and a preview of the effect of the CLUT: SMPTE color
+bars are displayed on the right-top, and below the same color bars processed by
+the color changes.
+
+Then, the effect of this Hald CLUT can be visualized with:
+@example
+ffplay input.mkv -vf "movie=clut.png, [in] haldclut"
+@end example
+
 @section hflip
 
 Flip the input video horizontally.
@@ -4603,6 +4676,7 @@ kerndeint=map=1
 @end example
 @end itemize
 
+@anchor{lut3d}
 @section lut3d
 
 Apply a 3D LUT to an input video.
@@ -7401,11 +7475,19 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 @end example
 @end itemize
 
+@anchor{color}
+@anchor{haldclutsrc}
+@anchor{nullsrc}
+@anchor{rgbtestsrc}
+@anchor{smptebars}
+@anchor{smptehdbars}
+@anchor{testsrc}
 @section color, haldclutsrc, nullsrc, rgbtestsrc, smptebars, smptehdbars, testsrc
 
 The @code{color} source provides an uniformly colored input.
 
-The @code{haldclutsrc} source provides an identity Hald CLUT.
+The @code{haldclutsrc} source provides an identity Hald CLUT. See also
+@ref{haldclut} filter.
 
 The @code{nullsrc} source returns unprocessed video frames. It is
 mainly useful to be employed in analysis / debugging tools, or as the
