@@ -208,6 +208,31 @@ static int filter_slice_chroma(AVFilterContext *ctx, void *arg, int jobnr,
     return 0;
 }
 
+static int filter_slice_alpha(AVFilterContext *ctx, void *arg, int jobnr,
+                              int nb_jobs)
+{
+    FadeContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    int plane = s->is_packed_rgb ? 0 : A;
+    int slice_start = (frame->height *  jobnr   ) / nb_jobs;
+    int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
+    int i, j;
+
+    for (i = slice_start; i < slice_end; i++) {
+        uint8_t *p = frame->data[plane] + i * frame->linesize[plane] + s->is_packed_rgb*s->rgba_map[A];
+        int step = s->is_packed_rgb ? 4 : 1;
+        for (j = 0; j < frame->width; j++) {
+            /* s->factor is using 16 lower-order bits for decimal
+             * places. 32768 = 1 << 15, it is an integer representation
+             * of 0.5 and is for rounding. */
+            *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
+            p += step;
+        }
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -264,14 +289,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     if (s->factor < UINT16_MAX) {
         if (s->alpha) {
-            // alpha only
-            int plane = s->is_packed_rgb ? 0 : A; // alpha is on plane 0 for packed formats
-                                                 // or plane 3 for planar formats
-            fade_plane(0, frame->height, inlink->w,
-                       s->factor, s->black_level, s->black_level_scaled,
-                       s->is_packed_rgb ? s->rgba_map[A] : 0, // alpha offset for packed formats
-                       s->is_packed_rgb ? 4 : 1,                 // pixstep for 8 bit packed formats
-                       1, frame->data[plane], frame->linesize[plane]);
+            ctx->internal->execute(ctx, filter_slice_alpha, frame, NULL,
+                                FFMIN(frame->height, ctx->graph->nb_threads));
         } else {
             /* luma or rgb plane */
             ctx->internal->execute(ctx, filter_slice_luma, frame, NULL,
