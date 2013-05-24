@@ -141,7 +141,7 @@ static int framemd5_write_trailer(struct AVFormatContext *s)
 }
 
 static const AVClass framemd5_class = {
-    .class_name = "hash encoder class",
+    .class_name = "frame hash encoder class",
     .item_name  = av_default_item_name,
     .option     = hash_options,
     .version    = LIBAVUTIL_VERSION_INT,
