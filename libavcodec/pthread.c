@@ -31,32 +31,12 @@
 
 #include "config.h"
 
-#if HAVE_SCHED_GETAFFINITY
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE
-#endif
-#include <sched.h>
-#endif
-#if HAVE_GETPROCESSAFFINITYMASK
-#include <windows.h>
-#endif
-#if HAVE_SYSCTL
-#if HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#endif
-#if HAVE_SYSCONF
-#include <unistd.h>
-#endif
-
 #include "avcodec.h"
 #include "internal.h"
 #include "thread.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/cpu.h"
 
 #if HAVE_PTHREADS
 #include <pthread.h>
@@ -168,41 +148,12 @@ typedef struct FrameThreadContext {
 
 int ff_get_logical_cpus(AVCodecContext *avctx)
 {
-    int ret, nb_cpus = 1;
-#if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
-    cpu_set_t cpuset;
-
-    CPU_ZERO(&cpuset);
-
-    ret = sched_getaffinity(0, sizeof(cpuset), &cpuset);
-    if (!ret) {
-        nb_cpus = CPU_COUNT(&cpuset);
-    }
-#elif HAVE_GETPROCESSAFFINITYMASK
-    DWORD_PTR proc_aff, sys_aff;
-    ret = GetProcessAffinityMask(GetCurrentProcess(), &proc_aff, &sys_aff);
-    if (ret)
-        nb_cpus = av_popcount64(proc_aff);
-#elif HAVE_SYSCTL && defined(HW_NCPU)
-    int mib[2] = { CTL_HW, HW_NCPU };
-    size_t len = sizeof(nb_cpus);
-
-    ret = sysctl(mib, 2, &nb_cpus, &len, NULL, 0);
-    if (ret == -1)
-        nb_cpus = 0;
-#elif HAVE_SYSCONF && defined(_SC_NPROC_ONLN)
-    nb_cpus = sysconf(_SC_NPROC_ONLN);
-#elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
-    nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-#endif
-    av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
-
+    int nb_cpus = av_cpu_count();
     if  (avctx->height)
         nb_cpus = FFMIN(nb_cpus, (avctx->height+15)/16);
 
     return nb_cpus;
 }
-
 
 static void* attribute_align_arg worker(void *v)
 {
@@ -843,9 +794,10 @@ static int frame_thread_init(AVCodecContext *avctx)
     int i, err = 0;
 
     if (!thread_count) {
-        int nb_cpus = ff_get_logical_cpus(avctx);
+        int nb_cpus = av_cpu_count();
         if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || avctx->debug_mv)
             nb_cpus = 1;
+        av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
         // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
             thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
