@@ -31,8 +31,8 @@
 #include <pthread.h>
 static pthread_mutex_t atomic_opencl_lock = PTHREAD_MUTEX_INITIALIZER;
 
-#define LOCK_OPENCL pthread_mutex_lock(&atomic_opencl_lock);
-#define UNLOCK_OPENCL pthread_mutex_unlock(&atomic_opencl_lock);
+#define LOCK_OPENCL pthread_mutex_lock(&atomic_opencl_lock)
+#define UNLOCK_OPENCL pthread_mutex_unlock(&atomic_opencl_lock)
 
 #elif !HAVE_THREADS
 #define LOCK_OPENCL
@@ -321,31 +321,31 @@ void av_opencl_free_device_list(AVOpenCLDeviceList **device_list)
 int av_opencl_set_option(const char *key, const char *val)
 {
     int ret = 0;
-    LOCK_OPENCL
+    LOCK_OPENCL;
     if (!opencl_ctx.opt_init_flag) {
         av_opt_set_defaults(&opencl_ctx);
         opencl_ctx.opt_init_flag = 1;
     }
     ret = av_opt_set(&opencl_ctx, key, val, 0);
-    UNLOCK_OPENCL
+    UNLOCK_OPENCL;
     return ret;
 }
 
 int av_opencl_get_option(const char *key, uint8_t **out_val)
 {
     int ret = 0;
-    LOCK_OPENCL
+    LOCK_OPENCL;
     ret = av_opt_get(&opencl_ctx, key, 0, out_val);
-    UNLOCK_OPENCL
+    UNLOCK_OPENCL;
     return ret;
 }
 
 void av_opencl_free_option(void)
 {
     /*FIXME: free openclutils context*/
-    LOCK_OPENCL
+    LOCK_OPENCL;
     av_opt_free(&opencl_ctx);
-    UNLOCK_OPENCL
+    UNLOCK_OPENCL;
 }
 
 AVOpenCLExternalEnv *av_opencl_alloc_external_env(void)
@@ -433,7 +433,7 @@ end:
 void av_opencl_release_kernel(AVOpenCLKernelEnv *env)
 {
     cl_int status;
-    LOCK_OPENCL
+    LOCK_OPENCL;
     if (!env->kernel)
         goto end;
     status = clReleaseKernel(env->kernel);
@@ -446,7 +446,7 @@ void av_opencl_release_kernel(AVOpenCLKernelEnv *env)
     env->kernel_name[0] = 0;
     opencl_ctx.kernel_count--;
 end:
-    UNLOCK_OPENCL
+    UNLOCK_OPENCL;
 }
 
 static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_opencl_env)
@@ -588,7 +588,7 @@ static int compile_kernel_file(OpenclContext *opencl_ctx)
 int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env)
 {
     int ret = 0;
-    LOCK_OPENCL
+    LOCK_OPENCL;
     if (!opencl_ctx.init_count) {
         if (!opencl_ctx.opt_init_flag) {
             av_opt_set_defaults(&opencl_ctx);
@@ -610,7 +610,7 @@ int av_opencl_init(AVOpenCLExternalEnv *ext_opencl_env)
     opencl_ctx.init_count++;
 
 end:
-    UNLOCK_OPENCL
+    UNLOCK_OPENCL;
     return ret;
 }
 
@@ -618,7 +618,7 @@ void av_opencl_uninit(void)
 {
     cl_int status;
     int i;
-    LOCK_OPENCL
+    LOCK_OPENCL;
     opencl_ctx.init_count--;
     if (opencl_ctx.is_user_created)
         goto end;
@@ -654,7 +654,7 @@ void av_opencl_uninit(void)
 end:
     if ((opencl_ctx.init_count <= 0) && (opencl_ctx.kernel_count <= 0))
         av_opt_free(&opencl_ctx); //FIXME: free openclutils context
-    UNLOCK_OPENCL
+    UNLOCK_OPENCL;
 }
 
 int av_opencl_buffer_create(cl_mem *cl_buf, size_t cl_buf_size, int flags, void *host_ptr)
