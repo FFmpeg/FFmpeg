@@ -19,6 +19,7 @@
 #include "cpu.h"
 #include "config.h"
 #include "opt.h"
+#include "common.h"
 
 #if HAVE_SCHED_GETAFFINITY
 #ifndef _GNU_SOURCE
