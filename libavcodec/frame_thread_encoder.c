@@ -126,7 +126,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
         return 0;
 
     if(!avctx->thread_count) {
-        avctx->thread_count = ff_get_logical_cpus(avctx);
+        avctx->thread_count = av_cpu_count();
         avctx->thread_count = FFMIN(avctx->thread_count, MAX_THREADS);
     }
 

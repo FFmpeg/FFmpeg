@@ -146,15 +146,6 @@ typedef struct FrameThreadContext {
  * limit the number of threads to 16 for automatic detection */
 #define MAX_AUTO_THREADS 16
 
-int ff_get_logical_cpus(AVCodecContext *avctx)
-{
-    int nb_cpus = av_cpu_count();
-    if  (avctx->height)
-        nb_cpus = FFMIN(nb_cpus, (avctx->height+15)/16);
-
-    return nb_cpus;
-}
-
 static void* attribute_align_arg worker(void *v)
 {
     AVCodecContext *avctx = v;
@@ -265,7 +256,9 @@ static int thread_init(AVCodecContext *avctx)
     int thread_count = avctx->thread_count;
 
     if (!thread_count) {
-        int nb_cpus = ff_get_logical_cpus(avctx);
+        int nb_cpus = av_cpu_count();
+        if  (avctx->height)
+            nb_cpus = FFMIN(nb_cpus, (avctx->height+15)/16);
         // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
             thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);
