@@ -287,6 +287,9 @@ fate-yop: CMD = framecrc -i $(TARGET_SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 FATE_VIDEO-$(call DEMDEC, AVI, XAN_WC4) += fate-xxan-wc4
 fate-xxan-wc4: CMD = framecrc -i $(TARGET_SAMPLES)/wc4-xan/wc4trailer-partial.avi -an
 
+FATE_VIDEO-$(call DEMDEC, WAV, SMVJPEG) += fate-smvjpeg
+fate-smvjpeg: CMD = framecrc -i $(TARGET_SAMPLES)/smv/clock.smv -an
+
 FATE_VIDEO += $(FATE_VIDEO-yes)
 
 FATE_SAMPLES_FFMPEG += $(FATE_VIDEO)
