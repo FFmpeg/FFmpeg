@@ -2694,11 +2694,10 @@ static void flush_dpb(AVCodecContext *avctx)
     h->parse_context.last_index        = 0;
 }
 
-static int init_poc(H264Context *h)
+int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
 {
     const int max_frame_num = 1 << h->sps.log2_max_frame_num;
     int field_poc[2];
-    Picture *cur = h->cur_pic_ptr;
 
     h->frame_num_offset = h->prev_frame_num_offset;
     if (h->frame_num < h->prev_frame_num)
@@ -2763,10 +2762,11 @@ static int init_poc(H264Context *h)
     }
 
     if (h->picture_structure != PICT_BOTTOM_FIELD)
-        h->cur_pic_ptr->field_poc[0] = field_poc[0];
+        pic_field_poc[0] = field_poc[0];
     if (h->picture_structure != PICT_TOP_FIELD)
-        h->cur_pic_ptr->field_poc[1] = field_poc[1];
-    cur->poc = FFMIN(cur->field_poc[0], cur->field_poc[1]);
+        pic_field_poc[1] = field_poc[1];
+    if (pic_poc)
+        *pic_poc = FFMIN(pic_field_poc[0], pic_field_poc[1]);
 
     return 0;
 }
@@ -3650,7 +3650,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             h->delta_poc[1] = get_se_golomb(&h->gb);
     }
 
-    init_poc(h);
+    ff_init_poc(h, h->cur_pic_ptr->field_poc, &h->cur_pic_ptr->poc);
 
     if (h->pps.redundant_pic_cnt_present)
         h->redundant_pic_count = get_ue_golomb(&h->gb);

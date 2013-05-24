@@ -150,10 +150,12 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     int state = -1;
     const uint8_t *ptr;
     int q264 = buf_size >=4 && !memcmp("Q264", buf, 4);
+    int field_poc[2];
 
     /* set some sane default values */
     s->pict_type = AV_PICTURE_TYPE_I;
     s->key_frame = 0;
+    s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
     h->avctx= avctx;
     h->sei_recovery_frame_cnt = -1;
@@ -209,6 +211,11 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             break;
         case NAL_IDR_SLICE:
             s->key_frame = 1;
+
+            h->prev_frame_num        = 0;
+            h->prev_frame_num_offset = 0;
+            h->prev_poc_msb          =
+            h->prev_poc_lsb          = 0;
             /* fall through */
         case NAL_SLICE:
             get_ue_golomb_long(&h->gb);  // skip first_mb_in_slice
@@ -248,6 +255,24 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 }
             }
 
+            if (h->nal_unit_type == NAL_IDR_SLICE)
+                get_ue_golomb(&h->gb); /* idr_pic_id */
+            if (h->sps.poc_type == 0) {
+                h->poc_lsb = get_bits(&h->gb, h->sps.log2_max_poc_lsb);
+
+                if (h->pps.pic_order_present == 1 && h->picture_structure == PICT_FRAME)
+                    h->delta_poc_bottom = get_se_golomb(&h->gb);
+            }
+
+            if (h->sps.poc_type == 1 && !h->sps.delta_pic_order_always_zero_flag) {
+                h->delta_poc[0] = get_se_golomb(&h->gb);
+
+                if (h->pps.pic_order_present == 1 && h->picture_structure == PICT_FRAME)
+                    h->delta_poc[1] = get_se_golomb(&h->gb);
+            }
+
+            ff_init_poc(h, field_poc, NULL);
+
             if(h->sps.pic_struct_present_flag) {
                 switch (h->sei_pic_struct) {
                     case SEI_PIC_STRUCT_TOP_FIELD:
@@ -275,6 +300,38 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 }
             } else {
                 s->repeat_pict = h->picture_structure == PICT_FRAME ? 1 : 0;
+            }
+
+            if (h->picture_structure == PICT_FRAME) {
+                s->picture_structure = AV_PICTURE_STRUCTURE_FRAME;
+                if (h->sps.pic_struct_present_flag) {
+                    switch (h->sei_pic_struct) {
+                        case SEI_PIC_STRUCT_TOP_BOTTOM:
+                        case SEI_PIC_STRUCT_TOP_BOTTOM_TOP:
+                            s->field_order = AV_FIELD_TT;
+                            break;
+                        case SEI_PIC_STRUCT_BOTTOM_TOP:
+                        case SEI_PIC_STRUCT_BOTTOM_TOP_BOTTOM:
+                            s->field_order = AV_FIELD_BB;
+                            break;
+                        default:
+                            s->field_order = AV_FIELD_PROGRESSIVE;
+                            break;
+                    }
+                } else {
+                    if (field_poc[0] < field_poc[1])
+                        s->field_order = AV_FIELD_TT;
+                    else if (field_poc[0] > field_poc[1])
+                        s->field_order = AV_FIELD_BB;
+                    else
+                        s->field_order = AV_FIELD_PROGRESSIVE;
+                }
+            } else {
+                if (h->picture_structure == PICT_TOP_FIELD)
+                    s->picture_structure = AV_PICTURE_STRUCTURE_TOP_FIELD;
+                else
+                    s->picture_structure = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
+                s->field_order = AV_FIELD_UNKNOWN;
             }
 
             return 0; /* no need to evaluate the rest */
