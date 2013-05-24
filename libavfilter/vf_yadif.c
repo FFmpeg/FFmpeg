@@ -111,6 +111,7 @@ static void filter_line_c(void *dst1,
     FILTER(0, w, 1)
 }
 
+#define MAX_ALIGN 8
 static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
                          int w, int prefs, int mrefs, int parity, int mode)
 {
@@ -126,13 +127,14 @@ static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
      * for is_not_edge should let the compiler ignore the whole branch. */
     FILTER(0, 3, 0)
 
-    dst  = (uint8_t*)dst1  + w - 3;
-    prev = (uint8_t*)prev1 + w - 3;
-    cur  = (uint8_t*)cur1  + w - 3;
-    next = (uint8_t*)next1 + w - 3;
+    dst  = (uint8_t*)dst1  + w - (MAX_ALIGN-1);
+    prev = (uint8_t*)prev1 + w - (MAX_ALIGN-1);
+    cur  = (uint8_t*)cur1  + w - (MAX_ALIGN-1);
+    next = (uint8_t*)next1 + w - (MAX_ALIGN-1);
     prev2 = (uint8_t*)(parity ? prev : cur);
     next2 = (uint8_t*)(parity ? cur  : next);
 
+    FILTER(w - (MAX_ALIGN-1), w - 3, 1)
     FILTER(w - 3, w, 0)
 }
 
@@ -170,13 +172,14 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
 
     FILTER(0, 3, 0)
 
-    dst   = (uint16_t*)dst1  + w - 3;
-    prev  = (uint16_t*)prev1 + w - 3;
-    cur   = (uint16_t*)cur1  + w - 3;
-    next  = (uint16_t*)next1 + w - 3;
+    dst   = (uint16_t*)dst1  + w - (MAX_ALIGN/2-1);
+    prev  = (uint16_t*)prev1 + w - (MAX_ALIGN/2-1);
+    cur   = (uint16_t*)cur1  + w - (MAX_ALIGN/2-1);
+    next  = (uint16_t*)next1 + w - (MAX_ALIGN/2-1);
     prev2 = (uint16_t*)(parity ? prev : cur);
     next2 = (uint16_t*)(parity ? cur  : next);
 
+    FILTER(w - (MAX_ALIGN/2-1), w - 3, 1)
     FILTER(w - 3, w, 0)
 }
 
@@ -203,7 +206,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             uint8_t *dst  = &td->frame->data[td->plane][y * td->frame->linesize[td->plane]];
             int     mode  = y == 1 || y + 2 == td->h ? 2 : s->mode;
             s->filter_line(dst + pix_3, prev + pix_3, cur + pix_3,
-                           next + pix_3, td->w - 6,
+                           next + pix_3, td->w - (3 + MAX_ALIGN/df-1),
                            y + 1 < td->h ? refs : -refs,
                            y ? -refs : refs,
                            td->parity ^ td->tff, mode);
