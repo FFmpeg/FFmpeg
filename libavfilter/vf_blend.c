@@ -383,8 +383,8 @@ static void blend_frame(AVFilterContext *ctx,
         param->values[VAR_T]  = dst_buf->pts == AV_NOPTS_VALUE ? NAN : dst_buf->pts * av_q2d(inlink->time_base);
         param->values[VAR_W]  = outw;
         param->values[VAR_H]  = outh;
-        param->values[VAR_SW] = outw / dst_buf->width;
-        param->values[VAR_SH] = outh / dst_buf->height;
+        param->values[VAR_SW] = outw / (double)dst_buf->width;
+        param->values[VAR_SH] = outh / (double)dst_buf->height;
         param->blend(top, top_buf->linesize[plane],
                      bottom, bottom_buf->linesize[plane],
                      dst, dst_buf->linesize[plane], outw, outh, param);
