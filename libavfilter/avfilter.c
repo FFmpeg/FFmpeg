@@ -717,8 +717,6 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
     const char *key;
     int offset= -1;
 
-    av_opt_set_defaults(ctx);
-
     if (!args)
         return 0;
 
