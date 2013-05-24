@@ -100,11 +100,9 @@ static int config_input(AVFilterLink *inlink)
 {
     IlContext *il = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int i, ret;
+    int ret;
 
-    for (i = 0; i < desc->nb_components; i++)
-        il->nb_planes = FFMAX(il->nb_planes, desc->comp[i].plane);
-    il->nb_planes++;
+    il->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     il->has_alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     if ((ret = av_image_fill_linesizes(il->linesize, inlink->format, inlink->w)) < 0)

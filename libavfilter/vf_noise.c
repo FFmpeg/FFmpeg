@@ -184,11 +184,9 @@ static int config_input(AVFilterLink *inlink)
 {
     NoiseContext *n = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int i, ret;
+    int ret;
 
-    for (i = 0; i < desc->nb_components; i++)
-        n->nb_planes = FFMAX(n->nb_planes, desc->comp[i].plane);
-    n->nb_planes++;
+    n->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if ((ret = av_image_fill_linesizes(n->linesize, inlink->format, inlink->w)) < 0)
         return ret;
