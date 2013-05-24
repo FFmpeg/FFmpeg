@@ -53,6 +53,7 @@ version <next>:
 - FTP protocol support
 - V4L2 output device
 - 3D LUT filter (lut3d)
+- SMPTE 302M audio encoder
 
 
 version 1.2:
