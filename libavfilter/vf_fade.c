@@ -139,25 +139,6 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static void fade_plane(int y, int h, int w,
-                       int fade_factor, int black_level, int black_level_scaled,
-                       uint8_t offset, uint8_t step, int bytes_per_plane,
-                       uint8_t *data, int line_size)
-{
-    uint8_t *p;
-    int i, j;
-
-    /* luma, alpha or rgb plane */
-    for (i = 0; i < h; i++) {
-        p = data + offset + (y+i) * line_size;
-        for (j = 0; j < w * bytes_per_plane; j++) {
-            /* s->factor is using 16 lower-order bits for decimal places. */
-            *p = ((*p - black_level) * fade_factor + black_level_scaled) >> 16;
-            p+=step;
-        }
-    }
-}
-
 static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
                              int nb_jobs)
 {
