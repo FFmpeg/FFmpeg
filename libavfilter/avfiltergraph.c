@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <string.h>
 
 #include "libavutil/avassert.h"
@@ -29,33 +31,63 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt_of_2()
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "thread.h"
 
-#define OFFSET(x) offsetof(AVFilterGraph,x)
-
-static const AVOption options[]={
-{"scale_sws_opts"       , "default scale filter options"        , OFFSET(scale_sws_opts)        ,  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, 0 },
-{"aresample_swr_opts"   , "default aresample filter options"    , OFFSET(aresample_swr_opts)    ,  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, 0 },
-{0}
+#define OFFSET(x) offsetof(AVFilterGraph, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption filtergraph_options[] = {
+    { "thread_type", "Allowed thread types", OFFSET(thread_type), AV_OPT_TYPE_FLAGS,
+        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, FLAGS, "thread_type" },
+        { "slice", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AVFILTER_THREAD_SLICE }, .flags = FLAGS, .unit = "thread_type" },
+    { "threads",     "Maximum number of threads", OFFSET(nb_threads),
+        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    {"scale_sws_opts"       , "default scale filter options"        , OFFSET(scale_sws_opts)        ,
+        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    {"aresample_swr_opts"   , "default aresample filter options"    , OFFSET(aresample_swr_opts)    ,
+        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { NULL },
 };
-
 
 static const AVClass filtergraph_class = {
     .class_name = "AVFilterGraph",
     .item_name  = av_default_item_name,
-    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .option     = filtergraph_options,
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
+
+#if !HAVE_THREADS
+void ff_graph_thread_free(AVFilterGraph *graph)
+{
+}
+
+int ff_graph_thread_init(AVFilterGraph *graph)
+{
+    graph->thread_type = 0;
+    graph->nb_threads  = 1;
+    return 0;
+}
+#endif
 
 AVFilterGraph *avfilter_graph_alloc(void)
 {
     AVFilterGraph *ret = av_mallocz(sizeof(*ret));
     if (!ret)
         return NULL;
+
+    ret->internal = av_mallocz(sizeof(*ret->internal));
+    if (!ret->internal) {
+        av_freep(&ret);
+        return NULL;
+    }
+
     ret->av_class = &filtergraph_class;
+    av_opt_set_defaults(ret);
+
     return ret;
 }
 
@@ -80,11 +112,15 @@ void avfilter_graph_free(AVFilterGraph **graph)
     while ((*graph)->nb_filters)
         avfilter_free((*graph)->filters[0]);
 
+    ff_graph_thread_free(*graph);
+
     av_freep(&(*graph)->sink_links);
+
     av_freep(&(*graph)->scale_sws_opts);
     av_freep(&(*graph)->aresample_swr_opts);
     av_freep(&(*graph)->resample_lavr_opts);
     av_freep(&(*graph)->filters);
+    av_freep(&(*graph)->internal);
     av_freep(graph);
 }
 
@@ -142,6 +178,14 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
                                              const char *name)
 {
     AVFilterContext **filters, *s;
+
+    if (graph->thread_type && !graph->internal->thread) {
+        int ret = ff_graph_thread_init(graph);
+        if (ret < 0) {
+            av_log(graph, AV_LOG_ERROR, "Error initializing threading.\n");
+            return NULL;
+        }
+    }
 
     s = ff_filter_alloc(filter, name);
     if (!s)
