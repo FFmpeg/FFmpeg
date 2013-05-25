@@ -2227,6 +2227,13 @@ case "$toolchain" in
         ar_default="lib"
         target_os_default="win32"
     ;;
+    icl)
+        cc_default="c99wrap -noconv icl"
+        ld_default="c99wrap xilink"
+        nm_default="dumpbin -symbols"
+        ar_default="xilib"
+        target_os_default="win32"
+    ;;
     gcov)
         add_cflags  -fprofile-arcs -ftest-coverage
         add_ldflags -fprofile-arcs -ftest-coverage
@@ -2551,6 +2558,31 @@ probe_cc(){
         _ld_path='-libpath:'
         _flags='-nologo'
         _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
+        if [ $pfx = hostcc ]; then
+            append _cflags -Dsnprintf=_snprintf
+        fi
+    elif $_cc 2>&1 | grep -q Intel; then
+        _type=icl
+        _ident=$($cc 2>&1 | head -n1)
+        _depflags='-QMMD -QMF$(@:.o=.d) -QMT$@'
+        # Not only is O3 broken on 13.x+ but it's slower on all previous versions (tested) as well
+        _cflags_speed="-O2"
+        _cflags_size="-O1 -Oi" # -O1 without -Oi miscompiles stuff
+        # Nonstandard output options, to avoid msys path conversion issues, relies on wrapper to remap it
+        if $_cc 2>&1 | grep -q Linker; then
+            _ld_o='-out $@'
+        else
+            _ld_o='-Fe$@'
+        fi
+        _cc_o='-Fo $@'
+        _cc_e='-P'
+        _flags_filter=msvc_flags
+        _ld_lib='lib%.a'
+        _ld_path='-libpath:'
+        # -Qdiag-error to make icl error when presented with certain unknown arguments
+        _flags='-nologo -Qdiag-error:10157 -Qdiag-error:4044'
+        # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency with msvc which enables it by default
+        _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64 -Qstd=c99 -Qms0 -Qvec- -Qsimd- -GS'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
@@ -3868,6 +3900,13 @@ elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
 elif enabled msvc; then
     enabled x86_32 && disable aligned_stack
+elif enabled icl; then
+    enabled x86_32 && disable aligned_stack
+    check_cflags -W1 # Just warnings, no remark spam
+    # basically -fstrict-aliasing for icl that doesn't work (correctly) on 13.x+
+    check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
+    # icl will pass the inline asm tests but inline asm is currently not supported (build will fail)
+    disable inline_asm
 fi
 
 case $target_os in
