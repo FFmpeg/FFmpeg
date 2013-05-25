@@ -115,6 +115,8 @@ AVRational av_d2q(double d, int max)
     exponent = FFMAX( (int)(log(fabs(d) + 1e-20)/LOG2), 0);
     den = 1LL << (61 - exponent);
     av_reduce(&a.num, &a.den, rint(d * den), den, max);
+    if ((!a.num || !a.den) && d && max>0 && max<INT_MAX)
+        av_reduce(&a.num, &a.den, llrint(d * den), den, INT_MAX);
 
     return a;
 }
