@@ -25,8 +25,6 @@
  * overlay one video on top of another
  */
 
-/* #define DEBUG */
-
 #include "avfilter.h"
 #include "formats.h"
 #include "libavutil/common.h"
@@ -37,9 +35,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
-#include "libavutil/timestamp.h"
 #include "internal.h"
-#include "bufferqueue.h"
+#include "dualinput.h"
 #include "drawutils.h"
 #include "video.h"
 
@@ -90,8 +87,6 @@ typedef struct {
     int x, y;                   ///< position of overlayed picture
 
     int allow_packed_rgb;
-    uint8_t frame_requested;
-    uint8_t overlay_eof;
     uint8_t main_is_packed_rgb;
     uint8_t main_rgba_map[4];
     uint8_t main_has_alpha;
@@ -101,20 +96,19 @@ typedef struct {
     enum OverlayFormat { OVERLAY_FORMAT_YUV420, OVERLAY_FORMAT_YUV444, OVERLAY_FORMAT_RGB, OVERLAY_FORMAT_NB} format;
     enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
 
-    AVFrame *overpicref;
-    struct FFBufQueue queue_main;
-    struct FFBufQueue queue_over;
+    FFDualInputContext dinput;
 
     int main_pix_step[4];       ///< steps per pixel for each plane of the main output
     int overlay_pix_step[4];    ///< steps per pixel for each plane of the overlay
     int hsub, vsub;             ///< chroma subsampling values
-    int shortest;               ///< terminate stream when the shortest input terminates
-    int repeatlast;             ///< repeat last overlay frame
 
     double var_values[VAR_VARS_NB];
     char *x_expr, *y_expr;
     AVExpr *x_pexpr, *y_pexpr;
 } OverlayContext;
+
+// TODO: remove forward declaration
+static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic, const AVFrame *second);
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -125,6 +119,7 @@ static av_cold int init(AVFilterContext *ctx)
                "The rgb option is deprecated and is overriding the format option, use format instead\n");
         s->format = OVERLAY_FORMAT_RGB;
     }
+    s->dinput.process = do_blend;
     return 0;
 }
 
@@ -132,9 +127,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
 
-    av_frame_free(&s->overpicref);
-    ff_bufqueue_discard_all(&s->queue_main);
-    ff_bufqueue_discard_all(&s->queue_over);
+    ff_dualinput_uninit(&s->dinput);
     av_expr_free(s->x_pexpr); s->x_pexpr = NULL;
     av_expr_free(s->y_pexpr); s->y_pexpr = NULL;
 }
@@ -355,7 +348,7 @@ static int config_output(AVFilterLink *outlink)
  * Blend image in src to destination buffer dst at position (x, y).
  */
 static void blend_image(AVFilterContext *ctx,
-                        AVFrame *dst, AVFrame *src,
+                        AVFrame *dst, const AVFrame *src,
                         int x, int y)
 {
     OverlayContext *s = ctx->priv;
@@ -542,46 +535,13 @@ static void blend_image(AVFilterContext *ctx,
     }
 }
 
-static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
+static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic,
+                         const AVFrame *second)
 {
     OverlayContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    AVFrame *next_overpic;
-    int ret;
 
-    /* Discard obsolete overlay frames: if there is a next overlay frame with pts
-     * before the main frame, we can drop the current overlay. */
-    while (1) {
-        next_overpic = ff_bufqueue_peek(&s->queue_over, 0);
-        if (!next_overpic && s->overlay_eof && !s->repeatlast) {
-            av_frame_free(&s->overpicref);
-            break;
-        }
-        if (!next_overpic || av_compare_ts(next_overpic->pts, ctx->inputs[OVERLAY]->time_base,
-                                           mainpic->pts     , ctx->inputs[MAIN]->time_base) > 0)
-            break;
-        ff_bufqueue_get(&s->queue_over);
-        av_frame_free(&s->overpicref);
-        s->overpicref = next_overpic;
-    }
-
-    /* If there is no next frame and no EOF and the overlay frame is before
-     * the main frame, we can not know yet if it will be superseded. */
-    if (!s->queue_over.available && !s->overlay_eof &&
-        (!s->overpicref || av_compare_ts(s->overpicref->pts, ctx->inputs[OVERLAY]->time_base,
-                                            mainpic->pts         , ctx->inputs[MAIN]->time_base) < 0))
-        return AVERROR(EAGAIN);
-
-    /* At this point, we know that the current overlay frame extends to the
-     * time of the main frame. */
-    av_dlog(ctx, "main_pts:%s main_pts_time:%s",
-            av_ts2str(mainpic->pts), av_ts2timestr(mainpic->pts, &ctx->inputs[MAIN]->time_base));
-    if (s->overpicref)
-        av_dlog(ctx, " over_pts:%s over_pts_time:%s",
-                av_ts2str(s->overpicref->pts), av_ts2timestr(s->overpicref->pts, &ctx->inputs[OVERLAY]->time_base));
-    av_dlog(ctx, "\n");
-
-    if (s->overpicref) {
+        /* TODO: reindent */
         if (s->eval_mode == EVAL_MODE_FRAME) {
             int64_t pos = av_frame_get_pkt_pos(mainpic);
 
@@ -596,100 +556,27 @@ static int try_filter_frame(AVFilterContext *ctx, AVFrame *mainpic)
                    s->var_values[VAR_X], s->x,
                    s->var_values[VAR_Y], s->y);
         }
-        if (!ctx->is_disabled)
-            blend_image(ctx, mainpic, s->overpicref, s->x, s->y);
 
-    }
-    ret = ff_filter_frame(ctx->outputs[0], mainpic);
-    av_assert1(ret != AVERROR(EAGAIN));
-    s->frame_requested = 0;
-    return ret;
-}
-
-static int try_filter_next_frame(AVFilterContext *ctx)
-{
-    OverlayContext *s = ctx->priv;
-    AVFrame *next_mainpic = ff_bufqueue_peek(&s->queue_main, 0);
-    int ret;
-
-    if (!next_mainpic)
-        return AVERROR(EAGAIN);
-    if ((ret = try_filter_frame(ctx, next_mainpic)) == AVERROR(EAGAIN))
-        return ret;
-    ff_bufqueue_get(&s->queue_main);
-    return ret;
-}
-
-static int flush_frames(AVFilterContext *ctx)
-{
-    int ret;
-
-    while (!(ret = try_filter_next_frame(ctx)));
-    return ret == AVERROR(EAGAIN) ? 0 : ret;
+    blend_image(ctx, mainpic, second, s->x, s->y);
+    return mainpic;
 }
 
 static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
 {
-    AVFilterContext *ctx = inlink->dst;
-    OverlayContext *s = ctx->priv;
-    int ret;
-
-    if ((ret = flush_frames(ctx)) < 0)
-        return ret;
-    if ((ret = try_filter_frame(ctx, inpicref)) < 0) {
-        if (ret != AVERROR(EAGAIN))
-            return ret;
-        ff_bufqueue_add(ctx, &s->queue_main, inpicref);
-    }
-
-    if (!s->overpicref)
-        return 0;
-    flush_frames(ctx);
-
-    return 0;
+    OverlayContext *s = inlink->dst->priv;
+    return ff_dualinput_filter_frame_main(&s->dinput, inlink, inpicref);
 }
 
 static int filter_frame_over(AVFilterLink *inlink, AVFrame *inpicref)
 {
-    AVFilterContext *ctx = inlink->dst;
-    OverlayContext *s = ctx->priv;
-    int ret;
-
-    if ((ret = flush_frames(ctx)) < 0)
-        return ret;
-    ff_bufqueue_add(ctx, &s->queue_over, inpicref);
-    ret = try_filter_next_frame(ctx);
-    return ret == AVERROR(EAGAIN) ? 0 : ret;
+    OverlayContext *s = inlink->dst->priv;
+    return ff_dualinput_filter_frame_second(&s->dinput, inlink, inpicref);
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
-    AVFilterContext *ctx = outlink->src;
-    OverlayContext *s = ctx->priv;
-    int input, ret;
-
-    if (!try_filter_next_frame(ctx))
-        return 0;
-    s->frame_requested = 1;
-    while (s->frame_requested) {
-        /* TODO if we had a frame duration, we could guess more accurately */
-        input = !s->overlay_eof && (s->queue_main.available ||
-                                       s->queue_over.available < 2) ?
-                OVERLAY : MAIN;
-        ret = ff_request_frame(ctx->inputs[input]);
-        /* EOF on main is reported immediately */
-        if (ret == AVERROR_EOF && input == OVERLAY) {
-            s->overlay_eof = 1;
-            if (s->shortest)
-                return ret;
-            if ((ret = try_filter_next_frame(ctx)) != AVERROR(EAGAIN))
-                return ret;
-            ret = 0; /* continue requesting frames on main */
-        }
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
+    OverlayContext *s = outlink->src->priv;
+    return ff_dualinput_request_frame(&s->dinput, outlink);
 }
 
 #define OFFSET(x) offsetof(OverlayContext, x)
@@ -702,12 +589,12 @@ static const AVOption overlay_options[] = {
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { "rgb", "force packed RGB in input and output (deprecated)", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
-    { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
+    { "shortest", "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
     { "format", "set output format", OFFSET(format), AV_OPT_TYPE_INT, {.i64=OVERLAY_FORMAT_YUV420}, 0, OVERLAY_FORMAT_NB-1, FLAGS, "format" },
         { "yuv420", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV420}, .flags = FLAGS, .unit = "format" },
         { "yuv444", "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_YUV444}, .flags = FLAGS, .unit = "format" },
         { "rgb",    "", 0, AV_OPT_TYPE_CONST, {.i64=OVERLAY_FORMAT_RGB},    .flags = FLAGS, .unit = "format" },
-    { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
+    { "repeatlast", "repeat overlay of the last overlay frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
