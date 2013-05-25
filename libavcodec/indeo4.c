@@ -362,9 +362,12 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
         }
 
         /* decode block huffman codebook */
-        if (ff_ivi_dec_huff_desc(&ctx->gb, get_bits1(&ctx->gb), IVI_BLK_HUFF,
-                                 &band->blk_vlc, avctx))
-            return AVERROR_INVALIDDATA;
+        if (!get_bits1(&ctx->gb))
+            band->blk_vlc.tab = ctx->blk_vlc.tab;
+        else
+            if (ff_ivi_dec_huff_desc(&ctx->gb, 1, IVI_BLK_HUFF,
+                                     &band->blk_vlc, avctx))
+                return AVERROR_INVALIDDATA;
 
         /* select appropriate rvmap table for this band */
         band->rvmap_sel = get_bits1(&ctx->gb) ? get_bits(&ctx->gb, 3) : 8;
