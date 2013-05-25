@@ -200,6 +200,7 @@ External library support:
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
   --enable-libvorbis       enable Vorbis encoding via libvorbis [no]
   --enable-libvpx          enable VP8 and VP9 de/encoding via libvpx [no]
+  --enable-libwavpack      enable wavpack encoding via libwavpack [no]
   --enable-libx264         enable H.264 encoding via x264 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
@@ -1060,6 +1061,7 @@ EXTERNAL_LIBRARY_LIST="
     libvo_amrwbenc
     libvorbis
     libvpx
+    libwavpack
     libx264
     libxavs
     libxvid
@@ -1790,6 +1792,7 @@ libvpx_vp8_decoder_deps="libvpx"
 libvpx_vp8_encoder_deps="libvpx"
 libvpx_vp9_decoder_deps="libvpx"
 libvpx_vp9_encoder_deps="libvpx"
+libwavpack_encoder_deps="libwavpack"
 libx264_encoder_deps="libx264"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
@@ -3735,6 +3738,7 @@ enabled libvpx     && {
                                 die "ERROR: libvpx encoder version must be >=0.9.6"; }
     enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder;  }
     enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx" -lvpx || disable libvpx_vp9_encoder; } }
+enabled libwavpack && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
 enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
                       { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                         die "ERROR: libx264 version must be >= 0.118."; }

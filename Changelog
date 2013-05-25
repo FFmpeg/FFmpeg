@@ -24,6 +24,7 @@ version 10:
 - VC-1 interlaced B-frame support
 - support for WavPack muxing (raw and in Matroska)
 - Go2Webinar decoder
+- WavPack encoding through libwavpack
 
 
 version 9:
