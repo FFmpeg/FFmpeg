@@ -1014,10 +1014,10 @@ check_exec_crash(){
 static void sighandler(int sig){
     raise(SIGTERM);
 }
-int func(void){
+int foo(void){
     $code
 }
-int (*func_ptr)(void) = func;
+int (*func_ptr)(void) = foo;
 int main(void){
     signal(SIGILL, sighandler);
     signal(SIGFPE, sighandler);
