@@ -393,6 +393,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (stat(filename, &img_stat))
             return AVERROR(EIO);
         pkt->pts = (int64_t)img_stat.st_mtime;
+        av_add_index_entry(s1->streams[0], s->img_number, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
     } else if (!s->is_pipe) {
         pkt->pts      = s->pts;
     }
@@ -433,8 +434,15 @@ static int img_read_close(struct AVFormatContext* s1)
 static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     VideoDemuxData *s1 = s->priv_data;
-    if (s1->ts_from_file)  /* Seeking is not supported in this case */
-        return AVERROR(ESPIPE);
+    AVStream *st = s->streams[0];
+
+    if (s1->ts_from_file) {
+        int index = av_index_search_timestamp(st, timestamp, flags);
+        if(index < 0)
+            return -1;
+        s1->img_number = st->index_entries[index].pos;
+        return 0;
+    }
 
     if (timestamp < 0 || !s1->loop && timestamp > s1->img_last - s1->img_first)
         return -1;
