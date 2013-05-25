@@ -226,9 +226,9 @@ static int img_read_header(AVFormatContext *s1)
     }
 
     if (s->ts_from_file)
-        avpriv_set_pts_info(st, 60, 1, 1);
+        avpriv_set_pts_info(st, 64, 1, 1);
     else
-        avpriv_set_pts_info(st, 60, s->framerate.den, s->framerate.num);
+        avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
     if (s->width && s->height) {
         st->codec->width  = s->width;
