@@ -1722,12 +1722,11 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
 
         if (framedrop>0 || (framedrop && get_master_sync_type(is) != AV_SYNC_VIDEO_MASTER)) {
             SDL_LockMutex(is->pictq_mutex);
-            if (is->frame_last_pts != AV_NOPTS_VALUE && frame->pts != AV_NOPTS_VALUE) {
-                double clockdiff = get_clock(&is->vidclk) - get_master_clock(is);
-                double ptsdiff = dpts - is->frame_last_pts;
-                if (!isnan(clockdiff) && fabs(clockdiff) < AV_NOSYNC_THRESHOLD &&
-                    !isnan(ptsdiff) && ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
-                    clockdiff + ptsdiff - is->frame_last_filter_delay < 0 &&
+            if (frame->pts != AV_NOPTS_VALUE) {
+                double diff = dpts - get_master_clock(is);
+                if (!isnan(diff) && fabs(diff) < AV_NOSYNC_THRESHOLD &&
+                    diff - is->frame_last_filter_delay < 0 &&
+                    *serial == is->vidclk.serial &&
                     is->videoq.nb_packets) {
                     is->frame_last_dropped_pos = av_frame_get_pkt_pos(frame);
                     is->frame_last_dropped_pts = dpts;
