@@ -1632,6 +1632,13 @@ vbv_retry:
     } else {
         s->frame_bits = 0;
     }
+
+    /* release non-reference frames */
+    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+        if (!s->picture[i].reference)
+            ff_mpeg_unref_picture(s, &s->picture[i]);
+    }
+
     assert((s->frame_bits & 7) == 0);
 
     pkt->size = s->frame_bits / 8;
