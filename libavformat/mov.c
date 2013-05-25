@@ -1988,10 +1988,22 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         st->index_entries_allocated_size = (st->nb_index_entries + sc->sample_count) * sizeof(*st->index_entries);
 
         for (i = 0; i < sc->chunk_count; i++) {
+            int64_t next_offset = i+1 < sc->chunk_count ? sc->chunk_offsets[i+1] : INT64_MAX;
             current_offset = sc->chunk_offsets[i];
             while (stsc_index + 1 < sc->stsc_count &&
                 i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
+
+            if (next_offset > current_offset && sc->sample_size>0 && sc->sample_size < sc->stsz_sample_size &&
+                sc->stsc_data[stsc_index].count * (int64_t)sc->stsz_sample_size > next_offset - current_offset) {
+                av_log(mov->fc, AV_LOG_WARNING, "STSZ sample size %d invalid (too large), ignoring\n", sc->stsz_sample_size);
+                sc->stsz_sample_size = sc->sample_size;
+            }
+            if (sc->stsz_sample_size>0 && sc->stsz_sample_size < sc->sample_size) {
+                av_log(mov->fc, AV_LOG_WARNING, "STSZ sample size %d invalid (too small), ignoring\n", sc->stsz_sample_size);
+                sc->stsz_sample_size = sc->sample_size;
+            }
+
             for (j = 0; j < sc->stsc_data[stsc_index].count; j++) {
                 int keyframe = 0;
                 if (current_sample >= sc->sample_count) {
