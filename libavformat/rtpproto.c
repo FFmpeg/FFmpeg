@@ -43,6 +43,7 @@
 typedef struct RTPContext {
     URLContext *rtp_hd, *rtcp_hd;
     int rtp_fd, rtcp_fd;
+    int rtp_port, rtcp_port;
 } RTPContext;
 
 /**
@@ -67,10 +68,10 @@ int ff_rtp_set_remote_url(URLContext *h, const char *uri)
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port,
                  path, sizeof(path), uri);
 
-    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port, "%s", path);
+    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, s->rtp_port, "%s", path);
     ff_udp_set_remote_url(s->rtp_hd, buf);
 
-    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, port + 1, "%s", path);
+    ff_url_join(buf, sizeof(buf), "udp", NULL, hostname, s->rtcp_port, "%s", path);
     ff_udp_set_remote_url(s->rtcp_hd, buf);
     return 0;
 }
@@ -189,6 +190,9 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
                   connect);
     if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
         goto fail;
+
+    s->rtp_port = rtp_port;
+    s->rtcp_port = rtcp_port;
 
     /* just to ease handle access. XXX: need to suppress direct handle
        access */
