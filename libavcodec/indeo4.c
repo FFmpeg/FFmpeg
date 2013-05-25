@@ -56,8 +56,8 @@ static const struct {
     int             is_2d_trans;
 } transforms[18] = {
     { ff_ivi_inverse_haar_8x8,  ff_ivi_dc_haar_2d,       1 },
-    { NULL, NULL, 0 }, /* inverse Haar 8x1 */
-    { NULL, NULL, 0 }, /* inverse Haar 1x8 */
+    { ff_ivi_row_haar8,         ff_ivi_dc_haar_2d,       0 },
+    { ff_ivi_col_haar8,         ff_ivi_dc_haar_2d,       0 },
     { ff_ivi_put_pixels_8x8,    ff_ivi_put_dc_pixel_8x8, 1 },
     { ff_ivi_inverse_slant_8x8, ff_ivi_dc_slant_2d,      1 },
     { ff_ivi_row_slant8,        ff_ivi_dc_row_slant,     1 },
@@ -65,13 +65,13 @@ static const struct {
     { NULL, NULL, 0 }, /* inverse DCT 8x8 */
     { NULL, NULL, 0 }, /* inverse DCT 8x1 */
     { NULL, NULL, 0 }, /* inverse DCT 1x8 */
-    { NULL, NULL, 0 }, /* inverse Haar 4x4 */
+    { ff_ivi_inverse_haar_4x4,  ff_ivi_dc_haar_2d,       1 },
     { ff_ivi_inverse_slant_4x4, ff_ivi_dc_slant_2d,      1 },
     { NULL, NULL, 0 }, /* no transform 4x4 */
-    { NULL, NULL, 0 }, /* inverse Haar 1x4 */
-    { NULL, NULL, 0 }, /* inverse Haar 4x1 */
-    { NULL, NULL, 0 }, /* inverse slant 1x4 */
-    { NULL, NULL, 0 }, /* inverse slant 4x1 */
+    { ff_ivi_row_haar4,         ff_ivi_dc_haar_2d,       0 },
+    { ff_ivi_col_haar4,         ff_ivi_dc_haar_2d,       0 },
+    { ff_ivi_row_slant4,        ff_ivi_dc_row_slant,     0 },
+    { ff_ivi_col_slant4,        ff_ivi_dc_col_slant,     0 },
     { NULL, NULL, 0 }, /* inverse DCT 4x4 */
 };
 
