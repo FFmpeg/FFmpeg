@@ -110,7 +110,7 @@ AVRational av_d2q(double d, int max)
     int64_t den;
     if (isnan(d))
         return (AVRational) { 0,0 };
-    if (isinf(d))
+    if (fabs(d) > INT_MAX + 3LL)
         return (AVRational) { d < 0 ? -1 : 1, 0 };
     exponent = FFMAX( (int)(log(fabs(d) + 1e-20)/LOG2), 0);
     den = 1LL << (61 - exponent);
