@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define _BSD_SOURCE
 #include <sys/stat.h>
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
@@ -200,7 +201,13 @@ int ff_img_read_header(AVFormatContext *s1)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    if (s->ts_from_file)
+    if (s->ts_from_file == 2) {
+#if !HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+        av_log(s1, AV_LOG_ERROR, "POSIX.1-2008 not supported, nanosecond file timestamps unavailable\n");
+        return AVERROR(ENOSYS);
+#endif
+        avpriv_set_pts_info(st, 64, 1, 1000000000);
+    } else if (s->ts_from_file)
         avpriv_set_pts_info(st, 64, 1, 1);
     else
         avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
@@ -394,6 +401,10 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (stat(filename, &img_stat))
             return AVERROR(EIO);
         pkt->pts = (int64_t)img_stat.st_mtime;
+#if HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+        if (s->ts_from_file == 2)
+            pkt->pts = 1000000000*pkt->pts + img_stat.st_mtim.tv_nsec;
+#endif
         av_add_index_entry(s1->streams[0], s->img_number, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
     } else if (!s->is_pipe) {
         pkt->pts      = s->pts;
@@ -468,7 +479,10 @@ static const AVOption options[] = {
     { "start_number_range", "set range for looking at the first sequence number", OFFSET(start_number_range), AV_OPT_TYPE_INT, {.i64 = 5}, 1, INT_MAX, DEC },
     { "video_size",   "set video size",                      OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0,   DEC },
     { "frame_size",   "force frame size in bytes",           OFFSET(frame_size),   AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, INT_MAX, DEC },
-    { "ts_from_file", "set frame timestamp from file's one", OFFSET(ts_from_file), AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 1,       DEC },
+    { "ts_from_file", "set frame timestamp from file's one", OFFSET(ts_from_file), AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 2,       DEC, "ts_type" },
+    { "none", "none",                   0, AV_OPT_TYPE_CONST,    {.i64 = 0   }, 0, 2,       DEC, "ts_type" },
+    { "sec",  "second precission",      0, AV_OPT_TYPE_CONST,    {.i64 = 1   }, 0, 2,       DEC, "ts_type" },
+    { "ns",   "nano second precission", 0, AV_OPT_TYPE_CONST,    {.i64 = 2   }, 0, 2,       DEC, "ts_type" },
     { NULL },
 };
 
