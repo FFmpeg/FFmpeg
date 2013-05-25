@@ -1441,8 +1441,9 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             }
             if (ttl > 0)
                 snprintf(optbuf, sizeof(optbuf), "?ttl=%d", ttl);
-            getnameinfo((struct sockaddr*) &addr, sizeof(addr),
-                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            if (!getnameinfo((struct sockaddr*) &addr, sizeof(addr),
+                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST))
+                namebuf[0] = '\0';
             ff_url_join(url, sizeof(url), "rtp", NULL, namebuf,
                         port, "%s", optbuf);
             if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
@@ -1632,8 +1633,9 @@ redirect:
 
     tcp_fd = ffurl_get_file_handle(rt->rtsp_hd);
     if (!getpeername(tcp_fd, (struct sockaddr*) &peer, &peer_len)) {
-        getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
-                    NULL, 0, NI_NUMERICHOST);
+        if (!getnameinfo((struct sockaddr*) &peer, peer_len, host, sizeof(host),
+                    NULL, 0, NI_NUMERICHOST)) 
+            host[0] = '\0';
     }
 
     /* request options supported by the server; this also detects server
@@ -2077,8 +2079,9 @@ static int sdp_read_header(AVFormatContext *s)
         rtsp_st = rt->rtsp_streams[i];
 
         if (!(rt->rtsp_flags & RTSP_FLAG_CUSTOM_IO)) {
-            getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip, sizeof(rtsp_st->sdp_ip),
-                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+            if (!getnameinfo((struct sockaddr*) &rtsp_st->sdp_ip, sizeof(rtsp_st->sdp_ip),
+                        namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST))
+                namebuf[0] = '\0';
             ff_url_join(url, sizeof(url), "rtp", NULL,
                         namebuf, rtsp_st->sdp_port,
                         "?localport=%d&ttl=%d&connect=%d", rtsp_st->sdp_port,
