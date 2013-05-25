@@ -301,8 +301,10 @@ static int img_read_header(AVFormatContext *s1)
         s->img_last   = last_index;
         s->img_number = first_index;
         /* compute duration */
-        st->start_time = 0;
-        st->duration   = last_index - first_index + 1;
+        if (!s->ts_from_file) {
+            st->start_time = 0;
+            st->duration   = last_index - first_index + 1;
+        }
     }
 
     if (s1->video_codec_id) {
