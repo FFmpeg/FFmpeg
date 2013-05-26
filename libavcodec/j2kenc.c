@@ -480,7 +480,7 @@ static void encode_sigpass(Jpeg2000T1Context *t1, int width, int height, int ban
         for (x = 0; x < width; x++)
             for (y = y0; y < height && y < y0+4; y++){
                 if (!(t1->flags[y+1][x+1] & JPEG2000_T1_SIG) && (t1->flags[y+1][x+1] & JPEG2000_T1_SIG_NB)){
-                    int ctxno = ff_j2k_getnbctxno(t1->flags[y+1][x+1], bandno),
+                    int ctxno = ff_j2k_getsigctxno(t1->flags[y+1][x+1], bandno),
                         bit = t1->data[y][x] & mask ? 1 : 0;
                     ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, bit);
                     if (bit){
@@ -532,7 +532,7 @@ static void encode_clnpass(Jpeg2000T1Context *t1, int width, int height, int ban
                 ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + MQC_CX_UNI, rlen & 1);
                 for (y = y0 + rlen; y < y0 + 4; y++){
                     if (!(t1->flags[y+1][x+1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS))){
-                        int ctxno = ff_j2k_getnbctxno(t1->flags[y+1][x+1], bandno);
+                        int ctxno = ff_j2k_getsigctxno(t1->flags[y+1][x+1], bandno);
                         if (y > y0 + rlen)
                             ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, t1->data[y][x] & mask ? 1:0);
                         if (t1->data[y][x] & mask){ // newly significant
@@ -548,7 +548,7 @@ static void encode_clnpass(Jpeg2000T1Context *t1, int width, int height, int ban
             } else{
                 for (y = y0; y < y0 + 4 && y < height; y++){
                     if (!(t1->flags[y+1][x+1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS))){
-                        int ctxno = ff_j2k_getnbctxno(t1->flags[y+1][x+1], bandno);
+                        int ctxno = ff_j2k_getsigctxno(t1->flags[y+1][x+1], bandno);
                         ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, t1->data[y][x] & mask ? 1:0);
                         if (t1->data[y][x] & mask){ // newly significant
                             int xorbit;
