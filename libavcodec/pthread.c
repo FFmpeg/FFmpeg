@@ -790,7 +790,6 @@ static int frame_thread_init(AVCodecContext *avctx)
         int nb_cpus = av_cpu_count();
         if ((avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || avctx->debug_mv)
             nb_cpus = 1;
-        av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
         // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
             thread_count = avctx->thread_count = FFMIN(nb_cpus + 1, MAX_AUTO_THREADS);

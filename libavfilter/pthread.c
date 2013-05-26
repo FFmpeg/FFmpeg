@@ -150,7 +150,6 @@ static int thread_init(ThreadContext *c, int nb_threads)
 
     if (!nb_threads) {
         int nb_cpus = av_cpu_count();
-        av_log(c->graph, AV_LOG_DEBUG, "Detected %d logical cores.\n", nb_cpus);
         // use number of cores + 1 as thread count if there is more than one
         if (nb_cpus > 1)
             nb_threads = nb_cpus + 1;

@@ -198,6 +198,8 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
 
 int av_cpu_count(void)
 {
+    static volatile int printed;
+
     int ret, nb_cpus = 1;
 #if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
     cpu_set_t cpuset;
@@ -225,6 +227,11 @@ int av_cpu_count(void)
 #elif HAVE_SYSCONF && defined(_SC_NPROCESSORS_ONLN)
     nb_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
+
+    if (!printed) {
+        av_log(NULL, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
+        printed = 1;
+    }
 
     return nb_cpus;
 }
