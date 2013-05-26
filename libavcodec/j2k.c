@@ -26,6 +26,7 @@
  * @author Kamil Nowosad
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
@@ -242,10 +243,12 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
 
         for (bandno = 0; bandno < reslevel->nbands; bandno++, gbandno++) {
             Jpeg2000Band *band = reslevel->band + bandno;
-            int cblkno, precx, precy, precno;
+            int precx, precy;
             int x0, y0, x1, y1;
             int xi0, yi0, xi1, yi1;
             int cblkperprecw, cblkperprech;
+            int cblkno, precno;
+            int nb_precincts;
 
             if (qntsty->quantsty != JPEG2000_QSTY_NONE) {
                 static const uint8_t lut_gain[2][4] = {{0, 0, 0, 0}, {0, 1, 1, 2}};
@@ -315,14 +318,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             if (!band->prec)
                 return AVERROR(ENOMEM);
 
-            for (cblkno = 0; cblkno < band->cblknx * band->cblkny; cblkno++) {
-                Jpeg2000Cblk *cblk = band->cblk + cblkno;
-                cblk->zero = 0;
-                cblk->lblock = 3;
-                cblk->length = 0;
-                cblk->lengthinc = 0;
-                cblk->npasses = 0;
-            }
+            nb_precincts = reslevel->num_precincts_x * reslevel->num_precincts_y;
 
             y0 = band->coord[1][0];
             y1 = ((band->coord[1][0] + (1<<reslevel->log2_prec_height)) & ~((1<<reslevel->log2_prec_height)-1)) - y0;
@@ -351,17 +347,94 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                     Jpeg2000Prec *prec = band->prec + precno;
                     prec->xi0 = xi0;
                     prec->xi1 = xi1;
-                    prec->cblkincl = ff_j2k_tag_tree_init(prec->xi1 - prec->xi0,
-                                                          prec->yi1 - prec->yi0);
-                    prec->zerobits = ff_j2k_tag_tree_init(prec->xi1 - prec->xi0,
-                                                          prec->yi1 - prec->yi0);
-                    if (!prec->cblkincl || !prec->zerobits)
-                        return AVERROR(ENOMEM);
-
                 }
                 xi1 += cblkperprecw;
                 xi0 = xi1 - cblkperprecw;
                 xi1 = FFMIN(xi1, band->cblknx);
+            }
+            for (precno = 0; precno < nb_precincts; precno++) {
+                Jpeg2000Prec *prec = band->prec + precno;
+
+                /* TODO: Explain formula for JPEG200 DCINEMA. */
+                /* TODO: Verify with previous count of codeblocks per band */
+
+                /* Compute P_x0 */
+                prec->coord[0][0] = (precno % reslevel->num_precincts_x) *
+                                    (1 << log2_band_prec_width);
+                prec->coord[0][0] = FFMAX(prec->coord[0][0], band->coord[0][0]);
+
+                /* Compute P_y0 */
+                prec->coord[1][0] = (precno / reslevel->num_precincts_x) *
+                                    (1 << log2_band_prec_height);
+                prec->coord[1][0] = FFMAX(prec->coord[1][0], band->coord[1][0]);
+
+                /* Compute P_x1 */
+                prec->coord[0][1] = prec->coord[0][0] +
+                                    (1 << log2_band_prec_width);
+                prec->coord[0][1] = FFMIN(prec->coord[0][1], band->coord[0][1]);
+
+                /* Compute P_y1 */
+                prec->coord[1][1] = prec->coord[1][0] +
+                                    (1 << log2_band_prec_height);
+                prec->coord[1][1] = FFMIN(prec->coord[1][1], band->coord[1][1]);
+
+                prec->nb_codeblocks_width =
+                    ff_jpeg2000_ceildivpow2(prec->coord[0][1] -
+                                            prec->coord[0][0],
+                                            band->log2_cblk_width);
+                prec->nb_codeblocks_height =
+                    ff_jpeg2000_ceildivpow2(prec->coord[1][1] -
+                                            prec->coord[1][0],
+                                            band->log2_cblk_height);
+
+                /* Tag trees initialization */
+                prec->cblkincl =
+                    ff_j2k_tag_tree_init(prec->nb_codeblocks_width,
+                                              prec->nb_codeblocks_height);
+                if (!prec->cblkincl)
+                    return AVERROR(ENOMEM);
+
+                prec->zerobits =
+                    ff_j2k_tag_tree_init(prec->nb_codeblocks_width,
+                                              prec->nb_codeblocks_height);
+                if (!prec->zerobits)
+                    return AVERROR(ENOMEM);
+
+//                 prec->cblk = av_malloc_array(prec->nb_codeblocks_width *
+//                                              prec->nb_codeblocks_height,
+//                                              sizeof(*prec->cblk));
+                prec->cblk = band->cblk;
+                av_assert0(nb_precincts == 1);
+                if (!prec->cblk)
+                    return AVERROR(ENOMEM);
+                for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
+                    Jpeg2000Cblk *cblk = prec->cblk + cblkno;
+                    uint16_t Cx0, Cy0;
+
+                    /* Compute coordinates of codeblocks */
+                    /* Compute Cx0*/
+                    Cx0 = (prec->coord[0][0] >> band->log2_cblk_width) << band->log2_cblk_width;
+                    Cx0 = Cx0 + ((cblkno % prec->nb_codeblocks_width)  << band->log2_cblk_width);
+                    cblk->coord[0][0] = FFMAX(Cx0, prec->coord[0][0]);
+
+                    /* Compute Cy0*/
+                    Cy0 = (prec->coord[1][0] >> band->log2_cblk_height) << band->log2_cblk_height;
+                    Cy0 = Cy0 + ((cblkno / prec->nb_codeblocks_width)   << band->log2_cblk_height);
+                    cblk->coord[1][0] = FFMAX(Cy0, prec->coord[1][0]);
+
+                    /* Compute Cx1 */
+                    cblk->coord[0][1] = FFMIN(Cx0 + (1 << band->log2_cblk_width),
+                                              prec->coord[0][1]);
+
+                    /* Compute Cy1 */
+                    cblk->coord[1][1] = FFMIN(Cy0 + (1 << band->log2_cblk_height),
+                                              prec->coord[1][1]);
+                    cblk->zero      = 0;
+                    cblk->lblock    = 3;
+                    cblk->length    = 0;
+                    cblk->lengthinc = 0;
+                    cblk->npasses   = 0;
+                }
             }
         }
     }

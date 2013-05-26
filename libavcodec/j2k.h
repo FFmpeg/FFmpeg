@@ -163,6 +163,7 @@ typedef struct Jpeg2000Cblk {
     uint8_t zero;
     uint8_t data[8192];
     Jpeg2000Pass passes[100];
+    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Cblk; // code block
 
 typedef struct Jpeg2000Prec {
@@ -172,6 +173,7 @@ typedef struct Jpeg2000Prec {
     Jpeg2000TgtNode *zerobits;
     Jpeg2000TgtNode *cblkincl;
     Jpeg2000Cblk *cblk;
+    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Prec; // precinct
 
 typedef struct Jpeg2000Band {
