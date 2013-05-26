@@ -114,6 +114,7 @@ static int config_out_props(AVFilterLink *outlink)
     TInterlaceContext *tinterlace = ctx->priv;
 
     tinterlace->vsub = desc->log2_chroma_h;
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     outlink->w = inlink->w;
     outlink->h = tinterlace->mode == MODE_MERGE || tinterlace->mode == MODE_PAD ?
         inlink->h*2 : inlink->h;
@@ -351,21 +352,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     return ret;
 }
 
-static int request_frame(AVFilterLink *outlink)
-{
-    TInterlaceContext *tinterlace = outlink->src->priv;
-    AVFilterLink *inlink = outlink->src->inputs[0];
-
-    do {
-        int ret;
-
-        if ((ret = ff_request_frame(inlink)) < 0)
-            return ret;
-    } while (!tinterlace->cur);
-
-    return 0;
-}
-
 static const AVFilterPad tinterlace_inputs[] = {
     {
         .name         = "default",
@@ -380,7 +366,6 @@ static const AVFilterPad tinterlace_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_out_props,
-        .request_frame = request_frame,
     },
     { NULL }
 };
