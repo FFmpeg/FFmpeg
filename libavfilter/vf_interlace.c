@@ -51,7 +51,6 @@ typedef struct {
     enum ScanMode scan;    // top or bottom field first scanning
     int lowpass;           // enable or disable low pass filterning
     AVFrame *cur, *next;   // the two frames from which the new one is obtained
-    int got_output;        // signal an output frame is reday to request_frame()
 } InterlaceContext;
 
 #define OFFSET(x) offsetof(InterlaceContext, x)
@@ -115,6 +114,7 @@ static int config_out_props(AVFilterLink *outlink)
     // half framerate
     outlink->time_base.num *= 2;
     outlink->frame_rate.den *= 2;
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     av_log(ctx, AV_LOG_VERBOSE, "%s interlacing %s lowpass filter\n",
            s->scan == MODE_TFF ? "tff" : "bff", (s->lowpass) ? "with" : "without");
@@ -205,20 +205,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     av_frame_free(&s->next);
 
     ret = ff_filter_frame(outlink, out);
-    s->got_output = 1;
-
-    return ret;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    InterlaceContext *s  = ctx->priv;
-    int ret = 0;
-
-    s->got_output = 0;
-    while (ret >= 0 && !s->got_output)
-        ret = ff_request_frame(ctx->inputs[0]);
 
     return ret;
 }
@@ -237,7 +223,6 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_out_props,
-        .request_frame = request_frame,
     },
     { NULL }
 };
