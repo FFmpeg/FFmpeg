@@ -1083,13 +1083,9 @@ err_out:
     return ret;
 }
 
-static av_cold int j2kdec_init(AVCodecContext *avctx)
+static void jpeg2000_init_static_data(AVCodec *codec)
 {
-    Jpeg2000DecoderContext *s = avctx->priv_data;
-
     ff_jpeg2000_init_tier1_luts();
-
-    return 0;
 }
 
 AVCodec ff_j2k_decoder = {
@@ -1097,7 +1093,7 @@ AVCodec ff_j2k_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(Jpeg2000DecoderContext),
-    .init           = j2kdec_init,
+    .init_static_data = jpeg2000_init_static_data,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_EXPERIMENTAL | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("JPEG 2000"),
