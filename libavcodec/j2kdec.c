@@ -330,9 +330,10 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c, uint8_t *p
 
     tmp.csty = bytestream2_get_byteu(&s->g);
 
-    if (bytestream2_get_byteu(&s->g)){ // progression level
+    // get progression order
+    tmp.prog_order = bytestream_get_byte(&s->g);
+    if (tmp.prog_order){
         av_log(s->avctx, AV_LOG_ERROR, "only LRCP progression supported\n");
-        return -1;
     }
 
     tmp.nlayers = bytestream2_get_be16u(&s->g);
