@@ -752,8 +752,7 @@ static av_cold int wavpack_decode_end(AVCodecContext *avctx)
 }
 
 static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
-                                uint8_t **data, int *got_frame_ptr,
-                                const uint8_t *buf, int buf_size)
+                                uint8_t **data, const uint8_t *buf, int buf_size)
 {
     WavpackContext *wc = avctx->priv_data;
     WavpackFrameContext *s;
@@ -1128,8 +1127,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             memcpy(samples_r, samples_l, bpp * s->samples);
     }
 
-    *got_frame_ptr = 1;
-
     return 0;
 }
 
@@ -1215,7 +1212,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
         if ((ret = wavpack_decode_block(avctx, s->block,
-                                        frame->extended_data, got_frame_ptr,
+                                        frame->extended_data,
                                         buf, frame_size)) < 0) {
             wavpack_decode_flush(avctx);
             return ret;
@@ -1224,6 +1221,8 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         buf      += frame_size;
         buf_size -= frame_size;
     }
+
+    *got_frame_ptr = 1;
 
     return avpkt->size;
 }
