@@ -60,7 +60,7 @@ typedef struct Jpeg2000Tile {
 typedef struct Jpeg2000DecoderContext {
     AVClass         *class;
     AVCodecContext  *avctx;
-    GetByteContext g;
+    GetByteContext  g;
 
     int             width, height;
     int             image_offset_x, image_offset_y;
@@ -170,11 +170,11 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->tile_offset_y  = bytestream2_get_be32u(&s->g); // YT0Siz
     s->ncomponents    = bytestream2_get_be16u(&s->g); // CSiz
 
-    if(s->ncomponents <= 0 || s->ncomponents > 4) {
+    if (s->ncomponents <= 0 || s->ncomponents > 4) {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", s->ncomponents);
         return AVERROR(EINVAL);
     }
-    if(s->tile_width<=0 || s->tile_height<=0)
+    if (s->tile_width<=0 || s->tile_height<=0)
         return AVERROR(EINVAL);
 
     if (bytestream2_get_bytes_left(&s->g) < 3 * s->ncomponents)
@@ -192,7 +192,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
-    if(s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(Jpeg2000Tile))
+    if (s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(Jpeg2000Tile))
         return AVERROR(EINVAL);
 
     s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(*s->tile));
@@ -420,7 +420,7 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         return AVERROR(EINVAL);
 
     s->curtileno = Isot = bytestream2_get_be16u(&s->g);        // Isot
-    if((unsigned)s->curtileno >= s->numXtiles * s->numYtiles){
+    if ((unsigned)s->curtileno >= s->numXtiles * s->numYtiles) {
         s->curtileno=0;
         return AVERROR(EINVAL);
     }
@@ -1244,7 +1244,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
     uint32_t atom_size, atom;
     int found_codestream = 0, search_range = 10;
 
-    while(!found_codestream && search_range && bytestream2_get_bytes_left(&s->g) >= 8) {
+    while (!found_codestream && search_range && bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
         if (atom == JP2_CODESTREAM) {
