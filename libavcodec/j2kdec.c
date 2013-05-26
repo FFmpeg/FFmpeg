@@ -26,8 +26,6 @@
  * @author Kamil Nowosad
  */
 
-// #define DEBUG
-
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -42,7 +40,7 @@
 #define HAD_COC 0x01
 #define HAD_QCC 0x02
 
-typedef struct {
+typedef struct Jpeg2000Tile {
    Jpeg2000Component *comp;
    uint8_t properties[4];
    Jpeg2000CodingStyle codsty[4];
