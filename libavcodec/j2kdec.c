@@ -1,6 +1,7 @@
 /*
- * JPEG2000 image decoder
+ * JPEG 2000 image decoder
  * Copyright (c) 2007 Kamil Nowosad
+ * Copyright (c) 2013 Nicolas Bertrand <nicoinattendu@gmail.com>
  *
  * This file is part of FFmpeg.
  *
