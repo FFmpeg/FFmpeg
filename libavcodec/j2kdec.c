@@ -48,6 +48,7 @@ typedef struct Jpeg2000Tile {
 } Jpeg2000Tile;
 
 typedef struct Jpeg2000DecoderContext {
+    AVClass         *class;
     AVCodecContext  *avctx;
     AVFrame         *picture;
     GetByteContext  g;
