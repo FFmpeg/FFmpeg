@@ -194,14 +194,6 @@ typedef struct Jpeg2000Component {
    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Component;
 
-/* debug routines */
-#if 0
-#undef fprintf
-#undef printf
-void ff_j2k_printv(int *tab, int l);
-void ff_j2k_printu(uint8_t *tab, int l);
-#endif
-
 /* misc tools */
 static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
