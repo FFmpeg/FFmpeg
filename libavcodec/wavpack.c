@@ -765,11 +765,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     int i, j, id, size, ssize, weights, t;
     int bpp, chan, chmask, orig_bpp;
 
-    if (buf_size == 0) {
-        *got_frame_ptr = 0;
-        return 0;
-    }
-
     if (block_no >= wc->fdec_num && wv_alloc_frame_context(wc) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error creating frame decode context\n");
         return AVERROR_INVALIDDATA;
@@ -1212,7 +1207,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
                 frame_size = AV_RL32(buf + 8) + 12;
             }
         }
-        if (frame_size < 0 || frame_size > buf_size) {
+        if (frame_size <= 0 || frame_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Block %d has invalid size (size %d vs. %d bytes left)\n",
                    s->block, frame_size, buf_size);
