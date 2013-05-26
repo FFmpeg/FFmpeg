@@ -32,7 +32,7 @@
 #include "mqc.h"
 #include "j2k_dwt.h"
 
-enum Jpeg2000Markers{
+enum Jpeg2000Markers {
     JPEG2000_SOC = 0xff4f, // start of codestream
     JPEG2000_SIZ = 0xff51, // image and tile size
     JPEG2000_COD,          // coding style default
@@ -55,7 +55,7 @@ enum Jpeg2000Markers{
     JPEG2000_EOC = 0xffd9, // end of codestream
 };
 
-enum Jpeg2000Quantsty{ // quantization style
+enum Jpeg2000Quantsty { // quantization style
     JPEG2000_QSTY_NONE, // no quantization
     JPEG2000_QSTY_SI,   // scalar derived
     JPEG2000_QSTY_SE    // scalar expounded
@@ -188,16 +188,16 @@ typedef struct Jpeg2000ResLevel {
 } Jpeg2000ResLevel; // resolution level
 
 typedef struct Jpeg2000Component {
-   Jpeg2000ResLevel *reslevel;
-   DWTContext dwt;
-   int *data;
-   uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    Jpeg2000ResLevel *reslevel;
+    DWTContext dwt;
+    int *data;
+    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Component;
 
 /* misc tools */
 static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
-    return (a + (1 << b) - 1)>> b;
+    return (a + (1 << b) - 1) >> b;
 }
 
 static inline int ff_jpeg2000_ceildiv(int a, int b)
@@ -217,7 +217,7 @@ extern uint8_t ff_jpeg2000_sigctxno_lut[256][4];
 
 static inline int ff_j2k_getsigctxno(int flag, int bandno)
 {
-    return ff_jpeg2000_sigctxno_lut[flag&255][bandno];
+    return ff_jpeg2000_sigctxno_lut[flag & 255][bandno];
 }
 
 /* Get context label (number in range[14..16]) of a coefficient for magnitude
@@ -225,7 +225,7 @@ static inline int ff_j2k_getsigctxno(int flag, int bandno)
 static inline int ff_jpeg2000_getrefctxno(int flag)
 {
     static const uint8_t refctxno_lut[2][2] = { { 14, 15 }, { 16, 16 } };
-    return refctxno_lut[(flag>>14)&1][(flag & 255) != 0];
+    return refctxno_lut[(flag >> 14) & 1][(flag & 255) != 0];
 }
 
 extern uint8_t ff_jpeg2000_sgnctxno_lut[16][16];
@@ -234,11 +234,14 @@ extern uint8_t ff_jpeg2000_xorbit_lut[16][16];
 /* Get context label (number in range[9..13]) for sign decoding. */
 static inline int ff_jpeg2000_getsgnctxno(int flag, int *xorbit)
 {
-    *xorbit = ff_jpeg2000_xorbit_lut[flag&15][(flag>>8)&15];
-    return  ff_jpeg2000_sgnctxno_lut[flag&15][(flag>>8)&15];
+    *xorbit = ff_jpeg2000_xorbit_lut[flag & 15][(flag >> 8) & 15];
+    return ff_jpeg2000_sgnctxno_lut[flag & 15][(flag >> 8) & 15];
 }
 
-int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, Jpeg2000QuantStyle *qntsty, int cbps, int dx, int dy);
+int ff_j2k_init_component(Jpeg2000Component *comp,
+                          Jpeg2000CodingStyle *codsty,
+                          Jpeg2000QuantStyle *qntsty,
+                          int cbps, int dx, int dy);
 void ff_j2k_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 
