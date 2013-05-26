@@ -23,6 +23,7 @@
  * bounding box detection filter
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
@@ -30,8 +31,19 @@
 #include "internal.h"
 
 typedef struct {
-    int unused;
+    const AVClass *class;
+    int min_val;
 } BBoxContext;
+
+#define OFFSET(x) offsetof(BBoxContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption bbox_options[] = {
+    { "min_val", "set minimum luminance value for bounding box", OFFSET(min_val), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, 254, FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(bbox);
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -58,7 +70,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     has_bbox =
         ff_calculate_bounding_box(&box,
                                   frame->data[0], frame->linesize[0],
-                                  inlink->w, inlink->h, 16);
+                                  inlink->w, inlink->h, bbox->min_val);
     w = box.x2 - box.x1 + 1;
     h = box.y2 - box.y1 + 1;
 
@@ -100,6 +112,7 @@ AVFilter avfilter_vf_bbox = {
     .name          = "bbox",
     .description   = NULL_IF_CONFIG_SMALL("Compute bounding box for each frame."),
     .priv_size     = sizeof(BBoxContext),
+    .priv_class    = &bbox_class,
     .query_formats = query_formats,
     .inputs        = bbox_inputs,
     .outputs       = bbox_outputs,

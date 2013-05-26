@@ -1925,6 +1925,13 @@ luminance value greater than the minimum allowed value.
 The parameters describing the bounding box are printed on the filter
 log.
 
+The filter accepts the following option:
+
+@table @option
+@item min_val
+Set the minimal luminance value. Default is @code{16}.
+@end table
+
 @section blackdetect
 
 Detect video intervals that are (almost) completely black. Can be
