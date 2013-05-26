@@ -230,9 +230,15 @@ static int get_siz(Jpeg2000DecoderContext *s)
 /** get common part for COD and COC segments */
 static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
 {
+    uint8_t byte;
+
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
-          c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
+    c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
+    if (c->nreslevels >= JPEG2000_MAX_RESLEVELS) {
+        av_log(s->avctx, AV_LOG_ERROR, "nreslevels %d is invalid\n", c->nreslevels);
+        return AVERROR_INVALIDDATA;
+    }
 
     c->log2_cblk_width  = (bytestream2_get_byteu(&s->g) & 15) + 2; // cblk width
     c->log2_cblk_height = (bytestream2_get_byteu(&s->g) & 15) + 2; // cblk height
@@ -250,9 +256,14 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     c->transform = bytestream2_get_byteu(&s->g); // transformation
     if (c->csty & JPEG2000_CSTY_PREC) {
         int i;
-
-        for (i = 0; i < c->nreslevels; i++)
-            bytestream2_get_byte(&s->g);
+        for (i = 0; i < c->nreslevels; i++) {
+            byte = bytestream2_get_byte(&s->g);
+            c->log2_prec_widths[i]  =  byte       & 0x0F;    // precinct PPx
+            c->log2_prec_heights[i] = (byte >> 4) & 0x0F;    // precinct PPy
+        }
+    } else {
+        memset(c->log2_prec_widths , 15, sizeof(c->log2_prec_widths ));
+        memset(c->log2_prec_heights, 15, sizeof(c->log2_prec_heights));
     }
     return 0;
 }
@@ -265,9 +276,6 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c, uint8_t *p
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
-
-    tmp.log2_prec_width  =
-    tmp.log2_prec_height = 15;
 
     tmp.csty = bytestream2_get_byteu(&s->g);
 
@@ -756,7 +764,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 
                 yy0 = bandno == 0 ? 0 : comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
                 y0 = yy0;
-                yy1 = FFMIN(ff_jpeg2000_ceildiv(band->coord[1][0] + 1, band->codeblock_height) * band->codeblock_height,
+                yy1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[1][0] + 1,  band->log2_cblk_height) << band->log2_cblk_height,
                             band->coord[1][1]) - band->coord[1][0] + yy0;
 
                 if (band->coord[0][0] == band->coord[0][1] || band->coord[1][0] == band->coord[1][1])
@@ -768,7 +776,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                     else
                         xx0 = comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
                     x0 = xx0;
-                    xx1 = FFMIN(ff_jpeg2000_ceildiv(band->coord[0][0] + 1, band->codeblock_width) * band->codeblock_width,
+                    xx1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[0][0] + 1, band->log2_cblk_width) << band->log2_cblk_width,
                                 band->coord[0][1]) - band->coord[0][0] + xx0;
 
                     for (cblkx = 0; cblkx < band->cblknx; cblkx++, cblkno++) {
@@ -792,10 +800,10 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                             }
                         }
                         xx0 = xx1;
-                        xx1 = FFMIN(xx1 + band->codeblock_width, band->coord[0][1] - band->coord[0][0] + x0);
+                        xx1 = FFMIN(xx1 + (1 << band->log2_cblk_width), band->coord[0][1] - band->coord[0][0] + x0);
                     }
                     yy0 = yy1;
-                    yy1 = FFMIN(yy1 + band->codeblock_height, band->coord[1][1] - band->coord[1][0] + y0);
+                    yy1 = FFMIN(yy1 + (1 << band->log2_cblk_height), band->coord[1][1] - band->coord[1][0] + y0);
                 }
             }
         }

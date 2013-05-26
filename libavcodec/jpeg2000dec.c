@@ -256,6 +256,10 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
     c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
+    if (c->nreslevels >= JPEG2000_MAX_RESLEVELS) {
+        av_log(s->avctx, AV_LOG_ERROR, "nreslevels %d is invalid\n", c->nreslevels);
+        return AVERROR_INVALIDDATA;
+    }
 
     /* compute number of resolution levels to decode */
     if (c->nreslevels < s->reduction_factor)
@@ -289,6 +293,9 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
             c->log2_prec_widths[i]  =  byte       & 0x0F;    // precinct PPx
             c->log2_prec_heights[i] = (byte >> 4) & 0x0F;    // precinct PPy
         }
+    } else {
+        memset(c->log2_prec_widths , 15, sizeof(c->log2_prec_widths ));
+        memset(c->log2_prec_heights, 15, sizeof(c->log2_prec_heights));
     }
     return 0;
 }
@@ -302,9 +309,6 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
-
-    tmp.log2_prec_width  =
-    tmp.log2_prec_height = 15;
 
     tmp.csty = bytestream2_get_byteu(&s->g);
 

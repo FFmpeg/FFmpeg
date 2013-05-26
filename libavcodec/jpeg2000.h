@@ -134,8 +134,6 @@ typedef struct Jpeg2000CodingStyle {
             log2_cblk_height; // exponent of codeblock size
     uint8_t transform;        // DWT type
     uint8_t csty;             // coding style
-    uint8_t log2_prec_width,
-            log2_prec_height; // precinct size
     uint8_t nlayers;          // number of layers
     uint8_t mct;              // multiple component transformation
     uint8_t cblk_style;       // codeblock coding style

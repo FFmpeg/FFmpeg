@@ -821,7 +821,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                 int cblkx, cblky, cblkno=0, xx0, x0, xx1, y0, yy0, yy1, bandpos;
                 yy0 = bandno == 0 ? 0 : comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
                 y0 = yy0;
-                yy1 = FFMIN(ff_jpeg2000_ceildiv(band->coord[1][0] + 1, band->codeblock_height) * band->codeblock_height,
+                yy1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[1][0] + 1, band->log2_cblk_height) << band->log2_cblk_height,
                             band->coord[1][1]) - band->coord[1][0] + yy0;
 
                 if (band->coord[0][0] == band->coord[0][1] || band->coord[1][0] == band->coord[1][1])
@@ -835,7 +835,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                     else
                         xx0 = comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
                     x0 = xx0;
-                    xx1 = FFMIN(ff_jpeg2000_ceildiv(band->coord[0][0] + 1, band->codeblock_width) * band->codeblock_width,
+                    xx1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[0][0] + 1, band->log2_cblk_width) << band->log2_cblk_width,
                                 band->coord[0][1]) - band->coord[0][0] + xx0;
 
                     for (cblkx = 0; cblkx < band->cblknx; cblkx++, cblkno++){
@@ -860,10 +860,10 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                         encode_cblk(s, &t1, band->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
                                     bandpos, codsty->nreslevels - reslevelno - 1);
                         xx0 = xx1;
-                        xx1 = FFMIN(xx1 + band->codeblock_width, band->coord[0][1] - band->coord[0][0] + x0);
+                        xx1 = FFMIN(xx1 + (1 << band->log2_cblk_width), band->coord[0][1] - band->coord[0][0] + x0);
                     }
                     yy0 = yy1;
-                    yy1 = FFMIN(yy1 + band->codeblock_height, band->coord[1][1] - band->coord[1][0] + y0);
+                    yy1 = FFMIN(yy1 + (1 << band->log2_cblk_height), band->coord[1][1] - band->coord[1][0] + y0);
                 }
             }
         }
@@ -969,8 +969,8 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
 
     // defaults:
     // TODO: implement setting non-standard precinct size
-    codsty->log2_prec_width  = 15;
-    codsty->log2_prec_height = 15;
+    memset(codsty->log2_prec_widths , 15, sizeof(codsty->log2_prec_widths ));
+    memset(codsty->log2_prec_heights, 15, sizeof(codsty->log2_prec_heights));
     codsty->nreslevels       = 7;
     codsty->log2_cblk_width  = 4;
     codsty->log2_cblk_height = 4;
