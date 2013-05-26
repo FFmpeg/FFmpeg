@@ -55,7 +55,7 @@ Jpeg2000TgtNode *ff_j2k_tag_tree_init(int w, int h)
 
     tt_size = tag_tree_size(w, h);
 
-    t = res = av_mallocz(tt_size, sizeof(*t));
+    t = res = av_mallocz_array(tt_size, sizeof(*t));
     if (!res)
         return NULL;
 
@@ -181,11 +181,10 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
     for (i = 0; i < 2; i++)
         csize *= comp->coord[i][1] - comp->coord[i][0];
 
-    comp->data = av_malloc(csize * sizeof(int));
+    comp->data = av_malloc_array(csize, sizeof(int));
     if (!comp->data)
         return AVERROR(ENOMEM);
-    comp->reslevel = av_malloc(codsty->nreslevels * sizeof(Jpeg2000ResLevel));
-
+    comp->reslevel = av_malloc_array(codsty->nreslevels, sizeof(*comp->reslevel));
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
@@ -214,9 +213,10 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
             reslevel->num_precincts_y = ff_jpeg2000_ceildivpow2(reslevel->coord[1][1], codsty->log2_prec_height)
                                         - (reslevel->coord[1][0] >> codsty->log2_prec_height);
 
-        reslevel->band = av_malloc(reslevel->nbands * sizeof(Jpeg2000Band));
+        reslevel->band = av_malloc_array(reslevel->nbands, sizeof(*reslevel->band));
         if (!reslevel->band)
             return AVERROR(ENOMEM);
+
         for (bandno = 0; bandno < reslevel->nbands; bandno++, gbandno++) {
             Jpeg2000Band *band = reslevel->band + bandno;
             int cblkno, precx, precy, precno;
@@ -258,10 +258,14 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
             band->cblknx = ff_jpeg2000_ceildiv(band->cblknx, dx);
             band->cblkny = ff_jpeg2000_ceildiv(band->cblkny, dy);
 
-            band->cblk = av_malloc(sizeof(Jpeg2000Cblk) * band->cblknx * band->cblkny);
+            band->cblk = av_malloc_array(band->cblknx *
+                                         band->cblkny,
+                                         sizeof(*band->cblk));
             if (!band->cblk)
                 return AVERROR(ENOMEM);
-            band->prec = av_malloc(sizeof(Jpeg2000Cblk) * reslevel->num_precincts_x * reslevel->num_precincts_y);
+            band->prec = av_malloc_array(reslevel->num_precincts_x *
+                                         reslevel->num_precincts_y,
+                                         sizeof(*band->prec));
             if (!band->prec)
                 return AVERROR(ENOMEM);
 
