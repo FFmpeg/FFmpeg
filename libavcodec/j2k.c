@@ -26,7 +26,8 @@
  * @author Kamil Nowosad
  */
 
-
+#include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "j2k.h"
 
