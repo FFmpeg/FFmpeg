@@ -33,6 +33,8 @@
  * WavPack lossless audio decoder
  */
 
+#define WV_HEADER_SIZE    32
+
 #define WV_MONO           0x00000004
 #define WV_JOINT_STEREO   0x00000010
 #define WV_FALSE_STEREO   0x40000000
@@ -1145,7 +1147,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *frame     = data;
     int frame_size, ret, frame_flags;
 
-    if (avpkt->size < 12 + s->multichannel * 4)
+    if (avpkt->size <= WV_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
     s->block     = 0;
@@ -1157,13 +1159,8 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         buf        += 4;
         frame_flags = AV_RL32(buf);
     } else {
-        if (s->multichannel) {
-            s->samples  = AV_RL32(buf + 4);
-            frame_flags = AV_RL32(buf + 8);
-        } else {
-            s->samples  = AV_RL32(buf);
-            frame_flags = AV_RL32(buf + 4);
-        }
+        s->samples  = AV_RL32(buf + 20);
+        frame_flags = AV_RL32(buf + 24);
     }
     if (s->samples <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of samples: %d\n",
@@ -1188,18 +1185,16 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     while (buf_size > 0) {
-        if (!s->multichannel) {
-            frame_size = buf_size;
+        if (!s->mkv_mode) {
+            if (buf_size <= WV_HEADER_SIZE)
+                break;
+            frame_size = AV_RL32(buf + 4) - 12;
+            buf       += 20;
+            buf_size  -= 20;
         } else {
-            if (!s->mkv_mode) {
-                frame_size = AV_RL32(buf) - 12;
-                buf       += 4;
-                buf_size  -= 4;
-            } else {
-                if (buf_size < 12) // MKV files can have zero flags after last block
-                    break;
-                frame_size = AV_RL32(buf + 8) + 12;
-            }
+            if (buf_size < 12) // MKV files can have zero flags after last block
+                break;
+            frame_size = AV_RL32(buf + 8) + 12;
         }
         if (frame_size <= 0 || frame_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR,
