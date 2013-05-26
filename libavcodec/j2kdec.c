@@ -137,7 +137,7 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node, int
 }
 
 /* marker segments */
-/** get sizes and offsets of image, tiles; number of components */
+/* get sizes and offsets of image, tiles; number of components */
 static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i, ret;
@@ -147,16 +147,15 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR(EINVAL);
 
                         bytestream2_get_be16u(&s->g); // Rsiz
-             s->width = bytestream2_get_be32u(&s->g); // Width
-            s->height = bytestream2_get_be32u(&s->g); // Height
+    s->width          = bytestream2_get_be32u(&s->g); // Width
+    s->height         = bytestream2_get_be32u(&s->g); // Height
     s->image_offset_x = bytestream2_get_be32u(&s->g); // X0Siz
     s->image_offset_y = bytestream2_get_be32u(&s->g); // Y0Siz
-
-        s->tile_width = bytestream2_get_be32u(&s->g); // XTSiz
-       s->tile_height = bytestream2_get_be32u(&s->g); // YTSiz
-     s->tile_offset_x = bytestream2_get_be32u(&s->g); // XT0Siz
-     s->tile_offset_y = bytestream2_get_be32u(&s->g); // YT0Siz
-       s->ncomponents = bytestream2_get_be16u(&s->g); // CSiz
+    s->tile_width     = bytestream2_get_be32u(&s->g); // XTSiz
+    s->tile_height    = bytestream2_get_be32u(&s->g); // YTSiz
+    s->tile_offset_x  = bytestream2_get_be32u(&s->g); // XT0Siz
+    s->tile_offset_y  = bytestream2_get_be32u(&s->g); // YT0Siz
+    s->ncomponents    = bytestream2_get_be16u(&s->g); // CSiz
 
     if (s->ncomponents <= 0 || s->ncomponents > 4) {
         av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", s->ncomponents);
