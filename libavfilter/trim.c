@@ -188,12 +188,7 @@ static const AVOption trim_options[] = {
 };
 #undef FLAGS
 
-static const AVClass trim_class = {
-    .class_name = "trim",
-    .item_name  = av_default_item_name,
-    .option     = trim_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(trim);
 
 static const AVFilterPad trim_inputs[] = {
     {
@@ -350,12 +345,7 @@ static const AVOption atrim_options[] = {
 };
 #undef FLAGS
 
-static const AVClass atrim_class = {
-    .class_name = "atrim",
-    .item_name  = av_default_item_name,
-    .option     = atrim_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(atrim);
 
 static const AVFilterPad atrim_inputs[] = {
     {
