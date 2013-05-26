@@ -63,6 +63,8 @@ enum Jpeg2000Quantsty{ ///< quantization style
 #define JPEG2000_MAX_CBLKW 64
 #define JPEG2000_MAX_CBLKH 64
 
+#define JPEG2000_MAX_RESLEVELS 33
+
 // T1 flags
 // flags determining significance of neighbour coefficients
 #define JPEG2000_T1_SIG_N  0x0001
@@ -112,17 +114,20 @@ typedef struct Jpeg2000TgtNode {
     struct Jpeg2000TgtNode *parent;
 } Jpeg2000TgtNode;
 
-typedef struct {
-    uint8_t nreslevels;       ///< number of resolution levels
+typedef struct Jpeg2000CodingStyle {
+    uint8_t nreslevels;       // number of resolution levels
     uint8_t log2_cblk_width,
-            log2_cblk_height; ///< exponent of codeblock size
-    uint8_t transform;        ///< DWT type
-    uint8_t csty;             ///< coding style
+            log2_cblk_height; // exponent of codeblock size
+    uint8_t transform;        // DWT type
+    uint8_t csty;             // coding style
     uint8_t log2_prec_width,
-            log2_prec_height; ///< precinct size
-    uint8_t nlayers;          ///< number of layers
-    uint8_t mct;              ///< multiple component transformation
-    uint8_t cblk_style;       ///< codeblock coding style
+            log2_prec_height; // precinct size
+    uint8_t nlayers;          // number of layers
+    uint8_t mct;              // multiple component transformation
+    uint8_t cblk_style;       // codeblock coding style
+    uint8_t prog_order;       // progression order
+    uint8_t log2_prec_widths[JPEG2000_MAX_RESLEVELS];  // precincts size according resolution levels
+    uint8_t log2_prec_heights[JPEG2000_MAX_RESLEVELS]; // TODO: initialize prec_size array with 0?
 } Jpeg2000CodingStyle;
 
 typedef struct {
