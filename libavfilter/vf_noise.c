@@ -338,14 +338,8 @@ static void noise(uint8_t *dst, const uint8_t *src,
     int shift, y;
 
     if (!noise) {
-        if (dst != src) {
-            for (y = 0; y < height; y++) {
-                memcpy(dst, src, width);
-                dst += dst_linesize;
-                src += src_linesize;
-            }
-        }
-
+        if (dst != src)
+            av_image_copy_plane(dst, dst_linesize, src, src_linesize, width, height);
         return;
     }
 
