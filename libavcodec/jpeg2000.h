@@ -182,7 +182,6 @@ typedef struct Jpeg2000Prec {
 typedef struct Jpeg2000Band {
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t log2_cblk_width, log2_cblk_height;
-    uint16_t cblknx, cblkny;
     float stepsize; // quantization stepsize
     Jpeg2000Prec *prec;
 } Jpeg2000Band; // subband
