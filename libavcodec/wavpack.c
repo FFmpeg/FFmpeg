@@ -632,7 +632,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
         wv_check_crc(s, crc, crc_extra_bits))
         return AVERROR_INVALIDDATA;
 
-    return count * 2;
+    return 0;
 }
 
 static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
@@ -693,7 +693,7 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
         wv_check_crc(s, crc, crc_extra_bits))
         return AVERROR_INVALIDDATA;
 
-    return count;
+    return 0;
 }
 
 static av_cold int wv_alloc_frame_context(WavpackContext *c)
@@ -759,7 +759,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     WavpackFrameContext *s;
     GetByteContext gb;
     void *samples_l, *samples_r;
-    int samplecount;
+    int ret;
     int got_terms   = 0, got_weights = 0, got_samples = 0,
         got_entropy = 0, got_bs      = 0, got_float   = 0, got_hybrid = 0;
     int i, j, id, size, ssize, weights, t;
@@ -1123,13 +1123,13 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     }
 
     if (s->stereo_in) {
-        samplecount = wv_unpack_stereo(s, &s->gb, samples_l, samples_r, avctx->sample_fmt);
-        if (samplecount < 0)
-            return samplecount;
+        ret = wv_unpack_stereo(s, &s->gb, samples_l, samples_r, avctx->sample_fmt);
+        if (ret < 0)
+            return ret;
     } else {
-        samplecount = wv_unpack_mono(s, &s->gb, samples_l, avctx->sample_fmt);
-        if (samplecount < 0)
-            return samplecount;
+        ret = wv_unpack_mono(s, &s->gb, samples_l, avctx->sample_fmt);
+        if (ret < 0)
+            return ret;
 
         if (s->stereo)
             memcpy(samples_r, samples_l, bpp * s->samples);
@@ -1137,7 +1137,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
 
     *got_frame_ptr = 1;
 
-    return samplecount * bpp;
+    return 0;
 }
 
 static void wavpack_decode_flush(AVCodecContext *avctx)
@@ -1157,7 +1157,6 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
     AVFrame *frame     = data;
     int frame_size, ret, frame_flags;
-    int samplecount = 0;
 
     if (avpkt->size < 12 + s->multichannel * 4)
         return AVERROR_INVALIDDATA;
@@ -1222,11 +1221,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
             wavpack_decode_flush(avctx);
             return AVERROR_INVALIDDATA;
         }
-        if ((samplecount = wavpack_decode_block(avctx, s->block,
-                                                frame->extended_data, got_frame_ptr,
-                                                buf, frame_size)) < 0) {
+        if ((ret = wavpack_decode_block(avctx, s->block,
+                                        frame->extended_data, got_frame_ptr,
+                                        buf, frame_size)) < 0) {
             wavpack_decode_flush(avctx);
-            return samplecount;
+            return ret;
         }
         s->block++;
         buf      += frame_size;
