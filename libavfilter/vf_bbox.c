@@ -30,7 +30,7 @@
 #include "internal.h"
 
 typedef struct {
-    unsigned int frame;
+    int unused;
 } BBoxContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -63,7 +63,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     h = box.y2 - box.y1 + 1;
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%d pts:%s pts_time:%s", bbox->frame,
+           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
@@ -76,7 +76,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
     av_log(ctx, AV_LOG_INFO, "\n");
 
-    bbox->frame++;
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
