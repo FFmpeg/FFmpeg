@@ -60,12 +60,17 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+#define SET_META(key, value) \
+    snprintf(buf, sizeof(buf), "%d", value);  \
+    av_dict_set(metadata, #key, buf, 0); \
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     BBoxContext *bbox = ctx->priv;
     FFBoundingBox box;
     int has_bbox, w, h;
+    char buf[32];
 
     has_bbox =
         ff_calculate_bounding_box(&box,
@@ -79,6 +84,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
+        AVDictionary **metadata = avpriv_frame_get_metadatap(frame);
+
+        SET_META("lavfi.bbox.x1", box.x1)
+        SET_META("lavfi.bbox.x2", box.x2)
+        SET_META("lavfi.bbox.y1", box.y1)
+        SET_META("lavfi.bbox.y2", box.y2)
+        SET_META("lavfi.bbox.w",  w)
+        SET_META("lavfi.bbox.h",  h)
+
         av_log(ctx, AV_LOG_INFO,
                " x1:%d x2:%d y1:%d y2:%d w:%d h:%d"
                " crop=%d:%d:%d:%d drawbox=%d:%d:%d:%d",
