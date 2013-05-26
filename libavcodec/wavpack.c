@@ -792,8 +792,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
 
     if (!wc->mkv_mode) {
         s->samples = bytestream2_get_le32(&gb);
-        if (s->samples != wc->samples)
+        if (s->samples != wc->samples) {
+            av_log(avctx, AV_LOG_ERROR, "Mismatching number of samples in "
+                   "a sequence: %d and %d\n", wc->samples, s->samples);
             return AVERROR_INVALIDDATA;
+        }
 
         if (!s->samples) {
             *got_frame_ptr = 0;
