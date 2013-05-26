@@ -1,5 +1,5 @@
 /*
- * JPEG2000 encoder and decoder common functions
+ * JPEG 2000 encoder and decoder common functions
  * Copyright (c) 2007 Kamil Nowosad
  * Copyright (c) 2013 Nicolas Bertrand <nicoinattendu@gmail.com>
  *
@@ -21,7 +21,7 @@
  */
 
 /**
- * JPEG2000 image encoder and decoder common functions
+ * JPEG 2000 image encoder and decoder common functions
  * @file
  * @author Kamil Nowosad
  */
@@ -51,10 +51,12 @@ Jpeg2000TgtNode *ff_j2k_tag_tree_init(int w, int h)
 {
     int pw = w, ph = h;
     Jpeg2000TgtNode *res, *t, *t2;
+    int32_t tt_size;
 
-    t = res = av_mallocz(tag_tree_size(w, h)*sizeof(Jpeg2000TgtNode));
+    tt_size = tag_tree_size(w, h);
 
-    if (res == NULL)
+    t = res = av_mallocz(tt_size, sizeof(*t));
+    if (!res)
         return NULL;
 
     while (w > 1 || h > 1) {
@@ -62,14 +64,14 @@ Jpeg2000TgtNode *ff_j2k_tag_tree_init(int w, int h)
         pw = w;
         ph = h;
 
-        w = (w + 1) >> 1;
-        h = (h + 1) >> 1;
+        w  = (w + 1) >> 1;
+        h  = (h + 1) >> 1;
         t2 = t + pw * ph;
 
         for (i = 0; i < ph; i++)
-            for (j = 0; j < pw; j++) {
+            for (j = 0; j < pw; j++)
                 t[i * pw + j].parent = &t2[(i >> 1) * w + (j >> 1)];
-            }
+
         t = t2;
     }
     t[0].parent = NULL;
@@ -129,25 +131,28 @@ static int getsigctxno(int flag, int bandno)
     return 0;
 }
 
+
+static const int contribtab[3][3] = { {  0, -1,  1 }, { -1, -1,  0 }, {  1,  0,  1 } };
+static const int  ctxlbltab[3][3] = { { 13, 12, 11 }, { 10,  9, 10 }, { 11, 12, 13 } };
+static const int  xorbittab[3][3] = { {  1,  1,  1 }, {  1,  0,  0 }, {  0,  0,  0 } };
+
 static int getsgnctxno(int flag, uint8_t *xorbit)
 {
     int vcontrib, hcontrib;
-    static const int contribtab[3][3] = {{0, -1, 1}, {-1, -1, 0}, {1, 0, 1}};
-    static const int ctxlbltab[3][3] = {{13, 12, 11}, {10, 9, 10}, {11, 12, 13}};
-    static const int xorbittab[3][3] = {{1, 1, 1,}, {1, 0, 0}, {0, 0, 0}};
 
-    hcontrib = contribtab[flag & JPEG2000_T1_SIG_E ? flag & JPEG2000_T1_SGN_E ? 1:2:0]
-                         [flag & JPEG2000_T1_SIG_W ? flag & JPEG2000_T1_SGN_W ? 1:2:0]+1;
-    vcontrib = contribtab[flag & JPEG2000_T1_SIG_S ? flag & JPEG2000_T1_SGN_S ? 1:2:0]
-                         [flag & JPEG2000_T1_SIG_N ? flag & JPEG2000_T1_SGN_N ? 1:2:0]+1;
+    hcontrib = contribtab[flag & JPEG2000_T1_SIG_E ? flag & JPEG2000_T1_SGN_E ? 1 : 2 : 0]
+                         [flag & JPEG2000_T1_SIG_W ? flag & JPEG2000_T1_SGN_W ? 1 : 2 : 0] + 1;
+    vcontrib = contribtab[flag & JPEG2000_T1_SIG_S ? flag & JPEG2000_T1_SGN_S ? 1 : 2 : 0]
+                         [flag & JPEG2000_T1_SIG_N ? flag & JPEG2000_T1_SGN_N ? 1 : 2 : 0] + 1;
     *xorbit = xorbittab[hcontrib][vcontrib];
+
     return ctxlbltab[hcontrib][vcontrib];
 }
 
 void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y,
                             int negative)
 {
-        x++;
+    x++;
     y++;
     t1->flags[y][x] |= JPEG2000_T1_SIG;
     if (negative) {
