@@ -215,7 +215,9 @@ void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative);
 
 extern uint8_t ff_jpeg2000_sigctxno_lut[256][4];
 
-static inline int ff_j2k_getsigctxno(int flag, int bandno)
+/* Get context label (number in range[0..8]) of a coefficient for significance
+ * propagation and cleanup coding passes. */
+static inline int ff_jpeg2000_getsigctxno(int flag, int bandno)
 {
     return ff_jpeg2000_sigctxno_lut[flag & 255][bandno];
 }
