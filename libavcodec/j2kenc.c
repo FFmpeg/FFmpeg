@@ -340,8 +340,8 @@ static int init_tiles(Jpeg2000EncoderContext *s)
     Jpeg2000CodingStyle *codsty = &s->codsty;
     Jpeg2000QuantStyle  *qntsty = &s->qntsty;
 
-    s->numXtiles = ff_j2k_ceildiv(s->width, s->tile_width);
-    s->numYtiles = ff_j2k_ceildiv(s->height, s->tile_height);
+    s->numXtiles = ff_jpeg2000_ceildiv(s->width, s->tile_width);
+    s->numYtiles = ff_jpeg2000_ceildiv(s->height, s->tile_height);
 
     s->tile = av_malloc(s->numXtiles * s->numYtiles * sizeof(Jpeg2000Tile));
     if (!s->tile)
@@ -364,7 +364,7 @@ static int init_tiles(Jpeg2000EncoderContext *s)
                 if (compno > 0)
                     for (i = 0; i < 2; i++)
                         for (j = 0; j < 2; j++)
-                            comp->coord[i][j] = ff_j2k_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
+                            comp->coord[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
 
                 if (ret = ff_j2k_init_component(comp, codsty, qntsty, s->cbps[compno], compno?1<<s->chroma_shift[0]:1, compno?1<<s->chroma_shift[1]:1))
                     return ret;
@@ -486,7 +486,7 @@ static void encode_sigpass(Jpeg2000T1Context *t1, int width, int height, int ban
                     ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, bit);
                     if (bit){
                         int xorbit;
-                        int ctxno = ff_j2k_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
+                        int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
                         ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, (t1->flags[y+1][x+1] >> 15) ^ xorbit);
                         *nmsedec += getnmsedec_sig(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
                         ff_j2k_set_significant(t1, x, y, t1->flags[y+1][x+1] >> 15);
@@ -503,7 +503,7 @@ static void encode_refpass(Jpeg2000T1Context *t1, int width, int height, int *nm
         for (x = 0; x < width; x++)
             for (y = y0; y < height && y < y0+4; y++)
                 if ((t1->flags[y+1][x+1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS)) == JPEG2000_T1_SIG){
-                    int ctxno = ff_j2k_getrefctxno(t1->flags[y+1][x+1]);
+                    int ctxno = ff_jpeg2000_getrefctxno(t1->flags[y+1][x+1]);
                     *nmsedec += getnmsedec_ref(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
                     ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, t1->data[y][x] & mask ? 1:0);
                     t1->flags[y+1][x+1] |= JPEG2000_T1_REF;
@@ -539,7 +539,7 @@ static void encode_clnpass(Jpeg2000T1Context *t1, int width, int height, int ban
                             ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, t1->data[y][x] & mask ? 1:0);
                         if (t1->data[y][x] & mask){ // newly significant
                             int xorbit;
-                            int ctxno = ff_j2k_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
+                            int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
                             *nmsedec += getnmsedec_sig(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
                             ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, (t1->flags[y+1][x+1] >> 15) ^ xorbit);
                             ff_j2k_set_significant(t1, x, y, t1->flags[y+1][x+1] >> 15);
@@ -554,7 +554,7 @@ static void encode_clnpass(Jpeg2000T1Context *t1, int width, int height, int ban
                         ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, t1->data[y][x] & mask ? 1:0);
                         if (t1->data[y][x] & mask){ // newly significant
                             int xorbit;
-                            int ctxno = ff_j2k_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
+                            int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
                             *nmsedec += getnmsedec_sig(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
                             ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, (t1->flags[y+1][x+1] >> 15) ^ xorbit);
                             ff_j2k_set_significant(t1, x, y, t1->flags[y+1][x+1] >> 15);
@@ -823,7 +823,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                 int cblkx, cblky, cblkno=0, xx0, x0, xx1, y0, yy0, yy1, bandpos;
                 yy0 = bandno == 0 ? 0 : comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
                 y0 = yy0;
-                yy1 = FFMIN(ff_j2k_ceildiv(band->coord[1][0] + 1, band->codeblock_height) * band->codeblock_height,
+                yy1 = FFMIN(ff_jpeg2000_ceildiv(band->coord[1][0] + 1, band->codeblock_height) * band->codeblock_height,
                             band->coord[1][1]) - band->coord[1][0] + yy0;
 
                 if (band->coord[0][0] == band->coord[0][1] || band->coord[1][0] == band->coord[1][1])
@@ -837,7 +837,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                     else
                         xx0 = comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
                     x0 = xx0;
-                    xx1 = FFMIN(ff_j2k_ceildiv(band->coord[0][0] + 1, band->codeblock_width) * band->codeblock_width,
+                    xx1 = FFMIN(ff_jpeg2000_ceildiv(band->coord[0][0] + 1, band->codeblock_width) * band->codeblock_width,
                                 band->coord[0][1]) - band->coord[0][0] + xx0;
 
                     for (cblkx = 0; cblkx < band->cblknx; cblkx++, cblkno++){

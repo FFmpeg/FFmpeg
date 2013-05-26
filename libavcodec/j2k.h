@@ -193,12 +193,12 @@ void ff_j2k_printu(uint8_t *tab, int l);
 #endif
 
 /* misc tools */
-static inline int ff_j2k_ceildivpow2(int a, int b)
+static inline int ff_jpeg2000_ceildivpow2(int a, int b)
 {
     return (a + (1 << b) - 1)>> b;
 }
 
-static inline int ff_j2k_ceildiv(int a, int b)
+static inline int ff_jpeg2000_ceildiv(int a, int b)
 {
     return (a + b - 1) / b;
 }
@@ -211,25 +211,29 @@ void ff_j2k_init_tier1_luts(void);
 
 void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative);
 
-extern uint8_t ff_j2k_nbctxno_lut[256][4];
+extern uint8_t ff_jpeg2000_sigctxno_lut[256][4];
 
 static inline int ff_j2k_getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
 {
-    return ff_j2k_nbctxno_lut[flag&255][bandno];
+    return ff_jpeg2000_sigctxno_lut[flag&255][bandno];
 }
 
-static inline int ff_j2k_getrefctxno(int flag)
+/* Get context label (number in range[14..16]) of a coefficient for magnitude
+ * refinement pass. */
+static inline int ff_jpeg2000_getrefctxno(int flag)
 {
-    static const uint8_t refctxno_lut[2][2] = {{14, 15}, {16, 16}};
+    static const uint8_t refctxno_lut[2][2] = { { 14, 15 }, { 16, 16 } };
     return refctxno_lut[(flag>>14)&1][(flag & 255) != 0];
 }
 
-extern uint8_t ff_j2k_sgnctxno_lut[16][16], ff_j2k_xorbit_lut[16][16];
+extern uint8_t ff_jpeg2000_sgnctxno_lut[16][16];
+extern uint8_t ff_jpeg2000_xorbit_lut[16][16];
 
-static inline int ff_j2k_getsgnctxno(int flag, int *xorbit)
+/* Get context label (number in range[9..13]) for sign decoding. */
+static inline int ff_jpeg2000_getsgnctxno(int flag, int *xorbit)
 {
-    *xorbit = ff_j2k_xorbit_lut[flag&15][(flag>>8)&15];
-    return  ff_j2k_sgnctxno_lut[flag&15][(flag>>8)&15];
+    *xorbit = ff_jpeg2000_xorbit_lut[flag&15][(flag>>8)&15];
+    return  ff_jpeg2000_sgnctxno_lut[flag&15][(flag>>8)&15];
 }
 
 int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, Jpeg2000QuantStyle *qntsty, int cbps, int dx, int dy);

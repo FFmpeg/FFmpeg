@@ -103,8 +103,6 @@ static void tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
     }
 }
 
-uint8_t ff_j2k_nbctxno_lut[256][4];
-
 static int getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
 {
     int h, v, d;
@@ -150,8 +148,6 @@ static int getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
     }
 }
 
-uint8_t ff_j2k_sgnctxno_lut[16][16], ff_j2k_xorbit_lut[16][16];
-
 static int getsgnctxno(int flag, uint8_t *xorbit)
 {
     int vcontrib, hcontrib;
@@ -172,10 +168,10 @@ void ff_j2k_init_tier1_luts(void)
     int i, j;
     for (i = 0; i < 256; i++)
         for (j = 0; j < 4; j++)
-            ff_j2k_nbctxno_lut[i][j] = getnbctxno(i, j, 0);
+            ff_jpeg2000_sigctxno_lut[i][j] = getnbctxno(i, j, 0);
     for (i = 0; i < 16; i++)
         for (j = 0; j < 16; j++)
-            ff_j2k_sgnctxno_lut[i][j] = getsgnctxno(i + (j << 8), &ff_j2k_xorbit_lut[i][j]);
+            ff_jpeg2000_sgnctxno_lut[i][j] = getsgnctxno(i + (j << 8), &ff_jpeg2000_xorbit_lut[i][j]);
 }
 
 void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative)
@@ -222,7 +218,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
         for (i = 0; i < 2; i++)
             for (j = 0; j < 2; j++)
                 reslevel->coord[i][j] =
-                    ff_j2k_ceildivpow2(comp->coord[i][j], declvl - 1);
+                    ff_jpeg2000_ceildivpow2(comp->coord[i][j], declvl - 1);
 
         if (reslevelno == 0)
             reslevel->nbands = 1;
@@ -232,13 +228,13 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
         if (reslevel->coord[0][1] == reslevel->coord[0][0])
             reslevel->num_precincts_x = 0;
         else
-            reslevel->num_precincts_x = ff_j2k_ceildivpow2(reslevel->coord[0][1], codsty->log2_prec_width)
+            reslevel->num_precincts_x = ff_jpeg2000_ceildivpow2(reslevel->coord[0][1], codsty->log2_prec_width)
                                         - (reslevel->coord[0][0] >> codsty->log2_prec_width);
 
         if (reslevel->coord[1][1] == reslevel->coord[1][0])
             reslevel->num_precincts_y = 0;
         else
-            reslevel->num_precincts_y = ff_j2k_ceildivpow2(reslevel->coord[1][1], codsty->log2_prec_height)
+            reslevel->num_precincts_y = ff_jpeg2000_ceildivpow2(reslevel->coord[1][1], codsty->log2_prec_height)
                                         - (reslevel->coord[1][0] >> codsty->log2_prec_height);
 
         reslevel->band = av_malloc(reslevel->nbands * sizeof(Jpeg2000Band));
@@ -265,25 +261,25 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
                 band->codeblock_height = 1 << FFMIN(codsty->log2_cblk_height, codsty->log2_prec_height-1);
                 for (i = 0; i < 2; i++)
                     for (j = 0; j < 2; j++)
-                        band->coord[i][j] = ff_j2k_ceildivpow2(comp->coord[i][j], declvl-1);
+                        band->coord[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j], declvl-1);
             } else{
                 band->codeblock_width = 1 << FFMIN(codsty->log2_cblk_width, codsty->log2_prec_width);
                 band->codeblock_height = 1 << FFMIN(codsty->log2_cblk_height, codsty->log2_prec_height);
 
                 for (i = 0; i < 2; i++)
                     for (j = 0; j < 2; j++)
-                        band->coord[i][j] = ff_j2k_ceildivpow2(comp->coord[i][j] - (((bandno+1>>i)&1) << declvl-1), declvl);
+                        band->coord[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j] - (((bandno+1>>i)&1) << declvl-1), declvl);
             }
-            band->cblknx = ff_j2k_ceildiv(band->coord[0][1], band->codeblock_width)  - band->coord[0][0] / band->codeblock_width;
-            band->cblkny = ff_j2k_ceildiv(band->coord[1][1], band->codeblock_height) - band->coord[1][0] / band->codeblock_height;
+            band->cblknx = ff_jpeg2000_ceildiv(band->coord[0][1], band->codeblock_width)  - band->coord[0][0] / band->codeblock_width;
+            band->cblkny = ff_jpeg2000_ceildiv(band->coord[1][1], band->codeblock_height) - band->coord[1][0] / band->codeblock_height;
 
             for (j = 0; j < 2; j++)
-                band->coord[0][j] = ff_j2k_ceildiv(band->coord[0][j], dx);
+                band->coord[0][j] = ff_jpeg2000_ceildiv(band->coord[0][j], dx);
             for (j = 0; j < 2; j++)
-                band->coord[1][j] = ff_j2k_ceildiv(band->coord[1][j], dy);
+                band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
 
-            band->cblknx = ff_j2k_ceildiv(band->cblknx, dx);
-            band->cblkny = ff_j2k_ceildiv(band->cblkny, dy);
+            band->cblknx = ff_jpeg2000_ceildiv(band->cblknx, dx);
+            band->cblkny = ff_jpeg2000_ceildiv(band->cblkny, dy);
 
             band->cblk = av_malloc(sizeof(Jpeg2000Cblk) * band->cblknx * band->cblkny);
             if (!band->cblk)
@@ -304,7 +300,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
             y0 = band->coord[1][0];
             y1 = ((band->coord[1][0] + (1<<codsty->log2_prec_height)) & ~((1<<codsty->log2_prec_height)-1)) - y0;
             yi0 = 0;
-            yi1 = ff_j2k_ceildivpow2(y1 - y0, codsty->log2_cblk_height) << codsty->log2_cblk_height;
+            yi1 = ff_jpeg2000_ceildivpow2(y1 - y0, codsty->log2_cblk_height) << codsty->log2_cblk_height;
             yi1 = FFMIN(yi1, band->cblkny);
             cblkperprech = 1<<(codsty->log2_prec_height - codsty->log2_cblk_height);
             for (precy = 0, precno = 0; precy < reslevel->num_precincts_y; precy++){
@@ -319,7 +315,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
             x0 = band->coord[0][0];
             x1 = ((band->coord[0][0] + (1<<codsty->log2_prec_width)) & ~((1<<codsty->log2_prec_width)-1)) - x0;
             xi0 = 0;
-            xi1 = ff_j2k_ceildivpow2(x1 - x0, codsty->log2_cblk_width) << codsty->log2_cblk_width;
+            xi1 = ff_jpeg2000_ceildivpow2(x1 - x0, codsty->log2_cblk_width) << codsty->log2_cblk_width;
             xi1 = FFMIN(xi1, band->cblknx);
 
             cblkperprecw = 1<<(codsty->log2_prec_width - codsty->log2_cblk_width);
