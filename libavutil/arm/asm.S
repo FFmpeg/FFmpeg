@@ -291,7 +291,7 @@ T       sub             \rn, \rn, \rm
 .endm
 
 #if HAVE_VFP_ARGS
-        .eabi_attribute 28, 1
+ELF     .eabi_attribute 28, 1
 #   define VFP
 #   define NOVFP @
 #else
