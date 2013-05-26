@@ -146,7 +146,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
 
-                        bytestream2_get_be16u(&s->g); // Rsiz
+    s->avctx->profile = bytestream2_get_be16u(&s->g); // Rsiz
     s->width          = bytestream2_get_be32u(&s->g); // Width
     s->height         = bytestream2_get_be32u(&s->g); // Height
     s->image_offset_x = bytestream2_get_be32u(&s->g); // X0Siz
@@ -1022,6 +1022,15 @@ static void jpeg2000_init_static_data(AVCodec *codec)
     ff_jpeg2000_init_tier1_luts();
 }
 
+static const AVProfile profiles[] = {
+    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_0,  "JPEG 2000 codestream restriction 0"   },
+    { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_1,  "JPEG 2000 codestream restriction 1"   },
+    { FF_PROFILE_JPEG2000_CSTREAM_NO_RESTRICTION, "JPEG 2000 no codestream restrictions" },
+    { FF_PROFILE_JPEG2000_DCINEMA_2K,             "JPEG 2000 digital cinema 2K"          },
+    { FF_PROFILE_JPEG2000_DCINEMA_4K,             "JPEG 2000 digital cinema 4K"          },
+    { FF_PROFILE_UNKNOWN },
+};
+
 AVCodec ff_j2k_decoder = {
     .name             = "j2k",
     .long_name        = NULL_IF_CONFIG_SMALL("JPEG 2000"),
@@ -1031,4 +1040,5 @@ AVCodec ff_j2k_decoder = {
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
     .init_static_data = jpeg2000_init_static_data,
     .decode           = decode_frame,
+    .profiles         = NULL_IF_CONFIG_SMALL(profiles)
 };
