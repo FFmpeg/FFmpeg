@@ -82,9 +82,10 @@ static float *dct_block(DCTdnoizContext *ctx, const float *src, int src_linesize
         av_dct_calc(ctx->dct, line);
 
         column = ctx->tmp_block + y;
-        for (x = 0; x < BSIZE; x++) {
-            *line *= x == 0 ? 1. / sqrt(BSIZE) : sqrt(2. / BSIZE);
-            *column = *line++;
+        column[0] = line[0] * (1. / sqrt(BSIZE));
+        column += BSIZE;
+        for (x = 1; x < BSIZE; x++) {
+            *column = line[x] * sqrt(2. / BSIZE);
             column += BSIZE;
         }
     }
@@ -92,8 +93,9 @@ static float *dct_block(DCTdnoizContext *ctx, const float *src, int src_linesize
     column = ctx->tmp_block;
     for (x = 0; x < BSIZE; x++) {
         av_dct_calc(ctx->dct, column);
-        for (y = 0; y < BSIZE; y++)
-            column[y] *= y == 0 ? 1. / sqrt(BSIZE) : sqrt(2. / BSIZE);
+        column[0] *= 1. / sqrt(BSIZE);
+        for (y = 1; y < BSIZE; y++)
+            column[y] *= sqrt(2. / BSIZE);
         column += BSIZE;
     }
 
@@ -111,18 +113,18 @@ static void idct_block(DCTdnoizContext *ctx, float *dst, int dst_linesize)
     float *tmp = ctx->tmp_block;
 
     for (y = 0; y < BSIZE; y++) {
-        for (x = 0; x < BSIZE; x++)
-            block[x] *= x == 0 ? sqrt(BSIZE) : 1./sqrt(2. / BSIZE);
+        block[0] *= sqrt(BSIZE);
+        for (x = 1; x < BSIZE; x++)
+            block[x] *= 1./sqrt(2. / BSIZE);
         av_dct_calc(ctx->idct, block);
         block += BSIZE;
     }
 
     block = ctx->block;
     for (y = 0; y < BSIZE; y++) {
-        for (x = 0; x < BSIZE; x++) {
-            tmp[x] = block[x*BSIZE + y];
-            tmp[x] *= x == 0 ? sqrt(BSIZE) : 1./sqrt(2. / BSIZE);
-        }
+        tmp[0] = block[y] * sqrt(BSIZE);
+        for (x = 1; x < BSIZE; x++)
+            tmp[x] = block[x*BSIZE + y] * (1./sqrt(2. / BSIZE));
         av_dct_calc(ctx->idct, tmp);
         for (x = 0; x < BSIZE; x++)
             dst[x*dst_linesize + y] += tmp[x];
