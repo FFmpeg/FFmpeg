@@ -1490,6 +1490,7 @@ static int transcode_init(void)
         }
 
         if (ost->stream_copy) {
+            AVRational sar;
             uint64_t extra_size;
 
             av_assert0(ist && !ost->filter);
@@ -1547,13 +1548,13 @@ static int transcode_init(void)
                 codec->width              = icodec->width;
                 codec->height             = icodec->height;
                 codec->has_b_frames       = icodec->has_b_frames;
-                if (!codec->sample_aspect_ratio.num) {
-                    codec->sample_aspect_ratio   =
-                    ost->st->sample_aspect_ratio =
-                        ist->st->sample_aspect_ratio.num ? ist->st->sample_aspect_ratio :
-                        ist->st->codec->sample_aspect_ratio.num ?
-                        ist->st->codec->sample_aspect_ratio : (AVRational){0, 1};
-                }
+                if (ost->frame_aspect_ratio)
+                    sar = av_d2q(ost->frame_aspect_ratio * codec->height / codec->width, 255);
+                else if (ist->st->sample_aspect_ratio.num)
+                    sar = ist->st->sample_aspect_ratio;
+                else
+                    sar = icodec->sample_aspect_ratio;
+                ost->st->sample_aspect_ratio = codec->sample_aspect_ratio = sar;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->width  = icodec->width;

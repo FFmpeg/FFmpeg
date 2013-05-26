@@ -983,15 +983,20 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *video_enc;
+    char *frame_aspect_ratio = NULL;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO);
     st  = ost->st;
     video_enc = st->codec;
 
+    MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
+    if (frame_aspect_ratio)
+        ost->frame_aspect_ratio = parse_frame_aspect_ratio(frame_aspect_ratio);
+
     if (!ost->stream_copy) {
         const char *p = NULL;
         char *frame_rate = NULL, *frame_size = NULL;
-        char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
+        char *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
         int do_pass = 0;
         int i;
@@ -1007,10 +1012,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             av_log(NULL, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
             exit(1);
         }
-
-        MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
-        if (frame_aspect_ratio)
-            ost->frame_aspect_ratio = parse_frame_aspect_ratio(frame_aspect_ratio);
 
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
         if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == AV_PIX_FMT_NONE) {
