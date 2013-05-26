@@ -1003,7 +1003,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
                 s->chroma_shift, s->chroma_shift + 1);
     }
 
-    ff_j2k_init_tier1_luts();
+    ff_jpeg2000_init_tier1_luts();
 
     init_luts();
 

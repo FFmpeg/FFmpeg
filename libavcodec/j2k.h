@@ -207,7 +207,7 @@ static inline int ff_jpeg2000_ceildiv(int a, int b)
 Jpeg2000TgtNode *ff_j2k_tag_tree_init(int w, int h);
 
 /* TIER-1 routines */
-void ff_j2k_init_tier1_luts(void);
+void ff_jpeg2000_init_tier1_luts(void);
 
 void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative);
 

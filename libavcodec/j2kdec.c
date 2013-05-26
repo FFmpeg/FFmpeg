@@ -1088,7 +1088,7 @@ static av_cold int j2kdec_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    ff_j2k_init_tier1_luts();
+    ff_jpeg2000_init_tier1_luts();
 
     return 0;
 }
