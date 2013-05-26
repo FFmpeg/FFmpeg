@@ -24,11 +24,14 @@
 #define AVCODEC_J2K_H
 
 /**
- * JPEG2000 tables
  * @file
- * @author Kamil Nowosad
+ * JPEG 2000 structures and defines common
+ * to encoder and decoder
  */
 
+#include <stdint.h>
+
+#include "avcodec.h"
 #include "mqc.h"
 #include "j2k_dwt.h"
 
@@ -114,7 +117,7 @@ enum Jpeg2000Quantsty { // quantization style
 
 typedef struct Jpeg2000T1Context {
     int data[JPEG2000_MAX_CBLKW][JPEG2000_MAX_CBLKH];
-    int flags[JPEG2000_MAX_CBLKW+2][JPEG2000_MAX_CBLKH+2];
+    int flags[JPEG2000_MAX_CBLKW + 2][JPEG2000_MAX_CBLKH + 2];
     MqcState mqc;
 } Jpeg2000T1Context;
 
@@ -139,10 +142,10 @@ typedef struct Jpeg2000CodingStyle {
 } Jpeg2000CodingStyle;
 
 typedef struct Jpeg2000QuantStyle {
-    uint8_t  expn[32 * 3]; // quantization exponent
+    uint8_t expn[32 * 3];  // quantization exponent
     uint16_t mant[32 * 3]; // quantization mantissa
-    uint8_t  quantsty;     // quantization style
-    uint8_t  nguardbits;   // number of guard bits
+    uint8_t quantsty;      // quantization style
+    uint8_t nguardbits;    // number of guard bits
 } Jpeg2000QuantStyle;
 
 typedef struct Jpeg2000Pass {
@@ -150,7 +153,7 @@ typedef struct Jpeg2000Pass {
     int64_t disto;
 } Jpeg2000Pass;
 
-typedef struct Jpeg2000Cblk  {
+typedef struct Jpeg2000Cblk {
     uint8_t npasses;
     uint8_t ninclpasses; // number coding of passes included in codestream
     uint8_t nonzerobits;
@@ -179,7 +182,7 @@ typedef struct Jpeg2000Band {
 
 typedef struct Jpeg2000ResLevel {
     uint8_t nbands;
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t num_precincts_x, num_precincts_y; // number of precincts in x/y direction
     uint8_t log2_prec_width, log2_prec_height; // exponent of precinct size
     Jpeg2000Band *band;
@@ -189,7 +192,7 @@ typedef struct Jpeg2000Component {
     Jpeg2000ResLevel *reslevel;
     DWTContext dwt;
     int *data;
-    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
+    uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Component;
 
 /* misc tools */
@@ -207,9 +210,14 @@ static inline int ff_jpeg2000_ceildiv(int a, int b)
 Jpeg2000TgtNode *ff_j2k_tag_tree_init(int w, int h);
 
 /* TIER-1 routines */
+
+/* Set up lookup tables used in TIER-1. */
 void ff_jpeg2000_init_tier1_luts(void);
 
-void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y, int negative);
+/* Update significance of a coefficient at current position (x,y) and
+ * for neighbors. */
+void ff_j2k_set_significant(Jpeg2000T1Context *t1,
+                            int x, int y, int negative);
 
 extern uint8_t ff_jpeg2000_sigctxno_lut[256][4];
 
@@ -220,11 +228,12 @@ static inline int ff_jpeg2000_getsigctxno(int flag, int bandno)
     return ff_jpeg2000_sigctxno_lut[flag & 255][bandno];
 }
 
+static const uint8_t refctxno_lut[2][2] = { { 14, 15 }, { 16, 16 } };
+
 /* Get context label (number in range[14..16]) of a coefficient for magnitude
  * refinement pass. */
 static inline int ff_jpeg2000_getrefctxno(int flag)
 {
-    static const uint8_t refctxno_lut[2][2] = { { 14, 15 }, { 16, 16 } };
     return refctxno_lut[(flag >> 14) & 1][(flag & 255) != 0];
 }
 

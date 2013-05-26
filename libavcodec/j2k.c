@@ -114,7 +114,7 @@ static int getsigctxno(int flag, int bandno)
         if (v == 1) return 3;
         if (d >= 2) return 2;
         if (d == 1) return 1;
-    } else{
+    } else {
         if (d >= 3) return 8;
         if (d == 2) {
             if (h+v >= 1) return 7;
@@ -172,7 +172,10 @@ void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y,
     t1->flags[y - 1][x - 1] |= JPEG2000_T1_SIG_SE;
 }
 
-int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, Jpeg2000QuantStyle *qntsty, int cbps, int dx, int dy)
+int ff_j2k_init_component(Jpeg2000Component *comp,
+                          Jpeg2000CodingStyle *codsty,
+                          Jpeg2000QuantStyle *qntsty,
+                          int cbps, int dx, int dy)
 {
     uint8_t log2_band_prec_width, log2_band_prec_height;
     int reslevelno, bandno, gbandno = 0, ret, i, j, csize = 1;
@@ -182,16 +185,20 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
     for (i = 0; i < 2; i++)
         csize *= comp->coord[i][1] - comp->coord[i][0];
 
-    comp->data = av_malloc_array(csize, sizeof(int));
+    comp->data = av_malloc_array(csize, sizeof(*comp->data));
     if (!comp->data)
         return AVERROR(ENOMEM);
     comp->reslevel = av_malloc_array(codsty->nreslevels, sizeof(*comp->reslevel));
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
+    /* LOOP on resolution levels */
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
-        int declvl = codsty->nreslevels - reslevelno;
+        int declvl = codsty->nreslevels - reslevelno;    // N_L -r see  ISO/IEC 15444-1:2002 B.5
         Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
+        /* Compute borders for each resolution level.
+         * Computation of trx_0, trx_1, try_0 and try_1.
+         * see ISO/IEC 15444-1:2002 eq. B.5 and B-14 */
         for (i = 0; i < 2; i++)
             for (j = 0; j < 2; j++)
                 reslevel->coord[i][j] =
@@ -200,22 +207,34 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
         reslevel->log2_prec_width  = codsty->log2_prec_widths[reslevelno];
         reslevel->log2_prec_height = codsty->log2_prec_heights[reslevelno];
 
+        /* Number of bands for each resolution level */
         if (reslevelno == 0)
             reslevel->nbands = 1;
         else
             reslevel->nbands = 3;
 
+        /* Number of precincts wich span the tile for resolution level reslevelno
+         * see B.6 in ISO/IEC 15444-1:2002 eq. B-16
+         * num_precincts_x = |- trx_1 / 2 ^ log2_prec_width) -| - (trx_0 / 2 ^ log2_prec_width)
+         * num_precincts_y = |- try_1 / 2 ^ log2_prec_width) -| - (try_0 / 2 ^ log2_prec_width)
+         * for Dcinema profiles in JPEG 2000
+         * num_precincts_x = |- trx_1 / 2 ^ log2_prec_width) -|
+         * num_precincts_y = |- try_1 / 2 ^ log2_prec_width) -| */
         if (reslevel->coord[0][1] == reslevel->coord[0][0])
             reslevel->num_precincts_x = 0;
         else
-            reslevel->num_precincts_x = ff_jpeg2000_ceildivpow2(reslevel->coord[0][1], reslevel->log2_prec_width)
-                                        - (reslevel->coord[0][0] >> reslevel->log2_prec_width);
+            reslevel->num_precincts_x =
+                ff_jpeg2000_ceildivpow2(reslevel->coord[0][1],
+                                        reslevel->log2_prec_width) -
+                (reslevel->coord[0][0] >> reslevel->log2_prec_width);
 
         if (reslevel->coord[1][1] == reslevel->coord[1][0])
             reslevel->num_precincts_y = 0;
         else
-            reslevel->num_precincts_y = ff_jpeg2000_ceildivpow2(reslevel->coord[1][1], reslevel->log2_prec_height)
-                                        - (reslevel->coord[1][0] >> reslevel->log2_prec_height);
+            reslevel->num_precincts_y =
+                ff_jpeg2000_ceildivpow2(reslevel->coord[1][1],
+                                        reslevel->log2_prec_height) -
+                (reslevel->coord[1][0] >> reslevel->log2_prec_height);
 
         reslevel->band = av_malloc_array(reslevel->nbands, sizeof(*reslevel->band));
         if (!reslevel->band)
@@ -252,7 +271,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty, 
                                                reslevel->log2_prec_width);
                 band->log2_cblk_height = FFMIN(codsty->log2_cblk_height,
                                                reslevel->log2_prec_height);
-            } else{
+            } else {
                 /* 3 bands x0_b = 1 y0_b = 0; x0_b = 0 y0_b = 1; x0_b = y0_b = 1 */
                 /* x0_b and y0_b are computed with ((bandno + 1 >> i) & 1) */
                 for (i = 0; i < 2; i++)
@@ -376,7 +395,7 @@ void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
     for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
         Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
-        for (bandno = 0; bandno < reslevel->nbands ; bandno++) {
+        for (bandno = 0; bandno < reslevel->nbands; bandno++) {
             Jpeg2000Band *band = reslevel->band + bandno;
                 for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
                     Jpeg2000Prec *prec = band->prec + precno;
