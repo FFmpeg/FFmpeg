@@ -116,4 +116,5 @@ AVFilter avfilter_vf_bbox = {
     .query_formats = query_formats,
     .inputs        = bbox_inputs,
     .outputs       = bbox_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
