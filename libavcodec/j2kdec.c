@@ -1037,6 +1037,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     s->picture = picture;
 
+    s->avctx = avctx;
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
@@ -1085,8 +1086,6 @@ err_out:
 static av_cold int j2kdec_init(AVCodecContext *avctx)
 {
     Jpeg2000DecoderContext *s = avctx->priv_data;
-
-    s->avctx = avctx;
 
     ff_jpeg2000_init_tier1_luts();
 
