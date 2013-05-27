@@ -252,7 +252,8 @@ static inline int ff_jpeg2000_getsgnctxno(int flag, int *xorbit)
 int ff_j2k_init_component(Jpeg2000Component *comp,
                           Jpeg2000CodingStyle *codsty,
                           Jpeg2000QuantStyle *qntsty,
-                          int cbps, int dx, int dy);
+                          int cbps, int dx, int dy,
+                          AVCodecContext *avctx);
 void ff_j2k_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 

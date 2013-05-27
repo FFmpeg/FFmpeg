@@ -173,10 +173,13 @@ void ff_j2k_set_significant(Jpeg2000T1Context *t1, int x, int y,
     t1->flags[y - 1][x - 1] |= JPEG2000_T1_SIG_SE;
 }
 
+static const uint8_t lut_gain[2][4] = { { 0, 0, 0, 0 }, { 0, 1, 1, 2 } };
+
 int ff_j2k_init_component(Jpeg2000Component *comp,
                           Jpeg2000CodingStyle *codsty,
                           Jpeg2000QuantStyle *qntsty,
-                          int cbps, int dx, int dy)
+                          int cbps, int dx, int dy,
+                          AVCodecContext *avctx)
 {
     uint8_t log2_band_prec_width, log2_band_prec_height;
     int reslevelno, bandno, gbandno = 0, ret, i, j, csize = 1;
@@ -245,16 +248,53 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             Jpeg2000Band *band = reslevel->band + bandno;
             int cblkno, precno;
             int nb_precincts;
+            double stepsize;
 
-            if (qntsty->quantsty != JPEG2000_QSTY_NONE) {
-                static const uint8_t lut_gain[2][4] = {{0, 0, 0, 0}, {0, 1, 1, 2}};
+            /* TODO: Implementation of quantization step not finished,
+             * see ISO/IEC 15444-1:2002 E.1 and A.6.4. */
+            switch (qntsty->quantsty) {
+                uint8_t gain;
                 int numbps;
+            case JPEG2000_QSTY_NONE:
+                /* TODO: to verify. No quantization in this case */
+                stepsize = 1;
+                break;
+            case JPEG2000_QSTY_SI:
+                /*TODO: Compute formula to implement. */
+                numbps = cbps +
+                         lut_gain[codsty->transform][bandno + reslevelno > 0];
+                stepsize = SHL(2048 + qntsty->mant[gbandno],
+                                            2 + numbps - qntsty->expn[gbandno]);
+                break;
+            case JPEG2000_QSTY_SE:
+                /* Exponent quantization step.
+                 * Formula:
+                 * delta_b = 2 ^ (R_b - expn_b) * (1 + (mant_b / 2 ^ 11))
+                 * R_b = R_I + log2 (gain_b )
+                 * see ISO/IEC 15444-1:2002 E.1.1 eqn. E-3 and E-4 */
+                /* TODO/WARN: value of log2 (gain_b ) not taken into account
+                 * but it works (compared to OpenJPEG). Why?
+                 * Further investigation needed. */
+                gain      = cbps;
+                stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
+                stepsize *= (qntsty->mant[gbandno] / 2048.0 + 1.0);
+                /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
+                 * If not set output of entropic decoder is not correct. */
+//                 stepsize *= 0.5;
+                break;
+            default:
+                stepsize = 0;
+                av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
+                break;
+            }
+            /* BITEXACT computing case --> convert to int */
+//             if (avctx->flags & CODEC_FLAG_BITEXACT)
+            band->stepsize = stepsize * (1 << 13);
 
-                numbps = cbps + lut_gain[codsty->transform][bandno + reslevelno>0];
-                band->stepsize = SHL(2048 + qntsty->mant[gbandno], 2 + numbps - qntsty->expn[gbandno]);
-            } else
-                band->stepsize = 1 << 13;
-
+            /* computation of tbx_0, tbx_1, tby_0, tby_1
+             * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
+             * codeblock width and height is computed for
+             * DCI JPEG 2000 codeblock_width = codeblock_width = 32 = 2 ^ 5 */
             if (reslevelno == 0) {
                 /* for reslevelno = 0, only one band, x0_b = y0_b = 0 */
                 for (i = 0; i < 2; i++)
