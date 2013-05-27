@@ -291,16 +291,11 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                 log2_band_prec_width  = reslevel->log2_prec_width  - 1;
                 log2_band_prec_height = reslevel->log2_prec_height - 1;
             }
-            band->cblknx = ff_jpeg2000_ceildivpow2(band->coord[0][1], band->log2_cblk_width)  - (band->coord[0][0] >> band->log2_cblk_width);
-            band->cblkny = ff_jpeg2000_ceildivpow2(band->coord[1][1], band->log2_cblk_height) - (band->coord[1][0] >> band->log2_cblk_height);
 
             for (j = 0; j < 2; j++)
                 band->coord[0][j] = ff_jpeg2000_ceildiv(band->coord[0][j], dx);
             for (j = 0; j < 2; j++)
                 band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
-
-            band->cblknx = ff_jpeg2000_ceildiv(band->cblknx, dx);
-            band->cblkny = ff_jpeg2000_ceildiv(band->cblkny, dy);
 
             band->prec = av_malloc_array(reslevel->num_precincts_x *
                                          reslevel->num_precincts_y,

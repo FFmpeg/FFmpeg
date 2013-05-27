@@ -821,6 +821,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
 
             for (bandno = 0; bandno < reslevel->nbands ; bandno++){
                 Jpeg2000Band *band = reslevel->band + bandno;
+                Jpeg2000Prec *prec = band->prec; // we support only 1 precinct per band ATM in the encoder
                 int cblkx, cblky, cblkno=0, xx0, x0, xx1, y0, yy0, yy1, bandpos;
                 yy0 = bandno == 0 ? 0 : comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
                 y0 = yy0;
@@ -832,7 +833,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
 
                 bandpos = bandno + (reslevelno > 0);
 
-                for (cblky = 0; cblky < band->cblkny; cblky++){
+                for (cblky = 0; cblky < prec->nb_codeblocks_height; cblky++){
                     if (reslevelno == 0 || bandno == 1)
                         xx0 = 0;
                     else
@@ -841,7 +842,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                     xx1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[0][0] + 1, band->log2_cblk_width) << band->log2_cblk_width,
                                 band->coord[0][1]) - band->coord[0][0] + xx0;
 
-                    for (cblkx = 0; cblkx < band->cblknx; cblkx++, cblkno++){
+                    for (cblkx = 0; cblkx < prec->nb_codeblocks_width; cblkx++, cblkno++){
                         int y, x;
                         if (codsty->transform == FF_DWT53){
                             for (y = yy0; y < yy1; y++){
@@ -860,7 +861,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                                 }
                             }
                         }
-                        encode_cblk(s, &t1, band->prec->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
+                        encode_cblk(s, &t1, prec->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
                                     bandpos, codsty->nreslevels - reslevelno - 1);
                         xx0 = xx1;
                         xx1 = FFMIN(xx1 + (1 << band->log2_cblk_width), band->coord[0][1] - band->coord[0][0] + x0);
