@@ -264,9 +264,8 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                 for (i = 0; i < 2; i++)
                     for (j = 0; j < 2; j++)
                         band->coord[i][j] =
-                            ff_jpeg2000_ceildivpow2(comp->coord[i][j],
+                            ff_jpeg2000_ceildivpow2(comp->coord[i][j] - comp->coord[i][0],
                                                     declvl - 1);
-
                 log2_band_prec_width  = reslevel->log2_prec_width;
                 log2_band_prec_height = reslevel->log2_prec_height;
                 /* see ISO/IEC 15444-1:2002 eq. B-17 and eq. B-15 */
@@ -281,7 +280,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                     for (j = 0; j < 2; j++)
                         /* Formula example for tbx_0 = ceildiv((tcx_0 - 2 ^ (declvl - 1) * x0_b) / declvl) */
                         band->coord[i][j] =
-                            ff_jpeg2000_ceildivpow2(comp->coord[i][j] -
+                            ff_jpeg2000_ceildivpow2(comp->coord[i][j] - comp->coord[i][0] -
                                                     (((bandno + 1 >> i) & 1) << declvl - 1),
                                                     declvl);
                 /* TODO: Manage case of 3 band offsets here or
