@@ -334,6 +334,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(ret != frame_size)
             return AVERROR(EIO);
         pkt->stream_index = smk->videoindex;
+        pkt->pts          = smk->cur_frame;
         pkt->size = ret + 769;
         smk->cur_frame++;
         smk->nextpos = avio_tell(s->pb);
