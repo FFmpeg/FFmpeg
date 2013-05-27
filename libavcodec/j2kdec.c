@@ -830,7 +830,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                                 int *datap = &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * (y+j) + x];
                                 int *ptr = t1.data[j];
                                 for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
-                                    int tmp = ((int64_t)ptr[i]) * ((int64_t)band->stepsize) >> 13, tmp2;
+                                    int tmp = ((int64_t)ptr[i]) * ((int64_t)band->stepsize) >> 16, tmp2;
                                     tmp2 = FFABS(tmp>>1) + (tmp&1);
                                     datap[i] = tmp < 0 ? -tmp2 : tmp2;
                                 }

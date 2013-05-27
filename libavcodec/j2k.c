@@ -289,7 +289,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             }
             /* BITEXACT computing case --> convert to int */
 //             if (avctx->flags & CODEC_FLAG_BITEXACT)
-            band->stepsize = stepsize * (1 << 13);
+            band->stepsize = stepsize * (1 << 16);
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
