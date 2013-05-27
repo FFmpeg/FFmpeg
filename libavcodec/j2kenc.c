@@ -985,7 +985,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     codsty->nreslevels       = 7;
     codsty->log2_cblk_width  = 4;
     codsty->log2_cblk_height = 4;
-    codsty->transform        = 1;
+    codsty->transform        = avctx->prediction_method;
 
     qntsty->nguardbits       = 1;
 
