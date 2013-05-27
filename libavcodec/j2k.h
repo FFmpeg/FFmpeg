@@ -182,7 +182,6 @@ typedef struct Jpeg2000Band {
     uint16_t cblknx, cblkny;
     uint32_t stepsize; // quantization stepsize (* 2^13)
     Jpeg2000Prec *prec;
-    Jpeg2000Cblk *cblk;
 } Jpeg2000Band; // subband
 
 typedef struct Jpeg2000ResLevel {

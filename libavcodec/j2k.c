@@ -306,11 +306,6 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             band->cblknx = ff_jpeg2000_ceildiv(band->cblknx, dx);
             band->cblkny = ff_jpeg2000_ceildiv(band->cblkny, dy);
 
-            band->cblk = av_malloc_array(band->cblknx *
-                                         band->cblkny,
-                                         sizeof(*band->cblk));
-            if (!band->cblk)
-                return AVERROR(ENOMEM);
             band->prec = av_malloc_array(reslevel->num_precincts_x *
                                          reslevel->num_precincts_y,
                                          sizeof(*band->prec));
@@ -399,11 +394,9 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                 if (!prec->zerobits)
                     return AVERROR(ENOMEM);
 
-//                 prec->cblk = av_malloc_array(prec->nb_codeblocks_width *
-//                                              prec->nb_codeblocks_height,
-//                                              sizeof(*prec->cblk));
-                prec->cblk = band->cblk;
-                av_assert0(nb_precincts == 1);
+                prec->cblk = av_malloc_array(prec->nb_codeblocks_width *
+                                             prec->nb_codeblocks_height,
+                                             sizeof(*prec->cblk));
                 if (!prec->cblk)
                     return AVERROR(ENOMEM);
                 for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
@@ -461,11 +454,11 @@ void ff_j2k_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
                 Jpeg2000Prec *prec = band->prec + precno;
                 tag_tree_zero(prec->zerobits, prec->xi1 - prec->xi0, prec->yi1 - prec->yi0);
                 tag_tree_zero(prec->cblkincl, prec->xi1 - prec->xi0, prec->yi1 - prec->yi0);
-            }
-            for (cblkno = 0; cblkno < band->cblknx * band->cblkny; cblkno++) {
-                Jpeg2000Cblk *cblk = band->cblk + cblkno;
-                cblk->length = 0;
-                cblk->lblock = 3;
+                for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
+                    Jpeg2000Cblk *cblk = prec->cblk + cblkno;
+                    cblk->length = 0;
+                    cblk->lblock = 3;
+                }
             }
         }
     }
@@ -483,8 +476,8 @@ void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
                     Jpeg2000Prec *prec = band->prec + precno;
                     av_freep(&prec->zerobits);
                     av_freep(&prec->cblkincl);
+                    av_freep(&prec->cblk);
                 }
-                av_freep(&band->cblk);
                 av_freep(&band->prec);
             }
         av_freep(&reslevel->band);
