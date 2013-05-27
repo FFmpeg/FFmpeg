@@ -365,7 +365,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(TAK,               tak);
     REGISTER_DECODER(TRUEHD,            truehd);
     REGISTER_DECODER(TRUESPEECH,        truespeech);
-    REGISTER_DECODER(TTA,               tta);
+    REGISTER_ENCDEC (TTA,               tta);
     REGISTER_DECODER(TWINVQ,            twinvq);
     REGISTER_DECODER(VMDAUDIO,          vmdaudio);
     REGISTER_ENCDEC (VORBIS,            vorbis);

@@ -60,6 +60,7 @@ version <next>:
 - support for WavPack muxing (raw and in Matroska)
 - XVideo output device
 - vignette filter
+- True Audio (TTA) encoder
 
 
 version 1.2:
