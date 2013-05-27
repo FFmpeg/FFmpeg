@@ -160,9 +160,9 @@ static void dwt_encode97(DWTContext *s, int *t)
 
             // copy back and deinterleave
             for (i =   mh; i < lh; i+=2, j++)
-                t[w*lp + j] = scale97[mh] * l[i] / 2;
+                t[w*lp + j] = scale97[0] * l[i] / 2;
             for (i = 1-mh; i < lh; i+=2, j++)
-                t[w*lp + j] = scale97[mh] * l[i] / 2;
+                t[w*lp + j] = scale97[1] * l[i] / 2;
         }
 
         // VER_SD
@@ -177,9 +177,9 @@ static void dwt_encode97(DWTContext *s, int *t)
 
             // copy back and deinterleave
             for (i =   mv; i < lv; i+=2, j++)
-                t[w*j + lp] = scale97[mv] * l[i] / 2;
+                t[w*j + lp] = scale97[0] * l[i] / 2;
             for (i = 1-mv; i < lv; i+=2, j++)
-                t[w*j + lp] = scale97[mv] * l[i] / 2;
+                t[w*j + lp] = scale97[1] * l[i] / 2;
         }
     }
 }
@@ -288,9 +288,9 @@ static void dwt_decode97(DWTContext *s, int *t)
             int i, j = 0;
             // copy with interleaving
             for (i =   mh; i < lh; i+=2, j++)
-                l[i] = scale97[1-mh] * t[w*lp + j];
+                l[i] = scale97[1] * t[w*lp + j];
             for (i = 1-mh; i < lh; i+=2, j++)
-                l[i] = scale97[1-mh] * t[w*lp + j];
+                l[i] = scale97[0] * t[w*lp + j];
 
             sr_1d97(line, mh, mh + lh);
 
@@ -304,9 +304,9 @@ static void dwt_decode97(DWTContext *s, int *t)
             int i, j = 0;
             // copy with interleaving
             for (i =   mv; i < lv; i+=2, j++)
-                l[i] = scale97[1-mv] * t[w*j + lp];
+                l[i] = scale97[1] * t[w*j + lp];
             for (i = 1-mv; i < lv; i+=2, j++)
-                l[i] = scale97[1-mv] * t[w*j + lp];
+                l[i] = scale97[0] * t[w*j + lp];
 
             sr_1d97(line, mv, mv + lv);
 

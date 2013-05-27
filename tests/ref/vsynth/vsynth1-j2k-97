@@ -1,4 +1,4 @@
-a8e2db2dc6fcd4c9ea3150dc8d6d7619 *tests/data/fate/vsynth1-j2k-97.avi
-2963264 tests/data/fate/vsynth1-j2k-97.avi
-68f26a8d366fce47cbd003cadc861cd8 *tests/data/fate/vsynth1-j2k-97.out.rawvideo
-stddev:    7.66 PSNR: 30.44 MAXDIFF:   58 bytes:  7603200/  7603200
+fc02bacb438c091a96ab327ab7aca5f9 *tests/data/fate/vsynth1-j2k-97.avi
+2034146 tests/data/fate/vsynth1-j2k-97.avi
+5975c315f9fd79e57e26bda1f749e8f6 *tests/data/fate/vsynth1-j2k-97.out.rawvideo
+stddev:    8.77 PSNR: 29.26 MAXDIFF:  104 bytes:  7603200/  7603200
