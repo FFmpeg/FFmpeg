@@ -129,8 +129,8 @@ static int32_t scalarproduct_and_madd_int16_altivec(int16_t *v1, const int16_t *
         pv1[0] = vec_mladd(t0, muls, i0);
         pv1[1] = vec_mladd(t1, muls, i1);
         pv1 += 2;
-        v2  += 8;
-        v3  += 8;
+        v2  += 16;
+        v3  += 16;
     } while(--order);
     res = vec_splat(vec_sums(res, zero_s32v), 3);
     vec_ste(res, 0, &ires);
