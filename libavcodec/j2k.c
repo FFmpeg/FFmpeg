@@ -431,14 +431,15 @@ void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 
         for (bandno = 0; bandno < reslevel->nbands; bandno++) {
             Jpeg2000Band *band = reslevel->band + bandno;
-                for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
-                    Jpeg2000Prec *prec = band->prec + precno;
-                    av_freep(&prec->zerobits);
-                    av_freep(&prec->cblkincl);
-                    av_freep(&prec->cblk);
-                }
-                av_freep(&band->prec);
+            for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++) {
+                Jpeg2000Prec *prec = band->prec + precno;
+                av_freep(&prec->zerobits);
+                av_freep(&prec->cblkincl);
+                av_freep(&prec->cblk);
             }
+
+            av_freep(&band->prec);
+        }
         av_freep(&reslevel->band);
     }
 
