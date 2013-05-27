@@ -789,59 +789,62 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
             Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
             /* Loop on bands */
             for (bandno = 0; bandno < rlevel->nbands; bandno++) {
+                int nb_precincts, precno;
                 Jpeg2000Band *band = rlevel->band + bandno;
-                int cblkx, cblky, cblkno=0, xx0, x0, xx1, y0, yy0, yy1, bandpos;
+                int cblkx, cblky, cblkno=0, bandpos;
 
                 bandpos = bandno + (reslevelno > 0);
-
-                yy0 = bandno == 0 ? 0 : comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
-                y0 = yy0;
-                yy1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[1][0] + 1,  band->log2_cblk_height) << band->log2_cblk_height,
-                            band->coord[1][1]) - band->coord[1][0] + yy0;
 
                 if (band->coord[0][0] == band->coord[0][1] || band->coord[1][0] == band->coord[1][1])
                     continue;
 
-                for (cblky = 0; cblky < band->cblkny; cblky++) {
-                    if (reslevelno == 0 || bandno == 1)
-                        xx0 = 0;
-                    else
-                        xx0 = comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
-                    x0 = xx0;
-                    xx1 = FFMIN(ff_jpeg2000_ceildivpow2(band->coord[0][0] + 1, band->log2_cblk_width) << band->log2_cblk_width,
-                                band->coord[0][1]) - band->coord[0][0] + xx0;
+                nb_precincts = rlevel->num_precincts_x * rlevel->num_precincts_y;
+                /* Loop on precincts */
+                for (precno = 0; precno < nb_precincts; precno++) {
+                    Jpeg2000Prec *prec = band->prec + precno;
 
-                    for (cblkx = 0; cblkx < band->cblknx; cblkx++, cblkno++) {
-                        int y, x;
-                        decode_cblk(s, codsty, &t1, band->cblk + cblkno, xx1 - xx0, yy1 - yy0, bandpos);
+                    /* Loop on codeblocks */
+                    for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
+                        int x, y;
+                        int i, j;
+                        Jpeg2000Cblk *cblk = prec->cblk + cblkno;
+                        decode_cblk(s, codsty, &t1, cblk,
+                                    cblk->coord[0][1] - cblk->coord[0][0],
+                                    cblk->coord[1][1] - cblk->coord[1][0],
+                                    bandpos);
+
+                        /* Manage band offsets */
+                        x = cblk->coord[0][0];
+                        y = cblk->coord[1][0];
+
                         if (codsty->transform == FF_DWT53) {
-                            for (y = yy0; y < yy1; y+=s->cdy[compno]) {
-                                int *ptr = t1.data[y-yy0];
-                                for (x = xx0; x < xx1; x+=s->cdx[compno]) {
-                                    comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] = *ptr++ >> 1;
+                            for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
+                                int *datap = &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * (y+j) + x];
+                                int *ptr = t1.data[j];
+                                for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
+                                    datap[i] = ptr[i] >> 1;
                                 }
                             }
                         } else{
-                            for (y = yy0; y < yy1; y+=s->cdy[compno]) {
-                                int *ptr = t1.data[y-yy0];
-                                for (x = xx0; x < xx1; x+=s->cdx[compno]) {
-                                    int tmp = ((int64_t)*ptr++) * ((int64_t)band->stepsize) >> 13, tmp2;
+                            for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
+                                int *datap = &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * (y+j) + x];
+                                int *ptr = t1.data[j];
+                                for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
+                                    int tmp = ((int64_t)ptr[i]) * ((int64_t)band->stepsize) >> 13, tmp2;
                                     tmp2 = FFABS(tmp>>1) + (tmp&1);
-                                    comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] = tmp < 0 ? -tmp2 : tmp2;
+                                    datap[i] = tmp < 0 ? -tmp2 : tmp2;
                                 }
                             }
                         }
-                        xx0 = xx1;
-                        xx1 = FFMIN(xx1 + (1 << band->log2_cblk_width), band->coord[0][1] - band->coord[0][0] + x0);
-                    }
-                    yy0 = yy1;
-                    yy1 = FFMIN(yy1 + (1 << band->log2_cblk_height), band->coord[1][1] - band->coord[1][0] + y0);
-                }
-            }
-        }
+                   } /* end cblk */
+                } /*end prec */
+            } /* end band */
+        } /* end reslevel */
+
         ff_j2k_dwt_decode(&comp->dwt, comp->data);
         src[compno] = comp->data;
-    }
+    } /*end comp */
+
     /* inverse MCT transformation */
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
