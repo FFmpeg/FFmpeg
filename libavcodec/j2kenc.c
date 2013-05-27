@@ -819,7 +819,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
         Jpeg2000Component *comp = s->tile[tileno].comp + compno;
 
         av_log(s->avctx, AV_LOG_DEBUG,"dwt\n");
-        if (ret = ff_j2k_dwt_encode(&comp->dwt, comp->data))
+        if (ret = ff_dwt_encode(&comp->dwt, comp->data))
             return ret;
         av_log(s->avctx, AV_LOG_DEBUG,"after dwt -> tier1\n");
 

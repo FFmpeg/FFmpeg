@@ -841,7 +841,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
             } /* end band */
         } /* end reslevel */
 
-        ff_j2k_dwt_decode(&comp->dwt, comp->data);
+        ff_dwt_decode(&comp->dwt, comp->data);
         src[compno] = comp->data;
     } /*end comp */
 

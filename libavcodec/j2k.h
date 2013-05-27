@@ -33,7 +33,7 @@
 
 #include "avcodec.h"
 #include "mqc.h"
-#include "j2k_dwt.h"
+#include "jpeg2000dwt.h"
 
 enum Jpeg2000Markers {
     JPEG2000_SOC = 0xff4f, // start of codestream

@@ -184,7 +184,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
     uint8_t log2_band_prec_width, log2_band_prec_height;
     int reslevelno, bandno, gbandno = 0, ret, i, j, csize = 1;
 
-    if (ret=ff_j2k_dwt_init(&comp->dwt, comp->coord, codsty->nreslevels-1, codsty->transform))
+    if (ret=ff_jpeg2000_dwt_init(&comp->dwt, comp->coord, codsty->nreslevels-1, codsty->transform == FF_DWT53 ? FF_DWT53 : FF_DWT97_INT))
         return ret;
     for (i = 0; i < 2; i++)
         csize *= comp->coord[i][1] - comp->coord[i][0];
@@ -483,7 +483,7 @@ void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
         av_freep(&reslevel->band);
     }
 
-    ff_j2k_dwt_destroy(&comp->dwt);
+    ff_dwt_destroy(&comp->dwt);
     av_freep(&comp->reslevel);
     av_freep(&comp->data);
 }
