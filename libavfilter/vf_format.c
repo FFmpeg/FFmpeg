@@ -109,12 +109,8 @@ static int query_formats_format(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVClass format_class = {
-    .class_name = "format",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define format_options options
+AVFILTER_DEFINE_CLASS(format);
 
 static const AVFilterPad avfilter_vf_format_inputs[] = {
     {
@@ -156,12 +152,8 @@ static int query_formats_noformat(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVClass noformat_class = {
-    .class_name = "noformat",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define noformat_options options
+AVFILTER_DEFINE_CLASS(noformat);
 
 static const AVFilterPad avfilter_vf_noformat_inputs[] = {
     {
