@@ -410,18 +410,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 #define OFFSET(x) offsetof(Frei0rContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
-static const AVOption filter_options[] = {
+static const AVOption frei0r_options[] = {
     { "filter_name",   NULL, OFFSET(dl_name), AV_OPT_TYPE_STRING, .flags = FLAGS },
     { "filter_params", NULL, OFFSET(params),  AV_OPT_TYPE_STRING, .flags = FLAGS },
     { NULL },
 };
 
-static const AVClass filter_class = {
-    .class_name = "frei0r",
-    .item_name  = av_default_item_name,
-    .option     = filter_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(frei0r);
 
 static const AVFilterPad avfilter_vf_frei0r_inputs[] = {
     {
@@ -450,7 +445,7 @@ AVFilter avfilter_vf_frei0r = {
     .uninit = uninit,
 
     .priv_size = sizeof(Frei0rContext),
-    .priv_class = &filter_class,
+    .priv_class = &frei0r_class,
 
     .inputs    = avfilter_vf_frei0r_inputs,
 
@@ -516,7 +511,7 @@ static int source_request_frame(AVFilterLink *outlink)
     return ff_filter_frame(outlink, frame);
 }
 
-static const AVOption src_options[] = {
+static const AVOption frei0r_src_options[] = {
     { "size",          "Dimensions of the generated video.", OFFSET(size),      AV_OPT_TYPE_STRING, { .str = "" },   .flags = FLAGS },
     { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = FLAGS },
     { "filter_name",   NULL,                                 OFFSET(dl_name),   AV_OPT_TYPE_STRING,                  .flags = FLAGS },
@@ -524,12 +519,7 @@ static const AVOption src_options[] = {
     { NULL },
 };
 
-static const AVClass src_class = {
-    .class_name = "frei0r_src",
-    .item_name  = av_default_item_name,
-    .option     = src_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(frei0r_src);
 
 static const AVFilterPad avfilter_vsrc_frei0r_src_outputs[] = {
     {
@@ -546,7 +536,7 @@ AVFilter avfilter_vsrc_frei0r_src = {
     .description = NULL_IF_CONFIG_SMALL("Generate a frei0r source."),
 
     .priv_size = sizeof(Frei0rContext),
-    .priv_class = &src_class,
+    .priv_class = &frei0r_src_class,
     .init      = source_init,
     .uninit    = uninit,
 
