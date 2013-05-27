@@ -426,6 +426,16 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     /* Compute Cy1 */
                     cblk->coord[1][1] = FFMIN(Cy0 + (1 << band->log2_cblk_height),
                                               prec->coord[1][1]);
+
+                    if((bandno + !!reslevelno) & 1) {
+                        cblk->coord[0][0] += comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
+                        cblk->coord[0][1] += comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
+                    }
+                    if((bandno + !!reslevelno) & 2) {
+                        cblk->coord[1][0] += comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
+                        cblk->coord[1][1] += comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
+                    }
+
                     cblk->zero      = 0;
                     cblk->lblock    = 3;
                     cblk->length    = 0;
