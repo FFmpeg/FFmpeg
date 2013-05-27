@@ -55,7 +55,7 @@ typedef struct {
 
 #define OFFSET(x) offsetof(InterlaceContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption options[] = {
+static const AVOption interlace_options[] = {
     { "scan", "scanning mode", OFFSET(scan),
         AV_OPT_TYPE_INT,   {.i64 = MODE_TFF }, 0, 1, .flags = V, .unit = "scan" },
     { "tff", "top field first", 0,
@@ -67,13 +67,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass class = {
-    .class_name = "interlace filter",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
+AVFILTER_DEFINE_CLASS(interlace);
 
 static const enum AVPixelFormat formats_supported[] = {
     AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
@@ -232,7 +226,7 @@ AVFilter avfilter_vf_interlace = {
     .description   = NULL_IF_CONFIG_SMALL("Convert progressive video into interlaced."),
     .uninit        = uninit,
 
-    .priv_class    = &class,
+    .priv_class    = &interlace_class,
     .priv_size     = sizeof(InterlaceContext),
     .query_formats = query_formats,
 
