@@ -26,12 +26,13 @@
  * @author Kamil Nowosad
  */
 
+#include "libavutil/common.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "thread.h"
 #include "j2k.h"
-#include "libavutil/common.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -74,6 +75,10 @@ typedef struct Jpeg2000DecoderContext {
     int             curtileno;
 
     Jpeg2000Tile    *tile;
+
+    /*options parameters*/
+    int             lowres;
+    int             reduction_factor;
 } Jpeg2000DecoderContext;
 
 static int get_bits(Jpeg2000DecoderContext *s, int n)
@@ -198,9 +203,11 @@ static int get_siz(Jpeg2000DecoderContext *s)
             return AVERROR(ENOMEM);
     }
 
-    s->avctx->width  = s->width  - s->image_offset_x;
-    s->avctx->height = s->height - s->image_offset_y;
-
+    /* compute image size with reduction factor */
+    s->avctx->width  = ff_jpeg2000_ceildivpow2(s->width  - s->image_offset_x,
+                                               s->reduction_factor);
+    s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
+                                               s->reduction_factor);
     switch(s->ncomponents) {
     case 1:
         if (s->precision > 8) {
@@ -243,6 +250,12 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
         av_log(s->avctx, AV_LOG_ERROR, "nreslevels %d is invalid\n", c->nreslevels);
         return AVERROR_INVALIDDATA;
     }
+
+    /* compute number of resolution levels to decode */
+    if (c->nreslevels < s->reduction_factor)
+        c->nreslevels2decode = 1;
+    else
+        c->nreslevels2decode = c->nreslevels - s->reduction_factor;
 
     c->log2_cblk_width  = (bytestream2_get_byteu(&s->g) & 15) + 2; // cblk width
     c->log2_cblk_height = (bytestream2_get_byteu(&s->g) & 15) + 2; // cblk height
@@ -434,10 +447,15 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
         Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
         int ret; // global bandno
 
-        comp->coord[0][0] = FFMAX(tilex * s->tile_width + s->tile_offset_x, s->image_offset_x);
-        comp->coord[0][1] = FFMIN((tilex+1)*s->tile_width + s->tile_offset_x, s->width);
-        comp->coord[1][0] = FFMAX(tiley * s->tile_height + s->tile_offset_y, s->image_offset_y);
-        comp->coord[1][1] = FFMIN((tiley+1)*s->tile_height + s->tile_offset_y, s->height);
+        comp->coord_o[0][0] = FFMAX(tilex       * s->tile_width  + s->tile_offset_x, s->image_offset_x);
+        comp->coord_o[0][1] = FFMIN((tilex + 1) * s->tile_width  + s->tile_offset_x, s->width);
+        comp->coord_o[1][0] = FFMAX(tiley       * s->tile_height + s->tile_offset_y, s->image_offset_y);
+        comp->coord_o[1][1] = FFMIN((tiley + 1) * s->tile_height + s->tile_offset_y, s->height);
+
+        comp->coord[0][0] = ff_jpeg2000_ceildivpow2(comp->coord_o[0][0], s->reduction_factor);
+        comp->coord[0][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[0][1], s->reduction_factor);
+        comp->coord[1][0] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], s->reduction_factor);
+        comp->coord[1][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][1], s->reduction_factor);
 
         if (ret = ff_j2k_init_component(comp, codsty, qntsty, s->cbps[compno], s->cdx[compno], s->cdy[compno], s->avctx))
             return ret;
@@ -785,7 +803,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
         Jpeg2000CodingStyle *codsty = tile->codsty + compno;
 
         /* Loop on resolution levels */
-        for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+        for (reslevelno = 0; reslevelno < codsty->nreslevels2decode; reslevelno++) {
             Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
             /* Loop on bands */
             for (bandno = 0; bandno < rlevel->nbands; bandno++) {
@@ -1025,6 +1043,9 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
+    // reduction factor, i.e number of resolution levels to skip
+    s->reduction_factor = avctx->lowres;
+
     if (bytestream2_get_bytes_left(&s->g) < 2) {
         ret = AVERROR(EINVAL);
         goto err_out;
@@ -1072,6 +1093,15 @@ static void jpeg2000_init_static_data(AVCodec *codec)
     ff_jpeg2000_init_tier1_luts();
 }
 
+#define OFFSET(x) offsetof(Jpeg2000DecoderContext, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption options[] = {
+    { "lowres",  "Lower the decoding resolution by a power of two",
+        OFFSET(lowres), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, JPEG2000_MAX_RESLEVELS - 1, VD },
+    { NULL },
+};
+
 static const AVProfile profiles[] = {
     { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_0,  "JPEG 2000 codestream restriction 0"   },
     { FF_PROFILE_JPEG2000_CSTREAM_RESTRICTION_1,  "JPEG 2000 codestream restriction 1"   },
@@ -1079,6 +1109,13 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_JPEG2000_DCINEMA_2K,             "JPEG 2000 digital cinema 2K"          },
     { FF_PROFILE_JPEG2000_DCINEMA_4K,             "JPEG 2000 digital cinema 4K"          },
     { FF_PROFILE_UNKNOWN },
+};
+
+static const AVClass class = {
+    .class_name = "j2k",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_j2k_decoder = {
@@ -1090,5 +1127,7 @@ AVCodec ff_j2k_decoder = {
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
     .init_static_data = jpeg2000_init_static_data,
     .decode           = jpeg2000_decode_frame,
+    .priv_class       = &class,
+    .max_lowres       = 5,
     .profiles         = NULL_IF_CONFIG_SMALL(profiles)
 };

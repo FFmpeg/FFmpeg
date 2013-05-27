@@ -357,14 +357,14 @@ static int init_tiles(Jpeg2000EncoderContext *s)
                 Jpeg2000Component *comp = tile->comp + compno;
                 int ret, i, j;
 
-                comp->coord[0][0] = tilex * s->tile_width;
-                comp->coord[0][1] = FFMIN((tilex+1)*s->tile_width, s->width);
-                comp->coord[1][0] = tiley * s->tile_height;
-                comp->coord[1][1] = FFMIN((tiley+1)*s->tile_height, s->height);
+                comp->coord[0][0] = comp->coord_o[0][0] = tilex * s->tile_width;
+                comp->coord[0][1] = comp->coord_o[0][1] = FFMIN((tilex+1)*s->tile_width, s->width);
+                comp->coord[1][0] = comp->coord_o[1][0] = tiley * s->tile_height;
+                comp->coord[1][1] = comp->coord_o[1][1] = FFMIN((tiley+1)*s->tile_height, s->height);
                 if (compno > 0)
                     for (i = 0; i < 2; i++)
                         for (j = 0; j < 2; j++)
-                            comp->coord[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
+                            comp->coord[i][j] = comp->coord_o[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
 
                 if (ret = ff_j2k_init_component(comp,
                                                 codsty,
@@ -982,6 +982,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     // TODO: implement setting non-standard precinct size
     memset(codsty->log2_prec_widths , 15, sizeof(codsty->log2_prec_widths ));
     memset(codsty->log2_prec_heights, 15, sizeof(codsty->log2_prec_heights));
+    codsty->nreslevels2decode=
     codsty->nreslevels       = 7;
     codsty->log2_cblk_width  = 4;
     codsty->log2_cblk_height = 4;

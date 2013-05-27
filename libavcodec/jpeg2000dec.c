@@ -543,12 +543,10 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
         comp->coord_o[1][0] = FFMAX(tiley       * s->tile_height + s->tile_offset_y, s->image_offset_y);
         comp->coord_o[1][1] = FFMIN((tiley + 1) * s->tile_height + s->tile_offset_y, s->height);
 
-        // FIXME: add a dcinema profile check ?
-        // value is guaranteed by profile (orig=0, 1 tile)
-        comp->coord[0][0] = 0;
-        comp->coord[0][1] = s->avctx->width;
-        comp->coord[1][0] = 0;
-        comp->coord[1][1] = s->avctx->height;
+        comp->coord[0][0] = ff_jpeg2000_ceildivpow2(comp->coord_o[0][0], s->reduction_factor);
+        comp->coord[0][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[0][1], s->reduction_factor);
+        comp->coord[1][0] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], s->reduction_factor);
+        comp->coord[1][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][1], s->reduction_factor);
 
         if (ret = ff_jpeg2000_init_component(comp, codsty, qntsty,
                                              s->cbps[compno], s->cdx[compno],
@@ -1369,5 +1367,6 @@ AVCodec ff_jpeg2000_decoder = {
     .pix_fmts         = (enum AVPixelFormat[]) { AV_PIX_FMT_XYZ12,
                                                  AV_PIX_FMT_GRAY8,
                                                  -1 },
+    .max_lowres       = 5,
     .profiles         = NULL_IF_CONFIG_SMALL(profiles)
 };
