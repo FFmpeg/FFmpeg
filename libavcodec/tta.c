@@ -29,6 +29,7 @@
 
 #define BITSTREAM_READER_LE
 #include <limits.h>
+#include "ttadata.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "unary.h"
@@ -39,24 +40,6 @@
 
 #define FORMAT_SIMPLE    1
 #define FORMAT_ENCRYPTED 2
-
-#define MAX_ORDER 16
-typedef struct TTAFilter {
-    int32_t shift, round, error;
-    int32_t qm[MAX_ORDER];
-    int32_t dx[MAX_ORDER];
-    int32_t dl[MAX_ORDER];
-} TTAFilter;
-
-typedef struct TTARice {
-    uint32_t k0, k1, sum0, sum1;
-} TTARice;
-
-typedef struct TTAChannel {
-    int32_t predictor;
-    TTAFilter filter;
-    TTARice rice;
-} TTAChannel;
 
 typedef struct TTAContext {
     AVClass *class;
@@ -74,40 +57,6 @@ typedef struct TTAContext {
     uint8_t *pass;
     TTAChannel *ch_ctx;
 } TTAContext;
-
-static const uint32_t shift_1[] = {
-    0x00000001, 0x00000002, 0x00000004, 0x00000008,
-    0x00000010, 0x00000020, 0x00000040, 0x00000080,
-    0x00000100, 0x00000200, 0x00000400, 0x00000800,
-    0x00001000, 0x00002000, 0x00004000, 0x00008000,
-    0x00010000, 0x00020000, 0x00040000, 0x00080000,
-    0x00100000, 0x00200000, 0x00400000, 0x00800000,
-    0x01000000, 0x02000000, 0x04000000, 0x08000000,
-    0x10000000, 0x20000000, 0x40000000, 0x80000000,
-    0x80000000, 0x80000000, 0x80000000, 0x80000000,
-    0x80000000, 0x80000000, 0x80000000, 0x80000000
-};
-
-static const uint32_t * const shift_16 = shift_1 + 4;
-
-static const int32_t ttafilter_configs[4] = {
-    10,
-    9,
-    10,
-    12
-};
-
-static void ttafilter_init(TTAContext *s, TTAFilter *c, int32_t shift) {
-    memset(c, 0, sizeof(TTAFilter));
-    if (s->format == FORMAT_ENCRYPTED) {
-        int i;
-        for (i = 0; i < 8; i++)
-            c->qm[i] = sign_extend(s->crc_pass[i], 8);
-    }
-    c->shift = shift;
-   c->round = shift_1[shift-1];
-//    c->round = 1 << (shift - 1);
-}
 
 static inline void ttafilter_process(TTAFilter *c, int32_t *in)
 {
@@ -138,14 +87,6 @@ static inline void ttafilter_process(TTAFilter *c, int32_t *in)
     dl[4] = -dl[5]; dl[5] = -dl[6];
     dl[6] = *in - dl[7]; dl[7] = *in;
     dl[5] += dl[6]; dl[4] += dl[5];
-}
-
-static void rice_init(TTARice *c, uint32_t k0, uint32_t k1)
-{
-    c->k0 = k0;
-    c->k1 = k1;
-    c->sum0 = shift_16[k0];
-    c->sum1 = shift_16[k1];
 }
 
 static const int64_t tta_channel_layouts[7] = {
@@ -319,9 +260,15 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
 
     // init per channel states
     for (i = 0; i < s->channels; i++) {
+        TTAFilter *filter = &s->ch_ctx[i].filter;
         s->ch_ctx[i].predictor = 0;
-        ttafilter_init(s, &s->ch_ctx[i].filter, ttafilter_configs[s->bps-1]);
-        rice_init(&s->ch_ctx[i].rice, 10, 10);
+        ff_tta_filter_init(filter, ff_tta_filter_configs[s->bps-1]);
+        if (s->format == FORMAT_ENCRYPTED) {
+            int i;
+            for (i = 0; i < 8; i++)
+                filter->qm[i] = sign_extend(s->crc_pass[i], 8);
+        }
+        ff_tta_rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
 
     i = 0;
@@ -361,16 +308,16 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         switch (depth) {
         case 1:
             rice->sum1 += value - (rice->sum1 >> 4);
-            if (rice->k1 > 0 && rice->sum1 < shift_16[rice->k1])
+            if (rice->k1 > 0 && rice->sum1 < ff_tta_shift_16[rice->k1])
                 rice->k1--;
-            else if(rice->sum1 > shift_16[rice->k1 + 1])
+            else if(rice->sum1 > ff_tta_shift_16[rice->k1 + 1])
                 rice->k1++;
-            value += shift_1[rice->k0];
+            value += ff_tta_shift_1[rice->k0];
         default:
             rice->sum0 += value - (rice->sum0 >> 4);
-            if (rice->k0 > 0 && rice->sum0 < shift_16[rice->k0])
+            if (rice->k0 > 0 && rice->sum0 < ff_tta_shift_16[rice->k0])
                 rice->k0--;
-            else if(rice->sum0 > shift_16[rice->k0 + 1])
+            else if(rice->sum0 > ff_tta_shift_16[rice->k0 + 1])
                 rice->k0++;
         }
 
