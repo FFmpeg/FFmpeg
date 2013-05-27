@@ -432,6 +432,48 @@ static int get_sot(Jpeg2000DecoderContext *s)
     return 0;
 }
 
+/* Tile-part lengths: see ISO 15444-1:2002, section A.7.1
+ * Used to know the number of tile parts and lengths.
+ * There may be multiple TLMs in the header.
+ * TODO: The function is not used for tile-parts management, nor anywhere else.
+ * It can be useful to allocate memory for tile parts, before managing the SOT
+ * markers. Parsing the TLM header is needed to increment the input header
+ * buffer.
+ * This marker is mandatory for DCI. */
+static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
+{
+    uint8_t Stlm, ST, SP, tile_tlm, i;
+    bytestream2_get_byte(&s->g);               /* Ztlm: skipped */
+    Stlm = bytestream2_get_byte(&s->g);
+
+    // too complex ? ST = ((Stlm >> 4) & 0x01) + ((Stlm >> 4) & 0x02);
+    ST = (Stlm >> 4) & 0x03;
+    // TODO: Manage case of ST = 0b11 --> raise error
+    SP       = (Stlm >> 6) & 0x01;
+    tile_tlm = (n - 4) / ((SP + 1) * 2 + ST);
+    for (i = 0; i < tile_tlm; i++) {
+        switch (ST) {
+        case 0:
+            break;
+        case 1:
+            bytestream2_get_byte(&s->g);
+            break;
+        case 2:
+            bytestream2_get_be16(&s->g);
+            break;
+        case 3:
+            bytestream2_get_be32(&s->g);
+            break;
+        }
+        if (SP == 0) {
+            bytestream2_get_be16(&s->g);
+        } else {
+            bytestream2_get_be32(&s->g);
+        }
+    }
+    return 0;
+}
+
 static int init_tile(Jpeg2000DecoderContext *s, int tileno)
 {
     int compno;
@@ -993,6 +1035,10 @@ static int decode_codestream(Jpeg2000DecoderContext *s)
         case JPEG2000_COM:
             // the comment is ignored
             bytestream2_skip(&s->g, len - 2);
+            break;
+        case JPEG2000_TLM:
+            // Tile-part lengths
+            ret = get_tlm(s, len);
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "unsupported marker 0x%.4X at pos 0x%x\n", marker, bytestream2_tell(&s->g) - 4);
