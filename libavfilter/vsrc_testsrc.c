@@ -279,7 +279,7 @@ AVFilter avfilter_vsrc_color = {
 
 static const AVOption haldclutsrc_options[] = {
     { "level", "set level", OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 6}, 2, 8, FLAGS },
-    COMMON_OPTIONS
+    COMMON_OPTIONS_NOSIZE
     { NULL }
 };
 
