@@ -81,6 +81,10 @@ typedef struct Jpeg2000DecoderContext {
     int             reduction_factor;
 } Jpeg2000DecoderContext;
 
+/* get_bits functions for JPEG2000 packet bitstream
+ * It is a get_bit function with a bit-stuffing routine. If the value of the
+ * byte is 0xFF, the next byte includes an extra zero bit stuffed into the MSB.
+ * cf. ISO-15444-1:2002 / B.10.1 Bit-stuffing routine */
 static int get_bits(Jpeg2000DecoderContext *s, int n)
 {
     int res = 0;
@@ -326,7 +330,7 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     compno = bytestream2_get_byteu(&s->g);
 
     c += compno;
-    c->csty = bytestream2_get_byte(&s->g);
+    c->csty = bytestream2_get_byteu(&s->g);
     get_cox(s, c);
 
     properties[compno] |= HAD_COC;
@@ -387,7 +391,7 @@ static int get_qcd(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
         return -1;
     for (compno = 0; compno < s->ncomponents; compno++)
         if (!(properties[compno] & HAD_QCC))
-            memcpy(q + compno, &tmp, sizeof(Jpeg2000QuantStyle));
+            memcpy(q + compno, &tmp, sizeof(tmp));
     return 0;
 }
 
@@ -630,11 +634,15 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                 Jpeg2000CodingStyle *codsty = tile->codsty + compno;
                 Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
                 if (reslevelno < codsty->nreslevels) {
-                    Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel + reslevelno;
+                    Jpeg2000ResLevel *rlevel = tile->comp[compno].reslevel +
+                                               reslevelno;
                     ok_reslevel = 1;
                     for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++) {
-                        if (decode_packet(s, codsty, rlevel, precno, layno, qntsty->expn +
-                                          (reslevelno ? 3*(reslevelno-1)+1 : 0), qntsty->nguardbits))
+                        if (decode_packet(s,
+                                          codsty, rlevel,
+                                          precno, layno,
+                                          qntsty->expn + (reslevelno ? 3*(reslevelno-1)+1 : 0),
+                                          qntsty->nguardbits))
                             return -1;
                     }
                 }
@@ -645,14 +653,15 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
 }
 
 /* TIER-1 routines */
-static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height, int bpno, int bandno, int bpass_csty_symbol,
+static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height,
+                           int bpno, int bandno, int bpass_csty_symbol,
                            int vert_causal_ctx_csty_symbol)
 {
     int mask = 3 << (bpno - 1), y0, x, y;
 
     for (y0 = 0; y0 < height; y0 += 4)
         for (x = 0; x < width; x++)
-            for (y = y0; y < height && y < y0+4; y++) {
+            for (y = y0; y < height && y < y0 + 4; y++) {
                 if ((t1->flags[y+1][x+1] & JPEG2000_T1_SIG_NB)
                 && !(t1->flags[y+1][x+1] & (JPEG2000_T1_SIG | JPEG2000_T1_VIS))) {
                     int flags_mask = -1;
@@ -695,8 +704,9 @@ static void decode_refpass(Jpeg2000T1Context *t1, int width, int height,
                 }
 }
 
-static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1, int width, int height,
-                           int bpno, int bandno, int seg_symbols, int vert_causal_ctx_csty_symbol)
+static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1,
+                           int width, int height, int bpno, int bandno,
+                           int seg_symbols, int vert_causal_ctx_csty_symbol)
 {
     int mask = 3 << (bpno - 1), y0, x, y, runlen, dec;
 
@@ -777,19 +787,22 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
 
     while (passno--) {
         switch(pass_t) {
-            case 0: decode_sigpass(t1, width, height, bpno+1, bandpos,
-                                  bpass_csty_symbol && (clnpass_cnt >= 4), vert_causal_ctx_csty_symbol);
-                    break;
-            case 1: decode_refpass(t1, width, height, bpno+1);
-                    if (bpass_csty_symbol && clnpass_cnt >= 4)
-                        ff_mqc_initdec(&t1->mqc, cblk->data);
-                    break;
-            case 2: decode_clnpass(s, t1, width, height, bpno+1, bandpos,
-                                   codsty->cblk_style & JPEG2000_CBLK_SEGSYM, vert_causal_ctx_csty_symbol);
-                    clnpass_cnt = clnpass_cnt + 1;
-                    if (bpass_csty_symbol && clnpass_cnt >= 4)
-                       ff_mqc_initdec(&t1->mqc, cblk->data);
-                    break;
+        case 0:
+            decode_sigpass(t1, width, height, bpno+1, bandpos,
+                           bpass_csty_symbol && (clnpass_cnt >= 4), vert_causal_ctx_csty_symbol);
+            break;
+        case 1:
+            decode_refpass(t1, width, height, bpno+1);
+            if (bpass_csty_symbol && clnpass_cnt >= 4)
+                ff_mqc_initdec(&t1->mqc, cblk->data);
+            break;
+        case 2:
+            decode_clnpass(s, t1, width, height, bpno+1, bandpos,
+                           codsty->cblk_style & JPEG2000_CBLK_SEGSYM, vert_causal_ctx_csty_symbol);
+            clnpass_cnt = clnpass_cnt + 1;
+            if (bpass_csty_symbol && clnpass_cnt >= 4)
+                ff_mqc_initdec(&t1->mqc, cblk->data);
+            break;
         }
 
         pass_t++;
@@ -1041,12 +1054,15 @@ static int decode_codestream(Jpeg2000DecoderContext *s)
             ret = get_tlm(s, len);
             break;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "unsupported marker 0x%.4X at pos 0x%x\n", marker, bytestream2_tell(&s->g) - 4);
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "unsupported marker 0x%.4X at pos 0x%x\n",
+                   marker, bytestream2_tell(&s->g) - 4);
             bytestream2_skip(&s->g, len - 2);
             break;
         }
         if (bytestream2_tell(&s->g) - oldpos != len || ret) {
-            av_log(s->avctx, AV_LOG_ERROR, "error during processing marker segment %.4x\n", marker);
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "error during processing marker segment %.4x\n", marker);
             return ret ? ret : -1;
         }
     }
