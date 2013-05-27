@@ -38,7 +38,6 @@ typedef enum {
     DISCONNECTED
 } FTPState;
 
-
 typedef struct {
     const AVClass *class;
     URLContext *conn_control;                    /**< Control connection */
@@ -499,57 +498,6 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     return err;
 }
 
-static int ftp_read(URLContext *h, unsigned char *buf, int size)
-{
-    FTPContext *s = h->priv_data;
-    int read;
-
-    av_dlog(h, "ftp protocol read %d bytes\n", size);
-
-    if (s->state == READY) {
-        ftp_retrieve(s);
-    }
-    if (s->conn_data && s->state == DOWNLOADING) {
-        read = ffurl_read(s->conn_data, buf, size);
-        if (read >= 0) {
-            s->position += read;
-            if (s->position >= s->filesize) {
-                ffurl_closep(&s->conn_data);
-                s->state = DISCONNECTED;
-                if (ftp_status(s, NULL, NULL, NULL,NULL, 226) != 226)
-                    return AVERROR(EIO);
-            }
-        }
-        return read;
-    }
-
-    av_log(h, AV_LOG_DEBUG, "FTP read failed\n");
-    return AVERROR(EIO);
-}
-
-static int ftp_write(URLContext *h, const unsigned char *buf, int size)
-{
-    FTPContext *s = h->priv_data;
-    int written;
-
-    av_dlog(h, "ftp protocol write %d bytes\n", size);
-
-    if (s->state == READY) {
-        ftp_store(s);
-    }
-    if (s->conn_data && s->state == UPLOADING) {
-        written = ffurl_write(s->conn_data, buf, size);
-        if (written > 0) {
-            s->position += written;
-            s->filesize = FFMAX(s->filesize, s->position);
-        }
-        return written;
-    }
-
-    av_log(h, AV_LOG_ERROR, "FTP write failed\n");
-    return AVERROR(EIO);
-}
-
 static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
 {
     FTPContext *s = h->priv_data;
@@ -616,6 +564,79 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
         s->position = pos;
     }
     return new_pos;
+}
+
+static int ftp_read(URLContext *h, unsigned char *buf, int size)
+{
+    FTPContext *s = h->priv_data;
+    int read, err, retry_done = 0;
+
+    av_dlog(h, "ftp protocol read %d bytes\n", size);
+  retry:
+    if (s->state == READY) {
+        ftp_retrieve(s);
+    }
+    if (s->conn_data && s->state == DOWNLOADING) {
+        read = ffurl_read(s->conn_data, buf, size);
+        if (read >= 0) {
+            s->position += read;
+            if (s->position >= s->filesize) {
+                ffurl_closep(&s->conn_data);
+                s->state = DISCONNECTED;
+                if (ftp_status(s, NULL, NULL, NULL,NULL, 226) != 226)
+                    return AVERROR(EIO);
+            }
+        }
+        if (!read && s->position < s->filesize && !h->is_streamed) {
+            /* Server closed connection. Probably due to inactivity */
+            /* TODO: Consider retry before reconnect */
+            int64_t pos = s->position;
+            av_log(h, AV_LOG_INFO, "Reconnect to FTP server.\n");
+            ffurl_closep(&s->conn_control);
+            ffurl_closep(&s->conn_data);
+            s->position = 0;
+            s->state = DISCONNECTED;
+            if ((err = ftp_connect_control_connection(h)) < 0) {
+                av_log(h, AV_LOG_ERROR, "Reconnect failed\n");
+                return err;
+            }
+            if ((err = ftp_seek(h, pos, SEEK_SET)) < 0) {
+                av_dlog(h, "Seek failed after reconnect\n");
+                return err;
+            }
+            if (!retry_done) {
+                retry_done = 1;
+                goto retry;
+            }
+        }
+        return read;
+    }
+
+    av_log(h, AV_LOG_DEBUG, "FTP read failed\n");
+    return AVERROR(EIO);
+}
+
+static int ftp_write(URLContext *h, const unsigned char *buf, int size)
+{
+    FTPContext *s = h->priv_data;
+    int written;
+
+    av_dlog(h, "ftp protocol write %d bytes\n", size);
+
+    if (s->state == READY) {
+        ftp_store(s);
+    }
+    if (s->conn_data && s->state == UPLOADING) {
+        written = ffurl_write(s->conn_data, buf, size);
+        if (written > 0) {
+            s->position += written;
+            s->filesize = FFMAX(s->filesize, s->position);
+        }
+        return written;
+    }
+
+    av_log(h, AV_LOG_ERROR, "FTP write failed\n");
+    return AVERROR(EIO);
 }
 
 static int ftp_close(URLContext *h)
