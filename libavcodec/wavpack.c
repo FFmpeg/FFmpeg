@@ -51,7 +51,7 @@
 #define WV_FLT_ZERO_SIGN  0x10
 
 enum WP_ID_Flags {
-    WP_IDF_MASK   = 0x1F,
+    WP_IDF_MASK   = 0x3F,
     WP_IDF_IGNORE = 0x20,
     WP_IDF_ODD    = 0x40,
     WP_IDF_LONG   = 0x80
@@ -71,7 +71,8 @@ enum WP_ID {
     WP_ID_DATA,
     WP_ID_CORR,
     WP_ID_EXTRABITS,
-    WP_ID_CHANINFO
+    WP_ID_CHANINFO,
+    WP_ID_SAMPLE_RATE = 0x27,
 };
 
 typedef struct SavedContext {
@@ -139,6 +140,11 @@ typedef struct WavpackContext {
     int samples;
     int ch_offset;
 } WavpackContext;
+
+static const int wv_rates[16] = {
+     6000,  8000,  9600, 11025, 12000, 16000,  22050, 24000,
+    32000, 44100, 48000, 64000, 88200, 96000, 192000,     0
+};
 
 // exponent table copied from WavPack source
 static const uint8_t wp_exp2_table[256] = {
@@ -742,7 +748,7 @@ static av_cold int wavpack_decode_end(AVCodecContext *avctx)
 }
 
 static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
-                                uint8_t **data, const uint8_t *buf, int buf_size)
+                                AVFrame *frame, const uint8_t *buf, int buf_size)
 {
     WavpackContext *wc = avctx->priv_data;
     WavpackFrameContext *s;
@@ -752,7 +758,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     int got_terms   = 0, got_weights = 0, got_samples = 0,
         got_entropy = 0, got_bs      = 0, got_float   = 0, got_hybrid = 0;
     int i, j, id, size, ssize, weights, t;
-    int bpp, chan, chmask, orig_bpp;
+    int bpp, chan, chmask, orig_bpp, sample_rate = 0;
 
     if (block_no >= wc->fdec_num && wv_alloc_frame_context(wc) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error creating frame decode context\n");
@@ -794,12 +800,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->hybrid_minclip = ((-1LL << (orig_bpp - 1)));
     s->CRC            = bytestream2_get_le32(&gb);
 
-    samples_l = data[wc->ch_offset];
-    if (s->stereo)
-        samples_r = data[wc->ch_offset + 1];
-
-    wc->ch_offset += 1 + s->stereo;
-
     // parse metadata blocks
     while (bytestream2_get_bytes_left(&gb)) {
         id   = bytestream2_get_byte(&gb);
@@ -821,10 +821,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             av_log(avctx, AV_LOG_ERROR,
                    "Block size %i is out of bounds\n", size);
             break;
-        }
-        if (id & WP_IDF_IGNORE) {
-            bytestream2_skip(&gb, ssize);
-            continue;
         }
         switch (id & WP_IDF_MASK) {
         case WP_ID_DECTERMS:
@@ -1053,6 +1049,13 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             if (!avctx->channel_layout)
                 avctx->channel_layout = chmask;
             break;
+        case WP_ID_SAMPLE_RATE:
+            if (size != 3) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid custom sample rate.\n");
+                return AVERROR_INVALIDDATA;
+            }
+            sample_rate = bytestream2_get_le24(&gb);
+            break;
         default:
             bytestream2_skip(&gb, size);
         }
@@ -1096,6 +1099,31 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             s->got_extra_bits = 0;
         }
     }
+
+    if (!wc->ch_offset) {
+        int sr = (s->frame_flags >> 23) & 0xf;
+        if (sr == 0xf) {
+            if (!sample_rate) {
+                av_log(avctx, AV_LOG_ERROR, "Custom sample rate missing.\n");
+                return AVERROR_INVALIDDATA;
+            }
+            avctx->sample_rate = sample_rate;
+        } else
+            avctx->sample_rate = wv_rates[sr];
+
+        /* get output buffer */
+        frame->nb_samples = s->samples;
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
+        }
+    }
+
+    samples_l = frame->extended_data[wc->ch_offset];
+    if (s->stereo)
+        samples_r = frame->extended_data[wc->ch_offset + 1];
+
+    wc->ch_offset += 1 + s->stereo;
 
     if (s->stereo_in) {
         ret = wv_unpack_stereo(s, &s->gb, samples_l, samples_r, avctx->sample_fmt);
@@ -1155,13 +1183,6 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         avctx->bits_per_raw_sample = ((frame_flags & 0x03) + 1) << 3;
     }
 
-    /* get output buffer */
-    frame->nb_samples = s->samples;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return ret;
-    }
-
     while (buf_size > 0) {
         if (buf_size <= WV_HEADER_SIZE)
             break;
@@ -1176,8 +1197,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
         if ((ret = wavpack_decode_block(avctx, s->block,
-                                        frame->extended_data,
-                                        buf, frame_size)) < 0) {
+                                        frame, buf, frame_size)) < 0) {
             wavpack_decode_flush(avctx);
             return ret;
         }
