@@ -1212,6 +1212,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         buf_size -= frame_size;
     }
 
+    if (s->ch_offset != avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "Not enough channels coded in a packet.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     *got_frame_ptr = 1;
 
     return avpkt->size;
