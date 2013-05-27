@@ -144,7 +144,7 @@ typedef struct Jpeg2000CodingStyle {
 
 typedef struct Jpeg2000QuantStyle {
     uint8_t expn[32 * 3];  // quantization exponent
-    uint32_t mant[32 * 3]; // quantization mantissa
+    uint16_t mant[32 * 3]; // quantization mantissa
     uint8_t quantsty;      // quantization style
     uint8_t nguardbits;    // number of guard bits
 } Jpeg2000QuantStyle;
