@@ -168,7 +168,6 @@ typedef struct Jpeg2000Cblk {
 } Jpeg2000Cblk; // code block
 
 typedef struct Jpeg2000Prec {
-    uint16_t xi0, yi0; // codeblock indexes ([xi0, xi1))
     uint16_t nb_codeblocks_width;
     uint16_t nb_codeblocks_height;
     Jpeg2000TgtNode *zerobits;

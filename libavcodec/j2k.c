@@ -243,10 +243,6 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
 
         for (bandno = 0; bandno < reslevel->nbands; bandno++, gbandno++) {
             Jpeg2000Band *band = reslevel->band + bandno;
-            int precx, precy;
-            int x0, y0, x1, y1;
-            int xi0, yi0, xi1, yi1;
-            int cblkperprecw, cblkperprech;
             int cblkno, precno;
             int nb_precincts;
 
@@ -314,38 +310,6 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
 
             nb_precincts = reslevel->num_precincts_x * reslevel->num_precincts_y;
 
-            y0 = band->coord[1][0];
-            y1 = ((band->coord[1][0] + (1<<reslevel->log2_prec_height)) & ~((1<<reslevel->log2_prec_height)-1)) - y0;
-            yi0 = 0;
-            yi1 = ff_jpeg2000_ceildivpow2(y1 - y0, codsty->log2_cblk_height) << codsty->log2_cblk_height;
-            yi1 = FFMIN(yi1, band->cblkny);
-            cblkperprech = 1<<(reslevel->log2_prec_height - codsty->log2_cblk_height);
-            for (precy = 0, precno = 0; precy < reslevel->num_precincts_y; precy++) {
-                for (precx = 0; precx < reslevel->num_precincts_x; precx++, precno++) {
-                    band->prec[precno].yi0 = yi0;
-                    band->prec[precno].yi1 = yi1;
-                }
-                yi1 += cblkperprech;
-                yi0 = yi1 - cblkperprech;
-                yi1 = FFMIN(yi1, band->cblkny);
-            }
-            x0 = band->coord[0][0];
-            x1 = ((band->coord[0][0] + (1<<reslevel->log2_prec_width)) & ~((1<<reslevel->log2_prec_width)-1)) - x0;
-            xi0 = 0;
-            xi1 = ff_jpeg2000_ceildivpow2(x1 - x0, codsty->log2_cblk_width) << codsty->log2_cblk_width;
-            xi1 = FFMIN(xi1, band->cblknx);
-
-            cblkperprecw = 1<<(reslevel->log2_prec_width - codsty->log2_cblk_width);
-            for (precx = 0, precno = 0; precx < reslevel->num_precincts_x; precx++) {
-                for (precy = 0; precy < reslevel->num_precincts_y; precy++, precno = 0) {
-                    Jpeg2000Prec *prec = band->prec + precno;
-                    prec->xi0 = xi0;
-                    prec->xi1 = xi1;
-                }
-                xi1 += cblkperprecw;
-                xi0 = xi1 - cblkperprecw;
-                xi1 = FFMIN(xi1, band->cblknx);
-            }
             for (precno = 0; precno < nb_precincts; precno++) {
                 Jpeg2000Prec *prec = band->prec + precno;
 
@@ -452,8 +416,8 @@ void ff_j2k_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
             Jpeg2000Band *band = rlevel->band + bandno;
             for(precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++) {
                 Jpeg2000Prec *prec = band->prec + precno;
-                tag_tree_zero(prec->zerobits, prec->xi1 - prec->xi0, prec->yi1 - prec->yi0);
-                tag_tree_zero(prec->cblkincl, prec->xi1 - prec->xi0, prec->yi1 - prec->yi0);
+                tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
                 for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
                     Jpeg2000Cblk *cblk = prec->cblk + cblkno;
                     cblk->length = 0;

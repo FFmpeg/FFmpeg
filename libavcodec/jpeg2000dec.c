@@ -605,8 +605,6 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
         if (band->coord[0][0] == band->coord[0][1] ||
             band->coord[1][0] == band->coord[1][1])
             continue;
-        prec->yi0 = 0;
-        prec->xi0 = 0;
         nb_code_blocks =  prec->nb_codeblocks_height *
                           prec->nb_codeblocks_width;
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {

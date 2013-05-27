@@ -668,14 +668,14 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
         Jpeg2000Band *band = rlevel->band + bandno;
         Jpeg2000Prec *prec = band->prec + precno;
         int yi, xi, pos;
-        int cblknw = prec->xi1 - prec->xi0;
+        int cblknw = prec->nb_codeblocks_width;
 
         if (band->coord[0][0] == band->coord[0][1]
         ||  band->coord[1][0] == band->coord[1][1])
             continue;
 
-        for (pos=0, yi = prec->yi0; yi < prec->yi1; yi++){
-            for (xi = prec->xi0; xi < prec->xi1; xi++, pos++){
+        for (pos=0, yi = 0; yi < prec->nb_codeblocks_height; yi++){
+            for (xi = 0; xi < cblknw; xi++, pos++){
                 prec->cblkincl[pos].val = prec->cblk[yi * cblknw + xi].ninclpasses == 0;
                 tag_tree_update(prec->cblkincl + pos);
                 prec->zerobits[pos].val = expn[bandno] + numgbits - 1 - prec->cblk[yi * cblknw + xi].nonzerobits;
@@ -683,8 +683,8 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
             }
         }
 
-        for (pos=0, yi = prec->yi0; yi < prec->yi1; yi++){
-            for (xi = prec->xi0; xi < prec->xi1; xi++, pos++){
+        for (pos=0, yi = 0; yi < prec->nb_codeblocks_height; yi++){
+            for (xi = 0; xi < cblknw; xi++, pos++){
                 int pad = 0, llen, length;
                 Jpeg2000Cblk *cblk = prec->cblk + yi * cblknw + xi;
 
@@ -717,10 +717,10 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
     for (bandno = 0; bandno < rlevel->nbands; bandno++){
         Jpeg2000Band *band = rlevel->band + bandno;
         Jpeg2000Prec *prec = band->prec + precno;
-        int yi, cblknw = prec->xi1 - prec->xi0;
-        for (yi = prec->yi0; yi < prec->yi1; yi++){
+        int yi, cblknw = prec->nb_codeblocks_width;
+        for (yi =0; yi < prec->nb_codeblocks_height; yi++){
             int xi;
-            for (xi = prec->xi0; xi < prec->xi1; xi++){
+            for (xi = 0; xi < cblknw; xi++){
                 Jpeg2000Cblk *cblk = prec->cblk + yi * cblknw + xi;
                 if (cblk->ninclpasses){
                     if (s->buf_end - s->buf < cblk->passes[cblk->ninclpasses-1].rate)
