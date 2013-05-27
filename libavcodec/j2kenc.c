@@ -676,9 +676,9 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
 
         for (pos=0, yi = prec->yi0; yi < prec->yi1; yi++){
             for (xi = prec->xi0; xi < prec->xi1; xi++, pos++){
-                prec->cblkincl[pos].val = band->cblk[yi * cblknw + xi].ninclpasses == 0;
+                prec->cblkincl[pos].val = prec->cblk[yi * cblknw + xi].ninclpasses == 0;
                 tag_tree_update(prec->cblkincl + pos);
-                prec->zerobits[pos].val = expn[bandno] + numgbits - 1 - band->cblk[yi * cblknw + xi].nonzerobits;
+                prec->zerobits[pos].val = expn[bandno] + numgbits - 1 - prec->cblk[yi * cblknw + xi].nonzerobits;
                 tag_tree_update(prec->zerobits + pos);
             }
         }
@@ -686,7 +686,7 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
         for (pos=0, yi = prec->yi0; yi < prec->yi1; yi++){
             for (xi = prec->xi0; xi < prec->xi1; xi++, pos++){
                 int pad = 0, llen, length;
-                Jpeg2000Cblk *cblk = band->cblk + yi * cblknw + xi;
+                Jpeg2000Cblk *cblk = prec->cblk + yi * cblknw + xi;
 
                 if (s->buf_end - s->buf < 20) // approximately
                     return -1;
@@ -721,7 +721,7 @@ static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, in
         for (yi = prec->yi0; yi < prec->yi1; yi++){
             int xi;
             for (xi = prec->xi0; xi < prec->xi1; xi++){
-                Jpeg2000Cblk *cblk = band->cblk + yi * cblknw + xi;
+                Jpeg2000Cblk *cblk = prec->cblk + yi * cblknw + xi;
                 if (cblk->ninclpasses){
                     if (s->buf_end - s->buf < cblk->passes[cblk->ninclpasses-1].rate)
                         return -1;
@@ -776,7 +776,7 @@ static int getcut(Jpeg2000Cblk *cblk, int64_t lambda, int dwt_norm)
 
 static void truncpasses(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
 {
-    int compno, reslevelno, bandno, cblkno, lev;
+    int precno, compno, reslevelno, bandno, cblkno, lev;
     Jpeg2000CodingStyle *codsty = &s->codsty;
 
     for (compno = 0; compno < s->ncomponents; compno++){
@@ -785,15 +785,18 @@ static void truncpasses(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
         for (reslevelno = 0, lev = codsty->nreslevels-1; reslevelno < codsty->nreslevels; reslevelno++, lev--){
             Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
-            for (bandno = 0; bandno < reslevel->nbands ; bandno++){
-                int bandpos = bandno + (reslevelno > 0);
-                Jpeg2000Band *band = reslevel->band + bandno;
+            for (precno = 0; precno < reslevel->num_precincts_x * reslevel->num_precincts_y; precno++){
+                for (bandno = 0; bandno < reslevel->nbands ; bandno++){
+                    int bandpos = bandno + (reslevelno > 0);
+                    Jpeg2000Band *band = reslevel->band + bandno;
+                    Jpeg2000Prec *prec = band->prec + precno;
 
-                for (cblkno = 0; cblkno < band->cblknx * band->cblkny; cblkno++){
-                    Jpeg2000Cblk *cblk = band->cblk + cblkno;
+                    for (cblkno = 0; cblkno < prec->nb_codeblocks_height * prec->nb_codeblocks_width; cblkno++){
+                        Jpeg2000Cblk *cblk = prec->cblk + cblkno;
 
-                    cblk->ninclpasses = getcut(cblk, s->lambda,
-                            (int64_t)dwt_norms[codsty->transform][bandpos][lev] * (int64_t)band->stepsize >> 13);
+                        cblk->ninclpasses = getcut(cblk, s->lambda,
+                                (int64_t)dwt_norms[codsty->transform][bandpos][lev] * (int64_t)band->stepsize >> 13);
+                    }
                 }
             }
         }
@@ -857,7 +860,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                                 }
                             }
                         }
-                        encode_cblk(s, &t1, band->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
+                        encode_cblk(s, &t1, band->prec->cblk + cblkno, tile, xx1 - xx0, yy1 - yy0,
                                     bandpos, codsty->nreslevels - reslevelno - 1);
                         xx0 = xx1;
                         xx1 = FFMIN(xx1 + (1 << band->log2_cblk_width), band->coord[0][1] - band->coord[0][0] + x0);
