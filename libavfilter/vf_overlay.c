@@ -107,22 +107,6 @@ typedef struct {
     AVExpr *x_pexpr, *y_pexpr;
 } OverlayContext;
 
-// TODO: remove forward declaration
-static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic, const AVFrame *second);
-
-static av_cold int init(AVFilterContext *ctx)
-{
-    OverlayContext *s = ctx->priv;
-
-    if (s->allow_packed_rgb) {
-        av_log(ctx, AV_LOG_WARNING,
-               "The rgb option is deprecated and is overriding the format option, use format instead\n");
-        s->format = OVERLAY_FORMAT_RGB;
-    }
-    s->dinput.process = do_blend;
-    return 0;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *s = ctx->priv;
@@ -577,6 +561,19 @@ static int request_frame(AVFilterLink *outlink)
 {
     OverlayContext *s = outlink->src->priv;
     return ff_dualinput_request_frame(&s->dinput, outlink);
+}
+
+static av_cold int init(AVFilterContext *ctx)
+{
+    OverlayContext *s = ctx->priv;
+
+    if (s->allow_packed_rgb) {
+        av_log(ctx, AV_LOG_WARNING,
+               "The rgb option is deprecated and is overriding the format option, use format instead\n");
+        s->format = OVERLAY_FORMAT_RGB;
+    }
+    s->dinput.process = do_blend;
+    return 0;
 }
 
 #define OFFSET(x) offsetof(OverlayContext, x)
