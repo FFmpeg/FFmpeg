@@ -175,6 +175,9 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->sgnd[i] = !!(x & 0x80);
         s->cdx[i] = bytestream2_get_byteu(&s->g);
         s->cdy[i] = bytestream2_get_byteu(&s->g);
+        if (s->cdx[i] != 1 || s->cdy[i] != 1) {
+            av_log(s->avctx, AV_LOG_ERROR, "unsupported/ CDxy values\n");
+        }
     }
 
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
