@@ -411,6 +411,19 @@ static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
     }
 }
 
+static int deinvert_buffer(TiffContext *s, const uint8_t *src, int size)
+{
+    int i;
+
+    av_fast_padded_malloc(&s->deinvert_buf, &s->deinvert_buf_size, size);
+    if (!s->deinvert_buf)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < size; i++)
+        s->deinvert_buf[i] = ff_reverse[src[i]];
+
+    return 0;
+}
+
 static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                              const uint8_t *src, int size, int lines)
 {
@@ -423,31 +436,23 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
 
 #if CONFIG_ZLIB
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE) {
-        uint8_t *src2 = NULL, *zbuf;
+        uint8_t *zbuf;
         unsigned long outlen;
-        int i, ret;
+        int ret;
         outlen = width * lines;
         zbuf = av_malloc(outlen);
         if (!zbuf)
             return AVERROR(ENOMEM);
         if (s->fill_order) {
-            src2 = av_malloc((unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!src2) {
-                av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
-                av_free(zbuf);
-                return AVERROR(ENOMEM);
-            }
-            for (i = 0; i < size; i++)
-                src2[i] = ff_reverse[src[i]];
-            memset(src2 + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
-            src = src2;
+            if ((ret = deinvert_buffer(s, src, size)) < 0)
+                return ret;
+            ssrc = src = s->deinvert_buf;
         }
         ret = tiff_uncompress(zbuf, &outlen, src, size);
         if (ret != Z_OK) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Uncompressing failed (%lu of %lu) with error %d\n", outlen,
                    (unsigned long)width * lines, ret);
-            av_free(src2);
             av_free(zbuf);
             return AVERROR_UNKNOWN;
         }
@@ -461,21 +466,15 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             dst += stride;
             src += width;
         }
-        av_free(src2);
         av_free(zbuf);
         return 0;
     }
 #endif
     if (s->compr == TIFF_LZW) {
         if (s->fill_order) {
-            int i;
-            av_fast_padded_malloc(&s->deinvert_buf, &s->deinvert_buf_size, size);
-            if (!s->deinvert_buf)
-                return AVERROR(ENOMEM);
-            for (i = 0; i < size; i++)
-                s->deinvert_buf[i] = ff_reverse[src[i]];
-            src = s->deinvert_buf;
-            ssrc = src;
+            if ((ret = deinvert_buffer(s, src, size)) < 0)
+                return ret;
+            ssrc = src = s->deinvert_buf;
         }
         if (size > 1 && !src[0] && (src[1]&1)) {
             av_log(s->avctx, AV_LOG_ERROR, "Old style LZW is unsupported\n");
