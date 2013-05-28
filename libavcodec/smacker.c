@@ -660,6 +660,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
     }
+    /* this codec relies on wraparound instead of clipping audio */
     if(bits) { //decode 16-bit data
         for(i = stereo; i >= 0; i--)
             pred[i] = sign_extend(av_bswap16(get_bits(&gb, 16)), 16);
