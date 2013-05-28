@@ -831,26 +831,60 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
         }
 }
 
+/* Inverse ICT parameters in float and integer.
+ * int value = (float value) * (1<<16) */
+static const float f_ict_params[4] = {
+    1.402f,
+    0.34413f,
+    0.71414f,
+    1.772f
+};
+static const int   i_ict_params[4] = {
+     91881,
+     22553,
+     46802,
+    116130
+};
+
 static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
-    int i, *src[3], i0, i1, i2, csize = 1;
+    int i, csize = 1;
+    int32_t *src[3],  i0,  i1,  i2;
+    float   *srcf[3], i0f, i1f, i2f;
 
     for (i = 0; i < 3; i++)
-        src[i] = tile->comp[i].data;
+        if (tile->codsty[0].transform == FF_DWT97)
+            srcf[i] = tile->comp[i].data;
+        else
+            src[i] = (int32_t *)tile->comp[i].data;
 
     for (i = 0; i < 2; i++)
         csize *= tile->comp[0].coord[i][1] - tile->comp[0].coord[i][0];
 
-    if (tile->codsty[0].transform == FF_DWT97) {
+    switch (tile->codsty[0].transform) {
+    case FF_DWT97:
         for (i = 0; i < csize; i++) {
-            i0 = *src[0] + (*src[2] * 46802 >> 16);
-            i1 = *src[0] - (*src[1] * 22553 + *src[2] * 46802 >> 16);
-            i2 = *src[0] + (116130 * *src[1] >> 16);
+            i0f = *srcf[0] + (f_ict_params[0] * *srcf[2]);
+            i1f = *srcf[0] - (f_ict_params[1] * *srcf[1])
+                           - (f_ict_params[2] * *srcf[2]);
+            i2f = *srcf[0] + (f_ict_params[3] * *srcf[1]);
+            *srcf[0]++ = i0f;
+            *srcf[1]++ = i1f;
+            *srcf[2]++ = i2f;
+        }
+        break;
+    case FF_DWT97_INT:
+        for (i = 0; i < csize; i++) {
+            i0 = *src[0] + (((i_ict_params[0] * *src[2]) + (1 << 15)) >> 16);
+            i1 = *src[0] - (((i_ict_params[1] * *src[1]) + (1 << 15)) >> 16)
+                         - (((i_ict_params[2] * *src[2]) + (1 << 15)) >> 16);
+            i2 = *src[0] + (((i_ict_params[3] * *src[1]) + (1 << 15)) >> 16);
             *src[0]++ = i0;
             *src[1]++ = i1;
             *src[2]++ = i2;
         }
-    } else{
+        break;
+    case FF_DWT53:
         for (i = 0; i < csize; i++) {
             i1 = *src[0] - (*src[2] + *src[1] >> 2);
             i0 = i1 + *src[2];
