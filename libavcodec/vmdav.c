@@ -267,7 +267,7 @@ static int vmd_decode(VmdVideoContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "Incomplete palette\n");
             return AVERROR_INVALIDDATA;
         }
-        s->size -= (256 * 3 + 2);
+        s->size -= PALETTE_COUNT * 3 + 2;
     }
     if (s->size > 0) {
         /* originally UnpackFrame in VAG's code */
