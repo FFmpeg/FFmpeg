@@ -1138,13 +1138,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     }
 
     if (s->stereo_in) {
-        if (avctx->sample_fmt == AV_SAMPLE_FMT_S16)
-            samplecount = wv_unpack_stereo(s, &s->gb, samples, AV_SAMPLE_FMT_S16);
-        else if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-            samplecount = wv_unpack_stereo(s, &s->gb, samples, AV_SAMPLE_FMT_S32);
-        else
-            samplecount = wv_unpack_stereo(s, &s->gb, samples, AV_SAMPLE_FMT_FLT);
-
+        samplecount = wv_unpack_stereo(s, &s->gb, samples, avctx->sample_fmt);
         if (samplecount < 0)
             return samplecount;
 
@@ -1152,13 +1146,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     } else {
         const int channel_stride = avctx->channels;
 
-        if (avctx->sample_fmt == AV_SAMPLE_FMT_S16)
-            samplecount = wv_unpack_mono(s, &s->gb, samples, AV_SAMPLE_FMT_S16);
-        else if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-            samplecount = wv_unpack_mono(s, &s->gb, samples, AV_SAMPLE_FMT_S32);
-        else
-            samplecount = wv_unpack_mono(s, &s->gb, samples, AV_SAMPLE_FMT_FLT);
-
+        samplecount = wv_unpack_mono(s, &s->gb, samples, avctx->sample_fmt);
         if (samplecount < 0)
             return samplecount;
 
