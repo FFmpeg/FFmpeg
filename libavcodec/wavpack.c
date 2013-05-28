@@ -722,10 +722,7 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     WavpackContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    if (avctx->bits_per_coded_sample <= 16)
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
-    else
-        avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+
     if (avctx->channels <= 2 && !avctx->channel_layout)
         avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO
                                                        : AV_CH_LAYOUT_MONO;
