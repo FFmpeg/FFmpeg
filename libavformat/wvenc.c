@@ -22,14 +22,10 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
-#include "avio_internal.h"
 #include "apetag.h"
 
-#define WV_EXTRA_SIZE 12
-#define WV_END_BLOCK  0x1000
-
-typedef struct{
-    uint32_t duration;
+typedef struct WVMuxContext {
+    int64_t samples;
 } WVMuxContext;
 
 static int write_header(AVFormatContext *s)
@@ -44,87 +40,33 @@ static int write_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR(EINVAL);
     }
-    if (codec->extradata_size > 0) {
-        avpriv_report_missing_feature(s, "remuxing from matroska container");
-        return AVERROR_PATCHWELCOME;
-    }
-    avpriv_set_pts_info(s->streams[0], 64, 1, codec->sample_rate);
+    return 0;
+}
+
+static int write_packet(AVFormatContext *ctx, AVPacket *pkt)
+{
+    WVMuxContext *s = ctx->priv_data;
+
+    if (pkt->size >= 24)
+        s->samples += AV_RL32(pkt->data + 20);
+    avio_write(ctx->pb, pkt->data, pkt->size);
 
     return 0;
 }
 
-static int write_packet(AVFormatContext *s, AVPacket *pkt)
+static int write_trailer(AVFormatContext *ctx)
 {
-    WVMuxContext *wc = s->priv_data;
-    AVCodecContext *codec = s->streams[0]->codec;
-    AVIOContext *pb = s->pb;
-    uint64_t size;
-    uint32_t flags;
-    uint32_t left = pkt->size;
-    uint8_t *ptr = pkt->data;
-    int off = codec->channels > 2 ? 4 : 0;
+    WVMuxContext *s = ctx->priv_data;
 
-    /* FIXME: Simplify decoder/demuxer so bellow code can support midstream
-     *        change of stream parameters */
-    wc->duration += pkt->duration;
-    ffio_wfourcc(pb, "wvpk");
-    if (off) {
-        size = AV_RL32(pkt->data);
-        if (size <= 12)
-            return AVERROR_INVALIDDATA;
-        size -= 12;
-    } else {
-        size = pkt->size;
-    }
+    ff_ape_write(ctx);
 
-    if (size + off > left)
-        return AVERROR_INVALIDDATA;
-
-    avio_wl32(pb, size + 12);
-    avio_wl16(pb, 0x410);
-    avio_w8(pb, 0);
-    avio_w8(pb, 0);
-    avio_wl32(pb, -1);
-    avio_wl32(pb, pkt->pts);
-    ptr += off; left -= off;
-    flags = AV_RL32(ptr + 4);
-    avio_write(pb, ptr, size);
-    ptr += size; left -= size;
-
-    while (!(flags & WV_END_BLOCK) &&
-            (left >= 4 + WV_EXTRA_SIZE)) {
-        ffio_wfourcc(pb, "wvpk");
-        size = AV_RL32(ptr);
-        ptr += 4; left -= 4;
-        if (size < 24 || size - 24 > left)
-            return AVERROR_INVALIDDATA;
-        avio_wl32(pb, size);
-        avio_wl16(pb, 0x410);
-        avio_w8(pb, 0);
-        avio_w8(pb, 0);
-        avio_wl32(pb, -1);
-        avio_wl32(pb, pkt->pts);
-        flags = AV_RL32(ptr + 4);
-        avio_write(pb, ptr, WV_EXTRA_SIZE);
-        ptr += WV_EXTRA_SIZE; left -= WV_EXTRA_SIZE;
-        avio_write(pb, ptr, size - 24);
-        ptr += size - 24; left -= size - 24;
-    }
-
-    return 0;
-}
-
-static int write_trailer(AVFormatContext *s)
-{
-    WVMuxContext *wc = s->priv_data;
-    AVIOContext *pb = s->pb;
-
-    ff_ape_write(s);
-
-    if (pb->seekable) {
-        avio_seek(pb, 12, SEEK_SET);
-        avio_wl32(pb, wc->duration);
-        avio_flush(pb);
+    if (ctx->pb->seekable && s->samples) {
+        avio_seek(ctx->pb, 12, SEEK_SET);
+        if (s->samples < 0xFFFFFFFFu)
+            avio_wl32(ctx->pb, s->samples);
+        else
+            avio_wl32(ctx->pb, 0xFFFFFFFFu);
+        avio_flush(ctx->pb);
     }
 
     return 0;
@@ -140,4 +82,5 @@ AVOutputFormat ff_wv_muxer = {
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
