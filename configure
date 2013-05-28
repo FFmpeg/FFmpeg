@@ -2214,8 +2214,8 @@ ffserver_extralibs='$ldl'
 # documentation
 podpages_deps="perl"
 manpages_deps="perl pod2man"
-htmlpages_deps="texi2html"
-txtpages_deps="makeinfo"
+htmlpages_deps="perl texi2html"
+txtpages_deps="perl makeinfo"
 doc_deps_any="manpages htmlpages podpages txtpages"
 
 # default parameters
