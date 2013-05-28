@@ -933,12 +933,10 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                 dst = line + x * s->ncomponents + compno;
 
                 for (; x < tile->comp[compno].coord[0][1] - s->image_offset_x; x += s->cdx[compno]) {
-                    *src[compno] += 1 << (s->cbps[compno]-1);
-                    if (*src[compno] < 0)
-                        *src[compno] = 0;
-                    else if (*src[compno] >= (1 << s->cbps[compno]))
-                        *src[compno] = (1 << s->cbps[compno]) - 1;
-                    *dst = *src[compno]++;
+                    int val = *src[compno]++ << (8 - s->cbps[compno]);
+                    val += 1 << 7;
+                    val = av_clip(val, 0, (1 << 8) - 1);
+                    *dst = val;
                     dst += s->ncomponents;
                 }
                 line += s->picture->linesize[0];
