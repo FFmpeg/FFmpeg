@@ -350,7 +350,7 @@ static int init_tiles(Jpeg2000EncoderContext *s)
         for (tilex = 0; tilex < s->numXtiles; tilex++, tileno++){
             Jpeg2000Tile *tile = s->tile + tileno;
 
-            tile->comp = av_malloc(s->ncomponents * sizeof(Jpeg2000Component));
+            tile->comp = av_mallocz(s->ncomponents * sizeof(Jpeg2000Component));
             if (!tile->comp)
                 return AVERROR(ENOMEM);
             for (compno = 0; compno < s->ncomponents; compno++){
