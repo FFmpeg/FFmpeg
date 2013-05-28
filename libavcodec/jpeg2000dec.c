@@ -932,7 +932,6 @@ static void dequantization_float(int x, int y, Jpeg2000Cblk *cblk,
             idx        = (comp->coord[0][1] - comp->coord[0][0]) * j + i;
             datap[idx] = (float)(t1->data[j][i]) * ((float)band->stepsize);
         }
-    return;
 }
 
 /* Integer dequantization of a codeblock.*/
@@ -949,7 +948,6 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
             datap[idx] =
                 ((int32_t)(t1->data[j][i]) * ((int32_t)band->stepsize) + (1 << 15)) >> 16;
         }
-    return;
 }
 
 /* Inverse ICT parameters in float and integer.
