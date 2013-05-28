@@ -564,6 +564,7 @@ static EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_SIMPLEBLOCK,    EBML_BIN,  0, offsetof(MatroskaBlock,bin) },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, offsetof(MatroskaBlock,duration) },
     { MATROSKA_ID_BLOCKREFERENCE, EBML_UINT, 0, offsetof(MatroskaBlock,reference) },
+    { MATROSKA_ID_CODECSTATE,     EBML_NONE },
     { 1,                          EBML_UINT, 0, offsetof(MatroskaBlock,non_simple), {.u=1} },
     { 0 }
 };
