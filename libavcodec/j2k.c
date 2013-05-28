@@ -262,7 +262,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             case JPEG2000_QSTY_SI:
                 /*TODO: Compute formula to implement. */
                 numbps = cbps +
-                         lut_gain[codsty->transform][bandno + reslevelno > 0];
+                         lut_gain[codsty->transform][bandno + (reslevelno > 0)];
                 stepsize = SHL(2048 + qntsty->mant[gbandno],
                                             2 + numbps - qntsty->expn[gbandno]);
                 break;
