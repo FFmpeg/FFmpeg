@@ -137,7 +137,6 @@ typedef struct WavpackContext {
     int fdec_num;
 
     int multichannel;
-    int mkv_mode;
     int block;
     int samples;
     int ch_offset;
@@ -730,14 +729,6 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
                                                        : AV_CH_LAYOUT_MONO;
 
     s->multichannel = avctx->channels > 2;
-    /* lavf demuxer does not provide extradata, Matroska stores 0x403
-     * there, use this to detect decoding mode for multichannel */
-    s->mkv_mode = 0;
-    if (s->multichannel && avctx->extradata && avctx->extradata_size == 2) {
-        int ver = AV_RL16(avctx->extradata);
-        if (ver >= 0x402 && ver <= 0x410)
-            s->mkv_mode = 1;
-    }
 
     s->fdec_num = 0;
 
@@ -789,15 +780,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
 
     bytestream2_init(&gb, buf, buf_size);
 
-    if (!wc->mkv_mode) {
-        s->samples = bytestream2_get_le32(&gb);
-        if (s->samples != wc->samples) {
-            av_log(avctx, AV_LOG_ERROR, "Mismatching number of samples in "
-                   "a sequence: %d and %d\n", wc->samples, s->samples);
-            return AVERROR_INVALIDDATA;
-        }
-    } else {
-        s->samples = wc->samples;
+    s->samples = bytestream2_get_le32(&gb);
+    if (s->samples != wc->samples) {
+        av_log(avctx, AV_LOG_ERROR, "Mismatching number of samples in "
+               "a sequence: %d and %d\n", wc->samples, s->samples);
+        return AVERROR_INVALIDDATA;
     }
     s->frame_flags = bytestream2_get_le32(&gb);
     bpp            = av_get_bytes_per_sample(avctx->sample_fmt);
@@ -821,9 +808,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     samples_l = data[wc->ch_offset];
     if (s->stereo)
         samples_r = data[wc->ch_offset + 1];
-
-    if (wc->mkv_mode)
-        bytestream2_skip(&gb, 4);  // skip block size;
 
     wc->ch_offset += 1 + s->stereo;
 
@@ -1165,14 +1149,8 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     s->ch_offset = 0;
 
     /* determine number of samples */
-    if (s->mkv_mode) {
-        s->samples  = AV_RL32(buf);
-        buf        += 4;
-        frame_flags = AV_RL32(buf);
-    } else {
-        s->samples  = AV_RL32(buf + 20);
-        frame_flags = AV_RL32(buf + 24);
-    }
+    s->samples  = AV_RL32(buf + 20);
+    frame_flags = AV_RL32(buf + 24);
     if (s->samples <= 0 || s->samples > WV_MAX_SAMPLES) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of samples: %d\n",
                s->samples);
@@ -1195,17 +1173,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     frame->nb_samples = s->samples;
 
     while (buf_size > 0) {
-        if (!s->mkv_mode) {
-            if (buf_size <= WV_HEADER_SIZE)
-                break;
-            frame_size = AV_RL32(buf + 4) - 12;
-            buf       += 20;
-            buf_size  -= 20;
-        } else {
-            if (buf_size < 12) // MKV files can have zero flags after last block
-                break;
-            frame_size = AV_RL32(buf + 8) + 12;
-        }
+        if (buf_size <= WV_HEADER_SIZE)
+            break;
+        frame_size = AV_RL32(buf + 4) - 12;
+        buf       += 20;
+        buf_size  -= 20;
         if (frame_size <= 0 || frame_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Block %d has invalid size (size %d vs. %d bytes left)\n",
