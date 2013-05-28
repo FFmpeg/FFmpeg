@@ -3426,7 +3426,7 @@ EOF
     check_inline_asm asm_mod_q '"add r0, %Q0, %R0" :: "r"((long long)0)'
     check_inline_asm asm_mod_y '"vmul.i32 d0, d0, %y0" :: "x"(0)'
 
-    enabled_all armv6t2 shared !pic && enable_weak_pic
+    [ $target_os != win32 ] && enabled_all armv6t2 shared !pic && enable_weak_pic
 
 elif enabled mips; then
 
