@@ -965,10 +965,9 @@ static const int   i_ict_params[4] = {
     116130
 };
 
-static int mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
+static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int i, csize = 1;
-    int ret = 0;
     int32_t *src[3],  i0,  i1,  i2;
     float   *srcf[3], i0f, i1f, i2f;
 
@@ -1014,7 +1013,6 @@ static int mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
         }
         break;
     }
-    return ret;
 }
 
 static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
