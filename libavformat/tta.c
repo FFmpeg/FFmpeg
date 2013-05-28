@@ -33,9 +33,11 @@ typedef struct {
 
 static int tta_probe(AVProbeData *p)
 {
-    const uint8_t *d = p->buf;
-
-    if (d[0] == 'T' && d[1] == 'T' && d[2] == 'A' && d[3] == '1')
+    if (AV_RL32(&p->buf[0]) == MKTAG('T', 'T', 'A', '1') &&
+        (AV_RL16(&p->buf[4]) == 1 || AV_RL16(&p->buf[4]) == 2) &&
+        AV_RL16(&p->buf[6]) > 0 &&
+        AV_RL16(&p->buf[8]) > 0 &&
+        AV_RL32(&p->buf[10]) > 0)
         return AVPROBE_SCORE_EXTENSION + 30;
     return 0;
 }
