@@ -2117,6 +2117,7 @@ static int transcode_init(void)
         }
 
         if (ost->stream_copy) {
+            AVRational sar;
             uint64_t extra_size;
 
             av_assert0(ist && !ost->filter);
@@ -2225,19 +2226,17 @@ static int transcode_init(void)
                 codec->height             = icodec->height;
                 codec->has_b_frames       = icodec->has_b_frames;
                 if (ost->frame_aspect_ratio.num) { // overridden by the -aspect cli option
-                    codec->sample_aspect_ratio   =
-                    ost->st->sample_aspect_ratio =
+                    sar =
                         av_mul_q(ost->frame_aspect_ratio,
                                  (AVRational){ codec->height, codec->width });
                     av_log(NULL, AV_LOG_WARNING, "Overriding aspect ratio "
                            "with stream copy may produce invalid files\n");
-                } else if (!codec->sample_aspect_ratio.num) {
-                    codec->sample_aspect_ratio   =
-                    ost->st->sample_aspect_ratio =
-                        ist->st->sample_aspect_ratio.num ? ist->st->sample_aspect_ratio :
-                        ist->st->codec->sample_aspect_ratio.num ?
-                        ist->st->codec->sample_aspect_ratio : (AVRational){0, 1};
                 }
+                else if (ist->st->sample_aspect_ratio.num)
+                    sar = ist->st->sample_aspect_ratio;
+                else
+                    sar = icodec->sample_aspect_ratio;
+                ost->st->sample_aspect_ratio = codec->sample_aspect_ratio = sar;
                 ost->st->avg_frame_rate = ist->st->avg_frame_rate;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
