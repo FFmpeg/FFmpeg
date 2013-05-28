@@ -32,4 +32,9 @@
  */
 int64_t ff_ape_parse_tag(AVFormatContext *s);
 
+/**
+ * Write an APE tag into a file.
+ */
+int ff_ape_write_tag(AVFormatContext *s);
+
 #endif /* AVFORMAT_APETAG_H */
