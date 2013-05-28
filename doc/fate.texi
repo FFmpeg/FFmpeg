@@ -126,6 +126,7 @@ build_only=     # set to "yes" for a compile-only instance that skips tests
 arch=
 cpu=
 cross_prefix=
+as=
 cc=
 target_os=
 sysroot=
