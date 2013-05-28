@@ -788,11 +788,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         return AVERROR_INVALIDDATA;
     }
 
-    if (wc->ch_offset >= avctx->channels) {
-        av_log(avctx, AV_LOG_ERROR, "too many channels\n");
-        return -1;
-    }
-
     memset(s->decorr, 0, MAX_TERMS * sizeof(Decorr));
     memset(s->ch, 0, sizeof(s->ch));
     s->extra_bits     = 0;
@@ -828,6 +823,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->hybrid_maxclip =  ((1LL << (orig_bpp - 1)) - 1);
     s->hybrid_minclip = ((-1LL << (orig_bpp - 1)));
     s->CRC            = bytestream2_get_le32(&gb);
+
+    if (wc->ch_offset + s->stereo >= avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "too many channels\n");
+        return -1;
+    }
 
     samples_l = data[wc->ch_offset];
     if (s->stereo)
