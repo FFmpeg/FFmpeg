@@ -549,7 +549,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                     av_log(s->avctx, AV_LOG_ERROR, "Read went out of bounds\n");
                     return AVERROR_INVALIDDATA;
                 }
-                code = (int8_t) * src++;
+                code = s->fill_order ? (int8_t) ff_reverse[*src++]: (int8_t) *src++;
                 if (code >= 0) {
                     code++;
                     if (pixels + code > width) {
@@ -577,6 +577,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                                     dst, 0, NULL, c, code, pixels);
                     pixels += code;
                 }
+            }
+            if (s->fill_order) {
+                int i;
+                for (i = 0; i < width; i++)
+                    dst[i] = ff_reverse[dst[i]];
             }
             break;
         case TIFF_LZW:
