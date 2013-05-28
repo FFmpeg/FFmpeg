@@ -278,15 +278,16 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                 gain      = cbps;
                 stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
                 stepsize *= (qntsty->mant[gbandno] / 2048.0 + 1.0);
-                /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
-                 * If not set output of entropic decoder is not correct. */
-//                 stepsize *= 0.5;
                 break;
             default:
                 stepsize = 0;
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
+            /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
+             * If not set output of entropic decoder is not correct. */
+            if (!av_codec_is_encoder(avctx->codec))
+                stepsize *= 0.5;
             /* BITEXACT computing case --> convert to int */
 //             if (avctx->flags & CODEC_FLAG_BITEXACT)
             band->stepsize = stepsize * (1 << 16);

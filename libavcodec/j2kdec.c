@@ -26,6 +26,7 @@
  * @author Kamil Nowosad
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -814,6 +815,22 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     return 0;
 }
 
+/* Integer dequantization of a codeblock.*/
+static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
+                               Jpeg2000Component *comp,
+                               Jpeg2000T1Context *t1, Jpeg2000Band *band)
+{
+    int i, j, idx;
+    int32_t *datap =
+        (int32_t *) &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x];
+    for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j)
+        for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
+            idx        = (comp->coord[0][1] - comp->coord[0][0]) * j + i;
+            datap[idx] =
+                ((int32_t)(t1->data[j][i]) * ((int32_t)band->stepsize) + (1 << 15)) >> 16;
+        }
+}
+
 static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int i, *src[3], i0, i1, i2, csize = 1;
@@ -890,25 +907,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                         x = cblk->coord[0][0];
                         y = cblk->coord[1][0];
 
-                        if (codsty->transform == FF_DWT53) {
-                            for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
-                                int *datap = &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * (y+j) + x];
-                                int *ptr = t1.data[j];
-                                for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
-                                    datap[i] = ptr[i] >> 1;
-                                }
-                            }
-                        } else{
-                            for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j) {
-                                int *datap = &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * (y+j) + x];
-                                int *ptr = t1.data[j];
-                                for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
-                                    int tmp = ((int64_t)ptr[i]) * ((int64_t)band->stepsize) >> 16, tmp2;
-                                    tmp2 = FFABS(tmp>>1) + (tmp&1);
-                                    datap[i] = tmp < 0 ? -tmp2 : tmp2;
-                                }
-                            }
-                        }
+                        dequantization_int(x, y, cblk, comp, &t1, band);
                    } /* end cblk */
                 } /*end prec */
             } /* end band */
