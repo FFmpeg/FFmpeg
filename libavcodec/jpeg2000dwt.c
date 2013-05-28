@@ -144,6 +144,76 @@ static void dwt_encode53(DWTContext *s, int *t)
         }
     }
 }
+static void sd_1d97_float(float *p, int i0, int i1)
+{
+    int i;
+
+    if (i1 == i0 + 1)
+        return;
+
+    extend97_float(p, i0, i1);
+    i0++; i1++;
+
+    for (i = i0/2 - 2; i < i1/2 + 1; i++)
+        p[2*i+1] -= 1.586134 * (p[2*i] + p[2*i+2]);
+    for (i = i0/2 - 1; i < i1/2 + 1; i++)
+        p[2*i] -= 0.052980 * (p[2*i-1] + p[2*i+1]);
+    for (i = i0/2 - 1; i < i1/2; i++)
+        p[2*i+1] += 0.882911 * (p[2*i] + p[2*i+2]);
+    for (i = i0/2; i < i1/2; i++)
+        p[2*i] += 0.443506 * (p[2*i-1] + p[2*i+1]);
+}
+
+static void dwt_encode97_float(DWTContext *s, float *t)
+{
+    int lev,
+        w = s->linelen[s->ndeclevels-1][0];
+    float *line = s->f_linebuf;
+    line += 5;
+
+    for (lev = s->ndeclevels-1; lev >= 0; lev--){
+        int lh = s->linelen[lev][0],
+            lv = s->linelen[lev][1],
+            mh = s->mod[lev][0],
+            mv = s->mod[lev][1],
+            lp;
+        float *l;
+
+        // HOR_SD
+        l = line + mh;
+        for (lp = 0; lp < lv; lp++){
+            int i, j = 0;
+
+            for (i = 0; i < lh; i++)
+                l[i] = t[w*lp + i];
+
+            sd_1d97_float(line, mh, mh + lh);
+
+            // copy back and deinterleave
+            for (i =   mh; i < lh; i+=2, j++)
+                t[w*lp + j] = F_LFTG_X * l[i] / 2;
+            for (i = 1-mh; i < lh; i+=2, j++)
+                t[w*lp + j] = F_LFTG_K * l[i] / 2;
+        }
+
+        // VER_SD
+        l = line + mv;
+        for (lp = 0; lp < lh; lp++) {
+            int i, j = 0;
+
+            for (i = 0; i < lv; i++)
+                l[i] = t[w*i + lp];
+
+            sd_1d97_float(line, mv, mv + lv);
+
+            // copy back and deinterleave
+            for (i =   mv; i < lv; i+=2, j++)
+                t[w*j + lp] = F_LFTG_X * l[i] / 2;
+            for (i = 1-mv; i < lv; i+=2, j++)
+                t[w*j + lp] = F_LFTG_K * l[i] / 2;
+        }
+    }
+}
 
 static void sd_1d97_int(int *p, int i0, int i1)
 {
@@ -482,9 +552,11 @@ int ff_jpeg2000_dwt_init(DWTContext *s, uint16_t border[2][2],
     return 0;
 }
 
-int ff_dwt_encode(DWTContext *s, int *t)
+int ff_dwt_encode(DWTContext *s, void *t)
 {
     switch(s->type){
+        case FF_DWT97:
+            dwt_encode97_float(s, t); break;
         case FF_DWT97_INT:
             dwt_encode97_int(s, t); break;
         case FF_DWT53:
