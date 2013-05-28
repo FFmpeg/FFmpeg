@@ -30,7 +30,7 @@
 // specs say that maximum block size is 1Mb
 #define WV_BLOCK_LIMIT 1047576
 
-#define WV_EXTRA_SIZE 12
+#define WV_HEADER_SIZE 32
 
 #define WV_START_BLOCK  0x0800
 #define WV_END_BLOCK    0x1000
@@ -56,13 +56,13 @@ static const int wv_rates[16] = {
 };
 
 typedef struct {
+    uint8_t block_header[WV_HEADER_SIZE];
     uint32_t blksize, flags;
     int rate, chan, bpp;
     uint32_t chmask;
     uint32_t samples, soff;
     int multichannel;
     int block_parsed;
-    uint8_t extra[WV_EXTRA_SIZE];
     int64_t pos;
 
     int64_t apetag_start;
@@ -83,12 +83,11 @@ static int wv_probe(AVProbeData *p)
         return 0;
 }
 
-static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb,
-                                int append)
+static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
 {
     WVContext *wc = ctx->priv_data;
-    uint32_t tag, ver;
-    int size;
+    uint32_t ver;
+    int size, ret;
     int rate, bpp, chan;
     uint32_t chmask;
 
@@ -98,33 +97,30 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb,
     if (wc->apetag_start && wc->pos >= wc->apetag_start)
         return AVERROR_EOF;
 
-    if (!append) {
-        tag = avio_rl32(pb);
-        if (tag != MKTAG('w', 'v', 'p', 'k'))
-            return AVERROR_INVALIDDATA;
-        size = avio_rl32(pb);
-        if (size < 24 || size > WV_BLOCK_LIMIT) {
-            av_log(ctx, AV_LOG_ERROR, "Incorrect block size %i\n", size);
-            return AVERROR_INVALIDDATA;
-        }
-        wc->blksize = size;
-        ver = avio_rl16(pb);
-        if (ver < 0x402 || ver > 0x410) {
-            av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
-            return AVERROR_PATCHWELCOME;
-        }
-        avio_r8(pb); // track no
-        avio_r8(pb); // track sub index
-        wc->samples = avio_rl32(pb); // total samples in file
-        wc->soff    = avio_rl32(pb); // offset in samples of current block
-        avio_read(pb, wc->extra, WV_EXTRA_SIZE);
-    } else {
-        size = wc->blksize;
+    ret = avio_read(pb, wc->block_header, WV_HEADER_SIZE);
+    if (ret != WV_HEADER_SIZE)
+        return (ret < 0) ? ret : AVERROR_EOF;
+
+    if (AV_RL32(wc->block_header) != MKTAG('w', 'v', 'p', 'k'))
+        return AVERROR_INVALIDDATA;
+
+    size = AV_RL32(wc->block_header + 4);
+    if (size < 24 || size > WV_BLOCK_LIMIT) {
+        av_log(ctx, AV_LOG_ERROR, "Incorrect block size %i\n", size);
+        return AVERROR_INVALIDDATA;
     }
-    wc->flags = AV_RL32(wc->extra + 4);
+    wc->blksize = size;
+    ver = AV_RL32(wc->block_header + 8);
+    if (ver < 0x402 || ver > 0x410) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
+        return AVERROR_PATCHWELCOME;
+    }
+    wc->samples = AV_RL32(wc->block_header + 12); // total samples in file
+    wc->soff    = AV_RL32(wc->block_header + 16); // offset in samples of current block
+    wc->flags   = AV_RL32(wc->block_header + 24);
     /* Blocks with zero samples don't contain actual audio information
      * and should be ignored */
-    if (!AV_RN32(wc->extra))
+    if (!AV_RN32(wc->block_header + 20))
         return 0;
     // parse flags
     bpp    = ((wc->flags & 3) + 1) << 3;
@@ -238,9 +234,9 @@ static int wv_read_header(AVFormatContext *s)
 
     wc->block_parsed = 0;
     for (;;) {
-        if ((ret = wv_read_block_header(s, pb, 0)) < 0)
+        if ((ret = wv_read_block_header(s, pb)) < 0)
             return ret;
-        if (!AV_RN32(wc->extra))
+        if (!AV_RL32(wc->block_header + 20))
             avio_skip(pb, wc->blksize - 24);
         else
             break;
@@ -276,75 +272,49 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     WVContext *wc = s->priv_data;
     int ret;
-    int size, ver, off;
+    int off;
     int64_t pos;
     uint32_t block_samples;
 
     if (url_feof(s->pb))
         return AVERROR_EOF;
     if (wc->block_parsed) {
-        if ((ret = wv_read_block_header(s, s->pb, 0)) < 0)
+        if ((ret = wv_read_block_header(s, s->pb)) < 0)
             return ret;
     }
 
     pos = wc->pos;
-    off = wc->multichannel ? 4 : 0;
-    if (av_new_packet(pkt, wc->blksize + WV_EXTRA_SIZE + off) < 0)
+    if (av_new_packet(pkt, wc->blksize + WV_HEADER_SIZE) < 0)
         return AVERROR(ENOMEM);
-    if (wc->multichannel)
-        AV_WL32(pkt->data, wc->blksize + WV_EXTRA_SIZE + 12);
-    memcpy(pkt->data + off, wc->extra, WV_EXTRA_SIZE);
-    ret = avio_read(s->pb, pkt->data + WV_EXTRA_SIZE + off, wc->blksize);
+    memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
+    ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->blksize);
     if (ret != wc->blksize) {
         av_free_packet(pkt);
         return AVERROR(EIO);
     }
     while (!(wc->flags & WV_END_BLOCK)) {
-        if (avio_rl32(s->pb) != MKTAG('w', 'v', 'p', 'k')) {
-            av_free_packet(pkt);
-            return AVERROR_INVALIDDATA;
-        }
-        if ((ret = av_append_packet(s->pb, pkt, 4)) < 0) {
+        if ((ret = wv_read_block_header(s, s->pb)) < 0) {
             av_free_packet(pkt);
             return ret;
         }
-        size = AV_RL32(pkt->data + pkt->size - 4);
-        if (size < 24 || size > WV_BLOCK_LIMIT) {
-            av_free_packet(pkt);
-            av_log(s, AV_LOG_ERROR, "Incorrect block size %d\n", size);
-            return AVERROR_INVALIDDATA;
-        }
-        wc->blksize = size;
-        ver         = avio_rl16(s->pb);
-        if (ver < 0x402 || ver > 0x410) {
-            av_free_packet(pkt);
-            av_log(s, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
-            return AVERROR_PATCHWELCOME;
-        }
-        avio_r8(s->pb); // track no
-        avio_r8(s->pb); // track sub index
-        wc->samples = avio_rl32(s->pb); // total samples in file
-        wc->soff    = avio_rl32(s->pb); // offset in samples of current block
-        if ((ret = av_append_packet(s->pb, pkt, WV_EXTRA_SIZE)) < 0) {
-            av_free_packet(pkt);
-            return ret;
-        }
-        memcpy(wc->extra, pkt->data + pkt->size - WV_EXTRA_SIZE, WV_EXTRA_SIZE);
 
-        if ((ret = wv_read_block_header(s, s->pb, 1)) < 0) {
+        off = pkt->size;
+        if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->blksize)) < 0) {
             av_free_packet(pkt);
             return ret;
         }
-        ret = av_append_packet(s->pb, pkt, wc->blksize);
-        if (ret < 0) {
+        memcpy(pkt->data + off, wc->block_header, WV_HEADER_SIZE);
+
+        ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->blksize);
+        if (ret != wc->blksize) {
             av_free_packet(pkt);
-            return ret;
+            return (ret < 0) ? ret : AVERROR_EOF;
         }
     }
     pkt->stream_index = 0;
     wc->block_parsed  = 1;
     pkt->pts          = wc->soff;
-    block_samples     = AV_RL32(wc->extra);
+    block_samples     = AV_RL32(wc->block_header + 20);
     if (block_samples > INT32_MAX)
         av_log(s, AV_LOG_WARNING,
                "Too many samples in block: %"PRIu32"\n", block_samples);
