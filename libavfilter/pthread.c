@@ -34,6 +34,8 @@
 
 #if HAVE_PTHREADS
 #include <pthread.h>
+#elif HAVE_OS2THREADS
+#include "compat/os2threads.h"
 #elif HAVE_W32THREADS
 #include "compat/w32pthreads.h"
 #endif

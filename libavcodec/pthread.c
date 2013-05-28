@@ -43,7 +43,7 @@
 #elif HAVE_W32THREADS
 #include "compat/w32pthreads.h"
 #elif HAVE_OS2THREADS
-#include "os2threads.h"
+#include "compat/os2threads.h"
 #endif
 
 typedef int (action_func)(AVCodecContext *c, void *arg);

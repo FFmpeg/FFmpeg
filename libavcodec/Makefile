@@ -803,7 +803,6 @@ SKIPHEADERS-$(CONFIG_MPEG_XVMC_DECODER) += xvmc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
-SKIPHEADERS-$(HAVE_OS2THREADS)         += os2threads.h
 
 TESTPROGS = cabac                                                       \
             dct                                                         \

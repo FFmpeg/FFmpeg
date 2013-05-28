@@ -32,7 +32,7 @@
 #elif HAVE_W32THREADS
 #include "compat/w32pthreads.h"
 #elif HAVE_OS2THREADS
-#include "os2threads.h"
+#include "compat/os2threads.h"
 #endif
 
 #define MAX_THREADS 64
