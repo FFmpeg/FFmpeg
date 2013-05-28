@@ -61,7 +61,7 @@ documentation: $(DOCS)
 
 examples: $(DOC_EXAMPLES)
 
-TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
+TEXIDEP = perl $(SRC_PATH)/doc/texidep.pl $(SRC_PATH) $< $@ >$(@:%=%.d)
 
 doc/%.txt: TAG = TXT
 doc/%.txt: doc/%.texi
