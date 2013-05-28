@@ -35,6 +35,7 @@ Specifically, the GPL parts of FFmpeg are
     - vf_hqdn3d.c
     - vf_hue.c
     - vf_kerndeint.c
+    - vf_mcdeint.c
     - vf_mp.c
     - vf_noise.c
     - vf_owdenoise.c
