@@ -184,7 +184,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
     uint8_t log2_band_prec_width, log2_band_prec_height;
     int reslevelno, bandno, gbandno = 0, ret, i, j, csize = 1;
 
-    if (ret=ff_jpeg2000_dwt_init(&comp->dwt, comp->coord, codsty->nreslevels2decode-1, codsty->transform == FF_DWT53 ? FF_DWT53 : FF_DWT97_INT))
+    if (ret=ff_jpeg2000_dwt_init(&comp->dwt, comp->coord, codsty->nreslevels2decode-1, codsty->transform))
         return ret;
     for (i = 0; i < 2; i++)
         csize *= comp->coord[i][1] - comp->coord[i][0];
@@ -261,7 +261,7 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             case JPEG2000_QSTY_SI:
                 /*TODO: Compute formula to implement. */
                 numbps = cbps +
-                         lut_gain[codsty->transform][bandno + (reslevelno > 0)];
+                         lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
                 band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
                                             2 + numbps - qntsty->expn[gbandno]);
                 break;

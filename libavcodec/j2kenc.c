@@ -280,7 +280,7 @@ static int put_cod(Jpeg2000EncoderContext *s)
     bytestream_put_byte(&s->buf, codsty->log2_cblk_width-2); // cblk width
     bytestream_put_byte(&s->buf, codsty->log2_cblk_height-2); // cblk height
     bytestream_put_byte(&s->buf, 0); // cblk style
-    bytestream_put_byte(&s->buf, codsty->transform); // transformation
+    bytestream_put_byte(&s->buf, codsty->transform == FF_DWT53); // transformation
     return 0;
 }
 
@@ -432,7 +432,7 @@ static void init_quantization(Jpeg2000EncoderContext *s)
             for (bandno = 0; bandno < nbands; bandno++, gbandno++){
                 int expn, mant;
 
-                if (codsty->transform == FF_DWT97){
+                if (codsty->transform == FF_DWT97_INT){
                     int bandpos = bandno + (reslevelno>0),
                         ss = 81920000 / dwt_norms[0][bandpos][lev],
                         log = av_log2(ss);
@@ -802,7 +802,7 @@ static void truncpasses(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
                         Jpeg2000Cblk *cblk = prec->cblk + cblkno;
 
                         cblk->ninclpasses = getcut(cblk, s->lambda,
-                                (int64_t)dwt_norms[codsty->transform][bandpos][lev] * (int64_t)band->i_stepsize >> 16);
+                                (int64_t)dwt_norms[codsty->transform == FF_DWT53][bandpos][lev] * (int64_t)band->i_stepsize >> 16);
                     }
                 }
             }
@@ -986,7 +986,7 @@ static av_cold int j2kenc_init(AVCodecContext *avctx)
     codsty->nreslevels       = 7;
     codsty->log2_cblk_width  = 4;
     codsty->log2_cblk_height = 4;
-    codsty->transform        = avctx->prediction_method;
+    codsty->transform        = avctx->prediction_method ? FF_DWT53 : FF_DWT97_INT;
 
     qntsty->nguardbits       = 1;
 
