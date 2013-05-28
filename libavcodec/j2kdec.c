@@ -827,7 +827,7 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
         for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
             idx        = (comp->coord[0][1] - comp->coord[0][0]) * j + i;
             datap[idx] =
-                ((int32_t)(t1->data[j][i]) * ((int32_t)band->stepsize) + (1 << 15)) >> 16;
+                ((int32_t)(t1->data[j][i]) * band->i_stepsize + (1 << 15)) >> 16;
         }
 }
 

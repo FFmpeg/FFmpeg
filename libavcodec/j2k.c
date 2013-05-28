@@ -248,7 +248,6 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
             Jpeg2000Band *band = reslevel->band + bandno;
             int cblkno, precno;
             int nb_precincts;
-            double stepsize;
 
             /* TODO: Implementation of quantization step not finished,
              * see ISO/IEC 15444-1:2002 E.1 and A.6.4. */
@@ -257,13 +256,13 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                 int numbps;
             case JPEG2000_QSTY_NONE:
                 /* TODO: to verify. No quantization in this case */
-                stepsize = 1;
+                band->f_stepsize = 1;
                 break;
             case JPEG2000_QSTY_SI:
                 /*TODO: Compute formula to implement. */
                 numbps = cbps +
                          lut_gain[codsty->transform][bandno + (reslevelno > 0)];
-                stepsize = SHL(2048 + qntsty->mant[gbandno],
+                band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
                                             2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
@@ -276,21 +275,20 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
                  * but it works (compared to OpenJPEG). Why?
                  * Further investigation needed. */
                 gain      = cbps;
-                stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
-                stepsize *= (qntsty->mant[gbandno] / 2048.0 + 1.0);
+                band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
+                band->f_stepsize *= (qntsty->mant[gbandno] / 2048.0 + 1.0);
                 break;
             default:
-                stepsize = 0;
+                band->f_stepsize = 0;
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
              * If not set output of entropic decoder is not correct. */
             if (!av_codec_is_encoder(avctx->codec))
-                stepsize *= 0.5;
-            /* BITEXACT computing case --> convert to int */
-//             if (avctx->flags & CODEC_FLAG_BITEXACT)
-            band->stepsize = stepsize * (1 << 16);
+                band->f_stepsize *= 0.5;
+
+            band->i_stepsize = band->f_stepsize * (1 << 16);
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1

@@ -176,12 +176,11 @@ typedef struct Jpeg2000Prec {
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Prec; // precinct
 
-/* TODO: stepsize can be float or integer depending on
- * reversible or irreversible transformation. */
 typedef struct Jpeg2000Band {
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t log2_cblk_width, log2_cblk_height;
-    float stepsize; // quantization stepsize
+    int i_stepsize; // quantization stepsize
+    float f_stepsize; // quantization stepsize
     Jpeg2000Prec *prec;
 } Jpeg2000Band; // subband
 

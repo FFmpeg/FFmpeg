@@ -267,13 +267,13 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 int numbps;
             case JPEG2000_QSTY_NONE:
                 /* TODO: to verify. No quantization in this case */
-                band->stepsize = (float) (1 << 13);
+                band->f_stepsize = (float) (1 << 13);
                 break;
             case JPEG2000_QSTY_SI:
                 /*TODO: Compute formula to implement. */
                 numbps = cbps +
                          lut_gain[codsty->transform][bandno + (reslevelno > 0)];
-                band->stepsize = (float)SHL(2048 + qntsty->mant[gbandno],
+                band->f_stepsize = (float)SHL(2048 + qntsty->mant[gbandno],
                                             2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
@@ -286,20 +286,20 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                  * but it works (compared to OpenJPEG). Why?
                  * Further investigation needed. */
                 gain            = cbps;
-                band->stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
-                band->stepsize *= (float)qntsty->mant[gbandno] / 2048.0 + 1.0;
+                band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
+                band->f_stepsize *= (float)qntsty->mant[gbandno] / 2048.0 + 1.0;
                 break;
             default:
-                band->stepsize = 0;
+                band->f_stepsize = 0;
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
                 * If not set output of entropic decoder is not correct. */
-            band->stepsize *= 0.5;
-            /* BITEXACT computing case --> convert to int */
-            if (avctx->flags & CODEC_FLAG_BITEXACT)
-                band->stepsize = (int32_t)(band->stepsize * (1 << 16));
+            if (!av_codec_is_encoder(avctx->codec))
+                band->f_stepsize *= 0.5;
+
+            band->i_stepsize = (int32_t)(band->f_stepsize * (1 << 16));
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
