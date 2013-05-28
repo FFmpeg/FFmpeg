@@ -22,6 +22,7 @@ version 10:
 - Escape 130 video decoder
 - support for slice multithreading in libavfilter
 - VC-1 interlaced B-frame support
+- support for WavPack muxing (raw and in Matroska)
 
 
 version 9:
