@@ -255,7 +255,7 @@ static void vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 palette32[i] = (r << 16) | (g << 8) | (b);
             }
         }
-        s->size -= (256 * 3 + 2);
+        s->size -= PALETTE_COUNT * 3 + 2;
     }
     if (s->size > 0) {
         /* originally UnpackFrame in VAG's code */
