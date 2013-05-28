@@ -437,7 +437,7 @@ Algorithm quality. Valid options are integers from 0-9.
 @item reservoir         @tab N.A.
 Enable use of bit reservoir. LAME has this enabled by default.
 @item joint_stereo      @tab -m j
-Enables the the encoder to use (on a frame by frame basis) either L/R
+Enables the encoder to use (on a frame by frame basis) either L/R
 stereo or mid/side stereo.
 @end multitable
 
