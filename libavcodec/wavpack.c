@@ -803,11 +803,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                    "a sequence: %d and %d\n", wc->samples, s->samples);
             return AVERROR_INVALIDDATA;
         }
-
-        if (!s->samples) {
-            *got_frame_ptr = 0;
-            return 0;
-        }
     } else {
         s->samples = wc->samples;
     }
