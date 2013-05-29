@@ -43,6 +43,10 @@
 #define WV_HYBRID_SHAPE   0x00000008
 #define WV_HYBRID_BITRATE 0x00000200
 #define WV_HYBRID_BALANCE 0x00000400
+#define WV_INITIAL_BLOCK  0x00000800
+#define WV_FINAL_BLOCK    0x00001000
+
+#define WV_SINGLE_BLOCK (WV_INITIAL_BLOCK | WV_FINAL_BLOCK)
 
 #define WV_FLT_SHIFT_ONES 0x01
 #define WV_FLT_SHIFT_SAME 0x02
@@ -137,7 +141,6 @@ typedef struct WavpackContext {
     WavpackFrameContext *fdec[WV_MAX_FRAME_DECODERS];
     int fdec_num;
 
-    int multichannel;
     int block;
     int samples;
     int ch_offset;
@@ -730,12 +733,6 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    if (avctx->channels <= 2 && !avctx->channel_layout)
-        avctx->channel_layout = (avctx->channels == 2) ? AV_CH_LAYOUT_STEREO
-                                                       : AV_CH_LAYOUT_MONO;
-
-    s->multichannel = avctx->channels > 2;
-
     s->fdec_num = 0;
 
     return 0;
@@ -764,7 +761,8 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     int got_terms   = 0, got_weights = 0, got_samples = 0,
         got_entropy = 0, got_bs      = 0, got_float   = 0, got_hybrid = 0;
     int i, j, id, size, ssize, weights, t;
-    int bpp, chan, chmask, orig_bpp, sample_rate = 0;
+    int bpp, chan = 0, chmask = 0, orig_bpp, sample_rate = 0;
+    int multiblock;
 
     if (block_no >= wc->fdec_num && wv_alloc_frame_context(wc) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error creating frame decode context\n");
@@ -795,6 +793,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->frame_flags = bytestream2_get_le32(&gb);
     bpp            = av_get_bytes_per_sample(avctx->sample_fmt);
     orig_bpp       = ((s->frame_flags & 0x03) + 1) << 3;
+    multiblock     = (s->frame_flags & WV_SINGLE_BLOCK) != WV_SINGLE_BLOCK;
 
     s->stereo         = !(s->frame_flags & WV_MONO);
     s->stereo_in      =  (s->frame_flags & WV_FALSE_STEREO) ? 0 : s->stereo;
@@ -1050,15 +1049,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 chan   = avctx->channels;
                 chmask = avctx->channel_layout;
             }
-            if (chan != avctx->channels) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Block reports total %d channels, "
-                       "decoder believes it's %d channels\n",
-                       chan, avctx->channels);
-                return AVERROR_INVALIDDATA;
-            }
-            if (!avctx->channel_layout)
-                avctx->channel_layout = chmask;
             break;
         case WP_ID_SAMPLE_RATE:
             if (size != 3) {
@@ -1121,6 +1111,17 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             avctx->sample_rate = sample_rate;
         } else
             avctx->sample_rate = wv_rates[sr];
+
+        if (multiblock) {
+            if (chan)
+                avctx->channels = chan;
+            if (chmask)
+                avctx->channel_layout = chmask;
+        } else {
+            avctx->channels       = s->stereo ? 2 : 1;
+            avctx->channel_layout = s->stereo ? AV_CH_LAYOUT_STEREO :
+                                                AV_CH_LAYOUT_MONO;
+        }
 
         /* get output buffer */
         frame->nb_samples = s->samples + 1;
