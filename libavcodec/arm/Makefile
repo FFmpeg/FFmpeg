@@ -71,7 +71,8 @@ NEON-OBJS-$(CONFIG_H264CHROMA)         += arm/h264cmc_neon.o
 NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o
 NEON-OBJS-$(CONFIG_H264PRED)           += arm/h264pred_neon.o
-NEON-OBJS-$(CONFIG_H264QPEL)           += arm/h264qpel_neon.o
+NEON-OBJS-$(CONFIG_H264QPEL)           += arm/h264qpel_neon.o           \
+                                          arm/hpeldsp_neon.o
 NEON-OBJS-$(CONFIG_HPELDSP)            += arm/hpeldsp_init_neon.o       \
                                           arm/hpeldsp_neon.o
 NEON-OBJS-$(CONFIG_MDCT)               += arm/mdct_neon.o               \
