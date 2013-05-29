@@ -1,5 +1,5 @@
 FATE_G722-$(call DEMDEC, G722, ADPCM_G722) += fate-g722dec-1
-fate-g722dec-1: CMD = framecrc -i $(SAMPLES)/g722/conf-adminmenu-162.g722
+fate-g722dec-1: CMD = framecrc -i $(TARGET_SAMPLES)/g722/conf-adminmenu-162.g722
 
 FATE_G722-$(call ENCMUX, ADPCM_G722, WAV) += fate-g722-encode
 fate-g722-encode: tests/data/asynth-16000-1.wav
@@ -10,28 +10,28 @@ FATE_VOICE-yes += $(FATE_G722-yes)
 fate-g722: $(FATE_G722)
 
 FATE_G723_1 += fate-g723_1-dec-1
-fate-g723_1-dec-1: CMD = framecrc -postfilter 0 -i $(SAMPLES)/g723_1/ineqd53.tco
+fate-g723_1-dec-1: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/ineqd53.tco
 
 FATE_G723_1 += fate-g723_1-dec-2
-fate-g723_1-dec-2: CMD = framecrc -postfilter 0 -i $(SAMPLES)/g723_1/overd53.tco
+fate-g723_1-dec-2: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/overd53.tco
 
 FATE_G723_1 += fate-g723_1-dec-3
-fate-g723_1-dec-3: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/overd63p.tco
+fate-g723_1-dec-3: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/overd63p.tco
 
 FATE_G723_1 += fate-g723_1-dec-4
-fate-g723_1-dec-4: CMD = framecrc -postfilter 0 -i $(SAMPLES)/g723_1/pathd53.tco
+fate-g723_1-dec-4: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/pathd53.tco
 
 FATE_G723_1 += fate-g723_1-dec-5
-fate-g723_1-dec-5: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/pathd63p.tco
+fate-g723_1-dec-5: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/pathd63p.tco
 
 FATE_G723_1 += fate-g723_1-dec-6
-fate-g723_1-dec-6: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/tamed63p.tco
+fate-g723_1-dec-6: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/tamed63p.tco
 
 FATE_G723_1 += fate-g723_1-dec-7
-fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/dtx63b.tco
+fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63b.tco
 
 FATE_G723_1 += fate-g723_1-dec-8
-fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(SAMPLES)/g723_1/dtx63e.tco
+fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63e.tco
 
 FATE_G723_1-$(call DEMDEC, G723_1, G723_1) += $(FATE_G723_1)
 FATE_SAMPLES_AVCONV += $(FATE_G723_1-yes)
@@ -56,21 +56,21 @@ FATE_VOICE-$(call ENCMUX, ADPCM_G726, WAV) += $(FATE_G726)
 fate-g726: $(FATE_G726)
 
 FATE_GSM-$(call DEMDEC, WAV, GSM) += fate-gsm-ms
-fate-gsm-ms: CMD = framecrc -i $(SAMPLES)/gsm/ciao.wav
+fate-gsm-ms: CMD = framecrc -i $(TARGET_SAMPLES)/gsm/ciao.wav
 
 FATE_GSM-$(call DEMDEC, MOV, GSM) += fate-gsm-toast
-fate-gsm-toast: CMD = framecrc -i $(SAMPLES)/gsm/sample-gsm-8000.mov -t 10
+fate-gsm-toast: CMD = framecrc -i $(TARGET_SAMPLES)/gsm/sample-gsm-8000.mov -t 10
 
 FATE_VOICE-yes += $(FATE_GSM-yes)
 fate-gsm: $(FATE_GSM)
 
 FATE_VOICE-$(call DEMDEC, QCP, QCELP) += fate-qcelp
-fate-qcelp: CMD = pcm -i $(SAMPLES)/qcp/0036580847.QCP
+fate-qcelp: CMD = pcm -i $(TARGET_SAMPLES)/qcp/0036580847.QCP
 fate-qcelp: CMP = oneoff
 fate-qcelp: REF = $(SAMPLES)/qcp/0036580847.pcm
 
 FATE_VOICE-$(call DEMDEC, WAV, TRUESPEECH) += fate-truespeech
-fate-truespeech: CMD = pcm -i $(SAMPLES)/truespeech/a6.wav
+fate-truespeech: CMD = pcm -i $(TARGET_SAMPLES)/truespeech/a6.wav
 fate-truespeech: CMP = oneoff
 fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
 

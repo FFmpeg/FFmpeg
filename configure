@@ -251,6 +251,7 @@ Advanced options (experts only):
   --target-os=OS           compiler targets OS [$target_os]
   --target-exec=CMD        command to run executables on target
   --target-path=DIR        path to view of build directory on target
+  --target-samples=DIR     path to samples directory on target
   --toolchain=NAME         set tool defaults according to NAME
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
@@ -1627,6 +1628,7 @@ CMDLINE_SET="
     target_exec
     target_os
     target_path
+    target_samples
     toolchain
     valgrind
     yasmexe
@@ -4624,6 +4626,7 @@ HOSTCC_O=$HOSTCC_O
 HOSTLD_O=$HOSTLD_O
 TARGET_EXEC=$target_exec $target_exec_args
 TARGET_PATH=$target_path
+TARGET_SAMPLES=${target_samples:-\$(SAMPLES)}
 LIBS-ffplay=$sdl_libs
 CFLAGS-ffplay=$sdl_cflags
 ZLIB=$($ldflags_filter -lz)
