@@ -329,7 +329,8 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    init_get_bits(&s->gb, buf, buf_size*8);
+    if ((ret = init_get_bits8(&s->gb, avpkt->data, avpkt->size)) < 0)
+        return ret;
 
     /* get output buffer */
     frame->nb_samples = framelen;
