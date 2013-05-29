@@ -1080,6 +1080,7 @@ static int video_open(VideoState *is, int force_set_video_mode, VideoPicture *vp
         w = default_width;
         h = default_height;
     }
+    w = FFMIN(16383, w);
     if (screen && is->width == screen->w && screen->w == w
        && is->height== screen->h && screen->h == h && !force_set_video_mode)
         return 0;
@@ -3249,10 +3250,14 @@ static void event_loop(VideoState *cur_stream)
                 }
             break;
         case SDL_VIDEORESIZE:
-                screen = SDL_SetVideoMode(event.resize.w, event.resize.h, 0,
+                screen = SDL_SetVideoMode(FFMIN(16383, event.resize.w), event.resize.h, 0,
                                           SDL_HWSURFACE|SDL_RESIZABLE|SDL_ASYNCBLIT|SDL_HWACCEL);
-                screen_width  = cur_stream->width  = event.resize.w;
-                screen_height = cur_stream->height = event.resize.h;
+                if (!screen) {
+                    fprintf(stderr, "Failed to set video mode\n");
+                    do_exit(cur_stream);
+                }
+                screen_width  = cur_stream->width  = screen->w;
+                screen_height = cur_stream->height = screen->h;
                 cur_stream->force_refresh = 1;
             break;
         case SDL_QUIT:
