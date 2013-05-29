@@ -203,6 +203,24 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
     return result;
 }
 
+static int ftp_send_command(FTPContext *s, const char *command,
+                            const int response_codes[], char **response)
+{
+    int err;
+
+    /* Flush control connection input to get rid of non relevant responses if any */
+    if ((err = ftp_flush_control_input(s)) < 0)
+        return err;
+
+    /* send command in blocking mode */
+    s->conn_control_block_flag = 0;
+    if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
+        return err;
+
+    /* return status */
+    return ftp_status(s, response, response_codes);
+}
+
 static int ftp_auth(FTPContext *s)
 {
     const char *user = NULL, *pass = NULL;
@@ -210,9 +228,6 @@ static int ftp_auth(FTPContext *s)
     int err;
     const int user_codes[] = {331, 230, 0};
     const int pass_codes[] = {230, 0};
-
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
 
     /* Authentication may be repeated, original string has to be saved */
     av_strlcpy(credencials, s->credencials, sizeof(credencials));
@@ -226,15 +241,11 @@ static int ftp_auth(FTPContext *s)
     }
 
     snprintf(buf, sizeof(buf), "USER %s\r\n", user);
-    if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-        return err;
-    err = ftp_status(s, NULL, user_codes);
+    err = ftp_send_command(s, buf, user_codes, NULL);
     if (err == 331) {
         if (pass) {
             snprintf(buf, sizeof(buf), "PASS %s\r\n", pass);
-            if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-                return err;
-            err = ftp_status(s, NULL, pass_codes);
+            err = ftp_send_command(s, buf, pass_codes, NULL);
         } else
             return AVERROR(EACCES);
     }
@@ -247,16 +258,11 @@ static int ftp_auth(FTPContext *s)
 static int ftp_passive_mode(FTPContext *s)
 {
     char *res = NULL, *start, *end;
-    int err, i;
+    int i;
     const char *command = "PASV\r\n";
     const int pasv_codes[] = {227, 0};
 
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
-        return err;
-    if (!ftp_status(s, &res, pasv_codes))
+    if (!ftp_send_command(s, command, pasv_codes, &res))
         goto fail;
 
     start = NULL;
@@ -299,16 +305,11 @@ static int ftp_passive_mode(FTPContext *s)
 static int ftp_current_dir(FTPContext *s)
 {
     char *res = NULL, *start = NULL, *end = NULL;
-    int err, i;
+    int i;
     const char *command = "PWD\r\n";
     const int pwd_codes[] = {257, 0};
 
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
-        return err;
-    if (!ftp_status(s, &res, pwd_codes))
+    if (!ftp_send_command(s, command, pwd_codes, &res))
         goto fail;
 
     for (i = 0; res[i]; ++i) {
@@ -341,18 +342,12 @@ static int ftp_current_dir(FTPContext *s)
 
 static int ftp_file_size(FTPContext *s)
 {
-    char buf[CONTROL_BUFFER_SIZE];
-    int err;
+    char command[CONTROL_BUFFER_SIZE];
     char *res = NULL;
     const int size_codes[] = {213, 0};
 
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    snprintf(buf, sizeof(buf), "SIZE %s\r\n", s->path);
-    if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-        return err;
-    if (ftp_status(s, &res, size_codes)) {
+    snprintf(command, sizeof(command), "SIZE %s\r\n", s->path);
+    if (ftp_send_command(s, command, size_codes, &res)) {
         s->filesize = strtoll(&res[4], NULL, 10);
     } else {
         s->filesize = -1;
@@ -366,18 +361,11 @@ static int ftp_file_size(FTPContext *s)
 
 static int ftp_retrieve(FTPContext *s)
 {
-    char buf[CONTROL_BUFFER_SIZE];
-    int err;
+    char command[CONTROL_BUFFER_SIZE];
     const int retr_codes[] = {150, 0};
 
-
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    snprintf(buf, sizeof(buf), "RETR %s\r\n", s->path);
-    if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-        return err;
-    if (!ftp_status(s, NULL, retr_codes))
+    snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
+    if (!ftp_send_command(s, command, retr_codes, NULL))
         return AVERROR(EIO);
 
     s->state = DOWNLOADING;
@@ -387,17 +375,11 @@ static int ftp_retrieve(FTPContext *s)
 
 static int ftp_store(FTPContext *s)
 {
-    char buf[CONTROL_BUFFER_SIZE];
-    int err;
+    char command[CONTROL_BUFFER_SIZE];
     const int stor_codes[] = {150, 0};
 
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    snprintf(buf, sizeof(buf), "STOR %s\r\n", s->path);
-    if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-        return err;
-    if (!ftp_status(s, NULL, stor_codes))
+    snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
+    if (!ftp_send_command(s, command, stor_codes, NULL))
         return AVERROR(EIO);
 
     s->state = UPLOADING;
@@ -407,16 +389,10 @@ static int ftp_store(FTPContext *s)
 
 static int ftp_type(FTPContext *s)
 {
-    int err;
     const char *command = "TYPE I\r\n";
     const int type_codes[] = {200, 0};
 
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
-        return err;
-    if (!ftp_status(s, NULL, type_codes))
+    if (!ftp_send_command(s, command, type_codes, NULL))
         return AVERROR(EIO);
 
     return 0;
@@ -432,6 +408,7 @@ static int ftp_abort(FTPContext *s)
         return err;
 
     if (s->state == DOWNLOADING) {
+        s->conn_control_block_flag = 0;
         if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
             return err;
     }
@@ -446,17 +423,11 @@ static int ftp_abort(FTPContext *s)
 
 static int ftp_restart(FTPContext *s, int64_t pos)
 {
-    int err;
-    char buf[CONTROL_BUFFER_SIZE];
+    char command[CONTROL_BUFFER_SIZE];
     const int rest_codes[] = {350, 0};
 
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    snprintf(buf, sizeof(buf), "REST %"PRId64"\r\n", pos);
-    if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-        return err;
-    if (!ftp_status(s, NULL, rest_codes))
+    snprintf(command, sizeof(command), "REST %"PRId64"\r\n", pos);
+    if (!ftp_send_command(s, command, rest_codes, NULL))
         return AVERROR(EIO);
 
     return 0;
