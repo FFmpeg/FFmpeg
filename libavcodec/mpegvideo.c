@@ -2179,7 +2179,7 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
                                      int motion_x, int motion_y)
 {
     const int lowres   = s->avctx->lowres;
-    const int op_index = FFMIN(lowres, 2);
+    const int op_index = FFMIN(lowres, 3);
     const int s_mask   = (2 << lowres) - 1;
     int emu = 0;
     int sx, sy;
