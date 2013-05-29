@@ -21,6 +21,7 @@
 
 #include "libavcodec/flac.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "flacenc.h"
 #include "vorbiscomment.h"
 #include "libavcodec/bytestream.h"
@@ -31,10 +32,7 @@ static int flac_write_block_padding(AVIOContext *pb, unsigned int n_padding_byte
 {
     avio_w8(pb, last_block ? 0x81 : 0x01);
     avio_wb24(pb, n_padding_bytes);
-    while (n_padding_bytes > 0) {
-        avio_w8(pb, 0);
-        n_padding_bytes--;
-    }
+    ffio_fill(pb, 0, n_padding_bytes);
     return 0;
 }
 
