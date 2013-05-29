@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
 #include "libavutil/attributes.h"
 
 #include "apetag.h"
@@ -56,7 +55,6 @@ static int wv_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     s->samples += header.samples;
 
     avio_write(ctx->pb, pkt->data, pkt->size);
-    avio_flush(ctx->pb);
 
     return 0;
 }
