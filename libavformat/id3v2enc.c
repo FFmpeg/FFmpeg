@@ -26,7 +26,10 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
+#include "avio_internal.h"
 #include "id3v2.h"
+
+#define PADDING_BYTES 10
 
 static void id3v2_put_size(AVIOContext *pb, int size)
 {
@@ -319,7 +322,15 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
 
 void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb)
 {
-    int64_t cur_pos = avio_tell(pb);
+    int64_t cur_pos;
+
+    /* adding an arbitrary amount of padding bytes at the end of the
+     * ID3 metadata fixes cover art display for some software (iTunes,
+     * Traktor, Serato, Torq) */
+    ffio_fill(pb, 0, PADDING_BYTES);
+    id3->len += PADDING_BYTES;
+
+    cur_pos = avio_tell(pb);
     avio_seek(pb, id3->size_pos, SEEK_SET);
     id3v2_put_size(pb, id3->len);
     avio_seek(pb, cur_pos, SEEK_SET);
