@@ -917,7 +917,7 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
     int compno, reslevelno, bandno;
-    int x, y, *src[4];
+    int x, y;
     uint8_t *line;
     Jpeg2000T1Context t1;
 
@@ -933,7 +933,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
             for (bandno = 0; bandno < rlevel->nbands; bandno++) {
                 int nb_precincts, precno;
                 Jpeg2000Band *band = rlevel->band + bandno;
-                int cblkx, cblky, cblkno=0, bandpos;
+                int cblkno=0, bandpos;
 
                 bandpos = bandno + (reslevelno > 0);
 
@@ -948,7 +948,6 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                     /* Loop on codeblocks */
                     for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
                         int x, y;
-                        int i, j;
                         Jpeg2000Cblk *cblk = prec->cblk + cblkno;
                         decode_cblk(s, codsty, &t1, cblk,
                                     cblk->coord[0][1] - cblk->coord[0][0],
@@ -969,7 +968,6 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
         } /* end reslevel */
 
         ff_dwt_decode(&comp->dwt, comp->data);
-        src[compno] = comp->data;
     } /*end comp */
 
     /* inverse MCT transformation */
