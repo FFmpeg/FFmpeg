@@ -56,6 +56,7 @@ version <next>:
 - SMPTE 302M audio encoder
 - support for slice multithreading in libavfilter
 - Hald CLUT support (generation and filtering)
+- VC-1 interlaced B-frame support
 
 
 version 1.2:

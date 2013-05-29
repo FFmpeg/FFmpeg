@@ -389,24 +389,24 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             srcY = s->current_picture.f.data[0];
             srcU = s->current_picture.f.data[1];
             srcV = s->current_picture.f.data[2];
-            luty = v->curr_luty;
-            lutuv= v->curr_lutuv;
-            use_ic=v->curr_use_ic;
+            luty  = v->curr_luty;
+            lutuv = v->curr_lutuv;
+            use_ic = v->curr_use_ic;
         } else {
             srcY = s->last_picture.f.data[0];
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
-            luty = v->last_luty ;
-            lutuv= v->last_lutuv;
-            use_ic=v->last_use_ic;
+            luty  = v->last_luty;
+            lutuv = v->last_lutuv;
+            use_ic = v->last_use_ic;
         }
     } else {
         srcY = s->next_picture.f.data[0];
         srcU = s->next_picture.f.data[1];
         srcV = s->next_picture.f.data[2];
-        luty = v->next_luty ;
-        lutuv= v->next_lutuv;
-        use_ic=v->next_use_ic;
+        luty  = v->next_luty;
+        lutuv = v->next_lutuv;
+        use_ic = v->next_use_ic;
     }
 
     if(!srcY)
@@ -492,7 +492,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
 
             src = srcY;
             for (j = 0; j < 17 + s->mspel * 2; j++) {
-                int f = v->field_mode ? v->ref_field_type[dir] : ((j + src_y - s->mspel)&1) ;
+                int f = v->field_mode ? v->ref_field_type[dir] : ((j + src_y - s->mspel) & 1) ;
                 for (i = 0; i < 17 + s->mspel * 2; i++)
                     src[i] = luty[f][src[i]];
                 src += s->linesize;
@@ -500,7 +500,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
             src  = srcU;
             src2 = srcV;
             for (j = 0; j < 9; j++) {
-                int f = v->field_mode ? v->ref_field_type[dir] : ((j + uvsrc_y)&1);
+                int f = v->field_mode ? v->ref_field_type[dir] : ((j + uvsrc_y) & 1);
                 for (i = 0; i < 9; i++) {
                     src[i]  = lutuv[f][src[i]];
                     src2[i] = lutuv[f][src2[i]];
@@ -576,16 +576,16 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
         if (v->field_mode && (v->cur_field_type != v->ref_field_type[dir]) && v->second_field) {
             srcY = s->current_picture.f.data[0];
             luty = v->curr_luty;
-            use_ic=v->curr_use_ic;
+            use_ic = v->curr_use_ic;
         } else {
             srcY = s->last_picture.f.data[0];
             luty = v->last_luty;
-            use_ic=v->last_use_ic;
+            use_ic = v->last_use_ic;
         }
     } else {
         srcY = s->next_picture.f.data[0];
         luty = v->next_luty;
-        use_ic=v->next_use_ic;
+        use_ic = v->next_use_ic;
     }
 
     if(!srcY)
@@ -717,7 +717,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
 
             src = srcY;
             for (j = 0; j < 9 + s->mspel * 2; j++) {
-                int f = v->field_mode ? v->ref_field_type[dir] : (((j<<fieldmv)+src_y - (s->mspel << fieldmv))&1);
+                int f = v->field_mode ? v->ref_field_type[dir] : (((j<<fieldmv)+src_y - (s->mspel << fieldmv)) & 1);
                 for (i = 0; i < 9 + s->mspel * 2; i++)
                     src[i] = luty[f][src[i]];
                 src += s->linesize << fieldmv;
@@ -874,19 +874,19 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         if (v->field_mode && (v->cur_field_type != chroma_ref_type) && v->second_field) {
             srcU = s->current_picture.f.data[1];
             srcV = s->current_picture.f.data[2];
-            lutuv= v->curr_lutuv;
-            use_ic=v->curr_use_ic;
+            lutuv = v->curr_lutuv;
+            use_ic = v->curr_use_ic;
         } else {
             srcU = s->last_picture.f.data[1];
             srcV = s->last_picture.f.data[2];
-            lutuv= v->last_lutuv;
-            use_ic=v->last_use_ic;
+            lutuv = v->last_lutuv;
+            use_ic = v->last_use_ic;
         }
     } else {
         srcU = s->next_picture.f.data[1];
         srcV = s->next_picture.f.data[2];
-        lutuv= v->next_lutuv;
-        use_ic=v->next_use_ic;
+        lutuv = v->next_lutuv;
+        use_ic = v->next_use_ic;
     }
 
     if(!srcU)
@@ -939,7 +939,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
             src  = srcU;
             src2 = srcV;
             for (j = 0; j < 9; j++) {
-                int f = v->field_mode ? chroma_ref_type : ((j + uvsrc_y)&1);
+                int f = v->field_mode ? chroma_ref_type : ((j + uvsrc_y) & 1);
                 for (i = 0; i < 9; i++) {
                     src[i]  = lutuv[f][src[i]];
                     src2[i] = lutuv[f][src2[i]];
@@ -983,7 +983,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
         return;
 
     for (i = 0; i < 4; i++) {
-        int d = i<2 ? dir: dir2;
+        int d = i < 2 ? dir: dir2;
         tx = s->mv[d][i][0];
         uvmx_field[i] = (tx + ((tx & 3) == 3)) >> 1;
         ty = s->mv[d][i][1];
@@ -1019,7 +1019,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
 
         if (fieldmv && (uvsrc_y & 1) && uvsrc_y < 2)
             uvsrc_y--;
-        if ((use_ic)
+        if (use_ic
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
             || (unsigned)uvsrc_y > v_edge_pos - (5 << fieldmv)) {
@@ -1040,7 +1040,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
                 src  = srcU;
                 src2 = srcV;
                 for (j = 0; j < 5; j++) {
-                    int f = (uvsrc_y + (j<<fieldmv))&1;
+                    int f = (uvsrc_y + (j << fieldmv)) & 1;
                     for (i = 0; i < 5; i++) {
                         src[i]  = lutuv[f][src[i]];
                         src2[i] = lutuv[f][src2[i]];
@@ -1059,13 +1059,13 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
                 v->vc1dsp.avg_no_rnd_vc1_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
             }
         } else {
-        if (!v->rnd) {
-            h264chroma->put_h264_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
-            h264chroma->put_h264_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
-        } else {
-            v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
-            v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
-        }
+            if (!v->rnd) {
+                h264chroma->put_h264_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
+                h264chroma->put_h264_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
+            } else {
+                v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[1](s->dest[1] + off, srcU, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
+                v->vc1dsp.put_no_rnd_vc1_chroma_pixels_tab[1](s->dest[2] + off, srcV, s->uvlinesize << fieldmv, 4, uvmx_field[i], uvmy_field[i]);
+            }
         }
     }
 }
@@ -1996,7 +1996,7 @@ static void vc1_interp_mc(VC1Context *v)
 
             src = srcY;
             for (j = 0; j < 17 + s->mspel * 2; j++) {
-                int f = v->field_mode ? v->ref_field_type[1] : ((j+src_y - s->mspel)&1);
+                int f = v->field_mode ? v->ref_field_type[1] : ((j+src_y - s->mspel) & 1);
                 for (i = 0; i < 17 + s->mspel * 2; i++)
                     src[i] = luty[f][src[i]];
                 src += s->linesize;
@@ -2004,7 +2004,7 @@ static void vc1_interp_mc(VC1Context *v)
             src  = srcU;
             src2 = srcV;
             for (j = 0; j < 9; j++) {
-                int f = v->field_mode ? v->ref_field_type[1] : ((j+uvsrc_y)&1);
+                int f = v->field_mode ? v->ref_field_type[1] : ((j+uvsrc_y) & 1);
                 for (i = 0; i < 9; i++) {
                     src[i]  = lutuv[f][src[i]];
                     src2[i] = lutuv[f][src2[i]];
