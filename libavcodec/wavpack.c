@@ -805,11 +805,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->hybrid_minclip = ((-1LL << (orig_bpp - 1)));
     s->CRC            = bytestream2_get_le32(&gb);
 
-    if (wc->ch_offset + s->stereo >= avctx->channels) {
-        av_log(avctx, AV_LOG_ERROR, "too many channels\n");
-        return -1;
-    }
-
     // parse metadata blocks
     while (bytestream2_get_bytes_left(&gb)) {
         id   = bytestream2_get_byte(&gb);
@@ -1132,6 +1127,11 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         frame->nb_samples = s->samples;
     }
 
+    if (wc->ch_offset + s->stereo >= avctx->channels) {
+        av_log(avctx, AV_LOG_WARNING, "Too many channels coded in a packet.\n");
+        return (avctx->err_recognition & AV_EF_EXPLODE) ? AVERROR_INVALIDDATA : 0;
+    }
+
     samples_l = frame->extended_data[wc->ch_offset];
     if (s->stereo)
         samples_r = frame->extended_data[wc->ch_offset + 1];
@@ -1217,6 +1217,11 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         s->block++;
         buf      += frame_size;
         buf_size -= frame_size;
+    }
+
+    if (s->ch_offset != avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "Not enough channels coded in a packet.\n");
+        return AVERROR_INVALIDDATA;
     }
 
     *got_frame_ptr = 1;
