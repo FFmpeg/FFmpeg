@@ -586,6 +586,9 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
     /* ensure output buffer is large enough */
     audio_chunks = buf_size / s->chunk_size;
 
+    /* drop incomplete chunks */
+    buf_size     = audio_chunks * s->chunk_size;
+
     /* get output buffer */
     s->frame.nb_samples = ((silent_chunks + audio_chunks) * avctx->block_align) / avctx->channels;
     if ((ret = ff_get_buffer(avctx, &s->frame)) < 0) {
@@ -597,7 +600,8 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* decode silent chunks */
     if (silent_chunks > 0) {
-        int silent_size = avctx->block_align * silent_chunks;
+        int silent_size = FFMIN(avctx->block_align * silent_chunks,
+                                s->frame.nb_samples * avctx->channels);
         if (s->out_bps == 2) {
             memset(output_samples_s16, 0x00, silent_size * 2);
             output_samples_s16 += silent_size;
@@ -609,7 +613,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
 
     /* decode audio chunks */
     if (audio_chunks > 0) {
-        buf_end = buf + buf_size;
+        buf_end = buf + (buf_size & ~(avctx->channels > 1));
         while (buf + s->chunk_size <= buf_end) {
             if (s->out_bps == 2) {
                 decode_audio_s16(output_samples_s16, buf, s->chunk_size,
