@@ -26,15 +26,7 @@
 #include "internal.h"
 #include "apetag.h"
 #include "id3v1.h"
-
-// specs say that maximum block size is 1Mb
-#define WV_BLOCK_LIMIT 1047576
-
-#define WV_HEADER_SIZE 32
-
-#define WV_START_BLOCK  0x0800
-#define WV_END_BLOCK    0x1000
-#define WV_SINGLE_BLOCK (WV_START_BLOCK | WV_END_BLOCK)
+#include "wv.h"
 
 enum WV_FLAGS {
     WV_MONO   = 0x0004,
@@ -57,10 +49,9 @@ static const int wv_rates[16] = {
 
 typedef struct {
     uint8_t block_header[WV_HEADER_SIZE];
-    uint32_t blksize, flags;
+    WvHeader header;
     int rate, chan, bpp;
     uint32_t chmask;
-    uint32_t samples, soff;
     int multichannel;
     int block_parsed;
     int64_t pos;
@@ -86,10 +77,9 @@ static int wv_probe(AVProbeData *p)
 static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
 {
     WVContext *wc = ctx->priv_data;
-    uint32_t ver;
-    int size, ret;
+    int ret;
     int rate, bpp, chan;
-    uint32_t chmask;
+    uint32_t chmask, flags;
 
     wc->pos = avio_tell(pb);
 
@@ -101,39 +91,34 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     if (ret != WV_HEADER_SIZE)
         return (ret < 0) ? ret : AVERROR_EOF;
 
-    if (AV_RL32(wc->block_header) != MKTAG('w', 'v', 'p', 'k'))
-        return AVERROR_INVALIDDATA;
-
-    size = AV_RL32(wc->block_header + 4);
-    if (size < 24 || size > WV_BLOCK_LIMIT) {
-        av_log(ctx, AV_LOG_ERROR, "Incorrect block size %i\n", size);
-        return AVERROR_INVALIDDATA;
+    ret = ff_wv_parse_header(&wc->header, wc->block_header);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid block header.\n");
+        return ret;
     }
-    wc->blksize = size;
-    ver = AV_RL32(wc->block_header + 8);
-    if (ver < 0x402 || ver > 0x410) {
-        av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", ver);
+
+    if (wc->header.version < 0x402 || wc->header.version > 0x410) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported version %03X\n", wc->header.version);
         return AVERROR_PATCHWELCOME;
     }
-    wc->samples = AV_RL32(wc->block_header + 12); // total samples in file
-    wc->soff    = AV_RL32(wc->block_header + 16); // offset in samples of current block
-    wc->flags   = AV_RL32(wc->block_header + 24);
+
     /* Blocks with zero samples don't contain actual audio information
      * and should be ignored */
-    if (!AV_RN32(wc->block_header + 20))
+    if (!wc->header.samples)
         return 0;
     // parse flags
-    bpp    = ((wc->flags & 3) + 1) << 3;
-    chan   = 1 + !(wc->flags & WV_MONO);
-    chmask = wc->flags & WV_MONO ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
-    rate   = wv_rates[(wc->flags >> 23) & 0xF];
-    wc->multichannel = !!((wc->flags & WV_SINGLE_BLOCK) != WV_SINGLE_BLOCK);
+    flags  = wc->header.flags;
+    bpp    = ((flags & 3) + 1) << 3;
+    chan   = 1 + !(flags & WV_MONO);
+    chmask = flags & WV_MONO ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+    rate   = wv_rates[(flags >> 23) & 0xF];
+    wc->multichannel = !(wc->header.initial && wc->header.final);
     if (wc->multichannel) {
         chan   = wc->chan;
         chmask = wc->chmask;
     }
     if ((rate == -1 || !chan) && !wc->block_parsed) {
-        int64_t block_end = avio_tell(pb) + wc->blksize - 24;
+        int64_t block_end = avio_tell(pb) + wc->header.blocksize;
         if (!pb->seekable) {
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot determine additional parameters\n");
@@ -192,7 +177,7 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
                    "Cannot determine custom sampling rate\n");
             return AVERROR_INVALIDDATA;
         }
-        avio_seek(pb, block_end - wc->blksize + 24, SEEK_SET);
+        avio_seek(pb, block_end - wc->header.blocksize, SEEK_SET);
     }
     if (!wc->bpp)
         wc->bpp    = bpp;
@@ -203,25 +188,24 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     if (!wc->rate)
         wc->rate   = rate;
 
-    if (wc->flags && bpp != wc->bpp) {
+    if (flags && bpp != wc->bpp) {
         av_log(ctx, AV_LOG_ERROR,
                "Bits per sample differ, this block: %i, header block: %i\n",
                bpp, wc->bpp);
         return AVERROR_INVALIDDATA;
     }
-    if (wc->flags && !wc->multichannel && chan != wc->chan) {
+    if (flags && !wc->multichannel && chan != wc->chan) {
         av_log(ctx, AV_LOG_ERROR,
                "Channels differ, this block: %i, header block: %i\n",
                chan, wc->chan);
         return AVERROR_INVALIDDATA;
     }
-    if (wc->flags && rate != -1 && rate != wc->rate) {
+    if (flags && rate != -1 && rate != wc->rate) {
         av_log(ctx, AV_LOG_ERROR,
                "Sampling rate differ, this block: %i, header block: %i\n",
                rate, wc->rate);
         return AVERROR_INVALIDDATA;
     }
-    wc->blksize = size - 24;
     return 0;
 }
 
@@ -236,8 +220,8 @@ static int wv_read_header(AVFormatContext *s)
     for (;;) {
         if ((ret = wv_read_block_header(s, pb)) < 0)
             return ret;
-        if (!AV_RL32(wc->block_header + 20))
-            avio_skip(pb, wc->blksize - 24);
+        if (!wc->header.samples)
+            avio_skip(pb, wc->header.blocksize);
         else
             break;
     }
@@ -254,8 +238,8 @@ static int wv_read_header(AVFormatContext *s)
     st->codec->bits_per_coded_sample = wc->bpp;
     avpriv_set_pts_info(st, 64, 1, wc->rate);
     st->start_time = 0;
-    if (wc->samples != 0xFFFFFFFFu)
-        st->duration = wc->samples;
+    if (wc->header.total_samples != 0xFFFFFFFFu)
+        st->duration = wc->header.total_samples;
 
     if (s->pb->seekable) {
         int64_t cur = avio_tell(s->pb);
@@ -284,37 +268,37 @@ static int wv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     pos = wc->pos;
-    if (av_new_packet(pkt, wc->blksize + WV_HEADER_SIZE) < 0)
+    if (av_new_packet(pkt, wc->header.blocksize + WV_HEADER_SIZE) < 0)
         return AVERROR(ENOMEM);
     memcpy(pkt->data, wc->block_header, WV_HEADER_SIZE);
-    ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->blksize);
-    if (ret != wc->blksize) {
+    ret = avio_read(s->pb, pkt->data + WV_HEADER_SIZE, wc->header.blocksize);
+    if (ret != wc->header.blocksize) {
         av_free_packet(pkt);
         return AVERROR(EIO);
     }
-    while (!(wc->flags & WV_END_BLOCK)) {
+    while (!(wc->header.flags & WV_FLAG_FINAL_BLOCK)) {
         if ((ret = wv_read_block_header(s, s->pb)) < 0) {
             av_free_packet(pkt);
             return ret;
         }
 
         off = pkt->size;
-        if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->blksize)) < 0) {
+        if ((ret = av_grow_packet(pkt, WV_HEADER_SIZE + wc->header.blocksize)) < 0) {
             av_free_packet(pkt);
             return ret;
         }
         memcpy(pkt->data + off, wc->block_header, WV_HEADER_SIZE);
 
-        ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->blksize);
-        if (ret != wc->blksize) {
+        ret = avio_read(s->pb, pkt->data + off + WV_HEADER_SIZE, wc->header.blocksize);
+        if (ret != wc->header.blocksize) {
             av_free_packet(pkt);
             return (ret < 0) ? ret : AVERROR_EOF;
         }
     }
     pkt->stream_index = 0;
     wc->block_parsed  = 1;
-    pkt->pts          = wc->soff;
-    block_samples     = AV_RL32(wc->block_header + 20);
+    pkt->pts          = wc->header.block_idx;
+    block_samples     = wc->header.samples;
     if (block_samples > INT32_MAX)
         av_log(s, AV_LOG_WARNING,
                "Too many samples in block: %"PRIu32"\n", block_samples);
