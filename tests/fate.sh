@@ -49,6 +49,7 @@ configure()(
         ${arch:+--arch=$arch}                                           \
         ${cpu:+--cpu="$cpu"}                                            \
         ${cross_prefix:+--cross-prefix="$cross_prefix"}                 \
+        ${as:+--as="$as"}                                               \
         ${cc:+--cc="$cc"}                                               \
         ${ld:+--ld="$ld"}                                               \
         ${target_os:+--target-os="$target_os"}                          \
