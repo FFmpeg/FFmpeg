@@ -13,7 +13,7 @@ ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
 	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
 
-OBJDIRS += tests/data tests/vsynth1
+OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
@@ -40,6 +40,10 @@ tests/data/ffprobe-test.nut: ffmpeg$(EXESUF) | tests/data
         -y $@ 2>/dev/null
 
 tests/data/%.sw tests/data/asynth% tests/data/vsynth%.yuv tests/vsynth%/00.pgm tests/data/%.nut: TAG = GEN
+
+tests/data/filtergraphs/%: TAG = COPY
+tests/data/filtergraphs/%: $(SRC_PATH)/tests/filtergraphs/% | tests/data/filtergraphs
+	$(M)cp $< $@
 
 CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
 

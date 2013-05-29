@@ -53,7 +53,8 @@ FATE_FILTER_VSYNTH-$(CONFIG_HISTOGRAM_FILTER) += fate-filter-histogram-waveform
 fate-filter-histogram-waveform: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogram=mode=waveform -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_OVERLAY_FILTER) += fate-filter-overlay
-fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay
+fate-filter-overlay: tests/data/filtergraphs/overlay
+fate-filter-overlay: CMD = framecrc -c:v pgmyuv -i $(SRC) -c:v pgmyuv -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/overlay
 
 FATE_FILTER_VSYNTH-$(call ALLYES, SPLIT_FILTER SCALE_FILTER PAD_FILTER OVERLAY_FILTER) += fate-filter-overlay_rgb
 fate-filter-overlay_rgb: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/overlay_rgb
@@ -68,7 +69,8 @@ FATE_FILTER_VSYNTH-$(CONFIG_SEPARATEFIELDS_FILTER) += fate-filter-separatefields
 fate-filter-separatefields: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf separatefields
 
 FATE_FILTER_VSYNTH-$(call ALLYES, SETPTS_FILTER  SETTB_FILTER) += fate-filter-setpts
-fate-filter-setpts: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_script $(SRC_PATH)/tests/filtergraphs/setpts
+fate-filter-setpts: tests/data/filtergraphs/setpts
+fate-filter-setpts: CMD = framecrc -c:v pgmyuv -i $(SRC) -filter_script $(TARGET_PATH)/tests/data/filtergraphs/setpts
 
 FATE_FILTER_VSYNTH-$(CONFIG_TELECINE_FILTER) += fate-filter-telecine
 fate-filter-telecine: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf telecine
