@@ -35,7 +35,7 @@
 #include "internal.h"
 #include "video.h"
 
-#define MAX_NOISE 4096
+#define MAX_NOISE 5120
 #define MAX_SHIFT 1024
 #define MAX_RES (MAX_NOISE-MAX_SHIFT)
 
@@ -347,14 +347,15 @@ static void noise(uint8_t *dst, const uint8_t *src,
     }
 
     for (y = start; y < end; y++) {
+        const int ix = y & (MAX_RES - 1);
         if (flags & NOISE_TEMPORAL)
             shift = av_lfg_get(lfg) & (MAX_SHIFT - 1);
         else
-            shift = n->rand_shift[y];
+            shift = n->rand_shift[ix];
 
         if (flags & NOISE_AVERAGED) {
-            n->line_noise_avg(dst, src, width, p->prev_shift[y]);
-            p->prev_shift[y][shift & 3] = noise + shift;
+            n->line_noise_avg(dst, src, width, p->prev_shift[ix]);
+            p->prev_shift[ix][shift & 3] = noise + shift;
         } else {
             n->line_noise(dst, src, noise, width, shift);
         }
