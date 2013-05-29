@@ -57,6 +57,7 @@ version <next>:
 - support for slice multithreading in libavfilter
 - Hald CLUT support (generation and filtering)
 - VC-1 interlaced B-frame support
+- support for WavPack muxing (raw and in Matroska)
 
 
 version 1.2:

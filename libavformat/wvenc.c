@@ -1,5 +1,6 @@
 /*
  * WavPack muxer
+ * Copyright (c) 2013 Kostya Shishkov <kostya.shishkov@gmail.com>
  * Copyright (c) 2012 Paul B Mahol
  *
  * This file is part of FFmpeg.
@@ -19,68 +20,74 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
-#include "avformat.h"
-#include "internal.h"
+
+#include "libavutil/attributes.h"
+
 #include "apetag.h"
+#include "avformat.h"
+#include "wv.h"
 
-typedef struct WVMuxContext {
+typedef struct WvMuxContext {
     int64_t samples;
-} WVMuxContext;
+} WvMuxContext;
 
-static int write_header(AVFormatContext *s)
+static av_cold int wv_write_header(AVFormatContext *ctx)
 {
-    AVCodecContext *codec = s->streams[0]->codec;
+    if (ctx->nb_streams > 1 ||
+        ctx->streams[0]->codec->codec_id != AV_CODEC_ID_WAVPACK) {
+        av_log(ctx, AV_LOG_ERROR, "This muxer only supports a single WavPack stream.\n");
+        return AVERROR(EINVAL);
+    }
 
-    if (s->nb_streams > 1) {
-        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
-        return AVERROR(EINVAL);
-    }
-    if (codec->codec_id != AV_CODEC_ID_WAVPACK) {
-        av_log(s, AV_LOG_ERROR, "unsupported codec\n");
-        return AVERROR(EINVAL);
-    }
     return 0;
 }
 
-static int write_packet(AVFormatContext *ctx, AVPacket *pkt)
+static int wv_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
-    WVMuxContext *s = ctx->priv_data;
+    WvMuxContext *s = ctx->priv_data;
+    WvHeader header;
+    int ret;
 
-    if (pkt->size >= 24)
-        s->samples += AV_RL32(pkt->data + 20);
+    if (pkt->size < WV_HEADER_SIZE ||
+        (ret = ff_wv_parse_header(&header, pkt->data)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid WavPack packet.\n");
+        return AVERROR(EINVAL);
+    }
+    s->samples += header.samples;
+
     avio_write(ctx->pb, pkt->data, pkt->size);
+    avio_flush(ctx->pb);
 
     return 0;
 }
 
-static int write_trailer(AVFormatContext *ctx)
+static av_cold int wv_write_trailer(AVFormatContext *ctx)
 {
-    WVMuxContext *s = ctx->priv_data;
+    WvMuxContext *s = ctx->priv_data;
 
-    ff_ape_write(ctx);
-
-    if (ctx->pb->seekable && s->samples) {
+    /* update total number of samples in the first block */
+    if (ctx->pb->seekable && s->samples &&
+        s->samples < UINT32_MAX) {
+        int64_t pos = avio_tell(ctx->pb);
         avio_seek(ctx->pb, 12, SEEK_SET);
-        if (s->samples < 0xFFFFFFFFu)
-            avio_wl32(ctx->pb, s->samples);
-        else
-            avio_wl32(ctx->pb, 0xFFFFFFFFu);
-        avio_flush(ctx->pb);
+        avio_wl32(ctx->pb, s->samples);
+        avio_seek(ctx->pb, pos, SEEK_SET);
     }
 
+    ff_ape_write_tag(ctx);
     return 0;
 }
 
 AVOutputFormat ff_wv_muxer = {
     .name              = "wv",
-    .long_name         = NULL_IF_CONFIG_SMALL("WavPack"),
-    .priv_data_size    = sizeof(WVMuxContext),
+    .long_name         = NULL_IF_CONFIG_SMALL("raw WavPack"),
+    .mime_type         = "audio/x-wavpack",
     .extensions        = "wv",
+    .priv_data_size    = sizeof(WvMuxContext),
     .audio_codec       = AV_CODEC_ID_WAVPACK,
     .video_codec       = AV_CODEC_ID_NONE,
-    .write_header      = write_header,
-    .write_packet      = write_packet,
-    .write_trailer     = write_trailer,
+    .write_header      = wv_write_header,
+    .write_packet      = wv_write_packet,
+    .write_trailer     = wv_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
 };
