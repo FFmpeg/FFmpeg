@@ -170,6 +170,12 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
     return tag_start;
 }
 
+static int string_is_ascii(const uint8_t *str)
+{
+    while (*str && *str >= 0x20 && *str <= 0x7e ) str++;
+    return !*str;
+}
+
 int ff_ape_write_tag(AVFormatContext *s)
 {
     AVDictionaryEntry *e = NULL;
@@ -193,8 +199,14 @@ int ff_ape_write_tag(AVFormatContext *s)
     ffio_fill(s->pb, 0, 8);             // reserved
 
     while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
-        int val_len = strlen(e->value);
+        int val_len;
 
+        if (!string_is_ascii(e->key)) {
+            av_log(s, AV_LOG_WARNING, "Non ASCII keys are not allowed\n");
+            continue;
+        }
+
+        val_len = strlen(e->value);
         avio_wl32(s->pb, val_len);            // value length
         avio_wl32(s->pb, 0);                  // item flags
         avio_put_str(s->pb, e->key);          // key
