@@ -443,7 +443,8 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     int channels;
     int ch, ret, got_end;
 
-    init_get_bits(&alac->gb, avpkt->data, avpkt->size * 8);
+    if ((ret = init_get_bits8(&alac->gb, avpkt->data, avpkt->size)) < 0)
+        return ret;
 
     got_end = 0;
     alac->nb_samples = 0;
