@@ -85,39 +85,18 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     cur_ai = ai;
 
  restart:
-    ret = AVERROR(EIO);
     fd = socket(cur_ai->ai_family, cur_ai->ai_socktype, cur_ai->ai_protocol);
-    if (fd < 0)
+    if (fd < 0) {
+        ret = ff_neterrno();
         goto fail;
+    }
 
     if (listen_socket) {
-        int fd1;
-        int reuse = 1;
-        struct pollfd lp = { fd, POLLIN, 0 };
-        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
-        ret = bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
-        if (ret) {
-            ret = ff_neterrno();
+        if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                 listen_timeout)) < 0) {
+            ret = fd;
             goto fail1;
         }
-        ret = listen(fd, 1);
-        if (ret) {
-            ret = ff_neterrno();
-            goto fail1;
-        }
-        ret = poll(&lp, 1, listen_timeout >= 0 ? listen_timeout : -1);
-        if (ret <= 0) {
-            ret = AVERROR(ETIMEDOUT);
-            goto fail1;
-        }
-        fd1 = accept(fd, NULL, NULL);
-        if (fd1 < 0) {
-            ret = ff_neterrno();
-            goto fail1;
-        }
-        closesocket(fd);
-        fd = fd1;
-        ff_socket_nonblock(fd, 1);
     } else {
  redo:
         ff_socket_nonblock(fd, 1);
@@ -177,6 +156,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         cur_ai = cur_ai->ai_next;
         if (fd >= 0)
             closesocket(fd);
+        ret = 0;
         goto restart;
     }
  fail1:

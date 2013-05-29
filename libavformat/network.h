@@ -209,4 +209,7 @@ const char *ff_gai_strerror(int ecode);
 
 int ff_is_multicast_address(struct sockaddr *addr);
 
+int ff_listen_bind(int fd, const struct sockaddr *addr,
+                   socklen_t addrlen, int timeout);
+
 #endif /* AVFORMAT_NETWORK_H */
