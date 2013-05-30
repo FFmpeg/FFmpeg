@@ -42,11 +42,21 @@
 #define HAD_COC 0x01
 #define HAD_QCC 0x02
 
+typedef struct Jpeg2000TilePart {
+    uint16_t tp_idx;                    // Tile-part index
+    uint8_t tile_index;                 // Tile index who refers the tile-part
+    uint32_t tp_len;                    // Length of tile-part
+    GetByteContext tpg;                 // bit stream in tile-part
+} Jpeg2000TilePart;
+
+/* RMK: For JPEG2000 DCINEMA 3 tile-parts in a tile
+ * one per component, so tile_part elements have a size of 3 */
 typedef struct Jpeg2000Tile {
     Jpeg2000Component  *comp;
     uint8_t             properties[4];
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
+    Jpeg2000TilePart    tile_part[3];
 } Jpeg2000Tile;
 
 typedef struct Jpeg2000DecoderContext {
@@ -427,28 +437,45 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
     return get_qcx(s, n - 1, q + compno);
 }
 
-/* get start of tile segment */
-static int get_sot(Jpeg2000DecoderContext *s)
+/* Get start of tile segment. */
+static int get_sot(Jpeg2000DecoderContext *s, int n)
 {
+    Jpeg2000TilePart *tp;
+    uint16_t Isot;
+    uint32_t Psot;
+    uint8_t TPsot;
+
     if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR(EINVAL);
 
-    s->curtileno = bytestream2_get_be16u(&s->g); ///< Isot
+    s->curtileno = Isot = bytestream2_get_be16u(&s->g);        // Isot
     if ((unsigned)s->curtileno >= s->numXtiles * s->numYtiles) {
         s->curtileno=0;
         return AVERROR(EINVAL);
     }
+    Psot  = bytestream2_get_be32u(&s->g);       // Psot
+    TPsot = bytestream2_get_byteu(&s->g);       // TPsot
 
-    bytestream2_skipu(&s->g, 4); ///< Psot (ignored)
+    /* Read TNSot but not used */
+    bytestream2_get_byteu(&s->g);               // TNsot
 
-    if (!bytestream2_get_byteu(&s->g)) { ///< TPsot
+    if (TPsot >= FF_ARRAY_ELEMS(s->tile[s->curtileno].tile_part)) {
+        av_log(s->avctx, AV_LOG_ERROR, "TPsot %d too big\n", TPsot);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    tp             = s->tile[s->curtileno].tile_part + TPsot;
+    tp->tile_index = Isot;
+    tp->tp_len     = Psot;
+    tp->tp_idx     = TPsot;
+
+    if (!TPsot) {
         Jpeg2000Tile *tile = s->tile + s->curtileno;
 
         /* copy defaults */
         memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(Jpeg2000CodingStyle));
         memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(Jpeg2000QuantStyle));
     }
-    bytestream2_get_byteu(&s->g); ///< TNsot
 
     return 0;
 }
@@ -526,7 +553,7 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
     return 0;
 }
 
-/* read the number of coding passes */
+/* Read the number of coding passes. */
 static int getnpasses(Jpeg2000DecoderContext *s)
 {
     int num;
@@ -835,6 +862,12 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     return 0;
 }
 
+/* TODO: Verify dequantization for lossless case
+ * comp->data can be float or int
+ * band->stepsize can be float or int
+ * depending on the type of DWT transformation.
+ * see ISO/IEC 15444-1:2002 A.6.1 */
+
 /* Float dequantization of a codeblock.*/
 static void dequantization_float(int x, int y, Jpeg2000Cblk *cblk,
                                  Jpeg2000Component *comp,
@@ -985,6 +1018,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             } /* end band */
         } /* end reslevel */
 
+        /* inverse DWT */
         ff_dwt_decode(&comp->dwt, codsty->transform == FF_DWT97 ? (void*)comp->f_data : (void*)comp->i_data);
     } /*end comp */
 
@@ -1128,7 +1162,7 @@ static int jpeg2000_decode_codestream(Jpeg2000DecoderContext *s)
             ret = get_qcd(s, len, qntsty, properties);
             break;
         case JPEG2000_SOT:
-            if (!(ret = get_sot(s))) {
+            if (!(ret = get_sot(s, len))) {
                 codsty = s->tile[s->curtileno].codsty;
                 qntsty = s->tile[s->curtileno].qntsty;
                 properties = s->tile[s->curtileno].properties;
@@ -1155,6 +1189,20 @@ static int jpeg2000_decode_codestream(Jpeg2000DecoderContext *s)
             return ret ? ret : -1;
         }
     }
+    return 0;
+}
+
+/* Read bit stream packets --> T2 operation. */
+static int jpeg2000_read_bitstream_packets(Jpeg2000DecoderContext *s)
+{
+    int ret = 0;
+    Jpeg2000Tile *tile = s->tile + s->curtileno;
+
+    if (ret = init_tile(s, s->curtileno))
+        return ret;
+    if (ret = jpeg2000_decode_packets(s, tile))
+        return ret;
+
     return 0;
 }
 

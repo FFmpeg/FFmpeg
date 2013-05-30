@@ -975,6 +975,7 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 
     for (i = 0; i < 2; i++)
         csize *= tile->comp[0].coord[i][1] - tile->comp[0].coord[i][0];
+
     switch (tile->codsty[0].transform) {
     case FF_DWT97:
         for (i = 0; i < csize; i++) {
@@ -1024,12 +1025,13 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     for (compno = 0; compno < s->ncomponents; compno++) {
         Jpeg2000Component *comp     = tile->comp + compno;
         Jpeg2000CodingStyle *codsty = tile->codsty + compno;
+
         /* Loop on resolution levels */
         for (reslevelno = 0; reslevelno < codsty->nreslevels2decode; reslevelno++) {
             Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
             /* Loop on bands */
             for (bandno = 0; bandno < rlevel->nbands; bandno++) {
-                uint16_t nb_precincts, precno;
+                int nb_precincts, precno;
                 Jpeg2000Band *band = rlevel->band + bandno;
                 int cblkno = 0, bandpos;
                 bandpos = bandno + (reslevelno > 0);
@@ -1110,6 +1112,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             linel = (uint16_t *)picture->data[0] + y * (picture->linesize[0] >> 1);
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint16_t *dst;
+
                 x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
                 dst = linel + (x * s->ncomponents + compno);
                 for (; x < s->avctx->width; x += s->cdx[compno]) {
