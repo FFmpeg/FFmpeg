@@ -227,12 +227,18 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         frame_x >= s->avctx->width ||
         frame_width > s->avctx->width ||
         frame_x + frame_width > s->avctx->width) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid horizontal range %d-%d\n",
+               frame_x, frame_width);
         return AVERROR_INVALIDDATA;
     }
     if (frame_y < 0 || frame_height < 0 ||
         frame_y >= s->avctx->height ||
         frame_height > s->avctx->height ||
         frame_y + frame_height > s->avctx->height) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid vertical range %d-%d\n",
+               frame_x, frame_width);
         return AVERROR_INVALIDDATA;
     }
 
@@ -259,6 +265,9 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 palette32[i] = 0xFFU << 24 | (r << 16) | (g << 8) | (b);
                 palette32[i] |= palette32[i] >> 6 & 0x30303;
             }
+        } else {
+            av_log(s->avctx, AV_LOG_ERROR, "Incomplete palette\n");
+            return AVERROR_INVALIDDATA;
         }
     }
     if (s->size > 0) {
@@ -299,7 +308,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 if (ofs > frame_width) {
                     av_log(s->avctx, AV_LOG_ERROR, "offset > width (%d > %d)\n",
                         ofs, frame_width);
-                    break;
+                    return AVERROR_INVALIDDATA;
                 }
                 dp += frame->linesize[0];
                 pp += s->prev_frame.linesize[0];
@@ -339,6 +348,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 if (ofs > frame_width) {
                     av_log(s->avctx, AV_LOG_ERROR, "offset > width (%d > %d)\n",
                         ofs, frame_width);
+                    return AVERROR_INVALIDDATA;
                 }
                 dp += frame->linesize[0];
                 pp += s->prev_frame.linesize[0];
@@ -346,7 +356,6 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
             break;
         }
     }
-
     return 0;
 }
 
@@ -405,13 +414,13 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     if (buf_size < 16)
-        return buf_size;
+        return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
-    if (vmd_decode(s, frame) < 0)
-        av_log(avctx, AV_LOG_WARNING, "decode error\n");
+    if ((ret = vmd_decode(s, frame)) < 0)
+        return ret;
 
     /* make the palette available on the way out */
     memcpy(frame->data[1], s->palette, PALETTE_COUNT * 4);
