@@ -41,20 +41,21 @@ typedef enum {
 
 typedef struct {
     const AVClass *class;
-    URLContext *conn_control;        /**< Control connection */
-    int conn_control_block_flag;     /**< Controls block/unblock mode of data connection */
-    AVIOInterruptCB conn_control_interrupt_cb; /**< Controls block/unblock mode of data connection */
-    URLContext *conn_data;           /**< Data connection, NULL when not connected */
-    uint8_t control_buffer[CONTROL_BUFFER_SIZE], *control_buf_ptr, *control_buf_end; /**< Control connection buffer */
-    int server_data_port;            /**< Data connection port opened by server, -1 on error. */
-    char hostname[512];              /**< Server address. */
-    char path[MAX_URL_SIZE];         /**< Path to resource on server. */
-    int64_t filesize;                /**< Size of file on server, -1 on error. */
-    int64_t position;                /**< Current position, calculated. */
-    int rw_timeout;                  /**< Network timeout. */
-    const char *anonymous_password;  /**< Password to be used for anonymous user. An email should be used. */
-    int write_seekable;              /**< Control seekability, 0 = disable, 1 = enable. */
-    FTPState state;                  /**< State of data connection */
+    URLContext *conn_control;                    /**< Control connection */
+    int conn_control_block_flag;                 /**< Controls block/unblock mode of data connection */
+    AVIOInterruptCB conn_control_interrupt_cb;   /**< Controls block/unblock mode of data connection */
+    URLContext *conn_data;                       /**< Data connection, NULL when not connected */
+    uint8_t control_buffer[CONTROL_BUFFER_SIZE]; /**< Control connection buffer */
+    uint8_t *control_buf_ptr, *control_buf_end;
+    int server_data_port;                        /**< Data connection port opened by server, -1 on error. */
+    char hostname[512];                          /**< Server address. */
+    char path[MAX_URL_SIZE];                     /**< Path to resource on server. */
+    int64_t filesize;                            /**< Size of file on server, -1 on error. */
+    int64_t position;                            /**< Current position, calculated. */
+    int rw_timeout;                              /**< Network timeout. */
+    const char *anonymous_password;              /**< Password to be used for anonymous user. An email should be used. */
+    int write_seekable;                          /**< Control seekability, 0 = disable, 1 = enable. */
+    FTPState state;                              /**< State of data connection */
 } FTPContext;
 
 #define OFFSET(x) offsetof(FTPContext, x)
@@ -63,7 +64,7 @@ typedef struct {
 static const AVOption options[] = {
     {"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
     {"ftp-write-seekable", "control seekability of connection during encoding", OFFSET(write_seekable), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
-    {"ftp-anonymous-password", "password for anonynous login. E-mail address should be used.", OFFSET(anonymous_password), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"ftp-anonymous-password", "password for anonymous login. E-mail address should be used.", OFFSET(anonymous_password), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
     {NULL}
 };
 
@@ -129,7 +130,7 @@ static int ftp_get_line(FTPContext *s, char *line, int line_size)
 
 /*
  * This routine returns ftp server response code.
- * Server may send more than one response for a certain command, following priorites are used:
+ * Server may send more than one response for a certain command, following priorities are used:
  *   - 5xx code is returned if occurred. (means error)
  *   - When pref_code is set then pref_code is return if occurred. (expected result)
  *   - The lowest code is returned. (means success)
