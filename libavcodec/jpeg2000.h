@@ -192,13 +192,11 @@ typedef struct Jpeg2000ResLevel {
     Jpeg2000Band *band;
 } Jpeg2000ResLevel; // resolution level
 
-/* TODO: data can be float of integer depending of reversible/irreversible
- * transformation.
- */
 typedef struct Jpeg2000Component {
     Jpeg2000ResLevel *reslevel;
     DWTContext dwt;
-    float *data;
+    float *f_data;
+    int *i_data;
     uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
     uint16_t coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
 } Jpeg2000Component;

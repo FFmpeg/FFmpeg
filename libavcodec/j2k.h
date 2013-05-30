@@ -186,7 +186,7 @@ typedef struct Jpeg2000Band {
 
 typedef struct Jpeg2000ResLevel {
     uint8_t nbands;
-    uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}}
+    uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t num_precincts_x, num_precincts_y; // number of precincts in x/y direction
     uint8_t log2_prec_width, log2_prec_height; // exponent of precinct size
     Jpeg2000Band *band;
@@ -195,7 +195,8 @@ typedef struct Jpeg2000ResLevel {
 typedef struct Jpeg2000Component {
     Jpeg2000ResLevel *reslevel;
     DWTContext dwt;
-    int *data;
+    float *f_data;
+    int *i_data;
     uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
     uint16_t coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
 } Jpeg2000Component;

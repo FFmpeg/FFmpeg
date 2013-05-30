@@ -189,9 +189,17 @@ int ff_j2k_init_component(Jpeg2000Component *comp,
     for (i = 0; i < 2; i++)
         csize *= comp->coord[i][1] - comp->coord[i][0];
 
-    comp->data = av_malloc_array(csize, sizeof(*comp->data));
-    if (!comp->data)
-        return AVERROR(ENOMEM);
+    if (codsty->transform == FF_DWT97) {
+        comp->i_data = NULL;
+        comp->f_data = av_malloc_array(csize, sizeof(*comp->f_data));
+        if (!comp->f_data)
+            return AVERROR(ENOMEM);
+    } else {
+        comp->f_data = NULL;
+        comp->i_data = av_malloc_array(csize, sizeof(*comp->i_data));
+        if (!comp->i_data)
+            return AVERROR(ENOMEM);
+    }
     comp->reslevel = av_malloc_array(codsty->nreslevels, sizeof(*comp->reslevel));
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
@@ -484,5 +492,6 @@ void ff_j2k_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 
     ff_dwt_destroy(&comp->dwt);
     av_freep(&comp->reslevel);
-    av_freep(&comp->data);
+    av_freep(&comp->i_data);
+    av_freep(&comp->f_data);
 }

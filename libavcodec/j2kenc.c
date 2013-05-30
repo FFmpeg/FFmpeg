@@ -98,7 +98,7 @@ static void printcomp(Jpeg2000Component *comp)
 {
     int i;
     for (i = 0; i < comp->y1 - comp->y0; i++)
-        ff_j2k_printv(comp->data + i * (comp->x1 - comp->x0), comp->x1 - comp->x0);
+        ff_j2k_printv(comp->i_data + i * (comp->x1 - comp->x0), comp->x1 - comp->x0);
 }
 
 static void dump(Jpeg2000EncoderContext *s, FILE *fd)
@@ -389,7 +389,7 @@ static void copy_frame(Jpeg2000EncoderContext *s)
         if (s->planar){
             for (compno = 0; compno < s->ncomponents; compno++){
                 Jpeg2000Component *comp = tile->comp + compno;
-                int *dst = comp->data;
+                int *dst = comp->i_data;
                 line = s->picture.data[compno]
                        + comp->coord[1][0] * s->picture.linesize[compno]
                        + comp->coord[0][0];
@@ -409,7 +409,7 @@ static void copy_frame(Jpeg2000EncoderContext *s)
                 uint8_t *ptr = line;
                 for (x = tile->comp[0].coord[0][0]; x < tile->comp[0].coord[0][1]; x++, i++){
                     for (compno = 0; compno < s->ncomponents; compno++){
-                        tile->comp[compno].data[i] = *ptr++  - (1 << 7);
+                        tile->comp[compno].i_data[i] = *ptr++  - (1 << 7);
                     }
                 }
                 line += s->picture.linesize[0];
@@ -819,7 +819,7 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
         Jpeg2000Component *comp = s->tile[tileno].comp + compno;
 
         av_log(s->avctx, AV_LOG_DEBUG,"dwt\n");
-        if (ret = ff_dwt_encode(&comp->dwt, comp->data))
+        if (ret = ff_dwt_encode(&comp->dwt, comp->i_data))
             return ret;
         av_log(s->avctx, AV_LOG_DEBUG,"after dwt -> tier1\n");
 
@@ -855,14 +855,14 @@ static int encode_tile(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile, int tileno
                             for (y = yy0; y < yy1; y++){
                                 int *ptr = t1.data[y-yy0];
                                 for (x = xx0; x < xx1; x++){
-                                    *ptr++ = comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] << NMSEDEC_FRACBITS;
+                                    *ptr++ = comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * y + x] << NMSEDEC_FRACBITS;
                                 }
                             }
                         } else{
                             for (y = yy0; y < yy1; y++){
                                 int *ptr = t1.data[y-yy0];
                                 for (x = xx0; x < xx1; x++){
-                                    *ptr = (comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x]);
+                                    *ptr = (comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * y + x]);
                                     *ptr = (int64_t)*ptr * (int64_t)(16384 * 65536 / band->i_stepsize) >> 14 - NMSEDEC_FRACBITS;
                                     ptr++;
                                 }
