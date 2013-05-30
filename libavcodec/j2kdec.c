@@ -924,7 +924,9 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
     }
 }
 
-static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
+static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
+                       AVFrame *picture)
+)
 {
     int compno, reslevelno, bandno;
     int x, y;
@@ -991,7 +993,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
             int32_t *i_datap = comp->i_data;
 
             y = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            line = s->picture->data[0] + y * s->picture->linesize[0];
+            line = picture->data[0] + y * picture->linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint8_t *dst;
 
@@ -1011,7 +1013,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                     i_datap++;
                     dst += s->ncomponents;
                 }
-                line += s->picture->linesize[0];
+                line += picture->linesize[0];
             }
         }
     } else {
@@ -1022,7 +1024,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
             uint16_t *linel;
 
             y     = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            linel = (uint16_t*)s->picture->data[0] + y * (s->picture->linesize[0] >> 1);
+            linel = (uint16_t*)picture->data[0] + y * (picture->linesize[0] >> 1);
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint16_t *dst;
 
@@ -1042,7 +1044,7 @@ static int decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
                     i_datap++;
                     dst += s->ncomponents;
                 }
-                linel += s->picture->linesize[0]>>1;
+                linel += picture->linesize[0]>>1;
             }
         }
     }
@@ -1216,7 +1218,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         goto err_out;
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++)
-        if (ret = decode_tile(s, s->tile + tileno))
+        if (ret = decode_tile(s, s->tile + tileno, s->picture))
             goto err_out;
 
     jpeg2000_dec_cleanup(s);
