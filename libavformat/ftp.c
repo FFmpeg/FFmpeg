@@ -48,6 +48,7 @@ typedef struct {
     uint8_t control_buffer[CONTROL_BUFFER_SIZE]; /**< Control connection buffer */
     uint8_t *control_buf_ptr, *control_buf_end;
     int server_data_port;                        /**< Data connection port opened by server, -1 on error. */
+    int server_control_port;                     /**< Control connection port, default is 21 */
     char hostname[512];                          /**< Server address. */
     char credencials[CREDENTIALS_BUFFER_SIZE];   /**< Authentication data */
     char path[MAX_URL_SIZE];                     /**< Path to resource on server. */
@@ -378,7 +379,51 @@ static int ftp_type(FTPContext *s)
     return 0;
 }
 
-static int ftp_reconnect_data_connection(URLContext *h)
+static int ftp_connect_control_connection(URLContext *h)
+{
+    char buf[CONTROL_BUFFER_SIZE], opts_format[20];
+    int err;
+    AVDictionary *opts = NULL;
+    FTPContext *s = h->priv_data;
+
+    s->conn_control_block_flag = 0;
+
+    if (!s->conn_control) {
+        ff_url_join(buf, sizeof(buf), "tcp", NULL,
+                    s->hostname, s->server_control_port, NULL);
+        if (s->rw_timeout != -1) {
+            snprintf(opts_format, sizeof(opts_format), "%d", s->rw_timeout);
+            av_dict_set(&opts, "timeout", opts_format, 0);
+        } /* if option is not given, don't pass it and let tcp use its own default */
+        err = ffurl_open(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
+                         &s->conn_control_interrupt_cb, &opts);
+        av_dict_free(&opts);
+        if (err < 0) {
+            av_dlog(h, "Cannot open control connection, error %d\n", err);
+            return err;
+        }
+
+        /* consume all messages from server */
+        if (ftp_status(s, NULL, NULL, NULL, NULL, 220) != 220) {
+            av_log(h, AV_LOG_ERROR, "FTP server not ready for new users\n");
+            err = AVERROR(EACCES);
+            return err;
+        }
+
+        if ((err = ftp_auth(s)) < 0) {
+            av_log(h, AV_LOG_ERROR, "FTP authentication failed\n");
+            return err;
+        }
+
+        if ((err = ftp_type(s)) < 0) {
+            av_dlog(h, "Set content type failed\n");
+            return err;
+        }
+    }
+    return 0;
+}
+
+static int ftp_connect_data_connection(URLContext *h)
 {
     int err;
     char buf[CONTROL_BUFFER_SIZE], opts_format[20];
@@ -386,6 +431,12 @@ static int ftp_reconnect_data_connection(URLContext *h)
     FTPContext *s = h->priv_data;
 
     if (!s->conn_data) {
+        /* Enter passive mode */
+        if ((err = ftp_passive_mode(s)) < 0) {
+            av_dlog(h, "Set passive mode failed\n");
+            return err;
+        }
+        /* Open data connection */
         ff_url_join(buf, sizeof(buf), "tcp", NULL, s->hostname, s->server_data_port, NULL);
         if (s->rw_timeout != -1) {
             snprintf(opts_format, sizeof(opts_format), "%d", s->rw_timeout);
@@ -404,9 +455,8 @@ static int ftp_reconnect_data_connection(URLContext *h)
 
 static int ftp_open(URLContext *h, const char *url, int flags)
 {
-    char proto[10], path[MAX_URL_SIZE], buf[CONTROL_BUFFER_SIZE], opts_format[20];
-    AVDictionary *opts = NULL;
-    int port, err;
+    char proto[10], path[MAX_URL_SIZE];
+    int err;
     FTPContext *s = h->priv_data;
 
     av_dlog(h, "ftp protocol open\n");
@@ -419,52 +469,26 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     av_url_split(proto, sizeof(proto),
                  s->credencials, sizeof(s->credencials),
                  s->hostname, sizeof(s->hostname),
-                 &port,
+                 &s->server_control_port,
                  path, sizeof(path),
                  url);
 
-    if (port < 0)
-        port = 21;
+    if (s->server_control_port < 0 || s->server_control_port > 65535)
+        s->server_control_port = 21;
 
-    if (!s->conn_control) {
-        ff_url_join(buf, sizeof(buf), "tcp", NULL, s->hostname, port, NULL);
-        if (s->rw_timeout != -1) {
-            snprintf(opts_format, sizeof(opts_format), "%d", s->rw_timeout);
-            av_dict_set(&opts, "timeout", opts_format, 0);
-        } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
-                         &s->conn_control_interrupt_cb, &opts);
-        av_dict_free(&opts);
-        if (err < 0)
-            goto fail;
+    if ((err = ftp_connect_control_connection(h)) < 0)
+        goto fail;
 
-        /* consume all messages from server */
-        if (ftp_status(s, NULL, NULL, NULL, NULL, 220) != 220) {
-            av_log(h, AV_LOG_ERROR, "Server not ready for new users\n");
-            err = AVERROR(EACCES);
-            goto fail;
-        }
+    if ((err = ftp_current_dir(s)) < 0)
+        goto fail;
+    av_strlcat(s->path, path, sizeof(s->path));
 
-        if ((err = ftp_auth(s)) < 0)
-            goto fail;
+    if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
+        h->is_streamed = 1;
+    if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
+        h->is_streamed = 1;
 
-        if ((err = ftp_type(s)) < 0)
-            goto fail;
-
-        if ((err = ftp_current_dir(s)) < 0)
-            goto fail;
-        av_strlcat(s->path, path, sizeof(s->path));
-
-        if ((err = ftp_passive_mode(s)) < 0)
-            goto fail;
-
-        if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
-            h->is_streamed = 1;
-        if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
-            h->is_streamed = 1;
-    }
-
-    if ((err = ftp_reconnect_data_connection(h)) < 0)
+    if ((err = ftp_connect_data_connection(h)) < 0)
         goto fail;
 
     return 0;
@@ -577,12 +601,8 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
                     return AVERROR(EIO);
             }
 
-            /* set passive */
-            if ((err = ftp_passive_mode(s)) < 0)
-                return err;
-
             /* open new data connection */
-            if ((err = ftp_reconnect_data_connection(h)) < 0)
+            if ((err = ftp_connect_data_connection(h)) < 0)
                 return err;
         }
 
