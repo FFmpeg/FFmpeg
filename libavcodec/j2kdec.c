@@ -43,9 +43,8 @@
 #define HAD_QCC 0x02
 
 typedef struct Jpeg2000TilePart {
-    uint16_t tp_idx;                    // Tile-part index
     uint8_t tile_index;                 // Tile index who refers the tile-part
-    uint32_t tp_len;                    // Length of tile-part
+    const uint8_t *tp_end;
     GetByteContext tpg;                 // bit stream in tile-part
 } Jpeg2000TilePart;
 
@@ -57,6 +56,7 @@ typedef struct Jpeg2000Tile {
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
     Jpeg2000TilePart    tile_part[3];
+    uint16_t tp_idx;                    // Tile-part index
 } Jpeg2000Tile;
 
 typedef struct Jpeg2000DecoderContext {
@@ -464,10 +464,10 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         return AVERROR_PATCHWELCOME;
     }
 
+    s->tile[s->curtileno].tp_idx = TPsot;
     tp             = s->tile[s->curtileno].tile_part + TPsot;
     tp->tile_index = Isot;
-    tp->tp_len     = Psot;
-    tp->tp_idx     = TPsot;
+    tp->tp_end     = s->g.buffer + Psot - n - 2;
 
     if (!TPsot) {
         Jpeg2000Tile *tile = s->tile + s->curtileno;
@@ -531,6 +531,7 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
 
     if (!tile->comp)
         return AVERROR(ENOMEM);
+
     for (compno = 0; compno < s->ncomponents; compno++) {
         Jpeg2000Component *comp = tile->comp + compno;
         Jpeg2000CodingStyle *codsty = tile->codsty + compno;
@@ -1106,7 +1107,7 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
     av_freep(&s->tile);
 }
 
-static int jpeg2000_decode_codestream(Jpeg2000DecoderContext *s)
+static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 {
     Jpeg2000CodingStyle *codsty = s->codsty;
     Jpeg2000QuantStyle *qntsty  = s->qntsty;
@@ -1127,14 +1128,11 @@ static int jpeg2000_decode_codestream(Jpeg2000DecoderContext *s)
 
         if (marker == JPEG2000_SOD) {
             Jpeg2000Tile *tile = s->tile + s->curtileno;
-            if (ret = init_tile(s, s->curtileno)) {
-                av_log(s->avctx, AV_LOG_ERROR, "tile initialization failed\n");
-                return ret;
-            }
-            if (ret = jpeg2000_decode_packets(s, tile)) {
-                av_log(s->avctx, AV_LOG_ERROR, "packets decoding failed\n");
-                return ret;
-            }
+            Jpeg2000TilePart *tp = tile->tile_part + tile->tp_idx;
+
+            bytestream2_init(&tp->tpg, s->g.buffer, tp->tp_end - s->g.buffer);
+            bytestream2_skip(&s->g, tp->tp_end - s->g.buffer);
+
             continue;
         }
         if (marker == JPEG2000_EOC)
@@ -1196,12 +1194,18 @@ static int jpeg2000_decode_codestream(Jpeg2000DecoderContext *s)
 static int jpeg2000_read_bitstream_packets(Jpeg2000DecoderContext *s)
 {
     int ret = 0;
-    Jpeg2000Tile *tile = s->tile + s->curtileno;
+    int tileno;
 
-    if (ret = init_tile(s, s->curtileno))
-        return ret;
-    if (ret = jpeg2000_decode_packets(s, tile))
-        return ret;
+    for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++) {
+        Jpeg2000Tile *tile = s->tile + tileno;
+
+        if (ret = init_tile(s, tileno))
+            return ret;
+
+        s->g = tile->tile_part[0].tpg;
+        if (ret = jpeg2000_decode_packets(s, tile))
+            return ret;
+    }
 
     return 0;
 }
@@ -1269,7 +1273,10 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         ret = -1;
         goto err_out;
     }
-    if (ret = jpeg2000_decode_codestream(s))
+    if (ret = jpeg2000_read_main_headers(s))
+        goto err_out;
+
+    if (ret = jpeg2000_read_bitstream_packets(s))
         goto err_out;
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++)
