@@ -213,36 +213,34 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
                                                s->reduction_factor);
 
-    switch (s->avctx->profile) {
-    case FF_PROFILE_JPEG2000_DCINEMA_2K:
-    case FF_PROFILE_JPEG2000_DCINEMA_4K:
-        /* XYZ color-space for digital cinema profiles */
-        s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
+    switch(s->ncomponents) {
+    case 1:
+        if (s->precision > 8)
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+        else
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         break;
-    default:
-        /* For other profiles selects color-space according number of
-         * components and bit depth precision. */
-        switch (s->ncomponents) {
-        case 1:
-            if (s->precision > 8)
-                s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+    case 3:
+        switch (s->avctx->profile) {
+        case FF_PROFILE_JPEG2000_DCINEMA_2K:
+        case FF_PROFILE_JPEG2000_DCINEMA_4K:
+            /* XYZ color-space for digital cinema profiles */
+            s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
             break;
-        case 3:
+        default:
             if (s->precision > 8)
                 s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
             else
                 s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
             break;
-        case 4:
-            s->avctx->pix_fmt = AV_PIX_FMT_BGRA;
-            break;
-        default:
-            /* pixel format can not be identified */
-            s->avctx->pix_fmt = AV_PIX_FMT_NONE;
-            break;
         }
+        break;
+    case 4:
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        break;
+    default:
+        /* pixel format can not be identified */
+        s->avctx->pix_fmt = AV_PIX_FMT_NONE;
         break;
     }
     return 0;

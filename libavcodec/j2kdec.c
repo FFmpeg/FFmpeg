@@ -215,21 +215,32 @@ static int get_siz(Jpeg2000DecoderContext *s)
                                                s->reduction_factor);
     switch(s->ncomponents) {
     case 1:
-        if (s->precision > 8) {
+        if (s->precision > 8)
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
-        } else {
+        else
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-        }
         break;
     case 3:
-        if (s->precision > 8) {
-            s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
-        } else {
-            s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        switch (s->avctx->profile) {
+        case FF_PROFILE_JPEG2000_DCINEMA_2K:
+        case FF_PROFILE_JPEG2000_DCINEMA_4K:
+            /* XYZ color-space for digital cinema profiles */
+            s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
+            break;
+        default:
+            if (s->precision > 8)
+                s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
+            else
+                s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            break;
         }
         break;
     case 4:
         s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        break;
+    default:
+        /* pixel format can not be identified */
+        s->avctx->pix_fmt = AV_PIX_FMT_NONE;
         break;
     }
 
