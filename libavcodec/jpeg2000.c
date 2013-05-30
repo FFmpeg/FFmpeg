@@ -79,6 +79,16 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     return res;
 }
 
+static void tag_tree_zero(Jpeg2000TgtNode *t, int w, int h)
+{
+    int i, siz = tag_tree_size(w, h);
+
+    for (i = 0; i < siz; i++) {
+        t[i].val = 0;
+        t[i].vis = 0;
+    }
+}
+
 uint8_t ff_jpeg2000_sigctxno_lut[256][4];
 
 static int getsigctxno(int flag, int bandno)
@@ -316,9 +326,8 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 for (i = 0; i < 2; i++)
                     for (j = 0; j < 2; j++)
                         band->coord[i][j] =
-                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j],
+                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] - comp->coord_o[i][0],
                                                     declvl - 1);
-
                 log2_band_prec_width  = reslevel->log2_prec_width;
                 log2_band_prec_height = reslevel->log2_prec_height;
                 /* see ISO/IEC 15444-1:2002 eq. B-17 and eq. B-15 */
@@ -333,7 +342,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     for (j = 0; j < 2; j++)
                         /* Formula example for tbx_0 = ceildiv((tcx_0 - 2 ^ (declvl - 1) * x0_b) / declvl) */
                         band->coord[i][j] =
-                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] -
+                            ff_jpeg2000_ceildivpow2(comp->coord_o[i][j] - comp->coord_o[i][0] -
                                                     (((bandno + 1 >> i) & 1) << declvl - 1),
                                                     declvl);
                 /* TODO: Manage case of 3 band offsets here or
@@ -348,6 +357,11 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 log2_band_prec_width  = reslevel->log2_prec_width  - 1;
                 log2_band_prec_height = reslevel->log2_prec_height - 1;
             }
+
+            for (j = 0; j < 2; j++)
+                band->coord[0][j] = ff_jpeg2000_ceildiv(band->coord[0][j], dx);
+            for (j = 0; j < 2; j++)
+                band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
 
             band->prec = av_malloc_array(reslevel->num_precincts_x *
                                          reslevel->num_precincts_y,
@@ -452,6 +466,27 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         }
     }
     return 0;
+}
+
+void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
+{
+    int reslevelno, bandno, cblkno, precno;
+    for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+        Jpeg2000ResLevel *rlevel = comp->reslevel + reslevelno;
+        for (bandno = 0; bandno < rlevel->nbands; bandno++) {
+            Jpeg2000Band *band = rlevel->band + bandno;
+            for(precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++) {
+                Jpeg2000Prec *prec = band->prec + precno;
+                tag_tree_zero(prec->zerobits, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                tag_tree_zero(prec->cblkincl, prec->nb_codeblocks_width, prec->nb_codeblocks_height);
+                for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
+                    Jpeg2000Cblk *cblk = prec->cblk + cblkno;
+                    cblk->length = 0;
+                    cblk->lblock = 3;
+                }
+            }
+        }
+    }
 }
 
 void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)

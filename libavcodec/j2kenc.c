@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include "bytestream.h"
-#include "j2k.h"
+#include "jpeg2000.h"
 #include "libavutil/common.h"
 
 #define NMSEDEC_BITS 7
@@ -98,7 +98,7 @@ static void printcomp(Jpeg2000Component *comp)
 {
     int i;
     for (i = 0; i < comp->y1 - comp->y0; i++)
-        ff_j2k_printv(comp->i_data + i * (comp->x1 - comp->x0), comp->x1 - comp->x0);
+        ff_jpeg2000_printv(comp->i_data + i * (comp->x1 - comp->x0), comp->x1 - comp->x0);
 }
 
 static void dump(Jpeg2000EncoderContext *s, FILE *fd)
@@ -366,7 +366,7 @@ static int init_tiles(Jpeg2000EncoderContext *s)
                         for (j = 0; j < 2; j++)
                             comp->coord[i][j] = comp->coord_o[i][j] = ff_jpeg2000_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
 
-                if (ret = ff_j2k_init_component(comp,
+                if (ret = ff_jpeg2000_init_component(comp,
                                                 codsty,
                                                 qntsty,
                                                 s->cbps[compno],
@@ -495,7 +495,7 @@ static void encode_sigpass(Jpeg2000T1Context *t1, int width, int height, int ban
                         int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
                         ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, (t1->flags[y+1][x+1] >> 15) ^ xorbit);
                         *nmsedec += getnmsedec_sig(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
-                        ff_j2k_set_significant(t1, x, y, t1->flags[y+1][x+1] >> 15);
+                        ff_jpeg2000_set_significance(t1, x, y, t1->flags[y+1][x+1] >> 15);
                     }
                     t1->flags[y+1][x+1] |= JPEG2000_T1_VIS;
                 }
@@ -547,7 +547,7 @@ static void encode_clnpass(Jpeg2000T1Context *t1, int width, int height, int ban
                             int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
                             *nmsedec += getnmsedec_sig(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
                             ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, (t1->flags[y+1][x+1] >> 15) ^ xorbit);
-                            ff_j2k_set_significant(t1, x, y, t1->flags[y+1][x+1] >> 15);
+                            ff_jpeg2000_set_significance(t1, x, y, t1->flags[y+1][x+1] >> 15);
                         }
                     }
                     t1->flags[y+1][x+1] &= ~JPEG2000_T1_VIS;
@@ -562,7 +562,7 @@ static void encode_clnpass(Jpeg2000T1Context *t1, int width, int height, int ban
                             int ctxno = ff_jpeg2000_getsgnctxno(t1->flags[y+1][x+1], &xorbit);
                             *nmsedec += getnmsedec_sig(t1->data[y][x], bpno + NMSEDEC_FRACBITS);
                             ff_mqc_encode(&t1->mqc, t1->mqc.cx_states + ctxno, (t1->flags[y+1][x+1] >> 15) ^ xorbit);
-                            ff_j2k_set_significant(t1, x, y, t1->flags[y+1][x+1] >> 15);
+                            ff_jpeg2000_set_significance(t1, x, y, t1->flags[y+1][x+1] >> 15);
                         }
                     }
                     t1->flags[y+1][x+1] &= ~JPEG2000_T1_VIS;
@@ -897,7 +897,7 @@ static void cleanup(Jpeg2000EncoderContext *s)
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
         for (compno = 0; compno < s->ncomponents; compno++){
             Jpeg2000Component *comp = s->tile[tileno].comp + compno;
-            ff_j2k_cleanup(comp, codsty);
+            ff_jpeg2000_cleanup(comp, codsty);
         }
         av_freep(&s->tile[tileno].comp);
     }
@@ -910,7 +910,7 @@ static void reinit(Jpeg2000EncoderContext *s)
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
         Jpeg2000Tile *tile = s->tile + tileno;
         for (compno = 0; compno < s->ncomponents; compno++)
-            ff_j2k_reinit(tile->comp + compno, &s->codsty);
+            ff_jpeg2000_reinit(tile->comp + compno, &s->codsty);
     }
 }
 

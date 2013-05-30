@@ -33,7 +33,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "thread.h"
-#include "j2k.h"
+#include "jpeg2000.h"
 
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
@@ -508,7 +508,7 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
         comp->coord[1][0] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][0], s->reduction_factor);
         comp->coord[1][1] = ff_jpeg2000_ceildivpow2(comp->coord_o[1][1], s->reduction_factor);
 
-        if (ret = ff_j2k_init_component(comp, codsty, qntsty, s->cbps[compno], s->cdx[compno], s->cdy[compno], s->avctx))
+        if (ret = ff_jpeg2000_init_component(comp, codsty, qntsty, s->cbps[compno], s->cdx[compno], s->cdy[compno], s->avctx))
             return ret;
     }
     return 0;
@@ -680,7 +680,7 @@ static void decode_sigpass(Jpeg2000T1Context *t1, int width, int height,
                              t1->data[y][x] = (ff_mqc_decode(&t1->mqc, t1->mqc.cx_states + ctxno) ^ xorbit) ?
                                                -mask : mask;
 
-                        ff_j2k_set_significant(t1, x, y, t1->data[y][x] < 0);
+                        ff_jpeg2000_set_significance(t1, x, y, t1->data[y][x] < 0);
                     }
                     t1->flags[y + 1][x + 1] |= JPEG2000_T1_VIS;
                 }
@@ -753,7 +753,7 @@ static void decode_clnpass(Jpeg2000DecoderContext *s, Jpeg2000T1Context *t1,
                                                     t1->mqc.cx_states + ctxno) ^
                                       xorbit)
                                      ? -mask : mask;
-                    ff_j2k_set_significant(t1, x, y, t1->data[y][x] < 0);
+                    ff_jpeg2000_set_significance(t1, x, y, t1->data[y][x] < 0);
                 }
                 dec = 0;
                 t1->flags[y + 1][x + 1] &= ~JPEG2000_T1_VIS;
@@ -1046,7 +1046,7 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
             Jpeg2000Component *comp     = s->tile[tileno].comp   + compno;
             Jpeg2000CodingStyle *codsty = s->tile[tileno].codsty + compno;
 
-            ff_j2k_cleanup(comp, codsty);
+            ff_jpeg2000_cleanup(comp, codsty);
         }
         av_freep(&s->tile[tileno].comp);
     }
