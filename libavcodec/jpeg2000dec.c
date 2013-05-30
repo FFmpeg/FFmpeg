@@ -1070,11 +1070,6 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
-    if (s->avctx->pix_fmt == AV_PIX_FMT_BGRA) { // RGBA -> BGRA
-        FFSWAP(float *, tile->comp[0].f_data, tile->comp[2].f_data);
-        FFSWAP(int *, tile->comp[0].i_data, tile->comp[2].i_data);
-    }
-
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
