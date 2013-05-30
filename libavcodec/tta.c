@@ -203,8 +203,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-    // 30bytes includes a seektable with one frame
-    if (avctx->extradata_size < 30)
+    // 30bytes includes TTA1 header
+    if (avctx->extradata_size < 22)
         return AVERROR_INVALIDDATA;
 
     init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);
@@ -277,17 +277,6 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             avctx->block_align);
         av_log(avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
             s->data_length, s->frame_length, s->last_frame_length, total_frames);
-
-        // FIXME: seek table
-        if (avctx->extradata_size <= 26 || total_frames > INT_MAX / 4 ||
-            avctx->extradata_size - 26 < total_frames * 4)
-            av_log(avctx, AV_LOG_WARNING, "Seek table missing or too small\n");
-        else if (avctx->err_recognition & AV_EF_CRCCHECK) {
-            if (tta_check_crc(s, avctx->extradata + 22, total_frames * 4))
-                return AVERROR_INVALIDDATA;
-        }
-        skip_bits_long(&s->gb, 32 * total_frames);
-        skip_bits_long(&s->gb, 32); // CRC32 of seektable
 
         if(s->frame_length >= UINT_MAX / (s->channels * sizeof(int32_t))){
             av_log(avctx, AV_LOG_ERROR, "frame_length too large\n");

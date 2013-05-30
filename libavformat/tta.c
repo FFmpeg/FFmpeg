@@ -96,6 +96,16 @@ static int tta_read_header(AVFormatContext *s)
 
     framepos = avio_tell(s->pb) + 4*c->totalframes + 4;
 
+    st->codec->extradata_size = avio_tell(s->pb) - start_offset;
+    st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!st->codec->extradata) {
+        st->codec->extradata_size = 0;
+        return AVERROR(ENOMEM);
+    }
+
+    avio_seek(s->pb, start_offset, SEEK_SET);
+    avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
+
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
         av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
@@ -109,20 +119,6 @@ static int tta_read_header(AVFormatContext *s)
     st->codec->channels = channels;
     st->codec->sample_rate = samplerate;
     st->codec->bits_per_coded_sample = bps;
-
-    st->codec->extradata_size = avio_tell(s->pb) - start_offset;
-    if(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE <= (unsigned)st->codec->extradata_size){
-        //this check is redundant as avio_read should fail
-        av_log(s, AV_LOG_ERROR, "extradata_size too large\n");
-        return -1;
-    }
-    st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata) {
-        st->codec->extradata_size = 0;
-        return AVERROR(ENOMEM);
-    }
-    avio_seek(s->pb, start_offset, SEEK_SET);
-    avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
 
     return 0;
 }
