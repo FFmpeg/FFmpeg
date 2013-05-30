@@ -101,7 +101,7 @@ static int get_bits(Jpeg2000DecoderContext *s, int n)
     return res;
 }
 
-static void j2k_flush(Jpeg2000DecoderContext *s)
+static void jpeg2000_flush(Jpeg2000DecoderContext *s)
 {
     if (bytestream2_get_byte(&s->g) == 0xff)
         bytestream2_skip(&s->g, 1);
@@ -560,7 +560,7 @@ static int decode_packet(Jpeg2000DecoderContext *s,
     int bandno, cblkno, ret, nb_code_blocks;
 
     if (!(ret = get_bits(s, 1))) {
-        j2k_flush(s);
+        jpeg2000_flush(s);
         return 0;
     } else if (ret < 0)
         return ret;
@@ -603,7 +603,7 @@ static int decode_packet(Jpeg2000DecoderContext *s,
             cblk->npasses  += newpasses;
         }
     }
-    j2k_flush(s);
+    jpeg2000_flush(s);
 
     if (codsty->csty & JPEG2000_CSTY_EPH) {
         if (bytestream2_peek_be16(&s->g) == JPEG2000_EPH)
