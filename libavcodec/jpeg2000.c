@@ -279,7 +279,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 /*TODO: Compute formula to implement. */
                 numbps = cbps +
                          lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
-                band->f_stepsize = (float)SHL(2048 + qntsty->mant[gbandno],
+                band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
                                             2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
@@ -293,7 +293,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                  * Further investigation needed. */
                 gain            = cbps;
                 band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
-                band->f_stepsize *= (float)qntsty->mant[gbandno] / 2048.0 + 1.0;
+                band->f_stepsize *= qntsty->mant[gbandno] / 2048.0 + 1.0;
                 break;
             default:
                 band->f_stepsize = 0;
@@ -305,7 +305,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
             if (!av_codec_is_encoder(avctx->codec))
                 band->f_stepsize *= 0.5;
 
-            band->i_stepsize = (int32_t)(band->f_stepsize * (1 << 16));
+            band->i_stepsize = band->f_stepsize * (1 << 16);
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
