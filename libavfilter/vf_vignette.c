@@ -288,6 +288,8 @@ static int config_props(AVFilterLink *inlink)
         s->xscale = 1;
     }
     s->dmax = hypot(inlink->w / 2., inlink->h / 2.);
+    av_log(s, AV_LOG_DEBUG, "xscale=%f yscale=%f dmax=%f\n",
+           s->xscale, s->yscale, s->dmax);
 
     s->fmap_linesize = FFALIGN(inlink->w, 32);
     s->fmap = av_malloc(s->fmap_linesize * inlink->h * sizeof(*s->fmap));
