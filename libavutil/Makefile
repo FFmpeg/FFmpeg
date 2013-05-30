@@ -45,6 +45,7 @@ HEADERS = adler32.h                                                     \
           rational.h                                                    \
           samplefmt.h                                                   \
           sha.h                                                         \
+          sha512.h                                                      \
           time.h                                                        \
           timecode.h                                                    \
           timestamp.h                                                   \
@@ -103,6 +104,7 @@ OBJS = adler32.o                                                        \
        rc4.o                                                            \
        samplefmt.o                                                      \
        sha.o                                                            \
+       sha512.o                                                         \
        time.o                                                           \
        timecode.o                                                       \
        tree.o                                                           \
@@ -147,6 +149,7 @@ TESTPROGS = adler32                                                     \
             random_seed                                                 \
             rational                                                    \
             sha                                                         \
+            sha512                                                      \
             tree                                                        \
             xtea                                                        \
 

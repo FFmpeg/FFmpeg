@@ -70,6 +70,10 @@ FATE_LIBAVUTIL += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
 
+FATE_LIBAVUTIL += fate-sha512
+fate-sha512: libavutil/sha512-test$(EXESUF)
+fate-sha512: CMD = run libavutil/sha512-test
+
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test
