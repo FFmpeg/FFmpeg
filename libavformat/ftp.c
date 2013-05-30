@@ -20,7 +20,6 @@
 
 #include <stdlib.h>
 #include "libavutil/avstring.h"
-#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "internal.h"
 #include "network.h"
@@ -29,6 +28,7 @@
 #include "libavutil/opt.h"
 
 #define CONTROL_BUFFER_SIZE 1024
+#define CREDENTIALS_BUFFER_SIZE 128
 
 typedef enum {
     UNKNOWN,
@@ -49,6 +49,7 @@ typedef struct {
     uint8_t *control_buf_ptr, *control_buf_end;
     int server_data_port;                        /**< Data connection port opened by server, -1 on error. */
     char hostname[512];                          /**< Server address. */
+    char credencials[CREDENTIALS_BUFFER_SIZE];   /**< Authentication data */
     char path[MAX_URL_SIZE];                     /**< Path to resource on server. */
     int64_t filesize;                            /**< Size of file on server, -1 on error. */
     int64_t position;                            /**< Current position, calculated. */
@@ -187,50 +188,38 @@ static int ftp_status(FTPContext *s, int *major, int *minor, int *extra, char **
     return result;
 }
 
-static int ftp_auth(FTPContext *s, char *auth)
+static int ftp_auth(FTPContext *s)
 {
     const char *user = NULL, *pass = NULL;
-    char *end = NULL, buf[CONTROL_BUFFER_SIZE];
+    char *end = NULL, buf[CONTROL_BUFFER_SIZE], credencials[CREDENTIALS_BUFFER_SIZE];
     int err;
-    av_assert2(auth);
 
-    user = av_strtok(auth, ":", &end);
+    /* Authentication may be repeated, original string has to be saved */
+    av_strlcpy(credencials, s->credencials, sizeof(credencials));
+
+    user = av_strtok(credencials, ":", &end);
     pass = av_strtok(end, ":", &end);
 
-    if (user) {
-        snprintf(buf, sizeof(buf), "USER %s\r\n", user);
-        if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-            return err;
-        ftp_status(s, &err, NULL, NULL, NULL, -1);
-        if (err == 3) {
-            if (pass) {
-                snprintf(buf, sizeof(buf), "PASS %s\r\n", pass);
-                if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
-                    return err;
-                ftp_status(s, &err, NULL, NULL, NULL, -1);
-            } else
-                return AVERROR(EACCES);
-        }
-        if (err != 2) {
-            return AVERROR(EACCES);
-        }
-    } else {
-        const char* command = "USER anonymous\r\n";
-        if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
-            return err;
-        ftp_status(s, &err, NULL, NULL, NULL, -1);
-        if (err == 3) {
-            if (s->anonymous_password) {
-                snprintf(buf, sizeof(buf), "PASS %s\r\n", s->anonymous_password);
-            } else
-                snprintf(buf, sizeof(buf), "PASS nopassword\r\n");
+    if (!user) {
+        user = "anonymous";
+        pass = s->anonymous_password ? s->anonymous_password : "nopassword";
+    }
+
+    snprintf(buf, sizeof(buf), "USER %s\r\n", user);
+    if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
+        return err;
+    ftp_status(s, &err, NULL, NULL, NULL, -1);
+    if (err == 3) {
+        if (pass) {
+            snprintf(buf, sizeof(buf), "PASS %s\r\n", pass);
             if ((err = ffurl_write(s->conn_control, buf, strlen(buf))) < 0)
                 return err;
             ftp_status(s, &err, NULL, NULL, NULL, -1);
-        }
-        if (err != 2) {
+        } else
             return AVERROR(EACCES);
-        }
+    }
+    if (err != 2) {
+        return AVERROR(EACCES);
     }
 
     return 0;
@@ -415,7 +404,7 @@ static int ftp_reconnect_data_connection(URLContext *h)
 
 static int ftp_open(URLContext *h, const char *url, int flags)
 {
-    char proto[10], auth[1024], path[MAX_URL_SIZE], buf[CONTROL_BUFFER_SIZE], opts_format[20];
+    char proto[10], path[MAX_URL_SIZE], buf[CONTROL_BUFFER_SIZE], opts_format[20];
     AVDictionary *opts = NULL;
     int port, err;
     FTPContext *s = h->priv_data;
@@ -428,7 +417,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     s->conn_control_interrupt_cb.callback = ftp_conn_control_block_control;
 
     av_url_split(proto, sizeof(proto),
-                 auth, sizeof(auth),
+                 s->credencials, sizeof(s->credencials),
                  s->hostname, sizeof(s->hostname),
                  &port,
                  path, sizeof(path),
@@ -456,7 +445,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
             goto fail;
         }
 
-        if ((err = ftp_auth(s, auth)) < 0)
+        if ((err = ftp_auth(s)) < 0)
             goto fail;
 
         if ((err = ftp_type(s)) < 0)
