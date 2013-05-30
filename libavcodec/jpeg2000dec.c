@@ -884,9 +884,9 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     for (y = 0; y < height + 2; y++)
         memset(t1->flags[y], 0, (width + 2) * sizeof(width));
 
-    ff_mqc_initdec(&t1->mqc, cblk->data);
     cblk->data[cblk->length]     = 0xff;
     cblk->data[cblk->length + 1] = 0xff;
+    ff_mqc_initdec(&t1->mqc, cblk->data);
 
     while (passno--) {
         switch (pass_t) {
