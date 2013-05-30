@@ -269,6 +269,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int config_props(AVFilterLink *inlink)
 {
     VignetteContext *s = inlink->dst->priv;
+    AVRational sar = inlink->sample_aspect_ratio;
 
     s->desc = av_pix_fmt_desc_get(inlink->format);
     s->var_values[VAR_W]  = inlink->w;
@@ -277,12 +278,14 @@ static int config_props(AVFilterLink *inlink)
     s->var_values[VAR_R]  = inlink->frame_rate.num == 0 || inlink->frame_rate.den == 0 ?
         NAN : av_q2d(inlink->frame_rate);
 
-    if (inlink->sample_aspect_ratio.num > inlink->sample_aspect_ratio.den) {
-        s->xscale = av_q2d(inlink->sample_aspect_ratio);
+    if (!sar.num || !sar.den)
+        sar.num = sar.den = 1;
+    if (sar.num > sar.den) {
+        s->xscale = av_q2d(sar);
         s->yscale = 1;
         s->dmax = hypot(inlink->w / 2., s->yscale * inlink->h / 2.);
     } else {
-        s->yscale = av_q2d(inlink->sample_aspect_ratio);
+        s->yscale = av_q2d(sar);
         s->xscale = 1;
         s->dmax = hypot(s->xscale * inlink->w / 2., inlink->h / 2.);
     }
