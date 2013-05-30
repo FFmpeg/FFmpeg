@@ -109,6 +109,8 @@ static av_cold int smvjpeg_decode_init(AVCodecContext *avctx)
     s->avctx = avcodec_alloc_context3(codec);
 
     av_dict_set(&thread_opt, "threads", "1", 0);
+    s->avctx->flags = avctx->flags;
+    s->avctx->idct_algo = avctx->idct_algo;
     if (ff_codec_open2_recursive(s->avctx, codec, &thread_opt) < 0) {
         av_log(avctx, AV_LOG_ERROR, "MJPEG codec failed to open\n");
         ret = -1;
