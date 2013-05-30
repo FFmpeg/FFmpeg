@@ -25,6 +25,7 @@
  * JPEG 2000 image encoder and decoder common functions
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
@@ -40,8 +41,7 @@ static int32_t tag_tree_size(uint16_t w, uint16_t h)
     uint32_t res = 0;
     while (w > 1 || h > 1) {
         res += w * h;
-        if (res + 1 >= INT32_MAX)
-            return -1;
+        av_assert0(res + 1 < INT32_MAX);
         w = (w + 1) >> 1;
         h = (h + 1) >> 1;
     }
@@ -55,8 +55,6 @@ static Jpeg2000TgtNode *ff_jpeg2000_tag_tree_init(int w, int h)
     int32_t tt_size;
 
     tt_size = tag_tree_size(w, h);
-    if (tt_size == -1)
-        return NULL;
 
     t = res = av_mallocz_array(tt_size, sizeof(*t));
     if (!res)
