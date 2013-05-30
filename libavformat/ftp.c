@@ -221,6 +221,14 @@ static int ftp_send_command(FTPContext *s, const char *command,
     return ftp_status(s, response, response_codes);
 }
 
+static void ftp_close_both_connections(FTPContext *s)
+{
+    ffurl_closep(&s->conn_control);
+    ffurl_closep(&s->conn_data);
+    s->position = 0;
+    s->state = DISCONNECTED;
+}
+
 static int ftp_auth(FTPContext *s)
 {
     const char *user = NULL, *pass = NULL;
@@ -398,29 +406,6 @@ static int ftp_type(FTPContext *s)
     return 0;
 }
 
-static int ftp_abort(FTPContext *s)
-{
-    int err;
-    const char *command = "ABOR\r\n";
-    const int abor_codes[] = {225, 226, 0};
-
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    if (s->state == DOWNLOADING) {
-        s->conn_control_block_flag = 0;
-        if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
-            return err;
-    }
-    ffurl_closep(&s->conn_data);
-    s->state = DISCONNECTED;
-
-    if (!ftp_status(s, NULL, abor_codes))
-        return AVERROR(EIO);
-
-    return 0;
-}
-
 static int ftp_restart(FTPContext *s, int64_t pos)
 {
     char command[CONTROL_BUFFER_SIZE];
@@ -502,9 +487,21 @@ static int ftp_connect_data_connection(URLContext *h)
         av_dict_free(&opts);
         if (err < 0)
             return err;
+
+        if (s->position)
+            if ((err = ftp_restart(s, s->position)) < 0)
+                return err;
     }
     s->state = READY;
-    s->position = 0;
+    return 0;
+}
+
+static int ftp_abort(URLContext *h)
+{
+    int err;
+    ftp_close_both_connections(h->priv_data);
+    if ((err = ftp_connect_control_connection(h)) < 0)
+        return err;
     return 0;
 }
 
@@ -518,6 +515,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
 
     s->state = DISCONNECTED;
     s->filesize = -1;
+    s->position = 0;
     s->conn_control_interrupt_cb.opaque = s;
     s->conn_control_interrupt_cb.callback = ftp_conn_control_block_control;
 
@@ -543,10 +541,8 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
         h->is_streamed = 1;
 
-    if ((err = ftp_connect_data_connection(h)) < 0)
-        goto fail;
-
     return 0;
+
   fail:
     av_log(h, AV_LOG_ERROR, "FTP open failed\n");
     ffurl_closep(&s->conn_control);
@@ -583,23 +579,15 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
     if  (h->is_streamed)
         return AVERROR(EIO);
 
-    if (new_pos < 0 || (s->filesize >= 0 && new_pos > s->filesize))
-        return AVERROR(EINVAL);
+    new_pos = FFMAX(0, new_pos);
+    if (s->filesize >= 0)
+        new_pos = FFMIN(s->filesize, new_pos);
 
     if (new_pos != s->position) {
-        /* close existing data connection */
-        if (s->state != READY) {
-            if (s->conn_data) {
-                /* abort existing transfer */
-                if ((err = ftp_abort(s)) < 0)
-                    return err;
-            }
-            /* open new data connection */
-            if ((err = ftp_connect_data_connection(h)) < 0)
-                return err;
-        }
-
-        if ((err = ftp_restart(s, new_pos)) < 0)
+        /* XXX: Full abort is a save solution here.
+           Some optimalizations are possible, but may lead to crazy states of FTP server.
+           The worst scenario would be when FTP server closed both connection due to no transfer. */
+        if ((err = ftp_abort(h)) < 0)
             return err;
 
         s->position = new_pos;
@@ -614,15 +602,20 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
 
     av_dlog(h, "ftp protocol read %d bytes\n", size);
   retry:
+    if (s->state == DISCONNECTED) {
+        if ((err = ftp_connect_data_connection(h)) < 0)
+            return err;
+    }
     if (s->state == READY) {
-        ftp_retrieve(s);
+        if ((err = ftp_retrieve(s)) < 0)
+            return err;
     }
     if (s->conn_data && s->state == DOWNLOADING) {
         read = ffurl_read(s->conn_data, buf, size);
         if (read >= 0) {
             s->position += read;
             if (s->position >= s->filesize) {
-                if (ftp_abort(s) < 0)
+                if (ftp_abort(h) < 0)
                     return AVERROR(EIO);
             }
         }
@@ -631,16 +624,12 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
             /* TODO: Consider retry before reconnect */
             int64_t pos = s->position;
             av_log(h, AV_LOG_INFO, "Reconnect to FTP server.\n");
-            ffurl_closep(&s->conn_control);
-            ffurl_closep(&s->conn_data);
-            s->position = 0;
-            s->state = DISCONNECTED;
-            if ((err = ftp_connect_control_connection(h)) < 0) {
-                av_log(h, AV_LOG_ERROR, "Reconnect failed\n");
+            if ((err = ftp_abort(h)) < 0) {
+                av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
                 return err;
             }
             if ((err = ftp_seek(h, pos, SEEK_SET)) < 0) {
-                av_dlog(h, "Seek failed after reconnect\n");
+                av_log(h, AV_LOG_ERROR, "Position cannot be restored.\n");
                 return err;
             }
             if (!retry_done) {
@@ -657,13 +646,19 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
 
 static int ftp_write(URLContext *h, const unsigned char *buf, int size)
 {
+    int err;
     FTPContext *s = h->priv_data;
     int written;
 
     av_dlog(h, "ftp protocol write %d bytes\n", size);
 
+    if (s->state == DISCONNECTED) {
+        if ((err = ftp_connect_data_connection(h)) < 0)
+            return err;
+    }
     if (s->state == READY) {
-        ftp_store(s);
+        if ((err = ftp_store(s)) < 0)
+            return err;
     }
     if (s->conn_data && s->state == UPLOADING) {
         written = ffurl_write(s->conn_data, buf, size);
@@ -680,12 +675,9 @@ static int ftp_write(URLContext *h, const unsigned char *buf, int size)
 
 static int ftp_close(URLContext *h)
 {
-    FTPContext *s = h->priv_data;
-
     av_dlog(h, "ftp protocol close\n");
 
-    ffurl_closep(&s->conn_control);
-    ffurl_closep(&s->conn_data);
+    ftp_close_both_connections(h->priv_data);
 
     return 0;
 }
