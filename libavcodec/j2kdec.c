@@ -792,11 +792,11 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     int bpass_csty_symbol = JPEG2000_CBLK_BYPASS & codsty->cblk_style;
     int vert_causal_ctx_csty_symbol = JPEG2000_CBLK_VSC & codsty->cblk_style;
 
-    for (y = 0; y < height+2; y++)
-        memset(t1->flags[y], 0, (width + 2)*sizeof(int));
-
     for (y = 0; y < height; y++)
-        memset(t1->data[y], 0, width*sizeof(int));
+        memset(t1->data[y], 0, width * sizeof(**t1->data));
+
+    for (y = 0; y < height+2; y++)
+        memset(t1->flags[y], 0, (width + 2)*sizeof(**t1->flags));
 
     cblk->data[cblk->length] = 0xff;
     cblk->data[cblk->length+1] = 0xff;
