@@ -2,8 +2,6 @@ ARCH_HEADERS = mathops.h
 
 OBJS                                   += arm/dsputil_init_arm.o        \
                                           arm/dsputil_arm.o             \
-                                          arm/fft_init_arm.o            \
-                                          arm/fft_fixed_init_arm.o      \
                                           arm/fmtconvert_init_arm.o     \
                                           arm/jrevdct_arm.o             \
                                           arm/simple_idct_arm.o         \
@@ -13,6 +11,8 @@ OBJS-$(CONFIG_AAC_DECODER)             += arm/aacpsdsp_init_arm.o       \
 OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
                                           arm/ac3dsp_arm.o
 OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o
+OBJS-$(CONFIG_FFT)                     += arm/fft_init_arm.o            \
+                                          arm/fft_fixed_init_arm.o
 OBJS-$(CONFIG_FLAC_DECODER)            += arm/flacdsp_init_arm.o        \
                                           arm/flacdsp_arm.o
 OBJS-$(CONFIG_H264CHROMA)              += arm/h264chroma_init_arm.o
