@@ -708,7 +708,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
                 down the code */
     if(h->slice_type_nos != AV_PICTURE_TYPE_I){
         if(s->mb_skip_run==-1)
-            s->mb_skip_run= get_ue_golomb(&s->gb);
+            s->mb_skip_run= get_ue_golomb_long(&s->gb);
 
         if (s->mb_skip_run--) {
             if(FRAME_MBAFF && (s->mb_y&1) == 0){
