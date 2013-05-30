@@ -285,7 +285,7 @@ static int config_props(AVFilterLink *inlink)
         s->yscale = 1;
         s->dmax = hypot(inlink->w / 2., s->yscale * inlink->h / 2.);
     } else {
-        s->yscale = av_q2d(sar);
+        s->yscale = av_q2d(av_inv_q(sar));
         s->xscale = 1;
         s->dmax = hypot(s->xscale * inlink->w / 2., inlink->h / 2.);
     }
