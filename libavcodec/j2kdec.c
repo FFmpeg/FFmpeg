@@ -62,7 +62,6 @@ typedef struct Jpeg2000Tile {
 typedef struct Jpeg2000DecoderContext {
     AVClass         *class;
     AVCodecContext  *avctx;
-    AVFrame         *picture;
     GetByteContext  g;
 
     int             width, height;
@@ -162,7 +161,6 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
 static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i, ret;
-    ThreadFrame frame = { .f = s->picture };
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
@@ -254,13 +252,6 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->avctx->pix_fmt = AV_PIX_FMT_NONE;
         break;
     }
-
-
-    if ((ret = ff_thread_get_buffer(s->avctx, &frame, 0)) < 0)
-        return ret;
-
-    s->picture->pict_type = AV_PICTURE_TYPE_I;
-    s->picture->key_frame = 1;
 
     return 0;
 }
@@ -1237,10 +1228,9 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
                                  int *got_frame, AVPacket *avpkt)
 {
     Jpeg2000DecoderContext *s = avctx->priv_data;
+    ThreadFrame frame = { .f = data };
     AVFrame *picture = data;
     int tileno, ret;
-
-    s->picture = picture;
 
     s->avctx     = avctx;
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
@@ -1276,11 +1266,19 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     if (ret = jpeg2000_read_main_headers(s))
         goto err_out;
 
+    /* get picture buffer */
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed.\n");
+        goto err_out;
+    }
+    picture->pict_type = AV_PICTURE_TYPE_I;
+    picture->key_frame = 1;
+
     if (ret = jpeg2000_read_bitstream_packets(s))
         goto err_out;
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++)
-        if (ret = jpeg2000_decode_tile(s, s->tile + tileno, s->picture))
+        if (ret = jpeg2000_decode_tile(s, s->tile + tileno, picture))
             goto err_out;
 
     jpeg2000_dec_cleanup(s);
