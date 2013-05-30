@@ -283,12 +283,11 @@ static int config_props(AVFilterLink *inlink)
     if (sar.num > sar.den) {
         s->xscale = av_q2d(sar);
         s->yscale = 1;
-        s->dmax = hypot(inlink->w / 2., s->yscale * inlink->h / 2.);
     } else {
         s->yscale = av_q2d(av_inv_q(sar));
         s->xscale = 1;
-        s->dmax = hypot(s->xscale * inlink->w / 2., inlink->h / 2.);
     }
+    s->dmax = hypot(inlink->w / 2., inlink->h / 2.);
 
     s->fmap_linesize = FFALIGN(inlink->w, 32);
     s->fmap = av_malloc(s->fmap_linesize * inlink->h * sizeof(*s->fmap));
