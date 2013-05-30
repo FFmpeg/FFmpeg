@@ -601,6 +601,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
         if (band->coord[0][0] == band->coord[0][1] ||
             band->coord[1][0] == band->coord[1][1])
             continue;
+
         nb_code_blocks =  prec->nb_codeblocks_height *
                           prec->nb_codeblocks_width;
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
@@ -1020,8 +1021,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
     uint8_t *line;
     Jpeg2000T1Context t1;
-    /* Loop on tile components */
 
+    /* Loop on tile components */
     for (compno = 0; compno < s->ncomponents; compno++) {
         Jpeg2000Component *comp     = tile->comp + compno;
         Jpeg2000CodingStyle *codsty = tile->codsty + compno;
@@ -1075,6 +1076,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             Jpeg2000Component *comp = tile->comp + compno;
             float *datap = comp->f_data;
             int32_t *i_datap = comp->i_data;
+
             y    = tile->comp[compno].coord[1][0] - s->image_offset_y;
             line = picture->data[0] + y * picture->linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
