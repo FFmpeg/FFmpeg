@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <float.h>  /* DBL_MAX */
+
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
 #include "libavutil/avassert.h"
@@ -65,6 +67,8 @@ typedef struct {
     float xscale, yscale;
     uint32_t dither;
     int do_dither;
+    AVRational aspect;
+    AVRational scale;
 } VignetteContext;
 
 #define OFFSET(x) offsetof(VignetteContext, x)
@@ -81,6 +85,7 @@ static const AVOption vignette_options[] = {
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions for each frame",             0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { "dither", "set dithering", OFFSET(do_dither), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, FLAGS },
+    { "aspect", "set aspect ratio", OFFSET(aspect), AV_OPT_TYPE_RATIONAL, {.dbl = 1}, 0, DBL_MAX, .flags = FLAGS },
     { NULL }
 };
 
@@ -281,10 +286,10 @@ static int config_props(AVFilterLink *inlink)
     if (!sar.num || !sar.den)
         sar.num = sar.den = 1;
     if (sar.num > sar.den) {
-        s->xscale = av_q2d(sar);
+        s->xscale = av_q2d(av_div_q(sar, s->aspect));
         s->yscale = 1;
     } else {
-        s->yscale = av_q2d(av_inv_q(sar));
+        s->yscale = av_q2d(av_div_q(s->aspect, sar));
         s->xscale = 1;
     }
     s->dmax = hypot(inlink->w / 2., inlink->h / 2.);

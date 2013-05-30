@@ -7005,6 +7005,13 @@ Default value is @samp{init}.
 @item dither
 Set dithering to reduce the circular banding effects. Default is @code{1}
 (enabled).
+
+@item aspect
+Set vignette aspect. This setting allows to adjust the shape of the vignette.
+Setting this value to the SAR of the input will make a rectangular vignetting
+following the dimensions of the video.
+
+Default is @code{1/1}.
 @end table
 
 @subsection Expressions
