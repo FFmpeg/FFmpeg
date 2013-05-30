@@ -535,7 +535,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
 
     // FIXME mpeg2 uses that too
-    if (s->mpeg_quant && s->codec_id != AV_CODEC_ID_MPEG4) {
+    if (s->mpeg_quant && (   s->codec_id != AV_CODEC_ID_MPEG4
+                          && s->codec_id != AV_CODEC_ID_MPEG2VIDEO)) {
         av_log(avctx, AV_LOG_ERROR,
                "mpeg2 style quantization not supported by codec\n");
         return -1;
