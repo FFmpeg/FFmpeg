@@ -376,14 +376,14 @@ static int ftp_store(FTPContext *s)
     return 0;
 }
 
-static int ftp_send_command(FTPContext *s, const char* command)
+static int ftp_type(FTPContext *s)
 {
     int err;
+    const char *command = "TYPE I\r\n";
 
     if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
         return err;
-    ftp_status(s, &err, NULL, NULL, NULL, -1);
-    if (err != 2)
+    if (ftp_status(s, NULL, NULL, NULL, NULL, 200) != 200)
         return AVERROR(EIO);
 
     return 0;
@@ -459,7 +459,7 @@ static int ftp_open(URLContext *h, const char *url, int flags)
         if ((err = ftp_auth(s, auth)) < 0)
             goto fail;
 
-        if ((err = ftp_send_command(s, "TYPE I\r\n")) < 0)
+        if ((err = ftp_type(s)) < 0)
             goto fail;
 
         if ((err = ftp_current_dir(s)) < 0)
