@@ -42,7 +42,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     const char *p;
     char buf[256];
     int ret;
-    socklen_t optlen;
     int timeout = 100, listen_timeout = -1;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
@@ -98,53 +97,16 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             goto fail1;
         }
     } else {
- redo:
-        ff_socket_nonblock(fd, 1);
-        ret = connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen);
+        if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
+                                     timeout, h)) < 0) {
+
+            if (ret == AVERROR_EXIT)
+                goto fail1;
+            else
+                goto fail;
+        }
     }
 
-    if (ret < 0) {
-        struct pollfd p = {fd, POLLOUT, 0};
-        ret = ff_neterrno();
-        if (ret == AVERROR(EINTR)) {
-            if (ff_check_interrupt(&h->interrupt_callback)) {
-                ret = AVERROR_EXIT;
-                goto fail1;
-            }
-            goto redo;
-        }
-        if (ret != AVERROR(EINPROGRESS) &&
-            ret != AVERROR(EAGAIN))
-            goto fail;
-
-        /* wait until we are connected or until abort */
-        while(timeout--) {
-            if (ff_check_interrupt(&h->interrupt_callback)) {
-                ret = AVERROR_EXIT;
-                goto fail1;
-            }
-            ret = poll(&p, 1, 100);
-            if (ret > 0)
-                break;
-        }
-        if (ret <= 0) {
-            ret = AVERROR(ETIMEDOUT);
-            goto fail;
-        }
-        /* test error */
-        optlen = sizeof(ret);
-        if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen))
-            ret = AVUNERROR(ff_neterrno());
-        if (ret != 0) {
-            char errbuf[100];
-            ret = AVERROR(ret);
-            av_strerror(ret, errbuf, sizeof(errbuf));
-            av_log(h, AV_LOG_ERROR,
-                   "TCP connection to %s:%d failed: %s\n",
-                   hostname, port, errbuf);
-            goto fail;
-        }
-    }
     h->is_streamed = 1;
     s->fd = fd;
     freeaddrinfo(ai);
