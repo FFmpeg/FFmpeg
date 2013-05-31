@@ -56,7 +56,7 @@ typedef struct {
     const AVPixFmtDescriptor *desc;
     int backward;
     enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
-#define DEF_EXPR_FIELDS(name) AVExpr *name##_pexpr; char *name##_expr; double name;
+#define DEF_EXPR_FIELDS(name) AVExpr *name##_pexpr; char *name##_expr; double name
     DEF_EXPR_FIELDS(angle);
     DEF_EXPR_FIELDS(x0);
     DEF_EXPR_FIELDS(y0);
