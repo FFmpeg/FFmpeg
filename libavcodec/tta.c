@@ -207,14 +207,10 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
     if (avctx->extradata_size < 22)
         return AVERROR_INVALIDDATA;
 
+    s->crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
     init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);
     if (show_bits_long(&s->gb, 32) == AV_RL32("TTA1"))
     {
-        if (avctx->err_recognition & AV_EF_CRCCHECK) {
-            s->crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
-            tta_check_crc(s, avctx->extradata, 18);
-        }
-
         /* signature */
         skip_bits_long(&s->gb, 32);
 
