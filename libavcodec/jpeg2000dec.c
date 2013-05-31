@@ -1091,7 +1091,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 dst = line + x * s->ncomponents + compno;
 
                 for (; x < tile->comp[compno].coord[0][1] - s->image_offset_x; x += s->cdx[compno]) {
-                     int val;
+                    int val;
                     /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
                     if (tile->codsty->transform == FF_DWT97)
                         val = lrintf(*datap) + (1 << (s->cbps[compno] - 1));
