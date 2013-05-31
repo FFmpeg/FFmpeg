@@ -192,7 +192,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->cdx[i]    = bytestream2_get_byteu(&s->g);
         s->cdy[i]    = bytestream2_get_byteu(&s->g);
         if (s->cdx[i] != 1 || s->cdy[i] != 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "unsupported/ CDxy values\n");
+            av_log(s->avctx, AV_LOG_ERROR, "unsupported/ CDxy values %d %d for component %d\n", s->cdx[i], s->cdy[i], i);
         }
     }
 
