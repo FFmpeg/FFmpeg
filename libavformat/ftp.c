@@ -234,8 +234,8 @@ static int ftp_auth(FTPContext *s)
     const char *user = NULL, *pass = NULL;
     char *end = NULL, buf[CONTROL_BUFFER_SIZE], credencials[CREDENTIALS_BUFFER_SIZE];
     int err;
-    const int user_codes[] = {331, 230, 0};
-    const int pass_codes[] = {230, 0};
+    const int user_codes[] = {331, 230, 500, 530, 0}; /* 500, 530 are incorrect codes */
+    const int pass_codes[] = {230, 503, 530, 0}; /* 503, 530 are incorrect codes */
 
     /* Authentication may be repeated, original string has to be saved */
     av_strlcpy(credencials, s->credencials, sizeof(credencials));
@@ -257,7 +257,7 @@ static int ftp_auth(FTPContext *s)
         } else
             return AVERROR(EACCES);
     }
-    if (!err)
+    if (err != 230)
         return AVERROR(EACCES);
 
     return 0;
@@ -268,9 +268,9 @@ static int ftp_passive_mode(FTPContext *s)
     char *res = NULL, *start, *end;
     int i;
     const char *command = "PASV\r\n";
-    const int pasv_codes[] = {227, 0};
+    const int pasv_codes[] = {227, 501, 0}; /* 501 is incorrect code */
 
-    if (!ftp_send_command(s, command, pasv_codes, &res))
+    if (ftp_send_command(s, command, pasv_codes, &res) != 227 || !res)
         goto fail;
 
     start = NULL;
@@ -317,7 +317,7 @@ static int ftp_current_dir(FTPContext *s)
     const char *command = "PWD\r\n";
     const int pwd_codes[] = {257, 0};
 
-    if (!ftp_send_command(s, command, pwd_codes, &res))
+    if (ftp_send_command(s, command, pwd_codes, &res) != 257 || !res)
         goto fail;
 
     for (i = 0; res[i]; ++i) {
@@ -352,10 +352,10 @@ static int ftp_file_size(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
     char *res = NULL;
-    const int size_codes[] = {213, 0};
+    const int size_codes[] = {213, 501, 550, 0}; /* 501, 550 are incorrect codes */
 
     snprintf(command, sizeof(command), "SIZE %s\r\n", s->path);
-    if (ftp_send_command(s, command, size_codes, &res)) {
+    if (ftp_send_command(s, command, size_codes, &res) == 213 && res) {
         s->filesize = strtoll(&res[4], NULL, 10);
     } else {
         s->filesize = -1;
@@ -370,10 +370,10 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int retr_codes[] = {150, 0};
+    const int retr_codes[] = {150, 550, 0}; /* 550 is incorrect code */
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
-    if (!ftp_send_command(s, command, retr_codes, NULL))
+    if (ftp_send_command(s, command, retr_codes, NULL) != 150)
         return AVERROR(EIO);
 
     s->state = DOWNLOADING;
@@ -398,9 +398,9 @@ static int ftp_store(FTPContext *s)
 static int ftp_type(FTPContext *s)
 {
     const char *command = "TYPE I\r\n";
-    const int type_codes[] = {200, 0};
+    const int type_codes[] = {200, 500, 504, 0}; /* 500, 504 are incorrect codes */
 
-    if (!ftp_send_command(s, command, type_codes, NULL))
+    if (ftp_send_command(s, command, type_codes, NULL) != 200)
         return AVERROR(EIO);
 
     return 0;
@@ -409,10 +409,10 @@ static int ftp_type(FTPContext *s)
 static int ftp_restart(FTPContext *s, int64_t pos)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int rest_codes[] = {350, 0};
+    const int rest_codes[] = {350, 501, 0}; /* 501 is incorrect code */
 
     snprintf(command, sizeof(command), "REST %"PRId64"\r\n", pos);
-    if (!ftp_send_command(s, command, rest_codes, NULL))
+    if (ftp_send_command(s, command, rest_codes, NULL) != 350)
         return AVERROR(EIO);
 
     return 0;
@@ -439,7 +439,7 @@ static int ftp_connect_control_connection(URLContext *h)
                          &s->conn_control_interrupt_cb, &opts);
         av_dict_free(&opts);
         if (err < 0) {
-            av_dlog(h, "Cannot open control connection, error %d\n", err);
+            av_log(h, AV_LOG_ERROR, "Cannot open control connection\n");
             return err;
         }
 
