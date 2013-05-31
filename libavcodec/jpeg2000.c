@@ -492,7 +492,7 @@ void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 {
     int reslevelno, bandno, precno;
-    for (reslevelno = 0; reslevelno < codsty->nreslevels; reslevelno++) {
+    for (reslevelno = 0; comp->reslevel && reslevelno < codsty->nreslevels; reslevelno++) {
         Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
         for (bandno = 0; bandno < reslevel->nbands; bandno++) {
