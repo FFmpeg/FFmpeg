@@ -21,8 +21,10 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "id3v1.h"
+#include "libavutil/crc.h"
 #include "libavutil/dict.h"
 
 typedef struct {
@@ -30,6 +32,12 @@ typedef struct {
     int frame_size;
     int last_frame_size;
 } TTAContext;
+
+static unsigned long tta_check_crc(unsigned long checksum, const uint8_t *buf,
+                                   unsigned int len)
+{
+    return av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), checksum, buf, len);
+}
 
 static int tta_probe(AVProbeData *p)
 {
@@ -48,12 +56,13 @@ static int tta_read_header(AVFormatContext *s)
     AVStream *st;
     int i, channels, bps, samplerate;
     uint64_t framepos, start_offset;
-    uint32_t datalen;
+    uint32_t datalen, crc;
 
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
     start_offset = avio_tell(s->pb);
+    ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
         return -1; // not tta file
 
@@ -72,7 +81,11 @@ static int tta_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    avio_skip(s->pb, 4); // header crc
+    crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
+    if (crc != avio_rl32(s->pb)) {
+        av_log(s, AV_LOG_ERROR, "Header CRC error\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     c->frame_size      = samplerate * 256 / 245;
     c->last_frame_size = datalen % c->frame_size;
@@ -106,13 +119,18 @@ static int tta_read_header(AVFormatContext *s)
     avio_seek(s->pb, start_offset, SEEK_SET);
     avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
 
+    ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
     for (i = 0; i < c->totalframes; i++) {
         uint32_t size = avio_rl32(s->pb);
         av_add_index_entry(st, framepos, i * c->frame_size, size, 0,
                            AVINDEX_KEYFRAME);
         framepos += size;
     }
-    avio_skip(s->pb, 4); // seektable crc
+    crc = ffio_get_checksum(s->pb) ^ UINT32_MAX;
+    if (crc != avio_rl32(s->pb)) {
+        av_log(s, AV_LOG_ERROR, "Seek table CRC error\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = AV_CODEC_ID_TTA;
