@@ -278,6 +278,11 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         return AVERROR_INVALIDDATA;
     meth = bytestream2_get_byteu(&gb);
     if (meth & 0x80) {
+        if (!s->unpack_buffer_size) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Trying to unpack LZ-compressed frame with no LZ buffer\n");
+            return AVERROR_INVALIDDATA;
+        }
         lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
                   s->unpack_buffer, s->unpack_buffer_size);
         meth &= 0x7F;
@@ -389,9 +394,11 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
     vmd_header = (unsigned char *)avctx->extradata;
 
     s->unpack_buffer_size = AV_RL32(&vmd_header[800]);
-    s->unpack_buffer = av_malloc(s->unpack_buffer_size);
-    if (!s->unpack_buffer)
-        return -1;
+    if (s->unpack_buffer_size) {
+        s->unpack_buffer = av_malloc(s->unpack_buffer_size);
+        if (!s->unpack_buffer)
+            return AVERROR(ENOMEM);
+    }
 
     /* load up the initial palette */
     raw_palette = &vmd_header[28];
