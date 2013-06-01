@@ -499,8 +499,10 @@ static int ftp_abort(URLContext *h)
 {
     int err;
     ftp_close_both_connections(h->priv_data);
-    if ((err = ftp_connect_control_connection(h)) < 0)
+    if ((err = ftp_connect_control_connection(h)) < 0) {
+        av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
         return err;
+    }
     return 0;
 }
 
@@ -602,10 +604,14 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
     av_dlog(h, "ftp protocol read %d bytes\n", size);
   retry:
     if (s->state == DISCONNECTED) {
+        if (s->position >= s->filesize)
+            return 0;
         if ((err = ftp_connect_data_connection(h)) < 0)
             return err;
     }
     if (s->state == READY) {
+        if (s->position >= s->filesize)
+            return 0;
         if ((err = ftp_retrieve(s)) < 0)
             return err;
     }
@@ -618,15 +624,12 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
                     return AVERROR(EIO);
             }
         }
-        if (!read && s->position < s->filesize && !h->is_streamed) {
+        if (read <= 0 && s->position < s->filesize && !h->is_streamed) {
             /* Server closed connection. Probably due to inactivity */
-            /* TODO: Consider retry before reconnect */
             int64_t pos = s->position;
             av_log(h, AV_LOG_INFO, "Reconnect to FTP server.\n");
-            if ((err = ftp_abort(h)) < 0) {
-                av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+            if ((err = ftp_abort(h)) < 0)
                 return err;
-            }
             if ((err = ftp_seek(h, pos, SEEK_SET)) < 0) {
                 av_log(h, AV_LOG_ERROR, "Position cannot be restored.\n");
                 return err;
