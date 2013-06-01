@@ -2648,17 +2648,17 @@ ccc_flags(){
    done
 }
 
-msvc_flags(){
+msvc_common_flags(){
     for flag; do
         case $flag in
+            # In addition to specifying certain flags under the compiler
+            # specific filters, they must be specified here as well or else the
+            # generic catch all at the bottom will print the original flag.
+            -Wall)                ;;
+            -std=c99)             ;;
+            # Common flags
             -fomit-frame-pointer) echo -Oy ;;
             -g)                   echo -Z7 ;;
-            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
-                                       -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
-                                       -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
-                                       -wd4554 \
-                                       -wd4996 -wd4273 ;;
-            -std=c99)             ;;
             -fno-math-errno)      ;;
             -fno-common)          ;;
             -fno-signed-zeros)    ;;
@@ -2670,6 +2670,31 @@ msvc_flags(){
             -lavicap32)           echo vfw32.lib user32.lib ;;
             -l*)                  echo ${flag#-l}.lib ;;
             *)                    echo $flag ;;
+        esac
+    done
+}
+
+msvc_flags(){
+    msvc_common_flags "$@"
+    for flag; do
+        case $flag in
+            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
+                                       -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
+                                       -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
+                                       -wd4554 \
+                                       -wd4996 -wd4273 ;;
+        esac
+    done
+}
+
+icl_flags(){
+    msvc_common_flags "$@"
+    for flag; do
+        case $flag in
+            # Despite what Intel's documentation says -Wall, which is supported
+            # on Windows, does enable remarks so disable them here.
+            -Wall)                echo $flag -Qdiag-disable:remark ;;
+            -std=c99)             echo -Qstd=c99 ;;
         esac
     done
 }
@@ -2901,13 +2926,13 @@ probe_cc(){
         fi
         _cc_o='-Fo $@'
         _cc_e='-P'
-        _flags_filter=msvc_flags
+        _flags_filter=icl_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         # -Qdiag-error to make icl error when presented with certain unknown arguments
         _flags='-nologo -Qdiag-error:10157 -Qdiag-error:4044'
         # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency with msvc which enables it by default
-        _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64 -Qstd=c99 -Qms0 -Qvec- -Qsimd- -GS'
+        _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
@@ -4386,7 +4411,6 @@ elif enabled msvc; then
     enabled x86_32 && disable aligned_stack
 elif enabled icl; then
     enabled x86_32 && disable aligned_stack
-    check_cflags -W1 # Just warnings, no remark spam
     # basically -fstrict-aliasing for icl that doesn't work (correctly) on 13.x+
     check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
     # icl will pass the inline asm tests but inline asm is currently not supported (build will fail)
