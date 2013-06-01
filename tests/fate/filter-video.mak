@@ -10,10 +10,10 @@ fate-filter-yadif-mode1: CMD = framecrc -flags bitexact -idct simple -i $(TARGET
 FATE_FILTER-$(call FILTERDEMDEC, YADIF, MPEGTS, MPEG2VIDEO) += $(FATE_YADIF)
 
 FATE_MCDEINT += fate-filter-mcdeint-fast
-fate-filter-mcdeint-fast: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=fast
+fate-filter-mcdeint-fast: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=fast
 
 FATE_MCDEINT += fate-filter-mcdeint-medium
-fate-filter-mcdeint-medium: CMD = framecrc -flags bitexact -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=mode=medium
+fate-filter-mcdeint-medium: CMD = framecrc -flags bitexact -idct simple -i $(TARGET_SAMPLES)/mpeg2/mpeg2_field_encoding.ts -vframes 30 -vf mcdeint=mode=medium
 
 FATE_FILTER-$(call ALLYES, MCDEINT_FILTER, MPEGTS_DEMUXER, MPEG2VIDEO_DECODER SNOW_ENCODER) += $(FATE_MCDEINT)
 
