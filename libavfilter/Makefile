@@ -220,7 +220,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ilpack.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_mcdeint.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_perspective.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_phase.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp7.o
