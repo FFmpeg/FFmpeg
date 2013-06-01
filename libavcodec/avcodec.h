@@ -2821,7 +2821,7 @@ typedef struct AVCodecContext {
      * Code outside libavcodec should access this field using:
      * av_codec_{get,set}_pkt_timebase(avctx)
      * - encoding unused.
-     * - decodimg set by user
+     * - decoding set by user.
      */
     AVRational pkt_timebase;
 
