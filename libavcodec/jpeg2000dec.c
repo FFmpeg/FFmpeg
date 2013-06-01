@@ -1155,6 +1155,7 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
         av_freep(&s->tile[tileno].comp);
     }
     av_freep(&s->tile);
+    s->numXtiles = s->numYtiles = 0;
 }
 
 static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
