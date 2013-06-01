@@ -441,6 +441,69 @@ Enables the the encoder to use (on a frame by frame basis) either L/R
 stereo or mid/side stereo.
 @end multitable
 
+@section libtwolame
+
+TwoLAME MP2 encoder wrapper
+
+Requires the presence of the libtwolame headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libtwolame}.
+
+@subsection Options Mapping
+
+The following options are supported by the libtwolame wrapper. The
+TwoLAME-equivalent options follow the FFmpeg ones and are in
+parentheses.
+
+@table @option
+@item b
+(b) Set bitrate in bits/s. Note that FFmpeg @code{b} option is
+expressed in bits/s, twolame @code{b} in kilobits/s. The default
+value is 128k.
+
+@item q
+(V) Set quality for experimental VBR support. Maximum value range is
+from -50 to 50, useful range is from -10 to 10.
+
+@item mode
+(mode) Set MPEG mode. Possible values:
+
+@table @samp
+@item auto
+Choose mode automatically based on the input. This is the default.
+@item stereo
+Stereo
+@item joint_stereo
+Joint stereo
+@item dual_channel
+Dual channel
+@item mono
+Mono
+@end table
+
+@item psymodel
+(psyc-mode) Set psychoacoustic model to use in encoding. The argument
+must be an integer between -1 and 4, inclusive. The higher the value,
+the better the quality. The default value is 3.
+
+@item energy_levels
+(energy) Enable energy levels extensions when set to 1. The default
+value is 0 (disabled).
+
+@item error_protection
+(protect) Enable CRC error protection when set to 1. The default value
+is 0 (disabled).
+
+@item copyright
+(copyright) Set MPEG audio copyright flag when set to 1. The default
+value is 0 (disabled).
+
+@item original
+(original) Set MPEG audio original flag when set to 1. The default
+value is 0 (disabled).
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
