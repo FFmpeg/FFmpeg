@@ -92,13 +92,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     if (listen_socket) {
         if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                 listen_timeout)) < 0) {
+                                 listen_timeout, h)) < 0) {
             ret = fd;
             goto fail1;
         }
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                     timeout, h)) < 0) {
+                                     timeout * 100, h)) < 0) {
 
             if (ret == AVERROR_EXIT)
                 goto fail1;

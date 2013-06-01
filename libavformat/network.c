@@ -189,8 +189,29 @@ int ff_is_multicast_address(struct sockaddr *addr)
     return 0;
 }
 
+static int ff_poll_interrupt(struct pollfd *p, nfds_t nfds, int timeout,
+                             AVIOInterruptCB *cb)
+{
+    int runs = timeout / POLLING_TIME;
+    int ret = 0;
+
+    do {
+        if (ff_check_interrupt(cb))
+            return AVERROR_EXIT;
+        ret = poll(p, nfds, POLLING_TIME);
+        if (ret != 0)
+            break;
+    } while (timeout < 0 || runs-- > 0);
+
+    if (!ret)
+        return AVERROR(ETIMEDOUT);
+    if (ret < 0)
+        return AVERROR(errno);
+    return ret;
+}
+
 int ff_listen_bind(int fd, const struct sockaddr *addr,
-                   socklen_t addrlen, int timeout)
+                   socklen_t addrlen, int timeout, URLContext *h)
 {
     int ret;
     int reuse = 1;
@@ -204,9 +225,9 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
     if (ret)
         return ff_neterrno();
 
-    ret = poll(&lp, 1, timeout >= 0 ? timeout : -1);
-    if (ret <= 0)
-        return AVERROR(ETIMEDOUT);
+    ret = ff_poll_interrupt(&lp, 1, timeout, &h->interrupt_callback);
+    if (ret < 0)
+        return ret;
 
     ret = accept(fd, NULL, NULL);
     if (ret < 0)
@@ -236,15 +257,9 @@ int ff_listen_connect(int fd, const struct sockaddr *addr,
             continue;
         case AVERROR(EINPROGRESS):
         case AVERROR(EAGAIN):
-            while (timeout--) {
-                if (ff_check_interrupt(&h->interrupt_callback))
-                    return AVERROR_EXIT;
-                ret = poll(&p, 1, 100);
-                if (ret > 0)
-                    break;
-            }
-            if (ret <= 0)
-                return AVERROR(ETIMEDOUT);
+            ret = ff_poll_interrupt(&p, 1, timeout, &h->interrupt_callback);
+            if (ret < 0)
+                return ret;
             optlen = sizeof(ret);
             if (getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen))
                 ret = AVUNERROR(ff_neterrno());
