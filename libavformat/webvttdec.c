@@ -142,27 +142,19 @@ static int webvtt_read_header(AVFormatContext *s)
         sub->pts = ts_start;
         sub->duration = ts_end - ts_start;
 
-        if (identifier_len) {
-            uint8_t *buf = av_packet_new_side_data(sub,
-                                                   AV_PKT_DATA_WEBVTT_IDENTIFIER,
-                                                   identifier_len);
-            if (!buf) {
-                res = AVERROR(ENOMEM);
-                goto end;
-            }
-            memcpy(buf, identifier, identifier_len);
-        }
+#define SET_SIDE_DATA(name, type) do {                                  \
+    if (name##_len) {                                                   \
+        uint8_t *buf = av_packet_new_side_data(sub, type, name##_len);  \
+        if (!buf) {                                                     \
+            res = AVERROR(ENOMEM);                                      \
+            goto end;                                                   \
+        }                                                               \
+        memcpy(buf, name, name##_len);                                  \
+    }                                                                   \
+} while (0)
 
-        if (settings_len) {
-            uint8_t *buf = av_packet_new_side_data(sub,
-                                                   AV_PKT_DATA_WEBVTT_SETTINGS,
-                                                   settings_len);
-            if (!buf) {
-                res = AVERROR(ENOMEM);
-                goto end;
-            }
-            memcpy(buf, settings, settings_len);
-        }
+        SET_SIDE_DATA(identifier, AV_PKT_DATA_WEBVTT_IDENTIFIER);
+        SET_SIDE_DATA(settings,   AV_PKT_DATA_WEBVTT_SETTINGS);
     }
 
     ff_subtitles_queue_finalize(&webvtt->q);
