@@ -58,7 +58,7 @@ const char *av_hash_get_name(const struct AVHashContext *ctx);
  * with larger sizes will not be considered an ABI change and should not cause
  * your code to overflow a buffer.
  */
-#define AV_HASH_MAX_SIZE 32
+#define AV_HASH_MAX_SIZE 64
 
 /**
  * Get the size of the resulting hash value in bytes.
