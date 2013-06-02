@@ -91,7 +91,7 @@ static const uint64_t K512[80] = {
 #define ror(value, bits) (((value) >> (bits)) | ((value) << (64 - (bits))))
 
 #define Ch(x,y,z)   (((x) & ((y) ^ (z))) ^ (z))
-#define Maj(x,y,z)  ((((x) | (y)) & (z)) | ((x) & (y)))
+#define Maj(z,y,x)  ((((x) | (y)) & (z)) | ((x) & (y)))
 
 #define Sigma0_512(x)   (ror((x), 28) ^ ror((x), 34) ^ ror((x), 39))
 #define Sigma1_512(x)   (ror((x), 14) ^ ror((x), 18) ^ ror((x), 41))
