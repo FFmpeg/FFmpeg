@@ -13,6 +13,7 @@ version <next>:
 - indeo3: use unaligned reads on reference blocks, Bug #503
 - oma: properly forward errors in oma_read_packet
 - af_asyncts: fix offset calculation
+- proresdec: support mixed interlaced/non-interlaced content
 
 Most of the following fixes resulted from test samples that the Google
 Security Team has kindly made available to us:
