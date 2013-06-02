@@ -670,9 +670,11 @@ static int mkv_write_tracks(AVFormatContext *s)
         }
 
         if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
+                                        codec->codec_id == AV_CODEC_ID_VP9 ||
+                                        codec->codec_id == AV_CODEC_ID_OPUS ||
                                         codec->codec_id == AV_CODEC_ID_VORBIS)) {
             av_log(s, AV_LOG_ERROR,
-                   "Only VP8 video and Vorbis audio are supported for WebM.\n");
+                   "Only VP8 or VP9 video and Vorbis or Opus audio are supported for WebM.\n");
             return AVERROR(EINVAL);
         }
 
