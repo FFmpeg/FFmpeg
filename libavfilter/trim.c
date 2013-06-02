@@ -162,7 +162,7 @@ static int trim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
             drop = 0;
 
         if (drop) {
-            s->eof = 1;
+            s->eof = inlink->closed = 1;
             goto drop;
         }
     }
@@ -296,7 +296,7 @@ static int atrim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
 
         if (drop) {
-            s->eof = 1;
+            s->eof = inlink->closed = 1;
             goto drop;
         }
     }
