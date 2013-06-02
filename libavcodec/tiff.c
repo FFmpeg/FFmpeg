@@ -627,7 +627,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GRAY16LE : AV_PIX_FMT_GRAY16BE;
         break;
     case 162:
-        s->avctx->pix_fmt = s>planar ? AV_PIX_FMT_NONE : AV_PIX_FMT_GRAY8A;
+        s->avctx->pix_fmt = s->planar ? AV_PIX_FMT_NONE : AV_PIX_FMT_GRAY8A;
         break;
     case 324:
         s->avctx->pix_fmt = s->planar ? AV_PIX_FMT_GBRAP : AV_PIX_FMT_RGBA;
@@ -1206,7 +1206,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
     }
 
-    if (s->planar && s->bpp_count > 2) {
+    if (s->planar && s->bppcount > 2) {
         FFSWAP(uint8_t*, p->data[0],     p->data[2]);
         FFSWAP(int,      p->linesize[0], p->linesize[2]);
         FFSWAP(uint8_t*, p->data[0],     p->data[1]);
