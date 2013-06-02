@@ -28,6 +28,7 @@
 #include "libavutil/error.h"
 #include "os_support.h"
 #include "avio.h"
+#include "url.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -224,5 +225,7 @@ int ff_is_multicast_address(struct sockaddr *addr);
 
 int ff_listen_bind(int fd, const struct sockaddr *addr,
                    socklen_t addrlen, int timeout);
-
+int ff_listen_connect(int fd, const struct sockaddr *addr,
+                      socklen_t addrlen, int timeout,
+                      URLContext *h);
 #endif /* AVFORMAT_NETWORK_H */
