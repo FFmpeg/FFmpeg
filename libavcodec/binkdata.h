@@ -1,6 +1,6 @@
 /*
  * Bink video decoder
- * Copyright (C) 2009 Kostya Shishkov
+ * Copyright (C) 2009 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *
