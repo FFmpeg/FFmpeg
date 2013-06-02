@@ -1623,6 +1623,8 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             f = decoded_frame;
         err = av_buffersrc_add_frame_flags(ist->filters[i]->filter, f,
                                      AV_BUFFERSRC_FLAG_PUSH);
+        if (err == AVERROR_EOF)
+            err = 0; /* ignore */
         if (err < 0)
             break;
     }
@@ -1726,7 +1728,9 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
         } else
             f = decoded_frame;
         ret = av_buffersrc_add_frame_flags(ist->filters[i]->filter, f, AV_BUFFERSRC_FLAG_PUSH);
-        if (ret < 0) {
+        if (ret == AVERROR_EOF) {
+            ret = 0; /* ignore */
+        } else if (ret < 0) {
             av_log(NULL, AV_LOG_FATAL,
                    "Failed to inject frame into filter network: %s\n", av_err2str(ret));
             exit(1);
