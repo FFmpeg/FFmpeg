@@ -172,9 +172,6 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
             return result;
         }
 
-        /* first code received. Now get all lines in non blocking mode */
-        s->conn_control_block_flag = 1;
-
         av_log(s, AV_LOG_DEBUG, "%s\n", buf);
 
         if (!pref_code_found) {
@@ -191,6 +188,8 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 
             for (i = 0; response_codes[i]; ++i) {
                 if (err == response_codes[i]) {
+                    /* first code received. Now get all lines in non blocking mode */
+                    s->conn_control_block_flag = 1;
                     pref_code_found = 1;
                     result = err;
                     if (line)
@@ -216,17 +215,27 @@ static int ftp_send_command(FTPContext *s, const char *command,
     s->conn_control_block_flag = 0;
     if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
         return err;
+    if (!err)
+        return -1;
 
     /* return status */
-    return ftp_status(s, response, response_codes);
+    if (response_codes) {
+        return ftp_status(s, response, response_codes);
+    }
+    return 0;
+}
+
+static void ftp_close_data_connection(FTPContext *s)
+{
+    ffurl_closep(&s->conn_data);
+    s->position = 0;
+    s->state = DISCONNECTED;
 }
 
 static void ftp_close_both_connections(FTPContext *s)
 {
     ffurl_closep(&s->conn_control);
-    ffurl_closep(&s->conn_data);
-    s->position = 0;
-    s->state = DISCONNECTED;
+    ftp_close_data_connection(s);
 }
 
 static int ftp_auth(FTPContext *s)
@@ -445,8 +454,7 @@ static int ftp_connect_control_connection(URLContext *h)
         /* consume all messages from server */
         if (ftp_status(s, NULL, connect_codes) != 220) {
             av_log(h, AV_LOG_ERROR, "FTP server not ready for new users\n");
-            err = AVERROR(EACCES);
-            return err;
+            return AVERROR(EACCES);
         }
 
         if ((err = ftp_auth(s)) < 0) {
@@ -497,12 +505,40 @@ static int ftp_connect_data_connection(URLContext *h)
 
 static int ftp_abort(URLContext *h)
 {
+    const char *command = "ABOR\r\n";
     int err;
-    ftp_close_both_connections(h->priv_data);
-    if ((err = ftp_connect_control_connection(h)) < 0) {
-        av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
-        return err;
+    const int abor_codes[] = {225, 226, 0};
+    FTPContext *s = h->priv_data;
+
+    /* According to RCF 959:
+       "ABOR command tells the server to abort the previous FTP
+       service command and any associated transfer of data."
+
+       There are FTP server implementations that don't response
+       to any commands during data transfer in passive mode (including ABOR).
+
+       This implementation closes data connection by force.
+    */
+
+    if (ftp_send_command(s, command, NULL, NULL) < 0) {
+        ftp_close_both_connections(s);
+        if ((err = ftp_connect_control_connection(h)) < 0) {
+            av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+            return err;
+        }
+    } else {
+        ftp_close_data_connection(s);
     }
+
+    if (ftp_status(s, NULL, abor_codes) < 225) {
+        /* wu-ftpd also closes control connection after data connection closing */
+        ffurl_closep(&s->conn_control);
+        if ((err = ftp_connect_control_connection(h)) < 0) {
+            av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+            return err;
+        }
+    }
+
     return 0;
 }
 
@@ -585,12 +621,8 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
         new_pos = FFMIN(s->filesize, new_pos);
 
     if (new_pos != s->position) {
-        /* XXX: Full abort is a save solution here.
-           Some optimalizations are possible, but may lead to crazy states of FTP server.
-           The worst scenario would be when FTP server closed both connection due to no transfer. */
         if ((err = ftp_abort(h)) < 0)
             return err;
-
         s->position = new_pos;
     }
     return new_pos;
