@@ -89,6 +89,7 @@ static int check(char *file)
     for (;;) {
         ssize_t size = read(fd, buffer, SIZE);
         if (size < 0) {
+            close(fd);
             finish();
             printf("+READ-FAILED: %s", strerror(errno));
             ret = 2;
