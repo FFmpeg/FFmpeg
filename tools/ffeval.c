@@ -118,12 +118,13 @@ int main(int argc, char **argv)
 
             buf[count] = 0;
             if (buf[0] != '#') {
-                av_expr_parse_and_eval(&d, buf,
-                                       NULL, NULL,
-                                       NULL, NULL, NULL, NULL, NULL, 0, NULL);
+                int ret = av_expr_parse_and_eval(&d, buf,
+                                                 NULL, NULL,
+                                                 NULL, NULL, NULL, NULL, NULL, 0, NULL);
                 if (echo)
                     fprintf(outfile, "%s ", buf);
-                fprintf(outfile, "%s%f\n", prompt, d);
+                if (ret >= 0) fprintf(outfile, "%s%f\n", prompt, d);
+                else          fprintf(outfile, "%s%s\n", prompt, av_err2str(ret));
             }
             count = 0;
         } else {
