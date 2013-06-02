@@ -73,7 +73,7 @@ typedef struct MOVFragmentInfo {
     int64_t tfrf_offset;
 } MOVFragmentInfo;
 
-typedef struct MOVIndex {
+typedef struct MOVTrack {
     int         mode;
     int         entry;
     unsigned    timescale;
