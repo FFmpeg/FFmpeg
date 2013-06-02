@@ -44,7 +44,6 @@
 typedef struct TTAContext {
     AVClass *class;
     AVCodecContext *avctx;
-    GetBitContext gb;
     const AVCRC *crc_table;
 
     int format, channels, bps;
@@ -131,6 +130,7 @@ static uint64_t tta_check_crc64(uint8_t *pass)
 static av_cold int tta_decode_init(AVCodecContext * avctx)
 {
     TTAContext *s = avctx->priv_data;
+    GetBitContext gb;
     int total_frames;
 
     s->avctx = avctx;
@@ -140,13 +140,12 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         return AVERROR_INVALIDDATA;
 
     s->crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
-    init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);
-    if (show_bits_long(&s->gb, 32) == AV_RL32("TTA1"))
-    {
+    init_get_bits(&gb, avctx->extradata, avctx->extradata_size * 8);
+    if (show_bits_long(&gb, 32) == AV_RL32("TTA1")) {
         /* signature */
-        skip_bits_long(&s->gb, 32);
+        skip_bits_long(&gb, 32);
 
-        s->format = get_bits(&s->gb, 16);
+        s->format = get_bits(&gb, 16);
         if (s->format > 2) {
             av_log(avctx, AV_LOG_ERROR, "Invalid format\n");
             return AVERROR_INVALIDDATA;
@@ -158,14 +157,14 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             }
             AV_WL64(s->crc_pass, tta_check_crc64(s->pass));
         }
-        avctx->channels = s->channels = get_bits(&s->gb, 16);
+        avctx->channels = s->channels = get_bits(&gb, 16);
         if (s->channels > 1 && s->channels < 9)
             avctx->channel_layout = tta_channel_layouts[s->channels-2];
-        avctx->bits_per_raw_sample = get_bits(&s->gb, 16);
+        avctx->bits_per_raw_sample = get_bits(&gb, 16);
         s->bps = (avctx->bits_per_raw_sample + 7) / 8;
-        avctx->sample_rate = get_bits_long(&s->gb, 32);
-        s->data_length = get_bits_long(&s->gb, 32);
-        skip_bits_long(&s->gb, 32); // CRC32 of header
+        avctx->sample_rate = get_bits_long(&gb, 32);
+        s->data_length = get_bits_long(&gb, 32);
+        skip_bits_long(&gb, 32); // CRC32 of header
 
         if (s->channels == 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
@@ -237,6 +236,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TTAContext *s = avctx->priv_data;
+    GetBitContext gb;
     int i, ret;
     int cur_chan = 0, framelen = s->frame_length;
     int32_t *p;
@@ -246,7 +246,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = init_get_bits8(&s->gb, avpkt->data, avpkt->size)) < 0)
+    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
         return ret;
 
     /* get output buffer */
@@ -279,7 +279,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         uint32_t unary, depth, k;
         int32_t value;
 
-        unary = get_unary(&s->gb, 0, get_bits_left(&s->gb));
+        unary = get_unary(&gb, 0, get_bits_left(&gb));
 
         if (unary == 0) {
             depth = 0;
@@ -290,7 +290,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             unary--;
         }
 
-        if (get_bits_left(&s->gb) < k) {
+        if (get_bits_left(&gb) < k) {
             ret = AVERROR_INVALIDDATA;
             goto error;
         }
@@ -300,7 +300,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
                 ret = AVERROR_INVALIDDATA;
                 goto error;
             }
-            value = (unary << k) + get_bits(&s->gb, k);
+            value = (unary << k) + get_bits(&gb, k);
         } else
             value = unary;
 
@@ -350,19 +350,19 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             cur_chan = 0;
             i++;
             // check for last frame
-            if (i == s->last_frame_length && get_bits_left(&s->gb) / 8 == 4) {
+            if (i == s->last_frame_length && get_bits_left(&gb) / 8 == 4) {
                 frame->nb_samples = framelen = s->last_frame_length;
                 break;
             }
         }
     }
 
-    align_get_bits(&s->gb);
-    if (get_bits_left(&s->gb) < 32) {
+    align_get_bits(&gb);
+    if (get_bits_left(&gb) < 32) {
         ret = AVERROR_INVALIDDATA;
         goto error;
     }
-    skip_bits_long(&s->gb, 32); // frame crc
+    skip_bits_long(&gb, 32); // frame crc
 
     // convert to output buffer
     switch (s->bps) {
