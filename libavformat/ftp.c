@@ -138,7 +138,7 @@ static int ftp_flush_control_input(FTPContext *s)
     s->conn_control_block_flag = 1;
     do {
         err = ftp_get_line(s, buf, sizeof(buf));
-    } while (err > 0);
+    } while (!err);
 
     s->conn_control_block_flag = ori_block_flag;
 
