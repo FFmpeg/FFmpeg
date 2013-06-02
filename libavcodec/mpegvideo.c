@@ -2102,7 +2102,7 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
                                      int motion_x, int motion_y)
 {
     const int lowres   = s->avctx->lowres;
-    const int op_index = FFMIN(lowres, 2);
+    const int op_index = FFMIN(lowres, 3);
     const int s_mask   = (2 << lowres) - 1;
     int emu = 0;
     int sx, sy;
@@ -2155,7 +2155,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, uvlinesize, linesize, sx, sy,
         uvsx, uvsy;
     const int lowres     = s->avctx->lowres;
-    const int op_index   = FFMIN(lowres-1+s->chroma_x_shift, 2);
+    const int op_index   = FFMIN(lowres-1+s->chroma_x_shift, 3);
     const int block_s    = 8>>lowres;
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres;
@@ -2279,7 +2279,7 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
                                             int mx, int my)
 {
     const int lowres     = s->avctx->lowres;
-    const int op_index   = FFMIN(lowres, 2);
+    const int op_index   = FFMIN(lowres, 3);
     const int block_s    = 8 >> lowres;
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres + 1;
