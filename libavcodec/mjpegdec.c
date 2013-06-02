@@ -279,15 +279,18 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->h_max = h_count[i];
         if (v_count[i] > s->v_max)
             s->v_max = v_count[i];
-        if (!h_count[i] || !v_count[i]) {
-            av_log(s->avctx, AV_LOG_ERROR, "h/v_count is 0\n");
-            return -1;
-        }
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4) {
             av_log(s->avctx, AV_LOG_ERROR, "quant_index is invalid\n");
             return AVERROR_INVALIDDATA;
         }
+        if (!h_count[i] || !v_count[i]) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Invalid sampling factor in component %d %d:%d\n",
+                   i, h_count[i], v_count[i]);
+            return AVERROR_INVALIDDATA;
+        }
+
         av_log(s->avctx, AV_LOG_DEBUG, "component %d %d:%d id: %d quant:%d\n",
                i, h_count[i], v_count[i],
                s->component_id[i], s->quant_index[i]);
@@ -845,17 +848,16 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
 }
 
 static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
-                                 int point_transform)
+                                 int point_transform, int nb_components)
 {
     int i, mb_x, mb_y;
-    const int nb_components=s->nb_components;
     int bits= (s->bits+7)&~7;
     int resync_mb_y = 0;
     int resync_mb_x = 0;
 
     point_transform += bits - s->bits;
 
-    av_assert0(nb_components==1 || nb_components==3);
+    av_assert0(nb_components>=1 && nb_components<=3);
 
     for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
         for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
@@ -1124,8 +1126,9 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     int last_scan = 0;
     int16_t *quant_matrix = s->quant_matrixes[s->quant_index[c]];
 
-    if (se > 63) {
-        av_log(s->avctx, AV_LOG_ERROR, "SE %d is too large\n", se);
+    av_assert0(ss>=0 && Ah>=0 && Al>=0);
+    if (se < ss || se > 63) {
+        av_log(s->avctx, AV_LOG_ERROR, "SS/SE %d/%d is invalid\n", ss, se);
         return AVERROR_INVALIDDATA;
     }
 
@@ -1287,7 +1290,9 @@ next_field:
                 if ((ret = ljpeg_decode_rgb_scan(s, nb_components, predictor, point_transform)) < 0)
                     return ret;
             } else {
-                if ((ret = ljpeg_decode_yuv_scan(s, predictor, point_transform)) < 0)
+                if ((ret = ljpeg_decode_yuv_scan(s, predictor,
+                                                 point_transform,
+                                                 nb_components)) < 0)
                     return ret;
             }
         }
