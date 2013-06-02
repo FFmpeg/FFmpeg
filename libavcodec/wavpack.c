@@ -1185,6 +1185,9 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     int frame_size, ret, frame_flags;
     int samplecount = 0;
 
+    if (avpkt->size < 12 + s->multichannel * 4)
+        return AVERROR_INVALIDDATA;
+
     s->block     = 0;
     s->ch_offset = 0;
 
