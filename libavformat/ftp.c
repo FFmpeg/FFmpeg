@@ -386,7 +386,7 @@ static int ftp_store(FTPContext *s)
     const int stor_codes[] = {150, 0};
 
     snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
-    if (!ftp_send_command(s, command, stor_codes, NULL))
+    if (ftp_send_command(s, command, stor_codes, NULL) != 150)
         return AVERROR(EIO);
 
     s->state = UPLOADING;
@@ -443,7 +443,7 @@ static int ftp_connect_control_connection(URLContext *h)
         }
 
         /* consume all messages from server */
-        if (!ftp_status(s, NULL, connect_codes)) {
+        if (ftp_status(s, NULL, connect_codes) != 220) {
             av_log(h, AV_LOG_ERROR, "FTP server not ready for new users\n");
             err = AVERROR(EACCES);
             return err;
