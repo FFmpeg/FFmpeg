@@ -160,7 +160,7 @@ static const uint32_t K256[64] = {
 
 
 #define Ch(x,y,z)   (((x) & ((y) ^ (z))) ^ (z))
-#define Maj(x,y,z)  ((((x) | (y)) & (z)) | ((x) & (y)))
+#define Maj(z,y,x)  ((((x) | (y)) & (z)) | ((x) & (y)))
 
 #define Sigma0_256(x)   (rol((x), 30) ^ rol((x), 19) ^ rol((x), 10))
 #define Sigma1_256(x)   (rol((x), 26) ^ rol((x), 21) ^ rol((x),  7))
