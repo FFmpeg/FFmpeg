@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
                 goto error_out;
             }
             for (j = 0; j < offset_count; j++) {
-                current_offset  = BE_32(&moov_atom[i + 12 + j * 4]);
+                current_offset  = (uint32_t)BE_32(&moov_atom[i + 12 + j * 4]);
                 current_offset += moov_atom_size;
                 moov_atom[i + 12 + j * 4 + 0] = (current_offset >> 24) & 0xFF;
                 moov_atom[i + 12 + j * 4 + 1] = (current_offset >> 16) & 0xFF;
