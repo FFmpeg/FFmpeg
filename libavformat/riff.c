@@ -325,9 +325,6 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_DPX,          MKTAG('d', 'p', 'x', ' ') },
     { AV_CODEC_ID_KGV1,         MKTAG('K', 'G', 'V', '1') },
     { AV_CODEC_ID_LAGARITH,     MKTAG('L', 'A', 'G', 'S') },
-    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '2') },
-    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '3') },
-    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '4') },
     { AV_CODEC_ID_AMV,          MKTAG('A', 'M', 'V', 'F') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'R', 'A') },
     { AV_CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'R', 'G') },
@@ -349,6 +346,9 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_SVQ3,         MKTAG('S', 'V', 'Q', '3') },
     { AV_CODEC_ID_012V,         MKTAG('0', '1', '2', 'v') },
     { AV_CODEC_ID_012V,         MKTAG('a', '1', '2', 'v') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '2') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '3') },
+    { AV_CODEC_ID_G2M,          MKTAG('G', '2', 'M', '4') },
     { AV_CODEC_ID_NONE,         0 }
 };
 

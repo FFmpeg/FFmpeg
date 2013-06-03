@@ -61,6 +61,7 @@ version <next>:
 - XVideo output device
 - vignette filter
 - True Audio (TTA) encoder
+- Go2Webinar decoder
 
 
 version 1.2:

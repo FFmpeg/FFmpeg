@@ -571,6 +571,8 @@ following image formats are supported:
     @tab Sorenson H.263 used in Flash
 @item Forward Uncompressed   @tab     @tab  X
 @item Fraps                  @tab     @tab  X
+@item Go2Webinar             @tab     @tab  X
+    @tab fourcc: G2M4
 @item H.261                  @tab  X  @tab  X
 @item H.263 / H.263-1996     @tab  X  @tab  X
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
