@@ -529,7 +529,8 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* decode frame */
-    init_get_bits(&s->gb, buf, buf_size*8);
+    if ((ret = init_get_bits8(&s->gb, buf, buf_size)) < 0)
+        return ret;
     if ((ret = decode_frame(s)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "decode_frame() failed\n");
         return ret;
