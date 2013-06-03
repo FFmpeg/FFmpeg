@@ -1328,10 +1328,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
 
     /* get picture buffer */
-    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed.\n");
+    if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         goto end;
-    }
     picture->pict_type = AV_PICTURE_TYPE_I;
     picture->key_frame = 1;
 
