@@ -20,6 +20,7 @@
  */
 
 #include "libavcodec/get_bits.h"
+#include "apetag.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -58,6 +59,10 @@ static int tta_read_header(AVFormatContext *s)
     uint64_t framepos, start_offset;
     uint32_t datalen, crc;
 
+    if (s->pb->seekable) {
+        ff_ape_parse_tag(s);
+        avio_seek(s->pb, 0, SEEK_SET);
+    }
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
