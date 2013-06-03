@@ -25,6 +25,7 @@
  * JPEG 2000 image decoder
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
@@ -1230,6 +1231,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             break;
         case JPEG2000_SOT:
             if (!(ret = get_sot(s, len))) {
+                av_assert1(s->curtileno >= 0);
                 codsty = s->tile[s->curtileno].codsty;
                 qntsty = s->tile[s->curtileno].qntsty;
                 properties = s->tile[s->curtileno].properties;
