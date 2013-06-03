@@ -152,9 +152,10 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
                       int src_count, int src_size, int dest_len)
 {
     unsigned char *pd;
-    int i, j, l;
+    int i, l, used = 0;
     unsigned char *dest_end = dest + dest_len;
     GetByteContext gb;
+    uint16_t run_val;
 
     bytestream2_init(&gb, src, src_size);
     pd = dest;
@@ -162,10 +163,9 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
         if (bytestream2_get_bytes_left(&gb) < 1)
             return 0;
         *pd++ = bytestream2_get_byteu(&gb);
+        used++;
     }
 
-    src_count >>= 1;
-    i = 0;
     do {
         if (bytestream2_get_bytes_left(&gb) < 1)
             break;
@@ -177,18 +177,17 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
             bytestream2_get_bufferu(&gb, pd, l);
             pd += l;
         } else {
-            int ps[2];
             if (dest_end - pd < 2*l || bytestream2_get_bytes_left(&gb) < 2)
                 return bytestream2_tell(&gb);
-            ps[0] = bytestream2_get_byteu(&gb);
-            ps[1] = bytestream2_get_byteu(&gb);
-            for (j = 0; j < l; j++) {
-                *pd++ = ps[0];
-                *pd++ = ps[1];
+            run_val = bytestream2_get_ne16(&gb);
+            for (i = 0; i < l; i++) {
+                AV_WN16(pd, run_val);
+                pd += 2;
             }
+            l *= 2;
         }
-        i += l;
-    } while (i < src_count);
+        used += l;
+    } while (used < src_count);
 
     return bytestream2_tell(&gb);
 }
@@ -335,13 +334,18 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 len = bytestream2_get_byte(&gb);
                 if (len & 0x80) {
                     len = (len & 0x7F) + 1;
-                    if (bytestream2_get_byte(&gb) == 0xFF)
+                    if (bytestream2_peek_byte(&gb) == 0xFF) {
+                        int slen = len;
+                        bytestream2_get_byte(&gb);
                         len = rle_unpack(gb.buffer, &dp[ofs],
                                          len, bytestream2_get_bytes_left(&gb),
                                          frame_width - ofs);
-                    else
+                        ofs += slen;
+                        bytestream2_skip(&gb, len);
+                    } else {
                         bytestream2_get_buffer(&gb, &dp[ofs], len);
-                    bytestream2_skip(&gb, len);
+                        ofs += len;
+                    }
                 } else {
                     /* interframe pixel copy */
                     if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
