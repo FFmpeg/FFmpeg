@@ -44,6 +44,7 @@
 #include "flac.h"
 #include "flacdata.h"
 #include "flacdsp.h"
+#include "thread.h"
 
 typedef struct FLACContext {
     FLACSTREAMINFO
@@ -489,6 +490,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame_ptr, AVPacket *avpkt)
 {
     AVFrame *frame     = data;
+    ThreadFrame tframe = { .f = data };
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     FLACContext *s = avctx->priv_data;
@@ -547,7 +549,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = s->blocksize;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
         return ret;
 
     s->dsp.decorrelate[s->ch_mode](frame->data, s->decoded, s->channels,
@@ -567,6 +569,14 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     return bytes_read;
 }
 
+static int init_thread_copy(AVCodecContext *avctx)
+{
+    FLACContext *s = avctx->priv_data;
+    s->decoded_buffer = NULL;
+    s->decoded_buffer_size = 0;
+    return allocate_buffers(s);
+}
+
 static av_cold int flac_decode_close(AVCodecContext *avctx)
 {
     FLACContext *s = avctx->priv_data;
@@ -584,7 +594,8 @@ AVCodec ff_flac_decoder = {
     .init           = flac_decode_init,
     .close          = flac_decode_close,
     .decode         = flac_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .init_thread_copy = init_thread_copy,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_S16P,
