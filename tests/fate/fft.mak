@@ -38,5 +38,22 @@ $(FATE_FFT_FIXED): libavcodec/fft-fixed-test$(EXESUF)
 $(FATE_FFT_FIXED): CMD = run libavcodec/fft-fixed-test $(CPUFLAGS:%=-c%) $(ARGS)
 $(FATE_FFT_FIXED): REF = /dev/null
 
-FATE-$(call ALLYES, AVCODEC FFT) += $(FATE_FFT) $(FATE_FFT_FIXED)
-fate-fft: $(FATE_FFT) $(FATE_FFT_FIXED)
+define DEF_FFT_FIXED32
+FATE_FFT_FIXED32 += fate-fft-fixed32-$(1)   fate-ifft-fixed32-$(1)  \
+                  fate-mdct-fixed32-$(1) fate-imdct-fixed32-$(1)
+
+fate-fft-fixed32-$(1):   ARGS = -n$(1)
+fate-ifft-fixed32-$(1):  ARGS = -n$(1) -i
+#fate-mdct-fixed32-$(1):  ARGS = -n$(1) -m
+fate-imdct-fixed32-$(1): ARGS = -n$(1) -m -i
+endef
+
+$(foreach N, 4 5 6 7 8 9 10 11 12, $(eval $(call DEF_FFT_FIXED32,$(N))))
+
+fate-fft-fixed32-test: $(FATE_FFT_FIXED32)
+$(FATE_FFT_FIXED32): libavcodec/fft-fixed32-test$(EXESUF)
+$(FATE_FFT_FIXED32): CMD = run libavcodec/fft-fixed32-test $(CPUFLAGS:%=-c%) $(ARGS)
+$(FATE_FFT_FIXED32): REF = /dev/null
+
+FATE-$(call ALLYES, AVCODEC FFT) += $(FATE_FFT) $(FATE_FFT_FIXED) $(FATE_FFT_FIXED32)
+fate-fft: $(FATE_FFT) $(FATE_FFT_FIXED) $(FATE_FFT_FIXED32)

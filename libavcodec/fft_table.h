@@ -26,7 +26,9 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Author:  Stanislav Ocovaj (socovaj@mips.com)
+ * Authors:  Stanislav Ocovaj (socovaj@mips.com)
+ *           Goran Cordasic   (goran@mips.com)
+ *           Djordje Pesut    (djordje@mips.com)
  *
  * This file is part of FFmpeg.
  *
@@ -47,17 +49,18 @@
 
 /**
  * @file
- * definitions and LUT table for MIPS FFT
+ * definitions and tables for FFT
  */
-#ifndef AVCODEC_MIPS_FFT_TABLE_H
-#define AVCODEC_MIPS_FFT_TABLE_H
+#ifndef AVCODEC_FFT_TABLE_H
+#define AVCODEC_FFT_TABLE_H
 
 #include "libavcodec/fft.h"
 
 #define MAX_LOG2_NFFT 16 //!< Specifies maxiumum allowed fft size
 #define MAX_FFT_SIZE (1 << MAX_LOG2_NFFT)
 
+extern int32_t w_tab_sr[];
 extern uint16_t fft_offsets_lut[];
 void ff_fft_lut_init(uint16_t *table, int off, int size, int *index);
 
-#endif /* AVCODEC_MIPS_FFT_TABLE_H */
+#endif /* AVCODEC_FFT_TABLE_H */

@@ -49,7 +49,7 @@
  */
 #include "config.h"
 #include "libavcodec/fft.h"
-#include "fft_table.h"
+#include "libavcodec/fft_table.h"
 
 /**
  * FFT transform

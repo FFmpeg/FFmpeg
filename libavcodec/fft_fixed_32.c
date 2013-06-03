@@ -1,16 +1,3 @@
-MIPS optimizations info
-===============================================
-
-MIPS optimizations of codecs are targeting MIPS 74k family of
-CPUs. Some of these optimizations are relying more on properties of
-this architecture and some are relying less (and can be used on most
-MIPS architectures without degradation in performance).
-
-Along with FFMPEG copyright notice, there is MIPS copyright notice in
-all the files that are created by people from MIPS Technologies.
-
-Example of copyright notice:
-===============================================
 /*
  * Copyright (c) 2012
  *      MIPS Technologies, Inc., California.
@@ -39,37 +26,27 @@ Example of copyright notice:
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Author:  Author Name (author_name@@mips.com)
+ * Authors:  Stanislav Ocovaj (socovaj@mips.com)
+ *           Goran Cordasic   (goran@mips.com)
+ *           Djordje Pesut    (djordje@mips.com)
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-Files that have MIPS copyright notice in them:
-===============================================
-* libavutil/mips/
-      float_dsp_mips.c
-      libm_mips.h
-* libavcodec/
-      fft_fixed_32.c
-      fft_init_table.c
-      fft_table.h
-      mdct_fixed_32.c
-* libavcodec/mips/
-      aaccoder_mips.c
-      aacpsy_mips.h
-      ac3dsp_mips.c
-      acelp_filters_mips.c
-      acelp_vectors_mips.c
-      amrwbdec_mips.c
-      amrwbdec_mips.h
-      celp_filters_mips.c
-      celp_math_mips.c
-      compute_antialias_fixed.h
-      compute_antialias_float.h
-      lsp_mips.h
-      dsputil_mips.c
-      fft_mips.c
-      fft_table.h
-      fft_init_table.c
-      fmtconvert_mips.c
-      iirfilter_mips.c
-      mpegaudiodsp_mips_fixed.c
-      mpegaudiodsp_mips_float.c
+#define CONFIG_FFT_FLOAT 0
+#define CONFIG_FFT_FIXED_32 1
+#include "fft.c"

@@ -26,6 +26,10 @@
 #define CONFIG_FFT_FLOAT 1
 #endif
 
+#ifndef CONFIG_FFT_FIXED_32
+#define CONFIG_FFT_FIXED_32 0
+#endif
+
 #include <stdint.h>
 #include "config.h"
 #include "libavutil/mem.h"
@@ -40,15 +44,26 @@ typedef float FFTDouble;
 
 #else
 
+#if CONFIG_FFT_FIXED_32
+
+#define Q31(x) (int)((x)*2147483648.0 + 0.5)
+#define FFT_NAME(x) x ## _fixed_32
+
+typedef int32_t FFTSample;
+
+#else /* CONFIG_FFT_FIXED_32 */
+
 #define FFT_NAME(x) x ## _fixed
 
 typedef int16_t FFTSample;
-typedef int     FFTDouble;
+
+#endif /* CONFIG_FFT_FIXED_32 */
 
 typedef struct FFTComplex {
-    int16_t re, im;
+    FFTSample re, im;
 } FFTComplex;
 
+typedef int    FFTDouble;
 typedef struct FFTContext FFTContext;
 
 #endif /* CONFIG_FFT_FLOAT */
