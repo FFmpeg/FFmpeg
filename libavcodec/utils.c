@@ -2075,7 +2075,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     if (!avctx->refcounted_frames)
         av_frame_unref(&avci->to_free);
 
-    if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
+    if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         uint8_t *side;
         int side_size;
         // copy to ensure we do not change avpkt
@@ -2084,11 +2084,15 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         apply_param_change(avctx, &tmp);
 
         avctx->pkt = &tmp;
-        ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
+        if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
+            ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
+        else {
+            ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
+            frame->pkt_dts = avpkt->dts;
+        }
         if (ret >= 0 && *got_frame_ptr) {
             add_metadata_from_side_data(avctx, frame);
             avctx->frame_number++;
-            frame->pkt_dts = avpkt->dts;
             av_frame_set_best_effort_timestamp(frame,
                                                guess_correct_pts(avctx,
                                                                  frame->pkt_pts,

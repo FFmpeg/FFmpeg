@@ -3179,7 +3179,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
  find_stream_info_err:
     for (i=0; i < ic->nb_streams; i++) {
         st = ic->streams[i];
-        if (ic->streams[i]->codec)
+        if (ic->streams[i]->codec && ic->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
             ic->streams[i]->codec->thread_count = 0;
         if (st->info)
             av_freep(&st->info->duration_error);

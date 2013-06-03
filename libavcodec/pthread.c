@@ -403,6 +403,11 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
 
         dst->hwaccel = src->hwaccel;
         dst->hwaccel_context = src->hwaccel_context;
+
+        dst->channels       = src->channels;
+        dst->sample_rate    = src->sample_rate;
+        dst->sample_fmt     = src->sample_fmt;
+        dst->channel_layout = src->channel_layout;
     }
 
     if (for_user) {
@@ -477,7 +482,8 @@ static void release_delayed_buffers(PerThreadContext *p)
         pthread_mutex_lock(&fctx->buffer_mutex);
 
         // fix extended data in case the caller screwed it up
-        av_assert0(p->avctx->codec_type == AVMEDIA_TYPE_VIDEO);
+        av_assert0(p->avctx->codec_type == AVMEDIA_TYPE_VIDEO ||
+                   p->avctx->codec_type == AVMEDIA_TYPE_AUDIO);
         f = &p->released_buffers[--p->num_released_buffers];
         f->extended_data = f->data;
         av_frame_unref(f);
