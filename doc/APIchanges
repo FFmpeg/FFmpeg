@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-06-xx - xxxxxxx - lavu 52.13.0 - mem.h
+  Add av_realloc_array and av_reallocp_array
+
 2013-05-xx - xxxxxxx - lavfi 3.10.0 - avfilter.h
   Add support for slice multithreading to lavfi. Filters supporting threading
   are marked with AVFILTER_FLAG_SLICE_THREADS.
