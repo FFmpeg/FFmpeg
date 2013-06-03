@@ -453,8 +453,10 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
         if (!zbuf)
             return AVERROR(ENOMEM);
         if (s->fill_order) {
-            if ((ret = deinvert_buffer(s, src, size)) < 0)
+            if ((ret = deinvert_buffer(s, src, size)) < 0) {
+                av_free(zbuf);
                 return ret;
+            }
             ssrc = src = s->deinvert_buf;
         }
         ret = tiff_uncompress(zbuf, &outlen, src, size);
