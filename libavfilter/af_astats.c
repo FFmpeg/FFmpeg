@@ -105,7 +105,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static inline void stat(AudioStatsContext *s, ChannelStats *p, double d)
+static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d)
 {
     if (d < p->min) {
         p->min = d;
@@ -157,7 +157,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             src = (const double *)buf->extended_data[c];
 
             for (i = 0; i < buf->nb_samples; i++, src++)
-                stat(s, p, *src);
+                update_stat(s, p, *src);
         }
         break;
     case AV_SAMPLE_FMT_DBL:
@@ -165,7 +165,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
         for (i = 0; i < buf->nb_samples; i++) {
             for (c = 0; c < channels; c++, src++)
-                stat(s, &s->chstats[c], *src);
+                update_stat(s, &s->chstats[c], *src);
         }
         break;
     }
