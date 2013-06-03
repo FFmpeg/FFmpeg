@@ -420,7 +420,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     return AVERROR(ENOMEM);
 
                 prec->cblk = av_malloc_array(prec->nb_codeblocks_width *
-                                             prec->nb_codeblocks_height,
+                                             (uint64_t)prec->nb_codeblocks_height,
                                              sizeof(*prec->cblk));
                 if (!prec->cblk)
                     return AVERROR(ENOMEM);
