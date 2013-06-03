@@ -64,7 +64,7 @@ static int tta_read_header(AVFormatContext *s)
     start_offset = avio_tell(s->pb);
     ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
     if (avio_rl32(s->pb) != AV_RL32("TTA1"))
-        return -1; // not tta file
+        return AVERROR_INVALIDDATA;
 
     avio_skip(s->pb, 2); // FIXME: flags
     channels = avio_rl16(s->pb);
@@ -72,7 +72,7 @@ static int tta_read_header(AVFormatContext *s)
     samplerate = avio_rl32(s->pb);
     if(samplerate <= 0 || samplerate > 1000000){
         av_log(s, AV_LOG_ERROR, "nonsense samplerate\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     datalen = avio_rl32(s->pb);
@@ -96,7 +96,7 @@ static int tta_read_header(AVFormatContext *s)
 
     if(c->totalframes >= UINT_MAX/sizeof(uint32_t) || c->totalframes <= 0){
         av_log(s, AV_LOG_ERROR, "totalframes %d invalid\n", c->totalframes);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     st = avformat_new_stream(s, NULL);
