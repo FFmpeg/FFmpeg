@@ -755,8 +755,11 @@ static int process_options(AVFilterContext *ctx, AVDictionary **options,
 
         if (av_opt_find(ctx, key, NULL, 0, 0)) {
             ret = av_opt_set(ctx, key, value, 0);
-            if (ret < 0)
+            if (ret < 0) {
+                av_free(value);
+                av_free(parsed_key);
                 return ret;
+            }
         } else {
         av_dict_set(options, key, value, 0);
         if ((ret = av_opt_set(ctx->priv, key, value, 0)) < 0) {
