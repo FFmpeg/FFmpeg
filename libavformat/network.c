@@ -220,7 +220,9 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
     int ret;
     int reuse = 1;
     struct pollfd lp = { fd, POLLIN, 0 };
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse))) {
+        av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_REUSEADDR) failed\n");
+    }
     ret = bind(fd, addr, addrlen);
     if (ret)
         return ff_neterrno();
