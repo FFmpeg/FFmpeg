@@ -364,7 +364,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 band->coord[1][j] = ff_jpeg2000_ceildiv(band->coord[1][j], dy);
 
             band->prec = av_malloc_array(reslevel->num_precincts_x *
-                                         reslevel->num_precincts_y,
+                                         (uint64_t)reslevel->num_precincts_y,
                                          sizeof(*band->prec));
             if (!band->prec)
                 return AVERROR(ENOMEM);
