@@ -111,6 +111,35 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
     *len = zstream.total_out;
     return zret == Z_STREAM_END ? Z_OK : zret;
 }
+
+static int tiff_unpack_zlib(TiffContext *s, uint8_t *dst, int stride,
+                            const uint8_t *src, int size,
+                            int width, int lines)
+{
+    uint8_t *zbuf;
+    unsigned long outlen;
+    int ret, line;
+    outlen = width * lines;
+    zbuf   = av_malloc(outlen);
+    if (!zbuf)
+        return AVERROR(ENOMEM);
+    ret = tiff_uncompress(zbuf, &outlen, src, size);
+    if (ret != Z_OK) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Uncompressing failed (%lu of %lu) with error %d\n", outlen,
+               (unsigned long)width * lines, ret);
+        av_free(zbuf);
+        return AVERROR_UNKNOWN;
+    }
+    src = zbuf;
+    for (line = 0; line < lines; line++) {
+        memcpy(dst, src, width);
+        dst += stride;
+        src += width;
+    }
+    av_free(zbuf);
+    return 0;
+}
 #endif
 
 static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
@@ -123,33 +152,16 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
-#if CONFIG_ZLIB
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE) {
-        uint8_t *zbuf;
-        unsigned long outlen;
-        int ret;
-        outlen = width * lines;
-        zbuf   = av_malloc(outlen);
-        if (!zbuf)
-            return AVERROR(ENOMEM);
-        ret = tiff_uncompress(zbuf, &outlen, src, size);
-        if (ret != Z_OK) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Uncompressing failed (%lu of %lu) with error %d\n", outlen,
-                   (unsigned long)width * lines, ret);
-            av_free(zbuf);
-            return AVERROR_UNKNOWN;
-        }
-        src = zbuf;
-        for (line = 0; line < lines; line++) {
-            memcpy(dst, src, width);
-            dst += stride;
-            src += width;
-        }
-        av_free(zbuf);
-        return 0;
-    }
+#if CONFIG_ZLIB
+        return tiff_unpack_zlib(s, dst, stride, src, size, width, lines);
+#else
+        av_log(s->avctx, AV_LOG_ERROR,
+               "zlib support not enabled, "
+               "deflate compression not supported\n");
+        return AVERROR(ENOSYS);
 #endif
+    }
     if (s->compr == TIFF_LZW) {
         if ((ret = ff_lzw_decode_init(s->lzw, 8, src, size, FF_LZW_TIFF)) < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Error initializing LZW decoder\n");
