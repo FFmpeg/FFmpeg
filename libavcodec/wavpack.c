@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "thread.h"
 #include "unary.h"
 #include "bytestream.h"
 
@@ -754,6 +755,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                                 AVFrame *frame, const uint8_t *buf, int buf_size)
 {
     WavpackContext *wc = avctx->priv_data;
+    ThreadFrame tframe = { .f = frame };
     WavpackFrameContext *s;
     GetByteContext gb;
     void *samples_l, *samples_r;
@@ -1120,7 +1122,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
 
         /* get output buffer */
         frame->nb_samples = s->samples + 1;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
             return ret;
         frame->nb_samples = s->samples;
     }
@@ -1236,6 +1238,6 @@ AVCodec ff_wavpack_decoder = {
     .close          = wavpack_decode_end,
     .decode         = wavpack_decode_frame,
     .flush          = wavpack_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
 };
