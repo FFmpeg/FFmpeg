@@ -278,8 +278,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 end:
     av_free_packet(&pkt);
     av_frame_free(&inpic);
-    if (ret < 0)
+    if (ret < 0) {
+        av_frame_free(&outpic);
         return ret;
+    }
     return ff_filter_frame(outlink, outpic);
 }
 
