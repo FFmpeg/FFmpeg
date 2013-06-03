@@ -1016,7 +1016,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
 
     av_frame_unref(p);
-    av_frame_ref(p, pict);
+    if ((ret = av_frame_ref(p, pict)) < 0)
+        return ret;
     p->pict_type = AV_PICTURE_TYPE_I;
 
     if (avctx->gop_size == 0 || f->picture_number % avctx->gop_size == 0) {
