@@ -24,22 +24,23 @@
  * @author Konstantin Shishkov
  */
 
-#include "avcodec.h"
-#include "bytestream.h"
 #include "config.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
-#include "lzw.h"
-#include "tiff.h"
-#include "tiff_data.h"
-#include "faxcompr.h"
-#include "internal.h"
-#include "mathops.h"
+
 #include "libavutil/attributes.h"
+#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/avstring.h"
+#include "avcodec.h"
+#include "bytestream.h"
+#include "faxcompr.h"
+#include "internal.h"
+#include "lzw.h"
+#include "mathops.h"
+#include "tiff.h"
+#include "tiff_data.h"
 
 typedef struct TiffContext {
     AVCodecContext *avctx;
@@ -90,10 +91,14 @@ static double tget_double(GetByteContext *gb, int le)
 static unsigned tget(GetByteContext *gb, int type, int le)
 {
     switch (type) {
-    case TIFF_BYTE : return bytestream2_get_byte(gb);
-    case TIFF_SHORT: return tget_short(gb, le);
-    case TIFF_LONG : return tget_long(gb, le);
-    default        : return UINT_MAX;
+    case TIFF_BYTE:
+        return bytestream2_get_byte(gb);
+    case TIFF_SHORT:
+        return tget_short(gb, le);
+    case TIFF_LONG:
+        return tget_long(gb, le);
+    default:
+        return UINT_MAX;
     }
 }
 
@@ -356,11 +361,11 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
     z_stream zstream = { 0 };
     int zret;
 
-    zstream.next_in = (uint8_t *)src;
-    zstream.avail_in = size;
-    zstream.next_out = dst;
+    zstream.next_in   = (uint8_t *)src;
+    zstream.avail_in  = size;
+    zstream.next_out  = dst;
     zstream.avail_out = *len;
-    zret = inflateInit(&zstream);
+    zret              = inflateInit(&zstream);
     if (zret != Z_OK) {
         av_log(NULL, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return zret;
@@ -430,7 +435,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
 {
     int c, line, pixels, code, ret;
     const uint8_t *ssrc = src;
-    int width = ((s->width * s->bpp) + 7) >> 3;
+    int width           = ((s->width * s->bpp) + 7) >> 3;
 
     if (s->planar)
         width /= s->bppcount;
@@ -444,7 +449,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
         unsigned long outlen;
         int ret;
         outlen = width * lines;
-        zbuf = av_malloc(outlen);
+        zbuf   = av_malloc(outlen);
         if (!zbuf)
             return AVERROR(ENOMEM);
         if (s->fill_order) {
@@ -462,7 +467,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
         }
         src = zbuf;
         for (line = 0; line < lines; line++) {
-            if(s->bpp < 8 && s->avctx->pix_fmt == AV_PIX_FMT_PAL8){
+            if(s->bpp < 8 && s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
                 horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
             }else{
                 memcpy(dst, src, width);
@@ -488,8 +493,9 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
             return ret;
         }
     }
-    if (s->compr == TIFF_CCITT_RLE || s->compr == TIFF_G3
-        || s->compr == TIFF_G4) {
+    if (s->compr == TIFF_CCITT_RLE ||
+        s->compr == TIFF_G3        ||
+        s->compr == TIFF_G4) {
         int i, ret = 0;
         uint8_t *src2 = av_malloc((unsigned)size +
                                   FF_INPUT_BUFFER_PADDING_SIZE);
@@ -567,7 +573,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                     }
                     horizontal_fill(s->bpp * (s->avctx->pix_fmt == AV_PIX_FMT_PAL8),
                                     dst, 1, src, 0, code, pixels);
-                    src += code;
+                    src    += code;
                     pixels += code;
                 } else if (code != -128) { // -127..-1
                     code = (-code) + 1;
@@ -706,11 +712,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             bytestream2_seek(&s->gb, off, SEEK_SET);
         }
     } else {
-        if (count <= 4 && type_sizes[type] * count <= 4) {
+        if (count <= 4 && type_sizes[type] * count <= 4)
             bytestream2_seek(&s->gb, -4, SEEK_CUR);
-        } else {
+        else
             bytestream2_seek(&s->gb, off, SEEK_SET);
-        }
     }
 
     switch (tag) {
@@ -765,7 +770,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         s->bppcount = value;
         break;
     case TIFF_COMPR:
-        s->compr = value;
+        s->compr     = value;
         s->predictor = 0;
         switch (s->compr) {
         case TIFF_RAW:
@@ -808,8 +813,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_STRIP_OFFS:
         if (count == 1) {
-            s->strippos = 0;
-            s->stripoff = value;
+            s->strippos  = 0;
+            s->stripoff  = value;
         } else
             s->strippos = off;
         s->strips = count;
@@ -825,8 +830,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case TIFF_STRIP_SIZE:
         if (count == 1) {
             s->stripsizesoff = 0;
-            s->stripsize = value;
-            s->strips = 1;
+            s->stripsize  = value;
+            s->strips     = 1;
         } else {
             s->stripsizesoff = off;
         }
@@ -1046,8 +1051,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *const p = data;
     unsigned off;
     int id, le, ret, plane, planes;
-    int i, j, entries;
-    int stride;
+    int i, j, entries, stride;
     unsigned soff, ssize;
     uint8_t *dst;
     GetByteContext stripsizes;
@@ -1055,10 +1059,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
-    //parse image header
+    // parse image header
     if (avpkt->size < 8)
         return AVERROR_INVALIDDATA;
-    id = bytestream2_get_le16u(&s->gb);
+    id   = bytestream2_get_le16u(&s->gb);
     if (id == 0x4949)
         le = 1;
     else if (id == 0x4D4D)
@@ -1067,11 +1071,11 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "TIFF header not found\n");
         return AVERROR_INVALIDDATA;
     }
-    s->le = le;
+    s->le         = le;
     // TIFF_BPP is not a required tag and defaults to 1
-    s->bppcount = s->bpp = 1;
-    s->invert = 0;
-    s->compr = TIFF_RAW;
+    s->bppcount   = s->bpp = 1;
+    s->invert     = 0;
+    s->compr      = TIFF_RAW;
     s->fill_order = 0;
     free_geotags(s);
 
@@ -1148,7 +1152,7 @@ static int decode_frame(AVCodecContext *avctx,
     planes = s->planar ? s->bppcount : 1;
     for (plane = 0; plane < planes; plane++) {
         stride = p->linesize[plane];
-        dst = p->data[plane];
+        dst    = p->data[plane];
     for (i = 0; i < s->height; i += s->rps) {
         if (s->stripsizesoff)
             ssize = tget(&stripsizes, s->sstype, s->le);
@@ -1170,8 +1174,8 @@ static int decode_frame(AVCodecContext *avctx,
         dst += s->rps * stride;
     }
     if (s->predictor == 2) {
-        dst = p->data[plane];
-        soff = s->bpp >> 3;
+        dst   = p->data[plane];
+        soff  = s->bpp >> 3;
         ssize = s->width * soff;
         if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
             s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE) {
@@ -1222,9 +1226,9 @@ static av_cold int tiff_init(AVCodecContext *avctx)
 {
     TiffContext *s = avctx->priv_data;
 
-    s->width = 0;
+    s->width  = 0;
     s->height = 0;
-    s->avctx = avctx;
+    s->avctx  = avctx;
     ff_lzw_decode_open(&s->lzw);
     ff_ccitt_unpack_init();
 
@@ -1244,6 +1248,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 
 AVCodec ff_tiff_decoder = {
     .name           = "tiff",
+    .long_name      = NULL_IF_CONFIG_SMALL("TIFF image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TIFF,
     .priv_data_size = sizeof(TiffContext),
@@ -1251,5 +1256,4 @@ AVCodec ff_tiff_decoder = {
     .close          = tiff_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("TIFF image"),
 };
