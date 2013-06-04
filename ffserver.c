@@ -3974,6 +3974,7 @@ static void load_module(const char *filename)
                 "%s: init function 'ffserver_module_init()' not found\n",
                 filename);
         dlclose(dll);
+        return;
     }
 
     init_func();
