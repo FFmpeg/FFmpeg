@@ -36,6 +36,12 @@
 #    define COEFF int
 #    define INTER int
 #    define RENAME(x) x ## _s16
+#elif defined(TEMPLATE_REMATRIX_S32)
+#    define R(x) (((x) + 16384)>>15)
+#    define SAMPLE int32_t
+#    define COEFF int
+#    define INTER int64_t
+#    define RENAME(x) x ## _s32
 #endif
 
 typedef void (RENAME(mix_any_func_type))(SAMPLE **out, const SAMPLE **in1, COEFF *coeffp, integer len);
