@@ -265,7 +265,7 @@ static int ftp_auth(FTPContext *s)
 
 static int ftp_passive_mode(FTPContext *s)
 {
-    char *res = NULL, *start, *end;
+    char *res = NULL, *start = NULL, *end = NULL;
     int i;
     const char *command = "PASV\r\n";
     const int pasv_codes[] = {227, 501, 0}; /* 501 is incorrect code */
@@ -273,8 +273,7 @@ static int ftp_passive_mode(FTPContext *s)
     if (ftp_send_command(s, command, pasv_codes, &res) != 227 || !res)
         goto fail;
 
-    start = NULL;
-    for (i = 0; i < strlen(res); ++i) {
+    for (i = 0; res[i]; ++i) {
         if (res[i] == '(') {
             start = res + i + 1;
         } else if (res[i] == ')') {
