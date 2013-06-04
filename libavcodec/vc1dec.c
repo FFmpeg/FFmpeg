@@ -1843,21 +1843,23 @@ static inline void vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
                 } else if (!field_b && b_valid) {
                     px = B[0];
                     py = B[1];
-                } else if (c_valid) {
+                } else /*if (c_valid)*/ {
+                    av_assert1(c_valid);
                     px = C[0];
                     py = C[1];
-                } else px = py = 0;
+                } /*else px = py = 0;*/
             } else {
                 if (field_a && a_valid) {
                     px = A[0];
                     py = A[1];
-                } else if (field_b && b_valid) {
+                } else /*if (field_b && b_valid)*/ {
+                    av_assert1(field_b && b_valid);
                     px = B[0];
                     py = B[1];
-                } else if (c_valid) {
+                } /*else if (c_valid) {
                     px = C[0];
                     py = C[1];
-                }
+                }*/
             }
         } else if (total_valid == 1) {
             px = (a_valid) ? A[0] : ((b_valid) ? B[0] : C[0]);
