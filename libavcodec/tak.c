@@ -72,22 +72,6 @@ static int tak_get_nb_samples(int sample_rate, enum TAKFrameSizeType type)
     return nb_samples;
 }
 
-static int crc_init = 0;
-#if CONFIG_SMALL
-#define CRC_TABLE_SIZE 257
-#else
-#define CRC_TABLE_SIZE 1024
-#endif
-static AVCRC crc_24[CRC_TABLE_SIZE];
-
-av_cold void ff_tak_init_crc(void)
-{
-    if (!crc_init) {
-        av_crc_init(crc_24, 0, 24, 0x864CFBU, sizeof(crc_24));
-        crc_init = 1;
-    }
-}
-
 int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size)
 {
     uint32_t crc, CRC;
@@ -97,7 +81,7 @@ int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size)
     buf_size -= 3;
 
     CRC = AV_RB24(buf + buf_size);
-    crc = av_crc(crc_24, 0xCE04B7U, buf, buf_size);
+    crc = av_crc(av_crc_get_table(AV_CRC_24_IEEE), 0xCE04B7U, buf, buf_size);
     if (CRC != crc)
         return AVERROR_INVALIDDATA;
 

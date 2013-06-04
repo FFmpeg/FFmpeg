@@ -140,8 +140,6 @@ typedef struct TAKStreamInfo {
     int64_t           samples;
 } TAKStreamInfo;
 
-void ff_tak_init_crc(void);
-
 int ff_tak_check_crc(const uint8_t *buf, unsigned int buf_size);
 
 /**
