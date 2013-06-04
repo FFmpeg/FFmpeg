@@ -821,7 +821,7 @@ static int decode_frame(AVCodecContext *avctx,
 
      /* handle p-frames only if a predecessor frame is available */
      if (s->prev->data[0]) {
-         if (   !(avpkt->flags & AV_PKT_FLAG_KEY)
+         if (   !(avpkt->flags & AV_PKT_FLAG_KEY) && avctx->codec_tag != AV_RL32("MPNG")
             && s->prev->width == p->width
             && s->prev->height== p->height
             && s->prev->format== p->format
