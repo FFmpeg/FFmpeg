@@ -19,8 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/crc.h"
 #include "libavcodec/tak.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "rawdec.h"
 #include "apetag.h"
@@ -35,6 +37,12 @@ static int tak_probe(AVProbeData *p)
     if (!memcmp(p->buf, "tBaK", 4))
         return AVPROBE_SCORE_EXTENSION;
     return 0;
+}
+
+static unsigned long tak_check_crc(unsigned long checksum, const uint8_t *buf,
+                                   unsigned int len)
+{
+    return av_crc(av_crc_get_table(AV_CRC_24_IEEE), checksum, buf, len);
 }
 
 static int tak_read_header(AVFormatContext *s)
@@ -71,16 +79,27 @@ static int tak_read_header(AVFormatContext *s)
         case TAK_METADATA_STREAMINFO:
         case TAK_METADATA_LAST_FRAME:
         case TAK_METADATA_ENCODER:
-            buffer = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (size <= 3)
+                return AVERROR_INVALIDDATA;
+
+            buffer = av_malloc(size - 3 + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer)
                 return AVERROR(ENOMEM);
 
-            if (avio_read(pb, buffer, size) != size) {
+            ffio_init_checksum(pb, tak_check_crc, 0xCE04B7U);
+            if (avio_read(pb, buffer, size - 3) != size - 3) {
                 av_freep(&buffer);
                 return AVERROR(EIO);
             }
+            if (ffio_get_checksum(s->pb) != avio_rb24(pb)) {
+                av_log(s, AV_LOG_ERROR, "%d metadata block CRC error.\n", type);
+                if (s->error_recognition & AV_EF_EXPLODE) {
+                    av_freep(&buffer);
+                    return AVERROR_INVALIDDATA;
+                }
+            }
 
-            init_get_bits(&gb, buffer, size * 8);
+            init_get_bits(&gb, buffer, (size - 3) * 8);
             break;
         case TAK_METADATA_MD5: {
             uint8_t md5[16];
@@ -88,8 +107,14 @@ static int tak_read_header(AVFormatContext *s)
 
             if (size != 19)
                 return AVERROR_INVALIDDATA;
+            ffio_init_checksum(pb, tak_check_crc, 0xCE04B7U);
             avio_read(pb, md5, 16);
-            avio_skip(pb, 3);
+            if (ffio_get_checksum(s->pb) != avio_rb24(pb)) {
+                av_log(s, AV_LOG_ERROR, "MD5 metadata block CRC error.\n");
+                if (s->error_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
+            }
+
             av_log(s, AV_LOG_VERBOSE, "MD5=");
             for (i = 0; i < 16; i++)
                 av_log(s, AV_LOG_VERBOSE, "%02x", md5[i]);
@@ -127,7 +152,7 @@ static int tak_read_header(AVFormatContext *s)
             st->start_time                   = 0;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             st->codec->extradata             = buffer;
-            st->codec->extradata_size        = size;
+            st->codec->extradata_size        = size - 3;
             buffer                           = NULL;
         } else if (type == TAK_METADATA_LAST_FRAME) {
             if (size != 11)
@@ -155,7 +180,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
         AVIOContext *pb = s->pb;
         int64_t size, left;
 
-        left = tc->data_end - avio_tell(s->pb);
+        left = tc->data_end - avio_tell(pb);
         size = FFMIN(left, 1024);
         if (size <= 0)
             return AVERROR_EOF;
