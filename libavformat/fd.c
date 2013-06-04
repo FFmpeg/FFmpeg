@@ -53,7 +53,11 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence) {
 		int ret = fstat(fd, &st);
 		return ret < 0 ? AVERROR(errno) : st.st_size;
 	}
+#ifdef VPLAYER_IOS
+	return lseek(fd, pos, whence);
+#else
 	return lseek64(fd, pos, whence);
+#endif
 }
 
 

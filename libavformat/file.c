@@ -154,7 +154,11 @@ static int64_t file_seek(URLContext *h, int64_t pos, int whence)
         return ret < 0 ? AVERROR(errno) : (S_ISFIFO(st.st_mode) ? 0 : st.st_size);
     }
 
+#ifdef VPLAYER_IOS
+    ret = lseek(c->fd, pos, whence);
+#else
     ret = lseek64(c->fd, pos, whence);
+#endif
 
     return ret < 0 ? AVERROR(errno) : ret;
 }
