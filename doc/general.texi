@@ -324,7 +324,7 @@ library:
 @item raw Shorten               @tab   @tab X
 @item raw TAK                   @tab   @tab X
 @item raw TrueHD                @tab X @tab X
-@item raw VC-1                  @tab   @tab X
+@item raw VC-1                  @tab X @tab X
 @item raw PCM A-law             @tab X @tab X
 @item raw PCM mu-law            @tab X @tab X
 @item raw PCM signed 8 bit      @tab X @tab X
