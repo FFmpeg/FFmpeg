@@ -461,20 +461,42 @@ enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
  * callback functions used to interact with the filter.
  */
 typedef struct AVFilter {
-    const char *name;         ///< filter name
+    /**
+     * Filter name. Must be non-NULL and unique among filters.
+     */
+    const char *name;
 
     /**
-     * A description for the filter. You should use the
-     * NULL_IF_CONFIG_SMALL() macro to define it.
+     * A description of the filter. May be NULL.
+     *
+     * You should use the NULL_IF_CONFIG_SMALL() macro to define it.
      */
     const char *description;
 
-    const AVFilterPad *inputs;  ///< NULL terminated list of inputs. NULL if none
-    const AVFilterPad *outputs; ///< NULL terminated list of outputs. NULL if none
+    /**
+     * List of inputs, terminated by a zeroed element.
+     *
+     * NULL if there are no (static) inputs. Instances of filters with
+     * AVFILTER_FLAG_DYNAMIC_INPUTS set may have more inputs than present in
+     * this list.
+     */
+    const AVFilterPad *inputs;
+    /**
+     * List of outputs, terminated by a zeroed element.
+     *
+     * NULL if there are no (static) outputs. Instances of filters with
+     * AVFILTER_FLAG_DYNAMIC_OUTPUTS set may have more outputs than present in
+     * this list.
+     */
+    const AVFilterPad *outputs;
 
     /**
-     * A class for the private data, used to access filter private
-     * AVOptions.
+     * A class for the private data, used to declare filter private AVOptions.
+     * This field is NULL for filters that do not declare any options.
+     *
+     * If this field is non-NULL, the first member of the filter private data
+     * must be a pointer to AVClass, which will be set by libavfilter generic
+     * code to this class.
      */
     const AVClass *priv_class;
 
@@ -492,29 +514,71 @@ typedef struct AVFilter {
      */
 
     /**
-     * Filter initialization function. Called when all the options have been
-     * set.
+     * Filter initialization function.
+     *
+     * This callback will be called only once during the filter lifetime, after
+     * all the options have been set, but before links between filters are
+     * established and format negotiation is done.
+     *
+     * Basic filter initialization should be done here. Filters with dynamic
+     * inputs and/or outputs should create those inputs/outputs here based on
+     * provided options. No more changes to this filter's inputs/outputs can be
+     * done after this callback.
+     *
+     * This callback must not assume that the filter links exist or frame
+     * parameters are known.
+     *
+     * @ref AVFilter.uninit "uninit" is guaranteed to be called even if
+     * initialization fails, so this callback does not have to clean up on
+     * failure.
+     *
+     * @return 0 on success, a negative AVERROR on failure
      */
     int (*init)(AVFilterContext *ctx);
 
     /**
-     * Should be set instead of init by the filters that want to pass a
-     * dictionary of AVOptions to nested contexts that are allocated in
-     * init.
+     * Should be set instead of @ref AVFilter.init "init" by the filters that
+     * want to pass a dictionary of AVOptions to nested contexts that are
+     * allocated during init.
+     *
+     * On return, the options dict should be freed and replaced with one that
+     * contains all the options which could not be processed by this filter (or
+     * with NULL if all the options were processed).
+     *
+     * Otherwise the semantics is the same as for @ref AVFilter.init "init".
      */
     int (*init_dict)(AVFilterContext *ctx, AVDictionary **options);
 
     /**
-     * Filter uninitialization function. Should deallocate any memory held
-     * by the filter, release any buffer references, etc. This does not need
-     * to deallocate the AVFilterContext->priv memory itself.
+     * Filter uninitialization function.
+     *
+     * Called only once right before the filter is freed. Should deallocate any
+     * memory held by the filter, release any buffer references, etc. It does
+     * not need to deallocate the AVFilterContext.priv memory itself.
+     *
+     * This callback may be called even if @ref AVFilter.init "init" was not
+     * called or failed, so it must be prepared to handle such a situation.
      */
     void (*uninit)(AVFilterContext *ctx);
 
     /**
-     * Queries formats/layouts supported by the filter and its pads, and sets
-     * the in_formats/in_chlayouts for links connected to its output pads,
-     * and out_formats/out_chlayouts for links connected to its input pads.
+     * Query formats supported by the filter on its inputs and outputs.
+     *
+     * This callback is called after the filter is initialized (so the inputs
+     * and outputs are fixed), shortly before the format negotiation. This
+     * callback may be called more than once.
+     *
+     * This callback must set AVFilterLink.out_formats on every input link and
+     * AVFilterLink.in_formats on every output link to a list of pixel/sample
+     * formats that the filter supports on that link. For audio links, this
+     * filter must also set @ref AVFilterLink.in_samplerates "in_samplerates" /
+     * @ref AVFilterLink.out_samplerates "out_samplerates" and
+     * @ref AVFilterLink.in_channel_layouts "in_channel_layouts" /
+     * @ref AVFilterLink.out_channel_layouts "out_channel_layouts" analogously.
+     *
+     * This callback may be NULL for filters with one input, in which case
+     * libavfilter assumes that it supports all input formats and preserves
+     * them on output.
      *
      * @return zero on success, a negative value corresponding to an
      * AVERROR code otherwise
@@ -523,6 +587,10 @@ typedef struct AVFilter {
 
     int priv_size;      ///< size of private data to allocate for the filter
 
+    /**
+     * Used by the filter registration system. Must not be touched by any other
+     * code.
+     */
     struct AVFilter *next;
 
     /**
