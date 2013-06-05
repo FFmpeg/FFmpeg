@@ -454,7 +454,7 @@ static void exit_program(void)
     /* close files */
     for (i = 0; i < nb_output_files; i++) {
         AVFormatContext *s = output_files[i]->ctx;
-        if (s && !(s->oformat->flags & AVFMT_NOFILE) && s->pb)
+        if (s && s->oformat && !(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_close(s->pb);
         avformat_free_context(s);
         av_dict_free(&output_files[i]->opts);
