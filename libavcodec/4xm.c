@@ -395,6 +395,16 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length)
     const int stride =             f->current_picture.linesize[0] >> 1;
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra,
                  bytestream_offset, wordstream_offset;
+    int ret;
+
+    if (!f->last_picture.data[0]) {
+        if ((ret = ff_get_buffer(f->avctx, &f->last_picture)) < 0) {
+            av_log(f->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
+        }
+        memset(f->last_picture.data[0], 0,
+               f->avctx->height * FFABS(f->last_picture.linesize[0]));
+    }
 
     if (f->version > 1) {
         extra           = 20;
@@ -852,14 +862,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         if (decode_i_frame(f, buf, frame_size) < 0)
             return -1;
     } else if (frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")) {
-        if (!f->last_picture.data[0]) {
-            f->last_picture.reference = 1;
-            if (ff_get_buffer(avctx, &f->last_picture) < 0) {
-                av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-                return -1;
-            }
-            memset(f->last_picture.data[0], 0, avctx->height * FFABS(f->last_picture.linesize[0]));
-        }
 
         p->pict_type = AV_PICTURE_TYPE_P;
         if (decode_p_frame(f, buf, frame_size) < 0)
