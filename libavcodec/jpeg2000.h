@@ -128,8 +128,8 @@ typedef struct Jpeg2000TgtNode {
 } Jpeg2000TgtNode;
 
 typedef struct Jpeg2000CodingStyle {
-    uint8_t nreslevels;       // number of resolution levels
-    uint8_t nreslevels2decode; // number of resolution levels to decode
+    int nreslevels;           // number of resolution levels
+    int nreslevels2decode;    // number of resolution levels to decode
     uint8_t log2_cblk_width,
             log2_cblk_height; // exponent of codeblock size
     uint8_t transform;        // DWT type
