@@ -62,6 +62,8 @@ version <next>:
 - vignette filter
 - True Audio (TTA) encoder
 - Go2Webinar decoder
+- mcdeint filter ported from libmpcodecs
+- sab filter ported from libmpcodecs
 
 
 version 1.2:
