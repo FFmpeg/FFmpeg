@@ -26,6 +26,7 @@
 
 #include "avformat.h"
 
+#define MOV_FRAG_INFO_ALLOC_INCREMENT 64
 #define MOV_INDEX_CLUSTER_SIZE 1024
 #define MOV_TIMESCALE 1000
 
@@ -130,6 +131,7 @@ typedef struct MOVTrack {
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
+    unsigned    frag_info_capacity;
 
     struct {
         int64_t struct_offset;
