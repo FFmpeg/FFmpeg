@@ -116,7 +116,7 @@ static int ape_tag_read_field(AVFormatContext *s)
 int64_t ff_ape_parse_tag(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    int file_size = avio_size(pb);
+    int64_t file_size = avio_size(pb);
     uint32_t val, fields, tag_bytes;
     uint8_t buf[8];
     int64_t tag_start;
