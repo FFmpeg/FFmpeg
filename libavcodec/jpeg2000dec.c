@@ -310,7 +310,7 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
                    uint8_t *properties)
 {
     Jpeg2000CodingStyle tmp;
-    int compno;
+    int compno, ret;
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
@@ -323,7 +323,9 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     tmp.nlayers = bytestream2_get_be16u(&s->g);
     tmp.mct     = bytestream2_get_byteu(&s->g); // multiple component transformation
 
-    get_cox(s, &tmp);
+    if ((ret = get_cox(s, &tmp)) < 0)
+        return ret;
+
     for (compno = 0; compno < s->ncomponents; compno++)
         if (!(properties[compno] & HAD_COC))
             memcpy(c + compno, &tmp, sizeof(tmp));
@@ -335,7 +337,7 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
                    uint8_t *properties)
 {
-    int compno;
+    int compno, ret;
 
     if (bytestream2_get_bytes_left(&s->g) < 2)
         return AVERROR(EINVAL);
@@ -344,7 +346,9 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 
     c      += compno;
     c->csty = bytestream2_get_byteu(&s->g);
-    get_cox(s, c);
+
+    if ((ret = get_cox(s, c)) < 0)
+        return ret;
 
     properties[compno] |= HAD_COC;
     return 0;
