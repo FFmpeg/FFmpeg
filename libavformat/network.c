@@ -270,7 +270,6 @@ int ff_listen_connect(int fd, const struct sockaddr *addr,
                       socklen_t addrlen, int timeout, URLContext *h)
 {
     struct pollfd p = {fd, POLLOUT, 0};
-    int64_t wait_started;
     int ret;
     socklen_t optlen;
 
