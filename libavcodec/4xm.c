@@ -670,9 +670,9 @@ static int decode_i2_frame(FourXContext *f, AVFrame *frame, const uint8_t *buf, 
             color[1] = bytestream2_get_le16u(&g3);
 
             if (color[0] & 0x8000)
-                av_log(NULL, AV_LOG_ERROR, "unk bit 1\n");
+                av_log(f->avctx, AV_LOG_ERROR, "unk bit 1\n");
             if (color[1] & 0x8000)
-                av_log(NULL, AV_LOG_ERROR, "unk bit 2\n");
+                av_log(f->avctx, AV_LOG_ERROR, "unk bit 2\n");
 
             color[2] = mix(color[0], color[1]);
             color[3] = mix(color[1], color[0]);
