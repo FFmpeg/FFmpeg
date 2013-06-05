@@ -115,13 +115,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     if (s->listen) {
         if ((fd = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                 s->listen_timeout)) < 0) {
+                                 s->listen_timeout, h)) < 0) {
             ret = fd;
             goto fail1;
         }
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                     h->rw_timeout, h)) < 0) {
+                                     h->rw_timeout / 1000, h)) < 0) {
 
             if (ret == AVERROR_EXIT)
                 goto fail1;
