@@ -651,7 +651,8 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if(s->resample_first ? !s->rematrix : !s->resample)
         preout= midbuf;
 
-    if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar){
+    if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar
+       && !(s->out_sample_fmt==AV_SAMPLE_FMT_S32P && (s->dither.output_sample_bits&31))){
         if(preout==in){
             out_count= FFMIN(out_count, in_count); //TODO check at the end if this is needed or redundant
             av_assert0(s->in.planar); //we only support planar internally so it has to be, we support copying non planar though
