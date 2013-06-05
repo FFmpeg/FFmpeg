@@ -3208,10 +3208,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         memcpy(trk->vos_data, pkt->data, size);
     }
 
-    if (!(trk->entry % MOV_INDEX_CLUSTER_SIZE)) {
-        trk->cluster = av_realloc_f(trk->cluster, sizeof(*trk->cluster), (trk->entry + MOV_INDEX_CLUSTER_SIZE));
-        if (!trk->cluster)
-            return -1;
+    if (trk->entry >= trk->cluster_capacity) {
+        unsigned new_capacity = trk->entry + MOV_INDEX_CLUSTER_SIZE;
+        if (av_reallocp_array(&trk->cluster, new_capacity,
+                              sizeof(*trk->cluster)))
+            return AVERROR(ENOMEM);
+        trk->cluster_capacity = new_capacity;
     }
 
     trk->cluster[trk->entry].pos = avio_tell(pb) - size;

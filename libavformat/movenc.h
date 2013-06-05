@@ -102,6 +102,7 @@ typedef struct MOVTrack {
     int         vos_len;
     uint8_t     *vos_data;
     MOVIentry   *cluster;
+    unsigned    cluster_capacity;
     int         audio_vbr;
     int         height; ///< active picture (w/o VBI) height for D-10/IMX
     uint32_t    tref_tag;
