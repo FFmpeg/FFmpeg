@@ -894,6 +894,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                 break;
             case AV_PKT_DATA_PARAM_CHANGE:
                 flags = bytestream_get_le32(&data);
+#if FF_API_OLD_CHANNEL_LAYOUT
                 if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
                     put_str(dyn_bc, "Channels");
                     put_s(dyn_bc, bytestream_get_le32(&data));
@@ -907,6 +908,7 @@ static int write_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int
                     avio_write(dyn_bc, data, 8); data+=8;
                     sm_data_count++;
                 }
+#endif
                 if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
                     put_str(dyn_bc, "SampleRate");
                     put_s(dyn_bc, bytestream_get_le32(&data));

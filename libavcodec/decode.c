@@ -91,6 +91,8 @@ static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
     flags = bytestream_get_le32(&data);
     size -= 4;
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
         if (size < 4)
             goto fail;
@@ -109,6 +111,8 @@ static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
         avctx->channel_layout = bytestream_get_le64(&data);
         size -= 8;
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
         if (size < 4)
             goto fail;

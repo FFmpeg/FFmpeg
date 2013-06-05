@@ -164,8 +164,11 @@ static void dump_paramchange(void *ctx, const AVPacketSideData *sd)
 {
     int size = sd->size;
     const uint8_t *data = sd->data;
-    uint32_t flags, channels, sample_rate, width, height;
+    uint32_t flags, sample_rate, width, height;
+#if FF_API_OLD_CHANNEL_LAYOUT
+    uint32_t channels;
     uint64_t layout;
+#endif
 
     if (!data || sd->size < 4)
         goto fail;
@@ -174,6 +177,8 @@ static void dump_paramchange(void *ctx, const AVPacketSideData *sd)
     data += 4;
     size -= 4;
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
         if (size < 4)
             goto fail;
@@ -191,6 +196,8 @@ static void dump_paramchange(void *ctx, const AVPacketSideData *sd)
         av_log(ctx, AV_LOG_INFO,
                "channel layout: %s, ", av_get_channel_name(layout));
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif /* FF_API_OLD_CHANNEL_LAYOUT */
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
         if (size < 4)
             goto fail;

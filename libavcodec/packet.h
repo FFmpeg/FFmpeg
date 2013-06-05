@@ -447,8 +447,13 @@ typedef struct AVPacketList {
 #define AV_PKT_FLAG_DISPOSABLE 0x0010
 
 enum AVSideDataParamChangeFlags {
+#if FF_API_OLD_CHANNEL_LAYOUT
+    /**
+     * @deprecated those are not used by any decoder
+     */
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT  = 0x0001,
     AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT = 0x0002,
+#endif
     AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE    = 0x0004,
     AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS     = 0x0008,
 };
