@@ -389,11 +389,13 @@ static int decode_p_frame(FourXContext *f, AVFrame *frame,
     int x, y;
     const int width  = f->avctx->width;
     const int height = f->avctx->height;
-    uint16_t *src    = (uint16_t *)f->last_picture->data[0];
     uint16_t *dst    = (uint16_t *)frame->data[0];
     const int stride =             frame->linesize[0] >> 1;
+    uint16_t *src;
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra,
                  bytestream_offset, wordstream_offset;
+
+    src = (uint16_t *)f->last_picture->data[0];
 
     if (f->version > 1) {
         extra           = 20;
