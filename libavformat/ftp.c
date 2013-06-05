@@ -591,7 +591,7 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
 {
     FTPContext *s = h->priv_data;
     int err;
-    int64_t new_pos;
+    int64_t new_pos, fake_pos;
 
     av_dlog(h, "ftp protocol seek %"PRId64" %d\n", pos, whence);
 
@@ -617,13 +617,12 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EIO);
 
     new_pos = FFMAX(0, new_pos);
-    if (s->filesize >= 0)
-        new_pos = FFMIN(s->filesize, new_pos);
+    fake_pos = s->filesize != -1 ? FFMIN(new_pos, s->filesize) : new_pos;
 
-    if (new_pos != s->position) {
+    if (fake_pos != s->position) {
         if ((err = ftp_abort(h)) < 0)
             return err;
-        s->position = new_pos;
+        s->position = fake_pos;
     }
     return new_pos;
 }
@@ -652,8 +651,13 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
         if (read >= 0) {
             s->position += read;
             if (s->position >= s->filesize) {
-                if (ftp_abort(h) < 0)
+                /* server will terminate, but keep current position to avoid madness */
+                int64_t pos = s->position;
+                if (ftp_abort(h) < 0) {
+                    s->position = pos;
                     return AVERROR(EIO);
+                }
+                s->position = pos;
             }
         }
         if (read <= 0 && s->position < s->filesize && !h->is_streamed) {
