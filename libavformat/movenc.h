@@ -26,7 +26,7 @@
 
 #include "avformat.h"
 
-#define MOV_INDEX_CLUSTER_SIZE 16384
+#define MOV_INDEX_CLUSTER_SIZE 1024
 #define MOV_TIMESCALE 1000
 
 #define RTP_MAX_PACKET_SIZE 1450
