@@ -54,7 +54,7 @@ typedef struct Jpeg2000Tile {
     uint8_t             properties[4];
     Jpeg2000CodingStyle codsty[4];
     Jpeg2000QuantStyle  qntsty[4];
-    Jpeg2000TilePart    tile_part[3];
+    Jpeg2000TilePart    tile_part[4];
     uint16_t tp_idx;                    // Tile-part index
 } Jpeg2000Tile;
 
