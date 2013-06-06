@@ -574,7 +574,9 @@ static int init_thread_copy(AVCodecContext *avctx)
     FLACContext *s = avctx->priv_data;
     s->decoded_buffer = NULL;
     s->decoded_buffer_size = 0;
-    return allocate_buffers(s);
+    if (s->max_blocksize)
+        return allocate_buffers(s);
+    return 0;
 }
 
 static av_cold int flac_decode_close(AVCodecContext *avctx)
