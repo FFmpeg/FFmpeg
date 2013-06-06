@@ -1178,16 +1178,22 @@ static int decode_frame(AVCodecContext *avctx,
     if (s->predictor == 2) {
         dst   = p->data[plane];
         soff  = s->bpp >> 3;
+        if (s->planar)
+            soff  = FFMAX(soff / s->bppcount, 1);
         ssize = s->width * soff;
         if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48LE ||
-            s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE) {
+            s->avctx->pix_fmt == AV_PIX_FMT_RGBA64LE ||
+            s->avctx->pix_fmt == AV_PIX_FMT_GBRP16LE ||
+            s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16LE) {
             for (i = 0; i < s->height; i++) {
                 for (j = soff; j < ssize; j += 2)
                     AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
                 dst += stride;
             }
         } else if (s->avctx->pix_fmt == AV_PIX_FMT_RGB48BE ||
-                   s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE) {
+                   s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE ||
+                   s->avctx->pix_fmt == AV_PIX_FMT_GBRP16BE ||
+                   s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16BE) {
             for (i = 0; i < s->height; i++) {
                 for (j = soff; j < ssize; j += 2)
                     AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
