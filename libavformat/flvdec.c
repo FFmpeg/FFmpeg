@@ -653,7 +653,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     FLVContext *flv = s->priv_data;
     int ret, i, type, size, flags;
     int stream_type=-1;
-    int64_t next, pos;
+    int64_t next, pos, meta_pos;
     int64_t dts, pts = AV_NOPTS_VALUE;
     int av_uninit(channels);
     int av_uninit(sample_rate);
@@ -703,13 +703,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
             goto skip;
     } else if (type == FLV_TAG_TYPE_META) {
+        stream_type=FLV_STREAM_TYPE_DATA;
         if (size > 13+1+4 && dts == 0) { // Header-type metadata stuff
-            flv_read_metabody(s, next);
-            goto skip;
-        } else if (dts != 0) { // Script-data "special" metadata frames - don't skip
-            stream_type=FLV_STREAM_TYPE_DATA;
-        } else {
-            goto skip;
+            meta_pos = avio_tell(s->pb);
+            if (flv_read_metabody(s, next) == 0){
+                goto skip;
+            }
+            avio_seek(s->pb, meta_pos, SEEK_SET);
         }
     } else {
         av_log(s, AV_LOG_DEBUG, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
