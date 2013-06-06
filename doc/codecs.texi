@@ -259,7 +259,10 @@ strictly conform to all the things in the spec no matter what consequences
 @item unofficial
 allow unofficial extensions
 @item experimental
-allow non standardized experimental things
+allow non standardized experimental things, experimental
+(unfinished/work in progress/not well tested) decoders and encoders.
+Note: experimental decoders can pose a security risk, do not use this for
+decoding untrusted input.
 @end table
 
 @item b_qoffset @var{float} (@emph{encoding,video})
