@@ -11,7 +11,7 @@
 ./tests/data/images/dpx/%02d.dpx CRC=0xe5b9c023
 609920 ./tests/data/images/dpx/02.dpx
 b9f22728f8ff393bf30cf6cbd624fa95 *./tests/data/images/dpx/02.dpx
-./tests/data/images/dpx/%02d.dpx CRC=0xb6310a70
+./tests/data/images/dpx/%02d.dpx CRC=0xf38d5830
 407168 ./tests/data/images/dpx/02.dpx
 545603630f30dec2768c8ae8d12eb8ea *./tests/data/images/dpx/02.dpx
 ./tests/data/images/dpx/%02d.dpx CRC=0xe72ce131
