@@ -97,4 +97,5 @@ AVFilter avfilter_vf_framestep = {
     .priv_class = &framestep_class,
     .inputs    = framestep_inputs,
     .outputs   = framestep_outputs,
+    .flags       = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
