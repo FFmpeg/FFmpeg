@@ -64,6 +64,7 @@ version <next>:
 - Go2Webinar decoder
 - mcdeint filter ported from libmpcodecs
 - sab filter ported from libmpcodecs
+- ffprobe -show_chapters option
 
 
 version 1.2:
