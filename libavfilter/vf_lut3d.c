@@ -265,8 +265,8 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
             int i, j, k;
             const int size = strtol(line + 12, NULL, 0);
 
-            if (size > MAX_LEVEL) {
-                av_log(ctx, AV_LOG_ERROR, "Too large 3D LUT\n");
+            if (size < 2 || size > MAX_LEVEL) {
+                av_log(ctx, AV_LOG_ERROR, "Too large or invalid 3D LUT size\n");
                 return AVERROR(EINVAL);
             }
             lut3d->lutsize = size;
@@ -368,6 +368,12 @@ static int parse_m3d(AVFilterContext *ctx, FILE *f)
 
     if (in == -1 || out == -1) {
         av_log(ctx, AV_LOG_ERROR, "in and out must be defined\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (in < 2 || out < 2 ||
+        in  > MAX_LEVEL*MAX_LEVEL*MAX_LEVEL ||
+        out > MAX_LEVEL*MAX_LEVEL*MAX_LEVEL) {
+        av_log(ctx, AV_LOG_ERROR, "invalid in (%d) or out (%d)\n", in, out);
         return AVERROR_INVALIDDATA;
     }
     for (size = 1; size*size*size < in; size++);
