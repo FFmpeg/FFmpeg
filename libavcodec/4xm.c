@@ -837,6 +837,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 av_log(f->avctx, AV_LOG_ERROR, "cframe id mismatch %d %d\n",
                        id, avctx->frame_number);
 
+            if (f->version <= 1)
+                return AVERROR_INVALIDDATA;
+
             cfrm->size = cfrm->id = 0;
             frame_4cc  = AV_RL32("pfrm");
         } else
