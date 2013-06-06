@@ -617,7 +617,7 @@ static int init_image(TiffContext *s, AVFrame *frame)
     int i, ret;
     uint32_t *pal;
 
-    switch (s->bpp * 10 + s->bppcount) {
+    switch (s->planar * 1000 + s->bpp * 10 + s->bppcount) {
     case 11:
         if (!s->palette_is_set) {
             s->avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
@@ -629,24 +629,34 @@ static int init_image(TiffContext *s, AVFrame *frame)
         s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
     case 243:
-        s->avctx->pix_fmt = s->planar ? AV_PIX_FMT_GBRP : AV_PIX_FMT_RGB24;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
         break;
     case 161:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GRAY16LE : AV_PIX_FMT_GRAY16BE;
         break;
     case 162:
-        s->avctx->pix_fmt = s->planar ? AV_PIX_FMT_NONE : AV_PIX_FMT_GRAY8A;
+        s->avctx->pix_fmt = AV_PIX_FMT_GRAY8A;
         break;
     case 324:
-        s->avctx->pix_fmt = s->planar ? AV_PIX_FMT_GBRAP : AV_PIX_FMT_RGBA;
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case 483:
-        s->avctx->pix_fmt = s->planar ? (s->le ? AV_PIX_FMT_GBRP16LE : AV_PIX_FMT_GBRP16BE) :
-                                        (s->le ? AV_PIX_FMT_RGB48LE  : AV_PIX_FMT_RGB48BE);
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGB48LE  : AV_PIX_FMT_RGB48BE;
         break;
     case 644:
-        s->avctx->pix_fmt = s->planar ? (s->le ? AV_PIX_FMT_GBRAP16LE : AV_PIX_FMT_GBRAP16BE) :
-                                        (s->le ? AV_PIX_FMT_RGBA64LE  : AV_PIX_FMT_RGBA64BE);
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGBA64LE  : AV_PIX_FMT_RGBA64BE;
+        break;
+    case 1243:
+        s->avctx->pix_fmt = AV_PIX_FMT_GBRP;
+        break;
+    case 1324:
+        s->avctx->pix_fmt = AV_PIX_FMT_GBRAP;
+        break;
+    case 1483:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRP16LE : AV_PIX_FMT_GBRP16BE;
+        break;
+    case 1644:
+        s->avctx->pix_fmt = s->le ? AV_PIX_FMT_GBRAP16LE : AV_PIX_FMT_GBRAP16BE;
         break;
     default:
         av_log(s->avctx, AV_LOG_ERROR,
