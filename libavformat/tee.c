@@ -1,5 +1,5 @@
 /*
- * Tee pesudo-muxer
+ * Tee pseudo-muxer
  * Copyright (c) 2012 Nicolas George
  *
  * This file is part of FFmpeg.
