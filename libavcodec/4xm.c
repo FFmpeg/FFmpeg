@@ -329,7 +329,7 @@ static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w,
         }
         break;
     default:
-        assert(0);
+        break;
     }
 }
 
@@ -345,7 +345,7 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
     uint16_t *end   = start + stride * (f->avctx->height - h + 1) - (1 << log2w);
     int ret;
 
-    if (code < 0 || code > 6)
+    if (code < 0 || code > 6 || log2w < 0)
         return AVERROR_INVALIDDATA;
 
     if (code == 0) {
