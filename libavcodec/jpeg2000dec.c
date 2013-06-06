@@ -425,6 +425,11 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
         return AVERROR(EINVAL);
 
     compno              = bytestream2_get_byteu(&s->g);
+    if (compno >= s->ncomponents) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid compno\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     properties[compno] |= HAD_QCC;
     return get_qcx(s, n - 1, q + compno);
 }
