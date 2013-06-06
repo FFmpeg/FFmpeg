@@ -179,24 +179,17 @@ static int string_is_ascii(const uint8_t *str)
 int ff_ape_write_tag(AVFormatContext *s)
 {
     AVDictionaryEntry *e = NULL;
-    int64_t start, end;
-    int size, count = 0;
+    int size, ret, count = 0;
+    AVIOContext *dyn_bc = NULL;
+    uint8_t *dyn_buf = NULL;
 
-    if (!s->pb->seekable)
-        return 0;
-
-    start = avio_tell(s->pb);
-
-    // header
-    avio_write(s->pb, "APETAGEX", 8);   // id
-    avio_wl32 (s->pb, APE_TAG_VERSION); // version
-    avio_wl32(s->pb, 0);                // reserve space for size
-    avio_wl32(s->pb, 0);                // reserve space for tag count
+    if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
+        goto end;
 
     // flags
-    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER |
+    avio_wl32(dyn_bc, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER |
                      APE_TAG_FLAG_IS_HEADER);
-    ffio_fill(s->pb, 0, 8);             // reserved
+    ffio_fill(dyn_bc, 0, 8);             // reserved
 
     while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
         int val_len;
@@ -207,18 +200,31 @@ int ff_ape_write_tag(AVFormatContext *s)
         }
 
         val_len = strlen(e->value);
-        avio_wl32(s->pb, val_len);            // value length
-        avio_wl32(s->pb, 0);                  // item flags
-        avio_put_str(s->pb, e->key);          // key
-        avio_write(s->pb, e->value, val_len); // value
+        avio_wl32(dyn_bc, val_len);            // value length
+        avio_wl32(dyn_bc, 0);                  // item flags
+        avio_put_str(dyn_bc, e->key);          // key
+        avio_write(dyn_bc, e->value, val_len); // value
         count++;
     }
+    if (!count)
+        goto end;
 
-    size = avio_tell(s->pb) - start;
+    size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    if (size <= 0)
+        goto end;
+    size += 20;
+
+    // header
+    avio_write(s->pb, "APETAGEX", 8);   // id
+    avio_wl32(s->pb, APE_TAG_VERSION);  // version
+    avio_wl32(s->pb, size);
+    avio_wl32(s->pb, count);
+
+    avio_write(s->pb, dyn_buf, size - 20);
 
     // footer
     avio_write(s->pb, "APETAGEX", 8);   // id
-    avio_wl32 (s->pb, APE_TAG_VERSION); // version
+    avio_wl32(s->pb, APE_TAG_VERSION);  // version
     avio_wl32(s->pb, size);             // size
     avio_wl32(s->pb, count);            // tag count
 
@@ -226,12 +232,10 @@ int ff_ape_write_tag(AVFormatContext *s)
     avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER);
     ffio_fill(s->pb, 0, 8);             // reserved
 
-    // update values in the header
-    end = avio_tell(s->pb);
-    avio_seek(s->pb, start + 12, SEEK_SET);
-    avio_wl32(s->pb, size);
-    avio_wl32(s->pb, count);
-    avio_seek(s->pb, end, SEEK_SET);
+end:
+    if (dyn_bc && !dyn_buf)
+        avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    av_freep(&dyn_buf);
 
-    return 0;
+    return ret;
 }
