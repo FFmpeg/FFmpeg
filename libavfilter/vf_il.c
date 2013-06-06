@@ -209,4 +209,5 @@ AVFilter avfilter_vf_il = {
     .inputs        = inputs,
     .outputs       = outputs,
     .priv_class    = &il_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
