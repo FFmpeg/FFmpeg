@@ -962,8 +962,8 @@ AVCodec ff_ffv1_decoder = {
     .init           = decode_init,
     .close          = ffv1_close,
     .decode         = decode_frame,
-    .init_thread_copy = init_thread_copy,
-    .update_thread_context = update_thread_context,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/ |
                       CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),

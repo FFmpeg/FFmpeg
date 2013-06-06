@@ -632,7 +632,7 @@ AVCodec ff_alac_decoder = {
     .init           = alac_decode_init,
     .close          = alac_decode_close,
     .decode         = alac_decode_frame,
-    .init_thread_copy = init_thread_copy,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };
