@@ -1208,9 +1208,16 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         oldpos = bytestream2_tell(&s->g);
 
         if (marker == JPEG2000_SOD) {
-            Jpeg2000Tile *tile = s->tile + s->curtileno;
-            Jpeg2000TilePart *tp = tile->tile_part + tile->tp_idx;
+            Jpeg2000Tile *tile;
+            Jpeg2000TilePart *tp;
 
+            if (s->curtileno < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "Missing SOT\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            tile = s->tile + s->curtileno;
+            tp = tile->tile_part + tile->tp_idx;
             bytestream2_init(&tp->tpg, s->g.buffer, tp->tp_end - s->g.buffer);
             bytestream2_skip(&s->g, tp->tp_end - s->g.buffer);
 
