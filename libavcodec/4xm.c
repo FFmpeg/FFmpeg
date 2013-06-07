@@ -535,7 +535,10 @@ static int decode_i_mb(FourXContext *f){
     return 0;
 }
 
-static const uint8_t *read_huffman_tables(FourXContext *f, const uint8_t * const buf){
+static const uint8_t *read_huffman_tables(FourXContext *f,
+                                          const uint8_t * const buf,
+                                          int len)
+{
     int frequency[512];
     uint8_t flag[512];
     int up[512];
@@ -553,11 +556,19 @@ static const uint8_t *read_huffman_tables(FourXContext *f, const uint8_t * const
     for(;;){
         int i;
 
+        len -= end - start + 1;
+
+        if (end < start || len < 0)
+            return NULL;
+
         for(i=start; i<=end; i++){
             frequency[i]= *ptr++;
         }
         start= *ptr++;
         if(start==0) break;
+
+        if (--len < 0)
+            return NULL;
 
         end= *ptr++;
     }
@@ -691,7 +702,7 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
         return -1;
     }
 
-    prestream = read_huffman_tables(f, prestream);
+    prestream = read_huffman_tables(f, prestream, prestream_size);
     if (!prestream) {
         av_log(f->avctx, AV_LOG_ERROR, "Error reading Huffman tables.\n");
         return AVERROR_INVALIDDATA;
