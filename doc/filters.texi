@@ -4571,7 +4571,7 @@ The filter accepts the following options:
 
 @table @option
 @item luma_mode, l
-@item chroma_mode, s
+@item chroma_mode, c
 @item alpha_mode, a
 Available values for @var{luma_mode}, @var{chroma_mode} and
 @var{alpha_mode} are:
