@@ -57,7 +57,7 @@ static int tta_read_header(AVFormatContext *s)
     AVStream *st;
     int i, channels, bps, samplerate;
     uint64_t framepos, start_offset;
-    uint32_t datalen, crc;
+    uint32_t nb_samples, crc;
 
     if (s->pb->seekable) {
         ff_ape_parse_tag(s);
@@ -80,9 +80,9 @@ static int tta_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    datalen = avio_rl32(s->pb);
-    if (!datalen) {
-        av_log(s, AV_LOG_ERROR, "invalid datalen\n");
+    nb_samples = avio_rl32(s->pb);
+    if (!nb_samples) {
+        av_log(s, AV_LOG_ERROR, "invalid number of samples\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -93,10 +93,10 @@ static int tta_read_header(AVFormatContext *s)
     }
 
     c->frame_size      = samplerate * 256 / 245;
-    c->last_frame_size = datalen % c->frame_size;
+    c->last_frame_size = nb_samples % c->frame_size;
     if (!c->last_frame_size)
         c->last_frame_size = c->frame_size;
-    c->totalframes = datalen / c->frame_size + (c->last_frame_size < c->frame_size);
+    c->totalframes = nb_samples / c->frame_size + (c->last_frame_size < c->frame_size);
     c->currentframe = 0;
 
     if(c->totalframes >= UINT_MAX/sizeof(uint32_t) || c->totalframes <= 0){
@@ -110,7 +110,7 @@ static int tta_read_header(AVFormatContext *s)
 
     avpriv_set_pts_info(st, 64, 1, samplerate);
     st->start_time = 0;
-    st->duration = datalen;
+    st->duration = nb_samples;
 
     framepos = avio_tell(s->pb) + 4*c->totalframes + 4;
 
