@@ -417,7 +417,7 @@ static int ftp_type(FTPContext *s)
 static int ftp_restart(FTPContext *s, int64_t pos)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int rest_codes[] = {350, 501, 0}; /* 501 is incorrect code */
+    const int rest_codes[] = {350, 500, 501, 0}; /* 500, 501 are incorrect codes */
 
     snprintf(command, sizeof(command), "REST %"PRId64"\r\n", pos);
     if (ftp_send_command(s, command, rest_codes, NULL) != 350)
@@ -573,10 +573,14 @@ static int ftp_open(URLContext *h, const char *url, int flags)
         goto fail;
     av_strlcat(s->path, path, sizeof(s->path));
 
-    if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
+    if (ftp_restart(s, 0) < 0) {
         h->is_streamed = 1;
-    if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
-        h->is_streamed = 1;
+    } else {
+        if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
+            h->is_streamed = 1;
+        if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
+            h->is_streamed = 1;
+    }
 
     return 0;
 
