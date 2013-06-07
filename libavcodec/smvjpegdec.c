@@ -36,6 +36,7 @@ typedef struct SMVJpegDecodeContext {
     AVFrame *picture[2]; /* pictures array */
     AVCodecContext* avctx;
     int frames_per_jpeg;
+    int mjpeg_data_size;
 } SMVJpegDecodeContext;
 
 static inline void smv_img_pnt_plane(uint8_t      **dst, uint8_t *src,
@@ -131,9 +132,10 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
 
     /* Are we at the start of a block? */
     if (!cur_frame)
-        ret = avcodec_decode_video2(s->avctx, mjpeg_data, data_size, avpkt);
-    else /*use the last lot... */
-        *data_size = sizeof(AVPicture);
+        ret = avcodec_decode_video2(s->avctx, mjpeg_data, &s->mjpeg_data_size, avpkt);
+
+    /*use the last lot... */
+    *data_size = s->mjpeg_data_size;
 
     avctx->pix_fmt = s->avctx->pix_fmt;
 
@@ -142,17 +144,19 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
     avcodec_set_dimensions(avctx, mjpeg_data->width,
         mjpeg_data->height / s->frames_per_jpeg);
 
-    s->picture[1]->extended_data = NULL;
-    s->picture[1]->width         = avctx->width;
-    s->picture[1]->height        = avctx->height;
-    s->picture[1]->format        = avctx->pix_fmt;
-    /* ff_init_buffer_info(avctx, &s->picture[1]); */
-    smv_img_pnt(s->picture[1]->data, mjpeg_data->data, mjpeg_data->linesize,
-                avctx->pix_fmt, avctx->width, avctx->height, cur_frame);
-    for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
-        s->picture[1]->linesize[i] = mjpeg_data->linesize[i];
+    if (*data_size) {
+        s->picture[1]->extended_data = NULL;
+        s->picture[1]->width         = avctx->width;
+        s->picture[1]->height        = avctx->height;
+        s->picture[1]->format        = avctx->pix_fmt;
+        /* ff_init_buffer_info(avctx, &s->picture[1]); */
+        smv_img_pnt(s->picture[1]->data, mjpeg_data->data, mjpeg_data->linesize,
+                    avctx->pix_fmt, avctx->width, avctx->height, cur_frame);
+        for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
+            s->picture[1]->linesize[i] = mjpeg_data->linesize[i];
 
-    ret = av_frame_ref(data, s->picture[1]);
+        ret = av_frame_ref(data, s->picture[1]);
+    }
 
     return ret;
 }
