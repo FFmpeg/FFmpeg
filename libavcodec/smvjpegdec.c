@@ -124,6 +124,7 @@ static av_cold int smvjpeg_decode_init(AVCodecContext *avctx)
 static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                             AVPacket *avpkt)
 {
+    const AVPixFmtDescriptor *desc;
     SMVJpegDecodeContext *s = avctx->priv_data;
     AVFrame* mjpeg_data = s->picture[0];
     int i, cur_frame = 0, ret = 0;
@@ -133,6 +134,12 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
     /* Are we at the start of a block? */
     if (!cur_frame)
         ret = avcodec_decode_video2(s->avctx, mjpeg_data, &s->mjpeg_data_size, avpkt);
+
+    desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
+    if (desc && mjpeg_data->height % (s->frames_per_jpeg << desc->log2_chroma_h)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid height\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     /*use the last lot... */
     *data_size = s->mjpeg_data_size;
