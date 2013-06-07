@@ -45,6 +45,10 @@ unsigned avutil_version(void)
         abort();
     }
 
+    if (llrint(1LL<<60) != 1LL<<60) {
+        av_log(NULL, AV_LOG_ERROR, "Libavutil has been linked to a broken llrint()\n");
+    }
+
     ff_check_pixfmt_descriptors();
     checks_done = 1;
     return LIBAVUTIL_VERSION_INT;
