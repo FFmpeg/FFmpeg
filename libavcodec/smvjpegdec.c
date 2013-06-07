@@ -70,6 +70,9 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
         smv_img_pnt_plane(&dst_data[i], src_data[i],
             src_linesizes[i], h, nlines);
     }
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+        dst_data[1] = src_data[1];
 }
 
 static av_cold int smvjpeg_decode_init(AVCodecContext *avctx)
