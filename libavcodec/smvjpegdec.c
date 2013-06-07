@@ -194,7 +194,6 @@ AVCodec ff_smvjpeg_decoder = {
     .init           = smvjpeg_decode_init,
     .close          = smvjpeg_decode_end,
     .decode         = smvjpeg_decode_frame,
-    .max_lowres     = 3,
     .long_name      = NULL_IF_CONFIG_SMALL("SMV JPEG"),
     .priv_class     = &smvjpegdec_class,
 };
