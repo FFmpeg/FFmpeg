@@ -1839,6 +1839,13 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static void mov_update_dts_shift(MOVStreamContext *sc, int duration)
+{
+    if (duration < 0) {
+        sc->dts_shift = FFMAX(sc->dts_shift, -duration);
+    }
+}
+
 static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -1881,8 +1888,8 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return 0;
         }
 
-        if (duration < 0 && i+2<entries)
-            sc->dts_shift = FFMAX(sc->dts_shift, -duration);
+        if (i+2<entries)
+            mov_update_dts_shift(sc, duration);
     }
 
     sc->ctts_count = i;
@@ -2562,6 +2569,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->ctts_data[sc->ctts_count].count = 1;
         sc->ctts_data[sc->ctts_count].duration = (flags & MOV_TRUN_SAMPLE_CTS) ?
                                                   avio_rb32(pb) : 0;
+        mov_update_dts_shift(sc, sc->ctts_data[sc->ctts_count].duration);
         sc->ctts_count++;
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             keyframe = 1;
