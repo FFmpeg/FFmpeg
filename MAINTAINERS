@@ -350,6 +350,7 @@ Filters:
   vf_drawbox.c/drawgrid                 Andrey Utkin
   vf_extractplanes.c                    Paul B Mahol
   vf_histogram.c                        Paul B Mahol
+  vf_hqx.c                              Clément Bœsch
   vf_il.c                               Paul B Mahol
   vf_mergeplanes.c                      Paul B Mahol
   vf_psnr.c                             Paul B Mahol

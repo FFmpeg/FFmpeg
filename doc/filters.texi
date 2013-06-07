@@ -5203,6 +5203,20 @@ A floating point number which specifies chroma temporal strength. It defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}.
 @end table
 
+@section hqx
+
+Apply a high-quality magnification filter designed for pixel art. This filter
+was originally created by Maxim Stepin.
+
+It accepts the following option:
+
+@table @option
+@item n
+Set the scaling dimension: @code{2} for @code{hq2x}, @code{3} for
+@code{hq3x} and @code{4} for @code{hq4x}.
+Default is @code{3}.
+@end table
+
 @section hue
 
 Modify the hue and/or the saturation of the input.
