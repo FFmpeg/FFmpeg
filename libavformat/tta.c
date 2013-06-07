@@ -59,12 +59,12 @@ static int tta_read_header(AVFormatContext *s)
     uint64_t framepos, start_offset;
     uint32_t nb_samples, crc;
 
+    ff_id3v1_read(s);
     if (s->pb->seekable) {
+        int64_t pos = avio_tell(s->pb);
         ff_ape_parse_tag(s);
-        avio_seek(s->pb, 0, SEEK_SET);
+        avio_seek(s->pb, pos, SEEK_SET);
     }
-    if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
-        ff_id3v1_read(s);
 
     start_offset = avio_tell(s->pb);
     ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
