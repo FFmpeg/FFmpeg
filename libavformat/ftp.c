@@ -138,7 +138,7 @@ static int ftp_flush_control_input(FTPContext *s)
     s->conn_control_block_flag = 1;
     do {
         err = ftp_get_line(s, buf, sizeof(buf));
-    } while (err > 0);
+    } while (!err);
 
     s->conn_control_block_flag = ori_block_flag;
 
@@ -172,9 +172,6 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
             return result;
         }
 
-        /* first code received. Now get all lines in non blocking mode */
-        s->conn_control_block_flag = 1;
-
         av_log(s, AV_LOG_DEBUG, "%s\n", buf);
 
         if (!pref_code_found) {
@@ -191,6 +188,8 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 
             for (i = 0; response_codes[i]; ++i) {
                 if (err == response_codes[i]) {
+                    /* first code received. Now get all lines in non blocking mode */
+                    s->conn_control_block_flag = 1;
                     pref_code_found = 1;
                     result = err;
                     if (line)
@@ -216,17 +215,27 @@ static int ftp_send_command(FTPContext *s, const char *command,
     s->conn_control_block_flag = 0;
     if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
         return err;
+    if (!err)
+        return -1;
 
     /* return status */
-    return ftp_status(s, response, response_codes);
+    if (response_codes) {
+        return ftp_status(s, response, response_codes);
+    }
+    return 0;
+}
+
+static void ftp_close_data_connection(FTPContext *s)
+{
+    ffurl_closep(&s->conn_data);
+    s->position = 0;
+    s->state = DISCONNECTED;
 }
 
 static void ftp_close_both_connections(FTPContext *s)
 {
     ffurl_closep(&s->conn_control);
-    ffurl_closep(&s->conn_data);
-    s->position = 0;
-    s->state = DISCONNECTED;
+    ftp_close_data_connection(s);
 }
 
 static int ftp_auth(FTPContext *s)
@@ -369,7 +378,7 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int retr_codes[] = {150, 550, 0}; /* 550 is incorrect code */
+    const int retr_codes[] = {150, 550, 554, 0}; /* 550, 554 are incorrect codes */
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
     if (ftp_send_command(s, command, retr_codes, NULL) != 150)
@@ -386,7 +395,7 @@ static int ftp_store(FTPContext *s)
     const int stor_codes[] = {150, 0};
 
     snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
-    if (!ftp_send_command(s, command, stor_codes, NULL))
+    if (ftp_send_command(s, command, stor_codes, NULL) != 150)
         return AVERROR(EIO);
 
     s->state = UPLOADING;
@@ -408,7 +417,7 @@ static int ftp_type(FTPContext *s)
 static int ftp_restart(FTPContext *s, int64_t pos)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int rest_codes[] = {350, 501, 0}; /* 501 is incorrect code */
+    const int rest_codes[] = {350, 500, 501, 0}; /* 500, 501 are incorrect codes */
 
     snprintf(command, sizeof(command), "REST %"PRId64"\r\n", pos);
     if (ftp_send_command(s, command, rest_codes, NULL) != 350)
@@ -443,10 +452,9 @@ static int ftp_connect_control_connection(URLContext *h)
         }
 
         /* consume all messages from server */
-        if (!ftp_status(s, NULL, connect_codes)) {
+        if (ftp_status(s, NULL, connect_codes) != 220) {
             av_log(h, AV_LOG_ERROR, "FTP server not ready for new users\n");
-            err = AVERROR(EACCES);
-            return err;
+            return AVERROR(EACCES);
         }
 
         if ((err = ftp_auth(s)) < 0) {
@@ -497,10 +505,40 @@ static int ftp_connect_data_connection(URLContext *h)
 
 static int ftp_abort(URLContext *h)
 {
+    const char *command = "ABOR\r\n";
     int err;
-    ftp_close_both_connections(h->priv_data);
-    if ((err = ftp_connect_control_connection(h)) < 0)
-        return err;
+    const int abor_codes[] = {225, 226, 0};
+    FTPContext *s = h->priv_data;
+
+    /* According to RCF 959:
+       "ABOR command tells the server to abort the previous FTP
+       service command and any associated transfer of data."
+
+       There are FTP server implementations that don't response
+       to any commands during data transfer in passive mode (including ABOR).
+
+       This implementation closes data connection by force.
+    */
+
+    if (ftp_send_command(s, command, NULL, NULL) < 0) {
+        ftp_close_both_connections(s);
+        if ((err = ftp_connect_control_connection(h)) < 0) {
+            av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+            return err;
+        }
+    } else {
+        ftp_close_data_connection(s);
+    }
+
+    if (ftp_status(s, NULL, abor_codes) < 225) {
+        /* wu-ftpd also closes control connection after data connection closing */
+        ffurl_closep(&s->conn_control);
+        if ((err = ftp_connect_control_connection(h)) < 0) {
+            av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+            return err;
+        }
+    }
+
     return 0;
 }
 
@@ -535,10 +573,14 @@ static int ftp_open(URLContext *h, const char *url, int flags)
         goto fail;
     av_strlcat(s->path, path, sizeof(s->path));
 
-    if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
+    if (ftp_restart(s, 0) < 0) {
         h->is_streamed = 1;
-    if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
-        h->is_streamed = 1;
+    } else {
+        if (ftp_file_size(s) < 0 && flags & AVIO_FLAG_READ)
+            h->is_streamed = 1;
+        if (s->write_seekable != 1 && flags & AVIO_FLAG_WRITE)
+            h->is_streamed = 1;
+    }
 
     return 0;
 
@@ -553,7 +595,7 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
 {
     FTPContext *s = h->priv_data;
     int err;
-    int64_t new_pos;
+    int64_t new_pos, fake_pos;
 
     av_dlog(h, "ftp protocol seek %"PRId64" %d\n", pos, whence);
 
@@ -579,17 +621,12 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
         return AVERROR(EIO);
 
     new_pos = FFMAX(0, new_pos);
-    if (s->filesize >= 0)
-        new_pos = FFMIN(s->filesize, new_pos);
+    fake_pos = s->filesize != -1 ? FFMIN(new_pos, s->filesize) : new_pos;
 
-    if (new_pos != s->position) {
-        /* XXX: Full abort is a save solution here.
-           Some optimalizations are possible, but may lead to crazy states of FTP server.
-           The worst scenario would be when FTP server closed both connection due to no transfer. */
+    if (fake_pos != s->position) {
         if ((err = ftp_abort(h)) < 0)
             return err;
-
-        s->position = new_pos;
+        s->position = fake_pos;
     }
     return new_pos;
 }
@@ -602,10 +639,14 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
     av_dlog(h, "ftp protocol read %d bytes\n", size);
   retry:
     if (s->state == DISCONNECTED) {
+        if (s->position >= s->filesize)
+            return 0;
         if ((err = ftp_connect_data_connection(h)) < 0)
             return err;
     }
     if (s->state == READY) {
+        if (s->position >= s->filesize)
+            return 0;
         if ((err = ftp_retrieve(s)) < 0)
             return err;
     }
@@ -614,19 +655,21 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
         if (read >= 0) {
             s->position += read;
             if (s->position >= s->filesize) {
-                if (ftp_abort(h) < 0)
+                /* server will terminate, but keep current position to avoid madness */
+                int64_t pos = s->position;
+                if (ftp_abort(h) < 0) {
+                    s->position = pos;
                     return AVERROR(EIO);
+                }
+                s->position = pos;
             }
         }
-        if (!read && s->position < s->filesize && !h->is_streamed) {
+        if (read <= 0 && s->position < s->filesize && !h->is_streamed) {
             /* Server closed connection. Probably due to inactivity */
-            /* TODO: Consider retry before reconnect */
             int64_t pos = s->position;
             av_log(h, AV_LOG_INFO, "Reconnect to FTP server.\n");
-            if ((err = ftp_abort(h)) < 0) {
-                av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+            if ((err = ftp_abort(h)) < 0)
                 return err;
-            }
             if ((err = ftp_seek(h, pos, SEEK_SET)) < 0) {
                 av_log(h, AV_LOG_ERROR, "Position cannot be restored.\n");
                 return err;
