@@ -378,7 +378,7 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int retr_codes[] = {150, 550, 0}; /* 550 is incorrect code */
+    const int retr_codes[] = {150, 550, 554, 0}; /* 550, 554 are incorrect codes */
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
     if (ftp_send_command(s, command, retr_codes, NULL) != 150)
