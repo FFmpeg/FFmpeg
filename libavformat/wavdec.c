@@ -462,10 +462,10 @@ smv_retry:
         video_dts = s->streams[1]->cur_dts;
 
         if (audio_dts != AV_NOPTS_VALUE && video_dts != AV_NOPTS_VALUE) {
-            audio_dts = av_rescale_q(audio_dts, s->streams[0]->time_base, AV_TIME_BASE_Q);
-            video_dts = av_rescale_q(video_dts, s->streams[1]->time_base, AV_TIME_BASE_Q);
             /*We always return a video frame first to get the pixel format first*/
-            wav->smv_last_stream = wav->smv_given_first ? video_dts > audio_dts : 0;
+            wav->smv_last_stream = wav->smv_given_first ?
+                av_compare_ts(video_dts, s->streams[1]->time_base,
+                              audio_dts, s->streams[0]->time_base) > 0 : 0;
             wav->smv_given_first = 1;
         }
         wav->smv_last_stream = !wav->smv_last_stream;
