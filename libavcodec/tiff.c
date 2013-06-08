@@ -485,10 +485,9 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
         return AVERROR(ENOMEM);
     }
     if (s->fax_opts & 2) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "Uncompressed fax mode is not supported (yet)\n");
+        avpriv_request_sample(s->avctx, "Uncompressed fax mode");
         av_free(src2);
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
     if (!s->fill_order) {
         memcpy(src2, src, size);
@@ -818,8 +817,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 #endif
         case TIFF_JPEG:
         case TIFF_NEWJPEG:
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "JPEG compression is not supported\n");
+            avpriv_report_missing_feature(s->avctx, "JPEG compression");
             return AVERROR_PATCHWELCOME;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Unknown compression method %i\n",
@@ -1063,8 +1061,12 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         ADD_METADATA(count, "software", NULL);
         break;
     default:
-        av_log(s->avctx, AV_LOG_DEBUG, "Unknown or unsupported tag %d/0X%0X\n",
-               tag, tag);
+        if (s->avctx->err_recognition & AV_EF_EXPLODE) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Unknown or unsupported tag %d/0X%0X\n",
+                   tag, tag);
+            return AVERROR_INVALIDDATA;
+        }
     }
     bytestream2_seek(&s->gb, start, SEEK_SET);
     return 0;
@@ -1194,9 +1196,12 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
             return AVERROR_INVALIDDATA;
         }
-        if (tiff_unpack_strip(s, dst, stride, avpkt->data + soff, ssize,
-                              FFMIN(s->rps, s->height - i)) < 0)
+        if ((ret = tiff_unpack_strip(s, dst, stride, avpkt->data + soff, ssize,
+                                     FFMIN(s->rps, s->height - i))) < 0) {
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return ret;
             break;
+        }
         dst += s->rps * stride;
     }
     if (s->predictor == 2) {
