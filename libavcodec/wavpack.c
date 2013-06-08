@@ -916,7 +916,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         case WP_ID_ENTROPY:
             if (size != 6 * (s->stereo_in + 1)) {
                 av_log(avctx, AV_LOG_ERROR,
-                       "Entropy vars size should be %i, got %i",
+                       "Entropy vars size should be %i, got %i.\n",
                        6 * (s->stereo_in + 1), size);
                 bytestream2_skip(&gb, ssize);
                 continue;
