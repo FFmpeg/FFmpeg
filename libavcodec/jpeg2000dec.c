@@ -901,6 +901,10 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     ff_mqc_initdec(&t1->mqc, cblk->data);
 
     while (passno--) {
+        if (bpno < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "bpno invalid\n");
+            return AVERROR(EINVAL);
+        }
         switch(pass_t) {
         case 0:
             decode_sigpass(t1, width, height, bpno + 1, bandpos,
