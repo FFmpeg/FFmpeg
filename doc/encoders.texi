@@ -441,6 +441,27 @@ Enables the the encoder to use (on a frame by frame basis) either L/R
 stereo or mid/side stereo.
 @end multitable
 
+@section libvo-aacenc
+
+VisualOn AAC encoder
+
+Requires the presence of the libvo-aacenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvo-aacenc --enable-version3}.
+
+@subsection Options
+
+The VisualOn AAC encoder only support encoding AAC-LC and up to 2
+channels. It is also CBR-only. It is considered to be worse than the
+native experimental FFmpeg AAC encoder.
+
+@table @option
+
+@item b
+Bitrate.
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
