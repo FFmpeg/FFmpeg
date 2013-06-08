@@ -125,6 +125,8 @@ static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(outbuf, inbuf);
+    outbuf->width  = inbuf->width;
+    outbuf->height = inbuf->height;
     qp_table = av_frame_get_qp_table(inbuf, &qstride, &qp_type);
 
     pp_postprocess((const uint8_t **)inbuf->data, inbuf->linesize,
