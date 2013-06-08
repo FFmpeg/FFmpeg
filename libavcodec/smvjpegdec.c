@@ -137,6 +137,8 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
     /* Are we at the start of a block? */
     if (!cur_frame)
         ret = avcodec_decode_video2(s->avctx, mjpeg_data, &s->mjpeg_data_size, avpkt);
+    else if (!s->mjpeg_data_size)
+        return AVERROR(EINVAL);
 
     desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
     if (desc && mjpeg_data->height % (s->frames_per_jpeg << desc->log2_chroma_h)) {
