@@ -372,6 +372,10 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
                                   log2w, log2h, stride)) < 0)
             return ret;
     } else if (code == 3 && f->version < 2) {
+        if (start > src || src > end) {
+            av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
+            return AVERROR_INVALIDDATA;
+        }
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 4) {
         src += f->mv[bytestream2_get_byte(&f->g)];
@@ -381,6 +385,10 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
         }
         mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16(&f->g2));
     } else if (code == 5) {
+        if (start > src || src > end) {
+            av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
+            return AVERROR_INVALIDDATA;
+        }
         mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16(&f->g2));
     } else if (code == 6) {
         if (log2w) {
