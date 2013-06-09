@@ -512,6 +512,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
         c->planes      = 3;
         avctx->pix_fmt = AV_PIX_FMT_YUV422P;
         break;
+    case MKTAG('U', 'L', 'H', '0'):
+        c->planes      = 3;
+        avctx->color_primaries = AVCOL_PRI_BT709;
+        avctx->colorspace = AVCOL_SPC_BT709;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        break;
+    case MKTAG('U', 'L', 'H', '2'):
+        c->planes      = 3;
+        avctx->color_primaries = AVCOL_PRI_BT709;
+        avctx->colorspace = AVCOL_SPC_BT709;
+        avctx->pix_fmt = AV_PIX_FMT_YUV422P;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown Ut Video FOURCC provided (%08X)\n",
                avctx->codec_tag);
