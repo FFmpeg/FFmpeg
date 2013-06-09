@@ -440,7 +440,7 @@ static int g2m_init_buffers(G2MContext *c)
 {
     int aligned_height;
 
-    if (!c->framebuf || c->old_width < c->width || c->height < c->height) {
+    if (!c->framebuf || c->old_width < c->width || c->old_height < c->height) {
         c->framebuf_stride = FFALIGN(c->width * 3, 16);
         aligned_height     = FFALIGN(c->height,    16);
         av_free(c->framebuf);
