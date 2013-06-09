@@ -759,7 +759,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     if (got_header)
         c->got_header = 1;
 
-    if (c->width && c->height) {
+    if (c->width && c->height && c->framebuf) {
         if ((ret = ff_get_buffer(avctx, pic, 0)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
             return ret;
