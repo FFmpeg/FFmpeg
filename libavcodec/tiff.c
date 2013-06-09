@@ -548,14 +548,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
                 code = (int8_t) * src++;
                 if (code >= 0) {
                     code++;
-                    if (pixels + code > width) {
+                    if (pixels + code > width ||
+                        ssrc + size - src < code) {
                         av_log(s->avctx, AV_LOG_ERROR,
                                "Copy went out of bounds\n");
                         return -1;
-                    }
-                    if (ssrc + size - src < code) {
-                        av_log(s->avctx, AV_LOG_ERROR, "Read went out of bounds\n");
-                        return AVERROR_INVALIDDATA;
                     }
                     horizontal_fill(s->bpp * (s->avctx->pix_fmt == AV_PIX_FMT_PAL8),
                                     dst, 1, src, 0, code, pixels);
