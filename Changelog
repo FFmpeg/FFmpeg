@@ -22,6 +22,7 @@ version <next>:
 - Silicon Graphics RLE 8-bit video decoder
 - Silicon Graphics Motion Video Compressor 1 & 2 decoder
 - Silicon Graphics Movie demuxer
+- On2 AVC (Audio for Video) decoder
 
 
 version 10:

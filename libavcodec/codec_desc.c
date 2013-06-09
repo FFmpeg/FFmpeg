@@ -2285,6 +2285,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File Audio"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_ON2AVC,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "avc",
+        .long_name = NULL_IF_CONFIG_SMALL("On2 Audio for Video Codec"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {
