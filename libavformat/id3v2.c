@@ -527,7 +527,8 @@ static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, char *tta
     int taglen;
     char tag[5];
 
-    decode_str(s, pb, 0, &dst, &len);
+    if (decode_str(s, pb, 0, &dst, &len) < 0)
+        return;
     if (len < 16)
         return;
 
