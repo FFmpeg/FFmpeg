@@ -601,6 +601,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     int chunk_type;
     int i;
     int ret;
+    int cursor_w, cursor_h, cursor_hot_x, cursor_hot_y, cursor_fmt;
 
     if (buf_size < 12) {
         av_log(avctx, AV_LOG_ERROR,
@@ -732,17 +733,22 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             bytestream2_init(&tbc, buf + bytestream2_tell(&bc),
                              chunk_size - 4);
             cur_size        = bytestream2_get_be32(&tbc);
-            c->cursor_w     = bytestream2_get_byte(&tbc);
-            c->cursor_h     = bytestream2_get_byte(&tbc);
-            c->cursor_hot_x = bytestream2_get_byte(&tbc);
-            c->cursor_hot_y = bytestream2_get_byte(&tbc);
-            c->cursor_fmt   = bytestream2_get_byte(&tbc);
+            cursor_w        = bytestream2_get_byte(&tbc);
+            cursor_h        = bytestream2_get_byte(&tbc);
+            cursor_hot_x    = bytestream2_get_byte(&tbc);
+            cursor_hot_y    = bytestream2_get_byte(&tbc);
+            cursor_fmt      = bytestream2_get_byte(&tbc);
             if (cur_size >= chunk_size ||
                 c->cursor_w * c->cursor_h / 4 > cur_size) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %d\n",
                        chunk_size);
                 break;
             }
+            c->cursor_w     = cursor_w;
+            c->cursor_h     = cursor_h;
+            c->cursor_hot_x = cursor_hot_x;
+            c->cursor_hot_y = cursor_hot_y;
+            c->cursor_fmt   = cursor_fmt;
             g2m_load_cursor(c, &tbc);
             bytestream2_skip(&bc, chunk_size);
             break;
