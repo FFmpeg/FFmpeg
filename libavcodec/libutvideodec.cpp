@@ -55,13 +55,11 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 #ifdef UTV_BT709
     case MKTAG('U', 'L', 'H', '0'):
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        avctx->color_primaries = AVCOL_PRI_BT709;
         avctx->colorspace = AVCOL_SPC_BT709;
         format = UTVF_YV12;
         break;
     case MKTAG('U', 'L', 'H', '2'):
         avctx->pix_fmt = AV_PIX_FMT_YUYV422;
-        avctx->color_primaries = AVCOL_PRI_BT709;
         avctx->colorspace = AVCOL_SPC_BT709;
         format = UTVF_YUY2;
         break;
