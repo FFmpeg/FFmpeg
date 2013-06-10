@@ -494,7 +494,7 @@ static int planarRgb16ToRgb16Wrapper(SwsContext *c, const uint8_t *src[],
         !HAVE_BIGENDIAN &&   dst_format->flags & AV_PIX_FMT_FLAG_BE)
         swap += 2;
 
-    if (src_format->flags & (AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB) !=
+    if ((src_format->flags & (AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB)) !=
         (AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB)) {
         av_log(c, AV_LOG_ERROR, "unsupported planar RGB conversion %s -> %s\n",
                src_format->name, dst_format->name);
