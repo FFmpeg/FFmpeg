@@ -181,8 +181,10 @@ static int open_filter_param(FilterParam *f, int width, int height, unsigned int
     f->dist_width    = vec->length;
     f->dist_linesize = FFALIGN(vec->length, 8);
     f->dist_coeff    = av_malloc(f->dist_width * f->dist_linesize * sizeof(*f->dist_coeff));
-    if (!f->dist_coeff)
+    if (!f->dist_coeff) {
+        sws_freeVec(vec);
         return AVERROR(ENOMEM);
+    }
 
     for (y = 0; y < vec->length; y++) {
         for (x = 0; x < vec->length; x++) {
