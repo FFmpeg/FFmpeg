@@ -423,7 +423,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
             av_buffer_pool_uninit(&pool->pools[i]);
             pool->linesize[i] = picture.linesize[i];
             if (size[i]) {
-                pool->pools[i] = av_buffer_pool_init(size[i] + 16,
+                pool->pools[i] = av_buffer_pool_init(size[i] + 16 + STRIDE_ALIGN - 1,
                                                      CONFIG_MEMORY_POISONING ?
                                                         NULL :
                                                         av_buffer_allocz);
