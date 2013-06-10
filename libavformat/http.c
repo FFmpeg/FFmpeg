@@ -421,6 +421,8 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
                 cvalue = av_strdup(param);
             }
         }
+        if (!cdomain)
+            cdomain = av_strdup(domain);
 
         // ensure all of the necessary values are valid
         if (!cdomain || !cpath || !cvalue) {
