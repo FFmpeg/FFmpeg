@@ -739,6 +739,9 @@ static int decode_i_frame(FourXContext *f, AVFrame *frame, const uint8_t *buf, i
     unsigned int prestream_size;
     const uint8_t *prestream;
 
+    if (bitstream_size > (1 << 26))
+        return AVERROR_INVALIDDATA;
+
     if (length < bitstream_size + 12) {
         av_log(f->avctx, AV_LOG_ERROR, "packet size too small\n");
         return AVERROR_INVALIDDATA;
@@ -749,7 +752,6 @@ static int decode_i_frame(FourXContext *f, AVFrame *frame, const uint8_t *buf, i
     prestream      =             buf + bitstream_size + 12;
 
     if (prestream_size + bitstream_size + 12 != length
-        || bitstream_size > (1 << 26)
         || prestream_size > (1 << 26)) {
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d %d\n",
                prestream_size, bitstream_size, length);
