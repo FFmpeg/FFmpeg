@@ -40,7 +40,7 @@ static int alloc_and_copy(uint8_t **poutbuf, int *poutbuf_size,
     void *tmp;
 
     *poutbuf_size += sps_pps_size + in_size + nal_header_size;
-    tmp = av_realloc(*poutbuf, *poutbuf_size);
+    tmp = av_realloc(*poutbuf, *poutbuf_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!tmp)
         return AVERROR(ENOMEM);
     *poutbuf = tmp;
