@@ -3276,6 +3276,11 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
 
+    if (mov->next_root_atom) {
+        sample->pos = FFMIN(sample->pos, mov->next_root_atom);
+        sample->size = FFMIN(sample->size, (mov->next_root_atom - sample->pos));
+    }
+
     if (st->discard != AVDISCARD_ALL) {
         if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
