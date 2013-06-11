@@ -409,6 +409,29 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    RotContext *rot = ctx->priv;
+    int ret;
+
+    if (!strcmp(cmd, "angle") || !strcmp(cmd, "a")) {
+        AVExpr *old = rot->angle_expr;
+        ret = av_expr_parse(&rot->angle_expr, args, var_names,
+                            NULL, NULL, NULL, NULL, 0, ctx);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Error when parsing the expression '%s' for angle command\n", args);
+            rot->angle_expr = old;
+            return ret;
+        }
+        av_expr_free(old);
+    } else
+        ret = AVERROR(ENOSYS);
+
+    return ret;
+}
+
 static const AVFilterPad rotate_inputs[] = {
     {
         .name         = "default",
@@ -434,6 +457,7 @@ AVFilter avfilter_vf_rotate = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .process_command = process_command,
     .inputs        = rotate_inputs,
     .outputs       = rotate_outputs,
     .priv_class    = &rotate_class,

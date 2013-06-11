@@ -5883,6 +5883,19 @@ rotate=2*PI*t:ow='min(iw,ih)/sqrt(2)':oh=ow:c=none
 @end example
 @end itemize
 
+@subsection Commands
+
+The filter supports the following commands:
+
+@table @option
+@item a, angle
+Set the angle expression.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+@end table
+
 @section sab
 
 Apply Shape Adaptive Blur.
