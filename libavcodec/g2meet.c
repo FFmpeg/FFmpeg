@@ -646,8 +646,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid frame dimensions %dx%d\n",
                        c->width, c->height);
-                c->width = c->height = 0;
-                bytestream2_skip(&bc, bytestream2_get_bytes_left(&bc));
+                ret = AVERROR_INVALIDDATA;
+                goto header_fail;
             }
             if (c->width != avctx->width || c->height != avctx->height)
                 avcodec_set_dimensions(avctx, c->width, c->height);
@@ -664,15 +664,18 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid tile dimensions %dx%d\n",
                        c->tile_width, c->tile_height);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto header_fail;
             }
             c->tiles_x = (c->width  + c->tile_width  - 1) / c->tile_width;
             c->tiles_y = (c->height + c->tile_height - 1) / c->tile_height;
             c->bpp = bytestream2_get_byte(&bc);
             chunk_size -= 21;
             bytestream2_skip(&bc, chunk_size);
-            if (g2m_init_buffers(c))
-                return AVERROR(ENOMEM);
+            if (g2m_init_buffers(c)) {
+                ret = AVERROR(ENOMEM);
+                goto header_fail;
+            }
             got_header = 1;
             break;
         case TILE_DATA:
@@ -778,6 +781,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     return buf_size;
+header_fail:
+    c->width   = c->height  = 0;
+    c->tiles_x = c->tiles_y = 0;
+    return ret;
 }
 
 static av_cold int g2m_decode_init(AVCodecContext *avctx)
