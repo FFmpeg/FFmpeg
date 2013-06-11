@@ -628,21 +628,20 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
     matroska->current_id = 0;
     matroska->num_levels = 0;
 
-    // seek to next position to resync from
-    if (avio_seek(pb, last_pos + 1, SEEK_SET) < 0 || avio_tell(pb) <= last_pos)
+    /* seek to next position to resync from */
+    if (avio_seek(pb, last_pos + 1, SEEK_SET) < 0)
         goto eof;
 
     id = avio_rb32(pb);
 
     // try to find a toplevel element
     while (!url_feof(pb)) {
-        if (id == MATROSKA_ID_INFO || id == MATROSKA_ID_TRACKS ||
-            id == MATROSKA_ID_CUES || id == MATROSKA_ID_TAGS ||
+        if (id == MATROSKA_ID_INFO     || id == MATROSKA_ID_TRACKS      ||
+            id == MATROSKA_ID_CUES     || id == MATROSKA_ID_TAGS        ||
             id == MATROSKA_ID_SEEKHEAD || id == MATROSKA_ID_ATTACHMENTS ||
-            id == MATROSKA_ID_CLUSTER || id == MATROSKA_ID_CHAPTERS)
-        {
-            matroska->current_id = id;
-            return 0;
+            id == MATROSKA_ID_CLUSTER  || id == MATROSKA_ID_CHAPTERS) {
+                matroska->current_id = id;
+                return 0;
         }
         id = (id << 8) | avio_r8(pb);
     }
