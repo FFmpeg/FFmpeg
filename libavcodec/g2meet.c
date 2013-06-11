@@ -455,6 +455,8 @@ static int g2m_init_buffers(G2MContext *c)
         aligned_height = FFALIGN(c->tile_height,    16);
         av_free(c->synth_tile);
         av_free(c->jpeg_tile);
+        av_free(c->kempf_buf);
+        av_free(c->kempf_flags);
         c->synth_tile  = av_mallocz(c->tile_stride      * aligned_height);
         c->jpeg_tile   = av_mallocz(c->tile_stride      * aligned_height);
         c->kempf_buf   = av_mallocz((c->tile_width + 1) * aligned_height
