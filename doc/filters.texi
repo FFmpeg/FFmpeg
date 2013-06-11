@@ -5771,6 +5771,118 @@ much, but it will increase the amount of blurring needed to cover over
 the image and will destroy more information than necessary, and extra
 pixels will slow things down on a large logo.
 
+@section rotate
+
+Rotate video by an arbitrary angle expressed in radians.
+
+The filter accepts the following options:
+
+A description of the optional parameters follows.
+@table @option
+@item angle, a
+Set an expression for the angle by which to rotate the input video
+clockwise, expressed as a number of radians. A negative value will
+result in a counter-clockwise rotation. By default it is set to "0".
+
+This expression is evaluated for each frame.
+
+@item out_w, ow
+Set the output width expression, default value is "iw".
+This expression is evaluated just once during configuration.
+
+@item out_h, oh
+Set the output height expression, default value is "ih".
+This expression is evaluated just once during configuration.
+
+@item bilinear
+Enable bilinear interpolation if set to 1, a value of 0 disables
+it. Default value is 1.
+
+@item fillcolor, c
+Set the color used to fill the output area not covered by the rotated
+image. If the special value "none" is selected then no background is
+printed (useful for example if the background is never shown). Default
+value is "black".
+@end table
+
+The expressions for the angle and the output size can contain the
+following constants and functions:
+
+@table @option
+@item n
+sequential number of the input frame, starting from 0. It is always NAN
+before the first frame is filtered.
+
+@item t
+time in seconds of the input frame, it is set to 0 when the filter is
+configured. It is always NAN before the first frame is filtered.
+
+@item hsub
+@item vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+
+@item in_w, iw
+@item in_h, ih
+the input video width and heigth
+
+@item out_w, ow
+@item out_h, oh
+the output width and heigth, that is the size of the padded area as
+specified by the @var{width} and @var{height} expressions
+
+@item rotw(a)
+@item roth(a)
+the minimal width/height required for completely containing the input
+video rotated by @var{a} radians.
+
+These are only available when computing the @option{out_w} and
+@option{out_h} expressions.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Rotate the input by PI/6 radians clockwise:
+@example
+rotate=PI/6
+@end example
+
+@item
+Rotate the input by PI/6 radians counter-clockwise:
+@example
+rotate=-PI/6
+@end example
+
+@item
+Apply a constant rotation with period T, starting from an angle of PI/3:
+@example
+rotate=PI/3+2*PI*t/T
+@end example
+
+@item
+Make the input video rotation oscillating with a period of T
+seconds and an amplitude of A radians:
+@example
+rotate=A*sin(2*PI/T*t)
+@end example
+
+@item
+Rotate the video, output size is choosen so that the whole rotating
+input video is always completely contained in the output:
+@example
+rotate='2*PI*t:ow=hypot(iw,ih):oh=ow'
+@end example
+
+@item
+Rotate the video, reduce the output size so that no background is ever
+shown:
+@example
+rotate=2*PI*t:ow='min(iw,ih)/sqrt(2)':oh=ow:c=none
+@end example
+@end itemize
+
 @section sab
 
 Apply Shape Adaptive Blur.

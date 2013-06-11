@@ -66,6 +66,7 @@ version <next>:
 - sab filter ported from libmpcodecs
 - ffprobe -show_chapters option
 - WavPack encoding through libwavpack
+- rotate filter
 
 
 version 1.2:
