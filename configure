@@ -3716,7 +3716,13 @@ enable_weak_pic() {
     disabled pic && return
     enable pic
     add_cppflags -DPIC
-    add_cflags   -fPIC
+    case "$target_os" in
+    mingw*|cygwin*)
+        ;;
+    *)
+        add_cflags -fPIC
+        ;;
+    esac
     add_asflags  -fPIC
 }
 
