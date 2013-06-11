@@ -3476,7 +3476,6 @@ case $target_os in
         objformat="win32"
         ranlib=:
         enable dos_paths
-        disable pic
         ;;
     win32|win64)
         if enabled shared; then
@@ -3501,7 +3500,6 @@ case $target_os in
         objformat="win32"
         ranlib=:
         enable dos_paths
-        disable pic
         ;;
     cygwin*)
         target_os=cygwin
@@ -3516,7 +3514,6 @@ case $target_os in
         SHFLAGS='-shared -Wl,--out-implib,$(SUBDIR)lib$(FULLNAME).dll.a'
         objformat="win32"
         enable dos_paths
-        disable pic
         ;;
     *-dos|freedos|opendos)
         network_extralibs="-lsocket"
