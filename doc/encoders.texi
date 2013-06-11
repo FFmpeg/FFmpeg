@@ -525,6 +525,35 @@ Bitrate.
 
 @end table
 
+@section libwavpack
+
+A wrapper providing WavPack encoding through libwavpack.
+
+Only lossless mode using 32-bit integer samples is supported currently.
+The @option{compression_level} option can be used to control speed vs.
+compression tradeoff, with the values mapped to libwavpack as follows:
+
+@table @option
+
+@item 0
+Fast mode - corresponding to the wavpack @option{-f} option.
+
+@item 1
+Normal (default) settings.
+
+@item 2
+High quality - corresponding to the wavpack @option{-h} option.
+
+@item 3
+Very high quality - corresponding to the wavpack @option{-hh} option.
+
+@item 4-8
+Same as 3, but with extra processing enabled - corresponding to the wavpack
+@option{-x} option. I.e. 4 is the same as @option{-x2} and 8 is the same as
+@option{-x6}.
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders

@@ -95,6 +95,14 @@ Go to @url{http://www.webmproject.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libvpx} to configure to
 enable it.
 
+@section libwavpack
+
+Libav can make use of the libwavpack library for WavPack encoding.
+
+Go to @url{http://www.wavpack.com/} and follow the instructions for
+installing the library. Then pass @code{--enable-libwavpack} to configure to
+enable it.
+
 @section x264
 
 FFmpeg can make use of the x264 library for H.264 encoding.
@@ -909,7 +917,8 @@ following image formats are supported:
     @tab Used in LucasArts SMUSH animations.
 @item Vorbis                 @tab  E  @tab  X
     @tab A native but very primitive encoder exists.
-@item WavPack                @tab     @tab  X
+@item WavPack                @tab  E  @tab  X
+    @tab supported through external library libwavpack
 @item Westwood Audio (SND1)  @tab     @tab  X
 @item Windows Media Audio 1  @tab  X  @tab  X
 @item Windows Media Audio 2  @tab  X  @tab  X

@@ -65,6 +65,7 @@ version <next>:
 - mcdeint filter ported from libmpcodecs
 - sab filter ported from libmpcodecs
 - ffprobe -show_chapters option
+- WavPack encoding through libwavpack
 
 
 version 1.2:
