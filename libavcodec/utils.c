@@ -1447,26 +1447,23 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
 static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
 {
     AVFrame *frame = NULL;
-    uint8_t *buf   = NULL;
     int ret;
 
     if (!(frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
-    *frame = *src;
 
-    if ((ret = av_samples_get_buffer_size(&frame->linesize[0], s->channels,
-                                          s->frame_size, s->sample_fmt, 0)) < 0)
+    frame->format         = src->format;
+    frame->channel_layout = src->channel_layout;
+    av_frame_set_channels(frame, av_frame_get_channels(src));
+    frame->nb_samples     = s->frame_size;
+    ret = av_frame_get_buffer(frame, 32);
+    if (ret < 0)
         goto fail;
 
-    if (!(buf = av_malloc(ret))) {
-        ret = AVERROR(ENOMEM);
+    ret = av_frame_copy_props(frame, src);
+    if (ret < 0)
         goto fail;
-    }
 
-    frame->nb_samples = s->frame_size;
-    if ((ret = avcodec_fill_audio_frame(frame, s->channels, s->sample_fmt,
-                                        buf, ret, 0)) < 0)
-        goto fail;
     if ((ret = av_samples_copy(frame->extended_data, src->extended_data, 0, 0,
                                src->nb_samples, s->channels, s->sample_fmt)) < 0)
         goto fail;
@@ -1480,10 +1477,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
     return 0;
 
 fail:
-    if (frame->extended_data != frame->data)
-        av_freep(&frame->extended_data);
-    av_freep(&buf);
-    av_freep(&frame);
+    av_frame_free(&frame);
     return ret;
 }
 
