@@ -24,7 +24,7 @@ instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjp
 @file{./configure}.
 
 
-@section OpenCORE and VisualOn libraries
+@section OpenCORE, VisualOn, and Fraunhofer libraries
 
 Spun off Google Android sources, OpenCore, VisualOn and Fraunhofer
 libraries provide encoders for a number of audio codecs.
@@ -32,9 +32,14 @@ libraries provide encoders for a number of audio codecs.
 @float NOTE
 OpenCORE and VisualOn libraries are under the Apache License 2.0
 (see @url{http://www.apache.org/licenses/LICENSE-2.0} for details), which is
-incompatible with the LGPL version 2.1 and GPL version 2. You have to
+incompatible to the LGPL version 2.1 and GPL version 2. You have to
 upgrade FFmpeg's license to LGPL version 3 (or if you have enabled
-GPL components, GPL version 3) to use it.
+GPL components, GPL version 3) by passing @code{--enable-version3} to configure in
+order to use it.
+
+The Fraunhofer AAC library is licensed under a license incompatible to the GPL
+and is not known to be compatible to the LGPL. Therefore, you have to pass
+@code{--enable-nonfree} to configure to use it.
 @end float
 
 @subsection OpenCORE AMR
