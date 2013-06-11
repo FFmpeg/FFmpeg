@@ -525,6 +525,44 @@ Bitrate.
 
 @end table
 
+@section libvo-amrwbenc
+
+VisualOn Adaptive Multi-Rate Wideband encoder
+
+Requires the presence of the libvo-amrwbenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvo-amrwbenc --enable-version3}.
+
+This is a mono-only encoder. Officially it only supports 16000Hz sample
+rate, but you can override it by setting @option{strict} to
+@samp{unofficial} or lower.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set bitrate in bits/s. Only the following bitrates are supported, otherwise
+libavcodec will round to the nearest valid bitrate.
+
+@table @samp
+@item 6600
+@item 8850
+@item 12650
+@item 14250
+@item 15850
+@item 18250
+@item 19850
+@item 23050
+@item 23850
+@end table
+
+@item dtx
+Allow discontinuous transmission (generate comfort noise) when set to 1. The
+default value is 0 (disabled).
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
