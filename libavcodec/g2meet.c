@@ -455,6 +455,8 @@ static int g2m_init_buffers(G2MContext *c)
         aligned_height = FFALIGN(c->tile_height,    16);
         av_free(c->synth_tile);
         av_free(c->jpeg_tile);
+        av_free(c->kempf_buf);
+        av_free(c->kempf_flags);
         c->synth_tile  = av_mallocz(c->tile_stride      * aligned_height);
         c->jpeg_tile   = av_mallocz(c->tile_stride      * aligned_height);
         c->kempf_buf   = av_mallocz((c->tile_width + 1) * aligned_height
@@ -468,16 +470,63 @@ static int g2m_init_buffers(G2MContext *c)
     return 0;
 }
 
-static int g2m_load_cursor(G2MContext *c, GetByteContext *gb)
+static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
+                           GetByteContext *gb)
 {
     int i, j, k;
     uint8_t *dst;
     uint32_t bits;
+    uint32_t cur_size, cursor_w, cursor_h, cursor_stride;
+    uint32_t cursor_hot_x, cursor_hot_y;
+    int cursor_fmt;
+    uint8_t *tmp;
 
-    c->cursor_stride = c->cursor_w * 4;
-    c->cursor        = av_realloc(c->cursor, c->cursor_stride * c->cursor_h);
-    if (!c->cursor)
+    cur_size      = bytestream2_get_be32(gb);
+    cursor_w      = bytestream2_get_byte(gb);
+    cursor_h      = bytestream2_get_byte(gb);
+    cursor_hot_x  = bytestream2_get_byte(gb);
+    cursor_hot_y  = bytestream2_get_byte(gb);
+    cursor_fmt    = bytestream2_get_byte(gb);
+
+    cursor_stride = cursor_w * 4;
+
+    if (cursor_w < 1 || cursor_w > 256 ||
+        cursor_h < 1 || cursor_h > 256) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid cursor dimensions %dx%d\n",
+               cursor_w, cursor_h);
+        return AVERROR_INVALIDDATA;
+    }
+    if (cursor_hot_x > cursor_w || cursor_hot_y > cursor_h) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid hotspot position %d,%d\n",
+               cursor_hot_x, cursor_hot_y);
+        cursor_hot_x = FFMIN(cursor_hot_x, cursor_w - 1);
+        cursor_hot_y = FFMIN(cursor_hot_y, cursor_h - 1);
+    }
+    if (cur_size - 9 > bytestream2_get_bytes_left(gb) ||
+        c->cursor_w * c->cursor_h / 4 > cur_size) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %d/%d\n",
+               cur_size, bytestream2_get_bytes_left(gb));
+        return AVERROR_INVALIDDATA;
+    }
+    if (cursor_fmt != 1 && cursor_fmt != 32) {
+        avpriv_report_missing_feature(avctx, "Cursor format %d",
+                                      cursor_fmt);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    tmp = av_realloc(c->cursor, cursor_stride * cursor_h);
+    if (!tmp) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot allocate cursor buffer\n");
         return AVERROR(ENOMEM);
+    }
+
+    c->cursor        = tmp;
+    c->cursor_w      = cursor_w;
+    c->cursor_h      = cursor_h;
+    c->cursor_hot_x  = cursor_hot_x;
+    c->cursor_hot_y  = cursor_hot_y;
+    c->cursor_fmt    = cursor_fmt;
+    c->cursor_stride = cursor_stride;
 
     dst = c->cursor;
     switch (c->cursor_fmt) {
@@ -597,11 +646,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     GetByteContext bc, tbc;
     int magic;
     int got_header = 0;
-    uint32_t chunk_size, cur_size;
+    uint32_t chunk_size;
     int chunk_type;
     int i;
     int ret;
-    int cursor_w, cursor_h, cursor_hot_x, cursor_hot_y, cursor_fmt;
 
     if (buf_size < 12) {
         av_log(avctx, AV_LOG_ERROR,
@@ -647,8 +695,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid frame dimensions %dx%d\n",
                        c->width, c->height);
-                c->width = c->height = 0;
-                bytestream2_skip(&bc, bytestream2_get_bytes_left(&bc));
+                ret = AVERROR_INVALIDDATA;
+                goto header_fail;
             }
             if (c->width != avctx->width || c->height != avctx->height)
                 avcodec_set_dimensions(avctx, c->width, c->height);
@@ -665,15 +713,18 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid tile dimensions %dx%d\n",
                        c->tile_width, c->tile_height);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto header_fail;
             }
             c->tiles_x = (c->width  + c->tile_width  - 1) / c->tile_width;
             c->tiles_y = (c->height + c->tile_height - 1) / c->tile_height;
             c->bpp = bytestream2_get_byte(&bc);
             chunk_size -= 21;
             bytestream2_skip(&bc, chunk_size);
-            if (g2m_init_buffers(c))
-                return AVERROR(ENOMEM);
+            if (g2m_init_buffers(c)) {
+                ret = AVERROR(ENOMEM);
+                goto header_fail;
+            }
             got_header = 1;
             break;
         case TILE_DATA:
@@ -732,24 +783,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             }
             bytestream2_init(&tbc, buf + bytestream2_tell(&bc),
                              chunk_size - 4);
-            cur_size        = bytestream2_get_be32(&tbc);
-            cursor_w        = bytestream2_get_byte(&tbc);
-            cursor_h        = bytestream2_get_byte(&tbc);
-            cursor_hot_x    = bytestream2_get_byte(&tbc);
-            cursor_hot_y    = bytestream2_get_byte(&tbc);
-            cursor_fmt      = bytestream2_get_byte(&tbc);
-            if (cur_size >= chunk_size ||
-                c->cursor_w * c->cursor_h / 4 > cur_size) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid cursor data size %d\n",
-                       chunk_size);
-                break;
-            }
-            c->cursor_w     = cursor_w;
-            c->cursor_h     = cursor_h;
-            c->cursor_hot_x = cursor_hot_x;
-            c->cursor_hot_y = cursor_hot_y;
-            c->cursor_fmt   = cursor_fmt;
-            g2m_load_cursor(c, &tbc);
+            g2m_load_cursor(avctx, c, &tbc);
             bytestream2_skip(&bc, chunk_size);
             break;
         case CHUNK_CC:
@@ -784,6 +818,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     return buf_size;
+header_fail:
+    c->width   = c->height  = 0;
+    c->tiles_x = c->tiles_y = 0;
+    return ret;
 }
 
 static av_cold int g2m_decode_init(AVCodecContext *avctx)
