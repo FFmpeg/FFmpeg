@@ -962,7 +962,7 @@ performance on systems without hardware floating point support).
 @item TED Talks captions @tab @tab X @tab   @tab X
 @item VobSub (IDX+SUB) @tab   @tab X @tab   @tab X
 @item VPlayer          @tab   @tab X @tab   @tab X
-@item WebVTT           @tab   @tab X @tab   @tab X
+@item WebVTT           @tab X @tab X @tab   @tab X
 @item XSUB             @tab   @tab   @tab X @tab X
 @end multitable
 
