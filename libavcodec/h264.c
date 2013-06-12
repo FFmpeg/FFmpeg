@@ -4777,7 +4777,7 @@ again:
                 break;
             case NAL_SPS:
                 init_get_bits(&h->gb, ptr, bit_length);
-                if (ff_h264_decode_seq_parameter_set(h) < 0 && (h->is_avc ? (nalsize != consumed) && nalsize : 1)) {
+                if (ff_h264_decode_seq_parameter_set(h) < 0 && (h->is_avc ? nalsize : 1)) {
                     av_log(h->avctx, AV_LOG_DEBUG,
                            "SPS decoding failure, trying again with the complete NAL\n");
                     if (h->is_avc)
