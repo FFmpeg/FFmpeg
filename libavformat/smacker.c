@@ -304,10 +304,14 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* if audio chunks are present, put them to stack and retrieve later */
         for(i = 0; i < 7; i++) {
             if(flags & 1) {
-                int size;
+                uint32_t size;
                 uint8_t *tmpbuf;
 
                 size = avio_rl32(s->pb) - 4;
+                if (!size || size > frame_size) {
+                    av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 frame_size -= size;
                 frame_size -= 4;
                 smk->curstream++;
