@@ -236,6 +236,9 @@ fate-filter-pixfmts-null:  CMD = pixfmts
 FATE_FILTER_PIXFMTS-$(CONFIG_PAD_FILTER) += fate-filter-pixfmts-pad
 fate-filter-pixfmts-pad:   CMD = pixfmts "500:400:20:20"
 
+FATE_FILTER_PIXFMTS-$(CONFIG_ROTATE_FILTER) += fate-filter-pixfmts-rotate
+fate-filter-pixfmts-rotate: CMD = pixfmts "2*PI*n/50"
+
 FATE_FILTER_PIXFMTS-$(CONFIG_SCALE_FILTER) += fate-filter-pixfmts-scale
 fate-filter-pixfmts-scale: CMD = pixfmts "200:100"
 
