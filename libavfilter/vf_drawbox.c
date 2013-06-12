@@ -114,15 +114,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
         if (s->invert_color) {
             for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                if ((y - yb < s->thickness-1) || (yb + s->h - y < s->thickness) ||
-                    (x - xb < s->thickness-1) || (xb + s->w - x < s->thickness))
+                if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
+                    (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness))
                     row[0][x] = 0xff - row[0][x];
         } else {
             for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
                 double alpha = (double)s->yuv_color[A] / 255;
 
-                if ((y - yb < s->thickness-1) || (yb + s->h - y < s->thickness) ||
-                    (x - xb < s->thickness-1) || (xb + s->w - x < s->thickness)) {
+                if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
+                    (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness)) {
                     row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
                     row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
                     row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
@@ -148,8 +148,8 @@ static const AVOption drawbox_options[] = {
     { "h",         "set height of the box",                        OFFSET(h_opt),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
     { "color",     "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "c",         "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "thickness", "set the box maximum thickness",                OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
-    { "t",         "set the box maximum thickness",                OFFSET(thickness), AV_OPT_TYPE_INT, {.i64=4}, 0, INT_MAX, FLAGS },
+    { "thickness", "set the box thickness",                        OFFSET(thickness), AV_OPT_TYPE_INT, { .i64 = 3 }, 0,       INT_MAX, FLAGS },
+    { "t",         "set the box thickness",                        OFFSET(thickness), AV_OPT_TYPE_INT, { .i64 = 3 }, 0,       INT_MAX, FLAGS },
     { NULL }
 };
 

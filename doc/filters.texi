@@ -2900,7 +2900,7 @@ value @code{invert} is used, the box edge color is the same as the
 video with inverted luma.
 
 @item thickness, t
-Set the thickness of the box edge. Default value is @code{4}.
+Set the thickness of the box edge. Default value is @code{3}.
 @end table
 
 @subsection Examples
