@@ -73,6 +73,7 @@ compatible libraries
 --------------------
 
 The following libraries are under GPL:
+    - frei0r
     - libcdio
     - libutvideo
     - libvidstab

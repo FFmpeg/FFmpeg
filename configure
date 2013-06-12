@@ -3693,6 +3693,7 @@ die_license_disabled_gpl() {
     enabled $1 || { enabled $2 && die "$2 is incompatible with the gpl and --enable-$1 is not specified."; }
 }
 
+die_license_disabled gpl frei0r
 die_license_disabled gpl libcdio
 die_license_disabled gpl libutvideo
 die_license_disabled gpl libvidstab
