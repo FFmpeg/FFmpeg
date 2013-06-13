@@ -90,11 +90,12 @@ static int fourxm_probe(AVProbeData *p)
 }
 
 static int parse_vtrk(AVFormatContext *s,
-                      FourxmDemuxContext *fourxm, uint8_t *buf, int size)
+                      FourxmDemuxContext *fourxm, uint8_t *buf, int size,
+                      int left)
 {
     AVStream *st;
     /* check that there is enough data */
-    if (size != vtrk_SIZE) {
+    if (size != vtrk_SIZE || left < size + 8) {
         return AVERROR_INVALIDDATA;
     }
 
@@ -120,12 +121,13 @@ static int parse_vtrk(AVFormatContext *s,
 
 
 static int parse_strk(AVFormatContext *s,
-                      FourxmDemuxContext *fourxm, uint8_t *buf, int size)
+                      FourxmDemuxContext *fourxm, uint8_t *buf, int size,
+                      int left)
 {
     AVStream *st;
     int track;
     /* check that there is enough data */
-    if (size != strk_SIZE)
+    if (size != strk_SIZE || left < size + 8)
         return AVERROR_INVALIDDATA;
 
     track = AV_RL32(buf + 8);
@@ -230,18 +232,21 @@ static int fourxm_read_header(AVFormatContext *s)
         }
 
         if (fourcc_tag == std__TAG) {
-            if (header_size < i + 16) {
+            if (header_size - i < 16) {
                 av_log(s, AV_LOG_ERROR, "std TAG truncated\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
             fourxm->fps = av_int2float(AV_RL32(&header[i + 12]));
         } else if (fourcc_tag == vtrk_TAG) {
-            if ((ret = parse_vtrk(s, fourxm, header + i, size)) < 0)
+            if ((ret = parse_vtrk(s, fourxm, header + i, size,
+                                  header_size - i)) < 0)
                 goto fail;
 
             i += 8 + size;
         } else if (fourcc_tag == strk_TAG) {
-            if ((ret = parse_strk(s, fourxm, header + i, size)) < 0)
+            if ((ret = parse_strk(s, fourxm, header + i, size,
+                                  header_size - i)) < 0)
                 goto fail;
 
             i += 8 + size;
