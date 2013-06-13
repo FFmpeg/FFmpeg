@@ -333,8 +333,8 @@ static inline void mcdc(uint16_t *dst, const uint16_t *src, int log2w,
     }
 }
 
-static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
-                           int log2w, int log2h, int stride)
+static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
+                          int log2w, int log2h, int stride)
 {
     const int index = size2index[log2h][log2w];
     const int h     = 1 << log2h;
@@ -343,57 +343,64 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
                                BLOCK_TYPE_VLC_BITS, 1);
     uint16_t *start = (uint16_t *)f->last_picture->data[0];
     uint16_t *end   = start + stride * (f->avctx->height - h + 1) - (1 << log2w);
+    int ret;
 
-    av_assert2(code >= 0 && code <= 6);
+    av_assert0(code >= 0 && code <= 6);
 
     if (code == 0) {
         if (bytestream2_get_bytes_left(&f->g) < 1) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         src += f->mv[bytestream2_get_byteu(&f->g)];
         if (start > src || src > end) {
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 1) {
         log2h--;
-        decode_p_block(f, dst, src, log2w, log2h, stride);
-        decode_p_block(f, dst + (stride << log2h),
-                          src + (stride << log2h), log2w, log2h, stride);
+        if ((ret = decode_p_block(f, dst, src, log2w, log2h, stride)) < 0)
+            return ret;
+        if ((ret = decode_p_block(f, dst + (stride << log2h),
+                                  src + (stride << log2h),
+                                  log2w, log2h, stride)) < 0)
+            return ret;
     } else if (code == 2) {
         log2w--;
-        decode_p_block(f, dst , src, log2w, log2h, stride);
-        decode_p_block(f, dst + (1 << log2w),
-                          src + (1 << log2w), log2w, log2h, stride);
+        if ((ret = decode_p_block(f, dst , src, log2w, log2h, stride)) < 0)
+            return ret;
+        if ((ret = decode_p_block(f, dst + (1 << log2w),
+                                  src + (1 << log2w),
+                                  log2w, log2h, stride)) < 0)
+            return ret;
     } else if (code == 3 && f->version < 2) {
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 4) {
         if (bytestream2_get_bytes_left(&f->g) < 1) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         src += f->mv[bytestream2_get_byteu(&f->g)];
         if (start > src || src > end) {
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         if (bytestream2_get_bytes_left(&f->g2) < 2){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16u(&f->g2));
     } else if (code == 5) {
         if (bytestream2_get_bytes_left(&f->g2) < 2) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16u(&f->g2));
     } else if (code == 6) {
         if (bytestream2_get_bytes_left(&f->g2) < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
-            return;
+            return AVERROR_INVALIDDATA;
         }
         if (log2w) {
             dst[0]      = bytestream2_get_le16u(&f->g2);
@@ -403,6 +410,7 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
             dst[stride] = bytestream2_get_le16u(&f->g2);
         }
     }
+    return 0;
 }
 
 static int decode_p_frame(FourXContext *f, AVFrame *frame,
@@ -473,7 +481,8 @@ static int decode_p_frame(FourXContext *f, AVFrame *frame,
 
     for (y = 0; y < height; y += 8) {
         for (x = 0; x < width; x += 8)
-            decode_p_block(f, dst + x, src + x, 3, 3, stride);
+            if ((ret = decode_p_block(f, dst + x, src + x, 3, 3, stride)) < 0)
+                return ret;
         src += 8 * stride;
         dst += 8 * stride;
     }
