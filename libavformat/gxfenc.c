@@ -217,12 +217,27 @@ static int gxf_write_mpeg_auxiliary(AVIOContext *pb, AVStream *st)
     return size + 3;
 }
 
+static int gxf_write_dv_auxiliary(AVIOContext *pb, AVStream *st)
+{
+    int64_t track_aux_data = 0;
+
+    avio_w8(pb, TRACK_AUX);
+    avio_w8(pb, 8);
+    if (st->codec->pix_fmt == PIX_FMT_YUV420P)
+        track_aux_data |= 0x01;     /* marks stream as DVCAM instead of DVPRO */
+    track_aux_data |= 0x40000000;   /* aux data is valid */
+    avio_wl64(pb, track_aux_data);
+    return 8;
+}
+
 static int gxf_write_timecode_auxiliary(AVIOContext *pb, GXFContext *gxf)
 {
     uint32_t timecode = GXF_TIMECODE(gxf->tc.color, gxf->tc.drop,
                                      gxf->tc.hh, gxf->tc.mm,
                                      gxf->tc.ss, gxf->tc.ff);
 
+    avio_w8(pb, TRACK_AUX);
+    avio_w8(pb, 8);
     avio_wl32(pb, timecode);
     /* reserved */
     avio_wl32(pb, 0);
@@ -234,7 +249,6 @@ static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc,
     GXFContext *gxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t pos;
-    int mpeg = sc->track_type == 4 || sc->track_type == 9;
 
     /* track description section */
     avio_w8(pb, sc->media_type + 0x80);
@@ -250,13 +264,21 @@ static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc,
     avio_wb16(pb, sc->media_info);
     avio_w8(pb, 0);
 
-    if (!mpeg) {
-        /* auxiliary information */
-        avio_w8(pb, TRACK_AUX);
-        avio_w8(pb, 8);
-        if (sc->track_type == 3)
+    switch (sc->track_type) {
+        case 3:     /* timecode */
             gxf_write_timecode_auxiliary(pb, gxf);
-        else
+            break;
+        case 4:     /* MPEG2 */
+        case 9:     /* MPEG1 */
+            gxf_write_mpeg_auxiliary(pb, s->streams[index]);
+            break;
+        case 5:     /* DV25 */
+        case 6:     /* DV50 */
+            gxf_write_dv_auxiliary(pb, s->streams[index]);
+            break;
+        default:
+            avio_w8(pb, TRACK_AUX);
+            avio_w8(pb, 8);
             avio_wl64(pb, 0);
     }
 
@@ -264,9 +286,6 @@ static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc,
     avio_w8(pb, TRACK_VER);
     avio_w8(pb, 4);
     avio_wb32(pb, 0);
-
-    if (mpeg)
-        gxf_write_mpeg_auxiliary(pb, s->streams[index]);
 
     /* frame rate */
     avio_w8(pb, TRACK_FPS);
@@ -534,13 +553,20 @@ static int gxf_write_umf_media_timecode(AVIOContext *pb, int drop)
     return 32;
 }
 
-static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc, AVStream *st)
 {
-    int i;
+    int dv_umf_data = 0;
 
-    for (i = 0; i < 8; i++) {
-        avio_wb32(pb, 0);
-    }
+    if (st->codec->pix_fmt == PIX_FMT_YUV420P)
+        dv_umf_data |= 0x20; /* marks as DVCAM instead of DVPRO */
+    avio_wl32(pb, dv_umf_data);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
+    avio_wl32(pb, 0);
     return 32;
 }
 
@@ -604,7 +630,7 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
                 gxf_write_umf_media_audio(pb, sc);
                 break;
             case AV_CODEC_ID_DVVIDEO:
-                gxf_write_umf_media_dv(pb, sc);
+                gxf_write_umf_media_dv(pb, sc, st);
                 break;
             }
         }
