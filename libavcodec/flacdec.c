@@ -498,6 +498,7 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
 
     *got_frame_ptr = 0;
+    s->avctx = avctx;
 
     if (s->max_framesize == 0) {
         s->max_framesize =
