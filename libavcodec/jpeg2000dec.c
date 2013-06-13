@@ -354,6 +354,11 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
 
     compno = bytestream2_get_byteu(&s->g);
 
+    if (compno >= s->ncomponents) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid compno %d\n", compno);
+        return AVERROR_INVALIDDATA;
+    }
+
     c      += compno;
     c->csty = bytestream2_get_byteu(&s->g);
 
