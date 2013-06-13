@@ -160,6 +160,7 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
 static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i;
+    int ncomponents;
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR(EINVAL);
@@ -173,12 +174,14 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->tile_height    = bytestream2_get_be32u(&s->g); // YTSiz
     s->tile_offset_x  = bytestream2_get_be32u(&s->g); // XT0Siz
     s->tile_offset_y  = bytestream2_get_be32u(&s->g); // YT0Siz
-    s->ncomponents    = bytestream2_get_be16u(&s->g); // CSiz
+    ncomponents       = bytestream2_get_be16u(&s->g); // CSiz
 
-    if (s->ncomponents <= 0 || s->ncomponents > 4) {
-        av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", s->ncomponents);
+    if (ncomponents <= 0 || ncomponents > 4) {
+        av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", ncomponents);
         return AVERROR(EINVAL);
     }
+    s->ncomponents = ncomponents;
+
     if (s->tile_width<=0 || s->tile_height<=0)
         return AVERROR(EINVAL);
 
