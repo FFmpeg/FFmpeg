@@ -375,6 +375,7 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
                                   log2w, log2h, stride)) < 0)
             return ret;
     } else if (code == 3 && f->version < 2) {
+        av_assert0(start <= src && src <= end);
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 4) {
         if (bytestream2_get_bytes_left(&f->g) < 1) {
@@ -396,6 +397,7 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return AVERROR_INVALIDDATA;
         }
+        av_assert0(start <= src && src <= end);
         mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16u(&f->g2));
     } else if (code == 6) {
         if (bytestream2_get_bytes_left(&f->g2) < 4) {
