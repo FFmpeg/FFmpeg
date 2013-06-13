@@ -4932,7 +4932,6 @@ The list of the currently supported filters follows:
 @item pullup
 @item qp
 @item softpulldown
-@item spp
 @item uspp
 @end table
 
