@@ -498,7 +498,6 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
 
     *got_frame_ptr = 0;
-    s->avctx = avctx;
 
     if (s->max_framesize == 0) {
         s->max_framesize =
@@ -575,6 +574,7 @@ static int init_thread_copy(AVCodecContext *avctx)
     FLACContext *s = avctx->priv_data;
     s->decoded_buffer = NULL;
     s->decoded_buffer_size = 0;
+    s->avctx = avctx;
     if (s->max_blocksize)
         return allocate_buffers(s);
     return 0;

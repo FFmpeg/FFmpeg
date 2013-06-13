@@ -410,6 +410,8 @@ error:
 
 static int init_thread_copy(AVCodecContext *avctx)
 {
+    TTAContext *s = avctx->priv_data;
+    s->avctx = avctx;
     return allocate_buffers(avctx);
 }
 

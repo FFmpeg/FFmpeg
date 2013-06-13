@@ -621,6 +621,7 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
 static int init_thread_copy(AVCodecContext *avctx)
 {
     ALACContext *alac = avctx->priv_data;
+    alac->avctx = avctx;
     return allocate_buffers(alac);
 }
 

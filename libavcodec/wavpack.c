@@ -728,6 +728,13 @@ static av_cold int wv_alloc_frame_context(WavpackContext *c)
     return 0;
 }
 
+static int init_thread_copy(AVCodecContext *avctx)
+{
+    WavpackContext *s = avctx->priv_data;
+    s->avctx = avctx;
+    return 0;
+}
+
 static av_cold int wavpack_decode_init(AVCodecContext *avctx)
 {
     WavpackContext *s = avctx->priv_data;
@@ -1238,6 +1245,7 @@ AVCodec ff_wavpack_decoder = {
     .close          = wavpack_decode_end,
     .decode         = wavpack_decode_frame,
     .flush          = wavpack_decode_flush,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
 };
