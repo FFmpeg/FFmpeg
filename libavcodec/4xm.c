@@ -416,6 +416,16 @@ static int decode_p_frame(FourXContext *f, AVFrame *frame,
     uint16_t *src;
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra,
                  bytestream_offset, wordstream_offset;
+    int ret;
+
+    if (!f->last_picture->data[0]) {
+        if ((ret = ff_get_buffer(f->avctx, f->last_picture,
+                                 AV_GET_BUFFER_FLAG_REF)) < 0) {
+            return ret;
+        }
+        for (y=0; y<f->avctx->height; y++)
+            memset(f->last_picture->data[0] + y*f->last_picture->linesize[0], 0, 2*f->avctx->width);
+    }
 
     src = (uint16_t *)f->last_picture->data[0];
 
@@ -902,14 +912,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             return ret;
         }
     } else if (frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")) {
-        if (!f->last_picture->data[0]) {
-            if ((ret = ff_get_buffer(avctx, f->last_picture,
-                                     AV_GET_BUFFER_FLAG_REF)) < 0)
-                return ret;
-            for (i=0; i<avctx->height; i++)
-                memset(f->last_picture->data[0] + i*f->last_picture->linesize[0], 0, 2*avctx->width);
-        }
-
         f->current_picture->pict_type = AV_PICTURE_TYPE_P;
         if ((ret = decode_p_frame(f, f->current_picture, buf, frame_size)) < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "decode p frame failed\n");
