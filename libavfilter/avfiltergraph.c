@@ -139,7 +139,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 }
 #endif
 
-int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
+int avfilter_graph_create_filter(AVFilterContext **filt_ctx, const AVFilter *filt,
                                  const char *name, const char *args, void *opaque,
                                  AVFilterGraph *graph_ctx)
 {
