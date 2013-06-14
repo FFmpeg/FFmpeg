@@ -1249,9 +1249,9 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         if (marker == JPEG2000_EOC)
             break;
 
-        if (bytestream2_get_bytes_left(&s->g) < 2)
+        len = bytestream2_get_be16(&s->g);
+        if (len < 2 || bytestream2_get_bytes_left(&s->g) < len - 2)
             return AVERROR(EINVAL);
-        len = bytestream2_get_be16u(&s->g);
         switch (marker) {
         case JPEG2000_SIZ:
             ret = get_siz(s);
