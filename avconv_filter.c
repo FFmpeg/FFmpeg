@@ -412,14 +412,13 @@ int configure_output_filter(FilterGraph *fg, OutputFilter *ofilter, AVFilterInOu
 static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
-    AVFilterContext *first_filter = in->filter_ctx;
+    AVFilterContext *last_filter;
     const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
     InputStream *ist = ifilter->ist;
     AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
                                          ist->st->time_base;
     AVRational sar;
     char args[255], name[255];
-    int pad_idx = in->pad_idx;
     int ret;
 
     sar = ist->st->sample_aspect_ratio.num ?
@@ -434,6 +433,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
                                             args, NULL, fg->graph)) < 0)
         return ret;
+    last_filter = ifilter->filter;
 
     if (ist->framerate.num) {
         AVFilterContext *setpts;
@@ -446,14 +446,13 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                                                 fg->graph)) < 0)
             return ret;
 
-        if ((ret = avfilter_link(setpts, 0, first_filter, pad_idx)) < 0)
+        if ((ret = avfilter_link(last_filter, 0, setpts, 0)) < 0)
             return ret;
 
-        first_filter = setpts;
-        pad_idx = 0;
+        last_filter = setpts;
     }
 
-    if ((ret = avfilter_link(ifilter->filter, 0, first_filter, pad_idx)) < 0)
+    if ((ret = avfilter_link(last_filter, 0, in->filter_ctx, in->pad_idx)) < 0)
         return ret;
     return 0;
 }
@@ -461,10 +460,9 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
 static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
-    AVFilterContext *first_filter = in->filter_ctx;
+    AVFilterContext *last_filter;
     const AVFilter *abuffer_filt = avfilter_get_by_name("abuffer");
     InputStream *ist = ifilter->ist;
-    int pad_idx = in->pad_idx;
     char args[255], name[255];
     int ret;
 
@@ -481,6 +479,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
                                             name, args, NULL,
                                             fg->graph)) < 0)
         return ret;
+    last_filter = ifilter->filter;
 
     if (audio_sync_method > 0) {
         AVFilterContext *async;
@@ -503,12 +502,11 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
         if (ret < 0)
             return ret;
 
-        ret = avfilter_link(async, 0, first_filter, pad_idx);
+        ret = avfilter_link(last_filter, 0, async, 0);
         if (ret < 0)
             return ret;
 
-        first_filter = async;
-        pad_idx = 0;
+        last_filter = async;
     }
     if (audio_volume != 256) {
         AVFilterContext *volume;
@@ -526,14 +524,13 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
         if (ret < 0)
             return ret;
 
-        ret = avfilter_link(volume, 0, first_filter, pad_idx);
+        ret = avfilter_link(last_filter, 0, volume, 0);
         if (ret < 0)
             return ret;
 
-        first_filter = volume;
-        pad_idx = 0;
+        last_filter = volume;
     }
-    if ((ret = avfilter_link(ifilter->filter, 0, first_filter, pad_idx)) < 0)
+    if ((ret = avfilter_link(last_filter, 0, in->filter_ctx, in->pad_idx)) < 0)
         return ret;
 
     return 0;
