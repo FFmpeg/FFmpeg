@@ -424,7 +424,7 @@ static const AVFilterPad spp_outputs[] = {
 
 AVFilter avfilter_vf_spp = {
     .name            = "spp",
-    .description     = NULL_IF_CONFIG_SMALL("XXX"),
+    .description     = NULL_IF_CONFIG_SMALL("Apply a simple post processing filter."),
     .priv_size       = sizeof(SPPContext),
     .init            = init,
     .uninit          = uninit,
