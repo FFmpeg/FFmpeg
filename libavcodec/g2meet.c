@@ -514,6 +514,11 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
         return AVERROR_PATCHWELCOME;
     }
 
+    if (cursor_fmt == 1 && cursor_w % 32) {
+        avpriv_report_missing_feature(avctx, "odd monochrome cursor width %d", cursor_w);
+        return AVERROR_PATCHWELCOME;
+    }
+
     tmp = av_realloc(c->cursor, cursor_stride * cursor_h);
     if (!tmp) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate cursor buffer\n");
