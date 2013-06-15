@@ -1001,16 +1001,20 @@ static void vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
         uvsrc_x = av_clip(uvsrc_x, -8, s->avctx->coded_width  >> 1);
         uvsrc_y = av_clip(uvsrc_y, -8, s->avctx->coded_height >> 1);
         if (i < 2 ? dir : dir2) {
-            srcU = s->next_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
-            srcV = s->next_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+            srcU = s->next_picture.f.data[1];
+            srcV = s->next_picture.f.data[2];
             lutuv  = v->next_lutuv;
             use_ic = v->next_use_ic;
         } else {
-            srcU = s->last_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
-            srcV = s->last_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+            srcU = s->last_picture.f.data[1];
+            srcV = s->last_picture.f.data[2];
             lutuv  = v->last_lutuv;
             use_ic = v->last_use_ic;
         }
+        if (!srcU)
+            return;
+        srcU += uvsrc_y * s->uvlinesize + uvsrc_x;
+        srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
         uvmx_field[i] = (uvmx_field[i] & 3) << 1;
         uvmy_field[i] = (uvmy_field[i] & 3) << 1;
 
