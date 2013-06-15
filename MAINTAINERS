@@ -68,6 +68,7 @@ Other:
   integer.c, integer.h                  Michael Niedermayer
   bswap.h
   opencl.c, opencl.h                    Wei Gao
+  ripemd.c, ripemd.h                    James Almer
 
 
 libavcodec

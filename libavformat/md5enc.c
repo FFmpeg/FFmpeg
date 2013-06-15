@@ -35,7 +35,7 @@ struct MD5Context {
 static void md5_finish(struct AVFormatContext *s, char *buf)
 {
     struct MD5Context *c = s->priv_data;
-    uint8_t md5[32];
+    uint8_t md5[AV_HASH_MAX_SIZE];
     int i, offset = strlen(buf);
     int len = av_hash_get_size(c->hash);
     av_assert0(len > 0 && len <= sizeof(md5));
@@ -86,9 +86,9 @@ static int write_packet(struct AVFormatContext *s, AVPacket *pkt)
 static int write_trailer(struct AVFormatContext *s)
 {
     struct MD5Context *c = s->priv_data;
-    char buf[128];
-    av_strlcpy(buf, av_hash_get_name(c->hash), sizeof(buf) - 100);
-    av_strlcat(buf, "=", sizeof(buf) - 100);
+    char buf[256];
+    av_strlcpy(buf, av_hash_get_name(c->hash), sizeof(buf) - 200);
+    av_strlcat(buf, "=", sizeof(buf) - 200);
 
     md5_finish(s, buf);
 
