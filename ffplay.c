@@ -212,8 +212,6 @@ typedef struct VideoState {
 #endif
     struct AudioParams audio_tgt;
     struct SwrContext *swr_ctx;
-    double audio_current_pts;
-    double audio_current_pts_drift;
     int frame_drops_early;
     int frame_drops_late;
     AVFrame *frame;
@@ -251,8 +249,6 @@ typedef struct VideoState {
     int video_stream;
     AVStream *video_st;
     PacketQueue videoq;
-    double video_current_pts;       // current displayed pts
-    double video_current_pts_drift; // video_current_pts - time (av_gettime) at which we updated video_current_pts - used to have running video pts
     int64_t video_current_pos;      // current displayed file pos
     double max_frame_duration;      // maximum duration of a frame - above this, we consider the jump a timestamp discontinuity
     VideoPicture pictq[VIDEO_PICTURE_QUEUE_SIZE];
