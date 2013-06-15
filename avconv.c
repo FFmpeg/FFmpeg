@@ -652,10 +652,11 @@ static int poll_filter(OutputStream *ost)
         return ret;
 
     if (filtered_frame->pts != AV_NOPTS_VALUE) {
+        int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
         filtered_frame->pts = av_rescale_q(filtered_frame->pts,
                                            ost->filter->filter->inputs[0]->time_base,
                                            ost->st->codec->time_base) -
-                              av_rescale_q(of->start_time,
+                              av_rescale_q(start_time,
                                            AV_TIME_BASE_Q,
                                            ost->st->codec->time_base);
     }
@@ -948,7 +949,7 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
     if (ost->source_index != ist_index)
         return 0;
 
-    if (of->start_time && ist->last_dts < of->start_time)
+    if (of->start_time != AV_NOPTS_VALUE && ist->last_dts < of->start_time)
         return 0;
 
     return 1;
@@ -957,7 +958,8 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
 static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
-    int64_t ost_tb_start_time = av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
+    int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
+    int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
     AVPacket opkt;
 
     av_init_packet(&opkt);
@@ -967,7 +969,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         return;
 
     if (of->recording_time != INT64_MAX &&
-        ist->last_dts >= of->recording_time + of->start_time) {
+        ist->last_dts >= of->recording_time + start_time) {
         ost->finished = 1;
         return;
     }

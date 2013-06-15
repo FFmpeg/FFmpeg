@@ -183,7 +183,7 @@ static int insert_trim(OutputStream *ost, AVFilterContext **last_filter, int *pa
     char filter_name[128];
     int ret = 0;
 
-    if (of->recording_time == INT64_MAX && !of->start_time)
+    if (of->recording_time == INT64_MAX && of->start_time == AV_NOPTS_VALUE)
         return 0;
 
     trim = avfilter_get_by_name(name);
@@ -203,7 +203,7 @@ static int insert_trim(OutputStream *ost, AVFilterContext **last_filter, int *pa
         ret = av_opt_set_double(ctx, "duration", (double)of->recording_time / 1e6,
                                 AV_OPT_SEARCH_CHILDREN);
     }
-    if (ret >= 0 && of->start_time) {
+    if (ret >= 0 && of->start_time != AV_NOPTS_VALUE) {
         ret = av_opt_set_double(ctx, "start", (double)of->start_time / 1e6,
                                 AV_OPT_SEARCH_CHILDREN);
     }
