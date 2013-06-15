@@ -3109,50 +3109,6 @@ void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
     s->pts_wrap_bits = pts_wrap_bits;
 }
 
-int ff_url_join(char *str, int size, const char *proto,
-                const char *authorization, const char *hostname,
-                int port, const char *fmt, ...)
-{
-#if CONFIG_NETWORK
-    struct addrinfo hints = { 0 }, *ai;
-#endif
-
-    str[0] = '\0';
-    if (proto)
-        av_strlcatf(str, size, "%s://", proto);
-    if (authorization && authorization[0])
-        av_strlcatf(str, size, "%s@", authorization);
-#if CONFIG_NETWORK && defined(AF_INET6)
-    /* Determine if hostname is a numerical IPv6 address,
-     * properly escape it within [] in that case. */
-    hints.ai_flags = AI_NUMERICHOST;
-    if (!getaddrinfo(hostname, NULL, &hints, &ai)) {
-        if (ai->ai_family == AF_INET6) {
-            av_strlcat(str, "[", size);
-            av_strlcat(str, hostname, size);
-            av_strlcat(str, "]", size);
-        } else {
-            av_strlcat(str, hostname, size);
-        }
-        freeaddrinfo(ai);
-    } else
-#endif
-        /* Not an IPv6 address, just output the plain string. */
-        av_strlcat(str, hostname, size);
-
-    if (port >= 0)
-        av_strlcatf(str, size, ":%d", port);
-    if (fmt) {
-        va_list vl;
-        int len = strlen(str);
-
-        va_start(vl, fmt);
-        vsnprintf(str + len, size > len ? size - len : 0, fmt, vl);
-        va_end(vl);
-    }
-    return strlen(str);
-}
-
 void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
                         void *context)
 {
@@ -3215,75 +3171,6 @@ int ff_find_stream_index(AVFormatContext *s, int id)
             return i;
     }
     return -1;
-}
-
-void ff_make_absolute_url(char *buf, int size, const char *base,
-                          const char *rel)
-{
-    char *sep, *path_query;
-    /* Absolute path, relative to the current server */
-    if (base && strstr(base, "://") && rel[0] == '/') {
-        if (base != buf)
-            av_strlcpy(buf, base, size);
-        sep = strstr(buf, "://");
-        if (sep) {
-            /* Take scheme from base url */
-            if (rel[1] == '/') {
-                sep[1] = '\0';
-            } else {
-                /* Take scheme and host from base url */
-                sep += 3;
-                sep = strchr(sep, '/');
-                if (sep)
-                    *sep = '\0';
-            }
-        }
-        av_strlcat(buf, rel, size);
-        return;
-    }
-    /* If rel actually is an absolute url, just copy it */
-    if (!base || strstr(rel, "://") || rel[0] == '/') {
-        av_strlcpy(buf, rel, size);
-        return;
-    }
-    if (base != buf)
-        av_strlcpy(buf, base, size);
-
-    /* Strip off any query string from base */
-    path_query = strchr(buf, '?');
-    if (path_query != NULL)
-        *path_query = '\0';
-
-    /* Is relative path just a new query part? */
-    if (rel[0] == '?') {
-        av_strlcat(buf, rel, size);
-        return;
-    }
-
-    /* Remove the file name from the base url */
-    sep = strrchr(buf, '/');
-    if (sep)
-        sep[1] = '\0';
-    else
-        buf[0] = '\0';
-    while (av_strstart(rel, "../", NULL) && sep) {
-        /* Remove the path delimiter at the end */
-        sep[0] = '\0';
-        sep = strrchr(buf, '/');
-        /* If the next directory name to pop off is "..", break here */
-        if (!strcmp(sep ? &sep[1] : buf, "..")) {
-            /* Readd the slash we just removed */
-            av_strlcat(buf, "/", size);
-            break;
-        }
-        /* Cut off the directory name */
-        if (sep)
-            sep[1] = '\0';
-        else
-            buf[0] = '\0';
-        rel += 3;
-    }
-    av_strlcat(buf, rel, size);
 }
 
 int64_t ff_iso8601_to_unix_time(const char *datestr)

@@ -20,6 +20,7 @@ OBJS = allformats.o         \
        riff.o               \
        sdp.o                \
        seek.o               \
+       url.o                \
        utils.o              \
 
 OBJS-$(CONFIG_NETWORK)                   += network.o
