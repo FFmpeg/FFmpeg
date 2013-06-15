@@ -43,6 +43,7 @@ HEADERS = adler32.h                                                     \
           pixfmt.h                                                      \
           random_seed.h                                                 \
           rational.h                                                    \
+          ripemd.h                                                      \
           samplefmt.h                                                   \
           sha.h                                                         \
           sha512.h                                                      \
@@ -102,6 +103,7 @@ OBJS = adler32.o                                                        \
        random_seed.o                                                    \
        rational.o                                                       \
        rc4.o                                                            \
+       ripemd.o                                                         \
        samplefmt.o                                                      \
        sha.o                                                            \
        sha512.o                                                         \
@@ -148,6 +150,7 @@ TESTPROGS = adler32                                                     \
             parseutils                                                  \
             random_seed                                                 \
             rational                                                    \
+            ripemd                                                      \
             sha                                                         \
             sha512                                                      \
             tree                                                        \

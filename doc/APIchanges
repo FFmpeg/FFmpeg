@@ -16,6 +16,13 @@ libavutil:     2012-10-22
 API changes, most recent first:
 
 
+2013-06-xx - xxxxxxx - lavu 52.36.100
+  Add AVRIPEMD:
+   av_ripemd_alloc()
+   av_ripemd_init()
+   av_ripemd_update()
+   av_ripemd_final()
+
 2013-06-05 - fc962d4 - lavu 52.13.0 - mem.h
   Add av_realloc_array and av_reallocp_array
 
