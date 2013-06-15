@@ -27,6 +27,9 @@ version 10:
 - WavPack encoding through libwavpack
 - Added the -n parameter to avconv
 - RTMP seek support
+- when transcoding with avconv (i.e. not streamcopying), -ss is now accurate
+  even when used as an input option. Previous behavior can be restored with
+  the -noaccurate_seek option.
 
 
 version 9:

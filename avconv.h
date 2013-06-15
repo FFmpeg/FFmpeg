@@ -88,6 +88,7 @@ typedef struct OptionsContext {
     /* input options */
     int64_t input_ts_offset;
     int rate_emu;
+    int accurate_seek;
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
@@ -237,9 +238,11 @@ typedef struct InputFile {
     int eagain;           /* true if last read attempt returned EAGAIN */
     int ist_index;        /* index of first stream in ist_table */
     int64_t ts_offset;
+    int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
     int nb_streams;       /* number of stream that avconv is aware of; may be different
                              from ctx.nb_streams if new streams appear during av_read_frame() */
     int rate_emu;
+    int accurate_seek;
 
 #if HAVE_PTHREADS
     pthread_t thread;           /* thread reading from this file */
