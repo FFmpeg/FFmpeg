@@ -74,7 +74,7 @@ static av_always_inline av_const int64_t MUL64(int a, int b)
 static inline av_const int mid_pred(int a, int b, int c)
 {
     int i=b;
-    __asm__ volatile(
+    __asm__ (
         "cmp    %2, %1 \n\t"
         "cmovg  %1, %0 \n\t"
         "cmovg  %2, %1 \n\t"
