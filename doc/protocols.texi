@@ -49,6 +49,16 @@ Read angle 2 of playlist 4 from BluRay mounted to /mnt/bluray, start from chapte
 -playlist 4 -angle 2 -chapter 2 bluray:/mnt/bluray
 @end example
 
+@section cache
+
+Caching wrapper for input stream.
+
+Caches the input stream to temporary file. It brings seeking capability to live streams.
+
+@example
+cache:@var{URL}
+@end example
+
 @section concat
 
 Physical concatenation protocol.
