@@ -1429,8 +1429,8 @@ retry:
                         else
                             sp2 = NULL;
 
-                        if ((is->video_current_pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
-                                || (sp2 && is->video_current_pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
+                        if ((is->vidclk.pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
+                                || (sp2 && is->vidclk.pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
                         {
                             free_subpicture(sp);
 
