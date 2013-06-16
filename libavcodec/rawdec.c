@@ -190,7 +190,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         return res;
 
     if (need_copy)
-        frame->buf[0] = av_buffer_alloc(context->frame_size);
+        frame->buf[0] = av_buffer_alloc(FFMAX(context->frame_size, buf_size));
     else
         frame->buf[0] = av_buffer_ref(avpkt->buf);
     if (!frame->buf[0])
@@ -219,7 +219,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
         buf = dst;
     } else if (need_copy) {
-        memcpy(frame->buf[0]->data, buf, FFMIN(buf_size, context->frame_size));
+        memcpy(frame->buf[0]->data, buf, buf_size);
         buf = frame->buf[0]->data;
     }
 
