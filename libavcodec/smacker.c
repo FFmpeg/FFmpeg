@@ -646,9 +646,16 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         h[i].lengths = av_mallocz(256 * sizeof(int));
         h[i].values = av_mallocz(256 * sizeof(int));
         skip_bits1(&gb);
-        res = smacker_decode_tree(&gb, &h[i], 0, 0);
-        if (res < 0)
-            return res;
+        if (smacker_decode_tree(&gb, &h[i], 0, 0) < 0) {
+            for (; i >= 0; i--) {
+                if (vlc[i].table)
+                    ff_free_vlc(&vlc[i]);
+                av_free(h[i].bits);
+                av_free(h[i].lengths);
+                av_free(h[i].values);
+            }
+            return AVERROR_INVALIDDATA;
+        }
         skip_bits1(&gb);
         if(h[i].current > 1) {
             res = init_vlc(&vlc[i], SMKTREE_BITS, h[i].length,
