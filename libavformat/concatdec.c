@@ -23,6 +23,7 @@
 #include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
+#include "url.h"
 
 typedef struct {
     char *url;
