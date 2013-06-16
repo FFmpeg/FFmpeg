@@ -257,4 +257,6 @@ int ff_listen_connect(int fd, const struct sockaddr *addr,
                       socklen_t addrlen, int timeout,
                       URLContext *h);
 
+int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
+
 #endif /* AVFORMAT_NETWORK_H */

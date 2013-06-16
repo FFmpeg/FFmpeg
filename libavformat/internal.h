@@ -390,6 +390,4 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precissi
  */
 void ff_generate_avci_extradata(AVStream *st);
 
-int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
-
 #endif /* AVFORMAT_INTERNAL_H */
