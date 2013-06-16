@@ -1,6 +1,29 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.7:
+
+Most of the following fixes resulted from test samples that the Google
+Security Team has kindly made available to us:
+
+- 4xm: fix several programming errors to avoid crashes, etc.
+- apetag: use int64_t for filesize
+- jpegls: Fix invalid writes to memory
+- ljpeg: use the correct number of components in YUV
+- mjpeg: Validate sampling factors
+- mjpegdec: properly report unsupported disabled features
+- mjpegdec: validate parameters in mjpeg_decode_scan_progressive_ac
+- mpegvideo: allocate sufficiently large scratch buffer for interlaced vid
+- pixdesc: mark gray8 as pseudopal
+- smacker: fix several programming errors to avoid crashes, etc.
+- tiff: do not overread the source buffer
+- vmd: drop incomplete chunks and spurious samples
+- vmdav: convert to bytestream2 to avoid invalid reads and writes
+- wavpack: check packet size early
+- wavpack: use bytestream2 in wavpack_decode_block
+- wavpack: validate samples size parsed in wavpack_decode_block
+
+
 version 9.6:
 - aac: check the maximum number of channels to avoid invalid writes
 - indeo3: fix off by one in MV validity check
