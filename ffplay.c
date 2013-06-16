@@ -134,6 +134,7 @@ typedef struct VideoPicture {
 typedef struct SubPicture {
     double pts; /* presentation time stamp for this picture */
     AVSubtitle sub;
+    int serial;
 } SubPicture;
 
 typedef struct AudioParams {
@@ -230,7 +231,6 @@ typedef struct VideoState {
 
     SDL_Thread *subtitle_tid;
     int subtitle_stream;
-    int subtitle_stream_changed;
     AVStream *subtitle_st;
     PacketQueue subtitleq;
     SubPicture subpq[SUBPICTURE_QUEUE_SIZE];
@@ -1400,24 +1400,7 @@ retry:
             }
 
             if (is->subtitle_st) {
-                if (is->subtitle_stream_changed) {
-                    SDL_LockMutex(is->subpq_mutex);
-
-                    while (is->subpq_size) {
-                        free_subpicture(&is->subpq[is->subpq_rindex]);
-
-                        /* update queue size and signal for next picture */
-                        if (++is->subpq_rindex == SUBPICTURE_QUEUE_SIZE)
-                            is->subpq_rindex = 0;
-
-                        is->subpq_size--;
-                    }
-                    is->subtitle_stream_changed = 0;
-
-                    SDL_CondSignal(is->subpq_cond);
-                    SDL_UnlockMutex(is->subpq_mutex);
-                } else {
-                    if (is->subpq_size > 0) {
+                    while (is->subpq_size > 0) {
                         sp = &is->subpq[is->subpq_rindex];
 
                         if (is->subpq_size > 1)
@@ -1425,7 +1408,8 @@ retry:
                         else
                             sp2 = NULL;
 
-                        if ((is->vidclk.pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
+                        if (sp->serial != is->subtitleq.serial
+                                || (is->vidclk.pts > (sp->pts + ((float) sp->sub.end_display_time / 1000)))
                                 || (sp2 && is->vidclk.pts > (sp2->pts + ((float) sp2->sub.start_display_time / 1000))))
                         {
                             free_subpicture(sp);
@@ -1438,9 +1422,10 @@ retry:
                             is->subpq_size--;
                             SDL_CondSignal(is->subpq_cond);
                             SDL_UnlockMutex(is->subpq_mutex);
+                        } else {
+                            break;
                         }
                     }
-                }
             }
 
 display:
@@ -2000,6 +1985,7 @@ static int subtitle_thread(void *arg)
     SubPicture *sp;
     AVPacket pkt1, *pkt = &pkt1;
     int got_subtitle;
+    int serial;
     double pts;
     int i, j;
     int r, g, b, y, u, v, a;
@@ -2008,7 +1994,7 @@ static int subtitle_thread(void *arg)
         while (is->paused && !is->subtitleq.abort_request) {
             SDL_Delay(10);
         }
-        if (packet_queue_get(&is->subtitleq, pkt, 1, NULL) < 0)
+        if (packet_queue_get(&is->subtitleq, pkt, 1, &serial) < 0)
             break;
 
         if (pkt->data == flush_pkt.data) {
@@ -2039,6 +2025,7 @@ static int subtitle_thread(void *arg)
             if (sp->sub.pts != AV_NOPTS_VALUE)
                 pts = sp->sub.pts / (double)AV_TIME_BASE;
             sp->pts = pts;
+            sp->serial = serial;
 
             for (i = 0; i < sp->sub.num_rects; i++)
             {
@@ -2633,8 +2620,6 @@ static void stream_component_close(VideoState *is, int stream_index)
         /* note: we also signal this mutex to make sure we deblock the
            video thread in all cases */
         SDL_LockMutex(is->subpq_mutex);
-        is->subtitle_stream_changed = 1;
-
         SDL_CondSignal(is->subpq_cond);
         SDL_UnlockMutex(is->subpq_mutex);
 
