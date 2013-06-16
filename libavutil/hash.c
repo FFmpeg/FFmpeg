@@ -24,6 +24,7 @@
 #include "crc.h"
 #include "md5.h"
 #include "murmur3.h"
+#include "ripemd.h"
 #include "sha.h"
 #include "sha512.h"
 
@@ -35,6 +36,10 @@
 enum hashtype {
     MD5,
     MURMUR3,
+    RIPEMD128,
+    RIPEMD160,
+    RIPEMD256,
+    RIPEMD320,
     SHA160,
     SHA224,
     SHA256,
@@ -60,6 +65,10 @@ struct {
 } hashdesc[] = {
     [MD5]     = {"MD5",     16},
     [MURMUR3] = {"murmur3", 16},
+    [RIPEMD128] = {"RIPEMD128", 16},
+    [RIPEMD160] = {"RIPEMD160", 20},
+    [RIPEMD256] = {"RIPEMD256", 32},
+    [RIPEMD320] = {"RIPEMD320", 40},
     [SHA160]  = {"SHA160",  20},
     [SHA224]  = {"SHA224",  28},
     [SHA256]  = {"SHA256",  32},
@@ -102,6 +111,10 @@ int av_hash_alloc(AVHashContext **ctx, const char *name)
     switch (i) {
     case MD5:     res->ctx = av_md5_alloc(); break;
     case MURMUR3: res->ctx = av_murmur3_alloc(); break;
+    case RIPEMD128:
+    case RIPEMD160:
+    case RIPEMD256:
+    case RIPEMD320: res->ctx = av_ripemd_alloc(); break;
     case SHA160:
     case SHA224:
     case SHA256:  res->ctx = av_sha_alloc(); break;
@@ -125,6 +138,10 @@ void av_hash_init(AVHashContext *ctx)
     switch (ctx->type) {
     case MD5:     av_md5_init(ctx->ctx); break;
     case MURMUR3: av_murmur3_init(ctx->ctx); break;
+    case RIPEMD128: av_ripemd_init(ctx->ctx, 128); break;
+    case RIPEMD160: av_ripemd_init(ctx->ctx, 160); break;
+    case RIPEMD256: av_ripemd_init(ctx->ctx, 256); break;
+    case RIPEMD320: av_ripemd_init(ctx->ctx, 320); break;
     case SHA160:  av_sha_init(ctx->ctx, 160); break;
     case SHA224:  av_sha_init(ctx->ctx, 224); break;
     case SHA256:  av_sha_init(ctx->ctx, 256); break;
@@ -142,6 +159,10 @@ void av_hash_update(AVHashContext *ctx, const uint8_t *src, int len)
     switch (ctx->type) {
     case MD5:     av_md5_update(ctx->ctx, src, len); break;
     case MURMUR3: av_murmur3_update(ctx->ctx, src, len); break;
+    case RIPEMD128:
+    case RIPEMD160:
+    case RIPEMD256:
+    case RIPEMD320: av_ripemd_update(ctx->ctx, src, len); break;
     case SHA160:
     case SHA224:
     case SHA256:  av_sha_update(ctx->ctx, src, len); break;
@@ -159,6 +180,10 @@ void av_hash_final(AVHashContext *ctx, uint8_t *dst)
     switch (ctx->type) {
     case MD5:     av_md5_final(ctx->ctx, dst); break;
     case MURMUR3: av_murmur3_final(ctx->ctx, dst); break;
+    case RIPEMD128:
+    case RIPEMD160:
+    case RIPEMD256:
+    case RIPEMD320: av_ripemd_final(ctx->ctx, dst); break;
     case SHA160:
     case SHA224:
     case SHA256:  av_sha_final(ctx->ctx, dst); break;
