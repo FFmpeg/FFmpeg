@@ -462,6 +462,16 @@ enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
     return AV_CODEC_ID_NONE;
 }
 
+const struct AVCodecTag *avformat_get_riff_video_tags(void)
+{
+    return ff_codec_bmp_tags;
+}
+
+const struct AVCodecTag *avformat_get_riff_audio_tags(void)
+{
+    return ff_codec_wav_tags;
+}
+
 #if CONFIG_MUXERS
 int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
