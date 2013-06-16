@@ -28,6 +28,9 @@
  * @defgroup lavu_adler32 Adler32
  * @ingroup lavu_crypto
  * @{
+ */
+
+/**
  * Calculate the Adler32 checksum of a buffer.
  *
  * Passing the return value to a subsequent av_adler32_update() call
