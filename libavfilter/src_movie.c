@@ -197,7 +197,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
     char name[16];
     AVStream *st;
 
-    if (!*movie->file_name) {
+    if (!movie->file_name) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
         return AVERROR(EINVAL);
     }
