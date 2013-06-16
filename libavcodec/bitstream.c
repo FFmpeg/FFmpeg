@@ -45,81 +45,84 @@ const uint8_t ff_log2_run[41]={
 
 void avpriv_align_put_bits(PutBitContext *s)
 {
-    put_bits(s,s->bit_left & 7,0);
+    put_bits(s, s->bit_left & 7, 0);
 }
 
-void avpriv_put_string(PutBitContext *pb, const char *string, int terminate_string)
+void avpriv_put_string(PutBitContext *pb, const char *string,
+                       int terminate_string)
 {
-    while(*string){
+    while (*string) {
         put_bits(pb, 8, *string);
         string++;
     }
-    if(terminate_string)
+    if (terminate_string)
         put_bits(pb, 8, 0);
 }
 
 void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
 {
-    int words= length>>4;
-    int bits= length&15;
+    int words = length >> 4;
+    int bits  = length & 15;
     int i;
 
-    if(length==0) return;
+    if (length == 0)
+        return;
 
-    if(CONFIG_SMALL || words < 16 || put_bits_count(pb)&7){
-        for(i=0; i<words; i++) put_bits(pb, 16, AV_RB16(src + 2*i));
-    }else{
-        for(i=0; put_bits_count(pb)&31; i++)
+    if (CONFIG_SMALL || words < 16 || put_bits_count(pb) & 7) {
+        for (i = 0; i < words; i++)
+            put_bits(pb, 16, AV_RB16(src + 2 * i));
+    } else {
+        for (i = 0; put_bits_count(pb) & 31; i++)
             put_bits(pb, 8, src[i]);
         flush_put_bits(pb);
-        memcpy(put_bits_ptr(pb), src+i, 2*words-i);
-        skip_put_bytes(pb, 2*words-i);
+        memcpy(put_bits_ptr(pb), src + i, 2 * words - i);
+        skip_put_bytes(pb, 2 * words - i);
     }
 
-    put_bits(pb, bits, AV_RB16(src + 2*words)>>(16-bits));
+    put_bits(pb, bits, AV_RB16(src + 2 * words) >> (16 - bits));
 }
 
 /* VLC decoding */
 
-#define GET_DATA(v, table, i, wrap, size) \
-{\
-    const uint8_t *ptr = (const uint8_t *)table + i * wrap;\
-    switch(size) {\
-    case 1:\
-        v = *(const uint8_t *)ptr;\
-        break;\
-    case 2:\
-        v = *(const uint16_t *)ptr;\
-        break;\
-    default:\
-        v = *(const uint32_t *)ptr;\
-        break;\
-    }\
+#define GET_DATA(v, table, i, wrap, size)                   \
+{                                                           \
+    const uint8_t *ptr = (const uint8_t *)table + i * wrap; \
+    switch(size) {                                          \
+    case 1:                                                 \
+        v = *(const uint8_t *)ptr;                          \
+        break;                                              \
+    case 2:                                                 \
+        v = *(const uint16_t *)ptr;                         \
+        break;                                              \
+    default:                                                \
+        v = *(const uint32_t *)ptr;                         \
+        break;                                              \
+    }                                                       \
 }
 
 
 static int alloc_table(VLC *vlc, int size, int use_static)
 {
-    int index;
-    index = vlc->table_size;
+    int index = vlc->table_size;
+
     vlc->table_size += size;
     if (vlc->table_size > vlc->table_allocated) {
-        if(use_static)
+        if (use_static)
             abort(); // cannot do anything, init_vlc() is used with too little memory
         vlc->table_allocated += (1 << vlc->bits);
-        vlc->table = av_realloc_f(vlc->table,
-                                  vlc->table_allocated, sizeof(VLC_TYPE) * 2);
+        vlc->table = av_realloc_f(vlc->table, vlc->table_allocated, sizeof(VLC_TYPE) * 2);
         if (!vlc->table)
             return -1;
     }
     return index;
 }
 
-static av_always_inline uint32_t bitswap_32(uint32_t x) {
-    return (uint32_t)ff_reverse[x&0xFF]<<24
-         | (uint32_t)ff_reverse[(x>>8)&0xFF]<<16
-         | (uint32_t)ff_reverse[(x>>16)&0xFF]<<8
-         | (uint32_t)ff_reverse[x>>24];
+static av_always_inline uint32_t bitswap_32(uint32_t x)
+{
+    return (uint32_t)ff_reverse[ x        & 0xFF] << 24 |
+           (uint32_t)ff_reverse[(x >> 8)  & 0xFF] << 16 |
+           (uint32_t)ff_reverse[(x >> 16) & 0xFF] << 8  |
+           (uint32_t)ff_reverse[ x >> 24];
 }
 
 typedef struct {
@@ -132,10 +135,9 @@ typedef struct {
 
 static int compare_vlcspec(const void *a, const void *b)
 {
-    const VLCcode *sa=a, *sb=b;
+    const VLCcode *sa = a, *sb = b;
     return (sa->code >> 1) - (sb->code >> 1);
 }
-
 /**
  * Build VLC decoding tables suitable for use with get_vlc().
  *
@@ -174,8 +176,8 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
 
     /* first pass: map codes and compute auxiliary table sizes */
     for (i = 0; i < nb_codes; i++) {
-        n = codes[i].bits;
-        code = codes[i].code;
+        n      = codes[i].bits;
+        code   = codes[i].code;
         symbol = codes[i].symbol;
         av_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
         if (n <= table_nb_bits) {
@@ -260,16 +262,16 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
    with av_free_static(), 0 if ff_free_vlc() will be used.
 */
 int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
-             const void *bits, int bits_wrap, int bits_size,
-             const void *codes, int codes_wrap, int codes_size,
-             const void *symbols, int symbols_wrap, int symbols_size,
-             int flags)
+                       const void *bits, int bits_wrap, int bits_size,
+                       const void *codes, int codes_wrap, int codes_size,
+                       const void *symbols, int symbols_wrap, int symbols_size,
+                       int flags)
 {
     VLCcode *buf;
     int i, j, ret;
 
     vlc->bits = nb_bits;
-    if(flags & INIT_VLC_USE_NEW_STATIC){
+    if (flags & INIT_VLC_USE_NEW_STATIC) {
         VLC dyn_vlc = *vlc;
 
         if (vlc->table_size)
@@ -282,49 +284,49 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
                                  flags & ~INIT_VLC_USE_NEW_STATIC);
         av_assert0(ret >= 0);
         av_assert0(dyn_vlc.table_size <= vlc->table_allocated);
-        if(dyn_vlc.table_size < vlc->table_allocated)
+        if (dyn_vlc.table_size < vlc->table_allocated)
             av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", dyn_vlc.table_size, vlc->table_allocated);
         memcpy(vlc->table, dyn_vlc.table, dyn_vlc.table_size * sizeof(*vlc->table));
         vlc->table_size = dyn_vlc.table_size;
         ff_free_vlc(&dyn_vlc);
         return 0;
-    }else {
-        vlc->table = NULL;
+    } else {
+        vlc->table           = NULL;
         vlc->table_allocated = 0;
-        vlc->table_size = 0;
+        vlc->table_size      = 0;
     }
 
     av_dlog(NULL, "build table nb_codes=%d\n", nb_codes);
 
-    buf = av_malloc((nb_codes+1)*sizeof(VLCcode));
+    buf = av_malloc((nb_codes + 1) * sizeof(VLCcode));
 
     av_assert0(symbols_size <= 2 || !symbols);
     j = 0;
 #define COPY(condition)\
-    for (i = 0; i < nb_codes; i++) {\
-        GET_DATA(buf[j].bits, bits, i, bits_wrap, bits_size);\
-        if (!(condition))\
-            continue;\
-        if (buf[j].bits > 3*nb_bits || buf[j].bits>32) {\
+    for (i = 0; i < nb_codes; i++) {                                        \
+        GET_DATA(buf[j].bits, bits, i, bits_wrap, bits_size);               \
+        if (!(condition))                                                   \
+            continue;                                                       \
+        if (buf[j].bits > 3*nb_bits || buf[j].bits>32) {                    \
             av_log(NULL, AV_LOG_ERROR, "Too long VLC (%d) in init_vlc\n", buf[j].bits);\
-            av_free(buf);\
-            return -1;\
-        }\
-        GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);\
-        if (buf[j].code >= (1LL<<buf[j].bits)) {\
-            av_log(NULL, AV_LOG_ERROR, "Invalid code in init_vlc\n");\
-            av_free(buf);\
-            return -1;\
-        }\
-        if (flags & INIT_VLC_LE)\
-            buf[j].code = bitswap_32(buf[j].code);\
-        else\
-            buf[j].code <<= 32 - buf[j].bits;\
-        if (symbols)\
-            GET_DATA(buf[j].symbol, symbols, i, symbols_wrap, symbols_size)\
-        else\
-            buf[j].symbol = i;\
-        j++;\
+            av_free(buf);                                                   \
+            return -1;                                                      \
+        }                                                                   \
+        GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);            \
+        if (buf[j].code >= (1LL<<buf[j].bits)) {                            \
+            av_log(NULL, AV_LOG_ERROR, "Invalid code in init_vlc\n");       \
+            av_free(buf);                                                   \
+            return -1;                                                      \
+        }                                                                   \
+        if (flags & INIT_VLC_LE)                                            \
+            buf[j].code = bitswap_32(buf[j].code);                          \
+        else                                                                \
+            buf[j].code <<= 32 - buf[j].bits;                               \
+        if (symbols)                                                        \
+            GET_DATA(buf[j].symbol, symbols, i, symbols_wrap, symbols_size) \
+        else                                                                \
+            buf[j].symbol = i;                                              \
+        j++;                                                                \
     }
     COPY(buf[j].bits > nb_bits);
     // qsort is the slowest part of init_vlc, and could probably be improved or avoided
