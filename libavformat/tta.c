@@ -60,11 +60,6 @@ static int tta_read_header(AVFormatContext *s)
     uint32_t nb_samples, crc;
 
     ff_id3v1_read(s);
-    if (s->pb->seekable) {
-        int64_t pos = avio_tell(s->pb);
-        ff_ape_parse_tag(s);
-        avio_seek(s->pb, pos, SEEK_SET);
-    }
 
     start_offset = avio_tell(s->pb);
     ffio_init_checksum(s->pb, tta_check_crc, UINT32_MAX);
@@ -142,6 +137,12 @@ static int tta_read_header(AVFormatContext *s)
     st->codec->channels = channels;
     st->codec->sample_rate = samplerate;
     st->codec->bits_per_coded_sample = bps;
+
+    if (s->pb->seekable) {
+        int64_t pos = avio_tell(s->pb);
+        ff_ape_parse_tag(s);
+        avio_seek(s->pb, pos, SEEK_SET);
+    }
 
     return 0;
 }
