@@ -67,8 +67,8 @@ static int mmsh_close(URLContext *h)
     MMSContext *mms   = &mmsh->mms;
     if (mms->mms_hd)
         ffurl_close(mms->mms_hd);
-    av_free(mms->streams);
-    av_free(mms->asf_header);
+    av_freep(&mms->streams);
+    av_freep(&mms->asf_header);
     return 0;
 }
 
