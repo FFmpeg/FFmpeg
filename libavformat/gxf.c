@@ -122,6 +122,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             break;
         case 14:
         case 16:
+        case 25:
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_id = AV_CODEC_ID_DVVIDEO;
             break;
