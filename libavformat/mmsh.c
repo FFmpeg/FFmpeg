@@ -66,7 +66,7 @@ static int mmsh_close(URLContext *h)
     MMSHContext *mmsh = (MMSHContext *)h->priv_data;
     MMSContext *mms   = &mmsh->mms;
     if (mms->mms_hd)
-        ffurl_close(mms->mms_hd);
+        ffurl_closep(&mms->mms_hd);
     av_freep(&mms->streams);
     av_freep(&mms->asf_header);
     return 0;
