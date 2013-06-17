@@ -309,14 +309,16 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
     return 0;
 fail:
     av_freep(&stream_selection);
-    mmsh_close(h);
     av_dlog(NULL, "Connection failed with error %d\n", err);
     return err;
 }
 
 static int mmsh_open(URLContext *h, const char *uri, int flags)
 {
-    return mmsh_open_internal(h, uri, flags, 0, 0);
+    int ret = mmsh_open_internal(h, uri, flags, 0, 0);
+    if (ret < 0)
+        mmsh_close(h);
+    return ret;
 }
 
 static int handle_chunk_type(MMSHContext *mmsh)
