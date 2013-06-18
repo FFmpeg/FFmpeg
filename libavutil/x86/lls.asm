@@ -194,3 +194,41 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     jle .loop2x1
 .ret:
     REP_RET
+
+
+INIT_XMM sse2
+cglobal evaluate_lls, 2,4,2, ctx, var, order, i
+    ; This function is often called on the same buffer as update_lls, but with
+    ; an offset. They can't both be aligned.
+    ; Load halves rather than movu to avoid store-forwarding stalls, since the
+    ; input was initialized immediately prior to this function using scalar math.
+    %define coefsq ctxq
+    mov     id, orderd
+    imul    orderd, MAX_VARS
+    lea     coefsq, [ctxq + LLSModel.coeff + orderq*8]
+    movsd   m0, [varq]
+    movhpd  m0, [varq + 8]
+    mulpd   m0, [coefsq]
+    lea coefsq, [coefsq + iq*8]
+    lea   varq, [varq + iq*8]
+    neg     iq
+    add     iq, 2
+.loop:
+    movsd   m1, [varq + iq*8]
+    movhpd  m1, [varq + iq*8 + 8]
+    mulpd   m1, [coefsq + iq*8]
+    addpd   m0, m1
+    add     iq, 2
+    jl .loop
+    jg .skip1
+    movsd   m1, [varq + iq*8]
+    mulsd   m1, [coefsq + iq*8]
+    addpd   m0, m1
+.skip1:
+    movhlps m1, m0
+    addsd   m0, m1
+%if ARCH_X86_32
+    movsd  r0m, m0
+    fld   qword r0m
+%endif
+    RET
