@@ -38,13 +38,12 @@ av_cold void avpriv_init_lls(LLSModel *m, int indep_count)
     m->indep_count = indep_count;
 }
 
-void avpriv_update_lls(LLSModel *m, double *var, double decay)
+void avpriv_update_lls(LLSModel *m, double *var)
 {
     int i, j;
 
     for (i = 0; i <= m->indep_count; i++) {
         for (j = i; j <= m->indep_count; j++) {
-            m->covariance[i][j] *= decay;
             m->covariance[i][j] += var[i] * var[j];
         }
     }
@@ -125,7 +124,7 @@ av_cold void av_init_lls(LLSModel *m, int indep_count)
 }
 void av_update_lls(LLSModel *m, double *param, double decay)
 {
-    avpriv_update_lls(m, param, decay);
+    avpriv_update_lls(m, param);
 }
 void av_solve_lls(LLSModel *m, double threshold, int min_order)
 {
@@ -160,7 +159,7 @@ int main(void)
         var[1] = var[0] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         var[2] = var[1] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         var[3] = var[2] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
-        avpriv_update_lls(&m, var, 0.99);
+        avpriv_update_lls(&m, var);
         avpriv_solve_lls(&m, 0.001, 0);
         for (order = 0; order < 3; order++) {
             eval = avpriv_evaluate_lls(&m, var + 1, order);
