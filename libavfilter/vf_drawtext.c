@@ -616,7 +616,7 @@ static int func_frame_num(AVFilterContext *ctx, AVBPrint *bp,
 {
     DrawTextContext *s = ctx->priv;
 
-    av_bprintf(bp, "%d", (int)s->var_values[VAR_N]+s->start_number);
+    av_bprintf(bp, "%d", (int)s->var_values[VAR_N]);
     return 0;
 }
 
@@ -980,7 +980,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if ((ret = load_textfile(ctx)) < 0)
             return ret;
 
-    s->var_values[VAR_N] = inlink->frame_count;
+    s->var_values[VAR_N] = inlink->frame_count+s->start_number;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);
 
