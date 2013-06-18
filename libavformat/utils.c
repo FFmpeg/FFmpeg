@@ -1859,7 +1859,7 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     }
 
     if(ts_max == AV_NOPTS_VALUE){
-        int step= 1024;
+        int64_t step= 1024;
         filesize = avio_size(s->pb);
         pos_max = filesize - 1;
         do{
