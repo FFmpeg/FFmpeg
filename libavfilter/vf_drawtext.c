@@ -164,6 +164,7 @@ typedef struct {
     AVTimecode  tc;                 ///< timecode context
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
     int reload;                     ///< reload text file for each frame
+    int start_number;               ///< starting frame number for n/frame_num var
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -198,6 +199,7 @@ static const AVOption drawtext_options[]= {
     {"rate",            "set rate (timecode only)",         OFFSET(tc_rate),       AV_OPT_TYPE_RATIONAL, {.dbl=0},           0,  INT_MAX, FLAGS},
     {"reload",     "reload text file for each frame",                       OFFSET(reload),     AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
     {"fix_bounds", "if true, check and fix text coords to avoid clipping",  OFFSET(fix_bounds), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS},
+    {"start_number", "start frame number for n/frame_num variable", OFFSET(start_number), AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX, FLAGS},
 
     /* FT_LOAD_* flags */
     { "ft_load_flags", "set font loading flags for libfreetype", OFFSET(ft_load_flags), AV_OPT_TYPE_FLAGS, { .i64 = FT_LOAD_DEFAULT | FT_LOAD_RENDER}, 0, INT_MAX, FLAGS, "ft_load_flags" },
@@ -978,7 +980,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if ((ret = load_textfile(ctx)) < 0)
             return ret;
 
-    s->var_values[VAR_N] = inlink->frame_count;
+    s->var_values[VAR_N] = inlink->frame_count+s->start_number;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);
 
