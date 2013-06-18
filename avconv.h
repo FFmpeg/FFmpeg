@@ -239,6 +239,7 @@ typedef struct InputFile {
     int ist_index;        /* index of first stream in ist_table */
     int64_t ts_offset;
     int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
+    int64_t recording_time;
     int nb_streams;       /* number of stream that avconv is aware of; may be different
                              from ctx.nb_streams if new streams appear during av_read_frame() */
     int rate_emu;

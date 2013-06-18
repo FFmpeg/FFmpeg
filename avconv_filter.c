@@ -463,7 +463,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->st->index);
     ret = insert_trim(((f->start_time == AV_NOPTS_VALUE) || !f->accurate_seek) ?
-                      AV_NOPTS_VALUE : 0, INT64_MAX, &last_filter, &pad_idx, name);
+                      AV_NOPTS_VALUE : 0, f->recording_time, &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;
 
@@ -550,7 +550,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              ist->file_index, ist->st->index);
     ret = insert_trim(((f->start_time == AV_NOPTS_VALUE) || !f->accurate_seek) ?
-                      AV_NOPTS_VALUE : 0, INT64_MAX, &last_filter, &pad_idx, name);
+                      AV_NOPTS_VALUE : 0, f->recording_time, &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;
 

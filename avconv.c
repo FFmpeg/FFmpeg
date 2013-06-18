@@ -958,6 +958,7 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
 static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
+    InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
     AVPacket opkt;
@@ -972,6 +973,16 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         ist->last_dts >= of->recording_time + start_time) {
         ost->finished = 1;
         return;
+    }
+
+    if (f->recording_time != INT64_MAX) {
+        start_time = f->ctx->start_time;
+        if (f->start_time != AV_NOPTS_VALUE)
+            start_time += f->start_time;
+        if (ist->last_dts >= f->recording_time + start_time) {
+            ost->finished = 1;
+            return;
+        }
     }
 
     /* force the input stream PTS */
