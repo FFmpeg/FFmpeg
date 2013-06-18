@@ -126,10 +126,14 @@ static int get_video_buffer(AVFrame *frame, int align)
         return ret;
 
     if (!frame->linesize[0]) {
-        ret = av_image_fill_linesizes(frame->linesize, frame->format,
-                                      frame->width);
-        if (ret < 0)
-            return ret;
+        for(i=1; i<=align; i+=i) {
+            ret = av_image_fill_linesizes(frame->linesize, frame->format,
+                                          FFALIGN(frame->width, i));
+            if (ret < 0)
+                return ret;
+            if (!(frame->linesize[0] & (align-1)))
+                break;
+        }
 
         for (i = 0; i < 4 && frame->linesize[i]; i++)
             frame->linesize[i] = FFALIGN(frame->linesize[i], align);
