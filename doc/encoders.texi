@@ -592,6 +592,43 @@ default value is 0 (disabled).
 
 @end table
 
+@section libopencore-amrnb
+
+OpenCORE Adaptive Multi-Rate Narrowband encoder.
+
+Requires the presence of the libopencore-amrnb headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopencore-amrnb --enable-version3}.
+
+This is a mono-only encoder. Officially it only supports 8000Hz sample rate,
+but you can override it by setting @option{strict} to @samp{unofficial} or
+lower.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set bitrate in bits per second. Only the following bitrates are supported,
+otherwise libavcodec will round to the nearest valid bitrate.
+
+@table @option
+@item 4750
+@item 5150
+@item 5900
+@item 6700
+@item 7400
+@item 7950
+@item 10200
+@item 12200
+@end table
+
+@item dtx
+Allow discontinuous transmission (generate comfort noise) when set to 1. The
+default value is 0 (disabled).
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
