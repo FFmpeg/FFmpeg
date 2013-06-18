@@ -60,6 +60,14 @@ This decoder generates wave patterns according to predefined sequences. Its
 use is purely internal and the format of the data it accepts is not publicly
 documented.
 
+@section libcelt
+
+libcelt decoder wrapper
+
+libcelt allows libavcodec to decode the Xiph CELT ultra-low delay audio codec.
+Requires the presence of the libcelt headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libcelt}.
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders
