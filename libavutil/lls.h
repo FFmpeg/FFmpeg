@@ -37,12 +37,23 @@ typedef struct LLSModel {
     double coeff[MAX_VARS][MAX_VARS];
     double variance[MAX_VARS];
     int indep_count;
+    /**
+     * Take the outer-product of var[] with itself, and add to the covariance matrix.
+     * @param m this context
+     * @param var training samples, starting with the value to be predicted
+     */
+    void (*update_lls)(struct LLSModel *m, double *var);
+    /**
+     * Inner product of var[] and the LPC coefs.
+     * @param m this context
+     * @param var training samples, excluding the value to be predicted
+     * @param order lpc order
+     */
+    double (*evaluate_lls)(struct LLSModel *m, double *var, int order);
 } LLSModel;
 
 void avpriv_init_lls(LLSModel *m, int indep_count);
-void avpriv_update_lls(LLSModel *m, double *param);
 void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order);
-double avpriv_evaluate_lls(LLSModel *m, double *param, int order);
 
 #if FF_API_LLS_PRIVATE
 void av_init_lls(LLSModel *m, int indep_count);
