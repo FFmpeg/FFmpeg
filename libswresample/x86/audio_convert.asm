@@ -195,7 +195,12 @@ cglobal %2_to_%1_%3, 3, 3, 6, dst, src, len
     add lenq, 2*mmsize/(1<<%4)
 %endif
         jl .next
+%if mmsize == 8
+    emms
+    RET
+%else
     REP_RET
+%endif
 %endmacro
 
 %macro PACK_6CH 5-7
