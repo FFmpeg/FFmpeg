@@ -68,4 +68,14 @@ libcelt allows libavcodec to decode the Xiph CELT ultra-low delay audio codec.
 Requires the presence of the libcelt headers and library during configuration.
 You need to explicitly configure the build with @code{--enable-libcelt}.
 
+@section libgsm
+
+libgsm decoder wrapper
+
+libgsm allows libavcodec to decode the GSM full rate audio codec. Requires
+the presence of the libgsm headers and library during configuration. You need
+to explicitly configure the build with @code{--enable-libgsm}.
+
+This decoder supports both the ordinary GSM and the Microsoft variant.
+
 @c man end AUDIO DECODERS
