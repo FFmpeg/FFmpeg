@@ -3945,14 +3945,14 @@ elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 elif enabled pathscale; then
     add_cflags -fstrict-overflow -OPT:wrap_around_unsafe_opt=OFF
-elif enabled msvc; then
+elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
-elif enabled icl; then
-    enabled x86_32 && disable aligned_stack
-    # basically -fstrict-aliasing for icl that doesn't work (correctly) on 13.x+
-    check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
-    # icl will pass the inline asm tests but inline asm is currently not supported (build will fail)
-    disable inline_asm
+    if enabled icl; then
+        # basically -fstrict-aliasing for icl that doesn't work (correctly) on 13.x+
+        check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
+        # icl will pass the inline asm tests but inline asm is currently not supported (build will fail)
+        disable inline_asm
+    fi
 fi
 
 case $target_os in
