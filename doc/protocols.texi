@@ -85,6 +85,25 @@ ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
 Note that you may need to escape the character "|" which is special for
 many shells.
 
+@section crypto
+
+AES-encrypted stream reading protocol.
+
+The accepted options are:
+@table @option
+@item key
+Set the AES decryption key binary block from given hexadecimal representation.
+
+@item iv
+Set the AES decryption initialization vector binary block from given hexadecimal representation.
+@end table
+
+Accepted URL formats:
+@example
+crypto:@var{URL}
+crypto+@var{URL}
+@end example
+
 @section data
 
 Data in-line in the URI. See @url{http://en.wikipedia.org/wiki/Data_URI_scheme}.
