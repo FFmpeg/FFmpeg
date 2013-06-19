@@ -93,7 +93,7 @@ typedef struct IdcinDemuxContext {
 
 static int idcin_probe(AVProbeData *p)
 {
-    unsigned int number;
+    unsigned int number, sample_rate;
 
     /*
      * This is what you could call a "probabilistic" file check: id CIN
@@ -122,18 +122,18 @@ static int idcin_probe(AVProbeData *p)
        return 0;
 
     /* check the audio sample rate */
-    number = AV_RL32(&p->buf[8]);
-    if ((number != 0) && ((number < 8000) | (number > 48000)))
+    sample_rate = AV_RL32(&p->buf[8]);
+    if (sample_rate && (sample_rate < 8000 || sample_rate > 48000))
         return 0;
 
     /* check the audio bytes/sample */
     number = AV_RL32(&p->buf[12]);
-    if (number > 2)
+    if (number > 2 || sample_rate && !number)
         return 0;
 
     /* check the audio channels */
     number = AV_RL32(&p->buf[16]);
-    if (number > 2)
+    if (number > 2 || sample_rate && !number)
         return 0;
 
     /* return half certainty since this check is a bit sketchy */
