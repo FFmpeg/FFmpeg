@@ -430,7 +430,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
         int *x_ptr = &(window[step]);
         int *state_ptr = &(state[0]);
         j = window_entries - step;
-        for (;j>=0;j--,x_ptr++,state_ptr++)
+        for (;j>0;j--,x_ptr++,state_ptr++)
         {
             double x_value = *x_ptr;
             double state_value = *state_ptr;
@@ -465,7 +465,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
         x_ptr = &(window[step]);
         state_ptr = &(state[0]);
         j = window_entries - step;
-        for (;j>=0;j--,x_ptr++,state_ptr++)
+        for (;j>0;j--,x_ptr++,state_ptr++)
         {
             int x_value = *x_ptr;
             int state_value = *state_ptr;
