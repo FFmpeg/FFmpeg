@@ -427,18 +427,21 @@ static void modified_levinson_durbin(int *window, int window_entries,
         int step = (i+1)*channels, k, j;
         double xx = 0.0, xy = 0.0;
 #if 1
-        int *x_ptr = &(window[step]), *state_ptr = &(state[0]);
+        int *x_ptr = &(window[step]);
+        int *state_ptr = &(state[0]);
         j = window_entries - step;
         for (;j>=0;j--,x_ptr++,state_ptr++)
         {
-            double x_value = *x_ptr, state_value = *state_ptr;
+            double x_value = *x_ptr;
+            double state_value = *state_ptr;
             xx += state_value*state_value;
             xy += x_value*state_value;
         }
 #else
         for (j = 0; j <= (window_entries - step); j++);
         {
-            double stepval = window[step+j], stateval = window[j];
+            double stepval = window[step+j];
+            double stateval = window[j];
 //            xx += (double)window[j]*(double)window[j];
 //            xy += (double)window[step+j]*(double)window[j];
             xx += stateval*stateval;
@@ -464,14 +467,16 @@ static void modified_levinson_durbin(int *window, int window_entries,
         j = window_entries - step;
         for (;j>=0;j--,x_ptr++,state_ptr++)
         {
-            int x_value = *x_ptr, state_value = *state_ptr;
+            int x_value = *x_ptr;
+            int state_value = *state_ptr;
             *x_ptr = x_value + shift_down(k*state_value,LATTICE_SHIFT);
             *state_ptr = state_value + shift_down(k*x_value, LATTICE_SHIFT);
         }
 #else
         for (j=0; j <= (window_entries - step); j++)
         {
-            int stepval = window[step+j], stateval=state[j];
+            int stepval = window[step+j];
+            int stateval=state[j];
             window[step+j] += shift_down(k * stateval, LATTICE_SHIFT);
             state[j] += shift_down(k * stepval, LATTICE_SHIFT);
         }
