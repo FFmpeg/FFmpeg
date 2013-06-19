@@ -35,8 +35,8 @@
 #include "video.h"
 
 /**
- * Apply a simple delogo algorithm to the image in dst and put the
- * result in src.
+ * Apply a simple delogo algorithm to the image in src and put the
+ * result in dst.
  *
  * The algorithm is only applied to the region specified by the logo
  * parameters.
