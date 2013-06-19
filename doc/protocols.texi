@@ -698,6 +698,24 @@ To play back the first stream announced on one the default IPv6 SAP multicast ad
 ffplay sap://[ff0e::2:7ffe]
 @end example
 
+@section sctp
+
+Stream Control Transmission Protocol.
+
+The accepted URL syntax is:
+@example
+sctp://@var{host}:@var{port}[?@var{options}]
+@end example
+
+The protocol accepts the following options:
+@table @option
+@item listen
+If set to any value, listen for an incoming connection. Outgoing connection is done by default.
+
+@item max_streams
+Set the maximum number of streams. By default no limit is set.
+@end table
+
 @section tcp
 
 Trasmission Control Protocol.
