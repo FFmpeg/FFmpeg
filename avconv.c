@@ -1371,10 +1371,16 @@ static int init_input_stream(int ist_index, char *error, int error_len)
         if (!av_dict_get(ist->opts, "threads", NULL, 0))
             av_dict_set(&ist->opts, "threads", "auto", 0);
         if ((ret = avcodec_open2(ist->st->codec, codec, &ist->opts)) < 0) {
+            char errbuf[128];
             if (ret == AVERROR_EXPERIMENTAL)
                 abort_codec_experimental(codec, 0);
-            snprintf(error, error_len, "Error while opening decoder for input stream #%d:%d",
-                    ist->file_index, ist->st->index);
+
+            av_strerror(ret, errbuf, sizeof(errbuf));
+
+            snprintf(error, error_len,
+                     "Error while opening decoder for input stream "
+                     "#%d:%d : %s",
+                     ist->file_index, ist->st->index, errbuf);
             return ret;
         }
         assert_avoptions(ist->opts);
