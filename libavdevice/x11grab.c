@@ -78,6 +78,7 @@ struct x11grab {
     int  show_region;        /**< set by a private option. */
     char *framerate;         /**< Set by a private option. */
 
+    Cursor c;
     Window region_win;       /**< This is used by show_region option. */
 };
 
@@ -353,7 +354,6 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
      * Anyone who performs further investigation of the xlib API likely risks
      * permanent brain damage. */
     uint8_t *pix = image->data;
-    Cursor c;
     Window w;
     XSetWindowAttributes attr;
 
@@ -361,9 +361,10 @@ paint_mouse_pointer(XImage *image, struct x11grab *s)
     if (image->bits_per_pixel != 24 && image->bits_per_pixel != 32)
         return;
 
-    c = XCreateFontCursor(dpy, XC_left_ptr);
+    if(!s->c)
+        s->c = XCreateFontCursor(dpy, XC_left_ptr);
     w = DefaultRootWindow(dpy);
-    attr.cursor = c;
+    attr.cursor = s->c;
     XChangeWindowAttributes(dpy, w, CWCursor, &attr);
 
     xcim = XFixesGetCursorImage(dpy);
