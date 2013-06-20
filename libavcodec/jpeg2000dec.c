@@ -1237,6 +1237,10 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 
             tile = s->tile + s->curtileno;
             tp = tile->tile_part + tile->tp_idx;
+            if (tp->tp_end < s->g.buffer) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid tpend\n");
+                return AVERROR_INVALIDDATA;
+            }
             bytestream2_init(&tp->tpg, s->g.buffer, tp->tp_end - s->g.buffer);
             bytestream2_skip(&s->g, tp->tp_end - s->g.buffer);
 
