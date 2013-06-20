@@ -347,6 +347,19 @@ static int modplug_read_seek(AVFormatContext *s, int stream_idx, int64_t ts, int
     return 0;
 }
 
+static const char modplug_extensions[] = "669,abc,amf,ams,dbm,dmf,dsm,far,it,mdl,med,mid,mod,mt2,mtm,okt,psm,ptm,s3m,stm,ult,umx,xm,itgz,itr,itz,mdgz,mdr,mdz,s3gz,s3r,s3z,xmgz,xmr,xmz";
+
+static int modplug_probe(AVProbeData *p)
+{
+    if (av_match_ext(p->filename, modplug_extensions)) {
+        if (p->buf_size < 16384)
+            return AVPROBE_SCORE_MAX/4-1;
+        else
+            return AVPROBE_SCORE_MAX/2;
+    }
+    return 0;
+}
+
 static const AVClass modplug_class = {
     .class_name = "ModPlug demuxer",
     .item_name  = av_default_item_name,
@@ -358,11 +371,11 @@ AVInputFormat ff_libmodplug_demuxer = {
     .name           = "libmodplug",
     .long_name      = NULL_IF_CONFIG_SMALL("ModPlug demuxer"),
     .priv_data_size = sizeof(ModPlugContext),
+    .read_probe     = modplug_probe,
     .read_header    = modplug_read_header,
     .read_packet    = modplug_read_packet,
     .read_close     = modplug_read_close,
     .read_seek      = modplug_read_seek,
-    .extensions     = "669,abc,amf,ams,dbm,dmf,dsm,far,it,mdl,med,mid,mod,mt2,mtm,okt,psm,ptm,s3m,stm,ult,umx,xm"
-                      ",itgz,itr,itz,mdgz,mdr,mdz,s3gz,s3r,s3z,xmgz,xmr,xmz", // compressed mods
+    .extensions     = modplug_extensions,
     .priv_class     = &modplug_class,
 };
