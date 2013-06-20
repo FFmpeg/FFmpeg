@@ -2890,7 +2890,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         ret = -1; /* we could not have all the codec parameters before EOF */
         for(i=0;i<ic->nb_streams;i++) {
-            const char *errmsg;
 
             st = ic->streams[i];
 
@@ -2906,17 +2905,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     av_log(ic, AV_LOG_INFO,
                         "decoding for stream %d failed\n", st->index);
                 }
-            }
-
-            if (!has_codec_parameters(st, &errmsg)) {
-                char buf[256];
-                avcodec_string(buf, sizeof(buf), st->codec, 0);
-                av_log(ic, AV_LOG_WARNING,
-                       "Could not find codec parameters for stream %d (%s): %s\n"
-                       "Consider increasing the value for the 'analyzeduration' and 'probesize' options\n",
-                       i, buf, errmsg);
-            } else {
-                ret = 0;
             }
         }
     }
@@ -3026,6 +3014,21 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
     if(ic->probesize)
     estimate_timings(ic, old_offset);
+
+    for(i=0;i<ic->nb_streams;i++) {
+        const char *errmsg;
+        st = ic->streams[i];
+        if (!has_codec_parameters(st, &errmsg)) {
+            char buf[256];
+            avcodec_string(buf, sizeof(buf), st->codec, 0);
+            av_log(ic, AV_LOG_WARNING,
+                   "Could not find codec parameters for stream %d (%s): %s\n"
+                   "Consider increasing the value for the 'analyzeduration' and 'probesize' options\n",
+                   i, buf, errmsg);
+        } else {
+            ret = 0;
+        }
+    }
 
     compute_chapters_end(ic);
 
