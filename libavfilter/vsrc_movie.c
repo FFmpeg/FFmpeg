@@ -173,8 +173,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
 
-    av_free(movie->file_name);
-    av_free(movie->format_name);
     if (movie->codec_ctx)
         avcodec_close(movie->codec_ctx);
     if (movie->format_ctx)
