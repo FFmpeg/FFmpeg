@@ -2374,7 +2374,7 @@ msvc_flags(){
     msvc_common_flags "$@"
     for flag; do
         case $flag in
-            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
+            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389     \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4996 -wd4273 ;;
@@ -2425,10 +2425,10 @@ suncc_flags(){
                     corei7)           echo -xarch=sse4_2 -xchip=nehalem  ;;
                     corei7-avx)       echo -xarch=avx -xchip=sandybridge ;;
                     amdfam10|barcelona|bdver*) echo -xarch=sse4_1        ;;
-                    athlon-4|athlon-[mx]p)    echo -xarch=ssea           ;;
+                    athlon-4|athlon-[mx]p)     echo -xarch=ssea          ;;
                     k8|opteron|athlon64|athlon-fx)
-                                              echo -xarch=sse2a          ;;
-                    athlon*)                  echo -xarch=pentium_proa   ;;
+                                               echo -xarch=sse2a         ;;
+                    athlon*)                   echo -xarch=pentium_proa  ;;
                 esac
                 ;;
             -std=c99)             echo -xc99              ;;
@@ -2588,7 +2588,8 @@ probe_cc(){
         _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
         _cflags_speed="-O2"
         _cflags_size="-O1"
-        # Nonstandard output options, to avoid msys path conversion issues, relies on wrapper to remap it
+        # Nonstandard output options, to avoid msys path conversion issues.
+        # Relies on wrapper to remap it.
         if $_cc 2>&1 | grep -q Linker; then
             _ld_o='-out $@'
         else
@@ -2608,10 +2609,12 @@ probe_cc(){
         _type=icl
         _ident=$($cc 2>&1 | head -n1)
         _depflags='-QMMD -QMF$(@:.o=.d) -QMT$@'
-        # Not only is O3 broken on 13.x+ but it's slower on all previous versions (tested) as well
+        # Not only is O3 broken on 13.x+ but it is slower on all previous
+        # versions (tested) as well.
         _cflags_speed="-O2"
         _cflags_size="-O1 -Oi" # -O1 without -Oi miscompiles stuff
-        # Nonstandard output options, to avoid msys path conversion issues, relies on wrapper to remap it
+        # Nonstandard output options, to avoid msys path conversion issues.
+        # Relies on wrapper to remap it.
         if $_cc 2>&1 | grep -q Linker; then
             _ld_o='-out $@'
         else
@@ -2622,9 +2625,10 @@ probe_cc(){
         _flags_filter=icl_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
-        # -Qdiag-error to make icl error when presented with certain unknown arguments
+        # -Qdiag-error to make icl error when seeing certain unknown arguments
         _flags='-nologo -Qdiag-error:4044,10157'
-        # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency with msvc which enables it by default
+        # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency
+        # with MSVC which enables it by default.
         _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
@@ -2725,7 +2729,8 @@ if test -n "$sysroot"; then
 fi
 
 if test "$cpu" = host; then
-    enabled cross_compile && die "--cpu=host makes no sense when cross-compiling."
+    enabled cross_compile &&
+        die "--cpu=host makes no sense when cross-compiling."
 
     case "$cc_type" in
         gcc|llvm_gcc)
@@ -2741,7 +2746,8 @@ if test "$cpu" = host; then
         ;;
     esac
 
-    test "${cpu:-host}" = host && die "--cpu=host not supported with compiler $cc"
+    test "${cpu:-host}" = host &&
+        die "--cpu=host not supported with compiler $cc"
 fi
 
 # Deal with common $arch aliases
@@ -3059,7 +3065,9 @@ case $target_os in
         # the Solaris assembler.  As our libraries contain their own
         # guards for processor-specific code, instead suppress
         # generation of the HWCAPS ELF section on Solaris x86 only.
-        enabled_all suncc x86 && echo "hwcap_1 = OVERRIDE;" > mapfile && add_ldflags -Wl,-M,mapfile
+        enabled_all suncc x86 &&
+            echo "hwcap_1 = OVERRIDE;" > mapfile &&
+            add_ldflags -Wl,-M,mapfile
         nm_default='nm -P -g'
         ;;
     netbsd)
@@ -3133,8 +3141,7 @@ case $target_os in
             # Link to the import library instead of the normal static library
             # for shared libs.
             LD_LIB='%.lib'
-            # Cannot build shared and static libraries at the same time with
-            # MSVC.
+            # Cannot build shared and static libs at the same time with MSVC.
             disable static
         fi
         shlibdir_default="$bindir_default"
@@ -3707,47 +3714,47 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
-enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
-enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
-enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
-enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
-enabled libgsm     && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
-                            check_lib "${gsm_hdr}" gsm_create -lgsm && break;
-                        done || die "ERROR: libgsm not found"; }
-enabled libilbc    && require  libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
-enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
-enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
-enabled libopencore_amrwb  && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv  && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
-enabled libopenjpeg && require libopenjpeg openjpeg.h opj_version -lopenjpeg
-enabled libopus    && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
-enabled libpulse && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
-enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
-enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
-enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
-enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
-enabled libvo_aacenc && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
-enabled libvo_amrwbenc && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
-enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
-enabled libvpx     && {
+enabled avisynth          && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
+enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfdk_aac        && require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
+enabled libfreetype       && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
+enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
+                                   check_lib "${gsm_hdr}" gsm_create -lgsm && break;
+                               done || die "ERROR: libgsm not found"; }
+enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
+enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
+enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
+enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
+enabled libopencv         && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
+enabled libopenjpeg       && require libopenjpeg openjpeg.h opj_version -lopenjpeg
+enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
+enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
+enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
+enabled libspeex          && require libspeex speex/speex.h speex_decoder_init -lspeex
+enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
+enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
+enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
+enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
+enabled libvpx            && {
     enabled libvpx_vp8_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
-                                die "ERROR: libvpx decoder version must be >=0.9.1"; }
+                                    die "ERROR: libvpx decoder version must be >=0.9.1"; }
     enabled libvpx_vp8_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VPX_CQ" -lvpx ||
-                                die "ERROR: libvpx encoder version must be >=0.9.6"; }
-    enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder;  }
+                                    die "ERROR: libvpx encoder version must be >=0.9.6"; }
+    enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder; }
     enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx" -lvpx || disable libvpx_vp9_encoder; } }
-enabled libwavpack && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
-enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
-                      { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                        die "ERROR: libx264 version must be >= 0.118."; }
-enabled libxavs    && require  libxavs xavs.h xavs_encoder_encode -lxavs
-enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
-enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
-                        check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
-                        check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
-                        die "ERROR: openssl not found"; }
+enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
+enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &&
+                             { check_cpp_condition x264.h "X264_BUILD >= 118" ||
+                               die "ERROR: libx264 version must be >= 0.118."; }
+enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
+enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
+enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
+                               check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
+                               check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
+                               die "ERROR: openssl not found"; }
 
 if enabled gnutls; then
     { check_lib nettle/bignum.h nettle_mpz_get_str_256 -lnettle -lhogweed -lgmp && enable nettle; } ||
@@ -3795,7 +3802,8 @@ check_header sndio.h
 check_header sys/soundcard.h
 check_header soundcard.h
 
-enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled_any alsa_indev alsa_outdev &&
+    check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack &&
     check_func jack_port_get_latency_range -ljack
@@ -3803,7 +3811,8 @@ enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack &&
 enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 
 if enabled libcdio; then
-    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio || check_lib2 "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio
+    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio ||
+    check_lib2 "cdio/paranoia/cdda.h cdio/paranoia/paranoia.h" cdio_cddap_open -lcdio_paranoia -lcdio_cdda -lcdio
 fi
 
 enabled x11grab                                           &&
@@ -3948,9 +3957,10 @@ elif enabled pathscale; then
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     if enabled icl; then
-        # basically -fstrict-aliasing for icl that doesn't work (correctly) on 13.x+
+        # basically -fstrict-aliasing that does not work (correctly) on icl 13.x
         check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
-        # icl will pass the inline asm tests but inline asm is currently not supported (build will fail)
+        # icl will pass the inline asm tests but inline asm is currently
+        # not supported (build will fail)
         disable inline_asm
     fi
 fi
@@ -4273,10 +4283,10 @@ enabled movie_filter    && prepend lavfi_libs "libavformat >= $LIBAVFORMAT_VERSI
 enabled resample_filter && prepend lavfi_libs "libavresample >= $LIBAVRESAMPLE_VERSION,"
 enabled scale_filter    && prepend lavfi_libs "libswscale >= $LIBSWSCALE_VERSION,"
 
-pkgconfig_generate libavutil "Libav utility library" "$LIBAVUTIL_VERSION" "$LIBM"
-pkgconfig_generate libavcodec "Libav codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavformat "Libav container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice "Libav device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
-pkgconfig_generate libavfilter "Libav video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$lavfi_libs"
+pkgconfig_generate libavutil     "Libav utility library"          "$LIBAVUTIL_VERSION"     "$LIBM"
+pkgconfig_generate libavcodec    "Libav codec library"            "$LIBAVCODEC_VERSION"    "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavformat   "Libav container format library" "$LIBAVFORMAT_VERSION"   "$extralibs" "libavcodec = $LIBAVCODEC_VERSION"
+pkgconfig_generate libavdevice   "Libav device handling library"  "$LIBAVDEVICE_VERSION"   "$extralibs" "libavformat = $LIBAVFORMAT_VERSION"
+pkgconfig_generate libavfilter   "Libav video filtering library"  "$LIBAVFILTER_VERSION"   "$extralibs" "$lavfi_libs"
 pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil = $LIBAVUTIL_VERSION"
-pkgconfig_generate libswscale "Libav image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil = $LIBAVUTIL_VERSION"
+pkgconfig_generate libswscale    "Libav image rescaling library"  "$LIBSWSCALE_VERSION"    "$LIBM"      "libavutil = $LIBAVUTIL_VERSION"
