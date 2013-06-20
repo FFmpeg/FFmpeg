@@ -78,6 +78,27 @@ to explicitly configure the build with @code{--enable-libgsm}.
 
 This decoder supports both the ordinary GSM and the Microsoft variant.
 
+@section libilbc
+
+libilbc decoder wrapper
+
+libilbc allows libavcodec to decode the Internet Low Bitrate Codec (iLBC)
+audio codec. Requires the presence of the libilbc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libilbc}.
+
+@subsection Options
+
+The following option is supported by the libilbc wrapper.
+
+@table @option
+@item enhance
+
+Enable the enhancement of the decoded audio when set to 1. The default
+value is 0 (disabled).
+
+@end table
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders
