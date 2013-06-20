@@ -478,8 +478,11 @@ static int ogg_get_headers(AVFormatContext *s)
         if (os->codec && os->codec->nb_header &&
             os->nb_header < os->codec->nb_header) {
             av_log(s, AV_LOG_ERROR,
-                   "Headers mismatch for stream %d\n", i);
-            return AVERROR_INVALIDDATA;
+                   "Headers mismatch for stream %d: "
+                   "expected %d received %d.\n",
+                   i, os->codec->nb_header, os->nb_header);
+            if (s->error_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
         if (os->start_granule != OGG_NOGRANULE_VALUE)
             os->lastpts = s->streams[i]->start_time =
