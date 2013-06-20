@@ -478,5 +478,5 @@ AVInputFormat ff_iff_demuxer = {
     .read_probe     = iff_probe,
     .read_header    = iff_read_header,
     .read_packet    = iff_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
 };
