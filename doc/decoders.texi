@@ -111,4 +111,16 @@ explicitly configure the build with @code{--enable-libopencore-amrnb}.
 An FFmpeg native decoder for AMR-NB exists, so users can decode AMR-NB
 without this library.
 
+@section libopencore-amrwb
+
+libopencore-amrwb decoder wrapper.
+
+libopencore-amrwb allows libavcodec to decode the Adaptive Multi-Rate
+Wideband audio codec. Using it requires the presence of the
+libopencore-amrwb headers and library during configuration. You need to
+explicitly configure the build with @code{--enable-libopencore-amrwb}.
+
+An FFmpeg native decoder for AMR-WB exists, so users can decode AMR-WB
+without this library.
+
 @c man end AUDIO DECODERS
