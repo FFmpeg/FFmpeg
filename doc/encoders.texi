@@ -414,7 +414,7 @@ Selected by Encoder (default)
 
 @section libmp3lame
 
-LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper
+LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper.
 
 Requires the presence of the libmp3lame headers and library during
 configuration. You need to explicitly configure the build with
@@ -443,7 +443,7 @@ stereo or mid/side stereo.
 
 @section libtwolame
 
-TwoLAME MP2 encoder wrapper
+TwoLAME MP2 encoder wrapper.
 
 Requires the presence of the libtwolame headers and library during
 configuration. You need to explicitly configure the build with
@@ -506,7 +506,7 @@ value is 0 (disabled).
 
 @section libvo-aacenc
 
-VisualOn AAC encoder
+VisualOn AAC encoder.
 
 Requires the presence of the libvo-aacenc headers and library during
 configuration. You need to explicitly configure the build with
@@ -556,7 +556,7 @@ Same as 3, but with extra processing enabled - corresponding to the wavpack
 
 @section libvo-amrwbenc
 
-VisualOn Adaptive Multi-Rate Wideband encoder
+VisualOn Adaptive Multi-Rate Wideband encoder.
 
 Requires the presence of the libvo-amrwbenc headers and library during
 configuration. You need to explicitly configure the build with
@@ -798,7 +798,7 @@ For more information about libvpx see:
 
 @section libx264
 
-x264 H.264/MPEG-4 AVC encoder wrapper
+x264 H.264/MPEG-4 AVC encoder wrapper.
 
 Requires the presence of the libx264 headers and library during
 configuration. You need to explicitly configure the build with
