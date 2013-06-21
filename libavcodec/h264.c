@@ -144,7 +144,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode, int is_chroma)
     static const int8_t top[7]  = { LEFT_DC_PRED8x8, 1, -1, -1 };
     static const int8_t left[7] = { TOP_DC_PRED8x8, -1, 2, -1, DC_128_PRED8x8 };
 
-    if (mode > 6U) {
+    if (mode > 3U) {
         av_log(h->s.avctx, AV_LOG_ERROR,
                "out of range intra chroma pred mode at %d %d\n",
                s->mb_x, s->mb_y);
