@@ -99,4 +99,16 @@ value is 0 (disabled).
 
 @end table
 
+@section libopencore-amrnb
+
+libopencore-amrnb decoder wrapper
+
+libopencore-amrnb allows libavcodec to decode the Adaptive Multi-Rate
+Narrowband audio codec. Using it requires the presence of the
+libopencore-amrnb headers and library during configuration. You need to
+explicitly configure the build with @code{--enable-libopencore-amrnb}.
+
+An FFmpeg native decoder for AMR-NB exists, so users can decode AMR-NB
+without this library.
+
 @c man end AUDIO DECODERS
