@@ -53,7 +53,7 @@ Read angle 2 of playlist 4 from BluRay mounted to /mnt/bluray, start from chapte
 
 Caching wrapper for input stream.
 
-Caches the input stream to temporary file. It brings seeking capability to live streams.
+Cache the input stream to temporary file. It brings seeking capability to live streams.
 
 @example
 cache:@var{URL}
@@ -131,7 +131,7 @@ specified with the name "FILE.mpeg" is interpreted as the URL
 
 @section ftp
 
-FTP (File Transfer Protocol)
+FTP (File Transfer Protocol).
 
 Allow to read from or write to remote resources using FTP protocol.
 
