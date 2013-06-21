@@ -322,7 +322,6 @@ static av_cold void movie_uninit(AVFilterContext *ctx)
         if (movie->st[i].st)
             avcodec_close(movie->st[i].st->codec);
     }
-    av_freep(&movie->file_name);
     av_freep(&movie->st);
     av_freep(&movie->out_index);
     av_frame_free(&movie->frame);
