@@ -722,10 +722,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         quant = (int)(BASE_QUANT*s->quantization*energy2/SAMPLE_FACTOR);
 //        av_log(avctx, AV_LOG_DEBUG, "quant: %d energy: %f / %f\n", quant, energy1, energy2);
 
-        if (quant < 1)
-            quant = 1;
-        if (quant > 65534)
-            quant = 65534;
+        quant = av_clip(quant, 1, 65534);
 
         set_ue_golomb(&pb, quant);
 
