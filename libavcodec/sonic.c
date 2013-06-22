@@ -90,7 +90,7 @@ static inline int shift(int a,int b)
 
 static inline int shift_down(int a,int b)
 {
-    return (a>>b)+((a<0)?1:0);
+    return (a>>b)+(a<0);
 }
 
 #if 1
