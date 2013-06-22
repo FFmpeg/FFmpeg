@@ -174,7 +174,7 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
 
     copy = av_mallocz(4* entries);
     if (!copy)
-        return -1;
+        return AVERROR(ENOMEM);
 
     if (base_2_part)
     {
@@ -202,7 +202,7 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
     if (!bits)
     {
 //        av_free(copy);
-        return -1;
+        return AVERROR(ENOMEM);
     }
 
     for (i = 0; i <= max; i++)
@@ -271,7 +271,7 @@ static int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_par
     int *bits = av_mallocz(4* entries);
 
     if (!bits)
-        return -1;
+        return AVERROR(ENOMEM);
 
     if (base_2_part)
     {
@@ -500,7 +500,7 @@ static inline int code_samplerate(int samplerate)
         case 16000: return 7;
         case 8000: return 8;
     }
-    return -1;
+    return AVERROR(EINVAL);
 }
 
 static av_cold int sonic_encode_init(AVCodecContext *avctx)
@@ -512,7 +512,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     if (avctx->channels > MAX_CHANNELS)
     {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
-        return -1; /* only stereo or mono for now */
+        return AVERROR(EINVAL); /* only stereo or mono for now */
     }
 
     if (avctx->channels == 2)
@@ -539,7 +539,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
         ((s->num_taps>>5)<<5 != s->num_taps))
     {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of taps\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     // generate taps
@@ -556,17 +556,17 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     s->tail_size = s->num_taps*s->channels;
     s->tail = av_mallocz(4 * s->tail_size);
     if (!s->tail)
-        return -1;
+        return AVERROR(ENOMEM);
 
     s->predictor_k = av_mallocz(4 * s->num_taps);
     if (!s->predictor_k)
-        return -1;
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < s->channels; i++)
     {
         s->coded_samples[i] = av_mallocz(4* s->block_align);
         if (!s->coded_samples[i])
-            return -1;
+            return AVERROR(ENOMEM);
     }
 
     s->int_samples = av_mallocz(4* s->frame_size);
@@ -574,11 +574,11 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     s->window_size = ((2*s->tail_size)+s->frame_size);
     s->window = av_mallocz(4* s->window_size);
     if (!s->window)
-        return -1;
+        return AVERROR(ENOMEM);
 
     avctx->extradata = av_mallocz(16);
     if (!avctx->extradata)
-        return -1;
+        return AVERROR(ENOMEM);
     init_put_bits(&pb, avctx->extradata, 16*8);
 
     put_bits(&pb, 2, version); // version
@@ -681,8 +681,8 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     // generate taps
     modified_levinson_durbin(s->window, s->window_size,
                 s->predictor_k, s->num_taps, s->channels, s->tap_quant);
-    if (intlist_write(&pb, s->predictor_k, s->num_taps, 0) < 0)
-        return -1;
+    if ((ret = intlist_write(&pb, s->predictor_k, s->num_taps, 0)) < 0)
+        return ret;
 
     for (ch = 0; ch < s->channels; ch++)
     {
@@ -739,8 +739,8 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             for (i = 0; i < s->block_align; i++)
                 s->coded_samples[ch][i] = divide(s->coded_samples[ch][i], quant);
 
-        if (intlist_write(&pb, s->coded_samples[ch], s->block_align, 1) < 0)
-            return -1;
+        if ((ret = intlist_write(&pb, s->coded_samples[ch], s->block_align, 1)) < 0)
+            return ret;
     }
 
 //    av_log(avctx, AV_LOG_DEBUG, "used bytes: %d\n", (put_bits_count(&pb)+7)/8);
@@ -768,7 +768,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     if (!avctx->extradata)
     {
         av_log(avctx, AV_LOG_ERROR, "No mandatory headers present\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     init_get_bits(&gb, avctx->extradata, avctx->extradata_size);
@@ -777,7 +777,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     if (version > 1)
     {
         av_log(avctx, AV_LOG_ERROR, "Unsupported Sonic version, please report\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (version == 1)
@@ -791,7 +791,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     if (s->channels > MAX_CHANNELS)
     {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->lossless = get_bits1(&gb);
@@ -831,14 +831,14 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     {
         s->predictor_state[i] = av_mallocz(4* s->num_taps);
         if (!s->predictor_state[i])
-            return -1;
+            return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < s->channels; i++)
     {
         s->coded_samples[i] = av_mallocz(4* s->block_align);
         if (!s->coded_samples[i])
-            return -1;
+            return AVERROR(ENOMEM);
     }
     s->int_samples = av_mallocz(4* s->frame_size);
 
