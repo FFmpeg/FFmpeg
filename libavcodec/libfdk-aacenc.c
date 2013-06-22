@@ -197,6 +197,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
             avctx->bit_rate = (96*sce + 128*cpe) * avctx->sample_rate / 44;
             if (avctx->profile == FF_PROFILE_AAC_HE ||
                 avctx->profile == FF_PROFILE_AAC_HE_V2 ||
+                avctx->profile == FF_PROFILE_MPEG2_AAC_HE ||
                 s->eld_sbr)
                 avctx->bit_rate /= 2;
         }
