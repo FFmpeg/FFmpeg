@@ -263,7 +263,7 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int e
     ROUND160_48_TO_63(c,d,e,a,b,h,i,j,f,g);
     SWAP(d,i)
 
-    for (; n < 80 - 1;) {
+    for (; n < 75;) {
         ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
         ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
         ROUND160_64_TO_79(e,a,b,c,d,j,f,g,h,i);
