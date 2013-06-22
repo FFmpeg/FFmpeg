@@ -545,7 +545,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     // generate taps
     s->tap_quant = av_calloc(s->num_taps, sizeof(*s->tap_quant));
     for (i = 0; i < s->num_taps; i++)
-        s->tap_quant[i] = (int)(sqrt(i+1));
+        s->tap_quant[i] = ff_sqrt(i+1);
 
     s->channels = avctx->channels;
     s->samplerate = avctx->sample_rate;
@@ -820,7 +820,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     // generate taps
     s->tap_quant = av_calloc(s->num_taps, sizeof(*s->tap_quant));
     for (i = 0; i < s->num_taps; i++)
-        s->tap_quant[i] = (int)(sqrt(i+1));
+        s->tap_quant[i] = ff_sqrt(i+1);
 
     s->predictor_k = av_calloc(s->num_taps, sizeof(*s->predictor_k));
 
