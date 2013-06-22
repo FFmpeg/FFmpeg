@@ -172,7 +172,7 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
     int step = 256, pos = 0, dominant = 0, any = 0;
     int *copy, *bits;
 
-    copy = av_mallocz(4* entries);
+    copy = av_mallocz(sizeof(*copy) * entries);
     if (!copy)
         return AVERROR(ENOMEM);
 
@@ -198,7 +198,7 @@ static int intlist_write(PutBitContext *pb, int *buf, int entries, int base_2_pa
             max = abs(copy[i]);
     }
 
-    bits = av_mallocz(4* entries*max);
+    bits = av_mallocz(sizeof(*bits) * entries*max);
     if (!bits)
     {
 //        av_free(copy);
@@ -268,7 +268,7 @@ static int intlist_read(GetBitContext *gb, int *buf, int entries, int base_2_par
     int i, low_bits = 0, x = 0;
     int n_zeros = 0, step = 256, dominant = 0;
     int pos = 0, level = 0;
-    int *bits = av_mallocz(4* entries);
+    int *bits = av_mallocz(sizeof(*bits) * entries);
 
     if (!bits)
         return AVERROR(ENOMEM);
@@ -418,7 +418,7 @@ static void modified_levinson_durbin(int *window, int window_entries,
         int *out, int out_entries, int channels, int *tap_quant)
 {
     int i;
-    int *state = av_mallocz(4* window_entries);
+    int *state = av_mallocz(sizeof(*state) * window_entries);
 
     memcpy(state, window, 4* window_entries);
 
@@ -543,7 +543,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     }
 
     // generate taps
-    s->tap_quant = av_mallocz(4* s->num_taps);
+    s->tap_quant = av_mallocz(sizeof(*s->tap_quant) * s->num_taps);
     for (i = 0; i < s->num_taps; i++)
         s->tap_quant[i] = (int)(sqrt(i+1));
 
@@ -554,25 +554,25 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     s->frame_size = s->channels*s->block_align*s->downsampling;
 
     s->tail_size = s->num_taps*s->channels;
-    s->tail = av_mallocz(4 * s->tail_size);
+    s->tail = av_mallocz(sizeof(*s->tail) * s->tail_size);
     if (!s->tail)
         return AVERROR(ENOMEM);
 
-    s->predictor_k = av_mallocz(4 * s->num_taps);
+    s->predictor_k = av_mallocz(sizeof(*s->predictor_k) * s->num_taps);
     if (!s->predictor_k)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < s->channels; i++)
     {
-        s->coded_samples[i] = av_mallocz(4* s->block_align);
+        s->coded_samples[i] = av_mallocz(sizeof(**s->coded_samples) * s->block_align);
         if (!s->coded_samples[i])
             return AVERROR(ENOMEM);
     }
 
-    s->int_samples = av_mallocz(4* s->frame_size);
+    s->int_samples = av_mallocz(sizeof(*s->int_samples) * s->frame_size);
 
     s->window_size = ((2*s->tail_size)+s->frame_size);
-    s->window = av_mallocz(4* s->window_size);
+    s->window = av_mallocz(sizeof(*s->window) * s->window_size);
     if (!s->window)
         return AVERROR(ENOMEM);
 
@@ -821,26 +821,26 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
         version, s->lossless, s->decorrelation, s->num_taps, s->block_align, s->frame_size, s->downsampling);
 
     // generate taps
-    s->tap_quant = av_mallocz(4* s->num_taps);
+    s->tap_quant = av_mallocz(sizeof(*s->tap_quant) * s->num_taps);
     for (i = 0; i < s->num_taps; i++)
         s->tap_quant[i] = (int)(sqrt(i+1));
 
-    s->predictor_k = av_mallocz(4* s->num_taps);
+    s->predictor_k = av_mallocz(sizeof(*s->predictor_k) * s->num_taps);
 
     for (i = 0; i < s->channels; i++)
     {
-        s->predictor_state[i] = av_mallocz(4* s->num_taps);
+        s->predictor_state[i] = av_mallocz(sizeof(**s->predictor_state) * s->num_taps);
         if (!s->predictor_state[i])
             return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < s->channels; i++)
     {
-        s->coded_samples[i] = av_mallocz(4* s->block_align);
+        s->coded_samples[i] = av_mallocz(sizeof(**s->coded_samples) * s->block_align);
         if (!s->coded_samples[i])
             return AVERROR(ENOMEM);
     }
-    s->int_samples = av_mallocz(4* s->frame_size);
+    s->int_samples = av_mallocz(sizeof(*s->int_samples) * s->frame_size);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
