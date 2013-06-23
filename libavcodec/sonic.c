@@ -527,9 +527,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     }
 
     // max tap 2048
-    if ((s->num_taps < 32) || (s->num_taps > 1024) ||
-        ((s->num_taps>>5)<<5 != s->num_taps))
-    {
+    if (s->num_taps < 32 || s->num_taps > 1024 || s->num_taps % 32) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of taps\n");
         return AVERROR_INVALIDDATA;
     }
