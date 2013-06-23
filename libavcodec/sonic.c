@@ -602,13 +602,13 @@ static av_cold int sonic_encode_close(AVCodecContext *avctx)
     int i;
 
     for (i = 0; i < s->channels; i++)
-        av_free(s->coded_samples[i]);
+        av_freep(&s->coded_samples[i]);
 
-    av_free(s->predictor_k);
-    av_free(s->tail);
-    av_free(s->tap_quant);
-    av_free(s->window);
-    av_free(s->int_samples);
+    av_freep(&s->predictor_k);
+    av_freep(&s->tail);
+    av_freep(&s->tap_quant);
+    av_freep(&s->window);
+    av_freep(&s->int_samples);
 
     return 0;
 }
@@ -838,14 +838,14 @@ static av_cold int sonic_decode_close(AVCodecContext *avctx)
     SonicContext *s = avctx->priv_data;
     int i;
 
-    av_free(s->int_samples);
-    av_free(s->tap_quant);
-    av_free(s->predictor_k);
+    av_freep(&s->int_samples);
+    av_freep(&s->tap_quant);
+    av_freep(&s->predictor_k);
 
     for (i = 0; i < s->channels; i++)
     {
-        av_free(s->predictor_state[i]);
-        av_free(s->coded_samples[i]);
+        av_freep(&s->predictor_state[i]);
+        av_freep(&s->coded_samples[i]);
     }
 
     return 0;
