@@ -75,14 +75,6 @@ typedef struct SonicContext {
 #define BASE_QUANT      0.6
 #define RATE_VARIATION  3.0
 
-static inline int divide(int a, int b)
-{
-    if (a < 0)
-        return -( (-a + b/2)/b );
-    else
-        return (a + b/2)/b;
-}
-
 static inline int shift(int a,int b)
 {
     return (a+(1<<(b-1))) >> b;
@@ -734,7 +726,7 @@ static int sonic_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     {
         if (!s->lossless)
             for (i = 0; i < s->block_align; i++)
-                s->coded_samples[ch][i] = divide(s->coded_samples[ch][i], quant);
+                s->coded_samples[ch][i] = ROUNDED_DIV(s->coded_samples[ch][i], quant);
 
         if ((ret = intlist_write(&pb, s->coded_samples[ch], s->block_align, 1)) < 0)
             return ret;
