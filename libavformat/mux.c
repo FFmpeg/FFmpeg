@@ -187,13 +187,18 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
 
             if (av_cmp_q(st->sample_aspect_ratio,
                          codec->sample_aspect_ratio)) {
-                av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between muxer "
-                                        "(%d/%d) and encoder layer (%d/%d)\n",
-                       st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
-                       codec->sample_aspect_ratio.num,
-                       codec->sample_aspect_ratio.den);
-                ret = AVERROR(EINVAL);
-                goto fail;
+                if (st->sample_aspect_ratio.num != 0 &&
+                    st->sample_aspect_ratio.den != 0 &&
+                    codec->sample_aspect_ratio.den != 0 &&
+                    codec->sample_aspect_ratio.den != 0) {
+                    av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between muxer "
+                            "(%d/%d) and encoder layer (%d/%d)\n",
+                            st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
+                            codec->sample_aspect_ratio.num,
+                            codec->sample_aspect_ratio.den);
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
             }
             break;
         }
