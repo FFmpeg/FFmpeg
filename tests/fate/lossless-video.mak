@@ -4,6 +4,9 @@ fate-cllc-argb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-argb.avi
 FATE_CLLC += fate-cllc-rgb
 fate-cllc-rgb: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-rgb.avi
 
+FATE_CLLC += fate-cllc-yuy2-noblock
+fate-cllc-yuy2-noblock: CMD = framecrc -i $(TARGET_SAMPLES)/cllc/sample-cllc-yuy2-noblock.avi
+
 FATE_LOSSLESS_VIDEO-$(call DEMDEC, AVI, CLLC) += $(FATE_CLLC)
 fate-cllc: $(FATE_CLLC)
 
