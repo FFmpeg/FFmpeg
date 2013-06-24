@@ -575,7 +575,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     }
 
     /* draw sliding color line */
-    p0 = p = data + frame->linesize[0] * height * 3/4;
+    p0 = p = data + frame->linesize[0] * (height * 3/4);
     grad = (256 * test->nb_frame * test->time_base.num / test->time_base.den) %
         GRADIENT_SIZE;
     rgrad = 0;
