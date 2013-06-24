@@ -175,13 +175,13 @@ int ff_msmpeg4_coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block
     return pred;
 }
 
-static int get_dc(uint8_t *src, int stride, int scale)
+static int get_dc(uint8_t *src, int stride, int scale, int block_size)
 {
     int y;
     int sum=0;
-    for(y=0; y<8; y++){
+    for(y=0; y<block_size; y++){
         int x;
-        for(x=0; x<8; x++){
+        for(x=0; x<block_size; x++){
             sum+=src[x + y*stride];
         }
     }
@@ -276,17 +276,18 @@ int ff_msmpeg4_pred_dc(MpegEncContext *s, int n,
                     *dir_ptr = 0;
                 }
             }else{
+                int bs = 8 >> s->avctx->lowres;
                 if(n<4){
                     wrap= s->linesize;
-                    dest= s->current_picture.f.data[0] + (((n >> 1) + 2*s->mb_y) * 8*  wrap ) + ((n & 1) + 2*s->mb_x) * 8;
+                    dest= s->current_picture.f.data[0] + (((n >> 1) + 2*s->mb_y) * bs*  wrap ) + ((n & 1) + 2*s->mb_x) * bs;
                 }else{
                     wrap= s->uvlinesize;
-                    dest= s->current_picture.f.data[n - 3] + (s->mb_y * 8 * wrap) + s->mb_x * 8;
+                    dest= s->current_picture.f.data[n - 3] + (s->mb_y * bs * wrap) + s->mb_x * bs;
                 }
                 if(s->mb_x==0) a= (1024 + (scale>>1))/scale;
-                else           a= get_dc(dest-8, wrap, scale*8);
+                else           a= get_dc(dest-bs, wrap, scale*8>>(2*s->avctx->lowres), bs);
                 if(s->mb_y==0) c= (1024 + (scale>>1))/scale;
-                else           c= get_dc(dest-8*wrap, wrap, scale*8);
+                else           c= get_dc(dest-bs*wrap, wrap, scale*8>>(2*s->avctx->lowres), bs);
 
                 if (s->h263_aic_dir==0) {
                     pred= a;
