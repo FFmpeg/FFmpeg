@@ -910,7 +910,6 @@ static int init_report(const char *env)
            tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
            tm->tm_hour, tm->tm_min, tm->tm_sec,
            filename.str);
-    av_log_set_level(FFMAX(av_log_get_level(), AV_LOG_VERBOSE));
     av_bprint_finalize(&filename, NULL);
     return 0;
 }
