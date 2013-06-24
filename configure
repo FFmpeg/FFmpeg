@@ -2685,7 +2685,7 @@ msvc_flags(){
     msvc_common_flags "$@"
     for flag; do
         case $flag in
-            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389 \
+            -Wall)                echo -W4 -wd4244 -wd4127 -wd4018 -wd4389     \
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4554 \
@@ -2736,12 +2736,12 @@ suncc_flags(){
                     core2)              echo -xarch=ssse3 -xchip=core2   ;;
                     corei7)           echo -xarch=sse4_2 -xchip=nehalem  ;;
                     corei7-avx)       echo -xarch=avx -xchip=sandybridge ;;
-                    amdfam10|barcelona)       echo -xtarget=barcelona    ;;
-                    bdver*)                   echo -xarch=avx            ;;
-                    athlon-4|athlon-[mx]p)    echo -xarch=ssea           ;;
+                    amdfam10|barcelona)        echo -xtarget=barcelona   ;;
+                    bdver*)                    echo -xarch=avx           ;;
+                    athlon-4|athlon-[mx]p)     echo -xarch=ssea          ;;
                     k8|opteron|athlon64|athlon-fx)
-                                              echo -xarch=sse2a          ;;
-                    athlon*)                  echo -xarch=pentium_proa   ;;
+                                               echo -xarch=sse2a         ;;
+                    athlon*)                   echo -xarch=pentium_proa  ;;
                 esac
                 ;;
             -std=c99)             echo -xc99              ;;
@@ -2901,7 +2901,8 @@ probe_cc(){
         _DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -showIncludes -Zs'
         _cflags_speed="-O2"
         _cflags_size="-O1"
-        # Nonstandard output options, to avoid msys path conversion issues, relies on wrapper to remap it
+        # Nonstandard output options, to avoid msys path conversion issues.
+        # Relies on wrapper to remap it.
         if $_cc 2>&1 | grep -q Linker; then
             _ld_o='-out $@'
         else
@@ -2922,10 +2923,12 @@ probe_cc(){
         _type=icl
         _ident=$($cc 2>&1 | head -n1)
         _depflags='-QMMD -QMF$(@:.o=.d) -QMT$@'
-        # Not only is O3 broken on 13.x+ but it's slower on all previous versions (tested) as well
+        # Not only is O3 broken on 13.x+ but it is slower on all previous
+        # versions (tested) as well.
         _cflags_speed="-O2"
         _cflags_size="-O1 -Oi" # -O1 without -Oi miscompiles stuff
-        # Nonstandard output options, to avoid msys path conversion issues, relies on wrapper to remap it
+        # Nonstandard output options, to avoid msys path conversion issues.
+        # Relies on wrapper to remap it.
         if $_cc 2>&1 | grep -q Linker; then
             _ld_o='-out $@'
         else
@@ -2936,9 +2939,10 @@ probe_cc(){
         _flags_filter=icl_flags
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
-        # -Qdiag-error to make icl error when presented with certain unknown arguments
+        # -Qdiag-error to make icl error when seeing certain unknown arguments
         _flags='-nologo -Qdiag-error:4044,10157'
-        # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency with msvc which enables it by default
+        # -Qvec- -Qsimd- to prevent miscompilation, -GS for consistency
+        # with MSVC which enables it by default.
         _cflags='-D_USE_MATH_DEFINES -FIstdlib.h -Dstrtoll=_strtoi64 -Qms0 -Qvec- -Qsimd- -GS'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
@@ -3040,7 +3044,8 @@ if test -n "$sysroot"; then
 fi
 
 if test "$cpu" = host; then
-    enabled cross_compile && die "--cpu=host makes no sense when cross-compiling."
+    enabled cross_compile &&
+        die "--cpu=host makes no sense when cross-compiling."
 
     case "$cc_type" in
         gcc|llvm_gcc)
@@ -3056,7 +3061,8 @@ if test "$cpu" = host; then
         ;;
     esac
 
-    test "${cpu:-host}" = host && die "--cpu=host not supported with compiler $cc"
+    test "${cpu:-host}" = host &&
+        die "--cpu=host not supported with compiler $cc"
 fi
 
 # Deal with common $arch aliases
@@ -3402,7 +3408,9 @@ case $target_os in
         # the Solaris assembler.  As our libraries contain their own
         # guards for processor-specific code, instead suppress
         # generation of the HWCAPS ELF section on Solaris x86 only.
-        enabled_all suncc x86 && echo "hwcap_1 = OVERRIDE;" > mapfile && add_ldflags -Wl,-M,mapfile
+        enabled_all suncc x86 &&
+            echo "hwcap_1 = OVERRIDE;" > mapfile &&
+            add_ldflags -Wl,-M,mapfile
         nm_default='nm -P -g'
         ;;
     netbsd)
@@ -3486,8 +3494,7 @@ case $target_os in
             # Link to the import library instead of the normal static library
             # for shared libs.
             LD_LIB='%.lib'
-            # Cannot build shared and static libraries at the same time with
-            # MSVC.
+            # Cannot build shared and static libs at the same time with MSVC.
             disable static
         fi
         shlibdir_default="$bindir_default"
@@ -4103,88 +4110,88 @@ for func in $MATH_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled avisynth   && { { check_lib2 "windows.h" LoadLibrary; } ||
-                        { check_lib2 "dlfcn.h" dlopen -ldl; } ||
-                        die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
-enabled fontconfig && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
-enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
-enabled libiec61883 && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
-enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
-enabled libass     && require_pkg_config libass ass/ass.h ass_library_init
-enabled libbluray  && require libbluray libbluray/bluray.h bd_open -lbluray
-enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
-                      { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
-                        die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
-enabled libcaca    && require_pkg_config caca caca.h caca_create_canvas
-enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
-enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
+enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
+                               { check_lib2 "dlfcn.h" dlopen -ldl; } ||
+                               die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
+enabled fontconfig        && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
+enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
+enabled libaacplus        && require "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
+enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
+enabled libbluray         && require libbluray libbluray/bluray.h bd_open -lbluray
+enabled libcelt           && require libcelt celt/celt.h celt_decode -lcelt0 &&
+                             { check_lib celt/celt.h celt_decoder_create_custom -lcelt0 ||
+                               die "ERROR: libcelt must be installed and version must be >= 0.11.0."; }
+enabled libcaca           && require_pkg_config caca caca.h caca_create_canvas
+enabled libfaac           && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
+enabled libfdk_aac        && require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
-enabled libflite   && require2 libflite "flite/flite.h" flite_init $flite_libs
-enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
-enabled libgsm     && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
-                            check_lib "${gsm_hdr}" gsm_create -lgsm && break;
-                        done || die "ERROR: libgsm not found"; }
-enabled libilbc    && require  libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
-enabled libmodplug && require  libmodplug libmodplug/modplug.h ModPlug_Load -lmodplug
-enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
-enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
-enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
-enabled libopencore_amrwb  && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv  && require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader
-enabled libopenjpeg && { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg ||
-                         check_lib openjpeg.h opj_version -lopenjpeg ||
-                         die "ERROR: libopenjpeg not found"; }
-enabled libopus    && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
-enabled libpulse && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
-enabled libquvi    && require_pkg_config libquvi quvi/quvi.h quvi_init
-enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
-enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
-enabled libshine   && require_pkg_config shine shine/layer3.h shine_encode_frame
-enabled libsoxr    && require  libsoxr soxr.h soxr_create -lsoxr
-enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
-enabled libstagefright_h264  && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
+enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite_libs
+enabled libfreetype       && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
+enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
+                                   check_lib "${gsm_hdr}" gsm_create -lgsm && break;
+                               done || die "ERROR: libgsm not found"; }
+enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc
+enabled libmodplug        && require libmodplug libmodplug/modplug.h ModPlug_Load -lmodplug
+enabled libmp3lame        && require "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
+enabled libnut            && require libnut libnut.h nut_demuxer_init -lnut
+enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
+enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
+enabled libopencv         && require_pkg_config opencv opencv/cxcore.h cvCreateImageHeader
+enabled libopenjpeg       && { check_lib openjpeg-1.5/openjpeg.h opj_version -lopenjpeg ||
+                               check_lib openjpeg.h opj_version -lopenjpeg ||
+                               die "ERROR: libopenjpeg not found"; }
+enabled libopus           && require_pkg_config opus opus_multistream.h opus_multistream_decoder_create
+enabled libpulse          && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
+enabled libquvi           && require_pkg_config libquvi quvi/quvi.h quvi_init
+enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
+enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
+enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_frame
+enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
+enabled libspeex          && require libspeex speex/speex.h speex_decoder_init -lspeex
+enabled libstagefright_h264 && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
     media/stagefright/MediaBufferGroup.h media/stagefright/MediaDebug.h media/stagefright/MediaDefs.h
     media/stagefright/OMXClient.h media/stagefright/OMXCodec.h" android::OMXClient -lstagefright -lmedia -lutils -lbinder -lgnustl_static
-enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
-enabled libtwolame && require  libtwolame twolame.h twolame_init -ltwolame &&
-                      { check_lib twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
-                        die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
-enabled libutvideo    && require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++
-enabled libv4l2    && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
-enabled libvidstab && require_pkg_config vidstab vid.stab/libvidstab.h vsMotionDetectInit
-enabled libvo_aacenc && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
-enabled libvo_amrwbenc && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
-enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
-enabled libvpx     && {
+enabled libtheora         && require libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
+enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
+                             { check_lib twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
+                               die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
+enabled libutvideo        && require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++
+enabled libv4l2           && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
+enabled libvidstab        && require_pkg_config vidstab vid.stab/libvidstab.h vsMotionDetectInit
+enabled libvo_aacenc      && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
+enabled libvo_amrwbenc    && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
+enabled libvorbis         && require libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
+enabled libvpx            && {
     enabled libvpx_vp8_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_dec_init_ver -lvpx ||
-                                die "ERROR: libvpx decoder version must be >=0.9.1"; }
+                                    die "ERROR: libvpx decoder version must be >=0.9.1"; }
     enabled libvpx_vp8_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VP8E_SET_MAX_INTRA_BITRATE_PCT" -lvpx ||
-                                die "ERROR: libvpx encoder version must be >=0.9.7"; }
-    enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder;  }
+                                    die "ERROR: libvpx encoder version must be >=0.9.7"; }
+    enabled libvpx_vp9_decoder && { check_lib2 "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp9_dx" -lvpx || disable libvpx_vp9_decoder; }
     enabled libvpx_vp9_encoder && { check_lib2 "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp9_cx" -lvpx || disable libvpx_vp9_encoder; } }
-enabled libwavpack && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
-enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
-                      { check_cpp_condition x264.h "X264_BUILD >= 118" ||
-                        die "ERROR: libx264 must be installed and version must be >= 0.118."; }
-enabled libxavs    && require  libxavs xavs.h xavs_encoder_encode -lxavs
-enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
-enabled libzmq     && require_pkg_config libzmq zmq.h zmq_ctx_new
-enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
-                        check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
-                        die "ERROR: openal not found"; } &&
-                      { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
-                        die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
-enabled opencl     && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
-                        check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
-                        die "ERROR: opencl not found"; } &&
-                      { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
-                        check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
-                        die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
-enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
-                        check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
-                        check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
-                        die "ERROR: openssl not found"; }
+enabled libwavpack        && require libwavpack wavpack/wavpack.h WavpackOpenFileOutput  -lwavpack
+enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &&
+                             { check_cpp_condition x264.h "X264_BUILD >= 118" ||
+                               die "ERROR: libx264 must be installed and version must be >= 0.118."; }
+enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
+enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
+enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
+enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
+                               check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
+                               die "ERROR: openal not found"; } &&
+                             { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
+                               die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
+enabled opencl            && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
+                               check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
+                               die "ERROR: opencl not found"; } &&
+                             { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
+                               check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
+                               die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
+enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
+                               check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
+                               check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
+                               die "ERROR: openssl not found"; }
 
 if enabled gnutls; then
     { check_lib nettle/bignum.h nettle_mpz_get_str_256 -lnettle -lhogweed -lgmp && enable nettle; } ||
@@ -4257,7 +4264,8 @@ EOF
 fi
 check_header soundcard.h
 
-enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled_any alsa_indev alsa_outdev &&
+    check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
 enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack && check_func sem_timedwait &&
     check_func jack_port_get_latency_range -ljack
@@ -4426,9 +4434,10 @@ elif enabled pathscale; then
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     if enabled icl; then
-        # basically -fstrict-aliasing for icl that doesn't work (correctly) on 13.x+
+        # basically -fstrict-aliasing that does not work (correctly) on icl 13.x
         check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
-        # icl will pass the inline asm tests but inline asm is currently not supported (build will fail)
+        # icl will pass the inline asm tests but inline asm is currently
+        # not supported (build will fail)
         disable inline_asm
     fi
 fi
@@ -4843,15 +4852,15 @@ lavfi_libs=${lavfi_libs%, }
 lavd_libs="libavformat${build_suffix} = $LIBAVFORMAT_VERSION"
 enabled lavfi_indev && prepend lavd_libs "libavfilter${build_suffix} = $LIBAVFILTER_VERSION,"
 
-pkgconfig_generate libavutil "FFmpeg utility library" "$LIBAVUTIL_VERSION" "$LIBM"
-pkgconfig_generate libavcodec "FFmpeg codec library" "$LIBAVCODEC_VERSION" "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavformat "FFmpeg container format library" "$LIBAVFORMAT_VERSION" "$extralibs" "libavcodec${build_suffix} = $LIBAVCODEC_VERSION"
-pkgconfig_generate libavdevice "FFmpeg device handling library" "$LIBAVDEVICE_VERSION" "$extralibs" "$lavd_libs"
-pkgconfig_generate libavfilter "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION" "$extralibs" "$lavfi_libs"
-pkgconfig_generate libpostproc "FFmpeg postprocessing library" "$LIBPOSTPROC_VERSION" "" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libavresample "Libav audio resampling library" "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libswscale "FFmpeg image rescaling library" "$LIBSWSCALE_VERSION" "$LIBM" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
-pkgconfig_generate libswresample "FFmpeg audio resampling library" "$LIBSWRESAMPLE_VERSION" "$LIBM" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavutil     "FFmpeg utility library"               "$LIBAVUTIL_VERSION"     "$LIBM"
+pkgconfig_generate libavcodec    "FFmpeg codec library"                 "$LIBAVCODEC_VERSION"    "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavformat   "FFmpeg container format library"      "$LIBAVFORMAT_VERSION"   "$extralibs" "libavcodec${build_suffix} = $LIBAVCODEC_VERSION"
+pkgconfig_generate libavdevice   "FFmpeg device handling library"       "$LIBAVDEVICE_VERSION"   "$extralibs" "$lavd_libs"
+pkgconfig_generate libavfilter   "FFmpeg audio/video filtering library" "$LIBAVFILTER_VERSION"   "$extralibs" "$lavfi_libs"
+pkgconfig_generate libpostproc   "FFmpeg postprocessing library"        "$LIBPOSTPROC_VERSION"   ""           "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+pkgconfig_generate libavresample "Libav audio resampling library"       "$LIBAVRESAMPLE_VERSION" "$extralibs" "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+pkgconfig_generate libswscale    "FFmpeg image rescaling library"       "$LIBSWSCALE_VERSION"    "$LIBM"      "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
+pkgconfig_generate libswresample "FFmpeg audio resampling library"      "$LIBSWRESAMPLE_VERSION" "$LIBM"      "libavutil${build_suffix} = $LIBAVUTIL_VERSION"
 
 fix_ffmpeg_remote(){
     git_remote_from=$1
