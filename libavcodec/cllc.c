@@ -136,14 +136,13 @@ static int read_argb_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
 
     CLOSE_READER(bits, gb);
 
-    dst         -= 4 * ctx->avctx->width;
-    top_left[0]  = dst[0];
+    top_left[0]  = outbuf[0];
 
     /* Only stash components if they are not transparent */
     if (top_left[0]) {
-        top_left[1] = dst[1];
-        top_left[2] = dst[2];
-        top_left[3] = dst[3];
+        top_left[1] = outbuf[1];
+        top_left[2] = outbuf[2];
+        top_left[3] = outbuf[3];
     }
 
     return 0;
@@ -174,7 +173,7 @@ static int read_rgb24_component_line(CLLCContext *ctx, GetBitContext *gb,
     CLOSE_READER(bits, gb);
 
     /* Stash the first pixel */
-    *top_left = dst[-3 * ctx->avctx->width];
+    *top_left = outbuf[0];
 
     return 0;
 }
