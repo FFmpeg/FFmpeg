@@ -2353,7 +2353,7 @@ msvc_common_flags(){
             -Wall)                ;;
             -std=c99)             ;;
             # Common flags
-            -fomit-frame-pointer) echo -Oy ;;
+            -fomit-frame-pointer) ;;
             -g)                   echo -Z7 ;;
             -fno-math-errno)      ;;
             -fno-common)          ;;
