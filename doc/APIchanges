@@ -18,6 +18,9 @@ API changes, most recent first:
 2013-06-xx - xxxxxxx - lavc 55.10.0 - avcodec.h
   Add MPEG-2 AAC profiles
 
+2013-06-xx - xxxxxxx - lavf 55.10.100 - avformat.h
+  Add AV_DISPOSITION_* flags to indicate text track kind.
+
 2013-06-xx - xxxxxxx - lavu 52.36.100
   Add AVRIPEMD:
    av_ripemd_alloc()

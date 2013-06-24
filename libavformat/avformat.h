@@ -636,6 +636,13 @@ typedef struct AVIndexEntry {
 #define AV_DISPOSITION_ATTACHED_PIC      0x0400
 
 /**
+ * To specify text track kind (different from subtitles default).
+ */
+#define AV_DISPOSITION_CAPTIONS     0x10000
+#define AV_DISPOSITION_DESCRIPTIONS 0x20000
+#define AV_DISPOSITION_METADATA     0x40000
+
+/**
  * Options for behavior on timestamp wrap detection.
  */
 #define AV_PTS_WRAP_IGNORE      0   ///< ignore the wrap
