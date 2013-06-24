@@ -29,9 +29,12 @@
 #include "subtitles.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/opt.h"
 
 typedef struct {
+    const AVClass *class;
     FFDemuxSubtitlesQueue q;
+    int kind;
 } WebVTTContext;
 
 static int webvtt_probe(AVProbeData *p)
@@ -66,6 +69,7 @@ static int webvtt_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, 1000);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id   = AV_CODEC_ID_WEBVTT;
+    st->disposition |= webvtt->kind;
 
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_init(&cue,    0, AV_BPRINT_SIZE_UNLIMITED);
@@ -186,6 +190,25 @@ static int webvtt_read_close(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(WebVTTContext, x)
+#define KIND_FLAGS AV_OPT_FLAG_SUBTITLE_PARAM
+
+static const AVOption options[] = {
+    { "kind", "Set kind of WebVTT track", OFFSET(kind), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, KIND_FLAGS, "webvtt_kind" },
+        { "subtitles",    "WebVTT subtitles kind",    0, AV_OPT_TYPE_CONST, { .i64 = 0 },                           INT_MIN, INT_MAX, 0, "webvtt_kind" },
+        { "captions",     "WebVTT captions kind",     0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_CAPTIONS },     INT_MIN, INT_MAX, 0, "webvtt_kind" },
+        { "descriptions", "WebVTT descriptions kind", 0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_DESCRIPTIONS }, INT_MIN, INT_MAX, 0, "webvtt_kind" },
+        { "metadata",     "WebVTT metadata kind",     0, AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_METADATA },     INT_MIN, INT_MAX, 0, "webvtt_kind" },
+    { NULL }
+};
+
+static const AVClass webvtt_demuxer_class = {
+    .class_name  = "WebVTT demuxer",
+    .item_name   = av_default_item_name,
+    .option      = options,
+    .version     = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_webvtt_demuxer = {
     .name           = "webvtt",
     .long_name      = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
@@ -196,4 +219,5 @@ AVInputFormat ff_webvtt_demuxer = {
     .read_seek2     = webvtt_read_seek,
     .read_close     = webvtt_read_close,
     .extensions     = "vtt",
+    .priv_class     = &webvtt_demuxer_class,
 };
