@@ -106,10 +106,10 @@ libavformat) as DLLs.
 
 @end itemize
 
-@section Microsoft Visual C++
+@section Microsoft Visual C++ or Intel C++ Compiler for Windows
 
-FFmpeg can be built with MSVC using a C99-to-C89 conversion utility and
-wrapper.
+FFmpeg can be built with MSVC or ICL using a C99-to-C89 conversion utility and
+wrapper. For ICL, only the wrapper is used, since ICL supports C99.
 
 You will need the following prerequisites:
 
@@ -122,28 +122,33 @@ You will need the following prerequisites:
 you want to run @uref{fate.html, FATE}.
 @end itemize
 
-To set up a proper MSVC environment in MSYS, you simply need to run
-@code{msys.bat} from the Visual Studio command prompt.
+To set up a proper environment in MSYS, you need to run @code{msys.bat} from
+the Visual Studio or Intel Compiler command prompt.
 
 Place @code{makedef}, @code{c99wrap.exe}, @code{c99conv.exe}, and @code{yasm.exe}
 somewhere in your @code{PATH}.
 
 Next, make sure @code{inttypes.h} and any other headers and libs you want to use
-are located in a spot that MSVC can see. Do so by modifying the @code{LIB} and
-@code{INCLUDE} environment variables to include the @strong{Windows} paths to
+are located in a spot that the compiler can see. Do so by modifying the @code{LIB}
+and @code{INCLUDE} environment variables to include the @strong{Windows} paths to
 these directories. Alternatively, you can try and use the
 @code{--extra-cflags}/@code{--extra-ldflags} configure options.
 
 Finally, run:
 
 @example
+For MSVC:
 ./configure --toolchain=msvc
+
+For ICL:
+./configure --toolchain=icl
+
 make
 make install
 @end example
 
 If you wish to compile shared libraries, add @code{--enable-shared} to your
-configure options. Note that due to the way MSVC handles DLL imports and
+configure options. Note that due to the way MSVC and ICL handle DLL imports and
 exports, you cannot compile static and shared libraries at the same time, and
 enabling shared libraries will automatically disable the static ones.
 
@@ -173,7 +178,12 @@ erroneously included when building FFmpeg.
 can see.
 @end enumerate
 
-@item FFmpeg has been tested with Visual Studio 2010 and 2012, Pro and Express.
+@item FFmpeg has been tested with the following on i686 and x86_64:
+@itemize
+@item Visual Studio 2010 Pro and Express
+@item Visual Studio 2012 Pro and Express
+@item Intel Composer XE 2013
+@end itemize
 Anything else is not officially supported.
 
 @end itemize
