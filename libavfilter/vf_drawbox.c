@@ -123,6 +123,7 @@ static int config_input(AVFilterLink *inlink)
     double var_values[VARS_NB], res;
     char *expr;
     int ret;
+    int i;
 
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
@@ -139,7 +140,7 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_W] = NAN;
     var_values[VAR_T] = NAN;
 
-    for (int i = 0; i <= NUM_EXPR_EVALS; i++) {
+    for (i = 0; i <= NUM_EXPR_EVALS; i++) {
         /* evaluate expressions, fail on last iteration */
         if ((ret = av_expr_parse_and_eval(&res, (expr = s->x_expr),
                                           var_names, var_values,
