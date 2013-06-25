@@ -467,8 +467,7 @@ int main(int argc, char **argv)
             audio_pts = 0.0;
 
         if (video_st)
-            video_pts = (double)video_st->pts.val * video_st->time_base.num /
-                        video_st->time_base.den;
+            video_pts = (double)video_st->pts.val * video_st->time_base.num / video_st->time_base.den;
         else
             video_pts = 0.0;
 
