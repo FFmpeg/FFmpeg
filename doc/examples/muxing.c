@@ -460,15 +460,8 @@ int main(int argc, char **argv)
         frame->pts = 0;
     for (;;) {
         /* Compute current audio and video time. */
-        if (audio_st)
-            audio_time = (double)audio_st->pts.val * audio_st->time_base.num / audio_st->time_base.den;
-        else
-            audio_time = 0.0;
-
-        if (video_st)
-            video_time = (double)video_st->pts.val * video_st->time_base.num / video_st->time_base.den;
-        else
-            video_time = 0.0;
+        audio_time = audio_st ? audio_st->pts.val * av_q2d(audio_st->time_base) : 0.0;
+        video_time = video_st ? video_st->pts.val * av_q2d(video_st->time_base) : 0.0;
 
         if ((!audio_st || audio_time >= STREAM_DURATION) &&
             (!video_st || video_time >= STREAM_DURATION))
