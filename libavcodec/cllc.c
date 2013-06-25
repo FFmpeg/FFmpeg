@@ -410,11 +410,8 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt             = AV_PIX_FMT_YUV422P;
         avctx->bits_per_raw_sample = 8;
 
-        ret = ff_get_buffer(avctx, pic, 0);
-        if (ret < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Could not allocate buffer.\n");
+        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
             return ret;
-        }
 
         ret = decode_yuv_frame(ctx, &gb, pic);
         if (ret < 0)
