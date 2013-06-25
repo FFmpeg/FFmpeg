@@ -228,6 +228,20 @@ not specified.
 @item mime_type
 Set MIME type.
 
+@item icy
+If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
+supports this, the metadata has to be retrieved by the application by reading
+the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
+The default is 0.
+
+@item icy_metadata_headers
+If the server supports ICY metadata, this contains the ICY specific HTTP reply
+headers, separated with newline characters.
+
+@item icy_metadata_packet
+If the server supports ICY metadata, and @option{icy} was set to 1, this
+contains the last non-empty metadata packet sent by the server.
+
 @item cookies
 Set the cookies to be sent in future requests. The format of each cookie is the
 same as the value of a Set-Cookie HTTP response field. Multiple cookies can be
