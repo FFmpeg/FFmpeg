@@ -29,7 +29,6 @@
 #define LXF_IDENT               "LEITCH\0"
 #define LXF_IDENT_LENGTH        8
 #define LXF_SAMPLERATE          48000
-#define LXF_MAX_AUDIO_PACKET    (8008*15*4) ///< 15-channel 32-bit NTSC audio frame
 
 static const AVCodecTag lxf_tags[] = {
     { AV_CODEC_ID_MJPEG,       0 },
@@ -306,13 +305,6 @@ static int lxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (stream == 1 && !(ast = s->streams[1])) {
         av_log(s, AV_LOG_ERROR, "got audio packet without having an audio stream\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    //make sure the data fits in the de-planerization buffer
-    if (ast && ret > LXF_MAX_AUDIO_PACKET) {
-        av_log(s, AV_LOG_ERROR, "audio packet too large (%i > %i)\n",
-            ret, LXF_MAX_AUDIO_PACKET);
         return AVERROR_INVALIDDATA;
     }
 
