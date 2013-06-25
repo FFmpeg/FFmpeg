@@ -28,6 +28,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
@@ -35,17 +36,50 @@
 #include "internal.h"
 #include "video.h"
 
+static const char *const var_names[] = {
+    "dar",
+    "hsub", "vsub",
+    "in_h", "ih",      ///< height of the input video
+    "in_w", "iw",      ///< width  of the input video
+    "sar",
+    "x",
+    "y",
+    "h",              ///< height of the rendered box
+    "w",              ///< width  of the rendered box
+    "t",
+    NULL
+};
+
 enum { Y, U, V, A };
+
+enum var_name {
+    VAR_DAR,
+    VAR_HSUB, VAR_VSUB,
+    VAR_IN_H, VAR_IH,
+    VAR_IN_W, VAR_IW,
+    VAR_SAR,
+    VAR_X,
+    VAR_Y,
+    VAR_H,
+    VAR_W,
+    VAR_T,
+    VARS_NB
+};
 
 typedef struct {
     const AVClass *class;
-    int x, y, w_opt, h_opt, w, h;
+    int x, y, w, h;
     int thickness;
     char *color_str;
     unsigned char yuv_color[4];
     int invert_color; ///< invert luma color
     int vsub, hsub;   ///< chroma subsampling
+    char *x_expr, *y_expr; ///< expression for x and y
+    char *w_expr, *h_expr; ///< expression for width and height
+    char *t_expr;          ///< expression for thickness
 } DrawBoxContext;
+
+static const int NUM_EXPR_EVALS = 5;
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -83,20 +117,82 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    DrawBoxContext *s = inlink->dst->priv;
+    AVFilterContext *ctx = inlink->dst;
+    DrawBoxContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    double var_values[VARS_NB], res;
+    char *expr;
+    int ret;
 
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
 
-    s->w = (s->w_opt > 0) ? s->w_opt : inlink->w;
-    s->h = (s->h_opt > 0) ? s->h_opt : inlink->h;
+    var_values[VAR_IN_H] = var_values[VAR_IH] = inlink->h;
+    var_values[VAR_IN_W] = var_values[VAR_IW] = inlink->w;
+    var_values[VAR_SAR]  = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
+    var_values[VAR_DAR]  = (double)inlink->w / inlink->h * var_values[VAR_SAR];
+    var_values[VAR_HSUB] = s->hsub;
+    var_values[VAR_VSUB] = s->vsub;
+    var_values[VAR_X] = NAN;
+    var_values[VAR_Y] = NAN;
+    var_values[VAR_H] = NAN;
+    var_values[VAR_W] = NAN;
+    var_values[VAR_T] = NAN;
 
-    av_log(inlink->dst, AV_LOG_VERBOSE, "x:%d y:%d w:%d h:%d color:0x%02X%02X%02X%02X\n",
+    for (int i = 0; i <= NUM_EXPR_EVALS; i++) {
+        /* evaluate expressions, fail on last iteration */
+        if ((ret = av_expr_parse_and_eval(&res, (expr = s->x_expr),
+                                          var_names, var_values,
+                                          NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
+            goto fail;
+        s->x = var_values[VAR_X] = res;
+
+        if ((ret = av_expr_parse_and_eval(&res, (expr = s->y_expr),
+                                          var_names, var_values,
+                                          NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
+            goto fail;
+        s->y = var_values[VAR_Y] = res;
+
+        if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
+                                          var_names, var_values,
+                                          NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
+            goto fail;
+        s->w = var_values[VAR_W] = res;
+
+        if ((ret = av_expr_parse_and_eval(&res, (expr = s->h_expr),
+                                          var_names, var_values,
+                                          NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
+            goto fail;
+        s->h = var_values[VAR_H] = res;
+
+        if ((ret = av_expr_parse_and_eval(&res, (expr = s->t_expr),
+                                          var_names, var_values,
+                                          NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0 && i == NUM_EXPR_EVALS)
+            goto fail;
+        s->thickness = var_values[VAR_T] = res;
+    }
+
+    /* if w or h are zero, use the input w/h */
+    s->w = (s->w > 0) ? s->w : inlink->w;
+    s->h = (s->h > 0) ? s->h : inlink->h;
+
+    /* sanity check width and height */
+    if (s->w <  0 || s->h <  0) {
+        av_log(ctx, AV_LOG_ERROR, "Size values less than 0 are not acceptable.\n");
+        return AVERROR(EINVAL);
+    }
+
+    av_log(ctx, AV_LOG_VERBOSE, "x:%d y:%d w:%d h:%d color:0x%02X%02X%02X%02X\n",
            s->x, s->y, s->w, s->h,
            s->yuv_color[Y], s->yuv_color[U], s->yuv_color[V], s->yuv_color[A]);
 
     return 0;
+
+fail:
+    av_log(NULL, AV_LOG_ERROR,
+           "Error when evaluating the expression '%s'.\n",
+           expr);
+    return ret;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -140,16 +236,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #if CONFIG_DRAWBOX_FILTER
 
 static const AVOption drawbox_options[] = {
-    { "x",         "set horizontal position of the left box edge", OFFSET(x),         AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
-    { "y",         "set vertical position of the top box edge",    OFFSET(y),         AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS },
-    { "width",     "set width of the box",                         OFFSET(w_opt),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "w",         "set width of the box",                         OFFSET(w_opt),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "height",    "set height of the box",                        OFFSET(h_opt),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
-    { "h",         "set height of the box",                        OFFSET(h_opt),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       INT_MAX, FLAGS },
+    { "x",         "set horizontal position of the left box edge", OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "y",         "set vertical position of the top box edge",    OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "width",     "set width of the box",                         OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "w",         "set width of the box",                         OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "height",    "set height of the box",                        OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "h",         "set height of the box",                        OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
     { "color",     "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "c",         "set color of the box",                         OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "thickness", "set the box thickness",                        OFFSET(thickness), AV_OPT_TYPE_INT, { .i64 = 3 }, 0,       INT_MAX, FLAGS },
-    { "t",         "set the box thickness",                        OFFSET(thickness), AV_OPT_TYPE_INT, { .i64 = 3 }, 0,       INT_MAX, FLAGS },
+    { "thickness", "set the box thickness",                        OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "t",         "set the box thickness",                        OFFSET(t_expr),    AV_OPT_TYPE_STRING, { .str="3" },       CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
@@ -248,16 +344,16 @@ static int drawgrid_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 }
 
 static const AVOption drawgrid_options[] = {
-    { "x",         "set horizontal offset",   OFFSET(x),         AV_OPT_TYPE_INT,    { .i64 = 0 },       INT_MIN,  INT_MAX,  FLAGS },
-    { "y",         "set vertical offset",     OFFSET(y),         AV_OPT_TYPE_INT,    { .i64 = 0 },       INT_MIN,  INT_MAX,  FLAGS },
-    { "width",     "set width of grid cell",  OFFSET(w_opt),     AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
-    { "w",         "set width of grid cell",  OFFSET(w_opt),     AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
-    { "height",    "set height of grid cell", OFFSET(h_opt),     AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
-    { "h",         "set height of grid cell", OFFSET(h_opt),     AV_OPT_TYPE_INT,    { .i64 = 0 },       0,        INT_MAX,  FLAGS },
+    { "x",         "set horizontal offset",   OFFSET(x_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "y",         "set vertical offset",     OFFSET(y_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "width",     "set width of grid cell",  OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "w",         "set width of grid cell",  OFFSET(w_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "height",    "set height of grid cell", OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
+    { "h",         "set height of grid cell", OFFSET(h_expr),    AV_OPT_TYPE_STRING, { .str="0" },       CHAR_MIN, CHAR_MAX, FLAGS },
     { "color",     "set color of the grid",   OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "c",         "set color of the grid",   OFFSET(color_str), AV_OPT_TYPE_STRING, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "thickness", "set grid line thickness", OFFSET(thickness), AV_OPT_TYPE_INT,    {.i64=1},           0,        INT_MAX,  FLAGS },
-    { "t",         "set grid line thickness", OFFSET(thickness), AV_OPT_TYPE_INT,    {.i64=1},           0,        INT_MAX,  FLAGS },
+    { "thickness", "set grid line thickness", OFFSET(t_expr),    AV_OPT_TYPE_STRING, {.str="1"},         CHAR_MIN, CHAR_MAX, FLAGS },
+    { "t",         "set grid line thickness", OFFSET(t_expr),    AV_OPT_TYPE_STRING, {.str="1"},         CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
