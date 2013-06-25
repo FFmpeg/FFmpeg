@@ -368,8 +368,8 @@ static int png_decode_idat(PNGDecContext *s, int length)
     while (s->zstream.avail_in > 0) {
         ret = inflate(&s->zstream, Z_PARTIAL_FLUSH);
         if (ret != Z_OK && ret != Z_STREAM_END) {
-            av_log(s->avctx, AV_LOG_ERROR, "inflate returned %d\n", ret);
-            return -1;
+            av_log(s->avctx, AV_LOG_ERROR, "inflate returned error %d\n", ret);
+            return AVERROR_EXTERNAL;
         }
         if (s->zstream.avail_out == 0) {
             if (!(s->state & PNG_ALLIMAGE)) {
@@ -519,7 +519,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (sig != PNGSIG &&
         sig != MNGSIG) {
         av_log(avctx, AV_LOG_ERROR, "Missing png signature\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     s->y = s->state = 0;
@@ -530,8 +530,8 @@ static int decode_frame(AVCodecContext *avctx,
     s->zstream.opaque = NULL;
     ret = inflateInit(&s->zstream);
     if (ret != Z_OK) {
-        av_log(avctx, AV_LOG_ERROR, "inflateInit returned %d\n", ret);
-        return -1;
+        av_log(avctx, AV_LOG_ERROR, "inflateInit returned error %d\n", ret);
+        return AVERROR_EXTERNAL;
     }
     for (;;) {
         if (bytestream2_get_bytes_left(&s->gb) <= 0) {
@@ -859,7 +859,7 @@ static int decode_frame(AVCodecContext *avctx,
     return ret;
  fail:
     av_dict_free(&metadata);
-    ret = -1;
+    ret = AVERROR_INVALIDDATA;
     goto the_end;
 }
 
