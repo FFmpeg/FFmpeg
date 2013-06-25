@@ -78,7 +78,6 @@ static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
 
     switch ((*codec)->type) {
     case AVMEDIA_TYPE_AUDIO:
-        st->id = 1;
         c->sample_fmt  = AV_SAMPLE_FMT_S16;
         c->bit_rate    = 64000;
         c->sample_rate = 44100;
