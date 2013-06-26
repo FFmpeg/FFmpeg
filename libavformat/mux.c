@@ -301,12 +301,12 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
             }
             if (codec->codec_tag) {
                 if (!validate_codec_tag(s, st)) {
-                    char tagbuf[32], cortag[32];
+                    char tagbuf[32], tagbuf2[32];
                     av_get_codec_tag_string(tagbuf, sizeof(tagbuf), codec->codec_tag);
-                    av_get_codec_tag_string(cortag, sizeof(cortag), av_codec_get_tag(s->oformat->codec_tag, codec->codec_id));
+                    av_get_codec_tag_string(tagbuf2, sizeof(tagbuf2), av_codec_get_tag(s->oformat->codec_tag, codec->codec_id));
                     av_log(s, AV_LOG_ERROR,
                            "Tag %s/0x%08x incompatible with output codec id '%d' (%s)\n",
-                           tagbuf, codec->codec_tag, codec->codec_id, cortag);
+                           tagbuf, codec->codec_tag, codec->codec_id, tagbuf2);
                     ret = AVERROR_INVALIDDATA;
                     goto fail;
                 }
