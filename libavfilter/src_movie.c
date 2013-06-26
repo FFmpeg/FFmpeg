@@ -515,8 +515,8 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         av_log(ctx, AV_LOG_WARNING, "Decode error: %s\n", av_err2str(ret));
         av_frame_free(&movie->frame);
         av_free_packet(&movie->pkt0);
-        movie->pkt0.size = 0;
-        movie->pkt0.data = NULL;
+        movie->pkt.size = 0;
+        movie->pkt.data = NULL;
         return 0;
     }
     if (!ret)
