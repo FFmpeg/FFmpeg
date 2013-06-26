@@ -1904,7 +1904,10 @@ static int probe_file(WriterContext *wctx, const char *filename)
     do_read_packets = do_show_packets || do_count_packets;
 
     ret = open_input_file(&fmt_ctx, filename);
-    if (ret >= 0) {
+    if (ret < 0)
+        return ret;
+
+    /* todo: reindent */
         nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
         nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
         selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
@@ -1949,7 +1952,7 @@ static int probe_file(WriterContext *wctx, const char *filename)
         av_freep(&nb_streams_frames);
         av_freep(&nb_streams_packets);
         av_freep(&selected_streams);
-    }
+
     return ret;
 }
 
