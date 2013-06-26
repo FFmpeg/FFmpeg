@@ -74,7 +74,7 @@ static int mxg_read_header(AVFormatContext *s)
 static uint8_t* mxg_find_startmarker(uint8_t *p, uint8_t *end)
 {
     for (; p < end - 3; p += 4) {
-        uint32_t x = *(uint32_t*)p;
+        uint32_t x = AV_RN32(p);
 
         if (x & (~(x+0x01010101)) & 0x80808080) {
             if (p[0] == 0xff) {
