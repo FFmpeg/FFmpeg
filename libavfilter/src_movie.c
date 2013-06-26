@@ -519,7 +519,7 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
         movie->pkt.data = NULL;
         return 0;
     }
-    if (!ret)
+    if (!ret || st->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
         ret = pkt->size;
 
     pkt->data += ret;
