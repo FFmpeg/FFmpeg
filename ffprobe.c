@@ -1921,6 +1921,7 @@ static int probe_file(WriterContext *wctx, const char *filename)
                     goto end;
                 else
                     selected_streams[i] = ret;
+                ret = 0;
             } else {
                 selected_streams[i] = 1;
             }
