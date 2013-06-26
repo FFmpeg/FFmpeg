@@ -1395,8 +1395,13 @@ free_and_end:
 
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size)
 {
-    if (size < 0 || avpkt->size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Size %d invalid\n", size);
+    if (avpkt->size < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid negative user packet size %d\n", avpkt->size);
+        return AVERROR(EINVAL);
+    }
+    if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid minimum required packet size %d (max allowed is %d)\n",
+               size, INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE);
         return AVERROR(EINVAL);
     }
 
