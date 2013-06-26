@@ -742,6 +742,8 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
+    if (pix_fmt == AV_PIX_FMT_PAL8)
+        return 1;
     return desc->flags & AV_PIX_FMT_FLAG_ALPHA;
 }
 
