@@ -3184,7 +3184,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (enc->codec_id == AV_CODEC_ID_AAC && pkt->size > 2 &&
         (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
         if (!s->streams[pkt->stream_index]->nb_frames) {
-            av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
+            av_log(s, AV_LOG_ERROR, "Malformed AAC bitstream detected: "
+                   "use audio bitstream filter 'aac_adtstoasc' to fix it "
+                   "('-bsf:a aac_adtstoasc' option with ffmpeg)\n");
             return -1;
         }
         av_log(s, AV_LOG_WARNING, "aac bitstream error\n");
