@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002 Jindrich Makovicka <makovick@gmail.com>
  * Copyright (c) 2011 Stefano Sabatini
+ * Copyright (c) 2013 Jean Delvare <khali@linux-fr.org>
  *
  * This file is part of FFmpeg.
  *
@@ -22,7 +23,8 @@
 /**
  * @file
  * A very simple tv station logo remover
- * Ported from MPlayer libmpcodecs/vf_delogo.c.
+ * Originally imported from MPlayer libmpcodecs/vf_delogo.c,
+ * the algorithm was later improved.
  */
 
 #include "libavutil/common.h"
@@ -58,8 +60,8 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                          int logo_x, int logo_y, int logo_w, int logo_h,
                          int band, int show, int direct)
 {
-    int x, y;
-    int interp, dist;
+    int x, y, dist;
+    uint64_t interp, weightl, weightr, weightt, weightb;
     uint8_t *xdst, *xsrc;
 
     uint8_t *topleft, *botleft, *topright;
@@ -90,23 +92,30 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
         for (x = logo_x1+1,
              xdst = dst+logo_x1+1,
              xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
+
+            /* Weighted interpolation based on relative distances */
+            weightl = (uint64_t)              (logo_x2-1-x) * (y-logo_y1) * (logo_y2-1-y);
+            weightr = (uint64_t)(x-logo_x1)                 * (y-logo_y1) * (logo_y2-1-y);
+            weightt = (uint64_t)(x-logo_x1) * (logo_x2-1-x)               * (logo_y2-1-y);
+            weightb = (uint64_t)(x-logo_x1) * (logo_x2-1-x) * (y-logo_y1);
+
             interp =
                 (topleft[src_linesize*(y-logo_y  -yclipt)]   +
                  topleft[src_linesize*(y-logo_y-1-yclipt)]   +
-                 topleft[src_linesize*(y-logo_y+1-yclipt)])  * (logo_w-(x-logo_x))/logo_w
+                 topleft[src_linesize*(y-logo_y+1-yclipt)])  * weightl
                 +
                 (topright[src_linesize*(y-logo_y-yclipt)]    +
                  topright[src_linesize*(y-logo_y-1-yclipt)]  +
-                 topright[src_linesize*(y-logo_y+1-yclipt)]) * (x-logo_x)/logo_w
+                 topright[src_linesize*(y-logo_y+1-yclipt)]) * weightr
                 +
                 (topleft[x-logo_x-xclipl]    +
                  topleft[x-logo_x-1-xclipl]  +
-                 topleft[x-logo_x+1-xclipl]) * (logo_h-(y-logo_y))/logo_h
+                 topleft[x-logo_x+1-xclipl]) * weightt
                 +
                 (botleft[x-logo_x-xclipl]    +
                  botleft[x-logo_x-1-xclipl]  +
-                 botleft[x-logo_x+1-xclipl]) * (y-logo_y)/logo_h;
-            interp /= 6;
+                 botleft[x-logo_x+1-xclipl]) * weightb;
+            interp /= (weightl + weightr + weightt + weightb) * 3U;
 
             if (y >= logo_y+band && y < logo_y+logo_h-band &&
                 x >= logo_x+band && x < logo_x+logo_w-band) {
