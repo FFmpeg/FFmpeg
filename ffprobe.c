@@ -2359,5 +2359,5 @@ end:
 
     avformat_network_deinit();
 
-    return ret;
+    return ret < 0;
 }
