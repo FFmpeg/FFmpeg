@@ -2936,7 +2936,7 @@ The width and height of the drawn box.
 The thickness of the drawn box.
 
 These constants allow the @var{x}, @var{y}, @var{w}, @var{h} and @var{t} expressions to refer to
-each other, so you may for example specify @code(y=x/dar} or @code(h=w/dar).
+each other, so you may for example specify @code{y=x/dar} or @code{h=w/dar}.
 
 @end table
 
@@ -3035,7 +3035,7 @@ The width and height of the drawn cell.
 The thickness of the drawn cell.
 
 These constants allow the @var{x}, @var{y}, @var{w}, @var{h} and @var{t} expressions to refer to
-each other, so you may for example specify @code(y=x/dar} or @code(h=w/dar).
+each other, so you may for example specify @code{y=x/dar} or @code{h=w/dar}.
 
 @end table
 
