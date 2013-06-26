@@ -28,6 +28,8 @@ ADTS AAC container to a FLV or a MOV/MP4 file.
 
 @section chomp
 
+Remove zero padding at the end of a packet.
+
 @section dump_extradata
 
 @section h264_mp4toannexb
