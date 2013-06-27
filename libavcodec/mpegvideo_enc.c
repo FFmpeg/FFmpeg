@@ -956,18 +956,17 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
 
         if (pts != AV_NOPTS_VALUE) {
             if (s->user_specified_pts != AV_NOPTS_VALUE) {
-                int64_t time = pts;
                 int64_t last = s->user_specified_pts;
 
-                if (time <= last) {
+                if (pts <= last) {
                     av_log(s->avctx, AV_LOG_ERROR,
-                           "Error, Invalid timestamp=%"PRId64", "
-                           "last=%"PRId64"\n", pts, s->user_specified_pts);
-                    return -1;
+                           "Invalid pts (%"PRId64") <= last (%"PRId64")\n",
+                           pts, last);
+                    return AVERROR(EINVAL);
                 }
 
                 if (!s->low_delay && display_picture_number == 1)
-                    s->dts_delta = time - last;
+                    s->dts_delta = pts - last;
             }
             s->user_specified_pts = pts;
         } else {
