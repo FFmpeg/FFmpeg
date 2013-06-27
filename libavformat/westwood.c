@@ -240,7 +240,6 @@ static int wsvqa_read_header(AVFormatContext *s,
     header = (unsigned char *)st->codec->extradata;
     if (avio_read(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
-        av_free(st->codec->extradata);
         return AVERROR(EIO);
     }
     st->codec->width = AV_RL16(&header[6]);
@@ -279,7 +278,6 @@ static int wsvqa_read_header(AVFormatContext *s,
      * FINF has been skipped and the file will be ready to be demuxed */
     do {
         if (avio_read(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE) {
-            av_free(st->codec->extradata);
             return AVERROR(EIO);
         }
         chunk_tag = AV_RB32(&scratch[0]);
