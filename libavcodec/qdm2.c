@@ -784,8 +784,6 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
     }
 
     for (sb = sb_min; sb < sb_max; sb++) {
-        FIX_NOISE_IDX(q->noise_idx);
-
         channels = q->nb_channels;
 
         if (q->nb_channels <= 1 || sb < 12)
@@ -809,6 +807,7 @@ static void synthfilt_build_sb_samples (QDM2Context *q, GetBitContext *gb, int l
         }
 
         for (ch = 0; ch < channels; ch++) {
+            FIX_NOISE_IDX(q->noise_idx);
             zero_encoding = (BITS_LEFT(length,gb) >= 1) ? get_bits1(gb) : 0;
             type34_predictor = 0.0;
             type34_first = 1;
