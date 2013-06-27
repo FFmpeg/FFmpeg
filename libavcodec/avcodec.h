@@ -3092,11 +3092,13 @@ typedef struct AVHWAccel {
  */
 
 /**
- * four components are given, that's all.
- * the last component is alpha
+ * Picture data structure.
+ *
+ * Up to four components can be stored into it, the last component is
+ * alpha.
  */
 typedef struct AVPicture {
-    uint8_t *data[AV_NUM_DATA_POINTERS];
+    uint8_t *data[AV_NUM_DATA_POINTERS];    ///< pointers to the image data planes
     int linesize[AV_NUM_DATA_POINTERS];     ///< number of bytes per line
 } AVPicture;
 
@@ -4286,15 +4288,18 @@ void av_resample_close(struct AVResampleContext *c);
  */
 
 /**
- * Allocate memory for a picture.  Call avpicture_free() to free it.
+ * Allocate memory for the pixels of a picture and setup the AVPicture
+ * fields for it.
  *
- * @see avpicture_fill()
+ * Call avpicture_free() to free it.
  *
- * @param picture the picture to be filled in
- * @param pix_fmt the format of the picture
- * @param width the width of the picture
- * @param height the height of the picture
- * @return zero if successful, a negative value if not
+ * @param picture            the picture structure to be filled in
+ * @param pix_fmt            the pixel format of the picture
+ * @param width              the width of the picture
+ * @param height             the height of the picture
+ * @return zero if successful, a negative error code otherwise
+ *
+ * @see av_image_alloc(), avpicture_fill()
  */
 int avpicture_alloc(AVPicture *picture, enum AVPixelFormat pix_fmt, int width, int height);
 
@@ -4308,8 +4313,25 @@ int avpicture_alloc(AVPicture *picture, enum AVPixelFormat pix_fmt, int width, i
 void avpicture_free(AVPicture *picture);
 
 /**
- * Fill in the AVPicture fields, always assume a linesize alignment of
- * 1.
+ * Setup the picture fields based on the specified image parameters
+ * and the provided image data buffer.
+ *
+ * The picture fields are filled in by using the image data buffer
+ * pointed to by ptr.
+ *
+ * If ptr is NULL, the function will fill only the picture linesize
+ * array and return the required size for the image buffer.
+ *
+ * To allocate an image buffer and fill the picture data in one call,
+ * use avpicture_alloc().
+ *
+ * @param picture       the picture to be filled in
+ * @param ptr           buffer where the image data is stored, or NULL
+ * @param pix_fmt       the pixel format of the image
+ * @param width         the width of the image in pixels
+ * @param height        the height of the image in pixels
+ * @return the size in bytes required for src, a negative error code
+ * in case of failure
  *
  * @see av_image_fill_arrays()
  */
@@ -4317,19 +4339,36 @@ int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
- * Copy pixel data from an AVPicture into a buffer, always assume a
- * linesize alignment of 1.
+ * Copy pixel data from an AVPicture into a buffer.
+ *
+ * avpicture_get_size() can be used to compute the required size for
+ * the buffer to fill.
+ *
+ * @param src        source picture with filled data
+ * @param pix_fmt    picture pixel format
+ * @param width      picture width
+ * @param height     picture height
+ * @param dest       destination buffer
+ * @param dest_size  destination buffer size in bytes
+ * @return the number of bytes written to dest, or a negative value
+ * (error code) on error, for example if the destination buffer is not
+ * big enough
  *
  * @see av_image_copy_to_buffer()
  */
-int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt,
+int avpicture_layout(const AVPicture *src, enum AVPixelFormat pix_fmt,
                      int width, int height,
                      unsigned char *dest, int dest_size);
 
 /**
  * Calculate the size in bytes that a picture of the given width and height
  * would occupy if stored in the given picture format.
- * Always assume a linesize alignment of 1.
+ *
+ * @param pix_fmt    picture pixel format
+ * @param width      picture width
+ * @param height     picture height
+ * @return the computed picture buffer size or a negative error code
+ * in case of error
  *
  * @see av_image_get_buffer_size().
  */
