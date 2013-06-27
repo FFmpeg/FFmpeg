@@ -182,12 +182,9 @@ void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
     av_log_callback = callback;
 }
 
-static void missing_feature_sample(int sample, void *avc, const char *msg, ...)
+static void missing_feature_sample(int sample, void *avc, const char *msg,
+                                   va_list argument_list)
 {
-    va_list argument_list;
-
-    va_start(argument_list, msg);
-
     av_vlog(avc, AV_LOG_WARNING, msg, argument_list);
     av_log(avc, AV_LOG_WARNING, " is not implemented. Update your Libav "
            "version to the newest one from Git. If the problem still "
@@ -197,8 +194,6 @@ static void missing_feature_sample(int sample, void *avc, const char *msg, ...)
         av_log(avc, AV_LOG_WARNING, "If you want to help, upload a sample "
                "of this file to ftp://upload.libav.org/incoming/ "
                "and contact the libav-devel mailing list.\n");
-
-    va_end(argument_list);
 }
 
 void avpriv_request_sample(void *avc, const char *msg, ...)
