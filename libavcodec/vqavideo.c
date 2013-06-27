@@ -134,6 +134,17 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
 
     /* load up the VQA parameters from the header */
     s->vqa_version = s->avctx->extradata[0];
+    switch (s->vqa_version) {
+    case 1:
+    case 2:
+        break;
+    case 3:
+        avpriv_report_missing_feature(avctx, "VQA Version %d", s->vqa_version);
+        return AVERROR_PATCHWELCOME;
+    default:
+        avpriv_request_sample(avctx, "VQA Version %i", s->vqa_version);
+        return AVERROR_PATCHWELCOME;
+    }
     s->width = AV_RL16(&s->avctx->extradata[6]);
     s->height = AV_RL16(&s->avctx->extradata[8]);
     if ((ret = av_image_check_size(s->width, s->height, 0, avctx)) < 0) {
