@@ -498,6 +498,23 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             p += strspn(p, SPACE_CHARS);
             if (av_strstart(p, "inline:", &p))
                 get_word(rtsp_st->crypto_params, sizeof(rtsp_st->crypto_params), &p);
+        } else if (av_strstart(p, "source-filter", &p) && s->nb_streams > 0) {
+            get_word(buf1, sizeof(buf1), &p); // ignore tag
+
+            get_word(buf1, sizeof(buf1), &p);
+            if (strcmp(buf1, "IN") != 0)
+                    return;
+            get_word(buf1, sizeof(buf1), &p);
+            if (strcmp(buf1, "IP4") && strcmp(buf1, "IP6"))
+                    return;
+            get_word(buf1, sizeof(buf1), &p); //ignore repeated multicast address
+            get_word(buf1, sizeof(buf1), &p);
+            if (get_sockaddr(buf1, &sdp_ip))
+                    return;
+
+            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+            rtsp_st->ssm = 1;
+            rtsp_st->source_ip = sdp_ip;
         } else {
             if (rt->server_type == RTSP_SERVER_WMS)
                 ff_wms_parse_sdp_a_line(s, p);
@@ -2084,6 +2101,11 @@ static int sdp_read_header(AVFormatContext *s)
                         "?localport=%d&ttl=%d&connect=%d", rtsp_st->sdp_port,
                         rtsp_st->sdp_ttl,
                         rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0);
+            if (rtsp_st->ssm) {
+                getnameinfo((struct sockaddr*) &rtsp_st->source_ip, sizeof(rtsp_st->source_ip),
+                            namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
+                av_strlcatf(url, sizeof(url), "&ssm=%s", namebuf);
+            }
             if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
                 err = AVERROR_INVALIDDATA;
