@@ -172,6 +172,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     h->sei_dpb_output_delay         = 0;
     h->sei_cpb_removal_delay        = -1;
     h->sei_buffering_period_present = 0;
+    h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
 
     if (!buf_size)
         return 0;

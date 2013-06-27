@@ -1512,6 +1512,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     h->prev_poc_msb = 1 << 16;
     h->prev_frame_num = -1;
     h->x264_build   = -1;
+    h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
     ff_h264_reset_sei(h);
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         if (avctx->ticks_per_frame == 1) {
@@ -4858,6 +4859,8 @@ static int output_frame(H264Context *h, AVFrame *dst, Picture *srcp)
     int ret = av_frame_ref(dst, src);
     if (ret < 0)
         return ret;
+
+    av_dict_set(&dst->metadata, "stereo_mode", ff_h264_sei_stereo_mode(h), 0);
 
     if (!srcp->crop)
         return 0;

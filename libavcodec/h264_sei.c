@@ -204,6 +204,44 @@ static int decode_buffering_period(H264Context *h){
     return 0;
 }
 
+static int decode_frame_packing(H264Context *h, int size){
+    int bits = get_bits_left(&h->gb);
+
+    h->sei_fpa.frame_packing_arrangement_id          = get_ue_golomb(&h->gb);
+    h->sei_fpa.frame_packing_arrangement_cancel_flag = get_bits(&h->gb, 1);
+    if (!h->sei_fpa.frame_packing_arrangement_cancel_flag) {
+        h->sei_fpa.frame_packing_arrangement_type  = get_bits(&h->gb, 7);
+        h->sei_fpa.quincunx_sampling_flag          = get_bits(&h->gb, 1);
+        h->sei_fpa.content_interpretation_type     = get_bits(&h->gb, 6);
+        skip_bits(&h->gb, 1); /* spatial_flipping_flag */
+        skip_bits(&h->gb, 1); /* frame0_flipped_flag */
+        skip_bits(&h->gb, 1); /* field_views_flag */
+        skip_bits(&h->gb, 1); /* current_frame_is_frame0_flag */
+        skip_bits(&h->gb, 1); /* frame0_self_contained_flag */
+        skip_bits(&h->gb, 1); /* frame1_self_contained_flag */
+        if (!h->sei_fpa.quincunx_sampling_flag && h->sei_fpa.frame_packing_arrangement_type != 5) {
+            skip_bits(&h->gb, 4); /* frame0_grid_position_x */
+            skip_bits(&h->gb, 4); /* frame0_grid_position_y */
+            skip_bits(&h->gb, 4); /* frame1_grid_position_x */
+            skip_bits(&h->gb, 4); /* frame1_grid_position_y */
+        }
+        skip_bits(&h->gb, 8); /* frame_packing_arrangement_reserved_byte */
+        h->sei_fpa.frame_packing_arrangement_repetition_period = get_ue_golomb(&h->gb) /* frame_packing_arrangement_repetition_period */;
+    }
+    skip_bits(&h->gb, 1); /* frame_packing_arrangement_extension_flag */
+
+    if (h->avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(h->avctx, AV_LOG_DEBUG, "SEI FPA %d %d %d %d %d %d\n",
+                                       h->sei_fpa.frame_packing_arrangement_id,
+                                       h->sei_fpa.frame_packing_arrangement_cancel_flag,
+                                       h->sei_fpa.frame_packing_arrangement_type,
+                                       h->sei_fpa.quincunx_sampling_flag,
+                                       h->sei_fpa.content_interpretation_type,
+                                       h->sei_fpa.frame_packing_arrangement_repetition_period);
+    skip_bits_long(&h->gb, 8*size - (bits - get_bits_left(&h->gb)));
+    return 0;
+}
+
 int ff_h264_decode_sei(H264Context *h){
     while (get_bits_left(&h->gb) > 16) {
         int size, type;
@@ -246,6 +284,9 @@ int ff_h264_decode_sei(H264Context *h){
             if(decode_buffering_period(h) < 0)
                 return -1;
             break;
+        case SEI_TYPE_FRAME_PACKING:
+            if(decode_frame_packing(h, size) < 0)
+                return -1;
         default:
             skip_bits(&h->gb, 8*size);
         }
@@ -255,4 +296,49 @@ int ff_h264_decode_sei(H264Context *h){
     }
 
     return 0;
+}
+
+const char* ff_h264_sei_stereo_mode(H264Context *h)
+{
+    if (h->sei_fpa.frame_packing_arrangement_cancel_flag == 0) {
+        switch (h->sei_fpa.frame_packing_arrangement_type) {
+            case SEI_FPA_TYPE_CHECKERBOARD:
+                if (h->sei_fpa.content_interpretation_type == 2)
+                    return "checkerboard_rl";
+                else
+                    return "checkerboard_lr";
+            case SEI_FPA_TYPE_INTERLEAVE_COLUMN:
+                if (h->sei_fpa.content_interpretation_type == 2)
+                    return "col_interleaved_rl";
+                else
+                    return "col_interleaved_lr";
+            case SEI_FPA_TYPE_INTERLEAVE_ROW:
+                if (h->sei_fpa.content_interpretation_type == 2)
+                    return "row_interleaved_rl";
+                else
+                    return "row_interleaved_lr";
+            case SEI_FPA_TYPE_SIDE_BY_SIDE:
+                if (h->sei_fpa.content_interpretation_type == 2)
+                    return "right_left";
+                else
+                    return "left_right";
+            case SEI_FPA_TYPE_TOP_BOTTOM:
+                if (h->sei_fpa.content_interpretation_type == 2)
+                    return "bottom_top";
+                else
+                    return "top_bottom";
+            case SEI_FPA_TYPE_INTERLEAVE_TEMPORAL:
+                if (h->sei_fpa.content_interpretation_type == 2)
+                    return "block_rl";
+                else
+                    return "block_lr";
+            case SEI_FPA_TYPE_2D:
+            default:
+                return "mono";
+        }
+    } else if (h->sei_fpa.frame_packing_arrangement_cancel_flag == 1) {
+        return "mono";
+    } else {
+        return NULL;
+    }
 }
