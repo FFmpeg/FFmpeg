@@ -202,6 +202,7 @@ External library support:
   --enable-libfdk-aac      enable AAC encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfreetype     enable libfreetype [no]
+  --enable-libgme          enable Game Music Emu via libgme [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
@@ -1167,6 +1168,7 @@ EXTERNAL_LIBRARY_LIST="
     libfdk_aac
     libflite
     libfreetype
+    libgme
     libgsm
     libiec61883
     libilbc
@@ -1974,6 +1976,7 @@ libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
+libgme_demuxer_deps="libgme"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
@@ -4131,6 +4134,7 @@ enabled libfdk_aac        && require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen 
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite_libs
 enabled libfreetype       && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
+enabled libgme            && require  libgme gme/gme.h gme_new_emu -lgme
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
