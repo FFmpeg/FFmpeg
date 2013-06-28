@@ -720,6 +720,7 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
                     if (get_bits1(&s->gb)) {
                         av_log_ask_for_sample(s->avctx,
                                               "unsupported channel transform type\n");
+                        return AVERROR_PATCHWELCOME;
                     }
                 } else {
                     chgroup->transform = 1;
