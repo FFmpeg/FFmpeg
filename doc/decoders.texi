@@ -123,6 +123,15 @@ explicitly configure the build with @code{--enable-libopencore-amrwb}.
 An FFmpeg native decoder for AMR-WB exists, so users can decode AMR-WB
 without this library.
 
+@section libopus
+
+libopus decoder wrapper.
+
+libopus allows libavcodec to decode the Opus Interactive Audio Codec.
+Requires the presence of the libopus headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopus}.
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders
