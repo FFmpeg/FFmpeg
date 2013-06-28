@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
@@ -465,10 +466,10 @@ int avfilter_register(AVFilter *filter)
                     || (!input->start_frame && !input->end_frame));
     }
 
-    while (*f)
-        f = &(*f)->next;
-    *f = filter;
     filter->next = NULL;
+
+    while(avpriv_atomic_ptr_cas((void * volatile *)f, NULL, filter))
+        f = &(*f)->next;
 
     return 0;
 }
