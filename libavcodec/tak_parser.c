@@ -90,6 +90,7 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                         s->duration           = t->ti.last_frame_samples ?
                                                 t->ti.last_frame_samples :
                                                 t->ti.frame_samples;
+                        s->key_frame          = !!(t->ti.flags & TAK_FRAME_FLAG_HAS_INFO);
                     } else {
                         pc->frame_start_found = 0;
                         next                  = t->index - pc->index;
