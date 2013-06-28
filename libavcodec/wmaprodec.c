@@ -1119,11 +1119,12 @@ static int decode_subframe(WMAProDecodeCtx *s)
     cur_subwoofer_cutoff = s->subwoofer_cutoffs[s->table_idx];
 
     /** configure the decoder for the current subframe */
+    offset += s->samples_per_frame >> 1;
+
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
         int c = s->channel_indexes_for_cur_subframe[i];
 
-        s->channel[c].coeffs = &s->channel[c].out[(s->samples_per_frame >> 1)
-                                                  + offset];
+        s->channel[c].coeffs = &s->channel[c].out[offset];
     }
 
     s->subframe_len = subframe_len;
@@ -1174,7 +1175,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
             for (i = 0; i < s->channels_for_cur_subframe; i++) {
                 int c = s->channel_indexes_for_cur_subframe[i];
                 int num_vec_coeffs = get_bits(&s->gb, num_bits) << 2;
-                if (num_vec_coeffs > WMAPRO_BLOCK_MAX_SIZE) {
+                if (num_vec_coeffs + offset > FF_ARRAY_ELEMS(s->channel[c].out)) {
                     av_log(s->avctx, AV_LOG_ERROR, "num_vec_coeffs %d is too large\n", num_vec_coeffs);
                     return AVERROR_INVALIDDATA;
                 }
