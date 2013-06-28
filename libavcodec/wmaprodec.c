@@ -1464,6 +1464,14 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
         return;
     }
 
+    if (len > put_bits_left(&s->pb)) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Cannot append %d bits, only %d bits available.\n",
+               len, put_bits_left(&s->pb));
+        s->packet_loss = 1;
+        return;
+    }
+
     s->num_saved_bits += len;
     if (!append) {
         avpriv_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3),
