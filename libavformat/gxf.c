@@ -176,6 +176,10 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
             st->codec->codec_id = AV_CODEC_ID_NONE;
             break;
+        case 30:
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+            st->codec->codec_id = AV_CODEC_ID_DNXHD;
+            break;
         default:
             st->codec->codec_type = AVMEDIA_TYPE_UNKNOWN;
             st->codec->codec_id = AV_CODEC_ID_NONE;
