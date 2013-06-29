@@ -1469,6 +1469,8 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
         return;
     }
 
+    av_assert0(len <= put_bits_left(&s->pb));
+
     s->num_saved_bits += len;
     if (!append) {
         avpriv_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3),
