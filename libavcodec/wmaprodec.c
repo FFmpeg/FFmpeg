@@ -726,6 +726,7 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
                     if (get_bits1(&s->gb)) {
                         avpriv_request_sample(s->avctx,
                                               "Unknown channel transform type");
+                        return AVERROR_PATCHWELCOME;
                     }
                 } else {
                     chgroup->transform = 1;
