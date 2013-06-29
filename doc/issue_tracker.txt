@@ -24,7 +24,7 @@ a mail for every change to every issue.
 The subscription URL for the ffmpeg-trac list is:
 http(s)://ffmpeg.org/mailman/listinfo/ffmpeg-trac
 The URL of the webinterface of the tracker is:
-http(s)://ffmpeg.org/trac/ffmpeg
+http(s)://trac.ffmpeg.org
 
 Type:
 -----
