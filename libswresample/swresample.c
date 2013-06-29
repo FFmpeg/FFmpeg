@@ -727,7 +727,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
             }
             s->dither.noise_pos += out_count;
         }
-//FIXME packed doesnt need more than 1 chan here!
+//FIXME packed doesn't need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, conv_src, out_count);
     }
     return out_count;
@@ -747,7 +747,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
         reversefill_audiodata(&s->drop_temp, tmp_arg);
         s->drop_output *= -1; //FIXME find a less hackish solution
-        ret = swr_convert(s, tmp_arg, FFMIN(-s->drop_output, MAX_DROP_STEP), in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesnt matter
+        ret = swr_convert(s, tmp_arg, FFMIN(-s->drop_output, MAX_DROP_STEP), in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesn't matter
         s->drop_output *= -1;
         in_count = 0;
         if(ret>0) {

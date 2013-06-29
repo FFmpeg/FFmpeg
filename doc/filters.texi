@@ -3625,7 +3625,7 @@ Default value is @var{auto}.
 
 @item mode
 Set the matching mode or strategy to use. @option{pc} mode is the safest in the
-sense that it wont risk creating jerkiness due to duplicate frames when
+sense that it won't risk creating jerkiness due to duplicate frames when
 possible, but if there are bad edits or blended fields it will end up
 outputting combed frames when a good match might actually exist. On the other
 hand, @option{pcn_ub} mode is the most risky in terms of creating jerkiness,

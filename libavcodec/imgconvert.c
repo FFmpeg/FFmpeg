@@ -148,7 +148,7 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
             loss |= FF_LOSS_RESOLUTION;
             score -= 256 << dst_desc->log2_chroma_h;
         }
-        // dont favor 422 over 420 if downsampling is needed, because 420 has much better support on the decoder side
+        // don't favor 422 over 420 if downsampling is needed, because 420 has much better support on the decoder side
         if (dst_desc->log2_chroma_w == 1 && src_desc->log2_chroma_w == 0 &&
             dst_desc->log2_chroma_h == 1 && src_desc->log2_chroma_h == 0 ) {
             score += 512;

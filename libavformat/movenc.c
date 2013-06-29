@@ -87,7 +87,7 @@ static int64_t update_size(AVIOContext *pb, int64_t pos)
 
 static int supports_edts(MOVMuxContext *mov)
 {
-    // EDTS with fragments is tricky as we dont know the duration when its written
+    // EDTS with fragments is tricky as we don't know the duration when its written
     return (mov->use_editlist<0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) || mov->use_editlist>0;
 }
 

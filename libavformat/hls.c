@@ -218,7 +218,7 @@ static int parse_playlist(HLSContext *c, const char *url,
     if (!in) {
         AVDictionary *opts = NULL;
         close_in = 1;
-        /* Some HLS servers dont like being sent the range header */
+        /* Some HLS servers don't like being sent the range header */
         av_dict_set(&opts, "seekable", "0", 0);
 
         // broker prior HTTP options that should be consistent across requests

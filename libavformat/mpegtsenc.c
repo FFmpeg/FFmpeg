@@ -119,7 +119,7 @@ static const AVOption options[] = {
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
-    { "mpegts_copyts", "dont offset dts/pts",
+    { "mpegts_copyts", "don't offset dts/pts",
       offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };

@@ -42,7 +42,7 @@ static int probe(AVProbeData *p)
         (AV_RL32(&p->buf[16]) != 16))
     return 0;
 
-    //We cant be sure that this is ACT and not regular WAV
+    //We can't be sure that this is ACT and not regular WAV
     if (p->buf_size<512)
         return 0;
 
