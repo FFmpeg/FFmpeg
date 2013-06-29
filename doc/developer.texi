@@ -659,7 +659,7 @@ inclusion into a point release:
     Fixes a security issue, preferably identified by a @strong{CVE
     number} issued by @url{http://cve.mitre.org/}.
 @item
-    Fixes a documented bug in @url{https://ffmpeg.org/trac/ffmpeg}.
+    Fixes a documented bug in @url{https://trac.ffmpeg.org}.
 @item
     Improves the included documentation.
 @item
@@ -679,7 +679,7 @@ The release process involves the following steps:
     Ensure that the @file{RELEASE} file contains the version number for
     the upcoming release.
 @item
-    Add the release at @url{https://ffmpeg.org/trac/ffmpeg/admin/ticket/versions}.
+    Add the release at @url{https://trac.ffmpeg.org/admin/ticket/versions}.
 @item
     Announce the intent to do a release to the mailing list.
 @item
