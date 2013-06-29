@@ -506,8 +506,10 @@ static int decode_i_block(FourXContext *f, int16_t *block)
 
     /* DC coef */
     val = get_vlc2(&f->pre_gb, f->pre_vlc.table, ACDC_VLC_BITS, 3);
-    if (val >> 4)
+    if (val >> 4) {
         av_log(f->avctx, AV_LOG_ERROR, "error dc run != 0\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (val)
         val = get_xbits(&f->gb, val);
