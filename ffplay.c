@@ -2892,8 +2892,7 @@ static int read_thread(void *arg)
                 pkt->stream_index = is->video_stream;
                 packet_queue_put(&is->videoq, pkt);
             }
-            if (is->audio_stream >= 0 &&
-                is->audio_st->codec->codec->capabilities & CODEC_CAP_DELAY) {
+            if (is->audio_stream >= 0) {
                 av_init_packet(pkt);
                 pkt->data = NULL;
                 pkt->size = 0;
