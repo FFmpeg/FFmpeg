@@ -289,7 +289,7 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
             }
         }
     } else if (avctx->pix_fmt == AV_PIX_FMT_PAL8 || avctx->pix_fmt == AV_PIX_FMT_GRAY8) { // IFF-PBM
-        for (y = 0; y < avctx->height; y++) {
+        for (y = 0; y < avctx->height && buf < buf_end; y++) {
             uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];
             memcpy(row, buf, FFMIN(avctx->width, buf_end - buf));
             buf += avctx->width + (avctx->width % 2); // padding if odd
