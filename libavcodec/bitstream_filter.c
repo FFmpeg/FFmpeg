@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "avcodec.h"
+#include "libavutil/atomic.h"
 #include "libavutil/mem.h"
 
 static AVBitStreamFilter *first_bitstream_filter= NULL;
@@ -31,8 +32,9 @@ AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f){
 }
 
 void av_register_bitstream_filter(AVBitStreamFilter *bsf){
-    bsf->next = first_bitstream_filter;
-    first_bitstream_filter= bsf;
+    do {
+        bsf->next = first_bitstream_filter;
+    } while(bsf->next != avpriv_atomic_ptr_cas((void * volatile *)&first_bitstream_filter, bsf->next, bsf));
 }
 
 AVBitStreamFilterContext *av_bitstream_filter_init(const char *name){
