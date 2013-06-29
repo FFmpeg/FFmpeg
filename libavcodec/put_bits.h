@@ -76,6 +76,14 @@ static inline int put_bits_count(PutBitContext *s)
 }
 
 /**
+ * @return the number of bits available in the bitstream.
+ */
+static inline int put_bits_left(PutBitContext* s)
+{
+    return (s->buf_end - s->buf_ptr) * 8 - 32 + s->bit_left;
+}
+
+/**
  * Pad the end of the output stream with zeros.
  */
 static inline void flush_put_bits(PutBitContext *s)
