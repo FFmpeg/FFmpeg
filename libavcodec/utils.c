@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+#include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -161,10 +162,9 @@ av_cold void avcodec_register(AVCodec *codec)
     AVCodec **p;
     avcodec_init();
     p = &first_avcodec;
-    while (*p != NULL)
-        p = &(*p)->next;
-    *p          = codec;
     codec->next = NULL;
+    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, codec))
+        p = &(*p)->next;
 
     if (codec->init_static_data)
         codec->init_static_data(codec);
@@ -2991,10 +2991,9 @@ static AVHWAccel *first_hwaccel = NULL;
 void av_register_hwaccel(AVHWAccel *hwaccel)
 {
     AVHWAccel **p = &first_hwaccel;
-    while (*p)
-        p = &(*p)->next;
-    *p = hwaccel;
     hwaccel->next = NULL;
+    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, hwaccel))
+        p = &(*p)->next;
 }
 
 AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)
