@@ -1476,15 +1476,20 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         /* EOF */
         if (start_code < 0) {
             goto the_end;
-        } else if (unescaped_buf_size > (1U<<29)) {
-            av_log(avctx, AV_LOG_ERROR, "MJPEG packet 0x%x too big (0x%x/0x%x), corrupt data?\n",
+        } else if (unescaped_buf_size > INT_MAX / 8) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "MJPEG packet 0x%x too big (%d/%d), corrupt data?\n",
                    start_code, unescaped_buf_size, buf_size);
             return AVERROR_INVALIDDATA;
         } else {
             av_log(avctx, AV_LOG_DEBUG, "marker=%x avail_size_in_buf=%td\n",
                    start_code, buf_end - buf_ptr);
 
-            init_get_bits(&s->gb, unescaped_buf_ptr, unescaped_buf_size * 8);
+            ret = init_get_bits(&s->gb, unescaped_buf_ptr,
+                                unescaped_buf_size * 8);
+
+            if (ret < 0)
+                return ret;
 
             s->start_code = start_code;
             if (s->avctx->debug & FF_DEBUG_STARTCODE)
