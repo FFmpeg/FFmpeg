@@ -43,16 +43,19 @@ static av_cold int pcx_init(AVCodecContext *avctx) {
 /**
  * @return advanced src pointer
  */
-static const uint8_t *pcx_rle_decode(const uint8_t *src, uint8_t *dst,
-                            unsigned int bytes_per_scanline, int compressed) {
+static const uint8_t *pcx_rle_decode(const uint8_t *src,
+                                     const uint8_t *end,
+                                     uint8_t *dst,
+                                     unsigned int bytes_per_scanline,
+                                     int compressed) {
     unsigned int i = 0;
     unsigned char run, value;
 
     if (compressed) {
-        while (i<bytes_per_scanline) {
+        while (i < bytes_per_scanline && src < end) {
             run = 1;
             value = *src++;
-            if (value >= 0xc0) {
+            if (value >= 0xc0 && src < end) {
                 run = value & 0x3f;
                 value = *src++;
             }
@@ -87,6 +90,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     unsigned int w, h, bits_per_pixel, bytes_per_line, nplanes, stride, y, x,
                  bytes_per_scanline;
     uint8_t *ptr;
+    const uint8_t *buf_end = buf + buf_size;
     uint8_t const *bufstart = buf;
     uint8_t *scanline;
     int ret = -1;
@@ -115,7 +119,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     nplanes            = buf[65];
     bytes_per_scanline = nplanes * bytes_per_line;
 
-    if (bytes_per_scanline < w * bits_per_pixel * nplanes / 8) {
+    if (bytes_per_scanline < w * bits_per_pixel * nplanes / 8 ||
+        (!compressed && bytes_per_scanline > buf_size / h)) {
         av_log(avctx, AV_LOG_ERROR, "PCX data is corrupted\n");
         return -1;
     }
@@ -163,7 +168,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (nplanes == 3 && bits_per_pixel == 8) {
         for (y=0; y<h; y++) {
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
+            buf = pcx_rle_decode(buf, buf_end,
+                                 scanline, bytes_per_scanline, compressed);
 
             for (x=0; x<w; x++) {
                 ptr[3*x  ] = scanline[x                    ];
@@ -178,7 +184,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         const uint8_t *palstart = bufstart + buf_size - 769;
 
         for (y=0; y<h; y++, ptr+=stride) {
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
+            buf = pcx_rle_decode(buf, buf_end,
+                                 scanline, bytes_per_scanline, compressed);
             memcpy(ptr, scanline, w);
         }
 
@@ -197,7 +204,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for (y=0; y<h; y++) {
             init_get_bits(&s, scanline, bytes_per_scanline<<3);
 
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
+            buf = pcx_rle_decode(buf, buf_end,
+                                 scanline, bytes_per_scanline, compressed);
 
             for (x=0; x<w; x++)
                 ptr[x] = get_bits(&s, bits_per_pixel);
@@ -208,7 +216,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         int i;
 
         for (y=0; y<h; y++) {
-            buf = pcx_rle_decode(buf, scanline, bytes_per_scanline, compressed);
+            buf = pcx_rle_decode(buf, buf_end,
+                                 scanline, bytes_per_scanline, compressed);
 
             for (x=0; x<w; x++) {
                 int m = 0x80 >> (x&7), v = 0;
