@@ -261,6 +261,8 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     huff.maxlength = 0;
     huff.current = 0;
     huff.values = av_mallocz(huff.length * sizeof(int));
+    if (!huff.values)
+        return AVERROR(ENOMEM);
 
     if (smacker_decode_bigtree(gb, &huff, &ctx) < 0)
         err = -1;
