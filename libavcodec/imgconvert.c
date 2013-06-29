@@ -113,7 +113,7 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
     int src_color, dst_color;
     int src_min_depth, src_max_depth, dst_min_depth, dst_max_depth;
     int ret, loss, i, nb_components;
-    int score = INT_MAX;
+    int score = INT_MAX - 1;
 
     if (dst_pix_fmt >= AV_PIX_FMT_NB || dst_pix_fmt <= AV_PIX_FMT_NONE)
         return ~0;
