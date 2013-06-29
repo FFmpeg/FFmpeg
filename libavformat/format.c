@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "internal.h"
+#include "libavutil/atomic.h"
 #include "libavutil/avstring.h"
 
 /**
@@ -52,22 +53,18 @@ void av_register_input_format(AVInputFormat *format)
 {
     AVInputFormat **p = &first_iformat;
 
-    while (*p != NULL)
-        p = &(*p)->next;
-
-    *p = format;
     format->next = NULL;
+    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+        p = &(*p)->next;
 }
 
 void av_register_output_format(AVOutputFormat *format)
 {
     AVOutputFormat **p = &first_oformat;
 
-    while (*p != NULL)
-        p = &(*p)->next;
-
-    *p = format;
     format->next = NULL;
+    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, format))
+        p = &(*p)->next;
 }
 
 int av_match_ext(const char *filename, const char *extensions)
