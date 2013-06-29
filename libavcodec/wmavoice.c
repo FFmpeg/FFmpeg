@@ -305,6 +305,20 @@ typedef struct {
  */
 static av_cold int decode_vbmtree(GetBitContext *gb, int8_t vbm_tree[25])
 {
+    int cntr[8] = { 0 }, n, res;
+
+    memset(vbm_tree, 0xff, sizeof(vbm_tree[0]) * 25);
+    for (n = 0; n < 17; n++) {
+        res = get_bits(gb, 3);
+        if (cntr[res] > 3) // should be >= 3 + (res == 7))
+            return -1;
+        vbm_tree[res * 3 + cntr[res]++] = n;
+    }
+    return 0;
+}
+
+static av_cold void wmavoice_init_static_data(AVCodec *codec)
+{
     static const uint8_t bits[] = {
          2,  2,  2,  4,  4,  4,
          6,  6,  6,  8,  8,  8,
@@ -320,18 +334,9 @@ static av_cold int decode_vbmtree(GetBitContext *gb, int8_t vbm_tree[25])
           0x0ffc, 0x0ffd, 0x0ffe,        //   1111111111+00/01/10
           0x3ffc, 0x3ffd, 0x3ffe, 0x3fff // 111111111111+xx
     };
-    int cntr[8] = { 0 }, n, res;
 
-    memset(vbm_tree, 0xff, sizeof(vbm_tree[0]) * 25);
-    for (n = 0; n < 17; n++) {
-        res = get_bits(gb, 3);
-        if (cntr[res] > 3) // should be >= 3 + (res == 7))
-            return -1;
-        vbm_tree[res * 3 + cntr[res]++] = n;
-    }
     INIT_VLC_STATIC(&frame_type_vlc, VLC_NBITS, sizeof(bits),
                     bits, 1, 1, codes, 2, 2, 132);
-    return 0;
 }
 
 /**
@@ -2047,14 +2052,15 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
 }
 
 AVCodec ff_wmavoice_decoder = {
-    .name           = "wmavoice",
-    .type           = AVMEDIA_TYPE_AUDIO,
-    .id             = AV_CODEC_ID_WMAVOICE,
-    .priv_data_size = sizeof(WMAVoiceContext),
-    .init           = wmavoice_decode_init,
-    .close          = wmavoice_decode_end,
-    .decode         = wmavoice_decode_packet,
-    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .flush          = wmavoice_flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
+    .name             = "wmavoice",
+    .type             = AVMEDIA_TYPE_AUDIO,
+    .id               = AV_CODEC_ID_WMAVOICE,
+    .priv_data_size   = sizeof(WMAVoiceContext),
+    .init             = wmavoice_decode_init,
+    .init_static_data = wmavoice_init_static_data,
+    .close            = wmavoice_decode_end,
+    .decode           = wmavoice_decode_packet,
+    .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
+    .flush            = wmavoice_flush,
+    .long_name        = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
 };
