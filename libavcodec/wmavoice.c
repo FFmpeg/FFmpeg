@@ -1045,9 +1045,10 @@ static void aw_parse_coords(WMAVoiceContext *s, GetBitContext *gb,
  * @param gb bit I/O context
  * @param block_idx block index in frame [0, 1]
  * @param fcb structure containing fixed codebook vector info
+ * @return -1 on error, 0 otherwise
  */
-static void aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
-                          int block_idx, AMRFixed *fcb)
+static int aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
+                         int block_idx, AMRFixed *fcb)
 {
     uint16_t use_mask_mem[9]; // only 5 are used, rest is padding
     uint16_t *use_mask = use_mask_mem + 2;
@@ -1109,7 +1110,7 @@ static void aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
             else if (use_mask[2]) idx = 0x2F;
             else if (use_mask[3]) idx = 0x3F;
             else if (use_mask[4]) idx = 0x4F;
-            else                  return;
+            else return -1;
             idx -= av_log2_16bit(use_mask[idx >> 4]);
         }
         if (use_mask[idx >> 4] & (0x8000 >> (idx & 15))) {
@@ -1126,6 +1127,7 @@ static void aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
     /* set offset for next block, relative to start of that block */
     n = (MAX_FRAMESIZE / 2 - start_off) % fcb->pitch_lag;
     s->aw_next_pulse_off_cache = n ? fcb->pitch_lag - n : 0;
+    return 0;
 }
 
 /**
@@ -1288,7 +1290,18 @@ static void synth_block_fcb_acb(WMAVoiceContext *s, GetBitContext *gb,
      * (fixed) codebook pulses of the speech signal. */
     if (frame_desc->fcb_type == FCB_TYPE_AW_PULSES) {
         aw_pulse_set1(s, gb, block_idx, &fcb);
-        aw_pulse_set2(s, gb, block_idx, &fcb);
+        if (aw_pulse_set2(s, gb, block_idx, &fcb)) {
+            /* Conceal the block with silence and return.
+             * Skip the correct amount of bits to read the next
+             * block from the correct offset. */
+            int r_idx = pRNG(s->frame_cntr, block_idx, size);
+
+            for (n = 0; n < size; n++)
+                excitation[n] =
+                    wmavoice_std_codebook[r_idx + n] * s->silence_gain;
+            skip_bits(gb, 7 + 1);
+            return;
+        }
     } else /* FCB_TYPE_EXC_PULSES */ {
         int offset_nbits = 5 - frame_desc->log_n_blocks;
 
