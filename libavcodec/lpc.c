@@ -225,7 +225,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
 
                 if(pass){
                     double eval, inv, rinv;
-                    eval= m[(pass-1)&1].evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
+                    eval= m[pass&1].evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
                     eval= (512>>pass) + fabs(eval - var[0]);
                     inv = 1/eval;
                     rinv = sqrt(inv);
