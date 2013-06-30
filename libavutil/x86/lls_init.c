@@ -32,7 +32,7 @@ av_cold void ff_init_lls_x86(LLSModel *m)
     if (EXTERNAL_SSE2(cpu_flags)) {
         m->update_lls = ff_update_lls_sse2;
     }
-    if (EXTERNAL_AVX(cpu_flags)) {
+    if (EXTERNAL_AVX(cpu_flags) && 0) {
         m->update_lls = ff_update_lls_avx;
     }
 }
