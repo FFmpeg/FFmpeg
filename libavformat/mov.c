@@ -3414,7 +3414,7 @@ static const AVOption options[] = {
     {NULL}
 };
 
-static const AVClass class = {
+static const AVClass mov_class = {
     .class_name = "mov,mp4,m4a,3gp,3g2,mj2",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -3430,6 +3430,6 @@ AVInputFormat ff_mov_demuxer = {
     .read_packet    = mov_read_packet,
     .read_close     = mov_read_close,
     .read_seek      = mov_read_seek,
-    .priv_class     = &class,
+    .priv_class     = &mov_class,
     .flags          = AVFMT_NO_BYTE_SEEK,
 };

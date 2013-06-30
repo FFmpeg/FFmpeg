@@ -1135,7 +1135,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass class = {
+static const AVClass ffv1_class = {
     .class_name = "ffv1 encoder",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -1169,5 +1169,5 @@ AVCodec ff_ffv1_encoder = {
     },
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
     .defaults       = ffv1_defaults,
-    .priv_class     = &class,
+    .priv_class     = &ffv1_class,
 };

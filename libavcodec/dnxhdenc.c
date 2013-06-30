@@ -43,7 +43,7 @@ static const AVOption options[]={
 {NULL}
 };
 
-static const AVClass class = {
+static const AVClass dnxhd_class = {
     .class_name = "dnxhd",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -1049,6 +1049,6 @@ AVCodec ff_dnxhd_encoder = {
                                                   AV_PIX_FMT_YUV422P10,
                                                   AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
-    .priv_class     = &class,
+    .priv_class     = &dnxhd_class,
     .defaults       = dnxhd_defaults,
 };
