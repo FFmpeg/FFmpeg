@@ -1223,7 +1223,8 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
                         (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
         } else {
-            if (init_duplicate_context(s) < 0)
+            err = init_duplicate_context(s);
+            if (err < 0)
                 goto fail;
             s->start_mb_y = 0;
             s->end_mb_y   = s->mb_height;
