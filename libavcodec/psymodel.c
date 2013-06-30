@@ -75,7 +75,7 @@ FFPsyChannelGroup *ff_psy_find_group(FFPsyContext *ctx, int channel)
 
 av_cold void ff_psy_end(FFPsyContext *ctx)
 {
-    if (ctx->model->end)
+    if (ctx->model && ctx->model->end)
         ctx->model->end(ctx);
     av_freep(&ctx->bands);
     av_freep(&ctx->num_bands);
