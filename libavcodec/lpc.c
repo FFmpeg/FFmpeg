@@ -201,7 +201,9 @@ int ff_lpc_calc_coefs(LPCContext *s,
             ref[i] = fabs(lpc[i][i]);
     } else if (lpc_type == FF_LPC_TYPE_CHOLESKY) {
         LLSModel m[2];
-        double var[MAX_LPC_ORDER+1], av_uninit(weight);
+        LOCAL_ALIGNED(32, double, var, [FFALIGN(MAX_LPC_ORDER+1,4)]);
+        double av_uninit(weight);
+        memset(var, 0, FFALIGN(MAX_LPC_ORDER+1,4)*sizeof(*var));
 
         if(lpc_passes <= 0)
             lpc_passes = 2;

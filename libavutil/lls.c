@@ -46,8 +46,8 @@ static void update_lls(LLSModel *m, double *var)
 void avpriv_solve_lls(LLSModel *m, double threshold, unsigned short min_order)
 {
     int i, j, k;
-    double (*factor)[MAX_VARS + 1] = (void *) &m->covariance[1][0];
-    double (*covar) [MAX_VARS + 1] = (void *) &m->covariance[1][1];
+    double (*factor)[MAX_VARS_ALIGN] = (void *) &m->covariance[1][0];
+    double (*covar) [MAX_VARS_ALIGN] = (void *) &m->covariance[1][1];
     double *covar_y                = m->covariance[0];
     int count                      = m->indep_count;
 
@@ -117,6 +117,8 @@ av_cold void avpriv_init_lls(LLSModel *m, int indep_count)
     m->indep_count = indep_count;
     m->update_lls = update_lls;
     m->evaluate_lls = evaluate_lls;
+    if (ARCH_X86)
+        ff_init_lls_x86(m);
 }
 
 #if FF_API_LLS_PRIVATE
@@ -154,7 +156,7 @@ int main(void)
     avpriv_init_lls(&m, 3);
 
     for (i = 0; i < 100; i++) {
-        double var[4];
+        LOCAL_ALIGNED(32, double, var, [4]);
         double eval;
 
         var[0] = (av_lfg_get(&lfg) / (double) UINT_MAX - 0.5) * 2;
