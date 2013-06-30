@@ -226,7 +226,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
                 }else
                     weight++;
 
-                avpriv_update_lls(&m[pass&1], var, 1.0);
+                avpriv_update_lls(&m[pass&1], var);
             }
             avpriv_solve_lls(&m[pass&1], 0.001, 0);
         }
