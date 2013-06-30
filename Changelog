@@ -1,6 +1,39 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
+version 0.8.8:
+
+- kmvc: Clip pixel position to valid range
+- kmvc: use fixed sized arrays in the context
+- indeo: use a typedef for the mc function pointer
+- lavc: check for overflow in init_get_bits
+- mjpegdec: properly report unsupported disabled features
+- jpegls: return meaningful errors
+- jpegls: factorize return paths
+- jpegls: check the scan offset
+- wavpack: validate samples size parsed in wavpack_decode_block
+- ljpeg: use the correct number of components in yuv
+- mjpeg: Validate sampling factors
+- mjpegdec: validate parameters in mjpeg_decode_scan_progressive_ac
+- wavpack: check packet size early
+- wavpack: return meaningful errors
+- apetag: use int64_t for filesize
+- tiff: do not overread the source buffer
+- Prepare for 0.8.8 Release
+- smacker: fix an off by one in huff.length computation
+- smacker: check the return value of smacker_decode_tree
+- smacker: pad the extradata allocation
+- smacker: check frame size validity
+- vmdav: convert to bytestream2
+- 4xm: don't rely on get_buffer() initializing the frame.
+- 4xm: check the return value of read_huffman_tables().
+- 4xm: use the correct logging context
+- 4xm: reject frames not compatible with the declared version
+- 4xm: check bitstream_size boundary before using it
+- 4xm: do not overread the source buffer in decode_p_block
+
+
 version 0.8.7:
 
 - avfiltergraph: check for sws opts being non-NULL before using them
