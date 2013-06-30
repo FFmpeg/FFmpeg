@@ -48,7 +48,7 @@ static const AVOption options[]={
 {NULL}
 };
 
-static const AVClass class = {
+static const AVClass rawdec_class = {
     .class_name = "rawdec",
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -351,5 +351,5 @@ AVCodec ff_rawvideo_decoder = {
     .close          = raw_close_decoder,
     .decode         = raw_decode,
     .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
-    .priv_class     = &class,
+    .priv_class     = &rawdec_class,
 };

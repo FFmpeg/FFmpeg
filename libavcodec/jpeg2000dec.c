@@ -1434,7 +1434,7 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
-static const AVClass class = {
+static const AVClass jpeg2000_class = {
     .class_name = "jpeg2000",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -1450,7 +1450,7 @@ AVCodec ff_jpeg2000_decoder = {
     .priv_data_size   = sizeof(Jpeg2000DecoderContext),
     .init_static_data = jpeg2000_init_static_data,
     .decode           = jpeg2000_decode_frame,
-    .priv_class       = &class,
+    .priv_class       = &jpeg2000_class,
     .max_lowres       = 5,
     .profiles         = NULL_IF_CONFIG_SMALL(profiles)
 };

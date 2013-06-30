@@ -92,7 +92,7 @@ static const AVOption options[] = {
 { NULL },
 };
 
-static const AVClass class = {
+static const AVClass spdif_class = {
     .class_name     = "spdif",
     .item_name      = av_default_item_name,
     .option         = options,
@@ -552,5 +552,5 @@ AVOutputFormat ff_spdif_muxer = {
     .write_packet      = spdif_write_packet,
     .write_trailer     = spdif_write_trailer,
     .flags             = AVFMT_NOTIMESTAMPS,
-    .priv_class        = &class,
+    .priv_class        = &spdif_class,
 };

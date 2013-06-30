@@ -911,7 +911,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass class = {
+static const AVClass flv_class = {
     .class_name = "flvdec",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -928,5 +928,5 @@ AVInputFormat ff_flv_demuxer = {
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
     .extensions     = "flv",
-    .priv_class     = &class,
+    .priv_class     = &flv_class,
 };
