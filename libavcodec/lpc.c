@@ -216,7 +216,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
 
                 if(pass){
                     double eval, inv, rinv;
-                    eval= avpriv_evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
+                    eval= m[(pass-1)&1].evaluate_lls(&m[(pass-1)&1], var+1, max_order-1);
                     eval= (512>>pass) + fabs(eval - var[0]);
                     inv = 1/eval;
                     rinv = sqrt(inv);
@@ -226,7 +226,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
                 }else
                     weight++;
 
-                avpriv_update_lls(&m[pass&1], var);
+                m[pass&1].update_lls(&m[pass&1], var);
             }
             avpriv_solve_lls(&m[pass&1], 0.001, 0);
         }
