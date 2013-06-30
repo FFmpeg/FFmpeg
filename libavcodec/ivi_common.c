@@ -804,8 +804,16 @@ static int decode_band(IVI45DecContext *ctx,
                 break;
 
             result = ivi_decode_blocks(&ctx->gb, band, tile, avctx);
-            if (result < 0 || ((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
-                av_log(avctx, AV_LOG_ERROR, "Corrupted tile data encountered!\n");
+            if (result < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Corrupted tile data encountered!\n");
+                break;
+            }
+
+            if (((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Tile data_size mismatch!\n");
+                result = AVERROR_INVALIDDATA;
                 break;
             }
 
