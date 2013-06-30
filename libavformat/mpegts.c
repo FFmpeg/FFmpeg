@@ -2050,7 +2050,7 @@ static int mpegts_read_header(AVFormatContext *s)
         for(;;) {
             ret = read_packet(s, packet, ts->raw_packet_size);
             if (ret < 0)
-                return -1;
+                goto fail;
             pid = AV_RB16(packet + 1) & 0x1fff;
             if ((pcr_pid == -1 || pcr_pid == pid) &&
                 parse_pcr(&pcr_h, &pcr_l, packet) == 0) {
