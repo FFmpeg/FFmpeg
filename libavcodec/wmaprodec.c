@@ -439,8 +439,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
                            + s->sfb_offsets[i][b + 1] - 1) << i) >> 1;
             for (x = 0; x < num_possible_block_sizes; x++) {
                 int v = 0;
-                while (s->sfb_offsets[x][v + 1] << x < offset)
-                    ++v;
+                while (s->sfb_offsets[x][v + 1] << x < offset) {
+                    v++;
+                    av_assert0(v < MAX_BANDS);
+                }
                 s->sf_offsets[i][x][b] = v;
             }
         }
