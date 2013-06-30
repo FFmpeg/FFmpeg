@@ -249,7 +249,7 @@ static int avcodec_thread_execute2(AVCodecContext *avctx, action_func2* func2, v
     return avcodec_thread_execute(avctx, NULL, arg, ret, job_count, 0);
 }
 
-static int thread_init(AVCodecContext *avctx)
+static int avcodec_thread_init(AVCodecContext *avctx)
 {
     int i;
     ThreadContext *c;
@@ -1103,7 +1103,7 @@ int ff_thread_init(AVCodecContext *avctx)
     validate_thread_parameters(avctx);
 
     if (avctx->active_thread_type&FF_THREAD_SLICE)
-        return thread_init(avctx);
+        return avcodec_thread_init(avctx);
     else if (avctx->active_thread_type&FF_THREAD_FRAME)
         return frame_thread_init(avctx);
 
