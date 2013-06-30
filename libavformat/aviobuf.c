@@ -392,12 +392,11 @@ void avio_wb24(AVIOContext *s, unsigned int val)
 
 static void fill_buffer(AVIOContext *s)
 {
-    uint8_t *dst        = !s->max_packet_size &&
-                          s->buf_end - s->buffer < s->buffer_size ?
-                          s->buf_end : s->buffer;
-    int len             = s->buffer_size - (dst - s->buffer);
     int max_buffer_size = s->max_packet_size ?
                           s->max_packet_size : IO_BUFFER_SIZE;
+    uint8_t *dst        = s->buf_end - s->buffer + max_buffer_size < s->buffer_size ?
+                          s->buf_end : s->buffer;
+    int len             = s->buffer_size - (dst - s->buffer);
 
     /* can't fill the buffer without read_packet, just set EOF if appropriate */
     if (!s->read_packet && s->buf_ptr >= s->buf_end)
@@ -416,10 +415,13 @@ static void fill_buffer(AVIOContext *s)
 
     /* make buffer smaller in case it ended up large after probing */
     if (s->read_packet && s->buffer_size > max_buffer_size) {
-        ffio_set_buf_size(s, max_buffer_size);
+        if (dst == s->buffer) {
+            ffio_set_buf_size(s, max_buffer_size);
 
-        s->checksum_ptr = dst = s->buffer;
-        len = s->buffer_size;
+            s->checksum_ptr = dst = s->buffer;
+        }
+        av_assert0(len >= max_buffer_size);
+        len = max_buffer_size;
     }
 
     if (s->read_packet)
