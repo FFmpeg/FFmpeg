@@ -2640,8 +2640,7 @@ static int mov_write_tfrf_tag(AVIOContext *pb, MOVMuxContext *mov,
         int free_size = 16*(mov->ism_lookahead - n);
         avio_wb32(pb, free_size);
         ffio_wfourcc(pb, "free");
-        for (i = 0; i < free_size - 8; i++)
-            avio_w8(pb, 0);
+        ffio_fill(pb, 0, free_size - 8);
     }
 
     return 0;
