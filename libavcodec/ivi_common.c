@@ -837,7 +837,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_INVALIDDATA;
 
     if (ctx->gop_flags & IVI5_IS_PROTECTED) {
-        avpriv_report_missing_feature(avctx, "Password-protected clip!\n");
+        av_log(avctx, AV_LOG_ERROR, "Password-protected clip!\n");
         return AVERROR_PATCHWELCOME;
     }
 
