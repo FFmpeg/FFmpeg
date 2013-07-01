@@ -202,7 +202,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 {
     uint8_t log2_band_prec_width, log2_band_prec_height;
     int reslevelno, bandno, gbandno = 0, ret, i, j;
-    uint32_t csize = 1;
+    uint32_t csize;
 
     if (!codsty->nreslevels2decode) {
         av_log(avctx, AV_LOG_ERROR, "nreslevels2decode uninitialized\n");
