@@ -235,36 +235,34 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
                                                s->reduction_factor);
 
-    switch (s->avctx->profile) {
-    case FF_PROFILE_JPEG2000_DCINEMA_2K:
-    case FF_PROFILE_JPEG2000_DCINEMA_4K:
-        /* XYZ color-space for digital cinema profiles */
-        s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
+    switch (s->ncomponents) {
+    case 1:
+        if (s->precision > 8)
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+        else
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         break;
-    default:
-        /* For other profiles selects color-space according number of
-         * components and bit depth precision. */
-        switch (s->ncomponents) {
-        case 1:
-            if (s->precision > 8)
-                s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+    case 3:
+        switch (s->avctx->profile) {
+        case FF_PROFILE_JPEG2000_DCINEMA_2K:
+        case FF_PROFILE_JPEG2000_DCINEMA_4K:
+            /* XYZ color-space for digital cinema profiles */
+            s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
             break;
-        case 3:
+        default:
             if (s->precision > 8)
                 s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
             else
                 s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
             break;
-        case 4:
-            s->avctx->pix_fmt = AV_PIX_FMT_BGRA;
-            break;
-        default:
-            /* pixel format can not be identified */
-            s->avctx->pix_fmt = AV_PIX_FMT_NONE;
-            break;
         }
+        break;
+    case 4:
+        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        break;
+    default:
+        /* pixel format can not be identified */
+        s->avctx->pix_fmt = AV_PIX_FMT_NONE;
         break;
     }
     return 0;
@@ -1135,11 +1133,6 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
-    if (s->avctx->pix_fmt == AV_PIX_FMT_BGRA) { // RGBA -> BGRA
-        FFSWAP(float *, tile->comp[0].f_data, tile->comp[2].f_data);
-        FFSWAP(int *, tile->comp[0].i_data, tile->comp[2].i_data);
-    }
-
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
@@ -1443,8 +1436,5 @@ AVCodec ff_jpeg2000_decoder = {
     .init_static_data = jpeg2000_init_static_data,
     .decode           = jpeg2000_decode_frame,
     .priv_class       = &class,
-    .pix_fmts         = (enum AVPixelFormat[]) { AV_PIX_FMT_XYZ12,
-                                                 AV_PIX_FMT_GRAY8,
-                                                 -1 },
     .profiles         = NULL_IF_CONFIG_SMALL(profiles)
 };
