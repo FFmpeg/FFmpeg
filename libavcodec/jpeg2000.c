@@ -284,14 +284,14 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 int numbps;
             case JPEG2000_QSTY_NONE:
                 /* TODO: to verify. No quantization in this case */
-                numbps = cbps +
-                         lut_gain[codsty->transform][bandno + (reslevelno > 0)];
-                band->stepsize = (float)SHL(2048 + qntsty->mant[gbandno],
-                                            2 + numbps - qntsty->expn[gbandno]);
+                band->f_stepsize = 1;
                 break;
             case JPEG2000_QSTY_SI:
                 /*TODO: Compute formula to implement. */
-                band->stepsize = (float) (1 << 13);
+                numbps = cbps +
+                         lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
+                band->stepsize = (float)SHL(2048 + qntsty->mant[gbandno],
+                                            2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
                 /* Exponent quantization step.
@@ -305,15 +305,15 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 gain            = cbps;
                 band->stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
                 band->stepsize *= (float)qntsty->mant[gbandno] / 2048.0 + 1.0;
-                /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
-                 * If not set output of entropic decoder is not correct. */
-                band->stepsize *= 0.5;
                 break;
             default:
                 band->stepsize = 0;
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
+            /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
+             * If not set output of entropic decoder is not correct. */
+            band->stepsize *= 0.5;
             /* BITEXACT computing case --> convert to int */
             if (avctx->flags & CODEC_FLAG_BITEXACT)
                 band->stepsize = (int32_t)(band->stepsize * (1 << 16));
