@@ -72,7 +72,7 @@ typedef struct Jpeg2000DecoderContext {
     int             precision;
     int             ncomponents;
     int             tile_width, tile_height;
-    int             numXtiles, numYtiles;
+    unsigned        numXtiles, numYtiles;
     int             maxtilelen;
 
     Jpeg2000CodingStyle codsty[4];
@@ -154,6 +154,7 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
 static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i;
+    int ncomponents;
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR_INVALIDDATA;
@@ -167,7 +168,28 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->tile_height    = bytestream2_get_be32u(&s->g); // YTSiz
     s->tile_offset_x  = bytestream2_get_be32u(&s->g); // XT0Siz
     s->tile_offset_y  = bytestream2_get_be32u(&s->g); // YT0Siz
-    s->ncomponents       = bytestream2_get_be16u(&s->g); // CSiz
+    ncomponents       = bytestream2_get_be16u(&s->g); // CSiz
+
+    if (ncomponents <= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid number of components: %d\n",
+               s->ncomponents);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (ncomponents > 3) {
+        avpriv_request_sample(s->avctx, "Support for %d components",
+                              s->ncomponents);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    s->ncomponents = ncomponents;
+
+    if (s->tile_width <= 0 || s->tile_height <= 0 ||
+        s->tile_width > s->width || s->tile_height > s->height) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid tile dimension %dx%d.\n",
+               s->tile_width, s->tile_height);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (bytestream2_get_bytes_left(&s->g) < 3 * s->ncomponents)
         return AVERROR_INVALIDDATA;
@@ -179,14 +201,26 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->sgnd[i]   = (x & 0x80) == 1;
         s->cdx[i]    = bytestream2_get_byteu(&s->g);
         s->cdy[i]    = bytestream2_get_byteu(&s->g);
+
+        if (s->cdx[i] != 1 || s->cdy[i] != 1) {
+            avpriv_request_sample(s->avctx,
+                                  "CDxy values %d %d for component %d",
+                                  s->cdx[i], s->cdy[i], i);
+            if (!s->cdx[i] || !s->cdy[i])
+                return AVERROR_INVALIDDATA;
+            else
+                return AVERROR_PATCHWELCOME;
+        }
     }
 
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
-    s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(*s->tile));
-    if (!s->tile)
+    s->tile = av_mallocz_array(s->numXtiles * s->numYtiles, sizeof(*s->tile));
+    if (!s->tile) {
+        s->numXtiles = s->numYtiles = 0;
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < s->numXtiles * s->numYtiles; i++) {
         Jpeg2000Tile *tile = s->tile + i;
