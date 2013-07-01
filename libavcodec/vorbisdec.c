@@ -422,11 +422,6 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
         }
 
 // Initialize VLC table
-        if (entries <= 0) {
-            av_log(vc->avctx, AV_LOG_ERROR, "Invalid codebook entry count\n");
-            ret = AVERROR_INVALIDDATA;
-            goto error;
-        }
         if (ff_vorbis_len2vlc(tmp_vlc_bits, tmp_vlc_codes, entries)) {
             av_log(vc->avctx, AV_LOG_ERROR, " Invalid code lengths while generating vlcs. \n");
             ret = AVERROR_INVALIDDATA;
@@ -1235,8 +1230,11 @@ static int vorbis_floor1_decode(vorbis_context *vc,
 
             cval = cval >> cbits;
             if (book > -1) {
-                floor1_Y[offset+j] = get_vlc2(gb, vc->codebooks[book].vlc.table,
-                vc->codebooks[book].nb_bits, 3);
+                int v = get_vlc2(gb, vc->codebooks[book].vlc.table,
+                                 vc->codebooks[book].nb_bits, 3);
+                if (v < 0)
+                    return AVERROR_INVALIDDATA;
+                floor1_Y[offset+j] = v;
             } else {
                 floor1_Y[offset+j] = 0;
             }
@@ -1329,6 +1327,9 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                                      vc->codebooks[vr->classbook].nb_bits, 3);
 
             av_dlog(NULL, "Classword: %u\n", temp);
+
+            if ((int)temp < 0)
+                return temp;
 
             av_assert0(vr->classifications > 1); //needed for inverse[]
 
