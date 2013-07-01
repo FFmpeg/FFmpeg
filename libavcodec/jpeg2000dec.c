@@ -1162,6 +1162,9 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             Jpeg2000Component *comp = tile->comp + compno;
             float *datap = comp->f_data;
             int32_t *i_datap = comp->i_data;
+            int cbps = s->cbps[compno];
+            int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
+
             y    = tile->comp[compno].coord[1][0] - s->image_offset_y;
             line = picture->data[0] + y * picture->linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
@@ -1170,18 +1173,24 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
                 dst = line + x * s->ncomponents + compno;
 
-                for (; x < tile->comp[compno].coord[0][1] - s->image_offset_x; x += s->cdx[compno]) {
-                     int val;
-                    /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
-                    if (tile->codsty->transform == FF_DWT97)
-                        val = lrintf(*datap) + (1 << (s->cbps[compno] - 1));
-                    else
-                        val = *i_datap + (1 << (s->cbps[compno] - 1));
-                    val = av_clip(val, 0, (1 << s->cbps[compno]) - 1);
-                    *dst = val << (8 - s->cbps[compno]);
-                    datap++;
-                    i_datap++;
-                    dst += s->ncomponents;
+                if (tile->codsty->transform == FF_DWT97) {
+                    for (; x < w; x += s->cdx[compno]) {
+                        int val = lrintf(*datap) + (1 << (cbps - 1));
+                        /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
+                        val = av_clip(val, 0, (1 << cbps) - 1);
+                        *dst = val << (8 - cbps);
+                        datap++;
+                        dst += s->ncomponents;
+                    }
+                } else {
+                    for (; x < w; x += s->cdx[compno]) {
+                        int val = *i_datap + (1 << (cbps - 1));
+                        /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
+                        val = av_clip(val, 0, (1 << cbps) - 1);
+                        *dst = val << (8 - cbps);
+                        i_datap++;
+                        dst += s->ncomponents;
+                    }
                 }
                 line += picture->linesize[0];
             }
@@ -1192,6 +1201,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             float *datap = comp->f_data;
             int32_t *i_datap = comp->i_data;
             uint16_t *linel;
+            int cbps = s->cbps[compno];
+            int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
 
             y     = tile->comp[compno].coord[1][0] - s->image_offset_y;
             linel = (uint16_t *)picture->data[0] + y * (picture->linesize[0] >> 1);
@@ -1199,24 +1210,32 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 uint16_t *dst;
                 x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
                 dst = linel + (x * s->ncomponents + compno);
-                for (; x < tile->comp[compno].coord[0][1] - s->image_offset_x; x += s-> cdx[compno]) {
-                    int val;
-                    /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
-                    if (tile->codsty->transform == FF_DWT97)
-                        val = lrintf(*datap) + (1 << (s->cbps[compno] - 1));
-                    else
-                        val = *i_datap + (1 << (s->cbps[compno] - 1));
-                    val = av_clip(val, 0, (1 << s->cbps[compno]) - 1);
-                    /* align 12 bit values in little-endian mode */
-                    *dst = val << (16 - s->cbps[compno]);
-                    datap++;
-                    i_datap++;
-                    dst += s->ncomponents;
+                if (tile->codsty->transform == FF_DWT97) {
+                    for (; x < w; x += s-> cdx[compno]) {
+                        int  val = lrintf(*datap) + (1 << (cbps - 1));
+                        /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
+                        val = av_clip(val, 0, (1 << cbps) - 1);
+                        /* align 12 bit values in little-endian mode */
+                        *dst = val << (16 - cbps);
+                        datap++;
+                        dst += s->ncomponents;
+                    }
+                } else {
+                    for (; x < w; x += s-> cdx[compno]) {
+                        int val = *i_datap + (1 << (cbps - 1));
+                        /* DC level shift and clip see ISO 15444-1:2002 G.1.2 */
+                        val = av_clip(val, 0, (1 << cbps) - 1);
+                        /* align 12 bit values in little-endian mode */
+                        *dst = val << (16 - cbps);
+                        i_datap++;
+                        dst += s->ncomponents;
+                    }
                 }
                 linel += picture->linesize[0] >> 1;
             }
         }
     }
+
     return 0;
 }
 
