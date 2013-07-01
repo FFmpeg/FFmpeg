@@ -940,12 +940,13 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y;
 
     for (y = 0; y < height; y++)
-        memset(t1->data[y], 0, width * sizeof(width));
+        memset(t1->data[y], 0, width * sizeof(**t1->data));
+
     /* If code-block contains no compressed data: nothing to do. */
     if (!cblk->length)
         return 0;
     for (y = 0; y < height + 2; y++)
-        memset(t1->flags[y], 0, (width + 2) * sizeof(width));
+        memset(t1->flags[y], 0, (width + 2) * sizeof(**t1->flags));
 
     ff_mqc_initdec(&t1->mqc, cblk->data);
     cblk->data[cblk->length]     = 0xff;
