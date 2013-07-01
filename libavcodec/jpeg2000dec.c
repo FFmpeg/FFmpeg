@@ -1118,6 +1118,10 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                 int cblkno = 0, bandpos;
                 bandpos = bandno + (reslevelno > 0);
 
+                if (band->coord[0][0] == band->coord[0][1] ||
+                    band->coord[1][0] == band->coord[1][1])
+                    continue;
+
                 nb_precincts = rlevel->num_precincts_x * rlevel->num_precincts_y;
                 /* Loop on precincts */
                 for (precno = 0; precno < nb_precincts; precno++) {
