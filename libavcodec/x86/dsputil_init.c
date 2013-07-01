@@ -621,7 +621,7 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 #if HAVE_SSE2_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
-    if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX) {
+    if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX && avctx->lowres == 0) {
         c->idct_put              = ff_idct_xvid_sse2_put;
         c->idct_add              = ff_idct_xvid_sse2_add;
         c->idct                  = ff_idct_xvid_sse2;
