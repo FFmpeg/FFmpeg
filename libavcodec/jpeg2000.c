@@ -115,7 +115,6 @@ static int getsigctxno(int flag, int bandno)
             return 2;
         if (d == 1)
             return 1;
-        return 0;
     } else {
         if (d >= 3)
             return 8;
@@ -135,7 +134,6 @@ static int getsigctxno(int flag, int bandno)
             return 2;
         if (h + v == 1)
             return 1;
-        return 0;
     }
     return 0;
 }
