@@ -1737,7 +1737,7 @@ static int configure_filtergraph(AVFilterGraph *graph, const char *filtergraph,
         inputs->pad_idx     = 0;
         inputs->next        = NULL;
 
-        if ((ret = avfilter_graph_parse(graph, filtergraph, &inputs, &outputs, NULL)) < 0)
+        if ((ret = avfilter_graph_parse_ptr(graph, filtergraph, &inputs, &outputs, NULL)) < 0)
             goto fail;
     } else {
         if ((ret = avfilter_link(source_ctx, 0, sink_ctx, 0)) < 0)
