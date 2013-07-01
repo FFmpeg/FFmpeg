@@ -119,6 +119,9 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
     Jpeg2000TgtNode *stack[30];
     int sp = -1, curval = 0;
 
+    if (!node)
+        return AVERROR_INVALIDDATA;
+
     while (node && !node->vis) {
         stack[++sp] = node;
         node        = node->parent;
