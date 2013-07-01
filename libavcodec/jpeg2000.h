@@ -136,8 +136,6 @@ typedef struct Jpeg2000CodingStyle {
             log2_cblk_height; // exponent of codeblock size
     uint8_t transform;        // DWT type
     uint8_t csty;             // coding style
-    uint8_t log2_prec_width,
-            log2_prec_height; // precinct size
     uint8_t nlayers;          // number of layers
     uint8_t mct;              // multiple component transformation
     uint8_t cblk_style;       // codeblock coding style
@@ -172,7 +170,6 @@ typedef struct Jpeg2000Cblk {
 } Jpeg2000Cblk; // code block
 
 typedef struct Jpeg2000Prec {
-    uint16_t xi0, yi0; // codeblock indexes ([xi0, xi1))
     uint16_t nb_codeblocks_width;
     uint16_t nb_codeblocks_height;
     Jpeg2000TgtNode *zerobits;
@@ -186,7 +183,6 @@ typedef struct Jpeg2000Prec {
 typedef struct Jpeg2000Band {
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t log2_cblk_width, log2_cblk_height;
-    uint16_t cblknx, cblkny;
     float stepsize; // quantization stepsize
     Jpeg2000Prec *prec;
 } Jpeg2000Band; // subband
