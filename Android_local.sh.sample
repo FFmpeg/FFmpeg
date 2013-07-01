@@ -2,7 +2,7 @@
 # bellow configure lines for yourself.
 
 ### For Linux
-#export ANDROID_NDK=/path/to/andriod/ndk/root/directory/
+#export ANDROID_NDK=$ANDROID_NDK
 #export HOST_SYSTEM=linux-x86_64
 #export CCACHE=ccache
 
