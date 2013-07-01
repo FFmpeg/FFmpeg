@@ -1397,7 +1397,9 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
         voffset = vr->begin;
         for (partition_count = 0; partition_count < ptns_to_read;) {  // SPEC        error
             if (!pass) {
-                setup_classifs(vc, vr, do_not_decode, ch_used, partition_count);
+                int ret;
+                if ((ret = setup_classifs(vc, vr, do_not_decode, ch_used, partition_count)) < 0)
+                    return ret;
             }
             for (i = 0; (i < c_p_c) && (partition_count < ptns_to_read); ++i) {
                 for (j_times_ptns_to_read = 0, j = 0; j < ch_used; ++j) {
