@@ -28,6 +28,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "wtv.h"
 #include "asf.h"
@@ -87,10 +88,10 @@ typedef struct {
 typedef struct {
     int64_t timeline_start_pos;
     WtvFile file[WTV_FILES];
-    int64_t serial;         /** chunk serial number */
-    int64_t last_chunk_pos; /** last chunk position */
-    int64_t last_timestamp_pos; /** last timestamp chunk position */
-    int64_t first_index_pos;    /** first index_chunk position */
+    int64_t serial;         /**< chunk serial number */
+    int64_t last_chunk_pos; /**< last chunk position */
+    int64_t last_timestamp_pos; /**< last timestamp chunk position */
+    int64_t first_index_pos;    /**< first index_chunk position */
 
     WtvChunkEntry index[MAX_NB_INDEX];
     int nb_index;
@@ -127,12 +128,7 @@ typedef struct {
     WTVHeaderWriteFunc *write_header;
 } WTVRootEntryTable;
 
-static int write_pad(AVIOContext *pb, int size)
-{
-    for (; size > 0; size--)
-        avio_w8(pb, 0);
-    return 0;
-}
+#define write_pad(pb, size) ffio_fill(pb, 0, size)
 
 static const ff_asf_guid *get_codec_guid(enum AVCodecID id, const AVCodecGuid *av_guid)
 {

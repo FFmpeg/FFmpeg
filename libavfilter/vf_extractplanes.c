@@ -100,7 +100,7 @@ static int query_formats(AVFilterContext *ctx)
     int i, depth = 0, be = 0;
 
     if (!ctx->inputs[0]->in_formats ||
-        !ctx->inputs[0]->in_formats->format_count) {
+        !ctx->inputs[0]->in_formats->nb_formats) {
         return AVERROR(EAGAIN);
     }
 
@@ -110,11 +110,11 @@ static int query_formats(AVFilterContext *ctx)
     avff = ctx->inputs[0]->in_formats;
     desc = av_pix_fmt_desc_get(avff->formats[0]);
     depth = desc->comp[0].depth_minus1;
-    be = desc->flags & PIX_FMT_BE;
-    for (i = 1; i < avff->format_count; i++) {
+    be = desc->flags & AV_PIX_FMT_FLAG_BE;
+    for (i = 1; i < avff->nb_formats; i++) {
         desc = av_pix_fmt_desc_get(avff->formats[i]);
         if (depth != desc->comp[0].depth_minus1 ||
-            be    != (desc->flags & PIX_FMT_BE)) {
+            be    != (desc->flags & AV_PIX_FMT_FLAG_BE)) {
             return AVERROR(EAGAIN);
         }
     }
@@ -139,10 +139,10 @@ static int config_input(AVFilterLink *inlink)
     int plane_avail, ret, i;
     uint8_t rgba_map[4];
 
-    plane_avail = ((desc->flags & PIX_FMT_RGB) ? PLANE_R|PLANE_G|PLANE_B :
+    plane_avail = ((desc->flags & AV_PIX_FMT_FLAG_RGB) ? PLANE_R|PLANE_G|PLANE_B :
                                                  PLANE_Y |
                                 ((desc->nb_components > 2) ? PLANE_U|PLANE_V : 0)) |
-                  ((desc->flags & PIX_FMT_ALPHA) ? PLANE_A : 0);
+                  ((desc->flags & AV_PIX_FMT_FLAG_ALPHA) ? PLANE_A : 0);
     if (e->requested_planes & ~plane_avail) {
         av_log(ctx, AV_LOG_ERROR, "Requested planes not available.\n");
         return AVERROR(EINVAL);
@@ -152,8 +152,8 @@ static int config_input(AVFilterLink *inlink)
 
     e->depth = (desc->comp[0].depth_minus1 + 1) >> 3;
     e->step = av_get_padded_bits_per_pixel(desc) >> 3;
-    e->is_packed_rgb = !(desc->flags & PIX_FMT_PLANAR);
-    if (desc->flags & PIX_FMT_RGB) {
+    e->is_packed_rgb = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    if (desc->flags & AV_PIX_FMT_FLAG_RGB) {
         ff_fill_rgba_map(rgba_map, inlink->format);
         for (i = 0; i < 4; i++)
             e->map[i] = rgba_map[e->map[i]];
@@ -171,8 +171,8 @@ static int config_output(AVFilterLink *outlink)
     const int output = outlink->srcpad - ctx->output_pads;
 
     if (e->map[output] == 1 || e->map[output] == 2) {
-        outlink->h = inlink->h >> desc->log2_chroma_h;
-        outlink->w = inlink->w >> desc->log2_chroma_w;
+        outlink->h = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+        outlink->w = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     }
 
     return 0;

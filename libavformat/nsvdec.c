@@ -28,10 +28,6 @@
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 
-//#define DEBUG_DUMP_INDEX // XXX dumbdriving-271.nsv breaks with it commented!!
-#define CHECK_SUBSEQUENT_NSVS
-//#define DISABLE_AUDIO
-
 /* max bytes to crawl for trying to resync
  * stupid streaming servers don't start at chunk boundaries...
  */
@@ -370,25 +366,6 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
 
     av_dlog(s, "NSV got index; filepos %"PRId64"\n", avio_tell(pb));
 
-#ifdef DEBUG_DUMP_INDEX
-#define V(v) ((v<0x20 || v > 127)?'.':v)
-    /* dump index */
-    av_dlog(s, "NSV %d INDEX ENTRIES:\n", table_entries);
-    av_dlog(s, "NSV [dataoffset][fileoffset]\n", table_entries);
-    for (i = 0; i < table_entries; i++) {
-        unsigned char b[8];
-        avio_seek(pb, size + nsv->nsvs_file_offset[i], SEEK_SET);
-        avio_read(pb, b, 8);
-        av_dlog(s, "NSV [0x%08lx][0x%08lx]: %02x %02x %02x %02x %02x %02x %02x %02x"
-           "%c%c%c%c%c%c%c%c\n",
-           nsv->nsvs_file_offset[i], size + nsv->nsvs_file_offset[i],
-           b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
-           V(b[0]), V(b[1]), V(b[2]), V(b[3]), V(b[4]), V(b[5]), V(b[6]), V(b[7]) );
-    }
-    //avio_seek(pb, size, SEEK_SET); /* go back to end of header */
-#undef V
-#endif
-
     avio_seek(pb, nsv->base_offset + size, SEEK_SET); /* required for dumbdriving-271.nsv (2 extra bytes) */
 
     if (url_feof(pb))
@@ -479,7 +456,6 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             }
         }
         if (atag != T_NONE) {
-#ifndef DISABLE_AUDIO
             st = avformat_new_stream(s, NULL);
             if (!st)
                 goto fail;
@@ -499,15 +475,12 @@ static int nsv_parse_NSVs_header(AVFormatContext *s)
             avpriv_set_pts_info(st, 64, 1, framerate.num*1000);
             st->start_time = 0;
             st->duration = (int64_t)nsv->duration * framerate.num;
-#endif
         }
-#ifdef CHECK_SUBSEQUENT_NSVS
     } else {
         if (nsv->vtag != vtag || nsv->atag != atag || nsv->vwidth != vwidth || nsv->vheight != vwidth) {
             av_dlog(s, "NSV NSVs header values differ from the first one!!!\n");
             //return -1;
         }
-#endif /* CHECK_SUBSEQUENT_NSVS */
     }
 
     nsv->state = NSV_HAS_READ_NSVS;

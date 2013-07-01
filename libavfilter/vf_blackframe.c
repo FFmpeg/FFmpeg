@@ -62,30 +62,30 @@ static int query_formats(AVFilterContext *ctx)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    BlackFrameContext *blackframe = ctx->priv;
+    BlackFrameContext *s = ctx->priv;
     int x, i;
     int pblack = 0;
     uint8_t *p = frame->data[0];
 
     for (i = 0; i < frame->height; i++) {
         for (x = 0; x < inlink->w; x++)
-            blackframe->nblack += p[x] < blackframe->bthresh;
+            s->nblack += p[x] < s->bthresh;
         p += frame->linesize[0];
     }
 
     if (frame->key_frame)
-        blackframe->last_keyframe = blackframe->frame;
+        s->last_keyframe = s->frame;
 
-    pblack = blackframe->nblack * 100 / (inlink->w * inlink->h);
-    if (pblack >= blackframe->bamount)
+    pblack = s->nblack * 100 / (inlink->w * inlink->h);
+    if (pblack >= s->bamount)
         av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pts:%"PRId64" t:%f "
                "type:%c last_keyframe:%d\n",
-               blackframe->frame, pblack, frame->pts,
+               s->frame, pblack, frame->pts,
                frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base),
-               av_get_picture_type_char(frame->pict_type), blackframe->last_keyframe);
+               av_get_picture_type_char(frame->pict_type), s->last_keyframe);
 
-    blackframe->frame++;
-    blackframe->nblack = 0;
+    s->frame++;
+    s->nblack = 0;
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 

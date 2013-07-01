@@ -151,9 +151,20 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
     }
 
     if (!faacEncSetConfiguration(s->faac_handle, faac_cfg)) {
-        av_log(avctx, AV_LOG_ERROR, "libfaac doesn't support this output format!\n");
-        ret = AVERROR(EINVAL);
-        goto error;
+        int i;
+        for (i = avctx->bit_rate/1000; i ; i--) {
+            faac_cfg->bitRate = 1000*i / avctx->channels;
+            if (faacEncSetConfiguration(s->faac_handle, faac_cfg))
+                break;
+        }
+        if (!i) {
+            av_log(avctx, AV_LOG_ERROR, "libfaac doesn't support this output format!\n");
+            ret = AVERROR(EINVAL);
+            goto error;
+        } else {
+            avctx->bit_rate = 1000*i;
+            av_log(avctx, AV_LOG_WARNING, "libfaac doesn't support the specified bitrate, using %dkbit/s instead\n", i);
+        }
     }
 
     avctx->delay = FAAC_DELAY_SAMPLES;

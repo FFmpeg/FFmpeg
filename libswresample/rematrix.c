@@ -34,6 +34,10 @@
 #include "rematrix_template.c"
 #undef TEMPLATE_REMATRIX_S16
 
+#define TEMPLATE_REMATRIX_S32
+#include "rematrix_template.c"
+#undef TEMPLATE_REMATRIX_S32
+
 #define FRONT_LEFT             0
 #define FRONT_RIGHT            1
 #define FRONT_CENTER           2
@@ -366,6 +370,17 @@ av_cold int swri_rematrix_init(SwrContext *s){
         s->mix_1_1_f = (mix_1_1_func_type*)copy_double;
         s->mix_2_1_f = (mix_2_1_func_type*)sum2_double;
         s->mix_any_f = (mix_any_func_type*)get_mix_any_func_double(s);
+    }else if(s->midbuf.fmt == AV_SAMPLE_FMT_S32P){
+        // Only for dithering currently
+//         s->native_matrix = av_calloc(nb_in * nb_out, sizeof(double));
+        s->native_one    = av_mallocz(sizeof(int));
+//         for (i = 0; i < nb_out; i++)
+//             for (j = 0; j < nb_in; j++)
+//                 ((double*)s->native_matrix)[i * nb_in + j] = s->matrix[i][j];
+        *((int*)s->native_one) = 32768;
+        s->mix_1_1_f = (mix_1_1_func_type*)copy_s32;
+        s->mix_2_1_f = (mix_2_1_func_type*)sum2_s32;
+        s->mix_any_f = (mix_any_func_type*)get_mix_any_func_s32(s);
     }else
         av_assert0(0);
     //FIXME quantize for integeres
@@ -388,6 +403,7 @@ av_cold void swri_rematrix_free(SwrContext *s){
     av_freep(&s->native_matrix);
     av_freep(&s->native_one);
     av_freep(&s->native_simd_matrix);
+    av_freep(&s->native_simd_one);
 }
 
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){

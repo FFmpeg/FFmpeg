@@ -78,7 +78,6 @@ static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
 
     switch ((*codec)->type) {
     case AVMEDIA_TYPE_AUDIO:
-        st->id = 1;
         c->sample_fmt  = AV_SAMPLE_FMT_S16;
         c->bit_rate    = 64000;
         c->sample_rate = 44100;
@@ -388,7 +387,7 @@ int main(int argc, char **argv)
     AVFormatContext *oc;
     AVStream *audio_st, *video_st;
     AVCodec *audio_codec, *video_codec;
-    double audio_pts, video_pts;
+    double audio_time, video_time;
     int ret;
 
     /* Initialize libavcodec, and register all codecs and formats. */
@@ -462,22 +461,21 @@ int main(int argc, char **argv)
     for (;;) {
         /* Compute current audio and video time. */
         if (audio_st)
-            audio_pts = (double)audio_st->pts.val * audio_st->time_base.num / audio_st->time_base.den;
+            audio_time = (double)audio_st->pts.val * audio_st->time_base.num / audio_st->time_base.den;
         else
-            audio_pts = 0.0;
+            audio_time = 0.0;
 
         if (video_st)
-            video_pts = (double)video_st->pts.val * video_st->time_base.num /
-                        video_st->time_base.den;
+            video_time = (double)video_st->pts.val * video_st->time_base.num / video_st->time_base.den;
         else
-            video_pts = 0.0;
+            video_time = 0.0;
 
-        if ((!audio_st || audio_pts >= STREAM_DURATION) &&
-            (!video_st || video_pts >= STREAM_DURATION))
+        if ((!audio_st || audio_time >= STREAM_DURATION) &&
+            (!video_st || video_time >= STREAM_DURATION))
             break;
 
         /* write interleaved audio and video frames */
-        if (!video_st || (video_st && audio_st && audio_pts < video_pts)) {
+        if (!video_st || (video_st && audio_st && audio_time < video_time)) {
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);

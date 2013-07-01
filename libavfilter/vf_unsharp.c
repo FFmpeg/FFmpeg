@@ -36,13 +36,12 @@
  * http://www.engin.umd.umich.edu/~jwvm/ece581/21_GBlur.pdf
  */
 
-#include <float.h> /* DBL_MAX */
-
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
 #include "libavutil/common.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -66,11 +65,7 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
     const int32_t halfscale = fp->halfscale;
 
     if (!amount) {
-        if (dst_stride == src_stride)
-            memcpy(dst, src, src_stride * height);
-        else
-            for (y = 0; y < height; y++, dst += dst_stride, src += src_stride)
-                memcpy(dst, src, width);
+        av_image_copy_plane(dst, dst_stride, src, src_stride, width, height);
         return;
     }
 
@@ -316,5 +311,5 @@ AVFilter avfilter_vf_unsharp = {
 
     .inputs    = avfilter_vf_unsharp_inputs,
     .outputs   = avfilter_vf_unsharp_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

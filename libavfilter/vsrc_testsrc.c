@@ -55,76 +55,51 @@ typedef struct {
     int64_t pts;
     int64_t duration;           ///< duration expressed in microseconds
     AVRational sar;             ///< sample aspect ratio
-    int nb_decimals;
     int draw_once;              ///< draw only the first frame, always put out the same picture
     int draw_once_reset;        ///< draw only the first frame or in case of reset
     AVFrame *picref;            ///< cached reference containing the painted picture
 
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFrame *frame);
 
+    /* only used by testsrc */
+    int nb_decimals;
+
     /* only used by color */
-    char *color_str;
     FFDrawContext draw;
     FFDrawColor color;
     uint8_t color_rgba[4];
 
     /* only used by rgbtest */
     uint8_t rgba_map[4];
+
+    /* only used by haldclut */
+    int level;
 } TestSourceContext;
 
 #define OFFSET(x) offsetof(TestSourceContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
-#define COMMON_OPTIONS \
+#define SIZE_OPTIONS \
     { "size",     "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },\
     { "s",        "set video size",     OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "320x240"}, 0, 0, FLAGS },\
+
+#define COMMON_OPTIONS_NOSIZE \
     { "rate",     "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },\
     { "r",        "set video rate",     OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },\
     { "duration", "set video duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },\
     { "d",        "set video duration", OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },\
     { "sar",      "set video sample aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX, FLAGS },
 
-
-static const AVOption color_options[] = {
-    /* only used by color */
-    { "color", "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { "c",     "set color", OFFSET(color_str), AV_OPT_TYPE_STRING, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-
-    COMMON_OPTIONS
-    { NULL },
-};
+#define COMMON_OPTIONS SIZE_OPTIONS COMMON_OPTIONS_NOSIZE
 
 static const AVOption options[] = {
     COMMON_OPTIONS
-    /* only used by testsrc */
-    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
-    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
-
-    { NULL },
+    { NULL }
 };
 
 static av_cold int init(AVFilterContext *ctx)
 {
     TestSourceContext *test = ctx->priv;
-    int ret = 0;
-
-    if (test->nb_decimals && strcmp(ctx->filter->name, "testsrc")) {
-        av_log(ctx, AV_LOG_WARNING,
-               "Option 'decimals' is ignored with source '%s'\n",
-               ctx->filter->name);
-    }
-
-    if (test->color_str) {
-        if (!strcmp(ctx->filter->name, "color")) {
-            ret = av_parse_color(test->color_rgba, test->color_str, -1, ctx);
-            if (ret < 0)
-                return ret;
-        } else {
-            av_log(ctx, AV_LOG_WARNING,
-                   "Option 'color' is ignored with source '%s'\n",
-                   ctx->filter->name);
-        }
-    }
 
     test->time_base = av_inv_q(test->frame_rate);
     test->nb_frame = 0;
@@ -200,6 +175,13 @@ static int request_frame(AVFilterLink *outlink)
 
 #if CONFIG_COLOR_FILTER
 
+static const AVOption color_options[] = {
+    { "color", "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "c",     "set color", OFFSET(color_rgba), AV_OPT_TYPE_COLOR, {.str = "black"}, CHAR_MIN, CHAR_MAX, FLAGS },
+    COMMON_OPTIONS
+    { NULL }
+};
+
 AVFILTER_DEFINE_CLASS(color);
 
 static void color_fill_picture(AVFilterContext *ctx, AVFrame *picref)
@@ -241,8 +223,6 @@ static int color_config_props(AVFilterLink *inlink)
     if ((ret = config_props(inlink)) < 0)
         return ret;
 
-    av_log(ctx, AV_LOG_VERBOSE, "color:0x%02x%02x%02x%02x\n",
-           test->color_rgba[0], test->color_rgba[1], test->color_rgba[2], test->color_rgba[3]);
     return 0;
 }
 
@@ -253,17 +233,11 @@ static int color_process_command(AVFilterContext *ctx, const char *cmd, const ch
     int ret;
 
     if (!strcmp(cmd, "color") || !strcmp(cmd, "c")) {
-        char *color_str;
         uint8_t color_rgba[4];
 
         ret = av_parse_color(color_rgba, args, -1, ctx);
         if (ret < 0)
             return ret;
-        color_str = av_strdup(args);
-        if (!color_str)
-            return AVERROR(ENOMEM);
-        av_free(test->color_str);
-        test->color_str = color_str;
 
         memcpy(test->color_rgba, color_rgba, sizeof(color_rgba));
         ff_draw_color(&test->draw, &test->color, test->color_rgba);
@@ -300,6 +274,135 @@ AVFilter avfilter_vsrc_color = {
 };
 
 #endif /* CONFIG_COLOR_FILTER */
+
+#if CONFIG_HALDCLUTSRC_FILTER
+
+static const AVOption haldclutsrc_options[] = {
+    { "level", "set level", OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 6}, 2, 8, FLAGS },
+    COMMON_OPTIONS_NOSIZE
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(haldclutsrc);
+
+static void haldclutsrc_fill_picture(AVFilterContext *ctx, AVFrame *frame)
+{
+    int i, j, k, x = 0, y = 0, is16bit = 0, step;
+    uint32_t alpha = 0;
+    const TestSourceContext *hc = ctx->priv;
+    int level = hc->level;
+    float scale;
+    const int w = frame->width;
+    const int h = frame->height;
+    const uint8_t *data = frame->data[0];
+    const int linesize  = frame->linesize[0];
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    uint8_t rgba_map[4];
+
+    av_assert0(w == h && w == level*level*level);
+
+    ff_fill_rgba_map(rgba_map, frame->format);
+
+    switch (frame->format) {
+    case AV_PIX_FMT_RGB48:
+    case AV_PIX_FMT_BGR48:
+    case AV_PIX_FMT_RGBA64:
+    case AV_PIX_FMT_BGRA64:
+        is16bit = 1;
+        alpha = 0xffff;
+        break;
+    case AV_PIX_FMT_RGBA:
+    case AV_PIX_FMT_BGRA:
+    case AV_PIX_FMT_ARGB:
+    case AV_PIX_FMT_ABGR:
+        alpha = 0xff;
+        break;
+    }
+
+    step  = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
+    scale = ((float)(1 << (8*(is16bit+1))) - 1) / (level*level - 1);
+
+#define LOAD_CLUT(nbits) do {                                                   \
+    uint##nbits##_t *dst = ((uint##nbits##_t *)(data + y*linesize)) + x*step;   \
+    dst[rgba_map[0]] = av_clip_uint##nbits(i * scale);                          \
+    dst[rgba_map[1]] = av_clip_uint##nbits(j * scale);                          \
+    dst[rgba_map[2]] = av_clip_uint##nbits(k * scale);                          \
+    if (step == 4)                                                              \
+        dst[rgba_map[3]] = alpha;                                               \
+} while (0)
+
+    level *= level;
+    for (k = 0; k < level; k++) {
+        for (j = 0; j < level; j++) {
+            for (i = 0; i < level; i++) {
+                if (!is16bit)
+                    LOAD_CLUT(8);
+                else
+                    LOAD_CLUT(16);
+                if (++x == w) {
+                    x = 0;
+                    y++;
+                }
+            }
+        }
+    }
+}
+
+static av_cold int haldclutsrc_init(AVFilterContext *ctx)
+{
+    TestSourceContext *hc = ctx->priv;
+    hc->fill_picture_fn = haldclutsrc_fill_picture;
+    hc->draw_once = 1;
+    return init(ctx);
+}
+
+static int haldclutsrc_query_formats(AVFilterContext *ctx)
+{
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,   AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_ARGB,   AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_0RGB,   AV_PIX_FMT_0BGR,
+        AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
+        AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
+        AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+        AV_PIX_FMT_NONE,
+    };
+    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+    return 0;
+}
+
+static int haldclutsrc_config_props(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    TestSourceContext *hc = ctx->priv;
+
+    hc->w = hc->h = hc->level * hc->level * hc->level;
+    return config_props(outlink);
+}
+
+static const AVFilterPad haldclutsrc_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .request_frame = request_frame,
+        .config_props  = haldclutsrc_config_props,
+    },
+    {  NULL }
+};
+
+AVFilter avfilter_vsrc_haldclutsrc = {
+    .name            = "haldclutsrc",
+    .description     = NULL_IF_CONFIG_SMALL("Provide an identity Hald CLUT."),
+    .priv_class      = &haldclutsrc_class,
+    .priv_size       = sizeof(TestSourceContext),
+    .init            = haldclutsrc_init,
+    .uninit          = uninit,
+    .query_formats   = haldclutsrc_query_formats,
+    .inputs          = NULL,
+    .outputs         = haldclutsrc_outputs,
+};
+#endif /* CONFIG_HALDCLUTSRC_FILTER */
 
 #if CONFIG_NULLSRC_FILTER
 
@@ -341,7 +444,13 @@ AVFilter avfilter_vsrc_nullsrc = {
 
 #if CONFIG_TESTSRC_FILTER
 
-#define testsrc_options options
+static const AVOption testsrc_options[] = {
+    COMMON_OPTIONS
+    { "decimals", "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
+    { "n",        "set number of decimals to show", OFFSET(nb_decimals), AV_OPT_TYPE_INT, {.i64=0},  0, 17, FLAGS },
+    { NULL }
+};
+
 AVFILTER_DEFINE_CLASS(testsrc);
 
 /**
@@ -466,7 +575,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     }
 
     /* draw sliding color line */
-    p0 = p = data + frame->linesize[0] * height * 3/4;
+    p0 = p = data + frame->linesize[0] * (height * 3/4);
     grad = (256 * test->nb_frame * test->time_base.num / test->time_base.den) %
         GRADIENT_SIZE;
     rgrad = 0;

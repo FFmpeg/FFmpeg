@@ -555,7 +555,7 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
             svq1_parse_string(bitbuf, msg);
 
             av_log(avctx, AV_LOG_INFO,
-                   "embedded message: \"%s\"\n", (char *)msg);
+                   "embedded message:\n%s\n", (char *)msg);
         }
 
         skip_bits(bitbuf, 2);

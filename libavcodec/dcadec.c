@@ -1257,7 +1257,7 @@ static void dca_downmix(float **samples, int srcfmt,
 #ifndef decode_blockcodes
 /* Very compact version of the block code decoder that does not use table
  * look-up but is slightly slower */
-static int decode_blockcode(int code, int levels, int *values)
+static int decode_blockcode(int code, int levels, int32_t *values)
 {
     int i;
     int offset = (levels - 1) >> 1;
@@ -1271,7 +1271,7 @@ static int decode_blockcode(int code, int levels, int *values)
     return code;
 }
 
-static int decode_blockcodes(int code1, int code2, int levels, int *values)
+static int decode_blockcodes(int code1, int code2, int levels, int32_t *values)
 {
     return decode_blockcode(code1, levels, values) |
            decode_blockcode(code2, levels, values + 4);
@@ -1300,7 +1300,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
 
     /* FIXME */
     float (*subband_samples)[DCA_SUBBANDS][8] = s->subband_samples[block_index];
-    LOCAL_ALIGNED_16(int, block, [8]);
+    LOCAL_ALIGNED_16(int32_t, block, [8]);
 
     /*
      * Audio data

@@ -15,6 +15,51 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-06-xx - xxxxxxx - lavc 55.10.0 - avcodec.h
+  Add MPEG-2 AAC profiles
+
+2013-06-xx - xxxxxxx - lavf 55.10.100 - avformat.h
+  Add AV_DISPOSITION_* flags to indicate text track kind.
+
+2013-06-xx - xxxxxxx - lavu 52.36.100
+  Add AVRIPEMD:
+   av_ripemd_alloc()
+   av_ripemd_init()
+   av_ripemd_update()
+   av_ripemd_final()
+
+2013-06-05 - fc962d4 - lavu 52.13.0 - mem.h
+  Add av_realloc_array and av_reallocp_array
+
+2013-05-30 - 682b227 - lavu 52.35.100
+  Add AVSHA512:
+   av_sha512_alloc()
+   av_sha512_init()
+   av_sha512_update()
+   av_sha512_final()
+
+2013-05-24 - xxxxxxx - lavfi 3.70.100 - avfilter.h
+  Add support for slice multithreading to lavfi. Filters supporting threading
+  are marked with AVFILTER_FLAG_SLICE_THREADS.
+  New fields AVFilterContext.thread_type, AVFilterGraph.thread_type and
+  AVFilterGraph.nb_threads (accessible directly or through AVOptions) may be
+  used to configure multithreading.
+
+2013-05-24 - xxxxxxx - lavu 52.34.100 - cpu.h
+  Add av_cpu_count() function for getting the number of logical CPUs.
+
+2013-05-24 - xxxxxxx - lavc 55.12.100 - avcodec.h
+  Add picture_structure to AVCodecParserContext.
+
+2013-05-17 - xxxxxxx - lavu 52.33.100 - opt.h
+  Add AV_OPT_TYPE_COLOR value to AVOptionType enum.
+
+2013-05-13 - xxxxxxx - lavu 52.31.100 - mem.h
+  Add av_dynarray2_add().
+
+2013-05-12 - xxxxxxx - lavfi 3.65.100
+  Add AVFILTER_FLAG_SUPPORT_TIMELINE* filter flags.
+
 2013-04-19 - xxxxxxx - lavc 55.4.100
   Add AV_CODEC_PROP_TEXT_SUB property for text based subtitles codec.
 
@@ -166,6 +211,9 @@ API changes, most recent first:
 
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
+
+2013-05-xx - xxxxxxx - lavu 52.11.0 - pixdesc.h
+  Replace PIX_FMT_* flags with AV_PIX_FMT_FLAG_*.
 
 2013-04-xx - xxxxxxx - lavc 55.4.0 - avcodec.h
   Add field_order to AVCodecParserContext.

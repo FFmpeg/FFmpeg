@@ -38,7 +38,6 @@
 #include "golomb.h"
 #include "mathops.h"
 #include "ffv1.h"
-#include "thread.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
                                                int is_signed)
@@ -327,6 +326,42 @@ static int decode_slice(AVCodecContext *c, void *arg)
     int width, height, x, y, ret;
     const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step_minus1 + 1;
     AVFrame * const p = f->cur;
+    int i, si;
+
+    for( si=0; fs != f->slice_context[si]; si ++)
+        ;
+
+    if(f->fsrc && !p->key_frame)
+        ff_thread_await_progress(&f->last_picture, si, 0);
+
+    if(f->fsrc && !p->key_frame) {
+        FFV1Context *fssrc = f->fsrc->slice_context[si];
+        FFV1Context *fsdst = f->slice_context[si];
+        av_assert1(fsdst->plane_count == fssrc->plane_count);
+        av_assert1(fsdst == fs);
+
+        if (!p->key_frame)
+            fsdst->slice_damaged |= fssrc->slice_damaged;
+
+        for (i = 0; i < f->plane_count; i++) {
+            PlaneContext *psrc = &fssrc->plane[i];
+            PlaneContext *pdst = &fsdst->plane[i];
+
+            av_free(pdst->state);
+            av_free(pdst->vlc_state);
+            memcpy(pdst, psrc, sizeof(*pdst));
+            pdst->state = NULL;
+            pdst->vlc_state = NULL;
+
+            if (fssrc->ac) {
+                pdst->state = av_malloc(CONTEXT_SIZE * psrc->context_count);
+                memcpy(pdst->state, psrc->state, CONTEXT_SIZE * psrc->context_count);
+            } else {
+                pdst->vlc_state = av_malloc(sizeof(*pdst->vlc_state) * psrc->context_count);
+                memcpy(pdst->vlc_state, psrc->vlc_state, sizeof(*pdst->vlc_state) * psrc->context_count);
+            }
+        }
+    }
 
     if (f->version > 2) {
         if (ffv1_init_slice_state(f, fs) < 0)
@@ -386,6 +421,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
 
     emms_c();
+
+    ff_thread_report_progress(&f->picture, si, 0);
 
     return 0;
 }
@@ -725,6 +762,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if ((ret = ffv1_init_slice_contexts(f)) < 0)
         return ret;
 
+    avctx->internal->allocate_progress = 1;
+
     return 0;
 }
 
@@ -734,15 +773,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
-    ThreadFrame frame = { .f = data };
     int i, ret;
     uint8_t keystate = 128;
     const uint8_t *buf_p;
-    AVFrame *const p    = data;
+    AVFrame *p;
 
-    f->cur = p;
+    if (f->last_picture.f)
+        ff_thread_release_buffer(avctx, &f->last_picture);
+    FFSWAP(ThreadFrame, f->picture, f->last_picture);
+
+    f->cur = p = f->picture.f;
+
     f->avctx = avctx;
-
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
 
@@ -762,12 +804,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         p->key_frame = 0;
     }
 
-    if ((ret = ff_thread_get_buffer(avctx, &frame, AV_GET_BUFFER_FLAG_REF)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &f->picture, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG, "ver:%d keyframe:%d coder:%d ec:%d slices:%d bps:%d\n",
                f->version, p->key_frame, f->ac, f->ec, f->slice_count, f->avctx->bits_per_raw_sample);
+
+    ff_thread_finish_setup(avctx);
 
     buf_p = buf + buf_size;
     for (i = f->slice_count - 1; i >= 0; i--) {
@@ -818,31 +862,34 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     for (i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
         int j;
-        if (fs->slice_damaged && f->last_picture.data[0]) {
+        if (fs->slice_damaged && f->last_picture.f->data[0]) {
             const uint8_t *src[4];
             uint8_t *dst[4];
+            ff_thread_await_progress(&f->last_picture, INT_MAX, 0);
             for (j = 0; j < 4; j++) {
                 int sh = (j==1 || j==2) ? f->chroma_h_shift : 0;
                 int sv = (j==1 || j==2) ? f->chroma_v_shift : 0;
                 dst[j] = p->data[j] + p->linesize[j]*
                          (fs->slice_y>>sv) + (fs->slice_x>>sh);
-                src[j] = f->last_picture.data[j] + f->last_picture.linesize[j]*
+                src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j]*
                          (fs->slice_y>>sv) + (fs->slice_x>>sh);
             }
             av_image_copy(dst, p->linesize, (const uint8_t **)src,
-                          f->last_picture.linesize,
+                          f->last_picture.f->linesize,
                           avctx->pix_fmt,
                           fs->slice_width,
                           fs->slice_height);
         }
     }
+    ff_thread_report_progress(&f->picture, INT_MAX, 0);
 
     f->picture_number++;
 
-    av_frame_unref(&f->last_picture);
-    if ((ret = av_frame_ref(&f->last_picture, p)) < 0)
-        return ret;
+    if (f->last_picture.f)
+        ff_thread_release_buffer(avctx, &f->last_picture);
     f->cur = NULL;
+    if ((ret = av_frame_ref(data, f->picture.f)) < 0)
+        return ret;
 
     *got_frame = 1;
 
@@ -852,18 +899,58 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 static int init_thread_copy(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
-    int ret, i;
 
-    for (i = 0; i < f->quant_table_count; i++) {
-        void *p = f->initial_states[i];
-        f->initial_states[i] = av_malloc(f->context_count[i] * sizeof(*f->initial_states[i]));
-        if (!f->initial_states[i])
-            return AVERROR(ENOMEM);
-        memcpy(f->initial_states[i], p, f->context_count[i] * sizeof(*f->initial_states[i]));
+    f->picture.f      = NULL;
+    f->last_picture.f = NULL;
+    f->sample_buffer  = NULL;
+    f->quant_table_count = 0;
+    f->slice_count = 0;
+
+    return 0;
+}
+
+static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    FFV1Context *fsrc = src->priv_data;
+    FFV1Context *fdst = dst->priv_data;
+    int i, ret;
+
+    if (dst == src)
+        return 0;
+
+    if (!fdst->picture.f) {
+        memcpy(fdst, fsrc, sizeof(*fdst));
+
+        for (i = 0; i < fdst->quant_table_count; i++) {
+            fdst->initial_states[i] = av_malloc(fdst->context_count[i] * sizeof(*fdst->initial_states[i]));
+            memcpy(fdst->initial_states[i], fsrc->initial_states[i], fdst->context_count[i] * sizeof(*fdst->initial_states[i]));
+        }
+
+        fdst->picture.f      = av_frame_alloc();
+        fdst->last_picture.f = av_frame_alloc();
+
+        if ((ret = ffv1_init_slice_contexts(fdst)) < 0)
+            return ret;
     }
 
-    if ((ret = ffv1_init_slice_contexts(f)) < 0)
-        return ret;
+    av_assert1(fdst->slice_count == fsrc->slice_count);
+
+    fdst->key_frame_ok = fsrc->key_frame_ok;
+
+    ff_thread_release_buffer(dst, &fdst->picture);
+    if (fsrc->picture.f->data[0]) {
+        if ((ret = ff_thread_ref_frame(&fdst->picture, &fsrc->picture)) < 0)
+            return ret;
+    }
+    for (i = 0; i < fdst->slice_count; i++) {
+        FFV1Context *fsdst = fdst->slice_context[i];
+        FFV1Context *fssrc = fsrc->slice_context[i];
+
+        fsdst->slice_damaged = fssrc->slice_damaged;
+    }
+
+    fdst->fsrc = fsrc;
+
     return 0;
 }
 
@@ -875,8 +962,9 @@ AVCodec ff_ffv1_decoder = {
     .init           = decode_init,
     .close          = ffv1_close,
     .decode         = decode_frame,
-    .init_thread_copy = init_thread_copy,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
+    .update_thread_context = ONLY_IF_THREADS_ENABLED(update_thread_context),
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/ |
-                      CODEC_CAP_SLICE_THREADS,
+                      CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };

@@ -129,16 +129,12 @@ extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_fil;
 extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_ilpack;
-extern const vf_info_t ff_vf_info_mcdeint;
-extern const vf_info_t ff_vf_info_ow;
 extern const vf_info_t ff_vf_info_perspective;
 extern const vf_info_t ff_vf_info_phase;
 extern const vf_info_t ff_vf_info_pp7;
 extern const vf_info_t ff_vf_info_pullup;
 extern const vf_info_t ff_vf_info_qp;
-extern const vf_info_t ff_vf_info_sab;
 extern const vf_info_t ff_vf_info_softpulldown;
-extern const vf_info_t ff_vf_info_spp;
 extern const vf_info_t ff_vf_info_uspp;
 
 
@@ -149,16 +145,12 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_fil,
     &ff_vf_info_fspp,
     &ff_vf_info_ilpack,
-    &ff_vf_info_mcdeint,
-    &ff_vf_info_ow,
     &ff_vf_info_perspective,
     &ff_vf_info_phase,
     &ff_vf_info_pp7,
     &ff_vf_info_pullup,
     &ff_vf_info_qp,
-    &ff_vf_info_sab,
     &ff_vf_info_softpulldown,
-    &ff_vf_info_spp,
     &ff_vf_info_uspp,
 
     NULL
@@ -257,6 +249,7 @@ typedef struct {
     AVFilterContext *avfctx;
     int frame_returned;
     char *filter;
+    enum AVPixelFormat in_pix_fmt;
 } MPContext;
 
 #define OFFSET(x) offsetof(MPContext, x)
@@ -530,8 +523,6 @@ mp_image_t* ff_vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgty
   return mpi;
 }
 
-static void dummy_free(void *opaque, uint8_t *data){}
-
 int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
     MPContext *m= (MPContext*)(((uint8_t*)vf) - offsetof(MPContext, vf));
     AVFilterLink *outlink     = m->avfctx->outputs[0];
@@ -552,6 +543,10 @@ int ff_vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
 
     for(i=0; conversion_map[i].fmt && mpi->imgfmt != conversion_map[i].fmt; i++);
     picref->format = conversion_map[i].pix_fmt;
+
+    for(i=0; conversion_map[i].fmt && m->in_pix_fmt != conversion_map[i].pix_fmt; i++);
+    if (mpi->imgfmt == conversion_map[i].fmt)
+        picref->format = conversion_map[i].pix_fmt;
 
     memcpy(picref->linesize, mpi->stride, FFMIN(sizeof(picref->linesize), sizeof(mpi->stride)));
 
@@ -806,11 +801,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
     for(i=0; conversion_map[i].fmt && conversion_map[i].pix_fmt != inlink->format; i++);
     ff_mp_image_setfmt(mpi,conversion_map[i].fmt);
+    m->in_pix_fmt = inlink->format;
 
     memcpy(mpi->planes, inpic->data,     FFMIN(sizeof(inpic->data)    , sizeof(mpi->planes)));
     memcpy(mpi->stride, inpic->linesize, FFMIN(sizeof(inpic->linesize), sizeof(mpi->stride)));
 
-    //FIXME pass interleced & tff flags around
+    if (inpic->interlaced_frame)
+        mpi->fields |= MP_IMGFIELD_INTERLACED;
+    if (inpic->top_field_first)
+        mpi->fields |= MP_IMGFIELD_TOP_FIRST;
+    if (inpic->repeat_pict)
+        mpi->fields |= MP_IMGFIELD_REPEAT_FIRST;
 
     // mpi->flags|=MP_IMGFLAG_ALLOCATED; ?
     mpi->flags |= MP_IMGFLAG_READABLE;

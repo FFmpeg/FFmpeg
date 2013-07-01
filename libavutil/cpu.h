@@ -100,6 +100,11 @@ int av_parse_cpu_flags(const char *s);
  */
 int av_parse_cpu_caps(unsigned *flags, const char *s);
 
+/**
+ * @return the number of logical CPU cores present.
+ */
+int av_cpu_count(void);
+
 /* The following CPU-specific functions shall not be called directly. */
 int ff_get_cpu_flags_arm(void);
 int ff_get_cpu_flags_ppc(void);

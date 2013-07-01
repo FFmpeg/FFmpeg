@@ -131,7 +131,6 @@ static const AVFilterPad apad_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
-        .passthrough_filter_frame = filter_frame,
     },
     { NULL },
 };
@@ -153,5 +152,5 @@ AVFilter avfilter_af_apad = {
     .inputs        = apad_inputs,
     .outputs       = apad_outputs,
     .priv_class    = &apad_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

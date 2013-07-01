@@ -50,14 +50,14 @@ typedef struct {
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    FormatContext *format = ctx->priv;
+    FormatContext *s = ctx->priv;
     const char *cur, *sep;
     char             pix_fmt_name[AV_PIX_FMT_NAME_MAXSIZE];
     int              pix_fmt_name_len, ret;
     enum AVPixelFormat pix_fmt;
 
     /* parse the list of formats */
-    for (cur = format->pix_fmts; cur; cur = sep ? sep + 1 : NULL) {
+    for (cur = s->pix_fmts; cur; cur = sep ? sep + 1 : NULL) {
         if (!(sep = strchr(cur, '|')))
             pix_fmt_name_len = strlen(cur);
         else
@@ -73,23 +73,25 @@ static av_cold int init(AVFilterContext *ctx)
         if ((ret = ff_parse_pixel_format(&pix_fmt, pix_fmt_name, ctx)) < 0)
             return ret;
 
-        format->listed_pix_fmt_flags[pix_fmt] = 1;
+        s->listed_pix_fmt_flags[pix_fmt] = 1;
     }
 
     return 0;
 }
 
-static AVFilterFormats *make_format_list(FormatContext *format, int flag)
+static AVFilterFormats *make_format_list(FormatContext *s, int flag)
 {
-    AVFilterFormats *formats;
+    AVFilterFormats *formats = NULL;
     enum AVPixelFormat pix_fmt;
 
-    formats = av_mallocz(sizeof(AVFilterFormats));
-    formats->formats = av_malloc(sizeof(enum AVPixelFormat) * AV_PIX_FMT_NB);
-
     for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++)
-        if (format->listed_pix_fmt_flags[pix_fmt] == flag)
-            formats->formats[formats->format_count++] = pix_fmt;
+        if (s->listed_pix_fmt_flags[pix_fmt] == flag) {
+            int ret = ff_add_format(&formats, pix_fmt);
+            if (ret < 0) {
+                ff_formats_unref(&formats);
+                return NULL;
+            }
+        }
 
     return formats;
 }
@@ -107,12 +109,8 @@ static int query_formats_format(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVClass format_class = {
-    .class_name = "format",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define format_options options
+AVFILTER_DEFINE_CLASS(format);
 
 static const AVFilterPad avfilter_vf_format_inputs[] = {
     {
@@ -154,12 +152,8 @@ static int query_formats_noformat(AVFilterContext *ctx)
     return 0;
 }
 
-static const AVClass noformat_class = {
-    .class_name = "noformat",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+#define noformat_options options
+AVFILTER_DEFINE_CLASS(noformat);
 
 static const AVFilterPad avfilter_vf_noformat_inputs[] = {
     {

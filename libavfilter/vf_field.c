@@ -55,12 +55,8 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     FieldContext *field = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int i;
 
-    for (i = 0; i < desc->nb_components; i++)
-        field->nb_planes = FFMAX(field->nb_planes, desc->comp[i].plane);
-    field->nb_planes++;
+    field->nb_planes = av_pix_fmt_count_planes(outlink->format);
 
     outlink->w = inlink->w;
     outlink->h = (inlink->h + (field->type == FIELD_TYPE_TOP)) / 2;

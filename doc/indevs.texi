@@ -590,8 +590,8 @@ Video4Linux2 input video device.
 "v4l2" can be used as alias for "video4linux2".
 
 If FFmpeg is built with v4l-utils support (by using the
-@code{--enable-libv4l2} configure option), the device will always rely
-on libv4l2.
+@code{--enable-libv4l2} configure option), it is possible to use it with the
+@code{-use_libv4l2} input device option.
 
 The name of the device to grab is a file device node, usually Linux
 systems tend to automatically create such nodes when the device

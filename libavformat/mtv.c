@@ -42,10 +42,10 @@ typedef struct MTVDemuxContext {
     unsigned int audio_br;          ///< bitrate of audio channel (mp3)
     unsigned int img_colorfmt;      ///< frame colorfmt rgb 565/555
     unsigned int img_bpp;           ///< frame bits per pixel
-    unsigned int img_width;         //
-    unsigned int img_height;        //
+    unsigned int img_width;
+    unsigned int img_height;
     unsigned int img_segment_size;  ///< size of image segment
-    unsigned int video_fps;         //
+    unsigned int video_fps;
     unsigned int full_segment_size;
 
 } MTVDemuxContext;

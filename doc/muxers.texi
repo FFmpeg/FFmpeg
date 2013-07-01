@@ -258,6 +258,90 @@ each of the YUV420P components. To read or write this image file format,
 specify the name of the '.Y' file. The muxer will automatically open the
 '.U' and '.V' files as required.
 
+@section matroska
+
+Matroska container muxer.
+
+This muxer implements the matroska and webm container specs.
+
+The recognized metadata settings in this muxer are:
+
+@table @option
+
+@item title=@var{title name}
+Name provided to a single track
+@end table
+
+@table @option
+
+@item language=@var{language name}
+Specifies the language of the track in the Matroska languages form
+@end table
+
+@table @option
+
+@item stereo_mode=@var{mode}
+Stereo 3D video layout of two views in a single video track
+@table @option
+@item mono
+video is not stereo
+@item left_right
+Both views are arranged side by side, Left-eye view is on the left
+@item bottom_top
+Both views are arranged in top-bottom orientation, Left-eye view is at bottom
+@item top_bottom
+Both views are arranged in top-bottom orientation, Left-eye view is on top
+@item checkerboard_rl
+Each view is arranged in a checkerboard interleaved pattern, Left-eye view being first
+@item checkerboard_lr
+Each view is arranged in a checkerboard interleaved pattern, Right-eye view being first
+@item row_interleaved_rl
+Each view is constituted by a row based interleaving, Right-eye view is first row
+@item row_interleaved_lr
+Each view is constituted by a row based interleaving, Left-eye view is first row
+@item col_interleaved_rl
+Both views are arranged in a column based interleaving manner, Right-eye view is first column
+@item col_interleaved_lr
+Both views are arranged in a column based interleaving manner, Left-eye view is first column
+@item anaglyph_cyan_red
+All frames are in anaglyph format viewable through red-cyan filters
+@item right_left
+Both views are arranged side by side, Right-eye view is on the left
+@item anaglyph_green_magenta
+All frames are in anaglyph format viewable through green-magenta filters
+@item block_lr
+Both eyes laced in one Block, Left-eye view is first
+@item block_rl
+Both eyes laced in one Block, Right-eye view is first
+@end table
+@end table
+
+For example a 3D WebM clip can be created using the following command line:
+@example
+ffmpeg -i sample_left_right_clip.mpg -an -c:v libvpx -metadata stereo_mode=left_right -y stereo_clip.webm
+@end example
+
+This muxer supports the following options:
+
+@table @option
+
+@item reserve_index_space
+By default, this muxer writes the index for seeking (called cues in Matroska
+terms) at the end of the file, because it cannot know in advance how much space
+to leave for the index at the beginning of the file. However for some use cases
+-- e.g.  streaming where seeking is possible but slow -- it is useful to put the
+index at the beginning of the file.
+
+If this option is set to a non-zero value, the muxer will reserve a given amount
+of space in the file header and then try to write the cues there when the muxing
+finishes. If the available space does not suffice, muxing will fail. A safe size
+for most use cases should be about 50kB per hour of video.
+
+Note that cues are only written if the output is seekable and this option will
+have no effect if it is not.
+
+@end table
+
 @anchor{md5}
 @section md5
 
@@ -363,6 +447,42 @@ point on IIS with this muxer. Example:
 ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
 @end example
 
+@section mp3
+
+The MP3 muxer writes a raw MP3 stream with an ID3v2 header at the beginning and
+optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
+@code{id3v2_version} option controls which one is used. The legacy ID3v1 tag is
+not written by default, but may be enabled with the @code{write_id3v1} option.
+
+For seekable output the muxer also writes a Xing frame at the beginning, which
+contains the number of frames in the file. It is useful for computing duration
+of VBR files.
+
+The muxer supports writing ID3v2 attached pictures (APIC frames). The pictures
+are supplied to the muxer in form of a video stream with a single packet. There
+can be any number of those streams, each will correspond to a single APIC frame.
+The stream metadata tags @var{title} and @var{comment} map to APIC
+@var{description} and @var{picture type} respectively. See
+@url{http://id3.org/id3v2.4.0-frames} for allowed picture types.
+
+Note that the APIC frames must be written at the beginning, so the muxer will
+buffer the audio frames until it gets all the pictures. It is therefore advised
+to provide the pictures as soon as possible to avoid excessive buffering.
+
+Examples:
+
+Write an mp3 with an ID3v2.3 header and an ID3v1 footer:
+@example
+ffmpeg -i INPUT -id3v2_version 3 -write_id3v1 1 out.mp3
+@end example
+
+To attach a picture to an mp3 file select both the audio and the picture stream
+with @code{map}:
+@example
+ffmpeg -i input.mp3 -i cover.png -c copy -map 0 -map 1
+-metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" out.mp3
+@end example
+
 @section mpegts
 
 MPEG transport stream muxer.
@@ -426,88 +546,19 @@ Alternatively you can write the command as:
 ffmpeg -benchmark -i INPUT -f null -
 @end example
 
-@section matroska
+@section ogg
 
-Matroska container muxer.
-
-This muxer implements the matroska and webm container specs.
-
-The recognized metadata settings in this muxer are:
+Ogg container muxer.
 
 @table @option
-
-@item title=@var{title name}
-Name provided to a single track
-@end table
-
-@table @option
-
-@item language=@var{language name}
-Specifies the language of the track in the Matroska languages form
-@end table
-
-@table @option
-
-@item stereo_mode=@var{mode}
-Stereo 3D video layout of two views in a single video track
-@table @option
-@item mono
-video is not stereo
-@item left_right
-Both views are arranged side by side, Left-eye view is on the left
-@item bottom_top
-Both views are arranged in top-bottom orientation, Left-eye view is at bottom
-@item top_bottom
-Both views are arranged in top-bottom orientation, Left-eye view is on top
-@item checkerboard_rl
-Each view is arranged in a checkerboard interleaved pattern, Left-eye view being first
-@item checkerboard_lr
-Each view is arranged in a checkerboard interleaved pattern, Right-eye view being first
-@item row_interleaved_rl
-Each view is constituted by a row based interleaving, Right-eye view is first row
-@item row_interleaved_lr
-Each view is constituted by a row based interleaving, Left-eye view is first row
-@item col_interleaved_rl
-Both views are arranged in a column based interleaving manner, Right-eye view is first column
-@item col_interleaved_lr
-Both views are arranged in a column based interleaving manner, Left-eye view is first column
-@item anaglyph_cyan_red
-All frames are in anaglyph format viewable through red-cyan filters
-@item right_left
-Both views are arranged side by side, Right-eye view is on the left
-@item anaglyph_green_magenta
-All frames are in anaglyph format viewable through green-magenta filters
-@item block_lr
-Both eyes laced in one Block, Left-eye view is first
-@item block_rl
-Both eyes laced in one Block, Right-eye view is first
-@end table
-@end table
-
-For example a 3D WebM clip can be created using the following command line:
-@example
-ffmpeg -i sample_left_right_clip.mpg -an -c:v libvpx -metadata stereo_mode=left_right -y stereo_clip.webm
-@end example
-
-This muxer supports the following options:
-
-@table @option
-
-@item reserve_index_space
-By default, this muxer writes the index for seeking (called cues in Matroska
-terms) at the end of the file, because it cannot know in advance how much space
-to leave for the index at the beginning of the file. However for some use cases
--- e.g.  streaming where seeking is possible but slow -- it is useful to put the
-index at the beginning of the file.
-
-If this option is set to a non-zero value, the muxer will reserve a given amount
-of space in the file header and then try to write the cues there when the muxing
-finishes. If the available space does not suffice, muxing will fail. A safe size
-for most use cases should be about 50kB per hour of video.
-
-Note that cues are only written if the output is seekable and this option will
-have no effect if it is not.
-
+@item -page_duration @var{duration}
+Preferred page duration, in microseconds. The muxer will attempt to create
+pages that are approximately @var{duration} microseconds long. This allows the
+user to compromise between seek granularity and container overhead. The default
+is 1 second. A value of 0 will fill all segments, making pages as large as
+possible. A value of 1 will effectively use 1 packet-per-page in most
+situations, giving a small seek granularity at the cost of additional container
+overhead.
 @end table
 
 @section segment, stream_segment, ssegment
@@ -546,7 +597,7 @@ Set the reference stream, as specified by the string @var{specifier}.
 If @var{specifier} is set to @code{auto}, the reference is choosen
 automatically. Otherwise it must be a stream specifier (see the ``Stream
 specifiers'' chapter in the ffmpeg manual) which specifies the
-reference stream. The default value is ``auto''.
+reference stream. The default value is @code{auto}.
 
 @item segment_format @var{format}
 Override the inner container format, by default it is guessed by the filename
@@ -560,7 +611,7 @@ listfile is generated.
 Set flags affecting the segment list generation.
 
 It currently supports the following flags:
-@table @var
+@table @samp
 @item cache
 Allow caching (only affects M3U8 list files).
 
@@ -568,18 +619,18 @@ Allow caching (only affects M3U8 list files).
 Allow live-friendly file generation.
 @end table
 
-Default value is @code{cache}.
+Default value is @code{samp}.
 
 @item segment_list_size @var{size}
 Update the list file so that it contains at most the last @var{size}
 segments. If 0 the list file will contain all the segments. Default
 value is 0.
 
-@item segment_list type @var{type}
+@item segment_list_type @var{type}
 Specify the format for the segment list file.
 
 The following values are recognized:
-@table @option
+@table @samp
 @item flat
 Generate a flat list for the created segments, one segment per line.
 
@@ -600,7 +651,7 @@ the segment start and end time expressed in seconds.
 A list file with the suffix @code{".csv"} or @code{".ext"} will
 auto-select this format.
 
-@code{ext} is deprecated in favor or @code{csv}.
+@samp{ext} is deprecated in favor or @samp{csv}.
 
 @item ffconcat
 Generate an ffconcat file for the created segments. The resulting file
@@ -694,9 +745,9 @@ ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_ti
 @end example
 
 @item
-As the example above, but use the @code{ffmpeg} @var{force_key_frames}
+As the example above, but use the @command{ffmpeg} @option{force_key_frames}
 option to force key frames in the input at the specified location, together
-with the segment option @var{segment_time_delta} to account for
+with the segment option @option{segment_time_delta} to account for
 possible roundings operated when setting key frame times.
 @example
 ffmpeg -i in.mkv -force_key_frames 1,2,3,5,8,13,21 -codec:v mpeg4 -codec:a pcm_s16le -map 0 \
@@ -707,7 +758,7 @@ required.
 
 @item
 Segment the input file by splitting the input file according to the
-frame numbers sequence specified with the @var{segment_frames} option:
+frame numbers sequence specified with the @option{segment_frames} option:
 @example
 ffmpeg -i in.mkv -codec copy -map 0 -f segment -segment_list out.csv -segment_frames 100,200,300,500,800 out%03d.nut
 @end example
@@ -727,57 +778,6 @@ ffmpeg -re -i in.mkv -codec copy -map 0 -f segment -segment_list playlist.m3u8 \
 -segment_list_flags +live -segment_time 10 out%03d.mkv
 @end example
 @end itemize
-
-@section mp3
-
-The MP3 muxer writes a raw MP3 stream with an ID3v2 header at the beginning and
-optionally an ID3v1 tag at the end. ID3v2.3 and ID3v2.4 are supported, the
-@code{id3v2_version} option controls which one is used. The legacy ID3v1 tag is
-not written by default, but may be enabled with the @code{write_id3v1} option.
-
-For seekable output the muxer also writes a Xing frame at the beginning, which
-contains the number of frames in the file. It is useful for computing duration
-of VBR files.
-
-The muxer supports writing ID3v2 attached pictures (APIC frames). The pictures
-are supplied to the muxer in form of a video stream with a single packet. There
-can be any number of those streams, each will correspond to a single APIC frame.
-The stream metadata tags @var{title} and @var{comment} map to APIC
-@var{description} and @var{picture type} respectively. See
-@url{http://id3.org/id3v2.4.0-frames} for allowed picture types.
-
-Note that the APIC frames must be written at the beginning, so the muxer will
-buffer the audio frames until it gets all the pictures. It is therefore advised
-to provide the pictures as soon as possible to avoid excessive buffering.
-
-Examples:
-
-Write an mp3 with an ID3v2.3 header and an ID3v1 footer:
-@example
-ffmpeg -i INPUT -id3v2_version 3 -write_id3v1 1 out.mp3
-@end example
-
-To attach a picture to an mp3 file select both the audio and the picture stream
-with @code{map}:
-@example
-ffmpeg -i input.mp3 -i cover.png -c copy -map 0 -map 1
--metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" out.mp3
-@end example
-
-@section ogg
-
-Ogg container muxer.
-
-@table @option
-@item -page_duration @var{duration}
-Preferred page duration, in microseconds. The muxer will attempt to create
-pages that are approximately @var{duration} microseconds long. This allows the
-user to compromise between seek granularity and container overhead. The default
-is 1 second. A value of 0 will fill all segments, making pages as large as
-possible. A value of 1 will effectively use 1 packet-per-page in most
-situations, giving a small seek granularity at the cost of additional container
-overhead.
-@end table
 
 @section tee
 

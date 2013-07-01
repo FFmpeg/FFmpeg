@@ -172,7 +172,7 @@ typedef struct Picture{
     int mb_var_sum;             ///< sum of MB variance for current frame
     int mc_mb_var_sum;          ///< motion compensated MB variance for current frame
 
-    int b_frame_score;          /* */
+    int b_frame_score;
     int needs_realloc;          ///< Picture needs to be reallocated (eg due to a frame size change)
 
     int reference;

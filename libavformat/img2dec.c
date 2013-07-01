@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <sys/stat.h>
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -63,6 +64,7 @@ typedef struct {
     int start_number;
     int start_number_range;
     int frame_size;
+    int ts_from_file;
 } VideoDemuxData;
 
 static const int sizes[][2] = {
@@ -223,7 +225,10 @@ static int img_read_header(AVFormatContext *s1)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    avpriv_set_pts_info(st, 60, s->framerate.den, s->framerate.num);
+    if (s->ts_from_file)
+        avpriv_set_pts_info(st, 64, 1, 1);
+    else
+        avpriv_set_pts_info(st, 64, s->framerate.den, s->framerate.num);
 
     if (s->width && s->height) {
         st->codec->width  = s->width;
@@ -296,8 +301,10 @@ static int img_read_header(AVFormatContext *s1)
         s->img_last   = last_index;
         s->img_number = first_index;
         /* compute duration */
-        st->start_time = 0;
-        st->duration   = last_index - first_index + 1;
+        if (!s->ts_from_file) {
+            st->start_time = 0;
+            st->duration   = last_index - first_index + 1;
+        }
     }
 
     if (s1->video_codec_id) {
@@ -381,8 +388,15 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return AVERROR(ENOMEM);
     pkt->stream_index = 0;
     pkt->flags       |= AV_PKT_FLAG_KEY;
-    if (!s->is_pipe)
+    if (s->ts_from_file) {
+        struct stat img_stat;
+        if (stat(filename, &img_stat))
+            return AVERROR(EIO);
+        pkt->pts = (int64_t)img_stat.st_mtime;
+        av_add_index_entry(s1->streams[0], s->img_number, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
+    } else if (!s->is_pipe) {
         pkt->pts      = s->pts;
+    }
 
     pkt->size = 0;
     for (i = 0; i < 3; i++) {
@@ -420,6 +434,15 @@ static int img_read_close(struct AVFormatContext* s1)
 static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     VideoDemuxData *s1 = s->priv_data;
+    AVStream *st = s->streams[0];
+
+    if (s1->ts_from_file) {
+        int index = av_index_search_timestamp(st, timestamp, flags);
+        if(index < 0)
+            return -1;
+        s1->img_number = st->index_entries[index].pos;
+        return 0;
+    }
 
     if (timestamp < 0 || !s1->loop && timestamp > s1->img_last - s1->img_first)
         return -1;
@@ -444,6 +467,7 @@ static const AVOption options[] = {
     { "start_number_range", "set range for looking at the first sequence number", OFFSET(start_number_range), AV_OPT_TYPE_INT, {.i64 = 5}, 1, INT_MAX, DEC },
     { "video_size",   "set video size",                      OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0,   DEC },
     { "frame_size",   "force frame size in bytes",           OFFSET(frame_size),   AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, INT_MAX, DEC },
+    { "ts_from_file", "set frame timestamp from file's one", OFFSET(ts_from_file), AV_OPT_TYPE_INT,    {.i64 = 0   }, 0, 1,       DEC },
     { NULL },
 };
 

@@ -28,6 +28,7 @@
 #include "libavutil/error.h"
 #include "os_support.h"
 #include "avio.h"
+#include "url.h"
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
@@ -221,5 +222,41 @@ const char *ff_gai_strerror(int ecode);
 #endif
 
 int ff_is_multicast_address(struct sockaddr *addr);
+
+#define POLLING_TIME 100 /// Time in milliseconds between interrupt check
+
+/**
+ * Bind to a file descriptor and poll for a connection.
+ *
+ * @param fd      First argument of bind().
+ * @param addr    Second argument of bind().
+ * @param addrlen Third argument of bind().
+ * @param timeout Polling timeout in milliseconds.
+ * @param h       URLContext providing interrupt check
+ *                callback and logging context.
+ * @return        A non-blocking file descriptor on success
+ *                or an AVERROR on failure.
+ */
+int ff_listen_bind(int fd, const struct sockaddr *addr,
+                   socklen_t addrlen, int timeout,
+                   URLContext *h);
+
+/**
+ * Connect to a file descriptor and poll for result.
+ *
+ * @param fd       First argument of connect(),
+ *                 will be set as non-blocking.
+ * @param addr     Second argument of connect().
+ * @param addrlen  Third argument of connect().
+ * @param timeout  Polling timeout in milliseconds.
+ * @param h        URLContext providing interrupt check
+ *                 callback and logging context.
+ * @return         0 on success, AVERROR on failure.
+ */
+int ff_listen_connect(int fd, const struct sockaddr *addr,
+                      socklen_t addrlen, int timeout,
+                      URLContext *h);
+
+int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
 
 #endif /* AVFORMAT_NETWORK_H */

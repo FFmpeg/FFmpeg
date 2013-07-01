@@ -41,7 +41,7 @@
 #include "libavutil/imgutils.h"
 
 #if HAVE_MMX_EXTERNAL
-#include "x86/dsputil_mmx.h"
+#include "x86/dsputil_x86.h"
 #endif
 
 #define FF_COLOR_NA      -1
@@ -59,7 +59,7 @@
 #endif
 
 #define pixdesc_has_alpha(pixdesc) \
-    ((pixdesc)->nb_components == 2 || (pixdesc)->nb_components == 4 || (pixdesc)->flags & PIX_FMT_PAL)
+    ((pixdesc)->nb_components == 2 || (pixdesc)->nb_components == 4 || (pixdesc)->flags & AV_PIX_FMT_FLAG_PAL)
 
 
 void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int *v_shift)
@@ -77,7 +77,7 @@ static int get_color_type(const AVPixFmtDescriptor *desc) {
     if(desc->name && !strncmp(desc->name, "yuvj", 4))
         return FF_COLOR_YUV_JPEG;
 
-    if(desc->flags & PIX_FMT_RGB)
+    if(desc->flags & AV_PIX_FMT_FLAG_RGB)
         return  FF_COLOR_RGB;
 
     if(desc->nb_components == 0)
@@ -113,7 +113,7 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
     int src_color, dst_color;
     int src_min_depth, src_max_depth, dst_min_depth, dst_max_depth;
     int ret, loss, i, nb_components;
-    int score = INT_MAX;
+    int score = INT_MAX - 1;
 
     if (dst_pix_fmt >= AV_PIX_FMT_NB || dst_pix_fmt <= AV_PIX_FMT_NONE)
         return ~0;
@@ -148,7 +148,7 @@ static int get_pix_fmt_score(enum AVPixelFormat dst_pix_fmt,
             loss |= FF_LOSS_RESOLUTION;
             score -= 256 << dst_desc->log2_chroma_h;
         }
-        // dont favor 422 over 420 if downsampling is needed, because 420 has much better support on the decoder side
+        // don't favor 422 over 420 if downsampling is needed, because 420 has much better support on the decoder side
         if (dst_desc->log2_chroma_w == 1 && src_desc->log2_chroma_w == 0 &&
             dst_desc->log2_chroma_h == 1 && src_desc->log2_chroma_h == 0 ) {
             score += 512;
@@ -366,8 +366,8 @@ static inline int is_yuv_planar(const AVPixFmtDescriptor *desc)
     int i;
     int planes[4] = { 0 };
 
-    if (     desc->flags & PIX_FMT_RGB
-        || !(desc->flags & PIX_FMT_PLANAR))
+    if (     desc->flags & AV_PIX_FMT_FLAG_RGB
+        || !(desc->flags & AV_PIX_FMT_FLAG_PLANAR))
         return 0;
 
     /* set the used planes */
@@ -644,7 +644,7 @@ int main(void){
     int skip = 0;
 
     for (i=0; i<AV_PIX_FMT_NB*2; i++) {
-        AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(i);
         if(!desc || !desc->name) {
             skip ++;
             continue;
@@ -654,7 +654,7 @@ int main(void){
             skip = 0;
         }
         av_log(NULL, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d colortype:%d\n", desc->name, is_yuv_planar(desc), av_get_padded_bits_per_pixel(desc), get_color_type(desc));
-        if ((!(desc->flags & PIX_FMT_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
+        if ((!(desc->flags & AV_PIX_FMT_FLAG_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
             av_log(NULL, AV_LOG_ERROR, "Alpha flag mismatch\n");
             err = 1;
         }

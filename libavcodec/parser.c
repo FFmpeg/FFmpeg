@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "parser.h"
+#include "libavutil/atomic.h"
 #include "libavutil/mem.h"
 
 static AVCodecParser *av_first_parser = NULL;
@@ -34,8 +35,9 @@ AVCodecParser* av_parser_next(AVCodecParser *p){
 
 void av_register_codec_parser(AVCodecParser *parser)
 {
-    parser->next = av_first_parser;
-    av_first_parser = parser;
+    do {
+        parser->next = av_first_parser;
+    } while (parser->next != avpriv_atomic_ptr_cas((void * volatile *)&av_first_parser, parser->next, parser));
 }
 
 AVCodecParserContext *av_parser_init(int codec_id)

@@ -64,6 +64,7 @@ int main(int argc, char **argv)
     int64_t seekfirst = AV_NOPTS_VALUE;
     int firstback=0;
     int frame_count = 1;
+    int duration = 4;
 
     for(i=2; i<argc; i+=2){
         if       (!strcmp(argv[i], "-seekforw")){
@@ -73,6 +74,8 @@ int main(int argc, char **argv)
             firstback = 1;
         } else if(!strcmp(argv[i], "-frames")){
             frame_count = atoi(argv[i+1]);
+        } else if(!strcmp(argv[i], "-duration")){
+            duration = atoi(argv[i+1]);
         } else {
             argc = 1;
         }
@@ -133,7 +136,7 @@ int main(int argc, char **argv)
         if(i>25) break;
 
         stream_id= (i>>1)%(ic->nb_streams+1) - 1;
-        timestamp= (i*19362894167LL) % (4*AV_TIME_BASE) - AV_TIME_BASE;
+        timestamp= (i*19362894167LL) % (duration*AV_TIME_BASE) - AV_TIME_BASE;
         if(stream_id>=0){
             st= ic->streams[stream_id];
             timestamp= av_rescale_q(timestamp, AV_TIME_BASE_Q, st->time_base);

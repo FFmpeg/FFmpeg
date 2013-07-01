@@ -49,6 +49,7 @@ typedef struct {
     uint8_t interlaced_scan[64];
     const uint8_t *scan;
     int first_field;
+    int alpha_info;
 } ProresContext;
 
 #endif /* AVCODEC_PRORESDEC_H */

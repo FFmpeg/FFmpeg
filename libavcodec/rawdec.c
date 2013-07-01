@@ -48,7 +48,7 @@ static const AVOption options[]={
 {NULL}
 };
 
-static const AVClass class = {
+static const AVClass rawdec_class = {
     .class_name = "rawdec",
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -123,11 +123,11 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (desc->flags & (PIX_FMT_PAL | PIX_FMT_PSEUDOPAL)) {
+    if (desc->flags & (AV_PIX_FMT_FLAG_PAL | AV_PIX_FMT_FLAG_PSEUDOPAL)) {
         context->palette = av_buffer_alloc(AVPALETTE_SIZE);
         if (!context->palette)
             return AVERROR(ENOMEM);
-        if (desc->flags & PIX_FMT_PSEUDOPAL)
+        if (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
             avpriv_set_systematic_pal2((uint32_t*)context->palette->data, avctx->pix_fmt);
         else
             memset(context->palette->data, 0, AVPALETTE_SIZE);
@@ -190,7 +190,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         return res;
 
     if (need_copy)
-        frame->buf[0] = av_buffer_alloc(context->frame_size);
+        frame->buf[0] = av_buffer_alloc(FFMAX(context->frame_size, buf_size));
     else
         frame->buf[0] = av_buffer_ref(avpkt->buf);
     if (!frame->buf[0])
@@ -219,7 +219,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
         }
         buf = dst;
     } else if (need_copy) {
-        memcpy(frame->buf[0]->data, buf, FFMIN(buf_size, context->frame_size));
+        memcpy(frame->buf[0]->data, buf, buf_size);
         buf = frame->buf[0]->data;
     }
 
@@ -276,7 +276,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if ((avctx->pix_fmt == AV_PIX_FMT_PAL8 && buf_size < context->frame_size) ||
-        (desc->flags & PIX_FMT_PSEUDOPAL)) {
+        (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)) {
         frame->buf[1]  = av_buffer_ref(context->palette);
         if (!frame->buf[1]) {
             av_buffer_unref(&frame->buf[0]);
@@ -351,5 +351,5 @@ AVCodec ff_rawvideo_decoder = {
     .close          = raw_close_decoder,
     .decode         = raw_decode,
     .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
-    .priv_class     = &class,
+    .priv_class     = &rawdec_class,
 };

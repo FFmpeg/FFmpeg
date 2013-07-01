@@ -63,7 +63,7 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
 const AVOption *av_opt_next(void *obj, const AVOption *last)
 {
     AVClass *class = *(AVClass**)obj;
-    if (!last && class->option && class->option[0].name)
+    if (!last && class && class->option && class->option[0].name)
         return class->option;
     if (last && last[1].name)
         return ++last;
@@ -259,7 +259,7 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     if (!val && (o->type != AV_OPT_TYPE_STRING &&
                  o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_SAMPLE_FMT &&
                  o->type != AV_OPT_TYPE_IMAGE_SIZE && o->type != AV_OPT_TYPE_VIDEO_RATE &&
-                 o->type != AV_OPT_TYPE_DURATION))
+                 o->type != AV_OPT_TYPE_DURATION && o->type != AV_OPT_TYPE_COLOR))
         return AVERROR(EINVAL);
 
     dst = ((uint8_t*)target_obj) + o->offset;
@@ -329,6 +329,16 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
         } else {
             if ((ret = av_parse_time(dst, val, 1)) < 0)
                 av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
+            return ret;
+        }
+        break;
+    case AV_OPT_TYPE_COLOR:
+        if (!val) {
+            return 0;
+        } else {
+            ret = av_parse_color(dst, val, -1, obj);
+            if (ret < 0)
+                av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as color\n", val);
             return ret;
         }
     }
@@ -617,6 +627,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
                        i64 / 3600000000, (int)((i64 / 60000000) % 60),
                        (int)((i64 / 1000000) % 60), (int)(i64 % 1000000));
         break;
+    case AV_OPT_TYPE_COLOR:
+        ret = snprintf(buf, sizeof(buf), "0x%02x%02x%02x%02x", ((int *)dst)[0], ((int *)dst)[1], ((int *)dst)[2], ((int *)dst)[3]);
+        break;
     default:
         return AVERROR(EINVAL);
     }
@@ -886,6 +899,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_DURATION:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<duration>");
                 break;
+            case AV_OPT_TYPE_COLOR:
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<color>");
+                break;
             case AV_OPT_TYPE_CONST:
             default:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
@@ -978,6 +994,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 av_opt_set_q(s, opt->name, val, 0);
             }
             break;
+            case AV_OPT_TYPE_COLOR:
             case AV_OPT_TYPE_STRING:
             case AV_OPT_TYPE_IMAGE_SIZE:
             case AV_OPT_TYPE_VIDEO_RATE:
@@ -1334,6 +1351,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     case AV_OPT_TYPE_FLOAT:
     case AV_OPT_TYPE_DOUBLE:
     case AV_OPT_TYPE_DURATION:
+    case AV_OPT_TYPE_COLOR:
         break;
     case AV_OPT_TYPE_STRING:
         range->component_min = 0;
@@ -1400,6 +1418,7 @@ typedef struct TestContext
     enum AVPixelFormat pix_fmt;
     enum AVSampleFormat sample_fmt;
     int64_t duration;
+    uint8_t color[4];
 } TestContext;
 
 #define OFFSET(x) offsetof(TestContext, x)
@@ -1422,6 +1441,7 @@ static const AVOption test_options[]= {
 {"sample_fmt", "set samplefmt", OFFSET(sample_fmt), AV_OPT_TYPE_SAMPLE_FMT, {.i64 = AV_SAMPLE_FMT_NONE}, -1, AV_SAMPLE_FMT_NB-1},
 {"video_rate", "set videorate", OFFSET(video_rate), AV_OPT_TYPE_VIDEO_RATE,  {.str = "25"}, 0,     0                   },
 {"duration", "set duration",   OFFSET(duration), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, INT64_MAX},
+{"color", "set color",   OFFSET(color), AV_OPT_TYPE_COLOR, {.str = "pink"}, 0, 0},
 {NULL},
 };
 
@@ -1480,6 +1500,9 @@ int main(void)
             "duration=bogus",
             "duration=123.45",
             "duration=1\\:23\\:45.67",
+            "color=blue",
+            "color=0x223300",
+            "color=0x42FF07AA",
         };
 
         test_ctx.class = &test_class;

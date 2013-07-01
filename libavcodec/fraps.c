@@ -105,7 +105,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for (j = 0; j < h; j++) {
         for (i = 0; i < w*step; i += step) {
-            dst[i] = get_vlc2(&gb, vlc.table, 9, 3);
+            dst[i] = get_vlc2(&gb, vlc.table, FF_HUFFMAN_BITS, 3);
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
              */
@@ -200,6 +200,7 @@ static int decode_frame(AVCodecContext *avctx,
     f->key_frame = 1;
 
     avctx->pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
+    avctx->color_range = version & 1 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_JPEG;
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;

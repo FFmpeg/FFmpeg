@@ -30,7 +30,7 @@
 #define BLOCKSIZE       40      ///< subblock size in 16-bit words
 #define BUFFERSIZE      146     ///< the size of the adaptive codebook
 #define FIXED_CB_SIZE   128     ///< size of fixed codebooks
-#define FRAMESIZE       20      ///< size of encoded frame
+#define FRAME_SIZE      20      ///< size of encoded frame
 #define LPC_ORDER       10      ///< order of LPC filter
 
 typedef struct RA144Context {

@@ -42,9 +42,6 @@
 #include "thread.h"
 #include <limits.h>
 
-//#undef NDEBUG
-//#include <assert.h>
-
 static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s,
                                    int16_t *block, int n, int qscale);
 static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s,
@@ -59,10 +56,6 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
                                   int16_t *block, int n, int qscale);
 static void dct_unquantize_h263_inter_c(MpegEncContext *s,
                                   int16_t *block, int n, int qscale);
-
-
-//#define DEBUG
-
 
 static const uint8_t ff_default_chroma_qscale_table[32] = {
 //   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15
@@ -454,6 +447,9 @@ void ff_mpeg_unref_picture(MpegEncContext *s, Picture *pic)
         av_frame_unref(&pic->f);
 
     av_buffer_unref(&pic->hwaccel_priv_buf);
+
+    if (pic->needs_realloc)
+        free_picture_tables(pic);
 
     memset((uint8_t*)pic + off, 0, sizeof(*pic) - off);
 }
@@ -1227,7 +1223,8 @@ int ff_MPV_common_frame_size_change(MpegEncContext *s)
                         (s->mb_height * (i + 1) + nb_slices / 2) / nb_slices;
             }
         } else {
-            if (init_duplicate_context(s) < 0)
+            err = init_duplicate_context(s);
+            if (err < 0)
                 goto fail;
             s->start_mb_y = 0;
             s->end_mb_y   = s->mb_height;
@@ -1524,6 +1521,8 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         }
     }
 
+    ff_mpeg_unref_picture(s, &s->current_picture);
+
     if (!s->encoding) {
         ff_release_unused_pictures(s, 1);
 
@@ -1571,7 +1570,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     //     s->current_picture_ptr->quality = s->new_picture_ptr->quality;
     s->current_picture_ptr->f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
-    ff_mpeg_unref_picture(s, &s->current_picture);
     if ((ret = ff_mpeg_ref_picture(s, &s->current_picture,
                                    s->current_picture_ptr)) < 0)
         return ret;
@@ -1717,7 +1715,6 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
  * frame has been coded/decoded. */
 void ff_MPV_frame_end(MpegEncContext *s)
 {
-    int i;
     /* redraw edges for the frame if decoding didn't complete */
     // just to make sure that all data is rendered.
     if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration) {
@@ -1766,13 +1763,6 @@ void ff_MPV_frame_end(MpegEncContext *s)
     assert(i < MAX_PICTURE_COUNT);
 #endif
 
-    if (s->encoding) {
-        /* release non-reference frames */
-        for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-            if (!s->picture[i].reference)
-                ff_mpeg_unref_picture(s, &s->picture[i]);
-        }
-    }
     // clear copies, to avoid confusion
 #if 0
     memset(&s->last_picture,    0, sizeof(Picture));
@@ -2190,7 +2180,7 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
                                      int motion_x, int motion_y)
 {
     const int lowres   = s->avctx->lowres;
-    const int op_index = FFMIN(lowres, 2);
+    const int op_index = FFMIN(lowres, 3);
     const int s_mask   = (2 << lowres) - 1;
     int emu = 0;
     int sx, sy;
@@ -2243,7 +2233,7 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, uvlinesize, linesize, sx, sy,
         uvsx, uvsy;
     const int lowres     = s->avctx->lowres;
-    const int op_index   = FFMIN(lowres-1+s->chroma_x_shift, 2);
+    const int op_index   = FFMIN(lowres-1+s->chroma_x_shift, 3);
     const int block_s    = 8>>lowres;
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres;
@@ -2367,7 +2357,7 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
                                             int mx, int my)
 {
     const int lowres     = s->avctx->lowres;
-    const int op_index   = FFMIN(lowres, 2);
+    const int op_index   = FFMIN(lowres, 3);
     const int block_s    = 8 >> lowres;
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres + 1;

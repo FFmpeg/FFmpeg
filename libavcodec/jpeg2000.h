@@ -128,14 +128,12 @@ typedef struct Jpeg2000TgtNode {
 } Jpeg2000TgtNode;
 
 typedef struct Jpeg2000CodingStyle {
-    uint8_t nreslevels;       // number of resolution levels
-    uint8_t nreslevels2decode; // number of resolution levels to decode
+    int nreslevels;           // number of resolution levels
+    int nreslevels2decode;    // number of resolution levels to decode
     uint8_t log2_cblk_width,
             log2_cblk_height; // exponent of codeblock size
     uint8_t transform;        // DWT type
     uint8_t csty;             // coding style
-    uint8_t log2_prec_width,
-            log2_prec_height; // precinct size
     uint8_t nlayers;          // number of layers
     uint8_t mct;              // multiple component transformation
     uint8_t cblk_style;       // codeblock coding style
@@ -146,7 +144,7 @@ typedef struct Jpeg2000CodingStyle {
 
 typedef struct Jpeg2000QuantStyle {
     uint8_t expn[32 * 3];  // quantization exponent
-    uint32_t mant[32 * 3]; // quantization mantissa
+    uint16_t mant[32 * 3]; // quantization mantissa
     uint8_t quantsty;      // quantization style
     uint8_t nguardbits;    // number of guard bits
 } Jpeg2000QuantStyle;
@@ -170,7 +168,6 @@ typedef struct Jpeg2000Cblk {
 } Jpeg2000Cblk; // code block
 
 typedef struct Jpeg2000Prec {
-    uint16_t xi0, yi0; // codeblock indexes ([xi0, xi1))
     uint16_t nb_codeblocks_width;
     uint16_t nb_codeblocks_height;
     Jpeg2000TgtNode *zerobits;
@@ -179,13 +176,11 @@ typedef struct Jpeg2000Prec {
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
 } Jpeg2000Prec; // precinct
 
-/* TODO: stepsize can be float or integer depending on
- * reversible or irreversible transformation. */
 typedef struct Jpeg2000Band {
     uint16_t coord[2][2]; // border coordinates {{x0, x1}, {y0, y1}}
     uint16_t log2_cblk_width, log2_cblk_height;
-    uint16_t cblknx, cblkny;
-    float stepsize; // quantization stepsize
+    int i_stepsize; // quantization stepsize
+    float f_stepsize; // quantization stepsize
     Jpeg2000Prec *prec;
 } Jpeg2000Band; // subband
 
@@ -197,13 +192,11 @@ typedef struct Jpeg2000ResLevel {
     Jpeg2000Band *band;
 } Jpeg2000ResLevel; // resolution level
 
-/* TODO: data can be float of integer depending of reversible/irreversible
- * transformation.
- */
 typedef struct Jpeg2000Component {
     Jpeg2000ResLevel *reslevel;
     DWTContext dwt;
-    float *data;
+    float *f_data;
+    int *i_data;
     uint16_t coord[2][2];   // border coordinates {{x0, x1}, {y0, y1}} -- can be reduced with lowres option
     uint16_t coord_o[2][2]; // border coordinates {{x0, x1}, {y0, y1}} -- original values from jpeg2000 headers
 } Jpeg2000Component;
@@ -262,6 +255,8 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                                Jpeg2000QuantStyle *qntsty,
                                int cbps, int dx, int dy,
                                AVCodecContext *ctx);
+
+void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 
 void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty);
 

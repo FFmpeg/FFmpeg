@@ -211,6 +211,11 @@ static const AVCRC av_crc_table[AV_CRC_MAX][257] = {
     },
 };
 #else
+#if CONFIG_SMALL
+#define CRC_TABLE_SIZE 257
+#else
+#define CRC_TABLE_SIZE 1024
+#endif
 static struct {
     uint8_t  le;
     uint8_t  bits;
@@ -222,7 +227,7 @@ static struct {
     [AV_CRC_32_IEEE]    = { 0, 32, 0x04C11DB7 },
     [AV_CRC_32_IEEE_LE] = { 1, 32, 0xEDB88320 },
 };
-static AVCRC av_crc_table[AV_CRC_MAX][257];
+static AVCRC av_crc_table[AV_CRC_MAX][CRC_TABLE_SIZE];
 #endif
 
 int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size)

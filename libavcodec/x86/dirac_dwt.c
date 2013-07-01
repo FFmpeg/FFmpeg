@@ -21,7 +21,7 @@
  */
 
 #include "libavutil/x86/asm.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 #include "dirac_dwt.h"
 
 #define COMPOSE_VERTICAL(ext, align) \

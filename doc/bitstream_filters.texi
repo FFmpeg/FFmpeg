@@ -17,7 +17,18 @@ Below is a description of the currently available bitstream filters.
 
 @section aac_adtstoasc
 
+Convert MPEG-2/4 AAC ADTS to MPEG-4 Audio Specific Configuration
+bitstream filter.
+
+This filter creates an MPEG-4 AudioSpecificConfig from an MPEG-2/4
+ADTS header and removes the ADTS header.
+
+This is required for example when copying an AAC stream from a raw
+ADTS AAC container to a FLV or a MOV/MP4 file.
+
 @section chomp
+
+Remove zero padding at the end of a packet.
 
 @section dump_extradata
 

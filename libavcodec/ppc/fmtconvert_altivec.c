@@ -27,7 +27,7 @@
 
 #if HAVE_ALTIVEC
 
-static void int32_to_float_fmul_scalar_altivec(float *dst, const int *src,
+static void int32_to_float_fmul_scalar_altivec(float *dst, const int32_t *src,
                                                float mul, int len)
 {
     union {

@@ -910,7 +910,6 @@ static int init_report(const char *env)
            tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
            tm->tm_hour, tm->tm_min, tm->tm_sec,
            filename.str);
-    av_log_set_level(FFMAX(av_log_get_level(), AV_LOG_VERBOSE));
     av_bprint_finalize(&filename, NULL);
     return 0;
 }
@@ -1214,7 +1213,8 @@ static void print_codec(const AVCodec *c)
     printf("%s %s [%s]:\n", encoder ? "Encoder" : "Decoder", c->name,
            c->long_name ? c->long_name : "");
 
-    if (c->type == AVMEDIA_TYPE_VIDEO) {
+    if (c->type == AVMEDIA_TYPE_VIDEO ||
+        c->type == AVMEDIA_TYPE_AUDIO) {
         printf("    Threading capabilities: ");
         switch (c->capabilities & (CODEC_CAP_FRAME_THREADS |
                                    CODEC_CAP_SLICE_THREADS)) {
@@ -1454,6 +1454,8 @@ int show_filters(void *optctx, const char *opt, const char *arg)
     const AVFilterPad *pad;
 
     printf("Filters:\n"
+           "  T. = Timeline support\n"
+           "  .S = Slice threading\n"
            "  A = Audio input/output\n"
            "  V = Video input/output\n"
            "  N = Dynamic number and/or type of input/output\n"
@@ -1477,7 +1479,10 @@ int show_filters(void *optctx, const char *opt, const char *arg)
                                   ( i && (filter->flags & AVFILTER_FLAG_DYNAMIC_OUTPUTS))) ? 'N' : '|';
         }
         *descr_cur = 0;
-        printf("%-16s %-10s %s\n", filter->name, descr, filter->description);
+        printf(" %c%c %-16s %-10s %s\n",
+               filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE ? 'T' : '.',
+               filter->flags & AVFILTER_FLAG_SLICE_THREADS    ? 'S' : '.',
+               filter->name, descr, filter->description);
     }
 #endif
     return 0;
@@ -1504,11 +1509,11 @@ int show_pix_fmts(void *optctx, const char *opt, const char *arg)
     while ((pix_desc = av_pix_fmt_desc_next(pix_desc))) {
         enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(pix_desc);
         printf("%c%c%c%c%c %-16s       %d            %2d\n",
-               sws_isSupportedInput (pix_fmt)      ? 'I' : '.',
-               sws_isSupportedOutput(pix_fmt)      ? 'O' : '.',
-               pix_desc->flags & PIX_FMT_HWACCEL   ? 'H' : '.',
-               pix_desc->flags & PIX_FMT_PAL       ? 'P' : '.',
-               pix_desc->flags & PIX_FMT_BITSTREAM ? 'B' : '.',
+               sws_isSupportedInput (pix_fmt)              ? 'I' : '.',
+               sws_isSupportedOutput(pix_fmt)              ? 'O' : '.',
+               pix_desc->flags & AV_PIX_FMT_FLAG_HWACCEL   ? 'H' : '.',
+               pix_desc->flags & AV_PIX_FMT_FLAG_PAL       ? 'P' : '.',
+               pix_desc->flags & AV_PIX_FMT_FLAG_BITSTREAM ? 'B' : '.',
                pix_desc->name,
                pix_desc->nb_components,
                av_get_bits_per_pixel(pix_desc));
@@ -1658,6 +1663,10 @@ static void show_help_filter(const char *name)
     printf("Filter %s\n", f->name);
     if (f->description)
         printf("  %s\n", f->description);
+
+    if (f->flags & AVFILTER_FLAG_SLICE_THREADS)
+        printf("    slice threading supported\n");
+
     printf("    Inputs:\n");
     count = avfilter_pad_count(f->inputs);
     for (i = 0; i < count; i++) {

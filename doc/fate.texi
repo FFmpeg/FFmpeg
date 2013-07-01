@@ -131,7 +131,12 @@ of the server and to accept its host key. This can usually be achieved by
 running your SSH client manually and killing it after you accepted the key.
 The FATE server's fingerprint is:
 
-  b1:31:c8:79:3f:04:1d:f8:f2:23:26:5a:fd:55:fa:92
+@table @option
+@item RSA
+   d3:f1:83:97:a4:75:2b:a6:fb:d6:e8:aa:81:93:97:51
+@item ECDSA
+   76:9f:68:32:04:1e:d5:d4:ec:47:3f:dc:fc:18:17:86
+@end table
 
   If you have problems connecting to the FATE server, it may help to try out
 the @command{ssh} command with one or more @option{-v} options. You should

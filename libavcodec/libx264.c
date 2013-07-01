@@ -155,7 +155,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     X264Context *x4 = ctx->priv_data;
     x264_nal_t *nal;
     int nnal, i, ret;
-    x264_picture_t pic_out;
+    x264_picture_t pic_out = {0};
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -237,7 +237,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
 #define OPT_STR(opt, param)                                                   \
     do {                                                                      \
         int ret;                                                              \
-        if (param && (ret = x264_param_parse(&x4->params, opt, param)) < 0) { \
+        if (param!=NULL && (ret = x264_param_parse(&x4->params, opt, param)) < 0) { \
             if(ret == X264_PARAM_BAD_NAME)                                    \
                 av_log(avctx, AV_LOG_ERROR,                                   \
                         "bad option '%s': '%s'\n", opt, param);               \

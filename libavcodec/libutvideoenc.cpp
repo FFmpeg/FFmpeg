@@ -21,7 +21,8 @@
 /**
  * @file
  * Known FOURCCs:
- *     'ULY0' (YCbCr 4:2:0), 'ULY2' (YCbCr 4:2:2), 'ULRG' (RGB), 'ULRA' (RGBA)
+ *     'ULY0' (YCbCr 4:2:0), 'ULY2' (YCbCr 4:2:2), 'ULRG' (RGB), 'ULRA' (RGBA),
+ *     'ULH0' (YCbCr 4:2:0 BT.709), 'ULH2' (YCbCr 4:2:2 BT.709)
  */
 
 extern "C" {

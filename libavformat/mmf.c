@@ -98,6 +98,7 @@ static int mmf_write_header(AVFormatContext *s)
     avio_w8(pb, 0); /* status */
     avio_w8(pb, 0); /* counts */
     end_tag_be(pb, pos);
+
     pos = ff_start_tag(pb, "OPDA");
     avio_write(pb, version, strlen(version)); /* metadata ("ST:songtitle,VN:version,...") */
     end_tag_be(pb, pos);

@@ -279,5 +279,5 @@ AVFilter avfilter_vf_histeq = {
     .inputs        = histeq_inputs,
     .outputs       = histeq_outputs,
     .priv_class    = &histeq_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

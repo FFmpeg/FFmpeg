@@ -88,7 +88,7 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & PIX_FMT_PAL) && !(desc->flags & PIX_FMT_HWACCEL))
+        if (!(desc->flags & AV_PIX_FMT_FLAG_PAL) && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             ff_add_format(&formats, fmt);
     }
 
@@ -100,17 +100,15 @@ static int config_input(AVFilterLink *inlink)
 {
     IlContext *il = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int i, ret;
+    int ret;
 
-    for (i = 0; i < desc->nb_components; i++)
-        il->nb_planes = FFMAX(il->nb_planes, desc->comp[i].plane);
-    il->nb_planes++;
+    il->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    il->has_alpha = !!(desc->flags & PIX_FMT_ALPHA);
+    il->has_alpha = !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     if ((ret = av_image_fill_linesizes(il->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    il->chroma_height = inlink->h >> desc->log2_chroma_h;
+    il->chroma_height = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
 
     return 0;
 }
@@ -211,4 +209,5 @@ AVFilter avfilter_vf_il = {
     .inputs        = inputs,
     .outputs       = outputs,
     .priv_class    = &il_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

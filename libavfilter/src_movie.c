@@ -27,8 +27,6 @@
  * @todo support a PTS correction mechanism
  */
 
-/* #define DEBUG */
-
 #include <float.h>
 
 #include "libavutil/attributes.h"
@@ -199,7 +197,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx)
     char name[16];
     AVStream *st;
 
-    if (!*movie->file_name) {
+    if (!movie->file_name) {
         av_log(ctx, AV_LOG_ERROR, "No filename provided!\n");
         return AVERROR(EINVAL);
     }
@@ -324,7 +322,6 @@ static av_cold void movie_uninit(AVFilterContext *ctx)
         if (movie->st[i].st)
             avcodec_close(movie->st[i].st->codec);
     }
-    av_freep(&movie->file_name);
     av_freep(&movie->st);
     av_freep(&movie->out_index);
     av_frame_free(&movie->frame);
@@ -517,9 +514,12 @@ static int movie_push_frame(AVFilterContext *ctx, unsigned out_id)
     if (ret < 0) {
         av_log(ctx, AV_LOG_WARNING, "Decode error: %s\n", av_err2str(ret));
         av_frame_free(&movie->frame);
+        av_free_packet(&movie->pkt0);
+        movie->pkt.size = 0;
+        movie->pkt.data = NULL;
         return 0;
     }
-    if (!ret)
+    if (!ret || st->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
         ret = pkt->size;
 
     pkt->data += ret;
@@ -565,17 +565,12 @@ static int movie_request_frame(AVFilterLink *outlink)
 
 AVFILTER_DEFINE_CLASS(movie);
 
-static av_cold int movie_init(AVFilterContext *ctx)
-{
-    return movie_common_init(ctx);
-}
-
 AVFilter avfilter_avsrc_movie = {
     .name          = "movie",
     .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
     .priv_size     = sizeof(MovieContext),
     .priv_class    = &movie_class,
-    .init          = movie_init,
+    .init          = movie_common_init,
     .uninit        = movie_uninit,
     .query_formats = movie_query_formats,
 
@@ -591,16 +586,11 @@ AVFilter avfilter_avsrc_movie = {
 #define amovie_options movie_options
 AVFILTER_DEFINE_CLASS(amovie);
 
-static av_cold int amovie_init(AVFilterContext *ctx)
-{
-    return movie_common_init(ctx);
-}
-
 AVFilter avfilter_avsrc_amovie = {
     .name          = "amovie",
     .description   = NULL_IF_CONFIG_SMALL("Read audio from a movie source."),
     .priv_size     = sizeof(MovieContext),
-    .init          = amovie_init,
+    .init          = movie_common_init,
     .uninit        = movie_uninit,
     .query_formats = movie_query_formats,
 

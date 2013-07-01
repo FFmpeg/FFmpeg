@@ -24,7 +24,7 @@ instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjp
 @file{./configure}.
 
 
-@section OpenCORE and VisualOn libraries
+@section OpenCORE, VisualOn, and Fraunhofer libraries
 
 Spun off Google Android sources, OpenCore, VisualOn and Fraunhofer
 libraries provide encoders for a number of audio codecs.
@@ -32,9 +32,14 @@ libraries provide encoders for a number of audio codecs.
 @float NOTE
 OpenCORE and VisualOn libraries are under the Apache License 2.0
 (see @url{http://www.apache.org/licenses/LICENSE-2.0} for details), which is
-incompatible with the LGPL version 2.1 and GPL version 2. You have to
+incompatible to the LGPL version 2.1 and GPL version 2. You have to
 upgrade FFmpeg's license to LGPL version 3 (or if you have enabled
-GPL components, GPL version 3) to use it.
+GPL components, GPL version 3) by passing @code{--enable-version3} to configure in
+order to use it.
+
+The Fraunhofer AAC library is licensed under a license incompatible to the GPL
+and is not known to be compatible to the LGPL. Therefore, you have to pass
+@code{--enable-nonfree} to configure to use it.
 @end float
 
 @subsection OpenCORE AMR
@@ -95,6 +100,14 @@ Go to @url{http://www.webmproject.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libvpx} to configure to
 enable it.
 
+@section libwavpack
+
+FFmpeg can make use of the libwavpack library for WavPack encoding.
+
+Go to @url{http://www.wavpack.com/} and follow the instructions for
+installing the library. Then pass @code{--enable-libwavpack} to configure to
+enable it.
+
 @section x264
 
 FFmpeg can make use of the x264 library for H.264 encoding.
@@ -147,6 +160,8 @@ library:
     @tab Multimedia format used in game Heart Of Darkness.
 @item Apple HTTP Live Streaming @tab   @tab X
 @item Artworx Data Format       @tab   @tab X
+@item ADP                       @tab   @tab X
+    @tab Audio format used on the Nintendo Gamecube.
 @item AFC                       @tab   @tab X
     @tab Audio format used on the Nintendo Gamecube.
 @item ASF                       @tab X @tab X
@@ -322,7 +337,7 @@ library:
 @item raw Shorten               @tab   @tab X
 @item raw TAK                   @tab   @tab X
 @item raw TrueHD                @tab X @tab X
-@item raw VC-1                  @tab   @tab X
+@item raw VC-1                  @tab X @tab X
 @item raw PCM A-law             @tab X @tab X
 @item raw PCM mu-law            @tab X @tab X
 @item raw PCM signed 8 bit      @tab X @tab X
@@ -348,11 +363,13 @@ library:
     @tab File format used by RED Digital cameras, contains JPEG 2000 frames and PCM audio.
 @item RealMedia                 @tab X @tab X
 @item Redirector                @tab   @tab X
+@item RedSpark                  @tab   @tab X
 @item Renderware TeXture Dictionary @tab   @tab X
 @item RL2                       @tab   @tab X
     @tab Audio and video format used in some games by Entertainment Software Partners.
 @item RPL/ARMovie               @tab   @tab X
 @item Lego Mindstorms RSO       @tab X @tab X
+@item RSD                       @tab   @tab X
 @item RTMP                      @tab X @tab X
     @tab Output is performed by publishing stream to RTMP server
 @item RTP                       @tab X @tab X
@@ -484,6 +501,7 @@ following image formats are supported:
 @item AMV Video              @tab  X  @tab  X
     @tab Used in Chinese MP3 players.
 @item ANSI/ASCII art         @tab     @tab  X
+@item Apple Intermediate Codec @tab     @tab  X
 @item Apple MJPEG-B          @tab     @tab  X
 @item Apple ProRes           @tab  X  @tab  X
 @item Apple QuickDraw        @tab     @tab  X
@@ -566,6 +584,8 @@ following image formats are supported:
     @tab Sorenson H.263 used in Flash
 @item Forward Uncompressed   @tab     @tab  X
 @item Fraps                  @tab     @tab  X
+@item Go2Webinar             @tab     @tab  X
+    @tab fourcc: G2M4
 @item H.261                  @tab  X  @tab  X
 @item H.263 / H.263-1996     @tab  X  @tab  X
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
@@ -768,9 +788,11 @@ following image formats are supported:
     @tab Used in some Sega Saturn console games.
 @item ADPCM IMA Duck DK4     @tab     @tab  X
     @tab Used in some Sega Saturn console games.
+@item ADPCM IMA Radical      @tab     @tab  X
 @item ADPCM Microsoft        @tab  X  @tab  X
 @item ADPCM MS IMA           @tab  X  @tab  X
 @item ADPCM Nintendo Gamecube AFC  @tab     @tab  X
+@item ADPCM Nintendo Gamecube DTK  @tab     @tab  X
 @item ADPCM Nintendo Gamecube THP  @tab     @tab  X
 @item ADPCM QT IMA           @tab  X  @tab  X
 @item ADPCM SEGA CRI ADX     @tab  X  @tab  X
@@ -830,7 +852,6 @@ following image formats are supported:
 @item MLP (Meridian Lossless Packing)  @tab     @tab  X
     @tab Used in DVD-Audio discs.
 @item Monkey's Audio         @tab     @tab  X
-    @tab Only versions 3.97-3.99 are supported.
 @item MP1 (MPEG audio layer 1)  @tab     @tab IX
 @item MP2 (MPEG audio layer 2)  @tab IX  @tab IX
     @tab libtwolame can be used alternatively for encoding.
@@ -885,7 +906,7 @@ following image formats are supported:
 @item Sierra VMD audio       @tab     @tab  X
     @tab Used in Sierra VMD files.
 @item Smacker audio          @tab     @tab  X
-@item SMPTE 302M AES3 audio  @tab     @tab  X
+@item SMPTE 302M AES3 audio  @tab  X  @tab  X
 @item Sonic                  @tab  X  @tab  X
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
@@ -893,7 +914,7 @@ following image formats are supported:
 @item Speex                  @tab  E  @tab  E
     @tab supported through external library libspeex
 @item TAK (Tom's lossless Audio Kompressor)  @tab     @tab  X
-@item True Audio (TTA)       @tab     @tab  X
+@item True Audio (TTA)       @tab  X  @tab  X
 @item TrueHD                 @tab     @tab  X
     @tab Used in HD-DVD and Blu-Ray discs.
 @item TwinVQ (VQF flavor)    @tab     @tab  X
@@ -901,7 +922,8 @@ following image formats are supported:
     @tab Used in LucasArts SMUSH animations.
 @item Vorbis                 @tab  E  @tab  X
     @tab A native but very primitive encoder exists.
-@item WavPack                @tab     @tab  X
+@item WavPack                @tab  E  @tab  X
+    @tab supported through external library libwavpack
 @item Westwood Audio (SND1)  @tab     @tab  X
 @item Windows Media Audio 1  @tab  X  @tab  X
 @item Windows Media Audio 2  @tab  X  @tab  X
@@ -940,7 +962,7 @@ performance on systems without hardware floating point support).
 @item TED Talks captions @tab @tab X @tab   @tab X
 @item VobSub (IDX+SUB) @tab   @tab X @tab   @tab X
 @item VPlayer          @tab   @tab X @tab   @tab X
-@item WebVTT           @tab   @tab X @tab   @tab X
+@item WebVTT           @tab X @tab X @tab   @tab X
 @item XSUB             @tab   @tab   @tab X @tab X
 @end multitable
 
@@ -993,7 +1015,7 @@ performance on systems without hardware floating point support).
 @item OSS               @tab X      @tab X
 @item Pulseaudio        @tab X      @tab
 @item SDL               @tab        @tab X
-@item Video4Linux2      @tab X      @tab
+@item Video4Linux2      @tab X      @tab X
 @item VfW capture       @tab X      @tab
 @item X11 grabbing      @tab X      @tab
 @end multitable

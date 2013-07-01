@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 #include "config.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 #if HAVE_MMX_INLINE
 

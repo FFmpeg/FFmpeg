@@ -42,43 +42,29 @@ AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
     AVFrame *frame = av_frame_alloc();
     int channels = link->channels;
-    int buf_size, ret;
+    int ret;
 
     av_assert0(channels == av_get_channel_layout_nb_channels(link->channel_layout) || !av_get_channel_layout_nb_channels(link->channel_layout));
 
     if (!frame)
         return NULL;
 
-    buf_size = av_samples_get_buffer_size(NULL, channels, nb_samples,
-                                          link->format, 0);
-    if (buf_size < 0)
-        goto fail;
-
-    frame->buf[0] = av_buffer_alloc(buf_size);
-    if (!frame->buf[0])
-        goto fail;
-
-    frame->nb_samples = nb_samples;
-    ret = avcodec_fill_audio_frame(frame, channels, link->format,
-                                   frame->buf[0]->data, buf_size, 0);
-    if (ret < 0)
-        goto fail;
-
-    av_samples_set_silence(frame->extended_data, 0, nb_samples, channels,
-                           link->format);
-
     frame->nb_samples     = nb_samples;
     frame->format         = link->format;
     av_frame_set_channels(frame, link->channels);
     frame->channel_layout = link->channel_layout;
     frame->sample_rate    = link->sample_rate;
+    ret = av_frame_get_buffer(frame, 0);
+    if (ret < 0) {
+        av_frame_free(&frame);
+        return NULL;
+    }
+
+    av_samples_set_silence(frame->extended_data, 0, nb_samples, channels,
+                           link->format);
+
 
     return frame;
-
-fail:
-    av_buffer_unref(&frame->buf[0]);
-    av_frame_free(&frame);
-    return NULL;
 }
 
 AVFrame *ff_get_audio_buffer(AVFilterLink *link, int nb_samples)

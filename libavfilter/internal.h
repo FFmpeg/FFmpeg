@@ -27,6 +27,7 @@
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "formats.h"
+#include "thread.h"
 #include "video.h"
 
 #define POOL_SIZE 32
@@ -140,6 +141,17 @@ struct AVFilterPad {
     int needs_fifo;
 };
 #endif
+
+struct AVFilterGraphInternal {
+    void *thread;
+    int (*thread_execute)(AVFilterContext *ctx, action_func *func, void *arg,
+                          int *ret, int nb_jobs);
+};
+
+struct AVFilterInternal {
+    int (*execute)(AVFilterContext *ctx, action_func *func, void *arg,
+                   int *ret, int nb_jobs);
+};
 
 /** default handler for freeing audio/video buffer when there are no references left */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);

@@ -25,7 +25,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavcodec/hpeldsp.h"
-#include "dsputil_mmx.h"
+#include "dsputil_x86.h"
 
 void ff_put_pixels8_x2_mmxext(uint8_t *block, const uint8_t *pixels,
                               ptrdiff_t line_size, int h);
@@ -105,6 +105,13 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #undef PAVGBP
 #undef PAVGB
 #undef STATIC
+
+PIXELS16(static, avg_no_rnd, , _y2, _mmx)
+PIXELS16(static, put_no_rnd, , _y2, _mmx)
+
+PIXELS16(static, avg_no_rnd, , _xy2, _mmx)
+PIXELS16(static, put_no_rnd, , _xy2, _mmx)
+
 /***********************************/
 /* MMX rounding */
 
@@ -120,27 +127,25 @@ void ff_avg_pixels8_xy2_3dnow(uint8_t *block, const uint8_t *pixels,
 #undef PAVGBP
 #undef PAVGB
 
+PIXELS16(static, avg, , _y2, _mmx)
+PIXELS16(static, put, , _y2, _mmx)
+
 #endif /* HAVE_INLINE_ASM */
 
 
 #if HAVE_YASM
-/***********************************/
-/* 3Dnow specific */
 
-#define DEF(x) x ## _3dnow
+#define HPELDSP_AVG_PIXELS16(CPUEXT)                \
+    PIXELS16(static, put_no_rnd, ff_,  _x2, CPUEXT) \
+    PIXELS16(static, put,        ff_,  _y2, CPUEXT) \
+    PIXELS16(static, put_no_rnd, ff_,  _y2, CPUEXT) \
+    PIXELS16(static, avg,        ff_,     , CPUEXT) \
+    PIXELS16(static, avg,        ff_,  _x2, CPUEXT) \
+    PIXELS16(static, avg,        ff_,  _y2, CPUEXT) \
+    PIXELS16(static, avg,        ff_, _xy2, CPUEXT)
 
-#include "hpeldsp_avg_template.c"
-
-#undef DEF
-
-/***********************************/
-/* MMXEXT specific */
-
-#define DEF(x) x ## _mmxext
-
-#include "hpeldsp_avg_template.c"
-
-#undef DEF
+HPELDSP_AVG_PIXELS16(_3dnow)
+HPELDSP_AVG_PIXELS16(_mmxext)
 
 #endif /* HAVE_YASM */
 

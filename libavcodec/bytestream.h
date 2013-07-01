@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 
@@ -131,6 +132,7 @@ static av_always_inline void bytestream2_init(GetByteContext *g,
                                               const uint8_t *buf,
                                               int buf_size)
 {
+    av_assert0(buf_size >= 0);
     g->buffer       = buf;
     g->buffer_start = buf;
     g->buffer_end   = buf + buf_size;
@@ -140,6 +142,7 @@ static av_always_inline void bytestream2_init_writer(PutByteContext *p,
                                                      uint8_t *buf,
                                                      int buf_size)
 {
+    av_assert0(buf_size >= 0);
     p->buffer       = buf;
     p->buffer_start = buf;
     p->buffer_end   = buf + buf_size;

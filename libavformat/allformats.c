@@ -65,6 +65,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(AC3,              ac3);
     REGISTER_DEMUXER (ACT,              act);
     REGISTER_DEMUXER (ADF,              adf);
+    REGISTER_DEMUXER (ADP,              adp);
     REGISTER_MUXER   (ADTS,             adts);
     REGISTER_MUXDEMUX(ADX,              adx);
     REGISTER_DEMUXER (AEA,              aea);
@@ -232,10 +233,12 @@ void av_register_all(void)
     REGISTER_DEMUXER (R3D,              r3d);
     REGISTER_MUXDEMUX(RAWVIDEO,         rawvideo);
     REGISTER_DEMUXER (REALTEXT,         realtext);
+    REGISTER_DEMUXER (REDSPARK,         redspark);
     REGISTER_DEMUXER (RL2,              rl2);
     REGISTER_MUXDEMUX(RM,               rm);
     REGISTER_MUXDEMUX(ROQ,              roq);
     REGISTER_DEMUXER (RPL,              rpl);
+    REGISTER_DEMUXER (RSD,              rsd);
     REGISTER_MUXDEMUX(RSO,              rso);
     REGISTER_MUXDEMUX(RTP,              rtp);
     REGISTER_MUXDEMUX(RTSP,             rtsp);
@@ -265,7 +268,7 @@ void av_register_all(void)
     REGISTER_DEMUXER (SUBVIEWER,        subviewer);
     REGISTER_MUXDEMUX(SWF,              swf);
     REGISTER_DEMUXER (TAK,              tak);
-    REGISTER_MUXER   (TEE, tee);
+    REGISTER_MUXER   (TEE,              tee);
     REGISTER_DEMUXER (TEDCAPTIONS,      tedcaptions);
     REGISTER_MUXER   (TG2,              tg2);
     REGISTER_MUXER   (TGP,              tgp);
@@ -289,7 +292,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX(WAV,              wav);
     REGISTER_DEMUXER (WC3,              wc3);
     REGISTER_MUXER   (WEBM,             webm);
-    REGISTER_DEMUXER (WEBVTT,           webvtt);
+    REGISTER_MUXDEMUX(WEBVTT,           webvtt);
     REGISTER_DEMUXER (WSAUD,            wsaud);
     REGISTER_DEMUXER (WSVQA,            wsvqa);
     REGISTER_MUXDEMUX(WTV,              wtv);
@@ -311,6 +314,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL(FFRTMPHTTP,       ffrtmphttp);
     REGISTER_PROTOCOL(FILE,             file);
     REGISTER_PROTOCOL(FD,               fd);
+    REGISTER_PROTOCOL(FTP,              ftp);
     REGISTER_PROTOCOL(GOPHER,           gopher);
     REGISTER_PROTOCOL(HLS,              hls);
     REGISTER_PROTOCOL(HTTP,             http);

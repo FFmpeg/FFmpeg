@@ -45,6 +45,7 @@ static void vc1_extract_headers(AVCodecParserContext *s, AVCodecContext *avctx,
 
     vpc->v.s.avctx = avctx;
     vpc->v.parse_only = 1;
+    vpc->v.first_pic_header_flag = 1;
     next = buf;
     s->repeat_pict = 0;
 

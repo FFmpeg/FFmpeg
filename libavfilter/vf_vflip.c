@@ -55,9 +55,10 @@ static AVFrame *get_video_buffer(AVFilterLink *link, int w, int h)
 
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
+        int height = FF_CEIL_RSHIFT(h, vsub);
 
         if (frame->data[i]) {
-            frame->data[i] += (((h + (1<<vsub) - 1) >> vsub) - 1) * frame->linesize[i];
+            frame->data[i] += (height - 1) * frame->linesize[i];
             frame->linesize[i] = -frame->linesize[i];
         }
     }
@@ -72,9 +73,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 
     for (i = 0; i < 4; i ++) {
         int vsub = i == 1 || i == 2 ? flip->vsub : 0;
+        int height = FF_CEIL_RSHIFT(link->h, vsub);
 
         if (frame->data[i]) {
-            frame->data[i] += (((link->h + (1<<vsub)-1)>> vsub)-1) * frame->linesize[i];
+            frame->data[i] += (height - 1) * frame->linesize[i];
             frame->linesize[i] = -frame->linesize[i];
         }
     }

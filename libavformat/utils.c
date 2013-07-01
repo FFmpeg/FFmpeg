@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* #define DEBUG */
-
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -104,156 +102,6 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
     void av_##name##_set_##field(str *s, type v) { s->field = v; }
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
-
-/** head of registered input format linked list */
-static AVInputFormat *first_iformat = NULL;
-/** head of registered output format linked list */
-static AVOutputFormat *first_oformat = NULL;
-
-AVInputFormat  *av_iformat_next(AVInputFormat  *f)
-{
-    if(f) return f->next;
-    else  return first_iformat;
-}
-
-AVOutputFormat *av_oformat_next(AVOutputFormat *f)
-{
-    if(f) return f->next;
-    else  return first_oformat;
-}
-
-void av_register_input_format(AVInputFormat *format)
-{
-    AVInputFormat **p;
-    p = &first_iformat;
-    while (*p != NULL) p = &(*p)->next;
-    *p = format;
-    format->next = NULL;
-}
-
-void av_register_output_format(AVOutputFormat *format)
-{
-    AVOutputFormat **p;
-    p = &first_oformat;
-    while (*p != NULL) p = &(*p)->next;
-    *p = format;
-    format->next = NULL;
-}
-
-int av_match_ext(const char *filename, const char *extensions)
-{
-    const char *ext, *p;
-    char ext1[32], *q;
-
-    if(!filename)
-        return 0;
-
-    ext = strrchr(filename, '.');
-    if (ext) {
-        ext++;
-        p = extensions;
-        for(;;) {
-            q = ext1;
-            while (*p != '\0' && *p != ',' && q-ext1<sizeof(ext1)-1)
-                *q++ = *p++;
-            *q = '\0';
-            if (!av_strcasecmp(ext1, ext))
-                return 1;
-            if (*p == '\0')
-                break;
-            p++;
-        }
-    }
-    return 0;
-}
-
-static int match_format(const char *name, const char *names)
-{
-    const char *p;
-    int len, namelen;
-
-    if (!name || !names)
-        return 0;
-
-    namelen = strlen(name);
-    while ((p = strchr(names, ','))) {
-        len = FFMAX(p - names, namelen);
-        if (!av_strncasecmp(name, names, len))
-            return 1;
-        names = p+1;
-    }
-    return !av_strcasecmp(name, names);
-}
-
-AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
-                                const char *mime_type)
-{
-    AVOutputFormat *fmt = NULL, *fmt_found;
-    int score_max, score;
-
-    /* specific test for image sequences */
-#if CONFIG_IMAGE2_MUXER
-    if (!short_name && filename &&
-        av_filename_number_test(filename) &&
-        ff_guess_image2_codec(filename) != AV_CODEC_ID_NONE) {
-        return av_guess_format("image2", NULL, NULL);
-    }
-#endif
-    /* Find the proper file type. */
-    fmt_found = NULL;
-    score_max = 0;
-    while ((fmt = av_oformat_next(fmt))) {
-        score = 0;
-        if (fmt->name && short_name && match_format(short_name, fmt->name))
-            score += 100;
-        if (fmt->mime_type && mime_type && !strcmp(fmt->mime_type, mime_type))
-            score += 10;
-        if (filename && fmt->extensions &&
-            av_match_ext(filename, fmt->extensions)) {
-            score += 5;
-        }
-        if (score > score_max) {
-            score_max = score;
-            fmt_found = fmt;
-        }
-    }
-    return fmt_found;
-}
-
-enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
-                            const char *filename, const char *mime_type, enum AVMediaType type){
-    if (!strcmp(fmt->name, "segment") || !strcmp(fmt->name, "ssegment")) {
-        fmt = av_guess_format(NULL, filename, NULL);
-    }
-
-    if(type == AVMEDIA_TYPE_VIDEO){
-        enum AVCodecID codec_id= AV_CODEC_ID_NONE;
-
-#if CONFIG_IMAGE2_MUXER
-        if(!strcmp(fmt->name, "image2") || !strcmp(fmt->name, "image2pipe")){
-            codec_id= ff_guess_image2_codec(filename);
-        }
-#endif
-        if(codec_id == AV_CODEC_ID_NONE)
-            codec_id= fmt->video_codec;
-        return codec_id;
-    }else if(type == AVMEDIA_TYPE_AUDIO)
-        return fmt->audio_codec;
-    else if (type == AVMEDIA_TYPE_SUBTITLE)
-        return fmt->subtitle_codec;
-    else
-        return AV_CODEC_ID_NONE;
-}
-
-AVInputFormat *av_find_input_format(const char *short_name)
-{
-    AVInputFormat *fmt = NULL;
-    while ((fmt = av_iformat_next(fmt))) {
-        if (match_format(short_name, fmt->name))
-            return fmt;
-    }
-    return NULL;
-}
 
 /* an arbitrarily chosen "sane" max packet size -- 50M */
 #define SANE_CHUNK_SIZE (50000000)
@@ -671,7 +519,8 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
             goto fail;
 
     if (id3v2_extra_meta) {
-        if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac")) {
+        if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac") ||
+            !strcmp(s->iformat->name, "tta")) {
             if((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
                 goto fail;
         } else
@@ -956,7 +805,7 @@ static int is_intra_only(AVCodecContext *enc){
 static int has_decode_delay_been_guessed(AVStream *st)
 {
     if(st->codec->codec_id != AV_CODEC_ID_H264) return 1;
-    if(!st->info) // if we have left find_stream_info then nb_decoded_frames wont increase anymore for stream copy
+    if(!st->info) // if we have left find_stream_info then nb_decoded_frames won't increase anymore for stream copy
         return 1;
 #if CONFIG_H264_DECODER
     if(st->codec->has_b_frames &&
@@ -1344,6 +1193,13 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         if (!out_pkt.size)
             continue;
 
+        if (pkt->side_data) {
+            out_pkt.side_data       = pkt->side_data;
+            out_pkt.side_data_elems = pkt->side_data_elems;
+            pkt->side_data       = NULL;
+            pkt->side_data_elems = 0;
+        }
+
         /* set the duration */
         out_pkt.duration = 0;
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -1508,6 +1364,9 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             st->skip_to_keyframe = 0;
         if (st->skip_to_keyframe) {
             av_free_packet(&cur_pkt);
+            if (got_packet) {
+                *pkt = cur_pkt;
+            }
             got_packet = 0;
         }
     }
@@ -1910,14 +1769,16 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     }
 
     if(ts_max == AV_NOPTS_VALUE){
-        int step= 1024;
+        int64_t step= 1024;
+        int64_t limit;
         filesize = avio_size(s->pb);
         pos_max = filesize - 1;
         do{
+            limit = pos_max;
             pos_max = FFMAX(0, pos_max - step);
-            ts_max = ff_read_timestamp(s, stream_index, &pos_max, pos_max + step, read_timestamp);
+            ts_max = ff_read_timestamp(s, stream_index, &pos_max, limit, read_timestamp);
             step += step;
-        }while(ts_max == AV_NOPTS_VALUE && pos_max > 0);
+        }while(ts_max == AV_NOPTS_VALUE && 2*limit > step);
         if (ts_max == AV_NOPTS_VALUE)
             return -1;
 
@@ -2954,7 +2815,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 t = FFMAX(t, av_rescale_q(st->codec_info_nb_frames, av_inv_q(st->avg_frame_rate), AV_TIME_BASE_Q));
 
             if (t >= ic->max_analyze_duration) {
-                av_log(ic, AV_LOG_WARNING, "max_analyze_duration %d reached at %"PRId64" microseconds\n", ic->max_analyze_duration, t);
+                av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %d reached at %"PRId64" microseconds\n", ic->max_analyze_duration, t);
                 break;
             }
             if (pkt->duration) {
@@ -3171,7 +3032,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
  find_stream_info_err:
     for (i=0; i < ic->nb_streams; i++) {
         st = ic->streams[i];
-        if (ic->streams[i]->codec)
+        if (ic->streams[i]->codec && ic->streams[i]->codec->codec_type != AVMEDIA_TYPE_AUDIO)
             ic->streams[i]->codec->thread_count = 0;
         if (st->info)
             av_freep(&st->info->duration_error);
@@ -3981,72 +3842,6 @@ void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
     s->pts_wrap_bits = pts_wrap_bits;
 }
 
-int ff_url_join(char *str, int size, const char *proto,
-                const char *authorization, const char *hostname,
-                int port, const char *fmt, ...)
-{
-#if CONFIG_NETWORK
-    struct addrinfo hints = { 0 }, *ai;
-#endif
-
-    str[0] = '\0';
-    if (proto)
-        av_strlcatf(str, size, "%s://", proto);
-    if (authorization && authorization[0])
-        av_strlcatf(str, size, "%s@", authorization);
-#if CONFIG_NETWORK && defined(AF_INET6)
-    /* Determine if hostname is a numerical IPv6 address,
-     * properly escape it within [] in that case. */
-    hints.ai_flags = AI_NUMERICHOST;
-    if (!getaddrinfo(hostname, NULL, &hints, &ai)) {
-        if (ai->ai_family == AF_INET6) {
-            av_strlcat(str, "[", size);
-            av_strlcat(str, hostname, size);
-            av_strlcat(str, "]", size);
-        } else {
-            av_strlcat(str, hostname, size);
-        }
-        freeaddrinfo(ai);
-    } else
-#endif
-        /* Not an IPv6 address, just output the plain string. */
-        av_strlcat(str, hostname, size);
-
-    if (port >= 0)
-        av_strlcatf(str, size, ":%d", port);
-    if (fmt) {
-        va_list vl;
-        int len = strlen(str);
-
-        va_start(vl, fmt);
-        vsnprintf(str + len, size > len ? size - len : 0, fmt, vl);
-        va_end(vl);
-    }
-    return strlen(str);
-}
-
-int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
-                     AVFormatContext *src)
-{
-    AVPacket local_pkt;
-
-    local_pkt = *pkt;
-    local_pkt.stream_index = dst_stream;
-    if (pkt->pts != AV_NOPTS_VALUE)
-        local_pkt.pts = av_rescale_q(pkt->pts,
-                                     src->streams[pkt->stream_index]->time_base,
-                                     dst->streams[dst_stream]->time_base);
-    if (pkt->dts != AV_NOPTS_VALUE)
-        local_pkt.dts = av_rescale_q(pkt->dts,
-                                     src->streams[pkt->stream_index]->time_base,
-                                     dst->streams[dst_stream]->time_base);
-    if (pkt->duration)
-        local_pkt.duration = av_rescale_q(pkt->duration,
-                                          src->streams[pkt->stream_index]->time_base,
-                                          dst->streams[dst_stream]->time_base);
-    return av_write_frame(dst, &local_pkt);
-}
-
 void ff_parse_key_value(const char *str, ff_parse_key_val_cb callback_get_buf,
                         void *context)
 {
@@ -4109,75 +3904,6 @@ int ff_find_stream_index(AVFormatContext *s, int id)
             return i;
     }
     return -1;
-}
-
-void ff_make_absolute_url(char *buf, int size, const char *base,
-                          const char *rel)
-{
-    char *sep, *path_query;
-    /* Absolute path, relative to the current server */
-    if (base && strstr(base, "://") && rel[0] == '/') {
-        if (base != buf)
-            av_strlcpy(buf, base, size);
-        sep = strstr(buf, "://");
-        if (sep) {
-            /* Take scheme from base url */
-            if (rel[1] == '/') {
-                sep[1] = '\0';
-            } else {
-                /* Take scheme and host from base url */
-                sep += 3;
-                sep = strchr(sep, '/');
-                if (sep)
-                    *sep = '\0';
-            }
-        }
-        av_strlcat(buf, rel, size);
-        return;
-    }
-    /* If rel actually is an absolute url, just copy it */
-    if (!base || strstr(rel, "://") || rel[0] == '/') {
-        av_strlcpy(buf, rel, size);
-        return;
-    }
-    if (base != buf)
-        av_strlcpy(buf, base, size);
-
-    /* Strip off any query string from base */
-    path_query = strchr(buf, '?');
-    if (path_query != NULL)
-        *path_query = '\0';
-
-    /* Is relative path just a new query part? */
-    if (rel[0] == '?') {
-        av_strlcat(buf, rel, size);
-        return;
-    }
-
-    /* Remove the file name from the base url */
-    sep = strrchr(buf, '/');
-    if (sep)
-        sep[1] = '\0';
-    else
-        buf[0] = '\0';
-    while (av_strstart(rel, "../", NULL) && sep) {
-        /* Remove the path delimiter at the end */
-        sep[0] = '\0';
-        sep = strrchr(buf, '/');
-        /* If the next directory name to pop off is "..", break here */
-        if (!strcmp(sep ? &sep[1] : buf, "..")) {
-            /* Readd the slash we just removed */
-            av_strlcat(buf, "/", size);
-            break;
-        }
-        /* Cut off the directory name */
-        if (sep)
-            sep[1] = '\0';
-        else
-            buf[0] = '\0';
-        rel += 3;
-    }
-    av_strlcat(buf, rel, size);
 }
 
 int64_t ff_iso8601_to_unix_time(const char *datestr)
@@ -4267,15 +3993,6 @@ int ff_add_param_change(AVPacket *pkt, int32_t channels,
         bytestream_put_le32(&data, height);
     }
     return 0;
-}
-
-const struct AVCodecTag *avformat_get_riff_video_tags(void)
-{
-    return ff_codec_bmp_tags;
-}
-const struct AVCodecTag *avformat_get_riff_audio_tags(void)
-{
-    return ff_codec_wav_tags;
 }
 
 AVRational av_guess_sample_aspect_ratio(AVFormatContext *format, AVStream *stream, AVFrame *frame)
@@ -4471,58 +4188,4 @@ void ff_generate_avci_extradata(AVStream *st)
         return;
     memcpy(st->codec->extradata, data, size);
     st->codec->extradata_size = size;
-}
-
-static int match_host_pattern(const char *pattern, const char *hostname)
-{
-    int len_p, len_h;
-    if (!strcmp(pattern, "*"))
-        return 1;
-    // Skip a possible *. at the start of the pattern
-    if (pattern[0] == '*')
-        pattern++;
-    if (pattern[0] == '.')
-        pattern++;
-    len_p = strlen(pattern);
-    len_h = strlen(hostname);
-    if (len_p > len_h)
-        return 0;
-    // Simply check if the end of hostname is equal to 'pattern'
-    if (!strcmp(pattern, &hostname[len_h - len_p])) {
-        if (len_h == len_p)
-            return 1; // Exact match
-        if (hostname[len_h - len_p - 1] == '.')
-            return 1; // The matched substring is a domain and not just a substring of a domain
-    }
-    return 0;
-}
-
-int ff_http_match_no_proxy(const char *no_proxy, const char *hostname)
-{
-    char *buf, *start;
-    int ret = 0;
-    if (!no_proxy)
-        return 0;
-    if (!hostname)
-        return 0;
-    buf = av_strdup(no_proxy);
-    if (!buf)
-        return 0;
-    start = buf;
-    while (start) {
-        char *sep, *next = NULL;
-        start += strspn(start, " ,");
-        sep = start + strcspn(start, " ,");
-        if (*sep) {
-            next = sep + 1;
-            *sep = '\0';
-        }
-        if (match_host_pattern(start, hostname)) {
-            ret = 1;
-            break;
-        }
-        start = next;
-    }
-    av_free(buf);
-    return ret;
 }

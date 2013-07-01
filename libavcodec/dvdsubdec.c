@@ -28,8 +28,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avstring.h"
 
-//#define DEBUG
-
 typedef struct DVDSubContext
 {
   AVClass *class;
@@ -596,7 +594,7 @@ static const AVOption options[] = {
     { "palette", "set the global palette", OFFSET(palette_str), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, VD },
     { NULL }
 };
-static const AVClass class = {
+static const AVClass dvdsub_class = {
     .class_name = "dvdsubdec",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -611,5 +609,5 @@ AVCodec ff_dvdsub_decoder = {
     .init           = dvdsub_init,
     .decode         = dvdsub_decode,
     .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
-    .priv_class     = &class,
+    .priv_class     = &dvdsub_class,
 };

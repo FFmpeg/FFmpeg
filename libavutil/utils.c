@@ -45,6 +45,10 @@ unsigned avutil_version(void)
         abort();
     }
 
+    if (llrint(1LL<<60) != 1LL<<60) {
+        av_log(NULL, AV_LOG_ERROR, "Libavutil has been linked to a broken llrint()\n");
+    }
+
     ff_check_pixfmt_descriptors();
     checks_done = 1;
     return LIBAVUTIL_VERSION_INT;
@@ -95,7 +99,7 @@ unsigned av_int_list_length_for_size(unsigned elsize,
     if (!list)
         return 0;
 #define LIST_LENGTH(type) \
-    { type t = term, *l = list; for (i = 0; l[i] != t; i++); }
+    { type t = term, *l = (type *)list; for (i = 0; l[i] != t; i++); }
     switch (elsize) {
     case 1: LIST_LENGTH(uint8_t);  break;
     case 2: LIST_LENGTH(uint16_t); break;

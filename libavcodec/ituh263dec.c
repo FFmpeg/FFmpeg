@@ -28,8 +28,6 @@
  */
 
 #define UNCHECKED_BITSTREAM_READER 1
-
-//#define DEBUG
 #include <limits.h>
 
 #include "libavutil/attributes.h"

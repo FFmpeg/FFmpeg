@@ -43,8 +43,6 @@
  * Only tracks with associated descriptors will be decoded. "Highly Desirable" SMPTE 377M D.1
  */
 
-//#define DEBUG
-
 #include "libavutil/aes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
@@ -1603,8 +1601,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
         if (descriptor->extradata) {
             st->codec->extradata = av_mallocz(descriptor->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (st->codec->extradata)
+            if (st->codec->extradata) {
                 memcpy(st->codec->extradata, descriptor->extradata, descriptor->extradata_size);
+                st->codec->extradata_size = descriptor->extradata_size;
+            }
         } else if(st->codec->codec_id == AV_CODEC_ID_H264) {
             ff_generate_avci_extradata(st);
         }
@@ -2210,10 +2210,8 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
     KLVPacket klv;
     MXFContext *mxf = s->priv_data;
 
-    while (!url_feof(s->pb)) {
+    while (klv_read_packet(&klv, s->pb) == 0) {
         int ret;
-        if (klv_read_packet(&klv, s->pb) < 0)
-            return -1;
         PRINT_KEY(s, "read packet", klv.key);
         av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
@@ -2298,7 +2296,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
         skip:
             avio_skip(s->pb, klv.length);
     }
-    return AVERROR_EOF;
+    return url_feof(s->pb) ? AVERROR_EOF : -1;
 }
 
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)

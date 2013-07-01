@@ -297,4 +297,5 @@ AVFilter avfilter_af_afade = {
     .inputs        = avfilter_af_afade_inputs,
     .outputs       = avfilter_af_afade_outputs,
     .priv_class    = &afade_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

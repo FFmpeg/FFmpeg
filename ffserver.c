@@ -3974,6 +3974,7 @@ static void load_module(const char *filename)
                 "%s: init function 'ffserver_module_init()' not found\n",
                 filename);
         dlclose(dll);
+        return;
     }
 
     init_func();
@@ -4151,7 +4152,7 @@ static int parse_ffconfig(const char *filename)
         } else if (!av_strcasecmp(cmd, "MaxBandwidth")) {
             int64_t llval;
             get_arg(arg, sizeof(arg), &p);
-            llval = atoll(arg);
+            llval = strtoll(arg, NULL, 10);
             if (llval < 10 || llval > 10000000) {
                 ERROR("Invalid MaxBandwidth: %s\n", arg);
             } else

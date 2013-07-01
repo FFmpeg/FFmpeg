@@ -57,6 +57,7 @@ typedef struct DWTContext {
 int ff_jpeg2000_dwt_init(DWTContext *s, uint16_t border[2][2],
                          int decomp_levels, int type);
 
+int ff_dwt_encode(DWTContext *s, void *t);
 int ff_dwt_decode(DWTContext *s, void *t);
 
 void ff_dwt_destroy(DWTContext *s);

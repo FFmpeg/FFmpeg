@@ -35,7 +35,7 @@
 #include "internal.h"
 #include "video.h"
 
-#define MAX_NOISE 4096
+#define MAX_NOISE 5120
 #define MAX_SHIFT 1024
 #define MAX_RES (MAX_NOISE-MAX_SHIFT)
 
@@ -47,7 +47,6 @@
 typedef struct {
     int strength;
     unsigned flags;
-    int shiftptr;
     AVLFG lfg;
     int seed;
     int8_t *noise;
@@ -66,6 +65,10 @@ typedef struct {
     void (*line_noise)(uint8_t *dst, const uint8_t *src, int8_t *noise, int len, int shift);
     void (*line_noise_avg)(uint8_t *dst, const uint8_t *src, int len, int8_t **shift);
 } NoiseContext;
+
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
 
 #define OFFSET(x) offsetof(NoiseContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -161,7 +164,6 @@ static int init_noise(NoiseContext *n, int comp)
     }
 
     fp->noise = noise;
-    fp->shiftptr = 0;
     return 0;
 }
 
@@ -172,7 +174,7 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (desc->flags & PIX_FMT_PLANAR && !((desc->comp[0].depth_minus1 + 1) & 7))
+        if (desc->flags & AV_PIX_FMT_FLAG_PLANAR && !((desc->comp[0].depth_minus1 + 1) & 7))
             ff_add_format(&formats, fmt);
     }
 
@@ -184,16 +186,14 @@ static int config_input(AVFilterLink *inlink)
 {
     NoiseContext *n = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int i, ret;
+    int ret;
 
-    for (i = 0; i < desc->nb_components; i++)
-        n->nb_planes = FFMAX(n->nb_planes, desc->comp[i].plane);
-    n->nb_planes++;
+    n->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if ((ret = av_image_fill_linesizes(n->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
-    n->height[1] = n->height[2] = inlink->h >> desc->log2_chroma_h;
+    n->height[1] = n->height[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     n->height[0] = n->height[3] = inlink->h;
 
     return 0;
@@ -332,52 +332,63 @@ static inline void line_noise_avg_mmx(uint8_t *dst, const uint8_t *src,
 
 static void noise(uint8_t *dst, const uint8_t *src,
                   int dst_linesize, int src_linesize,
-                  int width, int height, NoiseContext *n, int comp)
+                  int width, int start, int end, NoiseContext *n, int comp)
 {
-    int8_t *noise = n->param[comp].noise;
-    int flags = n->param[comp].flags;
-    AVLFG *lfg = &n->param[comp].lfg;
+    FilterParams *p = &n->param[comp];
+    int8_t *noise = p->noise;
+    const int flags = p->flags;
+    AVLFG *lfg = &p->lfg;
     int shift, y;
 
     if (!noise) {
-        if (dst != src) {
-            for (y = 0; y < height; y++) {
-                memcpy(dst, src, width);
-                dst += dst_linesize;
-                src += src_linesize;
-            }
-        }
-
+        if (dst != src)
+            av_image_copy_plane(dst, dst_linesize, src, src_linesize, width, end - start);
         return;
     }
 
-    for (y = 0; y < height; y++) {
+    for (y = start; y < end; y++) {
+        const int ix = y & (MAX_RES - 1);
         if (flags & NOISE_TEMPORAL)
             shift = av_lfg_get(lfg) & (MAX_SHIFT - 1);
         else
-            shift = n->rand_shift[y];
+            shift = n->rand_shift[ix];
 
         if (flags & NOISE_AVERAGED) {
-            n->line_noise_avg(dst, src, width, n->param[comp].prev_shift[y]);
-            n->param[comp].prev_shift[y][n->param[comp].shiftptr] = noise + shift;
+            n->line_noise_avg(dst, src, width, p->prev_shift[ix]);
+            p->prev_shift[ix][shift & 3] = noise + shift;
         } else {
             n->line_noise(dst, src, noise, width, shift);
         }
         dst += dst_linesize;
         src += src_linesize;
     }
+}
 
-    n->param[comp].shiftptr++;
-    if (n->param[comp].shiftptr == 3)
-        n->param[comp].shiftptr = 0;
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    NoiseContext *s = ctx->priv;
+    ThreadData *td = arg;
+    int plane;
+
+    for (plane = 0; plane < s->nb_planes; plane++) {
+        const int height = s->height[plane];
+        const int start  = (height *  jobnr   ) / nb_jobs;
+        const int end    = (height * (jobnr+1)) / nb_jobs;
+        noise(td->out->data[plane] + start * td->out->linesize[plane],
+              td->in->data[plane]  + start * td->in->linesize[plane],
+              td->out->linesize[plane], td->in->linesize[plane],
+              s->linesize[plane], start, end, s, plane);
+    }
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
-    NoiseContext *n = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    NoiseContext *n = ctx->priv;
+    ThreadData td;
     AVFrame *out;
-    int i;
 
     if (av_frame_is_writable(inpicref)) {
         out = inpicref;
@@ -390,9 +401,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         av_frame_copy_props(out, inpicref);
     }
 
-    for (i = 0; i < n->nb_planes; i++)
-        noise(out->data[i], inpicref->data[i], out->linesize[i],
-              inpicref->linesize[i], n->linesize[i], n->height[i], n, i);
+    td.in = inpicref; td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(n->height[0], ctx->graph->nb_threads));
     emms_c();
 
     if (inpicref != out)
@@ -471,5 +481,5 @@ AVFilter avfilter_vf_noise = {
     .inputs        = noise_inputs,
     .outputs       = noise_outputs,
     .priv_class    = &noise_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

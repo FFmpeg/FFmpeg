@@ -84,6 +84,9 @@ static int xa_read_header(AVFormatContext *s)
     avio_skip(pb, 2);       /* Skip block align */
     avio_skip(pb, 2);       /* Skip bits-per-sample */
 
+    if (!st->codec->channels || !st->codec->sample_rate)
+        return AVERROR_INVALIDDATA;
+
     st->codec->bit_rate = av_clip(15LL * st->codec->channels * 8 *
                                   st->codec->sample_rate / 28, 0, INT_MAX);
 

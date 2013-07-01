@@ -76,7 +76,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
-    if (buf_size < FRAMESIZE) {
+    if (buf_size < FRAME_SIZE) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
         *got_frame_ptr = 0;
@@ -89,7 +89,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
         return ret;
     samples = (int16_t *)frame->data[0];
 
-    init_get_bits(&gb, buf, FRAMESIZE * 8);
+    init_get_bits(&gb, buf, FRAME_SIZE * 8);
 
     for (i = 0; i < LPC_ORDER; i++)
         lpc_refl[i] = ff_lpc_refl_cb[i][get_bits(&gb, sizes[i])];
@@ -122,7 +122,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return FRAMESIZE;
+    return FRAME_SIZE;
 }
 
 AVCodec ff_ra_144_decoder = {

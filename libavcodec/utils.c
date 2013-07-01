@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+#include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -161,10 +162,9 @@ av_cold void avcodec_register(AVCodec *codec)
     AVCodec **p;
     avcodec_init();
     p = &first_avcodec;
-    while (*p != NULL)
-        p = &(*p)->next;
-    *p          = codec;
     codec->next = NULL;
+    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, codec))
+        p = &(*p)->next;
 
     if (codec->init_static_data)
         codec->init_static_data(codec);
@@ -239,6 +239,18 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
     case AV_PIX_FMT_YUV444P12BE:
     case AV_PIX_FMT_YUV444P14LE:
     case AV_PIX_FMT_YUV444P14BE:
+    case AV_PIX_FMT_YUVA420P9LE:
+    case AV_PIX_FMT_YUVA420P9BE:
+    case AV_PIX_FMT_YUVA420P10LE:
+    case AV_PIX_FMT_YUVA420P10BE:
+    case AV_PIX_FMT_YUVA422P9LE:
+    case AV_PIX_FMT_YUVA422P9BE:
+    case AV_PIX_FMT_YUVA422P10LE:
+    case AV_PIX_FMT_YUVA422P10BE:
+    case AV_PIX_FMT_YUVA444P9LE:
+    case AV_PIX_FMT_YUVA444P9BE:
+    case AV_PIX_FMT_YUVA444P10LE:
+    case AV_PIX_FMT_YUVA444P10BE:
     case AV_PIX_FMT_GBRP9LE:
     case AV_PIX_FMT_GBRP9BE:
     case AV_PIX_FMT_GBRP10LE:
@@ -251,6 +263,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         h_align = 16 * 2; // interlaced needs 2 macroblocks height
         break;
     case AV_PIX_FMT_YUV411P:
+    case AV_PIX_FMT_YUVJ411P:
     case AV_PIX_FMT_UYYVYY411:
         w_align = 32;
         h_align = 8;
@@ -410,7 +423,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
             av_buffer_pool_uninit(&pool->pools[i]);
             pool->linesize[i] = picture.linesize[i];
             if (size[i]) {
-                pool->pools[i] = av_buffer_pool_init(size[i] + 16,
+                pool->pools[i] = av_buffer_pool_init(size[i] + 16 + STRIDE_ALIGN - 1,
                                                      CONFIG_MEMORY_POISONING ?
                                                         NULL :
                                                         av_buffer_allocz);
@@ -568,7 +581,7 @@ void avpriv_color_frame(AVFrame *frame, const int c[4])
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     int p, y, x;
 
-    av_assert0(desc->flags & PIX_FMT_PLANAR);
+    av_assert0(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
 
     for (p = 0; p<desc->nb_components; p++) {
         uint8_t *dst = frame->data[p];
@@ -762,7 +775,7 @@ do {                                                                    \
             planes = av_pix_fmt_count_planes(frame->format);
             /* workaround for AVHWAccel plane count of 0, buf[0] is used as
                check for allocated buffers: make libavcodec happy */
-            if (desc && desc->flags & PIX_FMT_HWACCEL)
+            if (desc && desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
                 planes = 1;
             if (!desc || planes <= 0) {
                 ret = AVERROR(EINVAL);
@@ -888,6 +901,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic)
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic)
 {
     av_assert0(0);
+    return AVERROR_BUG;
 }
 #endif
 
@@ -918,7 +932,7 @@ int avcodec_default_execute2(AVCodecContext *c, int (*func)(AVCodecContext *c2, 
 static int is_hwaccel_pix_fmt(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    return desc->flags & PIX_FMT_HWACCEL;
+    return desc->flags & AV_PIX_FMT_FLAG_HWACCEL;
 }
 
 enum AVPixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum AVPixelFormat *fmt)
@@ -1172,7 +1186,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             goto free_and_end;
     }
 
-    if (HAVE_THREADS && !avctx->thread_opaque
+    if (HAVE_THREADS
         && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
         ret = ff_thread_init(avctx);
         if (ret < 0) {
@@ -1381,8 +1395,13 @@ free_and_end:
 
 int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size)
 {
-    if (size < 0 || avpkt->size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Size %d invalid\n", size);
+    if (avpkt->size < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid negative user packet size %d\n", avpkt->size);
+        return AVERROR(EINVAL);
+    }
+    if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid minimum required packet size %d (max allowed is %d)\n",
+               size, INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE);
         return AVERROR(EINVAL);
     }
 
@@ -1433,26 +1452,23 @@ int ff_alloc_packet(AVPacket *avpkt, int size)
 static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
 {
     AVFrame *frame = NULL;
-    uint8_t *buf   = NULL;
     int ret;
 
     if (!(frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
-    *frame = *src;
 
-    if ((ret = av_samples_get_buffer_size(&frame->linesize[0], s->channels,
-                                          s->frame_size, s->sample_fmt, 0)) < 0)
+    frame->format         = src->format;
+    frame->channel_layout = src->channel_layout;
+    av_frame_set_channels(frame, av_frame_get_channels(src));
+    frame->nb_samples     = s->frame_size;
+    ret = av_frame_get_buffer(frame, 32);
+    if (ret < 0)
         goto fail;
 
-    if (!(buf = av_malloc(ret))) {
-        ret = AVERROR(ENOMEM);
+    ret = av_frame_copy_props(frame, src);
+    if (ret < 0)
         goto fail;
-    }
 
-    frame->nb_samples = s->frame_size;
-    if ((ret = avcodec_fill_audio_frame(frame, s->channels, s->sample_fmt,
-                                        buf, ret, 0)) < 0)
-        goto fail;
     if ((ret = av_samples_copy(frame->extended_data, src->extended_data, 0, 0,
                                src->nb_samples, s->channels, s->sample_fmt)) < 0)
         goto fail;
@@ -1466,10 +1482,7 @@ static int pad_last_frame(AVCodecContext *s, AVFrame **dst, const AVFrame *src)
     return 0;
 
 fail:
-    if (frame->extended_data != frame->data)
-        av_freep(&frame->extended_data);
-    av_freep(&buf);
-    av_freep(&frame);
+    av_frame_free(&frame);
     return ret;
 }
 
@@ -1591,12 +1604,7 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
     avpkt->flags |= AV_PKT_FLAG_KEY;
 
 end:
-    if (padded_frame) {
-        av_freep(&padded_frame->data[0]);
-        if (padded_frame->extended_data != padded_frame->data)
-            av_freep(&padded_frame->extended_data);
-        av_freep(&padded_frame);
-    }
+    av_frame_free(&padded_frame);
 
     return ret;
 }
@@ -1912,6 +1920,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     // copy to ensure we do not change avpkt
     AVPacket tmp = *avpkt;
 
+    if (!avctx->codec)
+        return AVERROR(EINVAL);
     if (avctx->codec->type != AVMEDIA_TYPE_VIDEO) {
         av_log(avctx, AV_LOG_ERROR, "Invalid media type for video\n");
         return AVERROR(EINVAL);
@@ -2051,6 +2061,8 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
         return AVERROR(EINVAL);
     }
+    if (!avctx->codec)
+        return AVERROR(EINVAL);
     if (avctx->codec->type != AVMEDIA_TYPE_AUDIO) {
         av_log(avctx, AV_LOG_ERROR, "Invalid media type for audio\n");
         return AVERROR(EINVAL);
@@ -2061,7 +2073,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     if (!avctx->refcounted_frames)
         av_frame_unref(&avci->to_free);
 
-    if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
+    if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         uint8_t *side;
         int side_size;
         // copy to ensure we do not change avpkt
@@ -2070,11 +2082,15 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         apply_param_change(avctx, &tmp);
 
         avctx->pkt = &tmp;
-        ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
+        if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
+            ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
+        else {
+            ret = avctx->codec->decode(avctx, frame, got_frame_ptr, &tmp);
+            frame->pkt_dts = avpkt->dts;
+        }
         if (ret >= 0 && *got_frame_ptr) {
             add_metadata_from_side_data(avctx, frame);
             avctx->frame_number++;
-            frame->pkt_dts = avpkt->dts;
             av_frame_set_best_effort_timestamp(frame,
                                                guess_correct_pts(avctx,
                                                                  frame->pkt_pts,
@@ -2395,6 +2411,8 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
 //         case AV_CODEC_ID_UTVIDEO_DEPRECATED: return AV_CODEC_ID_UTVIDEO;
         case AV_CODEC_ID_OPUS_DEPRECATED: return AV_CODEC_ID_OPUS;
         case AV_CODEC_ID_TAK_DEPRECATED : return AV_CODEC_ID_TAK;
+        case AV_CODEC_ID_ESCAPE130_DEPRECATED : return AV_CODEC_ID_ESCAPE130;
+        case AV_CODEC_ID_G2M_DEPRECATED : return AV_CODEC_ID_G2M;
         default                         : return id;
     }
 }
@@ -2660,6 +2678,9 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
 
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
+
+    if (!avctx->refcounted_frames)
+        av_frame_unref(&avctx->internal->to_free);
 }
 
 int av_get_exact_bits_per_sample(enum AVCodecID codec_id)
@@ -2838,6 +2859,8 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
             switch (id) {
             case AV_CODEC_ID_ADPCM_AFC:
                 return frame_bytes / (9 * ch) * 16;
+            case AV_CODEC_ID_ADPCM_DTK:
+                return frame_bytes / (16 * ch) * 28;
             case AV_CODEC_ID_ADPCM_4XM:
             case AV_CODEC_ID_ADPCM_IMA_ISS:
                 return (frame_bytes - 4 * ch) * 2 / ch;
@@ -2884,6 +2907,8 @@ int av_get_audio_frame_duration(AVCodecContext *avctx, int frame_bytes)
                     return blocks * (((ba - 16) * 2 / 3 * 4) / ch);
                 case AV_CODEC_ID_ADPCM_IMA_DK4:
                     return blocks * (1 + (ba - 4 * ch) * 2 / ch);
+                case AV_CODEC_ID_ADPCM_IMA_RAD:
+                    return blocks * ((ba - 4 * ch) * 2 / ch);
                 case AV_CODEC_ID_ADPCM_MS:
                     return blocks * (2 + (ba - 7 * ch) * 2 / ch);
                 }
@@ -2971,10 +2996,9 @@ static AVHWAccel *first_hwaccel = NULL;
 void av_register_hwaccel(AVHWAccel *hwaccel)
 {
     AVHWAccel **p = &first_hwaccel;
-    while (*p)
-        p = &(*p)->next;
-    *p = hwaccel;
     hwaccel->next = NULL;
+    while(avpriv_atomic_ptr_cas((void * volatile *)p, NULL, hwaccel))
+        p = &(*p)->next;
 }
 
 AVHWAccel *av_hwaccel_next(AVHWAccel *hwaccel)

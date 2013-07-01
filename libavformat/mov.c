@@ -26,7 +26,6 @@
 
 #include <limits.h>
 
-//#define DEBUG
 //#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/attributes.h"
@@ -1558,6 +1557,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     case AV_CODEC_ID_ADPCM_MS:
     case AV_CODEC_ID_ADPCM_IMA_WAV:
     case AV_CODEC_ID_ILBC:
+    case AV_CODEC_ID_MACE3:
+    case AV_CODEC_ID_MACE6:
+    case AV_CODEC_ID_QDM2:
         st->codec->block_align = sc->bytes_per_frame;
         break;
     case AV_CODEC_ID_ALAC:
@@ -1728,7 +1730,7 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sample_size = avio_rb32(pb);
         if (!sc->sample_size) /* do not overwrite value computed in stsd */
             sc->sample_size = sample_size;
-        sc->alt_sample_size = sample_size;
+        sc->stsz_sample_size = sample_size;
         field_size = 32;
     } else {
         sample_size = 0;
@@ -1846,6 +1848,13 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static void mov_update_dts_shift(MOVStreamContext *sc, int duration)
+{
+    if (duration < 0) {
+        sc->dts_shift = FFMAX(sc->dts_shift, -duration);
+    }
+}
+
 static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -1888,8 +1897,8 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return 0;
         }
 
-        if (duration < 0 && i+2<entries)
-            sc->dts_shift = FFMAX(sc->dts_shift, -duration);
+        if (i+2<entries)
+            mov_update_dts_shift(sc, duration);
     }
 
     sc->ctts_count = i;
@@ -1995,10 +2004,22 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         st->index_entries_allocated_size = (st->nb_index_entries + sc->sample_count) * sizeof(*st->index_entries);
 
         for (i = 0; i < sc->chunk_count; i++) {
+            int64_t next_offset = i+1 < sc->chunk_count ? sc->chunk_offsets[i+1] : INT64_MAX;
             current_offset = sc->chunk_offsets[i];
             while (stsc_index + 1 < sc->stsc_count &&
                 i + 1 == sc->stsc_data[stsc_index + 1].first)
                 stsc_index++;
+
+            if (next_offset > current_offset && sc->sample_size>0 && sc->sample_size < sc->stsz_sample_size &&
+                sc->stsc_data[stsc_index].count * (int64_t)sc->stsz_sample_size > next_offset - current_offset) {
+                av_log(mov->fc, AV_LOG_WARNING, "STSZ sample size %d invalid (too large), ignoring\n", sc->stsz_sample_size);
+                sc->stsz_sample_size = sc->sample_size;
+            }
+            if (sc->stsz_sample_size>0 && sc->stsz_sample_size < sc->sample_size) {
+                av_log(mov->fc, AV_LOG_WARNING, "STSZ sample size %d invalid (too small), ignoring\n", sc->stsz_sample_size);
+                sc->stsz_sample_size = sc->sample_size;
+            }
+
             for (j = 0; j < sc->stsc_data[stsc_index].count; j++) {
                 int keyframe = 0;
                 if (current_sample >= sc->sample_count) {
@@ -2025,7 +2046,7 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
                 }
                 if (keyframe)
                     distance = 0;
-                sample_size = sc->alt_sample_size > 0 ? sc->alt_sample_size : sc->sample_sizes[current_sample];
+                sample_size = sc->stsz_sample_size > 0 ? sc->stsz_sample_size : sc->sample_sizes[current_sample];
                 if (sc->pseudo_stream_id == -1 ||
                    sc->stsc_data[stsc_index].id - 1 == sc->pseudo_stream_id) {
                     AVIndexEntry *e = &st->index_entries[st->nb_index_entries++];
@@ -2557,6 +2578,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->ctts_data[sc->ctts_count].count = 1;
         sc->ctts_data[sc->ctts_count].duration = (flags & MOV_TRUN_SAMPLE_CTS) ?
                                                   avio_rb32(pb) : 0;
+        mov_update_dts_shift(sc, sc->ctts_data[sc->ctts_count].duration);
         sc->ctts_count++;
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
             keyframe = 1;
@@ -3263,6 +3285,11 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     /* must be done just before reading, to avoid infinite loop on sample */
     sc->current_sample++;
 
+    if (mov->next_root_atom) {
+        sample->pos = FFMIN(sample->pos, mov->next_root_atom);
+        sample->size = FFMIN(sample->size, (mov->next_root_atom - sample->pos));
+    }
+
     if (st->discard != AVDISCARD_ALL) {
         if (avio_seek(sc->pb, sample->pos, SEEK_SET) != sample->pos) {
             av_log(mov->fc, AV_LOG_ERROR, "stream %d, offset 0x%"PRIx64": partial file\n",
@@ -3395,7 +3422,7 @@ static const AVOption options[] = {
     {NULL}
 };
 
-static const AVClass class = {
+static const AVClass mov_class = {
     .class_name = "mov,mp4,m4a,3gp,3g2,mj2",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -3411,6 +3438,6 @@ AVInputFormat ff_mov_demuxer = {
     .read_packet    = mov_read_packet,
     .read_close     = mov_read_close,
     .read_seek      = mov_read_seek,
-    .priv_class     = &class,
+    .priv_class     = &mov_class,
     .flags          = AVFMT_NO_BYTE_SEEK,
 };

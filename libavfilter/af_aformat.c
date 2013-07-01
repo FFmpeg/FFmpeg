@@ -110,7 +110,7 @@ static int query_formats(AVFilterContext *ctx)
     AFormatContext *s = ctx->priv;
 
     ff_set_common_formats(ctx, s->formats ? s->formats :
-                                                  ff_all_formats(AVMEDIA_TYPE_AUDIO));
+                                            ff_all_formats(AVMEDIA_TYPE_AUDIO));
     ff_set_common_samplerates(ctx, s->sample_rates ? s->sample_rates :
                                                      ff_all_samplerates());
     ff_set_common_channel_layouts(ctx, s->channel_layouts ? s->channel_layouts :

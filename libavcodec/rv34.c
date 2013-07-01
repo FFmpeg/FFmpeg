@@ -40,8 +40,6 @@
 #include "rv34data.h"
 #include "rv34.h"
 
-//#define DEBUG
-
 static inline void ZERO8x2(void* dst, int stride)
 {
     fill_rectangle(dst,                 1, 2, stride, 0, 4);

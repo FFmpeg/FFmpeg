@@ -35,10 +35,10 @@
 #include "thread.h"
 #if HAVE_PTHREADS
 #include <pthread.h>
-#elif HAVE_W32THREADS
-#include "w32pthreads.h"
 #elif HAVE_OS2THREADS
-#include "os2threads.h"
+#include "compat/os2threads.h"
+#elif HAVE_W32THREADS
+#include "compat/w32pthreads.h"
 #endif
 
 #define VP8_MAX_QUANT 127

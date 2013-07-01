@@ -1,6 +1,6 @@
 /*
  * Bink DSP routines
- * Copyright (c) 2009 Kostya Shishkov
+ * Copyright (c) 2009 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *

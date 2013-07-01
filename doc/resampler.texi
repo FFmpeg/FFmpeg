@@ -217,6 +217,10 @@ select Kaiser Windowed Sinc
 For swr only, set Kaiser Window Beta value. Must be an integer in the
 interval [2,16], default value is 9.
 
+@item output_sample_bits
+For swr only, set number of used output sample bits for dithering. Must be an integer in the
+interval [0,64], default value is 0, which means it's not used.
+
 @end table
 
 @c man end RESAMPLER OPTIONS

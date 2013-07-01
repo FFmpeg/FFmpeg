@@ -102,6 +102,8 @@ static int vdadec_decode(AVCodecContext *avctx,
         AVBufferRef *buffer = pic->buf[0];
         VDABufferContext *context = av_buffer_get_opaque(buffer);
         CVPixelBufferRef cv_buffer = (CVPixelBufferRef)pic->data[3];
+
+        CVPixelBufferRetain(cv_buffer);
         CVPixelBufferLockBaseAddress(cv_buffer, 0);
         context->cv_buffer = cv_buffer;
         pic->format = ctx->pix_fmt;
@@ -133,48 +135,6 @@ static av_cold int vdadec_close(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int check_format(AVCodecContext *avctx)
-{
-    AVCodecParserContext *parser;
-    uint8_t *pout;
-    int psize;
-    int index;
-    H264Context *h;
-    int ret = -1;
-
-    /* init parser & parse file */
-    parser = av_parser_init(avctx->codec->id);
-    if (!parser) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to open H.264 parser.\n");
-        goto final;
-    }
-    parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
-    index = av_parser_parse2(parser, avctx, &pout, &psize, NULL, 0, 0, 0, 0);
-    if (index < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to parse this file.\n");
-        goto release_parser;
-    }
-
-    /* check if support */
-    h = parser->priv_data;
-    switch (h->sps.bit_depth_luma) {
-    case 8:
-        if (!CHROMA444(h) && !CHROMA422(h)) {
-            // only this will H.264 decoder switch to hwaccel
-            ret = 0;
-            break;
-        }
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported file.\n");
-    }
-
-release_parser:
-    av_parser_close(parser);
-
-final:
-    return ret;
-}
-
 static av_cold int vdadec_init(AVCodecContext *avctx)
 {
     VDADecoderContext *ctx = avctx->priv_data;
@@ -192,16 +152,13 @@ static av_cold int vdadec_init(AVCodecContext *avctx)
             ff_h264_vda_decoder.pix_fmts = vda_pixfmts;
     }
 
-    /* check if VDA supports this file */
-    if (check_format(avctx) < 0)
-        goto failed;
-
     /* init vda */
     memset(vda_ctx, 0, sizeof(struct vda_context));
     vda_ctx->width = avctx->width;
     vda_ctx->height = avctx->height;
     vda_ctx->format = 'avc1';
     vda_ctx->use_sync_decoding = 1;
+    vda_ctx->use_ref_buffer = 1;
     ctx->pix_fmt = avctx->get_format(avctx, avctx->codec->pix_fmts);
     switch (ctx->pix_fmt) {
     case AV_PIX_FMT_UYVY422:

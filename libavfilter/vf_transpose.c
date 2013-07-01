@@ -67,9 +67,9 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & PIX_FMT_PAL ||
-              desc->flags & PIX_FMT_HWACCEL ||
-              desc->flags & PIX_FMT_BITSTREAM ||
+        if (!(desc->flags & AV_PIX_FMT_FLAG_PAL ||
+              desc->flags & AV_PIX_FMT_FLAG_HWACCEL ||
+              desc->flags & AV_PIX_FMT_FLAG_BITSTREAM ||
               desc->log2_chroma_w != desc->log2_chroma_h))
             ff_add_format(&pix_fmts, fmt);
     }
@@ -163,8 +163,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int vsub = plane == 1 || plane == 2 ? trans->vsub : 0;
         int pixstep = trans->pixsteps[plane];
         int inh  = in->height  >> vsub;
-        int outw = out->width  >> hsub;
-        int outh = out->height >> vsub;
+        int outw = FF_CEIL_RSHIFT(out->width,  hsub);
+        int outh = FF_CEIL_RSHIFT(out->height, vsub);
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;

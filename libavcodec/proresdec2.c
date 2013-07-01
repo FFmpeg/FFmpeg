@@ -112,6 +112,12 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     ctx->frame_type = (buf[12] >> 2) & 3;
+    ctx->alpha_info = buf[17] & 0xf;
+
+    if (ctx->alpha_info > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid alpha mode %d\n", ctx->alpha_info);
+        return AVERROR_INVALIDDATA;
+    }
 
     av_dlog(avctx, "frame type %d\n", ctx->frame_type);
 
@@ -123,7 +129,11 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         ctx->frame->top_field_first = ctx->frame_type == 1;
     }
 
-    avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
+    if (ctx->alpha_info) {
+        avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P10 : AV_PIX_FMT_YUVA422P10;
+    } else {
+        avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
+    }
 
     ptr   = buf + 20;
     flags = buf[19];
@@ -422,6 +432,83 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     }
 }
 
+static void unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
+                         const int num_bits)
+{
+    const int mask = (1 << num_bits) - 1;
+    int i, idx, val, alpha_val;
+
+    idx       = 0;
+    alpha_val = mask;
+    do {
+        do {
+            if (get_bits1(gb)) {
+                val = get_bits(gb, num_bits);
+            } else {
+                int sign;
+                val  = get_bits(gb, num_bits == 16 ? 7 : 4);
+                sign = val & 1;
+                val  = (val + 2) >> 1;
+                if (sign)
+                    val = -val;
+            }
+            alpha_val = (alpha_val + val) & mask;
+            if (num_bits == 16) {
+                dst[idx++] = alpha_val >> 6;
+            } else {
+                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
+            }
+            if (idx >= num_coeffs)
+                break;
+        } while (get_bits_left(gb)>0 && get_bits1(gb));
+        val = get_bits(gb, 4);
+        if (!val)
+            val = get_bits(gb, 11);
+        if (idx + val > num_coeffs)
+            val = num_coeffs - idx;
+        if (num_bits == 16) {
+            for (i = 0; i < val; i++)
+                dst[idx++] = alpha_val >> 6;
+        } else {
+            for (i = 0; i < val; i++)
+                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
+
+        }
+    } while (idx < num_coeffs);
+}
+
+/**
+ * Decode alpha slice plane.
+ */
+static void decode_slice_alpha(ProresContext *ctx,
+                               uint16_t *dst, int dst_stride,
+                               const uint8_t *buf, int buf_size,
+                               int blocks_per_slice)
+{
+    GetBitContext gb;
+    int i;
+    LOCAL_ALIGNED_16(int16_t, blocks, [8*4*64]);
+    int16_t *block;
+
+    for (i = 0; i < blocks_per_slice<<2; i++)
+        ctx->dsp.clear_block(blocks+(i<<6));
+
+    init_get_bits(&gb, buf, buf_size << 3);
+
+    if (ctx->alpha_info == 2) {
+        unpack_alpha(&gb, blocks, blocks_per_slice * 4 * 64, 16);
+    } else {
+        unpack_alpha(&gb, blocks, blocks_per_slice * 4 * 64, 8);
+    }
+
+    block = blocks;
+    for (i = 0; i < 16; i++) {
+        memcpy(dst, block, 16 * blocks_per_slice * sizeof(*dst));
+        dst   += dst_stride >> 1;
+        block += 16 * blocks_per_slice;
+    }
+}
+
 static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
 {
     ProresContext *ctx = avctx->priv_data;
@@ -430,8 +517,8 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     AVFrame *pic = ctx->frame;
     int i, hdr_size, qscale, log2_chroma_blocks_per_mb;
     int luma_stride, chroma_stride;
-    int y_data_size, u_data_size, v_data_size;
-    uint8_t *dest_y, *dest_u, *dest_v;
+    int y_data_size, u_data_size, v_data_size, a_data_size;
+    uint8_t *dest_y, *dest_u, *dest_v, *dest_a;
     int16_t qmat_luma_scaled[64];
     int16_t qmat_chroma_scaled[64];
     int mb_x_shift;
@@ -448,6 +535,8 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     u_data_size = AV_RB16(buf + 4);
     v_data_size = slice->data_size - y_data_size - u_data_size - hdr_size;
     if (hdr_size > 7) v_data_size = AV_RB16(buf + 6);
+    a_data_size = slice->data_size - y_data_size - u_data_size -
+                  v_data_size - hdr_size;
 
     if (y_data_size < 0 || u_data_size < 0 || v_data_size < 0
         || hdr_size+y_data_size+u_data_size+v_data_size > slice->data_size){
@@ -470,7 +559,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         chroma_stride = pic->linesize[1] << 1;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P10) {
         mb_x_shift = 5;
         log2_chroma_blocks_per_mb = 2;
     } else {
@@ -481,11 +570,13 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     dest_y = pic->data[0] + (slice->mb_y << 4) * luma_stride + (slice->mb_x << 5);
     dest_u = pic->data[1] + (slice->mb_y << 4) * chroma_stride + (slice->mb_x << mb_x_shift);
     dest_v = pic->data[2] + (slice->mb_y << 4) * chroma_stride + (slice->mb_x << mb_x_shift);
+    dest_a = pic->data[3] + (slice->mb_y << 4) * luma_stride + (slice->mb_x << 5);
 
     if (ctx->frame_type && ctx->first_field ^ ctx->frame->top_field_first) {
         dest_y += pic->linesize[0];
         dest_u += pic->linesize[1];
         dest_v += pic->linesize[2];
+        dest_a += pic->linesize[3];
     }
 
     decode_slice_luma(avctx, slice, (uint16_t*)dest_y, luma_stride,
@@ -499,6 +590,11 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
                             buf + y_data_size + u_data_size, v_data_size,
                             qmat_chroma_scaled, log2_chroma_blocks_per_mb);
     }
+    /* decode alpha plane if available */
+    if (ctx->alpha_info && pic->data[3] && a_data_size)
+        decode_slice_alpha(ctx, (uint16_t*)dest_a, luma_stride,
+                           buf + y_data_size + u_data_size + v_data_size,
+                           a_data_size, slice->mb_count);
 
     slice->ret = 0;
     return 0;

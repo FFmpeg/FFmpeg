@@ -52,6 +52,7 @@ static int do_count_frames = 0;
 static int do_count_packets = 0;
 static int do_read_frames  = 0;
 static int do_read_packets = 0;
+static int do_show_chapters = 0;
 static int do_show_error   = 0;
 static int do_show_format  = 0;
 static int do_show_frames  = 0;
@@ -93,6 +94,9 @@ struct section {
 
 typedef enum {
     SECTION_ID_NONE = -1,
+    SECTION_ID_CHAPTER,
+    SECTION_ID_CHAPTER_TAGS,
+    SECTION_ID_CHAPTERS,
     SECTION_ID_ERROR,
     SECTION_ID_FORMAT,
     SECTION_ID_FORMAT_TAGS,
@@ -113,6 +117,9 @@ typedef enum {
 } SectionID;
 
 static struct section sections[] = {
+    [SECTION_ID_CHAPTERS] =           { SECTION_ID_CHAPTERS, "chapters", SECTION_FLAG_IS_ARRAY, { SECTION_ID_CHAPTER, -1 } },
+    [SECTION_ID_CHAPTER] =            { SECTION_ID_CHAPTER, "chapter", 0, { SECTION_ID_CHAPTER_TAGS, -1 } },
+    [SECTION_ID_CHAPTER_TAGS] =       { SECTION_ID_CHAPTER_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "chapter_tags" },
     [SECTION_ID_ERROR] =              { SECTION_ID_ERROR, "error", 0, { -1 } },
     [SECTION_ID_FORMAT] =             { SECTION_ID_FORMAT, "format", 0, { SECTION_ID_FORMAT_TAGS, -1 } },
     [SECTION_ID_FORMAT_TAGS] =        { SECTION_ID_FORMAT_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "format_tags" },
@@ -126,7 +133,7 @@ static struct section sections[] = {
     [SECTION_ID_PACKET] =             { SECTION_ID_PACKET, "packet", 0, { -1 } },
     [SECTION_ID_PROGRAM_VERSION] =    { SECTION_ID_PROGRAM_VERSION, "program_version", 0, { -1 } },
     [SECTION_ID_ROOT] =               { SECTION_ID_ROOT, "root", SECTION_FLAG_IS_WRAPPER,
-                                        { SECTION_ID_FORMAT, SECTION_ID_FRAMES, SECTION_ID_STREAMS, SECTION_ID_PACKETS,
+                                        { SECTION_ID_CHAPTERS, SECTION_ID_FORMAT, SECTION_ID_FRAMES, SECTION_ID_STREAMS, SECTION_ID_PACKETS,
                                           SECTION_ID_ERROR, SECTION_ID_PROGRAM_VERSION, SECTION_ID_LIBRARY_VERSIONS, -1} },
     [SECTION_ID_STREAMS] =            { SECTION_ID_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM, -1 } },
     [SECTION_ID_STREAM] =             { SECTION_ID_STREAM, "stream", 0, { SECTION_ID_STREAM_DISPOSITION, SECTION_ID_STREAM_TAGS, -1 } },
@@ -1751,6 +1758,27 @@ static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
     writer_print_section_footer(w);
 }
 
+static void show_chapters(WriterContext *w, AVFormatContext *fmt_ctx)
+{
+    int i;
+
+    writer_print_section_header(w, SECTION_ID_CHAPTERS);
+    for (i = 0; i < fmt_ctx->nb_chapters; i++) {
+        AVChapter *chapter = fmt_ctx->chapters[i];
+
+        writer_print_section_header(w, SECTION_ID_CHAPTER);
+        print_int("id", chapter->id);
+        print_q  ("time_base", chapter->time_base, '/');
+        print_int("start", chapter->start);
+        print_time("start_time", chapter->start, &chapter->time_base);
+        print_int("end", chapter->end);
+        print_time("end_time", chapter->end, &chapter->time_base);
+        show_tags(w, chapter->metadata, SECTION_ID_CHAPTER_TAGS);
+        writer_print_section_footer(w);
+    }
+    writer_print_section_footer(w);
+}
+
 static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
@@ -1876,50 +1904,55 @@ static int probe_file(WriterContext *wctx, const char *filename)
     do_read_packets = do_show_packets || do_count_packets;
 
     ret = open_input_file(&fmt_ctx, filename);
-    if (ret >= 0) {
-        nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
-        nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
-        selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
+    if (ret < 0)
+        return ret;
 
-        for (i = 0; i < fmt_ctx->nb_streams; i++) {
-            if (stream_specifier) {
-                ret = avformat_match_stream_specifier(fmt_ctx,
-                                                      fmt_ctx->streams[i],
-                                                      stream_specifier);
-                if (ret < 0)
-                    goto end;
-                else
-                    selected_streams[i] = ret;
-            } else {
-                selected_streams[i] = 1;
-            }
+    nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
+    nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
+    selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
+
+    for (i = 0; i < fmt_ctx->nb_streams; i++) {
+        if (stream_specifier) {
+            ret = avformat_match_stream_specifier(fmt_ctx,
+                                                  fmt_ctx->streams[i],
+                                                  stream_specifier);
+            if (ret < 0)
+                goto end;
+            else
+                selected_streams[i] = ret;
+            ret = 0;
+        } else {
+            selected_streams[i] = 1;
         }
-
-        if (do_read_frames || do_read_packets) {
-            if (do_show_frames && do_show_packets &&
-                wctx->writer->flags & WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER)
-                section_id = SECTION_ID_PACKETS_AND_FRAMES;
-            else if (do_show_packets && !do_show_frames)
-                section_id = SECTION_ID_PACKETS;
-            else // (!do_show_packets && do_show_frames)
-                section_id = SECTION_ID_FRAMES;
-            if (do_show_frames || do_show_packets)
-                writer_print_section_header(wctx, section_id);
-            read_packets(wctx, fmt_ctx);
-            if (do_show_frames || do_show_packets)
-                writer_print_section_footer(wctx);
-        }
-        if (do_show_streams)
-            show_streams(wctx, fmt_ctx);
-        if (do_show_format)
-            show_format(wctx, fmt_ctx);
-
-    end:
-        close_input_file(&fmt_ctx);
-        av_freep(&nb_streams_frames);
-        av_freep(&nb_streams_packets);
-        av_freep(&selected_streams);
     }
+
+    if (do_read_frames || do_read_packets) {
+        if (do_show_frames && do_show_packets &&
+            wctx->writer->flags & WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER)
+            section_id = SECTION_ID_PACKETS_AND_FRAMES;
+        else if (do_show_packets && !do_show_frames)
+            section_id = SECTION_ID_PACKETS;
+        else // (!do_show_packets && do_show_frames)
+            section_id = SECTION_ID_FRAMES;
+        if (do_show_frames || do_show_packets)
+            writer_print_section_header(wctx, section_id);
+        read_packets(wctx, fmt_ctx);
+        if (do_show_frames || do_show_packets)
+            writer_print_section_footer(wctx);
+    }
+    if (do_show_streams)
+        show_streams(wctx, fmt_ctx);
+    if (do_show_chapters)
+        show_chapters(wctx, fmt_ctx);
+    if (do_show_format)
+        show_format(wctx, fmt_ctx);
+
+end:
+    close_input_file(&fmt_ctx);
+    av_freep(&nb_streams_frames);
+    av_freep(&nb_streams_packets);
+    av_freep(&selected_streams);
+
     return ret;
 }
 
@@ -2165,6 +2198,7 @@ static int opt_show_versions(const char *opt, const char *arg)
         return 0;                                                       \
     }
 
+DEFINE_OPT_SHOW_SECTION(chapters,         CHAPTERS);
 DEFINE_OPT_SHOW_SECTION(error,            ERROR);
 DEFINE_OPT_SHOW_SECTION(format,           FORMAT);
 DEFINE_OPT_SHOW_SECTION(frames,           FRAMES);
@@ -2199,6 +2233,7 @@ static const OptionDef real_options[] = {
       "show a set of specified entries", "entry_list" },
     { "show_packets", 0, {(void*)&opt_show_packets}, "show packets info" },
     { "show_streams", 0, {(void*)&opt_show_streams}, "show streams info" },
+    { "show_chapters", 0, {(void*)&opt_show_chapters}, "show chapters info" },
     { "count_frames", OPT_BOOL, {(void*)&do_count_frames}, "count the number of frames per stream" },
     { "count_packets", OPT_BOOL, {(void*)&do_count_packets}, "count the number of packets per stream" },
     { "show_program_version",  0, {(void*)&opt_show_program_version},  "show ffprobe version" },
@@ -2253,6 +2288,7 @@ int main(int argc, char **argv)
     parse_options(NULL, argc, argv, options, opt_input_file);
 
     /* mark things to show, based on -show_entries */
+    SET_DO_SHOW(CHAPTERS, chapters);
     SET_DO_SHOW(ERROR, error);
     SET_DO_SHOW(FORMAT, format);
     SET_DO_SHOW(FRAMES, frames);
@@ -2298,7 +2334,7 @@ int main(int argc, char **argv)
             ffprobe_show_library_versions(wctx);
 
         if (!input_filename &&
-            ((do_show_format || do_show_streams || do_show_packets || do_show_error) ||
+            ((do_show_format || do_show_streams || do_show_chapters || do_show_packets || do_show_error) ||
              (!do_show_program_version && !do_show_library_versions))) {
             show_usage();
             av_log(NULL, AV_LOG_ERROR, "You have to specify one input file.\n");
@@ -2323,5 +2359,5 @@ end:
 
     avformat_network_deinit();
 
-    return ret;
+    return ret < 0;
 }

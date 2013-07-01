@@ -168,7 +168,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass class = {
+static const AVClass cljr_class = {
     .class_name = "cljr encoder",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -185,6 +185,6 @@ AVCodec ff_cljr_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV411P,
                                                    AV_PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
-    .priv_class     = &class,
+    .priv_class     = &cljr_class,
 };
 #endif

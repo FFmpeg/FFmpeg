@@ -51,8 +51,8 @@ static int query_formats(AVFilterContext *ctx)
         formats = NULL;
         for (pix_fmt = 0; pix_fmt < AV_PIX_FMT_NB; pix_fmt++) {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-            if (!(desc->flags & PIX_FMT_HWACCEL ||
-                  desc->flags & PIX_FMT_BITSTREAM) &&
+            if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL ||
+                  desc->flags & AV_PIX_FMT_FLAG_BITSTREAM) &&
                 desc->nb_components && !desc->log2_chroma_h &&
                 (ret = ff_add_format(&formats, pix_fmt)) < 0) {
                 ff_formats_unref(&formats);
@@ -68,17 +68,15 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    AVFilterContext   *ctx        = inlink->dst;
-    FieldOrderContext *fieldorder = ctx->priv;
+    AVFilterContext   *ctx = inlink->dst;
+    FieldOrderContext *s   = ctx->priv;
     int               plane;
 
     /** full an array with the number of bytes that the video
      *  data occupies per line for each plane of the input video */
     for (plane = 0; plane < 4; plane++) {
-        fieldorder->line_size[plane] = av_image_get_linesize(
-                inlink->format,
-                inlink->w,
-                plane);
+        s->line_size[plane] = av_image_get_linesize(inlink->format, inlink->w,
+                                                    plane);
     }
 
     return 0;

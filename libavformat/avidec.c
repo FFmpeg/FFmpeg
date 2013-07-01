@@ -365,6 +365,7 @@ static int avi_read_header(AVFormatContext *s)
     int amv_file_format=0;
     uint64_t list_end = 0;
     int ret;
+    AVDictionaryEntry *dict_entry;
 
     avi->stream_index= -1;
 
@@ -712,7 +713,9 @@ static int avi_read_header(AVFormatContext *s)
             }
             break;
         case MKTAG('s', 't', 'r', 'd'):
-            if (stream_index >= (unsigned)s->nb_streams || s->streams[stream_index]->codec->extradata_size) {
+            if (stream_index >= (unsigned)s->nb_streams
+                || s->streams[stream_index]->codec->extradata_size
+                || s->streams[stream_index]->codec->codec_tag == MKTAG('H','2','6','4')) {
                 avio_skip(pb, size);
             } else {
                 uint64_t cur_pos = avio_tell(pb);
@@ -802,6 +805,16 @@ static int avi_read_header(AVFormatContext *s)
         avi_load_index(s);
     avi->index_loaded |= 1;
     avi->non_interleaved |= guess_ni_flag(s) | (s->flags & AVFMT_FLAG_SORT_DTS);
+
+    dict_entry = av_dict_get(s->metadata, "ISFT", NULL, 0);
+    if (dict_entry && !strcmp(dict_entry->value, "PotEncoder"))
+        for (i=0; i<s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            if (   st->codec->codec_id == AV_CODEC_ID_MPEG1VIDEO
+                || st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO)
+                st->need_parsing = AVSTREAM_PARSE_FULL;
+        }
+
     for(i=0; i<s->nb_streams; i++){
         AVStream *st = s->streams[i];
         if(st->nb_index_entries)
@@ -1009,9 +1022,9 @@ start_sync:
                || st->discard >= AVDISCARD_ALL){
                 if (!exit_early) {
                     ast->frame_offset += get_duration(ast, size);
+                    avio_skip(pb, size);
+                    goto start_sync;
                 }
-                avio_skip(pb, size);
-                goto start_sync;
             }
 
             if (d[2] == 'p' && d[3] == 'c' && size<=4*256+4) {

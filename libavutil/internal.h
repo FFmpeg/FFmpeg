@@ -66,6 +66,8 @@
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
 
+#define FF_MEMORY_POISON 0x2a
+
 // Some broken preprocessors need a second expansion
 // to be forced to tokenize __VA_ARGS__
 #define E1(x) x

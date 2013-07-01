@@ -33,10 +33,10 @@
 #define JV_PREAMBLE_SIZE 5
 
 typedef struct {
-    int audio_size;    /** audio packet size (bytes) */
-    int video_size;    /** video packet size (bytes) */
-    int palette_size;  /** palette size (bytes) */
-    int video_type;    /** per-frame video compression type */
+    int audio_size;    /**< audio packet size (bytes) */
+    int video_size;    /**< video packet size (bytes) */
+    int palette_size;  /**< palette size (bytes) */
+    int video_type;    /**< per-frame video compression type */
 } JVFrame;
 
 typedef struct {

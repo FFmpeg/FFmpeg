@@ -119,7 +119,7 @@ static const AVOption options[] = {
     // backward compatibility
     { "resend_headers", "Reemit PAT/PMT before writing the next packet",
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
-    { "mpegts_copyts", "dont offset dts/pts",
+    { "mpegts_copyts", "don't offset dts/pts",
       offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
@@ -395,6 +395,16 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++ = 'r';
                 *q++ = 'a';
                 *q++ = 'c';
+            }
+            break;
+        case AVMEDIA_TYPE_DATA:
+            if (st->codec->codec_id == AV_CODEC_ID_SMPTE_KLV) {
+                *q++ = 0x05; /* MPEG-2 registration descriptor */
+                *q++ = 4;
+                *q++ = 'K';
+                *q++ = 'L';
+                *q++ = 'V';
+                *q++ = 'A';
             }
             break;
         }
@@ -977,8 +987,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             *q++ = len >> 8;
             *q++ = len;
             val = 0x80;
-            /* data alignment indicator is required for subtitle data */
-            if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+            /* data alignment indicator is required for subtitle and data streams */
+            if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE || st->codec->codec_type == AVMEDIA_TYPE_DATA)
                 val |= 0x04;
             *q++ = val;
             *q++ = flags;

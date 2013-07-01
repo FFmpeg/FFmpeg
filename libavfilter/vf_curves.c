@@ -478,7 +478,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int x, y, direct = 0;
     AVFilterContext *ctx = inlink->dst;
     CurvesContext *curves = ctx->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     uint8_t *dst;
     const uint8_t *src;
@@ -532,11 +532,11 @@ static const AVFilterPad curves_inputs[] = {
 };
 
 static const AVFilterPad curves_outputs[] = {
-     {
-         .name = "default",
-         .type = AVMEDIA_TYPE_VIDEO,
-     },
-     { NULL }
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 AVFilter avfilter_vf_curves = {
@@ -548,5 +548,5 @@ AVFilter avfilter_vf_curves = {
     .inputs        = curves_inputs,
     .outputs       = curves_outputs,
     .priv_class    = &curves_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

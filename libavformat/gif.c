@@ -66,7 +66,7 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
 }
 
 typedef struct {
-    AVClass *class;         /** Class for private options. */
+    AVClass *class;
     int loop;
     int last_delay;
     AVPacket *prev_pkt;

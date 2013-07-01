@@ -1,6 +1,6 @@
 /*
  * RTMP network protocol
- * Copyright (c) 2009 Kostya Shishkov
+ * Copyright (c) 2009 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *
@@ -47,8 +47,6 @@
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
-
-//#define DEBUG
 
 #define APP_MAX_LENGTH 1024
 #define PLAYPATH_MAX_LENGTH 256

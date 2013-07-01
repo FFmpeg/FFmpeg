@@ -26,8 +26,6 @@
  * The simplest AC-3 encoder.
  */
 
-//#define ASSERT_LEVEL 2
-
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
@@ -2019,6 +2017,7 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
 
     av_freep(&s->windowed_samples);
+    if (s->planar_samples)
     for (ch = 0; ch < s->channels; ch++)
         av_freep(&s->planar_samples[ch]);
     av_freep(&s->planar_samples);

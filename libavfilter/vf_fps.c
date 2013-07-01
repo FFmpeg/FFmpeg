@@ -77,6 +77,8 @@ static av_cold int init(AVFilterContext *ctx)
     if (!(s->fifo = av_fifo_alloc(2*sizeof(AVFrame*))))
         return AVERROR(ENOMEM);
 
+    s->pts          = AV_NOPTS_VALUE;
+
     av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", s->framerate.num, s->framerate.den);
     return 0;
 }
@@ -111,7 +113,6 @@ static int config_props(AVFilterLink* link)
     link->frame_rate= s->framerate;
     link->w         = link->src->inputs[0]->w;
     link->h         = link->src->inputs[0]->h;
-    s->pts          = AV_NOPTS_VALUE;
 
     return 0;
 }

@@ -30,9 +30,9 @@
 #if HAVE_PTHREADS
 #include <pthread.h>
 #elif HAVE_W32THREADS
-#include "w32pthreads.h"
+#include "compat/w32pthreads.h"
 #elif HAVE_OS2THREADS
-#include "os2threads.h"
+#include "compat/os2threads.h"
 #endif
 
 #define MAX_THREADS 64
@@ -126,7 +126,7 @@ int ff_frame_thread_encoder_init(AVCodecContext *avctx, AVDictionary *options){
         return 0;
 
     if(!avctx->thread_count) {
-        avctx->thread_count = ff_get_logical_cpus(avctx);
+        avctx->thread_count = av_cpu_count();
         avctx->thread_count = FFMIN(avctx->thread_count, MAX_THREADS);
     }
 

@@ -52,16 +52,11 @@
 #include <limits.h>
 #include "sp5x.h"
 
-//#undef NDEBUG
-//#include <assert.h>
-
 static int encode_picture(MpegEncContext *s, int picture_number);
 static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
 static void denoise_dct_c(MpegEncContext *s, int16_t *block);
 static int dct_quantize_trellis_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
-
-//#define DEBUG
 
 static uint8_t default_mv_penalty[MAX_FCODE + 1][MAX_MV * 2 + 1];
 static uint8_t default_fcode_tab[MAX_MV * 2 + 1];
@@ -540,7 +535,8 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
 
     // FIXME mpeg2 uses that too
-    if (s->mpeg_quant && s->codec_id != AV_CODEC_ID_MPEG4) {
+    if (s->mpeg_quant && (   s->codec_id != AV_CODEC_ID_MPEG4
+                          && s->codec_id != AV_CODEC_ID_MPEG2VIDEO)) {
         av_log(avctx, AV_LOG_ERROR,
                "mpeg2 style quantization not supported by codec\n");
         return -1;
@@ -960,18 +956,17 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
 
         if (pts != AV_NOPTS_VALUE) {
             if (s->user_specified_pts != AV_NOPTS_VALUE) {
-                int64_t time = pts;
                 int64_t last = s->user_specified_pts;
 
-                if (time <= last) {
+                if (pts <= last) {
                     av_log(s->avctx, AV_LOG_ERROR,
-                           "Error, Invalid timestamp=%"PRId64", "
-                           "last=%"PRId64"\n", pts, s->user_specified_pts);
-                    return -1;
+                           "Invalid pts (%"PRId64") <= last (%"PRId64")\n",
+                           pts, last);
+                    return AVERROR(EINVAL);
                 }
 
                 if (!s->low_delay && display_picture_number == 1)
-                    s->dts_delta = time - last;
+                    s->dts_delta = pts - last;
             }
             s->user_specified_pts = pts;
         } else {
@@ -1637,6 +1632,13 @@ vbv_retry:
     } else {
         s->frame_bits = 0;
     }
+
+    /* release non-reference frames */
+    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
+        if (!s->picture[i].reference)
+            ff_mpeg_unref_picture(s, &s->picture[i]);
+    }
+
     assert((s->frame_bits & 7) == 0);
 
     pkt->size = s->frame_bits / 8;

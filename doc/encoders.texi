@@ -412,6 +412,223 @@ Selected by Encoder (default)
 
 @end table
 
+@section libmp3lame
+
+LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper.
+
+Requires the presence of the libmp3lame headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libmp3lame}.
+
+@subsection Option Mapping
+
+The following options are supported by the libmp3lame wrapper,
+the LAME-equivalent options follow the FFmpeg ones.
+
+@multitable @columnfractions .2 .2
+@item FFmpeg            @tab LAME
+@item b                 @tab b
+FFmpeg @code{b} option is expressed in bits/s, lame @code{bitrate}
+in kilobits/s.
+@item q                 @tab V
+Quality setting for VBR.
+@item compression_level @tab q
+Algorithm quality. Valid options are integers from 0-9.
+@item reservoir         @tab N.A.
+Enable use of bit reservoir. LAME has this enabled by default.
+@item joint_stereo      @tab -m j
+Enables the encoder to use (on a frame by frame basis) either L/R
+stereo or mid/side stereo.
+@end multitable
+
+@section libopencore-amrnb
+
+OpenCORE Adaptive Multi-Rate Narrowband encoder.
+
+Requires the presence of the libopencore-amrnb headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopencore-amrnb --enable-version3}.
+
+This is a mono-only encoder. Officially it only supports 8000Hz sample rate,
+but you can override it by setting @option{strict} to @samp{unofficial} or
+lower.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set bitrate in bits per second. Only the following bitrates are supported,
+otherwise libavcodec will round to the nearest valid bitrate.
+
+@table @option
+@item 4750
+@item 5150
+@item 5900
+@item 6700
+@item 7400
+@item 7950
+@item 10200
+@item 12200
+@end table
+
+@item dtx
+Allow discontinuous transmission (generate comfort noise) when set to 1. The
+default value is 0 (disabled).
+
+@end table
+
+@section libtwolame
+
+TwoLAME MP2 encoder wrapper.
+
+Requires the presence of the libtwolame headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libtwolame}.
+
+@subsection Options Mapping
+
+The following options are supported by the libtwolame wrapper. The
+TwoLAME-equivalent options follow the FFmpeg ones and are in
+parentheses.
+
+@table @option
+@item b
+(b) Set bitrate in bits/s. Note that FFmpeg @code{b} option is
+expressed in bits/s, twolame @code{b} in kilobits/s. The default
+value is 128k.
+
+@item q
+(V) Set quality for experimental VBR support. Maximum value range is
+from -50 to 50, useful range is from -10 to 10.
+
+@item mode
+(mode) Set MPEG mode. Possible values:
+
+@table @samp
+@item auto
+Choose mode automatically based on the input. This is the default.
+@item stereo
+Stereo
+@item joint_stereo
+Joint stereo
+@item dual_channel
+Dual channel
+@item mono
+Mono
+@end table
+
+@item psymodel
+(psyc-mode) Set psychoacoustic model to use in encoding. The argument
+must be an integer between -1 and 4, inclusive. The higher the value,
+the better the quality. The default value is 3.
+
+@item energy_levels
+(energy) Enable energy levels extensions when set to 1. The default
+value is 0 (disabled).
+
+@item error_protection
+(protect) Enable CRC error protection when set to 1. The default value
+is 0 (disabled).
+
+@item copyright
+(copyright) Set MPEG audio copyright flag when set to 1. The default
+value is 0 (disabled).
+
+@item original
+(original) Set MPEG audio original flag when set to 1. The default
+value is 0 (disabled).
+
+@end table
+
+@section libvo-aacenc
+
+VisualOn AAC encoder.
+
+Requires the presence of the libvo-aacenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvo-aacenc --enable-version3}.
+
+@subsection Options
+
+The VisualOn AAC encoder only support encoding AAC-LC and up to 2
+channels. It is also CBR-only. It is considered to be worse than the
+native experimental FFmpeg AAC encoder.
+
+@table @option
+
+@item b
+Bitrate.
+
+@end table
+
+@section libvo-amrwbenc
+
+VisualOn Adaptive Multi-Rate Wideband encoder.
+
+Requires the presence of the libvo-amrwbenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvo-amrwbenc --enable-version3}.
+
+This is a mono-only encoder. Officially it only supports 16000Hz sample
+rate, but you can override it by setting @option{strict} to
+@samp{unofficial} or lower.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set bitrate in bits/s. Only the following bitrates are supported, otherwise
+libavcodec will round to the nearest valid bitrate.
+
+@table @samp
+@item 6600
+@item 8850
+@item 12650
+@item 14250
+@item 15850
+@item 18250
+@item 19850
+@item 23050
+@item 23850
+@end table
+
+@item dtx
+Allow discontinuous transmission (generate comfort noise) when set to 1. The
+default value is 0 (disabled).
+
+@end table
+
+@section libwavpack
+
+A wrapper providing WavPack encoding through libwavpack.
+
+Only lossless mode using 32-bit integer samples is supported currently.
+The @option{compression_level} option can be used to control speed vs.
+compression tradeoff, with the values mapped to libwavpack as follows:
+
+@table @option
+
+@item 0
+Fast mode - corresponding to the wavpack @option{-f} option.
+
+@item 1
+Normal (default) settings.
+
+@item 2
+High quality - corresponding to the wavpack @option{-h} option.
+
+@item 3
+Very high quality - corresponding to the wavpack @option{-hh} option.
+
+@item 4-8
+Same as 3, but with extra processing enabled - corresponding to the wavpack
+@option{-x} option. I.e. 4 is the same as @option{-x2} and 8 is the same as
+@option{-x6}.
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
@@ -581,7 +798,7 @@ For more information about libvpx see:
 
 @section libx264
 
-x264 H.264/MPEG-4 AVC encoder wrapper
+x264 H.264/MPEG-4 AVC encoder wrapper.
 
 Requires the presence of the libx264 headers and library during
 configuration. You need to explicitly configure the build with
@@ -777,6 +994,19 @@ Override the x264 configuration using a :-separated list of key=value parameters
 Encoding avpresets for common usages are provided so they can be used with the
 general presets system (e.g. passing the @code{-pre} option).
 
+@section png
+
+PNG image encoder.
+
+@subsection Private options
+
+@table @option
+@item dpi @var{integer}
+Set physical density of pixels, in dots per inch, unset by default
+@item dpm @var{integer}
+Set physical density of pixels, in dots per meter, unset by default
+@end table
+
 @section ProRes
 
 Apple ProRes encoder.
@@ -794,6 +1024,7 @@ Select the ProRes profile to encode
 @item lt
 @item standard
 @item hq
+@item 4444
 @end table
 
 @item quant_mat @var{integer}
@@ -822,6 +1053,11 @@ should be good in almost all situations.
 Override the 4-byte vendor ID.
 A custom vendor ID like @var{apl0} would claim the stream was produced by
 the Apple encoder.
+
+@item alpha_bits @var{integer}
+Specify number of bits for alpha component.
+Possible values are @var{0}, @var{8} and @var{16}.
+Use @var{0} to disable alpha plane coding.
 
 @end table
 

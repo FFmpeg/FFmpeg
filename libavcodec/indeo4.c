@@ -56,8 +56,8 @@ static const struct {
     int             is_2d_trans;
 } transforms[18] = {
     { ff_ivi_inverse_haar_8x8,  ff_ivi_dc_haar_2d,       1 },
-    { ff_ivi_inverse_haar_8x1,  ff_ivi_dc_haar_2d,       1 },
-    { ff_ivi_inverse_haar_1x8,  ff_ivi_dc_haar_2d,       1 },
+    { ff_ivi_row_haar8,         ff_ivi_dc_haar_2d,       0 },
+    { ff_ivi_col_haar8,         ff_ivi_dc_haar_2d,       0 },
     { ff_ivi_put_pixels_8x8,    ff_ivi_put_dc_pixel_8x8, 1 },
     { ff_ivi_inverse_slant_8x8, ff_ivi_dc_slant_2d,      1 },
     { ff_ivi_row_slant8,        ff_ivi_dc_row_slant,     1 },
@@ -65,13 +65,13 @@ static const struct {
     { NULL, NULL, 0 }, /* inverse DCT 8x8 */
     { NULL, NULL, 0 }, /* inverse DCT 8x1 */
     { NULL, NULL, 0 }, /* inverse DCT 1x8 */
-    { NULL, NULL, 0 }, /* inverse Haar 4x4 */
+    { ff_ivi_inverse_haar_4x4,  ff_ivi_dc_haar_2d,       1 },
     { ff_ivi_inverse_slant_4x4, ff_ivi_dc_slant_2d,      1 },
     { NULL, NULL, 0 }, /* no transform 4x4 */
-    { NULL, NULL, 0 }, /* inverse Haar 1x4 */
-    { NULL, NULL, 0 }, /* inverse Haar 4x1 */
-    { NULL, NULL, 0 }, /* inverse slant 1x4 */
-    { NULL, NULL, 0 }, /* inverse slant 4x1 */
+    { ff_ivi_row_haar4,         ff_ivi_dc_haar_2d,       0 },
+    { ff_ivi_col_haar4,         ff_ivi_dc_haar_2d,       0 },
+    { ff_ivi_row_slant4,        ff_ivi_dc_row_slant,     0 },
+    { ff_ivi_col_slant4,        ff_ivi_dc_col_slant,     0 },
     { NULL, NULL, 0 }, /* inverse DCT 4x4 */
 };
 
@@ -392,9 +392,12 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
         }
 
         /* decode block huffman codebook */
-        if (ff_ivi_dec_huff_desc(&ctx->gb, get_bits1(&ctx->gb), IVI_BLK_HUFF,
-                                 &band->blk_vlc, avctx))
-            return AVERROR_INVALIDDATA;
+        if (!get_bits1(&ctx->gb))
+            band->blk_vlc.tab = ctx->blk_vlc.tab;
+        else
+            if (ff_ivi_dec_huff_desc(&ctx->gb, 1, IVI_BLK_HUFF,
+                                     &band->blk_vlc, avctx))
+                return AVERROR_INVALIDDATA;
 
         /* select appropriate rvmap table for this band */
         band->rvmap_sel = get_bits1(&ctx->gb) ? get_bits(&ctx->gb, 3) : 8;

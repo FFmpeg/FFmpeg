@@ -26,7 +26,10 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
+#include "avio_internal.h"
 #include "id3v2.h"
+
+#define PADDING_BYTES 10
 
 static void id3v2_put_size(AVIOContext *pb, int size)
 {
@@ -162,35 +165,91 @@ void ff_id3v2_start(ID3v2EncContext *id3, AVIOContext *pb, int id3v2_version,
     avio_wb32(pb, 0);
 }
 
-int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
+static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
+                          ID3v2EncContext *id3, int enc)
 {
     AVDictionaryEntry *t = NULL;
-    int enc = id3->version == 3 ? ID3v2_ENCODING_UTF16BOM :
-                                  ID3v2_ENCODING_UTF8;
+    int ret;
 
-    ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
+    ff_metadata_conv(metadata, ff_id3v2_34_metadata_conv, NULL);
     if (id3->version == 3)
-        id3v2_3_metadata_split_date(&s->metadata);
+        id3v2_3_metadata_split_date(metadata);
     else if (id3->version == 4)
-        ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
+        ff_metadata_conv(metadata, ff_id3v2_4_metadata_conv, NULL);
 
-    while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
-        int ret;
-
-        if ((ret = id3v2_check_write_tag(id3, s->pb, t, ff_id3v2_tags, enc)) > 0) {
+    while ((t = av_dict_get(*metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        if ((ret = id3v2_check_write_tag(id3, pb, t, ff_id3v2_tags, enc)) > 0) {
             id3->len += ret;
             continue;
         }
-        if ((ret = id3v2_check_write_tag(id3, s->pb, t, id3->version == 3 ?
-                                               ff_id3v2_3_tags : ff_id3v2_4_tags, enc)) > 0) {
+        if ((ret = id3v2_check_write_tag(id3, pb, t, id3->version == 3 ?
+                                         ff_id3v2_3_tags : ff_id3v2_4_tags, enc)) > 0) {
             id3->len += ret;
             continue;
         }
 
         /* unknown tag, write as TXXX frame */
-        if ((ret = id3v2_put_ttag(id3, s->pb, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
+        if ((ret = id3v2_put_ttag(id3, pb, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
             return ret;
         id3->len += ret;
+    }
+
+    return 0;
+}
+
+static int write_chapter(AVFormatContext *s, ID3v2EncContext *id3, int id, int enc)
+{
+    const AVRational time_base = {1, 1000};
+    AVChapter *ch = s->chapters[id];
+    uint8_t *dyn_buf = NULL;
+    AVIOContext *dyn_bc = NULL;
+    char name[123];
+    int len, start, end, ret;
+
+    if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
+        goto fail;
+
+    start = av_rescale_q(ch->start, ch->time_base, time_base);
+    end   = av_rescale_q(ch->end,   ch->time_base, time_base);
+
+    snprintf(name, 122, "ch%d", id);
+    id3->len += avio_put_str(dyn_bc, name);
+    avio_wb32(dyn_bc, start);
+    avio_wb32(dyn_bc, end);
+    avio_wb32(dyn_bc, 0xFFFFFFFFu);
+    avio_wb32(dyn_bc, 0xFFFFFFFFu);
+
+    if ((ret = write_metadata(dyn_bc, &ch->metadata, id3, enc)) < 0)
+        goto fail;
+
+    len = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    id3->len += 16 + ID3v2_HEADER_SIZE;
+
+    avio_wb32(s->pb, MKBETAG('C', 'H', 'A', 'P'));
+    avio_wb32(s->pb, len);
+    avio_wb16(s->pb, 0);
+    avio_write(s->pb, dyn_buf, len);
+
+fail:
+    if (dyn_bc && !dyn_buf)
+        avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    av_freep(&dyn_buf);
+
+    return ret;
+}
+
+int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
+{
+    int enc = id3->version == 3 ? ID3v2_ENCODING_UTF16BOM :
+                                  ID3v2_ENCODING_UTF8;
+    int i, ret;
+
+    if ((ret = write_metadata(s->pb, &s->metadata, id3, enc)) < 0)
+        return ret;
+
+    for (i = 0; i < s->nb_chapters; i++) {
+        if ((ret = write_chapter(s, id3, i, enc)) < 0)
+            return ret;
     }
 
     return 0;
@@ -263,7 +322,15 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
 
 void ff_id3v2_finish(ID3v2EncContext *id3, AVIOContext *pb)
 {
-    int64_t cur_pos = avio_tell(pb);
+    int64_t cur_pos;
+
+    /* adding an arbitrary amount of padding bytes at the end of the
+     * ID3 metadata fixes cover art display for some software (iTunes,
+     * Traktor, Serato, Torq) */
+    ffio_fill(pb, 0, PADDING_BYTES);
+    id3->len += PADDING_BYTES;
+
+    cur_pos = avio_tell(pb);
     avio_seek(pb, id3->size_pos, SEEK_SET);
     id3v2_put_size(pb, id3->len);
     avio_seek(pb, cur_pos, SEEK_SET);

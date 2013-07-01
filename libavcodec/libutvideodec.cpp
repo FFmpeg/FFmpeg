@@ -21,7 +21,8 @@
 /**
  * @file
  * Known FOURCCs:
- *     'ULY0' (YCbCr 4:2:0), 'ULY2' (YCbCr 4:2:2), 'ULRG' (RGB), 'ULRA' (RGBA)
+ *     'ULY0' (YCbCr 4:2:0), 'ULY2' (YCbCr 4:2:2), 'ULRG' (RGB), 'ULRA' (RGBA),
+ *     'ULH0' (YCbCr 4:2:0 BT.709), 'ULH2' (YCbCr 4:2:2 BT.709)
  */
 
 extern "C" {
@@ -51,6 +52,18 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 
     /* Pick format based on FOURCC */
     switch (avctx->codec_tag) {
+#ifdef UTV_BT709
+    case MKTAG('U', 'L', 'H', '0'):
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        avctx->colorspace = AVCOL_SPC_BT709;
+        format = UTVF_YV12;
+        break;
+    case MKTAG('U', 'L', 'H', '2'):
+        avctx->pix_fmt = AV_PIX_FMT_YUYV422;
+        avctx->colorspace = AVCOL_SPC_BT709;
+        format = UTVF_YUY2;
+        break;
+#endif
     case MKTAG('U', 'L', 'Y', '0'):
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         format = UTVF_YV12;

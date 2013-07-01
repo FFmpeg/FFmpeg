@@ -103,13 +103,13 @@ av_cold void ff_ccitt_unpack_init(void)
     int i;
     static int initialized = 0;
 
-    if(initialized)
+    if (initialized)
         return;
     ccitt_vlc[0].table = code_table1;
     ccitt_vlc[0].table_allocated = 528;
     ccitt_vlc[1].table = code_table2;
     ccitt_vlc[1].table_allocated = 648;
-    for(i = 0; i < 2; i++){
+    for (i = 0; i < 2; i++) {
         ff_init_vlc_sparse(&ccitt_vlc[i], 9, CCITT_SYMS,
                            ccitt_codes_lens[i], 1, 1,
                            ccitt_codes_bits[i], 1, 1,
@@ -124,32 +124,33 @@ av_cold void ff_ccitt_unpack_init(void)
 
 
 static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 unsigned int pix_left, int *runs, const int *runend)
+                                 unsigned int pix_left, int *runs,
+                                 const int *runend)
 {
-    int mode = 0;
-    unsigned int run=0;
+    int mode         = 0;
+    unsigned int run = 0;
     unsigned int t;
-    for(;;){
-        t = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
+    for (;;) {
+        t    = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
         run += t;
-        if(t < 64){
+        if (t < 64) {
             *runs++ = run;
-            if(runs >= runend){
+            if (runs >= runend) {
                 av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
-            if(pix_left <= run){
-                if(pix_left == run)
+            if (pix_left <= run) {
+                if (pix_left == run)
                     break;
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             pix_left -= run;
-            run = 0;
-            mode = !mode;
-        }else if((int)t == -1){
+            run       = 0;
+            mode      = !mode;
+        } else if ((int)t == -1) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect code\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
     *runs++ = 0;
@@ -157,85 +158,86 @@ static int decode_group3_1d_line(AVCodecContext *avctx, GetBitContext *gb,
 }
 
 static int decode_group3_2d_line(AVCodecContext *avctx, GetBitContext *gb,
-                                 unsigned int width, int *runs, const int *runend, const int *ref)
+                                 unsigned int width, int *runs,
+                                 const int *runend, const int *ref)
 {
-    int mode = 0, saved_run = 0, t;
-    int run_off = *ref++;
-    unsigned int offs=0, run= 0;
+    int mode          = 0, saved_run = 0, t;
+    int run_off       = *ref++;
+    unsigned int offs = 0, run = 0;
 
-    while(offs < width){
+    while (offs < width) {
         int cmode = get_vlc2(gb, ccitt_group3_2d_vlc.table, 9, 1);
-        if(cmode == -1){
+        if (cmode == -1) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect mode VLC\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
-        if(!cmode){//pass mode
-            if(run_off < width)
+        if (!cmode) { //pass mode
+            if (run_off < width)
                 run_off += *ref++;
-            run = run_off - offs;
-            offs= run_off;
-            if(run_off < width)
+            run      = run_off - offs;
+            offs     = run_off;
+            if (run_off < width)
                 run_off += *ref++;
-            if(offs > width){
+            if (offs > width) {
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             saved_run += run;
-        }else if(cmode == 1){//horizontal mode
+        } else if (cmode == 1) { //horizontal mode
             int k;
-            for(k = 0; k < 2; k++){
+            for (k = 0; k < 2; k++) {
                 run = 0;
-                for(;;){
+                for (;;) {
                     t = get_vlc2(gb, ccitt_vlc[mode].table, 9, 2);
-                    if(t == -1){
+                    if (t == -1) {
                         av_log(avctx, AV_LOG_ERROR, "Incorrect code\n");
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     run += t;
-                    if(t < 64)
+                    if (t < 64)
                         break;
                 }
                 *runs++ = run + saved_run;
-                if(runs >= runend){
+                if (runs >= runend) {
                     av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 saved_run = 0;
-                offs += run;
-                if(offs > width || run > width){
+                offs     += run;
+                if (offs > width || run > width) {
                     av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 mode = !mode;
             }
-        }else if(cmode == 9 || cmode == 10){
-            av_log(avctx, AV_LOG_ERROR, "Special modes are not supported (yet)\n");
-            return -1;
-        }else{//vertical mode
-            run = run_off - offs + (cmode - 5);
+        } else if (cmode == 9 || cmode == 10) {
+            avpriv_report_missing_feature(avctx, "Special modes support");
+            return AVERROR_PATCHWELCOME;
+        } else { //vertical mode
+            run      = run_off - offs + (cmode - 5);
             run_off -= *--ref;
-            offs += run;
-            if(offs > width || run > width){
+            offs    += run;
+            if (offs > width || run > width) {
                 av_log(avctx, AV_LOG_ERROR, "Run went out of bounds\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             *runs++ = run + saved_run;
-            if(runs >= runend){
+            if (runs >= runend) {
                 av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             saved_run = 0;
-            mode = !mode;
+            mode      = !mode;
         }
         //sync line pointers
-        while(offs < width && run_off <= offs){
+        while (offs < width && run_off <= offs) {
             run_off += *ref++;
             run_off += *ref++;
         }
     }
     *runs++ = saved_run;
     if (saved_run) {
-        if(runs >= runend){
+        if (runs >= runend) {
             av_log(avctx, AV_LOG_ERROR, "Run overrun\n");
             return -1;
         }
@@ -249,14 +251,14 @@ static void put_line(uint8_t *dst, int size, int width, const int *runs)
     PutBitContext pb;
     int run, mode = ~0, pix_left = width, run_idx = 0;
 
-    init_put_bits(&pb, dst, size*8);
-    while(pix_left > 0){
-        run = runs[run_idx++];
-        mode = ~mode;
+    init_put_bits(&pb, dst, size * 8);
+    while (pix_left > 0) {
+        run       = runs[run_idx++];
+        mode      = ~mode;
         pix_left -= run;
-        for(; run > 16; run -= 16)
+        for (; run > 16; run -= 16)
             put_sbits(&pb, 16, mode);
-        if(run)
+        if (run)
             put_sbits(&pb, run, mode);
     }
     flush_put_bits(&pb);
@@ -266,16 +268,15 @@ static int find_group3_syncmarker(GetBitContext *gb, int srcsize)
 {
     unsigned int state = -1;
     srcsize -= get_bits_count(gb);
-    while(srcsize-- > 0){
-        state+= state + get_bits1(gb);
-        if((state & 0xFFF) == 1)
+    while (srcsize-- > 0) {
+        state += state + get_bits1(gb);
+        if ((state & 0xFFF) == 1)
             return 0;
     }
     return -1;
 }
 
-int ff_ccitt_unpack(AVCodecContext *avctx,
-                    const uint8_t *src, int srcsize,
+int ff_ccitt_unpack(AVCodecContext *avctx, const uint8_t *src, int srcsize,
                     uint8_t *dst, int height, int stride,
                     enum TiffCompr compr, int opts)
 {
@@ -283,51 +284,57 @@ int ff_ccitt_unpack(AVCodecContext *avctx,
     GetBitContext gb;
     int *runs, *ref = NULL, *runend;
     int ret;
-    int runsize= avctx->width + 2;
-    int err = 0;
+    int runsize = avctx->width + 2;
     int has_eol;
 
     runs = av_malloc(runsize * sizeof(runs[0]));
     ref  = av_malloc(runsize * sizeof(ref[0]));
-    if (!runs || ! ref) {
-        err = AVERROR(ENOMEM);
+    if (!runs || !ref) {
+        ret = AVERROR(ENOMEM);
         goto fail;
     }
     ref[0] = avctx->width;
     ref[1] = 0;
     ref[2] = 0;
-    init_get_bits(&gb, src, srcsize*8);
+    init_get_bits(&gb, src, srcsize * 8);
     has_eol = show_bits(&gb, 12) == 1 || show_bits(&gb, 16) == 1;
 
-    for(j = 0; j < height; j++){
+    for (j = 0; j < height; j++) {
         runend = runs + runsize;
-        if(compr == TIFF_G4){
-            ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
-            if(ret < 0){
-                err = -1;
+        if (compr == TIFF_G4) {
+            ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend,
+                                        ref);
+            if (ret < 0)
                 goto fail;
-            }
-        }else{
+        } else {
             int g3d1 = (compr == TIFF_G3) && !(opts & 1);
-            if(compr!=TIFF_CCITT_RLE && has_eol && find_group3_syncmarker(&gb, srcsize*8) < 0)
+            if (compr != TIFF_CCITT_RLE &&
+                has_eol &&
+                find_group3_syncmarker(&gb, srcsize * 8) < 0)
                 break;
-            if(compr==TIFF_CCITT_RLE || g3d1 || get_bits1(&gb))
-                ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs, runend);
+            if (compr == TIFF_CCITT_RLE || g3d1 || get_bits1(&gb))
+                ret = decode_group3_1d_line(avctx, &gb, avctx->width, runs,
+                                            runend);
             else
-                ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs, runend, ref);
-            if(compr==TIFF_CCITT_RLE)
+                ret = decode_group3_2d_line(avctx, &gb, avctx->width, runs,
+                                            runend, ref);
+            if (compr == TIFF_CCITT_RLE)
                 align_get_bits(&gb);
         }
-        if(ret < 0){
+        if (avctx->err_recognition & AV_EF_EXPLODE && ret < 0)
+            goto fail;
+
+        if (ret < 0) {
             put_line(dst, stride, avctx->width, ref);
-        }else{
+        } else {
             put_line(dst, stride, avctx->width, runs);
-            FFSWAP(int*, runs, ref);
+            FFSWAP(int *, runs, ref);
         }
         dst += stride;
     }
+    ret = 0;
 fail:
     av_free(runs);
     av_free(ref);
-    return err;
+    return ret;
 }

@@ -1,7 +1,7 @@
 /*
  * Canopus Lossless Codec decoder
  *
- * Copyright (c) 2012 Derek Buitenhuis
+ * Copyright (c) 2012-2013 Derek Buitenhuis
  *
  * This file is part of FFmpeg.
  *
@@ -136,14 +136,13 @@ static int read_argb_line(CLLCContext *ctx, GetBitContext *gb, int *top_left,
 
     CLOSE_READER(bits, gb);
 
-    dst         -= 4 * ctx->avctx->width;
-    top_left[0]  = dst[0];
+    top_left[0]  = outbuf[0];
 
     /* Only stash components if they are not transparent */
     if (top_left[0]) {
-        top_left[1] = dst[1];
-        top_left[2] = dst[2];
-        top_left[3] = dst[3];
+        top_left[1] = outbuf[1];
+        top_left[2] = outbuf[2];
+        top_left[3] = outbuf[3];
     }
 
     return 0;
@@ -174,7 +173,35 @@ static int read_rgb24_component_line(CLLCContext *ctx, GetBitContext *gb,
     CLOSE_READER(bits, gb);
 
     /* Stash the first pixel */
-    *top_left = dst[-3 * ctx->avctx->width];
+    *top_left = outbuf[0];
+
+    return 0;
+}
+
+static int read_yuv_component_line(CLLCContext *ctx, GetBitContext *gb,
+                                   int *top_left, VLC *vlc, uint8_t *outbuf,
+                                   int is_chroma)
+{
+    int pred, code;
+    int i;
+
+    OPEN_READER(bits, gb);
+
+    pred = *top_left;
+
+    /* Simultaneously read and restore the line */
+    for (i = 0; i < ctx->avctx->width >> is_chroma; i++) {
+        UPDATE_CACHE(bits, gb);
+        GET_VLC(code, bits, gb, vlc->table, 7, 2);
+
+        pred     += code;
+        outbuf[i] = pred;
+    }
+
+    CLOSE_READER(bits, gb);
+
+    /* Stash the first pixel */
+    *top_left = outbuf[0];
 
     return 0;
 }
@@ -267,6 +294,61 @@ static int decode_rgb24_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
     return 0;
 }
 
+static int decode_yuv_frame(CLLCContext *ctx, GetBitContext *gb, AVFrame *pic)
+{
+    AVCodecContext *avctx = ctx->avctx;
+    uint8_t block;
+    uint8_t *dst[3];
+    int pred[3];
+    int ret;
+    int i, j;
+    VLC vlc[2];
+
+    pred[0] = 0x80;
+    pred[1] = 0x80;
+    pred[2] = 0x80;
+
+    dst[0] = pic->data[0];
+    dst[1] = pic->data[1];
+    dst[2] = pic->data[2];
+
+    skip_bits(gb, 8);
+
+    block = get_bits(gb, 8);
+    if (block) {
+        avpriv_request_sample(ctx->avctx, "Blocked YUV");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    /* Read in code table for luma and chroma */
+    for (i = 0; i < 2; i++) {
+        ret = read_code_table(ctx, gb, &vlc[i]);
+        if (ret < 0) {
+            for (j = 0; j <= i; j++)
+                ff_free_vlc(&vlc[j]);
+
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "Could not read code table %d.\n", i);
+            return ret;
+        }
+    }
+
+    /* Read in and restore every line */
+    for (i = 0; i < avctx->height; i++) {
+        read_yuv_component_line(ctx, gb, &pred[0], &vlc[0], dst[0], 0); /* Y */
+        read_yuv_component_line(ctx, gb, &pred[1], &vlc[1], dst[1], 1); /* U */
+        read_yuv_component_line(ctx, gb, &pred[2], &vlc[1], dst[2], 1); /* V */
+
+        for (j = 0; j < 3; j++)
+            dst[j] += pic->linesize[j];
+    }
+
+    for (i = 0; i < 2; i++)
+        ff_free_vlc(&vlc[i]);
+
+    return 0;
+}
+
 static int cllc_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_picture_ptr, AVPacket *avpkt)
 {
@@ -324,6 +406,18 @@ static int cllc_decode_frame(AVCodecContext *avctx, void *data,
     av_log(avctx, AV_LOG_DEBUG, "Frame coding type: %d\n", coding_type);
 
     switch (coding_type) {
+    case 0:
+        avctx->pix_fmt             = AV_PIX_FMT_YUV422P;
+        avctx->bits_per_raw_sample = 8;
+
+        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
+            return ret;
+
+        ret = decode_yuv_frame(ctx, &gb, pic);
+        if (ret < 0)
+            return ret;
+
+        break;
     case 1:
     case 2:
         avctx->pix_fmt             = AV_PIX_FMT_RGB24;

@@ -20,7 +20,7 @@ $(FATE_AMIX): CMP  = oneoff
 $(FATE_AMIX): CMP_UNIT = f32
 
 FATE_AFILTER-$(call FILTERDEMDECMUX, ASYNCTS, FLV, NELLYMOSER, PCM_S16LE) += fate-filter-asyncts
-fate-filter-asyncts: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
+fate-filter-asyncts: SRC = $(TARGET_SAMPLES)/nellymoser/nellymoser-discont.flv
 fate-filter-asyncts: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af asyncts
 fate-filter-asyncts: CMP = oneoff
 fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont-async-v2.pcm
@@ -48,9 +48,10 @@ $(FATE_ATRIM): SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 FATE_FILTER-$(call FILTERDEMDECENCMUX, ATRIM, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_ATRIM)
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-channelmap
+fate-filter-channelmap: tests/data/filtergraphs/channelmap
 fate-filter-channelmap: SRC = $(TARGET_PATH)/tests/data/asynth-44100-6.wav
 fate-filter-channelmap: tests/data/asynth-44100-6.wav
-fate-filter-channelmap: CMD = md5 -i $(SRC) -filter_complex_script $(SRC_PATH)/tests/filtergraphs/channelmap -f wav -flags +bitexact
+fate-filter-channelmap: CMD = md5 -i $(SRC) -filter_complex_script $(TARGET_PATH)/tests/data/filtergraphs/channelmap -f wav -flags +bitexact
 fate-filter-channelmap: CMP = oneline
 fate-filter-channelmap: REF = 06168d06085e2c0603e4e118ba4cade2
 

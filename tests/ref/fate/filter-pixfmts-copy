@@ -46,6 +46,8 @@ rgb565be            bc123b962629ead1a06af0c18cbb6e5f
 rgb565le            20757fafe4756e62d845b2ab4c0b8f93
 rgb8                e01614f5416dcc8ad365ad7a57afc9fb
 rgba                53796fa4c392a1b2659595b6a284f8c4
+rgba64be            c05fbb1ada1b48fb1eb192fc200af2b6
+rgba64le            1b826cc613666f545274e8a7799d69f1
 uyvy422             3f411f947e3ac8f842c88e717d68bd9a
 xyz12be             e1e6718ae1c83e904fbdf903d62e5808
 xyz12le             24e8a22c1bd7d637edb731d10b7c54d0
@@ -106,6 +108,7 @@ yuva444p16be        52a9591ec0d5059e49b1b2803f8582aa
 yuva444p16le        a9272ac197e4a4195662ce90f533976c
 yuva444p9be         f72f646ef07cdab613420585aba041ac
 yuva444p9le         6d431b0a27bf4f86ea44ef5f14247a01
+yuvj411p            037accc8e48ac9928a580cddf444f129
 yuvj420p            73661456012f20cda81207b14bb0c0a5
 yuvj422p            aa97862b57f47c5a6506156e9aaf129a
 yuvj440p            ff8b9884a49d546b035f5d2ac1e673df

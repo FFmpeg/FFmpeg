@@ -209,6 +209,11 @@ multimedia stream.
 Each media stream information is printed within a dedicated section
 with name "STREAM".
 
+@item -show_chapters
+Show information about chapters stored in the format.
+
+Each chapter is printed within a dedicated section with name "CHAPTER".
+
 @item -count_frames
 Count the number of frames per stream and report it in the
 corresponding stream section.

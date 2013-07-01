@@ -120,9 +120,6 @@ enum {
 #define VIDEO_ID 0
 #define SHAPE_ID  1
 
-#undef NDEBUG
-#include <assert.h>
-
 typedef struct SWFContext {
     int64_t duration_pos;
     int64_t tag_pos;

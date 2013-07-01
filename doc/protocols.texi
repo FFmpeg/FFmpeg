@@ -49,6 +49,16 @@ Read angle 2 of playlist 4 from BluRay mounted to /mnt/bluray, start from chapte
 -playlist 4 -angle 2 -chapter 2 bluray:/mnt/bluray
 @end example
 
+@section cache
+
+Caching wrapper for input stream.
+
+Cache the input stream to temporary file. It brings seeking capability to live streams.
+
+@example
+cache:@var{URL}
+@end example
+
 @section concat
 
 Physical concatenation protocol.
@@ -75,6 +85,25 @@ ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
 Note that you may need to escape the character "|" which is special for
 many shells.
 
+@section crypto
+
+AES-encrypted stream reading protocol.
+
+The accepted options are:
+@table @option
+@item key
+Set the AES decryption key binary block from given hexadecimal representation.
+
+@item iv
+Set the AES decryption initialization vector binary block from given hexadecimal representation.
+@end table
+
+Accepted URL formats:
+@example
+crypto:@var{URL}
+crypto+@var{URL}
+@end example
+
 @section data
 
 Data in-line in the URI. See @url{http://en.wikipedia.org/wiki/Data_URI_scheme}.
@@ -99,6 +128,40 @@ ffmpeg -i file:input.mpeg output.mpeg
 The ff* tools default to the file protocol, that is a resource
 specified with the name "FILE.mpeg" is interpreted as the URL
 "file:FILE.mpeg".
+
+@section ftp
+
+FTP (File Transfer Protocol).
+
+Allow to read from or write to remote resources using FTP protocol.
+
+Following syntax is required.
+@example
+ftp://[user[:password]@@]server[:port]/path/to/remote/resource.mpeg
+@end example
+
+This protocol accepts the following options.
+
+@table @option
+@item timeout
+Set timeout of socket I/O operations used by the underlying low level
+operation. By default it is set to -1, which means that the timeout is
+not specified.
+
+@item ftp-anonymous-password
+Password used when login as anonymous user. Typically an e-mail address
+should be used.
+
+@item ftp-write-seekable
+Control seekability of connection during encoding. If set to 1 the
+resource is supposed to be seekable, if set to 0 it is assumed not
+to be seekable. Default value is 0.
+@end table
+
+NOTE: Protocol can be used as output, but it is recommended to not do
+it, unless special care is taken (tests, customized server configuration
+etc.). Different FTP servers behave in different way during seek
+operation. ff* tools may produce incomplete content due to server limitations.
 
 @section gopher
 
@@ -634,6 +697,50 @@ To play back the first stream announced on one the default IPv6 SAP multicast ad
 @example
 ffplay sap://[ff0e::2:7ffe]
 @end example
+
+@section sctp
+
+Stream Control Transmission Protocol.
+
+The accepted URL syntax is:
+@example
+sctp://@var{host}:@var{port}[?@var{options}]
+@end example
+
+The protocol accepts the following options:
+@table @option
+@item listen
+If set to any value, listen for an incoming connection. Outgoing connection is done by default.
+
+@item max_streams
+Set the maximum number of streams. By default no limit is set.
+@end table
+
+@section srtp
+
+Secure Real-time Transport Protocol.
+
+The accepted options are:
+@table @option
+@item srtp_in_suite
+@item srtp_out_suite
+Select input and output encoding suites.
+
+Supported values:
+@table @samp
+@item AES_CM_128_HMAC_SHA1_80
+@item SRTP_AES128_CM_HMAC_SHA1_80
+@item AES_CM_128_HMAC_SHA1_32
+@item SRTP_AES128_CM_HMAC_SHA1_32
+@end table
+
+@item srtp_in_params
+@item srtp_out_params
+Set input and output encoding parameters, which are expressed by a
+base64-encoded representation of a binary block. The first 16 bytes of
+this binary block are used as master key, the following 14 bytes are
+used as master salt.
+@end table
 
 @section tcp
 

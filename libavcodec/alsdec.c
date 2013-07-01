@@ -25,10 +25,6 @@
  * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
  */
 
-
-//#define DEBUG
-
-
 #include "avcodec.h"
 #include "get_bits.h"
 #include "unary.h"

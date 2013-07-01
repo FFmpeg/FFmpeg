@@ -210,6 +210,10 @@ to read from. Default value is 0.
 Set the index interval range to check when looking for the first image
 file in the sequence, starting from @var{start_number}. Default value
 is 5.
+@item ts_from_file
+If set to 1, will set frame timestamp to modification time of image file. Note
+that monotonity of timestamps is not provided: images go in the same order as
+without this option. Default value is 0.
 @item video_size
 Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.

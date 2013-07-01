@@ -38,8 +38,8 @@ typedef struct ADPCMChannelStatus {
     int prev_sample;
 
     /* MS version */
-    int16_t sample1;
-    int16_t sample2;
+    int sample1;
+    int sample2;
     int coeff1;
     int coeff2;
     int idelta;

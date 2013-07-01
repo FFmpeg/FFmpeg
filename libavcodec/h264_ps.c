@@ -599,10 +599,10 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     qp_bd_offset = 6*(sps->bit_depth_luma-8);
     if (sps->bit_depth_luma > 14) {
         av_log(h->avctx, AV_LOG_ERROR, "Invalid luma bit depth=%d\n", sps->bit_depth_luma);
-        return AVERROR_INVALIDDATA;
+        goto fail;
     } else if (sps->bit_depth_luma == 11 || sps->bit_depth_luma == 13) {
         av_log(h->avctx, AV_LOG_ERROR, "Unimplemented luma bit depth=%d\n", sps->bit_depth_luma);
-        return AVERROR_PATCHWELCOME;
+        goto fail;
     }
 
     pps->cabac= get_bits1(&h->gb);

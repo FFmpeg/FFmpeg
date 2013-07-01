@@ -425,7 +425,11 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
         cbp      = mb->cbp;
         buf_offs = mb->buf_offs;
 
-        quant = av_clip(band->glob_quant + mb->q_delta, 0, 23);
+        quant = band->glob_quant + mb->q_delta;
+        if (avctx->codec_id == AV_CODEC_ID_INDEO4)
+            quant = av_clip(quant, 0, 31);
+        else
+            quant = av_clip(quant, 0, 23);
 
         base_tab  = is_intra ? band->intra_base  : band->inter_base;
         scale_tab = is_intra ? band->intra_scale : band->inter_scale;

@@ -125,6 +125,8 @@ static int pp_filter_frame(AVFilterLink *inlink, AVFrame *inbuf)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(outbuf, inbuf);
+    outbuf->width  = inbuf->width;
+    outbuf->height = inbuf->height;
     qp_table = av_frame_get_qp_table(inbuf, &qstride, &qp_type);
 
     pp_postprocess((const uint8_t **)inbuf->data, inbuf->linesize,
@@ -180,5 +182,5 @@ AVFilter avfilter_vf_pp = {
     .outputs         = pp_outputs,
     .process_command = pp_process_command,
     .priv_class      = &pp_class,
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE,
+    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

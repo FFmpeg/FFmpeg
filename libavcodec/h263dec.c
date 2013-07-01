@@ -41,9 +41,6 @@
 #include "flv.h"
 #include "mpeg4video.h"
 
-//#define DEBUG
-//#define PRINT_FRAME_TIME
-
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
@@ -355,9 +352,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
     int ret;
     AVFrame *pict = data;
 
-#ifdef PRINT_FRAME_TIME
-uint64_t time= rdtsc();
-#endif
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
@@ -765,10 +759,6 @@ intrax8_decoded:
     if(s->last_picture_ptr || s->low_delay){
         *got_frame = 1;
     }
-
-#ifdef PRINT_FRAME_TIME
-av_log(avctx, AV_LOG_DEBUG, "%"PRId64"\n", rdtsc()-time);
-#endif
 
     return (ret && (avctx->err_recognition & AV_EF_EXPLODE))?ret:get_consumed_bytes(s, buf_size);
 }

@@ -246,8 +246,6 @@ static const vector unsigned char
                   (vector unsigned short)                               \
                       vec_max(y, ((vector signed short) { 0 })))
 
-//#define out_pixels(a, b, c, ptr) vec_mstrgb32(__typeof__(a), ((__typeof__(a)) { 255 }), a, a, a, ptr)
-
 static inline void cvtyuvtoRGB(SwsContext *c, vector signed short Y,
                                vector signed short U, vector signed short V,
                                vector signed short *R, vector signed short *G,

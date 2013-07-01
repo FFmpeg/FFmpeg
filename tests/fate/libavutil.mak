@@ -54,6 +54,10 @@ FATE_LIBAVUTIL += fate-md5
 fate-md5: libavutil/md5-test$(EXESUF)
 fate-md5: CMD = run libavutil/md5-test
 
+FATE_LIBAVUTIL += fate-murmur3
+fate-murmur3: libavutil/murmur3-test$(EXESUF)
+fate-murmur3: CMD = run libavutil/murmur3-test
+
 FATE_LIBAVUTIL += fate-parseutils
 fate-parseutils: libavutil/parseutils-test$(EXESUF)
 fate-parseutils: CMD = run libavutil/parseutils-test
@@ -62,9 +66,17 @@ FATE_LIBAVUTIL += fate-random_seed
 fate-random_seed: libavutil/random_seed-test$(EXESUF)
 fate-random_seed: CMD = run libavutil/random_seed-test
 
+FATE_LIBAVUTIL += fate-ripemd
+fate-ripemd: libavutil/ripemd-test$(EXESUF)
+fate-ripemd: CMD = run libavutil/ripemd-test
+
 FATE_LIBAVUTIL += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
+
+FATE_LIBAVUTIL += fate-sha512
+fate-sha512: libavutil/sha512-test$(EXESUF)
+fate-sha512: CMD = run libavutil/sha512-test
 
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)

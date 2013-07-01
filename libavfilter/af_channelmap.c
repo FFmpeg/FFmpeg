@@ -69,7 +69,7 @@ typedef struct ChannelMapContext {
 #define OFFSET(x) offsetof(ChannelMapContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
-static const AVOption options[] = {
+static const AVOption channelmap_options[] = {
     { "map", "A comma-separated list of input channel numbers in output order.",
           OFFSET(mapping_str),        AV_OPT_TYPE_STRING, .flags = A|F },
     { "channel_layout", "Output channel layout.",
@@ -77,12 +77,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass channelmap_class = {
-    .class_name = "channel map filter",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(channelmap);
 
 static char* split(char *message, char delim) {
     char *next = strchr(message, delim);

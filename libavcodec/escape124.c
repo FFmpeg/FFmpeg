@@ -200,7 +200,6 @@ static int escape124_decode_frame(AVCodecContext *avctx,
                                   void *data, int *got_frame,
                                   AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     Escape124Context *s = avctx->priv_data;
     AVFrame *frame = data;
@@ -218,7 +217,8 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
     int ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
+        return ret;
 
     // This call also guards the potential depth reads for the
     // codebook unpacking.
@@ -234,7 +234,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         if (!s->frame.data[0])
             return AVERROR_INVALIDDATA;
 
-        av_log(NULL, AV_LOG_DEBUG, "Skipping frame\n");
+        av_log(avctx, AV_LOG_DEBUG, "Skipping frame\n");
 
         *got_frame = 1;
         if ((ret = av_frame_ref(frame, &s->frame)) < 0)
@@ -352,7 +352,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
         skip--;
     }
 
-    av_log(NULL, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_DEBUG,
            "Escape sizes: %i, %i, %i\n",
            frame_size, buf_size, get_bits_count(&gb) / 8);
 

@@ -69,7 +69,6 @@ typedef struct TrimContext {
     int64_t next_pts;
 
     int eof;
-    int got_output;
 } TrimContext;
 
 static int init(AVFilterContext *ctx)
@@ -104,22 +103,9 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int config_output(AVFilterLink *outlink)
 {
-    AVFilterContext *ctx = outlink->src;
-    TrimContext       *s = ctx->priv;
-    int ret;
-
-    s->got_output = 0;
-    while (!s->got_output) {
-        if (s->eof)
-            return AVERROR_EOF;
-
-        ret = ff_request_frame(ctx->inputs[0]);
-        if (ret < 0)
-            return ret;
-    }
-
+    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     return 0;
 }
 
@@ -176,13 +162,12 @@ static int trim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
             drop = 0;
 
         if (drop) {
-            s->eof = 1;
+            s->eof = inlink->closed = 1;
             goto drop;
         }
     }
 
     s->nb_frames++;
-    s->got_output = 1;
 
     return ff_filter_frame(ctx->outputs[0], frame);
 
@@ -203,12 +188,7 @@ static const AVOption trim_options[] = {
 };
 #undef FLAGS
 
-static const AVClass trim_class = {
-    .class_name = "trim",
-    .item_name  = av_default_item_name,
-    .option     = trim_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(trim);
 
 static const AVFilterPad trim_inputs[] = {
     {
@@ -224,7 +204,7 @@ static const AVFilterPad trim_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
+        .config_props  = config_output,
     },
     { NULL }
 };
@@ -316,7 +296,7 @@ static int atrim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
         }
 
         if (drop) {
-            s->eof = 1;
+            s->eof = inlink->closed = 1;
             goto drop;
         }
     }
@@ -346,7 +326,6 @@ static int atrim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     } else
         frame->nb_samples = end_sample;
 
-    s->got_output = 1;
     return ff_filter_frame(ctx->outputs[0], frame);
 
 drop:
@@ -366,12 +345,7 @@ static const AVOption atrim_options[] = {
 };
 #undef FLAGS
 
-static const AVClass atrim_class = {
-    .class_name = "atrim",
-    .item_name  = av_default_item_name,
-    .option     = atrim_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(atrim);
 
 static const AVFilterPad atrim_inputs[] = {
     {
@@ -387,7 +361,7 @@ static const AVFilterPad atrim_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = request_frame,
+        .config_props  = config_output,
     },
     { NULL }
 };

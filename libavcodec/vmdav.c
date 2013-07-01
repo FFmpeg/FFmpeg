@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
@@ -151,9 +152,10 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
                       int src_count, int src_size, int dest_len)
 {
     unsigned char *pd;
-    int i, j, l;
+    int i, l, used = 0;
     unsigned char *dest_end = dest + dest_len;
     GetByteContext gb;
+    uint16_t run_val;
 
     bytestream2_init(&gb, src, src_size);
     pd = dest;
@@ -161,10 +163,9 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
         if (bytestream2_get_bytes_left(&gb) < 1)
             return 0;
         *pd++ = bytestream2_get_byteu(&gb);
+        used++;
     }
 
-    src_count >>= 1;
-    i = 0;
     do {
         if (bytestream2_get_bytes_left(&gb) < 1)
             break;
@@ -176,18 +177,17 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
             bytestream2_get_bufferu(&gb, pd, l);
             pd += l;
         } else {
-            int ps[2];
             if (dest_end - pd < 2*l || bytestream2_get_bytes_left(&gb) < 2)
                 return bytestream2_tell(&gb);
-            ps[0] = bytestream2_get_byteu(&gb);
-            ps[1] = bytestream2_get_byteu(&gb);
-            for (j = 0; j < l; j++) {
-                *pd++ = ps[0];
-                *pd++ = ps[1];
+            run_val = bytestream2_get_ne16(&gb);
+            for (i = 0; i < l; i++) {
+                AV_WN16(pd, run_val);
+                pd += 2;
             }
+            l *= 2;
         }
-        i += l;
-    } while (i < src_count);
+        used += l;
+    } while (used < src_count);
 
     return bytestream2_tell(&gb);
 }
@@ -227,12 +227,18 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         frame_x >= s->avctx->width ||
         frame_width > s->avctx->width ||
         frame_x + frame_width > s->avctx->width) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid horizontal range %d-%d\n",
+               frame_x, frame_width);
         return AVERROR_INVALIDDATA;
     }
     if (frame_y < 0 || frame_height < 0 ||
         frame_y >= s->avctx->height ||
         frame_height > s->avctx->height ||
         frame_y + frame_height > s->avctx->height) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid vertical range %d-%d\n",
+               frame_x, frame_width);
         return AVERROR_INVALIDDATA;
     }
 
@@ -259,94 +265,111 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
                 palette32[i] = 0xFFU << 24 | (r << 16) | (g << 8) | (b);
                 palette32[i] |= palette32[i] >> 6 & 0x30303;
             }
+        } else {
+            av_log(s->avctx, AV_LOG_ERROR, "Incomplete palette\n");
+            return AVERROR_INVALIDDATA;
         }
     }
-    if (s->size > 0) {
-        /* originally UnpackFrame in VAG's code */
-        bytestream2_init(&gb, gb.buffer, s->buf + s->size - gb.buffer);
-        if (bytestream2_get_bytes_left(&gb) < 1)
+
+    if (!s->size)
+        return 0;
+
+    /* originally UnpackFrame in VAG's code */
+    if (bytestream2_get_bytes_left(&gb) < 1)
+        return AVERROR_INVALIDDATA;
+    meth = bytestream2_get_byteu(&gb);
+    if (meth & 0x80) {
+        if (!s->unpack_buffer_size) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "Trying to unpack LZ-compressed frame with no LZ buffer\n");
             return AVERROR_INVALIDDATA;
-        meth = bytestream2_get_byteu(&gb);
-        if (meth & 0x80) {
-            lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
-                      s->unpack_buffer, s->unpack_buffer_size);
-            meth &= 0x7F;
-            bytestream2_init(&gb, s->unpack_buffer, s->unpack_buffer_size);
         }
+        lz_unpack(gb.buffer, bytestream2_get_bytes_left(&gb),
+                  s->unpack_buffer, s->unpack_buffer_size);
+        meth &= 0x7F;
+        bytestream2_init(&gb, s->unpack_buffer, s->unpack_buffer_size);
+    }
 
-        dp = &frame->data[0][frame_y * frame->linesize[0] + frame_x];
-        pp = &s->prev_frame.data[0][frame_y * s->prev_frame.linesize[0] + frame_x];
-        switch (meth) {
-        case 1:
-            for (i = 0; i < frame_height; i++) {
-                ofs = 0;
-                do {
-                    len = bytestream2_get_byte(&gb);
-                    if (len & 0x80) {
-                        len = (len & 0x7F) + 1;
-                        if (ofs + len > frame_width || bytestream2_get_bytes_left(&gb) < len)
-                            return AVERROR_INVALIDDATA;
-                        bytestream2_get_bufferu(&gb, &dp[ofs], len);
-                        ofs += len;
-                    } else {
-                        /* interframe pixel copy */
-                        if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
-                            return AVERROR_INVALIDDATA;
-                        memcpy(&dp[ofs], &pp[ofs], len + 1);
-                        ofs += len + 1;
-                    }
-                } while (ofs < frame_width);
-                if (ofs > frame_width) {
-                    av_log(s->avctx, AV_LOG_ERROR, "offset > width (%d > %d)\n",
-                        ofs, frame_width);
-                    break;
+    dp = &frame->data[0][frame_y * frame->linesize[0] + frame_x];
+    pp = &s->prev_frame.data[0][frame_y * s->prev_frame.linesize[0] + frame_x];
+    switch (meth) {
+    case 1:
+        for (i = 0; i < frame_height; i++) {
+            ofs = 0;
+            do {
+                len = bytestream2_get_byte(&gb);
+                if (len & 0x80) {
+                    len = (len & 0x7F) + 1;
+                    if (ofs + len > frame_width ||
+                        bytestream2_get_bytes_left(&gb) < len)
+                        return AVERROR_INVALIDDATA;
+                    bytestream2_get_bufferu(&gb, &dp[ofs], len);
+                    ofs += len;
+                } else {
+                    /* interframe pixel copy */
+                    if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
+                        return AVERROR_INVALIDDATA;
+                    memcpy(&dp[ofs], &pp[ofs], len + 1);
+                    ofs += len + 1;
                 }
-                dp += frame->linesize[0];
-                pp += s->prev_frame.linesize[0];
+            } while (ofs < frame_width);
+            if (ofs > frame_width) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "offset > width (%d > %d)\n",
+                       ofs, frame_width);
+                return AVERROR_INVALIDDATA;
             }
-            break;
+            dp += frame->linesize[0];
+            pp += s->prev_frame.linesize[0];
+        }
+        break;
 
-        case 2:
-            for (i = 0; i < frame_height; i++) {
-                bytestream2_get_buffer(&gb, dp, frame_width);
-                dp += frame->linesize[0];
-                pp += s->prev_frame.linesize[0];
-            }
-            break;
+    case 2:
+        for (i = 0; i < frame_height; i++) {
+            bytestream2_get_buffer(&gb, dp, frame_width);
+            dp += frame->linesize[0];
+            pp += s->prev_frame.linesize[0];
+        }
+        break;
 
-        case 3:
-            for (i = 0; i < frame_height; i++) {
-                ofs = 0;
-                do {
-                    len = bytestream2_get_byte(&gb);
-                    if (len & 0x80) {
-                        len = (len & 0x7F) + 1;
-                        if (bytestream2_get_byte(&gb) == 0xFF)
-                            len = rle_unpack(gb.buffer, &dp[ofs],
-                                             len, bytestream2_get_bytes_left(&gb),
-                                             frame_width - ofs);
-                        else
-                            bytestream2_get_buffer(&gb, &dp[ofs], len);
+    case 3:
+        for (i = 0; i < frame_height; i++) {
+            ofs = 0;
+            do {
+                len = bytestream2_get_byte(&gb);
+                if (len & 0x80) {
+                    len = (len & 0x7F) + 1;
+                    if (bytestream2_peek_byte(&gb) == 0xFF) {
+                        int slen = len;
+                        bytestream2_get_byte(&gb);
+                        len = rle_unpack(gb.buffer, &dp[ofs],
+                                         len, bytestream2_get_bytes_left(&gb),
+                                         frame_width - ofs);
+                        ofs += slen;
                         bytestream2_skip(&gb, len);
                     } else {
-                        /* interframe pixel copy */
-                        if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
-                            return AVERROR_INVALIDDATA;
-                        memcpy(&dp[ofs], &pp[ofs], len + 1);
-                        ofs += len + 1;
+                        bytestream2_get_buffer(&gb, &dp[ofs], len);
+                        ofs += len;
                     }
-                } while (ofs < frame_width);
-                if (ofs > frame_width) {
-                    av_log(s->avctx, AV_LOG_ERROR, "offset > width (%d > %d)\n",
-                        ofs, frame_width);
+                } else {
+                    /* interframe pixel copy */
+                    if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
+                        return AVERROR_INVALIDDATA;
+                    memcpy(&dp[ofs], &pp[ofs], len + 1);
+                    ofs += len + 1;
                 }
-                dp += frame->linesize[0];
-                pp += s->prev_frame.linesize[0];
+            } while (ofs < frame_width);
+            if (ofs > frame_width) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "offset > width (%d > %d)\n",
+                       ofs, frame_width);
+                return AVERROR_INVALIDDATA;
             }
-            break;
+            dp += frame->linesize[0];
+            pp += s->prev_frame.linesize[0];
         }
+        break;
     }
-
     return 0;
 }
 
@@ -372,9 +395,11 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
     vmd_header = (unsigned char *)avctx->extradata;
 
     s->unpack_buffer_size = AV_RL32(&vmd_header[800]);
-    s->unpack_buffer = av_malloc(s->unpack_buffer_size);
-    if (!s->unpack_buffer)
-        return AVERROR(ENOMEM);
+    if (s->unpack_buffer_size) {
+        s->unpack_buffer = av_malloc(s->unpack_buffer_size);
+        if (!s->unpack_buffer)
+            return AVERROR(ENOMEM);
+    }
 
     /* load up the initial palette */
     raw_palette = &vmd_header[28];
@@ -405,13 +430,13 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     s->size = buf_size;
 
     if (buf_size < 16)
-        return buf_size;
+        return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
-    if (vmd_decode(s, frame) < 0)
-        av_log(avctx, AV_LOG_WARNING, "decode error\n");
+    if ((ret = vmd_decode(s, frame)) < 0)
+        return ret;
 
     /* make the palette available on the way out */
     memcpy(frame->data[1], s->palette, PALETTE_COUNT * 4);
@@ -575,6 +600,9 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
     /* ensure output buffer is large enough */
     audio_chunks = buf_size / s->chunk_size;
 
+    /* drop incomplete chunks */
+    buf_size     = audio_chunks * s->chunk_size;
+
     /* get output buffer */
     frame->nb_samples = ((silent_chunks + audio_chunks) * avctx->block_align) /
                         avctx->channels;
@@ -586,6 +614,8 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
     /* decode silent chunks */
     if (silent_chunks > 0) {
         int silent_size = avctx->block_align * silent_chunks;
+        av_assert0(avctx->block_align * silent_chunks <= frame->nb_samples * avctx->channels);
+
         if (s->out_bps == 2) {
             memset(output_samples_s16, 0x00, silent_size * 2);
             output_samples_s16 += silent_size;
@@ -598,6 +628,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
     /* decode audio chunks */
     if (audio_chunks > 0) {
         buf_end = buf + buf_size;
+        av_assert0((buf_size & (avctx->channels > 1)) == 0);
         while (buf_end - buf >= s->chunk_size) {
             if (s->out_bps == 2) {
                 decode_audio_s16(output_samples_s16, buf, s->chunk_size,

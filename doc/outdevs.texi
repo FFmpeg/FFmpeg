@@ -26,7 +26,7 @@ ALSA (Advanced Linux Sound Architecture) output device.
 
 CACA output device.
 
-This output devices allows to show a video stream in CACA window.
+This output device allows to show a video stream in CACA window.
 Only one CACA window is allowed per application, so you can
 have only one instance of this output device in an application.
 
@@ -112,7 +112,7 @@ OSS (Open Sound System) output device.
 
 SDL (Simple DirectMedia Layer) output device.
 
-This output devices allows to show a video stream in an SDL
+This output device allows to show a video stream in an SDL
 window. Only one SDL window is allowed per application, so you can
 have only one instance of this output device in an application.
 
@@ -152,5 +152,70 @@ ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL 
 @section sndio
 
 sndio audio output device.
+
+@section xv
+
+XV (XVideo) output device.
+
+This output device allows to show a video stream in a X Window System
+window.
+
+@subsection Options
+
+@table @option
+@item display_name
+Specify the hardware display name, which determines the display and
+communications domain to be used.
+
+The display name or DISPLAY environment variable can be a string in
+the format @var{hostname}[:@var{number}[.@var{screen_number}]].
+
+@var{hostname} specifies the name of the host machine on which the
+display is physically attached. @var{number} specifies the number of
+the display server on that host machine. @var{screen_number} specifies
+the screen to be used on that server.
+
+If unspecified, it defaults to the value of the DISPLAY environment
+variable.
+
+For example, @code{dual-headed:0.1} would specify screen 1 of display
+0 on the machine named ``dual-headed''.
+
+Check the X11 specification for more detailed information about the
+display name format.
+
+@item window_size
+Set the created window size, can be a string of the form
+@var{width}x@var{height} or a video size abbreviation. If not
+specified it defaults to the size of the input video.
+
+@item window_x
+@item window_y
+Set the X and Y window offsets for the created window. They are both
+set to 0 by default. The values may be ignored by the window manager.
+
+@item window_title
+Set the window title, if not specified default to the filename
+specified for the output device.
+@end table
+
+For more information about XVideo see @url{http://www.x.org/}.
+
+@subsection Examples
+
+@itemize
+@item
+Decode, display and encode video input with @command{ffmpeg} at the
+same time:
+@example
+ffmpeg -i INPUT OUTPUT -f xv display
+@end example
+
+@item
+Decode and display the input video to multiple X11 windows:
+@example
+ffmpeg -i INPUT -f xv normal -vf negate -f xv negated
+@end example
+@end itemize
 
 @c man end OUTPUT DEVICES

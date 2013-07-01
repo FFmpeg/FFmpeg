@@ -199,13 +199,24 @@ static int copy_packet_data(AVPacket *pkt, AVPacket *src, int dup)
     if (pkt->side_data_elems && dup)
         pkt->side_data = src->side_data;
     if (pkt->side_data_elems && !dup) {
-        int i;
+        return av_copy_packet_side_data(pkt, src);
+    }
+    return 0;
 
+failed_alloc:
+    av_destruct_packet(pkt);
+    return AVERROR(ENOMEM);
+}
+
+int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
+{
+    if (src->side_data_elems) {
+        int i;
         DUP_DATA(pkt->side_data, src->side_data,
-                pkt->side_data_elems * sizeof(*pkt->side_data), 0, ALLOC_MALLOC);
+                src->side_data_elems * sizeof(*src->side_data), 0, ALLOC_MALLOC);
         memset(pkt->side_data, 0,
-                pkt->side_data_elems * sizeof(*pkt->side_data));
-        for (i = 0; i < pkt->side_data_elems; i++) {
+                src->side_data_elems * sizeof(*src->side_data));
+        for (i = 0; i < src->side_data_elems; i++) {
             DUP_DATA(pkt->side_data[i].data, src->side_data[i].data,
                     src->side_data[i].size, 1, ALLOC_MALLOC);
             pkt->side_data[i].size = src->side_data[i].size;
@@ -345,7 +356,7 @@ int av_packet_merge_side_data(AVPacket *pkt){
 int av_packet_split_side_data(AVPacket *pkt){
     if (!pkt->side_data_elems && pkt->size >12 && AV_RB64(pkt->data + pkt->size - 8) == FF_MERGE_MARKER){
         int i;
-        unsigned int size;
+        unsigned int size, orig_pktsize = pkt->size;
         uint8_t *p;
 
         p = pkt->data + pkt->size - 8 - 5;
@@ -378,6 +389,13 @@ int av_packet_split_side_data(AVPacket *pkt){
             p-= size+5;
         }
         pkt->size -= 8;
+        /* FFMIN() prevents overflow in case the packet wasn't allocated with
+         * proper padding.
+         * If the side data is smaller than the buffer padding size, the
+         * remaining bytes should have already been filled with zeros by the
+         * original packet allocation anyway. */
+        memset(pkt->data + pkt->size, 0,
+               FFMIN(orig_pktsize - pkt->size, FF_INPUT_BUFFER_PADDING_SIZE));
         pkt->side_data_elems = i+1;
         return 1;
     }

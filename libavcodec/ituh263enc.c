@@ -27,7 +27,6 @@
  * h263 bitstream encoder.
  */
 
-//#define DEBUG
 #include <limits.h>
 
 #include "libavutil/attributes.h"

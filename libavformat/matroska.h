@@ -195,6 +195,7 @@
 #define MATROSKA_ID_BLOCK      0xA1
 #define MATROSKA_ID_BLOCKDURATION 0x9B
 #define MATROSKA_ID_BLOCKREFERENCE 0xFB
+#define MATROSKA_ID_CODECSTATE 0xA4
 
 /* IDs in the attachments master */
 #define MATROSKA_ID_ATTACHEDFILE        0x61A7

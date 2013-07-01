@@ -25,6 +25,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -51,6 +52,8 @@ typedef struct WAVDemuxContext {
     int audio_eof;
     int ignore_length;
     int spdif;
+    int smv_cur_pt;
+    int smv_given_first;
 } WAVDemuxContext;
 
 #if CONFIG_WAV_DEMUXER
@@ -337,15 +340,23 @@ static int wav_read_header(AVFormatContext *s)
                 goto break_loop;
             }
             av_log(s, AV_LOG_DEBUG, "Found SMV data\n");
+            wav->smv_given_first = 0;
             vst = avformat_new_stream(s, NULL);
             if (!vst)
                 return AVERROR(ENOMEM);
             avio_r8(pb);
             vst->id = 1;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            vst->codec->codec_id = AV_CODEC_ID_MJPEG;
+            vst->codec->codec_id = AV_CODEC_ID_SMVJPEG;
             vst->codec->width  = avio_rl24(pb);
             vst->codec->height = avio_rl24(pb);
+            vst->codec->extradata_size = 4;
+            vst->codec->extradata = av_malloc(vst->codec->extradata_size +
+                                              FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!vst->codec->extradata) {
+                av_log(s, AV_LOG_ERROR, "Could not allocate extradata.\n");
+                return AVERROR(ENOMEM);
+            }
             size = avio_rl24(pb);
             wav->smv_data_ofs = avio_tell(pb) + (size - 5) * 3;
             avio_rl24(pb);
@@ -355,6 +366,8 @@ static int wav_read_header(AVFormatContext *s)
             avio_rl24(pb);
             avio_rl24(pb);
             wav->smv_frames_per_jpeg = avio_rl24(pb);
+            AV_WL32(vst->codec->extradata, wav->smv_frames_per_jpeg);
+            wav->smv_cur_pt = 0;
             goto break_loop;
         case MKTAG('L', 'I', 'S', 'T'):
             if (size < 4) {
@@ -447,10 +460,13 @@ static int wav_read_packet(AVFormatContext *s, AVPacket *pkt)
 smv_retry:
         audio_dts = s->streams[0]->cur_dts;
         video_dts = s->streams[1]->cur_dts;
+
         if (audio_dts != AV_NOPTS_VALUE && video_dts != AV_NOPTS_VALUE) {
-            audio_dts = av_rescale_q(audio_dts, s->streams[0]->time_base, AV_TIME_BASE_Q);
-            video_dts = av_rescale_q(video_dts, s->streams[1]->time_base, AV_TIME_BASE_Q);
-            wav->smv_last_stream = video_dts >= audio_dts;
+            /*We always return a video frame first to get the pixel format first*/
+            wav->smv_last_stream = wav->smv_given_first ?
+                av_compare_ts(video_dts, s->streams[1]->time_base,
+                              audio_dts, s->streams[0]->time_base) > 0 : 0;
+            wav->smv_given_first = 1;
         }
         wav->smv_last_stream = !wav->smv_last_stream;
         wav->smv_last_stream |= wav->audio_eof;
@@ -468,8 +484,13 @@ smv_retry:
             if (ret < 0)
                 goto smv_out;
             pkt->pos -= 3;
-            pkt->pts = wav->smv_block * wav->smv_frames_per_jpeg;
-            wav->smv_block++;
+            pkt->pts = wav->smv_block * wav->smv_frames_per_jpeg + wav->smv_cur_pt;
+            wav->smv_cur_pt++;
+            if (wav->smv_frames_per_jpeg > 0)
+                wav->smv_cur_pt %= wav->smv_frames_per_jpeg;
+            if (!wav->smv_cur_pt)
+                wav->smv_block++;
+
             pkt->stream_index = 1;
 smv_out:
             avio_seek(s->pb, old_pos, SEEK_SET);
@@ -528,7 +549,10 @@ static int wav_read_seek(AVFormatContext *s,
             smv_timestamp = av_rescale_q(timestamp, s->streams[0]->time_base, s->streams[1]->time_base);
         else
             timestamp = av_rescale_q(smv_timestamp, s->streams[1]->time_base, s->streams[0]->time_base);
-        wav->smv_block = smv_timestamp / wav->smv_frames_per_jpeg;
+        if (wav->smv_frames_per_jpeg > 0) {
+            wav->smv_block = smv_timestamp / wav->smv_frames_per_jpeg;
+            wav->smv_cur_pt = smv_timestamp % wav->smv_frames_per_jpeg;
+        }
     }
 
     st = s->streams[0];

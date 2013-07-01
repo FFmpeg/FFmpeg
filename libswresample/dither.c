@@ -88,6 +88,7 @@ int swri_dither_init(SwrContext *s, enum AVSampleFormat out_fmt, enum AVSampleFo
         if(out_fmt == AV_SAMPLE_FMT_S16) scale = 1.0/(1L<<15);
         if(out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1.0/(1L<< 7);
     }
+    if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_S32 && (s->dither.output_sample_bits&31)) scale = 1;
     if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_S16) scale = 1L<<16;
     if(in_fmt == AV_SAMPLE_FMT_S32 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<24;
     if(in_fmt == AV_SAMPLE_FMT_S16 && out_fmt == AV_SAMPLE_FMT_U8 ) scale = 1L<<8;

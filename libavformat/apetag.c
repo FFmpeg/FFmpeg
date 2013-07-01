@@ -23,10 +23,12 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "apetag.h"
 #include "internal.h"
 
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)
+#define APE_TAG_FLAG_CONTAINS_FOOTER  (1 << 30)
 #define APE_TAG_FLAG_IS_HEADER        (1 << 29)
 #define APE_TAG_FLAG_IS_BINARY        (1 << 1)
 
@@ -114,7 +116,7 @@ static int ape_tag_read_field(AVFormatContext *s)
 int64_t ff_ape_parse_tag(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    int file_size = avio_size(pb);
+    int64_t file_size = avio_size(pb);
     uint32_t val, fields, tag_bytes;
     uint8_t buf[8];
     int64_t tag_start;
@@ -166,4 +168,74 @@ int64_t ff_ape_parse_tag(AVFormatContext *s)
         if (ape_tag_read_field(s) < 0) break;
 
     return tag_start;
+}
+
+static int string_is_ascii(const uint8_t *str)
+{
+    while (*str && *str >= 0x20 && *str <= 0x7e ) str++;
+    return !*str;
+}
+
+int ff_ape_write_tag(AVFormatContext *s)
+{
+    AVDictionaryEntry *e = NULL;
+    int size, ret, count = 0;
+    AVIOContext *dyn_bc = NULL;
+    uint8_t *dyn_buf = NULL;
+
+    if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
+        goto end;
+
+    // flags
+    avio_wl32(dyn_bc, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER |
+                     APE_TAG_FLAG_IS_HEADER);
+    ffio_fill(dyn_bc, 0, 8);             // reserved
+
+    while ((e = av_dict_get(s->metadata, "", e, AV_DICT_IGNORE_SUFFIX))) {
+        int val_len;
+
+        if (!string_is_ascii(e->key)) {
+            av_log(s, AV_LOG_WARNING, "Non ASCII keys are not allowed\n");
+            continue;
+        }
+
+        val_len = strlen(e->value);
+        avio_wl32(dyn_bc, val_len);            // value length
+        avio_wl32(dyn_bc, 0);                  // item flags
+        avio_put_str(dyn_bc, e->key);          // key
+        avio_write(dyn_bc, e->value, val_len); // value
+        count++;
+    }
+    if (!count)
+        goto end;
+
+    size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    if (size <= 0)
+        goto end;
+    size += 20;
+
+    // header
+    avio_write(s->pb, "APETAGEX", 8);   // id
+    avio_wl32(s->pb, APE_TAG_VERSION);  // version
+    avio_wl32(s->pb, size);
+    avio_wl32(s->pb, count);
+
+    avio_write(s->pb, dyn_buf, size - 20);
+
+    // footer
+    avio_write(s->pb, "APETAGEX", 8);   // id
+    avio_wl32(s->pb, APE_TAG_VERSION);  // version
+    avio_wl32(s->pb, size);             // size
+    avio_wl32(s->pb, count);            // tag count
+
+    // flags
+    avio_wl32(s->pb, APE_TAG_FLAG_CONTAINS_HEADER | APE_TAG_FLAG_CONTAINS_FOOTER);
+    ffio_fill(s->pb, 0, 8);             // reserved
+
+end:
+    if (dyn_bc && !dyn_buf)
+        avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    av_freep(&dyn_buf);
+
+    return ret;
 }

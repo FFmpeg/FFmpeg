@@ -1,0 +1,4 @@
+fc49816ba28731689872f5c87ca91c10 *tests/data/fate/vsynth2-jpeg2000.avi
+1151144 tests/data/fate/vsynth2-jpeg2000.avi
+e7d79c9e11d0fe97f03e38be66c34e4f *tests/data/fate/vsynth2-jpeg2000.out.rawvideo
+stddev:    4.41 PSNR: 35.23 MAXDIFF:   63 bytes:  7603200/  7603200

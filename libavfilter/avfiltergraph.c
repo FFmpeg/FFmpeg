@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <string.h>
 
 #include "libavutil/avassert.h"
@@ -29,33 +31,63 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/avcodec.h" // avcodec_find_best_pix_fmt_of_2()
+
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "thread.h"
 
-#define OFFSET(x) offsetof(AVFilterGraph,x)
-
-static const AVOption options[]={
-{"scale_sws_opts"       , "default scale filter options"        , OFFSET(scale_sws_opts)        ,  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, 0 },
-{"aresample_swr_opts"   , "default aresample filter options"    , OFFSET(aresample_swr_opts)    ,  AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, 0 },
-{0}
+#define OFFSET(x) offsetof(AVFilterGraph, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption filtergraph_options[] = {
+    { "thread_type", "Allowed thread types", OFFSET(thread_type), AV_OPT_TYPE_FLAGS,
+        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, FLAGS, "thread_type" },
+        { "slice", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AVFILTER_THREAD_SLICE }, .flags = FLAGS, .unit = "thread_type" },
+    { "threads",     "Maximum number of threads", OFFSET(nb_threads),
+        AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    {"scale_sws_opts"       , "default scale filter options"        , OFFSET(scale_sws_opts)        ,
+        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    {"aresample_swr_opts"   , "default aresample filter options"    , OFFSET(aresample_swr_opts)    ,
+        AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
+    { NULL },
 };
-
 
 static const AVClass filtergraph_class = {
     .class_name = "AVFilterGraph",
     .item_name  = av_default_item_name,
-    .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
+    .option     = filtergraph_options,
     .category   = AV_CLASS_CATEGORY_FILTER,
 };
+
+#if !HAVE_THREADS
+void ff_graph_thread_free(AVFilterGraph *graph)
+{
+}
+
+int ff_graph_thread_init(AVFilterGraph *graph)
+{
+    graph->thread_type = 0;
+    graph->nb_threads  = 1;
+    return 0;
+}
+#endif
 
 AVFilterGraph *avfilter_graph_alloc(void)
 {
     AVFilterGraph *ret = av_mallocz(sizeof(*ret));
     if (!ret)
         return NULL;
+
+    ret->internal = av_mallocz(sizeof(*ret->internal));
+    if (!ret->internal) {
+        av_freep(&ret);
+        return NULL;
+    }
+
     ret->av_class = &filtergraph_class;
+    av_opt_set_defaults(ret);
+
     return ret;
 }
 
@@ -80,11 +112,15 @@ void avfilter_graph_free(AVFilterGraph **graph)
     while ((*graph)->nb_filters)
         avfilter_free((*graph)->filters[0]);
 
+    ff_graph_thread_free(*graph);
+
     av_freep(&(*graph)->sink_links);
+
     av_freep(&(*graph)->scale_sws_opts);
     av_freep(&(*graph)->aresample_swr_opts);
     av_freep(&(*graph)->resample_lavr_opts);
     av_freep(&(*graph)->filters);
+    av_freep(&(*graph)->internal);
     av_freep(graph);
 }
 
@@ -142,6 +178,14 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
                                              const char *name)
 {
     AVFilterContext **filters, *s;
+
+    if (graph->thread_type && !graph->internal->thread) {
+        int ret = ff_graph_thread_init(graph);
+        if (ret < 0) {
+            av_log(graph, AV_LOG_ERROR, "Error initializing threading.\n");
+            return NULL;
+        }
+    }
 
     s = ff_filter_alloc(filter, name);
     if (!s)
@@ -406,13 +450,9 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
                     snprintf(inst_name, sizeof(inst_name), "auto-inserted scaler %d",
                              scaler_count++);
-                    av_strlcpy(scale_args, "0:0", sizeof(scale_args));
-                    if (graph->scale_sws_opts) {
-                        av_strlcat(scale_args, ":", sizeof(scale_args));
-                        av_strlcat(scale_args, graph->scale_sws_opts, sizeof(scale_args));
-                    }
+
                     if ((ret = avfilter_graph_create_filter(&convert, filter,
-                                                            inst_name, scale_args, NULL,
+                                                            inst_name, graph->scale_sws_opts, NULL,
                                                             graph)) < 0)
                         return ret;
                     break;
@@ -507,28 +547,28 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
             int has_alpha= av_pix_fmt_desc_get(ref->format)->nb_components % 2 == 0;
             enum AVPixelFormat best= AV_PIX_FMT_NONE;
             int i;
-            for (i=0; i<link->in_formats->format_count; i++) {
+            for (i=0; i<link->in_formats->nb_formats; i++) {
                 enum AVPixelFormat p = link->in_formats->formats[i];
                 best= avcodec_find_best_pix_fmt_of_2(best, p, ref->format, has_alpha, NULL);
             }
             av_log(link->src,AV_LOG_DEBUG, "picking %s out of %d ref:%s alpha:%d\n",
-                   av_get_pix_fmt_name(best), link->in_formats->format_count,
+                   av_get_pix_fmt_name(best), link->in_formats->nb_formats,
                    av_get_pix_fmt_name(ref->format), has_alpha);
             link->in_formats->formats[0] = best;
         }
     }
 
-    link->in_formats->format_count = 1;
+    link->in_formats->nb_formats = 1;
     link->format = link->in_formats->formats[0];
 
     if (link->type == AVMEDIA_TYPE_AUDIO) {
-        if (!link->in_samplerates->format_count) {
+        if (!link->in_samplerates->nb_formats) {
             av_log(link->src, AV_LOG_ERROR, "Cannot select sample rate for"
                    " the link between filters %s and %s.\n", link->src->name,
                    link->dst->name);
             return AVERROR(EINVAL);
         }
-        link->in_samplerates->format_count = 1;
+        link->in_samplerates->nb_formats = 1;
         link->sample_rate = link->in_samplerates->formats[0];
 
         if (link->in_channel_layouts->all_layouts) {
@@ -595,9 +635,9 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
     int i, j, k, ret = 0;
 
     REDUCE_FORMATS(int,      AVFilterFormats,        formats,         formats,
-                   format_count, ff_add_format);
+                   nb_formats, ff_add_format);
     REDUCE_FORMATS(int,      AVFilterFormats,        samplerates,     formats,
-                   format_count, ff_add_format);
+                   nb_formats, ff_add_format);
 
     /* reduce channel layouts */
     for (i = 0; i < filter->nb_inputs; i++) {
@@ -660,7 +700,7 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         link = filter->inputs[i];
 
         if (link->type == AVMEDIA_TYPE_AUDIO &&
-            link->out_samplerates->format_count == 1)
+            link->out_samplerates->nb_formats== 1)
             break;
     }
     if (i == filter->nb_inputs)
@@ -673,10 +713,10 @@ static void swap_samplerates_on_filter(AVFilterContext *filter)
         int best_idx, best_diff = INT_MAX;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
-            outlink->in_samplerates->format_count < 2)
+            outlink->in_samplerates->nb_formats < 2)
             continue;
 
-        for (j = 0; j < outlink->in_samplerates->format_count; j++) {
+        for (j = 0; j < outlink->in_samplerates->nb_formats; j++) {
             int diff = abs(sample_rate - outlink->in_samplerates->formats[j]);
 
             if (diff < best_diff) {
@@ -838,7 +878,7 @@ static void swap_sample_fmts_on_filter(AVFilterContext *filter)
         link = filter->inputs[i];
 
         if (link->type == AVMEDIA_TYPE_AUDIO &&
-            link->out_formats->format_count == 1)
+            link->out_formats->nb_formats == 1)
             break;
     }
     if (i == filter->nb_inputs)
@@ -852,10 +892,10 @@ static void swap_sample_fmts_on_filter(AVFilterContext *filter)
         int best_idx = -1, best_score = INT_MIN;
 
         if (outlink->type != AVMEDIA_TYPE_AUDIO ||
-            outlink->in_formats->format_count < 2)
+            outlink->in_formats->nb_formats < 2)
             continue;
 
-        for (j = 0; j < outlink->in_formats->format_count; j++) {
+        for (j = 0; j < outlink->in_formats->nb_formats; j++) {
             int out_format = outlink->in_formats->formats[j];
             int out_bps    = av_get_bytes_per_sample(out_format);
             int score;
@@ -908,7 +948,7 @@ static int pick_formats(AVFilterGraph *graph)
             AVFilterContext *filter = graph->filters[i];
             if (filter->nb_inputs){
                 for (j = 0; j < filter->nb_inputs; j++){
-                    if(filter->inputs[j]->in_formats && filter->inputs[j]->in_formats->format_count == 1) {
+                    if(filter->inputs[j]->in_formats && filter->inputs[j]->in_formats->nb_formats == 1) {
                         if ((ret = pick_format(filter->inputs[j], NULL)) < 0)
                             return ret;
                         change = 1;
@@ -917,7 +957,7 @@ static int pick_formats(AVFilterGraph *graph)
             }
             if (filter->nb_outputs){
                 for (j = 0; j < filter->nb_outputs; j++){
-                    if(filter->outputs[j]->in_formats && filter->outputs[j]->in_formats->format_count == 1) {
+                    if(filter->outputs[j]->in_formats && filter->outputs[j]->in_formats->nb_formats == 1) {
                         if ((ret = pick_format(filter->outputs[j], NULL)) < 0)
                             return ret;
                         change = 1;

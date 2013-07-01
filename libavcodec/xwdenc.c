@@ -43,7 +43,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     AVFrame * const p = (AVFrame *)pict;
 
     pixdepth = av_get_bits_per_pixel(desc);
-    if (desc->flags & PIX_FMT_BE)
+    if (desc->flags & AV_PIX_FMT_FLAG_BE)
         be = 1;
     switch (pix_fmt) {
     case AV_PIX_FMT_ARGB:

@@ -77,7 +77,7 @@ static void denoise_temporal(uint8_t *src, uint8_t *dst,
 }
 
 av_always_inline
-static void denoise_spatial(HQDN3DContext *hqdn3d,
+static void denoise_spatial(HQDN3DContext *s,
                             uint8_t *src, uint8_t *dst,
                             uint16_t *line_ant, uint16_t *frame_ant,
                             int w, int h, int sstride, int dstride,
@@ -103,8 +103,8 @@ static void denoise_spatial(HQDN3DContext *hqdn3d,
         src += sstride;
         dst += dstride;
         frame_ant += w;
-        if (hqdn3d->denoise_row[depth]) {
-            hqdn3d->denoise_row[depth](src, dst, line_ant, frame_ant, w, spatial, temporal);
+        if (s->denoise_row[depth]) {
+            s->denoise_row[depth](src, dst, line_ant, frame_ant, w, spatial, temporal);
             continue;
         }
         pixel_ant = LOAD(0);
@@ -121,7 +121,7 @@ static void denoise_spatial(HQDN3DContext *hqdn3d,
 }
 
 av_always_inline
-static void denoise_depth(HQDN3DContext *hqdn3d,
+static void denoise_depth(HQDN3DContext *s,
                           uint8_t *src, uint8_t *dst,
                           uint16_t *line_ant, uint16_t **frame_ant_ptr,
                           int w, int h, int sstride, int dstride,
@@ -142,7 +142,7 @@ static void denoise_depth(HQDN3DContext *hqdn3d,
     }
 
     if (spatial[0])
-        denoise_spatial(hqdn3d, src, dst, line_ant, frame_ant,
+        denoise_spatial(s, src, dst, line_ant, frame_ant,
                         w, h, sstride, dstride, spatial, temporal, depth);
     else
         denoise_temporal(src, dst, frame_ant,
@@ -150,7 +150,7 @@ static void denoise_depth(HQDN3DContext *hqdn3d,
 }
 
 #define denoise(...) \
-    switch (hqdn3d->depth) {\
+    switch (s->depth) {\
         case  8: denoise_depth(__VA_ARGS__,  8); break;\
         case  9: denoise_depth(__VA_ARGS__,  9); break;\
         case 10: denoise_depth(__VA_ARGS__, 10); break;\
@@ -184,36 +184,36 @@ static int16_t *precalc_coefs(double dist25, int depth)
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    HQDN3DContext *hqdn3d = ctx->priv;
+    HQDN3DContext *s = ctx->priv;
 
-    if (!hqdn3d->strength[LUMA_SPATIAL])
-        hqdn3d->strength[LUMA_SPATIAL] = PARAM1_DEFAULT;
-    if (!hqdn3d->strength[CHROMA_SPATIAL])
-        hqdn3d->strength[CHROMA_SPATIAL] = PARAM2_DEFAULT * hqdn3d->strength[LUMA_SPATIAL] / PARAM1_DEFAULT;
-    if (!hqdn3d->strength[LUMA_TMP])
-        hqdn3d->strength[LUMA_TMP]   = PARAM3_DEFAULT * hqdn3d->strength[LUMA_SPATIAL] / PARAM1_DEFAULT;
-    if (!hqdn3d->strength[CHROMA_TMP])
-        hqdn3d->strength[CHROMA_TMP] = hqdn3d->strength[LUMA_TMP] * hqdn3d->strength[CHROMA_SPATIAL] / hqdn3d->strength[LUMA_SPATIAL];
+    if (!s->strength[LUMA_SPATIAL])
+        s->strength[LUMA_SPATIAL] = PARAM1_DEFAULT;
+    if (!s->strength[CHROMA_SPATIAL])
+        s->strength[CHROMA_SPATIAL] = PARAM2_DEFAULT * s->strength[LUMA_SPATIAL] / PARAM1_DEFAULT;
+    if (!s->strength[LUMA_TMP])
+        s->strength[LUMA_TMP]   = PARAM3_DEFAULT * s->strength[LUMA_SPATIAL] / PARAM1_DEFAULT;
+    if (!s->strength[CHROMA_TMP])
+        s->strength[CHROMA_TMP] = s->strength[LUMA_TMP] * s->strength[CHROMA_SPATIAL] / s->strength[LUMA_SPATIAL];
 
     av_log(ctx, AV_LOG_VERBOSE, "ls:%f cs:%f lt:%f ct:%f\n",
-           hqdn3d->strength[LUMA_SPATIAL], hqdn3d->strength[CHROMA_SPATIAL],
-           hqdn3d->strength[LUMA_TMP], hqdn3d->strength[CHROMA_TMP]);
+           s->strength[LUMA_SPATIAL], s->strength[CHROMA_SPATIAL],
+           s->strength[LUMA_TMP], s->strength[CHROMA_TMP]);
 
     return 0;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    HQDN3DContext *hqdn3d = ctx->priv;
+    HQDN3DContext *s = ctx->priv;
 
-    av_freep(&hqdn3d->coefs[0]);
-    av_freep(&hqdn3d->coefs[1]);
-    av_freep(&hqdn3d->coefs[2]);
-    av_freep(&hqdn3d->coefs[3]);
-    av_freep(&hqdn3d->line);
-    av_freep(&hqdn3d->frame_prev[0]);
-    av_freep(&hqdn3d->frame_prev[1]);
-    av_freep(&hqdn3d->frame_prev[2]);
+    av_freep(&s->coefs[0]);
+    av_freep(&s->coefs[1]);
+    av_freep(&s->coefs[2]);
+    av_freep(&s->coefs[3]);
+    av_freep(&s->line);
+    av_freep(&s->frame_prev[0]);
+    av_freep(&s->frame_prev[1]);
+    av_freep(&s->frame_prev[2]);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -248,39 +248,42 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    HQDN3DContext *hqdn3d = inlink->dst->priv;
+    HQDN3DContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int i;
 
-    hqdn3d->hsub  = desc->log2_chroma_w;
-    hqdn3d->vsub  = desc->log2_chroma_h;
-    hqdn3d->depth = desc->comp[0].depth_minus1+1;
+    uninit(inlink->dst);
 
-    hqdn3d->line = av_malloc(inlink->w * sizeof(*hqdn3d->line));
-    if (!hqdn3d->line)
+    s->hsub  = desc->log2_chroma_w;
+    s->vsub  = desc->log2_chroma_h;
+    s->depth = desc->comp[0].depth_minus1+1;
+
+    s->line = av_malloc(inlink->w * sizeof(*s->line));
+    if (!s->line)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < 4; i++) {
-        hqdn3d->coefs[i] = precalc_coefs(hqdn3d->strength[i], hqdn3d->depth);
-        if (!hqdn3d->coefs[i])
+        s->coefs[i] = precalc_coefs(s->strength[i], s->depth);
+        if (!s->coefs[i])
             return AVERROR(ENOMEM);
     }
 
     if (ARCH_X86)
-        ff_hqdn3d_init_x86(hqdn3d);
+        ff_hqdn3d_init_x86(s);
 
     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    HQDN3DContext *hqdn3d = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx  = inlink->dst;
+    HQDN3DContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     AVFrame *out;
     int direct, c;
 
-    if (av_frame_is_writable(in)) {
+    if (av_frame_is_writable(in) && !ctx->is_disabled) {
         direct = 1;
         out = in;
     } else {
@@ -295,12 +298,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     for (c = 0; c < 3; c++) {
-        denoise(hqdn3d, in->data[c], out->data[c],
-                hqdn3d->line, &hqdn3d->frame_prev[c],
-                in->width  >> (!!c * hqdn3d->hsub),
-                in->height >> (!!c * hqdn3d->vsub),
+        denoise(s, in->data[c], out->data[c],
+                s->line, &s->frame_prev[c],
+                FF_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
+                FF_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
                 in->linesize[c], out->linesize[c],
-                hqdn3d->coefs[c?2:0], hqdn3d->coefs[c?3:1]);
+                s->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
+                s->coefs[c ? CHROMA_TMP     : LUMA_TMP]);
+    }
+
+    if (ctx->is_disabled) {
+        av_frame_free(&out);
+        return ff_filter_frame(outlink, in);
     }
 
     if (!direct)
@@ -311,7 +320,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 #define OFFSET(x) offsetof(HQDN3DContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
-static const AVOption options[] = {
+static const AVOption hqdn3d_options[] = {
     { "luma_spatial",   "spatial luma strength",    OFFSET(strength[LUMA_SPATIAL]),   AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
     { "chroma_spatial", "spatial chroma strength",  OFFSET(strength[CHROMA_SPATIAL]), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
     { "luma_tmp",       "temporal luma strength",   OFFSET(strength[LUMA_TMP]),       AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
@@ -319,12 +328,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass hqdn3d_class = {
-    .class_name = "hqdn3d",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
+AVFILTER_DEFINE_CLASS(hqdn3d);
 
 static const AVFilterPad avfilter_vf_hqdn3d_inputs[] = {
     {
@@ -357,4 +361,5 @@ AVFilter avfilter_vf_hqdn3d = {
 
     .inputs    = avfilter_vf_hqdn3d_inputs,
     .outputs   = avfilter_vf_hqdn3d_outputs,
+    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

@@ -43,25 +43,23 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
     /* number of channels */
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "encoding %d channel(s) is not allowed\n", avctx->channels);
-        return -1;
+        return AVERROR(EINVAL);
+    }
+
+    if (avctx->profile != FF_PROFILE_AAC_LOW && avctx->profile != FF_PROFILE_UNKNOWN) {
+        av_log(avctx, AV_LOG_ERROR, "invalid AAC profile: %d, only LC supported\n", avctx->profile);
+        return AVERROR(EINVAL);
     }
 
     s->aacplus_handle = aacplusEncOpen(avctx->sample_rate, avctx->channels,
                                        &s->samples_input, &s->max_output_bytes);
-    if(!s->aacplus_handle) {
-            av_log(avctx, AV_LOG_ERROR, "can't open encoder\n");
-            return -1;
+    if (!s->aacplus_handle) {
+        av_log(avctx, AV_LOG_ERROR, "can't open encoder\n");
+        return AVERROR(EINVAL);
     }
 
     /* check aacplus version */
     aacplus_cfg = aacplusEncGetCurrentConfiguration(s->aacplus_handle);
-
-    /* put the options in the configuration struct */
-    if(avctx->profile != FF_PROFILE_AAC_LOW && avctx->profile != FF_PROFILE_UNKNOWN) {
-            av_log(avctx, AV_LOG_ERROR, "invalid AAC profile: %d, only LC supported\n", avctx->profile);
-            aacplusEncClose(s->aacplus_handle);
-            return -1;
-    }
 
     aacplus_cfg->bitRate = avctx->bit_rate;
     aacplus_cfg->bandWidth = avctx->cutoff;
@@ -69,7 +67,7 @@ static av_cold int aacPlus_encode_init(AVCodecContext *avctx)
     aacplus_cfg->inputFormat = avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? AACPLUS_INPUT_FLOAT : AACPLUS_INPUT_16BIT;
     if (!aacplusEncSetConfiguration(s->aacplus_handle, aacplus_cfg)) {
         av_log(avctx, AV_LOG_ERROR, "libaacplus doesn't support this output format!\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     avctx->frame_size = s->samples_input / avctx->channels;
@@ -114,8 +112,8 @@ static av_cold int aacPlus_encode_close(AVCodecContext *avctx)
     aacPlusAudioContext *s = avctx->priv_data;
 
     av_freep(&avctx->extradata);
-
     aacplusEncClose(s->aacplus_handle);
+
     return 0;
 }
 

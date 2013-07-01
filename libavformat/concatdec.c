@@ -23,6 +23,7 @@
 #include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "internal.h"
+#include "url.h"
 
 typedef struct {
     char *url;
@@ -216,6 +217,8 @@ static int concat_read_header(AVFormatContext *avf)
     }
     if (ret < 0)
         FAIL(ret);
+    if (!cat->nb_files)
+        FAIL(AVERROR_INVALIDDATA);
 
     for (i = 0; i < cat->nb_files; i++) {
         if (cat->files[i].start_time == AV_NOPTS_VALUE)

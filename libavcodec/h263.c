@@ -27,7 +27,6 @@
  * h263/mpeg4 codec.
  */
 
-//#define DEBUG
 #include <limits.h>
 
 #include "avcodec.h"
@@ -39,8 +38,6 @@
 #include "flv.h"
 #include "mpeg4video.h"
 
-//#undef NDEBUG
-//#include <assert.h>
 
 uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 

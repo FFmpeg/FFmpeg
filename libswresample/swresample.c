@@ -127,7 +127,7 @@ static const AVOption options[]={
 
 { "kaiser_beta"         , "set swr Kaiser Window Beta"  , OFFSET(kaiser_beta)    , AV_OPT_TYPE_INT  , {.i64=9                     }, 2      , 16        , PARAM },
 
-{ "output_sample_bits"   , ""  , OFFSET(dither.output_sample_bits)               , AV_OPT_TYPE_INT  , {.i64=0                     }, 0      , 64        , 0 },
+{ "output_sample_bits"  , "set swr number of output sample bits", OFFSET(dither.output_sample_bits), AV_OPT_TYPE_INT  , {.i64=0   }, 0      , 64        , PARAM },
 {0}
 };
 
@@ -651,7 +651,8 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
     if(s->resample_first ? !s->rematrix : !s->resample)
         preout= midbuf;
 
-    if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar){
+    if(s->int_sample_fmt == s->out_sample_fmt && s->out.planar
+       && !(s->out_sample_fmt==AV_SAMPLE_FMT_S32P && (s->dither.output_sample_bits&31))){
         if(preout==in){
             out_count= FFMIN(out_count, in_count); //TODO check at the end if this is needed or redundant
             av_assert0(s->in.planar); //we only support planar internally so it has to be, we support copying non planar though
@@ -708,7 +709,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
 
                     if(len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_simd(conv_src->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, len1);
+                            s->mix_2_1_simd(conv_src->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_simd_one, 0, 0, len1);
                     if(out_count != len1)
                         for(ch=0; ch<preout->ch_count; ch++)
                             s->mix_2_1_f(conv_src->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos + off + len1, s->native_one, 0, 0, out_count - len1);
@@ -726,7 +727,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
             }
             s->dither.noise_pos += out_count;
         }
-//FIXME packed doesnt need more than 1 chan here!
+//FIXME packed doesn't need more than 1 chan here!
         swri_audio_convert(s->out_convert, out, conv_src, out_count);
     }
     return out_count;
@@ -746,7 +747,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
         reversefill_audiodata(&s->drop_temp, tmp_arg);
         s->drop_output *= -1; //FIXME find a less hackish solution
-        ret = swr_convert(s, tmp_arg, FFMIN(-s->drop_output, MAX_DROP_STEP), in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesnt matter
+        ret = swr_convert(s, tmp_arg, FFMIN(-s->drop_output, MAX_DROP_STEP), in_arg, in_count); //FIXME optimize but this is as good as never called so maybe it doesn't matter
         s->drop_output *= -1;
         in_count = 0;
         if(ret>0) {

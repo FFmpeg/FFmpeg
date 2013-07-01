@@ -60,7 +60,7 @@ static int write_header(AVFormatContext *s)
                          && s->nb_streams == 1
                          && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO
                          && desc
-                         &&(desc->flags & PIX_FMT_PLANAR)
+                         &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
                          && desc->nb_components >= 3;
     return 0;
 }
@@ -101,7 +101,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (img->split_planes) {
         int ysize = codec->width * codec->height;
-        int usize = ((-codec->width)>>desc->log2_chroma_w) * ((-codec->height)>>desc->log2_chroma_h);
+        int usize = FF_CEIL_RSHIFT(codec->width, desc->log2_chroma_w) * FF_CEIL_RSHIFT(codec->height, desc->log2_chroma_h);
         if (desc->comp[0].depth_minus1 >= 8) {
             ysize *= 2;
             usize *= 2;

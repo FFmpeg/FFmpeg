@@ -271,7 +271,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
  * Parse a text tag.
  */
 static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
-                      const char *key)
+                      AVDictionary **metadata, const char *key)
 {
     uint8_t *dst;
     int encoding, dict_flags = AV_DICT_DONT_OVERWRITE | AV_DICT_DONT_STRDUP_VAL;
@@ -306,7 +306,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen,
         av_freep(&dst);
 
     if (dst)
-        av_dict_set(&s->metadata, key, dst, dict_flags);
+        av_dict_set(metadata, key, dst, dict_flags);
 }
 
 /**
@@ -518,39 +518,50 @@ fail:
     avio_seek(pb, end, SEEK_SET);
 }
 
-static void read_chapter(AVFormatContext *s, AVIOContext *pb, int taglen, char *tag, ID3v2ExtraMeta **extra_meta)
+static void read_chapter(AVFormatContext *s, AVIOContext *pb, int len, char *ttag, ID3v2ExtraMeta **extra_meta)
 {
     AVRational time_base = {1, 1000};
     uint32_t start, end;
+    AVChapter *chapter;
     uint8_t *dst = NULL;
-    int encoding;
+    int taglen;
+    char tag[5];
 
-    decode_str(s, pb, 0, &dst, &taglen);
-    if (taglen < 16)
+    if (decode_str(s, pb, 0, &dst, &len) < 0)
+        return;
+    if (len < 16)
         return;
 
     start = avio_rb32(pb);
     end   = avio_rb32(pb);
-    taglen -= 27;
-    if (taglen > 0) {
-        char tag[4];
+    avio_skip(pb, 8);
 
-        avio_skip(pb, 8);
-        avio_read(pb, tag, 4);
-        if (!memcmp(tag, "TIT2", 4)) {
-            taglen = FFMIN(taglen, avio_rb32(pb));
-            if (taglen < 0) {
-                av_free(dst);
-                return;
-            }
-            avio_skip(pb, 2);
-            encoding = avio_r8(pb);
-            av_freep(&dst);
-            decode_str(s, pb, encoding, &dst, &taglen);
-        }
+    chapter = avpriv_new_chapter(s, s->nb_chapters + 1, time_base, start, end, dst);
+    if (!chapter) {
+        av_free(dst);
+        return;
     }
 
-    avpriv_new_chapter(s, s->nb_chapters + 1, time_base, start, end, dst);
+    len -= 16;
+    while (len > 10) {
+        avio_read(pb, tag, 4);
+        tag[4] = 0;
+        taglen = avio_rb32(pb);
+        avio_skip(pb, 2);
+        len -= 10;
+        if (taglen < 0 || taglen > len) {
+            av_free(dst);
+            return;
+        }
+        if (tag[0] == 'T')
+            read_ttag(s, pb, taglen, &chapter->metadata, tag);
+        else
+            avio_skip(pb, taglen);
+        len -= taglen;
+    }
+
+    ff_metadata_conv(&chapter->metadata, NULL, ff_id3v2_34_metadata_conv);
+    ff_metadata_conv(&chapter->metadata, NULL, ff_id3v2_4_metadata_conv);
     av_free(dst);
 }
 
@@ -774,7 +785,7 @@ static void id3v2_parse(AVFormatContext *s, int len, uint8_t version,
 #endif
             if (tag[0] == 'T')
                 /* parse text tag */
-                read_ttag(s, pbx, tlen, tag);
+                read_ttag(s, pbx, tlen, &s->metadata, tag);
             else
                 /* parse special meta tag */
                 extra_func->read(s, pbx, tlen, tag, extra_meta);
