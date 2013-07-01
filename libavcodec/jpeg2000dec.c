@@ -652,10 +652,16 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             else if (incl < 0)
                 return incl;
 
-            if (!cblk->npasses)
-                cblk->nonzerobits = expn[bandno] + numgbits - 1 -
-                                    tag_tree_decode(s, prec->zerobits + cblkno,
-                                                    100);
+            if (!cblk->npasses) {
+                int v = expn[bandno] + numgbits - 1 -
+                        tag_tree_decode(s, prec->zerobits + cblkno, 100);
+                if (v < 0) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "nonzerobits %d invalid\n", v);
+                    return AVERROR_INVALIDDATA;
+                }
+                cblk->nonzerobits = v;
+            }
             if ((newpasses = getnpasses(s)) < 0)
                 return newpasses;
             if ((llen = getlblockinc(s)) < 0)
