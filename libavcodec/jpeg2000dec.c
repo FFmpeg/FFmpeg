@@ -573,8 +573,6 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
     int tilex = tileno % s->numXtiles;
     int tiley = tileno / s->numXtiles;
     Jpeg2000Tile *tile = s->tile + tileno;
-    Jpeg2000CodingStyle *codsty;
-    Jpeg2000QuantStyle  *qntsty;
 
     if (!tile->comp)
         return AVERROR(ENOMEM);
@@ -582,14 +580,14 @@ static int init_tile(Jpeg2000DecoderContext *s, int tileno)
     /* copy codsty, qnsty to tile. TODO: Is it the best way?
      * codsty, qnsty is an array of 4 structs Jpeg2000CodingStyle
      * and Jpeg2000QuantStyle */
-    memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(*codsty));
-    memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(*qntsty));
+    memcpy(tile->codsty, s->codsty, s->ncomponents * sizeof(*tile->codsty));
+    memcpy(tile->qntsty, s->qntsty, s->ncomponents * sizeof(*tile->qntsty));
 
     for (compno = 0; compno < s->ncomponents; compno++) {
         Jpeg2000Component *comp = tile->comp + compno;
+        Jpeg2000CodingStyle *codsty = tile->codsty + compno;
+        Jpeg2000QuantStyle  *qntsty = tile->qntsty + compno;
         int ret; // global bandno
-        codsty = tile->codsty + compno;
-        qntsty = tile->qntsty + compno;
 
         comp->coord_o[0][0] = FFMAX(tilex       * s->tile_width  + s->tile_offset_x, s->image_offset_x);
         comp->coord_o[0][1] = FFMIN((tilex + 1) * s->tile_width  + s->tile_offset_x, s->width);
