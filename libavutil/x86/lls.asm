@@ -198,7 +198,7 @@ cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
 %endif
 
 INIT_XMM sse2
-cglobal evaluate_lls, 2,4,2, ctx, var, order, i
+cglobal evaluate_lls, 3,4,2, ctx, var, order, i
     ; This function is often called on the same buffer as update_lls, but with
     ; an offset. They can't both be aligned.
     ; Load halves rather than movu to avoid store-forwarding stalls, since the
