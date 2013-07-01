@@ -1346,8 +1346,10 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = 0; // TODO: only one tile in DCI JP2K. to implement for more tiles
 
-    if (bytestream2_get_bytes_left(&s->g) < 2)
-        return AVERROR_INVALIDDATA;
+    if (bytestream2_get_bytes_left(&s->g) < 2) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
 
     // check if the image is in jp2 format
     if (bytestream2_get_bytes_left(&s->g) >= 12 &&
@@ -1357,17 +1359,17 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         if (!jp2_find_codestream(s)) {
             av_log(avctx, AV_LOG_ERROR,
                    "Could not find Jpeg2000 codestream atom.\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto end;
         }
     } else {
         bytestream2_seek(&s->g, 0, SEEK_SET);
-        if (bytestream2_peek_be16(&s->g) != JPEG2000_SOC)
-            bytestream2_skip(&s->g, 8);
     }
 
     if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
         av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     if (ret = jpeg2000_read_main_headers(s))
         goto end;
@@ -1385,6 +1387,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++)
         if (ret = jpeg2000_decode_tile(s, s->tile + tileno, picture))
             goto end;
+
+    jpeg2000_dec_cleanup(s);
 
     *got_frame = 1;
 
