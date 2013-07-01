@@ -416,9 +416,9 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 if (!prec->zerobits)
                     return AVERROR(ENOMEM);
 
-                prec->cblk = av_malloc_array(prec->nb_codeblocks_width *
-                                             prec->nb_codeblocks_height,
-                                             sizeof(*prec->cblk));
+                prec->cblk = av_mallocz_array(prec->nb_codeblocks_width *
+                                              prec->nb_codeblocks_height,
+                                              sizeof(*prec->cblk));
                 if (!prec->cblk)
                     return AVERROR(ENOMEM);
                 for (cblkno = 0; cblkno < prec->nb_codeblocks_width * prec->nb_codeblocks_height; cblkno++) {
