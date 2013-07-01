@@ -56,7 +56,7 @@
  */
 static void apply_delogo(uint8_t *dst, int dst_linesize,
                          uint8_t *src, int src_linesize,
-                         int w, int h,
+                         int w, int h, AVRational sar,
                          int logo_x, int logo_y, int logo_w, int logo_h,
                          int band, int show, int direct)
 {
@@ -93,11 +93,11 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
              xdst = dst+logo_x1+1,
              xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
 
-            /* Weighted interpolation based on relative distances */
-            weightl = (uint64_t)              (logo_x2-1-x) * (y-logo_y1) * (logo_y2-1-y);
-            weightr = (uint64_t)(x-logo_x1)                 * (y-logo_y1) * (logo_y2-1-y);
-            weightt = (uint64_t)(x-logo_x1) * (logo_x2-1-x)               * (logo_y2-1-y);
-            weightb = (uint64_t)(x-logo_x1) * (logo_x2-1-x) * (y-logo_y1);
+            /* Weighted interpolation based on relative distances, taking SAR into account */
+            weightl = (uint64_t)              (logo_x2-1-x) * (y-logo_y1) * (logo_y2-1-y) * sar.den;
+            weightr = (uint64_t)(x-logo_x1)                 * (y-logo_y1) * (logo_y2-1-y) * sar.den;
+            weightt = (uint64_t)(x-logo_x1) * (logo_x2-1-x)               * (logo_y2-1-y) * sar.num;
+            weightb = (uint64_t)(x-logo_x1) * (logo_x2-1-x) * (y-logo_y1)                 * sar.num;
 
             interp =
                 (topleft[src_linesize*(y-logo_y  -yclipt)]   +
@@ -217,6 +217,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int vsub0 = desc->log2_chroma_h;
     int direct = 0;
     int plane;
+    AVRational sar;
 
     if (av_frame_is_writable(in)) {
         direct = 1;
@@ -231,6 +232,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
+    sar = in->sample_aspect_ratio;
+    /* Assume square pixels if SAR is unknown */
+    if (!sar.num)
+        sar.num = sar.den = 1;
+
     for (plane = 0; plane < 4 && in->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? hsub0 : 0;
         int vsub = plane == 1 || plane == 2 ? vsub0 : 0;
@@ -239,7 +245,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                      in ->data[plane], in ->linesize[plane],
                      FF_CEIL_RSHIFT(inlink->w, hsub),
                      FF_CEIL_RSHIFT(inlink->h, vsub),
-                     s->x>>hsub, s->y>>vsub,
+                     sar, s->x>>hsub, s->y>>vsub,
                      FF_CEIL_RSHIFT(s->w, hsub),
                      FF_CEIL_RSHIFT(s->h, vsub),
                      s->band>>FFMIN(hsub, vsub),
