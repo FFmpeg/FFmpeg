@@ -1119,17 +1119,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                     cblk->coord[1][1] - cblk->coord[1][0],
                                     bandpos);
 
-                        /* Manage band offsets */
                         x = cblk->coord[0][0];
                         y = cblk->coord[1][0];
-                        if ((reslevelno > 0) && ((bandno + 1) & 1)) {
-                            Jpeg2000ResLevel *pres = comp->reslevel + (reslevelno - 1);
-                            x += pres->coord[0][1] - pres->coord[0][0];
-                        }
-                        if ((reslevelno > 0) && ((bandno + 1) & 2)) {
-                            Jpeg2000ResLevel *pres = comp->reslevel + (reslevelno - 1);
-                            y += pres->coord[1][1] - pres->coord[1][0];
-                        }
 
                         if (s->avctx->flags & CODEC_FLAG_BITEXACT)
                             dequantization_int(x, y, cblk, comp, &t1, band);
