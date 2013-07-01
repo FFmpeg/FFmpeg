@@ -196,8 +196,10 @@ static int idcin_read_header(AVFormatContext *s)
     st->codec->height = height;
 
     /* load up the Huffman tables into extradata */
-    st->codec->extradata_size = HUFFMAN_TABLE_SIZE;
     st->codec->extradata = av_malloc(HUFFMAN_TABLE_SIZE);
+    if (!st->codec->extradata)
+        return AVERROR(ENOMEM);
+    st->codec->extradata_size = HUFFMAN_TABLE_SIZE;
     ret = avio_read(pb, st->codec->extradata, HUFFMAN_TABLE_SIZE);
     if (ret < 0) {
         return ret;
