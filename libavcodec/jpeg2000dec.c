@@ -251,7 +251,12 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
 
     if (s->buf_end - s->buf < 5)
         return AVERROR(EINVAL);
-    c->nreslevels = bytestream_get_byte(&s->buf) + 1; // num of resolution levels - 1
+    /*  nreslevels = number of resolution levels
+                   = number of decomposition level +1 */
+    c->nreslevels = bytestream_get_byte(&s->buf) + 1;
+
+    if (c->nreslevels > JPEG2000_MAX_RESLEVELS)
+        return AVERROR_INVALIDDATA;
 
     /* compute number of resolution levels to decode */
     if (c->nreslevels < s->reduction_factor)
