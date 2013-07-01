@@ -217,9 +217,17 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
     csize = (comp->coord[0][1] - comp->coord[0][0]) *
             (comp->coord[1][1] - comp->coord[1][0]);
 
-    comp->data = av_malloc_array(csize, sizeof(*comp->data));
-    if (!comp->data)
-        return AVERROR(ENOMEM);
+    if (codsty->transform == FF_DWT97) {
+        comp->i_data = NULL;
+        comp->f_data = av_malloc_array(csize, sizeof(*comp->f_data));
+        if (!comp->f_data)
+            return AVERROR(ENOMEM);
+    } else {
+        comp->f_data = NULL;
+        comp->i_data = av_malloc_array(csize, sizeof(*comp->i_data));
+        if (!comp->i_data)
+            return AVERROR(ENOMEM);
+    }
     comp->reslevel = av_malloc_array(codsty->nreslevels, sizeof(*comp->reslevel));
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
@@ -290,8 +298,8 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 /*TODO: Compute formula to implement. */
                 numbps = cbps +
                          lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
-                band->stepsize = (float)SHL(2048 + qntsty->mant[gbandno],
-                                            2 + numbps - qntsty->expn[gbandno]);
+                band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
+                                       2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
                 /* Exponent quantization step.
@@ -303,20 +311,20 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                  * but it works (compared to OpenJPEG). Why?
                  * Further investigation needed. */
                 gain            = cbps;
-                band->stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
-                band->stepsize *= (float)qntsty->mant[gbandno] / 2048.0 + 1.0;
+                band->f_stepsize  = pow(2.0, gain - qntsty->expn[gbandno]);
+                band->f_stepsize *= qntsty->mant[gbandno] / 2048.0 + 1.0;
                 break;
             default:
-                band->stepsize = 0;
+                band->f_stepsize = 0;
                 av_log(avctx, AV_LOG_ERROR, "Unknown quantization format\n");
                 break;
             }
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
              * If not set output of entropic decoder is not correct. */
-            band->stepsize *= 0.5;
-            /* BITEXACT computing case --> convert to int */
-            if (avctx->flags & CODEC_FLAG_BITEXACT)
-                band->stepsize = (int32_t)(band->stepsize * (1 << 16));
+            if (!av_codec_is_encoder(avctx->codec))
+                band->f_stepsize *= 0.5;
+
+            band->i_stepsize = band->f_stepsize * (1 << 16);
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
@@ -491,5 +499,6 @@ void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 
     ff_dwt_destroy(&comp->dwt);
     av_freep(&comp->reslevel);
-    av_freep(&comp->data);
+    av_freep(&comp->i_data);
+    av_freep(&comp->f_data);
 }

@@ -990,11 +990,11 @@ static void dequantization_float(int x, int y, Jpeg2000Cblk *cblk,
                                  Jpeg2000T1Context *t1, Jpeg2000Band *band)
 {
     int i, j, idx;
-    float *datap = &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x];
+    float *datap = &comp->f_data[(comp->coord[0][1] - comp->coord[0][0]) * y + x];
     for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j)
         for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
             idx        = (comp->coord[0][1] - comp->coord[0][0]) * j + i;
-            datap[idx] = (float)(t1->data[j][i]) * ((float)band->stepsize);
+            datap[idx] = (float)(t1->data[j][i]) * band->f_stepsize;
         }
 }
 
@@ -1004,13 +1004,12 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
                                Jpeg2000T1Context *t1, Jpeg2000Band *band)
 {
     int i, j, idx;
-    int32_t *datap =
-        (int32_t *) &comp->data[(comp->coord[0][1] - comp->coord[0][0]) * y + x];
+    int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * y + x];
     for (j = 0; j < (cblk->coord[1][1] - cblk->coord[1][0]); ++j)
         for (i = 0; i < (cblk->coord[0][1] - cblk->coord[0][0]); ++i) {
             idx        = (comp->coord[0][1] - comp->coord[0][0]) * j + i;
             datap[idx] =
-                ((int32_t)(t1->data[j][i]) * ((int32_t)band->stepsize) + (1 << 15)) >> 16;
+                ((int32_t)(t1->data[j][i]) * band->i_stepsize + (1 << 15)) >> 16;
         }
 }
 
@@ -1037,9 +1036,9 @@ static void mct_decode(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 
     for (i = 0; i < 3; i++)
         if (tile->codsty[0].transform == FF_DWT97)
-            srcf[i] = tile->comp[i].data;
+            srcf[i] = tile->comp[i].f_data;
         else
-            src[i] = (int32_t *)tile->comp[i].data;
+            src [i] = tile->comp[i].i_data;
 
     for (i = 0; i < 2; i++)
         csize *= tile->comp[0].coord[i][1] - tile->comp[0].coord[i][0];
@@ -1129,21 +1128,23 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
         } /* end reslevel */
 
         /* inverse DWT */
-        ff_dwt_decode(&comp->dwt, comp->data);
+        ff_dwt_decode(&comp->dwt, codsty->transform == FF_DWT97 ? (void*)comp->f_data : (void*)comp->i_data);
     } /*end comp */
 
     /* inverse MCT transformation */
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
-    if (s->avctx->pix_fmt == AV_PIX_FMT_BGRA) // RGBA -> BGRA
-        FFSWAP(float *, tile->comp[0].data, tile->comp[2].data);
+    if (s->avctx->pix_fmt == AV_PIX_FMT_BGRA) { // RGBA -> BGRA
+        FFSWAP(float *, tile->comp[0].f_data, tile->comp[2].f_data);
+        FFSWAP(int *, tile->comp[0].i_data, tile->comp[2].i_data);
+    }
 
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
-            float *datap = comp->data;
-            int32_t *i_datap = (int32_t *) comp->data;
+            float *datap = comp->f_data;
+            int32_t *i_datap = comp->i_data;
             y    = tile->comp[compno].coord[1][0] - s->image_offset_y;
             line = picture->data[0] + y * picture->linesize[0];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
@@ -1171,8 +1172,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     } else {
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
-            float *datap = comp->data;
-            int32_t *i_datap = (int32_t *) comp->data;
+            float *datap = comp->f_data;
+            int32_t *i_datap = comp->i_data;
             uint16_t *linel;
 
             y     = tile->comp[compno].coord[1][0] - s->image_offset_y;
