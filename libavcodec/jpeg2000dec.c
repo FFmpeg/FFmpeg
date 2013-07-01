@@ -1327,12 +1327,18 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 static int jpeg2000_read_bitstream_packets(Jpeg2000DecoderContext *s)
 {
     int ret = 0;
-    Jpeg2000Tile *tile = s->tile + s->curtileno;
+    int tileno;
 
-    if (ret = init_tile(s, s->curtileno))
-        return ret;
-    if (ret = jpeg2000_decode_packets(s, tile))
-        return ret;
+    for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++) {
+        Jpeg2000Tile *tile = s->tile + tileno;
+
+        if (ret = init_tile(s, tileno))
+            return ret;
+
+        s->g = tile->tile_part[0].tpg;
+        if (ret = jpeg2000_decode_packets(s, tile))
+            return ret;
+    }
 
     return 0;
 }
