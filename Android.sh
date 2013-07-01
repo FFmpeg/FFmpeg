@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source ./Android_local.sh
+
+
 DEST=`pwd`/build/android && rm -rf $DEST
 SOURCE=`pwd`
 SSL=$SOURCE/../openssl
@@ -7,10 +10,10 @@ SSL=$SOURCE/../openssl
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
 $ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
-  --system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
+  --system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
 
 export PATH=$TOOLCHAIN/bin:$PATH
-export CC="ccache arm-linux-androideabi-gcc"
+export CC="$CCACHE arm-linux-androideabi-gcc"
 export LD=arm-linux-androideabi-ld
 export AR=arm-linux-androideabi-ar
 
@@ -100,7 +103,7 @@ for version in neon armv7; do
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
   $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
-    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o
+    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so

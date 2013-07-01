@@ -1,4 +1,9 @@
 build/
+Android_local.sh
+tags
+*.swp
+*.~
+*.swo
 *.a
 *.o
 *.d
