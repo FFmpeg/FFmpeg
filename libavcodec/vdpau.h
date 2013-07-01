@@ -136,7 +136,7 @@ struct vdpau_render_state {
 
     int state; ///< Holds FF_VDPAU_STATE_* values.
 
-#if AV_HAVE_INCOMPATIBLE_FORK_ABI
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     /** picture parameter information for all supported codecs */
     union FFVdpPictureInfo info;
 #endif
@@ -148,7 +148,7 @@ struct vdpau_render_state {
     /** The user is responsible for freeing this buffer using av_freep(). */
     VdpBitstreamBuffer *bitstream_buffers;
 
-#if !AV_HAVE_INCOMPATIBLE_FORK_ABI
+#if !AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     /** picture parameter information for all supported codecs */
     union FFVdpPictureInfo info;
 #endif
