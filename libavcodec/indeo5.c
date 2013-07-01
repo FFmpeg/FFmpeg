@@ -520,12 +520,6 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
                         mv_x += IVI_TOSIGNED(mv_delta);
                         mb->mv_x = mv_x;
                         mb->mv_y = mv_y;
-                        if (mv_x < 0 || mv_y < 0) {
-                            av_log(avctx, AV_LOG_ERROR, "Invalid MV %d %d\n",
-                                   mv_x, mv_y);
-                            mb->mv_x = mb->mv_y = 0;
-                            return AVERROR_INVALIDDATA;
-                        }
                     }
                 }
             }
