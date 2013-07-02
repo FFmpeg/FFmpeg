@@ -2128,8 +2128,6 @@ static int audio_decode_frame(VideoState *is)
     int64_t dec_channel_layout;
     int got_frame;
     av_unused double audio_clock0;
-    int new_packet = 0;
-    int flush_complete = 0;
     int wanted_nb_samples;
     AVRational tb;
     int ret;
@@ -2137,7 +2135,7 @@ static int audio_decode_frame(VideoState *is)
 
     for (;;) {
         /* NOTE: the audio packet can contain several frames */
-        while (pkt_temp->size > 0 || (!pkt_temp->data && new_packet) || is->audio_buf_frames_pending) {
+        while (pkt_temp->stream_index != -1 || is->audio_buf_frames_pending) {
             if (!is->frame) {
                 if (!(is->frame = avcodec_alloc_frame()))
                     return AVERROR(ENOMEM);
@@ -2153,9 +2151,6 @@ static int audio_decode_frame(VideoState *is)
                 return -1;
 
             if (!is->audio_buf_frames_pending) {
-                if (flush_complete)
-                    break;
-                new_packet = 0;
                 len1 = avcodec_decode_audio4(dec, is->frame, &got_frame, pkt_temp);
                 if (len1 < 0) {
                     /* if error, we skip the frame */
@@ -2165,13 +2160,11 @@ static int audio_decode_frame(VideoState *is)
 
                 pkt_temp->data += len1;
                 pkt_temp->size -= len1;
+                if (pkt_temp->data && pkt_temp->size <= 0 || !pkt_temp->data && !got_frame)
+                    pkt_temp->stream_index = -1;
 
-                if (!got_frame) {
-                    /* stop sending empty packets if the decoder is finished */
-                    if (!pkt_temp->data && dec->codec->capabilities & CODEC_CAP_DELAY)
-                        flush_complete = 1;
+                if (!got_frame)
                     continue;
-                }
 
                 tb = (AVRational){1, is->frame->sample_rate};
                 if (is->frame->pts != AV_NOPTS_VALUE)
@@ -2317,6 +2310,7 @@ static int audio_decode_frame(VideoState *is)
         if (pkt->data)
             av_free_packet(pkt);
         memset(pkt_temp, 0, sizeof(*pkt_temp));
+        pkt_temp->stream_index = -1;
 
         if (is->audioq.abort_request) {
             return -1;
@@ -2326,12 +2320,11 @@ static int audio_decode_frame(VideoState *is)
             SDL_CondSignal(is->continue_read_thread);
 
         /* read next packet */
-        if ((new_packet = packet_queue_get(&is->audioq, pkt, 1, &is->audio_pkt_temp_serial)) < 0)
+        if ((packet_queue_get(&is->audioq, pkt, 1, &is->audio_pkt_temp_serial)) < 0)
             return -1;
 
         if (pkt->data == flush_pkt.data) {
             avcodec_flush_buffers(dec);
-            flush_complete = 0;
             is->audio_buf_frames_pending = 0;
         }
 
@@ -2541,6 +2534,7 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
         memset(&is->audio_pkt_temp, 0, sizeof(is->audio_pkt_temp));
+        is->audio_pkt_temp.stream_index = -1;
 
         is->audio_stream = stream_index;
         is->audio_st = ic->streams[stream_index];
