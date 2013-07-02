@@ -38,7 +38,7 @@ endstruc
 
 %macro ADDPD_MEM 2
 %if cpuflag(avx)
-    vaddpd %2, %1
+    vaddpd %2, %2, %1
 %else
     addpd  %2, %1
 %endif
