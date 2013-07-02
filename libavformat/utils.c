@@ -2888,8 +2888,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         int err = 0;
         av_init_packet(&empty_pkt);
 
-        if (ret >= 0 && ic->nb_streams)
-        ret = -1; /* we could not have all the codec parameters before EOF */
         for(i=0;i<ic->nb_streams;i++) {
 
             st = ic->streams[i];
@@ -3016,6 +3014,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     if(ic->probesize)
     estimate_timings(ic, old_offset);
 
+    if (ret >= 0 && ic->nb_streams)
+        ret = -1; /* we could not have all the codec parameters before EOF */
     for(i=0;i<ic->nb_streams;i++) {
         const char *errmsg;
         st = ic->streams[i];
