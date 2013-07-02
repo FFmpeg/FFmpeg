@@ -2888,6 +2888,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         int err = 0;
         av_init_packet(&empty_pkt);
 
+        if (ret >= 0)
         ret = -1; /* we could not have all the codec parameters before EOF */
         for(i=0;i<ic->nb_streams;i++) {
 
