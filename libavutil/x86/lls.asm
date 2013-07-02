@@ -125,7 +125,7 @@ cglobal update_lls, 2,5,8, ctx, var, i, j, covar2
 .ret:
     REP_RET
 
-%if HAVE_AVX_EXTERNAL && 0
+%if HAVE_AVX_EXTERNAL
 INIT_YMM avx
 cglobal update_lls, 3,6,8, ctx, var, count, i, j, count2
     %define covarq ctxq
