@@ -2621,7 +2621,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
-    int i, count, ret, j;
+    int i, count, ret = 0, j;
     int64_t read_size;
     AVStream *st;
     AVPacket pkt1, *pkt;
