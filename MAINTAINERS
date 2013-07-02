@@ -295,6 +295,7 @@ Filters:
   af_astreamsync.c                      Nicolas George
   af_atempo.c                           Pavel Koshevoy
   af_pan.c                              Nicolas George
+  vf_delogo.c                           Jean Delvare (CC <khali@linux-fr.org>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
   vf_yadif.c                            Michael Niedermayer
 
@@ -478,6 +479,7 @@ Diego Biurrun                 8227 1E31 B6D9 4994 7427 E220 9CAE D6CC 4757 FCC5
 FFmpeg release signing key    FCF9 86EA 15E6 E293 A564 4F10 B432 2F04 D676 58D8
 Gwenole Beauchesne            2E63 B3A6 3E44 37E2 017D 2704 53C7 6266 B153 99C4
 Jaikrishnan Menon             61A1 F09F 01C9 2D45 78E1 C862 25DC 8831 AF70 D368
+Jean Delvare                  7CA6 9F44 60F1 BDC4 1FD2 C858 A552 6B9B B3CD 4E6A
 Justin Ruggles                3136 ECC0 C10D 6C04 5F43 CA29 FCBE CD2A 3787 1EBF
 Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
 Lou Logan                     7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
