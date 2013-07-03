@@ -51,9 +51,10 @@ static uint16_t inv_bits(uint16_t val, int nbits)
     uint16_t res;
 
     if (nbits <= 8) {
-        res = av_reverse[val] >> (8-nbits);
+        res = av_reverse[val] >> (8 - nbits);
     } else
-        res = ((av_reverse[val & 0xFF] << 8) + (av_reverse[val >> 8])) >> (16-nbits);
+        res = ((av_reverse[val & 0xFF] << 8) +
+               (av_reverse[val >> 8])) >> (16 - nbits);
 
     return res;
 }
@@ -103,10 +104,12 @@ void ff_ivi_init_static_vlc(void)
     for (i = 0; i < 8; i++) {
         ff_ivi_mb_vlc_tabs[i].table = table_data + i * 2 * 8192;
         ff_ivi_mb_vlc_tabs[i].table_allocated = 8192;
-        ff_ivi_create_huff_from_desc(&ff_ivi_mb_huff_desc[i],  &ff_ivi_mb_vlc_tabs[i],  1);
+        ff_ivi_create_huff_from_desc(&ff_ivi_mb_huff_desc[i],
+                                     &ff_ivi_mb_vlc_tabs[i],  1);
         ff_ivi_blk_vlc_tabs[i].table = table_data + (i * 2 + 1) * 8192;
         ff_ivi_blk_vlc_tabs[i].table_allocated = 8192;
-        ff_ivi_create_huff_from_desc(&ff_ivi_blk_huff_desc[i], &ff_ivi_blk_vlc_tabs[i], 1);
+        ff_ivi_create_huff_from_desc(&ff_ivi_blk_huff_desc[i],
+                                     &ff_ivi_blk_vlc_tabs[i], 1);
     }
     initialized_vlcs = 1;
 }
@@ -114,7 +117,7 @@ void ff_ivi_init_static_vlc(void)
 int ff_ivi_dec_huff_desc(GetBitContext *gb, int desc_coded, int which_tab,
                          IVIHuffTab *huff_tab, AVCodecContext *avctx)
 {
-    int         i, result;
+    int i, result;
     IVIHuffDesc new_huff;
 
     if (!desc_coded) {
@@ -175,8 +178,9 @@ void ff_ivi_huff_desc_copy(IVIHuffDesc *dst, const IVIHuffDesc *src)
 
 int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
 {
-    int         p, b;
-    uint32_t    b_width, b_height, align_fac, width_aligned, height_aligned, buf_size;
+    int p, b;
+    uint32_t b_width, b_height, align_fac, width_aligned,
+             height_aligned, buf_size;
     IVIBandDesc *band;
 
     ff_ivi_free_buffers(planes);
@@ -199,8 +203,10 @@ int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
         /* select band dimensions: if there is only one band then it
          *  has the full size, if there are several bands each of them
          *  has only half size */
-        b_width  = planes[p].num_bands == 1 ? planes[p].width  : (planes[p].width  + 1) >> 1;
-        b_height = planes[p].num_bands == 1 ? planes[p].height : (planes[p].height + 1) >> 1;
+        b_width  = planes[p].num_bands == 1 ? planes[p].width
+                                            : (planes[p].width  + 1) >> 1;
+        b_height = planes[p].num_bands == 1 ? planes[p].height
+                                            : (planes[p].height + 1) >> 1;
 
         /* luma   band buffers will be aligned on 16x16 (max macroblock size) */
         /* chroma band buffers will be aligned on   8x8 (max macroblock size) */
@@ -228,8 +234,8 @@ int av_cold ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
                 if (!band->bufs[2])
                     return AVERROR(ENOMEM);
             }
-
-            planes[p].bands[0].blk_vlc.cust_desc.num_rows = 0; /* reset custom vlc */
+            /* reset custom vlc */
+            planes[p].bands[0].blk_vlc.cust_desc.num_rows = 0;
         }
     }
 
@@ -781,7 +787,8 @@ static int decode_band(IVI45DecContext *ctx, int plane_num,
         }
     }
 
-    /* restore the selected rvmap table by applying its corrections in reverse order */
+    /* restore the selected rvmap table by applying its corrections in
+     * reverse order */
     for (i = band->num_corr-1; i >= 0; i--) {
         idx1 = band->corr[i*2];
         idx2 = band->corr[i*2+1];
@@ -794,7 +801,8 @@ static int decode_band(IVI45DecContext *ctx, int plane_num,
         uint16_t chksum = ivi_calc_band_checksum(band);
         if (chksum != band->checksum) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Band checksum mismatch! Plane %d, band %d, received: %x, calculated: %x\n",
+                   "Band checksum mismatch! Plane %d, band %d, "
+                   "received: %x, calculated: %x\n",
                    band->plane, band->band_num, band->checksum, chksum);
         }
     }
@@ -861,7 +869,8 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     /* If the bidirectional mode is enabled, next I and the following P frame will */
     /* be sent together. Unfortunately the approach below seems to be the only way */
     /* to handle the B-frames mode. That's exactly the same Intel decoders do.     */
-    if (avctx->codec_id == CODEC_ID_INDEO4 && ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
+    if (avctx->codec_id == CODEC_ID_INDEO4 &&
+        ctx->frame_type == 0/*FRAMETYPE_INTRA*/) {
         while (get_bits(&ctx->gb, 8)); // skip version string
         skip_bits_long(&ctx->gb, 64);  // skip padding, TODO: implement correct 8-bytes alignment
         if (get_bits_left(&ctx->gb) > 18 && show_bits(&ctx->gb, 18) == 0x3FFF8)
