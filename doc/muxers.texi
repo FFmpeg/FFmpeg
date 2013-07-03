@@ -18,6 +18,23 @@ enabled muxers.
 
 A description of some of the currently available muxers follows.
 
+@anchor{aiff}
+@section aiff
+
+Audio Interchange File Format muxer.
+
+It accepts the following options:
+
+@table @option
+@item write_id3v2
+Enable ID3v2 tags writing when set to 1. Default is 0 (disabled).
+
+@item id3v2_version
+Select ID3v2 version to write. Currently only version 3 and 4 (aka.
+ID3v2.3 and ID3v2.4) are supported. The default is version 4.
+
+@end table
+
 @anchor{crc}
 @section crc
 
