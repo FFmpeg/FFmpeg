@@ -1412,8 +1412,6 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         }
     } else {
         bytestream2_seek(&s->g, 0, SEEK_SET);
-        if (bytestream2_peek_be16(&s->g) != JPEG2000_SOC)
-            bytestream2_skip(&s->g, 8);
     }
 
     if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
