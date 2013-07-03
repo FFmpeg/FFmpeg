@@ -86,7 +86,6 @@ typedef struct Jpeg2000DecoderContext {
     Jpeg2000Tile    *tile;
 
     /*options parameters*/
-    int             lowres;
     int             reduction_factor;
 } Jpeg2000DecoderContext;
 
@@ -1121,7 +1120,6 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                     cblk->coord[1][1] - cblk->coord[1][0],
                                     bandpos);
 
-                        /* Manage band offsets */
                         x = cblk->coord[0][0];
                         y = cblk->coord[1][0];
 
@@ -1396,9 +1394,6 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
-    // reduction factor, i.e number of resolution levels to skip
-    s->reduction_factor = s->lowres;
-
     if (bytestream2_get_bytes_left(&s->g) < 2) {
         ret = AVERROR_INVALIDDATA;
         goto end;
@@ -1463,7 +1458,7 @@ static void jpeg2000_init_static_data(AVCodec *codec)
 
 static const AVOption options[] = {
     { "lowres",  "Lower the decoding resolution by a power of two",
-        OFFSET(lowres), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, JPEG2000_MAX_RESLEVELS - 1, VD },
+        OFFSET(reduction_factor), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, JPEG2000_MAX_RESLEVELS - 1, VD },
     { NULL },
 };
 
