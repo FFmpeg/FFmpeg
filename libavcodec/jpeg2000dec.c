@@ -242,7 +242,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
                                                s->reduction_factor);
 
-    switch(s->ncomponents) {
+    switch (s->ncomponents) {
     case 1:
         if (s->precision > 8)
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
@@ -940,8 +940,8 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     if (!cblk->length)
         return 0;
 
-    for (y = 0; y < height+2; y++)
-        memset(t1->flags[y], 0, (width + 2)*sizeof(**t1->flags));
+    for (y = 0; y < height + 2; y++)
+        memset(t1->flags[y], 0, (width + 2) * sizeof(**t1->flags));
 
     cblk->data[cblk->length] = 0xff;
     cblk->data[cblk->length+1] = 0xff;
