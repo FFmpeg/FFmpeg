@@ -375,7 +375,9 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     compno = bytestream2_get_byteu(&s->g);
 
     if (compno >= s->ncomponents) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid compno %d\n", compno);
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid compno %d. There are %d components in the image.\n",
+               compno, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
 
@@ -459,9 +461,12 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
     if (bytestream2_get_bytes_left(&s->g) < 1)
         return AVERROR_INVALIDDATA;
 
-    compno              = bytestream2_get_byteu(&s->g);
+    compno = bytestream2_get_byteu(&s->g);
+
     if (compno >= s->ncomponents) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid compno\n");
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid compno %d. There are %d components in the image.\n",
+               compno, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
 
@@ -1282,6 +1287,7 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
         len = bytestream2_get_be16(&s->g);
         if (len < 2 || bytestream2_get_bytes_left(&s->g) < len - 2)
             return AVERROR_INVALIDDATA;
+
         switch (marker) {
         case JPEG2000_SIZ:
             ret = get_siz(s);
