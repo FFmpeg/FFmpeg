@@ -67,7 +67,9 @@ enum Jpeg2000Quantsty { // quantization style
 #define JPEG2000_MAX_CBLKW 64
 #define JPEG2000_MAX_CBLKH 64
 
-#define JPEG2000_MAX_RESLEVELS 33
+
+#define JPEG2000_MAX_DECLEVELS 32
+#define JPEG2000_MAX_RESLEVELS (JPEG2000_MAX_DECLEVELS + 1)
 
 // T1 flags
 // flags determining significance of neighbor coefficients
@@ -143,8 +145,8 @@ typedef struct Jpeg2000CodingStyle {
 } Jpeg2000CodingStyle;
 
 typedef struct Jpeg2000QuantStyle {
-    uint8_t expn[32 * 3];  // quantization exponent
-    uint16_t mant[32 * 3]; // quantization mantissa
+    uint8_t expn[JPEG2000_MAX_DECLEVELS * 3];  // quantization exponent
+    uint16_t mant[JPEG2000_MAX_DECLEVELS * 3]; // quantization mantissa
     uint8_t quantsty;      // quantization style
     uint8_t nguardbits;    // number of guard bits
 } Jpeg2000QuantStyle;
