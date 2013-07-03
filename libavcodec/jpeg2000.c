@@ -202,7 +202,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 
     if (codsty->nreslevels2decode <= 0) {
         av_log(avctx, AV_LOG_ERROR, "nreslevels2decode %d invalid or uninitialized\n", codsty->nreslevels2decode);
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     if (ret = ff_jpeg2000_dwt_init(&comp->dwt, comp->coord,
