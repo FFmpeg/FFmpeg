@@ -123,7 +123,7 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
     int sp = -1, curval = 0;
 
     if (!node)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     while (node && !node->vis) {
         stack[++sp] = node;
@@ -508,8 +508,8 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         return AVERROR_PATCHWELCOME;
     }
 
-    s->tile[s->curtileno].tp_idx = TPsot;
-    tp             = s->tile[s->curtileno].tile_part + TPsot;
+    s->tile[Isot].tp_idx = TPsot;
+    tp             = s->tile[Isot].tile_part + TPsot;
     tp->tile_index = Isot;
     tp->tp_end     = s->g.buffer + Psot - n - 2;
 
@@ -720,13 +720,16 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
 
 static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
-    int layno, reslevelno, compno, precno, ok_reslevel, ret;
+    int ret = 0;
+    int layno, reslevelno, compno, precno, ok_reslevel;
     int x, y;
 
     s->bit_index = 8;
     switch (tile->codsty[0].prog_order) {
-    case JPEG2000_PGOD_LRCP:
     case JPEG2000_PGOD_RLCP:
+        avpriv_request_sample(s->avctx, "Progression order RLCP");
+
+    case JPEG2000_PGOD_LRCP:
         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
             ok_reslevel = 1;
             for (reslevelno = 0; ok_reslevel; reslevelno++) {
@@ -799,6 +802,16 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
         }
         break;
 
+    case JPEG2000_PGOD_RPCL:
+        avpriv_request_sample(s->avctx, "Progression order RPCL");
+        ret = AVERROR_PATCHWELCOME;
+        break;
+
+    case JPEG2000_PGOD_PCRL:
+        avpriv_request_sample(s->avctx, "Progression order PCRL");
+        ret = AVERROR_PATCHWELCOME;
+        break;
+
     default:
         break;
     }
@@ -806,7 +819,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     /* EOC marker reached */
     bytestream2_skip(&s->g, 2);
 
-    return 0;
+    return ret;
 }
 
 /* TIER-1 routines */
