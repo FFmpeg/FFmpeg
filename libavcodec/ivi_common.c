@@ -286,11 +286,46 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
     return 0;
 }
 
-av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_height)
+static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
+                          int p, int b, int t_height, int t_width)
 {
-    int         p, b, x, y, x_tiles, y_tiles, t_width, t_height;
+    int x, y;
+    IVITile *tile = band->tiles;
+
+    for (y = 0; y < band->height; y += t_height) {
+        for (x = 0; x < band->width; x += t_width) {
+            tile->xpos     = x;
+            tile->ypos     = y;
+            tile->mb_size  = band->mb_size;
+            tile->width    = FFMIN(band->width - x,  t_width);
+            tile->height   = FFMIN(band->height - y, t_height);
+            tile->is_empty = tile->data_size = 0;
+            /* calculate number of macroblocks */
+            tile->num_MBs  = IVI_MBs_PER_TILE(tile->width, tile->height,
+                                              band->mb_size);
+
+            av_freep(&tile->mbs);
+            tile->mbs = av_malloc(tile->num_MBs * sizeof(IVIMbInfo));
+            if (!tile->mbs)
+                return AVERROR(ENOMEM);
+
+            tile->ref_mbs = 0;
+            if (p || b) {
+                tile->ref_mbs = ref_tile->mbs;
+                ref_tile++;
+            }
+            tile++;
+        }
+    }
+
+    return 0;
+}
+
+av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes,
+                              int tile_width, int tile_height)
+{
+    int p, b, x_tiles, y_tiles, t_width, t_height, ret;
     IVIBandDesc *band;
-    IVITile     *tile, *ref_tile;
 
     for (p = 0; p < 3; p++) {
         t_width  = !p ? tile_width  : (tile_width  + 3) >> 2;
@@ -312,41 +347,14 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes, int tile_width, int tile_hei
             if (!band->tiles)
                 return AVERROR(ENOMEM);
 
-            tile = band->tiles;
-
             /* use the first luma band as reference for motion vectors
              * and quant */
-            ref_tile = planes[0].bands[0].tiles;
-
-            for (y = 0; y < band->height; y += t_height) {
-                for (x = 0; x < band->width; x += t_width) {
-                    tile->xpos     = x;
-                    tile->ypos     = y;
-                    tile->mb_size  = band->mb_size;
-                    tile->width    = FFMIN(band->width - x,  t_width);
-                    tile->height   = FFMIN(band->height - y, t_height);
-                    tile->is_empty = tile->data_size = 0;
-                    /* calculate number of macroblocks */
-                    tile->num_MBs  = IVI_MBs_PER_TILE(tile->width, tile->height,
-                                                      band->mb_size);
-
-                    av_freep(&tile->mbs);
-                    tile->mbs = av_malloc(tile->num_MBs * sizeof(IVIMbInfo));
-                    if (!tile->mbs)
-                        return AVERROR(ENOMEM);
-
-                    tile->ref_mbs = 0;
-                    if (p || b) {
-                        tile->ref_mbs = ref_tile->mbs;
-                        ref_tile++;
-                    }
-
-                    tile++;
-                }
-            }
-
-        }// for b
-    }// for p
+            ret = ivi_init_tiles(band, planes[0].bands[0].tiles,
+                                 p, b, t_height, t_width);
+            if (ret < 0)
+                return ret;
+        }
+    }
 
     return 0;
 }
@@ -378,6 +386,94 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
     return len;
 }
 
+
+static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
+                                   ivi_mc_func mc, int mv_x, int mv_y,
+                                   int *prev_dc, int is_intra, int mc_type,
+                                   uint32_t quant, int offs,
+                                   AVCodecContext *avctx)
+{
+    const uint16_t *base_tab  = is_intra ? band->intra_base : band->inter_base;
+    RVMapDesc *rvmap = band->rv_map;
+    uint8_t col_flags[8];
+    int32_t trvec[64];
+    uint32_t sym = 0, lo, hi, q;
+    int pos, run, val;
+    int blk_size   = band->blk_size;
+    int num_coeffs = blk_size * blk_size;
+    int col_mask   = blk_size - 1;
+    int scan_pos   = -1;
+
+    if (!band->scan) {
+        av_log(avctx, AV_LOG_ERROR, "Scan pattern is not set.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* zero transform vector */
+    memset(trvec, 0, num_coeffs * sizeof(trvec[0]));
+    /* zero column flags */
+    memset(col_flags, 0, sizeof(col_flags));
+    while (scan_pos <= num_coeffs) {
+        sym = get_vlc2(gb, band->blk_vlc.tab->table,
+                       IVI_VLC_BITS, 1);
+        if (sym == rvmap->eob_sym)
+            break; /* End of block */
+
+        /* Escape - run/val explicitly coded using 3 vlc codes */
+        if (sym == rvmap->esc_sym) {
+            run = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1) + 1;
+            lo  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
+            hi  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
+            /* merge them and convert into signed val */
+            val = IVI_TOSIGNED((hi << 6) | lo);
+        } else {
+            if (sym >= 256U) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
+                return AVERROR_INVALIDDATA;
+            }
+            run = rvmap->runtab[sym];
+            val = rvmap->valtab[sym];
+        }
+
+        /* de-zigzag and dequantize */
+        scan_pos += run;
+        if (scan_pos >= num_coeffs)
+            break;
+        pos = band->scan[scan_pos];
+
+        if (!val)
+            av_dlog(avctx, "Val = 0 encountered!\n");
+
+        q = (base_tab[pos] * quant) >> 9;
+        if (q > 1)
+            val = val * q + FFSIGN(val) * (((q ^ 1) - 1) >> 1);
+        trvec[pos] = val;
+        /* track columns containing non-zero coeffs */
+        col_flags[pos & col_mask] |= !!val;
+    }
+
+    if (scan_pos >= num_coeffs && sym != rvmap->eob_sym)
+        return AVERROR_INVALIDDATA; /* corrupt block data */
+
+    /* undoing DC coeff prediction for intra-blocks */
+    if (is_intra && band->is_2d_trans) {
+        *prev_dc     += trvec[0];
+        trvec[0]      = *prev_dc;
+        col_flags[0] |= !!*prev_dc;
+    }
+
+    /* apply inverse transform */
+    band->inv_transform(trvec, band->buf + offs,
+                        band->pitch, col_flags);
+
+    /* apply motion compensation */
+    if (!is_intra)
+        mc(band->buf + offs,
+           band->ref_buf + offs + mv_y * band->pitch + mv_x,
+           band->pitch, mc_type);
+
+    return 0;
+}
 /*
  *  Decode block data:
  *  extract huffman-coded transform coefficients from the bitstream,
@@ -389,26 +485,22 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
  *  @param[in]      tile  pointer to the tile descriptor
  *  @return     result code: 0 - OK, -1 = error (corrupted blocks data)
  */
-static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile,
-                             AVCodecContext *avctx)
+static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
+                             IVITile *tile, AVCodecContext *avctx)
 {
-    int         mbn, blk, num_blocks, num_coeffs, blk_size, scan_pos, run, val,
-                pos, is_intra, mc_type = 0, mv_x, mv_y, col_mask;
-    uint8_t     col_flags[8];
-    int32_t     prev_dc, trvec[64];
-    uint32_t    cbp, sym, lo, hi, quant, buf_offs, q;
-    IVIMbInfo   *mb;
-    RVMapDesc   *rvmap = band->rv_map;
+    int mbn, blk, num_blocks, blk_size, ret, is_intra, mc_type = 0;
+    int mv_x = 0, mv_y = 0;
+    int32_t prev_dc;
+    uint32_t cbp, quant, buf_offs;
+    IVIMbInfo *mb;
     ivi_mc_func mc_with_delta_func, mc_no_delta_func;
-    const uint16_t  *base_tab;
-    const uint8_t   *scale_tab;
+    const uint8_t *scale_tab;
 
-    prev_dc = 0; /* init intra prediction for the DC coefficient */
-
+    /* init intra prediction for the DC coefficient */
+    prev_dc    = 0;
     blk_size   = band->blk_size;
-    col_mask   = blk_size - 1; /* column mask for tracking non-zero coeffs */
-    num_blocks = (band->mb_size != blk_size) ? 4 : 1; /* number of blocks per mb */
-    num_coeffs = blk_size * blk_size;
+    /* number of blocks per mb */
+    num_blocks = (band->mb_size != blk_size) ? 4 : 1;
     if (blk_size == 8) {
         mc_with_delta_func = ff_ivi_mc_8x8_delta;
         mc_no_delta_func   = ff_ivi_mc_8x8_no_delta;
@@ -424,7 +516,6 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
 
         quant = av_clip(band->glob_quant + mb->q_delta, 0, 23);
 
-        base_tab  = is_intra ? band->intra_base  : band->inter_base;
         scale_tab = is_intra ? band->intra_scale : band->inter_scale;
         if (scale_tab)
             quant = scale_tab[quant];
@@ -445,10 +536,10 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
                 cx    = mb->mv_x &  band->is_halfpel;
                 cy    = mb->mv_y &  band->is_halfpel;
 
-                if (   mb->xpos + dmv_x < 0
-                    || mb->xpos + dmv_x + band->mb_size + cx > band->pitch
-                    || mb->ypos + dmv_y < 0
-                    || mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
+                if (mb->xpos + dmv_x < 0 ||
+                    mb->xpos + dmv_x + band->mb_size + cx > band->pitch ||
+                    mb->ypos + dmv_y < 0 ||
+                    mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
                     return AVERROR_INVALIDDATA;
                 }
             }
@@ -464,69 +555,11 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
             }
 
             if (cbp & 1) { /* block coded ? */
-                if (!band->scan) {
-                    av_log(avctx, AV_LOG_ERROR, "Scan pattern is not set.\n");
-                    return AVERROR_INVALIDDATA;
-                }
-
-                scan_pos = -1;
-                memset(trvec, 0, num_coeffs*sizeof(trvec[0])); /* zero transform vector */
-                memset(col_flags, 0, sizeof(col_flags));      /* zero column flags */
-
-                while (scan_pos <= num_coeffs) {
-                    sym = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
-                    if (sym == rvmap->eob_sym)
-                        break; /* End of block */
-
-                    if (sym == rvmap->esc_sym) { /* Escape - run/val explicitly coded using 3 vlc codes */
-                        run = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1) + 1;
-                        lo  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
-                        hi  = get_vlc2(gb, band->blk_vlc.tab->table, IVI_VLC_BITS, 1);
-                        val = IVI_TOSIGNED((hi << 6) | lo); /* merge them and convert into signed val */
-                    } else {
-                        if (sym >= 256U) {
-                            av_log(avctx, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
-                            return AVERROR_INVALIDDATA;
-                        }
-                        run = rvmap->runtab[sym];
-                        val = rvmap->valtab[sym];
-                    }
-
-                    /* de-zigzag and dequantize */
-                    scan_pos += run;
-                    if (scan_pos >= num_coeffs)
-                        break;
-                    pos = band->scan[scan_pos];
-
-                    if (!val)
-                        av_dlog(avctx, "Val = 0 encountered!\n");
-
-                    q = (base_tab[pos] * quant) >> 9;
-                    if (q > 1)
-                        val = val * q + FFSIGN(val) * (((q ^ 1) - 1) >> 1);
-                    trvec[pos] = val;
-                    col_flags[pos & col_mask] |= !!val; /* track columns containing non-zero coeffs */
-                }// while
-
-                if (scan_pos >= num_coeffs && sym != rvmap->eob_sym)
-                    return AVERROR_INVALIDDATA; /* corrupt block data */
-
-                /* undoing DC coeff prediction for intra-blocks */
-                if (is_intra && band->is_2d_trans) {
-                    prev_dc      += trvec[0];
-                    trvec[0]      = prev_dc;
-                    col_flags[0] |= !!prev_dc;
-                }
-
-                /* apply inverse transform */
-                band->inv_transform(trvec, band->buf + buf_offs,
-                                    band->pitch, col_flags);
-
-                /* apply motion compensation */
-                if (!is_intra)
-                    mc_with_delta_func(band->buf + buf_offs,
-                                       band->ref_buf + buf_offs + mv_y * band->pitch + mv_x,
-                                       band->pitch, mc_type);
+                ret = ivi_decode_coded_blocks(gb, band, mc_with_delta_func,
+                                              mv_x, mv_y, &prev_dc, is_intra,
+                                              mc_type, quant, buf_offs, avctx);
+                if (ret < 0)
+                    return ret;
             } else {
                 /* block not coded */
                 /* for intra blocks apply the dc slant transform */
