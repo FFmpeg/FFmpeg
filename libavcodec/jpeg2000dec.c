@@ -349,7 +349,9 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     tmp.mct        = bytestream2_get_byteu(&s->g); // multiple component transformation
 
     if (tmp.mct && s->ncomponents < 3) {
-        av_log(s->avctx, AV_LOG_ERROR, "MCT %d with too few components (%d)\n", tmp.mct, s->ncomponents);
+        av_log(s->avctx, AV_LOG_ERROR,
+               "MCT %d with too few components (%d)\n",
+               tmp.mct, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
 
