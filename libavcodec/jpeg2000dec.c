@@ -463,11 +463,12 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     if (bytestream2_get_bytes_left(&s->g) < 8)
         return AVERROR_INVALIDDATA;
 
-    s->curtileno = Isot = bytestream2_get_be16u(&s->g);        // Isot
-    if ((unsigned)s->curtileno >= s->numXtiles * s->numYtiles) {
-        s->curtileno=0;
+    s->curtileno = 0;
+    Isot = bytestream2_get_be16u(&s->g);        // Isot
+    if (Isot >= s->numXtiles * s->numYtiles)
         return AVERROR_INVALIDDATA;
-    }
+
+    s->curtileno = Isot;
     Psot  = bytestream2_get_be32u(&s->g);       // Psot
     TPsot = bytestream2_get_byteu(&s->g);       // TPsot
 
@@ -478,8 +479,9 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         av_log(s->avctx, AV_LOG_ERROR, "Psot %d too big\n", Psot);
         return AVERROR_INVALIDDATA;
     }
-    if (TPsot >= FF_ARRAY_ELEMS(s->tile[s->curtileno].tile_part)) {
-        av_log(s->avctx, AV_LOG_ERROR, "TPsot %d too big\n", TPsot);
+
+    if (TPsot >= FF_ARRAY_ELEMS(s->tile[Isot].tile_part)) {
+        avpriv_request_sample(s->avctx, "Support for %d components", TPsot);
         return AVERROR_PATCHWELCOME;
     }
 
