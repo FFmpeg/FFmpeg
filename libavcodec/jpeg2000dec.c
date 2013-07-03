@@ -284,7 +284,7 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     c->log2_cblk_height = (bytestream2_get_byteu(&s->g) & 15) + 2; // cblk height
 
     if (c->log2_cblk_width > 10 || c->log2_cblk_height > 10 ||
-        c->log2_cblk_width + c->log2_cblk_height > 14) {
+        c->log2_cblk_width + c->log2_cblk_height > 12) {
         av_log(s->avctx, AV_LOG_ERROR, "cblk size invalid\n");
         return AVERROR_INVALIDDATA;
     }
