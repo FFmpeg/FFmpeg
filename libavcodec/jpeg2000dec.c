@@ -674,6 +674,12 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             cblk->lblock += llen;
             if ((ret = get_bits(s, av_log2(newpasses) + cblk->lblock)) < 0)
                 return ret;
+            if (ret > sizeof(cblk->data)) {
+                avpriv_request_sample(s->avctx,
+                                      "Block with lengthinc greater than %zu",
+                                      sizeof(cblk->data));
+                return AVERROR_PATCHWELCOME;
+            }
             cblk->lengthinc = ret;
             cblk->npasses  += newpasses;
         }
