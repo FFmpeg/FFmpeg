@@ -39,6 +39,9 @@ extern const IVIHuffDesc ff_ivi_blk_huff_desc[8]; ///< static block huffman tabl
 VLC ff_ivi_mb_vlc_tabs [8];
 VLC ff_ivi_blk_vlc_tabs[8];
 
+typedef void (*ivi_mc_func) (int16_t *buf, const int16_t *ref_buf,
+                             uint32_t pitch, int mc_type);
+
 /**
  *  Reverse "nbits" bits of the value "val" and return the result
  *  in the least significant bits.
@@ -343,8 +346,7 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
     uint32_t    cbp, sym, lo, hi, quant, buf_offs, q;
     IVIMbInfo   *mb;
     RVMapDesc   *rvmap = band->rv_map;
-    void (*mc_with_delta_func)(int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
-    void (*mc_no_delta_func)  (int16_t *buf, const int16_t *ref_buf, uint32_t pitch, int mc_type);
+    ivi_mc_func mc_with_delta_func, mc_no_delta_func;
     const uint16_t  *base_tab;
     const uint8_t   *scale_tab;
 
@@ -514,8 +516,7 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
     IVIMbInfo       *mb, *ref_mb;
     const int16_t   *src;
     int16_t         *dst;
-    void (*mc_no_delta_func)(int16_t *buf, const int16_t *ref_buf, uint32_t pitch,
-                             int mc_type);
+    ivi_mc_func     mc_no_delta_func;
 
     if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
         av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches "
