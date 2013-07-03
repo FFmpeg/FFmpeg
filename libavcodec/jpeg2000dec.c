@@ -189,7 +189,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_INVALIDDATA;
 
     for (i = 0; i < s->ncomponents; i++) { // Ssiz_i XRsiz_i, YRsiz_i
-        uint8_t x = bytestream2_get_byteu(&s->g);
+        uint8_t x    = bytestream2_get_byteu(&s->g);
         s->cbps[i]   = (x & 0x7f) + 1;
         s->precision = FFMAX(s->cbps[i], s->precision);
         s->sgnd[i]   = !!(x & 0x80);
@@ -266,6 +266,7 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR_INVALIDDATA;
+
     /*  nreslevels = number of resolution levels
                    = number of decomposition level +1 */
     c->nreslevels = bytestream2_get_byteu(&s->g) + 1;
@@ -327,8 +328,8 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     // get progression order
     tmp.prog_order = bytestream2_get_byteu(&s->g);
 
-    tmp.nlayers = bytestream2_get_be16u(&s->g);
-    tmp.mct     = bytestream2_get_byteu(&s->g); // multiple component transformation
+    tmp.nlayers    = bytestream2_get_be16u(&s->g);
+    tmp.mct        = bytestream2_get_byteu(&s->g); // multiple component transformation
 
     if (tmp.mct && s->ncomponents < 3) {
         av_log(s->avctx, AV_LOG_ERROR, "MCT %d with too few components (%d)\n", tmp.mct, s->ncomponents);
@@ -386,7 +387,8 @@ static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
 
     if (q->quantsty == JPEG2000_QSTY_NONE) {
         n -= 3;
-        if (bytestream2_get_bytes_left(&s->g) < n || 32*3 < n)
+        if (bytestream2_get_bytes_left(&s->g) < n ||
+            n > JPEG2000_MAX_DECLEVELS*3)
             return AVERROR_INVALIDDATA;
         for (i = 0; i < n; i++)
             q->expn[i] = bytestream2_get_byteu(&s->g) >> 3;
@@ -403,7 +405,8 @@ static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
         }
     } else {
         n = (n - 3) >> 1;
-        if (bytestream2_get_bytes_left(&s->g) < 2 * n || 32*3 < n)
+        if (bytestream2_get_bytes_left(&s->g) < 2 * n ||
+            n > JPEG2000_MAX_DECLEVELS*3)
             return AVERROR_INVALIDDATA;
         for (i = 0; i < n; i++) {
             x          = bytestream2_get_be16u(&s->g);
@@ -1329,7 +1332,9 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
     uint32_t atom_size, atom;
     int found_codestream = 0, search_range = 10;
 
-    while (!found_codestream && search_range && bytestream2_get_bytes_left(&s->g) >= 8) {
+    while (!found_codestream && search_range
+           &&
+           bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
         if (atom == JP2_CODESTREAM) {
@@ -1380,6 +1385,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         }
     } else {
         bytestream2_seek(&s->g, 0, SEEK_SET);
+        if (bytestream2_peek_be16(&s->g) != JPEG2000_SOC)
+            bytestream2_skip(&s->g, 8);
     }
 
     if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
@@ -1408,6 +1415,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame = 1;
 
     return bytestream2_tell(&s->g);
+
 end:
     jpeg2000_dec_cleanup(s);
     return ret;
