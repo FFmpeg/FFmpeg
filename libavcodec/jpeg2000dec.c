@@ -266,7 +266,9 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
         return AVERROR(EINVAL);
-    c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
+    /*  nreslevels = number of resolution levels
+                   = number of decomposition level +1 */
+    c->nreslevels = bytestream2_get_byteu(&s->g) + 1;
     if (c->nreslevels >= JPEG2000_MAX_RESLEVELS) {
         av_log(s->avctx, AV_LOG_ERROR, "nreslevels %d is invalid\n", c->nreslevels);
         return AVERROR_INVALIDDATA;
