@@ -43,7 +43,7 @@ doc: documentation
 apidoc: doc/doxy/html
 documentation: $(DOCS)
 
-TEXIDEP = perl $(SRC_PATH)/doc/texidep.pl $< $@ >$(@:%=%.d)
+TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
 doc/%.txt: TAG = TXT
 doc/%.txt: doc/%.texi
