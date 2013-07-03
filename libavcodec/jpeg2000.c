@@ -295,7 +295,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 numbps = cbps +
                          lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
                 band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
-                                            2 + numbps - qntsty->expn[gbandno]);
+                                       2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
                 /* Exponent quantization step.
