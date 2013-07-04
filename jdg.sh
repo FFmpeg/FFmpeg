@@ -1,19 +1,16 @@
 #!/bin/bash
 
-source ./Android_local.sh
-
-
 DEST=`pwd`/build/android && rm -rf $DEST
 SOURCE=`pwd`
 SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
-$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
-  --system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
+#$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
+#  --system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
 
 export PATH=$TOOLCHAIN/bin:$PATH
-export CC="$CCACHE arm-linux-androideabi-gcc"
+export CC="ccache arm-linux-androideabi-gcc"
 export LD=arm-linux-androideabi-ld
 export AR=arm-linux-androideabi-ar
 
@@ -58,7 +55,7 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --enable-version3"
 
 
-for version in neon armv7; do
+for version in vfp; do
 
   cd $SOURCE
 
@@ -106,19 +103,22 @@ for version in neon armv7; do
   PREFIX="$DEST/$version" && mkdir -p $PREFIX
   FFMPEG_FLAGS="$FFMPEG_FLAGS --prefix=$PREFIX"
 
-  ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
+  # ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
   cp config.* $PREFIX
   [ $PIPESTATUS == 0 ] || exit 1
 
-  make clean
-  find . -name "*.o" -type f -delete
+  #make clean
+  #find . -name "*.o" -type f -delete
   make -j4 || exit 1
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
   $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
     libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
 
+
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so
+
+  adb push $PREFIX/libffmpeg.so /data/data/io.vov.vitamio.demo/libs/
 
 done
