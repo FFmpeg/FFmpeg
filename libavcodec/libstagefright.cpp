@@ -36,6 +36,7 @@
 extern "C" {
 #include "avcodec.h"
 #include "libavutil/imgutils.h"
+#include "internal.h"
 }
 
 #define OMX_QCOM_COLOR_FormatYVU420SemiPlanar 0x7FA30C00
@@ -185,7 +186,7 @@ void* decode_thread(void *arg)
                 buffer->release();
                 goto push_frame;
             }
-            ret = ff_get_buffer(avctx, frame->vframe);
+            ret = ff_get_buffer(avctx, frame->vframe, 0);
             if (ret < 0) {
                 frame->status = ret;
                 decode_done   = 1;
