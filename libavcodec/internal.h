@@ -82,7 +82,7 @@ typedef struct AVCodecInternal {
      * Internal sample count used by avcodec_encode_audio() to fabricate pts.
      * Can be removed along with avcodec_encode_audio().
      */
-    int sample_count;
+    int64_t sample_count;
 #endif
 
     /**
