@@ -6953,8 +6953,13 @@ static int mov_read_header(AVFormatContext *s)
 static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
 {
     AVIndexEntry *sample = NULL;
+    AVIndexEntry *best_dts_sample = NULL;
+    AVIndexEntry *best_pos_sample = NULL;
+    AVStream *best_dts_stream = NULL;
+    AVStream *best_pos_stream = NULL;
     int64_t best_dts = INT64_MAX;
     int i;
+    int64_t pos = avio_tell(s->pb);
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *avst = s->streams[i];
         MOVStreamContext *msc = avst->priv_data;
@@ -6962,17 +6967,36 @@ static AVIndexEntry *mov_find_next_sample(AVFormatContext *s, AVStream **st)
             AVIndexEntry *current_sample = &avst->index_entries[msc->current_sample];
             int64_t dts = av_rescale(current_sample->timestamp, AV_TIME_BASE, msc->time_scale);
             av_log(s, AV_LOG_TRACE, "stream %d, sample %d, dts %"PRId64"\n", i, msc->current_sample, dts);
-            if (!sample || (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && current_sample->pos < sample->pos) ||
+            if (!best_dts_sample || (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && current_sample->pos < best_dts_sample->pos) ||
                 ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
                  ((msc->pb != s->pb && dts < best_dts) || (msc->pb == s->pb &&
-                 ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < sample->pos) ||
+                 ((FFABS(best_dts - dts) <= AV_TIME_BASE && current_sample->pos < best_dts_sample->pos) ||
                   (FFABS(best_dts - dts) > AV_TIME_BASE && dts < best_dts)))))) {
-                sample = current_sample;
+                /* find best dts sample */
+                best_dts_sample = current_sample;
                 best_dts = dts;
-                *st = avst;
+                best_dts_stream = avst;
+            }
+            if (current_sample->pos >= pos &&
+                (!best_pos_sample || current_sample->pos < best_pos_sample->pos)) {
+                /* find nearest sample to avoid seek around */
+                best_pos_sample = current_sample;
+                best_pos_stream = avst;
             }
         }
     }
+
+    if (best_dts_sample && best_dts_sample != best_pos_sample &&
+        (!best_pos_sample ||
+         best_dts_sample->pos < pos ||
+         best_dts_sample->pos > pos + 1024 * 1024)) {
+        sample = best_dts_sample;
+        *st = best_dts_stream;
+    } else {
+        sample = best_pos_sample;
+        *st = best_pos_stream;
+    }
+
     return sample;
 }
 
