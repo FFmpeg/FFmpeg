@@ -84,8 +84,8 @@ for iarch in armv7; do
 	mkdir -p $DIST
 	cd $FFMPEG_DIR
 
-	doConfigure | tee $confInfo
+	doConfigure 2>&1 | tee $confInfo
 
-	make clean && make && make install | tee $makeInfo
+	(make clean && make && make install) 2>&1 | tee $makeInfo
 done
 
