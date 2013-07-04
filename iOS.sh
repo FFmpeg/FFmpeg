@@ -38,6 +38,7 @@ function doConfigure()
 		--cpu=cortex-a8 \
 		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -I${SSLINCLUDE}" \
 		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS}" \
+		--enable-pic \
 		--disable-runtime-cpudetect \
 		--disable-symver \
 		--disable-doc \
