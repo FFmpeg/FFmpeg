@@ -676,7 +676,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass class = {
+static const AVClass x264_class = {
     .class_name = "libx264",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -730,7 +730,7 @@ AVCodec ff_libx264_encoder = {
     .close            = X264_close,
     .capabilities     = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .long_name        = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
-    .priv_class       = &class,
+    .priv_class       = &x264_class,
     .defaults         = x264_defaults,
     .init_static_data = X264_init_static,
 };

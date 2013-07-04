@@ -392,7 +392,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass class = {
+static const AVClass openjpeg_class = {
     .class_name = "libopenjpeg",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -409,5 +409,5 @@ AVCodec ff_libopenjpeg_decoder = {
     .capabilities     = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .max_lowres       = 31,
     .long_name        = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
-    .priv_class       = &class,
+    .priv_class       = &openjpeg_class,
 };
