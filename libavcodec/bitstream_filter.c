@@ -53,6 +53,8 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name){
 }
 
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsfc){
+    if (!bsfc)
+        return;
     if(bsfc->filter->close)
         bsfc->filter->close(bsfc);
     av_freep(&bsfc->priv_data);
