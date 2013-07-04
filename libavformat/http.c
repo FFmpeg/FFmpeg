@@ -335,7 +335,10 @@ static int process_line(URLContext *h, char *line, int line_count,
         while (av_isspace(*p))
             p++;
         if (!av_strcasecmp(tag, "Location")) {
-            av_strlcpy(s->location, p, sizeof(s->location));
+            char redirected_location[MAX_URL_SIZE];
+            ff_make_absolute_url(redirected_location, sizeof(redirected_location),
+                                 s->location, p);
+            av_strlcpy(s->location, redirected_location, sizeof(s->location));
             *new_location = 1;
         } else if (!av_strcasecmp (tag, "Content-Length") && s->filesize == -1) {
             s->filesize = strtoll(p, NULL, 10);
