@@ -3733,7 +3733,8 @@ static int mov_write_header(AVFormatContext *s)
             AVStream *st = s->streams[i];
             if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
                 st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-                ff_mov_init_hinting(s, hint_track, i);
+                if (ff_mov_init_hinting(s, hint_track, i) < 0)
+                    goto error;
                 hint_track++;
             }
         }
