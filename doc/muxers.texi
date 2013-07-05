@@ -852,10 +852,26 @@ leading or trailing spaces or any special character, it must be
 escaped (see the ``Quoting and escaping'' section in the ffmpeg-utils
 manual).
 
-Options can be specified for each slave by prepending them as a list of
+Muxer options can be specified for each slave by prepending them as a list of
 @var{key}=@var{value} pairs separated by ':', between square brackets. If
 the options values contain a special character or the ':' separator, they
 must be escaped; note that this is a second level escaping.
+
+The following special options are also recognized:
+@table @option
+@item f
+Specify the format name. Useful if it cannot be guessed from the
+output name suffix.
+
+@item bsfs[/@var{spec}]
+Specify a list of bitstream filters to apply to the specified
+output. It is possible to specify to which streams a given bitstream
+filter applies, by appending a stream specifier to the option
+separated by @code{/}. If the stream specifier is not specified, the
+bistream filters will be applied to all streams in the output.
+
+Several bitstream filters can be specified, separated by ",".
+@end table
 
 Example: encode something and both archive it in a WebM file and stream it
 as MPEG-TS over UDP (the streams need to be explicitly mapped):
