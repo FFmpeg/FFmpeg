@@ -696,24 +696,23 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         seg->is_first_pkt = 0;
     }
 
-    /* todo: reindent */
-        av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s dts:%s dts_time:%s",
-               pkt->stream_index,
-               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q),
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
+    av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s dts:%s dts_time:%s",
+           pkt->stream_index,
+           av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q),
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
-        /* compute new timestamps */
-        offset = av_rescale_q(seg->initial_offset - (seg->reset_timestamps ? seg->cur_entry.start_pts : 0),
-                              AV_TIME_BASE_Q, st->time_base);
-        if (pkt->pts != AV_NOPTS_VALUE)
-            pkt->pts += offset;
-        if (pkt->dts != AV_NOPTS_VALUE)
-            pkt->dts += offset;
+    /* compute new timestamps */
+    offset = av_rescale_q(seg->initial_offset - (seg->reset_timestamps ? seg->cur_entry.start_pts : 0),
+                          AV_TIME_BASE_Q, st->time_base);
+    if (pkt->pts != AV_NOPTS_VALUE)
+        pkt->pts += offset;
+    if (pkt->dts != AV_NOPTS_VALUE)
+        pkt->dts += offset;
 
-        av_log(s, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
+    av_log(s, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
 
