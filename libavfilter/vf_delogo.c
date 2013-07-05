@@ -100,21 +100,21 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
             weightb = (uint64_t)(x-logo_x1) * (logo_x2-1-x) * (y-logo_y1)                 * sar.num;
 
             interp =
-                (topleft[src_linesize*(y-logo_y  -yclipt)]   +
-                 topleft[src_linesize*(y-logo_y-1-yclipt)]   +
-                 topleft[src_linesize*(y-logo_y+1-yclipt)])  * weightl
+                (topleft[src_linesize*(y-logo_y1)]    +
+                 topleft[src_linesize*(y-logo_y1-1)]  +
+                 topleft[src_linesize*(y-logo_y1+1)]) * weightl
                 +
-                (topright[src_linesize*(y-logo_y-yclipt)]    +
-                 topright[src_linesize*(y-logo_y-1-yclipt)]  +
-                 topright[src_linesize*(y-logo_y+1-yclipt)]) * weightr
+                (topright[src_linesize*(y-logo_y1)]    +
+                 topright[src_linesize*(y-logo_y1-1)]  +
+                 topright[src_linesize*(y-logo_y1+1)]) * weightr
                 +
-                (topleft[x-logo_x-xclipl]    +
-                 topleft[x-logo_x-1-xclipl]  +
-                 topleft[x-logo_x+1-xclipl]) * weightt
+                (topleft[x-logo_x1]    +
+                 topleft[x-logo_x1-1]  +
+                 topleft[x-logo_x1+1]) * weightt
                 +
-                (botleft[x-logo_x-xclipl]    +
-                 botleft[x-logo_x-1-xclipl]  +
-                 botleft[x-logo_x+1-xclipl]) * weightb;
+                (botleft[x-logo_x1]    +
+                 botleft[x-logo_x1-1]  +
+                 botleft[x-logo_x1+1]) * weightb;
             interp /= (weightl + weightr + weightt + weightb) * 3U;
 
             if (y >= logo_y+band && y < logo_y+logo_h-band &&
