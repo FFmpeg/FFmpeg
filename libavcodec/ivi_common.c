@@ -44,6 +44,20 @@ static VLC ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 typedef void (*ivi_mc_func) (int16_t *buf, const int16_t *ref_buf,
                              uint32_t pitch, int mc_type);
 
+static int ivi_mc(ivi_mc_func mc, int16_t *buf, const int16_t *ref_buf,
+                  int offs, int mv_x, int mv_y, uint32_t pitch,
+                  int mc_type)
+{
+    int ref_offs = offs + mv_y * pitch + mv_x;
+
+    if (offs < 0 || ref_offs < 0 || !ref_buf)
+        return AVERROR_INVALIDDATA;
+
+    mc(buf + offs, ref_buf + ref_offs, pitch, mc_type);
+
+    return 0;
+}
+
 /**
  *  Reverse "nbits" bits of the value "val" and return the result
  *  in the least significant bits.
@@ -452,7 +466,7 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
 
         /* de-zigzag and dequantize */
         scan_pos += run;
-        if (scan_pos >= (unsigned)num_coeffs)
+        if (scan_pos >= num_coeffs || scan_pos < 0)
             break;
         pos = band->scan[scan_pos];
 
@@ -467,7 +481,7 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
         col_flags[pos & col_mask] |= !!val;
     }
 
-    if (scan_pos >= num_coeffs && sym != rvmap->eob_sym)
+    if (scan_pos < 0 || scan_pos >= num_coeffs && sym != rvmap->eob_sym)
         return AVERROR_INVALIDDATA; /* corrupt block data */
 
     /* undoing DC coeff prediction for intra-blocks */
@@ -488,9 +502,8 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
 
     /* apply motion compensation */
     if (!is_intra)
-        mc(band->buf + offs,
-           band->ref_buf + offs + mv_y * band->pitch + mv_x,
-           band->pitch, mc_type);
+        return ivi_mc(mc, band->buf, band->ref_buf, offs, mv_x, mv_y,
+                      band->pitch, mc_type);
 
     return 0;
 }
@@ -591,10 +604,12 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
                 if (is_intra) {
                         band->dc_transform(&prev_dc, band->buf + buf_offs,
                                            band->pitch, blk_size);
-                } else
-                    mc_no_delta_func(band->buf + buf_offs,
-                                     band->ref_buf + buf_offs + mv_y * band->pitch + mv_x,
-                                     band->pitch, mc_type);
+                } else {
+                    ret = ivi_mc(mc_no_delta_func, band->buf, band->ref_buf,
+                                 buf_offs, mv_x, mv_y, band->pitch, mc_type);
+                    if (ret < 0)
+                        return ret;
+                }
             }
 
             cbp >>= 1;
@@ -619,7 +634,7 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
                                   IVITile *tile, int32_t mv_scale)
 {
     int             x, y, need_mc, mbn, blk, num_blocks, mv_x, mv_y, mc_type;
-    int             offs, mb_offset, row_offset;
+    int             offs, mb_offset, row_offset, ret;
     IVIMbInfo       *mb, *ref_mb;
     const int16_t   *src;
     int16_t         *dst;
@@ -713,9 +728,10 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
             for (blk = 0; blk < num_blocks; blk++) {
                 /* adjust block position in the buffer according with its number */
                 offs = mb->buf_offs + band->blk_size * ((blk & 1) + !!(blk & 2) * band->pitch);
-                mc_no_delta_func(band->buf + offs,
-                                 band->ref_buf + offs + mv_y * band->pitch + mv_x,
-                                 band->pitch, mc_type);
+                ret = ivi_mc(mc_no_delta_func, band->buf, band->ref_buf,
+                             offs, mv_x, mv_y, band->pitch, mc_type);
+                if (ret < 0)
+                    return ret;
             }
         }
     } else {
