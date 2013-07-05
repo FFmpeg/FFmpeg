@@ -3401,6 +3401,7 @@ enabled spic && enable_weak pic
 # OS specific
 case $target_os in
     aix)
+        add_cppflags '-I\$(SRC_PATH)/compat/aix'
         ;;
     haiku)
         prefix_default="/boot/common"
