@@ -1,3 +1,16 @@
+#!/bin/bash
+
+[[ ! -e iOS_local.sh ]] && {
+	echo "File 'iOS_local.sh' not found! Pls see 'iOS_local.sh.sample'!!" 2>&1
+	exit 1;
+}
+source iOS_local.sh
+
+
+export CC=$DEVRoot/usr/bin/llvm-gcc
+export LD=$DEVRoot/usr/bin/ld
+export STRIP=$DEVRoot/usr/bin/strip
+
 DEST=`pwd`/build/ios
 SOURCE=`pwd`
 SSL=${SOURCE}/../ios-openssl
@@ -6,22 +19,9 @@ SSLLIBS=${SSL}/lib
 
 export FFMPEG_DIR=${SOURCE}
 
+
 # export LIPO=/Users/nuoerlz/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/lipo
 # $LIPO -arch armv7 lib.a -arch armv7s r/lib.a -create -output libffmpeg.a
-
-### For iOS 5.1
-#export DEVRoot=/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer
-#export SDKRoot=$DEVRoot/SDKs/iPhoneOS5.1.sdk
-#export CC=$DEVRoot/usr/bin/llvm-gcc
-#export LD=$DEVRoot/usr/bin/ld
-#export ARCH=armv7
-
-## For iOS 6.x.x
-export DEVRoot=/Users/nuoerlz/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer
-export SDKRoot=$DEVRoot/SDKs/iPhoneOS6.1.sdk
-export CC=$DEVRoot/usr/bin/llvm-gcc
-export LD=$DEVRoot/usr/bin/ld
-export STRIP=$DEVRoot/usr/bin/strip
 
 
 function doConfigure()
