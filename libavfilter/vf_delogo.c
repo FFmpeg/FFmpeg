@@ -65,6 +65,7 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
     uint8_t *xdst, *xsrc;
 
     uint8_t *topleft, *botleft, *topright;
+    unsigned int left_sample, right_sample;
     int xclipl, xclipr, yclipt, yclipb;
     int logo_x1, logo_x2, logo_y1, logo_y2;
 
@@ -89,6 +90,13 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
     src += (logo_y1 + 1) * src_linesize;
 
     for (y = logo_y1+1; y < logo_y2-1; y++) {
+        left_sample = topleft[src_linesize*(y-logo_y1)]   +
+                      topleft[src_linesize*(y-logo_y1-1)] +
+                      topleft[src_linesize*(y-logo_y1+1)];
+        right_sample = topright[src_linesize*(y-logo_y1)]   +
+                       topright[src_linesize*(y-logo_y1-1)] +
+                       topright[src_linesize*(y-logo_y1+1)];
+
         for (x = logo_x1+1,
              xdst = dst+logo_x1+1,
              xsrc = src+logo_x1+1; x < logo_x2-1; x++, xdst++, xsrc++) {
@@ -100,13 +108,9 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
             weightb = (uint64_t)(x-logo_x1) * (logo_x2-1-x) * (y-logo_y1)                 * sar.num;
 
             interp =
-                (topleft[src_linesize*(y-logo_y1)]    +
-                 topleft[src_linesize*(y-logo_y1-1)]  +
-                 topleft[src_linesize*(y-logo_y1+1)]) * weightl
+                left_sample * weightl
                 +
-                (topright[src_linesize*(y-logo_y1)]    +
-                 topright[src_linesize*(y-logo_y1-1)]  +
-                 topright[src_linesize*(y-logo_y1+1)]) * weightr
+                right_sample * weightr
                 +
                 (topleft[x-logo_x1]    +
                  topleft[x-logo_x1-1]  +
