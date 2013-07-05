@@ -741,6 +741,10 @@ Reset timestamps at the begin of each segment, so that each segment
 will start with near-zero timestamps. It is meant to ease the playback
 of the generated segments. May not work with some combinations of
 muxers/codecs. It is set to @code{0} by default.
+
+@item initial_offset @var{offset}
+Specify timestamp offset to apply to the output packet timestamps. The
+argument must be a time duration specification, and defaults to 0.
 @end table
 
 @subsection Examples
