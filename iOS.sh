@@ -21,6 +21,7 @@ export DEVRoot=/Users/nuoerlz/Applications/Xcode.app/Contents/Developer/Platform
 export SDKRoot=$DEVRoot/SDKs/iPhoneOS6.1.sdk
 export CC=$DEVRoot/usr/bin/llvm-gcc
 export LD=$DEVRoot/usr/bin/ld
+export STRIP=$DEVRoot/usr/bin/strip
 
 
 function doConfigure()
@@ -49,24 +50,19 @@ function doConfigure()
 		--disable-avdevice \
 		--disable-postproc \
 		--disable-encoders \
-		--disable-muxers \
 		--disable-devices \
+		--disable-muxers \
+		--enable-muxer=mp4 \
+		--enable-demuxers \
 		--disable-demuxer=sbg \
 		--disable-demuxer=dts \
 		--disable-parser=dca \
 		--disable-decoder=dca \
 		--disable-decoder=svq3 \
-		--enable-muxer=mp4 \
-		--enable-protocols  \
-		--enable-parsers \
-		--enable-demuxers \
-		--enable-decoders \
 		--enable-network \
 		--enable-openssl \
-		--enable-swscale  \
 		--enable-version3 \
 		\
-		--enable-avdevice \
 		--disable-asm \
 		--disable-shared
 
