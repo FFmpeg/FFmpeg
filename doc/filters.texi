@@ -5338,7 +5338,7 @@ color space. Default value is 0. This option is deprecated, use
 @item repeatlast
 If set to 1, force the filter to draw the last overlay frame over the
 main input until the end of the stream. A value of 0 disables this
-behavior, which is enabled by default.
+behavior. Default value is 1.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following
