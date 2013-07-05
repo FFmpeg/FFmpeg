@@ -2780,8 +2780,8 @@ Specify the thickness of the fuzzy edge of the rectangle (added to
 
 @item show
 When set to 1, a green rectangle is drawn on the screen to simplify
-finding the right @var{x}, @var{y}, @var{w}, @var{h} parameters, and
-@var{band} is set to 4. The default value is 0.
+finding the right @var{x}, @var{y}, @var{w}, and @var{h} parameters.
+The default value is 0.
 
 @end table
 

@@ -195,10 +195,8 @@ static av_cold int init(AVFilterContext *ctx)
     CHECK_UNSET_OPT(w);
     CHECK_UNSET_OPT(h);
 
-    if (s->band < 0 || s->show) {
-        s->show = 1;
+    if (s->band < 0)
         s->band = 4;
-    }
 
     av_log(ctx, AV_LOG_VERBOSE, "x:%d y:%d, w:%d h:%d band:%d show:%d\n",
            s->x, s->y, s->w, s->h, s->band, s->show);
