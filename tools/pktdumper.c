@@ -31,18 +31,18 @@
 #include <io.h>
 #endif
 
-#define FILENAME_BUF_SIZE 4096
-
 #include "libavutil/avstring.h"
 #include "libavutil/time.h"
 #include "libavformat/avformat.h"
 
+#define FILENAME_BUF_SIZE 4096
 #define PKTFILESUFF "_%08" PRId64 "_%02d_%010" PRId64 "_%06d_%c.bin"
 
 static int usage(int ret)
 {
-    fprintf(stderr, "dump (up to maxpkts) AVPackets as they are demuxed by libavformat.\n");
-    fprintf(stderr, "each packet is dumped in its own file named like `basename file.ext`_$PKTNUM_$STREAMINDEX_$STAMP_$SIZE_$FLAGS.bin\n");
+    fprintf(stderr, "Dump (up to maxpkts) AVPackets as they are demuxed by libavformat.\n");
+    fprintf(stderr, "Each packet is dumped in its own file named like\n");
+    fprintf(stderr, "$(basename file.ext)_$PKTNUM_$STREAMINDEX_$STAMP_$SIZE_$FLAGS.bin\n");
     fprintf(stderr, "pktdumper [-nw] file [maxpkts]\n");
     fprintf(stderr, "-n\twrite No file at all, only demux.\n");
     fprintf(stderr, "-w\tWait at end of processing instead of quitting.\n");
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     if (strrchr(fntemplate, '.'))
         *strrchr(fntemplate, '.') = '\0';
     if (strchr(fntemplate, '%')) {
-        fprintf(stderr, "can't use filenames containing '%%'\n");
+        fprintf(stderr, "cannot use filenames containing '%%'\n");
         return usage(1);
     }
     if (strlen(fntemplate) + sizeof(PKTFILESUFF) >= sizeof(fntemplate) - 1) {
