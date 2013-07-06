@@ -1,6 +1,19 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.8:
+- indeo: Check for reference when inheriting motion vectors
+- indeo: Properly forward the error codes
+- mjpeg: Check the unescaped size for overflows
+- wmapro: Error out on impossible scale factor offsets
+- wmapro: Check the min_samples_per_subframe
+- wmapro: Return early on unsupported condition
+- wmapro: Check num_vec_coeffs against the actual available buffer
+- wmapro: Make sure there is room to store the current packet
+- lavc: Move put_bits_left in put_bits.h
+- 4xm: Do not overread the source buffer in decode_p_block
+- 4xm: Check bitstream_size boundary before using it
+
 version 9.7:
 
 Most of the following fixes resulted from test samples that the Google
