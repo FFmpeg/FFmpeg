@@ -1012,6 +1012,8 @@ static int handle_jpeg(enum AVPixelFormat *format)
     case AV_PIX_FMT_YUVJ440P:
         *format = AV_PIX_FMT_YUV440P;
         return 1;
+    case AV_PIX_FMT_GRAY8:
+        return 1;
     default:
         return 0;
     }

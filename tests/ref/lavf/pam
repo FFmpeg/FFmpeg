@@ -4,8 +4,8 @@
 2ed31ca8d8de560afb3e0fd7a873cde5 *./tests/data/images/pam/02.pam
 ./tests/data/images/pam/%02d.pam CRC=0xf07d29cd
 405573 ./tests/data/images/pam/02.pam
-587284e40b78accd54fa92fdb7ca29f4 *./tests/data/images/pam/02.pam
-./tests/data/images/pam/%02d.pam CRC=0x418d2963
+35cb9e42b2d3181be494f8693af1ddea *./tests/data/images/pam/02.pam
+./tests/data/images/pam/%02d.pam CRC=0x0ff205be
 101445 ./tests/data/images/pam/02.pam
 ebd43e97839b2538a79f35757e84ffb0 *./tests/data/images/pam/02.pam
 ./tests/data/images/pam/%02d.pam CRC=0x831a2963
