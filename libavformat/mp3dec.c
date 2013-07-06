@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -36,10 +37,12 @@
 #define XING_TOC_COUNT 100
 
 typedef struct {
+    AVClass *class;
     int64_t filesize;
     int xing_toc;
     int start_pad;
     int end_pad;
+    int usetoc;
 } MP3DecContext;
 
 /* mp3 read */
@@ -90,6 +93,9 @@ static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration
 {
     int i;
     MP3DecContext *mp3 = s->priv_data;
+
+    if (!mp3->usetoc)
+        return;
 
     if (!filesize &&
         !(filesize = avio_size(s->pb))) {
@@ -316,6 +322,19 @@ static int mp3_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     return 0;
 }
 
+static const AVOption options[] = {
+    { "usetoc", "use table of contents", offsetof(MP3DecContext, usetoc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM},
+    { NULL },
+};
+
+static const AVClass demuxer_class = {
+    .class_name = "mp3",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEMUXER,
+};
+
 AVInputFormat ff_mp3_demuxer = {
     .name           = "mp3",
     .long_name      = NULL_IF_CONFIG_SMALL("MP2/3 (MPEG audio layer 2/3)"),
@@ -326,4 +345,5 @@ AVInputFormat ff_mp3_demuxer = {
     .priv_data_size = sizeof(MP3DecContext),
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "mp2,mp3,m2a", /* XXX: use probe */
+    .priv_class     = &demuxer_class,
 };
