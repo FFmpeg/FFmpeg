@@ -230,6 +230,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
     return val;
 }
 
+#if !BROKEN_COMPILER
 #define get_cabac_bypass get_cabac_bypass_x86
 static av_always_inline int get_cabac_bypass_x86(CABACContext *c)
 {
@@ -269,6 +270,7 @@ static av_always_inline int get_cabac_bypass_x86(CABACContext *c)
     );
     return res;
 }
+#endif /* !BROKEN_COMPILER */
 
 #endif /* HAVE_INLINE_ASM */
 #endif /* AVCODEC_X86_CABAC_H */
