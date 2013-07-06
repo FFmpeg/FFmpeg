@@ -372,11 +372,6 @@ typedef struct BlockInfo {
 static const int vs_total_ac_bits = (100 * 4 + 68*2) * 5;
 static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
 
-static inline int put_bits_left(PutBitContext* s)
-{
-    return (s->buf_end - s->buf) * 8 - put_bits_count(s);
-}
-
 /* decode AC coefficients */
 static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
