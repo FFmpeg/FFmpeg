@@ -600,6 +600,79 @@ default value is 0 (disabled).
 
 @end table
 
+@section libopus
+
+libopus Opus Interactive Audio Codec encoder wrapper.
+
+Requires the presence of the libopus headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopus}.
+
+@subsection Option Mapping
+
+Most libopus options are modeled after the @command{opusenc} utility from
+opus-tools. The following is an option mapping chart describing options
+supported by the libopus wrapper, and their @command{opusenc}-equivalent
+in parentheses.
+
+@table @option
+
+@item b (@emph{bitrate})
+Set the bit rate in bits/s.  FFmpeg's @option{b} option is
+expressed in bits/s, while @command{opusenc}'s @option{bitrate} in
+kilobits/s.
+
+@item vbr (@emph{vbr}, @emph{hard-cbr}, and @emph{cvbr})
+Set VBR mode. The FFmpeg @option{vbr} option has the following
+valid arguments, with the their @command{opusenc} equivalent options
+in parentheses:
+
+@table @samp
+@item off (@emph{hard-cbr})
+Use constant bit rate encoding.
+
+@item on (@emph{vbr})
+Use variable bit rate encoding (the default).
+
+@item constrained (@emph{cvbr})
+Use constrained variable bit rate encoding.
+@end table
+
+@item compression_level (@emph{comp})
+Set encoding algorithm complexity. Valid options are integers in
+the 0-10 range. 0 gives the fastest encodes but lower quality, while 10
+gives the highest quality but slowest encoding. The default is 10.
+
+@item frame_duration (@emph{framesize})
+Set maximum frame size, or duration of a frame in milliseconds. The
+argument must be exactly the following: 2.5, 5, 10, 20, 40, 60. Smaller
+frame sizes achieve lower latency but less quality at a given bitrate.
+Sizes greater than 20ms are only interesting at fairly low bitrates.
+The default of FFmpeg is 10ms, but is 20ms in @command{opusenc}.
+
+@item packet_loss (@emph{expect-loss})
+Set expected packet loss percentage. The default is 0.
+
+@item application (N.A.)
+Set intended application type. Valid options are listed below:
+
+@table @samp
+@item voip
+Favor improved speech intelligibility.
+@item audio
+Favor faithfulness to the input (the default).
+@item lowdelay
+Restrict to only the lowest delay modes.
+@end table
+
+@item cutoff (N.A.)
+Set cutoff bandwidth in Hz. The argument must be exactly one of the
+following: 4000, 6000, 8000, 12000, or 20000, corresponding to
+narrowband, mediumband, wideband, super wideband, and fullband
+respectively. The default is 0 (cutoff disabled).
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
