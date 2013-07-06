@@ -80,8 +80,7 @@ static int skeleton_header(AVFormatContext *s, int idx)
         }
         os = ogg->streams + target_idx;
         if (os->start_granule != OGG_NOGRANULE_VALUE) {
-            av_log_missing_feature(s, "multiple fisbone for the "
-                                      "same stream\n", 0);
+            av_log(s, AV_LOG_WARNING, "Multiple fisbone for the same stream\n");
             return 1;
         }
         if (start_granule != OGG_NOGRANULE_VALUE) {
