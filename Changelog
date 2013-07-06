@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 9.8:
+- kmvc: Clip pixel position to valid range
+- kmvc: Use fixed sized arrays in the context
+- indeo: Reject negative array indexes
 - indeo: Check for reference when inheriting motion vectors
 - indeo: Properly forward the error codes
 - mjpeg: Check the unescaped size for overflows
