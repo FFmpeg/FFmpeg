@@ -840,7 +840,7 @@ static av_cold int g2m_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    avctx->pix_fmt     = PIX_FMT_RGB24;
+    avctx->pix_fmt     = AV_PIX_FMT_RGB24;
 
     return 0;
 }
