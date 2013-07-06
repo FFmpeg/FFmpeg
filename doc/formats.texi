@@ -141,6 +141,37 @@ increase performance in some cases.
 
 @c man end FORMAT OPTIONS
 
+@anchor{Format stream specifiers}
+@section Format stream specifiers
+
+Format stream specifiers allow selection of one or more streams that
+match specific properties.
+
+Possible forms of stream specifiers are:
+@table @option
+@item @var{stream_index}
+Matches the stream with this index.
+
+@item @var{stream_type}[:@var{stream_index}]
+@var{stream_type} is one of following: 'v' for video, 'a' for audio,
+'s' for subtitle, 'd' for data, and 't' for attachments. If
+@var{stream_index} is given, then it matches the stream number
+@var{stream_index} of this type. Otherwise, it matches all streams of
+this type.
+
+@item p:@var{program_id}[:@var{stream_index}]
+If @var{stream_index} is given, then it matches the stream with number
+@var{stream_index} in the program with the id
+@var{program_id}. Otherwise, it matches all streams in the program.
+
+@item #@var{stream_id}
+Matches the stream by a format-specific ID.
+@end table
+
+The exact semantics of stream specifiers is defined by the
+@code{avformat_match_stream_specifier()} function declared in the
+@file{libavformat/avformat.h} header.
+
 @include demuxers.texi
 @include muxers.texi
 @include metadata.texi
