@@ -26,7 +26,7 @@
 #include "libavcodec/mpegvideo.h"
 #include "dsputil_mmx.h"
 
-#if HAVE_INLINE_ASM
+#if HAVE_MMX_INLINE
 
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
@@ -582,11 +582,11 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
     );
 }
 
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_MMX_INLINE */
 
 void ff_MPV_common_init_x86(MpegEncContext *s)
 {
-#if HAVE_INLINE_ASM
+#if HAVE_MMX_INLINE
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
@@ -604,5 +604,5 @@ void ff_MPV_common_init_x86(MpegEncContext *s)
                 s->denoise_dct= denoise_dct_mmx;
         }
     }
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_MMX_INLINE */
 }
