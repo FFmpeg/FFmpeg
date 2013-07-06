@@ -2101,6 +2101,13 @@ Value of pixel component at current location for first video frame (top layer).
 @item BOTTOM, B
 Value of pixel component at current location for second video frame (bottom layer).
 @end table
+
+@item shortest
+Force termination when the shortest input terminates. Default is @code{0}.
+@item repeatlast
+Continue applying the last bottom frame after the end of the stream. A value of
+@code{0} disable the filter after the last frame of the bottom layer is reached.
+Default is @code{1}.
 @end table
 
 @subsection Examples

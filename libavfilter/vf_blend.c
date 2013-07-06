@@ -26,6 +26,7 @@
 #include "bufferqueue.h"
 #include "formats.h"
 #include "internal.h"
+#include "dualinput.h"
 #include "video.h"
 
 #define TOP    0
@@ -76,7 +77,8 @@ typedef struct FilterParams {
 } FilterParams;
 
 typedef struct ThreadData {
-    AVFrame *top, *bottom, *dst;
+    const AVFrame *top, *bottom;
+    AVFrame *dst;
     AVFilterLink *inlink;
     int plane;
     int w, h;
@@ -85,11 +87,9 @@ typedef struct ThreadData {
 
 typedef struct {
     const AVClass *class;
-    struct FFBufQueue queue_top;
-    struct FFBufQueue queue_bottom;
+    FFDualInputContext dinput;
     int hsub, vsub;             ///< chroma subsampling values
     int nb_planes;
-    int frame_requested;
     char *all_expr;
     enum BlendMode all_mode;
     double all_opacity;
@@ -140,6 +140,8 @@ static const AVOption blend_options[] = {
     { "c2_opacity",  "set color component #2 opacity", OFFSET(params[2].opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS },
     { "c3_opacity",  "set color component #3 opacity", OFFSET(params[3].opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS },
     { "all_opacity", "set opacity for all color components", OFFSET(all_opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
+    { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
+    { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
     { NULL },
 };
 
@@ -229,6 +231,65 @@ static void blend_expr(const uint8_t *top, int top_linesize,
     }
 }
 
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ThreadData *td = arg;
+    int slice_start = (td->h *  jobnr   ) / nb_jobs;
+    int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
+    const uint8_t *top    = td->top->data[td->plane];
+    const uint8_t *bottom = td->bottom->data[td->plane];
+    uint8_t *dst    = td->dst->data[td->plane];
+    double values[VAR_VARS_NB];
+
+    values[VAR_N]  = td->inlink->frame_count;
+    values[VAR_T]  = td->dst->pts == AV_NOPTS_VALUE ? NAN : td->dst->pts * av_q2d(td->inlink->time_base);
+    values[VAR_W]  = td->w;
+    values[VAR_H]  = td->h;
+    values[VAR_SW] = td->w / (double)td->dst->width;
+    values[VAR_SH] = td->h / (double)td->dst->height;
+
+    td->param->blend(top + slice_start * td->top->linesize[td->plane],
+                     td->top->linesize[td->plane],
+                     bottom + slice_start * td->bottom->linesize[td->plane],
+                     td->bottom->linesize[td->plane],
+                     dst + slice_start * td->dst->linesize[td->plane],
+                     td->dst->linesize[td->plane],
+                     td->w, slice_start, slice_end, td->param, &values[0]);
+    return 0;
+}
+
+static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
+                            const AVFrame *bottom_buf)
+{
+    BlendContext *b = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *dst_buf;
+    int plane;
+
+    dst_buf = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!dst_buf)
+        return top_buf;
+    av_frame_copy_props(dst_buf, top_buf);
+
+    for (plane = 0; plane < b->nb_planes; plane++) {
+        int hsub = plane == 1 || plane == 2 ? b->hsub : 0;
+        int vsub = plane == 1 || plane == 2 ? b->vsub : 0;
+        int outw = FF_CEIL_RSHIFT(dst_buf->width,  hsub);
+        int outh = FF_CEIL_RSHIFT(dst_buf->height, vsub);
+        FilterParams *param = &b->params[plane];
+        ThreadData td = { .top = top_buf, .bottom = bottom_buf, .dst = dst_buf,
+                          .w = outw, .h = outh, .param = param, .plane = plane,
+                          .inlink = inlink };
+
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ctx->graph->nb_threads));
+    }
+
+    av_frame_free(&top_buf);
+
+    return dst_buf;
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     BlendContext *b = ctx->priv;
@@ -283,6 +344,7 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
+    b->dinput.process = blend_frame;
     return 0;
 }
 
@@ -345,129 +407,38 @@ static av_cold void uninit(AVFilterContext *ctx)
     BlendContext *b = ctx->priv;
     int i;
 
-    ff_bufqueue_discard_all(&b->queue_top);
-    ff_bufqueue_discard_all(&b->queue_bottom);
-
+    ff_dualinput_uninit(&b->dinput);
     for (i = 0; i < FF_ARRAY_ELEMS(b->params); i++)
         av_expr_free(b->params[i].e);
 }
 
 static int request_frame(AVFilterLink *outlink)
 {
-    AVFilterContext *ctx = outlink->src;
-    BlendContext *b = ctx->priv;
-    int in, ret;
-
-    b->frame_requested = 1;
-    while (b->frame_requested) {
-        in = ff_bufqueue_peek(&b->queue_top, 0) ? BOTTOM : TOP;
-        ret = ff_request_frame(ctx->inputs[in]);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
+    BlendContext *b = outlink->src->priv;
+    return ff_dualinput_request_frame(&b->dinput, outlink);
 }
 
-static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static int filter_frame_top(AVFilterLink *inlink, AVFrame *buf)
 {
-    ThreadData *td = arg;
-    int slice_start = (td->h *  jobnr   ) / nb_jobs;
-    int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
-    const uint8_t *top    = td->top->data[td->plane];
-    const uint8_t *bottom = td->bottom->data[td->plane];
-    uint8_t *dst    = td->dst->data[td->plane];
-    double values[VAR_VARS_NB];
-
-    values[VAR_N]  = td->inlink->frame_count;
-    values[VAR_T]  = td->dst->pts == AV_NOPTS_VALUE ? NAN : td->dst->pts * av_q2d(td->inlink->time_base);
-    values[VAR_W]  = td->w;
-    values[VAR_H]  = td->h;
-    values[VAR_SW] = td->w / (double)td->dst->width;
-    values[VAR_SH] = td->h / (double)td->dst->height;
-
-    td->param->blend(top + slice_start * td->top->linesize[td->plane],
-                     td->top->linesize[td->plane],
-                     bottom + slice_start * td->bottom->linesize[td->plane],
-                     td->bottom->linesize[td->plane],
-                     dst + slice_start * td->dst->linesize[td->plane],
-                     td->dst->linesize[td->plane],
-                     td->w, slice_start, slice_end, td->param, &values[0]);
-    return 0;
+    BlendContext *b = inlink->dst->priv;
+    return ff_dualinput_filter_frame_main(&b->dinput, inlink, buf);
 }
 
-static void blend_frame(AVFilterContext *ctx,
-                        AVFrame *top_buf,
-                        AVFrame *bottom_buf,
-                        AVFrame *dst_buf)
+static int filter_frame_bottom(AVFilterLink *inlink, AVFrame *buf)
 {
-    BlendContext *b = ctx->priv;
-    AVFilterLink *inlink = ctx->inputs[0];
-    int plane;
-
-    for (plane = 0; plane < b->nb_planes; plane++) {
-        int hsub = plane == 1 || plane == 2 ? b->hsub : 0;
-        int vsub = plane == 1 || plane == 2 ? b->vsub : 0;
-        int outw = FF_CEIL_RSHIFT(dst_buf->width,  hsub);
-        int outh = FF_CEIL_RSHIFT(dst_buf->height, vsub);
-        FilterParams *param = &b->params[plane];
-        ThreadData td = { .top = top_buf, .bottom = bottom_buf, .dst = dst_buf,
-                          .w = outw, .h = outh, .param = param, .plane = plane,
-                          .inlink = inlink };
-
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ctx->graph->nb_threads));
-    }
-}
-
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
-{
-    AVFilterContext *ctx = inlink->dst;
-    AVFilterLink *outlink = ctx->outputs[0];
-    BlendContext *b = ctx->priv;
-
-    int ret = 0;
-    int is_bottom = (inlink == ctx->inputs[BOTTOM]);
-    struct FFBufQueue *queue =
-        (is_bottom ? &b->queue_bottom : &b->queue_top);
-    ff_bufqueue_add(ctx, queue, buf);
-
-    while (1) {
-        AVFrame *top_buf, *bottom_buf, *out_buf;
-
-        if (!ff_bufqueue_peek(&b->queue_top, 0) ||
-            !ff_bufqueue_peek(&b->queue_bottom, 0)) break;
-
-        top_buf = ff_bufqueue_get(&b->queue_top);
-        bottom_buf = ff_bufqueue_get(&b->queue_bottom);
-
-        if (!ctx->is_disabled) {
-            out_buf = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-            if (!out_buf)
-                return AVERROR(ENOMEM);
-            av_frame_copy_props(out_buf, top_buf);
-            blend_frame(ctx, top_buf, bottom_buf, out_buf);
-        } else {
-            out_buf = av_frame_clone(top_buf);
-            if (!out_buf)
-                return AVERROR(ENOMEM);
-        }
-
-        b->frame_requested = 0;
-        ret = ff_filter_frame(outlink, out_buf);
-        av_frame_free(&top_buf);
-        av_frame_free(&bottom_buf);
-    }
-    return ret;
+    BlendContext *b = inlink->dst->priv;
+    return ff_dualinput_filter_frame_second(&b->dinput, inlink, buf);
 }
 
 static const AVFilterPad blend_inputs[] = {
     {
         .name             = "top",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .filter_frame     = filter_frame_top,
     },{
         .name             = "bottom",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .filter_frame     = filter_frame_bottom,
     },
     { NULL }
 };
