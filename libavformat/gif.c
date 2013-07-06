@@ -52,15 +52,18 @@ static int gif_image_write_header(AVIOContext *pb, int width, int height,
         avio_w8(pb, 0); /* aspect ratio */
     }
 
-    /* "NETSCAPE EXTENSION" for looped animation GIF */
-    avio_w8(pb, 0x21); /* GIF Extension code */
-    avio_w8(pb, 0xff); /* Application Extension Label */
-    avio_w8(pb, 0x0b); /* Length of Application Block */
-    avio_write(pb, "NETSCAPE2.0", sizeof("NETSCAPE2.0") - 1);
-    avio_w8(pb, 0x03); /* Length of Data Sub-Block */
-    avio_w8(pb, 0x01);
-    avio_wl16(pb, (uint16_t)loop_count);
-    avio_w8(pb, 0x00); /* Data Sub-block Terminator */
+
+    if (loop_count >= 0 ) {
+        /* "NETSCAPE EXTENSION" for looped animation GIF */
+        avio_w8(pb, 0x21); /* GIF Extension code */
+        avio_w8(pb, 0xff); /* Application Extension Label */
+        avio_w8(pb, 0x0b); /* Length of Application Block */
+        avio_write(pb, "NETSCAPE2.0", sizeof("NETSCAPE2.0") - 1);
+        avio_w8(pb, 0x03); /* Length of Data Sub-Block */
+        avio_w8(pb, 0x01);
+        avio_wl16(pb, (uint16_t)loop_count);
+        avio_w8(pb, 0x00); /* Data Sub-block Terminator */
+    }
 
     return 0;
 }
@@ -189,8 +192,8 @@ static int gif_write_trailer(AVFormatContext *s)
 #define OFFSET(x) offsetof(GIFContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "loop", "Number of times to loop the output.", OFFSET(loop),
-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 65535, ENC },
+    { "loop", "Number of times to loop the output: -1 - no loop, 0 - infinite loop", OFFSET(loop),
+      AV_OPT_TYPE_INT, { .i64 = 0 }, -1, 65535, ENC },
     { "final_delay", "Force delay (in ms) after the last frame", OFFSET(last_delay),
       AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 65535, ENC },
     { NULL },
