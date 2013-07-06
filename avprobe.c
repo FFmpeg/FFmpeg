@@ -60,7 +60,7 @@ static const char unit_hertz_str[]          = "Hz"   ;
 static const char unit_byte_str[]           = "byte" ;
 static const char unit_bit_per_second_str[] = "bit/s";
 
-static void exit_program(void)
+static void avprobe_cleanup(int ret)
 {
     av_dict_free(&fmt_entries_to_show);
 }
@@ -366,7 +366,7 @@ static void probe_group_enter(const char *name, int type)
 
     if (!octx.prefix || !name) {
         fprintf(stderr, "Out of memory\n");
-        exit(1);
+        exit_program(1);
     }
 
     if (octx.level) {
@@ -854,7 +854,7 @@ static void opt_input_file(void *optctx, const char *arg)
         fprintf(stderr,
                 "Argument '%s' provided as input filename, but '%s' was already specified.\n",
                 arg, input_filename);
-        exit(1);
+        exit_program(1);
     }
     if (!strcmp(arg, "-"))
         arg = "pipe:";
@@ -919,7 +919,7 @@ int main(int argc, char **argv)
     if (!buffer)
         exit(1);
 
-    atexit(exit_program);
+    register_exit(avprobe_cleanup);
 
     options = real_options;
     parse_loglevel(argc, argv, options);
@@ -949,13 +949,13 @@ int main(int argc, char **argv)
         fprintf(stderr,
                 "Use -h to get full help or, even better, run 'man %s'.\n",
                 program_name);
-        exit(1);
+        exit_program(1);
     }
 
     probe_out = avio_alloc_context(buffer, AVP_BUFFSIZE, 1, NULL, NULL,
                                  probe_buf_write, NULL);
     if (!probe_out)
-        exit(1);
+        exit_program(1);
 
     probe_header();
     ret = probe_file(input_filename);
