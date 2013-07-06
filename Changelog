@@ -69,6 +69,7 @@ version <next>:
 - rotate filter
 - spp filter ported from libmpcodecs
 - libgme support
+- psnr filter
 
 
 version 1.2:

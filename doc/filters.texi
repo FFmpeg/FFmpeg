@@ -5837,6 +5837,79 @@ pp=hb|y/vb|a
 @end example
 @end itemize
 
+@section psnr
+
+Obtain the average, maximum and minimum PSNR (Peak Signal to Noise
+Ratio) between two input videos.
+
+This filter takes in input two input videos, the first input is
+considered the "main" source and is passed unchanged to the
+output. The second input is used as a "reference" video for computing
+the PSNR.
+
+Both video inputs must have the same resolution and pixel format for
+this filter to work correctly. Also it assumes that both inputs
+have the same number of frames, which are compared one by one.
+
+The obtained average PSNR is printed through the logging system.
+
+The filter stores the accumulated MSE (mean squared error) of each
+frame, and at the end of the processing it is averaged across all frames
+equally, and the following formula is applied to obtain the PSNR:
+
+@example
+PSNR = 10*log10(MAX^2/MSE)
+@end example
+
+Where MAX is the average of the maximum values of each component of the
+image.
+
+The filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted parameters follows.
+
+@table @option
+@item stats_file, f
+If specified the filter will use the named file to save the PSNR of
+each individual frame.
+@end table
+
+The file printed if @var{stats_file} is selected, contains a sequence of
+key/value pairs of the form @var{key}:@var{value} for each compared
+couple of frames.
+
+The shown line contains .
+
+A description of each shown parameter follows:
+
+@table @option
+@item n
+sequential number of the input frame, starting from 1
+
+@item mse_average
+Mean Square Error pixel-by-pixel average difference of the compared
+frames, averaged over all the image components.
+
+@item mse_y, mse_u, mse_v, mse_r, mse_g, mse_g, mse_a
+Mean Square Error pixel-by-pixel average difference of the compared
+frames for the component specified by the suffix.
+
+@item psnr_y, psnr_u, psnr_v, psnr_r, psnr_g, psnr_g, psnr_a
+Peak Signal to Noise ratio of the compared frames for the component
+specified by the suffix.
+@end table
+
+For example:
+@example
+movie=ref_movie.mpg, setpts=PTS-STARTPTS [main];
+[main][ref] psnr="stats_file=stats.log" [out]
+@end example
+
+On this example the input file being processed is compared with the
+reference file @file{ref_movie.mpg}. The PSNR of each individual frame
+is stored in @file{stats.log}.
+
 @section removelogo
 
 Suppress a TV station logo, using an image file to determine which
