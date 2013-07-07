@@ -77,6 +77,7 @@ typedef struct Jpeg2000DecoderContext {
     int             colour_space;
     uint32_t        palette[256];
     int8_t          pal8;
+    int             cdef[4];
     int             tile_width, tile_height;
     unsigned        numXtiles, numYtiles;
     int             maxtilelen;
@@ -1229,6 +1230,13 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
+    if (s->cdef[0] < 0) {
+        for (x = 0; x < s->ncomponents; x++)
+            s->cdef[x] = x + 1;
+        if ((s->ncomponents & 1) == 0)
+            s->cdef[s->ncomponents-1] = 0;
+    }
+
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
@@ -1535,6 +1543,21 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                     atom2_size -= size;
                     bytestream2_skipu(&s->g, atom2_size);
                     atom_size -= atom2_size;
+                } else if (atom2 == MKBETAG('c','d','e','f') && atom2_size >= 2 &&
+                    bytestream2_get_bytes_left(&s->g) >= atom2_size) {
+                    int n = bytestream2_get_be16u(&s->g);
+                    atom_size  -= 2;
+                    atom2_size -= 2;
+                    for (; n>0; n--) {
+                        int cn   = bytestream2_get_be16(&s->g);
+                        int typ  = bytestream2_get_be16(&s->g);
+                        int asoc = bytestream2_get_be16(&s->g);
+                        if (cn < 4 || asoc < 4)
+                            s->cdef[cn] = asoc;
+                        atom_size  -= 6;
+                        atom2_size -= 6;
+                    }
+                    bytestream2_skipu(&s->g, atom2_size);
                 } else {
                     bytestream2_skipu(&s->g, atom2_size);
                     atom_size -= atom2_size;
@@ -1565,6 +1588,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     s->avctx     = avctx;
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
+    memset(s->cdef, -1, sizeof(s->cdef));
 
     if (bytestream2_get_bytes_left(&s->g) < 2) {
         ret = AVERROR_INVALIDDATA;
