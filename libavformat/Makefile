@@ -454,10 +454,11 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
-TESTPROGS = noproxy                                                     \
-            seek                                                        \
+TESTPROGS = seek                                                        \
             srtp                                                        \
             url                                                         \
+
+TESTPROGS-$(CONFIG_NETWORK)              += noproxy
 
 TOOLS     = aviocat                                                     \
             ismindex                                                    \
