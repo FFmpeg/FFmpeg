@@ -62,6 +62,9 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     AascContext *s     = avctx->priv_data;
     int compr, i, stride, ret;
 
+    if (buf_size < 4)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return ret;
@@ -73,6 +76,8 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     switch (compr) {
     case 0:
         stride = (avctx->width * 3 + 3) & ~3;
+        if (buf_size < stride * avctx->height)
+            return AVERROR_INVALIDDATA;
         for (i = avctx->height - 1; i >= 0; i--) {
             memcpy(s->frame->data[0] + i * s->frame->linesize[0], buf, avctx->width * 3);
             buf += stride;
