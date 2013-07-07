@@ -309,16 +309,14 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
     return 0;
 fail:
     av_freep(&stream_selection);
+    mmsh_close(h);
     av_dlog(NULL, "Connection failed with error %d\n", err);
     return err;
 }
 
 static int mmsh_open(URLContext *h, const char *uri, int flags)
 {
-    int ret = mmsh_open_internal(h, uri, flags, 0, 0);
-    if (ret < 0)
-        mmsh_close(h);
-    return ret;
+    return mmsh_open_internal(h, uri, flags, 0, 0);
 }
 
 static int handle_chunk_type(MMSHContext *mmsh)
@@ -370,23 +368,26 @@ static int mmsh_read(URLContext *h, uint8_t *buf, int size)
 static int64_t mmsh_read_seek(URLContext *h, int stream_index,
                         int64_t timestamp, int flags)
 {
-    MMSHContext *mmsh = h->priv_data;
-    MMSContext *mms   = &mmsh->mms;
+    MMSHContext *mmsh_old = h->priv_data;
+    MMSHContext *mmsh     = av_mallocz(sizeof(*mmsh));
     int ret;
 
-    ret= mmsh_open_internal(h, mmsh->location, 0, FFMAX(timestamp, 0), 0);
+    if (!mmsh)
+        return AVERROR(ENOMEM);
 
+    h->priv_data = mmsh;
+    ret= mmsh_open_internal(h, mmsh_old->location, 0, FFMAX(timestamp, 0), 0);
     if(ret>=0){
-        if (mms->mms_hd)
-            ffurl_close(mms->mms_hd);
-        av_freep(&mms->streams);
-        av_freep(&mms->asf_header);
+        h->priv_data = mmsh_old;
+        mmsh_close(h);
+        h->priv_data = mmsh;
+        av_free(mmsh_old);
+        mmsh->mms.asf_header_read_size = mmsh->mms.asf_header_size;
+    }else {
+        h->priv_data = mmsh_old;
         av_free(mmsh);
-        mmsh = h->priv_data;
-        mms   = &mmsh->mms;
-        mms->asf_header_read_size= mms->asf_header_size;
-    }else
-        h->priv_data= mmsh;
+    }
+
     return ret;
 }
 
