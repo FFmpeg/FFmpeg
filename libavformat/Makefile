@@ -11,7 +11,7 @@ OBJS = allformats.o         \
        avio.o               \
        aviobuf.o            \
        cutils.o             \
-       format.o		    \
+       format.o             \
        id3v1.o              \
        id3v2.o              \
        metadata.o           \
