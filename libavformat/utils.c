@@ -2829,6 +2829,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             if (st->avg_frame_rate.num > 0)
                 t = FFMAX(t, av_rescale_q(st->codec_info_nb_frames, av_inv_q(st->avg_frame_rate), AV_TIME_BASE_Q));
 
+            if (   t==0
+                && st->codec_info_nb_frames>15
+                && st->codec->codec_type == AVMEDIA_TYPE_VIDEO
+                && (   !strcmp(ic->iformat->name, "mpeg") // this breaks some flvs thus use only for mpegps/ts for now (for ts we have a sample that needs it)
+                    || !strcmp(ic->iformat->name, "mpegts"))
+                && st->info->fps_first_dts != AV_NOPTS_VALUE
+                && st->info->fps_last_dts  != AV_NOPTS_VALUE)
+                t = FFMAX(t, av_rescale_q(st->info->fps_last_dts - st->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
+
             if (t >= ic->max_analyze_duration) {
                 av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %d reached at %"PRId64" microseconds\n", ic->max_analyze_duration, t);
                 break;
