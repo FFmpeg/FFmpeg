@@ -2685,6 +2685,7 @@ static int read_thread(void *arg)
     int st_index[AVMEDIA_TYPE_NB];
     AVPacket pkt1, *pkt = &pkt1;
     int eof = 0;
+    int64_t stream_start_time;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
     AVDictionary **opts;
@@ -2926,8 +2927,9 @@ static int read_thread(void *arg)
             continue;
         }
         /* check if packet is in play range specified by user, then queue, otherwise discard */
+        stream_start_time = ic->streams[pkt->stream_index]->start_time;
         pkt_in_play_range = duration == AV_NOPTS_VALUE ||
-                (pkt->pts - ic->streams[pkt->stream_index]->start_time) *
+                (pkt->pts - (stream_start_time != AV_NOPTS_VALUE ? stream_start_time : 0)) *
                 av_q2d(ic->streams[pkt->stream_index]->time_base) -
                 (double)(start_time != AV_NOPTS_VALUE ? start_time : 0) / 1000000
                 <= ((double)duration / 1000000);
