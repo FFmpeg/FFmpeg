@@ -87,7 +87,7 @@ static void sample_queue_free(HintSampleQueue *queue)
         if (queue->samples[i].own_data)
             av_free(queue->samples[i].data);
     av_freep(&queue->samples);
-    queue->len = 0;
+    queue->len  = 0;
     queue->size = 0;
 }
 
@@ -104,7 +104,7 @@ static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
     if (size <= 14)
         return;
     if (!queue->samples || queue->len >= queue->size) {
-        HintSample* samples;
+        HintSample *samples;
         queue->size += 10;
         samples = av_realloc(queue->samples, sizeof(HintSample)*queue->size);
         if (!samples)
@@ -114,7 +114,7 @@ static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
     queue->samples[queue->len].data = data;
     queue->samples[queue->len].size = size;
     queue->samples[queue->len].sample_number = sample;
-    queue->samples[queue->len].offset = 0;
+    queue->samples[queue->len].offset   = 0;
     queue->samples[queue->len].own_data = 0;
     queue->len++;
 }
@@ -128,7 +128,7 @@ static void sample_queue_retain(HintSampleQueue *queue)
     for (i = 0; i < queue->len; ) {
         HintSample *sample = &queue->samples[i];
         if (!sample->own_data) {
-            uint8_t* ptr = av_malloc(sample->size);
+            uint8_t *ptr = av_malloc(sample->size);
             if (!ptr) {
                 /* Unable to allocate memory for this one, remove it */
                 memmove(queue->samples + i, queue->samples + i + 1,
@@ -344,7 +344,7 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
             trk->max_packet_size = packet_len;
 
         seq = AV_RB16(&data[2]);
-        ts = AV_RB32(&data[4]);
+        ts  = AV_RB32(&data[4]);
 
         if (trk->prev_rtp_ts == 0)
             trk->prev_rtp_ts = ts;
@@ -417,7 +417,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
      * for next time. */
     size = avio_close_dyn_buf(rtp_ctx->pb, &buf);
     if ((ret = ffio_open_dyn_packet_buf(&rtp_ctx->pb,
-                                       RTP_MAX_PACKET_SIZE)) < 0)
+                                        RTP_MAX_PACKET_SIZE)) < 0)
         goto done;
 
     if (size <= 0)
@@ -445,8 +445,9 @@ done:
     return ret;
 }
 
-void ff_mov_close_hinting(MOVTrack *track) {
-    AVFormatContext* rtp_ctx = track->rtp_ctx;
+void ff_mov_close_hinting(MOVTrack *track)
+{
+    AVFormatContext *rtp_ctx = track->rtp_ctx;
     uint8_t *ptr;
 
     av_freep(&track->enc);
