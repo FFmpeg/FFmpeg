@@ -248,9 +248,12 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
 static av_cold int rv30_decode_init(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
+    int ret;
 
     r->rv30 = 1;
-    ff_rv34_decode_init(avctx);
+    ret = ff_rv34_decode_init(avctx);
+    if (ret < 0)
+        return ret;
     if(avctx->extradata_size < 2){
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
         return -1;
