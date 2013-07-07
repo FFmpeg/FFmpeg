@@ -312,8 +312,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->coded_frame = &c->pic;
-
     return 0;
 }
 
