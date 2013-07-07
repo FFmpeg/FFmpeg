@@ -309,11 +309,11 @@ static void describe_payload(const uint8_t *data, int size,
  * @param data buffer containing RTP packets
  * @param size the size of the data buffer
  * @param trk the MOVTrack for the hint track
- * @param pts pointer where the timestamp for the written RTP hint is stored
+ * @param dts pointer where the timestamp for the written RTP hint is stored
  * @return the number of RTP packets in the written hint
  */
 static int write_hint_packets(AVIOContext *out, const uint8_t *data,
-                              int size, MOVTrack *trk, int64_t *pts)
+                              int size, MOVTrack *trk, int64_t *dts)
 {
     int64_t curpos;
     int64_t count_pos, entries_pos;
@@ -357,8 +357,8 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
             trk->prev_rtp_ts = ts;
             ts_diff = 0;
         }
-        if (*pts == AV_NOPTS_VALUE)
-            *pts = trk->cur_rtp_ts_unwrapped;
+        if (*dts == AV_NOPTS_VALUE)
+            *dts = trk->cur_rtp_ts_unwrapped;
 
         count++;
         /* RTPpacket header */
