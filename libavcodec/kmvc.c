@@ -46,7 +46,7 @@ typedef struct KmvcContext {
     int palsize;
     uint32_t pal[MAX_PALSIZE];
     uint8_t *cur, *prev;
-    uint8_t *frm0, *frm1;
+    uint8_t frm0[320 * 200], frm1[320 * 200];
     GetByteContext g;
 } KmvcContext;
 
@@ -378,8 +378,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
         return AVERROR(EINVAL);
     }
 
-    c->frm0 = av_mallocz(320 * 200);
-    c->frm1 = av_mallocz(320 * 200);
     c->cur = c->frm0;
     c->prev = c->frm1;
 
@@ -414,28 +412,12 @@ static av_cold int decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-
-
-/*
- * Uninit kmvc decoder
- */
-static av_cold int decode_end(AVCodecContext * avctx)
-{
-    KmvcContext *const c = avctx->priv_data;
-
-    av_freep(&c->frm0);
-    av_freep(&c->frm1);
-
-    return 0;
-}
-
 AVCodec ff_kmvc_decoder = {
     .name           = "kmvc",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_KMVC,
     .priv_data_size = sizeof(KmvcContext),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
