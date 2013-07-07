@@ -1245,14 +1245,21 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             int32_t *i_datap = comp->i_data;
             int cbps = s->cbps[compno];
             int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
+            int planar = !!picture->data[2];
+            int pixelsize = planar ? 1 : s->ncomponents;
+            int plane = 0;
+
+            if (planar)
+                plane = s->cdef[compno] ? s->cdef[compno]-1 : (s->ncomponents-1);
+
 
             y    = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            line = picture->data[0] + y * picture->linesize[0];
+            line = picture->data[plane] + y * picture->linesize[plane];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint8_t *dst;
 
                 x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
-                dst = line + x * s->ncomponents + compno;
+                dst = line + x * pixelsize + compno*!planar;
 
                 if (codsty->transform == FF_DWT97) {
                     for (; x < w; x += s->cdx[compno]) {
@@ -1261,7 +1268,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         val = av_clip(val, 0, (1 << cbps) - 1);
                         *dst = val << (8 - cbps);
                         datap++;
-                        dst += s->ncomponents;
+                        dst += pixelsize;
                     }
                 } else {
                     for (; x < w; x += s->cdx[compno]) {
@@ -1270,10 +1277,10 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         val = av_clip(val, 0, (1 << cbps) - 1);
                         *dst = val << (8 - cbps);
                         i_datap++;
-                        dst += s->ncomponents;
+                        dst += pixelsize;
                     }
                 }
-                line += picture->linesize[0];
+                line += picture->linesize[plane];
             }
         }
     } else {
