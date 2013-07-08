@@ -71,10 +71,10 @@ typedef struct {
     int hsub, vsub;
     int nb_planes;
     int use_bilinear;
-    uint8_t *line[4];
-    int linestep[4];
     float sinx, cosx;
     double var_values[VAR_VARS_NB];
+    FFDrawContext draw;
+    FFDrawColor color;
 } RotContext;
 
 #define OFFSET(x) offsetof(RotContext, x)
@@ -111,10 +111,6 @@ static av_cold int init(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     RotContext *rot = ctx->priv;
-    int i;
-
-    for (i = 0; i < 4; i++)
-        av_freep(&rot->line[i]);
 
     av_expr_free(rot->angle_expr);
     rot->angle_expr = NULL;
@@ -123,10 +119,14 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     static enum PixelFormat pix_fmts[] = {
+        AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_ARGB,   AV_PIX_FMT_RGBA,
         AV_PIX_FMT_ABGR,   AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_0RGB,   AV_PIX_FMT_RGB0,
+        AV_PIX_FMT_0BGR,   AV_PIX_FMT_BGR0,
         AV_PIX_FMT_RGB24,  AV_PIX_FMT_BGR24,
         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA420P,
@@ -179,10 +179,12 @@ static int config_props(AVFilterLink *outlink)
     RotContext *rot = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(inlink->format);
-    uint8_t rgba_color[4];
-    int is_packed_rgba, ret;
+    int ret;
     double res;
     char *expr;
+
+    ff_draw_init(&rot->draw, inlink->format, 0);
+    ff_draw_color(&rot->draw, &rot->color, rot->fillcolor);
 
     rot->hsub = pixdesc->log2_chroma_w;
     rot->vsub = pixdesc->log2_chroma_h;
@@ -236,16 +238,6 @@ static int config_props(AVFilterLink *outlink)
     rot->nb_planes = av_pix_fmt_count_planes(inlink->format);
     outlink->w = rot->outw;
     outlink->h = rot->outh;
-
-    memcpy(rgba_color, rot->fillcolor, sizeof(rgba_color));
-    ff_fill_line_with_color(rot->line, rot->linestep, outlink->w, rot->fillcolor,
-                            outlink->format, rgba_color, &is_packed_rgba, NULL);
-    av_log(ctx, AV_LOG_INFO,
-           "w:%d h:%d -> w:%d h:%d bgcolor:0x%02X%02X%02X%02X[%s]\n",
-           inlink->w, inlink->h, outlink->w, outlink->h,
-           rot->fillcolor[0], rot->fillcolor[1], rot->fillcolor[2], rot->fillcolor[3],
-           is_packed_rgba ? "rgba" : "yuva");
-
     return 0;
 }
 
@@ -336,8 +328,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     /* fill background */
     if (rot->fillcolor_enable)
-        ff_draw_rectangle(out->data, out->linesize,
-                          rot->line, rot->linestep, rot->hsub, rot->vsub,
+        ff_fill_rectangle(&rot->draw, &rot->color, out->data, out->linesize,
                           0, 0, outlink->w, outlink->h);
 
     for (plane = 0; plane < rot->nb_planes; plane++) {
@@ -370,17 +361,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 /* the out-of-range values avoid border artifacts */
                 if (x1 >= -1 && x1 <= inw && y1 >= -1 && y1 <= inh) {
                     uint8_t inp_inv[4]; /* interpolated input value */
-                    pout = out->data[plane] + j * out->linesize[plane] + i * rot->linestep[plane];
+                    pout = out->data[plane] + j * out->linesize[plane] + i * rot->draw.pixelstep[plane];
                     if (rot->use_bilinear) {
                         pin = interpolate_bilinear(inp_inv,
-                                                   in->data[plane], in->linesize[plane], rot->linestep[plane],
+                                                   in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
                                                    x, y, inw-1, inh-1);
                     } else {
                         int x2 = av_clip(x1, 0, inw-1);
                         int y2 = av_clip(y1, 0, inh-1);
-                        pin = in->data[plane] + y2 * in->linesize[plane] + x2 * rot->linestep[plane];
+                        pin = in->data[plane] + y2 * in->linesize[plane] + x2 * rot->draw.pixelstep[plane];
                     }
-                    switch (rot->linestep[plane]) {
+                    switch (rot->draw.pixelstep[plane]) {
                     case 1:
                         *pout = *pin;
                         break;
@@ -395,7 +386,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                         *((uint32_t *)pout) = *((uint32_t *)pin);
                         break;
                     default:
-                        memcpy(pout, pin, rot->linestep[plane]);
+                        memcpy(pout, pin, rot->draw.pixelstep[plane]);
                         break;
                     }
                 }
