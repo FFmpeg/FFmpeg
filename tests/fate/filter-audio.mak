@@ -27,7 +27,7 @@ fate-filter-asyncts: REF = $(SAMPLES)/nellymoser/nellymoser-discont-async-v2.pcm
 
 FATE_FILTER-$(CONFIG_ARESAMPLE_FILTER) += fate-filter-aresample
 fate-filter-aresample: SRC = $(SAMPLES)/nellymoser/nellymoser-discont.flv
-fate-filter-aresample: CMD = pcm -i $(SRC) -af aresample=min_comp=0.001:min_hard_comp=0.1:first_pts=0
+fate-filter-aresample: CMD = pcm -analyzeduration 10000000 -i $(SRC) -af aresample=min_comp=0.001:min_hard_comp=0.1:first_pts=0
 fate-filter-aresample: CMP = oneoff
 fate-filter-aresample: REF = $(SAMPLES)/nellymoser/nellymoser-discont.pcm
 
