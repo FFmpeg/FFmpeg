@@ -168,6 +168,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(PIXDESCTEST,    pixdesctest,    vf);
     REGISTER_FILTER(PP,             pp,             vf);
     REGISTER_FILTER(PSNR,           psnr,           vf);
+    REGISTER_FILTER(PULLUP,         pullup,         vf);
     REGISTER_FILTER(REMOVELOGO,     removelogo,     vf);
     REGISTER_FILTER(ROTATE,         rotate,         vf);
     REGISTER_FILTER(SAB,            sab,            vf);

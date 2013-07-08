@@ -24,6 +24,7 @@ version <next>
 - changed DTS stream id in lavf mpeg ps muxer from 0x8a to 0x88, to be
   more consistent with other muxers.
 - adelay filter
+- pullup filter ported from libmpcodecs
 
 
 version 2.0:

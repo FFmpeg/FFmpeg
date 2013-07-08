@@ -173,6 +173,7 @@ OBJS-$(CONFIG_PHASE_FILTER)                  += vf_phase.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
 OBJS-$(CONFIG_PP_FILTER)                     += vf_pp.o
 OBJS-$(CONFIG_PSNR_FILTER)                   += vf_psnr.o dualinput.o
+OBJS-$(CONFIG_PULLUP_FILTER)                 += vf_pullup.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
 OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SEPARATEFIELDS_FILTER)         += vf_separatefields.o

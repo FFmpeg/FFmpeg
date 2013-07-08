@@ -6184,6 +6184,59 @@ On this example the input file being processed is compared with the
 reference file @file{ref_movie.mpg}. The PSNR of each individual frame
 is stored in @file{stats.log}.
 
+@section pullup
+
+Pulldown reversal (inverse telecine) filter, capable of handling mixed
+hard-telecine, 24000/1001 fps progressive, and 30000/1001 fps progressive
+content.
+
+The pullup filter is designed to take advantage of future context in making
+its decisions. This filter is stateless in the sense that it does not lock
+onto a pattern to follow, but it instead looks forward to the following
+fields in order to identify matches and rebuild progressive frames.
+
+The filter accepts the following options:
+
+@table @option
+@item jl
+@item jr
+@item jt
+@item jb
+These options set the amount of "junk" to ignore at the left, right, top, and
+bottom of the image, respectively. Left and right are in units of 8 pixels,
+while top and bottom are in units of 2 lines.
+The default is 8 pixels on each side.
+
+@item sb
+Set the strict breaks. Setting this option to 1 will reduce the chances of
+filter generating an occasional mismatched frame, but it may also cause an
+excessive number of frames to be dropped during high motion sequences.
+Conversely, setting it to -1 will make filter match fields more easily.
+This may help processing of video where there is slight blurring between
+the fields, but may also cause there to be interlaced frames in the output.
+Default value is @code{0}.
+
+@item mp
+Set the metric plane to use. It accepts the following values:
+@table @samp
+@item l
+Use luma plane.
+
+@item u
+Use chroma blue plane.
+
+@item v
+Use chroma red plane.
+@end table
+
+This option may be set to use chroma plane instead of the default luma plane
+for doing filter's computations. This may improve accuracy on very clean
+source material, but more likely will decrease accuracy, especially if there
+is chroma noise (rainbow effect) or any grayscale video.
+The main purpose of setting @option{mp} to a chroma plane is to reduce CPU
+load and make pullup usable in realtime on slow machines.
+@end table
+
 @section removelogo
 
 Suppress a TV station logo, using an image file to determine which
