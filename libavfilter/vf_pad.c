@@ -260,7 +260,6 @@ static int buffer_needs_copy(PadContext *s, AVFrame *frame, AVBufferRef *buf)
             (buf->data + buf->size) - end < req_end)
             return 1;
 
-#define SIGN(x) ((x) > 0 ? 1 : -1)
         for (j = 0; j < FF_ARRAY_ELEMS(planes) && planes[j] >= 0; j++) {
             int vsub1 = s->draw.vsub[planes[j]];
             uint8_t *start1 = frame->data[planes[j]];
@@ -269,8 +268,8 @@ static int buffer_needs_copy(PadContext *s, AVFrame *frame, AVBufferRef *buf)
             if (i == j)
                 continue;
 
-            if (SIGN(start - end1) != SIGN(start - end1 - req_start) ||
-                SIGN(end - start1) != SIGN(end - start1 + req_end))
+            if (FFSIGN(start - end1) != FFSIGN(start - end1 - req_start) ||
+                FFSIGN(end - start1) != FFSIGN(end - start1 + req_end))
                 return 1;
         }
     }
