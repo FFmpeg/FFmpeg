@@ -93,6 +93,7 @@ static int video_discard      = 0;
 static int intra_dc_precision = 8;
 static int do_psnr            = 0;
 static int input_sync;
+static int override_ffserver  = 0;
 
 static int64_t recording_time = INT64_MAX;
 
@@ -1646,7 +1647,7 @@ static int open_output_file(OptionsContext *o, const char *filename)
         }
     }
 
-    if (!strcmp(file_oformat->name, "ffm") &&
+    if (!strcmp(file_oformat->name, "ffm") && !override_ffserver &&
         av_strstart(filename, "http:", NULL)) {
         int j;
         /* special case for files sent to ffserver: we get the stream
@@ -2836,6 +2837,8 @@ const OptionDef options[] = {
         "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(mux_preload) },
         "set the initial demux-decode delay", "seconds" },
+    { "override_ffserver", OPT_BOOL | OPT_EXPERT | OPT_OUTPUT, { &override_ffserver },
+        "override the options from ffserver", "" },
 
     { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT, { .off = OFFSET(bitstream_filters) },
         "A comma-separated list of bitstream filters", "bitstream_filters" },
