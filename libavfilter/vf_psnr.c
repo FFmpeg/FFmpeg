@@ -98,16 +98,24 @@ void compute_images_mse(const uint8_t *main_data[4], const int main_linesizes[4]
     }
 }
 
-#define SET_META(key, comp, value) \
-    snprintf(buf, sizeof(buf), "%0.2f", value);  \
-    av_dict_set(metadata, #key #comp, buf, 0); \
+static void set_meta(AVDictionary **metadata, const char *key, char comp, float d)
+{
+    char value[128];
+    snprintf(value, sizeof(value), "%0.2f", d);
+    if (comp) {
+        char key2[128];
+        snprintf(key2, sizeof(key2), "%s%c", key, comp);
+        av_dict_set(metadata, key2, value, 0);
+    } else {
+        av_dict_set(metadata, key, value, 0);
+    }
+}
 
 static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
                         const AVFrame *ref)
 {
     PSNRContext *s = ctx->priv;
     double comp_mse[4], mse = 0;
-    char buf[32];
     int j, c;
     AVDictionary **metadata = avpriv_frame_get_metadatap(main);
 
@@ -127,10 +135,10 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
 
     for (j = 0; j < s->desc->nb_components; j++) {
         c = s->is_rgb ? s->rgba_map[j] : j;
-        SET_META("lavfi.psnr.mse.", s->comps[j], comp_mse[c]);
-        SET_META("lavfi.psnr.mse_avg", "", mse);
-        SET_META("lavfi.psnr.s.", s->comps[j], get_psnr(comp_mse[c], 1, s->max[c]));
-        SET_META("lavfi.psnr.s_avg", "", get_psnr(mse, 1, s->average_max));
+        set_meta(metadata, "lavfi.psnr.mse.", s->comps[j], comp_mse[c]);
+        set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
+        set_meta(metadata, "lavfi.psnr.s.", s->comps[j], get_psnr(comp_mse[c], 1, s->max[c]));
+        set_meta(metadata, "lavfi.psnr.s_avg", 0, get_psnr(mse, 1, s->average_max));
     }
 
     if (s->stats_file) {

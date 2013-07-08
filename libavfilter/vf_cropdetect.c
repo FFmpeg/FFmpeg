@@ -114,7 +114,7 @@ static int config_input(AVFilterLink *inlink)
 
 #define SET_META(key, value) \
     snprintf(buf, sizeof(buf), "%d", value);  \
-    av_dict_set(metadata, #key, buf, 0) \
+    av_dict_set(metadata, key, buf, 0)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
