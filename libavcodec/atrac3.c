@@ -661,8 +661,8 @@ static int decode_channel_sound_unit(ATRAC3Context *q, GetBitContext *gb,
 
     snd->num_components = decode_tonal_components(gb, snd->components,
                                                   snd->bands_coded);
-    if (snd->num_components == -1)
-        return -1;
+    if (snd->num_components < 0)
+        return snd->num_components;
 
     num_subbands = decode_spectrum(gb, snd->spectrum);
 
