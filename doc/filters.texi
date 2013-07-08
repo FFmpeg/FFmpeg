@@ -3328,6 +3328,9 @@ It can accept an argument: a strftime() format string.
 The time at which the filter is running, expressed in the local time zone.
 It can accept an argument: a strftime() format string.
 
+@item metadata
+Frame metadata. It must take one argument specifying metadata key.
+
 @item n, frame_num
 The frame number, starting from 0.
 
