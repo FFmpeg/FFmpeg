@@ -1509,9 +1509,6 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
             choose_pixel_fmt(st, codec, st->codec->pix_fmt);
     }
 
-    /* ffserver seeking with date=... needs a date reference */
-    err = parse_option(o, "metadata", "creation_time=now", options);
-
     avformat_close_input(&ic);
     return err;
 }
@@ -1636,6 +1633,16 @@ static int open_output_file(OptionsContext *o, const char *filename)
             case AVMEDIA_TYPE_SUBTITLE: o->subtitle_disable = 1; break;
             }
             init_output_filter(ofilter, o, oc);
+        }
+    }
+
+    /* ffserver seeking with date=... needs a date reference */
+    if (!strcmp(file_oformat->name, "ffm") &&
+        av_strstart(filename, "http:", NULL)) {
+        int err = parse_option(o, "metadata", "creation_time=now", options);
+        if (err < 0) {
+            print_error(filename, err);
+            exit_program(1);
         }
     }
 
