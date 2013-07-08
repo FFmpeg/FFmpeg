@@ -2731,6 +2731,72 @@ static int mov_read_tmcd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int ret;
+    uint8_t uuid[16];
+    static const uint8_t uuid_isml_manifest[] = {
+        0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
+        0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
+    };
+
+    if (atom.size < sizeof(uuid) || atom.size == INT64_MAX)
+        return AVERROR_INVALIDDATA;
+
+    ret = avio_read(pb, uuid, sizeof(uuid));
+    if (ret < 0) {
+        return ret;
+    } else if (ret != sizeof(uuid)) {
+        return AVERROR_INVALIDDATA;
+    }
+    if (!memcmp(uuid, uuid_isml_manifest, sizeof(uuid))) {
+        uint8_t *buffer, *ptr;
+        char *endptr;
+        size_t len = atom.size - sizeof(uuid);
+
+        if (len < 4) {
+            return AVERROR_INVALIDDATA;
+        }
+        ret = avio_skip(pb, 4); // zeroes
+        len -= 4;
+
+        buffer = av_mallocz(len + 1);
+        if (!buffer) {
+            return AVERROR(ENOMEM);
+        }
+        ret = avio_read(pb, buffer, len);
+        if (ret < 0) {
+            av_free(buffer);
+            return ret;
+        } else if (ret != len) {
+            av_free(buffer);
+            return AVERROR_INVALIDDATA;
+        }
+
+        ptr = buffer;
+        while ((ptr = av_stristr(ptr, "systemBitrate=\"")) != NULL) {
+            ptr += sizeof("systemBitrate=\"") - 1;
+            c->bitrates_count++;
+            c->bitrates = av_realloc_f(c->bitrates, c->bitrates_count, sizeof(*c->bitrates));
+            if (!c->bitrates) {
+                c->bitrates_count = 0;
+                av_free(buffer);
+                return AVERROR(ENOMEM);
+            }
+            errno = 0;
+            ret = strtol(ptr, &endptr, 10);
+            if (ret < 0 || errno || *endptr != '"') {
+                c->bitrates[c->bitrates_count - 1] = 0;
+            } else {
+                c->bitrates[c->bitrates_count - 1] = ret;
+            }
+        }
+
+        av_free(buffer);
+    }
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_avid },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -2794,6 +2860,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('c','h','a','n'), mov_read_chan }, /* channel layout */
 { MKTAG('d','v','c','1'), mov_read_dvc1 },
 { MKTAG('s','b','g','p'), mov_read_sbgp },
+{ MKTAG('u','u','i','d'), mov_read_uuid },
 { 0, NULL }
 };
 
@@ -3110,6 +3177,7 @@ static int mov_read_close(AVFormatContext *s)
     }
 
     av_freep(&mov->trex_data);
+    av_freep(&mov->bitrates);
 
     return 0;
 }
@@ -3219,6 +3287,12 @@ static int mov_read_header(AVFormatContext *s)
             MOVStreamContext *sc = st->priv_data;
             if (st->duration)
                 st->codec->bit_rate = sc->data_size * 8 * sc->time_scale / st->duration;
+        }
+    }
+
+    for (i = 0; i < mov->bitrates_count && i < s->nb_streams; i++) {
+        if (mov->bitrates[i]) {
+            s->streams[i]->codec->bit_rate = mov->bitrates[i];
         }
     }
 
