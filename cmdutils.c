@@ -942,7 +942,7 @@ int opt_max_alloc(void *optctx, const char *opt, const char *arg)
     max = strtol(arg, &tail, 10);
     if (*tail) {
         av_log(NULL, AV_LOG_FATAL, "Invalid max_alloc \"%s\".\n", arg);
-        exit(1);
+        exit_program(1);
     }
     av_max_alloc(max);
     return 0;
@@ -1310,7 +1310,7 @@ static unsigned get_codecs_sorted(const AVCodecDescriptor ***rcodecs)
         nb_codecs++;
     if (!(codecs = av_calloc(nb_codecs, sizeof(*codecs)))) {
         av_log(NULL, AV_LOG_ERROR, "Out of memory\n");
-        exit(1);
+        exit_program(1);
     }
     desc = NULL;
     while ((desc = avcodec_descriptor_next(desc)))
