@@ -1060,6 +1060,14 @@ This option is similar to @option{-filter_complex}, the only difference is that
 its argument is the name of the file from which a complex filtergraph
 description is to be read.
 
+@item -override_ffserver (@emph{global})
+Overrides the input specifications from ffserver. Using this option you can
+map any input stream to ffserver and control many aspects of the encoding from
+ffmpeg. Without this option ffmpeg will transmit to ffserver what is requested by
+ffserver.
+The option is intended for cases where features are needed that cannot be
+specified to ffserver but can be to ffmpeg.
+
 @end table
 
 As a special exception, you can use a bitmap subtitle stream as input: it
