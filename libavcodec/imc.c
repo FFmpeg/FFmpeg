@@ -365,6 +365,10 @@ static int bit_allocation (IMCContext* q, int stream_format_code, int freebits, 
         iacc += q->bandWidthT[i];
         summa += q->bandWidthT[i] * q->flcoeffs4[i];
     }
+
+    if (!iacc)
+        return AVERROR_INVALIDDATA;
+
     q->bandWidthT[BANDS-1] = 0;
     summa = (summa * 0.5 - freebits) / iacc;
 
