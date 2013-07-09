@@ -137,8 +137,8 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
         c = s->is_rgb ? s->rgba_map[j] : j;
         set_meta(metadata, "lavfi.psnr.mse.", s->comps[j], comp_mse[c]);
         set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
-        set_meta(metadata, "lavfi.psnr.s.", s->comps[j], get_psnr(comp_mse[c], 1, s->max[c]));
-        set_meta(metadata, "lavfi.psnr.s_avg", 0, get_psnr(mse, 1, s->average_max));
+        set_meta(metadata, "lavfi.psnr.psnr.", s->comps[j], get_psnr(comp_mse[c], 1, s->max[c]));
+        set_meta(metadata, "lavfi.psnr.psnr_avg", 0, get_psnr(mse, 1, s->average_max));
     }
 
     if (s->stats_file) {
@@ -149,7 +149,7 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
         }
         for (j = 0; j < s->desc->nb_components; j++) {
             c = s->is_rgb ? s->rgba_map[j] : j;
-            fprintf(s->stats_file, "s%c:%0.2f ", s->comps[j],
+            fprintf(s->stats_file, "psnr_%c:%0.2f ", s->comps[j],
                     get_psnr(comp_mse[c], 1, s->max[c]));
         }
         fprintf(s->stats_file, "\n");

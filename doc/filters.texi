@@ -5864,9 +5864,6 @@ PSNR = 10*log10(MAX^2/MSE)
 Where MAX is the average of the maximum values of each component of the
 image.
 
-The filter accepts parameters as a list of @var{key}=@var{value} pairs,
-separated by ":".
-
 The description of the accepted parameters follows.
 
 @table @option
@@ -5879,15 +5876,13 @@ The file printed if @var{stats_file} is selected, contains a sequence of
 key/value pairs of the form @var{key}:@var{value} for each compared
 couple of frames.
 
-The shown line contains .
-
 A description of each shown parameter follows:
 
 @table @option
 @item n
 sequential number of the input frame, starting from 1
 
-@item mse_average
+@item mse_avg
 Mean Square Error pixel-by-pixel average difference of the compared
 frames, averaged over all the image components.
 
@@ -5895,7 +5890,7 @@ frames, averaged over all the image components.
 Mean Square Error pixel-by-pixel average difference of the compared
 frames for the component specified by the suffix.
 
-@item psnr_y, psnr_u, psnr_v, psnr_r, psnr_g, psnr_g, psnr_a
+@item psnr_y, psnr_u, psnr_v, psnr_r, psnr_g, psnr_b, psnr_a
 Peak Signal to Noise ratio of the compared frames for the component
 specified by the suffix.
 @end table
