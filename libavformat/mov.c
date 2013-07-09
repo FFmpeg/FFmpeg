@@ -1014,6 +1014,22 @@ static int mov_read_avid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return mov_read_extradata(c, pb, atom, AV_CODEC_ID_AVUI);
 }
 
+static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVCodecContext *codec = c->fc->streams[c->fc->nb_streams-1]->codec;
+    if (codec->codec_tag == MKTAG('A', 'V', 'i', 'n') &&
+        codec->codec_id == AV_CODEC_ID_H264 &&
+        atom.size > 11) {
+        avio_skip(pb, 10);
+        /* For AVID AVCI50, force width of 1440 to be able to select the correct SPS and PPS */
+        if (avio_rb16(pb) == 0xd4d)
+            codec->width = 1440;
+        return 0;
+    }
+
+    return mov_read_avid(c, pb, atom);
+}
+
 static int mov_read_svq3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     return mov_read_extradata(c, pb, atom, AV_CODEC_ID_SVQ3);
@@ -2801,7 +2817,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_avid },
 { MKTAG('A','P','R','G'), mov_read_avid },
 { MKTAG('A','A','L','P'), mov_read_avid },
-{ MKTAG('A','R','E','S'), mov_read_avid },
+{ MKTAG('A','R','E','S'), mov_read_ares },
 { MKTAG('a','v','s','s'), mov_read_avss },
 { MKTAG('c','h','p','l'), mov_read_chpl },
 { MKTAG('c','o','6','4'), mov_read_stco },
