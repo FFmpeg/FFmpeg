@@ -23,6 +23,10 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
+#if HAVE_INLINE_ASM_LABELS
+
 #define AV_READ_TIME read_time
 
 static inline uint64_t read_time(void)
@@ -43,5 +47,7 @@ static inline uint64_t read_time(void)
 
      return (((uint64_t)tbu)<<32) | (uint64_t)tbl;
 }
+
+#endif /* HAVE_INLINE_ASM_LABELS */
 
 #endif /* AVUTIL_PPC_TIMER_H */
