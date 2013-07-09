@@ -976,6 +976,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     if (q->codingMode == STEREO) {
         av_log(avctx,AV_LOG_DEBUG,"Normal stereo detected.\n");
     } else if (q->codingMode == JOINT_STEREO) {
+        if (avctx->channels != 2)
+            return AVERROR_INVALIDDATA;
         av_log(avctx,AV_LOG_DEBUG,"Joint stereo detected.\n");
     } else {
         av_log(avctx,AV_LOG_ERROR,"Unknown channel coding mode %x!\n",q->codingMode);
