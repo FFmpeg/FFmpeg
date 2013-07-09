@@ -328,6 +328,7 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         uint32_t packet_len = AV_RB32(data);
         uint16_t seq;
         uint32_t ts;
+        int32_t  ts_diff;
 
         data += 4;
         size -= 4;
@@ -350,8 +351,12 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
             trk->prev_rtp_ts = ts;
         /* Unwrap the 32-bit RTP timestamp that wraps around often
          * into a not (as often) wrapping 64-bit timestamp. */
-        trk->cur_rtp_ts_unwrapped += (int32_t) (ts - trk->prev_rtp_ts);
-        trk->prev_rtp_ts = ts;
+        ts_diff = ts - trk->prev_rtp_ts;
+        if (ts_diff > 0) {
+            trk->cur_rtp_ts_unwrapped += ts_diff;
+            trk->prev_rtp_ts = ts;
+            ts_diff = 0;
+        }
         if (*pts == AV_NOPTS_VALUE)
             *pts = trk->cur_rtp_ts_unwrapped;
 
@@ -360,9 +365,15 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         avio_wb32(out, 0); /* relative_time */
         avio_write(out, data, 2); /* RTP header */
         avio_wb16(out, seq); /* RTPsequenceseed */
-        avio_wb16(out, 0); /* reserved + flags */
+        avio_wb16(out, ts_diff ? 4 : 0); /* reserved + flags (extra_flag) */
         entries_pos = avio_tell(out);
         avio_wb16(out, 0); /* entry count */
+        if (ts_diff) { /* if extra_flag is set */
+            avio_wb32(out, 16); /* extra_information_length */
+            avio_wb32(out, 12); /* rtpoffsetTLV box */
+            avio_write(out, "rtpo", 4);
+            avio_wb32(out, ts_diff);
+        }
 
         data += 12;
         size -= 12;
