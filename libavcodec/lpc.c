@@ -182,6 +182,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
 
     av_assert2(max_order >= MIN_LPC_ORDER && max_order <= MAX_LPC_ORDER &&
            lpc_type > FF_LPC_TYPE_FIXED);
+    av_assert0(lpc_type == FF_LPC_TYPE_CHOLESKY || lpc_type == FF_LPC_TYPE_LEVINSON);
 
     /* reinit LPC context if parameters have changed */
     if (blocksize != s->blocksize || max_order != s->max_order ||
