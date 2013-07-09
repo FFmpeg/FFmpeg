@@ -126,14 +126,14 @@ static void copy_picture_field(AVFrame *src_frame, AVFrame *dst_frame,
     int plane, i, j;
 
     for (plane = 0; plane < desc->nb_components; plane++) {
-        int lines = (plane == 1 || plane == 2) ? inlink->h >> vsub : inlink->h;
+        int lines = (plane == 1 || plane == 2) ? -(-inlink->h) >> vsub : inlink->h;
         int linesize = av_image_get_linesize(inlink->format, inlink->w, plane);
         uint8_t *dstp = dst_frame->data[plane];
         const uint8_t *srcp = src_frame->data[plane];
 
         av_assert0(linesize >= 0);
 
-        lines /= 2;
+        lines = (lines + (field_type == FIELD_UPPER)) / 2;
         if (field_type == FIELD_LOWER)
             srcp += src_frame->linesize[plane];
         if (field_type == FIELD_LOWER)
