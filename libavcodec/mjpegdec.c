@@ -736,9 +736,11 @@ static int decode_block_refinement(MJpegDecodeContext *s, int16_t *block,
 #undef REFINE_BIT
 #undef ZERO_RUN
 
-static void handle_rstn(MJpegDecodeContext *s, int nb_components)
+static int handle_rstn(MJpegDecodeContext *s, int nb_components)
 {
     int i;
+    int reset = 0;
+
     if (s->restart_interval) {
         s->restart_count--;
         if(s->restart_count == 0 && s->avctx->codec_id == AV_CODEC_ID_THP){
@@ -759,11 +761,13 @@ static void handle_rstn(MJpegDecodeContext *s, int nb_components)
                 if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
                     for (i = 0; i < nb_components; i++) /* reset dc */
                         s->last_dc[i] = 1024;
+                    reset = 1;
                 } else
                     skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
             }
         }
     }
+    return reset;
 }
 
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int predictor, int point_transform)
