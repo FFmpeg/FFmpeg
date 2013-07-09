@@ -1029,7 +1029,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
         av_log(s->avctx, AV_LOG_ERROR, "Can not flip image with lowres\n");
         s->flipped = 0;
     }
-
+    s->restart_count = 0;
     for (i = 0; i < nb_components; i++) {
         int c   = s->comp_index[i];
         data[c] = s->picture_ptr->data[c];
