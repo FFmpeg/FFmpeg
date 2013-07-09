@@ -52,13 +52,12 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-parser=dca \
   --disable-decoder=dca \
   --disable-decoder=svq3 \
-  --enable-openssl \
   --enable-network \
   --enable-asm \
   --enable-version3"
 
 
-for version in neon armv7; do
+for version in neon armv7 vfp armv6; do
 
   cd $SOURCE
 
@@ -68,6 +67,7 @@ for version in neon armv7; do
     neon)
       FFMPEG_FLAGS="--arch=armv7-a \
         --cpu=cortex-a8 \
+        --enable-openssl \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad"
       EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
@@ -76,6 +76,7 @@ for version in neon armv7; do
     armv7)
       FFMPEG_FLAGS="--arch=armv7-a \
         --cpu=cortex-a8 \
+        --enable-openssl \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp"
       EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
@@ -85,15 +86,15 @@ for version in neon armv7; do
       FFMPEG_FLAGS="--arch=arm \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv6 -mfpu=vfp -mfloat-abi=softfp"
-      EXTRA_LDFLAGS="-L$SSL/libs/armeabi"
-      SSL_OBJS=`find $SSL/obj/local/armeabi/objs/ssl $SSL/obj/local/armeabi/objs/crypto -type f -name "*.o"`
+      EXTRA_LDFLAGS=""
+      SSL_OBJS=""
       ;;
     armv6)
       FFMPEG_FLAGS="--arch=arm \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv6"
-      EXTRA_LDFLAGS="-L$SSL/libs/armeabi"
-      SSL_OBJS=`find $SSL/obj/local/armeabi/objs/ssl $SSL/obj/local/armeabi/objs/crypto -type f -name "*.o"`
+      EXTRA_LDFLAGS=""
+      SSL_OBJS=""
       ;;
     *)
       FFMPEG_FLAGS=""
