@@ -1855,6 +1855,10 @@ loop_end:
             exit_program(1);
         }
 
+        // gop_timecode is injected by generic code but not always used
+        if (!strcmp(e->key, "gop_timecode"))
+            continue;
+
         av_log(NULL, AV_LOG_WARNING, "Codec AVOption %s (%s) specified for "
                "output file #%d (%s) has not been used for any stream. The most "
                "likely reason is either wrong type (e.g. a video option with "
