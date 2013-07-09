@@ -740,19 +740,6 @@ typedef struct AVStream {
      */
     AVPacket attached_pic;
 
-    /**
-     * Real base framerate of the stream.
-     * This is the lowest framerate with which all timestamps can be
-     * represented accurately (it is the least common multiple of all
-     * framerates in the stream). Note, this value is just a guess!
-     * For example, if the time base is 1/90000 and all frames have either
-     * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
-     *
-     * Code outside avformat should access this field using:
-     * av_stream_get/set_r_frame_rate(stream)
-     */
-    AVRational r_frame_rate;
-
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
@@ -813,16 +800,6 @@ typedef struct AVStream {
      */
     int codec_info_nb_frames;
 
-    /**
-     * Stream Identifier
-     * This is the MPEG-TS stream identifier +1
-     * 0 means unknown
-     */
-    int stream_identifier;
-
-    int64_t interleaver_chunk_size;
-    int64_t interleaver_chunk_duration;
-
     /* av_read_frame() support */
     enum AVStreamParseType need_parsing;
     struct AVCodecParserContext *parser;
@@ -839,6 +816,29 @@ typedef struct AVStream {
                                     support seeking natively. */
     int nb_index_entries;
     unsigned int index_entries_allocated_size;
+
+    /**
+     * Real base framerate of the stream.
+     * This is the lowest framerate with which all timestamps can be
+     * represented accurately (it is the least common multiple of all
+     * framerates in the stream). Note, this value is just a guess!
+     * For example, if the time base is 1/90000 and all frames have either
+     * approximately 3600 or 1800 timer ticks, then r_frame_rate will be 50/1.
+     *
+     * Code outside avformat should access this field using:
+     * av_stream_get/set_r_frame_rate(stream)
+     */
+    AVRational r_frame_rate;
+
+    /**
+     * Stream Identifier
+     * This is the MPEG-TS stream identifier +1
+     * 0 means unknown
+     */
+    int stream_identifier;
+
+    int64_t interleaver_chunk_size;
+    int64_t interleaver_chunk_duration;
 
     /**
      * stream probing state
