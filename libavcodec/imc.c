@@ -450,6 +450,10 @@ static int bit_allocation(IMCContext *q, IMCChannel *chctx,
         iacc  += chctx->bandWidthT[i];
         summa += chctx->bandWidthT[i] * chctx->flcoeffs4[i];
     }
+
+    if (!iacc)
+        return AVERROR_INVALIDDATA;
+
     chctx->bandWidthT[BANDS - 1] = 0;
     summa = (summa * 0.5 - freebits) / iacc;
 
