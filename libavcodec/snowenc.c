@@ -1770,6 +1770,11 @@ redo_frame:
           || !(height>>(s->chroma_v_shift + s->spatial_decomposition_count)))
         s->spatial_decomposition_count--;
 
+    if (s->spatial_decomposition_count <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Resolution too low\n");
+        return AVERROR(EINVAL);
+    }
+
     s->m.pict_type = pic->pict_type;
     s->qbias = pic->pict_type == AV_PICTURE_TYPE_P ? 2 : 0;
 
