@@ -306,6 +306,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     /** generic init */
     s->log2_frame_size = av_log2(avctx->block_align) + 4;
+    if (s->log2_frame_size > 25) {
+        avpriv_request_sample(avctx, "Large block align");
+        return AVERROR_PATCHWELCOME;
+    }
 
     /** frame info */
     s->skip_frame  = 1; /* skip first frame */
