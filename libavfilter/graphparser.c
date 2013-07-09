@@ -515,8 +515,8 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          void *log_ctx)
 {
     return avfilter_graph_parse_ptr(graph, filters, inputs, outputs, log_ctx);
-}
 #endif
+}
 
 int avfilter_graph_parse_ptr(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut **open_inputs_ptr, AVFilterInOut **open_outputs_ptr,
