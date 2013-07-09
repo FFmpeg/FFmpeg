@@ -1180,7 +1180,8 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
                     s->dsp.idct_put(ptr, linesize, *block);
                     ptr += 8 >> s->avctx->lowres;
             }
-            handle_rstn(s, 0);
+            if (handle_rstn(s, 0))
+                EOBRUN = 0;
         }
     }
     return 0;
