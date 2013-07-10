@@ -25,42 +25,48 @@
  * sample format and channel layout conversion audio filter
  */
 
-#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/opt.h"
 #include "libswresample/swresample.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "internal.h"
 
 typedef struct {
+    const AVClass       *class;
     enum AVSampleFormat  out_sample_fmt;
     int64_t              out_chlayout;
     struct SwrContext *swr;
+    char *format_str;
+    char *channel_layout_str;
 } AConvertContext;
+
+#define OFFSET(x) offsetof(AConvertContext, x)
+#define A AV_OPT_FLAG_AUDIO_PARAM
+#define F AV_OPT_FLAG_FILTERING_PARAM
+static const AVOption aconvert_options[] = {
+    { "sample_fmt",     "", OFFSET(format_str),         AV_OPT_TYPE_STRING, .flags = A|F },
+    { "channel_layout", "", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, .flags = A|F },
+    { NULL },
+};
+
+AVFILTER_DEFINE_CLASS(aconvert);
 
 static av_cold int init(AVFilterContext *ctx)
 {
     AConvertContext *aconvert = ctx->priv;
-    char *arg, *ptr = NULL;
     int ret = 0;
-    char *args = av_strdup(NULL);
 
     av_log(ctx, AV_LOG_WARNING, "This filter is deprecated, use aformat instead\n");
 
     aconvert->out_sample_fmt  = AV_SAMPLE_FMT_NONE;
     aconvert->out_chlayout    = 0;
 
-    if ((arg = av_strtok(args, ":", &ptr)) && strcmp(arg, "auto")) {
-        if ((ret = ff_parse_sample_format(&aconvert->out_sample_fmt, arg, ctx)) < 0)
-            goto end;
-    }
-    if ((arg = av_strtok(NULL, ":", &ptr)) && strcmp(arg, "auto")) {
-        if ((ret = ff_parse_channel_layout(&aconvert->out_chlayout, arg, ctx)) < 0)
-            goto end;
-    }
-
-end:
-    av_freep(&args);
+    if (aconvert->format_str && strcmp(aconvert->format_str, "auto") &&
+        (ret = ff_parse_sample_format(&aconvert->out_sample_fmt, aconvert->format_str, ctx)) < 0)
+        return ret;
+    if (aconvert->channel_layout_str && strcmp(aconvert->channel_layout_str, "auto"))
+        return ff_parse_channel_layout(&aconvert->out_chlayout, aconvert->channel_layout_str, ctx);
     return ret;
 }
 
@@ -181,6 +187,7 @@ AVFilter avfilter_af_aconvert = {
     .name          = "aconvert",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to sample_fmt:channel_layout."),
     .priv_size     = sizeof(AConvertContext),
+    .priv_class    = &aconvert_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
