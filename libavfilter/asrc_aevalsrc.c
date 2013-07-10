@@ -150,8 +150,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_expr_free(eval->expr[i]);
         eval->expr[i] = NULL;
     }
-    av_freep(&eval->chlayout_str);
-    av_freep(&eval->sample_rate_str);
 }
 
 static int config_props(AVFilterLink *outlink)
