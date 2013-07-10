@@ -16,9 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <float.h>
-#include <math.h>
-
 #include "config.h"
 
 #include "libavutil/avassert.h"
@@ -39,8 +36,8 @@ typedef struct TrimContext {
     /*
      * AVOptions
      */
-    double duration;
-    double start_time, end_time;
+    int64_t duration;
+    int64_t start_time, end_time;
     int64_t start_frame, end_frame;
     /*
      * in the link timebase for video,
@@ -87,18 +84,18 @@ static int config_input(AVFilterLink *inlink)
     AVRational tb = (inlink->type == AVMEDIA_TYPE_VIDEO) ?
                      inlink->time_base : (AVRational){ 1, inlink->sample_rate };
 
-    if (s->start_time != DBL_MAX) {
-        int64_t start_pts = lrint(s->start_time / av_q2d(tb));
+    if (s->start_time != INT64_MAX) {
+        int64_t start_pts = av_rescale_q(s->start_time, AV_TIME_BASE_Q, tb);
         if (s->start_pts == AV_NOPTS_VALUE || start_pts < s->start_pts)
             s->start_pts = start_pts;
     }
-    if (s->end_time != DBL_MAX) {
-        int64_t end_pts = lrint(s->end_time / av_q2d(tb));
+    if (s->end_time != INT64_MAX) {
+        int64_t end_pts = av_rescale_q(s->end_time, AV_TIME_BASE_Q, tb);
         if (s->end_pts == AV_NOPTS_VALUE || end_pts > s->end_pts)
             s->end_pts = end_pts;
     }
     if (s->duration)
-        s->duration_tb = lrint(s->duration / av_q2d(tb));
+        s->duration_tb = av_rescale_q(s->duration, AV_TIME_BASE_Q, tb);
 
     return 0;
 }
@@ -111,15 +108,15 @@ static int config_output(AVFilterLink *outlink)
 
 #define OFFSET(x) offsetof(TrimContext, x)
 #define COMMON_OPTS                                                                                                                                                         \
-    { "start",       "Timestamp in seconds of the first frame that "                                                                                                        \
-        "should be passed",                                              OFFSET(start_time),  AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX },       -DBL_MAX, DBL_MAX,     FLAGS }, \
-    { "end",         "Timestamp in seconds of the first frame that "                                                                                                        \
-        "should be dropped again",                                       OFFSET(end_time),    AV_OPT_TYPE_DOUBLE, { .dbl = DBL_MAX },       -DBL_MAX, DBL_MAX,     FLAGS }, \
+    { "start",       "Timestamp of the first frame that "                                                                                                        \
+        "should be passed",                                              OFFSET(start_time),  AV_OPT_TYPE_DURATION, { .i64 = INT64_MAX },    INT64_MIN, INT64_MAX, FLAGS }, \
+    { "end",         "Timestamp of the first frame that "                                                                                                        \
+        "should be dropped again",                                       OFFSET(end_time),    AV_OPT_TYPE_DURATION, { .i64 = INT64_MAX },    INT64_MIN, INT64_MAX, FLAGS }, \
     { "start_pts",   "Timestamp of the first frame that should be "                                                                                                         \
        " passed",                                                        OFFSET(start_pts),   AV_OPT_TYPE_INT64,  { .i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, FLAGS }, \
     { "end_pts",     "Timestamp of the first frame that should be "                                                                                                         \
         "dropped again",                                                 OFFSET(end_pts),     AV_OPT_TYPE_INT64,  { .i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, FLAGS }, \
-    { "duration",    "Maximum duration of the output in seconds",        OFFSET(duration),    AV_OPT_TYPE_DOUBLE, { .dbl = 0 },                      0,   DBL_MAX, FLAGS },
+    { "duration",    "Maximum duration of the output",                   OFFSET(duration),    AV_OPT_TYPE_DURATION, { .i64 = 0 },                    0, INT64_MAX, FLAGS },
 
 
 #if CONFIG_TRIM_FILTER

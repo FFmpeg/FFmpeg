@@ -949,11 +949,11 @@ Trim the input so that the output contains one continuous subpart of the input.
 This filter accepts the following options:
 @table @option
 @item start
-Timestamp (in seconds) of the start of the kept section. I.e. the audio sample
+Specify time of the start of the kept section, i.e. the audio sample
 with the timestamp @var{start} will be the first sample in the output.
 
 @item end
-Timestamp (in seconds) of the first audio sample that will be dropped. I.e. the
+Specify time of the first audio sample that will be dropped, i.e. the
 audio sample immediately preceding the one with the timestamp @var{end} will be
 the last sample in the output.
 
@@ -966,7 +966,7 @@ Same as @var{end}, except this option sets the end timestamp in samples instead
 of seconds.
 
 @item duration
-Maximum duration of the output in seconds.
+Specify maximum duration of the output.
 
 @item start_sample
 Number of the first sample that should be passed to output.
@@ -974,6 +974,10 @@ Number of the first sample that should be passed to output.
 @item end_sample
 Number of the first sample that should be dropped.
 @end table
+
+@option{start}, @option{end}, @option{duration} are expressed as time
+duration specifications, check the "Time duration" section in the
+ffmpeg-utils manual.
 
 Note that the first two sets of the start/end options and the @option{duration}
 option look at the frame timestamp, while the _sample options simply count the
@@ -7066,11 +7070,11 @@ Trim the input so that the output contains one continuous subpart of the input.
 This filter accepts the following options:
 @table @option
 @item start
-Timestamp (in seconds) of the start of the kept section. I.e. the frame with the
+Specify time of the start of the kept section, i.e. the frame with the
 timestamp @var{start} will be the first frame in the output.
 
 @item end
-Timestamp (in seconds) of the first frame that will be dropped. I.e. the frame
+Specify time of the first frame that will be dropped, i.e. the frame
 immediately preceding the one with the timestamp @var{end} will be the last
 frame in the output.
 
@@ -7083,7 +7087,7 @@ Same as @var{end}, except this option sets the end timestamp in timebase units
 instead of seconds.
 
 @item duration
-Maximum duration of the output in seconds.
+Specify maximum duration of the output.
 
 @item start_frame
 Number of the first frame that should be passed to output.
@@ -7091,6 +7095,10 @@ Number of the first frame that should be passed to output.
 @item end_frame
 Number of the first frame that should be dropped.
 @end table
+
+@option{start}, @option{end}, @option{duration} are expressed as time
+duration specifications, check the "Time duration" section in the
+ffmpeg-utils manual.
 
 Note that the first two sets of the start/end options and the @option{duration}
 option look at the frame timestamp, while the _frame variants simply count the
