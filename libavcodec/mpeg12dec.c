@@ -1172,7 +1172,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         s1->save_width           != s->width                ||
         s1->save_height          != s->height               ||
         s1->save_aspect_info     != s->aspect_ratio_info    ||
-        s1->save_progressive_seq != s->progressive_sequence ||
+        (s1->save_progressive_seq != s->progressive_sequence && (s->height&31)) ||
         0)
     {
 

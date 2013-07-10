@@ -73,7 +73,7 @@ typedef struct Jpeg2000DecoderContext {
     int             precision;
     int             ncomponents;
     int             tile_width, tile_height;
-    int             numXtiles, numYtiles;
+    unsigned        numXtiles, numYtiles;
     int             maxtilelen;
 
     Jpeg2000CodingStyle codsty[4];
@@ -86,7 +86,6 @@ typedef struct Jpeg2000DecoderContext {
     Jpeg2000Tile    *tile;
 
     /*options parameters*/
-    int             lowres;
     int             reduction_factor;
 } Jpeg2000DecoderContext;
 
@@ -124,7 +123,7 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
     int sp = -1, curval = 0;
 
     if (!node)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     while (node && !node->vis) {
         stack[++sp] = node;
@@ -163,7 +162,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     int ncomponents;
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     s->avctx->profile = bytestream2_get_be16u(&s->g); // Rsiz
     s->width          = bytestream2_get_be32u(&s->g); // Width
@@ -176,27 +175,40 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->tile_offset_y  = bytestream2_get_be32u(&s->g); // YT0Siz
     ncomponents       = bytestream2_get_be16u(&s->g); // CSiz
 
-    if (ncomponents <= 0 || ncomponents > 4) {
-        av_log(s->avctx, AV_LOG_ERROR, "unsupported/invalid ncomponents: %d\n", ncomponents);
-        return AVERROR(EINVAL);
+    if (ncomponents <= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid number of components: %d\n",
+               s->ncomponents);
+        return AVERROR_INVALIDDATA;
     }
+
+    if (ncomponents > 4) {
+        avpriv_request_sample(s->avctx, "Support for %d components",
+                              s->ncomponents);
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->ncomponents = ncomponents;
 
-    if (s->tile_width<=0 || s->tile_height<=0)
-        return AVERROR(EINVAL);
+    if (s->tile_width <= 0 || s->tile_height <= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid tile dimension %dx%d.\n",
+               s->tile_width, s->tile_height);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (bytestream2_get_bytes_left(&s->g) < 3 * s->ncomponents)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     for (i = 0; i < s->ncomponents; i++) { // Ssiz_i XRsiz_i, YRsiz_i
-        uint8_t x = bytestream2_get_byteu(&s->g);
+        uint8_t x    = bytestream2_get_byteu(&s->g);
         s->cbps[i]   = (x & 0x7f) + 1;
         s->precision = FFMAX(s->cbps[i], s->precision);
         s->sgnd[i]   = !!(x & 0x80);
         s->cdx[i]    = bytestream2_get_byteu(&s->g);
         s->cdy[i]    = bytestream2_get_byteu(&s->g);
         if (s->cdx[i] != 1 || s->cdy[i] != 1) {
-            av_log(s->avctx, AV_LOG_ERROR, "unsupported/ CDxy values %d %d for component %d\n", s->cdx[i], s->cdy[i], i);
+            avpriv_request_sample(s->avctx,
+                                  "CDxy values %d %d for component %d",
+                                  s->cdx[i], s->cdy[i], i);
             if (!s->cdx[i] || !s->cdy[i])
                 return AVERROR_INVALIDDATA;
         }
@@ -205,12 +217,16 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
-    if (s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(Jpeg2000Tile))
+    if (s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(*s->tile)) {
+        s->numXtiles = s->numYtiles = 0;
         return AVERROR(EINVAL);
+    }
 
-    s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(*s->tile));
-    if (!s->tile)
+    s->tile = av_mallocz_array(s->numXtiles * s->numYtiles, sizeof(*s->tile));
+    if (!s->tile) {
+        s->numXtiles = s->numYtiles = 0;
         return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < s->numXtiles * s->numYtiles; i++) {
         Jpeg2000Tile *tile = s->tile + i;
@@ -226,7 +242,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
                                                s->reduction_factor);
 
-    switch(s->ncomponents) {
+    switch (s->ncomponents) {
     case 1:
         if (s->precision > 8)
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
@@ -265,8 +281,11 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     uint8_t byte;
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
-        return AVERROR(EINVAL);
-    c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
+        return AVERROR_INVALIDDATA;
+
+    /*  nreslevels = number of resolution levels
+                   = number of decomposition level +1 */
+    c->nreslevels = bytestream2_get_byteu(&s->g) + 1;
     if (c->nreslevels >= JPEG2000_MAX_RESLEVELS) {
         av_log(s->avctx, AV_LOG_ERROR, "nreslevels %d is invalid\n", c->nreslevels);
         return AVERROR_INVALIDDATA;
@@ -282,7 +301,7 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
     c->log2_cblk_height = (bytestream2_get_byteu(&s->g) & 15) + 2; // cblk height
 
     if (c->log2_cblk_width > 10 || c->log2_cblk_height > 10 ||
-        c->log2_cblk_width + c->log2_cblk_height > 14) {
+        c->log2_cblk_width + c->log2_cblk_height > 12) {
         av_log(s->avctx, AV_LOG_ERROR, "cblk size invalid\n");
         return AVERROR_INVALIDDATA;
     }
@@ -318,18 +337,20 @@ static int get_cod(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     int compno, ret;
 
     if (bytestream2_get_bytes_left(&s->g) < 5)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     tmp.csty = bytestream2_get_byteu(&s->g);
 
     // get progression order
     tmp.prog_order = bytestream2_get_byteu(&s->g);
 
-    tmp.nlayers = bytestream2_get_be16u(&s->g);
-    tmp.mct     = bytestream2_get_byteu(&s->g); // multiple component transformation
+    tmp.nlayers    = bytestream2_get_be16u(&s->g);
+    tmp.mct        = bytestream2_get_byteu(&s->g); // multiple component transformation
 
     if (tmp.mct && s->ncomponents < 3) {
-        av_log(s->avctx, AV_LOG_ERROR, "MCT %d with too few components (%d)\n", tmp.mct, s->ncomponents);
+        av_log(s->avctx, AV_LOG_ERROR,
+               "MCT %d with too few components (%d)\n",
+               tmp.mct, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
 
@@ -350,12 +371,14 @@ static int get_coc(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c,
     int compno, ret;
 
     if (bytestream2_get_bytes_left(&s->g) < 2)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     compno = bytestream2_get_byteu(&s->g);
 
     if (compno >= s->ncomponents) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid compno %d\n", compno);
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid compno %d. There are %d components in the image.\n",
+               compno, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
 
@@ -375,7 +398,7 @@ static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
     int i, x;
 
     if (bytestream2_get_bytes_left(&s->g) < 1)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
     x = bytestream2_get_byteu(&s->g); // Sqcd
 
@@ -384,25 +407,27 @@ static int get_qcx(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q)
 
     if (q->quantsty == JPEG2000_QSTY_NONE) {
         n -= 3;
-        if (bytestream2_get_bytes_left(&s->g) < n || 32*3 < n)
-            return AVERROR(EINVAL);
+        if (bytestream2_get_bytes_left(&s->g) < n ||
+            n > JPEG2000_MAX_DECLEVELS*3)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < n; i++)
             q->expn[i] = bytestream2_get_byteu(&s->g) >> 3;
     } else if (q->quantsty == JPEG2000_QSTY_SI) {
         if (bytestream2_get_bytes_left(&s->g) < 2)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
         x          = bytestream2_get_be16u(&s->g);
         q->expn[0] = x >> 11;
         q->mant[0] = x & 0x7ff;
-        for (i = 1; i < 32 * 3; i++) {
+        for (i = 1; i < JPEG2000_MAX_DECLEVELS * 3; i++) {
             int curexpn = FFMAX(0, q->expn[0] - (i - 1) / 3);
             q->expn[i] = curexpn;
             q->mant[i] = q->mant[0];
         }
     } else {
         n = (n - 3) >> 1;
-        if (bytestream2_get_bytes_left(&s->g) < 2 * n || 32*3 < n)
-            return AVERROR(EINVAL);
+        if (bytestream2_get_bytes_left(&s->g) < 2 * n ||
+            n > JPEG2000_MAX_DECLEVELS*3)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < n; i++) {
             x          = bytestream2_get_be16u(&s->g);
             q->expn[i] = x >> 11;
@@ -417,10 +442,10 @@ static int get_qcd(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
                    uint8_t *properties)
 {
     Jpeg2000QuantStyle tmp;
-    int compno;
+    int compno, ret;
 
-    if (get_qcx(s, n, &tmp))
-        return -1;
+    if ((ret = get_qcx(s, n, &tmp)) < 0)
+        return ret;
     for (compno = 0; compno < s->ncomponents; compno++)
         if (!(properties[compno] & HAD_QCC))
             memcpy(q + compno, &tmp, sizeof(tmp));
@@ -435,11 +460,14 @@ static int get_qcc(Jpeg2000DecoderContext *s, int n, Jpeg2000QuantStyle *q,
     int compno;
 
     if (bytestream2_get_bytes_left(&s->g) < 1)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
-    compno              = bytestream2_get_byteu(&s->g);
+    compno = bytestream2_get_byteu(&s->g);
+
     if (compno >= s->ncomponents) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid compno\n");
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Invalid compno %d. There are %d components in the image.\n",
+               compno, s->ncomponents);
         return AVERROR_INVALIDDATA;
     }
 
@@ -456,13 +484,14 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
     uint8_t TPsot;
 
     if (bytestream2_get_bytes_left(&s->g) < 8)
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
 
-    s->curtileno = Isot = bytestream2_get_be16u(&s->g);        // Isot
-    if ((unsigned)s->curtileno >= s->numXtiles * s->numYtiles) {
-        s->curtileno=0;
-        return AVERROR(EINVAL);
-    }
+    s->curtileno = 0;
+    Isot = bytestream2_get_be16u(&s->g);        // Isot
+    if (Isot >= s->numXtiles * s->numYtiles)
+        return AVERROR_INVALIDDATA;
+
+    s->curtileno = Isot;
     Psot  = bytestream2_get_be32u(&s->g);       // Psot
     TPsot = bytestream2_get_byteu(&s->g);       // TPsot
 
@@ -473,13 +502,14 @@ static int get_sot(Jpeg2000DecoderContext *s, int n)
         av_log(s->avctx, AV_LOG_ERROR, "Psot %d too big\n", Psot);
         return AVERROR_INVALIDDATA;
     }
-    if (TPsot >= FF_ARRAY_ELEMS(s->tile[s->curtileno].tile_part)) {
-        av_log(s->avctx, AV_LOG_ERROR, "TPsot %d too big\n", TPsot);
+
+    if (TPsot >= FF_ARRAY_ELEMS(s->tile[Isot].tile_part)) {
+        avpriv_request_sample(s->avctx, "Support for %d components", TPsot);
         return AVERROR_PATCHWELCOME;
     }
 
-    s->tile[s->curtileno].tp_idx = TPsot;
-    tp             = s->tile[s->curtileno].tile_part + TPsot;
+    s->tile[Isot].tp_idx = TPsot;
+    tp             = s->tile[Isot].tile_part + TPsot;
     tp->tile_index = Isot;
     tp->tp_end     = s->g.buffer + Psot - n - 2;
 
@@ -617,7 +647,6 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
         if (band->coord[0][0] == band->coord[0][1] ||
             band->coord[1][0] == band->coord[1][1])
             continue;
-
         nb_code_blocks =  prec->nb_codeblocks_height *
                           prec->nb_codeblocks_width;
         for (cblkno = 0; cblkno < nb_code_blocks; cblkno++) {
@@ -635,10 +664,10 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
 
             if (!cblk->npasses) {
                 int v = expn[bandno] + numgbits - 1 -
-                                    tag_tree_decode(s, prec->zerobits + cblkno,
-                                                    100);
+                        tag_tree_decode(s, prec->zerobits + cblkno, 100);
                 if (v < 0) {
-                    av_log(s->avctx, AV_LOG_ERROR, "nonzerobits %d invalid\n", v);
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "nonzerobits %d invalid\n", v);
                     return AVERROR_INVALIDDATA;
                 }
                 cblk->nonzerobits = v;
@@ -650,6 +679,12 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             cblk->lblock += llen;
             if ((ret = get_bits(s, av_log2(newpasses) + cblk->lblock)) < 0)
                 return ret;
+            if (ret > sizeof(cblk->data)) {
+                avpriv_request_sample(s->avctx,
+                                      "Block with lengthinc greater than %zu",
+                                      sizeof(cblk->data));
+                return AVERROR_PATCHWELCOME;
+            }
             cblk->lengthinc = ret;
             cblk->npasses  += newpasses;
         }
@@ -673,7 +708,7 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             if (   bytestream2_get_bytes_left(&s->g) < cblk->lengthinc
                 || sizeof(cblk->data) < cblk->length + cblk->lengthinc + 2
             )
-                return AVERROR(EINVAL);
+                return AVERROR_INVALIDDATA;
 
             bytestream2_get_bufferu(&s->g, cblk->data + cblk->length, cblk->lengthinc);
             cblk->length   += cblk->lengthinc;
@@ -685,13 +720,16 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
 
 static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile)
 {
+    int ret = 0;
     int layno, reslevelno, compno, precno, ok_reslevel;
     int x, y;
 
     s->bit_index = 8;
     switch (tile->codsty[0].prog_order) {
-    case JPEG2000_PGOD_LRCP:
     case JPEG2000_PGOD_RLCP:
+        avpriv_request_sample(s->avctx, "Progression order RLCP");
+
+    case JPEG2000_PGOD_LRCP:
         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
             ok_reslevel = 1;
             for (reslevelno = 0; ok_reslevel; reslevelno++) {
@@ -704,12 +742,12 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                                                 reslevelno;
                         ok_reslevel = 1;
                         for (precno = 0; precno < rlevel->num_precincts_x * rlevel->num_precincts_y; precno++)
-                            if (jpeg2000_decode_packet(s,
-                                                       codsty, rlevel,
-                                                       precno, layno,
-                                                       qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
-                                                       qntsty->nguardbits))
-                                return -1;
+                            if ((ret = jpeg2000_decode_packet(s,
+                                                              codsty, rlevel,
+                                                              precno, layno,
+                                                              qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
+                                                              qntsty->nguardbits)) < 0)
+                                return ret;
                     }
                 }
             }
@@ -752,16 +790,26 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                         prcy   = ff_jpeg2000_ceildivpow2(y, reducedresno) >> rlevel->log2_prec_height;
                         precno = prcx + rlevel->num_precincts_x * prcy;
                         for (layno = 0; layno < tile->codsty[0].nlayers; layno++) {
-                            if (jpeg2000_decode_packet(s, codsty, rlevel,
-                                                       precno, layno,
-                                                       qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
-                                                       qntsty->nguardbits))
-                                return -1;
+                            if ((ret = jpeg2000_decode_packet(s, codsty, rlevel,
+                                                              precno, layno,
+                                                              qntsty->expn + (reslevelno ? 3 * (reslevelno - 1) + 1 : 0),
+                                                              qntsty->nguardbits)) < 0)
+                                return ret;
                         }
                     }
                 }
             }
         }
+        break;
+
+    case JPEG2000_PGOD_RPCL:
+        avpriv_request_sample(s->avctx, "Progression order RPCL");
+        ret = AVERROR_PATCHWELCOME;
+        break;
+
+    case JPEG2000_PGOD_PCRL:
+        avpriv_request_sample(s->avctx, "Progression order PCRL");
+        ret = AVERROR_PATCHWELCOME;
         break;
 
     default:
@@ -771,7 +819,7 @@ static int jpeg2000_decode_packets(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
     /* EOC marker reached */
     bytestream2_skip(&s->g, 2);
 
-    return 0;
+    return ret;
 }
 
 /* TIER-1 routines */
@@ -894,9 +942,10 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
                        Jpeg2000T1Context *t1, Jpeg2000Cblk *cblk,
                        int width, int height, int bandpos)
 {
-    int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y, clnpass_cnt = 0;
-    int bpass_csty_symbol = JPEG2000_CBLK_BYPASS & codsty->cblk_style;
-    int vert_causal_ctx_csty_symbol = JPEG2000_CBLK_VSC & codsty->cblk_style;
+    int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y;
+    int clnpass_cnt = 0;
+    int bpass_csty_symbol           = codsty->cblk_style & JPEG2000_CBLK_BYPASS;
+    int vert_causal_ctx_csty_symbol = codsty->cblk_style & JPEG2000_CBLK_VSC;
 
     for (y = 0; y < height; y++)
         memset(t1->data[y], 0, width * sizeof(**t1->data));
@@ -905,8 +954,8 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     if (!cblk->length)
         return 0;
 
-    for (y = 0; y < height+2; y++)
-        memset(t1->flags[y], 0, (width + 2)*sizeof(**t1->flags));
+    for (y = 0; y < height + 2; y++)
+        memset(t1->flags[y], 0, (width + 2) * sizeof(**t1->flags));
 
     cblk->data[cblk->length] = 0xff;
     cblk->data[cblk->length+1] = 0xff;
@@ -916,7 +965,8 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
         switch(pass_t) {
         case 0:
             decode_sigpass(t1, width, height, bpno + 1, bandpos,
-                           bpass_csty_symbol && (clnpass_cnt >= 4), vert_causal_ctx_csty_symbol);
+                           bpass_csty_symbol && (clnpass_cnt >= 4),
+                           vert_causal_ctx_csty_symbol);
             break;
         case 1:
             decode_refpass(t1, width, height, bpno + 1);
@@ -925,7 +975,8 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
             break;
         case 2:
             decode_clnpass(s, t1, width, height, bpno + 1, bandpos,
-                           codsty->cblk_style & JPEG2000_CBLK_SEGSYM, vert_causal_ctx_csty_symbol);
+                           codsty->cblk_style & JPEG2000_CBLK_SEGSYM,
+                           vert_causal_ctx_csty_symbol);
             clnpass_cnt = clnpass_cnt + 1;
             if (bpass_csty_symbol && clnpass_cnt >= 4)
                 ff_mqc_initdec(&t1->mqc, cblk->data);
@@ -1068,7 +1119,8 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
 
                 bandpos = bandno + (reslevelno > 0);
 
-                if (band->coord[0][0] == band->coord[0][1] || band->coord[1][0] == band->coord[1][1])
+                if (band->coord[0][0] == band->coord[0][1] ||
+                    band->coord[1][0] == band->coord[1][1])
                     continue;
 
                 nb_precincts = rlevel->num_precincts_x * rlevel->num_precincts_y;
@@ -1085,7 +1137,6 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                                     cblk->coord[1][1] - cblk->coord[1][0],
                                     bandpos);
 
-                        /* Manage band offsets */
                         x = cblk->coord[0][0];
                         y = cblk->coord[1][0];
 
@@ -1251,7 +1302,8 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
 
         len = bytestream2_get_be16(&s->g);
         if (len < 2 || bytestream2_get_bytes_left(&s->g) < len - 2)
-            return AVERROR(EINVAL);
+            return AVERROR_INVALIDDATA;
+
         switch (marker) {
         case JPEG2000_SIZ:
             ret = get_siz(s);
@@ -1327,7 +1379,9 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
     uint32_t atom_size, atom;
     int found_codestream = 0, search_range = 10;
 
-    while (!found_codestream && search_range && bytestream2_get_bytes_left(&s->g) >= 8) {
+    while (!found_codestream && search_range
+           &&
+           bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
         if (atom == JP2_CODESTREAM) {
@@ -1357,11 +1411,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
 
-    // reduction factor, i.e number of resolution levels to skip
-    s->reduction_factor = s->lowres;
-
     if (bytestream2_get_bytes_left(&s->g) < 2) {
-        ret = AVERROR(EINVAL);
+        ret = AVERROR_INVALIDDATA;
         goto end;
     }
 
@@ -1372,8 +1423,8 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
        (bytestream2_get_be32u(&s->g) == JP2_SIG_VALUE)) {
         if (!jp2_find_codestream(s)) {
             av_log(avctx, AV_LOG_ERROR,
-                   "couldn't find jpeg2k codestream atom\n");
-            ret = -1;
+                   "Could not find Jpeg2000 codestream atom.\n");
+            ret = AVERROR_INVALIDDATA;
             goto end;
         }
     } else {
@@ -1382,7 +1433,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
 
     if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
         av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
-        ret = -1;
+        ret = AVERROR_INVALIDDATA;
         goto end;
     }
     if (ret = jpeg2000_read_main_headers(s))
@@ -1406,6 +1457,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame = 1;
 
     return bytestream2_tell(&s->g);
+
 end:
     jpeg2000_dec_cleanup(s);
     return ret;
@@ -1421,7 +1473,7 @@ static void jpeg2000_init_static_data(AVCodec *codec)
 
 static const AVOption options[] = {
     { "lowres",  "Lower the decoding resolution by a power of two",
-        OFFSET(lowres), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, JPEG2000_MAX_RESLEVELS - 1, VD },
+        OFFSET(reduction_factor), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, JPEG2000_MAX_RESLEVELS - 1, VD },
     { NULL },
 };
 

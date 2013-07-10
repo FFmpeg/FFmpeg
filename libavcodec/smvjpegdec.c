@@ -56,7 +56,7 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int i, planes_nb = 0;
 
-    if (desc->flags & PIX_FMT_HWACCEL)
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return;
 
     for (i = 0; i < desc->nb_components; i++)

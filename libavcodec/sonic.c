@@ -758,7 +758,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    init_get_bits(&gb, avctx->extradata, avctx->extradata_size);
+    init_get_bits8(&gb, avctx->extradata, avctx->extradata_size);
 
     version = get_bits(&gb, 2);
     if (version > 1)
@@ -872,7 +872,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
 //    av_log(NULL, AV_LOG_INFO, "buf_size: %d\n", buf_size);
 
-    init_get_bits(&gb, buf, buf_size*8);
+    init_get_bits8(&gb, buf, buf_size);
 
     intlist_read(&gb, s->predictor_k, s->num_taps, 0);
 

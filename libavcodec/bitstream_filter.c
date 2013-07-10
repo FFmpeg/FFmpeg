@@ -24,36 +24,46 @@
 #include "libavutil/atomic.h"
 #include "libavutil/mem.h"
 
-static AVBitStreamFilter *first_bitstream_filter= NULL;
+static AVBitStreamFilter *first_bitstream_filter = NULL;
 
-AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f){
-    if(f) return f->next;
-    else  return first_bitstream_filter;
+AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f)
+{
+    if (f)
+        return f->next;
+    else
+        return first_bitstream_filter;
 }
 
-void av_register_bitstream_filter(AVBitStreamFilter *bsf){
+void av_register_bitstream_filter(AVBitStreamFilter *bsf)
+{
     do {
         bsf->next = first_bitstream_filter;
     } while(bsf->next != avpriv_atomic_ptr_cas((void * volatile *)&first_bitstream_filter, bsf->next, bsf));
 }
 
-AVBitStreamFilterContext *av_bitstream_filter_init(const char *name){
-    AVBitStreamFilter *bsf= first_bitstream_filter;
+AVBitStreamFilterContext *av_bitstream_filter_init(const char *name)
+{
+    AVBitStreamFilter *bsf = first_bitstream_filter;
 
-    while(bsf){
-        if(!strcmp(name, bsf->name)){
-            AVBitStreamFilterContext *bsfc= av_mallocz(sizeof(AVBitStreamFilterContext));
-            bsfc->filter= bsf;
-            bsfc->priv_data = bsf->priv_data_size ? av_mallocz(bsf->priv_data_size) : NULL;
+    while (bsf) {
+        if (!strcmp(name, bsf->name)) {
+            AVBitStreamFilterContext *bsfc =
+                av_mallocz(sizeof(AVBitStreamFilterContext));
+            bsfc->filter    = bsf;
+            bsfc->priv_data =
+                bsf->priv_data_size ? av_mallocz(bsf->priv_data_size) : NULL;
             return bsfc;
         }
-        bsf= bsf->next;
+        bsf = bsf->next;
     }
     return NULL;
 }
 
-void av_bitstream_filter_close(AVBitStreamFilterContext *bsfc){
-    if(bsfc->filter->close)
+void av_bitstream_filter_close(AVBitStreamFilterContext *bsfc)
+{
+    if (!bsfc)
+        return;
+    if (bsfc->filter->close)
         bsfc->filter->close(bsfc);
     av_freep(&bsfc->priv_data);
     av_parser_close(bsfc->parser);
@@ -62,9 +72,11 @@ void av_bitstream_filter_close(AVBitStreamFilterContext *bsfc){
 
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,
-                     uint8_t **poutbuf, int *poutbuf_size,
-                     const uint8_t *buf, int buf_size, int keyframe){
-    *poutbuf= (uint8_t *) buf;
-    *poutbuf_size= buf_size;
-    return bsfc->filter->filter(bsfc, avctx, args, poutbuf, poutbuf_size, buf, buf_size, keyframe);
+                               uint8_t **poutbuf, int *poutbuf_size,
+                               const uint8_t *buf, int buf_size, int keyframe)
+{
+    *poutbuf      = (uint8_t *)buf;
+    *poutbuf_size = buf_size;
+    return bsfc->filter->filter(bsfc, avctx, args, poutbuf, poutbuf_size,
+                                buf, buf_size, keyframe);
 }

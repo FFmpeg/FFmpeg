@@ -547,9 +547,12 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
 static av_cold int rv40_decode_init(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
+    int ret;
 
     r->rv30 = 0;
-    ff_rv34_decode_init(avctx);
+    ret = ff_rv34_decode_init(avctx);
+    if (ret < 0)
+        return ret;
     if(!aic_top_vlc.bits)
         rv40_init_tables();
     r->parse_slice_header = rv40_parse_slice_header;

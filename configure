@@ -102,6 +102,8 @@ Configuration options:
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-all            disable building components, libraries and programs
+  --enable-incompatible-libav-abi enable incompatible Libav fork ABI [no]
+  --enable-incompatible-fork-abi  enable incompatible Libav fork ABI (deprecated) [no]
 
 Program options:
   --disable-programs       do not build command line programs
@@ -202,6 +204,7 @@ External library support:
   --enable-libfdk-aac      enable AAC encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfreetype     enable libfreetype [no]
+  --enable-libgme          enable Game Music Emu via libgme [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
@@ -1167,6 +1170,7 @@ EXTERNAL_LIBRARY_LIST="
     libfdk_aac
     libflite
     libfreetype
+    libgme
     libgsm
     libiec61883
     libilbc
@@ -1257,6 +1261,7 @@ CONFIG_LIST="
     gpl
     gray
     hardcoded_tables
+    incompatible_libav_abi
     incompatible_fork_abi
     lsp
     lzo
@@ -1363,6 +1368,7 @@ HAVE_LIST_CMDLINE='
 HAVE_LIST_PUB='
     bigendian
     fast_unaligned
+    incompatible_libav_abi
     incompatible_fork_abi
 '
 
@@ -1882,6 +1888,7 @@ vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp8_decoder_select="h264pred videodsp"
+webp_decoder_select="vp8_decoder"
 wmapro_decoder_select="mdct sinewin"
 wmav1_decoder_select="mdct sinewin"
 wmav1_encoder_select="mdct sinewin"
@@ -1974,6 +1981,7 @@ libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
+libgme_demuxer_deps="libgme"
 libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
@@ -3393,6 +3401,7 @@ enabled spic && enable_weak pic
 # OS specific
 case $target_os in
     aix)
+        add_cppflags '-I\$(SRC_PATH)/compat/aix'
         ;;
     haiku)
         prefix_default="/boot/common"
@@ -3696,6 +3705,10 @@ build the shared libraries as well. To only build the shared libraries specify
 EOF
     exit 1;
 fi
+
+# backward compatibility layer for incompatible_libav/fork_abi
+enabled incompatible_fork_abi  && enable incompatible_libav_abi
+enabled incompatible_libav_abi && enable incompatible_fork_abi
 
 die_license_disabled() {
     enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
@@ -4131,6 +4144,7 @@ enabled libfdk_aac        && require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen 
 flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
 enabled libflite          && require2 libflite "flite/flite.h" flite_init $flite_libs
 enabled libfreetype       && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
+enabled libgme            && require  libgme gme/gme.h gme_new_emu -lgme
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }

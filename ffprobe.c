@@ -159,7 +159,7 @@ static uint64_t *nb_streams_packets;
 static uint64_t *nb_streams_frames;
 static int *selected_streams;
 
-static void exit_program(void)
+static void ffprobe_cleanup(int ret)
 {
     int i;
     for (i = 0; i < FF_ARRAY_ELEMS(sections); i++)
@@ -2123,7 +2123,7 @@ static void opt_input_file(void *optctx, const char *arg)
         av_log(NULL, AV_LOG_ERROR,
                 "Argument '%s' provided as input filename, but '%s' was already specified.\n",
                 arg, input_filename);
-        exit(1);
+        exit_program(1);
     }
     if (!strcmp(arg, "-"))
         arg = "pipe:";
@@ -2273,7 +2273,7 @@ int main(int argc, char **argv)
     int ret, i;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
-    atexit(exit_program);
+    register_exit(ffprobe_cleanup);
 
     options = real_options;
     parse_loglevel(argc, argv, options);

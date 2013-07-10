@@ -202,7 +202,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 
     if (codsty->nreslevels2decode <= 0) {
         av_log(avctx, AV_LOG_ERROR, "nreslevels2decode %d invalid or uninitialized\n", codsty->nreslevels2decode);
-        return AVERROR(EINVAL);
+        return AVERROR_INVALIDDATA;
     }
 
     if (ret = ff_jpeg2000_dwt_init(&comp->dwt, comp->coord,
@@ -295,7 +295,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 numbps = cbps +
                          lut_gain[codsty->transform == FF_DWT53][bandno + (reslevelno > 0)];
                 band->f_stepsize = SHL(2048 + qntsty->mant[gbandno],
-                                            2 + numbps - qntsty->expn[gbandno]);
+                                       2 + numbps - qntsty->expn[gbandno]);
                 break;
             case JPEG2000_QSTY_SE:
                 /* Exponent quantization step.
@@ -316,7 +316,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                 break;
             }
             /* FIXME: In openjepg code stespize = stepsize * 0.5. Why?
-                * If not set output of entropic decoder is not correct. */
+             * If not set output of entropic decoder is not correct. */
             if (!av_codec_is_encoder(avctx->codec))
                 band->f_stepsize *= 0.5;
 
@@ -451,14 +451,18 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
                     /* Compute Cy1 */
                     cblk->coord[1][1] = FFMIN(Cy0 + (1 << band->log2_cblk_height),
                                               prec->coord[1][1]);
-
-                    if((bandno + !!reslevelno) & 1) {
-                        cblk->coord[0][0] += comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
-                        cblk->coord[0][1] += comp->reslevel[reslevelno-1].coord[0][1] - comp->reslevel[reslevelno-1].coord[0][0];
+                    /* Update code-blocks coordinates according sub-band position */
+                    if ((bandno + !!reslevelno) & 1) {
+                        cblk->coord[0][0] += comp->reslevel[reslevelno-1].coord[0][1] -
+                                             comp->reslevel[reslevelno-1].coord[0][0];
+                        cblk->coord[0][1] += comp->reslevel[reslevelno-1].coord[0][1] -
+                                             comp->reslevel[reslevelno-1].coord[0][0];
                     }
-                    if((bandno + !!reslevelno) & 2) {
-                        cblk->coord[1][0] += comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
-                        cblk->coord[1][1] += comp->reslevel[reslevelno-1].coord[1][1] - comp->reslevel[reslevelno-1].coord[1][0];
+                    if ((bandno + !!reslevelno) & 2) {
+                        cblk->coord[1][0] += comp->reslevel[reslevelno-1].coord[1][1] -
+                                             comp->reslevel[reslevelno-1].coord[1][0];
+                        cblk->coord[1][1] += comp->reslevel[reslevelno-1].coord[1][1] -
+                                             comp->reslevel[reslevelno-1].coord[1][0];
                     }
 
                     cblk->zero      = 0;
@@ -497,7 +501,9 @@ void ff_jpeg2000_reinit(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 void ff_jpeg2000_cleanup(Jpeg2000Component *comp, Jpeg2000CodingStyle *codsty)
 {
     int reslevelno, bandno, precno;
-    for (reslevelno = 0; comp->reslevel && reslevelno < codsty->nreslevels; reslevelno++) {
+    for (reslevelno = 0;
+         comp->reslevel && reslevelno < codsty->nreslevels;
+         reslevelno++) {
         Jpeg2000ResLevel *reslevel = comp->reslevel + reslevelno;
 
         for (bandno = 0; bandno < reslevel->nbands; bandno++) {

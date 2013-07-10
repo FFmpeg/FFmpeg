@@ -768,7 +768,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 }
 
 static const AVClass class_vp8 = {
-    .class_name = "libvpx encoder",
+    .class_name = "libvpx-vp8 encoder",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -797,7 +797,7 @@ static av_cold int vp9_init(AVCodecContext *avctx)
 }
 
 static const AVClass class_vp9 = {
-    .class_name = "libvpx encoder",
+    .class_name = "libvpx-vp9 encoder",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

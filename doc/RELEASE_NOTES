@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-* 1.2 "Magic"  March, 2013
+* 2.0 "Nameless"  July, 2013
 
 
 General notes
@@ -14,3 +14,7 @@ accepted. If you are experiencing issues with any formally released version of
 FFmpeg, please try git master to check if the issue still exists. If it does,
 make your report against the development code following the usual bug reporting
 guidelines.
+
+AVI/AVXSynth
+--------
+If you want to use FFmpeg with AVISynth, you need AVISynth 2.6.0 at minimum.

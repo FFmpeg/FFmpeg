@@ -121,7 +121,7 @@ Consider things that a sane encoder should not do as an error.
 Use wallclock as timestamps.
 
 @item avoid_negative_ts @var{integer} (@emph{output})
-Shift timestamps to make them positive. A value of 1 enables shifting,
+Shift timestamps to make them non-negative. A value of 1 enables shifting,
 a value of 0 disables it, the default value of -1 enables shifting
 when required by the target format.
 

@@ -1311,6 +1311,49 @@ AVFilterInOut *avfilter_inout_alloc(void);
  */
 void avfilter_inout_free(AVFilterInOut **inout);
 
+#if HAVE_INCOMPATIBLE_LIBAV_ABI || !FF_API_OLD_GRAPH_PARSE
+/**
+ * Add a graph described by a string to a graph.
+ *
+ * @note The caller must provide the lists of inputs and outputs,
+ * which therefore must be known before calling the function.
+ *
+ * @note The inputs parameter describes inputs of the already existing
+ * part of the graph; i.e. from the point of view of the newly created
+ * part, they are outputs. Similarly the outputs parameter describes
+ * outputs of the already existing filters, which are provided as
+ * inputs to the parsed filters.
+ *
+ * @param graph   the filter graph where to link the parsed grap context
+ * @param filters string to be parsed
+ * @param inputs  linked list to the inputs of the graph
+ * @param outputs linked list to the outputs of the graph
+ * @return zero on success, a negative AVERROR code on error
+ */
+int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
+                         AVFilterInOut *inputs, AVFilterInOut *outputs,
+                         void *log_ctx);
+#else
+/**
+ * Add a graph described by a string to a graph.
+ *
+ * @param graph   the filter graph where to link the parsed graph context
+ * @param filters string to be parsed
+ * @param inputs  pointer to a linked list to the inputs of the graph, may be NULL.
+ *                If non-NULL, *inputs is updated to contain the list of open inputs
+ *                after the parsing, should be freed with avfilter_inout_free().
+ * @param outputs pointer to a linked list to the outputs of the graph, may be NULL.
+ *                If non-NULL, *outputs is updated to contain the list of open outputs
+ *                after the parsing, should be freed with avfilter_inout_free().
+ * @return non negative on success, a negative AVERROR code on error
+ * @deprecated Use avfilter_graph_parse_ptr() instead.
+ */
+attribute_deprecated
+int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
+                         AVFilterInOut **inputs, AVFilterInOut **outputs,
+                         void *log_ctx);
+#endif
+
 /**
  * Add a graph described by a string to a graph.
  *
@@ -1324,9 +1367,9 @@ void avfilter_inout_free(AVFilterInOut **inout);
  *                after the parsing, should be freed with avfilter_inout_free().
  * @return non negative on success, a negative AVERROR code on error
  */
-int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut **inputs, AVFilterInOut **outputs,
-                         void *log_ctx);
+int avfilter_graph_parse_ptr(AVFilterGraph *graph, const char *filters,
+                             AVFilterInOut **inputs, AVFilterInOut **outputs,
+                             void *log_ctx);
 
 /**
  * Add a graph described by a string to a graph.
@@ -1341,21 +1384,13 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
  *                     caller using avfilter_inout_free().
  * @return zero on success, a negative AVERROR code on error
  *
- * @note the difference between avfilter_graph_parse2() and
- * avfilter_graph_parse() is that in avfilter_graph_parse(), the caller provides
- * the lists of inputs and outputs, which therefore must be known before calling
- * the function. On the other hand, avfilter_graph_parse2() \em returns the
- * inputs and outputs that are left unlinked after parsing the graph and the
- * caller then deals with them. Another difference is that in
- * avfilter_graph_parse(), the inputs parameter describes inputs of the
- * <em>already existing</em> part of the graph; i.e. from the point of view of
- * the newly created part, they are outputs. Similarly the outputs parameter
- * describes outputs of the already existing filters, which are provided as
- * inputs to the parsed filters.
- * avfilter_graph_parse2() takes the opposite approach -- it makes no reference
- * whatsoever to already existing parts of the graph and the inputs parameter
- * will on return contain inputs of the newly parsed part of the graph.
- * Analogously the outputs parameter will contain outputs of the newly created
+ * @note This function returns the inputs and outputs that are left
+ * unlinked after parsing the graph and the caller then deals with
+ * them.
+ * @note This function makes no reference whatsoever to already
+ * existing parts of the graph and the inputs parameter will on return
+ * contain inputs of the newly parsed part of the graph.  Analogously
+ * the outputs parameter will contain outputs of the newly created
  * filters.
  */
 int avfilter_graph_parse2(AVFilterGraph *graph, const char *filters,

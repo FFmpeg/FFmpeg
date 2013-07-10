@@ -936,6 +936,40 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             av_opt_freep_ranges(&r);
         }
 
+        if (opt->type != AV_OPT_TYPE_CONST  &&
+            opt->type != AV_OPT_TYPE_BINARY &&
+                !((opt->type == AV_OPT_TYPE_COLOR      ||
+                   opt->type == AV_OPT_TYPE_IMAGE_SIZE ||
+                   opt->type == AV_OPT_TYPE_STRING     ||
+                   opt->type == AV_OPT_TYPE_VIDEO_RATE) &&
+                  !opt->default_val.str)) {
+            av_log(av_log_obj, AV_LOG_INFO, " (default ");
+            switch (opt->type) {
+            case AV_OPT_TYPE_FLAGS:
+                av_log(av_log_obj, AV_LOG_INFO, "%0llX", opt->default_val.i64);
+                break;
+            case AV_OPT_TYPE_DURATION:
+            case AV_OPT_TYPE_INT:
+            case AV_OPT_TYPE_INT64:
+                log_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
+                break;
+            case AV_OPT_TYPE_DOUBLE:
+            case AV_OPT_TYPE_FLOAT:
+                log_value(av_log_obj, AV_LOG_INFO, opt->default_val.dbl);
+                break;
+            case AV_OPT_TYPE_RATIONAL: {
+                AVRational q = av_d2q(opt->default_val.dbl, INT_MAX);
+                av_log(av_log_obj, AV_LOG_INFO, "%d/%d", q.num, q.den); }
+                break;
+            case AV_OPT_TYPE_COLOR:
+            case AV_OPT_TYPE_IMAGE_SIZE:
+            case AV_OPT_TYPE_STRING:
+            case AV_OPT_TYPE_VIDEO_RATE:
+                av_log(av_log_obj, AV_LOG_INFO, "\"%s\"", opt->default_val.str);
+            }
+            av_log(av_log_obj, AV_LOG_INFO, ")");
+        }
+
         av_log(av_log_obj, AV_LOG_INFO, "\n");
         if (opt->unit && opt->type != AV_OPT_TYPE_CONST) {
             opt_list(obj, av_log_obj, opt->unit, req_flags, rej_flags);

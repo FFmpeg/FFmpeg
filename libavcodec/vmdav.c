@@ -408,7 +408,8 @@ static av_cold int vmdvideo_decode_init(AVCodecContext *avctx)
         r = raw_palette[palette_index++] * 4;
         g = raw_palette[palette_index++] * 4;
         b = raw_palette[palette_index++] * 4;
-        palette32[i] = (r << 16) | (g << 8) | (b);
+        palette32[i] = 0xFFU << 24 | (r << 16) | (g << 8) | (b);
+        palette32[i] |= palette32[i] >> 6 & 0x30303;
     }
 
     avcodec_get_frame_defaults(&s->prev_frame);

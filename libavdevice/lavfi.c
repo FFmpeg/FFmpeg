@@ -141,7 +141,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     if (!(lavfi->graph = avfilter_graph_alloc()))
         FAIL(AVERROR(ENOMEM));
 
-    if ((ret = avfilter_graph_parse(lavfi->graph, lavfi->graph_str,
+    if ((ret = avfilter_graph_parse_ptr(lavfi->graph, lavfi->graph_str,
                                     &input_links, &output_links, avctx)) < 0)
         FAIL(ret);
 

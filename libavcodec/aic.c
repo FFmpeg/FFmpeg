@@ -196,11 +196,11 @@ static int aic_decode_header(AICContext *ctx, const uint8_t *src, int size)
     } while (0)
 
 static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
-                             int band, int slice_width)
+                             int band, int slice_width, int force_chroma)
 {
     int has_skips, coeff_type, coeff_bits, skip_type, skip_bits;
     const int num_coeffs = aic_num_band_coeffs[band];
-    const uint8_t *scan = aic_scan[band];
+    const uint8_t *scan = aic_scan[band | force_chroma];
     int mb, idx;
     unsigned val;
 
@@ -322,7 +322,8 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
            sizeof(*ctx->slice_data) * slice_width * AIC_BAND_COEFFS);
     for (i = 0; i < NUM_BANDS; i++)
         if ((ret = aic_decode_coeffs(&gb, ctx->data_ptr[i],
-                                     i, slice_width)) < 0)
+                                     i, slice_width,
+                                     !ctx->interlaced)) < 0)
             return ret;
 
     for (mb = 0; mb < slice_width; mb++) {
@@ -337,7 +338,7 @@ static int aic_decode_slice(AICContext *ctx, int mb_x, int mb_y,
             ctx->dsp.idct(ctx->block);
 
             if (!ctx->interlaced) {
-                dst = Y + (blk & 1) * 8 * ystride + (blk >> 1) * 8;
+                dst = Y + (blk >> 1) * 8 * ystride + (blk & 1) * 8;
                 ctx->dsp.put_signed_pixels_clamped(ctx->block, dst,
                                                    ystride);
             } else {

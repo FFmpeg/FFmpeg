@@ -242,6 +242,9 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index,
  */
 void ff_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
 
+int ff_find_last_ts(AVFormatContext *s, int stream_index, int64_t *ts, int64_t *pos,
+                    int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
+
 /**
  * Perform a binary search using read_timestamp().
  *

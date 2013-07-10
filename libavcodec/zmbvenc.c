@@ -44,8 +44,6 @@
  */
 typedef struct ZmbvEncContext {
     AVCodecContext *avctx;
-    AVFrame pic;
-
     int range;
     uint8_t *comp_buf, *work_buf;
     uint8_t pal[768];
@@ -121,7 +119,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     ZmbvEncContext * const c = avctx->priv_data;
-    AVFrame * const p = &c->pic;
+    AVFrame * const p = (AVFrame *)pict;
     uint8_t *src, *prev, *buf;
     uint32_t *palptr;
     int keyframe, chpal;
@@ -134,7 +132,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     c->curfrm++;
     if(c->curfrm == c->keyint)
         c->curfrm = 0;
-    *p = *pict;
     p->pict_type= keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     p->key_frame= keyframe;
     chpal = !keyframe && memcmp(p->data[1], c->pal2, 1024);
@@ -311,8 +308,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return -1;
     }
-
-    avctx->coded_frame = &c->pic;
 
     return 0;
 }

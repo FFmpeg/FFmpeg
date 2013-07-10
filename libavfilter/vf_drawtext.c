@@ -165,6 +165,7 @@ typedef struct {
     int tc24hmax;                   ///< 1 if timecode is wrapped to 24 hours, 0 otherwise
     int reload;                     ///< reload text file for each frame
     int start_number;               ///< starting frame number for n/frame_num var
+    AVDictionary *metadata;
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -620,6 +621,17 @@ static int func_frame_num(AVFilterContext *ctx, AVBPrint *bp,
     return 0;
 }
 
+static int func_metadata(AVFilterContext *ctx, AVBPrint *bp,
+                         char *fct, unsigned argc, char **argv, int tag)
+{
+    DrawTextContext *s = ctx->priv;
+    AVDictionaryEntry *e = av_dict_get(s->metadata, argv[0], NULL, 0);
+
+    if (e && e->value)
+        av_bprintf(bp, "%s", e->value);
+    return 0;
+}
+
 #if !HAVE_LOCALTIME_R
 static void localtime_r(const time_t *t, struct tm *tm)
 {
@@ -677,6 +689,7 @@ static const struct drawtext_function {
     { "localtime", 0, 1, 'L', func_strftime },
     { "frame_num", 0, 0, 0,   func_frame_num },
     { "n",         0, 0, 0,   func_frame_num },
+    { "metadata",  1, 1, 0,   func_metadata },
 };
 
 static int eval_function(AVFilterContext *ctx, AVBPrint *bp, char *fct,
@@ -985,6 +998,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         NAN : frame->pts * av_q2d(inlink->time_base);
 
     s->var_values[VAR_PICT_TYPE] = frame->pict_type;
+    s->metadata = av_frame_get_metadata(frame);
 
     draw_text(ctx, frame, frame->width, frame->height);
 

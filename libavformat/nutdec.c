@@ -586,14 +586,8 @@ static int64_t find_duration(NUTContext *nut, int64_t filesize)
     AVFormatContext *s = nut->avf;
     int64_t duration = 0;
 
-    int64_t pos = FFMAX(0, filesize - 2*nut->max_distance);
-    for(;;){
-        int64_t ts = nut_read_timestamp(s, -1, &pos, INT64_MAX);
-        if(ts < 0)
-            break;
-        duration = FFMAX(duration, ts);
-        pos++;
-    }
+    ff_find_last_ts(s, -1, &duration, NULL, nut_read_timestamp);
+
     if(duration > 0)
         s->duration_estimation_method = AVFMT_DURATION_FROM_PTS;
     return duration;

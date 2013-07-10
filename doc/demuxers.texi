@@ -103,6 +103,19 @@ probed and 0 otherwise.
 
 @end table
 
+@section libgme
+
+The Game Music Emu library is a collection of video game music file emulators.
+
+See @url{http://code.google.com/p/game-music-emu/} for more information.
+
+Some files have multiple tracks. The demuxer will pick the first track by
+default. The @option{track_index} option can be used to select a different
+track. Track indexes start at 0. The demuxer exports the number of tracks as
+@var{tracks} meta data entry.
+
+For very large files, the @option{max_size} option may have to be adjusted.
+
 @section libquvi
 
 Play media from Internet services using the quvi project.

@@ -3236,7 +3236,7 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
     int i, level, qmul, qadd;
     int nCoeffs;
 
-    av_assert2(s->block_last_index[n]>=0);
+    av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
 
     qmul = qscale << 1;
 

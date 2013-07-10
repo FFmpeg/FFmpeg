@@ -557,9 +557,9 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         s->scratchbuf = av_malloc(s->current_picture.linesize[0] * 16 * 2);
     }
 
-    temp               = s->current_picture;
-    s->current_picture = s->last_picture;
-    s->last_picture    = temp;
+    av_frame_move_ref(&temp, &s->current_picture);
+    av_frame_move_ref(&s->current_picture, &s->last_picture);
+    av_frame_move_ref(&s->last_picture, &temp);
 
     init_put_bits(&s->pb, pkt->data, pkt->size);
 

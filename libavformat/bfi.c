@@ -81,6 +81,8 @@ static int bfi_read_header(AVFormatContext * s)
     /*Load the palette to extradata */
     avio_skip(pb, 8);
     vstream->codec->extradata      = av_malloc(768);
+    if (!vstream->codec->extradata)
+        return AVERROR(ENOMEM);
     vstream->codec->extradata_size = 768;
     avio_read(pb, vstream->codec->extradata,
                vstream->codec->extradata_size);

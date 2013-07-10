@@ -202,7 +202,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         return ret;
     out = (float *)frame->data[0];
 
-    init_get_bits(&gb, buf, avctx->block_align * 8);
+    init_get_bits8(&gb, buf, avctx->block_align);
 
     for (i=0; i < RA288_BLOCKS_PER_FRAME; i++) {
         float gain = amptable[get_bits(&gb, 3)];

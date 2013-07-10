@@ -436,6 +436,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     av_dict_set(&st->metadata, "title", description, 0);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = AV_CODEC_ID_MJPEG;
+    st->id = -1;
     ret = av_get_packet(pb, &st->attached_pic, filesize);
     if (ret < 0)
         goto done;

@@ -45,7 +45,7 @@ static const AVOption options[] = {
     { NULL }
 };
 
-static const AVClass class = {
+static const AVClass amrwb_class = {
     "libvo_amrwbenc", av_default_item_name, options, LIBAVUTIL_VERSION_INT
 };
 
@@ -148,5 +148,5 @@ AVCodec ff_libvo_amrwbenc_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Android VisualOn AMR-WB "
                                            "(Adaptive Multi-Rate Wide-Band)"),
-    .priv_class     = &class,
+    .priv_class     = &amrwb_class,
 };

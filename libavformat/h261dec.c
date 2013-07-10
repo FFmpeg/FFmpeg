@@ -33,7 +33,7 @@ static int h261_probe(AVProbeData *p)
     int src_fmt=0;
     GetBitContext gb;
 
-    init_get_bits(&gb, p->buf, p->buf_size*8);
+    init_get_bits8(&gb, p->buf, p->buf_size);
 
     for(i=0; i<p->buf_size*8; i++){
         if ((code & 0x01ff0000) || !(code & 0xff00)) {

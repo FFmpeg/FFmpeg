@@ -1253,7 +1253,7 @@ typedef struct AVCodecContext {
      * rv10: additional flags
      * mpeg4: global headers (they can be in the bitstream or here)
      * The allocated memory should be FF_INPUT_BUFFER_PADDING_SIZE bytes larger
-     * than extradata_size to avoid prolems if it is read with the bitstream reader.
+     * than extradata_size to avoid problems if it is read with the bitstream reader.
      * The bytewise contents of extradata must not depend on the architecture or CPU endianness.
      * - encoding: Set/allocated/freed by libavcodec.
      * - decoding: Set/allocated/freed by user.
@@ -4490,7 +4490,7 @@ enum AVPixelFormat avcodec_find_best_pix_fmt_of_2(enum AVPixelFormat dst_pix_fmt
                                             enum AVPixelFormat src_pix_fmt, int has_alpha, int *loss_ptr);
 
 attribute_deprecated
-#if AV_HAVE_INCOMPATIBLE_FORK_ABI
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
 enum AVPixelFormat avcodec_find_best_pix_fmt2(enum AVPixelFormat *pix_fmt_list,
                                               enum AVPixelFormat src_pix_fmt,
                                               int has_alpha, int *loss_ptr);
@@ -4620,14 +4620,78 @@ typedef struct AVBitStreamFilter {
     struct AVBitStreamFilter *next;
 } AVBitStreamFilter;
 
+/**
+ * Register a bitstream filter.
+ *
+ * The filter will be accessible to the application code through
+ * av_bitstream_filter_next() or can be directly initialized with
+ * av_bitstream_filter_init().
+ *
+ * @see avcodec_register_all()
+ */
 void av_register_bitstream_filter(AVBitStreamFilter *bsf);
+
+/**
+ * Create and initialize a bitstream filter context given a bitstream
+ * filter name.
+ *
+ * The returned context must be freed with av_bitstream_filter_close().
+ *
+ * @param name    the name of the bitstream filter
+ * @return a bitstream filter context if a matching filter was found
+ * and successfully initialized, NULL otherwise
+ */
 AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
+
+/**
+ * Filter bitstream.
+ *
+ * This function filters the buffer buf with size buf_size, and places the
+ * filtered buffer in the buffer pointed to by poutbuf.
+ *
+ * The output buffer must be freed by the caller.
+ *
+ * @param bsfc            bitstream filter context created by av_bitstream_filter_init()
+ * @param avctx           AVCodecContext accessed by the filter, may be NULL.
+ *                        If specified, this must point to the encoder context of the
+ *                        output stream the packet is sent to.
+ * @param args            arguments which specify the filter configuration, may be NULL
+ * @param poutbuf         pointer which is updated to point to the filtered buffer
+ * @param poutbuf_size    pointer which is updated to the filtered buffer size in bytes
+ * @param buf             buffer containing the data to filter
+ * @param buf_size        size in bytes of buf
+ * @param keyframe        set to non-zero if the buffer to filter corresponds to a key-frame packet data
+ * @return >= 0 in case of success, or a negative error code in case of failure
+ *
+ * If the return value is positive, an output buffer is allocated and
+ * is availble in *poutbuf, and is distinct from the input buffer.
+ *
+ * If the return value is 0, the output output buffer is not allocated
+ * and the output buffer should be considered identical to the input
+ * buffer, or in case *poutbuf was set it points to the input buffer
+ * (not necessarily to its starting address).
+ */
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,
                                uint8_t **poutbuf, int *poutbuf_size,
                                const uint8_t *buf, int buf_size, int keyframe);
+
+/**
+ * Release bitstream filter context.
+ *
+ * @param bsf the bitstream filter context created with
+ * av_bitstream_filter_init(), can be NULL
+ */
 void av_bitstream_filter_close(AVBitStreamFilterContext *bsf);
 
+/**
+ * If f is NULL, return the first registered bitstream filter,
+ * if f is non-NULL, return the next registered bitstream filter
+ * after f, or NULL if f is the last one.
+ *
+ * This function can be used to iterate over all registered bitstream
+ * filters.
+ */
 AVBitStreamFilter *av_bitstream_filter_next(AVBitStreamFilter *f);
 
 /* memory */

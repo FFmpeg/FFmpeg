@@ -1745,14 +1745,50 @@ int ff_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     return 0;
 }
 
+int ff_find_last_ts(AVFormatContext *s, int stream_index, int64_t *ts, int64_t *pos,
+                    int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ))
+{
+    int64_t step= 1024;
+    int64_t limit, ts_max;
+    int64_t filesize = avio_size(s->pb);
+    int64_t pos_max = filesize - 1;
+    do{
+        limit = pos_max;
+        pos_max = FFMAX(0, (pos_max) - step);
+        ts_max = ff_read_timestamp(s, stream_index, &pos_max, limit, read_timestamp);
+        step += step;
+    }while(ts_max == AV_NOPTS_VALUE && 2*limit > step);
+    if (ts_max == AV_NOPTS_VALUE)
+        return -1;
+
+    for(;;){
+        int64_t tmp_pos = pos_max + 1;
+        int64_t tmp_ts = ff_read_timestamp(s, stream_index, &tmp_pos, INT64_MAX, read_timestamp);
+        if(tmp_ts == AV_NOPTS_VALUE)
+            break;
+        ts_max  = tmp_ts;
+        pos_max = tmp_pos;
+        if(tmp_pos >= filesize)
+            break;
+    }
+
+    if (ts)
+        *ts = ts_max;
+    if (pos)
+        *pos = pos_max;
+
+    return 0;
+}
+
 int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
                       int64_t pos_min, int64_t pos_max, int64_t pos_limit,
                       int64_t ts_min, int64_t ts_max, int flags, int64_t *ts_ret,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ))
 {
     int64_t pos, ts;
-    int64_t start_pos, filesize;
+    int64_t start_pos;
     int no_change;
+    int ret;
 
     av_dlog(s, "gen_seek: %d %s\n", stream_index, av_ts2str(target_ts));
 
@@ -1769,29 +1805,8 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts,
     }
 
     if(ts_max == AV_NOPTS_VALUE){
-        int64_t step= 1024;
-        int64_t limit;
-        filesize = avio_size(s->pb);
-        pos_max = filesize - 1;
-        do{
-            limit = pos_max;
-            pos_max = FFMAX(0, pos_max - step);
-            ts_max = ff_read_timestamp(s, stream_index, &pos_max, limit, read_timestamp);
-            step += step;
-        }while(ts_max == AV_NOPTS_VALUE && 2*limit > step);
-        if (ts_max == AV_NOPTS_VALUE)
-            return -1;
-
-        for(;;){
-            int64_t tmp_pos= pos_max + 1;
-            int64_t tmp_ts= ff_read_timestamp(s, stream_index, &tmp_pos, INT64_MAX, read_timestamp);
-            if(tmp_ts == AV_NOPTS_VALUE)
-                break;
-            ts_max= tmp_ts;
-            pos_max= tmp_pos;
-            if(tmp_pos >= filesize)
-                break;
-        }
+        if ((ret = ff_find_last_ts(s, stream_index, &ts_max, &pos_max, read_timestamp)) < 0)
+            return ret;
         pos_limit= pos_max;
     }
 
@@ -2621,7 +2636,7 @@ int av_find_stream_info(AVFormatContext *ic)
 
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
-    int i, count, ret, j;
+    int i, count, ret = 0, j;
     int64_t read_size;
     AVStream *st;
     AVPacket pkt1, *pkt;
@@ -2768,6 +2783,10 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         } else {
             pkt = add_to_pktbuf(&ic->packet_buffer, &pkt1,
                                 &ic->packet_buffer_end);
+            if (!pkt) {
+                ret = AVERROR(ENOMEM);
+                goto find_stream_info_err;
+            }
             if ((ret = av_dup_packet(pkt)) < 0)
                 goto find_stream_info_err;
         }
@@ -2813,6 +2832,12 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 t = av_rescale_q(st->info->codec_info_duration, st->time_base, AV_TIME_BASE_Q);
             if (st->avg_frame_rate.num > 0)
                 t = FFMAX(t, av_rescale_q(st->codec_info_nb_frames, av_inv_q(st->avg_frame_rate), AV_TIME_BASE_Q));
+
+            if (   t==0
+                && st->codec_info_nb_frames>30
+                && st->info->fps_first_dts != AV_NOPTS_VALUE
+                && st->info->fps_last_dts  != AV_NOPTS_VALUE)
+                t = FFMAX(t, av_rescale_q(st->info->fps_last_dts - st->info->fps_first_dts, st->time_base, AV_TIME_BASE_Q));
 
             if (t >= ic->max_analyze_duration) {
                 av_log(ic, AV_LOG_VERBOSE, "max_analyze_duration %d reached at %"PRId64" microseconds\n", ic->max_analyze_duration, t);
@@ -2888,9 +2913,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         int err = 0;
         av_init_packet(&empty_pkt);
 
-        ret = -1; /* we could not have all the codec parameters before EOF */
         for(i=0;i<ic->nb_streams;i++) {
-            const char *errmsg;
 
             st = ic->streams[i];
 
@@ -2906,17 +2929,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     av_log(ic, AV_LOG_INFO,
                         "decoding for stream %d failed\n", st->index);
                 }
-            }
-
-            if (!has_codec_parameters(st, &errmsg)) {
-                char buf[256];
-                avcodec_string(buf, sizeof(buf), st->codec, 0);
-                av_log(ic, AV_LOG_WARNING,
-                       "Could not find codec parameters for stream %d (%s): %s\n"
-                       "Consider increasing the value for the 'analyzeduration' and 'probesize' options\n",
-                       i, buf, errmsg);
-            } else {
-                ret = 0;
             }
         }
     }
@@ -3026,6 +3038,23 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
     if(ic->probesize)
     estimate_timings(ic, old_offset);
+
+    if (ret >= 0 && ic->nb_streams)
+        ret = -1; /* we could not have all the codec parameters before EOF */
+    for(i=0;i<ic->nb_streams;i++) {
+        const char *errmsg;
+        st = ic->streams[i];
+        if (!has_codec_parameters(st, &errmsg)) {
+            char buf[256];
+            avcodec_string(buf, sizeof(buf), st->codec, 0);
+            av_log(ic, AV_LOG_WARNING,
+                   "Could not find codec parameters for stream %d (%s): %s\n"
+                   "Consider increasing the value for the 'analyzeduration' and 'probesize' options\n",
+                   i, buf, errmsg);
+        } else {
+            ret = 0;
+        }
+    }
 
     compute_chapters_end(ic);
 

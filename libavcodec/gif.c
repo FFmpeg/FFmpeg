@@ -41,7 +41,6 @@
 
 typedef struct {
     const AVClass *class;
-    AVFrame picture;
     LZWState *lzw;
     uint8_t *buf;
     AVFrame *last_frame;
@@ -217,7 +216,6 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    avctx->coded_frame = &s->picture;
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
     s->buf = av_malloc(avctx->width*avctx->height*2);
     s->tmpl = av_malloc(avctx->width);
@@ -234,7 +232,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *pict, int *got_packet)
 {
     GIFContext *s = avctx->priv_data;
-    AVFrame *const p = &s->picture;
+    AVFrame *const p = (AVFrame *)pict;
     uint8_t *outbuf_ptr, *end;
     const uint32_t *palette = NULL;
     int ret;
@@ -244,7 +242,6 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     outbuf_ptr = pkt->data;
     end        = pkt->data + pkt->size;
 
-    *p = *pict;
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 

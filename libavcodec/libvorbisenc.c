@@ -64,7 +64,7 @@ static const AVCodecDefault defaults[] = {
     { NULL },
 };
 
-static const AVClass class = {
+static const AVClass vorbis_class = {
     .class_name = "libvorbis",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -373,6 +373,6 @@ AVCodec ff_libvorbis_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libvorbis"),
-    .priv_class     = &class,
+    .priv_class     = &vorbis_class,
     .defaults       = defaults,
 };

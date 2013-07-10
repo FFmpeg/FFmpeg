@@ -87,7 +87,7 @@ static void sample_queue_free(HintSampleQueue *queue)
         if (queue->samples[i].own_data)
             av_free(queue->samples[i].data);
     av_freep(&queue->samples);
-    queue->len = 0;
+    queue->len  = 0;
     queue->size = 0;
 }
 
@@ -104,7 +104,7 @@ static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
     if (size <= 14)
         return;
     if (!queue->samples || queue->len >= queue->size) {
-        HintSample* samples;
+        HintSample *samples;
         queue->size += 10;
         samples = av_realloc(queue->samples, sizeof(HintSample)*queue->size);
         if (!samples)
@@ -114,7 +114,7 @@ static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
     queue->samples[queue->len].data = data;
     queue->samples[queue->len].size = size;
     queue->samples[queue->len].sample_number = sample;
-    queue->samples[queue->len].offset = 0;
+    queue->samples[queue->len].offset   = 0;
     queue->samples[queue->len].own_data = 0;
     queue->len++;
 }
@@ -128,7 +128,7 @@ static void sample_queue_retain(HintSampleQueue *queue)
     for (i = 0; i < queue->len; ) {
         HintSample *sample = &queue->samples[i];
         if (!sample->own_data) {
-            uint8_t* ptr = av_malloc(sample->size);
+            uint8_t *ptr = av_malloc(sample->size);
             if (!ptr) {
                 /* Unable to allocate memory for this one, remove it */
                 memmove(queue->samples + i, queue->samples + i + 1,
@@ -309,11 +309,11 @@ static void describe_payload(const uint8_t *data, int size,
  * @param data buffer containing RTP packets
  * @param size the size of the data buffer
  * @param trk the MOVTrack for the hint track
- * @param pts pointer where the timestamp for the written RTP hint is stored
+ * @param dts pointer where the timestamp for the written RTP hint is stored
  * @return the number of RTP packets in the written hint
  */
 static int write_hint_packets(AVIOContext *out, const uint8_t *data,
-                              int size, MOVTrack *trk, int64_t *pts)
+                              int size, MOVTrack *trk, int64_t *dts)
 {
     int64_t curpos;
     int64_t count_pos, entries_pos;
@@ -328,6 +328,7 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
         uint32_t packet_len = AV_RB32(data);
         uint16_t seq;
         uint32_t ts;
+        int32_t  ts_diff;
 
         data += 4;
         size -= 4;
@@ -344,25 +345,35 @@ static int write_hint_packets(AVIOContext *out, const uint8_t *data,
             trk->max_packet_size = packet_len;
 
         seq = AV_RB16(&data[2]);
-        ts = AV_RB32(&data[4]);
+        ts  = AV_RB32(&data[4]);
 
         if (trk->prev_rtp_ts == 0)
             trk->prev_rtp_ts = ts;
         /* Unwrap the 32-bit RTP timestamp that wraps around often
          * into a not (as often) wrapping 64-bit timestamp. */
-        trk->cur_rtp_ts_unwrapped += (int32_t) (ts - trk->prev_rtp_ts);
-        trk->prev_rtp_ts = ts;
-        if (*pts == AV_NOPTS_VALUE)
-            *pts = trk->cur_rtp_ts_unwrapped;
+        ts_diff = ts - trk->prev_rtp_ts;
+        if (ts_diff > 0) {
+            trk->cur_rtp_ts_unwrapped += ts_diff;
+            trk->prev_rtp_ts = ts;
+            ts_diff = 0;
+        }
+        if (*dts == AV_NOPTS_VALUE)
+            *dts = trk->cur_rtp_ts_unwrapped;
 
         count++;
         /* RTPpacket header */
         avio_wb32(out, 0); /* relative_time */
         avio_write(out, data, 2); /* RTP header */
         avio_wb16(out, seq); /* RTPsequenceseed */
-        avio_wb16(out, 0); /* reserved + flags */
+        avio_wb16(out, ts_diff ? 4 : 0); /* reserved + flags (extra_flag) */
         entries_pos = avio_tell(out);
         avio_wb16(out, 0); /* entry count */
+        if (ts_diff) { /* if extra_flag is set */
+            avio_wb32(out, 16); /* extra_information_length */
+            avio_wb32(out, 12); /* rtpoffsetTLV box */
+            avio_write(out, "rtpo", 4);
+            avio_wb32(out, ts_diff);
+        }
 
         data += 12;
         size -= 12;
@@ -417,7 +428,7 @@ int ff_mov_add_hinted_packet(AVFormatContext *s, AVPacket *pkt,
      * for next time. */
     size = avio_close_dyn_buf(rtp_ctx->pb, &buf);
     if ((ret = ffio_open_dyn_packet_buf(&rtp_ctx->pb,
-                                       RTP_MAX_PACKET_SIZE)) < 0)
+                                        RTP_MAX_PACKET_SIZE)) < 0)
         goto done;
 
     if (size <= 0)
@@ -445,8 +456,9 @@ done:
     return ret;
 }
 
-void ff_mov_close_hinting(MOVTrack *track) {
-    AVFormatContext* rtp_ctx = track->rtp_ctx;
+void ff_mov_close_hinting(MOVTrack *track)
+{
+    AVFormatContext *rtp_ctx = track->rtp_ctx;
     uint8_t *ptr;
 
     av_freep(&track->enc);

@@ -36,7 +36,7 @@
 
 static void usage(void)
 {
-    printf("Convert a libavfilter graph to a dot file\n");
+    printf("Convert a libavfilter graph to a dot file.\n");
     printf("Usage: graph2dot [OPTIONS]\n");
     printf("\n"
            "Options:\n"
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
         infilename = "/dev/stdin";
     infile = fopen(infilename, "r");
     if (!infile) {
-        fprintf(stderr, "Impossible to open input file '%s': %s\n",
+        fprintf(stderr, "Failed to open input file '%s': %s\n",
                 infilename, strerror(errno));
         return 1;
     }
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
         outfilename = "/dev/stdout";
     outfile = fopen(outfilename, "w");
     if (!outfile) {
-        fprintf(stderr, "Impossible to open output file '%s': %s\n",
+        fprintf(stderr, "Failed to open output file '%s': %s\n",
                 outfilename, strerror(errno));
         return 1;
     }
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
     avfilter_register_all();
 
     if (avfilter_graph_parse(graph, graph_string, NULL, NULL, NULL) < 0) {
-        fprintf(stderr, "Impossible to parse the graph description\n");
+        fprintf(stderr, "Failed to parse the graph description\n");
         return 1;
     }
 

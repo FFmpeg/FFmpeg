@@ -112,15 +112,23 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+#define SET_META(key, value) \
+    snprintf(buf, sizeof(buf), "%d", value);  \
+    av_dict_set(metadata, key, buf, 0)
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     CropDetectContext *s = ctx->priv;
     int bpp = s->max_pixsteps[0];
     int w, h, x, y, shrink_by;
+    AVDictionary **metadata;
+    char buf[32];
 
     // ignore first 2 frames - they may be empty
     if (++s->frame_nb > 0) {
+        metadata = avpriv_frame_get_metadatap(frame);
+
         // Reset the crop area every reset_count frames, if reset_count is > 0
         if (s->reset_count > 0 && s->frame_nb > s->reset_count) {
             s->x1 = frame->width  - 1;
@@ -180,6 +188,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         shrink_by = h % s->round;
         h -= shrink_by;
         y += (shrink_by/2 + 1) & ~1;
+
+        SET_META("lavfi.cropdetect.x1", s->x1);
+        SET_META("lavfi.cropdetect.x2", s->x2);
+        SET_META("lavfi.cropdetect.y1", s->y1);
+        SET_META("lavfi.cropdetect.y2", s->y2);
+        SET_META("lavfi.cropdetect.w",  w);
+        SET_META("lavfi.cropdetect.h",  h);
+        SET_META("lavfi.cropdetect.x",  x);
+        SET_META("lavfi.cropdetect.y",  y);
 
         av_log(ctx, AV_LOG_INFO,
                "x1:%d x2:%d y1:%d y2:%d w:%d h:%d x:%d y:%d pts:%"PRId64" t:%f crop=%d:%d:%d:%d\n",

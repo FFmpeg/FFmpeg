@@ -36,6 +36,7 @@
 extern "C" {
 #include "avcodec.h"
 #include "libavutil/imgutils.h"
+#include "internal.h"
 }
 
 #define OMX_QCOM_COLOR_FormatYVU420SemiPlanar 0x7FA30C00
@@ -185,7 +186,7 @@ void* decode_thread(void *arg)
                 buffer->release();
                 goto push_frame;
             }
-            ret = ff_get_buffer(avctx, frame->vframe);
+            ret = ff_get_buffer(avctx, frame->vframe, AV_GET_BUFFER_FLAG_REF);
             if (ret < 0) {
                 frame->status = ret;
                 decode_done   = 1;
@@ -456,10 +457,8 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    if (s->prev_frame) {
-        avctx->release_buffer(avctx, s->prev_frame);
-        av_freep(&s->prev_frame);
-    }
+    if (s->prev_frame)
+        av_frame_free(&s->prev_frame);
     s->prev_frame = ret_frame;
 
     *got_frame = 1;
@@ -481,10 +480,8 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
             while (!s->out_queue->empty()) {
                 frame = *s->out_queue->begin();
                 s->out_queue->erase(s->out_queue->begin());
-                if (frame->vframe) {
-                    avctx->release_buffer(avctx, frame->vframe);
-                    av_freep(&frame->vframe);
-                }
+                if (frame->vframe)
+                    av_frame_free(&frame->vframe);
                 av_freep(&frame);
             }
             pthread_mutex_unlock(&s->out_mutex);
@@ -514,10 +511,8 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
 
         pthread_join(s->decode_thread_id, NULL);
 
-        if (s->prev_frame) {
-            avctx->release_buffer(avctx, s->prev_frame);
-            av_freep(&s->prev_frame);
-        }
+        if (s->prev_frame)
+            av_frame_free(&s->prev_frame);
 
         s->thread_started = false;
     }
@@ -533,10 +528,8 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
     while (!s->out_queue->empty()) {
         frame = *s->out_queue->begin();
         s->out_queue->erase(s->out_queue->begin());
-        if (frame->vframe) {
-            avctx->release_buffer(avctx, frame->vframe);
-            av_freep(&frame->vframe);
-        }
+        if (frame->vframe)
+            av_frame_free(&frame->vframe);
         av_freep(&frame);
     }
 

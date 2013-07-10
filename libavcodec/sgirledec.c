@@ -42,7 +42,7 @@ static av_cold int sgirle_decode_init(AVCodecContext *avctx)
 }
 
 /**
- * Convert SGI RGB332 pixel into PIX_FMT_BGR8
+ * Convert SGI RGB332 pixel into AV_PIX_FMT_BGR8
  * SGI RGB332 is packed RGB 3:3:2, 8bpp, (msb)3R 2B 3G(lsb)
  */
 #define RGB332_TO_BGR8(x) (((x << 3) & 0xC0) | ((x << 3) & 0x38) | ((x >> 5) & 7))

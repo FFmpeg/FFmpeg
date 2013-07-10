@@ -171,7 +171,6 @@ static av_cold int tak_decode_init(AVCodecContext *avctx)
 {
     TAKDecContext *s = avctx->priv_data;
 
-    ff_tak_init_crc();
     ff_dsputil_init(&s->dsp, avctx);
 
     s->avctx = avctx;

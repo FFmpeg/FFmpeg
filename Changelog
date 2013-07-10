@@ -1,7 +1,13 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version <next>
+
+- aecho filter
+
+
+version 2.0:
+
 - curves filter
 - reference-counting for AVFrame and AVPacket data
 - ffmpeg now fails when input options are used for output file
@@ -68,6 +74,8 @@ version <next>:
 - WavPack encoding through libwavpack
 - rotate filter
 - spp filter ported from libmpcodecs
+- libgme support
+- psnr filter
 
 
 version 1.2:

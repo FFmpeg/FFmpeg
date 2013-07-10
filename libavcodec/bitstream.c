@@ -299,6 +299,8 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
     av_dlog(NULL, "build table nb_codes=%d\n", nb_codes);
 
     buf = av_malloc((nb_codes + 1) * sizeof(VLCcode));
+    if (!buf)
+        return AVERROR(ENOMEM);
 
     av_assert0(symbols_size <= 2 || !symbols);
     j = 0;

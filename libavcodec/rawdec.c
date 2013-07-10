@@ -133,12 +133,17 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
             memset(context->palette->data, 0, AVPALETTE_SIZE);
     }
 
-    context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
-                                             avctx->height);
     if ((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8 &&
-       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' ')))
+       (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))) {
         context->is_2_4_bpp = 1;
+        context->frame_size = avpicture_get_size(avctx->pix_fmt,
+                                                 FFALIGN(avctx->width, 16),
+                                                 avctx->height);
+    } else {
+        context->frame_size = avpicture_get_size(avctx->pix_fmt, avctx->width,
+                                                 avctx->height);
+    }
 
     if ((avctx->extradata_size >= 9 &&
          !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9)) ||

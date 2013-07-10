@@ -334,7 +334,7 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass class = {
+static const AVClass speex_class = {
     .class_name = "libspeex",
     .item_name  = av_default_item_name,
     .option     = options,
@@ -363,6 +363,6 @@ AVCodec ff_libspeex_encoder = {
                                            0 },
     .supported_samplerates = (const int[]){ 8000, 16000, 32000, 0 },
     .long_name      = NULL_IF_CONFIG_SMALL("libspeex Speex"),
-    .priv_class     = &class,
+    .priv_class     = &speex_class,
     .defaults       = defaults,
 };

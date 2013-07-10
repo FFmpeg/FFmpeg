@@ -213,7 +213,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->eval_mode == EVAL_MODE_FRAME)
         update_context(s, inlink, in);
 
-    if (s->desc->flags & PIX_FMT_RGB) {
+    if (s->desc->flags & AV_PIX_FMT_FLAG_RGB) {
         uint8_t       *dst = out->data[0];
         const uint8_t *src = in ->data[0];
         const float *fmap = s->fmap;

@@ -615,7 +615,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
     svq1_pmv *pmv;
 
     /* initialize bit buffer */
-    init_get_bits(&s->gb, buf, buf_size * 8);
+    init_get_bits8(&s->gb, buf, buf_size);
 
     /* decode frame header */
     s->frame_code = get_bits(&s->gb, 22);

@@ -347,6 +347,66 @@ aconvert=u8:auto
 @end example
 @end itemize
 
+@section aecho
+
+Apply echoing to the input audio.
+
+Echoes are reflected sound and can occur naturally amongst mountains
+(and sometimes large buildings) when talking or shouting; digital echo
+effects emulate this behaviour and are often used to help fill out the
+sound of a single instrument or vocal. The time difference between the
+original signal and the reflection is the @code{delay}, and the
+loudness of the reflected signal is the @code{decay}.
+Multiple echoes can have different delays and decays.
+
+A description of the accepted parameters follows.
+
+@table @option
+@item in_gain
+Set input gain of reflected signal. Default is @code{0.6}.
+
+@item out_gain
+Set output gain of reflected signal. Default is @code{0.3}.
+
+@item delays
+Set list of time intervals in milliseconds between original signal and reflections
+separated by '|'. Allowed range for each @code{delay} is @code{(0 - 90000.0]}.
+Default is @code{1000}.
+
+@item decays
+Set list of loudnesses of reflected signals separated by '|'.
+Allowed range for each @code{decay} is @code{(0 - 1.0]}.
+Default is @code{0.5}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Make it sound as if there are twice as many instruments as are actually playing:
+@example
+aecho=0.8:0.88:60:0.4
+@end example
+
+@item
+If delay is very short, then it sound like a (metallic) robot playing music:
+@example
+aecho=0.8:0.88:6:0.4
+@end example
+
+@item
+A longer delay will sound like an open air concert in the mountains:
+@example
+aecho=0.8:0.9:1000:0.3
+@end example
+
+@item
+Same as above but with one more mountain:
+@example
+aecho=0.8:0.9:1000|1800:0.3|0.25
+@end example
+@end itemize
+
 @section afade
 
 Apply fade-in/out effect to input audio.
@@ -2101,6 +2161,13 @@ Value of pixel component at current location for first video frame (top layer).
 @item BOTTOM, B
 Value of pixel component at current location for second video frame (bottom layer).
 @end table
+
+@item shortest
+Force termination when the shortest input terminates. Default is @code{0}.
+@item repeatlast
+Continue applying the last bottom frame after the end of the stream. A value of
+@code{0} disable the filter after the last frame of the bottom layer is reached.
+Default is @code{1}.
 @end table
 
 @subsection Examples
@@ -2780,8 +2847,8 @@ Specify the thickness of the fuzzy edge of the rectangle (added to
 
 @item show
 When set to 1, a green rectangle is drawn on the screen to simplify
-finding the right @var{x}, @var{y}, @var{w}, @var{h} parameters, and
-@var{band} is set to 4. The default value is 0.
+finding the right @var{x}, @var{y}, @var{w}, and @var{h} parameters.
+The default value is 0.
 
 @end table
 
@@ -3320,6 +3387,9 @@ It can accept an argument: a strftime() format string.
 @item localtime
 The time at which the filter is running, expressed in the local time zone.
 It can accept an argument: a strftime() format string.
+
+@item metadata
+Frame metadata. It must take one argument specifying metadata key.
 
 @item n, frame_num
 The frame number, starting from 0.
@@ -5338,7 +5408,7 @@ color space. Default value is 0. This option is deprecated, use
 @item repeatlast
 If set to 1, force the filter to draw the last overlay frame over the
 main input until the end of the stream. A value of 0 disables this
-behavior, which is enabled by default.
+behavior. Default value is 1.
 @end table
 
 The @option{x}, and @option{y} expressions can contain the following
@@ -5829,6 +5899,74 @@ automatically depending on available CPU time:
 pp=hb|y/vb|a
 @end example
 @end itemize
+
+@section psnr
+
+Obtain the average, maximum and minimum PSNR (Peak Signal to Noise
+Ratio) between two input videos.
+
+This filter takes in input two input videos, the first input is
+considered the "main" source and is passed unchanged to the
+output. The second input is used as a "reference" video for computing
+the PSNR.
+
+Both video inputs must have the same resolution and pixel format for
+this filter to work correctly. Also it assumes that both inputs
+have the same number of frames, which are compared one by one.
+
+The obtained average PSNR is printed through the logging system.
+
+The filter stores the accumulated MSE (mean squared error) of each
+frame, and at the end of the processing it is averaged across all frames
+equally, and the following formula is applied to obtain the PSNR:
+
+@example
+PSNR = 10*log10(MAX^2/MSE)
+@end example
+
+Where MAX is the average of the maximum values of each component of the
+image.
+
+The description of the accepted parameters follows.
+
+@table @option
+@item stats_file, f
+If specified the filter will use the named file to save the PSNR of
+each individual frame.
+@end table
+
+The file printed if @var{stats_file} is selected, contains a sequence of
+key/value pairs of the form @var{key}:@var{value} for each compared
+couple of frames.
+
+A description of each shown parameter follows:
+
+@table @option
+@item n
+sequential number of the input frame, starting from 1
+
+@item mse_avg
+Mean Square Error pixel-by-pixel average difference of the compared
+frames, averaged over all the image components.
+
+@item mse_y, mse_u, mse_v, mse_r, mse_g, mse_g, mse_a
+Mean Square Error pixel-by-pixel average difference of the compared
+frames for the component specified by the suffix.
+
+@item psnr_y, psnr_u, psnr_v, psnr_r, psnr_g, psnr_b, psnr_a
+Peak Signal to Noise ratio of the compared frames for the component
+specified by the suffix.
+@end table
+
+For example:
+@example
+movie=ref_movie.mpg, setpts=PTS-STARTPTS [main];
+[main][ref] psnr="stats_file=stats.log" [out]
+@end example
+
+On this example the input file being processed is compared with the
+reference file @file{ref_movie.mpg}. The PSNR of each individual frame
+is stored in @file{stats.log}.
 
 @section removelogo
 

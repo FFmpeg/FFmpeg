@@ -62,7 +62,7 @@ static int query_formats(AVFilterContext *ctx)
 
 #define SET_META(key, value) \
     snprintf(buf, sizeof(buf), "%d", value);  \
-    av_dict_set(metadata, #key, buf, 0); \
+    av_dict_set(metadata, key, buf, 0);
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {

@@ -34,6 +34,7 @@ typedef struct TCPContext {
     const AVClass *class;
     int fd;
     int listen;
+    int open_timeout;
     int rw_timeout;
     int listen_timeout;
 } TCPContext;
@@ -43,7 +44,7 @@ typedef struct TCPContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
 {"listen", "listen on port instead of connecting", OFFSET(listen), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D|E },
-{"timeout", "timeout of socket i/o operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, D|E },
+{"timeout", "timeout of socket i/o operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
 {"listen_timeout", "connection awaiting timeout", OFFSET(listen_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
 {NULL}
 };
@@ -66,7 +67,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int ret;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
-    h->rw_timeout = 5000000;
+    s->open_timeout = 5000000;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -87,7 +88,10 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             s->listen_timeout = strtol(buf, NULL, 10);
         }
     }
-    h->rw_timeout = s->rw_timeout;
+    if (s->rw_timeout >= 0) {
+        s->open_timeout =
+        h->rw_timeout   = s->rw_timeout;
+    }
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
@@ -121,7 +125,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         }
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                     h->rw_timeout / 1000, h)) < 0) {
+                                     s->open_timeout / 1000, h)) < 0) {
 
             if (ret == AVERROR_EXIT)
                 goto fail1;
