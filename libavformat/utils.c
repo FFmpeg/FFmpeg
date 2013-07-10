@@ -2783,6 +2783,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         } else {
             pkt = add_to_pktbuf(&ic->packet_buffer, &pkt1,
                                 &ic->packet_buffer_end);
+            if (!pkt)
+                goto find_stream_info_err;
             if ((ret = av_dup_packet(pkt)) < 0)
                 goto find_stream_info_err;
         }
