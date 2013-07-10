@@ -809,6 +809,12 @@ static int dca_subframe_header(DCAContext *s, int base_channel, int block_index)
                        "Invalid channel mode %d\n", am);
                 return AVERROR_INVALIDDATA;
             }
+            if (s->prim_channels > FF_ARRAY_ELEMS(dca_default_coeffs[0])) {
+                av_log_ask_for_sample(s->avctx, "Downmixing %d channels",
+                                      s->prim_channels);
+                return AVERROR_PATCHWELCOME;
+            }
+
             for (j = base_channel; j < s->prim_channels; j++) {
                 s->downmix_coef[j][0] = dca_default_coeffs[am][j][0];
                 s->downmix_coef[j][1] = dca_default_coeffs[am][j][1];
