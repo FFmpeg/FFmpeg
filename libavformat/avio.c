@@ -273,6 +273,8 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
 
     len = 0;
     while (len < size_min) {
+        if (ff_check_interrupt(&h->interrupt_callback))
+            return AVERROR_EXIT;
         ret = transfer_func(h, buf+len, size-len);
         if (ret == AVERROR(EINTR))
             continue;
@@ -296,8 +298,6 @@ static inline int retry_transfer_wrapper(URLContext *h, unsigned char *buf, int 
         if (ret)
            fast_retries = FFMAX(fast_retries, 2);
         len += ret;
-        if (len < size && ff_check_interrupt(&h->interrupt_callback))
-            return AVERROR_EXIT;
     }
     return len;
 }
