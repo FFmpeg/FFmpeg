@@ -1258,6 +1258,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
 #endif
         } else {
             av_log(s->avctx, AV_LOG_ERROR, "Didn't get subframe DSYNC\n");
+            return AVERROR_INVALIDDATA;
         }
     }
 
