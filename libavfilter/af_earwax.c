@@ -117,6 +117,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
         ff_get_audio_buffer(inlink, AV_PERM_WRITE,
                                   insamples->audio->nb_samples);
     int ret;
+    int len;
 
     if (!outsamples)
         return AVERROR(ENOMEM);
@@ -126,16 +127,20 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     out   = (int16_t *)outsamples->data[0];
     in    = (int16_t *)insamples ->data[0];
 
+    len = FFMIN(NUMTAPS, 2*insamples->audio->nb_samples);
     // copy part of new input and process with saved input
-    memcpy(taps+NUMTAPS, in, NUMTAPS * sizeof(*taps));
-    out   = scalarproduct(taps, taps + NUMTAPS, out);
+    memcpy(taps+NUMTAPS, in, len * sizeof(*taps));
+    out   = scalarproduct(taps, taps + len, out);
 
     // process current input
-    endin = in + insamples->audio->nb_samples * 2 - NUMTAPS;
-    scalarproduct(in, endin, out);
+    if (2*insamples->audio->nb_samples >= NUMTAPS ){
+        endin = in + insamples->audio->nb_samples * 2 - NUMTAPS;
+        scalarproduct(in, endin, out);
 
-    // save part of input for next round
-    memcpy(taps, endin, NUMTAPS * sizeof(*taps));
+        // save part of input for next round
+        memcpy(taps, endin, NUMTAPS * sizeof(*taps));
+    } else
+        memmove(taps, taps + 2*insamples->audio->nb_samples, NUMTAPS * sizeof(*taps));
 
     ret = ff_filter_frame(outlink, outsamples);
     avfilter_unref_buffer(insamples);
