@@ -820,7 +820,7 @@ static int synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
     float type34_div = 0;
     float type34_predictor;
     float samples[10];
-    int sign_bits[16];
+    int sign_bits[16] = {0};
 
     if (length == 0) {
         // If no data use noise
