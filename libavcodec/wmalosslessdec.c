@@ -262,7 +262,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     avcodec_get_frame_defaults(&s->frame);
-    avctx->coded_frame    = &s->frame;
     avctx->channel_layout = channel_mask;
     return 0;
 }
