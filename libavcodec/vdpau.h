@@ -52,7 +52,7 @@
 #include <vdpau/vdpau.h>
 #include <vdpau/vdpau_x11.h>
 
-union VdpPictureInfo {
+union AVVDPAUPictureInfo {
     VdpPictureInfoH264        h264;
     VdpPictureInfoMPEG1Or2    mpeg;
     VdpPictureInfoVC1          vc1;
@@ -88,7 +88,7 @@ typedef struct AVVDPAUContext {
      *
      * Set by libavcodec.
      */
-    union VdpPictureInfo info;
+    union AVVDPAUPictureInfo info;
 
     /**
      * Allocated size of the bitstream_buffers table.
@@ -136,7 +136,7 @@ struct vdpau_render_state {
     int state; ///< Holds FF_VDPAU_STATE_* values.
 
     /** picture parameter information for all supported codecs */
-    union VdpPictureInfo info;
+    union AVVDPAUPictureInfo info;
 
     /** Describe size/location of the compressed video data.
         Set to 0 when freeing bitstream_buffers. */
