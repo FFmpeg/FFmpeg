@@ -241,6 +241,8 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
             return url_alloc_for_protocol (puc, up, filename, flags, int_cb);
     }
     *puc = NULL;
+    if (!strcmp("https", proto_str))
+        av_log(NULL, AV_LOG_WARNING, "https protocol not found, recompile with openssl or gnutls enabled.\n");
     return AVERROR_PROTOCOL_NOT_FOUND;
 }
 
