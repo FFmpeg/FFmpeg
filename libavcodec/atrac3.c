@@ -923,11 +923,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (q->coding_mode == JOINT_STEREO && avctx->channels < 2) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid coding mode\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     /* Check the extradata */
 
     if (version != 4) {
@@ -950,9 +945,13 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     if (q->coding_mode == STEREO)
         av_log(avctx, AV_LOG_DEBUG, "Normal stereo detected.\n");
-    else if (q->coding_mode == JOINT_STEREO)
+    else if (q->coding_mode == JOINT_STEREO) {
+        if (avctx->channels != 2) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid coding mode\n");
+            return AVERROR_INVALIDDATA;
+        }
         av_log(avctx, AV_LOG_DEBUG, "Joint stereo detected.\n");
-    else {
+    } else {
         av_log(avctx, AV_LOG_ERROR, "Unknown channel coding mode %x!\n",
                q->coding_mode);
         return AVERROR_INVALIDDATA;
