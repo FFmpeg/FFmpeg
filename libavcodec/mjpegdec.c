@@ -1231,16 +1231,16 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
             && nb_components == 3 && s->nb_components == 3 && i)
             index = 3 - i;
 
+        s->nb_blocks[i] = s->h_count[index] * s->v_count[index];
+        s->h_scount[i]  = s->h_count[index];
+        s->v_scount[i]  = s->v_count[index];
+
         if(nb_components == 3 && s->nb_components == 3 && s->avctx->pix_fmt == AV_PIX_FMT_GBR24P)
             index = (i+2)%3;
         if(nb_components == 1 && s->nb_components == 3 && s->avctx->pix_fmt == AV_PIX_FMT_GBR24P)
             index = (index+2)%3;
 
         s->comp_index[i] = index;
-
-        s->nb_blocks[i] = s->h_count[index] * s->v_count[index];
-        s->h_scount[i]  = s->h_count[index];
-        s->v_scount[i]  = s->v_count[index];
 
         s->dc_index[i] = get_bits(&s->gb, 4);
         s->ac_index[i] = get_bits(&s->gb, 4);
