@@ -2415,7 +2415,7 @@ and 13, default value is 5.
 Set the chroma matrix vertical size. It can be an integer between 3
 and 13, default value is 5.
 
-@item luma_amount
+@item chroma_amount
 Set the chroma effect strength. It can be a float number between -2.0
 and 5.0, default value is 0.0.
 
