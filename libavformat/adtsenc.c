@@ -24,16 +24,20 @@
 #include "libavcodec/put_bits.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
+#include "apetag.h"
 
 #define ADTS_HEADER_SIZE 7
 
 typedef struct {
+    AVClass *class;
     int write_adts;
     int objecttype;
     int sample_rate_index;
     int channel_conf;
     int pce_size;
+    int apetag;
     uint8_t pce_data[MAX_PCE_SIZE];
 } ADTSContext;
 
@@ -162,6 +166,30 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+static int adts_write_trailer(AVFormatContext *s)
+{
+    ADTSContext *adts = s->priv_data;
+
+    if (adts->apetag)
+        ff_ape_write_tag(s);
+
+    return 0;
+}
+
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
+#define OFFSET(obj) offsetof(ADTSContext, obj)
+static const AVOption options[] = {
+    { "write_apetag", "Enable APE tag writing", OFFSET(apetag), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, ENC},
+    { NULL },
+};
+
+static const AVClass adts_muxer_class = {
+    .class_name     = "ADTS muxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_adts_muxer = {
     .name              = "adts",
     .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC (Advanced Audio Coding)"),
@@ -172,4 +200,6 @@ AVOutputFormat ff_adts_muxer = {
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = adts_write_header,
     .write_packet      = adts_write_packet,
+    .write_trailer     = adts_write_trailer,
+    .priv_class        = &adts_muxer_class,
 };
