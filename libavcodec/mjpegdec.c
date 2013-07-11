@@ -1373,7 +1373,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     len -= 6;
 
     if (s->avctx->debug & FF_DEBUG_STARTCODE)
-        av_log(s->avctx, AV_LOG_DEBUG, "APPx %8X\n", id);
+        av_log(s->avctx, AV_LOG_DEBUG, "APPx %8X len=%d\n", id, len);
 
     /* Buggy AVID, it puts EOI only at every 10th frame. */
     /* Also, this fourcc is used by non-avid files too, it holds some
