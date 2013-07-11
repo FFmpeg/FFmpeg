@@ -57,6 +57,7 @@ static const struct rgb_pixfmt_map_entry rgb_pixfmt_map[] = {
     {  32,       3,           2,           8,            0,   AV_PIX_FMT_ABGR  },
     {  24,       0,           8,          16,            0,   AV_PIX_FMT_RGB24 },
     {  24,      16,           8,           0,            0,   AV_PIX_FMT_BGR24 },
+    {  16,      11,           5,           0,           16,   AV_PIX_FMT_RGB565 },
 };
 
 static enum AVPixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varinfo)
