@@ -361,6 +361,43 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         goto end;
     }
 
+    if (s->xfrm && s->nb_components == 3) {
+        int x, w;
+
+        w = s->width * s->nb_components;
+
+        if (s->bits <= 8) {
+            uint8_t *src = s->picture.data[0];
+
+            for (i = 0; i < s->height; i++) {
+                switch(s->xfrm) {
+                case 1:
+                    for (x = off; x < w; x += 3) {
+                        src[x  ] += src[x+1] + 128;
+                        src[x+2] += src[x+1] + 128;
+                    }
+                    break;
+                case 2:
+                    for (x = off; x < w; x += 3) {
+                        src[x  ] += src[x+1] + 128;
+                        src[x+2] += ((src[x  ] + src[x+1])>>1) + 128;
+                    }
+                    break;
+                case 3:
+                    for (x = off; x < w; x += 3) {
+                        int g = src[x+0] - ((src[x+2]+src[x+1])>>2) + 64;
+                        src[x+0] = src[x+2] + g + 128;
+                        src[x+2] = src[x+1] + g + 128;
+                        src[x+1] = g;
+                    }
+                    break;
+                }
+                src += s->picture.linesize[0];
+            }
+        }else
+            avpriv_report_missing_feature(s->avctx, "16bit xfrm");
+    }
+
     if (shift) { /* we need to do point transform or normalize samples */
         int x, w;
 
