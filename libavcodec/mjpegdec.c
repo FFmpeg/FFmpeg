@@ -1088,7 +1088,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                             s->dsp.clear_block(s->block);
                             if (decode_block(s, s->block, i,
                                              s->dc_index[i], s->ac_index[i],
-                                             s->quant_matrixes[s->quant_index[c]]) < 0) {
+                                             s->quant_matrixes[s->quant_sindex[i]]) < 0) {
                                 av_log(s->avctx, AV_LOG_ERROR,
                                        "error y=%d x=%d\n", mb_y, mb_x);
                                 return AVERROR_INVALIDDATA;
@@ -1101,9 +1101,9 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                         int16_t *block = s->blocks[c][block_idx];
                         if (Ah)
                             block[0] += get_bits1(&s->gb) *
-                                        s->quant_matrixes[s->quant_index[c]][0] << Al;
+                                        s->quant_matrixes[s->quant_sindex[i]][0] << Al;
                         else if (decode_dc_progressive(s, block, i, s->dc_index[i],
-                                                       s->quant_matrixes[s->quant_index[c]],
+                                                       s->quant_matrixes[s->quant_sindex[i]],
                                                        Al) < 0) {
                             av_log(s->avctx, AV_LOG_ERROR,
                                    "error y=%d x=%d\n", mb_y, mb_x);
@@ -1136,7 +1136,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     uint8_t *data = s->picture.data[c];
     int linesize  = s->linesize[c];
     int last_scan = 0;
-    int16_t *quant_matrix = s->quant_matrixes[s->quant_index[c]];
+    int16_t *quant_matrix = s->quant_matrixes[s->quant_sindex[0]];
 
     av_assert0(ss>=0 && Ah>=0 && Al>=0);
     if (se < ss || se > 63) {
@@ -1231,6 +1231,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
             && nb_components == 3 && s->nb_components == 3 && i)
             index = 3 - i;
 
+        s->quant_sindex[i] = s->quant_index[index];
         s->nb_blocks[i] = s->h_count[index] * s->v_count[index];
         s->h_scount[i]  = s->h_count[index];
         s->v_scount[i]  = s->v_count[index];

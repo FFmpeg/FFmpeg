@@ -84,6 +84,7 @@ typedef struct MJpegDecodeContext {
     int nb_blocks[MAX_COMPONENTS];
     int h_scount[MAX_COMPONENTS];
     int v_scount[MAX_COMPONENTS];
+    int quant_sindex[MAX_COMPONENTS];
     int h_max, v_max; /* maximum h and v counts */
     int quant_index[4];   /* quant table index for each component */
     int last_dc[MAX_COMPONENTS]; /* last DEQUANTIZED dc (XXX: am I right to do that ?) */
