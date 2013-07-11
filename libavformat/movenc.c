@@ -3646,8 +3646,10 @@ static int mov_write_header(AVFormatContext *s)
                 track->timescale = mov->video_track_timescale;
             } else {
                 track->timescale = st->codec->time_base.den;
+#ifndef VPLAYER_IOS
                 while(track->timescale < 10000)
                     track->timescale *= 2;
+#endif
             }
             if (track->mode == MODE_MOV && track->timescale > 100000)
                 av_log(s, AV_LOG_WARNING,
