@@ -1462,6 +1462,13 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         len -= 9;
         goto out;
     }
+    if (id == AV_RL32("colr") && len > 0) {
+        s->colr = get_bits(&s->gb, 8);
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "COLR %d\n", s->colr);
+        len --;
+        goto out;
+    }
 
     /* Apple MJPEG-A */
     if ((s->start_code == APP1) && (len > (0x28 - 8))) {
