@@ -66,6 +66,7 @@ typedef struct MJpegDecodeContext {
     int pegasus_rct;    /* pegasus reversible colorspace transform */
     int bits;           /* bits per component */
     int colr;
+    int xfrm;
 
     int maxval;
     int near;         ///< near lossless bound (si 0 for lossless)
