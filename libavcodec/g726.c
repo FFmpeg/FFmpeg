@@ -96,6 +96,7 @@ typedef struct G726Context {
     int sez;            /**< estimated second order prediction */
     int y;              /**< quantizer scaling factor for the next iteration */
     int code_size;
+    int little_endian;  /**< little-endian bitstream as used in aiff and Sun AU */
 } G726Context;
 
 static const int quant_tbl16[] =                  /**< 16kbit/s 2bits per sample */
@@ -396,7 +397,7 @@ AVCodec ff_adpcm_g726_encoder = {
 };
 #endif
 
-#if CONFIG_ADPCM_G726_DECODER
+#if CONFIG_ADPCM_G726_DECODER || CONFIG_ADPCM_G726LE_DECODER
 static av_cold int g726_decode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
@@ -407,6 +408,8 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
     }
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
+
+    c->little_endian = !strcmp(avctx->codec->name, "g726le");
 
     c->code_size = avctx->bits_per_coded_sample;
     if (c->code_size < 2 || c->code_size > 5) {
@@ -442,7 +445,9 @@ static int g726_decode_frame(AVCodecContext *avctx, void *data,
     init_get_bits(&gb, buf, buf_size * 8);
 
     while (out_samples--)
-        *samples++ = g726_decode(c, get_bits(&gb, c->code_size));
+        *samples++ = g726_decode(c, c->little_endian ?
+                                    get_bits_le(&gb, c->code_size) :
+                                    get_bits(&gb, c->code_size));
 
     if (get_bits_left(&gb) > 0)
         av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
@@ -457,7 +462,9 @@ static void g726_decode_flush(AVCodecContext *avctx)
     G726Context *c = avctx->priv_data;
     g726_reset(c);
 }
+#endif
 
+#if CONFIG_ADPCM_G726_DECODER
 AVCodec ff_adpcm_g726_decoder = {
     .name           = "g726",
     .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
@@ -468,5 +475,19 @@ AVCodec ff_adpcm_g726_decoder = {
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
+};
+#endif
+
+#if CONFIG_ADPCM_G726LE_DECODER
+AVCodec ff_adpcm_g726le_decoder = {
+    .name           = "g726le",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = AV_CODEC_ID_ADPCM_G726LE,
+    .priv_data_size = sizeof(G726Context),
+    .init           = g726_decode_init,
+    .decode         = g726_decode_frame,
+    .flush          = g726_decode_flush,
+    .capabilities   = CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("G.726 ADPCM little-endian"),
 };
 #endif
