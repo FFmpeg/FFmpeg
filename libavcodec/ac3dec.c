@@ -1370,7 +1370,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         avctx->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
 
     /* get output buffer */
-    frame->nb_samples = s->num_blocks * 256;
+    frame->nb_samples = s->num_blocks * AC3_BLOCK_SIZE;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
@@ -1392,7 +1392,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
         }
         if (err)
             for (ch = 0; ch < s->out_channels; ch++)
-                memcpy(s->outptr[channel_map[ch]], output[ch], 1024);
+                memcpy(s->outptr[channel_map[ch]], output[ch], sizeof(**output) * AC3_BLOCK_SIZE);
         for (ch = 0; ch < s->out_channels; ch++)
             output[ch] = s->outptr[channel_map[ch]];
         for (ch = 0; ch < s->channels; ch++)
@@ -1401,7 +1401,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
 
     /* keep last block for error concealment in next frame */
     for (ch = 0; ch < s->out_channels; ch++)
-        memcpy(s->output[ch], output[ch], 1024);
+        memcpy(s->output[ch], output[ch], sizeof(**output) * AC3_BLOCK_SIZE);
 
     *got_frame_ptr = 1;
 
