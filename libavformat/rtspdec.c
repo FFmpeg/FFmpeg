@@ -574,6 +574,8 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply)
     /* describe the stream */
     snprintf(cmd, sizeof(cmd),
              "Accept: application/sdp\r\n");
+    av_strlcatf(cmd, sizeof(cmd),
+                "User-Agent: %s\r\n", rt->user_agent);
     if (rt->server_type == RTSP_SERVER_REAL) {
         /**
          * The Require: attribute is needed for proper streaming from
