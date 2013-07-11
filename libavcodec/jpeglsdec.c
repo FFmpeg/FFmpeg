@@ -391,6 +391,16 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                         src[x+1] = g;
                     }
                     break;
+                case 4:
+                    for (x = off; x < w; x += 3) {
+                        int r    = src[x+0] - ((                       359 * (src[x+2]-128) + 490) >> 8);
+                        int g    = src[x+0] - (( 88 * (src[x+1]-128) - 183 * (src[x+2]-128) +  30) >> 8);
+                        int b    = src[x+0] + ((454 * (src[x+1]-128)                        + 574) >> 8);
+                        src[x+0] = av_clip_uint8(r);
+                        src[x+1] = av_clip_uint8(g);
+                        src[x+2] = av_clip_uint8(b);
+                    }
+                    break;
                 }
                 src += s->picture.linesize[0];
             }
