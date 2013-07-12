@@ -302,11 +302,11 @@ static int insert_trim(int64_t start_time, int64_t duration,
         return AVERROR(ENOMEM);
 
     if (duration != INT64_MAX) {
-        ret = av_opt_set_double(ctx, "duration", (double)duration / 1e6,
+        ret = av_opt_set_int(ctx, "durationi", duration,
                                 AV_OPT_SEARCH_CHILDREN);
     }
     if (ret >= 0 && start_time != AV_NOPTS_VALUE) {
-        ret = av_opt_set_double(ctx, "start", (double)start_time / 1e6,
+        ret = av_opt_set_int(ctx, "starti", start_time,
                                 AV_OPT_SEARCH_CHILDREN);
     }
     if (ret < 0) {
