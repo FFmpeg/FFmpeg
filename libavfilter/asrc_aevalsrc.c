@@ -55,7 +55,7 @@ typedef struct {
     char *chlayout_str;
     int nb_channels;
     int64_t pts;
-    AVExpr *expr[8];
+    AVExpr **expr;
     char *exprs;
     int nb_samples;             ///< number of samples per requested frame
     int64_t duration;
@@ -86,7 +86,7 @@ static int init(AVFilterContext *ctx)
     EvalContext *eval = ctx->priv;
     char *args1 = av_strdup(eval->exprs);
     char *expr, *buf;
-    int ret, i;
+    int ret;
 
     if (!args1) {
         av_log(ctx, AV_LOG_ERROR, "Channels expressions list is empty\n");
@@ -96,15 +96,16 @@ static int init(AVFilterContext *ctx)
 
     /* parse expressions */
     buf = args1;
-    i = 0;
-    while (i < FF_ARRAY_ELEMS(eval->expr) && (expr = av_strtok(buf, "|", &buf))) {
-        ret = av_expr_parse(&eval->expr[i], expr, var_names,
+    while (expr = av_strtok(buf, "|", &buf)) {
+        if (!av_dynarray2_add((void **)&eval->expr, &eval->nb_channels, sizeof(*eval->expr), NULL)) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+        ret = av_expr_parse(&eval->expr[eval->nb_channels - 1], expr, var_names,
                             NULL, NULL, NULL, NULL, 0, ctx);
         if (ret < 0)
             goto end;
-        i++;
     }
-    eval->nb_channels = i;
 
     if (eval->chlayout_str) {
         int n;
@@ -146,10 +147,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     EvalContext *eval = ctx->priv;
     int i;
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < eval->nb_channels; i++) {
         av_expr_free(eval->expr[i]);
         eval->expr[i] = NULL;
     }
+    av_freep(&eval->expr);
 }
 
 static int config_props(AVFilterLink *outlink)
