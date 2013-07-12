@@ -20,7 +20,9 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/mlpdsp.h"
 #include "libavcodec/mlp.h"
 
@@ -177,6 +179,8 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
 av_cold void ff_mlpdsp_init_x86(MLPDSPContext *c)
 {
 #if HAVE_7REGS && HAVE_INLINE_ASM
-    c->mlp_filter_channel = mlp_filter_channel_x86;
+    int cpu_flags = av_get_cpu_flags();
+    if (INLINE_MMX(cpu_flags))
+        c->mlp_filter_channel = mlp_filter_channel_x86;
 #endif
 }
