@@ -5722,6 +5722,44 @@ pad="2*iw:2*ih:ow-iw:oh-ih"
 @end example
 @end itemize
 
+@section perspective
+
+Correct perspective of video not recorded perpendicular to the screen.
+
+A description of the accepted parameters follows.
+
+@table @option
+@item x0
+@item y0
+@item x1
+@item y1
+@item x2
+@item y2
+@item x3
+@item y3
+Set coordinates expression for top left, top right, bottom left and bottom right corners.
+Default values are @code{0:0:W:0:0:H:W:H} with which perspective will remain unchanged.
+
+The expressions can use the following variables:
+
+@table @option
+@item W
+@item H
+the width and height of video frame.
+@end table
+
+@item interpolation
+Set interpolation for perspective correction.
+
+It accepts the following values:
+@table @samp
+@item linear
+@item cubic
+@end table
+
+Default value is @samp{linear}.
+@end table
+
 @section pixdesctest
 
 Pixel format descriptor test filter, mainly useful for internal

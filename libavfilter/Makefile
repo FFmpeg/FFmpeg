@@ -166,6 +166,7 @@ OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o dualinput.o
 OBJS-$(CONFIG_OWDENOISE_FILTER)              += vf_owdenoise.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PERMS_FILTER)                  += f_perms.o
+OBJS-$(CONFIG_PERSPECTIVE_FILTER)            += vf_perspective.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
 OBJS-$(CONFIG_PP_FILTER)                     += vf_pp.o
 OBJS-$(CONFIG_PSNR_FILTER)                   += vf_psnr.o dualinput.o

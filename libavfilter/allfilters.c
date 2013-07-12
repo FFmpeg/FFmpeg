@@ -161,6 +161,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER(OWDENOISE,      owdenoise,      vf);
     REGISTER_FILTER(PAD,            pad,            vf);
     REGISTER_FILTER(PERMS,          perms,          vf);
+    REGISTER_FILTER(PERSPECTIVE,    perspective,    vf);
     REGISTER_FILTER(PIXDESCTEST,    pixdesctest,    vf);
     REGISTER_FILTER(PP,             pp,             vf);
     REGISTER_FILTER(PSNR,           psnr,           vf);

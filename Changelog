@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>
 
 - aecho filter
+- perspective filter ported from libmpcodecs
 
 
 version 2.0:
