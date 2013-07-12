@@ -6,11 +6,6 @@
 }
 source iOS_local.sh
 
-
-export CC=$DEVRoot/usr/bin/llvm-gcc
-export LD=$DEVRoot/usr/bin/ld
-export STRIP=$DEVRoot/usr/bin/strip
-
 DEST=`pwd`/build/ios
 SOURCE=`pwd`
 SSL=${SOURCE}/../ios-openssl
@@ -30,6 +25,7 @@ function doConfigure()
 	# wget https://github.com/jacobson/gas-preprocessor/blob/master/gas-preprocessor.pl
 	./configure \
 		--prefix=${DIST} \
+		\
 		--cc=${CC} \
 		--as="gas-preprocessor.pl ${CC}" \
 		--sysroot=${SDKRoot} \
@@ -39,47 +35,57 @@ function doConfigure()
 		--cpu=cortex-a8 \
 		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -I${SSLINCLUDE}" \
 		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS}" \
+		--optflags="-Os" \
 		--enable-pic \
-		--disable-runtime-cpudetect \
 		--disable-symver \
-		--disable-doc \
-		--disable-ffplay \
-		--disable-ffmpeg \
-		--disable-ffprobe \
-		--disable-ffserver \
+		--enable-hardcoded-tables \
+		--disable-safe-bitstream-reader \
+		\
+		--disable-shared \
+		--disable-small \
+		--disable-runtime-cpudetect \
+		\
 		--disable-avdevice \
 		--disable-postproc \
-		--disable-encoders \
-		--disable-devices \
+		--enable-network \
+		\
 		--disable-muxers \
 		--enable-muxer=mp4 \
 		--enable-demuxers \
 		--disable-demuxer=sbg \
 		--disable-demuxer=dts \
-		--disable-parser=dca \
+		--disable-encoders \
 		--disable-decoder=dca \
 		--disable-decoder=svq3 \
-		--enable-network \
+		--disable-parser=dca \
+		--disable-devices \
+		\
 		--enable-openssl \
+		\
+		--disable-doc \
+		--disable-programs \
 		--enable-version3 \
 		\
 		--disable-asm \
-		--disable-shared
+		\
+		--disable-debug \
 
-	[[ $? != 0 ]] && kill $$
+		[[ $? != 0 ]] && kill $$
 }
+		#--enable-lto \
 
 
 for iarch in armv7; do
 #for iarch in armv7 armv7s; do
+	export PATH=$DEVRoot/usr/bin:$PATH
 	export ARCH=$iarch
-	export DIST=${DEST}/build-dist-$iarch
+	export DIST=${DEST}/build-dist-$iarch-`date "+%Y%m%d-%H%M%S"`
 	confInfo=${DIST}/configure-info.out
 	makeInfo=${DIST}/make-info.out
 
-	rm -rf $DIST
-	mkdir -p $DIST
 	cd $FFMPEG_DIR
+	rm -rf $DIST && mkdir -p $DIST
+	cp -f ./iOS.sh $DIST
 
 	doConfigure 2>&1 | tee $confInfo
 
