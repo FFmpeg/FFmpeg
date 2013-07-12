@@ -1133,6 +1133,7 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
     if (headers)
         av_strlcat(buf, headers, sizeof(buf));
     av_strlcatf(buf, sizeof(buf), "CSeq: %d\r\n", rt->seq);
+    av_strlcatf(buf, sizeof(buf), "User-Agent: %s\r\n", LIBAVFORMAT_IDENT);
     if (rt->session_id[0] != '\0' && (!headers ||
         !strstr(headers, "\nIf-Match:"))) {
         av_strlcatf(buf, sizeof(buf), "Session: %s\r\n", rt->session_id);
