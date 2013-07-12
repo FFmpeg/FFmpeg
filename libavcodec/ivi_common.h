@@ -162,6 +162,7 @@ typedef struct {
     int             num_tiles;      ///< number of tiles in this band
     IVITile         *tiles;         ///< array of tile descriptors
     InvTransformPtr *inv_transform;
+    int             transform_size;
     DCTransformPtr  *dc_transform;
     int             is_2d_trans;    ///< 1 indicates that the two-dimensional inverse transform is used
     int32_t         checksum;       ///< for debug purposes
