@@ -90,7 +90,7 @@ int ff_network_wait_fd(int fd, int write);
  * @fd Socket descriptor
  * @write Set 1 to wait for socket able to be read, 0 to be written
  * @timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
- * @param int_cb Interrupt callback, is checked after each ff_network_wait_fd call
+ * @param int_cb Interrupt callback, is checked before each ff_network_wait_fd call
  * @return 0 if data can be read/written, AVERROR(ETIMEDOUT) if timeout expired, or negative error code
  */
 int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
