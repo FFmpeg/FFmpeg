@@ -79,6 +79,11 @@ int ff_mqc_decode(MqcState *mqc, uint8_t *cxstate);
 /* common */
 
 /**
+ * MQ-coder Initialize context tables (QE, NLPS, NMPS)
+ */
+void ff_mqc_init_context_tables(void);
+
+/**
  * MQ-coder context initialisations.
  * @param mqc       MQ-coder context
  */
