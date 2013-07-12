@@ -52,7 +52,7 @@ OBJS-$(CONFIG_SHARED)                    += log2_tab.o
 
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o rawenc.o
-OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o apetag.o rawdec.o
+OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o apetag.o img2.o rawdec.o
 OBJS-$(CONFIG_AC3_DEMUXER)               += ac3dec.o rawdec.o
 OBJS-$(CONFIG_AC3_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_ACT_DEMUXER)               += act.o
