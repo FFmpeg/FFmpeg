@@ -347,6 +347,13 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             band->inv_transform = transforms[transform_id].inv_trans;
             band->dc_transform  = transforms[transform_id].dc_trans;
             band->is_2d_trans   = transforms[transform_id].is_2d_trans;
+            if (transform_id < 10)
+                band->transform_size = 8;
+            else
+                band->transform_size = 4;
+
+            if (band->blk_size != band->transform_size)
+                return AVERROR_INVALIDDATA;
 
             scan_indx = get_bits(&ctx->gb, 4);
             if (scan_indx == 15) {
