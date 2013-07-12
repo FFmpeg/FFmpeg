@@ -352,6 +352,12 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 av_log(avctx, AV_LOG_ERROR, "Custom scan pattern encountered!\n");
                 return AVERROR_INVALIDDATA;
             }
+            if (scan_indx > 4 && scan_indx < 10) {
+                if (band->blk_size != 4)
+                    return AVERROR_INVALIDDATA;
+            } else if (band->blk_size != 8)
+                return AVERROR_INVALIDDATA;
+
             band->scan = scan_index_to_tab[scan_indx];
 
             band->quant_mat = get_bits(&ctx->gb, 5);
