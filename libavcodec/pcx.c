@@ -28,17 +28,19 @@
 #include "get_bits.h"
 #include "internal.h"
 
-static void pcx_rle_decode(GetByteContext *gb, uint8_t *dst,
-                           unsigned int bytes_per_scanline, int compressed)
+static void pcx_rle_decode(GetByteContext *gb,
+                           uint8_t *dst,
+                           unsigned int bytes_per_scanline,
+                           int compressed)
 {
     unsigned int i = 0;
     unsigned char run, value;
 
     if (compressed) {
-        while (i < bytes_per_scanline) {
+        while (i < bytes_per_scanline && bytestream2_get_bytes_left(gb)>0) {
             run   = 1;
             value = bytestream2_get_byte(gb);
-            if (value >= 0xc0) {
+            if (value >= 0xc0 && bytestream2_get_bytes_left(gb)>0) {
                 run   = value & 0x3f;
                 value = bytestream2_get_byte(gb);
             }
@@ -104,7 +106,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     bytes_per_line     = bytestream2_get_le16u(&gb);
     bytes_per_scanline = nplanes * bytes_per_line;
 
-    if (bytes_per_scanline < (w * bits_per_pixel * nplanes + 7) / 8) {
+    if (bytes_per_scanline < (w * bits_per_pixel * nplanes + 7) / 8 ||
+        (!compressed && bytes_per_scanline > bytestream2_get_bytes_left(&gb) / h)) {
         av_log(avctx, AV_LOG_ERROR, "PCX data is corrupted\n");
         return AVERROR_INVALIDDATA;
     }
