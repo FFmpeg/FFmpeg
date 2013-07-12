@@ -298,7 +298,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
 
     /* av_get_bits_per_sample returns 0 for AV_CODEC_ID_PCM_DVD */
     samples_per_block = 1;
-    if (AV_CODEC_ID_PCM_DVD == avctx->codec_id) {
+    if (avctx->codec_id == AV_CODEC_ID_PCM_DVD) {
         if (avctx->bits_per_coded_sample != 20 &&
             avctx->bits_per_coded_sample != 24) {
             av_log(avctx, AV_LOG_ERROR,
