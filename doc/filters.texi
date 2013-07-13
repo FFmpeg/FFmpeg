@@ -2854,6 +2854,11 @@ When set to 1, a green rectangle is drawn on the screen to simplify
 finding the right @var{x}, @var{y}, @var{w}, and @var{h} parameters.
 The default value is 0.
 
+The rectangle is drawn on the outermost pixels which will be (partly)
+replaced with interpolated values. The values of the next pixels
+immediately outside this rectangle in each direction will be used to
+compute the interpolated pixel values inside the rectangle.
+
 @end table
 
 @subsection Examples
