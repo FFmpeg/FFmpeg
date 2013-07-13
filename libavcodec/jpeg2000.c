@@ -320,7 +320,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
             if (!av_codec_is_encoder(avctx->codec))
                 band->f_stepsize *= 0.5;
 
-            band->i_stepsize = band->f_stepsize * (1 << 16);
+            band->i_stepsize = band->f_stepsize * (1 << 15);
 
             /* computation of tbx_0, tbx_1, tby_0, tby_1
              * see ISO/IEC 15444-1:2002 B.5 eq. B-15 and tbl B.1
