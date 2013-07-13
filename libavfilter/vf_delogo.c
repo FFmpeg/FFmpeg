@@ -58,9 +58,9 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                          uint8_t *src, int src_linesize,
                          int w, int h, AVRational sar,
                          int logo_x, int logo_y, int logo_w, int logo_h,
-                         int band, int show, int direct)
+                         unsigned int band, int show, int direct)
 {
-    int x, y, dist;
+    int x, y;
     uint64_t interp, weightl, weightr, weightt, weightb;
     uint8_t *xdst, *xsrc;
 
@@ -125,7 +125,8 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                 x >= logo_x+band && x < logo_x+logo_w-band) {
                 *xdst = interp;
             } else {
-                dist = 0;
+                unsigned dist = 0;
+
                 if      (x < logo_x+band)
                     dist = FFMAX(dist, logo_x-x+band);
                 else if (x >= logo_x+logo_w-band)
