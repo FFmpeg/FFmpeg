@@ -333,7 +333,7 @@ static int atrim_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
         av_frame_copy_props(out, frame);
         av_samples_copy(out->extended_data, frame->extended_data, 0, start_sample,
-                        out->nb_samples, av_get_channel_layout_nb_channels(frame->channel_layout),
+                        out->nb_samples, inlink->channels,
                         frame->format);
         if (out->pts != AV_NOPTS_VALUE)
             out->pts += av_rescale_q(start_sample, (AVRational){ 1, out->sample_rate },
