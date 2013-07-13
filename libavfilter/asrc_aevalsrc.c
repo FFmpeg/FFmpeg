@@ -125,7 +125,7 @@ static int init(AVFilterContext *ctx)
     } else {
         /* guess channel layout from nb expressions/channels */
         eval->chlayout = av_get_default_channel_layout(eval->nb_channels);
-        if (!eval->chlayout) {
+        if (!eval->chlayout && eval->nb_channels <= 0) {
             av_log(ctx, AV_LOG_ERROR, "Invalid number of channels '%d' provided\n",
                    eval->nb_channels);
             ret = AVERROR(EINVAL);
@@ -177,7 +177,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     EvalContext *eval = ctx->priv;
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
-    int64_t chlayouts[] = { eval->chlayout, -1 };
+    int64_t chlayouts[] = { eval->chlayout ? eval->chlayout : FF_COUNT2LAYOUT(eval->nb_channels) , -1 };
     int sample_rates[] = { eval->sample_rate, -1 };
 
     ff_set_common_formats (ctx, ff_make_format_list(sample_fmts));
