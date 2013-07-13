@@ -28,6 +28,7 @@
  * bitstream api.
  */
 
+#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "mathops.h"
@@ -269,14 +270,17 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 {
     VLCcode *buf;
     int i, j, ret;
+    void *state;
 
     vlc->bits = nb_bits;
     if (flags & INIT_VLC_USE_NEW_STATIC) {
-        if (vlc->table_size && vlc->table_size == vlc->table_allocated) {
-            return 0;
-        } else if(vlc->table_size) {
-            abort(); // fatal error, we are called on a partially initialized table
+        while (state = avpriv_atomic_ptr_cas(&vlc->init_state, NULL, vlc)) {
+            if (state == vlc + 1) {
+                av_assert0(vlc->table_size && vlc->table_size == vlc->table_allocated);
+                return 0;
+            }
         }
+        av_assert0(!vlc->table_size);
     } else {
         vlc->table           = NULL;
         vlc->table_allocated = 0;
@@ -326,12 +330,18 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
     ret = build_table(vlc, nb_bits, nb_codes, buf, flags);
 
     av_free(buf);
-    if (ret < 0) {
-        av_freep(&vlc->table);
-        return ret;
+    if (flags & INIT_VLC_USE_NEW_STATIC) {
+        if(vlc->table_size != vlc->table_allocated)
+            av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
+        state = avpriv_atomic_ptr_cas(&vlc->init_state, vlc, vlc+1);
+        av_assert0(state == vlc);
+        av_assert0(ret >= 0);
+    } else {
+        if (ret < 0) {
+            av_freep(&vlc->table);
+            return ret;
+        }
     }
-    if((flags & INIT_VLC_USE_NEW_STATIC) && vlc->table_size != vlc->table_allocated)
-        av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
     return 0;
 }
 
