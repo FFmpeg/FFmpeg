@@ -401,6 +401,10 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
 
+    if(avctx->channels > 1){
+        avpriv_request_sample(avctx, "Decoding more than one channel");
+        return AVERROR_PATCHWELCOME;
+    }
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
 
