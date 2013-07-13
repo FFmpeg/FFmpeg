@@ -216,6 +216,7 @@ typedef struct VideoState {
     int frame_drops_early;
     int frame_drops_late;
     AVFrame *frame;
+    int64_t audio_frame_next_pts;
 
     enum ShowMode {
         SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
@@ -2158,6 +2159,8 @@ static int audio_decode_frame(VideoState *is)
                     break;
                 }
 
+                pkt_temp->dts =
+                pkt_temp->pts = AV_NOPTS_VALUE;
                 pkt_temp->data += len1;
                 pkt_temp->size -= len1;
                 if (pkt_temp->data && pkt_temp->size <= 0 || !pkt_temp->data && !got_frame)
@@ -2171,8 +2174,11 @@ static int audio_decode_frame(VideoState *is)
                     is->frame->pts = av_rescale_q(is->frame->pts, dec->time_base, tb);
                 else if (is->frame->pkt_pts != AV_NOPTS_VALUE)
                     is->frame->pts = av_rescale_q(is->frame->pkt_pts, is->audio_st->time_base, tb);
-                if (pkt_temp->pts != AV_NOPTS_VALUE)
-                    pkt_temp->pts += (double) is->frame->nb_samples / is->frame->sample_rate / av_q2d(is->audio_st->time_base);
+                else if (is->audio_frame_next_pts != AV_NOPTS_VALUE)
+                    is->frame->pts = av_rescale_q(is->audio_frame_next_pts, (AVRational){1, is->audio_filter_src.freq}, tb);
+
+                if (is->frame->pts != AV_NOPTS_VALUE)
+                    is->audio_frame_next_pts = is->frame->pts + is->frame->nb_samples;
 
 #if CONFIG_AVFILTER
                 dec_channel_layout = get_valid_channel_layout(is->frame->channel_layout, av_frame_get_channels(is->frame));
@@ -2326,6 +2332,7 @@ static int audio_decode_frame(VideoState *is)
         if (pkt->data == flush_pkt.data) {
             avcodec_flush_buffers(dec);
             is->audio_buf_frames_pending = 0;
+            is->audio_frame_next_pts = AV_NOPTS_VALUE;
         }
 
         *pkt_temp = *pkt;
