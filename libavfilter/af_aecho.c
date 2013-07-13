@@ -93,7 +93,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->samples);
 
     if (s->delayptrs)
-        av_freep(s->delayptrs[0]);
+        av_freep(&s->delayptrs[0]);
     av_freep(&s->delayptrs);
 }
 
@@ -256,7 +256,7 @@ static int config_output(AVFilterLink *outlink)
 
 
     if (s->delayptrs)
-        av_freep(s->delayptrs[0]);
+        av_freep(&s->delayptrs[0]);
     av_freep(&s->delayptrs);
 
     return av_samples_alloc_array_and_samples(&s->delayptrs, NULL,
