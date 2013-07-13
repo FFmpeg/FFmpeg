@@ -1500,6 +1500,7 @@ HAVE_LIST="
     pthread_cancel
     rdtsc
     rsync_contimeout
+    sarestart
     sched_getaffinity
     sdl
     SetConsoleTextAttribute
@@ -2214,7 +2215,7 @@ ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
 ffplay_deps="avcodec avformat swscale swresample sdl"
 ffplay_select="rdft crop_filter"
 ffprobe_deps="avcodec avformat"
-ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
+ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer sarestart"
 ffserver_extralibs='$ldl'
 
 # documentation
@@ -4031,6 +4032,7 @@ check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync
 check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
+check_builtin sarestart signal.h "SA_RESTART"
 check_func  sysconf
 check_func  sysctl
 check_func  usleep
