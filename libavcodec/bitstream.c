@@ -270,6 +270,7 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 {
     VLCcode *buf;
     int i, j, ret;
+    VLCcode localbuf[1500]; // the maximum currently needed is 1296 by rv34
     void *state;
 
     vlc->bits = nb_bits;
@@ -281,17 +282,18 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
             }
         }
         av_assert0(!vlc->table_size);
+        av_assert0(nb_codes + 1 <= FF_ARRAY_ELEMS(localbuf));
+        buf = localbuf;
     } else {
         vlc->table           = NULL;
         vlc->table_allocated = 0;
         vlc->table_size      = 0;
+
+        buf = av_malloc((nb_codes + 1) * sizeof(VLCcode));
+        if (!buf)
+            return AVERROR(ENOMEM);
     }
 
-    av_dlog(NULL, "build table nb_codes=%d\n", nb_codes);
-
-    buf = av_malloc((nb_codes + 1) * sizeof(VLCcode));
-    if (!buf)
-        return AVERROR(ENOMEM);
 
     av_assert0(symbols_size <= 2 || !symbols);
     j = 0;
@@ -329,7 +331,6 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
 
     ret = build_table(vlc, nb_bits, nb_codes, buf, flags);
 
-    av_free(buf);
     if (flags & INIT_VLC_USE_NEW_STATIC) {
         if(vlc->table_size != vlc->table_allocated)
             av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
@@ -337,6 +338,7 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         av_assert0(state == vlc);
         av_assert0(ret >= 0);
     } else {
+        av_free(buf);
         if (ret < 0) {
             av_freep(&vlc->table);
             return ret;
