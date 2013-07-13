@@ -30,7 +30,7 @@ ADTS AAC container to a FLV or a MOV/MP4 file.
 
 Remove zero padding at the end of a packet.
 
-@section dump_extradata
+@section dump_extra
 
 @section h264_mp4toannexb
 
@@ -97,6 +97,6 @@ ffmpeg -i frame_%d.jpg -c:v copy rotated.avi
 
 @section noise
 
-@section remove_extradata
+@section remove_extra
 
 @c man end BITSTREAM FILTERS
