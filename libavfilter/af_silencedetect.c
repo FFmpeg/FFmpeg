@@ -25,7 +25,6 @@
 
 #include <float.h> /* DBL_MAX */
 
-#include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "audio.h"
@@ -64,7 +63,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int i;
     SilenceDetectContext *silence = inlink->dst->priv;
-    const int nb_channels           = av_get_channel_layout_nb_channels(inlink->channel_layout);
+    const int nb_channels           = inlink->channels;
     const int srate                 = inlink->sample_rate;
     const int nb_samples            = insamples->nb_samples     * nb_channels;
     const int64_t nb_samples_notify = srate * silence->duration * nb_channels;
