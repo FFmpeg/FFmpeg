@@ -776,11 +776,13 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
                     int *seq, int flags, int64_t timestamp)
 {
     RMDemuxContext *rm = s->priv_data;
+    int ret;
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         rm->current_stream= st->id;
-        if(rm_assemble_video_frame(s, pb, rm, ast, pkt, len, seq, &timestamp))
-            return -1; //got partial frame
+        ret = rm_assemble_video_frame(s, pb, rm, ast, pkt, len, seq, &timestamp);
+        if(ret)
+            return ret; //got partial frame or error
     } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         if ((ast->deint_id == DEINT_ID_GENR) ||
             (ast->deint_id == DEINT_ID_INT4) ||
@@ -927,6 +929,8 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             res = ff_rm_parse_packet (s, s->pb, st, st->priv_data, len, pkt,
                                       &seq, flags, timestamp);
+            if (res < -1)
+                return res;
             if((flags&2) && (seq&0x7F) == 1)
                 av_add_index_entry(st, pos, timestamp, 0, 0, AVINDEX_KEYFRAME);
             if (res)
