@@ -2333,6 +2333,8 @@ static int audio_decode_frame(VideoState *is)
             avcodec_flush_buffers(dec);
             is->audio_buf_frames_pending = 0;
             is->audio_frame_next_pts = AV_NOPTS_VALUE;
+            if ((is->ic->iformat->flags & (AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK)) && !is->ic->iformat->read_seek)
+                is->audio_frame_next_pts = is->audio_st->start_time;
         }
 
         *pkt_temp = *pkt;
