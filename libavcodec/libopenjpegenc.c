@@ -290,6 +290,7 @@ static int libopenjpeg_copy_packed12(AVCodecContext *avctx, const AVFrame *frame
     int image_index;
     int frame_index;
     const int numcomps = image->numcomps;
+    uint16_t *frame_ptr = (uint16_t*)frame->data[0];
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[0] / numcomps) {
@@ -301,9 +302,9 @@ static int libopenjpeg_copy_packed12(AVCodecContext *avctx, const AVFrame *frame
     for (compno = 0; compno < numcomps; ++compno) {
         for (y = 0; y < avctx->height; ++y) {
             image_index = y * avctx->width;
-            frame_index = y * frame->linesize[0] + compno;
+            frame_index = y * (frame->linesize[0] / 2) + compno;
             for (x = 0; x < avctx->width; ++x) {
-                image->comps[compno].data[image_index++] = frame->data[0][frame_index] >> 4;
+                image->comps[compno].data[image_index++] = frame_ptr[frame_index] >> 4;
                 frame_index += numcomps;
             }
         }
