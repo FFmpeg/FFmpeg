@@ -953,6 +953,14 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 }
             }
         }
+    } else {
+        if (ctx->is_scalable)
+            return AVERROR_INVALIDDATA;
+
+        for (p = 0; p < 3; p++) {
+            if (!ctx->planes[p].bands[0].buf)
+                return AVERROR_INVALIDDATA;
+        }
     }
 
     //STOP_TIMER("decode_planes"); }
