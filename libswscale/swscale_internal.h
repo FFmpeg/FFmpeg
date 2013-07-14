@@ -382,6 +382,10 @@ typedef struct SwsContext {
     int dst0Alpha;
     int srcXYZ;
     int dstXYZ;
+    int src_h_chr_pos;
+    int dst_h_chr_pos;
+    int src_v_chr_pos;
+    int dst_v_chr_pos;
     int yuv2rgb_y_offset;
     int yuv2rgb_y_coeff;
     int yuv2rgb_v2r_coeff;
