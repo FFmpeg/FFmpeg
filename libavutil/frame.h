@@ -30,6 +30,26 @@
 #include "rational.h"
 #include "samplefmt.h"
 
+enum AVColorSpace{
+    AVCOL_SPC_RGB         = 0,
+    AVCOL_SPC_BT709       = 1, ///< also ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B
+    AVCOL_SPC_UNSPECIFIED = 2,
+    AVCOL_SPC_FCC         = 4,
+    AVCOL_SPC_BT470BG     = 5, ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM / IEC 61966-2-4 xvYCC601
+    AVCOL_SPC_SMPTE170M   = 6, ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC / functionally identical to above
+    AVCOL_SPC_SMPTE240M   = 7,
+    AVCOL_SPC_YCOCG       = 8, ///< Used by Dirac / VC-2 and H.264 FRext, see ITU-T SG16
+    AVCOL_SPC_NB             , ///< Not part of ABI
+};
+#define AVCOL_SPC_YCGCO AVCOL_SPC_YCOCG
+
+enum AVColorRange{
+    AVCOL_RANGE_UNSPECIFIED = 0,
+    AVCOL_RANGE_MPEG        = 1, ///< the normal 219*2^(n-8) "MPEG" YUV ranges
+    AVCOL_RANGE_JPEG        = 2, ///< the normal     2^n-1   "JPEG" YUV ranges
+    AVCOL_RANGE_NB             , ///< Not part of ABI
+};
+
 enum AVFrameSideDataType {
     /**
      * The data is the AVPanScan struct defined in libavcodec.
@@ -433,6 +453,25 @@ typedef struct AVFrame {
     int pkt_size;
 
     /**
+     * YUV colorspace type.
+     * It must be accessed using av_frame_get_colorspace() and
+     * av_frame_set_colorspace().
+     * - encoding: Set by user
+     * - decoding: Set by libavcodec
+     */
+    enum AVColorSpace colorspace;
+
+    /**
+     * MPEG vs JPEG YUV range.
+     * It must be accessed using av_frame_get_color_range() and
+     * av_frame_set_color_range().
+     * - encoding: Set by user
+     * - decoding: Set by libavcodec
+     */
+    enum AVColorRange color_range;
+
+
+    /**
      * Not to be accessed directly from outside libavutil
      */
     AVBufferRef *qp_table_buf;
@@ -464,6 +503,10 @@ void    av_frame_set_pkt_size(AVFrame *frame, int val);
 AVDictionary **avpriv_frame_get_metadatap(AVFrame *frame);
 int8_t *av_frame_get_qp_table(AVFrame *f, int *stride, int *type);
 int av_frame_set_qp_table(AVFrame *f, AVBufferRef *buf, int stride, int type);
+enum AVColorSpace av_frame_get_colorspace(const AVFrame *frame);
+void    av_frame_set_colorspace(AVFrame *frame, enum AVColorSpace val);
+enum AVColorRange av_frame_get_color_range(const AVFrame *frame);
+void    av_frame_set_color_range(AVFrame *frame, enum AVColorRange val);
 
 /**
  * Allocate an AVFrame and set its fields to default values.  The resulting

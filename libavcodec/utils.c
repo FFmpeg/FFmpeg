@@ -643,6 +643,10 @@ int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
             frame->format              = avctx->pix_fmt;
         if (!frame->sample_aspect_ratio.num)
             frame->sample_aspect_ratio = avctx->sample_aspect_ratio;
+        if (av_frame_get_colorspace(frame) == AVCOL_SPC_UNSPECIFIED)
+            av_frame_set_colorspace(frame, avctx->colorspace);
+        if (av_frame_get_color_range(frame) == AVCOL_RANGE_UNSPECIFIED)
+            av_frame_set_color_range(frame, avctx->color_range);
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (!frame->sample_rate)
@@ -964,6 +968,7 @@ void avcodec_get_frame_defaults(AVFrame *frame)
     frame->sample_aspect_ratio = (AVRational) {0, 1 };
     frame->format              = -1; /* unknown */
     frame->extended_data       = frame->data;
+    av_frame_set_colorspace(frame, AVCOL_SPC_UNSPECIFIED);
 }
 
 AVFrame *avcodec_alloc_frame(void)

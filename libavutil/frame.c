@@ -40,6 +40,8 @@ MAKE_ACCESSORS(AVFrame, frame, int,     sample_rate)
 MAKE_ACCESSORS(AVFrame, frame, AVDictionary *, metadata)
 MAKE_ACCESSORS(AVFrame, frame, int,     decode_error_flags)
 MAKE_ACCESSORS(AVFrame, frame, int,     pkt_size)
+MAKE_ACCESSORS(AVFrame, frame, enum AVColorSpace, colorspace)
+MAKE_ACCESSORS(AVFrame, frame, enum AVColorRange, color_range)
 
 #define CHECK_CHANNELS_CONSISTENCY(frame) \
     av_assert2(!(frame)->channel_layout || \
@@ -89,6 +91,7 @@ static void get_frame_defaults(AVFrame *frame)
     frame->key_frame           = 1;
     frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     frame->format              = -1; /* unknown */
+    frame->colorspace          = AVCOL_SPC_UNSPECIFIED;
     frame->extended_data       = frame->data;
 }
 
@@ -456,6 +459,8 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->coded_picture_number = src->coded_picture_number;
     dst->display_picture_number = src->display_picture_number;
     dst->decode_error_flags  = src->decode_error_flags;
+    dst->colorspace          = src->colorspace;
+    dst->color_range         = dst->color_range;
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
