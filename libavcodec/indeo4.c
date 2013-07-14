@@ -528,8 +528,10 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             } else {
                 if (band->inherit_mv) {
                     /* copy mb_type from corresponding reference mb */
-                    if (!ref_mb)
+                    if (!ref_mb) {
+                        av_log(avctx, AV_LOG_ERROR, "ref_mb unavailable\n");
                         return AVERROR_INVALIDDATA;
+                    }
                     mb->type = ref_mb->type;
                 } else if (ctx->frame_type == FRAMETYPE_INTRA ||
                            ctx->frame_type == FRAMETYPE_INTRA1) {
