@@ -136,6 +136,8 @@ typedef struct Stereo3DContext {
     int ana_matrix[3][6];
     int nb_planes;
     int linesize[4];
+    int pheight[4];
+    int hsub, vsub;
     int pixstep[4];
     AVFrame *prev;
     double ts_unit;
@@ -207,14 +209,39 @@ static const enum AVPixelFormat other_pix_fmts[] = {
     AV_PIX_FMT_GBRP12BE, AV_PIX_FMT_GBRP12LE,
     AV_PIX_FMT_GBRP14BE, AV_PIX_FMT_GBRP14LE,
     AV_PIX_FMT_GBRP16BE, AV_PIX_FMT_GBRP16LE,
+    AV_PIX_FMT_YUV410P,
+    AV_PIX_FMT_YUV411P,
+    AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
+    AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
+    AV_PIX_FMT_YUV440P,
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
+    AV_PIX_FMT_YUVJ411P,
+    AV_PIX_FMT_YUVJ420P,
+    AV_PIX_FMT_YUVJ422P,
+    AV_PIX_FMT_YUVJ440P,
     AV_PIX_FMT_YUVJ444P,
+    AV_PIX_FMT_YUV420P9LE,  AV_PIX_FMT_YUVA420P9LE,
+    AV_PIX_FMT_YUV420P9BE,  AV_PIX_FMT_YUVA420P9BE,
+    AV_PIX_FMT_YUV422P9LE,  AV_PIX_FMT_YUVA422P9LE,
+    AV_PIX_FMT_YUV422P9BE,  AV_PIX_FMT_YUVA422P9BE,
     AV_PIX_FMT_YUV444P9LE,  AV_PIX_FMT_YUVA444P9LE,
     AV_PIX_FMT_YUV444P9BE,  AV_PIX_FMT_YUVA444P9BE,
+    AV_PIX_FMT_YUV420P10LE, AV_PIX_FMT_YUVA420P10LE,
+    AV_PIX_FMT_YUV420P10BE, AV_PIX_FMT_YUVA420P10BE,
+    AV_PIX_FMT_YUV422P10LE, AV_PIX_FMT_YUVA422P10LE,
+    AV_PIX_FMT_YUV422P10BE, AV_PIX_FMT_YUVA422P10BE,
     AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUVA444P10LE,
     AV_PIX_FMT_YUV444P10BE, AV_PIX_FMT_YUVA444P10BE,
+    AV_PIX_FMT_YUV420P12BE,  AV_PIX_FMT_YUV420P12LE,
+    AV_PIX_FMT_YUV422P12BE,  AV_PIX_FMT_YUV422P12LE,
     AV_PIX_FMT_YUV444P12BE,  AV_PIX_FMT_YUV444P12LE,
+    AV_PIX_FMT_YUV420P14BE,  AV_PIX_FMT_YUV420P14LE,
+    AV_PIX_FMT_YUV422P14BE,  AV_PIX_FMT_YUV422P14LE,
     AV_PIX_FMT_YUV444P14BE,  AV_PIX_FMT_YUV444P14LE,
+    AV_PIX_FMT_YUV420P16LE, AV_PIX_FMT_YUVA420P16LE,
+    AV_PIX_FMT_YUV420P16BE, AV_PIX_FMT_YUVA420P16BE,
+    AV_PIX_FMT_YUV422P16LE, AV_PIX_FMT_YUVA422P16LE,
+    AV_PIX_FMT_YUV422P16BE, AV_PIX_FMT_YUVA422P16BE,
     AV_PIX_FMT_YUV444P16LE, AV_PIX_FMT_YUVA444P16LE,
     AV_PIX_FMT_YUV444P16BE, AV_PIX_FMT_YUVA444P16BE,
     AV_PIX_FMT_NONE
@@ -426,6 +453,10 @@ static int config_output(AVFilterLink *outlink)
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     av_image_fill_max_pixsteps(s->pixstep, NULL, desc);
     s->ts_unit = av_q2d(av_inv_q(av_mul_q(outlink->frame_rate, outlink->time_base)));
+    s->pheight[1] = s->pheight[2] = FF_CEIL_RSHIFT(s->height, desc->log2_chroma_h);
+    s->pheight[0] = s->pheight[3] = s->height;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
     return 0;
 }
@@ -488,10 +519,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     for (i = 0; i < 4; i++) {
-        in_off_left[i]   = (s->in.row_left   + s->in.off_lstep)  * ileft->linesize[i]  + s->in.off_left   * s->pixstep[i];
-        in_off_right[i]  = (s->in.row_right  + s->in.off_rstep)  * iright->linesize[i] + s->in.off_right  * s->pixstep[i];
-        out_off_left[i]  = (s->out.row_left  + s->out.off_lstep) * oleft->linesize[i]  + s->out.off_left  * s->pixstep[i];
-        out_off_right[i] = (s->out.row_right + s->out.off_rstep) * oright->linesize[i] + s->out.off_right * s->pixstep[i];
+        int hsub = i == 1 || i == 2 ? s->hsub : 0;
+        int vsub = i == 1 || i == 2 ? s->vsub : 0;
+        in_off_left[i]   = (FF_CEIL_RSHIFT(s->in.row_left,   vsub) + s->in.off_lstep)  * ileft->linesize[i]  + FF_CEIL_RSHIFT(s->in.off_left   * s->pixstep[i], hsub);
+        in_off_right[i]  = (FF_CEIL_RSHIFT(s->in.row_right,  vsub) + s->in.off_rstep)  * iright->linesize[i] + FF_CEIL_RSHIFT(s->in.off_right  * s->pixstep[i], hsub);
+        out_off_left[i]  = (FF_CEIL_RSHIFT(s->out.row_left,  vsub) + s->out.off_lstep) * oleft->linesize[i]  + FF_CEIL_RSHIFT(s->out.off_left  * s->pixstep[i], hsub);
+        out_off_right[i] = (FF_CEIL_RSHIFT(s->out.row_right, vsub) + s->out.off_rstep) * oright->linesize[i] + FF_CEIL_RSHIFT(s->out.off_right * s->pixstep[i], hsub);
     }
 
     switch (s->out.format) {
@@ -512,12 +545,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
                                 oleft->linesize[i] * s->row_step,
                                 ileft->data[i] + in_off_left[i],
                                 ileft->linesize[i] * s->row_step,
-                                s->linesize[i], s->height);
+                                s->linesize[i], s->pheight[i]);
             av_image_copy_plane(oright->data[i] + out_off_right[i],
                                 oright->linesize[i] * s->row_step,
                                 iright->data[i] + in_off_right[i],
                                 iright->linesize[i] * s->row_step,
-                                s->linesize[i], s->height);
+                                s->linesize[i], s->pheight[i]);
         }
         break;
     case MONO_L:
@@ -527,7 +560,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             av_image_copy_plane(out->data[i], out->linesize[i],
                                 iright->data[i] + in_off_left[i],
                                 iright->linesize[i],
-                                s->linesize[i], s->height);
+                                s->linesize[i], s->pheight[i]);
         }
         break;
     case ANAGLYPH_RB_GRAY:
