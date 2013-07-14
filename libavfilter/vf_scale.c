@@ -259,25 +259,35 @@ static int config_props(AVFilterLink *outlink)
 
     if (scale->sws)
         sws_freeContext(scale->sws);
+    if (scale->isws[0])
+        sws_freeContext(scale->isws[0]);
+    if (scale->isws[1])
+        sws_freeContext(scale->isws[1]);
+    scale->isws[0] = scale->isws[1] = scale->sws = NULL;
     if (inlink->w == outlink->w && inlink->h == outlink->h &&
         inlink->format == outlink->format)
-        scale->sws = NULL;
+        ;
     else {
-        scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
-                                    outlink->w, outlink->h, outfmt,
-                                    scale->flags, NULL, NULL, NULL);
-        if (scale->isws[0])
-            sws_freeContext(scale->isws[0]);
-        scale->isws[0] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
-                                        outlink->w, outlink->h/2, outfmt,
-                                        scale->flags, NULL, NULL, NULL);
-        if (scale->isws[1])
-            sws_freeContext(scale->isws[1]);
-        scale->isws[1] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
-                                        outlink->w, outlink->h/2, outfmt,
-                                        scale->flags, NULL, NULL, NULL);
-        if (!scale->sws || !scale->isws[0] || !scale->isws[1])
-            return AVERROR(EINVAL);
+        struct SwsContext **swscs[3] = {&scale->sws, &scale->isws[0], &scale->isws[1]};
+        int i;
+
+        for (i = 0; i < 3; i++) {
+            struct SwsContext **s = swscs[i];
+            *s = sws_alloc_context();
+            if (!*s)
+                return AVERROR(ENOMEM);
+
+            av_opt_set_int(*s, "srcw", inlink ->w, 0);
+            av_opt_set_int(*s, "srch", inlink ->h >> !!i, 0);
+            av_opt_set_int(*s, "src_format", inlink->format, 0);
+            av_opt_set_int(*s, "dstw", outlink->w, 0);
+            av_opt_set_int(*s, "dsth", outlink->h >> !!i, 0);
+            av_opt_set_int(*s, "dst_format", outfmt, 0);
+            av_opt_set_int(*s, "sws_flags", scale->flags, 0);
+
+            if ((ret = sws_init_context(*s, NULL, NULL)) < 0)
+                return ret;
+        }
     }
 
     if (inlink->sample_aspect_ratio.num){
