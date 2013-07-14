@@ -1091,8 +1091,14 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     unscaled = (srcW == dstW && srcH == dstH);
 
-    handle_jpeg(&c->srcFormat);
-    handle_jpeg(&c->dstFormat);
+    c->srcRange |= handle_jpeg(&c->srcFormat);
+    c->dstRange |= handle_jpeg(&c->dstFormat);
+
+    if (!c->contrast && !c->saturation && !c->dstFormatBpp)
+        sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], c->srcRange,
+                                 ff_yuv2rgb_coeffs[SWS_CS_DEFAULT],
+                                 c->dstRange, 0, 1 << 16, 1 << 16);
+
     if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat)
         av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
     handle_formats(c);
@@ -1586,8 +1592,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
     c->srcH      = srcH;
     c->dstW      = dstW;
     c->dstH      = dstH;
-    c->srcRange  = handle_jpeg(&srcFormat);
-    c->dstRange  = handle_jpeg(&dstFormat);
     c->srcFormat = srcFormat;
     c->dstFormat = dstFormat;
 
@@ -1595,9 +1599,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
         c->param[0] = param[0];
         c->param[1] = param[1];
     }
-    sws_setColorspaceDetails(c, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT], c->srcRange,
-                             ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/,
-                             c->dstRange, 0, 1 << 16, 1 << 16);
 
     if (sws_init_context(c, srcFilter, dstFilter) < 0) {
         sws_freeContext(c);
@@ -2027,19 +2028,13 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context, int srcW,
             return NULL;
         context->srcW      = srcW;
         context->srcH      = srcH;
-        context->srcRange  = handle_jpeg(&srcFormat);
         context->srcFormat = srcFormat;
         context->dstW      = dstW;
         context->dstH      = dstH;
-        context->dstRange  = handle_jpeg(&dstFormat);
         context->dstFormat = dstFormat;
         context->flags     = flags;
         context->param[0]  = param[0];
         context->param[1]  = param[1];
-        sws_setColorspaceDetails(context, ff_yuv2rgb_coeffs[SWS_CS_DEFAULT],
-                                 context->srcRange,
-                                 ff_yuv2rgb_coeffs[SWS_CS_DEFAULT] /* FIXME*/,
-                                 context->dstRange, 0, 1 << 16, 1 << 16);
         if (sws_init_context(context, srcFilter, dstFilter) < 0) {
             sws_freeContext(context);
             return NULL;
