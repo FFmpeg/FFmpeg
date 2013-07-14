@@ -52,6 +52,8 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
+static void handle_formats(SwsContext *c);
+
 unsigned swscale_version(void)
 {
     av_assert0(LIBSWSCALE_VERSION_MICRO >= 100);
@@ -1039,6 +1041,14 @@ static int handle_xyz(enum AVPixelFormat *format)
     }
 }
 
+static void handle_formats(SwsContext *c)
+{
+    c->src0Alpha = handle_0alpha(&c->srcFormat);
+    c->dst0Alpha = handle_0alpha(&c->dstFormat);
+    c->srcXYZ    = handle_xyz(&c->srcFormat);
+    c->dstXYZ    = handle_xyz(&c->dstFormat);
+}
+
 SwsContext *sws_alloc_context(void)
 {
     SwsContext *c = av_mallocz(sizeof(SwsContext));
@@ -1578,12 +1588,9 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
     c->dstH      = dstH;
     c->srcRange  = handle_jpeg(&srcFormat);
     c->dstRange  = handle_jpeg(&dstFormat);
-    c->src0Alpha = handle_0alpha(&srcFormat);
-    c->dst0Alpha = handle_0alpha(&dstFormat);
-    c->srcXYZ    = handle_xyz(&srcFormat);
-    c->dstXYZ    = handle_xyz(&dstFormat);
     c->srcFormat = srcFormat;
     c->dstFormat = dstFormat;
+    handle_formats(c);
 
     if (param) {
         c->param[0] = param[0];
@@ -2022,15 +2029,12 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context, int srcW,
         context->srcW      = srcW;
         context->srcH      = srcH;
         context->srcRange  = handle_jpeg(&srcFormat);
-        context->src0Alpha = handle_0alpha(&srcFormat);
-        context->srcXYZ    = handle_xyz(&srcFormat);
         context->srcFormat = srcFormat;
         context->dstW      = dstW;
         context->dstH      = dstH;
         context->dstRange  = handle_jpeg(&dstFormat);
-        context->dst0Alpha = handle_0alpha(&dstFormat);
-        context->dstXYZ    = handle_xyz(&dstFormat);
         context->dstFormat = dstFormat;
+        handle_formats(context);
         context->flags     = flags;
         context->param[0]  = param[0];
         context->param[1]  = param[1];
