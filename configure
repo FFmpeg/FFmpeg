@@ -72,6 +72,9 @@ Standard options:
   --mandir=DIR             install man page in DIR [PREFIX/share/man]
 
 Configuration options:
+  --enable-building        enable building ONLY if you understand the
+                           potential security risk posed by using this
+                           branch (oldabi)
   --disable-static         do not build static libraries [no]
   --enable-shared          build shared libraries [no]
   --enable-gpl             allow use of GPL code, the resulting libs
@@ -910,6 +913,7 @@ CONFIG_LIST="
     avfilter
     avformat
     avisynth
+    building
     bzlib
     crystalhd
     dct
@@ -1935,6 +1939,22 @@ fi
 filter_cflags=echo
 filter_cppflags=echo
 filter_asflags=echo
+
+if ! enabled building; then
+    cat <<EOF
+!!!! WARNING !!!!
+
+This branch is NOT actively maintained and CAN contain serious security
+issues. This branch is only provided for historical interest.
+
+For a newer branch with the old API/ABI, please use release/0.5 or
+release/0.7.
+
+If you really want to build this, pass --enable-building to configure.
+EOF
+    log --enable-building not enabled. Aborting.
+    exit 1;
+fi
 
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
