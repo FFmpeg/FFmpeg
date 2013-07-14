@@ -201,8 +201,8 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GBRP14BE]    = { 1, 1 },
     [AV_PIX_FMT_GBRP16LE]    = { 1, 0 },
     [AV_PIX_FMT_GBRP16BE]    = { 1, 0 },
-    [AV_PIX_FMT_XYZ12BE]     = { 1, 0, 1 },
-    [AV_PIX_FMT_XYZ12LE]     = { 1, 0, 1 },
+    [AV_PIX_FMT_XYZ12BE]     = { 1, 1, 1 },
+    [AV_PIX_FMT_XYZ12LE]     = { 1, 1, 1 },
     [AV_PIX_FMT_GBRAP]       = { 1, 1 },
     [AV_PIX_FMT_GBRAP16LE]   = { 1, 0 },
     [AV_PIX_FMT_GBRAP16BE]   = { 1, 0 },
@@ -924,15 +924,24 @@ static void fill_xyztables(struct SwsContext *c)
     int i;
     double xyzgamma = XYZ_GAMMA;
     double rgbgamma = 1.0 / RGB_GAMMA;
+    double xyzgammainv = 1.0 / XYZ_GAMMA;
+    double rgbgammainv = RGB_GAMMA;
     static const int16_t xyz2rgb_matrix[3][4] = {
         {13270, -6295, -2041},
         {-3969,  7682,   170},
         {  228,  -835,  4329} };
-    static int16_t xyzgamma_tab[4096], rgbgamma_tab[4096];
+    static const int16_t rgb2xyz_matrix[3][4] = {
+        {1689, 1464,  739},
+        { 871, 2929,  296},
+        {  79,  488, 3891} };
+    static int16_t xyzgamma_tab[4096], rgbgamma_tab[4096], xyzgammainv_tab[4096], rgbgammainv_tab[4096];
 
     memcpy(c->xyz2rgb_matrix, xyz2rgb_matrix, sizeof(c->xyz2rgb_matrix));
+    memcpy(c->rgb2xyz_matrix, rgb2xyz_matrix, sizeof(c->rgb2xyz_matrix));
     c->xyzgamma = xyzgamma_tab;
     c->rgbgamma = rgbgamma_tab;
+    c->xyzgammainv = xyzgammainv_tab;
+    c->rgbgammainv = rgbgammainv_tab;
 
     if (rgbgamma_tab[4095])
         return;
@@ -941,6 +950,8 @@ static void fill_xyztables(struct SwsContext *c)
     for (i = 0; i < 4096; i++) {
         xyzgamma_tab[i] = lrint(pow(i / 4095.0, xyzgamma) * 4095.0);
         rgbgamma_tab[i] = lrint(pow(i / 4095.0, rgbgamma) * 4095.0);
+        xyzgammainv_tab[i] = lrint(pow(i / 4095.0, xyzgammainv) * 4095.0);
+        rgbgammainv_tab[i] = lrint(pow(i / 4095.0, rgbgammainv) * 4095.0);
     }
 }
 
