@@ -1043,10 +1043,10 @@ static int handle_xyz(enum AVPixelFormat *format)
 
 static void handle_formats(SwsContext *c)
 {
-    c->src0Alpha = handle_0alpha(&c->srcFormat);
-    c->dst0Alpha = handle_0alpha(&c->dstFormat);
-    c->srcXYZ    = handle_xyz(&c->srcFormat);
-    c->dstXYZ    = handle_xyz(&c->dstFormat);
+    c->src0Alpha |= handle_0alpha(&c->srcFormat);
+    c->dst0Alpha |= handle_0alpha(&c->dstFormat);
+    c->srcXYZ    |= handle_xyz(&c->srcFormat);
+    c->dstXYZ    |= handle_xyz(&c->dstFormat);
 }
 
 SwsContext *sws_alloc_context(void)
