@@ -358,8 +358,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             else
                 band->transform_size = 4;
 
-            if (band->blk_size != band->transform_size)
+            if (band->blk_size != band->transform_size) {
+                av_log(avctx, AV_LOG_ERROR, "transform and block size mismatch (%d != %d)\n", band->transform_size, band->blk_size);
                 return AVERROR_INVALIDDATA;
+            }
 
             scan_indx = get_bits(&ctx->gb, 4);
             if (scan_indx == 15) {

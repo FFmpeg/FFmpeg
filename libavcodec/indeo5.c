@@ -191,8 +191,10 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
             band->is_2d_trans = band->inv_transform == ff_ivi_inverse_slant_8x8 ||
                                 band->inv_transform == ff_ivi_inverse_slant_4x4;
 
-            if (band->transform_size != band->blk_size)
+            if (band->transform_size != band->blk_size) {
+                av_log(avctx, AV_LOG_ERROR, "transform and block size mismatch (%d != %d)\n", band->transform_size, band->blk_size);
                 return AVERROR_INVALIDDATA;
+            }
 
             /* select dequant matrix according to plane and band number */
             if (!p) {
