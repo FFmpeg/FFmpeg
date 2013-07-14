@@ -484,7 +484,10 @@ typedef struct SwsContext {
 #define RGB_GAMMA (2.2f)
     int16_t *xyzgamma;
     int16_t *rgbgamma;
+    int16_t *xyzgammainv;
+    int16_t *rgbgammainv;
     int16_t xyz2rgb_matrix[3][4];
+    int16_t rgb2xyz_matrix[3][4];
 
     /* function pointers for swScale() */
     yuv2planar1_fn yuv2plane1;
