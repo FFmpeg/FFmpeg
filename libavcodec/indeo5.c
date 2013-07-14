@@ -153,43 +153,46 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
             /* select transform function and scan pattern according to plane and band number */
             switch ((p << 2) + i) {
             case 0:
-                band->inv_transform = ff_ivi_inverse_slant_8x8;
-                band->dc_transform  = ff_ivi_dc_slant_2d;
-                band->scan          = ff_zigzag_direct;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_inverse_slant_8x8;
+                band->dc_transform   = ff_ivi_dc_slant_2d;
+                band->scan           = ff_zigzag_direct;
+                band->transform_size = 8;
                 break;
 
             case 1:
-                band->inv_transform = ff_ivi_row_slant8;
-                band->dc_transform  = ff_ivi_dc_row_slant;
-                band->scan          = ff_ivi_vertical_scan_8x8;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_row_slant8;
+                band->dc_transform   = ff_ivi_dc_row_slant;
+                band->scan           = ff_ivi_vertical_scan_8x8;
+                band->transform_size = 8;
                 break;
 
             case 2:
-                band->inv_transform = ff_ivi_col_slant8;
-                band->dc_transform  = ff_ivi_dc_col_slant;
-                band->scan          = ff_ivi_horizontal_scan_8x8;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_col_slant8;
+                band->dc_transform   = ff_ivi_dc_col_slant;
+                band->scan           = ff_ivi_horizontal_scan_8x8;
+                band->transform_size = 8;
                 break;
 
             case 3:
-                band->inv_transform = ff_ivi_put_pixels_8x8;
-                band->dc_transform  = ff_ivi_put_dc_pixel_8x8;
-                band->scan          = ff_ivi_horizontal_scan_8x8;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_put_pixels_8x8;
+                band->dc_transform   = ff_ivi_put_dc_pixel_8x8;
+                band->scan           = ff_ivi_horizontal_scan_8x8;
+                band->transform_size = 8;
                 break;
 
             case 4:
-                band->inv_transform = ff_ivi_inverse_slant_4x4;
-                band->dc_transform  = ff_ivi_dc_slant_2d;
-                band->scan          = ff_ivi_direct_scan_4x4;
-                band->transform_size= 4;
+                band->inv_transform  = ff_ivi_inverse_slant_4x4;
+                band->dc_transform   = ff_ivi_dc_slant_2d;
+                band->scan           = ff_ivi_direct_scan_4x4;
+                band->transform_size = 4;
                 break;
             }
 
             band->is_2d_trans = band->inv_transform == ff_ivi_inverse_slant_8x8 ||
                                 band->inv_transform == ff_ivi_inverse_slant_4x4;
+
+            if (band->transform_size != band->blk_size)
+                return AVERROR_INVALIDDATA;
 
             /* select dequant matrix according to plane and band number */
             if (!p) {

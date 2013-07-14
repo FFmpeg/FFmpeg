@@ -415,6 +415,20 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
     return len;
 }
 
+static int ivi_dc_transform(IVIBandDesc *band, int *prev_dc, int buf_offs,
+                            int blk_size)
+{
+    int buf_size = band->pitch * band->aheight - buf_offs;
+    int min_size = (blk_size - 1) * band->pitch + blk_size;
+
+    if (min_size > buf_size)
+        return AVERROR_INVALIDDATA;
+
+    band->dc_transform(prev_dc, band->buf + buf_offs,
+                       band->pitch, blk_size);
+
+    return 0;
+}
 
 static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
                                    ivi_mc_func mc, int mv_x, int mv_y,
@@ -432,6 +446,12 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
     int num_coeffs = blk_size * blk_size;
     int col_mask   = blk_size - 1;
     int scan_pos   = -1;
+    int min_size   = band->pitch * (band->transform_size - 1) +
+                     band->transform_size;
+    int buf_size   = band->pitch * band->aheight - offs;
+
+    if (min_size > buf_size)
+        return AVERROR_INVALIDDATA;
 
     if (!band->scan) {
         av_log(avctx, AV_LOG_ERROR, "Scan pattern is not set.\n");
@@ -602,8 +622,9 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
                 /* for intra blocks apply the dc slant transform */
                 /* for inter - perform the motion compensation without delta */
                 if (is_intra) {
-                        band->dc_transform(&prev_dc, band->buf + buf_offs,
-                                           band->pitch, blk_size);
+                    ret = ivi_dc_transform(band, &prev_dc, buf_offs, blk_size);
+                    if (ret < 0)
+                        return ret;
                 } else {
                     ret = ivi_mc(mc_no_delta_func, band->buf, band->ref_buf,
                                  buf_offs, mv_x, mv_y, band->pitch, mc_type);
