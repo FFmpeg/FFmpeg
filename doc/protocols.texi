@@ -129,6 +129,20 @@ The ff* tools default to the file protocol, that is a resource
 specified with the name "FILE.mpeg" is interpreted as the URL
 "file:FILE.mpeg".
 
+This protocol accepts the following options:
+
+@table @option
+@item truncate
+Truncate existing files on write, if set to 1. A value of 0 prevents
+truncating. Default value is 1.
+
+@item blocksize
+Set I/O operation maximum block size, in bytes. Default value is
+@code{INT_MAX}, which results in not limiting the requested block size.
+Setting this value reasonably low improves user termination request reaction
+time, which is valuable for files on slow medium.
+@end table
+
 @section ftp
 
 FTP (File Transfer Protocol).
