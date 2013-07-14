@@ -343,6 +343,8 @@ static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
 
             tile->ref_mbs = 0;
             if (p || b) {
+                if (tile->num_MBs != ref_tile->num_MBs)
+                    return AVERROR_INVALIDDATA;
                 tile->ref_mbs = ref_tile->mbs;
                 ref_tile++;
             }
