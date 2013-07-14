@@ -932,7 +932,7 @@ static void fill_xyztables(struct SwsContext *c)
         {  228,  -835,  4329} };
     static const int16_t rgb2xyz_matrix[3][4] = {
         {1689, 1464,  739},
-        { 296,  871, 2929},
+        { 871, 2929,  296},
         {  79,  488, 3891} };
     static int16_t xyzgamma_tab[4096], rgbgamma_tab[4096], xyzgammainv_tab[4096], rgbgammainv_tab[4096];
 
