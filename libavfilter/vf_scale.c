@@ -96,6 +96,9 @@ typedef struct {
 
     int in_range;
     int out_range;
+
+    int out_h_chr_pos;
+    int out_v_chr_pos;
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -323,6 +326,9 @@ static int config_props(AVFilterLink *outlink)
             av_opt_set_int(*s, "dst_format", outfmt, 0);
             av_opt_set_int(*s, "sws_flags", scale->flags, 0);
 
+            av_opt_set_int(*s, "dst_h_chr_pos", scale->out_h_chr_pos, 0);
+            av_opt_set_int(*s, "dst_v_chr_pos", scale->out_v_chr_pos, 0);
+
             if ((ret = sws_init_context(*s, NULL, NULL)) < 0)
                 return ret;
             if (!scale->interlaced)
@@ -491,6 +497,8 @@ static const AVOption scale_options[] = {
     { "mpeg",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
     { "tv",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, "range" },
     { "pc",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
+    { "out_v_chr_pos",   "output vertical chroma position in luma grid/256"  , OFFSET(out_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1}, -1, 512, FLAGS },
+    { "out_h_chr_pos",   "output horizontal chroma position in luma grid/256", OFFSET(out_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1}, -1, 512, FLAGS },
     { NULL },
 };
 
