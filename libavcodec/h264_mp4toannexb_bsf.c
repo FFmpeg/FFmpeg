@@ -81,9 +81,15 @@ static int h264_extradata_to_annexb(AVCodecContext *avctx, const int padding)
 
         unit_size   = AV_RB16(extradata);
         total_size += unit_size + 4;
-        if (total_size > INT_MAX - padding ||
-            extradata + 2 + unit_size > avctx->extradata +
-            avctx->extradata_size) {
+        if (total_size > INT_MAX - padding) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Too big extradata size, corrupted stream or invalid MP4/AVCC bitstream\n");
+            av_free(out);
+            return AVERROR(EINVAL);
+        }
+        if (extradata + 2 + unit_size > avctx->extradata + avctx->extradata_size) {
+            av_log(avctx, AV_LOG_ERROR, "Packet header is not contained in global extradata, "
+                   "corrupted stream or invalid MP4/AVCC bitstream\n");
             av_free(out);
             return AVERROR(EINVAL);
         }
