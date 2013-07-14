@@ -939,10 +939,14 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                              int srcRange, const int table[4], int dstRange,
                              int brightness, int contrast, int saturation)
 {
-    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(c->dstFormat);
-    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(c->srcFormat);
+    const AVPixFmtDescriptor *desc_dst;
+    const AVPixFmtDescriptor *desc_src;
     memcpy(c->srcColorspaceTable, inv_table, sizeof(int) * 4);
     memcpy(c->dstColorspaceTable, table, sizeof(int) * 4);
+
+    handle_formats(c);
+    desc_dst = av_pix_fmt_desc_get(c->dstFormat);
+    desc_src = av_pix_fmt_desc_get(c->srcFormat);
 
     if(!isYUV(c->dstFormat) && !isGray(c->dstFormat))
         dstRange = 0;
@@ -1076,8 +1080,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     int flags, cpu_flags;
     enum AVPixelFormat srcFormat = c->srcFormat;
     enum AVPixelFormat dstFormat = c->dstFormat;
-    const AVPixFmtDescriptor *desc_src = av_pix_fmt_desc_get(srcFormat);
-    const AVPixFmtDescriptor *desc_dst = av_pix_fmt_desc_get(dstFormat);
+    const AVPixFmtDescriptor *desc_src;
+    const AVPixFmtDescriptor *desc_dst;
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
@@ -1087,19 +1091,15 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     unscaled = (srcW == dstW && srcH == dstH);
 
-    handle_jpeg(&srcFormat);
-    handle_jpeg(&dstFormat);
+    handle_jpeg(&c->srcFormat);
+    handle_jpeg(&c->dstFormat);
     if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat)
         av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
-    handle_0alpha(&srcFormat);
-    handle_0alpha(&dstFormat);
-    handle_xyz(&srcFormat);
-    handle_xyz(&dstFormat);
-
-    if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat){
-        c->srcFormat= srcFormat;
-        c->dstFormat= dstFormat;
-    }
+    handle_formats(c);
+    srcFormat = c->srcFormat;
+    dstFormat = c->dstFormat;
+    desc_src = av_pix_fmt_desc_get(srcFormat);
+    desc_dst = av_pix_fmt_desc_get(dstFormat);
 
     if (!(unscaled && sws_isSupportedEndiannessConversion(srcFormat) &&
           av_pix_fmt_swap_endianness(srcFormat) == dstFormat)) {
@@ -1590,7 +1590,6 @@ SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
     c->dstRange  = handle_jpeg(&dstFormat);
     c->srcFormat = srcFormat;
     c->dstFormat = dstFormat;
-    handle_formats(c);
 
     if (param) {
         c->param[0] = param[0];
@@ -2034,7 +2033,6 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context, int srcW,
         context->dstH      = dstH;
         context->dstRange  = handle_jpeg(&dstFormat);
         context->dstFormat = dstFormat;
-        handle_formats(context);
         context->flags     = flags;
         context->param[0]  = param[0];
         context->param[1]  = param[1];
