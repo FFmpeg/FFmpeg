@@ -989,6 +989,14 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
         ctx->buf_invalid[ctx->dst_buf] = 0;
+    } else {
+        if (ctx->is_scalable)
+            return AVERROR_INVALIDDATA;
+
+        for (p = 0; p < 3; p++) {
+            if (!ctx->planes[p].bands[0].buf)
+                return AVERROR_INVALIDDATA;
+        }
     }
     if (ctx->buf_invalid[ctx->dst_buf])
         return -1;
