@@ -21,6 +21,7 @@
 
 #include "avc.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "avlanguage.h"
 #include "flacenc.h"
 #include "internal.h"
@@ -139,8 +140,7 @@ static void put_ebml_size_unknown(AVIOContext *pb, int bytes)
 {
     av_assert0(bytes <= 8);
     avio_w8(pb, 0x1ff >> bytes);
-    while (--bytes)
-        avio_w8(pb, 0xff);
+    ffio_fill(pb, 0xff, bytes - 1);
 }
 
 /**
@@ -230,8 +230,7 @@ static void put_ebml_void(AVIOContext *pb, uint64_t size)
         put_ebml_num(pb, size-1, 0);
     else
         put_ebml_num(pb, size-9, 8);
-    while(avio_tell(pb) < currentpos + size)
-        avio_w8(pb, 0);
+    ffio_fill(pb, 0, currentpos + size - avio_tell(pb));
 }
 
 static ebml_master start_ebml_master(AVIOContext *pb, unsigned int elementid, uint64_t expectedsize)
@@ -254,9 +253,7 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
 
 static void put_xiph_size(AVIOContext *pb, int size)
 {
-    int i;
-    for (i = 0; i < size / 255; i++)
-        avio_w8(pb, 255);
+    ffio_fill(pb, 255, size / 255);
     avio_w8(pb, size % 255);
 }
 
