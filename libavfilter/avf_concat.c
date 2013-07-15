@@ -68,7 +68,7 @@ static const AVOption concat_options[] = {
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|F},
     { "unsafe", "enable unsafe mode",
       OFFSET(unsafe),
-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|A|F},
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, V|A|F},
     { 0 }
 };
 
