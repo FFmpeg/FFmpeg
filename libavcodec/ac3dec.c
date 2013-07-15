@@ -1308,7 +1308,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
                 av_log(avctx, AV_LOG_ERROR, "unsupported frame type : "
                        "skipping frame\n");
                 *got_frame_ptr = 0;
-                return s->frame_size;
+                return buf_size;
             } else {
                 av_log(avctx, AV_LOG_ERROR, "invalid frame type\n");
             }
