@@ -242,6 +242,7 @@ static av_cold void ivi_free_buffers(IVIPlaneDesc *planes)
             av_freep(&planes[p].bands[b].tiles);
         }
         av_freep(&planes[p].bands);
+        planes[p].num_bands = 0;
     }
 }
 
@@ -253,6 +254,10 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
     IVIBandDesc *band;
 
     ivi_free_buffers(planes);
+
+    if (cfg->pic_width < 1 || cfg->pic_height < 1 ||
+        cfg->luma_bands < 1 || cfg->chroma_bands < 1)
+        return AVERROR_INVALIDDATA;
 
     /* fill in the descriptor of the luminance plane */
     planes[0].width     = cfg->pic_width;
