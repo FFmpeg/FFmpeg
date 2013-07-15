@@ -2364,6 +2364,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     uint32_t *lace_size = NULL;
     int n, flags, laces = 0;
     uint64_t num;
+    int trust_default_duration = 1;
 
     if ((n = matroska_ebmlnum_uint(matroska, data, size, &num)) < 0) {
         av_log(matroska->ctx, AV_LOG_ERROR, "EBML block data error\n");
@@ -2418,7 +2419,15 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     if (res)
         goto end;
 
-    if (!block_duration)
+    if (track->audio.samplerate == 8000) {
+        // If this is needed for more codecs, then add them here
+        if (st->codec->codec_id == AV_CODEC_ID_AC3) {
+            if(track->audio.samplerate != st->codec->sample_rate || !st->codec->frame_size)
+                trust_default_duration = 0;
+        }
+    }
+
+    if (!block_duration && trust_default_duration)
         block_duration = track->default_duration * laces / matroska->time_scale;
 
     if (cluster_time != (uint64_t)-1 && (block_time >= 0 || cluster_time >= -block_time))
