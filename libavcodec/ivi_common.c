@@ -342,11 +342,11 @@ static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
 
             tile->ref_mbs = 0;
             if (p || b) {
-                if (tile->num_MBs <= ref_tile->num_MBs) {
-                    tile->ref_mbs = ref_tile->mbs;
-                }else
-                    av_log(NULL, AV_LOG_DEBUG, "Cannot use ref_tile, too few mbs\n");
-
+                if (tile->num_MBs != ref_tile->num_MBs) {
+                    av_log(NULL, AV_LOG_DEBUG, "ref_tile mismatch\n");
+                    return AVERROR_INVALIDDATA;
+                }
+                tile->ref_mbs = ref_tile->mbs;
                 ref_tile++;
             }
             tile++;
