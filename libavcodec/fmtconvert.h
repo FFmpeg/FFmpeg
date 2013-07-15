@@ -39,6 +39,22 @@ typedef struct FmtConvertContext {
                                        float mul, int len);
 
     /**
+     * Convert an array of int32_t to float and multiply by a float value from another array,
+     * stepping along the float array once for each 8 integers.
+     * @param c   pointer to FmtConvertContext.
+     * @param dst destination array of float.
+     *            constraints: 16-byte aligned
+     * @param src source array of int32_t.
+     *            constraints: 16-byte aligned
+     * @param mul source array of float multipliers.
+     * @param len number of elements to convert.
+     *            constraints: multiple of 8
+     */
+    void (*int32_to_float_fmul_array8)(struct FmtConvertContext *c,
+                                       float *dst, const int32_t *src,
+                                       const float *mul, int len);
+
+    /**
      * Convert an array of float to an array of int16_t.
      *
      * Convert floats from in the range [-32768.0,32767.0] to ints
