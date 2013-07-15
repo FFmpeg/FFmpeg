@@ -555,4 +555,5 @@ AVCodec ff_ra_144_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]){ 8000, 0 },
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
+    .channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
 };
