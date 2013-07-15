@@ -147,7 +147,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     sws_freeContext(scale->isws[0]);
     sws_freeContext(scale->isws[1]);
     scale->sws = NULL;
-    av_opt_free(scale);
 }
 
 static int query_formats(AVFilterContext *ctx)
