@@ -2954,6 +2954,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 int      best_fps = 0;
                 double best_error = 0.01;
 
+                if (st->info->codec_info_duration        >= INT64_MAX / st->time_base.num / 2||
+                    st->info->codec_info_duration_fields >= INT64_MAX / st->time_base.den)
+                    continue;
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           st->info->codec_info_duration_fields*(int64_t)st->time_base.den,
                           st->info->codec_info_duration*2*(int64_t)st->time_base.num, 60000);
