@@ -42,6 +42,7 @@
 #include "libavcodec/dnxhddata.h"
 #include "audiointerleave.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "mxf.h"
 #include "config.h"
@@ -1294,8 +1295,7 @@ static void mxf_write_klv_fill(AVFormatContext *s)
         avio_write(s->pb, klv_fill_key, 16);
         pad -= 16 + 4;
         klv_encode_ber4_length(s->pb, pad);
-        for (; pad; pad--)
-            avio_w8(s->pb, 0);
+        ffio_fill(s->pb, 0, pad);
         av_assert1(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     }
 }
@@ -1870,13 +1870,11 @@ static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacke
         avio_write(s->pb, klv_fill_key, 16);
         pad -= 16 + 4;
         klv_encode_ber4_length(s->pb, pad);
-        for (; pad; pad--)
-            avio_w8(s->pb, 0);
+        ffio_fill(s->pb, 0, pad);
         av_assert1(!(avio_tell(s->pb) & (KAG_SIZE-1)));
     } else {
         av_log(s, AV_LOG_WARNING, "cannot fill d-10 video packet\n");
-        for (; pad > 0; pad--)
-            avio_w8(s->pb, 0);
+        ffio_fill(s->pb, 0, pad);
     }
 }
 
