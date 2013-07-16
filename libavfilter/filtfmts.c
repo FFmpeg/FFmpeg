@@ -29,6 +29,7 @@ int main(int argc, char **argv)
 {
     AVFilter *filter;
     AVFilterContext *filter_ctx;
+    AVFilterGraph *graph_ctx;
     const char *filter_name;
     const char *filter_args = NULL;
     int i, j;
@@ -44,6 +45,11 @@ int main(int argc, char **argv)
     if (argv[2])
         filter_args = argv[2];
 
+    /* allocate graph */
+    graph_ctx = avfilter_graph_alloc();
+    if (!graph_ctx)
+        return 1;
+
     avfilter_register_all();
 
     /* get a corresponding filter and open it */
@@ -52,7 +58,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if (avfilter_open(&filter_ctx, filter, NULL) < 0) {
+    /* open filter and add it to the graph */
+    if (!(filter_ctx = avfilter_graph_alloc_filter(graph_ctx, filter, filter_name))) {
         fprintf(stderr, "Impossible to open filter with name '%s'\n",
                 filter_name);
         return 1;
@@ -99,6 +106,7 @@ int main(int argc, char **argv)
     }
 
     avfilter_free(filter_ctx);
+    avfilter_graph_free(&graph_ctx);
     fflush(stdout);
     return 0;
 }
