@@ -18,13 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdlib.h>
 #include "libavutil/avstring.h"
-#include "libavutil/time.h"
 #include "avformat.h"
 #include "internal.h"
-#include "network.h"
-#include "os_support.h"
 #include "url.h"
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
