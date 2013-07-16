@@ -4705,10 +4705,10 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
  * If the return value is positive, an output buffer is allocated and
  * is availble in *poutbuf, and is distinct from the input buffer.
  *
- * If the return value is 0, the output output buffer is not allocated
- * and the output buffer should be considered identical to the input
- * buffer, or in case *poutbuf was set it points to the input buffer
- * (not necessarily to its starting address).
+ * If the return value is 0, the output buffer is not allocated and
+ * should be considered identical to the input buffer, or in case
+ * *poutbuf was set it points to the input buffer (not necessarily to
+ * its starting address).
  */
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,
