@@ -144,7 +144,7 @@ static int thread_execute(AVFilterContext *ctx, action_func *func,
     return 0;
 }
 
-static int thread_init(ThreadContext *c, int nb_threads)
+static int thread_init_internal(ThreadContext *c, int nb_threads)
 {
     int i, ret;
 
@@ -207,7 +207,7 @@ int ff_graph_thread_init(AVFilterGraph *graph)
     if (!graph->internal->thread)
         return AVERROR(ENOMEM);
 
-    ret = thread_init(graph->internal->thread, graph->nb_threads);
+    ret = thread_init_internal(graph->internal->thread, graph->nb_threads);
     if (ret <= 1) {
         av_freep(&graph->internal->thread);
         graph->thread_type = 0;
