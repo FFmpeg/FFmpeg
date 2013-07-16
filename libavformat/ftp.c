@@ -27,6 +27,7 @@
 #include "os_support.h"
 #include "url.h"
 #include "libavutil/opt.h"
+#include "libavutil/bprint.h"
 
 #define CONTROL_BUFFER_SIZE 1024
 #define CREDENTIALS_BUFFER_SIZE 128
@@ -42,8 +43,6 @@ typedef enum {
 typedef struct {
     const AVClass *class;
     URLContext *conn_control;                    /**< Control connection */
-    int conn_control_block_flag;                 /**< Controls block/unblock mode of data connection */
-    AVIOInterruptCB conn_control_interrupt_cb;   /**< Controls block/unblock mode of data connection */
     URLContext *conn_data;                       /**< Data connection, NULL when not connected */
     uint8_t control_buffer[CONTROL_BUFFER_SIZE]; /**< Control connection buffer */
     uint8_t *control_buf_ptr, *control_buf_end;
@@ -77,18 +76,10 @@ static const AVClass ftp_context_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-static int ftp_conn_control_block_control(void *data)
-{
-    FTPContext *s = data;
-    return s->conn_control_block_flag;
-}
-
 static int ftp_getc(FTPContext *s)
 {
     int len;
     if (s->control_buf_ptr >= s->control_buf_end) {
-        if (s->conn_control_block_flag)
-            return AVERROR_EXIT;
         len = ffurl_read(s->conn_control, s->control_buffer, CONTROL_BUFFER_SIZE);
         if (len < 0) {
             return len;
@@ -106,12 +97,10 @@ static int ftp_get_line(FTPContext *s, char *line, int line_size)
 {
     int ch;
     char *q = line;
-    int ori_block_flag = s->conn_control_block_flag;
 
     for (;;) {
         ch = ftp_getc(s);
         if (ch < 0) {
-            s->conn_control_block_flag = ori_block_flag;
             return ch;
         }
         if (ch == '\n') {
@@ -119,33 +108,12 @@ static int ftp_get_line(FTPContext *s, char *line, int line_size)
             if (q > line && q[-1] == '\r')
                 q--;
             *q = '\0';
-
-            s->conn_control_block_flag = ori_block_flag;
             return 0;
         } else {
-            s->conn_control_block_flag = 0; /* line need to be finished */
             if ((q - line) < line_size - 1)
                 *q++ = ch;
         }
     }
-}
-
-static int ftp_flush_control_input(FTPContext *s)
-{
-    char buf[CONTROL_BUFFER_SIZE];
-    int err, ori_block_flag = s->conn_control_block_flag;
-
-    s->conn_control_block_flag = 1;
-    do {
-        err = ftp_get_line(s, buf, sizeof(buf));
-    } while (!err);
-
-    s->conn_control_block_flag = ori_block_flag;
-
-    if (err < 0 && err != AVERROR_EXIT)
-        return err;
-
-    return 0;
 }
 
 /*
@@ -156,49 +124,46 @@ static int ftp_flush_control_input(FTPContext *s)
  */
 static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 {
-    int err, i, result = 0, pref_code_found = 0, wait_count = 100;
+    int err, i, dash = 0, result = 0, code_found = 0;
     char buf[CONTROL_BUFFER_SIZE];
+    AVBPrint line_buffer;
 
-    /* Set blocking mode */
-    s->conn_control_block_flag = 0;
-    for (;;) {
+    if (line)
+        av_bprint_init(&line_buffer, 0, AV_BPRINT_SIZE_AUTOMATIC);
+
+    while (!code_found || dash) {
         if ((err = ftp_get_line(s, buf, sizeof(buf))) < 0) {
-            if (err == AVERROR_EXIT) {
-                if (!pref_code_found && wait_count--) {
-                    av_usleep(10000);
-                    continue;
-                }
-            }
-            return result;
+            av_bprint_finalize(&line_buffer, NULL);
+            return err;
         }
 
         av_log(s, AV_LOG_DEBUG, "%s\n", buf);
 
-        if (!pref_code_found) {
-            if (strlen(buf) < 3)
+        if (strlen(buf) < 4)
+            continue;
+
+        err = 0;
+        for (i = 0; i < 3; ++i) {
+            if (buf[i] < '0' || buf[i] > '9')
                 continue;
+            err *= 10;
+            err += buf[i] - '0';
+        }
+        dash = !!(buf[3] == '-');
 
-            err = 0;
-            for (i = 0; i < 3; ++i) {
-                if (buf[i] < '0' || buf[i] > '9')
-                    continue;
-                err *= 10;
-                err += buf[i] - '0';
-            }
-
-            for (i = 0; response_codes[i]; ++i) {
-                if (err == response_codes[i]) {
-                    /* first code received. Now get all lines in non blocking mode */
-                    s->conn_control_block_flag = 1;
-                    pref_code_found = 1;
-                    result = err;
-                    if (line)
-                        *line = av_strdup(buf);
-                    break;
-                }
+        for (i = 0; response_codes[i]; ++i) {
+            if (err == response_codes[i]) {
+                if (line)
+                    av_bprintf(&line_buffer, "%s", buf);
+                code_found = 1;
+                result = err;
+                break;
             }
         }
     }
+
+    if (line)
+        av_bprint_finalize(&line_buffer, line);
     return result;
 }
 
@@ -207,12 +172,6 @@ static int ftp_send_command(FTPContext *s, const char *command,
 {
     int err;
 
-    /* Flush control connection input to get rid of non relevant responses if any */
-    if ((err = ftp_flush_control_input(s)) < 0)
-        return err;
-
-    /* send command in blocking mode */
-    s->conn_control_block_flag = 0;
     if ((err = ffurl_write(s->conn_control, command, strlen(command))) < 0)
         return err;
     if (!err)
@@ -434,8 +393,6 @@ static int ftp_connect_control_connection(URLContext *h)
     FTPContext *s = h->priv_data;
     const int connect_codes[] = {220, 0};
 
-    s->conn_control_block_flag = 0;
-
     if (!s->conn_control) {
         ff_url_join(buf, sizeof(buf), "tcp", NULL,
                     s->hostname, s->server_control_port, NULL);
@@ -444,7 +401,7 @@ static int ftp_connect_control_connection(URLContext *h)
             av_dict_set(&opts, "timeout", opts_format, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
         err = ffurl_open(&s->conn_control, buf, AVIO_FLAG_READ_WRITE,
-                         &s->conn_control_interrupt_cb, &opts);
+                         &h->interrupt_callback, &opts);
         av_dict_free(&opts);
         if (err < 0) {
             av_log(h, AV_LOG_ERROR, "Cannot open control connection\n");
@@ -489,7 +446,7 @@ static int ftp_connect_data_connection(URLContext *h)
             snprintf(opts_format, sizeof(opts_format), "%d", s->rw_timeout);
             av_dict_set(&opts, "timeout", opts_format, 0);
         } /* if option is not given, don't pass it and let tcp use its own default */
-        err = ffurl_open(&s->conn_data, buf, AVIO_FLAG_READ_WRITE,
+        err = ffurl_open(&s->conn_data, buf, h->flags,
                          &h->interrupt_callback, &opts);
         av_dict_free(&opts);
         if (err < 0)
@@ -553,8 +510,6 @@ static int ftp_open(URLContext *h, const char *url, int flags)
     s->state = DISCONNECTED;
     s->filesize = -1;
     s->position = 0;
-    s->conn_control_interrupt_cb.opaque = s;
-    s->conn_control_interrupt_cb.callback = ftp_conn_control_block_control;
 
     av_url_split(proto, sizeof(proto),
                  s->credencials, sizeof(s->credencials),
