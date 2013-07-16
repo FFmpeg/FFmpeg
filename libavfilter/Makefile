@@ -84,6 +84,7 @@ OBJS-$(CONFIG_BASS_FILTER)                   += af_biquads.o
 OBJS-$(CONFIG_BIQUAD_FILTER)                 += af_biquads.o
 OBJS-$(CONFIG_CHANNELMAP_FILTER)             += af_channelmap.o
 OBJS-$(CONFIG_CHANNELSPLIT_FILTER)           += af_channelsplit.o
+OBJS-$(CONFIG_COMPAND_FILTER)                += af_compand.o
 OBJS-$(CONFIG_EARWAX_FILTER)                 += af_earwax.o
 OBJS-$(CONFIG_EBUR128_FILTER)                += f_ebur128.o
 OBJS-$(CONFIG_EQUALIZER_FILTER)              += af_biquads.o
