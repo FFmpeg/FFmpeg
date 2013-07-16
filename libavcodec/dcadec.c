@@ -1140,7 +1140,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
 
     /* FIXME */
     float (*subband_samples)[DCA_SUBBANDS][8] = s->subband_samples[block_index];
-    LOCAL_ALIGNED_16(int32_t, block, [8]);
+    LOCAL_ALIGNED_16(int32_t, block, [8 * DCA_SUBBANDS]);
 
     /*
      * Audio data
@@ -1153,6 +1153,8 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
         quant_step_table = lossy_quant_d;
 
     for (k = base_channel; k < s->prim_channels; k++) {
+        float rscale[DCA_SUBBANDS];
+
         if (get_bits_left(&s->gb) < 0)
             return AVERROR_INVALIDDATA;
 
@@ -1175,11 +1177,12 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
              * Extract bits from the bit stream
              */
             if (!abits) {
-                memset(subband_samples[k][l], 0, 8 * sizeof(subband_samples[0][0][0]));
+                rscale[l] = 0;
+                memset(block + 8 * l, 0, 8 * sizeof(block[0]));
             } else {
                 /* Deal with transients */
                 int sfi = s->transition_mode[k][l] && subsubframe >= s->transition_mode[k][l];
-                float rscale = quant_step_size * s->scale_factor[k][l][sfi] *
+                rscale[l] = quant_step_size * s->scale_factor[k][l][sfi] *
                                s->scalefactor_adj[k][sel];
 
                 if (abits >= 11 || !dca_smpl_bitalloc[abits].vlc[sel].table) {
@@ -1193,7 +1196,7 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
                         block_code1 = get_bits(&s->gb, size);
                         block_code2 = get_bits(&s->gb, size);
                         err = decode_blockcodes(block_code1, block_code2,
-                                                levels, block);
+                                                levels, block + 8 * l);
                         if (err) {
                             av_log(s->avctx, AV_LOG_ERROR,
                                    "ERROR: block code look-up failed\n");
@@ -1202,19 +1205,23 @@ static int dca_subsubframe(DCAContext *s, int base_channel, int block_index)
                     } else {
                         /* no coding */
                         for (m = 0; m < 8; m++)
-                            block[m] = get_sbits(&s->gb, abits - 3);
+                            block[8 * l + m] = get_sbits(&s->gb, abits - 3);
                     }
                 } else {
                     /* Huffman coded */
                     for (m = 0; m < 8; m++)
-                        block[m] = get_bitalloc(&s->gb,
+                        block[8 * l + m] = get_bitalloc(&s->gb,
                                                 &dca_smpl_bitalloc[abits], sel);
                 }
 
-                s->fmt_conv.int32_to_float_fmul_scalar(subband_samples[k][l],
-                                                       block, rscale, 8);
             }
+        }
 
+        s->fmt_conv.int32_to_float_fmul_array8(&s->fmt_conv, subband_samples[k][0],
+                                               block, rscale, 8 * s->vq_start_subband[k]);
+
+        for (l = 0; l < s->vq_start_subband[k]; l++) {
+            int m;
             /*
              * Inverse ADPCM if in prediction mode
              */
