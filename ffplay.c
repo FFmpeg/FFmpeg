@@ -177,6 +177,8 @@ typedef struct VideoState {
     int read_pause_return;
     AVFormatContext *ic;
     int realtime;
+    int audio_finished;
+    int video_finished;
 
     Clock audclk;
     Clock vidclk;
@@ -1673,6 +1675,9 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
     if(avcodec_decode_video2(is->video_st->codec, frame, &got_picture, pkt) < 0)
         return 0;
 
+    if (!got_picture && !pkt->data)
+        is->video_finished = *serial;
+
     if (got_picture) {
         int ret = 1;
         double dpts = NAN;
@@ -2170,6 +2175,8 @@ static int audio_decode_frame(VideoState *is)
                 pkt_temp->size -= len1;
                 if (pkt_temp->data && pkt_temp->size <= 0 || !pkt_temp->data && !got_frame)
                     pkt_temp->stream_index = -1;
+                if (!pkt_temp->data && !got_frame)
+                    is->audio_finished = is->audio_pkt_temp_serial;
 
                 if (!got_frame)
                     continue;
@@ -2899,6 +2906,16 @@ static int read_thread(void *arg)
             SDL_UnlockMutex(wait_mutex);
             continue;
         }
+        if (!is->paused &&
+            (!is->audio_st || is->audio_finished == is->audioq.serial) &&
+            (!is->video_st || (is->video_finished == is->videoq.serial && is->pictq_size == 0))) {
+            if (loop != 1 && (!loop || --loop)) {
+                stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
+            } else if (autoexit) {
+                ret = AVERROR_EOF;
+                goto fail;
+            }
+        }
         if (eof) {
             if (is->video_stream >= 0) {
                 av_init_packet(pkt);
@@ -2915,14 +2932,6 @@ static int read_thread(void *arg)
                 packet_queue_put(&is->audioq, pkt);
             }
             SDL_Delay(10);
-            if (is->audioq.size + is->videoq.size + is->subtitleq.size == 0) {
-                if (loop != 1 && (!loop || --loop)) {
-                    stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
-                } else if (autoexit) {
-                    ret = AVERROR_EOF;
-                    goto fail;
-                }
-            }
             eof=0;
             continue;
         }
