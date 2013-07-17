@@ -1974,7 +1974,6 @@ enable dxva2 vdpau
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
-AVSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
 LIBSUF=".a"
 FULLNAME='$(NAME)$(BUILDSUF)'
@@ -3059,7 +3058,6 @@ case $target_os in
         host_libs=
         ;;
     sunos)
-        AVSERVERLDFLAGS=""
         SHFLAGS='-shared -Wl,-h,$$(@F)'
         enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
@@ -3104,7 +3102,6 @@ case $target_os in
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
-        AVSERVERLDFLAGS=-Wl,-bind_at_load
         objformat="macho"
         enabled x86_64 && objformat="macho64"
         enabled_any pic shared ||
@@ -3196,7 +3193,6 @@ case $target_os in
         add_cppflags -D_GNU_SOURCE
         add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
-        AVSERVERLDFLAGS=""
         LIBSUF="_s.a"
         SLIBPREF=""
         SLIBSUF=".dll"
@@ -3236,7 +3232,6 @@ case $target_os in
         ;;
     osf1)
         add_cppflags -D_OSF_SOURCE -D_POSIX_PII -D_REENTRANT
-        AVSERVERLDFLAGS=
         ;;
     minix)
         ;;
@@ -4120,7 +4115,6 @@ LD_LIB=$LD_LIB
 LD_PATH=$LD_PATH
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
-LDFLAGS-avserver=$AVSERVERLDFLAGS
 SHFLAGS=$(echo $($ldflags_filter $SHFLAGS))
 YASMFLAGS=$YASMFLAGS
 BUILDSUF=$build_suffix
