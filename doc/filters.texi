@@ -2371,6 +2371,11 @@ Convert source to grayscale:
 @example
 colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3
 @end example
+@item
+Simulate sepia tones:
+@example
+colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
+@end example
 @end itemize
 
 @section colormatrix
