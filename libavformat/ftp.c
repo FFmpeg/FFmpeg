@@ -382,7 +382,7 @@ static int ftp_restart(FTPContext *s, int64_t pos)
 
 static int ftp_connect_control_connection(URLContext *h)
 {
-    char buf[CONTROL_BUFFER_SIZE], opts_format[20];
+    char buf[CONTROL_BUFFER_SIZE], opts_format[20], *response = NULL;
     int err;
     AVDictionary *opts = NULL;
     FTPContext *s = h->priv_data;
@@ -404,10 +404,15 @@ static int ftp_connect_control_connection(URLContext *h)
         }
 
         /* check if server is ready */
-        if (ftp_status(s, NULL, connect_codes) != 220) {
+        if (ftp_status(s, ((h->flags & AVIO_FLAG_WRITE) ? &response : NULL), connect_codes) != 220) {
             av_log(h, AV_LOG_ERROR, "FTP server not ready for new users\n");
             return AVERROR(EACCES);
         }
+
+        if ((h->flags & AVIO_FLAG_WRITE) && av_stristr(response, "pure-ftpd")) {
+            av_log(h, AV_LOG_WARNING, "Pure-FTPd server is used as an output protocol. It is known issue this implementation may produce incorrect content and it cannot be fixed at this moment.");
+        }
+        av_free(response);
 
         if ((err = ftp_auth(s)) < 0) {
             av_log(h, AV_LOG_ERROR, "FTP authentication failed\n");
