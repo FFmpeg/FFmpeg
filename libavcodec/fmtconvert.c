@@ -24,7 +24,9 @@
 #include "fmtconvert.h"
 #include "libavutil/common.h"
 
-static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src, float mul, int len){
+static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src,
+                                         float mul, int len)
+{
     int i;
     for(i=0; i<len; i++)
         dst[i] = src[i] * mul;

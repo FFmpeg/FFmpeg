@@ -35,7 +35,8 @@ typedef struct FmtConvertContext {
      * @param len number of elements to convert.
      *            constraints: multiple of 8
      */
-    void (*int32_to_float_fmul_scalar)(float *dst, const int32_t *src, float mul, int len);
+    void (*int32_to_float_fmul_scalar)(float *dst, const int32_t *src,
+                                       float mul, int len);
 
     /**
      * Convert an array of float to an array of int16_t.
