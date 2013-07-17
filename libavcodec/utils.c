@@ -338,6 +338,18 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height)
     *width              = FFALIGN(*width, align);
 }
 
+int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos)
+{
+    if (pos <= AVCHROMA_LOC_UNSPECIFIED || pos >= AVCHROMA_LOC_NB)
+        return AVERROR(EINVAL);
+    pos--;
+
+    *xpos = (pos&1) * 128;
+    *ypos = ((pos>>1)^(pos<4)) * 128;
+
+    return 0;
+}
+
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
                              int buf_size, int align)
