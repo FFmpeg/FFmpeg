@@ -22,32 +22,25 @@ export FFMPEG_DIR=${SOURCE}
 function doConfigure()
 {
 	#  *NEED* gas-preprocessor.pl file in PATH:
-	# wget https://github.com/jacobson/gas-preprocessor/blob/master/gas-preprocessor.pl
+	# wget https://github.com/yuvi/gas-preprocessor/blob/master/gas-preprocessor.pl
+	# wget https://github.com/wens/gas-preprocessor/blob/master/gas-preprocessor.pl
 	./configure \
 		--prefix=${DIST} \
 		\
-		--cc=${CC} \
-		--as="gas-preprocessor.pl ${CC}" \
-		--sysroot=${SDKRoot} \
-		--enable-cross-compile \
-		--target-os=darwin \
-		--arch=arm \
-		--cpu=cortex-a8 \
-		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -I${SSLINCLUDE}" \
-		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS}" \
-		--optflags="-Os" \
-		--enable-pic \
-		--disable-symver \
-		--enable-hardcoded-tables \
-		--disable-safe-bitstream-reader \
+		--enable-version3 \
 		\
 		--disable-shared \
 		--disable-small \
 		--disable-runtime-cpudetect \
 		\
+		--disable-programs \
+		--disable-doc \
+		\
 		--disable-avdevice \
 		--disable-postproc \
 		--enable-network \
+		\
+		--enable-vda \
 		\
 		--disable-muxers \
 		--enable-muxer=mp4 \
@@ -55,24 +48,44 @@ function doConfigure()
 		--disable-demuxer=sbg \
 		--disable-demuxer=dts \
 		--disable-encoders \
+		--enable-decoders \
 		--disable-decoder=dca \
 		--disable-decoder=svq3 \
 		--disable-parser=dca \
 		--disable-devices \
 		\
+		--disable-bzlib \
+		--disable-zlib \
+		--disable-iconv \
 		--enable-openssl \
 		\
-		--disable-doc \
-		--disable-programs \
-		--enable-version3 \
+		--enable-cross-compile \
+		--sysroot=${SDKRoot} \
+		--target-os=darwin \
+		--as="gas-preprocessor.pl ${CC}" \
+		--cc=${CC} \
+		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -I${SSLINCLUDE} -march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad" \
+		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad" \
+		--optflags="-Os" \
+		--arch=armv7-a \
+		--cpu=cortex-a8 \
+		--enable-pic \
+		--enable-thumb \
+		--disable-symver \
+		--enable-hardcoded-tables \
+		--disable-memalign-hack \
 		\
-		--disable-asm \
+		--enable-asm \
+		--disable-armv5te \
+		--disable-armv6 \
+		--disable-armv6t2 \
+		--enable-neon \
 		\
 		--disable-debug \
+		--enable-optimizations \
 
 		[[ $? != 0 ]] && kill $$
 }
-		#--enable-lto \
 
 
 for iarch in armv7; do
