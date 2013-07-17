@@ -66,8 +66,8 @@ static const AVOption options[] = {
 
     { "src_v_chr_pos",   "source vertical chroma position in luma grid/256"  , OFFSET(src_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
     { "src_h_chr_pos",   "source horizontal chroma position in luma grid/256", OFFSET(src_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
-    { "dst_v_chr_pos",   "source vertical chroma position in luma grid/256"  , OFFSET(dst_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
-    { "dst_h_chr_pos",   "source horizontal chroma position in luma grid/256", OFFSET(dst_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
+    { "dst_v_chr_pos",   "destination vertical chroma position in luma grid/256"  , OFFSET(dst_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
+    { "dst_h_chr_pos",   "destination horizontal chroma position in luma grid/256", OFFSET(dst_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1            }, -1,      512,             VE },
 
     { NULL }
 };
