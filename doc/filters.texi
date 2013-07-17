@@ -5072,7 +5072,7 @@ optimal individual vectors. Default value is 1.
 
 Apply an MPlayer filter to the input video.
 
-This filter provides a wrapper around most of the filters of
+This filter provides a wrapper around some of the filters of
 MPlayer/MEncoder.
 
 This wrapper is considered experimental. Some of the wrapped filters
@@ -5080,7 +5080,7 @@ may not work properly and we may drop support for them, as they will
 be implemented natively into FFmpeg. Thus you should avoid
 depending on them when writing portable scripts.
 
-The filters accepts the parameters:
+The filter accepts the parameters:
 @var{filter_name}[:=]@var{filter_params}
 
 @var{filter_name} is the name of a supported MPlayer filter,
