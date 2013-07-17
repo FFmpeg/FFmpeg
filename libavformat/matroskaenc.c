@@ -800,13 +800,12 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
 static int mkv_check_tag(AVDictionary *m)
 {
     AVDictionaryEntry *t = NULL;
-    int ret = 0;
 
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
         if (av_strcasecmp(t->key, "title") && av_strcasecmp(t->key, "stereo_mode"))
-            ret++;
+            return 1;
 
-    return ret;
+    return 0;
 }
 
 static int mkv_write_tags(AVFormatContext *s)
