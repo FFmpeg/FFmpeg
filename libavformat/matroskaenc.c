@@ -790,7 +790,7 @@ static int mkv_write_chapters(AVFormatContext *s)
         AVDictionaryEntry *t = NULL;
 
         chapteratom = start_ebml_master(pb, MATROSKA_ID_CHAPTERATOM, 0);
-        put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id);
+        put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id + 1);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMESTART,
                       av_rescale_q(c->start, c->time_base, scale));
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMEEND,
@@ -908,7 +908,7 @@ static int mkv_write_tags(AVFormatContext *s)
         if (!mkv_check_tag(ch->metadata))
             continue;
 
-        ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id, &tags);
+        ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id + 1, &tags);
         if (ret < 0) return ret;
     }
 
