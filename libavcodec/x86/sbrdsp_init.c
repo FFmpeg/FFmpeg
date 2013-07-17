@@ -39,9 +39,9 @@ void ff_sbr_qmf_pre_shuffle_sse2(float *z);
 
 av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
 {
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_SSE(mm_flags)) {
+    if (EXTERNAL_SSE(cpu_flags)) {
         s->neg_odd_64 = ff_sbr_neg_odd_64_sse;
         s->sum_square = ff_sbr_sum_square_sse;
         s->sum64x5    = ff_sbr_sum64x5_sse;
@@ -50,7 +50,7 @@ av_cold void ff_sbrdsp_init_x86(SBRDSPContext *s)
         s->qmf_post_shuffle = ff_sbr_qmf_post_shuffle_sse;
     }
 
-    if (EXTERNAL_SSE2(mm_flags)) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         s->qmf_deint_bfly   = ff_sbr_qmf_deint_bfly_sse2;
         s->qmf_pre_shuffle  = ff_sbr_qmf_pre_shuffle_sse2;
     }

@@ -42,16 +42,16 @@ void ff_vp3_h_loop_filter_mmxext(uint8_t *src, int stride,
 
 av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
 {
-    int cpuflags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
-    if (EXTERNAL_MMX(cpuflags)) {
+    if (EXTERNAL_MMX(cpu_flags)) {
         c->idct_put  = ff_vp3_idct_put_mmx;
         c->idct_add  = ff_vp3_idct_add_mmx;
     }
 #endif
 
-    if (EXTERNAL_MMXEXT(cpuflags)) {
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->idct_dc_add = ff_vp3_idct_dc_add_mmxext;
 
         if (!(flags & CODEC_FLAG_BITEXACT)) {
@@ -60,7 +60,7 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
         }
     }
 
-    if (EXTERNAL_SSE2(cpuflags)) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         c->idct_put  = ff_vp3_idct_put_sse2;
         c->idct_add  = ff_vp3_idct_add_sse2;
     }
