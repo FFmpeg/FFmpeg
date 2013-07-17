@@ -114,9 +114,8 @@ static int ftp_get_line(FTPContext *s, char *line, int line_size)
 
 /*
  * This routine returns ftp server response code.
- * Server may send more than one response for a certain command, following priorities are used:
- *   - When pref_codes are set then pref_code is return if occurred. (expected result)
- *   - 0 is returned when no pref_codes or not occurred
+ * Server may send more than one response for a certain command.
+ * First expected code is returned.
  */
 static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 {
@@ -404,7 +403,7 @@ static int ftp_connect_control_connection(URLContext *h)
             return err;
         }
 
-        /* consume all messages from server */
+        /* check if server is ready */
         if (ftp_status(s, NULL, connect_codes) != 220) {
             av_log(h, AV_LOG_ERROR, "FTP server not ready for new users\n");
             return AVERROR(EACCES);
@@ -571,6 +570,7 @@ static int64_t ftp_seek(URLContext *h, int64_t pos, int whence)
     if  (h->is_streamed)
         return AVERROR(EIO);
 
+    /* XXX: Simulate behaviour of lseek in file protocol, which could be treated as a reference */
     new_pos = FFMAX(0, new_pos);
     fake_pos = s->filesize != -1 ? FFMIN(new_pos, s->filesize) : new_pos;
 
@@ -590,6 +590,7 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
     av_dlog(h, "ftp protocol read %d bytes\n", size);
   retry:
     if (s->state == DISCONNECTED) {
+        /* optimization */
         if (s->position >= s->filesize)
             return 0;
         if ((err = ftp_connect_data_connection(h)) < 0)
@@ -607,6 +608,7 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
             s->position += read;
             if (s->position >= s->filesize) {
                 /* server will terminate, but keep current position to avoid madness */
+                /* save position to restart from it */
                 int64_t pos = s->position;
                 if (ftp_abort(h) < 0) {
                     s->position = pos;
