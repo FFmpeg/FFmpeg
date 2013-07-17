@@ -350,6 +350,17 @@ int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos)
     return 0;
 }
 
+enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos)
+{
+    int pos, xout, yout;
+
+    for (pos = AVCHROMA_LOC_UNSPECIFIED + 1; pos < AVCHROMA_LOC_NB; pos++) {
+        if (avcodec_enum_to_chroma_pos(&xout, &yout, pos) == 0 && xout == xpos && yout == ypos)
+            return pos;
+    }
+    return AVCHROMA_LOC_UNSPECIFIED;
+}
+
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,
                              int buf_size, int align)

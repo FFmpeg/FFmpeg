@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-07-XX - xxxxxxx - XXXXXXXXXXXXXX - avcodec.h
+  Add avcodec_chroma_pos_to_enum()
+  Add avcodec_enum_to_chroma_pos()
+
 2013-07-03 - xxxxxxx - lavfi 3.78.100 - avfilter.h
   Deprecate avfilter_graph_parse() in favor of the equivalent
   avfilter_graph_parse_ptr().
