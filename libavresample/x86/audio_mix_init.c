@@ -106,7 +106,7 @@ DEFINE_MIX_3_8_TO_1_2(7)
 DEFINE_MIX_3_8_TO_1_2(8)
 
 #define SET_MIX_3_8_TO_1_2(chan)                                            \
-    if (EXTERNAL_SSE(mm_flags)) {                                           \
+    if (EXTERNAL_SSE(cpu_flags)) {                                          \
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_FLTP, AV_MIX_COEFF_TYPE_FLT,\
                               chan, 1, 16, 4, "SSE",                        \
                               ff_mix_ ## chan ## _to_1_fltp_flt_sse);       \
@@ -114,7 +114,7 @@ DEFINE_MIX_3_8_TO_1_2(8)
                               chan, 2, 16, 4, "SSE",                        \
                               ff_mix_## chan ##_to_2_fltp_flt_sse);         \
     }                                                                       \
-    if (EXTERNAL_SSE2(mm_flags)) {                                          \
+    if (EXTERNAL_SSE2(cpu_flags)) {                                         \
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_FLT,\
                               chan, 1, 16, 8, "SSE2",                       \
                               ff_mix_ ## chan ## _to_1_s16p_flt_sse2);      \
@@ -122,7 +122,7 @@ DEFINE_MIX_3_8_TO_1_2(8)
                               chan, 2, 16, 8, "SSE2",                       \
                               ff_mix_ ## chan ## _to_2_s16p_flt_sse2);      \
     }                                                                       \
-    if (EXTERNAL_SSE4(mm_flags)) {                                          \
+    if (EXTERNAL_SSE4(cpu_flags)) {                                         \
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_FLT,\
                               chan, 1, 16, 8, "SSE4",                       \
                               ff_mix_ ## chan ## _to_1_s16p_flt_sse4);      \
@@ -130,7 +130,7 @@ DEFINE_MIX_3_8_TO_1_2(8)
                               chan, 2, 16, 8, "SSE4",                       \
                               ff_mix_ ## chan ## _to_2_s16p_flt_sse4);      \
     }                                                                       \
-    if (EXTERNAL_AVX(mm_flags)) {                                           \
+    if (EXTERNAL_AVX(cpu_flags)) {                                          \
         int ptr_align = 32;                                                 \
         int smp_align = 8;                                                  \
         if (ARCH_X86_32 || chan >= 6) {                                     \
@@ -150,7 +150,7 @@ DEFINE_MIX_3_8_TO_1_2(8)
                               chan, 2, 16, 8, "AVX",                        \
                               ff_mix_ ## chan ## _to_2_s16p_flt_avx);       \
     }                                                                       \
-    if (EXTERNAL_FMA4(mm_flags)) {                                          \
+    if (EXTERNAL_FMA4(cpu_flags)) {                                         \
         int ptr_align = 32;                                                 \
         int smp_align = 8;                                                  \
         if (ARCH_X86_32 || chan >= 6) {                                     \
@@ -174,15 +174,15 @@ DEFINE_MIX_3_8_TO_1_2(8)
 av_cold void ff_audio_mix_init_x86(AudioMix *am)
 {
 #if HAVE_YASM
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_SSE(mm_flags)) {
+    if (EXTERNAL_SSE(cpu_flags)) {
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_FLTP, AV_MIX_COEFF_TYPE_FLT,
                               2, 1, 16, 8, "SSE", ff_mix_2_to_1_fltp_flt_sse);
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_FLTP, AV_MIX_COEFF_TYPE_FLT,
                               1, 2, 16, 4, "SSE", ff_mix_1_to_2_fltp_flt_sse);
     }
-    if (EXTERNAL_SSE2(mm_flags)) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_FLT,
                               2, 1, 16, 8, "SSE2", ff_mix_2_to_1_s16p_flt_sse2);
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_Q8,
@@ -190,13 +190,13 @@ av_cold void ff_audio_mix_init_x86(AudioMix *am)
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_FLT,
                               1, 2, 16, 8, "SSE2", ff_mix_1_to_2_s16p_flt_sse2);
     }
-    if (EXTERNAL_SSE4(mm_flags)) {
+    if (EXTERNAL_SSE4(cpu_flags)) {
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_FLT,
                               2, 1, 16, 8, "SSE4", ff_mix_2_to_1_s16p_flt_sse4);
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_S16P, AV_MIX_COEFF_TYPE_FLT,
                               1, 2, 16, 8, "SSE4", ff_mix_1_to_2_s16p_flt_sse4);
     }
-    if (EXTERNAL_AVX(mm_flags)) {
+    if (EXTERNAL_AVX(cpu_flags)) {
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_FLTP, AV_MIX_COEFF_TYPE_FLT,
                               2, 1, 32, 16, "AVX", ff_mix_2_to_1_fltp_flt_avx);
         ff_audio_mix_set_func(am, AV_SAMPLE_FMT_FLTP, AV_MIX_COEFF_TYPE_FLT,

@@ -542,17 +542,17 @@ static av_cold void cavsdsp_init_3dnow(CAVSDSPContext *c,
 av_cold void ff_cavsdsp_init_x86(CAVSDSPContext *c, AVCodecContext *avctx)
 {
 #if HAVE_MMX_INLINE
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX)
+    if (cpu_flags & AV_CPU_FLAG_MMX)
         cavsdsp_init_mmx(c, avctx);
 #endif /* HAVE_MMX_INLINE */
 #if HAVE_MMXEXT_INLINE
-    if (mm_flags & AV_CPU_FLAG_MMXEXT)
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
         cavsdsp_init_mmxext(c, avctx);
 #endif /* HAVE_MMXEXT_INLINE */
 #if HAVE_AMD3DNOW_INLINE
-    if (mm_flags & AV_CPU_FLAG_3DNOW)
+    if (cpu_flags & AV_CPU_FLAG_3DNOW)
         cavsdsp_init_3dnow(c, avctx);
 #endif /* HAVE_AMD3DNOW_INLINE */
 }

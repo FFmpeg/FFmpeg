@@ -157,7 +157,7 @@ HPELDSP_AVG_PIXELS16(_mmxext)
         c->PFX ## _pixels_tab IDX [3] = PFX ## _pixels ## SIZE ## _xy2_ ## CPU; \
     } while (0)
 
-static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int mm_flags)
+static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int cpu_flags)
 {
 #if HAVE_MMX_INLINE
     SET_HPEL_FUNCS(put,        [0], 16, mmx);
@@ -170,7 +170,7 @@ static void hpeldsp_init_mmx(HpelDSPContext *c, int flags, int mm_flags)
 #endif /* HAVE_MMX_INLINE */
 }
 
-static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int mm_flags)
+static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int cpu_flags)
 {
 #if HAVE_MMXEXT_EXTERNAL
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_mmxext;
@@ -204,7 +204,7 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags, int mm_flags)
 #endif /* HAVE_MMXEXT_EXTERNAL */
 }
 
-static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int mm_flags)
+static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int cpu_flags)
 {
 #if HAVE_AMD3DNOW_EXTERNAL
     c->put_pixels_tab[0][1] = ff_put_pixels16_x2_3dnow;
@@ -238,10 +238,10 @@ static void hpeldsp_init_3dnow(HpelDSPContext *c, int flags, int mm_flags)
 #endif /* HAVE_AMD3DNOW_EXTERNAL */
 }
 
-static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int mm_flags)
+static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int cpu_flags)
 {
 #if HAVE_SSE2_EXTERNAL
-    if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
+    if (!(cpu_flags & AV_CPU_FLAG_SSE2SLOW)) {
         // these functions are slower than mmx on AMD, but faster on Intel
         c->put_pixels_tab[0][0]        = ff_put_pixels16_sse2;
         c->put_no_rnd_pixels_tab[0][0] = ff_put_pixels16_sse2;
@@ -252,17 +252,17 @@ static void hpeldsp_init_sse2(HpelDSPContext *c, int flags, int mm_flags)
 
 void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
-    if (HAVE_MMX && mm_flags & AV_CPU_FLAG_MMX)
-        hpeldsp_init_mmx(c, flags, mm_flags);
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
+        hpeldsp_init_mmx(c, flags, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_MMXEXT)
-        hpeldsp_init_mmxext(c, flags, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
+        hpeldsp_init_mmxext(c, flags, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_3DNOW)
-        hpeldsp_init_3dnow(c, flags, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_3DNOW)
+        hpeldsp_init_3dnow(c, flags, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSE2)
-        hpeldsp_init_sse2(c, flags, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_SSE2)
+        hpeldsp_init_sse2(c, flags, cpu_flags);
 }

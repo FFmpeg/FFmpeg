@@ -87,20 +87,20 @@ av_cold void ff_dct_encode_init_x86(MpegEncContext *s)
 
     if (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX) {
 #if HAVE_MMX_INLINE
-        int mm_flags = av_get_cpu_flags();
-        if (INLINE_MMX(mm_flags))
+        int cpu_flags = av_get_cpu_flags();
+        if (INLINE_MMX(cpu_flags))
             s->dct_quantize = dct_quantize_MMX;
 #endif
 #if HAVE_MMXEXT_INLINE
-        if (INLINE_MMXEXT(mm_flags))
+        if (INLINE_MMXEXT(cpu_flags))
             s->dct_quantize = dct_quantize_MMXEXT;
 #endif
 #if HAVE_SSE2_INLINE
-        if (INLINE_SSE2(mm_flags))
+        if (INLINE_SSE2(cpu_flags))
             s->dct_quantize = dct_quantize_SSE2;
 #endif
 #if HAVE_SSSE3_INLINE
-        if (INLINE_SSSE3(mm_flags))
+        if (INLINE_SSSE3(cpu_flags))
             s->dct_quantize = dct_quantize_SSSE3;
 #endif
     }

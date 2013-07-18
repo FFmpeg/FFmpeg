@@ -214,9 +214,9 @@ static void avg_rv40_qpel16_mc33_mmx(uint8_t *dst, uint8_t *src,
 av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 {
 #if HAVE_YASM
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_MMX(mm_flags)) {
+    if (EXTERNAL_MMX(cpu_flags)) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_mmx;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_mmx;
 #if HAVE_MMX_INLINE
@@ -229,7 +229,7 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         QPEL_MC_SET(put_, _mmx)
 #endif
     }
-    if (EXTERNAL_MMXEXT(mm_flags)) {
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->avg_chroma_pixels_tab[0]     = ff_avg_rv40_chroma_mc8_mmxext;
         c->avg_chroma_pixels_tab[1]     = ff_avg_rv40_chroma_mc4_mmxext;
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_mmxext;
@@ -239,14 +239,14 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
 #if ARCH_X86_32
         QPEL_MC_SET(avg_, _mmxext)
 #endif
-    } else if (EXTERNAL_AMD3DNOW(mm_flags)) {
+    } else if (EXTERNAL_AMD3DNOW(cpu_flags)) {
         c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_3dnow;
         c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_3dnow;
 #if ARCH_X86_32
         QPEL_MC_SET(avg_, _3dnow)
 #endif
     }
-    if (EXTERNAL_SSE2(mm_flags)) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_sse2;
         c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_sse2;
         c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_sse2;
@@ -254,7 +254,7 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         QPEL_MC_SET(put_, _sse2)
         QPEL_MC_SET(avg_, _sse2)
     }
-    if (EXTERNAL_SSSE3(mm_flags)) {
+    if (EXTERNAL_SSSE3(cpu_flags)) {
         c->rv40_weight_pixels_tab[0][0] = ff_rv40_weight_func_rnd_16_ssse3;
         c->rv40_weight_pixels_tab[0][1] = ff_rv40_weight_func_rnd_8_ssse3;
         c->rv40_weight_pixels_tab[1][0] = ff_rv40_weight_func_nornd_16_ssse3;
