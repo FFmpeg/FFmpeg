@@ -302,13 +302,25 @@ int main (int argc, char **argv)
     }
 
     if (audio_stream) {
+        enum AVSampleFormat sfmt = audio_dec_ctx->sample_fmt;
+        int n_channels = audio_dec_ctx->channels;
         const char *fmt;
 
-        if ((ret = get_format_from_sample_fmt(&fmt, audio_dec_ctx->sample_fmt)) < 0)
+        if (av_sample_fmt_is_planar(sfmt)) {
+            const char *packed = av_get_sample_fmt_name(sfmt);
+            printf("Warning: the sample format the decoder produced is planar "
+                   "(%s). This example will output the first channel only.\n",
+                   packed ? packed : "?");
+            sfmt = av_get_packed_sample_fmt(sfmt);
+            n_channels = 1;
+        }
+
+        if ((ret = get_format_from_sample_fmt(&fmt, sfmt)) < 0)
             goto end;
+
         printf("Play the output audio file with the command:\n"
                "ffplay -f %s -ac %d -ar %d %s\n",
-               fmt, audio_dec_ctx->channels, audio_dec_ctx->sample_rate,
+               fmt, n_channels, audio_dec_ctx->sample_rate,
                audio_dst_filename);
     }
 
