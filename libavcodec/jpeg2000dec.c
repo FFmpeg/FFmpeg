@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -37,6 +38,7 @@
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
 #define JP2_CODESTREAM  0x6A703263
+#define JP2_HEADER      0x6A703268
 
 #define HAD_COC 0x01
 #define HAD_QCC 0x02
@@ -72,6 +74,9 @@ typedef struct Jpeg2000DecoderContext {
     int             cdx[4], cdy[4];
     int             precision;
     int             ncomponents;
+    int             colour_space;
+    uint32_t        palette[256];
+    int8_t          pal8;
     int             tile_width, tile_height;
     unsigned        numXtiles, numYtiles;
     int             maxtilelen;
@@ -154,12 +159,74 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
     return curval;
 }
 
+static int pix_fmt_match(enum AVPixelFormat pix_fmt, int components,
+                         int bpc, uint32_t log2_chroma_wh, int pal8)
+{
+    int match = 1;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+
+    if (desc->nb_components != components) {
+        return 0;
+    }
+
+    switch (components) {
+    case 4:
+        match = match && desc->comp[3].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >> 14 & 3) == 0 &&
+                         (log2_chroma_wh >> 12 & 3) == 0;
+    case 3:
+        match = match && desc->comp[2].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >> 10 & 3) == desc->log2_chroma_w &&
+                         (log2_chroma_wh >>  8 & 3) == desc->log2_chroma_h;
+    case 2:
+        match = match && desc->comp[1].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >>  6 & 3) == desc->log2_chroma_w &&
+                         (log2_chroma_wh >>  4 & 3) == desc->log2_chroma_h;
+
+    case 1:
+        match = match && desc->comp[0].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >>  2 & 3) == 0 &&
+                         (log2_chroma_wh       & 3) == 0 &&
+                         (desc->flags & AV_PIX_FMT_FLAG_PAL) == pal8 * AV_PIX_FMT_FLAG_PAL;
+    }
+    return match;
+}
+
+// pix_fmts with lower bpp have to be listed before
+// similar pix_fmts with higher bpp.
+#define RGB_PIXEL_FORMATS   AV_PIX_FMT_PAL8,AV_PIX_FMT_RGB24,AV_PIX_FMT_RGBA,AV_PIX_FMT_RGB48,AV_PIX_FMT_RGBA64
+#define GRAY_PIXEL_FORMATS  AV_PIX_FMT_GRAY8,AV_PIX_FMT_GRAY8A,AV_PIX_FMT_GRAY16
+#define YUV_PIXEL_FORMATS   AV_PIX_FMT_YUV410P,AV_PIX_FMT_YUV411P,AV_PIX_FMT_YUVA420P, \
+                            AV_PIX_FMT_YUV420P,AV_PIX_FMT_YUV422P,AV_PIX_FMT_YUVA422P, \
+                            AV_PIX_FMT_YUV440P,AV_PIX_FMT_YUV444P,AV_PIX_FMT_YUVA444P, \
+                            AV_PIX_FMT_YUV420P9,AV_PIX_FMT_YUV422P9,AV_PIX_FMT_YUV444P9, \
+                            AV_PIX_FMT_YUVA420P9,AV_PIX_FMT_YUVA422P9,AV_PIX_FMT_YUVA444P9, \
+                            AV_PIX_FMT_YUV420P10,AV_PIX_FMT_YUV422P10,AV_PIX_FMT_YUV444P10, \
+                            AV_PIX_FMT_YUVA420P10,AV_PIX_FMT_YUVA422P10,AV_PIX_FMT_YUVA444P10, \
+                            AV_PIX_FMT_YUV420P12,AV_PIX_FMT_YUV422P12,AV_PIX_FMT_YUV444P12, \
+                            AV_PIX_FMT_YUV420P14,AV_PIX_FMT_YUV422P14,AV_PIX_FMT_YUV444P14, \
+                            AV_PIX_FMT_YUV420P16,AV_PIX_FMT_YUV422P16,AV_PIX_FMT_YUV444P16, \
+                            AV_PIX_FMT_YUVA420P16,AV_PIX_FMT_YUVA422P16,AV_PIX_FMT_YUVA444P16
+#define XYZ_PIXEL_FORMATS   AV_PIX_FMT_XYZ12
+
+static const enum AVPixelFormat rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
+static const enum AVPixelFormat gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
+static const enum AVPixelFormat yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
+static const enum AVPixelFormat xyz_pix_fmts[]  = {XYZ_PIXEL_FORMATS};
+static const enum AVPixelFormat all_pix_fmts[]  = {RGB_PIXEL_FORMATS,
+                                                   GRAY_PIXEL_FORMATS,
+                                                   YUV_PIXEL_FORMATS,
+                                                   XYZ_PIXEL_FORMATS};
+
 /* marker segments */
 /* get sizes and offsets of image, tiles; number of components */
 static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i;
     int ncomponents;
+    uint32_t log2_chroma_wh = 0;
+    const enum AVPixelFormat *possible_fmts = NULL;
+    int possible_fmts_nb = 0;
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR_INVALIDDATA;
@@ -205,13 +272,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->sgnd[i]   = !!(x & 0x80);
         s->cdx[i]    = bytestream2_get_byteu(&s->g);
         s->cdy[i]    = bytestream2_get_byteu(&s->g);
-        if (s->cdx[i] != 1 || s->cdy[i] != 1) {
-            avpriv_request_sample(s->avctx,
-                                  "CDxy values %d %d for component %d",
-                                  s->cdx[i], s->cdy[i], i);
-            if (!s->cdx[i] || !s->cdy[i])
-                return AVERROR_INVALIDDATA;
-        }
+        log2_chroma_wh |= s->cdy[i] >> 1 << i * 4 | s->cdx[i] >> 1 << i * 4 + 2;
     }
 
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
@@ -242,35 +303,46 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
                                                s->reduction_factor);
 
-    switch (s->ncomponents) {
-    case 1:
-        if (s->precision > 8)
-            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
-        else
-            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-        break;
-    case 3:
-        switch (s->avctx->profile) {
-        case FF_PROFILE_JPEG2000_DCINEMA_2K:
-        case FF_PROFILE_JPEG2000_DCINEMA_4K:
-            /* XYZ color-space for digital cinema profiles */
-            s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
+    if (s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_2K ||
+        s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_4K) {
+        possible_fmts = xyz_pix_fmts;
+        possible_fmts_nb = FF_ARRAY_ELEMS(xyz_pix_fmts);
+    } else {
+        switch (s->colour_space) {
+        case 16:
+            possible_fmts = rgb_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(rgb_pix_fmts);
+            break;
+        case 17:
+            possible_fmts = gray_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(gray_pix_fmts);
+            break;
+        case 18:
+            possible_fmts = yuv_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(yuv_pix_fmts);
             break;
         default:
-            if (s->precision > 8)
-                s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            possible_fmts = all_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(all_pix_fmts);
             break;
         }
-        break;
-    case 4:
-        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
-        break;
-    default:
-        /* pixel format can not be identified */
-        s->avctx->pix_fmt = AV_PIX_FMT_NONE;
-        break;
+    }
+    for (i = 0; i < possible_fmts_nb; ++i) {
+        if (pix_fmt_match(possible_fmts[i], ncomponents, s->precision, log2_chroma_wh, s->pal8)) {
+            s->avctx->pix_fmt = possible_fmts[i];
+            break;
+        }
+    }
+    if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unknown pix_fmt, profile: %d, colour_space: %d, "
+               "components: %d, precision: %d, "
+               "cdx[1]: %d, cdy[1]: %d, cdx[2]: %d, cdy[2]: %d\n",
+               s->avctx->profile, s->colour_space, ncomponents, s->precision,
+               ncomponents > 2 ? s->cdx[1] : 0,
+               ncomponents > 2 ? s->cdy[1] : 0,
+               ncomponents > 2 ? s->cdx[2] : 0,
+               ncomponents > 2 ? s->cdy[2] : 0);
     }
     return 0;
 }
@@ -1386,6 +1458,89 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
         atom      = bytestream2_get_be32u(&s->g);
         if (atom == JP2_CODESTREAM) {
             found_codestream = 1;
+        } else if (atom == JP2_HEADER &&
+                   bytestream2_get_bytes_left(&s->g) >= atom_size &&
+                   atom_size >= 16) {
+            uint32_t atom2_size, atom2;
+            atom_size -= 8;
+            do {
+                atom2_size = bytestream2_get_be32u(&s->g);
+                atom2      = bytestream2_get_be32u(&s->g);
+                atom_size  -= 8;
+                if (atom2_size < 8 || atom2_size - 8 > atom_size)
+                    break;
+                atom2_size -= 8;
+                if (atom2 == JP2_CODESTREAM) {
+                    return 1;
+                } else if (atom2 == MKBETAG('c','o','l','r') && atom2_size >= 7) {
+                    int method = bytestream2_get_byteu(&s->g);
+                    bytestream2_skipu(&s->g, 2);
+                    atom_size  -= 3;
+                    atom2_size -= 3;
+                    if (method == 1) {
+                        s->colour_space = bytestream2_get_be32u(&s->g);
+                        atom_size  -= 4;
+                        atom2_size -= 4;
+                    }
+                    bytestream2_skipu(&s->g, atom2_size);
+                    atom_size -= atom2_size;
+                } else if (atom2 == MKBETAG('p','c','l','r') && atom2_size >= 6) {
+                    int i, size, colour_count, colour_channels, colour_depth[3];
+                    uint32_t r, g, b;
+                    colour_count = bytestream2_get_be16u(&s->g);
+                    colour_channels = bytestream2_get_byteu(&s->g);
+                    // FIXME: Do not ignore channel_sign
+                    colour_depth[0] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
+                    colour_depth[1] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
+                    colour_depth[2] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
+                    atom_size  -= 6;
+                    atom2_size -= 6;
+                    size = (colour_depth[0] + 7 >> 3) * colour_count +
+                           (colour_depth[1] + 7 >> 3) * colour_count +
+                           (colour_depth[2] + 7 >> 3) * colour_count;
+                    if (colour_count > 256   ||
+                        colour_channels != 3 ||
+                        colour_depth[0] > 16 ||
+                        colour_depth[1] > 16 ||
+                        colour_depth[2] > 16 ||
+                        atom2_size < size) {
+                        avpriv_request_sample(s->avctx, "Unknown palette");
+                        bytestream2_skipu(&s->g, atom2_size);
+                        atom_size -= atom2_size;
+                        continue;
+                    }
+                    s->pal8 = 1;
+                    for (i = 0; i < colour_count; i++) {
+                        if (colour_depth[0] <= 8) {
+                            r = bytestream2_get_byteu(&s->g) << 8 - colour_depth[0];
+                            r |= r >> colour_depth[0];
+                        } else {
+                            r = bytestream2_get_be16u(&s->g) >> colour_depth[0] - 8;
+                        }
+                        if (colour_depth[1] <= 8) {
+                            g = bytestream2_get_byteu(&s->g) << 8 - colour_depth[1];
+                            r |= r >> colour_depth[1];
+                        } else {
+                            g = bytestream2_get_be16u(&s->g) >> colour_depth[1] - 8;
+                        }
+                        if (colour_depth[2] <= 8) {
+                            b = bytestream2_get_byteu(&s->g) << 8 - colour_depth[2];
+                            r |= r >> colour_depth[2];
+                        } else {
+                            b = bytestream2_get_be16u(&s->g) >> colour_depth[2] - 8;
+                        }
+                        s->palette[i] = 0xffu << 24 | r << 16 | g << 8 | b;
+                    }
+                    atom_size  -= size;
+                    atom2_size -= size;
+                    bytestream2_skipu(&s->g, atom2_size);
+                    atom_size -= atom2_size;
+                } else {
+                    bytestream2_skipu(&s->g, atom2_size);
+                    atom_size -= atom2_size;
+                }
+            } while (atom_size >= 8);
+            bytestream2_skipu(&s->g, atom_size);
         } else {
             if (bytestream2_get_bytes_left(&s->g) < atom_size - 8)
                 return 0;
@@ -1455,6 +1610,9 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     jpeg2000_dec_cleanup(s);
 
     *got_frame = 1;
+
+    if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
+        memcpy(picture->data[1], s->palette, 256 * sizeof(uint32_t));
 
     return bytestream2_tell(&s->g);
 
