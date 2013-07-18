@@ -42,7 +42,8 @@
 
 typedef struct RTPContext {
     URLContext *rtp_hd, *rtcp_hd;
-    int rtp_fd, rtcp_fd;
+    int rtp_fd, rtcp_fd, ssm;
+    struct sockaddr_storage ssm_addr;
 } RTPContext;
 
 /**
@@ -75,6 +76,44 @@ int ff_rtp_set_remote_url(URLContext *h, const char *uri)
     return 0;
 }
 
+static struct addrinfo* rtp_resolve_host(const char *hostname, int port,
+                                         int type, int family, int flags)
+{
+    struct addrinfo hints = { 0 }, *res = 0;
+    int error;
+    char service[16];
+
+    snprintf(service, sizeof(service), "%d", port);
+    hints.ai_socktype = type;
+    hints.ai_family   = family;
+    hints.ai_flags    = flags;
+    if ((error = getaddrinfo(hostname, service, &hints, &res))) {
+        res = NULL;
+        av_log(NULL, AV_LOG_ERROR, "rtp_resolve_host: %s\n", gai_strerror(error));
+    }
+
+    return res;
+}
+
+static int compare_addr(const struct sockaddr_storage *a,
+                        const struct sockaddr_storage *b)
+{
+    if (a->ss_family != b->ss_family)
+        return 1;
+    if (a->ss_family == AF_INET) {
+        return (((const struct sockaddr_in *)a)->sin_addr.s_addr !=
+                ((const struct sockaddr_in *)b)->sin_addr.s_addr);
+    }
+
+#if defined(IPPROTO_IPV6)
+    if (a->ss_family == AF_INET6) {
+        const uint8_t *s6_addr_a = ((const struct sockaddr_in6 *)a)->sin6_addr.s6_addr;
+        const uint8_t *s6_addr_b = ((const struct sockaddr_in6 *)b)->sin6_addr.s6_addr;
+        return memcmp(s6_addr_a, s6_addr_b, 16);
+    }
+#endif
+    return 1;
+}
 
 /**
  * add option to url of the form:
@@ -178,7 +217,20 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             connect = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
+            struct addrinfo *sourceaddr = NULL;
             av_strlcpy(sources, buf, sizeof(sources));
+
+            /* Try resolving the IP if only one IP is specified - we don't
+             * support manually checking more than one IP. */
+            if (!strchr(sources, ','))
+                sourceaddr = rtp_resolve_host(sources, 0,
+                                              SOCK_DGRAM, AF_UNSPEC,
+                                              AI_NUMERICHOST);
+            if (sourceaddr) {
+                s->ssm = 1;
+                memcpy(&s->ssm_addr, sourceaddr->ai_addr, sourceaddr->ai_addrlen);
+                freeaddrinfo(sourceaddr);
+            }
         }
     }
 
@@ -238,6 +290,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                         continue;
                     return AVERROR(EIO);
                 }
+                if (s->ssm && compare_addr(&from, &s->ssm_addr))
+                    continue;
                 break;
             }
             /* then RTP */
@@ -251,6 +305,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                         continue;
                     return AVERROR(EIO);
                 }
+                if (s->ssm && compare_addr(&from, &s->ssm_addr))
+                    continue;
                 break;
             }
         } else if (n < 0) {
