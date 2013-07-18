@@ -60,6 +60,7 @@ static int audio_frame_count = 0;
 static int decode_packet(int *got_frame, int cached)
 {
     int ret = 0;
+    int decoded = pkt.size;
 
     if (pkt.stream_index == video_stream_idx) {
         /* decode video frame */
@@ -91,6 +92,11 @@ static int decode_packet(int *got_frame, int cached)
             fprintf(stderr, "Error decoding audio frame\n");
             return ret;
         }
+        /* Some audio decoders decode only part of the packet, and have to be
+         * called again with the remainder of the packet data.
+         * Sample: fate-suite/lossless-audio/luckynight-partial.shn
+         * Also, some decoders might over-read the packet. */
+        decoded = FFMIN(ret, pkt.size);
 
         if (*got_frame) {
             printf("audio_frame%s n:%d nb_samples:%d pts:%s\n",
@@ -121,7 +127,7 @@ static int decode_packet(int *got_frame, int cached)
         }
     }
 
-    return ret;
+    return decoded;
 }
 
 static int open_codec_context(int *stream_idx,
@@ -293,8 +299,15 @@ int main (int argc, char **argv)
 
     /* read frames from the file */
     while (av_read_frame(fmt_ctx, &pkt) >= 0) {
-        decode_packet(&got_frame, 0);
-        av_free_packet(&pkt);
+        AVPacket orig_pkt = pkt;
+        do {
+            ret = decode_packet(&got_frame, 0);
+            if (ret < 0)
+                break;
+            pkt.data += ret;
+            pkt.size -= ret;
+        } while (pkt.size > 0);
+        av_free_packet(&orig_pkt);
     }
 
     /* flush cached frames */
