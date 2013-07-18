@@ -287,6 +287,8 @@ static int config_props(AVFilterLink *outlink)
 
             if ((ret = sws_init_context(*s, NULL, NULL)) < 0)
                 return ret;
+            if (!scale->interlaced)
+                break;
         }
     }
 
