@@ -439,6 +439,7 @@ const AVMetadataConv ff_riff_info_conv[] = {
     { "INAM", "title"      },
     { "IPRD", "album"      },
     { "IPRT", "track"      },
+    { "ITRK", "track"      },
     { "ISFT", "encoder"    },
     { "ISMP", "timecode"   },
     { "ITCH", "encoded_by" },
@@ -718,7 +719,7 @@ void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str)
 static const char riff_tags[][5] = {
     "IARL", "IART", "ICMS", "ICMT", "ICOP", "ICRD", "ICRP", "IDIM", "IDPI",
     "IENG", "IGNR", "IKEY", "ILGT", "ILNG", "IMED", "INAM", "IPLT", "IPRD",
-    "IPRT", "ISBJ", "ISFT", "ISHP", "ISMP", "ISRC", "ISRF", "ITCH",
+    "IPRT", "ITRK", "ISBJ", "ISFT", "ISHP", "ISMP", "ISRC", "ISRF", "ITCH",
     { 0 }
 };
 
