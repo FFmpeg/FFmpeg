@@ -392,6 +392,7 @@ const AVMetadataConv ff_riff_info_conv[] = {
     { "INAM", "title"      },
     { "IPRD", "album"      },
     { "IPRT", "track"      },
+    { "ITRK", "track"      },
     { "ISFT", "encoder"    },
     { "ITCH", "encoded_by" },
     { 0 },
