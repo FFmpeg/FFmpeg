@@ -3958,6 +3958,7 @@ elif enabled pathscale; then
 elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     enabled_all x86_32 debug && add_cflags -Oy-
+    enabled debug && add_ldflags -debug
     if enabled icl; then
         # basically -fstrict-aliasing that does not work (correctly) on icl 13.x
         check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
