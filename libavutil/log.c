@@ -190,8 +190,10 @@ static void format_line(void *ptr, int level, const char *fmt, va_list vl,
 
     vsnprintf(part[2], part_size, fmt, vl);
 
-    if(*part[0] || *part[1] || *part[2])
-        *print_prefix = strlen(part[2]) && part[2][strlen(part[2]) - 1] == '\n';
+    if(*part[0] || *part[1] || *part[2]) {
+        char lastc = strlen(part[2]) ? part[2][strlen(part[2]) - 1] : 0;
+        *print_prefix = lastc == '\n' || lastc == '\r';
+    }
 }
 
 void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
