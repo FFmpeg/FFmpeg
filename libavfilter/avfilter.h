@@ -1311,7 +1311,7 @@ AVFilterInOut *avfilter_inout_alloc(void);
  */
 void avfilter_inout_free(AVFilterInOut **inout);
 
-#if HAVE_INCOMPATIBLE_LIBAV_ABI || !FF_API_OLD_GRAPH_PARSE
+#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI || !FF_API_OLD_GRAPH_PARSE
 /**
  * Add a graph described by a string to a graph.
  *
