@@ -29,4 +29,4 @@
 #define have_vfpv3(flags)   (HAVE_VFPV3   && ((flags) & AV_CPU_FLAG_VFPV3))
 #define have_neon(flags)    (HAVE_NEON    && ((flags) & AV_CPU_FLAG_NEON))
 
-#endif
+#endif /* AVUTIL_ARM_CPU_H */

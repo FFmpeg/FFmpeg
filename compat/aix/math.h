@@ -1,9 +1,8 @@
-/*
- * Workaround aix-specific class() function clashing with ffmpeg class usage
- */
+/* Work around the class() function in AIX math.h clashing with identifiers
+ * named "class". */
 
-#ifndef COMPAT_AIX_MATH_H
-#define COMPAT_AIX_MATH_H
+#ifndef FFMPEG_COMPAT_AIX_MATH_H
+#define FFMPEG_COMPAT_AIX_MATH_H
 
 #define class class_in_math_h_causes_problems
 
@@ -11,4 +10,4 @@
 
 #undef class
 
-#endif /* COMPAT_AIX_MATH_H */
+#endif /* FFMPEG_COMPAT_AIX_MATH_H */
