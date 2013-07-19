@@ -243,6 +243,8 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
         }
     }
 
+    bitmap_frame_size = FFMIN(cin->bitmap_size, bitmap_frame_size);
+
     /* note: the decoding routines below assumes that
      * surface.width = surface.pitch */
     switch (bitmap_frame_type) {
