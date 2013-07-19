@@ -63,9 +63,6 @@
 #include <time.h>
 #include <sys/wait.h>
 #include <signal.h>
-#if HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
 
 #include "cmdutils.h"
 
@@ -3954,33 +3951,6 @@ static enum AVCodecID opt_video_codec(const char *arg)
     return p->id;
 }
 
-/* simplistic plugin support */
-
-#if HAVE_DLOPEN
-static void load_module(const char *filename)
-{
-    void *dll;
-    void (*init_func)(void);
-    dll = dlopen(filename, RTLD_NOW);
-    if (!dll) {
-        fprintf(stderr, "Could not load module '%s' - %s\n",
-                filename, dlerror());
-        return;
-    }
-
-    init_func = dlsym(dll, "ffserver_module_init");
-    if (!init_func) {
-        fprintf(stderr,
-                "%s: init function 'ffserver_module_init()' not found\n",
-                filename);
-        dlclose(dll);
-        return;
-    }
-
-    init_func();
-}
-#endif
-
 static int ffserver_opt_default(const char *opt, const char *arg,
                        AVCodecContext *avctx, int type)
 {
@@ -4637,12 +4607,7 @@ static int parse_ffconfig(const char *filename)
                 redirect = NULL;
             }
         } else if (!av_strcasecmp(cmd, "LoadModule")) {
-            get_arg(arg, sizeof(arg), &p);
-#if HAVE_DLOPEN
-            load_module(arg);
-#else
-            ERROR("Module support not compiled into this version: '%s'\n", arg);
-#endif
+            ERROR("Loadable modules no longer supported\n");
         } else {
             ERROR("Incorrect keyword: '%s'\n", cmd);
         }
