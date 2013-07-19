@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-#include <assert.h>
 
 #include "libavutil/intfloat.h"
 
