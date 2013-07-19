@@ -104,6 +104,8 @@ typedef struct MatroskaMuxContext {
 
     int reserve_cues_space;
     int64_t cues_pos;
+
+    uint32_t chapter_id_offset;
 } MatroskaMuxContext;
 
 
@@ -790,7 +792,7 @@ static int mkv_write_chapters(AVFormatContext *s)
         AVDictionaryEntry *t = NULL;
 
         chapteratom = start_ebml_master(pb, MATROSKA_ID_CHAPTERATOM, 0);
-        put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id + 1);
+        put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id + mkv->chapter_id_offset);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMESTART,
                       av_rescale_q(c->start, c->time_base, scale));
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERTIMEEND,
@@ -882,6 +884,7 @@ static int mkv_check_tag(AVDictionary *m)
 
 static int mkv_write_tags(AVFormatContext *s)
 {
+    MatroskaMuxContext *mkv = s->priv_data;
     ebml_master tags = {0};
     int i, ret;
 
@@ -908,7 +911,7 @@ static int mkv_write_tags(AVFormatContext *s)
         if (!mkv_check_tag(ch->metadata))
             continue;
 
-        ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id + 1, &tags);
+        ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id + mkv->chapter_id_offset, &tags);
         if (ret < 0) return ret;
     }
 
@@ -1086,6 +1089,9 @@ static int mkv_write_header(AVFormatContext *s)
 
     ret = mkv_write_tracks(s);
     if (ret < 0) return ret;
+
+    for (i = 0; i < s->nb_chapters; i++)
+        mkv->chapter_id_offset = FFMAX(mkv->chapter_id_offset, 1LL - s->chapters[i]->id);
 
     if (mkv->mode != MODE_WEBM) {
         ret = mkv_write_chapters(s);
