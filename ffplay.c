@@ -2806,7 +2806,8 @@ static int read_thread(void *arg)
     }
 
     if (is->video_stream < 0 && is->audio_stream < 0) {
-        av_log(NULL, AV_LOG_FATAL, "%s: could not open codecs\n", is->filename);
+        av_log(NULL, AV_LOG_FATAL, "Failed to open file '%s' or configure filtergraph\n",
+               is->filename);
         ret = -1;
         goto fail;
     }
