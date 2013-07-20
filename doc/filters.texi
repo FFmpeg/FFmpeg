@@ -6279,6 +6279,23 @@ Society of Motion Picture and Television Engineers 170M (2004)
 Society of Motion Picture and Television Engineers 240M
 @end table
 
+@item in_range
+@item out_range
+Set in/output YCbCr sample range.
+This allows the autodetected value to be overridden as well as allows forcing
+a specific value used for the output and encoder.
+If not specified, the range depends on the pixel format.
+@table @samp
+@item auto
+Choose automatically
+
+@item jpeg/full/pc
+Full range (0-255 in case of 8bit luma)
+
+@item mpeg/tv
+"Mpeg" range (16-235 in case of 8bit luma)
+@end table
+
 @end table
 
 The values of the @var{w} and @var{h} options are expressions
