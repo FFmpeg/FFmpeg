@@ -435,8 +435,7 @@ typedef struct RTSPStream {
     //@{
     int sdp_port;             /**< port (from SDP content) */
     struct sockaddr_storage sdp_ip; /**< IP address (from SDP content) */
-    int ssm;                    /**< Whether the stream should use source-specific multicast or not (from SDP content) */
-    struct sockaddr_storage source_ip; /**< Source-specific multicast source IP address (from SDP content) */
+    char source_addr[100];    /**< Source-specific multicast source IP address (from SDP content) */
     int sdp_ttl;              /**< IP Time-To-Live (from SDP content) */
     int sdp_payload_type;     /**< payload type */
     //@}
