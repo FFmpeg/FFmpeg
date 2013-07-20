@@ -90,6 +90,9 @@ typedef struct {
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
     char *flags_str;
+
+    char *in_color_matrix;
+    char *out_color_matrix;
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -179,6 +182,38 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     return 0;
+}
+
+static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
+{
+    const static int32_t yuv2rgb_coeffs[8][4] = {
+        {},
+        { 117504, 138453, 13954, 34903 }, /* ITU-R Rec. 709 (1990) */
+        { 104597, 132201, 25675, 53279 }, /* unspecified */
+        { 104597, 132201, 25675, 53279 }, /* reserved */
+        { 104448, 132798, 24759, 53109 }, /* FCC */
+        { 104597, 132201, 25675, 53279 }, /* ITU-R Rec. 624-4 System B, G */
+        { 104597, 132201, 25675, 53279 }, /* SMPTE 170M */
+        { 117579, 136230, 16907, 35559 }  /* SMPTE 240M (1987) */
+    };
+    if (!s)
+        s = "bt601";
+
+    if (s && strstr(s, "bt709")) {
+        colorspace = AVCOL_SPC_BT709;
+    } else if (s && strstr(s, "fcc")) {
+        colorspace = AVCOL_SPC_FCC;
+    } else if (s && strstr(s, "smpte240m")) {
+        colorspace = AVCOL_SPC_SMPTE240M;
+    } else if (s && (strstr(s, "bt601") || strstr(s, "bt470") || strstr(s, "smpte170m"))) {
+        colorspace = AVCOL_SPC_BT470BG;
+    }
+
+    if (colorspace < 1 || colorspace > 7) {
+        colorspace = AVCOL_SPC_BT470BG;
+    }
+
+    return yuv2rgb_coeffs[colorspace];
 }
 
 static int config_props(AVFilterLink *outlink)
@@ -381,6 +416,35 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if(scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
+    if (   scale->in_color_matrix
+        || scale->out_color_matrix
+        || scale-> in_range != AVCOL_RANGE_UNSPECIFIED
+        || scale->out_range != AVCOL_RANGE_UNSPECIFIED) {
+        int in_full, out_full, brightness, contrast, saturation;
+        const int *inv_table, *table;
+
+        sws_getColorspaceDetails(scale->sws, (int **)&inv_table, &in_full,
+                                 (int **)&table, &out_full,
+                                 &brightness, &contrast, &saturation);
+
+        if (scale->in_color_matrix)
+            inv_table = parse_yuv_type(scale->in_color_matrix, av_frame_get_colorspace(in));
+        if (scale->out_color_matrix)
+            table     = parse_yuv_type(scale->out_color_matrix, AVCOL_SPC_UNSPECIFIED);
+
+        sws_setColorspaceDetails(scale->sws, inv_table, in_full,
+                                 table, out_full,
+                                 brightness, contrast, saturation);
+        if (scale->isws[0])
+        sws_setColorspaceDetails(scale->isws[0], inv_table, in_full,
+                                 table, out_full,
+                                 brightness, contrast, saturation);
+        if (scale->isws[1])
+        sws_setColorspaceDetails(scale->isws[1], inv_table, in_full,
+                                 table, out_full,
+                                 brightness, contrast, saturation);
+    }
+
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
               (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
               (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
@@ -409,6 +473,8 @@ static const AVOption scale_options[] = {
     { "interl", "set interlacing", OFFSET(interlaced), AV_OPT_TYPE_INT, {.i64 = 0 }, -1, 1, FLAGS },
     { "size",   "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
     { "s",      "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
+    {  "in_color_matrix", "set input YCbCr type",   OFFSET(in_color_matrix),  AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
+    { "out_color_matrix", "set output YCbCr type",  OFFSET(out_color_matrix), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
     { NULL },
 };
 

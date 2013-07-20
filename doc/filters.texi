@@ -6252,6 +6252,33 @@ applies a bilinear scaling algorithm.
 @item size, s
 Set the video size, the value must be a valid abbreviation or in the
 form @var{width}x@var{height}.
+
+@item in_color_matrix
+@item out_color_matrix
+Set in/output YCbCr colorspace type.
+This allows the autodetected value to be overridden as well as allows forcing
+a specific value used for the output and encoder.
+If not specified, the colorspace type depends on the pixel format.
+@table @samp
+@item auto
+Choose automatically
+
+@item bt709
+ITU Rec BT709
+
+@item fcc
+United States Federal Communications Commission Title 47 Code of
+Federal Regulations (2003) 73.682 (a)
+
+@item bt601
+ITU Rec BT601
+ITU-R Rec. BT.470-6 System B, G
+Society of Motion Picture and Television Engineers 170M (2004)
+
+@item smpte240m
+Society of Motion Picture and Television Engineers 240M
+@end table
+
 @end table
 
 The values of the @var{w} and @var{h} options are expressions
