@@ -444,13 +444,13 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                  table, out_full,
                                  brightness, contrast, saturation);
         if (scale->isws[0])
-        sws_setColorspaceDetails(scale->isws[0], inv_table, in_full,
-                                 table, out_full,
-                                 brightness, contrast, saturation);
+            sws_setColorspaceDetails(scale->isws[0], inv_table, in_full,
+                                     table, out_full,
+                                     brightness, contrast, saturation);
         if (scale->isws[1])
-        sws_setColorspaceDetails(scale->isws[1], inv_table, in_full,
-                                 table, out_full,
-                                 brightness, contrast, saturation);
+            sws_setColorspaceDetails(scale->isws[1], inv_table, in_full,
+                                     table, out_full,
+                                     brightness, contrast, saturation);
     }
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
