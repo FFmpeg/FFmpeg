@@ -93,6 +93,9 @@ typedef struct {
 
     char *in_color_matrix;
     char *out_color_matrix;
+
+    int in_range;
+    int out_range;
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -432,6 +435,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         if (scale->out_color_matrix)
             table     = parse_yuv_type(scale->out_color_matrix, AVCOL_SPC_UNSPECIFIED);
 
+        if (scale-> in_range != AVCOL_RANGE_UNSPECIFIED)
+            in_full  = (scale-> in_range == AVCOL_RANGE_JPEG);
+        if (scale->out_range != AVCOL_RANGE_UNSPECIFIED)
+            out_full = (scale->out_range == AVCOL_RANGE_JPEG);
+
         sws_setColorspaceDetails(scale->sws, inv_table, in_full,
                                  table, out_full,
                                  brightness, contrast, saturation);
@@ -475,6 +483,14 @@ static const AVOption scale_options[] = {
     { "s",      "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
     {  "in_color_matrix", "set input YCbCr type",   OFFSET(in_color_matrix),  AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
     { "out_color_matrix", "set output YCbCr type",  OFFSET(out_color_matrix), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
+    {  "in_range", "set input color range",  OFFSET( in_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 2, FLAGS, "range" },
+    { "out_range", "set output color range", OFFSET(out_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 2, FLAGS, "range" },
+    { "auto",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 0, FLAGS, "range" },
+    { "full",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, "range" },
+    { "jpeg",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, "range" },
+    { "mpeg",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
+    { "tv",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, "range" },
+    { "pc",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
     { NULL },
 };
 
