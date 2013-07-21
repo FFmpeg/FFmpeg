@@ -616,6 +616,7 @@ do {                                                                   \
                                                                        \
             if (!out_link->in_ ## list->nb) {                          \
                 add_format(&out_link->in_ ##list, fmt);                \
+                ret = 1;                                               \
                 break;                                                 \
             }                                                          \
                                                                        \
