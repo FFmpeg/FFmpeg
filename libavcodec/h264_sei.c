@@ -249,14 +249,14 @@ int ff_h264_decode_sei(H264Context *h){
         type=0;
         do{
             if (get_bits_left(&h->gb) < 8)
-                return -1;
+                return AVERROR_INVALIDDATA;
             type+= show_bits(&h->gb, 8);
         }while(get_bits(&h->gb, 8) == 255);
 
         size=0;
         do{
             if (get_bits_left(&h->gb) < 8)
-                return -1;
+                return AVERROR_INVALIDDATA;
             size+= show_bits(&h->gb, 8);
         }while(get_bits(&h->gb, 8) == 255);
 
