@@ -244,7 +244,8 @@ static int decode_frame_packing(H264Context *h, int size){
 
 int ff_h264_decode_sei(H264Context *h){
     while (get_bits_left(&h->gb) > 16) {
-        int size, type;
+        int type;
+        unsigned size;
 
         type=0;
         do{
