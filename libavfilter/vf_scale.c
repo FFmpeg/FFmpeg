@@ -190,7 +190,7 @@ static int query_formats(AVFilterContext *ctx)
 static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
 {
     const static int32_t yuv2rgb_coeffs[8][4] = {
-        {},
+        { 117504, 138453, 13954, 34903 },
         { 117504, 138453, 13954, 34903 }, /* ITU-R Rec. 709 (1990) */
         { 104597, 132201, 25675, 53279 }, /* unspecified */
         { 104597, 132201, 25675, 53279 }, /* reserved */
