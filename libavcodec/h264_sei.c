@@ -245,7 +245,7 @@ static int decode_frame_packing(H264Context *h, int size){
 int ff_h264_decode_sei(H264Context *h){
     while (get_bits_left(&h->gb) > 16) {
         int type;
-        unsigned size;
+        unsigned size, next;
 
         type=0;
         do{
@@ -268,6 +268,7 @@ int ff_h264_decode_sei(H264Context *h){
             av_log(h->avctx, AV_LOG_ERROR, "SEI truncated\n");
             return AVERROR_INVALIDDATA;
         }
+        next = get_bits_count(&h->gb) + 8*size;
 
         switch(type){
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
@@ -293,9 +294,8 @@ int ff_h264_decode_sei(H264Context *h){
         case SEI_TYPE_FRAME_PACKING:
             if(decode_frame_packing(h, size) < 0)
                 return -1;
-        default:
-            skip_bits_long(&h->gb, 8*size);
         }
+        skip_bits_long(&h->gb, next - get_bits_count(&h->gb));
 
         //FIXME check bits here
         align_get_bits(&h->gb);
