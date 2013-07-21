@@ -294,7 +294,7 @@ int ff_h264_decode_sei(H264Context *h){
             if(decode_frame_packing(h, size) < 0)
                 return -1;
         default:
-            skip_bits(&h->gb, 8*size);
+            skip_bits_long(&h->gb, 8*size);
         }
 
         //FIXME check bits here
