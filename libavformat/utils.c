@@ -3178,9 +3178,6 @@ void ff_free_stream(AVFormatContext *s, AVStream *st){
     av_assert0(s->nb_streams>0);
     av_assert0(s->streams[ s->nb_streams-1 ] == st);
 
-    if (st->codec) {
-        avcodec_close(st->codec);
-    }
     if (st->parser) {
         av_parser_close(st->parser);
     }
