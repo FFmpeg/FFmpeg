@@ -2175,7 +2175,11 @@ static int audio_decode_frame(VideoState *is)
                 else if (is->frame->pkt_pts != AV_NOPTS_VALUE)
                     is->frame->pts = av_rescale_q(is->frame->pkt_pts, is->audio_st->time_base, tb);
                 else if (is->audio_frame_next_pts != AV_NOPTS_VALUE)
+#if CONFIG_AVFILTER
                     is->frame->pts = av_rescale_q(is->audio_frame_next_pts, (AVRational){1, is->audio_filter_src.freq}, tb);
+#else
+                    is->frame->pts = av_rescale_q(is->audio_frame_next_pts, (AVRational){1, is->audio_src.freq}, tb);
+#endif
 
                 if (is->frame->pts != AV_NOPTS_VALUE)
                     is->audio_frame_next_pts = is->frame->pts + is->frame->nb_samples;
