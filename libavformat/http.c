@@ -29,6 +29,10 @@
 #include "url.h"
 #include "libavutil/opt.h"
 
+#if CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 /* XXX: POST protocol is not completely implemented because avconv uses
    only a subset of it. */
 
@@ -58,6 +62,11 @@ typedef struct {
     int multiple_requests;  /**< A flag which indicates if we use persistent connections. */
     uint8_t *post_data;
     int post_datalen;
+#if CONFIG_ZLIB
+    int compressed;
+    z_stream inflate_stream;
+    uint8_t *inflate_buffer;
+#endif
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -336,6 +345,31 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp (tag, "Connection")) {
             if (!strcmp(p, "close"))
                 s->willclose = 1;
+        } else if (!av_strcasecmp (tag, "Content-Encoding")) {
+            if (!av_strncasecmp(p, "gzip", 4) || !av_strncasecmp(p, "deflate", 7)) {
+#if CONFIG_ZLIB
+                s->compressed = 1;
+                inflateEnd(&s->inflate_stream);
+                if (inflateInit2(&s->inflate_stream, 32 + 15) != Z_OK) {
+                    av_log(h, AV_LOG_WARNING, "Error during zlib initialisation: %s\n",
+                           s->inflate_stream.msg);
+                    return AVERROR(ENOSYS);
+                }
+                if (zlibCompileFlags() & (1 << 17)) {
+                    av_log(h, AV_LOG_WARNING, "Your zlib was compiled without gzip support.\n");
+                    return AVERROR(ENOSYS);
+                }
+#else
+                av_log(h, AV_LOG_WARNING, "Compressed (%s) content, need zlib with gzip support\n", p);
+                return AVERROR(ENOSYS);
+#endif
+            } else if (!av_strncasecmp(p, "identity", 8)) {
+                // The normal, no-encoding case (although servers shouldn't include
+                // the header at all if this is the case).
+            } else {
+                av_log(h, AV_LOG_WARNING, "Unknown content coding: %s\n", p);
+                return AVERROR(ENOSYS);
+            }
         }
     }
     return 1;
@@ -508,6 +542,38 @@ static int http_buf_read(URLContext *h, uint8_t *buf, int size)
     return len;
 }
 
+#if CONFIG_ZLIB
+#define DECOMPRESS_BUF_SIZE (256 * 1024)
+static int http_buf_read_compressed(URLContext *h, uint8_t *buf, int size)
+{
+    HTTPContext *s = h->priv_data;
+    int ret;
+
+    if (!s->inflate_buffer) {
+        s->inflate_buffer = av_malloc(DECOMPRESS_BUF_SIZE);
+        if (!s->inflate_buffer)
+            return AVERROR(ENOMEM);
+    }
+
+    if (s->inflate_stream.avail_in == 0) {
+        int read = http_buf_read(h, s->inflate_buffer, DECOMPRESS_BUF_SIZE);
+        if (read <= 0)
+            return read;
+        s->inflate_stream.next_in  = s->inflate_buffer;
+        s->inflate_stream.avail_in = read;
+    }
+
+    s->inflate_stream.avail_out = size;
+    s->inflate_stream.next_out  = buf;
+
+    ret = inflate(&s->inflate_stream, Z_SYNC_FLUSH);
+    if (ret != Z_OK && ret != Z_STREAM_END)
+        av_log(h, AV_LOG_WARNING, "inflate return value: %d, %s\n", ret, s->inflate_stream.msg);
+
+    return size - s->inflate_stream.avail_out;
+}
+#endif
+
 static int http_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
@@ -543,6 +609,10 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
         }
         size = FFMIN(size, s->chunksize);
     }
+#if CONFIG_ZLIB
+    if (s->compressed)
+        return http_buf_read_compressed(h, buf, size);
+#endif
     return http_buf_read(h, buf, size);
 }
 
@@ -593,6 +663,11 @@ static int http_close(URLContext *h)
 {
     int ret = 0;
     HTTPContext *s = h->priv_data;
+
+#if CONFIG_ZLIB
+    inflateEnd(&s->inflate_stream);
+    av_freep(&s->inflate_buffer);
+#endif
 
     if (!s->end_chunked_post) {
         /* Close the write direction by sending the end of chunked encoding. */
