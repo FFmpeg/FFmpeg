@@ -21,6 +21,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/intreadwrite.h"
 #include "dcadsp.h"
 
 static void dca_lfe_fir_c(float *out, const float *in, const float *coefs,
@@ -45,8 +46,37 @@ static void dca_lfe_fir_c(float *out, const float *in, const float *coefs,
     }
 }
 
+static void dca_qmf_32_subbands(float samples_in[32][8], int sb_act,
+                                SynthFilterContext *synth, FFTContext *imdct,
+                                float synth_buf_ptr[512],
+                                int *synth_buf_offset, float synth_buf2[32],
+                                const float window[512], float *samples_out,
+                                float raXin[32], float scale)
+{
+    int i;
+    int subindex;
+
+    for (i = sb_act; i < 32; i++)
+        raXin[i] = 0.0;
+
+    /* Reconstructed channel sample index */
+    for (subindex = 0; subindex < 8; subindex++) {
+        /* Load in one sample from each subband and clear inactive subbands */
+        for (i = 0; i < sb_act; i++) {
+            unsigned sign = (i - 1) & 2;
+            uint32_t v    = AV_RN32A(&samples_in[i][subindex]) ^ sign << 30;
+            AV_WN32A(&raXin[i], v);
+        }
+
+        synth->synth_filter_float(imdct, synth_buf_ptr, synth_buf_offset,
+                                  synth_buf2, window, samples_out, raXin, scale);
+        samples_out += 32;
+    }
+}
+
 av_cold void ff_dcadsp_init(DCADSPContext *s)
 {
     s->lfe_fir = dca_lfe_fir_c;
+    s->qmf_32_subbands = dca_qmf_32_subbands;
     if (ARCH_ARM) ff_dcadsp_init_arm(s);
 }
