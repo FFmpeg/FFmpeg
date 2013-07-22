@@ -174,9 +174,8 @@ function ff_imdct_half_vfp, export=1
  .endr
 
         fmxr    FPSCR, OLDFPSCR
-        mov     ORIGOUT, OUT
-        ldr     ip, [CONTEXT, #9*4]
-        blx     ip                          @ s->fft_calc(s, output)
+        mov     a1, OUT
+        bl      ff_fft16_vfp
         ldr     lr, =0x03030000             @ RunFast mode, short vectors of length 4, stride 1
         fmxr    FPSCR, lr
 
