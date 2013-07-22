@@ -56,7 +56,7 @@ enum KeyType {
 };
 
 struct segment {
-    int duration;
+    double duration;
     char url[MAX_URL_SIZE];
     char key[MAX_URL_SIZE];
     enum KeyType key_type;
@@ -206,7 +206,8 @@ static void handle_key_args(struct key_info *info, const char *key,
 static int parse_playlist(HLSContext *c, const char *url,
                           struct variant *var, AVIOContext *in)
 {
-    int ret = 0, duration = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    double duration = 0.0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
@@ -286,7 +287,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                 var->finished = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
-            duration   = atoi(ptr);
+            duration   = atof(ptr);
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
@@ -523,7 +524,7 @@ static int hls_read_header(AVFormatContext *s)
     /* If this isn't a live stream, calculate the total duration of the
      * stream. */
     if (c->variants[0]->finished) {
-        int64_t duration = 0;
+        double duration = 0.0;
         for (i = 0; i < c->variants[0]->n_segments; i++)
             duration += c->variants[0]->segments[i]->duration;
         s->duration = duration * AV_TIME_BASE;
