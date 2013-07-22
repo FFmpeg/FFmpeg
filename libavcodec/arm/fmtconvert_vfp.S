@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2008 Siarhei Siamashka <ssvb@users.sourceforge.net>
+ * Copyright (c) 2013 RISC OS Open Ltd <bavison@riscosopen.org>
  *
  * This file is part of FFmpeg.
  *
@@ -76,3 +77,40 @@ function ff_float_to_int16_vfp, export=1
         vpop            {d8-d11}
         pop             {r4-r8,pc}
 endfunc
+
+/**
+ * ARM VFP optimised int32 to float conversion.
+ * Assume len is a multiple of 8, destination buffer is at least 4 bytes aligned
+ * (16 bytes alignment is best for BCM2835), little-endian.
+ */
+@ void ff_int32_to_float_fmul_scalar_vfp(float *dst, const int32_t *src, float mul, int len)
+function ff_int32_to_float_fmul_scalar_vfp, export=1
+VFP     tmp     .req    a4
+VFP     len     .req    a3
+NOVFP   tmp     .req    a3
+NOVFP   len     .req    a4
+NOVFP   vmov    s0, a3
+        ldr     tmp, =0x03070000           @ RunFast mode, short vectors of length 8, stride 1
+        fmrx    ip, FPSCR
+        fmxr    FPSCR, tmp
+1:
+        vldmia          a2!, {s8-s15}
+        vcvt.f32.s32    s8, s8
+        vcvt.f32.s32    s9, s9
+        vcvt.f32.s32    s10, s10
+        vcvt.f32.s32    s11, s11
+        vcvt.f32.s32    s12, s12
+        vcvt.f32.s32    s13, s13
+        vcvt.f32.s32    s14, s14
+        vcvt.f32.s32    s15, s15
+        vmul.f32        s8, s8, s0
+        subs            len, len, #8
+        vstmia          a1!, {s8-s11}
+        vstmia          a1!, {s12-s15}
+        bne             1b
+
+        fmxr    FPSCR, ip
+        bx      lr
+endfunc
+        .unreq  tmp
+        .unreq  len
