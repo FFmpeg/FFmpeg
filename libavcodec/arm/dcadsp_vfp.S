@@ -463,7 +463,7 @@ NOVFP   ldr     a1, [fp, #-8*4]
 VFP     stmia   sp, {WINDOW, OUT, BUF}
 NOVFP   stmia   sp, {WINDOW, OUT, BUF, SCALEINT}
 VFP     vldr    SCALE, [sp, #3*4]
-        bl      ff_synth_filter_float_vfp
+        bl      X(ff_synth_filter_float_vfp)
         add     OUT, OUT, #32*4
         add     BUF, BUF, #32*4
         subs    COUNT, COUNT, #1
