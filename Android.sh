@@ -51,12 +51,12 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-demuxer=dts \
   --disable-parser=dca \
   --disable-decoder=dca \
-  --disable-decoder=ac3 --disable-decoder=eac3 --disable-decoder=mlp \
   --disable-decoder=svq3 \
   --enable-network \
   --enable-asm \
   --enable-version3"
 
+  # --disable-decoder=ac3 --disable-decoder=eac3 --disable-decoder=mlp \
 
 for version in neon armv7 vfp armv6; do
 
