@@ -64,7 +64,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     unsigned char *pixptr, *pixptr_end;
     unsigned int height = avctx->height; // Real image height
     unsigned int dlen, p, row;
-    const unsigned char *lp, *dp;
+    const unsigned char *lp, *dp, *ep;
     unsigned char count;
     unsigned int px_inc;
     unsigned int planes     = c->planes;
@@ -75,6 +75,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
+
+    ep = encoded + buf_size;
 
     /* Set data pointer after line lengths */
     dp = encoded + planes * (height << 1);
@@ -93,17 +95,19 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         for (row = 0; row < height; row++) {
             pixptr = frame->data[0] + row * frame->linesize[0] + planemap[p];
             pixptr_end = pixptr + frame->linesize[0];
+            if (ep - lp < row * 2 + 2)
+                return AVERROR_INVALIDDATA;
             dlen = av_be2ne16(*(const unsigned short *)(lp + row * 2));
             /* Decode a row of this plane */
             while (dlen > 0) {
-                if (dp + 1 >= buf + buf_size)
+                if (ep - dp <= 1)
                     return AVERROR_INVALIDDATA;
                 if ((count = *dp++) <= 127) {
                     count++;
                     dlen -= count + 1;
                     if (pixptr + count * px_inc > pixptr_end)
                         break;
-                    if (dp + count > buf + buf_size)
+                    if (ep - dp < count)
                         return AVERROR_INVALIDDATA;
                     while (count--) {
                         *pixptr = *dp++;
