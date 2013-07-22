@@ -151,7 +151,7 @@ function ff_imdct_half_vfp, export=1
         ldr     ip, [CONTEXT, #5*4]         @ mdct_bits
         teq     ip, #6
         it      ne
-        bne     ff_imdct_half_c             @ only case currently accelerated is the one used by DCA
+        bne     X(ff_imdct_half_c)          @ only case currently accelerated is the one used by DCA
 
  .set n, 1<<6
  .set n2, n/2
@@ -175,7 +175,7 @@ function ff_imdct_half_vfp, export=1
 
         fmxr    FPSCR, OLDFPSCR
         mov     a1, OUT
-        bl      ff_fft16_vfp
+        bl      X(ff_fft16_vfp)
         ldr     lr, =0x03030000             @ RunFast mode, short vectors of length 4, stride 1
         fmxr    FPSCR, lr
 

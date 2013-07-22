@@ -132,7 +132,7 @@ function ff_synth_filter_float_vfp, export=1
         str     lr, [P_SB_OFF]            @ rotate offset, modulo buffer size, ready for next call
         ldr     a3, [sp, #(16+6+2)*4]     @ fetch in from stack, to pass to imdct_half
 VFP     vmov    s16, SCALE                @ imdct_half is free to corrupt s0, but it contains one of our arguments in hardfp case
-        bl      ff_imdct_half_vfp
+        bl      X(ff_imdct_half_vfp)
 VFP     vmov    SCALE, s16
 
         fmrx    OLDFPSCR, FPSCR
