@@ -63,6 +63,11 @@ be in the interval [-32,32].
 @item rmvol, rematrix_volume
 Set rematrix volume. Default value is 1.0.
 
+@item rematrix_maxval
+Set maximum output value for rematrixing.
+This can be used to prevent clipping vs. preventing volumn reduction
+A value of 1.0 prevents cliping.
+
 @item flags, swr_flags
 Set flags used by the converter. Default value is 0.
 
