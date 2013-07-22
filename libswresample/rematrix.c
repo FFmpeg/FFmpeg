@@ -313,7 +313,7 @@ av_cold static int auto_matrix(SwrContext *s)
     } else
         maxval = INT_MAX;
 
-    if(maxcoef > maxval){
+    if(maxcoef > maxval || s->rematrix_volume  < 0){
         maxcoef /= maxval;
         for(i=0; i<SWR_CH_MAX; i++)
             for(j=0; j<SWR_CH_MAX; j++){
