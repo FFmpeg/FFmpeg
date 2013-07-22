@@ -810,6 +810,12 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 20)
         return AVERROR_INVALIDDATA;
 
+    if (avctx->width % 16 || avctx->height % 16) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Dimensions non-multiple of 16 are invalid.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (buf_size < AV_RL32(buf + 4) + 8) {
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n",
                buf_size, AV_RL32(buf + 4));
