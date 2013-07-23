@@ -1469,42 +1469,39 @@ static int jpeg2000_read_bitstream_packets(Jpeg2000DecoderContext *s)
 
 static int jp2_find_codestream(Jpeg2000DecoderContext *s)
 {
-    uint32_t atom_size, atom;
-    int found_codestream = 0, search_range = 10;
+    uint32_t atom_size, atom, atom_end;
+    int search_range = 10;
 
-    while (!found_codestream && search_range
+    while (search_range
            &&
            bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
-        if (atom == JP2_CODESTREAM) {
-            found_codestream = 1;
-        } else if (atom == JP2_HEADER &&
-                   bytestream2_get_bytes_left(&s->g) >= atom_size &&
+        atom_end  = bytestream2_tell(&s->g) + atom_size - 8;
+
+        if (atom == JP2_CODESTREAM)
+            return 1;
+
+        if (bytestream2_get_bytes_left(&s->g) < atom_size || atom_end < atom_size)
+            return 0;
+
+        if (atom == JP2_HEADER &&
                    atom_size >= 16) {
-            uint32_t atom2_size, atom2;
-            atom_size -= 8;
+            uint32_t atom2_size, atom2, atom2_end;
             do {
                 atom2_size = bytestream2_get_be32u(&s->g);
                 atom2      = bytestream2_get_be32u(&s->g);
-                atom_size  -= 8;
-                if (atom2_size < 8 || atom2_size - 8 > atom_size)
+                atom2_end  = bytestream2_tell(&s->g) + atom2_size - 8;
+                if (atom2_size < 8 || atom2_end > atom_end || atom2_end < atom2_size)
                     break;
-                atom2_size -= 8;
                 if (atom2 == JP2_CODESTREAM) {
                     return 1;
                 } else if (atom2 == MKBETAG('c','o','l','r') && atom2_size >= 7) {
                     int method = bytestream2_get_byteu(&s->g);
                     bytestream2_skipu(&s->g, 2);
-                    atom_size  -= 3;
-                    atom2_size -= 3;
                     if (method == 1) {
                         s->colour_space = bytestream2_get_be32u(&s->g);
-                        atom_size  -= 4;
-                        atom2_size -= 4;
                     }
-                    bytestream2_skipu(&s->g, atom2_size);
-                    atom_size -= atom2_size;
                 } else if (atom2 == MKBETAG('p','c','l','r') && atom2_size >= 6) {
                     int i, size, colour_count, colour_channels, colour_depth[3];
                     uint32_t r, g, b;
@@ -1514,8 +1511,6 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                     colour_depth[0] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
                     colour_depth[1] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
                     colour_depth[2] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
-                    atom_size  -= 6;
-                    atom2_size -= 6;
                     size = (colour_depth[0] + 7 >> 3) * colour_count +
                            (colour_depth[1] + 7 >> 3) * colour_count +
                            (colour_depth[2] + 7 >> 3) * colour_count;
@@ -1526,8 +1521,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         colour_depth[2] > 16 ||
                         atom2_size < size) {
                         avpriv_request_sample(s->avctx, "Unknown palette");
-                        bytestream2_skipu(&s->g, atom2_size);
-                        atom_size -= atom2_size;
+                        bytestream2_seek(&s->g, atom2_end, SEEK_SET);
                         continue;
                     }
                     s->pal8 = 1;
@@ -1552,41 +1546,24 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                         }
                         s->palette[i] = 0xffu << 24 | r << 16 | g << 8 | b;
                     }
-                    atom_size  -= size;
-                    atom2_size -= size;
-                    bytestream2_skipu(&s->g, atom2_size);
-                    atom_size -= atom2_size;
-                } else if (atom2 == MKBETAG('c','d','e','f') && atom2_size >= 2 &&
-                    bytestream2_get_bytes_left(&s->g) >= atom2_size) {
+                } else if (atom2 == MKBETAG('c','d','e','f') && atom2_size >= 2) {
                     int n = bytestream2_get_be16u(&s->g);
-                    atom_size  -= 2;
-                    atom2_size -= 2;
                     for (; n>0; n--) {
                         int cn   = bytestream2_get_be16(&s->g);
                         int av_unused typ  = bytestream2_get_be16(&s->g);
                         int asoc = bytestream2_get_be16(&s->g);
                         if (cn < 4 || asoc < 4)
                             s->cdef[cn] = asoc;
-                        atom_size  -= 6;
-                        atom2_size -= 6;
                     }
-                    bytestream2_skipu(&s->g, atom2_size);
-                } else {
-                    bytestream2_skipu(&s->g, atom2_size);
-                    atom_size -= atom2_size;
                 }
-            } while (atom_size >= 8);
-            bytestream2_skipu(&s->g, atom_size);
+                bytestream2_seek(&s->g, atom2_end, SEEK_SET);
+            } while (atom_end - atom2_end >= 8);
         } else {
-            if (bytestream2_get_bytes_left(&s->g) < atom_size - 8)
-                return 0;
-            bytestream2_skipu(&s->g, atom_size - 8);
             search_range--;
         }
+        bytestream2_seek(&s->g, atom_end, SEEK_SET);
     }
 
-    if (found_codestream)
-        return 1;
     return 0;
 }
 
