@@ -92,7 +92,7 @@ int ffio_init_context(AVIOContext *s,
     s->must_flush      = 0;
     s->eof_reached     = 0;
     s->error           = 0;
-    s->seekable        = AVIO_SEEKABLE_NORMAL;
+    s->seekable        = seek ? AVIO_SEEKABLE_NORMAL : 0;
     s->max_packet_size = 0;
     s->update_checksum = NULL;
 
