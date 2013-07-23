@@ -67,6 +67,7 @@ typedef struct {
     uint64_t        pts;
     int             tracknum;
     int64_t         cluster_pos;        ///< file offset of the cluster containing the block
+    int64_t         relative_pos;       ///< relative offset from the position of the cluster containing the block
 } mkv_cuepoint;
 
 typedef struct {
@@ -113,9 +114,9 @@ typedef struct MatroskaMuxContext {
  * offset, 4 bytes for target EBML ID */
 #define MAX_SEEKENTRY_SIZE 21
 
-/** per-cuepoint-track - 3 1-byte EBML IDs, 3 1-byte EBML sizes, 2
+/** per-cuepoint-track - 4 1-byte EBML IDs, 4 1-byte EBML sizes, 3
  * 8-byte uint max */
-#define MAX_CUETRACKPOS_SIZE 22
+#define MAX_CUETRACKPOS_SIZE 32
 
 /** per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max */
 #define MAX_CUEPOINT_SIZE(num_tracks) 12 + MAX_CUETRACKPOS_SIZE*num_tracks
@@ -372,7 +373,7 @@ static mkv_cues * mkv_start_cues(int64_t segment_offset)
     return cues;
 }
 
-static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos)
+static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos, int64_t relative_pos)
 {
     mkv_cuepoint *entries = cues->entries;
 
@@ -385,7 +386,8 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t clus
 
     entries[cues->num_entries  ].pts = ts;
     entries[cues->num_entries  ].tracknum = stream + 1;
-    entries[cues->num_entries++].cluster_pos = cluster_pos - cues->segment_offset;
+    entries[cues->num_entries  ].cluster_pos = cluster_pos - cues->segment_offset;
+    entries[cues->num_entries++].relative_pos = relative_pos;
 
     cues->entries = entries;
     return 0;
@@ -419,8 +421,9 @@ static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, mkv_track *tracks
                 continue;
             tracks[tracknum].has_cue = 1;
             track_positions = start_ebml_master(pb, MATROSKA_ID_CUETRACKPOSITION, MAX_CUETRACKPOS_SIZE);
-            put_ebml_uint(pb, MATROSKA_ID_CUETRACK          , entry[j].tracknum   );
-            put_ebml_uint(pb, MATROSKA_ID_CUECLUSTERPOSITION, entry[j].cluster_pos);
+            put_ebml_uint(pb, MATROSKA_ID_CUETRACK           , entry[j].tracknum   );
+            put_ebml_uint(pb, MATROSKA_ID_CUECLUSTERPOSITION , entry[j].cluster_pos);
+            put_ebml_uint(pb, MATROSKA_ID_CUERELATIVEPOSITION, entry[j].relative_pos);
             end_ebml_master(pb, track_positions);
         }
         i += j - 1;
@@ -1414,6 +1417,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     int duration = pkt->duration;
     int ret;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
+    int64_t relative_packet_pos;
 
     if (ts == AV_NOPTS_VALUE) {
         av_log(s, AV_LOG_ERROR, "Can't write packet with unknown timestamp\n");
@@ -1437,6 +1441,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster_pts = FFMAX(0, ts);
     }
 
+    relative_packet_pos = avio_tell(s->pb) - mkv->cluster.pos;
+
     if (codec->codec_type != AVMEDIA_TYPE_SUBTITLE) {
         mkv_write_block(s, pb, MATROSKA_ID_SIMPLEBLOCK, pkt, keyframe << 7);
 #if FF_API_ASS_SSA
@@ -1459,7 +1465,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe) {
-        ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, ts, mkv->cluster_pos);
+        ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, ts, mkv->cluster_pos, relative_packet_pos);
         if (ret < 0) return ret;
     }
 
