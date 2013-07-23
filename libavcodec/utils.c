@@ -3225,7 +3225,7 @@ const uint8_t *avpriv_find_start_code(const uint8_t *av_restrict p,
 {
     int i;
 
-    assert(p <= end);
+    av_assert0(p <= end);
     if (p >= end)
         return end;
 
