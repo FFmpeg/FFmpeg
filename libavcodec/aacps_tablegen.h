@@ -192,7 +192,7 @@ static void ps_tableinit(void)
     for (k = 0; k < NR_ALLPASS_BANDS34; k++) {
         double f_center, theta;
         if (k < FF_ARRAY_ELEMS(f_center_34))
-            f_center = f_center_34[k] / 24.;
+            f_center = f_center_34[k] / 24.0;
         else
             f_center = k - 26.5f;
         for (m = 0; m < PS_AP_LINKS; m++) {

@@ -423,12 +423,12 @@ static inline float mulawinv(float y, float clip, float mu)
  * {
  *    static float test; // Ugh, force gcc to do the division first...
  *
- *    test = a / 400.;
+ *    test = a / 400.0;
  *    return b * test + 0.5;
  * }
  * @endcode
  *
- * @note if this function is replaced by just ROUNDED_DIV(a * b, 400.), the
+ * @note if this function is replaced by just ROUNDED_DIV(a * b, 400.0), the
  * stddev between the original file (before encoding with Yamaha encoder) and
  * the decoded output increases, which leads one to believe that the encoder
  * expects exactly this broken calculation.
@@ -516,12 +516,12 @@ static void dec_gain(TwinContext *tctx, GetBitContext *gb, enum FrameType ftype,
 
     if (ftype == FT_LONG) {
         for (i = 0; i < tctx->avctx->channels; i++)
-            out[i] = (1. / (1 << 13)) *
+            out[i] = (1.0 / (1 << 13)) *
                      mulawinv(step * 0.5 + step * get_bits(gb, GAIN_BITS),
                               AMP_MAX, MULAW_MU);
     } else {
         for (i = 0; i < tctx->avctx->channels; i++) {
-            float val = (1. / (1 << 23)) *
+            float val = (1.0 / (1 << 23)) *
                         mulawinv(step * 0.5 + step * get_bits(gb, GAIN_BITS),
                                  AMP_MAX, MULAW_MU);
 
@@ -582,7 +582,7 @@ static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
     rearrange_lsp(mtab->n_lsp, lsp, 0.0001);
 
     for (i = 0; i < mtab->n_lsp; i++) {
-        float tmp1 = 1.      - cb3[lpc_hist_idx * mtab->n_lsp + i];
+        float tmp1 = 1.0     - cb3[lpc_hist_idx * mtab->n_lsp + i];
         float tmp2 = hist[i] * cb3[lpc_hist_idx * mtab->n_lsp + i];
         hist[i] = lsp[i];
         lsp[i]  = lsp[i] * tmp1 + tmp2;
@@ -713,13 +713,13 @@ static void dec_bark_env(TwinContext *tctx, const uint8_t *in, int use_hist,
     for (i = 0; i < fw_cb_len; i++)
         for (j = 0; j < bark_n_coef; j++, idx++) {
             float tmp2 = mtab->fmode[ftype].bark_cb[fw_cb_len * in[j] + i] *
-                         (1. / 4096);
-            float st   = use_hist ? (1. - val) * tmp2 + val * hist[idx] + 1.
-                                  : tmp2 + 1.;
+                         (1.0 / 4096);
+            float st   = use_hist ? (1.0 - val) * tmp2 + val * hist[idx] + 1.0
+                                  : tmp2 + 1.0;
 
             hist[idx] = tmp2;
-            if (st < -1.)
-                st = 1.;
+            if (st < -1.0)
+                st = 1.0;
 
             memset_float(out, st * gain, mtab->fmode[ftype].bark_tab[idx]);
             out += mtab->fmode[ftype].bark_tab[idx];
@@ -789,12 +789,12 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
         }
 
         if (ftype == FT_LONG) {
-            float pgain_step = 25000. / ((1 << mtab->pgain_bit) - 1);
+            float pgain_step = 25000.0 / ((1 << mtab->pgain_bit) - 1);
             int p_coef       = get_bits(gb, tctx->mtab->ppc_period_bit);
             int g_coef       = get_bits(gb, tctx->mtab->pgain_bit);
-            float v          = 1. / 8192 *
+            float v          = 1.0 / 8192 *
                                mulawinv(pgain_step * g_coef + pgain_step / 2,
-                                        25000., PGAIN_MU);
+                                        25000.0, PGAIN_MU);
 
             decode_ppc(tctx, p_coef, ppc_shape + i * mtab->ppc_shape_len, v,
                        chunk);
@@ -883,7 +883,7 @@ static av_cold int init_mdct_win(TwinContext *tctx)
     int size_s          = mtab->size / mtab->fmode[FT_SHORT].sub;
     int size_m          = mtab->size / mtab->fmode[FT_MEDIUM].sub;
     int channels        = tctx->avctx->channels;
-    float norm          = channels == 1 ? 2. : 1.;
+    float norm          = channels == 1 ? 2.0 : 1.0;
 
     for (i = 0; i < 3; i++) {
         int bsize = tctx->mtab->size / tctx->mtab->fmode[i].sub;
