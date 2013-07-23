@@ -105,7 +105,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 if ((count = *dp++) <= 127) {
                     count++;
                     dlen -= count + 1;
-                    if (pixptr + count * px_inc > pixptr_end)
+                    if (pixptr_end - pixptr < count * px_inc)
                         break;
                     if (ep - dp < count)
                         return AVERROR_INVALIDDATA;
@@ -115,7 +115,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                     }
                 } else {
                     count = 257 - count;
-                    if (pixptr + count * px_inc > pixptr_end)
+                    if (pixptr_end - pixptr < count * px_inc)
                         break;
                     while (count--) {
                         *pixptr = *dp;
