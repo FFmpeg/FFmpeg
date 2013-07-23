@@ -464,7 +464,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 count_delayed++;                                             \
             } else if (link->in_ ## field == link->out_ ## field) {          \
                 count_already_merged++;                                      \
-            } else if (!convert_needed) {                                                         \
+            } else if (!convert_needed) {                                    \
                 count_merged++;                                              \
                 statement                                                    \
             }
