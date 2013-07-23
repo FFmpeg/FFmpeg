@@ -1615,6 +1615,9 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
         bytestream2_seek(&s->g, 0, SEEK_SET);
     }
 
+    while (bytestream2_get_bytes_left(&s->g) >= 3 && bytestream2_peek_be16(&s->g) != JPEG2000_SOC)
+        bytestream2_skip(&s->g, 1);
+
     if (bytestream2_get_be16u(&s->g) != JPEG2000_SOC) {
         av_log(avctx, AV_LOG_ERROR, "SOC marker not present\n");
         ret = AVERROR_INVALIDDATA;
