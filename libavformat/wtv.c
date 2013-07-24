@@ -48,7 +48,7 @@
  *
  */
 
-#define WTV_SECTOR_BITS    12
+#define WTV_SECTOR_BITS    INT64_C(12)
 #define WTV_SECTOR_SIZE    (1 << WTV_SECTOR_BITS)
 #define WTV_BIGSECTOR_BITS 18
 
