@@ -983,8 +983,7 @@ static int read_block(ALSDecContext *ctx, ALSBlockData *bd)
     if (get_bits1(gb)) {
         ret = read_var_block_data(ctx, bd);
     } else {
-        if ((ret = read_const_block_data(ctx, bd)) < 0)
-            return ret;
+        ret = read_const_block_data(ctx, bd);
     }
 
     return ret;
