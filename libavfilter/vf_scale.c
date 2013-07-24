@@ -392,6 +392,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     AVFrame *out;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     char buf[32];
+    int in_range;
 
     if(   in->width  != link->w
        || in->height != link->h
@@ -429,9 +430,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if(scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
+    in_range = av_frame_get_color_range(in);
+
     if (   scale->in_color_matrix
         || scale->out_color_matrix
         || scale-> in_range != AVCOL_RANGE_UNSPECIFIED
+        || in_range != AVCOL_RANGE_UNSPECIFIED
         || scale->out_range != AVCOL_RANGE_UNSPECIFIED) {
         int in_full, out_full, brightness, contrast, saturation;
         const int *inv_table, *table;
@@ -447,6 +451,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
         if (scale-> in_range != AVCOL_RANGE_UNSPECIFIED)
             in_full  = (scale-> in_range == AVCOL_RANGE_JPEG);
+        else if (in_range != AVCOL_RANGE_UNSPECIFIED)
+            in_full  = (in_range == AVCOL_RANGE_JPEG);
         if (scale->out_range != AVCOL_RANGE_UNSPECIFIED)
             out_full = (scale->out_range == AVCOL_RANGE_JPEG);
 
