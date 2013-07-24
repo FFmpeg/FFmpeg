@@ -8,20 +8,15 @@ source iOS_local.sh
 
 DEST=`pwd`/build/ios
 SOURCE=`pwd`
-SSL=${SOURCE}/../ios-openssl
-SSLINCLUDE=${SSL}/include
-SSLLIBS=${SSL}/lib
-
-export FFMPEG_DIR=${SOURCE}
-
-
-# export LIPO=/Users/nuoerlz/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/lipo
-# $LIPO -arch armv7 lib.a -arch armv7s r/lib.a -create -output libffmpeg.a
+FFMPEG_DIR=${SOURCE}
+SSL=${SOURCE}/../opensslmirror/build/ios
+SSLINCLUDE=${SSL}/release/universal/include
+SSLLIBS=${SSL}/release/universal/lib
 
 
 function doConfigure()
 {
-	#  *NEED* gas-preprocessor.pl file in PATH:
+	# *NEED* gas-preprocessor.pl file in PATH:
 	# wget https://github.com/yuvi/gas-preprocessor/blob/master/gas-preprocessor.pl
 	# wget https://github.com/wens/gas-preprocessor/blob/master/gas-preprocessor.pl
 	./configure \
@@ -64,11 +59,9 @@ function doConfigure()
 		--target-os=darwin \
 		--as="gas-preprocessor.pl ${CC}" \
 		--cc=${CC} \
-		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -I${SSLINCLUDE} -march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad" \
-		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad" \
-		--optflags="-Os" \
-		--arch=armv7-a \
-		--cpu=cortex-a8 \
+		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -I${SSLINCLUDE} ${EXCFLAGS}" \
+		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} ${EXCLDFLAGS}" \
+		${ADVANCED} \
 		--enable-pic \
 		--enable-thumb \
 		--disable-symver \
@@ -81,27 +74,66 @@ function doConfigure()
 		--disable-armv6t2 \
 		--enable-neon \
 		\
-		--disable-debug \
-		--enable-optimizations \
+		${DEBUGS} \
 
-		[[ $? != 0 ]] && kill $$
+		ret=$?; cp -f ./config.log ${DIST}/; [[ $ret != 0 ]] && kill $$
 }
 
 
-for iarch in armv7; do
-#for iarch in armv7 armv7s; do
-	export PATH=$DEVRoot/usr/bin:$PATH
-	export ARCH=$iarch
-	export DIST=${DEST}/build-dist-$iarch-`date "+%Y%m%d-%H%M%S"`
-	confInfo=${DIST}/configure-info.out
-	makeInfo=${DIST}/make-info.out
+build_date=`date "+%Y%m%dT%H%M%S"`
+build_versions="release debug"
+#build_archs="armv7 armv7s"
+build_archs="armv7"
+path_old=$PATH
 
-	cd $FFMPEG_DIR
-	rm -rf $DIST && mkdir -p $DIST
-	cp -f ./iOS.sh $DIST
+for iver in $build_versions; do
+	case $iver in
+		release)
+			export DEBUGS="--disable-debug --enable-optimizations"
+			export ADVANCED="--optflags=-Os"
+			;;
+		debug)
+			export DEBUGS="--enable-debug --disable-optimizations"
+			export ADVANCED=
+			;;
+	esac
 
-	doConfigure 2>&1 | tee $confInfo
+	lipo_archs=
+	for iarch in $build_archs; do
+		export PATH=$DEVRoot/usr/bin:$HOME/bin:$path_old
+		export ARCH=$iarch
+		export DIST=${DEST}/$build_date/$iver/$iarch && mkdir -p ${DIST}
+		confInfo=${DIST}/configure-info.out
+		makeInfo=${DIST}/make-info.out
 
-	(make clean && make && make install) 2>&1 | tee $makeInfo
+		case $iarch in
+			armv7)
+				export EXCFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad"
+				export EXCLDFLAGS="-mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad"
+				export ADVANCED="${ADVANCED}"" --arch=armv7-a --cpu=cortex-a8"
+				;;
+			armv7s)
+				export EXCFLAGS=
+				export EXCLDFLAGS=
+				export ADVANCED="${ADVANCED}"" --arch=armv7-a --cpu=cortex-a9"
+				;;
+		esac
+
+		cd $FFMPEG_DIR && cp -f ./iOS.sh $DIST
+		doConfigure 2>&1 | tee -a $confInfo
+		(make clean && make && make install) 2>&1 | tee -a $makeInfo
+		lipo_archs="$lipo_archs"" $iarch"
+	done
+
+	univs=${DEST}/$build_date/$iver/universal && mkdir -p $univs/lib
+	cd ${DEST}/$build_date/$iver/$iarch/lib
+	for ilib in *.a; do
+		lps=; for jarch in $lipo_archs; do lps="$lps ""-arch $jarch ${DEST}/$build_date/$iver/$jarch/lib/$ilib"; done
+		lipo $lps -create -output $univs/lib/$ilib
+	done
 done
 
+[[ $? == 0 ]] && cd ${DEST} && rm -f built && ln -s $build_date built
+
+
+exit 0
