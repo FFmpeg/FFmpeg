@@ -83,7 +83,7 @@ __row_loop:
         orrs r5, r5, r7          @ R5=R4 | R3 | R2 | R7
         beq __almost_empty_row
 
-__b_evaluation:
+@@ __b_evaluation:
         @@ at this point, R0=block (temp),  R1(free), R2=ROWr32[1], R3=ROWr32[2], R4=ROWr32[3],
         @@     R5=(temp), R6=ROWr16[0], R7=ROWr16[1], R8-R11 free,
         @@     R12=__const_ptr_, R14=&block[n]
@@ -159,7 +159,7 @@ __end_b_evaluation:
         @@     R5=b2, R6=ROWr16[0], R7=b3, R8 (free), R9 (free), R10 (free), R11 (free),
         @@     R12=__const_ptr_, R14=&block[n]
 
-__a_evaluation:
+@@ __a_evaluation:
         @@ a0 = (W4 * row[0]) + (1 << (ROW_SHIFT - 1));
         @@ a1 = a0 + W6 * row[2];
         @@ a2 = a0 - W6 * row[2];
@@ -295,7 +295,7 @@ __end_row_loop:
         add r14, r0, #14        @ R14=&block[7], better start from the last col, and decrease the value until col=0, i.e. R14=block.
 __col_loop:
 
-__b_evaluation2:
+@@ __b_evaluation2:
         @@ at this point, R0=block (temp),  R1-R11 (free)
         @@     R12=__const_ptr_, R14=&block[n]
         @@ proceed with b0-b3 first, followed by a0-a3
@@ -357,12 +357,12 @@ __b_evaluation2:
         it    ne
         mlane r1, r10, r4, r1    @ R1-=W5*ROWr16[7x8]=b1
         @@ R4 is free now
-__end_b_evaluation2:
+@@ __end_b_evaluation2:
         @@ at this point, R0=b0,  R1=b1, R2 (free), R3 (free), R4 (free),
         @@     R5=b2, R6 (free), R7=b3, R8 (free), R9 (free), R10 (free), R11 (free),
         @@     R12=__const_ptr_, R14=&block[n]
 
-__a_evaluation2:
+@@ __a_evaluation2:
         @@ a0 = (W4 * col[8x0]) + (1 << (COL_SHIFT - 1));
         @@ a1 = a0 + W6 * row[2];
         @@ a2 = a0 - W6 * row[2];
@@ -414,7 +414,7 @@ __a_evaluation2:
         itt   ne
         subne r2, r2, r10        @ R2-=W2*ROWr16[6] (a1)
         addne r3, r3, r10        @ R3+=W2*ROWr16[6] (a2)
-__end_a_evaluation2:
+@@ __end_a_evaluation2:
         @@ at this point, R0=b0,  R1=b1, R2=a1, R3=a2, R4=a3,
         @@     R5=b2, R6=a0, R7=b3, R8 (free), R9 (free), R10 (free), R11 (free),
         @@     R12=__const_ptr_, R14=&block[n]
@@ -452,7 +452,7 @@ __end_a_evaluation2:
         strh r8, [r14, #96]
         strh r9, [r14, #112]
 
-__end_col_loop:
+@@ __end_col_loop:
         @@ at this point, R0-R11 (free)
         @@     R12=__const_ptr_, R14=&block[n]
         ldr r0, [sp, #0]         @ R0=block
@@ -463,7 +463,7 @@ __end_col_loop:
 
 
 
-__end_simple_idct_arm:
+@@ __end_simple_idct_arm:
         @@ restore registers to previous status!
         add sp, sp, #8 @@ the local variables!
         ldmfd sp!, {r4-r11, r15} @@ update PC with LR content.
