@@ -2067,7 +2067,8 @@ static int decode_chunks(AVCodecContext *avctx,
         buf_ptr = avpriv_find_start_code(buf_ptr, buf_end, &start_code);
         if (start_code > 0x1ff) {
             if (!skip_frame) {
-                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)) {
+                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+                    !avctx->hwaccel) {
                     int i;
 
                     avctx->execute(avctx, slice_decode_thread,  &s2->thread_context[0], NULL, s->slice_count, sizeof(void*));
@@ -2117,7 +2118,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 return AVERROR_INVALIDDATA;
             }
 
-            if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) && s->slice_count) {
+            if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+                !avctx->hwaccel && s->slice_count) {
                 int i;
 
                 avctx->execute(avctx, slice_decode_thread,
@@ -2263,7 +2265,8 @@ static int decode_chunks(AVCodecContext *avctx,
                     break;
                 }
 
-                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)) {
+                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+                    !avctx->hwaccel) {
                     int threshold = (s2->mb_height * s->slice_count +
                                      s2->slice_context_count / 2) /
                                     s2->slice_context_count;
