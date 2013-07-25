@@ -379,7 +379,7 @@ static int can_merge_formats(AVFilterFormats *a_arg,
                              int is_sample_rate)
 {
     AVFilterFormats *a, *b, *ret;
-    if (a == b)
+    if (a_arg == b_arg)
         return 1;
     a = clone_filter_formats(a_arg);
     b = clone_filter_formats(b_arg);
