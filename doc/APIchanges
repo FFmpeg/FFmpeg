@@ -13,6 +13,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lavc 55.12.0 - avcodec.h
+  Deprecate the CODEC_CAP_HWACCEL_VDPAU codec capability. Use CODEC_CAP_HWACCEL
+  and select the AV_PIX_FMT_VDPAU format with get_format() instead.
+
 2013-08-xx - xxxxxxx - lavu 52.14.0 - pixfmt.h
   Deprecate AV_PIX_FMT_VDPAU_*. Use AV_PIX_FMT_VDPAU instead.
 
