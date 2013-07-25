@@ -1006,7 +1006,7 @@ int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
                              int *srcRange, int **table, int *dstRange,
                              int *brightness, int *contrast, int *saturation)
 {
-    if (!c || isYUV(c->dstFormat) || isGray(c->dstFormat))
+    if (!c )
         return -1;
 
     *inv_table  = c->srcColorspaceTable;
