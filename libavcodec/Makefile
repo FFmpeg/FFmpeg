@@ -680,7 +680,7 @@ SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_MPEG_XVMC_DECODER) += xvmc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDA)              += vda.h
-SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
+SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
 EXAMPLES = api
 

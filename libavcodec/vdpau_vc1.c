@@ -32,9 +32,10 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
                                  const uint8_t *buffer, uint32_t size)
 {
     VC1Context * const v  = avctx->priv_data;
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
     MpegEncContext * const s = &v->s;
-    VdpPictureInfoVC1 *info = &hwctx->info.vc1;
+    Picture *pic          = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    VdpPictureInfoVC1 *info = &pic_ctx->info.vc1;
     VdpVideoSurface ref;
 
     /*  fill LvPictureInfoVC1 struct */
@@ -88,20 +89,23 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
     info->deblockEnable     = v->postprocflag & 1;
     info->pquant            = v->pq;
 
-    return ff_vdpau_common_start_frame(avctx, buffer, size);
+    return ff_vdpau_common_start_frame(pic, buffer, size);
 }
 
 static int vdpau_vc1_decode_slice(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
+    VC1Context * const v  = avctx->priv_data;
+    MpegEncContext * const s = &v->s;
+    Picture *pic          = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_add_buffer(avctx, buffer, size);
+    val = ff_vdpau_add_buffer(pic, buffer, size);
     if (val < 0)
         return val;
 
-    hwctx->info.vc1.slice_count++;
+    pic_ctx->info.vc1.slice_count++;
     return 0;
 }
 
@@ -114,6 +118,7 @@ AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif
 
@@ -125,4 +130,5 @@ AVHWAccel ff_vc1_vdpau_hwaccel = {
     .start_frame    = vdpau_vc1_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_vc1_decode_slice,
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };

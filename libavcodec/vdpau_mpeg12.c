@@ -31,8 +31,9 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext * const s = avctx->priv_data;
-    AVVDPAUContext *hwctx    = avctx->hwaccel_context;
-    VdpPictureInfoMPEG1Or2 *info = &hwctx->info.mpeg;
+    Picture *pic             = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    VdpPictureInfoMPEG1Or2 *info = &pic_ctx->info.mpeg;
     VdpVideoSurface ref;
     int i;
 
@@ -44,11 +45,11 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
     case AV_PICTURE_TYPE_B:
         ref = ff_vdpau_get_surface_id(&s->next_picture);
         assert(ref != VDP_INVALID_HANDLE);
-        hwctx->info.mpeg.backward_reference = ref;
+        info->backward_reference = ref;
         /* fall through to forward prediction */
     case AV_PICTURE_TYPE_P:
         ref = ff_vdpau_get_surface_id(&s->last_picture);
-        hwctx->info.mpeg.forward_reference  = ref;
+        info->forward_reference  = ref;
     }
 
     info->slice_count                = 0;
@@ -74,20 +75,22 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
         info->non_intra_quantizer_matrix[i] = s->inter_matrix[i];
     }
 
-    return ff_vdpau_common_start_frame(avctx, buffer, size);
+    return ff_vdpau_common_start_frame(pic, buffer, size);
 }
 
 static int vdpau_mpeg_decode_slice(AVCodecContext *avctx,
                                    const uint8_t *buffer, uint32_t size)
 {
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
+    MpegEncContext * const s = avctx->priv_data;
+    Picture *pic             = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_add_buffer(avctx, buffer, size);
+    val = ff_vdpau_add_buffer(pic, buffer, size);
     if (val < 0)
         return val;
 
-    hwctx->info.mpeg.slice_count++;
+    pic_ctx->info.mpeg.slice_count++;
     return 0;
 }
 
@@ -100,6 +103,7 @@ AVHWAccel ff_mpeg1_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif
 
@@ -112,5 +116,6 @@ AVHWAccel ff_mpeg2_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif
