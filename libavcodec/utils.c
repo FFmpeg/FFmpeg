@@ -2650,6 +2650,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf),
                  ", %d kb/s", bitrate / 1000);
+    } else if (enc->rc_max_rate > 0) {
+        snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                 ", max. %d kb/s", enc->rc_max_rate / 1000);
     }
 }
 

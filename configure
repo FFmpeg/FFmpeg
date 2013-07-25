@@ -3080,7 +3080,7 @@ case "$arch" in
     aarch64|arm64)
         arch="aarch64"
     ;;
-    arm*|iPad*)
+    arm*|iPad*|iPhone*)
         arch="arm"
     ;;
     mips*|IP*)
