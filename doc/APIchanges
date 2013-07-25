@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lavu 52.14.0 - pixfmt.h
+  Deprecate AV_PIX_FMT_VDPAU_*. Use AV_PIX_FMT_VDPAU instead.
+
 2013-08-xx - xxxxxxx - lavc 55.11.0 - avcodec.h
   Add output_picture_number to AVCodecParserContext.
 
