@@ -29,4 +29,4 @@ frame,video,1,6144,0.120000,6144,0.120000,2048,0.040000,1024731,N/A,100,100,rgb2
 stream,0,pcm_s16le,unknown,audio,1/44100,PSD[16],0x10445350,s16,44100,1,16,N/A,0/0,0/0,1/44100,0,0.000000,N/A,N/A,705600,N/A,6,6,0,0,0,0,0,0,0,0,0,0,0,mc²
 stream,1,rawvideo,unknown,video,1/51200,RGB[24],0x18424752,320,240,0,1:1,4:3,rgb24,-99,N/A,N/A,25/1,25/1,1/51200,0,0.000000,N/A,N/A,N/A,N/A,4,4,0,0,0,0,0,0,0,0,0,0,0,foobar,field-and-tags-conflict-attempt
 stream,2,rawvideo,unknown,video,1/51200,RGB[24],0x18424752,100,100,0,1:1,1:1,rgb24,-99,N/A,N/A,25/1,25/1,1/51200,0,0.000000,N/A,N/A,N/A,N/A,4,4,0,0,0,0,0,0,0,0,0,0,0
-format,tests/data/ffprobe-test.nut,3,nut,0.000000,0.120000,1054812,70320800,ffprobe test file,"'A comment with CSV, XML & JSON special chars': <tag value=""x"">",I ♥ Üñîçød€
+format,tests/data/ffprobe-test.nut,3,0,nut,0.000000,0.120000,1054812,70320800,ffprobe test file,"'A comment with CSV, XML & JSON special chars': <tag value=""x"">",I ♥ Üñîçød€

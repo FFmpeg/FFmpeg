@@ -539,6 +539,7 @@ streams.stream.2.disposition.clean_effects=0
 streams.stream.2.disposition.attached_pic=0
 format.filename="tests/data/ffprobe-test.nut"
 format.nb_streams=3
+format.nb_programs=0
 format.format_name="nut"
 format.start_time="0.000000"
 format.duration="0.120000"

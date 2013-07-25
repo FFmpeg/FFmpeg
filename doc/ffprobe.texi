@@ -44,7 +44,8 @@ name (which may be shared by other sections), and an unique
 name. See the output of @option{sections}.
 
 Metadata tags stored in the container or in the streams are recognized
-and printed in the corresponding "FORMAT" or "STREAM" section.
+and printed in the corresponding "FORMAT", "STREAM" or "PROGRAM_STREAM"
+section.
 
 @c man end
 
@@ -209,6 +210,13 @@ multimedia stream.
 Each media stream information is printed within a dedicated section
 with name "STREAM".
 
+@item -show_programs
+Show information about programs and their streams contained in the input
+multimedia stream.
+
+Each media stream information is printed within a dedicated section
+with name "PROGRAM_STREAM".
+
 @item -show_chapters
 Show information about chapters stored in the format.
 
@@ -279,8 +287,8 @@ keyN=valN
 [/SECTION]
 @end example
 
-Metadata tags are printed as a line in the corresponding FORMAT or
-STREAM section, and are prefixed by the string "TAG:".
+Metadata tags are printed as a line in the corresponding FORMAT, STREAM or
+PROGRAM_STREAM section, and are prefixed by the string "TAG:".
 
 A description of the accepted options follows.
 
