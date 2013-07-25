@@ -35,7 +35,6 @@
 #include "mpeg12data.h"
 #include "mpeg12decdata.h"
 #include "bytestream.h"
-#include "vdpau_internal.h"
 #include "xvmc_internal.h"
 #include "thread.h"
 

@@ -43,7 +43,6 @@
 #include "rectangle.h"
 #include "svq3.h"
 #include "thread.h"
-#include "vdpau_internal.h"
 
 // #undef NDEBUG
 #include <assert.h>
@@ -2769,10 +2768,6 @@ static int field_end(H264Context *h, int in_setup)
         ff_thread_report_progress(&h->cur_pic_ptr->tf, INT_MAX,
                                   h->picture_structure == PICT_BOTTOM_FIELD);
 
-    if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_h264_set_reference_frames(h);
-
     if (in_setup || !(avctx->active_thread_type & FF_THREAD_FRAME)) {
         if (!h->droppable) {
             err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
@@ -2789,10 +2784,6 @@ static int field_end(H264Context *h, int in_setup)
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
     }
-
-    if (CONFIG_H264_VDPAU_DECODER &&
-        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
-        ff_vdpau_h264_picture_complete(h);
 
     /*
      * FIXME: Error handling code does not seem to support interlaced
@@ -2897,13 +2888,6 @@ static int h264_set_parameter_from_sps(H264Context *h)
 
     if (h->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
         h->cur_chroma_format_idc      != h->sps.chroma_format_idc) {
-        if (h->avctx->codec &&
-            h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU &&
-            (h->sps.bit_depth_luma != 8 || h->sps.chroma_format_idc > 1)) {
-            av_log(h->avctx, AV_LOG_ERROR,
-                   "VDPAU decoding does not support video colorspace.\n");
-            return AVERROR_INVALIDDATA;
-        }
         if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10) {
             h->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
             h->cur_chroma_format_idc      = h->sps.chroma_format_idc;
@@ -4310,8 +4294,7 @@ static int execute_decode_slices(H264Context *h, int context_count)
     H264Context *hx;
     int i;
 
-    if (h->avctx->hwaccel ||
-        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+    if (h->avctx->hwaccel)
         return 0;
     if (context_count == 1) {
         return decode_slice(avctx, &h);
@@ -4503,9 +4486,6 @@ again:
                     if (h->avctx->hwaccel &&
                         h->avctx->hwaccel->start_frame(h->avctx, NULL, 0) < 0)
                         return -1;
-                    if (CONFIG_H264_VDPAU_DECODER &&
-                        h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
-                        ff_vdpau_h264_picture_start(h);
                 }
 
                 if (hx->redundant_pic_count == 0 &&
@@ -4521,14 +4501,6 @@ again:
                                                          &buf[buf_index - consumed],
                                                          consumed) < 0)
                             return -1;
-                    } else if (CONFIG_H264_VDPAU_DECODER &&
-                               h->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
-                        ff_vdpau_add_data_chunk(h->cur_pic_ptr->f.data[0],
-                                                start_code,
-                                                sizeof(start_code));
-                        ff_vdpau_add_data_chunk(h->cur_pic_ptr->f.data[0],
-                                                &buf[buf_index - consumed],
-                                                consumed);
                     } else
                         context_count++;
                 }
@@ -4809,21 +4781,3 @@ AVCodec ff_h264_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(decode_update_thread_context),
     .profiles              = NULL_IF_CONFIG_SMALL(profiles),
 };
-
-#if CONFIG_H264_VDPAU_DECODER
-AVCodec ff_h264_vdpau_decoder = {
-    .name           = "h264_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H264,
-    .priv_data_size = sizeof(H264Context),
-    .init           = ff_h264_decode_init,
-    .close          = h264_decode_end,
-    .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
-    .flush          = flush_dpb,
-    .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
-    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
-                                                     AV_PIX_FMT_NONE},
-    .profiles       = NULL_IF_CONFIG_SMALL(profiles),
-};
-#endif

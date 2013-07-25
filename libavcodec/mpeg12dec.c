@@ -36,7 +36,6 @@
 #include "mpeg12data.h"
 #include "mpeg12decdata.h"
 #include "bytestream.h"
-#include "vdpau_internal.h"
 #include "xvmc_internal.h"
 #include "thread.h"
 
@@ -1093,12 +1092,7 @@ static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 
     if (avctx->xvmc_acceleration)
         return avctx->get_format(avctx, pixfmt_xvmc_mpg2_420);
-    else if (avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
-        if (avctx->codec_id == AV_CODEC_ID_MPEG1VIDEO)
-            return AV_PIX_FMT_VDPAU_MPEG1;
-        else
-            return AV_PIX_FMT_VDPAU_MPEG2;
-    } else {
+    else {
         if (s->chroma_format <  2)
             return avctx->get_format(avctx, mpeg12_hwaccel_pixfmt_list_420);
         else if (s->chroma_format == 2)
@@ -1200,8 +1194,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
         // until then pix_fmt may be changed right after codec init
         if (avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT ||
-            avctx->hwaccel                            ||
-            s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+            avctx->hwaccel)
             if (avctx->idct_algo == FF_IDCT_AUTO)
                 avctx->idct_algo = FF_IDCT_SIMPLE;
 
@@ -1961,8 +1954,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     avctx->pix_fmt = mpeg_get_pixelformat(avctx);
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
 
-    if (avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT || avctx->hwaccel ||
-        s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
+    if (avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT || avctx->hwaccel)
         if (avctx->idct_algo == FF_IDCT_AUTO)
             avctx->idct_algo = FF_IDCT_SIMPLE;
 
@@ -2075,10 +2067,6 @@ static int decode_chunks(AVCodecContext *avctx,
                     for (i = 0; i < s->slice_count; i++)
                         s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
-
-                if ((CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER)
-                    && avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
-                    ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
 
                 ret = slice_end(avctx, picture);
                 if (ret < 0)
@@ -2258,11 +2246,6 @@ static int decode_chunks(AVCodecContext *avctx,
                 if (!s2->current_picture_ptr) {
                     av_log(avctx, AV_LOG_ERROR, "current_picture not initialized\n");
                     return AVERROR_INVALIDDATA;
-                }
-
-                if (avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) {
-                    s->slice_count++;
-                    break;
                 }
 
                 if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
@@ -2449,36 +2432,4 @@ AVCodec ff_mpeg_xvmc_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
 };
 
-#endif
-
-#if CONFIG_MPEG_VDPAU_DECODER
-AVCodec ff_mpeg_vdpau_decoder = {
-    .name           = "mpegvideo_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
-                      CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
-    .flush          = flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
-};
-#endif
-
-#if CONFIG_MPEG1_VDPAU_DECODER
-AVCodec ff_mpeg1_vdpau_decoder = {
-    .name           = "mpeg1video_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG1VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
-                      CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
-    .flush          = flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
-};
 #endif
