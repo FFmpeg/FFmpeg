@@ -390,6 +390,7 @@ static int can_merge_formats(AVFilterFormats *a_arg,
     }
     if (ret) {
         av_freep(&ret->formats);
+        av_freep(&ret->refs);
         av_freep(&ret);
         return 1;
     } else {
