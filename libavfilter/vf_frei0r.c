@@ -67,7 +67,6 @@ typedef struct Frei0rContext {
 
     char *dl_name;
     char *params;
-    char *size;
     AVRational framerate;
 
     /* only used by the source */
@@ -456,11 +455,6 @@ static av_cold int source_init(AVFilterContext *ctx)
 {
     Frei0rContext *s = ctx->priv;
 
-    if (av_parse_video_size(&s->w, &s->h, s->size) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: '%s'\n", s->size);
-        return AVERROR(EINVAL);
-    }
-
     s->time_base.num = s->framerate.den;
     s->time_base.den = s->framerate.num;
 
@@ -507,7 +501,7 @@ static int source_request_frame(AVFilterLink *outlink)
 }
 
 static const AVOption frei0r_src_options[] = {
-    { "size",          "Dimensions of the generated video.", OFFSET(size),      AV_OPT_TYPE_STRING, { .str = "" },   .flags = FLAGS },
+    { "size",          "Dimensions of the generated video.", OFFSET(w),         AV_OPT_TYPE_IMAGE_SIZE, { .str = "320x240" }, .flags = FLAGS },
     { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, .flags = FLAGS },
     { "filter_name",   NULL,                                 OFFSET(dl_name),   AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { "filter_params", NULL,                                 OFFSET(params),    AV_OPT_TYPE_STRING,                  .flags = FLAGS },
