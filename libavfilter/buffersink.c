@@ -118,7 +118,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     return 0;
 }
 
-int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
+int attribute_align_arg av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
 {
     return av_buffersink_get_frame_flags(ctx, frame, 0);
 }
@@ -272,8 +272,8 @@ static void compat_free_buffer(AVFilterBuffer *buf)
     av_free(buf);
 }
 
-static int attribute_align_arg compat_read(AVFilterContext *ctx,
-                                           AVFilterBufferRef **pbuf, int nb_samples, int flags)
+static int compat_read(AVFilterContext *ctx,
+                       AVFilterBufferRef **pbuf, int nb_samples, int flags)
 {
     AVFilterBufferRef *buf;
     AVFrame *frame;
@@ -326,19 +326,19 @@ fail:
     return ret;
 }
 
-int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
+int attribute_align_arg av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
     return compat_read(ctx, buf, 0, 0);
 }
 
-int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
-                               int nb_samples)
+int attribute_align_arg av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
+                                                   int nb_samples)
 {
     return compat_read(ctx, buf, nb_samples, 0);
 }
 
-int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
-                                  AVFilterBufferRef **bufref, int flags)
+int attribute_align_arg av_buffersink_get_buffer_ref(AVFilterContext *ctx,
+                                                     AVFilterBufferRef **bufref, int flags)
 {
     *bufref = NULL;
 

@@ -77,13 +77,13 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
+int attribute_align_arg av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
 {
     return av_buffersrc_add_frame_flags(ctx, (AVFrame *)frame,
                                         AV_BUFFERSRC_FLAG_KEEP_REF);
 }
 
-int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
+int attribute_align_arg av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
 {
     return av_buffersrc_add_frame_flags(ctx, frame, 0);
 }
@@ -91,7 +91,7 @@ int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
 static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
                                            AVFrame *frame, int flags);
 
-int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
+int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
 {
     AVFrame *copy = NULL;
     int ret = 0;
@@ -115,8 +115,8 @@ int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags
     return ret;
 }
 
-static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *ctx,
-                                                               AVFrame *frame, int flags)
+static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
+                                           AVFrame *frame, int flags)
 {
     BufferSourceContext *s = ctx->priv;
     AVFrame *copy;
