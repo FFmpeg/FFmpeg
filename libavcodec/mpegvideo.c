@@ -386,10 +386,10 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
             free_picture_tables(pic);
 
     if (shared) {
-        assert(pic->f.data[0]);
+        av_assert0(pic->f.data[0]);
         pic->shared = 1;
     } else {
-        assert(!pic->f.data[0]);
+        av_assert0(!pic->f.data[0]);
 
         if (alloc_frame_buffer(s, pic) < 0)
             return -1;
@@ -1669,7 +1669,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return ret;
     }
 
-    assert(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
+    av_assert0(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
                                                  s->last_picture_ptr->f.data[0]));
 
     if (s->picture_structure!= PICT_FRAME) {
