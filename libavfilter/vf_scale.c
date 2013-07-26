@@ -194,16 +194,6 @@ static int query_formats(AVFilterContext *ctx)
 
 static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
 {
-    const static int32_t yuv2rgb_coeffs[8][4] = {
-        { 117504, 138453, 13954, 34903 },
-        { 117504, 138453, 13954, 34903 }, /* ITU-R Rec. 709 (1990) */
-        { 104597, 132201, 25675, 53279 }, /* unspecified */
-        { 104597, 132201, 25675, 53279 }, /* reserved */
-        { 104448, 132798, 24759, 53109 }, /* FCC */
-        { 104597, 132201, 25675, 53279 }, /* ITU-R Rec. 624-4 System B, G */
-        { 104597, 132201, 25675, 53279 }, /* SMPTE 170M */
-        { 117579, 136230, 16907, 35559 }  /* SMPTE 240M (1987) */
-    };
     if (!s)
         s = "bt601";
 
@@ -221,7 +211,7 @@ static const int *parse_yuv_type(const char *s, enum AVColorSpace colorspace)
         colorspace = AVCOL_SPC_BT470BG;
     }
 
-    return yuv2rgb_coeffs[colorspace];
+    return sws_getCoefficients(colorspace);
 }
 
 static int config_props(AVFilterLink *outlink)
