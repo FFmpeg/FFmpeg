@@ -31,21 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "internal.h"
 
-typedef struct PCXContext {
-    AVFrame picture;
-} PCXContext;
-
 static const uint32_t monoblack_pal[16] = { 0x000000, 0xFFFFFF };
-
-static av_cold int pcx_encode_init(AVCodecContext *avctx)
-{
-    PCXContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
-
-    return 0;
-}
 
 /**
  * PCX run-length encoder
@@ -100,8 +86,7 @@ static int pcx_rle_encode(      uint8_t *dst, int dst_size,
 static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                             const AVFrame *frame, int *got_packet)
 {
-    PCXContext *s = avctx->priv_data;
-    AVFrame *const pict = &s->picture;
+    AVFrame *const pict = (AVFrame *) frame;
     const uint8_t *buf_end;
     uint8_t *buf;
 
@@ -110,7 +95,6 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint32_t palette256[256];
     const uint8_t *src;
 
-    *pict = *frame;
     pict->pict_type = AV_PICTURE_TYPE_I;
     pict->key_frame = 1;
 
@@ -216,8 +200,6 @@ AVCodec ff_pcx_encoder = {
     .name           = "pcx",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PCX,
-    .priv_data_size = sizeof(PCXContext),
-    .init           = pcx_encode_init,
     .encode2        = pcx_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24,
