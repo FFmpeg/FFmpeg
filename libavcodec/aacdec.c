@@ -1224,7 +1224,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
             int run_end = band_type_run_end[idx];
             if (band_type[idx] == ZERO_BT) {
                 for (; i < run_end; i++, idx++)
-                    sf[idx] = 0.;
+                    sf[idx] = 0.0;
             } else if ((band_type[idx] == INTENSITY_BT) ||
                        (band_type[idx] == INTENSITY_BT2)) {
                 for (; i < run_end; i++, idx++) {
@@ -1968,7 +1968,7 @@ static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
         int idx  = 0;
         int cge  = 1;
         int gain = 0;
-        float gain_cache = 1.;
+        float gain_cache = 1.0;
         if (c) {
             cge = coup->coupling_point == AFTER_IMDCT ? 1 : get_bits1(gb);
             gain = cge ? get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60: 0;

@@ -94,7 +94,7 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     for (i = 0; i < 10; i++)
-        q->prev_lspf[i] = (i + 1) / 11.;
+        q->prev_lspf[i] = (i + 1) / 11.0;
 
     return 0;
 }
@@ -162,7 +162,7 @@ static int decode_lspf(QCELPContext *q, float *lspf)
     } else {
         q->octave_count = 0;
 
-        tmp_lspf = 0.;
+        tmp_lspf = 0.0;
         for (i = 0; i < 5; i++) {
             lspf[2 * i + 0] = tmp_lspf += qcelp_lspvq[i][q->frame.lspv[i]][0] * 0.0001;
             lspf[2 * i + 1] = tmp_lspf += qcelp_lspvq[i][q->frame.lspv[i]][1] * 0.0001;
@@ -434,7 +434,7 @@ static const float *do_pitchfilter(float memory[303], const float v_in[160],
             v_lag = memory + 143 + 40 * i - lag[i];
             for (v_len = v_in + 40; v_in < v_len; v_in++) {
                 if (pfrac[i]) { // If it is a fractional lag...
-                    for (j = 0, *v_out = 0.; j < 4; j++)
+                    for (j = 0, *v_out = 0.0; j < 4; j++)
                         *v_out += qcelp_hammsinc_table[j] * (v_lag[j - 4] + v_lag[3 - j]);
                 } else
                     *v_out = *v_lag;
