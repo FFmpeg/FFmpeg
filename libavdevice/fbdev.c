@@ -80,7 +80,6 @@ typedef struct {
     AVClass *class;          ///< class for private options
     int frame_size;          ///< size in bytes of a grabbed frame
     AVRational framerate_q;  ///< framerate
-    char *framerate;         ///< framerate string set by a private option
     int64_t time_frame;      ///< time for the next frame to output (in 1/1000000 units)
 
     int fd;                  ///< framebuffer device file descriptor
@@ -100,12 +99,6 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     AVStream *st = NULL;
     enum AVPixelFormat pix_fmt;
     int ret, flags = O_RDONLY;
-
-    ret = av_parse_video_rate(&fbdev->framerate_q, fbdev->framerate);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", fbdev->framerate);
-        return ret;
-    }
 
     if (!(st = avformat_new_stream(avctx, NULL)))
         return AVERROR(ENOMEM);
@@ -246,7 +239,7 @@ static av_cold int fbdev_read_close(AVFormatContext *avctx)
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "framerate","", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { "framerate","", OFFSET(framerate_q), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 
