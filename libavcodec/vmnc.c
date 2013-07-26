@@ -361,9 +361,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR, "Cursor hot spot is not in image: %ix%i of %ix%i cursor size\n", c->cur_hx, c->cur_hy, c->cur_w, c->cur_h);
                 c->cur_hx = c->cur_hy = 0;
             }
-            c->curbits = av_realloc(c->curbits, c->cur_w * c->cur_h * c->bpp2);
-            c->curmask = av_realloc(c->curmask, c->cur_w * c->cur_h * c->bpp2);
-            c->screendta = av_realloc(c->screendta, c->cur_w * c->cur_h * c->bpp2);
+            c->curbits = av_realloc_f(c->curbits, c->cur_w * c->cur_h, c->bpp2);
+            c->curmask = av_realloc_f(c->curmask, c->cur_w * c->cur_h, c->bpp2);
+            c->screendta = av_realloc_f(c->screendta, c->cur_w * c->cur_h, c->bpp2);
+            if (!c->curbits || !c->curmask || !c->screendta)
+                return AVERROR(ENOMEM);
             load_cursor(c, src);
             src += w * h * c->bpp2 * 2;
             break;
