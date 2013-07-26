@@ -186,7 +186,7 @@ Individual component options:
   --disable-filters        disable all filters
 
 External library support:
-  --enable-avisynth        enable reading of AVISynth script files [no]
+  --enable-avisynth        enable reading of AviSynth script files [no]
   --disable-bzlib          disable bzlib [autodetect]
   --enable-fontconfig      enable fontconfig
   --enable-frei0r          enable frei0r video filtering

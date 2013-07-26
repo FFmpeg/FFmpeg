@@ -618,7 +618,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs,
     }
 
     /* calculate the Hilbert transform of the gains, which we do (since this
-     * is a sinus input) by doing a phase shift (in theory, H(sin())=cos()).
+     * is a sine input) by doing a phase shift (in theory, H(sin())=cos()).
      * Hilbert_Transform(RDFT(x)) = Laplace_Transform(x), which calculates the
      * "moment" of the LPCs in this filter. */
     s->dct.dct_calc(&s->dct, lpcs);

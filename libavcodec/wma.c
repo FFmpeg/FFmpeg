@@ -308,7 +308,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     }
 #endif
 
-    /* init MDCT windows : simple sinus window */
+    /* init MDCT windows : simple sine window */
     for (i = 0; i < s->nb_block_sizes; i++) {
         ff_init_ff_sine_windows(s->frame_len_bits - i);
         s->windows[i] = ff_sine_windows[s->frame_len_bits - i];

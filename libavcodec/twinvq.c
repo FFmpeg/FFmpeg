@@ -230,7 +230,7 @@ static void memset_float(float *buf, float val, int size)
  * Evaluate a single LPC amplitude spectrum envelope coefficient from the line
  * spectrum pairs.
  *
- * @param lsp a vector of the cosinus of the LSP values
+ * @param lsp a vector of the cosine of the LSP values
  * @param cos_val cos(PI*i/N) where i is the index of the LPC amplitude
  * @param order the order of the LSP (and the size of the *lsp buffer). Must
  *        be a multiple of four.
@@ -302,9 +302,9 @@ static inline float get_cos(int idx, int part, const float *cos_tab, int size)
  * unexplained condition.
  *
  * @param step the size of a block "siiiibiiii"
- * @param in the cosinus of the LSP data
- * @param part is 0 for 0...PI (positive cossinus values) and 1 for PI...2PI
- *        (negative cossinus values)
+ * @param in the cosine of the LSP data
+ * @param part is 0 for 0...PI (positive cosine values) and 1 for PI...2PI
+ *        (negative cosine values)
  * @param size the size of the whole output
  */
 static inline void eval_lpcenv_or_interp(TwinContext *tctx,

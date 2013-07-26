@@ -975,7 +975,8 @@ static void video_audio_display(VideoState *s)
                 }
                 av_rdft_calc(s->rdft, data[ch]);
             }
-            // least efficient way to do this, we should of course directly access it but its more than fast enough
+            /* Least efficient way to do this, we should of course
+             * directly access it but it is more than fast enough. */
             for (y = 0; y < s->height; y++) {
                 double w = 1 / sqrt(nb_freq);
                 int a = sqrt(w * sqrt(data[0][2 * y + 0] * data[0][2 * y + 0] + data[0][2 * y + 1] * data[0][2 * y + 1]));
