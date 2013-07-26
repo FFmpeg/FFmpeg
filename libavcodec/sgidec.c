@@ -223,13 +223,11 @@ static int decode_frame(AVCodecContext *avctx,
     } else {
         ret = read_uncompressed_sgi(out_buf, s);
     }
-
-    if (ret == 0) {
-        *got_frame = 1;
-        return avpkt->size;
-    } else {
+    if (ret)
         return ret;
-    }
+
+    *got_frame = 1;
+    return avpkt->size;
 }
 
 AVCodec ff_sgi_decoder = {
