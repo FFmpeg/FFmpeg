@@ -286,7 +286,26 @@ typedef struct SDPParseState {
     struct sockaddr_storage default_ip;
     int            default_ttl;
     int            skip_media;  ///< set if an unknown m= line occurs
+    int nb_default_include_source_addrs; /**< Number of source-specific multicast include source IP address (from SDP content) */
+    struct RTSPSource **default_include_source_addrs; /**< Source-specific multicast include source IP address (from SDP content) */
+    int nb_default_exclude_source_addrs; /**< Number of source-specific multicast exclude source IP address (from SDP content) */
+    struct RTSPSource **default_exclude_source_addrs; /**< Source-specific multicast exclude source IP address (from SDP content) */
 } SDPParseState;
+
+static void copy_default_source_addrs(struct RTSPSource **addrs, int count,
+                                      struct RTSPSource ***dest, int *dest_count)
+{
+    RTSPSource *rtsp_src, *rtsp_src2;
+    int i;
+    for (i = 0; i < count; i++) {
+        rtsp_src = addrs[i];
+        rtsp_src2 = av_malloc(sizeof(*rtsp_src2));
+        if (!rtsp_src2)
+            continue;
+        memcpy(rtsp_src2, rtsp_src, sizeof(*rtsp_src));
+        dynarray_add(dest, dest_count, rtsp_src2);
+    }
+}
 
 static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                            int letter, const char *buf)
@@ -298,6 +317,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
     int payload_type, i;
     AVStream *st;
     RTSPStream *rtsp_st;
+    RTSPSource *rtsp_src;
     struct sockaddr_storage sdp_ip;
     int ttl;
 
@@ -365,6 +385,15 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
 
         rtsp_st->sdp_ip = s1->default_ip;
         rtsp_st->sdp_ttl = s1->default_ttl;
+
+        copy_default_source_addrs(s1->default_include_source_addrs,
+                                  s1->nb_default_include_source_addrs,
+                                  &rtsp_st->include_source_addrs,
+                                  &rtsp_st->nb_include_source_addrs);
+        copy_default_source_addrs(s1->default_exclude_source_addrs,
+                                  s1->nb_default_exclude_source_addrs,
+                                  &rtsp_st->exclude_source_addrs,
+                                  &rtsp_st->nb_exclude_source_addrs);
 
         get_word(buf1, sizeof(buf1), &p); /* port */
         rtsp_st->sdp_port = atoi(buf1);
@@ -495,22 +524,43 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             p += strspn(p, SPACE_CHARS);
             if (av_strstart(p, "inline:", &p))
                 get_word(rtsp_st->crypto_params, sizeof(rtsp_st->crypto_params), &p);
-        } else if (av_strstart(p, "source-filter:", &p) && s->nb_streams > 0) {
+        } else if (av_strstart(p, "source-filter:", &p)) {
+            int exclude = 0;
             get_word(buf1, sizeof(buf1), &p);
-            if (strcmp(buf1, "incl"))
+            if (strcmp(buf1, "incl") && strcmp(buf1, "excl"))
                 return;
+            exclude = !strcmp(buf1, "excl");
 
             get_word(buf1, sizeof(buf1), &p);
             if (strcmp(buf1, "IN") != 0)
                 return;
             get_word(buf1, sizeof(buf1), &p);
-            if (strcmp(buf1, "IP4") && strcmp(buf1, "IP6"))
+            if (strcmp(buf1, "IP4") && strcmp(buf1, "IP6") && strcmp(buf1, "*"))
                 return;
-            // not checking that the destination address actually matches
+            // not checking that the destination address actually matches or is wildcard
             get_word(buf1, sizeof(buf1), &p);
 
-            rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
-            get_word(rtsp_st->source_addr, sizeof(rtsp_st->source_addr), &p);
+            while (*p != '\0') {
+                rtsp_src = av_mallocz(sizeof(*rtsp_src));
+                if (!rtsp_src)
+                    return;
+                get_word(rtsp_src->addr, sizeof(rtsp_src->addr), &p);
+                if (exclude) {
+                    if (s->nb_streams == 0) {
+                        dynarray_add(&s1->default_exclude_source_addrs, &s1->nb_default_exclude_source_addrs, rtsp_src);
+                    } else {
+                        rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+                        dynarray_add(&rtsp_st->exclude_source_addrs, &rtsp_st->nb_exclude_source_addrs, rtsp_src);
+                    }
+                } else {
+                    if (s->nb_streams == 0) {
+                        dynarray_add(&s1->default_include_source_addrs, &s1->nb_default_include_source_addrs, rtsp_src);
+                    } else {
+                        rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
+                        dynarray_add(&rtsp_st->include_source_addrs, &rtsp_st->nb_include_source_addrs, rtsp_src);
+                    }
+                }
+            }
         } else {
             if (rt->server_type == RTSP_SERVER_WMS)
                 ff_wms_parse_sdp_a_line(s, p);
@@ -535,7 +585,7 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
 {
     RTSPState *rt = s->priv_data;
     const char *p;
-    int letter;
+    int letter, i;
     /* Some SDP lines, particularly for Realmedia or ASF RTSP streams,
      * contain long SDP lines containing complete ASF Headers (several
      * kB) or arrays of MDPR (RM stream descriptor) headers plus
@@ -572,6 +622,14 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
         if (*p == '\n')
             p++;
     }
+
+    for (i = 0; i < s1->nb_default_include_source_addrs; i++)
+        av_free(s1->default_include_source_addrs[i]);
+    av_freep(&s1->default_include_source_addrs);
+    for (i = 0; i < s1->nb_default_exclude_source_addrs; i++)
+        av_free(s1->default_exclude_source_addrs[i]);
+    av_freep(&s1->default_exclude_source_addrs);
+
     rt->p = av_malloc(sizeof(struct pollfd)*2*(rt->nb_rtsp_streams+1));
     if (!rt->p) return AVERROR(ENOMEM);
     return 0;
@@ -615,7 +673,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
 void ff_rtsp_close_streams(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
-    int i;
+    int i, j;
     RTSPStream *rtsp_st;
 
     ff_rtsp_undo_setup(s);
@@ -625,6 +683,13 @@ void ff_rtsp_close_streams(AVFormatContext *s)
             if (rtsp_st->dynamic_handler && rtsp_st->dynamic_protocol_context)
                 rtsp_st->dynamic_handler->free(
                     rtsp_st->dynamic_protocol_context);
+            for (j = 0; j < rtsp_st->nb_include_source_addrs; j++)
+                av_free(rtsp_st->include_source_addrs[j]);
+            av_freep(&rtsp_st->include_source_addrs);
+            for (j = 0; j < rtsp_st->nb_exclude_source_addrs; j++)
+                av_free(rtsp_st->exclude_source_addrs[j]);
+            av_freep(&rtsp_st->exclude_source_addrs);
+
             av_free(rtsp_st);
         }
     }
@@ -2058,6 +2123,17 @@ static int sdp_probe(AVProbeData *p1)
     return 0;
 }
 
+static void append_source_addrs(char *buf, int size, const char *name,
+                                int count, struct RTSPSource **addrs)
+{
+    int i;
+    if (!count)
+        return;
+    av_strlcatf(buf, size, "&%s=%s", name, addrs[0]->addr);
+    for (i = 1; i < count; i++)
+        av_strlcatf(buf, size, ",%s", addrs[i]->addr);
+}
+
 static int sdp_read_header(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
@@ -2101,8 +2177,13 @@ static int sdp_read_header(AVFormatContext *s)
                         "?localport=%d&ttl=%d&connect=%d", rtsp_st->sdp_port,
                         rtsp_st->sdp_ttl,
                         rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0);
-            if (rtsp_st->source_addr[0])
-                av_strlcatf(url, sizeof(url), "&sources=%s", rtsp_st->source_addr);
+
+            append_source_addrs(url, sizeof(url), "sources",
+                                rtsp_st->nb_include_source_addrs,
+                                rtsp_st->include_source_addrs);
+            append_source_addrs(url, sizeof(url), "block",
+                                rtsp_st->nb_exclude_source_addrs,
+                                rtsp_st->exclude_source_addrs);
             if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE,
                            &s->interrupt_callback, NULL) < 0) {
                 err = AVERROR_INVALIDDATA;
