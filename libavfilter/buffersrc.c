@@ -73,7 +73,7 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
+int attribute_align_arg av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
 {
     AVFrame *copy;
     int ret = 0;

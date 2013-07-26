@@ -146,8 +146,8 @@ static void compat_free_buffer(AVFilterBuffer *buf)
     av_free(buf);
 }
 
-static int attribute_align_arg compat_read(AVFilterContext *ctx,
-                                           AVFilterBufferRef **pbuf, int nb_samples)
+static int compat_read(AVFilterContext *ctx,
+                       AVFilterBufferRef **pbuf, int nb_samples)
 {
     AVFilterBufferRef *buf;
     AVFrame *frame;
@@ -198,12 +198,12 @@ fail:
     return ret;
 }
 
-int av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
+int attribute_align_arg av_buffersink_read(AVFilterContext *ctx, AVFilterBufferRef **buf)
 {
     return compat_read(ctx, buf, 0);
 }
 
-int av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
+int attribute_align_arg av_buffersink_read_samples(AVFilterContext *ctx, AVFilterBufferRef **buf,
                                int nb_samples)
 {
     return compat_read(ctx, buf, nb_samples);
