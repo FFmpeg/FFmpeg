@@ -29,6 +29,7 @@
 
 #include <stddef.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
@@ -39,9 +40,6 @@
 #include "acelp_filters.h"
 #include "acelp_vectors.h"
 #include "lsp.h"
-
-#undef NDEBUG
-#include <assert.h>
 
 typedef enum {
     I_F_Q = -1,    /**< insufficient frame quality */
@@ -135,7 +133,7 @@ static int decode_lspf(QCELPContext *q, float *lspf)
         } else {
             erasure_coeff = QCELP_LSP_OCTAVE_PREDICTOR;
 
-            assert(q->bitrate == I_F_Q);
+            av_assert2(q->bitrate == I_F_Q);
 
             if (q->erasure_count > 1)
                 erasure_coeff *= q->erasure_count < 4 ? 0.9 : 0.7;
@@ -239,7 +237,7 @@ static void decode_gain_and_index(QCELPContext *q, float *gain)
                     av_clip((q->prev_g1[0] + q->prev_g1[1]) / 2 - 5, 0, 54);
             subframes_count = 8;
         } else {
-            assert(q->bitrate == I_F_Q);
+            av_assert2(q->bitrate == I_F_Q);
 
             g1[0] = q->prev_g1[1];
             switch (q->erasure_count) {
@@ -486,7 +484,7 @@ static void apply_pitch_filters(QCELPContext *q, float *cdn_vector)
                   else
                       max_pitch_gain = 0.0;
             } else {
-                assert(q->bitrate == SILENCE);
+                av_assert2(q->bitrate == SILENCE);
                 max_pitch_gain = 1.0;
             }
             for (i = 0; i < 4; i++)
