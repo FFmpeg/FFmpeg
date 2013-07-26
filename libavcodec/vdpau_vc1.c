@@ -59,7 +59,7 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
     else
         info->picture_type  = s->pict_type - 1 + s->pict_type / 3;
 
-    info->frame_coding_mode = v->fcm ? v->fcm + 1 : 0;
+    info->frame_coding_mode = v->fcm ? (v->fcm + 1) : 0;
     info->postprocflag      = v->postprocflag;
     info->pulldown          = v->broadcast;
     info->interlace         = v->interlace;
