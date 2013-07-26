@@ -58,7 +58,7 @@ enum TM2_BLOCKS {
 
 typedef struct TM2Context {
     AVCodecContext *avctx;
-    AVFrame pic;
+    AVFrame *pic;
 
     GetBitContext gb;
     DSPContext dsp;
@@ -858,7 +858,7 @@ static int decode_frame(AVCodecContext *avctx,
     TM2Context * const l = avctx->priv_data;
     const uint8_t *buf   = avpkt->data;
     int buf_size         = avpkt->size & ~3;
-    AVFrame * const p    = &l->pic;
+    AVFrame * const p    = l->pic;
     int offset           = TM2_HEADER_SIZE;
     int i, t, ret;
 
@@ -900,7 +900,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     l->cur = !l->cur;
     *got_frame      = 1;
-    ret = av_frame_ref(data, &l->pic);
+    ret = av_frame_ref(data, l->pic);
 
     return (ret < 0) ? ret : buf_size;
 }
@@ -916,8 +916,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     l->avctx       = avctx;
-    avcodec_get_frame_defaults(&l->pic);
     avctx->pix_fmt = AV_PIX_FMT_BGR24;
+    l->pic = av_frame_alloc();
+    if (!l->pic)
+        return AVERROR(ENOMEM);
 
     ff_dsputil_init(&l->dsp, avctx);
 
@@ -953,6 +955,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         av_freep(l->V2_base);
         av_freep(l->last);
         av_freep(l->clast);
+        av_frame_free(&l->pic);
         return AVERROR(ENOMEM);
     }
     l->Y1 = l->Y1_base + l->y_stride  * 4 + 4;
@@ -968,7 +971,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static av_cold int decode_end(AVCodecContext *avctx)
 {
     TM2Context * const l = avctx->priv_data;
-    AVFrame *pic = &l->pic;
     int i;
 
     av_free(l->last);
@@ -986,7 +988,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&l->buffer);
     l->buffer_size = 0;
 
-    av_frame_unref(pic);
+    av_frame_free(&l->pic);
 
     return 0;
 }
