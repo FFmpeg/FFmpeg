@@ -10,6 +10,10 @@ FATE_COVER_ART += fate-cover-art-m4a
 fate-cover-art-m4a: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a -an -c:v copy -f rawvideo
 fate-cover-art-m4a: REF = 08ba70a3b594ff6345a93965e96a9d3e
 
+FATE_COVER_ART += fate-cover-art-ogg
+fate-cover-art-ogg: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/ogg_vorbiscomment_cover.opus -an -c:v copy -f rawvideo
+fate-cover-art-ogg: REF = b796d33363dbfed1868523b5c751b7b1
+
 FATE_COVER_ART += fate-cover-art-wma
 fate-cover-art-wma: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/Californication_cover.wma -an -c:v copy -f rawvideo
 fate-cover-art-wma: REF = 0808bd0e1b61542a16e1906812dd924b
