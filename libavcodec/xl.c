@@ -49,6 +49,11 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t val;
     int y0, y1, y2, y3 = 0, c0 = 0, c1 = 0;
 
+    if (buf_size < avctx->width * avctx->height * sizeof(int32_t)) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
@@ -61,11 +66,6 @@ static int decode_frame(AVCodecContext *avctx,
     V = p->data[2];
 
     stride = avctx->width - 4;
-
-    if (buf_size < avctx->width * avctx->height) {
-        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     for (i = 0; i < avctx->height; i++) {
         /* lines are stored in reversed order */
