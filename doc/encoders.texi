@@ -1005,7 +1005,7 @@ for easy migration.
 To reduce the duplication of documentation, only the private options
 and some others requiring special attention are documented here. For
 the documentation of the undocumented generic options, see
-@ref{codec-options}.
+@ref{codec-options,,the Codec Options chapter}.
 
 To get a more accurate and extensive documentation of the libx264
 options, invoke the command @command{x264 --full-help} or consult

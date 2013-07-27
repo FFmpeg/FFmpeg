@@ -1,3 +1,4 @@
+@anchor{codec-options}
 @chapter Codec Options
 @c man begin CODEC OPTIONS
 
