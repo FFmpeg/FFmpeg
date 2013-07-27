@@ -179,6 +179,7 @@ static int decode_frame(AVCodecContext *avctx,
         avcodec_set_dimensions(avctx, w, h);
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
+    p->pict_type = AV_PICTURE_TYPE_I;
 
     if (flags & TGA_TOPTOBOTTOM) {
         dst = p->data[0];
