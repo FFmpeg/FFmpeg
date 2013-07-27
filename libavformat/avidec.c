@@ -917,9 +917,12 @@ start_sync:
             }
 
 
-            if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
-               /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
-               || st->discard >= AVDISCARD_ALL){
+            if (!avi->dv_demux &&
+                ((st->discard >= AVDISCARD_DEFAULT && size==0) /* ||
+                //FIXME needs a little reordering
+                (st->discard >= AVDISCARD_NONKEY &&
+                 !(pkt->flags & AV_PKT_FLAG_KEY)) */
+                || st->discard >= AVDISCARD_ALL)) {
                 if (!exit_early) {
                     ast->frame_offset += get_duration(ast, size);
                 }
