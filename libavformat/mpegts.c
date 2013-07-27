@@ -52,7 +52,7 @@ enum MpegTSFilterType {
 
 typedef struct MpegTSFilter MpegTSFilter;
 
-typedef int PESCallback(MpegTSFilter *f, const uint8_t *buf, int len, int is_start, int64_t pos);
+typedef int PESCallback(MpegTSFilter *f, const uint8_t *buf, int len, int is_start, int64_t pos, int64_t cur_pcr);
 
 typedef struct MpegTSPESFilter {
     PESCallback *pes_cb;
@@ -179,6 +179,7 @@ typedef struct PESContext {
     uint8_t header[MAX_PES_HEADER_SIZE];
     AVBufferRef *buffer;
     SLConfigDescr sl;
+    int64_t last_pcr;
 } PESContext;
 
 extern AVInputFormat ff_mpegts_demuxer;
@@ -808,7 +809,7 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
 /* return non zero if a packet could be constructed */
 static int mpegts_push_data(MpegTSFilter *filter,
                             const uint8_t *buf, int buf_size, int is_start,
-                            int64_t pos)
+                            int64_t pos, int64_t pcr)
 {
     PESContext *pes = filter->u.pes_filter.opaque;
     MpegTSContext *ts = pes->ts;
@@ -817,6 +818,9 @@ static int mpegts_push_data(MpegTSFilter *filter,
 
     if(!ts->pkt)
         return 0;
+
+    if (pcr != -1)
+        pes->last_pcr = pcr;
 
     if (is_start) {
         if (pes->state == MPEGTS_PAYLOAD && pes->data_index > 0) {
@@ -1020,6 +1024,7 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid)
     pes->state = MPEGTS_SKIP;
     pes->pts = AV_NOPTS_VALUE;
     pes->dts = AV_NOPTS_VALUE;
+    pes->last_pcr = -1;
     tss = mpegts_open_pes_filter(ts, pid, mpegts_push_data, pes);
     if (!tss) {
         av_free(pes);
@@ -1732,6 +1737,9 @@ static void sdt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     }
 }
 
+static int parse_pcr(int64_t *ppcr_high, int *ppcr_low,
+                     const uint8_t *packet);
+
 /* handle one TS packet */
 static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 {
@@ -1825,9 +1833,14 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         }
     } else {
         int ret;
+        int64_t pcr = -1;
+        int64_t pcr_h;
+        int pcr_l;
+        if (parse_pcr(&pcr_h, &pcr_l, packet) == 0)
+            pcr = pcr_h * 300 + pcr_l;
         // Note: The position here points actually behind the current packet.
         if ((ret = tss->u.pes_filter.pes_cb(tss, p, p_end - p, is_start,
-                                            pos - ts->raw_packet_size)) < 0)
+                                            pos - ts->raw_packet_size, pcr)) < 0)
             return ret;
     }
 
@@ -1900,6 +1913,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
                    av_buffer_unref(&pes->buffer);
                    pes->data_index = 0;
                    pes->state = MPEGTS_SKIP; /* skip until pes header */
+                   pes->last_pcr = -1;
                 }
                 ts->pids[i]->last_cc = -1;
             }
