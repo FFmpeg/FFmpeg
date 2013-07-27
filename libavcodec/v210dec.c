@@ -146,6 +146,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         v += pic->linesize[2] / 2 - avctx->width / 2;
     }
 
+    if (avctx->field_order > AV_FIELD_PROGRESSIVE) {
+        /* we have interlaced material flagged in container */
+        pic->interlaced_frame = 1;
+        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
+            pic->top_field_first = 1;
+    }
+
     *got_frame      = 1;
 
     return avpkt->size;
