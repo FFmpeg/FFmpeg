@@ -493,7 +493,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         c->bx = (c->width + c->bw - 1) / c->bw;
         c->by = (c->height+ c->bh - 1) / c->bh;
         if (!c->cur || !c->prev)
-            return -1;
+            return AVERROR(ENOMEM);
         memset(c->cur, 0, avctx->width * avctx->height * (c->bpp / 8));
         memset(c->prev, 0, avctx->width * avctx->height * (c->bpp / 8));
         c->decode_intra= decode_intra;
