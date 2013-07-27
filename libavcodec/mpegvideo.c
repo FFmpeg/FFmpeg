@@ -1761,7 +1761,7 @@ void ff_MPV_frame_end(MpegEncContext *s)
             break;
         }
     }
-    assert(i < MAX_PICTURE_COUNT);
+    av_assert0(i < MAX_PICTURE_COUNT);
 #endif
 
     // clear copies, to avoid confusion
