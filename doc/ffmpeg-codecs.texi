@@ -17,6 +17,7 @@ the libavcodec library.
 
 @c man end DESCRIPTION
 
+@anchor{codec-options}
 @chapter Codec Options
 @c man begin CODEC OPTIONS
 
