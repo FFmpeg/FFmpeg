@@ -140,9 +140,9 @@ typedef struct {
 static inline int put_codeword(PutBitContext *pb, vorbis_enc_codebook *cb,
                                int entry)
 {
-    assert(entry >= 0);
-    assert(entry < cb->nentries);
-    assert(cb->lens[entry]);
+    av_assert2(entry >= 0);
+    av_assert2(entry < cb->nentries);
+    av_assert2(cb->lens[entry]);
     if (pb->size_in_bits - put_bits_count(pb) < cb->lens[entry])
         return AVERROR(EINVAL);
     put_bits(pb, cb->lens[entry], cb->codewords[entry]);
@@ -198,7 +198,7 @@ static int ready_codebook(vorbis_enc_codebook *cb)
 static int ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
 {
     int i;
-    assert(rc->type == 2);
+    av_assert0(rc->type == 2);
     rc->maxes = av_mallocz(sizeof(float[2]) * rc->classifications);
     if (!rc->maxes)
         return AVERROR(ENOMEM);
@@ -878,8 +878,8 @@ static int residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
     int classes[MAX_CHANNELS][NUM_RESIDUE_PARTITIONS];
     int classwords = venc->codebooks[rc->classbook].ndimensions;
 
-    assert(rc->type == 2);
-    assert(real_ch == 2);
+    av_assert0(rc->type == 2);
+    av_assert0(real_ch == 2);
     for (p = 0; p < partitions; p++) {
         float max1 = 0.0, max2 = 0.0;
         int s = rc->begin + p * psize;
