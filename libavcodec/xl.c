@@ -69,6 +69,11 @@ static int decode_frame(AVCodecContext *avctx,
 
     stride = avctx->width - 4;
 
+    if (avctx->width % 4) {
+        av_log(avctx, AV_LOG_ERROR, "Width not a multiple of 4.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (buf_size < avctx->width * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
         return AVERROR_INVALIDDATA;
