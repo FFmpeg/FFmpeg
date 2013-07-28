@@ -45,7 +45,10 @@ tests/data/filtergraphs/%: TAG = COPY
 tests/data/filtergraphs/%: $(SRC_PATH)/tests/filtergraphs/% | tests/data/filtergraphs
 	$(M)cp $< $@
 
+# Check sanity of dependencies when running FATE tests.
+ifneq (,$(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS))))
 CHKCFG  = $(if $($(1))$(!$(1)),$($(1)), $(error No such config: $(1)))
+endif
 
 ALLYES  = $(strip $(call XYES, $(1)))
 XYES    = $(if $(strip $(1)),                                           \
