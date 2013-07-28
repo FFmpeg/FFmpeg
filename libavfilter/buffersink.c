@@ -56,7 +56,7 @@ typedef struct {
     int sample_rates_size;
 
     /* only used for compat API */
-    AVAudioFifo  *audio_fifo;    ///< FIFO for audio samples
+    AVAudioFifo *audio_fifo;     ///< FIFO for audio samples
     int64_t next_pts;            ///< interpolating audio pts
 } BufferSinkContext;
 
@@ -173,7 +173,6 @@ static int read_from_fifo(AVFilterContext *ctx, AVFrame *frame,
     av_frame_free(&tmp);
 
     return 0;
-
 }
 
 int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
@@ -218,7 +217,6 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
     }
 
     return ret;
-
 }
 
 AVBufferSinkParams *av_buffersink_params_alloc(void)
@@ -563,44 +561,44 @@ AVFilter avfilter_asink_ffabuffersink = {
 
 static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
     {
-        .name        = "default",
-        .type        = AVMEDIA_TYPE_VIDEO,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 AVFilter avfilter_vsink_buffer = {
-    .name      = "buffersink",
+    .name        = "buffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
-    .priv_size = sizeof(BufferSinkContext),
-    .priv_class = &buffersink_class,
+    .priv_size   = sizeof(BufferSinkContext),
+    .priv_class  = &buffersink_class,
     .init_opaque = vsink_init,
-    .uninit    = uninit,
+    .uninit      = uninit,
 
     .query_formats = vsink_query_formats,
-    .inputs    = avfilter_vsink_buffer_inputs,
-    .outputs   = NULL,
+    .inputs      = avfilter_vsink_buffer_inputs,
+    .outputs     = NULL,
 };
 
 static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 AVFilter avfilter_asink_abuffer = {
-    .name      = "abuffersink",
+    .name        = "abuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
-    .priv_class = &abuffersink_class,
-    .priv_size = sizeof(BufferSinkContext),
+    .priv_class  = &abuffersink_class,
+    .priv_size   = sizeof(BufferSinkContext),
     .init_opaque = asink_init,
-    .uninit    = uninit,
+    .uninit      = uninit,
 
     .query_formats = asink_query_formats,
-    .inputs    = avfilter_asink_abuffer_inputs,
-    .outputs   = NULL,
+    .inputs      = avfilter_asink_abuffer_inputs,
+    .outputs     = NULL,
 };
