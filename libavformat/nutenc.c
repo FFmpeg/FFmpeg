@@ -91,7 +91,7 @@ static int find_expected_header(AVCodecContext *c, int size, int key_frame,
         header |= (bitrate_index & 1) << 9;
 
         return 2; //FIXME actually put the needed ones in build_elision_headers()
-        return 3; //we guess that the private bit is not set
+        //return 3; //we guess that the private bit is not set
 //FIXME the above assumptions should be checked, if these turn out false too often something should be done
     }
     return 0;
