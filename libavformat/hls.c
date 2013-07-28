@@ -523,10 +523,10 @@ static int hls_read_header(AVFormatContext *s)
             goto fail;
         }
         v->ctx->pb       = &v->pb;
+        v->stream_offset = stream_offset;
         ret = avformat_open_input(&v->ctx, v->segments[0]->url, in_fmt, NULL);
         if (ret < 0)
             goto fail;
-        v->stream_offset = stream_offset;
         snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
         /* Create new AVStreams for each stream in this variant */
         for (j = 0; j < v->ctx->nb_streams; j++) {
