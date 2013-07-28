@@ -25,10 +25,9 @@
 
 
 static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                            const AVFrame *pict, int *got_packet)
+                            const AVFrame *p, int *got_packet)
 {
     PNMContext *s     = avctx->priv_data;
-    AVFrame * const p = &s->picture;
     int i, h, w, n, linesize, depth, maxval, ret;
     const char *tuple_type;
     uint8_t *ptr;
@@ -91,10 +90,6 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200)) < 0)
         return ret;
 
-    *p           = *pict;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->key_frame = 1;
-
     s->bytestream_start =
     s->bytestream       = pkt->data;
     s->bytestream_end   = pkt->data + pkt->size;
@@ -134,7 +129,6 @@ AVCodec ff_pam_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PAM,
     .priv_data_size = sizeof(PNMContext),
-    .init           = ff_pnm_init,
     .encode2        = pam_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
