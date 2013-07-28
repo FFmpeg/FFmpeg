@@ -3538,7 +3538,7 @@ static int mov_write_header(AVFormatContext *s)
      * is enabled, we don't support non-seekable output at all. */
     if (!s->pb->seekable &&
         ((!(mov->flags & FF_MOV_FLAG_FRAGMENT) &&
-          !(s->oformat && !strcmp(s->oformat->name, "ismv")))
+          strcmp(s->oformat->name, "ismv"))
          || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return -1;
@@ -3547,23 +3547,21 @@ static int mov_write_header(AVFormatContext *s)
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
 
-    if (s->oformat != NULL) {
-        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
-        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
-        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
-        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
-        else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
-        else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
-        else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
+    if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
+    else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
+    else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
+    else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
+    else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
+    else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
+    else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
 
-        mov_write_ftyp_tag(pb,s);
-        if (mov->mode == MODE_PSP) {
-            if (s->nb_streams != 2) {
-                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-                return -1;
-            }
-            mov_write_uuidprof_tag(pb, s);
+    mov_write_ftyp_tag(pb,s);
+    if (mov->mode == MODE_PSP) {
+        if (s->nb_streams != 2) {
+            av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+            return -1;
         }
+        mov_write_uuidprof_tag(pb, s);
     }
 
     mov->nb_streams = s->nb_streams;
