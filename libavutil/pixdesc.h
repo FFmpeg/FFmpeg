@@ -23,6 +23,8 @@
 #define AVUTIL_PIXDESC_H
 
 #include <inttypes.h>
+
+#include "attributes.h"
 #include "pixfmt.h"
 
 typedef struct AVComponentDescriptor{
@@ -139,7 +141,7 @@ typedef struct AVPixFmtDescriptor{
 /**
  * The array of all the pixel format descriptors.
  */
-extern const AVPixFmtDescriptor av_pix_fmt_descriptors[];
+extern attribute_deprecated const AVPixFmtDescriptor av_pix_fmt_descriptors[];
 #endif
 
 /**

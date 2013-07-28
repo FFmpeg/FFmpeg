@@ -29,6 +29,7 @@
 
 #include <errno.h>
 #include "libavutil/samplefmt.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/buffer.h"
 #include "libavutil/cpu.h"
@@ -1910,7 +1911,7 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      * @deprecated Deprecated in favor of request_channel_layout.
      */
-    int request_channels;
+    attribute_deprecated int request_channels;
 #endif
 
     /**
