@@ -638,10 +638,13 @@ start:
                 }
             }
         }
-        /* Check if this stream has the packet with the lowest dts */
+        /* Check if this stream still is on an earlier segment number, or
+         * has the packet with the lowest dts */
         if (var->pkt.data) {
             if (minvariant < 0 ||
-                var->pkt.dts < c->variants[minvariant]->pkt.dts)
+                var->cur_seq_no <  c->variants[minvariant]->cur_seq_no ||
+               (var->cur_seq_no == c->variants[minvariant]->cur_seq_no &&
+                var->pkt.dts    <  c->variants[minvariant]->pkt.dts))
                 minvariant = i;
         }
     }
