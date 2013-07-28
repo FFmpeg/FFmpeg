@@ -221,6 +221,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
     /* XXX: verify len field validity */
     len     = get_bits(&s->gb, 16);
+    s->avctx->bits_per_raw_sample =
     s->bits = get_bits(&s->gb, 8);
 
     if (s->pegasus_rct)
