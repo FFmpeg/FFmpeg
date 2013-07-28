@@ -153,20 +153,20 @@ the synchronisation of the samples directory.
 
 @table @option
 @item fate-rsync
-    Download/synchronize sample files to the configured samples directory.
+Download/synchronize sample files to the configured samples directory.
 
 @item fate-list
-    Will list all fate/regression test targets.
+Will list all fate/regression test targets.
 
 @item fate
-    Run the FATE test suite (requires the fate-suite dataset).
+Run the FATE test suite (requires the fate-suite dataset).
 @end table
 
 @section Makefile variables
 
 @table @option
 @item V
-    Verbosity level, can be set to 0, 1 or 2.
+Verbosity level, can be set to 0, 1 or 2.
     @itemize
         @item 0: show just the test arguments
         @item 1: show just the command used in the test
@@ -174,22 +174,26 @@ the synchronisation of the samples directory.
     @end itemize
 
 @item SAMPLES
-    Specify or override the path to the FATE samples at make time, it has a
-    meaning only while running the regression tests.
+Specify or override the path to the FATE samples at make time, it has a
+meaning only while running the regression tests.
 
 @item THREADS
-    Specify how many threads to use while running regression tests, it is
-    quite useful to detect thread-related regressions.
+Specify how many threads to use while running regression tests, it is
+quite useful to detect thread-related regressions.
+
 @item THREAD_TYPE
-    Specify which threading strategy test, either @var{slice} or @var{frame},
-    by default @var{slice+frame}
+Specify which threading strategy test, either @var{slice} or @var{frame},
+by default @var{slice+frame}
+
 @item CPUFLAGS
-    Specify CPU flags.
+Specify CPU flags.
+
 @item TARGET_EXEC
-    Specify or override the wrapper used to run the tests.
-    The @var{TARGET_EXEC} option provides a way to run FATE wrapped in
-    @command{valgrind}, @command{qemu-user} or @command{wine} or on remote targets
-    through @command{ssh}.
+Specify or override the wrapper used to run the tests.
+The @var{TARGET_EXEC} option provides a way to run FATE wrapped in
+@command{valgrind}, @command{qemu-user} or @command{wine} or on remote targets
+through @command{ssh}.
+
 @item GEN
 Set to @var{1} to generate the missing or mismatched references.
 @end table
