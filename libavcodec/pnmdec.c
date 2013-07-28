@@ -35,7 +35,6 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
     int i, j, n, linesize, h, upgrade = 0, is_mono = 0;
     unsigned char *ptr;
     int components, sample_len, ret;
-    unsigned int maskval = 0;
 
     s->bytestream_start =
     s->bytestream       = (uint8_t *)buf;
@@ -76,10 +75,8 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         n = avctx->width;
         components=1;
         sample_len=8;
-        if (s->maxval < 255) {
+        if (s->maxval < 255)
             upgrade = 1;
-            maskval = (2 << av_log2(s->maxval)) - 1;
-        }
         goto do_read;
     case AV_PIX_FMT_GRAY8A:
         n = avctx->width * 2;
@@ -91,10 +88,8 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         n = avctx->width * 2;
         components=1;
         sample_len=16;
-        if (s->maxval < 65535) {
+        if (s->maxval < 65535)
             upgrade = 2;
-            maskval = (2 << av_log2(s->maxval)) - 1;
-        }
         goto do_read;
     case AV_PIX_FMT_MONOWHITE:
     case AV_PIX_FMT_MONOBLACK:
@@ -141,11 +136,11 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
             else if (upgrade == 1) {
                 unsigned int j, f = (255 * 128 + s->maxval / 2) / s->maxval;
                 for (j = 0; j < n; j++)
-                    ptr[j] = ((s->bytestream[j] & maskval) * f + 64) >> 7;
+                    ptr[j] = (s->bytestream[j] * f + 64) >> 7;
             } else if (upgrade == 2) {
                 unsigned int j, v, f = (65535 * 32768 + s->maxval / 2) / s->maxval;
                 for (j = 0; j < n / 2; j++) {
-                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]) & maskval;
+                    v = av_be2ne16(((uint16_t *)s->bytestream)[j]);
                     ((uint16_t *)ptr)[j] = (v * f + 16384) >> 15;
                 }
             }
