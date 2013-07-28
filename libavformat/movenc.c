@@ -3557,7 +3557,18 @@ static int mov_write_header(AVFormatContext *s)
 
     mov_write_ftyp_tag(pb,s);
     if (mov->mode == MODE_PSP) {
-        if (s->nb_streams != 2) {
+        int video_streams_nb = 0, audio_streams_nb = 0, other_streams_nb = 0;
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                video_streams_nb++;
+            else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                audio_streams_nb++;
+            else
+                other_streams_nb++;
+            }
+
+        if (video_streams_nb != 1 || audio_streams_nb != 1 || other_streams_nb) {
             av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
             return -1;
         }
