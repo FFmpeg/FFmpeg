@@ -107,7 +107,7 @@ static int kmvc_decode_intra_8x8(KmvcContext * ctx, int w, int h)
                             val = bytestream2_get_byte(&ctx->g);
                             mx = val & 0xF;
                             my = val >> 4;
-                            if ((l0x-mx) + 320*(l0y-my) < 0 || (l0x-mx) + 320*(l0y-my) > 316*196) {
+                            if ((l0x-mx) + 320*(l0y-my) < 0 || (l0x-mx) + 320*(l0y-my) > 320*197 - 4) {
                                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid MV\n");
                                 return AVERROR_INVALIDDATA;
                             }
@@ -132,7 +132,7 @@ static int kmvc_decode_intra_8x8(KmvcContext * ctx, int w, int h)
                                     val = bytestream2_get_byte(&ctx->g);
                                     mx = val & 0xF;
                                     my = val >> 4;
-                                    if ((l1x-mx) + 320*(l1y-my) < 0 || (l1x-mx) + 320*(l1y-my) > 318*198) {
+                                    if ((l1x-mx) + 320*(l1y-my) < 0 || (l1x-mx) + 320*(l1y-my) > 320*199 - 2) {
                                         av_log(ctx->avctx, AV_LOG_ERROR, "Invalid MV\n");
                                         return AVERROR_INVALIDDATA;
                                     }
@@ -207,7 +207,7 @@ static int kmvc_decode_inter_8x8(KmvcContext * ctx, int w, int h)
                             val = bytestream2_get_byte(&ctx->g);
                             mx = (val & 0xF) - 8;
                             my = (val >> 4) - 8;
-                            if ((l0x+mx) + 320*(l0y+my) < 0 || (l0x+mx) + 320*(l0y+my) > 318*198) {
+                            if ((l0x+mx) + 320*(l0y+my) < 0 || (l0x+mx) + 320*(l0y+my) > 320*197 - 4) {
                                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid MV\n");
                                 return AVERROR_INVALIDDATA;
                             }
@@ -232,7 +232,7 @@ static int kmvc_decode_inter_8x8(KmvcContext * ctx, int w, int h)
                                     val = bytestream2_get_byte(&ctx->g);
                                     mx = (val & 0xF) - 8;
                                     my = (val >> 4) - 8;
-                                    if ((l1x+mx) + 320*(l1y+my) < 0 || (l1x+mx) + 320*(l1y+my) > 318*198) {
+                                    if ((l1x+mx) + 320*(l1y+my) < 0 || (l1x+mx) + 320*(l1y+my) > 320*199 - 2) {
                                         av_log(ctx->avctx, AV_LOG_ERROR, "Invalid MV\n");
                                         return AVERROR_INVALIDDATA;
                                     }
