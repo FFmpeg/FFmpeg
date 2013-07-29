@@ -22,7 +22,9 @@
 
 #include "avfilter.h"
 #include "internal.h"
+#include "version.h"
 
+#if FF_API_AVFILTERBUFFER
 /* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
 {
@@ -173,3 +175,4 @@ void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *s
     default: break;
     }
 }
+#endif /* FF_API_AVFILTERBUFFER */
