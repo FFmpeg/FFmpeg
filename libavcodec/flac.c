@@ -55,7 +55,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     /* frame sync code */
     if ((get_bits(gb, 15) & 0x7FFF) != 0x7FFC) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset, "invalid sync code\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* variable block size stream code */
@@ -76,7 +76,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     } else {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "invalid channel mode: %d\n", fi->ch_mode);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* bits per sample */
@@ -85,7 +85,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "invalid sample size code (%d)\n",
                bps_code);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     fi->bps = sample_size_table[bps_code];
 
@@ -93,7 +93,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     if (get_bits1(gb)) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "broken stream, invalid padding\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* sample or frame count */
@@ -101,14 +101,14 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     if (fi->frame_or_sample_num < 0) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "sample/frame number invalid; utf8 fscked\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* blocksize */
     if (bs_code == 0) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "reserved blocksize code: 0\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     } else if (bs_code == 6) {
         fi->blocksize = get_bits(gb, 8) + 1;
     } else if (bs_code == 7) {
@@ -130,7 +130,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "illegal sample rate code %d\n",
                sr_code);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* header CRC-8 check */
@@ -139,7 +139,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
                get_bits_count(gb)/8)) {
         av_log(avctx, AV_LOG_ERROR + log_level_offset,
                "header crc mismatch\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;

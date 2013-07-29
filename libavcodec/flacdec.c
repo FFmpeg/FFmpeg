@@ -409,9 +409,9 @@ static int decode_frame(FLACContext *s)
     GetBitContext *gb = &s->gb;
     FLACFrameInfo fi;
 
-    if (ff_flac_decode_frame_header(s->avctx, gb, &fi, 0)) {
+    if ((ret = ff_flac_decode_frame_header(s->avctx, gb, &fi, 0)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "invalid frame header\n");
-        return AVERROR_INVALIDDATA;
+        return ret;
     }
 
     if (s->channels && fi.channels != s->channels && s->got_streaminfo) {
@@ -435,7 +435,7 @@ static int decode_frame(FLACContext *s)
     } else if (s->bps && fi.bps != s->bps) {
         av_log(s->avctx, AV_LOG_ERROR, "switching bps mid-stream is not "
                                        "supported\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (!s->bps) {
@@ -523,9 +523,9 @@ static int flac_decode_frame(AVCodecContext *avctx, void *data,
 
     /* check for inline header */
     if (AV_RB32(buf) == MKBETAG('f','L','a','C')) {
-        if (!s->got_streaminfo && parse_streaminfo(s, buf, buf_size)) {
+        if (!s->got_streaminfo && (ret = parse_streaminfo(s, buf, buf_size))) {
             av_log(s->avctx, AV_LOG_ERROR, "invalid header\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
         return get_metadata_size(buf, buf_size);
     }
