@@ -305,7 +305,11 @@ static int oma_read_header(AVFormatContext *s,
 
     switch (buf[32]) {
         case OMA_CODECID_ATRAC3:
-            samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7]*100;
+            samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
+            if (!samplerate) {
+                av_log(s, AV_LOG_ERROR, "Unsupported sample rate\n");
+                return AVERROR_INVALIDDATA;
+            }
             if (samplerate != 44100)
                 av_log_ask_for_sample(s, "Unsupported sample rate: %d\n",
                                       samplerate);
@@ -335,9 +339,14 @@ static int oma_read_header(AVFormatContext *s,
         case OMA_CODECID_ATRAC3P:
             st->codec->channels = (codec_params >> 10) & 7;
             framesize = ((codec_params & 0x3FF) * 8) + 8;
-            st->codec->sample_rate = ff_oma_srate_tab[(codec_params >> 13) & 7]*100;
-            st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
-            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
+            if (!samplerate) {
+                av_log(s, AV_LOG_ERROR, "Unsupported sample rate\n");
+                return AVERROR_INVALIDDATA;
+            }
+            st->codec->sample_rate = samplerate;
+            st->codec->bit_rate    = samplerate * framesize * 8 / 1024;
+            avpriv_set_pts_info(st, 64, 1, samplerate);
             av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
             break;
         case OMA_CODECID_MP3:

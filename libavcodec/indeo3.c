@@ -222,7 +222,7 @@ static av_cold void free_frame_buffers(Indeo3DecodeContext *ctx)
  *  @param plane    pointer to the plane descriptor
  *  @param cell     pointer to the cell  descriptor
  */
-static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
+static int copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
 {
     int     h, w, mv_x, mv_y, offset, offset_dst;
     uint8_t *src, *dst;
@@ -235,6 +235,16 @@ static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
     mv_x        = cell->mv_ptr[1];
     }else
         mv_x= mv_y= 0;
+
+    /* -1 because there is an extra line on top for prediction */
+    if ((cell->ypos << 2) + mv_y < -1 || (cell->xpos << 2) + mv_x < 0 ||
+        ((cell->ypos + cell->height) << 2) + mv_y >= plane->height    ||
+        ((cell->xpos + cell->width)  << 2) + mv_x >= plane->width) {
+        av_log(ctx->avctx, AV_LOG_ERROR,
+               "Motion vectors point out of the frame.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     offset      = offset_dst + mv_y * plane->pitch + mv_x;
     src         = plane->pixels[ctx->buf_sel ^ 1] + offset;
 
@@ -262,6 +272,8 @@ static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
             dst += 4;
         }
     }
+
+    return 0;
 }
 
 
@@ -587,11 +599,23 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     } else if (mode >= 10) {
         /* for mode 10 and 11 INTER first copy the predicted cell into the current one */
         /* so we don't need to do data copying for each RLE code later */
-        copy_cell(ctx, plane, cell);
+        int ret = copy_cell(ctx, plane, cell);
+        if (ret < 0)
+            return ret;
     } else {
         /* set the pointer to the reference pixels for modes 0-4 INTER */
         mv_y      = cell->mv_ptr[0];
         mv_x      = cell->mv_ptr[1];
+
+        /* -1 because there is an extra line on top for prediction */
+        if ((cell->ypos << 2) + mv_y < -1 || (cell->xpos << 2) + mv_x < 0 ||
+            ((cell->ypos + cell->height) << 2) + mv_y >= plane->height    ||
+            ((cell->xpos + cell->width)  << 2) + mv_x >= plane->width) {
+            av_log(ctx->avctx, AV_LOG_ERROR,
+                   "Motion vectors point out of the frame.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         offset   += mv_y * plane->pitch + mv_x;
         ref_block = plane->pixels[ctx->buf_sel ^ 1] + offset;
     }
@@ -723,7 +747,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                          const int depth, const int strip_width)
 {
     Cell    curr_cell;
-    int     bytes_used;
+    int     bytes_used, ret;
 
     if (depth <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Stack overflow (corrupted binary tree)!\n");
@@ -774,8 +798,8 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 CHECK_CELL
                 if (!curr_cell.mv_ptr)
                     return AVERROR_INVALIDDATA;
-                copy_cell(ctx, plane, &curr_cell);
-                return 0;
+                ret = copy_cell(ctx, plane, &curr_cell);
+                return ret;
             }
             break;
         case INTER_DATA:
@@ -858,17 +882,20 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                                 const uint8_t *buf, int buf_size)
 {
-    const uint8_t   *buf_ptr = buf, *bs_hdr;
+    GetByteContext gb;
+    const uint8_t   *bs_hdr;
     uint32_t        frame_num, word2, check_sum, data_size;
     uint32_t        y_offset, u_offset, v_offset, starts[3], ends[3];
     uint16_t        height, width;
     int             i, j;
 
+    bytestream2_init(&gb, buf, buf_size);
+
     /* parse and check the OS header */
-    frame_num = bytestream_get_le32(&buf_ptr);
-    word2     = bytestream_get_le32(&buf_ptr);
-    check_sum = bytestream_get_le32(&buf_ptr);
-    data_size = bytestream_get_le32(&buf_ptr);
+    frame_num = bytestream2_get_le32(&gb);
+    word2     = bytestream2_get_le32(&gb);
+    check_sum = bytestream2_get_le32(&gb);
+    data_size = bytestream2_get_le32(&gb);
 
     if ((frame_num ^ word2 ^ data_size ^ OS_HDR_ID) != check_sum) {
         av_log(avctx, AV_LOG_ERROR, "OS header checksum mismatch!\n");
@@ -876,28 +903,27 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     }
 
     /* parse the bitstream header */
-    bs_hdr = buf_ptr;
+    bs_hdr = gb.buffer;
 
-    if (bytestream_get_le16(&buf_ptr) != 32) {
+    if (bytestream2_get_le16(&gb) != 32) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported codec version!\n");
         return AVERROR_INVALIDDATA;
     }
 
     ctx->frame_num   =  frame_num;
-    ctx->frame_flags =  bytestream_get_le16(&buf_ptr);
-    ctx->data_size   = (bytestream_get_le32(&buf_ptr) + 7) >> 3;
-    ctx->cb_offset   = *buf_ptr++;
+    ctx->frame_flags =  bytestream2_get_le16(&gb);
+    ctx->data_size   = (bytestream2_get_le32(&gb) + 7) >> 3;
+    ctx->cb_offset   =  bytestream2_get_byte(&gb);
 
     if (ctx->data_size == 16)
         return 4;
-    if (ctx->data_size > buf_size)
-        ctx->data_size = buf_size;
+    ctx->data_size = FFMIN(ctx->data_size, buf_size - 16);
 
-    buf_ptr += 3; // skip reserved byte and checksum
+    bytestream2_skip(&gb, 3); // skip reserved byte and checksum
 
     /* check frame dimensions */
-    height = bytestream_get_le16(&buf_ptr);
-    width  = bytestream_get_le16(&buf_ptr);
+    height = bytestream2_get_le16(&gb);
+    width  = bytestream2_get_le16(&gb);
     if (av_image_check_size(width, height, 0, avctx))
         return AVERROR_INVALIDDATA;
 
@@ -923,9 +949,10 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         avcodec_set_dimensions(avctx, width, height);
     }
 
-    y_offset = bytestream_get_le32(&buf_ptr);
-    v_offset = bytestream_get_le32(&buf_ptr);
-    u_offset = bytestream_get_le32(&buf_ptr);
+    y_offset = bytestream2_get_le32(&gb);
+    v_offset = bytestream2_get_le32(&gb);
+    u_offset = bytestream2_get_le32(&gb);
+    bytestream2_skip(&gb, 4);
 
     /* unfortunately there is no common order of planes in the buffer */
     /* so we use that sorting algo for determining planes data sizes  */
@@ -944,6 +971,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->v_data_size = ends[1] - starts[1];
     ctx->u_data_size = ends[2] - starts[2];
     if (FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
+        FFMIN3(y_offset, v_offset, u_offset) < gb.buffer - bs_hdr + 16 ||
         FFMIN3(ctx->y_data_size, ctx->v_data_size, ctx->u_data_size) <= 0) {
         av_log(avctx, AV_LOG_ERROR, "One of the y/u/v offsets is invalid\n");
         return AVERROR_INVALIDDATA;
@@ -952,7 +980,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->y_data_ptr = bs_hdr + y_offset;
     ctx->v_data_ptr = bs_hdr + v_offset;
     ctx->u_data_ptr = bs_hdr + u_offset;
-    ctx->alt_quant  = buf_ptr + sizeof(uint32_t);
+    ctx->alt_quant  = gb.buffer;
 
     if (ctx->data_size == 16) {
         av_log(avctx, AV_LOG_DEBUG, "Sync frame encountered!\n");

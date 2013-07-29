@@ -138,7 +138,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         mode += 1 + advance_mode;
         if (mode >= 4)
             mode -= 3;
-        if (FFABS(dst_end - dst) < len)
+        if (len <= 0 || FFABS(dst_end - dst) < len)
             return -1;
         switch (mode) {
         case 1:

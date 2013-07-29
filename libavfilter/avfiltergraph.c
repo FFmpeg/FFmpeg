@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "avfiltergraph.h"
 #include "internal.h"
@@ -202,6 +203,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
 
         for (j = 0; j < filter->input_count; j++) {
             AVFilterLink *link = filter->inputs[j];
+
             if (!link) continue;
 
             if (!link->in_formats || !link->out_formats)
@@ -211,8 +213,12 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                 !avfilter_merge_formats(link->in_formats, link->out_formats)) {
 
                 /* couldn't merge format lists, auto-insert scale filter */
-                snprintf(filt_args, sizeof(filt_args), "0:0:%s",
-                         graph->scale_sws_opts);
+                av_strlcpy(filt_args, "0:0", sizeof(filt_args));
+                if (graph->scale_sws_opts) {
+                    av_strlcat(filt_args, ":", sizeof(filt_args));
+                    av_strlcat(filt_args, graph->scale_sws_opts, sizeof(filt_args));
+                }
+
                 if (ret = insert_conv_filter(graph, link, "scale", filt_args))
                     return ret;
             }

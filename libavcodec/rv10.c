@@ -358,6 +358,11 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         f = get_bits(&s->gb, rpr_bits);
 
         if(f){
+            if (s->avctx->extradata_size < 8 + 2 * f) {
+                av_log(s->avctx, AV_LOG_ERROR, "Extradata too small.\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             new_w= 4*((uint8_t*)s->avctx->extradata)[6+2*f];
             new_h= 4*((uint8_t*)s->avctx->extradata)[7+2*f];
         }else{

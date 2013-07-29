@@ -1882,6 +1882,10 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unknown FFT order (%d), contact the developers!\n", s->fft_order);
         return -1;
     }
+    if (s->fft_size != (1 << (s->fft_order - 1))) {
+        av_log(avctx, AV_LOG_ERROR, "FFT size %d not power of 2.\n", s->fft_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     ff_rdft_init(&s->rdft_ctx, s->fft_order, IDFT_C2R);
     ff_mpadsp_init(&s->mpadsp);
