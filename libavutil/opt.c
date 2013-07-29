@@ -650,6 +650,9 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
     const AVClass  *c = *(AVClass**)obj;
     const AVOption *o = NULL;
 
+    if (!c)
+        return NULL;
+
     if (search_flags & AV_OPT_SEARCH_CHILDREN) {
         if (search_flags & AV_OPT_SEARCH_FAKE_OBJ) {
             const AVClass *child = NULL;
