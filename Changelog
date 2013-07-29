@@ -3,6 +3,29 @@ releases are sorted from youngest to oldest.
 
 version next:
 
+
+version 0.10.8
+
+- avfiltergraph: check for sws opts being non-NULL before using them
+- bmv: check for len being valid in bmv_decode_frame()
+- dfa: check for invalid access in decode_wdlt()
+- indeo3: check motion vectors
+- indeo3: fix data size check
+- indeo3: switch parsing the header to bytestream2
+- lavf: make sure stream probe data gets freed.
+- oggdec: fix faulty cleanup prototype
+- oma: Validate sample rates
+- qdm2: check that the FFT size is a power of 2
+- rv10: check that extradata is large enough
+- xmv: check audio track parameters validity
+- xmv: do not leak memory in the error paths in xmv_read_header()
+- aac: check the maximum number of channels
+- indeo3: fix off by one in MV validity check, Bug #503
+- id3v2: check for end of file while unescaping tags
+- wav: Always seek to an even offset, Bug #500, LP: #1174737
+- proresdec: support mixed interlaced/non-interlaced content
+
+
 version 0.10.6:
 
 - many bug fixes that where found with Coverity

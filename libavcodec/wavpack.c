@@ -790,6 +790,9 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
 
     if (!wc->mkv_mode) {
         s->samples = AV_RL32(buf); buf += 4;
+        if (s->samples != wc->samples)
+            return AVERROR_INVALIDDATA;
+
         if (!s->samples) {
             *got_frame_ptr = 0;
             return 0;
@@ -1168,6 +1171,9 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
     int frame_size, ret, frame_flags;
     int samplecount = 0;
+
+    if (avpkt->size < 12 + s->multichannel * 4)
+        return AVERROR_INVALIDDATA;
 
     s->block     = 0;
     s->ch_offset = 0;

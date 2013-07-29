@@ -186,6 +186,8 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (ctx->frame_type) {      /* if interlaced */
         ctx->picture.interlaced_frame = 1;
         ctx->picture.top_field_first  = ctx->frame_type & 1;
+    } else {
+        ctx->picture.interlaced_frame = 0;
     }
 
     ctx->alpha_info = buf[17] & 0xf;

@@ -238,8 +238,8 @@ static int copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
 
     /* -1 because there is an extra line on top for prediction */
     if ((cell->ypos << 2) + mv_y < -1 || (cell->xpos << 2) + mv_x < 0 ||
-        ((cell->ypos + cell->height) << 2) + mv_y >= plane->height    ||
-        ((cell->xpos + cell->width)  << 2) + mv_x >= plane->width) {
+        ((cell->ypos + cell->height) << 2) + mv_y > plane->height     ||
+        ((cell->xpos + cell->width)  << 2) + mv_x > plane->width) {
         av_log(ctx->avctx, AV_LOG_ERROR,
                "Motion vectors point out of the frame.\n");
         return AVERROR_INVALIDDATA;
@@ -609,8 +609,8 @@ static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
 
         /* -1 because there is an extra line on top for prediction */
         if ((cell->ypos << 2) + mv_y < -1 || (cell->xpos << 2) + mv_x < 0 ||
-            ((cell->ypos + cell->height) << 2) + mv_y >= plane->height    ||
-            ((cell->xpos + cell->width)  << 2) + mv_x >= plane->width) {
+            ((cell->ypos + cell->height) << 2) + mv_y > plane->height     ||
+            ((cell->xpos + cell->width)  << 2) + mv_x > plane->width) {
             av_log(ctx->avctx, AV_LOG_ERROR,
                    "Motion vectors point out of the frame.\n");
             return AVERROR_INVALIDDATA;

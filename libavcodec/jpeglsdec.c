@@ -71,13 +71,13 @@ int ff_jpegls_decode_lse(MJpegDecodeContext *s)
     case 2:
     case 3:
         av_log(s->avctx, AV_LOG_ERROR, "palette not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     case 4:
         av_log(s->avctx, AV_LOG_ERROR, "oversize image not supported\n");
-        return -1;
+        return AVERROR(ENOSYS);
     default:
         av_log(s->avctx, AV_LOG_ERROR, "invalid id %d\n", id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 //    av_log(s->avctx, AV_LOG_DEBUG, "ID=%i, T=%i,%i,%i\n", id, s->t1, s->t2, s->t3);
 
@@ -263,7 +263,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
     int i, t = 0;
     uint8_t *zero, *last, *cur;
     JLSState *state;
-    int off = 0, stride = 1, width, shift;
+    int off = 0, stride = 1, width, shift, ret = 0;
 
     zero = av_mallocz(s->picture.linesize[0]);
     last = zero;
@@ -289,6 +289,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
 //    av_log(s->avctx, AV_LOG_DEBUG, "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) RESET=%i, LIMIT=%i, qbpp=%i, RANGE=%i\n",s->width,s->height,state->near,state->maxval,state->T1,state->T2,state->T3,state->reset,state->limit,state->qbpp, state->range);
 //    av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n", ilv, point_transform, s->bits, s->cur_scan);
     if(ilv == 0) { /* separate planes */
+        if (s->cur_scan > s->nb_components) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         stride = (s->nb_components > 1) ? 3 : 1;
         off = av_clip(s->cur_scan - 1, 0, stride - 1);
         width = s->width * stride;
@@ -328,11 +332,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
             last = cur;
             cur += s->picture.linesize[0];
         }
-    } else if(ilv == 2) { /* sample interleaving */
+    } else if (ilv == 2) { /* sample interleaving */
         av_log(s->avctx, AV_LOG_ERROR, "Sample interleaved images are not supported.\n");
-        av_free(state);
-        av_free(zero);
-        return -1;
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
     }
 
     if(shift){ /* we need to do point transform or normalize samples */
@@ -360,10 +363,12 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near, int point_transfor
             }
         }
     }
+
+end:
     av_free(state);
     av_free(zero);
 
-    return 0;
+    return ret;
 }
 
 
