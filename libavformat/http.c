@@ -410,17 +410,26 @@ static int process_line(URLContext *h, char *line, int line_count,
 #if CONFIG_ZLIB
                 s->compressed = 1;
                 inflateEnd(&s->inflate_stream);
-                if (inflateInit2(&s->inflate_stream, 32 + 15) != Z_OK)
-                    av_log(h, AV_LOG_WARNING, "Error during zlib initialisation: %s",
+                if (inflateInit2(&s->inflate_stream, 32 + 15) != Z_OK) {
+                    av_log(h, AV_LOG_WARNING, "Error during zlib initialisation: %s\n",
                            s->inflate_stream.msg);
-                if (zlibCompileFlags() & (1 << 17))
-                    av_log(h, AV_LOG_WARNING, "Your zlib was compiled without gzip support.");
+                    return AVERROR(ENOSYS);
+                }
+                if (zlibCompileFlags() & (1 << 17)) {
+                    av_log(h, AV_LOG_WARNING, "Your zlib was compiled without gzip support.\n");
+                    return AVERROR(ENOSYS);
+                }
 #else
-                av_log(h, AV_LOG_WARNING, "Compressed(%s) content, need zlib support", p);
+                av_log(h, AV_LOG_WARNING, "Compressed (%s) content, need zlib with gzip support\n", p);
+                return AVERROR(ENOSYS);
 #endif
+            } else if (!av_strncasecmp(p, "identity", 8)) {
+                // The normal, no-encoding case (although servers shouldn't include
+                // the header at all if this is the case).
+            } else {
+                av_log(h, AV_LOG_WARNING, "Unknown content coding: %s\n", p);
+                return AVERROR(ENOSYS);
             }
-            else
-                av_log(h, AV_LOG_WARNING, "Unknown content coding: %s", p);
         }
     }
     return 1;
@@ -736,7 +745,7 @@ static int http_buf_read_compressed(URLContext *h, uint8_t *buf, int size)
 
     ret = inflate(&s->inflate_stream, Z_SYNC_FLUSH);
     if (ret != Z_OK && ret != Z_STREAM_END)
-        av_log(h, AV_LOG_WARNING, "inflate return value: %d, %s", ret, s->inflate_stream.msg);
+        av_log(h, AV_LOG_WARNING, "inflate return value: %d, %s\n", ret, s->inflate_stream.msg);
 
     return size - s->inflate_stream.avail_out;
 }
