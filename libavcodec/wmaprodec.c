@@ -106,6 +106,7 @@
 
 #define WMAPRO_BLOCK_MIN_BITS  6                                           ///< log2 of min block size
 #define WMAPRO_BLOCK_MAX_BITS 12                                           ///< log2 of max block size
+#define WMAPRO_BLOCK_MIN_SIZE (1 << WMAPRO_BLOCK_MIN_BITS)                 ///< minimum block size
 #define WMAPRO_BLOCK_MAX_SIZE (1 << WMAPRO_BLOCK_MAX_BITS)                 ///< maximum block size
 #define WMAPRO_BLOCK_SIZES    (WMAPRO_BLOCK_MAX_BITS - WMAPRO_BLOCK_MIN_BITS + 1) ///< possible block sizes
 
@@ -335,6 +336,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->min_samples_per_subframe < WMAPRO_BLOCK_MIN_SIZE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid minimum block size %i\n",
+               s->max_num_subframes);
+        return AVERROR_INVALIDDATA;
+    }
+
     if (s->avctx->sample_rate <= 0) {
         av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
         return AVERROR_INVALIDDATA;
@@ -428,7 +435,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
             for (x = 0; x < num_possible_block_sizes; x++) {
                 int v = 0;
                 while (s->sfb_offsets[x][v + 1] << x < offset)
-                    ++v;
+                    if (++v >= MAX_BANDS)
+                        return AVERROR_INVALIDDATA;
                 s->sf_offsets[i][x][b] = v;
             }
         }
@@ -720,6 +728,7 @@ static int decode_channel_transform(WMAProDecodeCtx* s)
                     if (get_bits1(&s->gb)) {
                         av_log_ask_for_sample(s->avctx,
                                               "unsupported channel transform type\n");
+                        return AVERROR_PATCHWELCOME;
                     }
                 } else {
                     chgroup->transform = 1;
@@ -1122,11 +1131,12 @@ static int decode_subframe(WMAProDecodeCtx *s)
     cur_subwoofer_cutoff = s->subwoofer_cutoffs[s->table_idx];
 
     /** configure the decoder for the current subframe */
+    offset += s->samples_per_frame >> 1;
+
     for (i = 0; i < s->channels_for_cur_subframe; i++) {
         int c = s->channel_indexes_for_cur_subframe[i];
 
-        s->channel[c].coeffs = &s->channel[c].out[(s->samples_per_frame >> 1)
-                                                  + offset];
+        s->channel[c].coeffs = &s->channel[c].out[offset];
     }
 
     s->subframe_len = subframe_len;
@@ -1177,7 +1187,7 @@ static int decode_subframe(WMAProDecodeCtx *s)
             for (i = 0; i < s->channels_for_cur_subframe; i++) {
                 int c = s->channel_indexes_for_cur_subframe[i];
                 int num_vec_coeffs = get_bits(&s->gb, num_bits) << 2;
-                if (num_vec_coeffs > WMAPRO_BLOCK_MAX_SIZE) {
+                if (num_vec_coeffs + offset > FF_ARRAY_ELEMS(s->channel[c].out)) {
                     av_log(s->avctx, AV_LOG_ERROR, "num_vec_coeffs %d is too large\n", num_vec_coeffs);
                     return AVERROR_INVALIDDATA;
                 }
