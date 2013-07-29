@@ -36,7 +36,7 @@ typedef struct {
 
 typedef struct {
   PAVIFILE file;
-  AVISynthStream *streams;
+  AviSynthStream *streams;
   int nb_streams;
   int next_stream;
 } AviSynthContext;
