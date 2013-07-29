@@ -410,6 +410,9 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
     int packet_size = s->streams[0]->codec->block_align;
     int ret = av_get_packet(s->pb, pkt, packet_size);
 
+    if (ret < packet_size)
+        pkt->flags |= AV_PKT_FLAG_CORRUPT;
+
     if (ret < 0)
         return ret;
     if (!ret)
@@ -420,8 +423,11 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (oc->encrypted) {
         /* previous unencrypted block saved in IV for
          * the next packet (CBC mode) */
-        av_des_crypt(&oc->av_des, pkt->data, pkt->data,
-                     (ret >> 3), oc->iv, 1);
+        if (ret == packet_size)
+            av_des_crypt(&oc->av_des, pkt->data, pkt->data,
+                         (packet_size >> 3), oc->iv, 1);
+        else
+            memset(oc->iv, 0, 8);
     }
 
     return ret;
