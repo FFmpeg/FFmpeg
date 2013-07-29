@@ -651,6 +651,8 @@ start:
                     c->seek_timestamp = AV_NOPTS_VALUE;
                     break;
                 }
+                av_free_packet(&var->pkt);
+                reset_packet(&var->pkt);
             }
         }
         /* Check if this stream still is on an earlier segment number, or
