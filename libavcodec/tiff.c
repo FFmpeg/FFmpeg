@@ -235,10 +235,13 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
             break;
         case TIFF_PACKBITS:
             for(pixels = 0; pixels < width;){
+                if (ssrc + size - src < 2)
+                    return AVERROR_INVALIDDATA;
                 code = (int8_t)*src++;
                 if(code >= 0){
                     code++;
-                    if(pixels + code > width){
+                    if (pixels + code > width ||
+                        ssrc + size - src < code) {
                         av_log(s->avctx, AV_LOG_ERROR, "Copy went out of bounds\n");
                         return -1;
                     }
