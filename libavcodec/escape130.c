@@ -115,7 +115,7 @@ const uint8_t chroma_vals[] = {
 static av_cold int escape130_decode_init(AVCodecContext *avctx)
 {
     Escape130Context *s = avctx->priv_data;
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if ((avctx->width & 1) || (avctx->height & 1)) {
         av_log(avctx, AV_LOG_ERROR,
