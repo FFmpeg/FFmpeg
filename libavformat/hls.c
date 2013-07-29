@@ -572,11 +572,10 @@ static int hls_read_header(AVFormatContext *s)
             goto fail;
         }
         v->ctx->pb       = &v->pb;
+        v->stream_offset = stream_offset;
         ret = avformat_open_input(&v->ctx, v->segments[0]->url, in_fmt, NULL);
         if (ret < 0)
             goto fail;
-
-        v->stream_offset = stream_offset;
         v->ctx->ctx_flags &= ~AVFMTCTX_NOHEADER;
         ret = avformat_find_stream_info(v->ctx, NULL);
         if (ret < 0)
