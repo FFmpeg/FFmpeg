@@ -281,6 +281,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL(TCP,              tcp);
     REGISTER_PROTOCOL(TLS,              tls);
     REGISTER_PROTOCOL(UDP,              udp);
+    REGISTER_PROTOCOL(UNIX,             unix);
 
     /* external libraries */
     REGISTER_PROTOCOL(LIBRTMP,          librtmp);

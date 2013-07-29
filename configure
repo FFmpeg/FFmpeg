@@ -1354,6 +1354,7 @@ HAVE_LIST="
     sys_select_h
     sys_soundcard_h
     sys_time_h
+    sys_un_h
     sys_videoio_h
     threads
     unistd_h
@@ -1874,6 +1875,8 @@ tcp_protocol_select="network"
 tls_protocol_deps_any="openssl gnutls"
 tls_protocol_select="tcp_protocol"
 udp_protocol_select="network"
+unix_protocol_deps="sys_un_h"
+unix_protocol_select="network"
 
 # filters
 blackframe_filter_deps="gpl"
@@ -3657,6 +3660,7 @@ check_header sys/param.h
 check_header sys/resource.h
 check_header sys/select.h
 check_header sys/time.h
+check_header sys/un.h
 check_header unistd.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h

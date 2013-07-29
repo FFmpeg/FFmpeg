@@ -626,4 +626,24 @@ To receive over UDP from a remote endpoint:
 avconv -i udp://[@var{multicast-address}]:@var{port}
 @end example
 
+@section unix
+
+Unix local socket
+
+The required syntax for a Unix socket URL is:
+
+@example
+unix://@var{filepath}
+@end example
+
+The following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+
+@table @option
+@item timeout
+Timeout in ms.
+@item listen
+Create the Unix socket in listening mode.
+@end table
+
 @c man end PROTOCOLS
