@@ -702,11 +702,13 @@ start:
                 }
             }
         }
-        /* Check if this stream has the packet with the lowest dts */
+        /* Check if this stream still is on an earlier segment number, or
+         * has the packet with the lowest dts */
         if (var->pkt.data) {
-            if(minvariant < 0) {
+            if (minvariant < 0 ||
+                var->cur_seq_no < c->variants[minvariant]->cur_seq_no) {
                 minvariant = i;
-            } else {
+            } else if (var->cur_seq_no == c->variants[minvariant]->cur_seq_no) {
                 struct variant *minvar = c->variants[minvariant];
                 int64_t dts    =    var->pkt.dts;
                 int64_t mindts = minvar->pkt.dts;
