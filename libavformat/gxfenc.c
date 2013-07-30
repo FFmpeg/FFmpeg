@@ -223,7 +223,7 @@ static int gxf_write_dv_auxiliary(AVIOContext *pb, AVStream *st)
 
     avio_w8(pb, TRACK_AUX);
     avio_w8(pb, 8);
-    if (st->codec->pix_fmt == PIX_FMT_YUV420P)
+    if (st->codec->pix_fmt == AV_PIX_FMT_YUV420P)
         track_aux_data |= 0x01;     /* marks stream as DVCAM instead of DVPRO */
     track_aux_data |= 0x40000000;   /* aux data is valid */
     avio_wl64(pb, track_aux_data);
@@ -557,7 +557,7 @@ static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc, AVStrea
 {
     int dv_umf_data = 0;
 
-    if (st->codec->pix_fmt == PIX_FMT_YUV420P)
+    if (st->codec->pix_fmt == AV_PIX_FMT_YUV420P)
         dv_umf_data |= 0x20; /* marks as DVCAM instead of DVPRO */
     avio_wl32(pb, dv_umf_data);
     avio_wl32(pb, 0);
