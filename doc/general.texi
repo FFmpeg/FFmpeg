@@ -168,7 +168,7 @@ library:
 @item AST                       @tab X @tab X
     @tab Audio format used on the Nintendo Wii.
 @item AVI                       @tab X @tab X
-@item AVISynth                  @tab   @tab X
+@item AviSynth                  @tab   @tab X
 @item AVR                       @tab   @tab X
     @tab Audio format used on Mac.
 @item AVS                       @tab   @tab X
