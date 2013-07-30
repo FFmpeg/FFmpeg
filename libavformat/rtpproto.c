@@ -42,8 +42,8 @@
 
 typedef struct RTPContext {
     URLContext *rtp_hd, *rtcp_hd;
-    int rtp_fd, rtcp_fd, ssm;
-    struct sockaddr_storage ssm_addr;
+    int rtp_fd, rtcp_fd, nb_ssm_include_addrs, nb_ssm_exclude_addrs;
+    struct sockaddr_storage **ssm_include_addrs, **ssm_exclude_addrs;
 } RTPContext;
 
 /**
@@ -115,6 +115,25 @@ static int compare_addr(const struct sockaddr_storage *a,
     return 1;
 }
 
+static int rtp_check_source_lists(RTPContext *s, struct sockaddr_storage *source_addr_ptr)
+{
+    int i;
+    if (s->nb_ssm_exclude_addrs) {
+        for (i = 0; i < s->nb_ssm_exclude_addrs; i++) {
+            if (!compare_addr(source_addr_ptr, s->ssm_exclude_addrs[i]))
+                return 1;
+        }
+    }
+    if (s->nb_ssm_include_addrs) {
+        for (i = 0; i < s->nb_ssm_include_addrs; i++) {
+            if (!compare_addr(source_addr_ptr, s->ssm_include_addrs[i]))
+                return 0;
+        }
+        return 1;
+    }
+    return 0;
+}
+
 /**
  * add option to url of the form:
  * "http://host:port/path?option1=val1&option2=val2...
@@ -139,7 +158,8 @@ static void build_udp_url(char *buf, int buf_size,
                           const char *hostname, int port,
                           int local_port, int ttl,
                           int max_packet_size, int connect,
-                          const char* sources)
+                          const char *include_sources,
+                          const char *exclude_sources)
 {
     ff_url_join(buf, buf_size, "udp", NULL, hostname, port, NULL);
     if (local_port >= 0)
@@ -151,8 +171,50 @@ static void build_udp_url(char *buf, int buf_size,
     if (connect)
         url_add_option(buf, buf_size, "connect=1");
     url_add_option(buf, buf_size, "fifo_size=0");
-    if (sources && sources[0])
-        url_add_option(buf, buf_size, "sources=%s", sources);
+    if (include_sources && include_sources[0])
+        url_add_option(buf, buf_size, "sources=%s", include_sources);
+    if (exclude_sources && exclude_sources[0])
+        url_add_option(buf, buf_size, "block=%s", exclude_sources);
+}
+
+static void rtp_parse_addr_list(URLContext *h, char *buf,
+                                struct sockaddr_storage ***address_list_ptr,
+                                int *address_list_size_ptr)
+{
+    struct addrinfo *ai = NULL;
+    struct sockaddr_storage *source_addr;
+    char tmp = '\0', *p = buf, *next;
+
+    /* Resolve all of the IPs */
+
+    while (p && p[0]) {
+        next = strchr(p, ',');
+
+        if (next) {
+            tmp = *next;
+            *next = '\0';
+        }
+
+        ai = rtp_resolve_host(p, 0, SOCK_DGRAM, AF_UNSPEC, 0);
+        if (ai) {
+            source_addr = av_mallocz(sizeof(struct sockaddr_storage));
+            if (!source_addr)
+                break;
+
+            memcpy(source_addr, ai->ai_addr, ai->ai_addrlen);
+            freeaddrinfo(ai);
+            dynarray_add(address_list_ptr, address_list_size_ptr, source_addr);
+        } else {
+            av_log(h, AV_LOG_WARNING, "Unable to resolve %s\n", p);
+        }
+
+        if (next) {
+            *next = tmp;
+            p = next + 1;
+        } else {
+            p = NULL;
+        }
+    }
 }
 
 /**
@@ -179,7 +241,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     int rtp_port, rtcp_port,
         ttl, connect,
         local_rtp_port, local_rtcp_port, max_packet_size;
-    char hostname[256], sources[1024] = "";
+    char hostname[256], include_sources[1024] = "", exclude_sources[1024] = "";
     char buf[1024];
     char path[1024];
     const char *p;
@@ -218,26 +280,18 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
             connect = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
-            struct addrinfo *sourceaddr = NULL;
-            av_strlcpy(sources, buf, sizeof(sources));
-
-            /* Try resolving the IP if only one IP is specified - we don't
-             * support manually checking more than one IP. */
-            if (!strchr(sources, ','))
-                sourceaddr = rtp_resolve_host(sources, 0,
-                                              SOCK_DGRAM, AF_UNSPEC,
-                                              AI_NUMERICHOST);
-            if (sourceaddr) {
-                s->ssm = 1;
-                memcpy(&s->ssm_addr, sourceaddr->ai_addr, sourceaddr->ai_addrlen);
-                freeaddrinfo(sourceaddr);
-            }
+            av_strlcpy(include_sources, buf, sizeof(include_sources));
+            rtp_parse_addr_list(h, buf, &s->ssm_include_addrs, &s->nb_ssm_include_addrs);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "block", p)) {
+            av_strlcpy(exclude_sources, buf, sizeof(exclude_sources));
+            rtp_parse_addr_list(h, buf, &s->ssm_exclude_addrs, &s->nb_ssm_exclude_addrs);
         }
     }
 
     build_udp_url(buf, sizeof(buf),
                   hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
-                  connect, sources);
+                  connect, include_sources, exclude_sources);
     if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
         goto fail;
     if (local_rtp_port>=0 && local_rtcp_port<0)
@@ -245,7 +299,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 
     build_udp_url(buf, sizeof(buf),
                   hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
-                  connect, sources);
+                  connect, include_sources, exclude_sources);
     if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
         goto fail;
 
@@ -291,7 +345,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                         continue;
                     return AVERROR(EIO);
                 }
-                if (s->ssm && compare_addr(&from, &s->ssm_addr))
+                if (rtp_check_source_lists(s, &from))
                     continue;
                 break;
             }
@@ -306,7 +360,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                         continue;
                     return AVERROR(EIO);
                 }
-                if (s->ssm && compare_addr(&from, &s->ssm_addr))
+                if (rtp_check_source_lists(s, &from))
                     continue;
                 break;
             }
@@ -340,6 +394,14 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
 static int rtp_close(URLContext *h)
 {
     RTPContext *s = h->priv_data;
+    int i;
+
+    for (i = 0; i < s->nb_ssm_include_addrs; i++)
+        av_free(s->ssm_include_addrs[i]);
+    av_freep(&s->ssm_include_addrs);
+    for (i = 0; i < s->nb_ssm_exclude_addrs; i++)
+        av_free(s->ssm_exclude_addrs[i]);
+    av_freep(&s->ssm_exclude_addrs);
 
     ffurl_close(s->rtp_hd);
     ffurl_close(s->rtcp_hd);
