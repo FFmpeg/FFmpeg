@@ -226,6 +226,7 @@ int main(int argc, char **argv)
             return -1;
         }
         av_log(NULL, AV_LOG_DEBUG, "inserting %4d\n", (int)j);
+
         if (!node)
             node = av_tree_node_alloc();
         av_tree_insert(&root, (void *)(j + 1), cmp, &node);
