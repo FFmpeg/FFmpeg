@@ -64,7 +64,7 @@ typedef struct VLC {
     int bits;
     VLC_TYPE (*table)[2]; ///< code, bits
     int table_size, table_allocated;
-    volatile void *init_state;
+    void * volatile init_state;
 } VLC;
 
 typedef struct RL_VLC_ELEM {
