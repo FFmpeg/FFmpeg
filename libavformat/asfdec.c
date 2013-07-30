@@ -1137,7 +1137,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             if (asf->stream_index < 0 ||
                 s->streams[asf->stream_index]->discard >= AVDISCARD_ALL ||
                 (!asf->packet_key_frame &&
-                 s->streams[asf->stream_index]->discard >= AVDISCARD_NONKEY)) {
+                 (s->streams[asf->stream_index]->discard >= AVDISCARD_NONKEY || asf->streams[s->streams[asf->stream_index]->id].skip_to_key))) {
                 asf->packet_time_start = 0;
                 /* unhandled packet (should not happen) */
                 avio_skip(pb, asf->packet_frag_size);
@@ -1148,6 +1148,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                 continue;
             }
             asf->asf_st = &asf->streams[s->streams[asf->stream_index]->id];
+            asf->asf_st->skip_to_key = 0;
         }
         asf_st = asf->asf_st;
         av_assert0(asf_st);
@@ -1366,6 +1367,21 @@ static void asf_reset_header(AVFormatContext *s)
     asf->asf_st = NULL;
 }
 
+static void skip_to_key(AVFormatContext *s)
+{
+    ASFContext *asf = s->priv_data;
+    int i;
+
+    for (i = 0; i < 128; i++) {
+        int j = asf->asfid2avid[i];
+        ASFStream *asf_st = &asf->streams[i];
+        if (j < 0 || s->streams[j]->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+            continue;
+
+        asf_st->skip_to_key = 1;
+    }
+}
+
 static int asf_read_close(AVFormatContext *s)
 {
     asf_reset_header(s);
@@ -1515,6 +1531,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
             if(avio_seek(s->pb, pos, SEEK_SET) < 0)
                 return -1;
             asf_reset_header(s);
+            skip_to_key(s);
             return 0;
         }
     }
@@ -1522,6 +1539,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index,
     if (ff_seek_frame_binary(s, stream_index, pts, flags) < 0)
         return -1;
     asf_reset_header(s);
+    skip_to_key(s);
     return 0;
 }
 
