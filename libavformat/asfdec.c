@@ -366,13 +366,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
-    asf_st = av_mallocz(sizeof(ASFStream));
-    if (!asf_st)
-        return AVERROR(ENOMEM);
-    st->priv_data  = asf_st;
     start_time     = asf->hdr.preroll;
-
-    asf_st->stream_language_index = 128; // invalid stream index means no language info
 
     if (!(asf->hdr.flags & 0x01)) { // if we aren't streaming...
         int64_t fsize = avio_size(pb);
@@ -405,6 +399,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     st->id = avio_rl16(pb) & 0x7f; /* stream id */
     // mapping of asf ID to AV stream ID;
     asf->asfid2avid[st->id] = s->nb_streams - 1;
+    asf_st = &asf->streams[st->id];
 
     avio_rl32(pb);
 
@@ -729,6 +724,10 @@ static int asf_read_header(AVFormatContext *s)
     avio_r8(pb);
     avio_r8(pb);
     memset(&asf->asfid2avid, -1, sizeof(asf->asfid2avid));
+
+    for (i = 0; i<128; i++)
+        asf->streams[i].stream_language_index = 128; // invalid stream index means no language info
+
     for (;;) {
         uint64_t gpos = avio_tell(pb);
         ff_get_guid(pb, &g);
@@ -1149,7 +1148,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                            asf->packet_frag_size);
                 continue;
             }
-            asf->asf_st = s->streams[asf->stream_index]->priv_data;
+            asf->asf_st = &asf->streams[s->streams[asf->stream_index]->id];
         }
         asf_st = asf->asf_st;
         av_assert0(asf_st);
@@ -1366,10 +1365,8 @@ static void asf_reset_header(AVFormatContext *s)
     asf->packet_time_delta     = 0;
     asf->packet_time_start     = 0;
 
-    for (i = 0; i < s->nb_streams; i++) {
-        asf_st = s->streams[i]->priv_data;
-        if (!asf_st)
-            continue;
+    for (i = 0; i < 128; i++) {
+        asf_st = &asf->streams[i];
         av_free_packet(&asf_st->pkt);
         asf_st->frag_offset = 0;
         asf_st->seq         = 0;
@@ -1387,6 +1384,7 @@ static int asf_read_close(AVFormatContext *s)
 static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
                             int64_t *ppos, int64_t pos_limit)
 {
+    ASFContext *asf     = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
     ASFStream *asf_st;
     int64_t pts;
@@ -1418,8 +1416,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
         if (pkt->flags & AV_PKT_FLAG_KEY) {
             i = pkt->stream_index;
 
-            asf_st = s->streams[i]->priv_data;
-            av_assert0(asf_st);
+            asf_st = &asf->streams[s->streams[i]->id];
 
 //            assert((asf_st->packet_pos - s->data_offset) % s->packet_size == 0);
             pos = asf_st->packet_pos;
