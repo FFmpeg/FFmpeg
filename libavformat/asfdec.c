@@ -67,7 +67,6 @@ typedef struct {
     unsigned int packet_frag_size;
     int64_t packet_frag_timestamp;
     int packet_multi_size;
-    int packet_obj_size;
     int packet_time_delta;
     int packet_time_start;
     int64_t packet_pos;
@@ -1006,10 +1005,10 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb)
     if (asf->packet_replic_size >= 8) {
         int64_t end = avio_tell(pb) + asf->packet_replic_size;
         AVRational aspect;
-        asf->packet_obj_size = avio_rl32(pb);
-        if (asf->packet_obj_size >= (1 << 24) || asf->packet_obj_size <= 0) {
+        asfst->packet_obj_size = avio_rl32(pb);
+        if (asfst->packet_obj_size >= (1 << 24) || asfst->packet_obj_size <= 0) {
             av_log(s, AV_LOG_ERROR, "packet_obj_size invalid\n");
-            asf->packet_obj_size = 0;
+            asfst->packet_obj_size = 0;
             return AVERROR_INVALIDDATA;
         }
         asf->packet_frag_timestamp = avio_rl32(pb); // timestamp
@@ -1157,37 +1156,37 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             // frag_offset is here used as the beginning timestamp
             asf->packet_frag_timestamp = asf->packet_time_start;
             asf->packet_time_start    += asf->packet_time_delta;
-            asf->packet_obj_size       = asf->packet_frag_size = avio_r8(pb);
+            asf_st->packet_obj_size    = asf->packet_frag_size = avio_r8(pb);
             asf->packet_size_left--;
             asf->packet_multi_size--;
-            if (asf->packet_multi_size < asf->packet_obj_size) {
+            if (asf->packet_multi_size < asf_st->packet_obj_size) {
                 asf->packet_time_start = 0;
                 avio_skip(pb, asf->packet_multi_size);
                 asf->packet_size_left -= asf->packet_multi_size;
                 continue;
             }
-            asf->packet_multi_size -= asf->packet_obj_size;
+            asf->packet_multi_size -= asf_st->packet_obj_size;
         }
         if (asf_st->frag_offset + asf->packet_frag_size <= asf_st->pkt.size &&
-            asf_st->frag_offset + asf->packet_frag_size > asf->packet_obj_size) {
+            asf_st->frag_offset + asf->packet_frag_size > asf_st->packet_obj_size) {
             av_log(s, AV_LOG_INFO, "ignoring invalid packet_obj_size (%d %d %d %d)\n",
                    asf_st->frag_offset, asf->packet_frag_size,
-                   asf->packet_obj_size, asf_st->pkt.size);
-            asf->packet_obj_size = asf_st->pkt.size;
+                   asf_st->packet_obj_size, asf_st->pkt.size);
+            asf_st->packet_obj_size = asf_st->pkt.size;
         }
 
-        if (asf_st->pkt.size != asf->packet_obj_size ||
+        if (asf_st->pkt.size != asf_st->packet_obj_size ||
             // FIXME is this condition sufficient?
             asf_st->frag_offset + asf->packet_frag_size > asf_st->pkt.size) {
             if (asf_st->pkt.data) {
                 av_log(s, AV_LOG_INFO,
                        "freeing incomplete packet size %d, new %d\n",
-                       asf_st->pkt.size, asf->packet_obj_size);
+                       asf_st->pkt.size, asf_st->packet_obj_size);
                 asf_st->frag_offset = 0;
                 av_free_packet(&asf_st->pkt);
             }
             /* new packet */
-            av_new_packet(&asf_st->pkt, asf->packet_obj_size);
+            av_new_packet(&asf_st->pkt, asf_st->packet_obj_size);
             asf_st->seq              = asf->packet_seq;
             asf_st->pkt.dts          = asf->packet_frag_timestamp - asf->hdr.preroll;
             asf_st->pkt.stream_index = asf->stream_index;
@@ -1208,7 +1207,7 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
                     asf->stream_index, asf->packet_key_frame,
                     asf_st->pkt.flags & AV_PKT_FLAG_KEY,
                     s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO,
-                    asf->packet_obj_size);
+                    asf_st->packet_obj_size);
             if (s->streams[asf->stream_index]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
                 asf->packet_key_frame = 1;
             if (asf->packet_key_frame)
@@ -1361,13 +1360,13 @@ static void asf_reset_header(AVFormatContext *s)
     asf->packet_frag_size      = 0;
     asf->packet_frag_timestamp = 0;
     asf->packet_multi_size     = 0;
-    asf->packet_obj_size       = 0;
     asf->packet_time_delta     = 0;
     asf->packet_time_start     = 0;
 
     for (i = 0; i < 128; i++) {
         asf_st = &asf->streams[i];
         av_free_packet(&asf_st->pkt);
+        asf_st->packet_obj_size = 0;
         asf_st->frag_offset = 0;
         asf_st->seq         = 0;
     }
