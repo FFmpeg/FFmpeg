@@ -355,7 +355,7 @@ static int config_output(AVFilterLink *outlink)
             return AVERROR(EINVAL);
         }
         S(i).y -= S(i).x;
-        av_log(ctx, AV_LOG_DEBUG, "%d: x=%lf y=%lf\n", i, S(i).x, S(i).y);
+        av_log(ctx, AV_LOG_DEBUG, "%d: x=%f y=%f\n", i, S(i).x, S(i).y);
         new_nb_items++;
     }
     num = new_nb_items;
