@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "error.h"
 #include "log.h"
 #include "mem.h"
 #include "tree.h"
@@ -211,32 +212,50 @@ static int cmp(void *a, const void *b)
 int main(void)
 {
     int i;
-    void *k;
     AVTreeNode *root = NULL, *node = NULL;
     AVLFG prng;
 
     av_lfg_init(&prng, 1);
 
     for (i = 0; i < 10000; i++) {
-        int j = av_lfg_get(&prng) % 86294;
+        AVTreeNode *node2 = NULL;
+        intptr_t j = av_lfg_get(&prng) % 86294;
+        void *ret, *jj = (void *)(j + 1);
+
+        while (ret = av_tree_find(root, jj, cmp, NULL)) {
+            j  = av_lfg_get(&prng) % 86294;
+            jj = (void *)(j + 1);
+        }
+
         if (check(root) > 999) {
             av_log(NULL, AV_LOG_ERROR, "FATAL error %d\n", i);
             print(root, 0);
             return -1;
         }
+
         if (!node)
             node = av_tree_node_alloc();
-        av_tree_insert(&root, (void *)(j + 1), cmp, &node);
-
-        j = av_lfg_get(&prng) % 86294;
-        {
-            AVTreeNode *node2 = NULL;
-            av_tree_insert(&root, (void *)(j + 1), cmp, &node2);
-            k = av_tree_find(root, (void *)(j + 1), cmp, NULL);
-            if (k)
-                av_log(NULL, AV_LOG_ERROR, "removal failure %d\n", i);
+        if (!node) {
+            av_log(NULL, AV_LOG_ERROR, "Memory allocation failure.\n");
+            return AVERROR(ENOMEM);
         }
+        av_tree_insert(&root, jj, cmp, &node);
+
+        while (ret = av_tree_find(root, jj, cmp, NULL)) {
+            j  = av_lfg_get(&prng) % 86294;
+            jj = (void *)(j + 1);
+        }
+
+        ret = av_tree_insert(&root, jj, cmp, &node2);
+        if (ret != jj)
+            av_tree_destroy(node2);
+        ret = av_tree_find(root, jj, cmp, NULL);
+        if (ret)
+            av_log(NULL, AV_LOG_ERROR, "removal failure %d\n", i);
     }
+
+    av_tree_destroy(root);
+
     return 0;
 }
 #endif
