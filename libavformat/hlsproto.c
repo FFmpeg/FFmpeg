@@ -45,7 +45,7 @@
  */
 
 struct segment {
-    int duration;
+    int64_t duration;
     char url[MAX_URL_SIZE];
 };
 
@@ -56,7 +56,7 @@ struct variant {
 
 typedef struct HLSContext {
     char playlisturl[MAX_URL_SIZE];
-    int target_duration;
+    int64_t target_duration;
     int start_seq_no;
     int finished;
     int n_segments;
@@ -111,7 +111,8 @@ static int parse_playlist(URLContext *h, const char *url)
 {
     HLSContext *s = h->priv_data;
     AVIOContext *in;
-    int ret = 0, duration = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    int64_t duration = 0;
     char line[1024];
     const char *ptr;
 
@@ -134,14 +135,14 @@ static int parse_playlist(URLContext *h, const char *url)
                                &info);
             bandwidth = atoi(info.bandwidth);
         } else if (av_strstart(line, "#EXT-X-TARGETDURATION:", &ptr)) {
-            s->target_duration = atoi(ptr);
+            s->target_duration = atoi(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             s->start_seq_no = atoi(ptr);
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             s->finished = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
-            duration = atoi(ptr);
+            duration = atof(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
@@ -270,7 +271,6 @@ start:
     reload_interval = s->n_segments > 0 ?
                       s->segments[s->n_segments - 1]->duration :
                       s->target_duration;
-    reload_interval *= 1000000;
 retry:
     if (!s->finished) {
         int64_t now = av_gettime();
@@ -280,7 +280,7 @@ retry:
             /* If we need to reload the playlist again below (if
              * there's still no more segments), switch to a reload
              * interval of half the target duration. */
-            reload_interval = s->target_duration * 500000LL;
+            reload_interval = s->target_duration / 2;
         }
     }
     if (s->cur_seq_no < s->start_seq_no) {
