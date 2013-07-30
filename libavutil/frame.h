@@ -485,7 +485,7 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
  * @return a pointer to the side data of a given type on success, NULL if there
  * is no side data with such type in this frame.
  */
-AVFrameSideData *av_frame_get_side_data(AVFrame *frame,
+AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
                                         enum AVFrameSideDataType type);
 
 #endif /* AVUTIL_FRAME_H */

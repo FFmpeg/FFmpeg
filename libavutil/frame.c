@@ -465,7 +465,7 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
     return ret;
 }
 
-AVFrameSideData *av_frame_get_side_data(AVFrame *frame,
+AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
                                         enum AVFrameSideDataType type)
 {
     int i;
