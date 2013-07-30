@@ -679,8 +679,11 @@ start:
                     reset_packet(&var->pkt);
                     break;
                 } else {
-                    if (c->first_timestamp == AV_NOPTS_VALUE)
-                        c->first_timestamp = var->pkt.dts;
+                    if (c->first_timestamp == AV_NOPTS_VALUE &&
+                        var->pkt.dts       != AV_NOPTS_VALUE)
+                        c->first_timestamp = av_rescale_q(var->pkt.dts,
+                            var->ctx->streams[var->pkt.stream_index]->time_base,
+                            AV_TIME_BASE_Q);
                 }
 
                 if (c->seek_timestamp == AV_NOPTS_VALUE)
@@ -780,11 +783,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
         /* Reset reading */
         struct variant *var = c->variants[i];
         int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ? 0 :
-                      av_rescale_rnd(c->first_timestamp, 1, stream_index >= 0 ?
-                               s->streams[stream_index]->time_base.den :
-                               AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
-                               AV_ROUND_DOWN : AV_ROUND_UP);
-         if (var->input) {
+                      av_rescale_rnd(c->first_timestamp, 1, AV_TIME_BASE,
+                          flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
+        if (var->input) {
             ffurl_close(var->input);
             var->input = NULL;
         }
