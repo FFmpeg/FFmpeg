@@ -412,6 +412,10 @@ typedef struct RTSPState {
 #define RTSP_FLAG_LISTEN      0x2    /**< Wait for incoming connections. */
 #define RTSP_FLAG_CUSTOM_IO   0x4    /**< Do all IO via the AVIOContext. */
 
+typedef struct RTSPSource {
+    char addr[128]; /**< Source-specific multicast include source IP address (from SDP content) */
+} RTSPSource;
+
 /**
  * Describe a single stream, as identified by a single m= line block in the
  * SDP content. In the case of RDT, one RTSPStream can represent multiple
@@ -435,7 +439,10 @@ typedef struct RTSPStream {
     //@{
     int sdp_port;             /**< port (from SDP content) */
     struct sockaddr_storage sdp_ip; /**< IP address (from SDP content) */
-    char source_addr[100];    /**< Source-specific multicast source IP address (from SDP content) */
+    int nb_include_source_addrs; /**< Number of source-specific multicast include source IP addresses (from SDP content) */
+    struct RTSPSource **include_source_addrs; /**< Source-specific multicast include source IP addresses (from SDP content) */
+    int nb_exclude_source_addrs; /**< Number of source-specific multicast exclude source IP addresses (from SDP content) */
+    struct RTSPSource **exclude_source_addrs; /**< Source-specific multicast exclude source IP addresses (from SDP content) */
     int sdp_ttl;              /**< IP Time-To-Live (from SDP content) */
     int sdp_payload_type;     /**< payload type */
     //@}
