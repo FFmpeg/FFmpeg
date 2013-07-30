@@ -1167,13 +1167,6 @@ static int asf_parse_packet(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
             }
             asf->packet_multi_size -= asf_st->packet_obj_size;
         }
-        if (asf_st->frag_offset + asf->packet_frag_size <= asf_st->pkt.size &&
-            asf_st->frag_offset + asf->packet_frag_size > asf_st->packet_obj_size) {
-            av_log(s, AV_LOG_INFO, "ignoring invalid packet_obj_size (%d %d %d %d)\n",
-                   asf_st->frag_offset, asf->packet_frag_size,
-                   asf_st->packet_obj_size, asf_st->pkt.size);
-            asf_st->packet_obj_size = asf_st->pkt.size;
-        }
 
         if (asf_st->pkt.size != asf_st->packet_obj_size ||
             // FIXME is this condition sufficient?
