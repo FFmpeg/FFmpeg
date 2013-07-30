@@ -222,7 +222,7 @@ int main(void)
             print(root, 0);
             return -1;
         }
-        av_log(NULL, AV_LOG_ERROR, "inserting %4d\n", (int)j);
+        av_log(NULL, AV_LOG_DEBUG, "inserting %4d\n", (int)j);
         if (!node)
             node = av_tree_node_alloc();
         av_tree_insert(&root, (void *)(j + 1), cmp, &node);
@@ -230,7 +230,7 @@ int main(void)
         j = av_lfg_get(&prng) % 86294;
         {
             AVTreeNode *node2 = NULL;
-            av_log(NULL, AV_LOG_ERROR, "removing %4d\n", (int)j);
+            av_log(NULL, AV_LOG_DEBUG, "removing %4d\n", (int)j);
             av_tree_insert(&root, (void *)(j + 1), cmp, &node2);
             k = av_tree_find(root, (void *)(j + 1), cmp, NULL);
             if (k)
