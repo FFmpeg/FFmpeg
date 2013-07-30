@@ -56,7 +56,7 @@ enum KeyType {
 };
 
 struct segment {
-    double duration;
+    int64_t duration;
     char url[MAX_URL_SIZE];
     char key[MAX_URL_SIZE];
     enum KeyType key_type;
@@ -81,7 +81,7 @@ struct variant {
     int stream_offset;
 
     int finished;
-    int target_duration;
+    int64_t target_duration;
     int start_seq_no;
     int n_segments;
     struct segment **segments;
@@ -207,7 +207,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                           struct variant *var, AVIOContext *in)
 {
     int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
-    double duration = 0.0;
+    int64_t duration = 0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
@@ -272,7 +272,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                     goto fail;
                 }
             }
-            var->target_duration = atoi(ptr);
+            var->target_duration = atoi(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             if (!var) {
                 var = new_variant(c, 0, url, NULL);
@@ -287,7 +287,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                 var->finished = 1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
-            duration   = atof(ptr);
+            duration   = atof(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
@@ -414,7 +414,6 @@ restart:
         int64_t reload_interval = v->n_segments > 0 ?
                                   v->segments[v->n_segments - 1]->duration :
                                   v->target_duration;
-        reload_interval *= 1000000;
 
 reload:
         if (!v->finished &&
@@ -424,7 +423,7 @@ reload:
             /* If we need to reload the playlist again below (if
              * there's still no more segments), switch to a reload
              * interval of half the target duration. */
-            reload_interval = v->target_duration * 500000LL;
+            reload_interval = v->target_duration / 2;
         }
         if (v->cur_seq_no < v->start_seq_no) {
             av_log(NULL, AV_LOG_WARNING,
@@ -527,7 +526,7 @@ static int hls_read_header(AVFormatContext *s)
     if (c->variants[0]->finished) {
         int64_t duration = 0;
         for (i = 0; i < c->variants[0]->n_segments; i++)
-            duration += round(c->variants[0]->segments[i]->duration * AV_TIME_BASE);
+            duration += c->variants[0]->segments[i]->duration;
         s->duration = duration;
     }
 
@@ -769,7 +768,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
                                        s->streams[stream_index]->time_base.den,
                                        flags & AVSEEK_FLAG_BACKWARD ?
                                        AV_ROUND_DOWN : AV_ROUND_UP);
-    timestamp = av_rescale_rnd(timestamp, 1, stream_index >= 0 ?
+    timestamp = av_rescale_rnd(timestamp, AV_TIME_BASE, stream_index >= 0 ?
                                s->streams[stream_index]->time_base.den :
                                AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
                                AV_ROUND_DOWN : AV_ROUND_UP);
@@ -782,9 +781,8 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_variants; i++) {
         /* Reset reading */
         struct variant *var = c->variants[i];
-        int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ? 0 :
-                      av_rescale_rnd(c->first_timestamp, 1, AV_TIME_BASE,
-                          flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
+        int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ?
+                      0 : c->first_timestamp;
         if (var->input) {
             ffurl_close(var->input);
             var->input = NULL;
