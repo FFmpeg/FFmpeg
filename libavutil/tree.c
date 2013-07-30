@@ -206,12 +206,15 @@ static int cmp(void *a, const void *b)
     return (uint8_t *) a - (const uint8_t *) b;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     int i;
     void *k;
     AVTreeNode *root = NULL, *node = NULL;
     AVLFG prng;
+    int log_level = argc <= 1 ? AV_LOG_INFO : atoi(argv[1]);
+
+    av_log_set_level(log_level);
 
     av_lfg_init(&prng, 1);
 
