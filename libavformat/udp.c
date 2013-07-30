@@ -237,7 +237,7 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
         int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
         struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
                                                        SOCK_DGRAM, AF_UNSPEC,
-                                                       AI_NUMERICHOST);
+                                                       0);
         if (!sourceaddr)
             return AVERROR(ENOENT);
 
@@ -267,7 +267,7 @@ static int udp_set_multicast_sources(int sockfd, struct sockaddr *addr,
         struct ip_mreq_source mreqs;
         struct addrinfo *sourceaddr = udp_resolve_host(sources[i], 0,
                                                        SOCK_DGRAM, AF_UNSPEC,
-                                                       AI_NUMERICHOST);
+                                                       0);
         if (!sourceaddr)
             return AVERROR(ENOENT);
         if (sourceaddr->ai_addr->sa_family != AF_INET) {
