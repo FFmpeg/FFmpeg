@@ -78,6 +78,11 @@ FATE_LIBAVUTIL += fate-sha512
 fate-sha512: libavutil/sha512-test$(EXESUF)
 fate-sha512: CMD = run libavutil/sha512-test
 
+FATE_LIBAVUTIL += fate-tree
+fate-tree: libavutil/tree-test$(EXESUF)
+fate-tree: CMD = run libavutil/tree-test
+fate-tree: REF = /dev/null
+
 FATE_LIBAVUTIL += fate-xtea
 fate-xtea: libavutil/xtea-test$(EXESUF)
 fate-xtea: CMD = run libavutil/xtea-test
