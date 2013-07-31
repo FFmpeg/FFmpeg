@@ -356,48 +356,47 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     uint16_t *intra, *inter;
     int fd;
 
-    xvid_plugin_single_t single       = { 0 };
-    struct xvid_ff_pass1 rc2pass1     = { 0 };
-    xvid_plugin_2pass2_t rc2pass2     = { 0 };
-    xvid_plugin_lumimasking_t masking_l = { 0 }; /* For lumi masking */
-    xvid_plugin_lumimasking_t masking_v = { 0 }; /* For variance AQ */
-    xvid_plugin_ssim_t ssim           = { 0 };
-    xvid_gbl_init_t xvid_gbl_init     = { 0 };
-    xvid_enc_create_t xvid_enc_create = { 0 };
-    xvid_enc_plugin_t plugins[7];
+    xvid_plugin_single_t      single          = { 0 };
+    struct xvid_ff_pass1      rc2pass1        = { 0 };
+    xvid_plugin_2pass2_t      rc2pass2        = { 0 };
+    xvid_plugin_lumimasking_t masking_l       = { 0 }; /* For lumi masking */
+    xvid_plugin_lumimasking_t masking_v       = { 0 }; /* For variance AQ */
+    xvid_plugin_ssim_t        ssim            = { 0 };
+    xvid_gbl_init_t           xvid_gbl_init   = { 0 };
+    xvid_enc_create_t         xvid_enc_create = { 0 };
+    xvid_enc_plugin_t         plugins[7];
 
     x->twopassfd = -1;
 
     /* Bring in VOP flags from ffmpeg command-line */
-    x->vop_flags = XVID_VOP_HALFPEL; /* Bare minimum quality */
+    x->vop_flags = XVID_VOP_HALFPEL;              /* Bare minimum quality */
     if( xvid_flags & CODEC_FLAG_4MV )
-        x->vop_flags |= XVID_VOP_INTER4V; /* Level 3 */
-    if( avctx->trellis
-        )
-        x->vop_flags |= XVID_VOP_TRELLISQUANT; /* Level 5 */
+        x->vop_flags    |= XVID_VOP_INTER4V;      /* Level 3 */
+    if( avctx->trellis)
+        x->vop_flags    |= XVID_VOP_TRELLISQUANT; /* Level 5 */
     if( xvid_flags & CODEC_FLAG_AC_PRED )
-        x->vop_flags |= XVID_VOP_HQACPRED; /* Level 6 */
+        x->vop_flags    |= XVID_VOP_HQACPRED;     /* Level 6 */
     if( xvid_flags & CODEC_FLAG_GRAY )
-        x->vop_flags |= XVID_VOP_GREYSCALE;
+        x->vop_flags    |= XVID_VOP_GREYSCALE;
 
     /* Decide which ME quality setting to use */
     x->me_flags = 0;
     switch( avctx->me_method ) {
        case ME_FULL:   /* Quality 6 */
-           x->me_flags |=  XVID_ME_EXTSEARCH16
-                       |   XVID_ME_EXTSEARCH8;
+           x->me_flags  |=  XVID_ME_EXTSEARCH16
+                        |   XVID_ME_EXTSEARCH8;
 
        case ME_EPZS:   /* Quality 4 */
-           x->me_flags |=  XVID_ME_ADVANCEDDIAMOND8
-                       |   XVID_ME_HALFPELREFINE8
-                       |   XVID_ME_CHROMA_PVOP
-                       |   XVID_ME_CHROMA_BVOP;
+           x->me_flags  |=  XVID_ME_ADVANCEDDIAMOND8
+                        |   XVID_ME_HALFPELREFINE8
+                        |   XVID_ME_CHROMA_PVOP
+                        |   XVID_ME_CHROMA_BVOP;
 
        case ME_LOG:    /* Quality 2 */
        case ME_PHODS:
        case ME_X1:
-           x->me_flags |=  XVID_ME_ADVANCEDDIAMOND16
-                       |   XVID_ME_HALFPELREFINE16;
+           x->me_flags  |=  XVID_ME_ADVANCEDDIAMOND16
+                        |   XVID_ME_HALFPELREFINE16;
 
        case ME_ZERO:   /* Quality 0 */
        default:
@@ -408,15 +407,15 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     switch( avctx->mb_decision ) {
        case 2:
            x->vop_flags |= XVID_VOP_MODEDECISION_RD;
-           x->me_flags |=  XVID_ME_HALFPELREFINE8_RD
-                       |   XVID_ME_QUARTERPELREFINE8_RD
-                       |   XVID_ME_EXTSEARCH_RD
-                       |   XVID_ME_CHECKPREDICTION_RD;
+           x->me_flags  |=  XVID_ME_HALFPELREFINE8_RD
+                        |   XVID_ME_QUARTERPELREFINE8_RD
+                        |   XVID_ME_EXTSEARCH_RD
+                        |   XVID_ME_CHECKPREDICTION_RD;
        case 1:
            if( !(x->vop_flags & XVID_VOP_MODEDECISION_RD) )
                x->vop_flags |= XVID_VOP_FAST_MODEDECISION_RD;
-           x->me_flags |=  XVID_ME_HALFPELREFINE16_RD
-                       |   XVID_ME_QUARTERPELREFINE16_RD;
+           x->me_flags  |=  XVID_ME_HALFPELREFINE16_RD
+                        |   XVID_ME_QUARTERPELREFINE16_RD;
 
        default:
            break;
@@ -425,12 +424,12 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     /* Bring in VOL flags from ffmpeg command-line */
     x->vol_flags = 0;
     if( xvid_flags & CODEC_FLAG_GMC ) {
-        x->vol_flags |= XVID_VOL_GMC;
-        x->me_flags |= XVID_ME_GME_REFINE;
+        x->vol_flags    |= XVID_VOL_GMC;
+        x->me_flags     |= XVID_ME_GME_REFINE;
     }
     if( xvid_flags & CODEC_FLAG_QPEL ) {
-        x->vol_flags |= XVID_VOL_QUARTERPEL;
-        x->me_flags |= XVID_ME_QUARTERPELREFINE16;
+        x->vol_flags    |= XVID_VOL_QUARTERPEL;
+        x->me_flags     |= XVID_ME_QUARTERPELREFINE16;
         if( x->vop_flags & XVID_VOP_INTER4V )
             x->me_flags |= XVID_ME_QUARTERPELREFINE8;
     }
