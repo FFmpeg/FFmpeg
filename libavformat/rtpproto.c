@@ -368,6 +368,9 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
     int ret;
     URLContext *hd;
 
+    if (size < 2)
+        return AVERROR(EINVAL);
+
     if (RTP_PT_IS_RTCP(buf[1])) {
         /* RTCP payload type */
         hd = s->rtcp_hd;
