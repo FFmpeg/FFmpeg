@@ -51,10 +51,6 @@ int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
 void ff_rtp_parse_close(RTPDemuxContext *s);
 int64_t ff_rtp_queued_packet_time(RTPDemuxContext *s);
 void ff_rtp_reset_packet_queue(RTPDemuxContext *s);
-int ff_rtp_get_local_rtp_port(URLContext *h);
-int ff_rtp_get_local_rtcp_port(URLContext *h);
-
-int ff_rtp_set_remote_url(URLContext *h, const char *uri);
 
 /**
  * Send a dummy packet on both port pairs to set up the connection
