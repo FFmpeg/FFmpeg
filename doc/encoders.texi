@@ -505,6 +505,19 @@ Small-sized colorful images
 Text-like
 @end table
 
+@item lumi_aq
+Enable lumi masking adaptive quantization when set to 1. Default is 0
+(disabled).
+
+@item variance_aq
+Enable variance adaptive quantization when set to 1. Default is 0
+(disabled).
+
+When combined with @option{lumi_aq}, the resulting quality will not
+be better than any of the two specified individually. In other
+words, the resulting quality will be the worse one of the two
+effects.
+
 @end table
 
 @section libx264

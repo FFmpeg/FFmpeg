@@ -46,6 +46,7 @@
  * This stores all the private context for the codec.
  */
 struct xvid_context {
+    AVClass *class;                /**< Handle for Xvid encoder */
     void *encoder_handle;          /**< Handle for Xvid encoder */
     int xsize;                     /**< Frame x size */
     int ysize;                     /**< Frame y size */
@@ -59,6 +60,8 @@ struct xvid_context {
     char *twopassfile;             /**< second pass temp file name */
     unsigned char *intra_matrix;   /**< P-Frame Quant Matrix */
     unsigned char *inter_matrix;   /**< I-Frame Quant Matrix */
+    int lumi_aq;                   /**< Lumi masking as an aq method */
+    int variance_aq;               /**< Variance adaptive quantization */
 };
 
 /**
@@ -349,6 +352,8 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_plugin_single_t single       = { 0 };
     struct xvid_ff_pass1 rc2pass1     = { 0 };
     xvid_plugin_2pass2_t rc2pass2     = { 0 };
+    xvid_plugin_lumimasking_t masking_l = { 0 }; /* For lumi masking */
+    xvid_plugin_lumimasking_t masking_v = { 0 }; /* For variance AQ */
     xvid_gbl_init_t xvid_gbl_init     = { 0 };
     xvid_enc_create_t xvid_enc_create = { 0 };
     xvid_enc_plugin_t plugins[7];
@@ -518,10 +523,32 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         xvid_enc_create.num_plugins++;
     }
 
+    if (avctx->lumi_masking != 0.0)
+        x->lumi_aq = 1;
+
+    if (x->lumi_aq && x->variance_aq) {
+        x->variance_aq = 0
+        av_log(avctx, AV_LOG_WARNING,
+               "variance_aq is ignored when lumi_aq is set.\n");
+    }
+
     /* Luminance Masking */
-    if( 0.0 != avctx->lumi_masking ) {
+    if (x->lumi_aq) {
+        masking_l.method = 0;
         plugins[xvid_enc_create.num_plugins].func = xvid_plugin_lumimasking;
-        plugins[xvid_enc_create.num_plugins].param = NULL;
+
+        /* The old behavior is that when avctx->lumi_masking is specified,
+         * plugins[...].param = NULL. Trying to keep the old behavior here. */
+        plugins[xvid_enc_create.num_plugins].param = avctx->lumi_masking ? NULL
+                                                                         : &masking_l;
+                xvid_enc_create.num_plugins++;
+    }
+
+    /* Variance AQ */
+    if (x->variance_aq) {
+        masking_v.method = 1;
+        plugins[xvid_enc_create.num_plugins].func  = xvid_plugin_lumimasking;
+        plugins[xvid_enc_create.num_plugins].param = &masking_v;
         xvid_enc_create.num_plugins++;
     }
 
@@ -748,6 +775,21 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
     return 0;
 }
 
+#define OFFSET(x) offsetof(struct xvid_context, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "lumi_aq",     "Luminance masking AQ", OFFSET(lumi_aq),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "variance_aq", "Variance AQ",          OFFSET(variance_aq), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { NULL },
+};
+
+static const AVClass xvid_class = {
+    .class_name = "libxvid",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
     .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
@@ -758,4 +800,5 @@ AVCodec ff_libxvid_encoder = {
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
+    .priv_class     = &xvid_class,
 };
