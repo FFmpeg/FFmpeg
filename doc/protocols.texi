@@ -325,6 +325,16 @@ ffmpeg -i test.wav -f avi pipe:1 | cat > test.avi
 ffmpeg -i test.wav -f avi pipe: | cat > test.avi
 @end example
 
+This protocol accepts the following options:
+
+@table @option
+@item blocksize
+Set I/O operation maximum block size, in bytes. Default value is
+@code{INT_MAX}, which results in not limiting the requested block size.
+Setting this value reasonably low improves user termination request reaction
+time, which is valuable if data transmission is slow.
+@end table
+
 Note that some formats (typically MOV), require the output protocol to
 be seekable, so they will fail with the pipe output protocol.
 
