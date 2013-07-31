@@ -71,6 +71,7 @@ int print_stats       = 1;
 int qp_hist           = 0;
 
 static int file_overwrite     = 0;
+static int file_skip          = 0;
 static int video_discard      = 0;
 static int intra_dc_precision = 8;
 static int using_stdin        = 0;
@@ -508,11 +509,16 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
 static void assert_file_overwrite(const char *filename)
 {
+    if (file_overwrite && file_skip) {
+        fprintf(stderr, "Error, both -y and -n supplied. Exiting.\n");
+        exit_program(1);
+    }
+
     if (!file_overwrite &&
         (strchr(filename, ':') == NULL || filename[1] == ':' ||
          av_strstart(filename, "file:", NULL))) {
         if (avio_check(filename, 0) == 0) {
-            if (!using_stdin) {
+            if (!using_stdin && !file_skip) {
                 fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                 fflush(stderr);
                 if (!read_yesno()) {
@@ -2113,6 +2119,8 @@ const OptionDef options[] = {
         "force format", "fmt" },
     { "y",              OPT_BOOL,                                    {              &file_overwrite },
         "overwrite output files" },
+    { "n",              OPT_BOOL,                                    {              &file_skip },
+        "never overwrite output files" },
     { "c",              HAS_ARG | OPT_STRING | OPT_SPEC |
                         OPT_INPUT | OPT_OUTPUT,                      { .off       = OFFSET(codec_names) },
         "codec name", "codec" },

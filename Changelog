@@ -25,6 +25,7 @@ version 10:
 - support for WavPack muxing (raw and in Matroska)
 - Go2Webinar decoder
 - WavPack encoding through libwavpack
+- Added the -n parameter to avconv
 
 
 version 9:
