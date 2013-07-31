@@ -62,6 +62,8 @@ struct xvid_context {
     unsigned char *inter_matrix;   /**< I-Frame Quant Matrix */
     int lumi_aq;                   /**< Lumi masking as an aq method */
     int variance_aq;               /**< Variance adaptive quantization */
+    int ssim;                      /**< SSIM information display mode */
+    int ssim_acc;                  /**< SSIM accuracy. 0: accurate. 4: fast. */
 };
 
 /**
@@ -354,6 +356,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_plugin_2pass2_t rc2pass2     = { 0 };
     xvid_plugin_lumimasking_t masking_l = { 0 }; /* For lumi masking */
     xvid_plugin_lumimasking_t masking_v = { 0 }; /* For variance AQ */
+    xvid_plugin_ssim_t ssim           = { 0 };
     xvid_gbl_init_t xvid_gbl_init     = { 0 };
     xvid_enc_create_t xvid_enc_create = { 0 };
     xvid_enc_plugin_t plugins[7];
@@ -549,6 +552,17 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         masking_v.method = 1;
         plugins[xvid_enc_create.num_plugins].func  = xvid_plugin_lumimasking;
         plugins[xvid_enc_create.num_plugins].param = &masking_v;
+        xvid_enc_create.num_plugins++;
+    }
+
+    /* SSIM */
+    if (x->ssim) {
+        plugins[xvid_enc_create.num_plugins].func = xvid_plugin_ssim;
+        ssim.b_printstat = x->ssim == 2;
+        ssim.acc         = x->ssim_acc;
+        ssim.cpu_flags   = xvid_gbl_init.cpu_flags;
+        ssim.b_visualize = 0;
+        plugins[xvid_enc_create.num_plugins].param = &ssim;
         xvid_enc_create.num_plugins++;
     }
 
@@ -780,6 +794,11 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
 static const AVOption options[] = {
     { "lumi_aq",     "Luminance masking AQ", OFFSET(lumi_aq),     AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
     { "variance_aq", "Variance AQ",          OFFSET(variance_aq), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    { "ssim",        "Show SSIM information to stdout",       OFFSET(ssim),              AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, VE, "ssim" },
+        { "off",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, VE, "ssim" },
+        { "avg",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, VE, "ssim" },
+        { "frame",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 2 }, INT_MIN, INT_MAX, VE, "ssim" },
+    { "ssim_acc",    "SSIM accuracy",                         OFFSET(ssim_acc),          AV_OPT_TYPE_INT, { .i64 = 2 }, 0, 4, VE },
     { NULL },
 };
 

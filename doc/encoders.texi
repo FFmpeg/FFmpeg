@@ -518,6 +518,43 @@ be better than any of the two specified individually. In other
 words, the resulting quality will be the worse one of the two
 effects.
 
+@item ssim
+Set structural similarity (SSIM) displaying method. Possible values:
+
+@table @samp
+@item off
+Disable displaying of SSIM information.
+
+@item avg
+Output average SSIM at the end of encoding to stdout. The format of
+showing the average SSIM is:
+
+@example
+Average SSIM: %f
+@end example
+
+For users who are not familiar with C, %f means a float number, or
+a decimal (e.g. 0.939232).
+
+@item frame
+Output both per-frame SSIM data during encoding and average SSIM at
+the end of encoding to stdout. The format of per-frame information
+is:
+
+@example
+       SSIM: avg: %1.3f min: %1.3f max: %1.3f
+@end example
+
+For users who are not familiar with C, %1.3f means a float number
+rounded to 3 digits after the dot (e.g. 0.932).
+
+@end table
+
+@item ssim_acc
+Set SSIM accuracy. Valid options are integers within the range of
+0-4, while 0 gives the most accurate result and 4 computes the
+fastest.
+
 @end table
 
 @section libx264
