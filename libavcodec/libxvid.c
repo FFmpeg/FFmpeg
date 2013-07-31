@@ -364,7 +364,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_plugin_ssim_t        ssim            = { 0 };
     xvid_gbl_init_t           xvid_gbl_init   = { 0 };
     xvid_enc_create_t         xvid_enc_create = { 0 };
-    xvid_enc_plugin_t         plugins[7];
+    xvid_enc_plugin_t         plugins[4];
 
     x->twopassfd = -1;
 
