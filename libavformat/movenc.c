@@ -2015,11 +2015,13 @@ static int mov_write_tmpo_tag(AVIOContext *pb, AVFormatContext *s)
     return size;
 }
 
-/* iTunes track number */
+/* iTunes track or disc number */
 static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
-                              AVFormatContext *s)
+                              AVFormatContext *s, int disc)
 {
-    AVDictionaryEntry *t = av_dict_get(s->metadata, "track", NULL, 0);
+    AVDictionaryEntry *t = av_dict_get(s->metadata,
+                                       disc ? "disc" : "track",
+                                       NULL, 0);
     int size = 0, track = t ? atoi(t->value) : 0;
     if (track) {
         int tracks = 0;
@@ -2027,14 +2029,14 @@ static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
         if (slash)
             tracks = atoi(slash + 1);
         avio_wb32(pb, 32); /* size */
-        ffio_wfourcc(pb, "trkn");
+        ffio_wfourcc(pb, disc ? "disk" : "trkn");
         avio_wb32(pb, 24); /* size */
         ffio_wfourcc(pb, "data");
         avio_wb32(pb, 0);        // 8 bytes empty
         avio_wb32(pb, 0);
         avio_wb16(pb, 0);        // empty
-        avio_wb16(pb, track);    // track number
-        avio_wb16(pb, tracks);   // total track number
+        avio_wb16(pb, track);    // track / disc number
+        avio_wb16(pb, tracks);   // total track / disc number
         avio_wb16(pb, 0);        // empty
         size = 32;
     }
@@ -2097,7 +2099,8 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_int8_metadata  (s, pb, "stik",    "media_type",1);
     mov_write_int8_metadata  (s, pb, "hdvd",    "hd_video",  1);
     mov_write_int8_metadata  (s, pb, "pgap",    "gapless_playback",1);
-    mov_write_trkn_tag(pb, mov, s);
+    mov_write_trkn_tag(pb, mov, s, 0); // track number
+    mov_write_trkn_tag(pb, mov, s, 1); // disc number
     mov_write_tmpo_tag(pb, s);
     return update_size(pb, pos);
 }
