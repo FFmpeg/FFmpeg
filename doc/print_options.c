@@ -27,7 +27,9 @@
 #include <float.h>
 
 #include "libavformat/avformat.h"
+#include "libavformat/options_table.h"
 #include "libavcodec/avcodec.h"
+#include "libavcodec/options_table.h"
 #include "libavutil/opt.h"
 
 static void print_usage(void)
@@ -96,16 +98,12 @@ static void show_opts(const AVOption *opts, int per_stream)
 
 static void show_format_opts(void)
 {
-#include "libavformat/options_table.h"
-
     printf("@section Format AVOptions\n");
     show_opts(avformat_options, 0);
 }
 
 static void show_codec_opts(void)
 {
-#include "libavcodec/options_table.h"
-
     printf("@section Codec AVOptions\n");
     show_opts(avcodec_options, 1);
 }
