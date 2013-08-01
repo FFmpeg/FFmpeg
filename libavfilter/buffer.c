@@ -30,7 +30,9 @@
 #include "internal.h"
 #include "audio.h"
 #include "avcodec.h"
+#include "version.h"
 
+#if FF_API_AVFILTERBUFFER
 void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
 {
     if (ptr->extended_data != ptr->data)
@@ -165,3 +167,4 @@ void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilterBufferRef *s
     av_dict_free(&dst->metadata);
     av_dict_copy(&dst->metadata, src->metadata, 0);
 }
+#endif /* FF_API_AVFILTERBUFFER */
