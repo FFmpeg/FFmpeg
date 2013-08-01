@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "error.h"
 #include "log.h"
 #include "mem.h"
 #include "tree.h"
@@ -220,6 +221,7 @@ int main(int argc, char **argv)
 
     for (i = 0; i < 10000; i++) {
         intptr_t j = av_lfg_get(&prng) % 86294;
+
         if (check(root) > 999) {
             av_log(NULL, AV_LOG_ERROR, "FATAL error %d\n", i);
             print(root, 0);
@@ -229,6 +231,10 @@ int main(int argc, char **argv)
 
         if (!node)
             node = av_tree_node_alloc();
+        if (!node) {
+            av_log(NULL, AV_LOG_ERROR, "Memory allocation failure.\n");
+            return AVERROR(ENOMEM);
+        }
         av_tree_insert(&root, (void *)(j + 1), cmp, &node);
 
         j = av_lfg_get(&prng) % 86294;
@@ -241,6 +247,9 @@ int main(int argc, char **argv)
                 av_log(NULL, AV_LOG_ERROR, "removal failure %d\n", i);
         }
     }
+
+    av_tree_destroy(root);
+
     return 0;
 }
 #endif
