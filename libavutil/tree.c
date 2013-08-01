@@ -245,8 +245,10 @@ int main(int argc, char **argv)
             k = av_tree_find(root, (void *)(j + 1), cmp, NULL);
             if (k)
                 av_log(NULL, AV_LOG_ERROR, "removal failure %d\n", i);
+            av_free(node2);
         }
     }
+    av_free(node);
 
     av_tree_destroy(root);
 
