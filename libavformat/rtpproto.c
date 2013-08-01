@@ -327,12 +327,13 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     socklen_t from_len;
     int len, n;
     struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
+    int poll_delay = h->flags & AVIO_FLAG_NONBLOCK ? 0 : 100;
 
     for(;;) {
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
         /* build fdset to listen to RTP and RTCP packets */
-        n = poll(p, 2, 100);
+        n = poll(p, 2, poll_delay);
         if (n > 0) {
             /* first try RTCP */
             if (p[1].revents & POLLIN) {
@@ -369,6 +370,8 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 continue;
             return AVERROR(EIO);
         }
+        if (h->flags & AVIO_FLAG_NONBLOCK)
+            return AVERROR(EAGAIN);
     }
     return len;
 }
