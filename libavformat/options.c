@@ -79,7 +79,7 @@ static const AVClass *format_child_class_next(const AVClass *prev)
 static const AVClass av_format_context_class = {
     .class_name     = "AVFormatContext",
     .item_name      = format_to_name,
-    .option         = options,
+    .option         = avformat_options,
     .version        = LIBAVUTIL_VERSION_INT,
     .child_next     = format_child_next,
     .child_class_next = format_child_class_next,

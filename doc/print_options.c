@@ -99,7 +99,7 @@ static void show_format_opts(void)
 #include "libavformat/options_table.h"
 
     printf("@section Format AVOptions\n");
-    show_opts(options, 0);
+    show_opts(avformat_options, 0);
 }
 
 static void show_codec_opts(void)
@@ -107,7 +107,7 @@ static void show_codec_opts(void)
 #include "libavcodec/options_table.h"
 
     printf("@section Codec AVOptions\n");
-    show_opts(options, 1);
+    show_opts(avcodec_options, 1);
 }
 
 int main(int argc, char **argv)
