@@ -2022,6 +2022,10 @@ static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
     AVDictionaryEntry *t = av_dict_get(s->metadata, "track", NULL, 0);
     int size = 0, track = t ? atoi(t->value) : 0;
     if (track) {
+        int tracks = 0;
+        char *slash = strchr(t->value, '/');
+        if (slash)
+            tracks = atoi(slash + 1);
         avio_wb32(pb, 32); /* size */
         ffio_wfourcc(pb, "trkn");
         avio_wb32(pb, 24); /* size */
@@ -2030,7 +2034,7 @@ static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
         avio_wb32(pb, 0);
         avio_wb16(pb, 0);        // empty
         avio_wb16(pb, track);    // track number
-        avio_wb16(pb, 0);        // total track number
+        avio_wb16(pb, tracks);   // total track number
         avio_wb16(pb, 0);        // empty
         size = 32;
     }
