@@ -325,7 +325,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     RTPContext *s = h->priv_data;
     struct sockaddr_storage from;
     socklen_t from_len;
-    int len, n;
+    int len, n, i;
     struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
     int poll_delay = h->flags & AVIO_FLAG_NONBLOCK ? 0 : 100;
 
@@ -334,10 +334,12 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
             return AVERROR_EXIT;
         n = poll(p, 2, poll_delay);
         if (n > 0) {
-            /* first try RTCP */
-            if (p[1].revents & POLLIN) {
+            /* first try RTCP, then RTP */
+            for (i = 1; i >= 0; i--) {
+                if (!(p[i].revents & POLLIN))
+                    continue;
                 from_len = sizeof(from);
-                len = recvfrom (s->rtcp_fd, buf, size, 0,
+                len = recvfrom(p[i].fd, buf, size, 0,
                                 (struct sockaddr *)&from, &from_len);
                 if (len < 0) {
                     if (ff_neterrno() == AVERROR(EAGAIN) ||
@@ -347,22 +349,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 }
                 if (rtp_check_source_lists(s, &from))
                     continue;
-                break;
-            }
-            /* then RTP */
-            if (p[0].revents & POLLIN) {
-                from_len = sizeof(from);
-                len = recvfrom (s->rtp_fd, buf, size, 0,
-                                (struct sockaddr *)&from, &from_len);
-                if (len < 0) {
-                    if (ff_neterrno() == AVERROR(EAGAIN) ||
-                        ff_neterrno() == AVERROR(EINTR))
-                        continue;
-                    return AVERROR(EIO);
-                }
-                if (rtp_check_source_lists(s, &from))
-                    continue;
-                break;
+                return len;
             }
         } else if (n < 0) {
             if (ff_neterrno() == AVERROR(EINTR))
