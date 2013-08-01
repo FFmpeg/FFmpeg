@@ -36,6 +36,7 @@
 #include "libavformat/network.h"
 #include "libavformat/os_support.h"
 #include "libavformat/rtpdec.h"
+#include "libavformat/rtpproto.h"
 #include "libavformat/rtsp.h"
 #include "libavformat/avio_internal.h"
 #include "libavformat/internal.h"

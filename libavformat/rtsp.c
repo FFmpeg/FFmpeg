@@ -42,6 +42,7 @@
 #include "rtsp.h"
 
 #include "rtpdec.h"
+#include "rtpproto.h"
 #include "rdt.h"
 #include "rtpdec_formats.h"
 #include "rtpenc_chain.h"
