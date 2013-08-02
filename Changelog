@@ -26,6 +26,7 @@ version 10:
 - Go2Webinar decoder
 - WavPack encoding through libwavpack
 - Added the -n parameter to avconv
+- RTMP seek support
 
 
 version 9:
