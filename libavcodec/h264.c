@@ -2717,8 +2717,7 @@ int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc)
         pic_field_poc[0] = field_poc[0];
     if (h->picture_structure != PICT_TOP_FIELD)
         pic_field_poc[1] = field_poc[1];
-    if (pic_poc)
-        *pic_poc = FFMIN(pic_field_poc[0], pic_field_poc[1]);
+    *pic_poc = FFMIN(pic_field_poc[0], pic_field_poc[1]);
 
     return 0;
 }

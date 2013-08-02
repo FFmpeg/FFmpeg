@@ -3563,6 +3563,14 @@ typedef struct AVCodecParserContext {
      * AV_PICTURE_STRUCTURE_TOP_FIELD.
      */
     enum AVPictureStructure picture_structure;
+
+    /**
+     * Picture number incremented in presentation or output order.
+     * This field may be reinitialized at the first picture of a new sequence.
+     *
+     * For example, this corresponds to H.264 PicOrderCnt.
+     */
+    int output_picture_number;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
