@@ -3779,8 +3779,7 @@ EOF
 done
 
 check_cc <<EOF && enable pragma_deprecated
-_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
-_Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")
+void foo(void) { _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"") }
 EOF
 
 check_cc <<EOF && enable attribute_packed
