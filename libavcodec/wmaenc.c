@@ -177,7 +177,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
     }
 
     s->block_len = 1 << s->block_len_bits;
-//     assert((s->block_pos + s->block_len) <= s->frame_len);
+//     av_assert0((s->block_pos + s->block_len) <= s->frame_len);
     bsize = s->frame_len_bits - s->block_len_bits;
 
     //FIXME factor
