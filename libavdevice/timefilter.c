@@ -118,7 +118,8 @@ int main(void)
                 double par0, par1;
                 better = 0;
                 for (par0 = bestpar0 * 0.8; par0 <= bestpar0 * 1.21; par0 += bestpar0 * 0.05) {
-                    for (par1 = bestpar1 * 0.8; par1 <= bestpar1 * 1.21; par1 += bestpar1 * 0.05) {
+                    double range = n0 ? 0.8 : 1.0;
+                    for (par1 = bestpar1 * range; par1 <= bestpar1 * (2.01 - range); par1 += bestpar1 * 0.05) {
                         double error   = 0;
                         TimeFilter *tf = ff_timefilter_new(1, par0, par1);
                         for (i = 0; i < SAMPLES; i++) {
