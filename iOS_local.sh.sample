@@ -1,7 +1,0 @@
-# Please make a copy for this file named 'Android_local.sh', then fix out
-# bellow configure lines for yourself.
-
-## DEVRoot & SDKRoot setting sample,
-#export DEVRoot=/Users/nuoerlz/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer
-#export SDKRoot=$DEVRoot/SDKs/iPhoneOS6.1.sdk
-

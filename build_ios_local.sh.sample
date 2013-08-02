@@ -1,0 +1,6 @@
+# Please make a copy for this file named 'build_ios_local.sh', and copy to $HOME
+# directory, then fix out bellow configure lines to fit yourself.
+
+## DEVELOPER & SDKVERSION setting sample,
+#export DEVELOPER="/Users/nuoerlz/Applications/Xcode.app/Contents/Developer"
+#export SDKVERSION="6.1"
