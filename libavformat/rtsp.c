@@ -1481,18 +1481,15 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
 
         case RTSP_LOWER_TRANSPORT_UDP: {
             char url[1024], options[30] = "";
+            const char *peer = host;
 
             if (rt->rtsp_flags & RTSP_FLAG_FILTER_SRC)
                 av_strlcpy(options, "?connect=1", sizeof(options));
             /* Use source address if specified */
-            if (reply->transports[0].source[0]) {
-                ff_url_join(url, sizeof(url), "rtp", NULL,
-                            reply->transports[0].source,
-                            reply->transports[0].server_port_min, "%s", options);
-            } else {
-                ff_url_join(url, sizeof(url), "rtp", NULL, host,
-                            reply->transports[0].server_port_min, "%s", options);
-            }
+            if (reply->transports[0].source[0])
+                peer = reply->transports[0].source;
+            ff_url_join(url, sizeof(url), "rtp", NULL, peer,
+                        reply->transports[0].server_port_min, "%s", options);
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
                 ff_rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
                 err = AVERROR_INVALIDDATA;
