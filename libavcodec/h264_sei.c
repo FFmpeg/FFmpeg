@@ -149,7 +149,7 @@ static int decode_unregistered_user_data(H264Context *h, int size){
     }
 
     user_data[i]= 0;
-    e= sscanf(user_data+16, "x264 - core %d"/*%s - H.264/MPEG-4 AVC codec - Copyleft 2005 - http://www.videolan.org/x264.html*/, &build);
+    e = sscanf(user_data + 16, "x264 - core %d", &build);
     if(e==1 && build>0)
         h->x264_build= build;
     if(e==1 && build==1 && !strncmp(user_data+16, "x264 - core 0000", 16))

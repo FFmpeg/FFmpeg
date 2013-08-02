@@ -32,7 +32,7 @@
 #include "sinewin.h"
 #include "twinvq_data.h"
 
-enum FrameType {
+enum TwinVQFrameType {
     FT_SHORT = 0,  ///< Short frame  (divided in n   sub-blocks)
     FT_MEDIUM,     ///< Medium frame (divided in m<n sub-blocks)
     FT_LONG,       ///< Long frame   (single sub-block + PPC)
@@ -42,7 +42,7 @@ enum FrameType {
 /**
  * Parameters and tables that are different for each frame type
  */
-struct FrameMode {
+struct TwinVQFrameMode {
     uint8_t         sub;      ///< Number subblocks in each frame
     const uint16_t *bark_tab;
 
@@ -66,8 +66,8 @@ struct FrameMode {
  * Parameters and tables that are different for every combination of
  * bitrate/sample rate
  */
-typedef struct {
-    struct FrameMode fmode[3]; ///< frame type-dependant parameters
+typedef struct TwinVQModeTab {
+    struct TwinVQFrameMode fmode[3]; ///< frame type-dependant parameters
 
     uint16_t     size;        ///< frame size in samples
     uint8_t      n_lsp;       ///< number of lsp coefficients
@@ -90,9 +90,9 @@ typedef struct {
 
     /** constant for peak period to peak width conversion */
     uint16_t     peak_per2wid;
-} ModeTab;
+} TwinVQModeTab;
 
-static const ModeTab mode_08_08 = {
+static const TwinVQModeTab mode_08_08 = {
     {
         { 8, bark_tab_s08_64,  10, tab.fcb08s, 1, 5, tab.cb0808s0, tab.cb0808s1, 18 },
         { 2, bark_tab_m08_256, 20, tab.fcb08m, 2, 5, tab.cb0808m0, tab.cb0808m1, 16 },
@@ -101,7 +101,7 @@ static const ModeTab mode_08_08 = {
     512, 12, tab.lsp08, 1, 5, 3, 3, tab.shape08, 8, 28, 20, 6, 40
 };
 
-static const ModeTab mode_11_08 = {
+static const TwinVQModeTab mode_11_08 = {
     {
         { 8, bark_tab_s11_64,  10, tab.fcb11s, 1, 5, tab.cb1108s0, tab.cb1108s1, 29 },
         { 2, bark_tab_m11_256, 20, tab.fcb11m, 2, 5, tab.cb1108m0, tab.cb1108m1, 24 },
@@ -110,7 +110,7 @@ static const ModeTab mode_11_08 = {
     512, 16, tab.lsp11, 1, 6, 4, 3, tab.shape11, 9, 36, 30, 7, 90
 };
 
-static const ModeTab mode_11_10 = {
+static const TwinVQModeTab mode_11_10 = {
     {
         { 8, bark_tab_s11_64,  10, tab.fcb11s, 1, 5, tab.cb1110s0, tab.cb1110s1, 21 },
         { 2, bark_tab_m11_256, 20, tab.fcb11m, 2, 5, tab.cb1110m0, tab.cb1110m1, 18 },
@@ -119,7 +119,7 @@ static const ModeTab mode_11_10 = {
     512, 16, tab.lsp11, 1, 6, 4, 3, tab.shape11, 9, 36, 30, 7, 90
 };
 
-static const ModeTab mode_16_16 = {
+static const TwinVQModeTab mode_16_16 = {
     {
         { 8, bark_tab_s16_128,  10, tab.fcb16s, 1, 5, tab.cb1616s0, tab.cb1616s1, 16 },
         { 2, bark_tab_m16_512,  20, tab.fcb16m, 2, 5, tab.cb1616m0, tab.cb1616m1, 15 },
@@ -128,7 +128,7 @@ static const ModeTab mode_16_16 = {
     1024, 16, tab.lsp16, 1, 6, 4, 3, tab.shape16, 9, 56, 60, 7, 180
 };
 
-static const ModeTab mode_22_20 = {
+static const TwinVQModeTab mode_22_20 = {
     {
         { 8, bark_tab_s22_128,  10, tab.fcb22s_1, 1, 6, tab.cb2220s0, tab.cb2220s1, 18 },
         { 2, bark_tab_m22_512,  20, tab.fcb22m_1, 2, 6, tab.cb2220m0, tab.cb2220m1, 17 },
@@ -137,7 +137,7 @@ static const ModeTab mode_22_20 = {
     1024, 16, tab.lsp22_1, 1, 6, 4, 3, tab.shape22_1, 9, 56, 36, 7, 144
 };
 
-static const ModeTab mode_22_24 = {
+static const TwinVQModeTab mode_22_24 = {
     {
         { 8, bark_tab_s22_128,  10, tab.fcb22s_1, 1, 6, tab.cb2224s0, tab.cb2224s1, 15 },
         { 2, bark_tab_m22_512,  20, tab.fcb22m_1, 2, 6, tab.cb2224m0, tab.cb2224m1, 14 },
@@ -146,7 +146,7 @@ static const ModeTab mode_22_24 = {
     1024, 16, tab.lsp22_1, 1, 6, 4, 3, tab.shape22_1, 9, 56, 36, 7, 144
 };
 
-static const ModeTab mode_22_32 = {
+static const TwinVQModeTab mode_22_32 = {
     {
         { 4, bark_tab_s22_128, 10, tab.fcb22s_2, 1, 6, tab.cb2232s0, tab.cb2232s1, 11 },
         { 2, bark_tab_m22_256, 20, tab.fcb22m_2, 2, 6, tab.cb2232m0, tab.cb2232m1, 11 },
@@ -155,7 +155,7 @@ static const ModeTab mode_22_32 = {
     512, 16, tab.lsp22_2, 1, 6, 4, 4, tab.shape22_2, 9, 56, 36, 7, 72
 };
 
-static const ModeTab mode_44_40 = {
+static const TwinVQModeTab mode_44_40 = {
     {
         { 16, bark_tab_s44_128,  10, tab.fcb44s, 1, 6, tab.cb4440s0, tab.cb4440s1, 18 },
         { 4,  bark_tab_m44_512,  20, tab.fcb44m, 2, 6, tab.cb4440m0, tab.cb4440m1, 17 },
@@ -164,7 +164,7 @@ static const ModeTab mode_44_40 = {
     2048, 20, tab.lsp44, 1, 6, 4, 4, tab.shape44, 9, 84, 54, 7, 432
 };
 
-static const ModeTab mode_44_48 = {
+static const TwinVQModeTab mode_44_48 = {
     {
         { 16, bark_tab_s44_128,  10, tab.fcb44s, 1, 6, tab.cb4448s0, tab.cb4448s1, 15 },
         { 4,  bark_tab_m44_512,  20, tab.fcb44m, 2, 6, tab.cb4448m0, tab.cb4448m1, 14 },
@@ -173,12 +173,12 @@ static const ModeTab mode_44_48 = {
     2048, 20, tab.lsp44, 1, 6, 4, 4, tab.shape44, 9, 84, 54, 7, 432
 };
 
-typedef struct TwinContext {
+typedef struct TwinVQContext {
     AVCodecContext *avctx;
     AVFloatDSPContext fdsp;
     FFTContext mdct_ctx[3];
 
-    const ModeTab *mtab;
+    const TwinVQModeTab *mtab;
 
     // history
     float lsp_hist[2][20];           ///< LSP coefficients of the last frame
@@ -202,7 +202,7 @@ typedef struct TwinContext {
 
     // scratch buffers
     float *tmp_buf;
-} TwinContext;
+} TwinVQContext;
 
 #define PPC_SHAPE_CB_SIZE 64
 #define PPC_SHAPE_LEN_MAX 60
@@ -263,11 +263,11 @@ static float eval_lpc_spectrum(const float *lsp, float cos_val, int order)
 /**
  * Evaluate the LPC amplitude spectrum envelope from the line spectrum pairs.
  */
-static void eval_lpcenv(TwinContext *tctx, const float *cos_vals, float *lpc)
+static void eval_lpcenv(TwinVQContext *tctx, const float *cos_vals, float *lpc)
 {
     int i;
-    const ModeTab *mtab = tctx->mtab;
-    int size_s          = mtab->size / mtab->fmode[FT_SHORT].sub;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int size_s = mtab->size / mtab->fmode[FT_SHORT].sub;
 
     for (i = 0; i < size_s / 2; i++) {
         float cos_i = tctx->cos_tabs[0][i];
@@ -307,14 +307,14 @@ static inline float get_cos(int idx, int part, const float *cos_tab, int size)
  *        (negative cosine values)
  * @param size the size of the whole output
  */
-static inline void eval_lpcenv_or_interp(TwinContext *tctx,
-                                         enum FrameType ftype,
+static inline void eval_lpcenv_or_interp(TwinVQContext *tctx,
+                                         enum TwinVQFrameType ftype,
                                          float *out, const float *in,
                                          int size, int step, int part)
 {
     int i;
-    const ModeTab *mtab  = tctx->mtab;
-    const float *cos_tab = tctx->cos_tabs[ftype];
+    const TwinVQModeTab *mtab = tctx->mtab;
+    const float *cos_tab      = tctx->cos_tabs[ftype];
 
     // Fill the 's'
     for (i = 0; i < size; i += step)
@@ -344,7 +344,7 @@ static inline void eval_lpcenv_or_interp(TwinContext *tctx,
                 out[size - 2 * step], step - 1);
 }
 
-static void eval_lpcenv_2parts(TwinContext *tctx, enum FrameType ftype,
+static void eval_lpcenv_2parts(TwinVQContext *tctx, enum TwinVQFrameType ftype,
                                const float *buf, float *lpc,
                                int size, int step)
 {
@@ -363,8 +363,8 @@ static void eval_lpcenv_2parts(TwinContext *tctx, enum FrameType ftype,
  * bitstream, sum the corresponding vectors and write the result to *out
  * after permutation.
  */
-static void dequant(TwinContext *tctx, GetBitContext *gb, float *out,
-                    enum FrameType ftype,
+static void dequant(TwinVQContext *tctx, GetBitContext *gb, float *out,
+                    enum TwinVQFrameType ftype,
                     const int16_t *cb0, const int16_t *cb1, int cb_len)
 {
     int pos = 0;
@@ -478,15 +478,15 @@ static void add_peak(int period, int width, const float *shape,
         speech[j + center] += ppc_gain * *shape++;
 }
 
-static void decode_ppc(TwinContext *tctx, int period_coef, const float *shape,
-                       float ppc_gain, float *speech)
+static void decode_ppc(TwinVQContext *tctx, int period_coef,
+                       const float *shape, float ppc_gain, float *speech)
 {
-    const ModeTab *mtab = tctx->mtab;
-    int isampf          = tctx->avctx->sample_rate / 1000;
-    int ibps            = tctx->avctx->bit_rate / (1000 * tctx->avctx->channels);
-    int min_period      = ROUNDED_DIV(40 * 2 * mtab->size, isampf);
-    int max_period      = ROUNDED_DIV(40 * 2 * mtab->size * 6, isampf);
-    int period_range    = max_period - min_period;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int isampf = tctx->avctx->sample_rate /  1000;
+    int ibps   = tctx->avctx->bit_rate    / (1000 * tctx->avctx->channels);
+    int min_period   = ROUNDED_DIV(40 * 2 * mtab->size, isampf);
+    int max_period   = ROUNDED_DIV(40 * 2 * mtab->size * 6, isampf);
+    int period_range = max_period - min_period;
 
     // This is actually the period multiplied by 400. It is just linearly coded
     // between its maximum and minimum value.
@@ -505,10 +505,10 @@ static void decode_ppc(TwinContext *tctx, int period_coef, const float *shape,
     add_peak(period, width, shape, ppc_gain, speech, mtab->ppc_shape_len);
 }
 
-static void dec_gain(TwinContext *tctx, GetBitContext *gb, enum FrameType ftype,
-                     float *out)
+static void dec_gain(TwinVQContext *tctx, GetBitContext *gb,
+                     enum TwinVQFrameType ftype, float *out)
 {
-    const ModeTab *mtab = tctx->mtab;
+    const TwinVQModeTab *mtab = tctx->mtab;
     int i, j;
     int sub        = mtab->fmode[ftype].sub;
     float step     = AMP_MAX / ((1 << GAIN_BITS) - 1);
@@ -553,10 +553,10 @@ static void rearrange_lsp(int order, float *lsp, float min_dist)
         }
 }
 
-static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
+static void decode_lsp(TwinVQContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
                        int lpc_hist_idx, float *lsp, float *hist)
 {
-    const ModeTab *mtab = tctx->mtab;
+    const TwinVQModeTab *mtab = tctx->mtab;
     int i, j;
 
     const float *cb  = mtab->lspcodebook;
@@ -593,8 +593,8 @@ static void decode_lsp(TwinContext *tctx, int lpc_idx1, uint8_t *lpc_idx2,
     ff_sort_nearly_sorted_floats(lsp, mtab->n_lsp);
 }
 
-static void dec_lpc_spectrum_inv(TwinContext *tctx, float *lsp,
-                                 enum FrameType ftype, float *lpc)
+static void dec_lpc_spectrum_inv(TwinVQContext *tctx, float *lsp,
+                                 enum TwinVQFrameType ftype, float *lpc)
 {
     int i;
     int size = tctx->mtab->size / tctx->mtab->fmode[ftype].sub;
@@ -617,14 +617,14 @@ static void dec_lpc_spectrum_inv(TwinContext *tctx, float *lsp,
 
 static const uint8_t wtype_to_wsize[] = { 0, 0, 2, 2, 2, 1, 0, 1, 1 };
 
-static void imdct_and_window(TwinContext *tctx, enum FrameType ftype, int wtype,
-                             float *in, float *prev, int ch)
+static void imdct_and_window(TwinVQContext *tctx, enum TwinVQFrameType ftype,
+                             int wtype, float *in, float *prev, int ch)
 {
-    FFTContext *mdct    = &tctx->mdct_ctx[ftype];
-    const ModeTab *mtab = tctx->mtab;
-    int bsize           = mtab->size / mtab->fmode[ftype].sub;
-    int size            = mtab->size;
-    float *buf1         = tctx->tmp_buf;
+    FFTContext *mdct = &tctx->mdct_ctx[ftype];
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int bsize = mtab->size / mtab->fmode[ftype].sub;
+    int size  = mtab->size;
+    float *buf1 = tctx->tmp_buf;
     int j, first_wsize, wsize; // Window size
     float *out  = tctx->curr_frame + 2 * ch * mtab->size;
     float *out2 = out;
@@ -668,11 +668,11 @@ static void imdct_and_window(TwinContext *tctx, enum FrameType ftype, int wtype,
     tctx->last_block_pos[ch] = (size + first_wsize) / 2;
 }
 
-static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
-                         float **out)
+static void imdct_output(TwinVQContext *tctx, enum TwinVQFrameType ftype,
+                         int wtype, float **out)
 {
-    const ModeTab *mtab = tctx->mtab;
-    float *prev_buf     = tctx->prev_frame + tctx->last_block_pos[0];
+    const TwinVQModeTab *mtab = tctx->mtab;
+    float *prev_buf           = tctx->prev_frame + tctx->last_block_pos[0];
     int size1, size2, i;
 
     for (i = 0; i < tctx->avctx->channels; i++)
@@ -699,10 +699,11 @@ static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
     }
 }
 
-static void dec_bark_env(TwinContext *tctx, const uint8_t *in, int use_hist,
-                         int ch, float *out, float gain, enum FrameType ftype)
+static void dec_bark_env(TwinVQContext *tctx, const uint8_t *in, int use_hist,
+                         int ch, float *out, float gain,
+                         enum TwinVQFrameType ftype)
 {
-    const ModeTab *mtab = tctx->mtab;
+    const TwinVQModeTab *mtab = tctx->mtab;
     int i, j;
     float *hist     = tctx->bark_hist[ftype][ch];
     float val       = ((const float []) { 0.4, 0.35, 0.28 })[ftype];
@@ -726,13 +727,13 @@ static void dec_bark_env(TwinContext *tctx, const uint8_t *in, int use_hist,
         }
 }
 
-static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
-                                     float *out, enum FrameType ftype)
+static void read_and_decode_spectrum(TwinVQContext *tctx, GetBitContext *gb,
+                                     float *out, enum TwinVQFrameType ftype)
 {
-    const ModeTab *mtab = tctx->mtab;
-    int channels        = tctx->avctx->channels;
-    int sub             = mtab->fmode[ftype].sub;
-    int block_size      = mtab->size / sub;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int channels              = tctx->avctx->channels;
+    int sub        = mtab->fmode[ftype].sub;
+    int block_size = mtab->size / sub;
     float gain[CHANNELS_MAX * SUBBLOCKS_MAX];
     float ppc_shape[PPC_SHAPE_LEN_MAX * CHANNELS_MAX * 4];
     uint8_t bark1[CHANNELS_MAX][SUBBLOCKS_MAX][BARK_N_COEF_MAX];
@@ -812,19 +813,19 @@ static void read_and_decode_spectrum(TwinContext *tctx, GetBitContext *gb,
     }
 }
 
-static int twin_decode_frame(AVCodecContext *avctx, void *data,
-                             int *got_frame_ptr, AVPacket *avpkt)
+static int twinvq_decode_frame(AVCodecContext *avctx, void *data,
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
     AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    TwinContext *tctx  = avctx->priv_data;
+    TwinVQContext *tctx = avctx->priv_data;
     GetBitContext gb;
-    const ModeTab *mtab = tctx->mtab;
-    float **out         = NULL;
-    enum FrameType ftype;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    float **out = NULL;
+    enum TwinVQFrameType ftype;
     int window_type, ret;
-    static const enum FrameType wtype_to_ftype_table[] = {
+    static const enum TwinVQFrameType wtype_to_ftype_table[] = {
         FT_LONG,   FT_LONG, FT_SHORT, FT_LONG,
         FT_MEDIUM, FT_LONG, FT_LONG,  FT_MEDIUM, FT_MEDIUM
     };
@@ -874,14 +875,14 @@ static int twin_decode_frame(AVCodecContext *avctx, void *data,
 /**
  * Init IMDCT and windowing tables
  */
-static av_cold int init_mdct_win(TwinContext *tctx)
+static av_cold int init_mdct_win(TwinVQContext *tctx)
 {
     int i, j, ret;
-    const ModeTab *mtab = tctx->mtab;
-    int size_s          = mtab->size / mtab->fmode[FT_SHORT].sub;
-    int size_m          = mtab->size / mtab->fmode[FT_MEDIUM].sub;
-    int channels        = tctx->avctx->channels;
-    float norm          = channels == 1 ? 2.0 : 1.0;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int size_s = mtab->size / mtab->fmode[FT_SHORT].sub;
+    int size_m = mtab->size / mtab->fmode[FT_MEDIUM].sub;
+    int channels = tctx->avctx->channels;
+    float norm = channels == 1 ? 2.0 : 1.0;
 
     for (i = 0; i < 3; i++) {
         int bsize = tctx->mtab->size / tctx->mtab->fmode[i].sub;
@@ -934,7 +935,7 @@ alloc_fail:
 static void permutate_in_line(int16_t *tab, int num_vect, int num_blocks,
                               int block_size,
                               const uint8_t line_len[2], int length_div,
-                              enum FrameType ftype)
+                              enum TwinVQFrameType ftype)
 {
     int i, j;
 
@@ -991,11 +992,11 @@ static void linear_perm(int16_t *out, int16_t *in, int n_blocks, int size)
         out[i] = block_size * (in[i] % n_blocks) + in[i] / n_blocks;
 }
 
-static av_cold void construct_perm_table(TwinContext *tctx,
-                                         enum FrameType ftype)
+static av_cold void construct_perm_table(TwinVQContext *tctx,
+                                         enum TwinVQFrameType ftype)
 {
     int block_size, size;
-    const ModeTab *mtab = tctx->mtab;
+    const TwinVQModeTab *mtab = tctx->mtab;
     int16_t *tmp_perm = (int16_t *)tctx->tmp_buf;
 
     if (ftype == FT_PPC) {
@@ -1017,12 +1018,12 @@ static av_cold void construct_perm_table(TwinContext *tctx,
                 size * block_size);
 }
 
-static av_cold void init_bitstream_params(TwinContext *tctx)
+static av_cold void init_bitstream_params(TwinVQContext *tctx)
 {
-    const ModeTab *mtab = tctx->mtab;
-    int n_ch            = tctx->avctx->channels;
-    int total_fr_bits   = tctx->avctx->bit_rate * mtab->size /
-                          tctx->avctx->sample_rate;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int n_ch                  = tctx->avctx->channels;
+    int total_fr_bits         = tctx->avctx->bit_rate * mtab->size /
+                                tctx->avctx->sample_rate;
 
     int lsp_bits_per_block = n_ch * (mtab->lsp_bit0 + mtab->lsp_bit1 +
                                      mtab->lsp_split * mtab->lsp_bit2);
@@ -1031,7 +1032,7 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
                            mtab->ppc_period_bit);
 
     int bsize_no_main_cb[3], bse_bits[3], i;
-    enum FrameType frametype;
+    enum TwinVQFrameType frametype;
 
     for (i = 0; i < 3; i++)
         // +1 for history usage switch
@@ -1086,9 +1087,9 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
         construct_perm_table(tctx, frametype);
 }
 
-static av_cold int twin_decode_close(AVCodecContext *avctx)
+static av_cold int twinvq_decode_close(AVCodecContext *avctx)
 {
-    TwinContext *tctx = avctx->priv_data;
+    TwinVQContext *tctx = avctx->priv_data;
     int i;
 
     for (i = 0; i < 3; i++) {
@@ -1104,10 +1105,10 @@ static av_cold int twin_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int twin_decode_init(AVCodecContext *avctx)
+static av_cold int twinvq_decode_init(AVCodecContext *avctx)
 {
     int ret, isampf, ibps;
-    TwinContext *tctx = avctx->priv_data;
+    TwinVQContext *tctx = avctx->priv_data;
 
     tctx->avctx       = avctx;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
@@ -1192,7 +1193,7 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     avpriv_float_dsp_init(&tctx->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
     if ((ret = init_mdct_win(tctx))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
-        twin_decode_close(avctx);
+        twinvq_decode_close(avctx);
         return ret;
     }
     init_bitstream_params(tctx);
@@ -1206,10 +1207,10 @@ AVCodec ff_twinvq_decoder = {
     .name           = "twinvq",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_TWINVQ,
-    .priv_data_size = sizeof(TwinContext),
-    .init           = twin_decode_init,
-    .close          = twin_decode_close,
-    .decode         = twin_decode_frame,
+    .priv_data_size = sizeof(TwinVQContext),
+    .init           = twinvq_decode_init,
+    .close          = twinvq_decode_close,
+    .decode         = twinvq_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("VQF TwinVQ"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
