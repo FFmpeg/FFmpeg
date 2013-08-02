@@ -122,7 +122,7 @@ static int flv_same_audio_codec(AVCodecContext *acodec, int flags)
         return acodec->sample_rate == 8000 &&
                acodec->codec_id == AV_CODEC_ID_PCM_MULAW;
     case FLV_CODECID_PCM_ALAW:
-        return acodec->sample_rate = 8000 &&
+        return acodec->sample_rate == 8000 &&
                acodec->codec_id == AV_CODEC_ID_PCM_ALAW;
     default:
         return acodec->codec_tag == (flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
