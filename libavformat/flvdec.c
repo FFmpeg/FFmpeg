@@ -524,7 +524,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
 {
     AMFDataType type;
-    AVStream *stream, *astream, *vstream, *dstream;
+    AVStream *stream, *astream, *vstream;
+    AVStream av_unused *dstream;
     AVIOContext *ioc;
     int i;
     // only needs to hold the string "onMetaData".
