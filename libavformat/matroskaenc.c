@@ -1608,7 +1608,7 @@ static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
     return 0;
 }
 
-const AVCodecTag additional_audio_tags[] = {
+static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_ALAC,      0XFFFFFFFF },
     { AV_CODEC_ID_EAC3,      0XFFFFFFFF },
     { AV_CODEC_ID_MLP,       0xFFFFFFFF },
@@ -1625,7 +1625,7 @@ const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
 
-const AVCodecTag additional_video_tags[] = {
+static const AVCodecTag additional_video_tags[] = {
     { AV_CODEC_ID_PRORES,    0xFFFFFFFF },
     { AV_CODEC_ID_RV10,      0xFFFFFFFF },
     { AV_CODEC_ID_RV20,      0xFFFFFFFF },
