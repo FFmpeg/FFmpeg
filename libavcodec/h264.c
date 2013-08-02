@@ -3125,6 +3125,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     int default_ref_list_done = 0;
     int last_pic_structure, last_pic_droppable;
     int needs_reinit = 0;
+    int field_pic_flag, bottom_field_flag;
 
     h->me.qpel_put = h->h264qpel.put_h264_qpel_pixels_tab;
     h->me.qpel_avg = h->h264qpel.avg_h264_qpel_pixels_tab;
@@ -3301,8 +3302,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
     if (h->sps.frame_mbs_only_flag) {
         h->picture_structure = PICT_FRAME;
     } else {
-        if (get_bits1(&h->gb)) { // field_pic_flag
-            h->picture_structure = PICT_TOP_FIELD + get_bits1(&h->gb); // bottom_field_flag
+        field_pic_flag = get_bits1(&h->gb);
+        if (field_pic_flag) {
+            bottom_field_flag = get_bits1(&h->gb);
+            h->picture_structure = PICT_TOP_FIELD + bottom_field_flag;
         } else {
             h->picture_structure = PICT_FRAME;
             h->mb_aff_frame      = h->sps.mb_aff;
