@@ -116,7 +116,7 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     PutBitContext pb;
     int ret, i, out_bytes, cur_chan = 0, res = 0, samples = 0;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, frame->nb_samples * 2 * s->bps)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, frame->nb_samples * 2 * avctx->channels * s->bps)) < 0)
         return ret;
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
