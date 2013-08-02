@@ -85,6 +85,7 @@ typedef struct MpegTSWrite {
 #define MPEGTS_FLAG_AAC_LATM        0x02
     int flags;
     int copyts;
+    int tables_version;
 } MpegTSWrite;
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
@@ -121,6 +122,8 @@ static const AVOption options[] = {
       offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { "mpegts_copyts", "don't offset dts/pts",
       offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "tables_version", "set PAT, PMT and SDT version",
+      offsetof(MpegTSWrite, tables_version), AV_OPT_TYPE_INT, {.i64=0}, 0, 31, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -252,7 +255,7 @@ static void mpegts_write_pat(AVFormatContext *s)
         put16(&q, service->sid);
         put16(&q, 0xe000 | service->pmt.pid);
     }
-    mpegts_write_section1(&ts->pat, PAT_TID, ts->tsid, 0, 0, 0,
+    mpegts_write_section1(&ts->pat, PAT_TID, ts->tsid, ts->tables_version, 0, 0,
                           data, q - data);
 }
 
@@ -413,7 +416,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         desc_length_ptr[0] = val >> 8;
         desc_length_ptr[1] = val;
     }
-    mpegts_write_section1(&service->pmt, PMT_TID, service->sid, 0, 0, 0,
+    mpegts_write_section1(&service->pmt, PMT_TID, service->sid, ts->tables_version, 0, 0,
                           data, q - data);
 }
 
@@ -468,7 +471,7 @@ static void mpegts_write_sdt(AVFormatContext *s)
         desc_list_len_ptr[0] = val >> 8;
         desc_list_len_ptr[1] = val;
     }
-    mpegts_write_section1(&ts->sdt, SDT_TID, ts->tsid, 0, 0, 0,
+    mpegts_write_section1(&ts->sdt, SDT_TID, ts->tsid, ts->tables_version, 0, 0,
                           data, q - data);
 }
 
