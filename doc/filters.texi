@@ -6294,33 +6294,45 @@ Scale (resize) the input video, using the libswscale library.
 The scale filter forces the output display aspect ratio to be the same
 of the input, by changing the output sample aspect ratio.
 
+If the input image format is different from the format requested by
+the next filter, the scale filter will convert the input to the
+requested format.
+
+@subsection Options
 The filter accepts the following options:
 
 @table @option
 @item width, w
-Set the output video width expression. Default value is @code{iw}. See
-below for the list of accepted constants.
-
 @item height, h
-Set the output video height expression. Default value is @code{ih}.
-See below for the list of accepted constants.
+Set the output video dimension expression. Default value is the input
+dimension.
+
+If the value is 0, the input width is used for the output.
+
+If one of the values is -1, the scale filter will use a value that
+maintains the aspect ratio of the input image, calculated from the
+other specified dimension. If both of them are -1, the input size is
+used
+
+See below for the list of accepted constants for use in the dimension
+expression.
 
 @item interl
-Set the interlacing. It accepts the following values:
+Set the interlacing mode. It accepts the following values:
 
-@table @option
+@table @samp
 @item 1
-force interlaced aware scaling
+Force interlaced aware scaling.
 
 @item 0
-do not apply interlaced scaling
+Do not apply interlaced scaling.
 
 @item -1
-select interlaced aware scaling depending on whether the source frames
-are flagged as interlaced or not
+Select interlaced aware scaling depending on whether the source frames
+are flagged as interlaced or not.
 @end table
 
-Default value is @code{0}.
+Default value is @samp{0}.
 
 @item flags
 Set libswscale scaling flags. If not explictly specified the filter
@@ -6332,45 +6344,63 @@ form @var{width}x@var{height}.
 
 @item in_color_matrix
 @item out_color_matrix
-Set in/output YCbCr colorspace type.
+Set in/output YCbCr color space type.
+
 This allows the autodetected value to be overridden as well as allows forcing
 a specific value used for the output and encoder.
-If not specified, the colorspace type depends on the pixel format.
+
+If not specified, the color space type depends on the pixel format.
+
+Possible values:
+
 @table @samp
 @item auto
-Choose automatically
+Choose automatically.
 
 @item bt709
-ITU Rec BT709
+Format conforming to International Telecommunication Union (ITU)
+Recommendation BT.709.
 
 @item fcc
-United States Federal Communications Commission Title 47 Code of
-Federal Regulations (2003) 73.682 (a)
+Set color space conforming to the United States Federal Communications
+Commission (FCC) Code of Federal Regulations (CFR) Title 47 (2003) 73.682 (a).
 
 @item bt601
-ITU Rec BT601
-ITU-R Rec. BT.470-6 System B, G
-Society of Motion Picture and Television Engineers 170M (2004)
+Set color space conforming to:
+
+@itemize
+@item
+ITU Radiocommunication Sector (ITU-R) Recommendation BT.601
+
+@item
+ITU-R Rec. BT.470-6 (1998) Systems B, B1, and G
+
+@item
+Society of Motion Picture and Television Engineers (SMPTE) ST 170:2004
+
+@end itemize
 
 @item smpte240m
-Society of Motion Picture and Television Engineers 240M
+Set color space conforming to SMPTE ST 240:1999.
 @end table
 
 @item in_range
 @item out_range
 Set in/output YCbCr sample range.
+
 This allows the autodetected value to be overridden as well as allows forcing
-a specific value used for the output and encoder.
-If not specified, the range depends on the pixel format.
+a specific value used for the output and encoder. If not specified, the
+range depends on the pixel format. Possible values:
+
 @table @samp
 @item auto
-Choose automatically
+Choose automatically.
 
 @item jpeg/full/pc
-Full range (0-255 in case of 8bit luma)
+Set full range (0-255 in case of 8-bit luma).
 
 @item mpeg/tv
-"Mpeg" range (16-235 in case of 8bit luma)
+Set "MPEG" range (16-235 in case of 8-bit luma).
 @end table
 
 @item force_original_aspect_ratio
@@ -6402,10 +6432,10 @@ to work.
 
 @end table
 
-The values of the @var{w} and @var{h} options are expressions
+The values of the @option{w} and @option{h} options are expressions
 containing the following constants:
 
-@table @option
+@table @var
 @item in_w
 @item in_h
 the input width and height
@@ -6416,7 +6446,7 @@ same as @var{in_w} and @var{in_h}
 
 @item out_w
 @item out_h
-the output (cropped) width and height
+the output (scaled) width and height
 
 @item ow
 @item oh
@@ -6429,24 +6459,13 @@ same as @var{iw} / @var{ih}
 input sample aspect ratio
 
 @item dar
-input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
+input display aspect ratio. Calculated from @code{(iw / ih) * sar}.
 
 @item hsub
 @item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
-
-If the input image format is different from the format requested by
-the next filter, the scale filter will convert the input to the
-requested format.
-
-If the value for @var{w} or @var{h} is 0, the respective input
-size is used for the output.
-
-If the value for @var{w} or @var{h} is -1, the scale filter will use, for the
-respective output size, a value that maintains the aspect ratio of the input
-image.
 
 @subsection Examples
 
