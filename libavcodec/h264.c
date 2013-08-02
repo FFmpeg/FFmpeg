@@ -1637,7 +1637,11 @@ static int decode_update_thread_context(AVCodecContext *dst,
             av_log(dst, AV_LOG_ERROR, "Could not allocate memory for h264\n");
             return ret;
         }
-        context_init(h);
+        ret = context_init(h);
+        if (ret < 0) {
+            av_log(dst, AV_LOG_ERROR, "context_init() failed.\n");
+            return ret;
+        }
 
         for (i = 0; i < 2; i++) {
             h->rbsp_buffer[i]      = NULL;
