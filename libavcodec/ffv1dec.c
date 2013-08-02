@@ -784,6 +784,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     f->cur = p = f->picture.f;
 
+    if (f->version < 3 && avctx->field_order > AV_FIELD_PROGRESSIVE) {
+        /* we have interlaced material flagged in container */
+        p->interlaced_frame = 1;
+        if (avctx->field_order == AV_FIELD_TT || avctx->field_order == AV_FIELD_TB)
+            p->top_field_first = 1;
+    }
+
     f->avctx = avctx;
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
