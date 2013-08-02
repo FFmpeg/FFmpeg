@@ -66,7 +66,7 @@ static int dxtory_decode_v1(AVCodecContext *avctx, AVFrame *pic,
     return 0;
 }
 
-const uint8_t def_lru[8] = { 0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xFF };
+static const uint8_t def_lru[8] = { 0x00, 0x20, 0x40, 0x60, 0x80, 0xA0, 0xC0, 0xFF };
 
 static inline uint8_t decode_sym(GetBitContext *gb, uint8_t lru[8])
 {
