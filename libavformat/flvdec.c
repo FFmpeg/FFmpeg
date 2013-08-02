@@ -654,35 +654,32 @@ static void clear_index_entries(AVFormatContext *s, int64_t pos)
 static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
                            int64_t dts, int64_t next)
 {
-    int ret         = AVERROR_INVALIDDATA, i;
     AVIOContext *pb = s->pb;
     AVStream *st    = NULL;
     AMFDataType type;
     char buf[20];
-    int length;
+    int ret, i, length;
 
     type = avio_r8(pb);
     if (type == AMF_DATA_TYPE_MIXEDARRAY)
         avio_seek(pb, 4, SEEK_CUR);
     else if (type != AMF_DATA_TYPE_OBJECT)
-        goto out;
+        return AVERROR_INVALIDDATA;
 
     amf_get_string(pb, buf, sizeof(buf));
     if (strcmp(buf, "type") || avio_r8(pb) != AMF_DATA_TYPE_STRING)
-        goto out;
+        return AVERROR_INVALIDDATA;
 
     amf_get_string(pb, buf, sizeof(buf));
     // FIXME parse it as codec_id
     amf_get_string(pb, buf, sizeof(buf));
     if (strcmp(buf, "text") || avio_r8(pb) != AMF_DATA_TYPE_STRING)
-        goto out;
+        return AVERROR_INVALIDDATA;
 
     length = avio_rb16(pb);
     ret    = av_get_packet(s->pb, pkt, length);
-    if (ret < 0) {
-        ret = AVERROR(EIO);
-        goto out;
-    }
+    if (ret < 0)
+        return AVERROR(EIO);
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
@@ -693,7 +690,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     if (i == s->nb_streams) {
         st = create_stream(s, AVMEDIA_TYPE_DATA);
         if (!st)
-            goto out;
+            return AVERROR_INVALIDDATA;
         st->codec->codec_id = AV_CODEC_ID_TEXT;
     }
 
@@ -706,7 +703,6 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
 
     avio_seek(s->pb, next + 4, SEEK_SET);
 
-out:
     return ret;
 }
 
