@@ -33,18 +33,20 @@
 //#undef NDEBUG
 #include <assert.h>
 
-static const uint8_t sei_num_clock_ts_table[9]={
-    1,  1,  1,  2,  2,  3,  3,  2,  3
+static const uint8_t sei_num_clock_ts_table[9] = {
+    1, 1, 1, 2, 2, 3, 3, 2, 3
 };
 
-void ff_h264_reset_sei(H264Context *h) {
+void ff_h264_reset_sei(H264Context *h)
+{
     h->sei_recovery_frame_cnt       = -1;
     h->sei_dpb_output_delay         =  0;
     h->sei_cpb_removal_delay        = -1;
     h->sei_buffering_period_present =  0;
 }
 
-static int decode_picture_timing(H264Context *h){
+static int decode_picture_timing(H264Context *h)
+{
     SPS *sps = &h->sps;
     int i;
 
@@ -52,12 +54,15 @@ static int decode_picture_timing(H264Context *h){
         if (!sps->log2_max_frame_num && h->sps_buffers[i])
             sps = h->sps_buffers[i];
 
-    if(sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag){
-        h->sei_cpb_removal_delay = get_bits_long(&h->gb, sps->cpb_removal_delay_length);
-        h->sei_dpb_output_delay = get_bits_long(&h->gb, sps->dpb_output_delay_length);
+    if (sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag) {
+        h->sei_cpb_removal_delay = get_bits_long(&h->gb,
+                                                 sps->cpb_removal_delay_length);
+        h->sei_dpb_output_delay  = get_bits_long(&h->gb,
+                                                 sps->dpb_output_delay_length);
     }
-    if(sps->pic_struct_present_flag){
+    if (sps->pic_struct_present_flag) {
         unsigned int i, num_clock_ts;
+
         h->sei_pic_struct = get_bits(&h->gb, 4);
         h->sei_ct_type    = 0;
 
@@ -66,42 +71,46 @@ static int decode_picture_timing(H264Context *h){
 
         num_clock_ts = sei_num_clock_ts_table[h->sei_pic_struct];
 
-        for (i = 0 ; i < num_clock_ts ; i++){
-            if(get_bits(&h->gb, 1)){                  /* clock_timestamp_flag */
+        for (i = 0; i < num_clock_ts; i++) {
+            if (get_bits(&h->gb, 1)) {                /* clock_timestamp_flag */
                 unsigned int full_timestamp_flag;
-                h->sei_ct_type |= 1<<get_bits(&h->gb, 2);
+
+                h->sei_ct_type |= 1 << get_bits(&h->gb, 2);
                 skip_bits(&h->gb, 1);                 /* nuit_field_based_flag */
                 skip_bits(&h->gb, 5);                 /* counting_type */
                 full_timestamp_flag = get_bits(&h->gb, 1);
                 skip_bits(&h->gb, 1);                 /* discontinuity_flag */
                 skip_bits(&h->gb, 1);                 /* cnt_dropped_flag */
                 skip_bits(&h->gb, 8);                 /* n_frames */
-                if(full_timestamp_flag){
+                if (full_timestamp_flag) {
                     skip_bits(&h->gb, 6);             /* seconds_value 0..59 */
                     skip_bits(&h->gb, 6);             /* minutes_value 0..59 */
                     skip_bits(&h->gb, 5);             /* hours_value 0..23 */
-                }else{
-                    if(get_bits(&h->gb, 1)){          /* seconds_flag */
+                } else {
+                    if (get_bits(&h->gb, 1)) {        /* seconds_flag */
                         skip_bits(&h->gb, 6);         /* seconds_value range 0..59 */
-                        if(get_bits(&h->gb, 1)){      /* minutes_flag */
+                        if (get_bits(&h->gb, 1)) {    /* minutes_flag */
                             skip_bits(&h->gb, 6);     /* minutes_value 0..59 */
-                            if(get_bits(&h->gb, 1))   /* hours_flag */
+                            if (get_bits(&h->gb, 1))  /* hours_flag */
                                 skip_bits(&h->gb, 5); /* hours_value 0..23 */
                         }
                     }
                 }
-                if(sps->time_offset_length > 0)
-                    skip_bits(&h->gb, sps->time_offset_length); /* time_offset */
+                if (sps->time_offset_length > 0)
+                    skip_bits(&h->gb,
+                              sps->time_offset_length); /* time_offset */
             }
         }
 
-        if(h->avctx->debug & FF_DEBUG_PICT_INFO)
-            av_log(h->avctx, AV_LOG_DEBUG, "ct_type:%X pic_struct:%d\n", h->sei_ct_type, h->sei_pic_struct);
+        if (h->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(h->avctx, AV_LOG_DEBUG, "ct_type:%X pic_struct:%d\n",
+                   h->sei_ct_type, h->sei_pic_struct);
     }
     return 0;
 }
 
-static int decode_user_data_itu_t_t35(H264Context *h, int size) {
+static int decode_user_data_itu_t_t35(H264Context *h, int size)
+{
     uint32_t user_identifier;
     int dtg_active_format;
 
@@ -137,51 +146,58 @@ static int decode_user_data_itu_t_t35(H264Context *h, int size) {
     return 0;
 }
 
-static int decode_unregistered_user_data(H264Context *h, int size){
-    uint8_t user_data[16+256];
+static int decode_unregistered_user_data(H264Context *h, int size)
+{
+    uint8_t user_data[16 + 256];
     int e, build, i;
 
-    if(size<16)
+    if (size < 16)
         return -1;
 
-    for(i=0; i<sizeof(user_data)-1 && i<size; i++){
-        user_data[i]= get_bits(&h->gb, 8);
-    }
+    for (i = 0; i < sizeof(user_data) - 1 && i < size; i++)
+        user_data[i] = get_bits(&h->gb, 8);
 
-    user_data[i]= 0;
+    user_data[i] = 0;
     e = sscanf(user_data + 16, "x264 - core %d", &build);
-    if(e==1 && build>0)
-        h->x264_build= build;
-    if(e==1 && build==1 && !strncmp(user_data+16, "x264 - core 0000", 16))
+    if (e == 1 && build > 0)
+        h->x264_build = build;
+    if (e == 1 && build == 1 && !strncmp(user_data+16, "x264 - core 0000", 16))
         h->x264_build = 67;
 
-    if(h->avctx->debug & FF_DEBUG_BUGS)
-        av_log(h->avctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data+16);
+    if (h->avctx->debug & FF_DEBUG_BUGS)
+        av_log(h->avctx, AV_LOG_DEBUG, "user data:\"%s\"\n", user_data + 16);
 
-    for(; i<size; i++)
+    for (; i < size; i++)
         skip_bits(&h->gb, 8);
 
     return 0;
 }
 
-static int decode_recovery_point(H264Context *h){
+static int decode_recovery_point(H264Context *h)
+{
     h->sei_recovery_frame_cnt = get_ue_golomb(&h->gb);
-    skip_bits(&h->gb, 4);       /* 1b exact_match_flag, 1b broken_link_flag, 2b changing_slice_group_idc */
 
-    if(h->avctx->debug & FF_DEBUG_PICT_INFO)
+    /* 1b exact_match_flag,
+     * 1b broken_link_flag,
+     * 2b changing_slice_group_idc */
+    skip_bits(&h->gb, 4);
+
+    if (h->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(h->avctx, AV_LOG_DEBUG, "sei_recovery_frame_cnt: %d\n", h->sei_recovery_frame_cnt);
 
     return 0;
 }
 
-static int decode_buffering_period(H264Context *h){
+static int decode_buffering_period(H264Context *h)
+{
     unsigned int sps_id;
     int sched_sel_idx;
     SPS *sps;
 
     sps_id = get_ue_golomb_31(&h->gb);
-    if(sps_id > 31 || !h->sps_buffers[sps_id]) {
-        av_log(h->avctx, AV_LOG_ERROR, "non-existing SPS %d referenced in buffering period\n", sps_id);
+    if (sps_id > 31 || !h->sps_buffers[sps_id]) {
+        av_log(h->avctx, AV_LOG_ERROR,
+               "non-existing SPS %d referenced in buffering period\n", sps_id);
         return -1;
     }
     sps = h->sps_buffers[sps_id];
@@ -189,14 +205,18 @@ static int decode_buffering_period(H264Context *h){
     // NOTE: This is really so duplicated in the standard... See H.264, D.1.1
     if (sps->nal_hrd_parameters_present_flag) {
         for (sched_sel_idx = 0; sched_sel_idx < sps->cpb_cnt; sched_sel_idx++) {
-            h->initial_cpb_removal_delay[sched_sel_idx] = get_bits_long(&h->gb, sps->initial_cpb_removal_delay_length);
-            skip_bits(&h->gb, sps->initial_cpb_removal_delay_length); // initial_cpb_removal_delay_offset
+            h->initial_cpb_removal_delay[sched_sel_idx] =
+                get_bits_long(&h->gb, sps->initial_cpb_removal_delay_length);
+            // initial_cpb_removal_delay_offset
+            skip_bits(&h->gb, sps->initial_cpb_removal_delay_length);
         }
     }
     if (sps->vcl_hrd_parameters_present_flag) {
         for (sched_sel_idx = 0; sched_sel_idx < sps->cpb_cnt; sched_sel_idx++) {
-            h->initial_cpb_removal_delay[sched_sel_idx] = get_bits_long(&h->gb, sps->initial_cpb_removal_delay_length);
-            skip_bits(&h->gb, sps->initial_cpb_removal_delay_length); // initial_cpb_removal_delay_offset
+            h->initial_cpb_removal_delay[sched_sel_idx] =
+                get_bits_long(&h->gb, sps->initial_cpb_removal_delay_length);
+            // initial_cpb_removal_delay_offset
+            skip_bits(&h->gb, sps->initial_cpb_removal_delay_length);
         }
     }
 
@@ -204,7 +224,7 @@ static int decode_buffering_period(H264Context *h){
     return 0;
 }
 
-static int decode_frame_packing(H264Context *h, int size){
+static int decode_frame_packing(H264Context *h, int size) {
     int bits = get_bits_left(&h->gb);
 
     h->sei_fpa.frame_packing_arrangement_id          = get_ue_golomb(&h->gb);
@@ -238,66 +258,66 @@ static int decode_frame_packing(H264Context *h, int size){
                                        h->sei_fpa.quincunx_sampling_flag,
                                        h->sei_fpa.content_interpretation_type,
                                        h->sei_fpa.frame_packing_arrangement_repetition_period);
-    skip_bits_long(&h->gb, 8*size - (bits - get_bits_left(&h->gb)));
+    skip_bits_long(&h->gb, 8 * size - (bits - get_bits_left(&h->gb)));
     return 0;
 }
 
-int ff_h264_decode_sei(H264Context *h){
+int ff_h264_decode_sei(H264Context *h)
+{
     while (get_bits_left(&h->gb) > 16) {
-        int type;
-        unsigned size, next;
+        int type = 0;
+        unsigned size = 0;
+        unsigned next;
 
-        type=0;
-        do{
+        do {
             if (get_bits_left(&h->gb) < 8)
                 return AVERROR_INVALIDDATA;
-            type+= show_bits(&h->gb, 8);
-        }while(get_bits(&h->gb, 8) == 255);
+            type += show_bits(&h->gb, 8);
+        } while (get_bits(&h->gb, 8) == 255);
 
-        size=0;
-        do{
+        do {
             if (get_bits_left(&h->gb) < 8)
                 return AVERROR_INVALIDDATA;
-            size+= show_bits(&h->gb, 8);
-        }while(get_bits(&h->gb, 8) == 255);
+            size += show_bits(&h->gb, 8);
+        } while (get_bits(&h->gb, 8) == 255);
 
-        if(h->avctx->debug&FF_DEBUG_STARTCODE)
+        if (h->avctx->debug&FF_DEBUG_STARTCODE)
             av_log(h->avctx, AV_LOG_DEBUG, "SEI %d len:%d\n", type, size);
 
         if (size > get_bits_left(&h->gb) / 8) {
             av_log(h->avctx, AV_LOG_ERROR, "SEI truncated\n");
             return AVERROR_INVALIDDATA;
         }
-        next = get_bits_count(&h->gb) + 8*size;
+        next = get_bits_count(&h->gb) + 8 * size;
 
-        switch(type){
+        switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
-            if(decode_picture_timing(h) < 0)
+            if (decode_picture_timing(h) < 0)
                 return -1;
             break;
         case SEI_TYPE_USER_DATA_ITU_T_T35:
-            if(decode_user_data_itu_t_t35(h, size) < 0)
+            if (decode_user_data_itu_t_t35(h, size) < 0)
                 return -1;
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
-            if(decode_unregistered_user_data(h, size) < 0)
+            if (decode_unregistered_user_data(h, size) < 0)
                 return -1;
             break;
         case SEI_TYPE_RECOVERY_POINT:
-            if(decode_recovery_point(h) < 0)
+            if (decode_recovery_point(h) < 0)
                 return -1;
             break;
         case SEI_BUFFERING_PERIOD:
-            if(decode_buffering_period(h) < 0)
+            if (decode_buffering_period(h) < 0)
                 return -1;
             break;
         case SEI_TYPE_FRAME_PACKING:
-            if(decode_frame_packing(h, size) < 0)
+            if (decode_frame_packing(h, size) < 0)
                 return -1;
         }
         skip_bits_long(&h->gb, next - get_bits_count(&h->gb));
 
-        //FIXME check bits here
+        // FIXME check bits here
         align_get_bits(&h->gb);
     }
 
