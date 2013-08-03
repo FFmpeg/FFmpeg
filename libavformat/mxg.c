@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/mjpeg.h"
 #include "avformat.h"
@@ -171,7 +172,9 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
                 pkt->pts = pkt->dts = mxg->dts;
                 pkt->stream_index = 0;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
                 pkt->destruct = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
                 pkt->buf  = NULL;
                 pkt->size = mxg->buffer_ptr - mxg->soi_ptr;
@@ -212,7 +215,9 @@ static int mxg_read_packet(AVFormatContext *s, AVPacket *pkt)
                     pkt->pts = pkt->dts = AV_RL64(startmarker_ptr + 8);
                     pkt->stream_index = 1;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
                     pkt->destruct = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
                     pkt->buf  = NULL;
                     pkt->size = size - 14;

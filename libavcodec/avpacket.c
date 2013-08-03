@@ -23,6 +23,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -63,7 +64,9 @@ void av_init_packet(AVPacket *pkt)
     pkt->flags                = 0;
     pkt->stream_index         = 0;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct             = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     pkt->buf                  = NULL;
     pkt->side_data            = NULL;
@@ -88,7 +91,9 @@ int av_new_packet(AVPacket *pkt, int size)
     pkt->data     = buf->data;
     pkt->size     = size;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct = dummy_destruct_packet;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     return 0;
@@ -123,7 +128,9 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
             return AVERROR(ENOMEM);
         memcpy(pkt->buf->data, pkt->data, FFMIN(pkt->size, pkt->size + grow_by));
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
         pkt->destruct = dummy_destruct_packet;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
     pkt->data  = pkt->buf->data;
@@ -146,7 +153,9 @@ int av_packet_from_data(AVPacket *pkt, uint8_t *data, int size)
     pkt->data = data;
     pkt->size = size;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct = dummy_destruct_packet;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
     return 0;
@@ -194,7 +203,9 @@ static int copy_packet_data(AVPacket *pkt, AVPacket *src, int dup)
         DUP_DATA(pkt->data, src->data, pkt->size, 1, ALLOC_BUF);
     }
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct = dummy_destruct_packet;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     if (pkt->side_data_elems && dup)
         pkt->side_data = src->side_data;
@@ -234,11 +245,13 @@ int av_dup_packet(AVPacket *pkt)
 {
     AVPacket tmp_pkt;
 
+FF_DISABLE_DEPRECATION_WARNINGS
     if (!pkt->buf && pkt->data
 #if FF_API_DESTRUCT_PACKET
         && !pkt->destruct
 #endif
         ) {
+FF_ENABLE_DEPRECATION_WARNINGS
         tmp_pkt = *pkt;
         return copy_packet_data(pkt, &tmp_pkt, 1);
     }
@@ -256,6 +269,7 @@ void av_free_packet(AVPacket *pkt)
     if (pkt) {
         int i;
 
+FF_DISABLE_DEPRECATION_WARNINGS
         if (pkt->buf)
             av_buffer_unref(&pkt->buf);
 #if FF_API_DESTRUCT_PACKET
@@ -263,6 +277,7 @@ void av_free_packet(AVPacket *pkt)
             pkt->destruct(pkt);
         pkt->destruct = NULL;
 #endif
+FF_ENABLE_DEPRECATION_WARNINGS
         pkt->data            = NULL;
         pkt->size            = 0;
 
@@ -333,7 +348,9 @@ int av_packet_merge_side_data(AVPacket *pkt){
         pkt->buf = buf;
         pkt->data = p = buf->data;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
         pkt->destruct = dummy_destruct_packet;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         pkt->size = size - FF_INPUT_BUFFER_PADDING_SIZE;
         bytestream_put_buffer(&p, old.data, old.size);

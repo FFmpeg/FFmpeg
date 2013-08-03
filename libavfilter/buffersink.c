@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 
@@ -263,6 +264,7 @@ void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)
 }
 
 #if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 static void compat_free_buffer(AVFilterBuffer *buf)
 {
     AVFrame *frame = buf->priv;
@@ -347,6 +349,7 @@ int attribute_align_arg av_buffersink_get_buffer_ref(AVFilterContext *ctx,
 
     return compat_read(ctx, bufref, 0, flags);
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 AVRational av_buffersink_get_frame_rate(AVFilterContext *ctx)

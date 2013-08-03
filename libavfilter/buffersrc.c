@@ -30,6 +30,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "audio.h"
@@ -173,6 +174,7 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 }
 
 #if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 static void compat_free_buffer(void *opaque, uint8_t *data)
 {
     AVFilterBufferRef *buf = opaque;
@@ -283,6 +285,7 @@ fail:
 
     return ret;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 
 int av_buffersrc_buffer(AVFilterContext *ctx, AVFilterBufferRef *buf)
 {
