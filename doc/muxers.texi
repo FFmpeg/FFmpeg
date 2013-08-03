@@ -886,6 +886,17 @@ ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
 @end example
 
+Example: use @command{ffmpeg} to encode the input, and send the output
+to three different destinations. The @code{dump_extra} bitstream
+filter is used to add extradata information to all the output video
+keyframes packets, as requested by the MPEG-TS format. The select
+option is applied to @file{out.aac} in order to make it contain only
+audio packets.
+@example
+ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac -strict experimental
+       -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
+@end example
+
 Note: some codecs may need different options depending on the output format;
 the auto-detection of this can not work with the tee muxer. The main example
 is the @option{global_header} flag.
