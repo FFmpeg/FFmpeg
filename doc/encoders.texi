@@ -420,26 +420,36 @@ Requires the presence of the libmp3lame headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libmp3lame}.
 
-@subsection Option Mapping
+@subsection Options
 
-The following options are supported by the libmp3lame wrapper,
-the LAME-equivalent options follow the FFmpeg ones.
+The following options are supported by the libmp3lame wrapper. The
+@command{lame}-equivalent of the options are listed in parentheses.
 
-@multitable @columnfractions .2 .2
-@item FFmpeg            @tab LAME
-@item b                 @tab b
-Set bitrate expressed in bits/s, LAME @code{bitrate} is expressed in
-kilobits/s.
-@item q                 @tab V
-Set quality setting for VBR.
-@item compression_level @tab q
-Set algorithm quality. Valid arguments are integers in the 0-9 range.
-@item reservoir         @tab N.A.
-Enable use of bit reservoir. LAME has this enabled by default.
-@item joint_stereo      @tab -m j
+@table @option
+@item b (@emph{-b})
+Set bitrate expressed in bits/s for CBR. LAME @code{bitrate} is
+expressed in kilobits/s.
+
+@item q (@emph{-V})
+Set constant quality setting for VBR. This option is valid only
+using the @command{ffmpeg} command-line tool. For library interface
+users, use @option{global_quality}.
+
+@item compression_level (@emph{-q})
+Set algorithm quality. Valid arguments are integers in the 0-9 range,
+with 0 meaning highest quality but slowest, and 9 meaning fastest
+while producing the worst quality.
+
+@item reservoir
+Enable use of bit reservoir when set to 1. Default value is 1. LAME
+has this enabled by default, but can be overriden by use
+@option{--nores} option.
+
+@item joint_stereo (@emph{-m j})
 Enable the encoder to use (on a frame by frame basis) either L/R
-stereo or mid/side stereo.
-@end multitable
+stereo or mid/side stereo. Default value is 1.
+
+@end table
 
 @section libopencore-amrnb
 
