@@ -67,7 +67,7 @@ static int decode_picture_timing(H264Context *h)
         h->sei_ct_type    = 0;
 
         if (h->sei_pic_struct > SEI_PIC_STRUCT_FRAME_TRIPLING)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         num_clock_ts = sei_num_clock_ts_table[h->sei_pic_struct];
 
@@ -152,7 +152,7 @@ static int decode_unregistered_user_data(H264Context *h, int size)
     int e, build, i;
 
     if (size < 16)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     for (i = 0; i < sizeof(user_data) - 1 && i < size; i++)
         user_data[i] = get_bits(&h->gb, 8);
@@ -198,7 +198,7 @@ static int decode_buffering_period(H264Context *h)
     if (sps_id > 31 || !h->sps_buffers[sps_id]) {
         av_log(h->avctx, AV_LOG_ERROR,
                "non-existing SPS %d referenced in buffering period\n", sps_id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     sps = h->sps_buffers[sps_id];
 
@@ -268,6 +268,7 @@ int ff_h264_decode_sei(H264Context *h)
         int type = 0;
         unsigned size = 0;
         unsigned next;
+        int ret  = 0;
 
         do {
             if (get_bits_left(&h->gb) < 8)
@@ -292,24 +293,28 @@ int ff_h264_decode_sei(H264Context *h)
 
         switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
-            if (decode_picture_timing(h) < 0)
-                return -1;
+            ret = decode_picture_timing(h);
+            if (ret < 0)
+                return ret;
             break;
         case SEI_TYPE_USER_DATA_ITU_T_T35:
             if (decode_user_data_itu_t_t35(h, size) < 0)
                 return -1;
             break;
         case SEI_TYPE_USER_DATA_UNREGISTERED:
-            if (decode_unregistered_user_data(h, size) < 0)
-                return -1;
+            ret = decode_unregistered_user_data(h, size);
+            if (ret < 0)
+                return ret;
             break;
         case SEI_TYPE_RECOVERY_POINT:
-            if (decode_recovery_point(h) < 0)
-                return -1;
+            ret = decode_recovery_point(h);
+            if (ret < 0)
+                return ret;
             break;
         case SEI_BUFFERING_PERIOD:
-            if (decode_buffering_period(h) < 0)
-                return -1;
+            ret = decode_buffering_period(h);
+            if (ret < 0)
+                return ret;
             break;
         case SEI_TYPE_FRAME_PACKING:
             if (decode_frame_packing(h, size) < 0)
