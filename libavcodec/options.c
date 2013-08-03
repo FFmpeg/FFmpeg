@@ -77,7 +77,7 @@ static AVClassCategory get_category(void *ptr)
 static const AVClass av_codec_context_class = {
     .class_name              = "AVCodecContext",
     .item_name               = context_to_name,
-    .option                  = options,
+    .option                  = avcodec_options,
     .version                 = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset = offsetof(AVCodecContext, log_level_offset),
     .child_next              = codec_child_next,

@@ -64,7 +64,7 @@
  *     int      bin_len;
  * } test_struct;
  *
- * static const AVOption options[] = {
+ * static const AVOption test_options[] = {
  *   { "test_int", "This is a test option of int type.", offsetof(test_struct, int_opt),
  *     AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX },
  *   { "test_str", "This is a test option of string type.", offsetof(test_struct, str_opt),
@@ -77,7 +77,7 @@
  * static const AVClass test_class = {
  *     .class_name = "test class",
  *     .item_name  = av_default_item_name,
- *     .option     = options,
+ *     .option     = test_options,
  *     .version    = LIBAVUTIL_VERSION_INT,
  * };
  * @endcode

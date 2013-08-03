@@ -33,7 +33,7 @@
 #define OFFSET(x) offsetof(AVAudioResampleContext, x)
 #define PARAM AV_OPT_FLAG_AUDIO_PARAM
 
-static const AVOption options[] = {
+static const AVOption avresample_options[] = {
     { "in_channel_layout",      "Input Channel Layout",     OFFSET(in_channel_layout),      AV_OPT_TYPE_INT64,  { .i64 = 0              }, INT64_MIN,            INT64_MAX,              PARAM },
     { "in_sample_fmt",          "Input Sample Format",      OFFSET(in_sample_fmt),          AV_OPT_TYPE_INT,    { .i64 = AV_SAMPLE_FMT_S16 }, AV_SAMPLE_FMT_U8,     AV_SAMPLE_FMT_NB-1,     PARAM },
     { "in_sample_rate",         "Input Sample Rate",        OFFSET(in_sample_rate),         AV_OPT_TYPE_INT,    { .i64 = 48000          }, 1,                    INT_MAX,                PARAM },
@@ -87,7 +87,7 @@ static const AVOption options[] = {
 static const AVClass av_resample_context_class = {
     .class_name = "AVAudioResampleContext",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = avresample_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
