@@ -337,8 +337,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
                 mh.num_substreams > 1) {
                 avctx->channels       = 2;
                 avctx->channel_layout = AV_CH_LAYOUT_STEREO;
-            } else
 FF_ENABLE_DEPRECATION_WARNINGS
+            } else
 #endif
             if (avctx->request_channel_layout == AV_CH_LAYOUT_STEREO &&
                 mh.num_substreams > 1) {
@@ -360,8 +360,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
                        avctx->request_channels <= mh.channels_thd_stream1) {
                 avctx->channels       = mh.channels_thd_stream1;
                 avctx->channel_layout = mh.channel_layout_thd_stream1;
-            } else
 FF_ENABLE_DEPRECATION_WARNINGS
+            } else
 #endif
             if (avctx->request_channel_layout == AV_CH_LAYOUT_STEREO &&
                 mh.num_substreams > 1) {

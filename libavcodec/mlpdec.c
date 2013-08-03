@@ -471,8 +471,8 @@ FF_DISABLE_DEPRECATION_WARNINGS
                "Further substreams will be skipped.\n",
                s->max_channel + 1, substr);
         m->max_decoded_substream = substr;
-    } else
 FF_ENABLE_DEPRECATION_WARNINGS
+    } else
 #endif
     if (m->avctx->request_channel_layout == s->ch_layout &&
         m->max_decoded_substream > substr) {
