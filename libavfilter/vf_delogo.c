@@ -236,7 +236,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (!sar.num)
         sar.num = sar.den = 1;
 
-    for (plane = 0; plane < 4 && in->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? hsub0 : 0;
         int vsub = plane == 1 || plane == 2 ? vsub0 : 0;
 
