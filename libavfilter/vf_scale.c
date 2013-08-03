@@ -101,6 +101,8 @@ typedef struct {
     int out_v_chr_pos;
     int in_h_chr_pos;
     int in_v_chr_pos;
+
+    int force_original_aspect_ratio;
 } ScaleContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -273,6 +275,19 @@ static int config_props(AVFilterLink *outlink)
         w = av_rescale(h, inlink->w, inlink->h);
     if (h == -1)
         h = av_rescale(w, inlink->h, inlink->w);
+
+    if (scale->force_original_aspect_ratio) {
+        int tmp_w = av_rescale(h, inlink->w, inlink->h);
+        int tmp_h = av_rescale(w, inlink->h, inlink->w);
+
+        if (scale->force_original_aspect_ratio == 1) {
+             w = FFMIN(tmp_w, w);
+             h = FFMIN(tmp_h, h);
+        } else {
+             w = FFMAX(tmp_w, w);
+             h = FFMAX(tmp_h, h);
+        }
+    }
 
     if (w > INT_MAX || h > INT_MAX ||
         (h * inlink->w) > INT_MAX  ||
@@ -501,6 +516,10 @@ static const AVOption scale_options[] = {
     { "in_h_chr_pos",   "input horizontal chroma position in luma grid/256", OFFSET(in_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1}, -1, 512, FLAGS },
     { "out_v_chr_pos",   "output vertical chroma position in luma grid/256"  , OFFSET(out_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1}, -1, 512, FLAGS },
     { "out_h_chr_pos",   "output horizontal chroma position in luma grid/256", OFFSET(out_h_chr_pos), AV_OPT_TYPE_INT, { .i64 = -1}, -1, 512, FLAGS },
+    { "force_original_aspect_ratio", "decrease or increase w/h if necessary to keep the original AR", OFFSET(force_original_aspect_ratio), AV_OPT_TYPE_INT, { .i64 = 0}, 0, 2, FLAGS, "force_oar" },
+    { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
+    { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
+    { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
     { NULL },
 };
 
