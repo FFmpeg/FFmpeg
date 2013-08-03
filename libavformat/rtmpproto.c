@@ -60,6 +60,7 @@ typedef enum {
     STATE_HANDSHAKED, ///< client has performed handshake
     STATE_FCPUBLISH,  ///< client FCPublishing stream (for output)
     STATE_PLAYING,    ///< client has started receiving multimedia data from server
+    STATE_SEEKING,    ///< client has started the seek operation. Back on STATE_PLAYING when the time comes
     STATE_PUBLISHING, ///< client has started sending multimedia data to server (for output)
     STATE_RECEIVING,  ///< received a publish command (for input)
     STATE_STOPPED,    ///< the broadcast has been stopped
@@ -700,6 +701,28 @@ static int gen_play(URLContext *s, RTMPContext *rt)
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
     ff_amf_write_number(&p, rt->live);
+
+    return rtmp_send_packet(rt, &pkt, 1);
+}
+
+static int gen_seek(URLContext *s, RTMPContext *rt, int64_t timestamp)
+{
+    RTMPPacket pkt;
+    uint8_t *p;
+    int ret;
+
+    av_log(s, AV_LOG_DEBUG, "Sending seek command for timestamp %lld\n", timestamp);
+
+    if ((ret = ff_rtmp_packet_create(&pkt, 3, RTMP_PT_INVOKE, 0, 26)) < 0)
+        return ret;
+
+    pkt.extra = rt->main_channel_id;
+
+    p = pkt.data;
+    ff_amf_write_string(&p, "seek");
+    ff_amf_write_number(&p, 0); //no tracking back responses
+    ff_amf_write_null(&p); //as usual, the first null param
+    ff_amf_write_number(&p, timestamp); //where we want to jump
 
     return rtmp_send_packet(rt, &pkt, 1);
 }
@@ -1960,6 +1983,7 @@ static int handle_invoke_status(URLContext *s, RTMPPacket *pkt)
     if (!t && !strcmp(tmpstr, "NetStream.Play.Stop")) rt->state = STATE_STOPPED;
     if (!t && !strcmp(tmpstr, "NetStream.Play.UnpublishNotify")) rt->state = STATE_STOPPED;
     if (!t && !strcmp(tmpstr, "NetStream.Publish.Start")) rt->state = STATE_PUBLISHING;
+    if (!t && !strcmp(tmpstr, "NetStream.Seek.Notify")) rt->state = STATE_PLAYING;
 
     return 0;
 }
@@ -2148,6 +2172,17 @@ static int get_packet(URLContext *s, int for_header)
         }
 
         ret = rtmp_parse_result(s, rt, &rpkt);
+
+        // At this point we must check if we are in the seek state and continue
+        // with the next packet. handle_invoke will get us out of this state
+        // when the right message is encountered
+        if (rt->state == STATE_SEEKING) {
+            ff_rtmp_packet_destroy(&rpkt);
+            // We continue, let the natural flow of things happen:
+            // AVERROR(EAGAIN) or handle_invoke gets us out of here
+            continue;
+        }
+
         if (ret < 0) {//serious error in current packet
             ff_rtmp_packet_destroy(&rpkt);
             return ret;
@@ -2512,6 +2547,25 @@ static int rtmp_read(URLContext *s, uint8_t *buf, int size)
     return orig_size;
 }
 
+static int64_t rtmp_seek(URLContext *s, int stream_index, int64_t timestamp,
+                         int flags)
+{
+    RTMPContext *rt = s->priv_data;
+    int ret;
+    av_log(s, AV_LOG_DEBUG,
+           "Seek on stream index %d at timestamp %lld with flags %08x\n",
+           stream_index, timestamp, flags);
+    if ((ret = gen_seek(s, rt, timestamp)) < 0) {
+        av_log(s, AV_LOG_ERROR,
+               "Unable to send seek command on stream index %d at timestamp %lld with flags %08x\n",
+               stream_index, timestamp, flags);
+        return ret;
+    }
+    rt->flv_off = rt->flv_size;
+    rt->state = STATE_SEEKING;
+    return timestamp;
+}
+
 static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 {
     RTMPContext *rt = s->priv_data;
@@ -2663,6 +2717,7 @@ URLProtocol ff_##flavor##_protocol = {           \
     .name           = #flavor,                   \
     .url_open       = rtmp_open,                 \
     .url_read       = rtmp_read,                 \
+    .url_read_seek  = rtmp_seek,                 \
     .url_write      = rtmp_write,                \
     .url_close      = rtmp_close,                \
     .priv_data_size = sizeof(RTMPContext),       \
