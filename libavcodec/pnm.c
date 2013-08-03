@@ -118,10 +118,8 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
                 avctx->pix_fmt = AV_PIX_FMT_MONOBLACK;
             } else if (maxval < 256) {
                 avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-            } else if (maxval < 65535) {
-                avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             } else {
-                avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
+                avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             }
         } else if (depth == 2) {
             if (maxval == 255)
@@ -130,13 +128,13 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
             if (maxval < 256) {
                 avctx->pix_fmt = AV_PIX_FMT_RGB24;
             } else {
-                avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
+                avctx->pix_fmt = AV_PIX_FMT_RGB48;
             }
         } else if (depth == 4) {
             if (maxval < 256) {
                 avctx->pix_fmt = AV_PIX_FMT_RGBA;
             } else {
-                avctx->pix_fmt = AV_PIX_FMT_RGBA64BE;
+                avctx->pix_fmt = AV_PIX_FMT_RGBA64;
             }
         } else {
             return AVERROR_INVALIDDATA;
@@ -164,16 +162,14 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         }
         if (s->maxval >= 256) {
             if (avctx->pix_fmt == AV_PIX_FMT_GRAY8) {
-                avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
-                if (s->maxval != 65535)
-                    avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+                avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
-                avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
+                avctx->pix_fmt = AV_PIX_FMT_RGB48;
             } else if (avctx->pix_fmt == AV_PIX_FMT_YUV420P && s->maxval < 65536) {
                 if (s->maxval < 512)
-                    avctx->pix_fmt = AV_PIX_FMT_YUV420P9BE;
+                    avctx->pix_fmt = AV_PIX_FMT_YUV420P9;
                 else if (s->maxval < 1024)
-                    avctx->pix_fmt = AV_PIX_FMT_YUV420P10BE;
+                    avctx->pix_fmt = AV_PIX_FMT_YUV420P10;
                 else
                     avctx->pix_fmt = AV_PIX_FMT_YUV420P16;
             } else {
