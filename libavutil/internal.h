@@ -62,6 +62,14 @@
 #    define av_export
 #endif
 
+#if HAVE_PRAGMA_DEPRECATED
+#    define FF_DISABLE_DEPRECATION_WARNINGS _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#    define FF_ENABLE_DEPRECATION_WARNINGS  _Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")
+#else
+#    define FF_DISABLE_DEPRECATION_WARNINGS
+#    define FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
 #ifndef INT_BIT
 #    define INT_BIT (CHAR_BIT * sizeof(int))
 #endif
