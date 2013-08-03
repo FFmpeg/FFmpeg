@@ -522,6 +522,28 @@ Set the service_id (default 0x0001) also known as program in DVB.
 Set the first PID for PMT (default 0x1000, max 0x1f00).
 @item -mpegts_start_pid @var{number}
 Set the first PID for data packets (default 0x0100, max 0x0f00).
+@item -mpegts_m2ts_mode @var{number}
+Enable m2ts mode if set to 1. Default value is -1 which disables m2ts mode.
+@item -muxrate @var{number}
+Set muxrate.
+@item -pes_payload_size @var{number}
+Set minimum PES packet payload in bytes.
+@item -mpegts_flags @var{flags}
+Set flags (see below).
+@item -mpegts_copyts @var{number}
+Preserve original timestamps, if value is set to 1. Default value is -1, which
+results in shifting timestamps so that they start from 0.
+@item -tables_version @var{number}
+Set PAT, PMT and SDT version (default 0, valid values are from 0 to 31, inclusively).
+@end table
+
+Option mpegts_flags may take a set of such flags:
+
+@table @option
+@item resend_headers
+Reemit PAT/PMT before writing the next packet.
+@item latm
+Use LATM packetization for AAC.
 @end table
 
 The recognized metadata settings in mpegts muxer are @code{service_provider}
