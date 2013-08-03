@@ -496,24 +496,26 @@ Requires the presence of the libtwolame headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libtwolame}.
 
-@subsection Options Mapping
+@subsection Options
 
 The following options are supported by the libtwolame wrapper. The
-TwoLAME-equivalent options follow the FFmpeg ones and are in
+@command{twolame}-equivalent options follow the FFmpeg ones and are in
 parentheses.
 
 @table @option
-@item b
-(b) Set bitrate in bits/s. Note that FFmpeg @code{b} option is
-expressed in bits/s, twolame @code{b} in kilobits/s. The default
-value is 128k.
+@item b (@emph{-b})
+Set bitrate expressed in bits/s for CBR. @command{twolame} @option{b}
+option is expressed in kilobits/s. Default value is 128k.
 
-@item q
-(V) Set quality for experimental VBR support. Maximum value range is
-from -50 to 50, useful range is from -10 to 10.
+@item q (@emph{-V})
+Set quality for experimental VBR support. Maximum value range is
+from -50 to 50, useful range is from -10 to 10. The higher the
+value, the better the quality. This option is valid only using the
+@command{ffmpeg} command-line tool. For library interface users,
+use @option{global_quality}.
 
-@item mode
-(mode) Set MPEG mode. Possible values:
+@item mode (@emph{--mode})
+Set the mode of the resulting audio. Possible values:
 
 @table @samp
 @item auto
@@ -528,26 +530,26 @@ Dual channel
 Mono
 @end table
 
-@item psymodel
-(psyc-mode) Set psychoacoustic model to use in encoding. The argument
-must be an integer between -1 and 4, inclusive. The higher the value,
-the better the quality. The default value is 3.
+@item psymodel (@emph{--psyc-mode})
+Set psychoacoustic model to use in encoding. The argument must be
+an integer between -1 and 4, inclusive. The higher the value, the
+better the quality. The default value is 3.
 
-@item energy_levels
-(energy) Enable energy levels extensions when set to 1. The default
-value is 0 (disabled).
+@item energy_levels (@emph{--energy})
+Enable energy levels extensions when set to 1. The default value is
+0 (disabled).
 
-@item error_protection
-(protect) Enable CRC error protection when set to 1. The default value
-is 0 (disabled).
+@item error_protection (@emph{--protect})
+Enable CRC error protection when set to 1. The default value is 0
+(disabled).
 
-@item copyright
-(copyright) Set MPEG audio copyright flag when set to 1. The default
-value is 0 (disabled).
+@item copyright (@emph{--copyright})
+Set MPEG audio copyright flag when set to 1. The default value is 0
+(disabled).
 
-@item original
-(original) Set MPEG audio original flag when set to 1. The default
-value is 0 (disabled).
+@item original (@emph{--original})
+Set MPEG audio original flag when set to 1. The default value is 0
+(disabled).
 
 @end table
 
