@@ -288,7 +288,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                     h->delta_poc[1] = get_se_golomb(&h->gb);
             }
 
-            ff_init_poc(h, field_poc, NULL);
+            ff_init_poc(h, field_poc, &s->output_picture_number);
 
             if (h->sps.pic_struct_present_flag) {
                 switch (h->sei_pic_struct) {
