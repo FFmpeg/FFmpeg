@@ -246,4 +246,13 @@ int ff_listen_connect(int fd, const struct sockaddr *addr,
 
 int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
 
+#ifndef SOCK_CLOEXEC
+#define SOCK_CLOEXEC 0
+#endif
+
+static inline int ff_socket(int domain, int type, int protocol)
+{
+    return socket(domain, type | SOCK_CLOEXEC, protocol);
+}
+
 #endif /* AVFORMAT_NETWORK_H */

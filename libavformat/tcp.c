@@ -84,7 +84,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     cur_ai = ai;
 
  restart:
-    fd = socket(cur_ai->ai_family, cur_ai->ai_socktype, cur_ai->ai_protocol);
+    fd = ff_socket(cur_ai->ai_family,
+                   cur_ai->ai_socktype,
+                   cur_ai->ai_protocol);
     if (fd < 0) {
         ret = ff_neterrno();
         goto fail;
