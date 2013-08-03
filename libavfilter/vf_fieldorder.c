@@ -137,7 +137,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *frame)
             "picture will move %s one line\n",
             s->dst_tff ? "up" : "down");
     h = frame->video->h;
-    for (plane = 0; plane < 4 && frame->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
         line_step = frame->linesize[plane];
         line_size = s->line_size[plane];
         data = frame->data[plane];

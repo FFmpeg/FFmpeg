@@ -346,13 +346,13 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     }
     avfilter_copy_buffer_ref_props(out, in);
 
-    for (plane = 0; in->data[plane] && plane < 4; plane++)
+    for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++)
         hblur(out->data[plane], out->linesize[plane],
               in ->data[plane], in ->linesize[plane],
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],
               boxblur->temp);
 
-    for (plane = 0; in->data[plane] && plane < 4; plane++)
+    for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++)
         vblur(out->data[plane], out->linesize[plane],
               out->data[plane], out->linesize[plane],
               w[plane], h[plane], boxblur->radius[plane], boxblur->power[plane],

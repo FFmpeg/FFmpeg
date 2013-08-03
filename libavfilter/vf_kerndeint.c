@@ -162,7 +162,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *inpic)
     avfilter_copy_buffer_ref_props(outpic, inpic);
     outpic->video->interlaced = 0;
 
-    for (plane = 0; inpic->data[plane] && plane < 4; plane++) {
+    for (plane = 0; plane < 4 && inpic->data[plane] && inpic->linesize[plane]; plane++) {
         h = plane == 0 ? inlink->h : inlink->h >> kerndeint->vsub;
         bwidth = kerndeint->tmp_bwidth[plane];
 

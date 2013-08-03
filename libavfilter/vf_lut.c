@@ -298,7 +298,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         }
     } else {
         /* planar */
-        for (plane = 0; plane < 4 && in->data[plane]; plane++) {
+        for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? lut->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? lut->hsub : 0;
 

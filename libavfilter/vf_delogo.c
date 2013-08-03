@@ -232,7 +232,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         avfilter_copy_buffer_ref_props(out, in);
     }
 
-    for (plane = 0; plane < 4 && in->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? hsub0 : 0;
         int vsub = plane == 1 || plane == 2 ? vsub0 : 0;
 

@@ -254,7 +254,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
     picref->video->w = w;
     picref->video->h = h;
 
-    for (plane = 0; plane < 4 && picref->data[plane]; plane++)
+    for (plane = 0; plane < 4 && picref->data[plane] && picref->linesize[plane]; plane++)
         picref->data[plane] += FFALIGN(pad->x >> pad->draw.hsub[plane], align) * pad->draw.pixelstep[plane] +
                                       (pad->y >> pad->draw.vsub[plane])        * picref->linesize[plane];
 

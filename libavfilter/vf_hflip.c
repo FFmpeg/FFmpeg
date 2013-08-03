@@ -90,7 +90,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
     if (av_pix_fmt_desc_get(inlink->format)->flags & PIX_FMT_PAL)
         memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
-    for (plane = 0; plane < 4 && in->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
         step = flip->max_step[plane];
         hsub = (plane == 1 || plane == 2) ? flip->hsub : 0;
         vsub = (plane == 1 || plane == 2) ? flip->vsub : 0;

@@ -216,7 +216,7 @@ static int filter_frame(AVFilterLink *inlink, AVFilterBufferRef *in)
         avfilter_copy_buffer_ref_props(out, in);
     }
 
-    for (p = 0; p < 4 && in->data[p]; p++) {
+    for (p = 0; p < 4 && in->data[p] && in->linesize[p]; p++) {
         int w = inlink->w;
         int h = inlink->h;
         int r = gf->radius;
