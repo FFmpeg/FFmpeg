@@ -535,6 +535,18 @@ Preserve original timestamps, if value is set to 1. Default value is -1, which
 results in shifting timestamps so that they start from 0.
 @item -tables_version @var{number}
 Set PAT, PMT and SDT version (default 0, valid values are from 0 to 31, inclusively).
+This option allows updating stream structure so that standard consumer may
+detect the change. To do so, reopen output AVFormatContext (in case of API
+usage) or restart ffmpeg instance, cyclically changing tables_version value:
+@example
+ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
+ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
+...
+ffmpeg -i source3.ts -codec copy -f mpegts -tables_version 31 udp://1.1.1.1:1111
+ffmpeg -i source1.ts -codec copy -f mpegts -tables_version 0 udp://1.1.1.1:1111
+ffmpeg -i source2.ts -codec copy -f mpegts -tables_version 1 udp://1.1.1.1:1111
+...
+@end example
 @end table
 
 Option mpegts_flags may take a set of such flags:
