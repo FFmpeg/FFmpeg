@@ -23,29 +23,30 @@ SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
-$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
+$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.7 \
   --system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
 
 export PATH=$TOOLCHAIN/bin:$PATH
-export CC="$CCACHE arm-linux-androideabi-gcc"
-export LD=arm-linux-androideabi-ld
-export AR=arm-linux-androideabi-ar
+export CC="$CCACHE i686-linux-android-gcc-4.7"
+export LD=i686-linux-android-ld
+export AR=i686-linux-android-ar
 
-CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
+CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
   -finline-limit=300 -ffast-math \
   -fstrict-aliasing -Werror=strict-aliasing \
   -fmodulo-sched -fmodulo-sched-allow-regmoves \
   -fgraphite -fgraphite-identity -floop-block -floop-flatten \
   -floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
-  -Wno-psabi -Wa,--noexecstack \
-  -D__ARM_ARCH_5__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5TE__ \
+  -Wno-psabi -Wa,--noexecstack -fpic \
   -DANDROID -DNDEBUG \
   -I$SSL/include"
 
-LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
+
+LDFLAGS="-lm"
 
 FFMPEG_FLAGS_COMMON="--target-os=linux \
-  --cross-prefix=arm-linux-androideabi- \
+  --arch=x86
+  --cross-prefix=i686-linux-android- \
   --enable-cross-compile \
   --enable-shared \
   --disable-static \
@@ -66,50 +67,24 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-parser=dca \
   --disable-decoder=dca \
   --disable-decoder=svq3 \
+  --enable-openssl \
   --enable-network \
-  --enable-asm \
   --enable-version3"
 
-  # --disable-decoder=ac3 --disable-decoder=eac3 --disable-decoder=mlp \
 
-for version in neon armv7 vfp armv6; do
+for version in x86; do
 
   cd $SOURCE
 
   FFMPEG_FLAGS="$FFMPEG_FLAGS_COMMON"
 
   case $version in
-    neon)
-      FFMPEG_FLAGS="--arch=armv7-a \
-        --cpu=cortex-a8 \
-        --enable-openssl \
-        $FFMPEG_FLAGS"
-      EXTRA_CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad"
-      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
-      SSL_OBJS=`find $SSL/obj/local/armeabi-v7a/objs/ssl $SSL/obj/local/armeabi-v7a/objs/crypto -type f -name "*.o"`
-      ;;
-    armv7)
-      FFMPEG_FLAGS="--arch=armv7-a \
-        --cpu=cortex-a8 \
-        --enable-openssl \
-        $FFMPEG_FLAGS"
-      EXTRA_CFLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp"
-      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
-      SSL_OBJS=`find $SSL/obj/local/armeabi-v7a/objs/ssl $SSL/obj/local/armeabi-v7a/objs/crypto -type f -name "*.o"`
-      ;;
-    vfp)
-      FFMPEG_FLAGS="--arch=arm \
-        $FFMPEG_FLAGS"
-      EXTRA_CFLAGS="-march=armv6 -mfpu=vfp -mfloat-abi=softfp"
-      EXTRA_LDFLAGS=""
-      SSL_OBJS=""
-      ;;
-    armv6)
-      FFMPEG_FLAGS="--arch=arm \
-        $FFMPEG_FLAGS"
-      EXTRA_CFLAGS="-march=armv6"
-      EXTRA_LDFLAGS=""
-      SSL_OBJS=""
+    x86)
+      FFMPEG_FLAGS="$FFMPEG_FLAGS \
+				--disable-asm"
+      EXTRA_CFLAGS="-march=i686 -mtune=atom -mstackrealign -msse3 -mfpmath=sse -m32"
+      EXTRA_LDFLAGS="-L$SSL/libs/x86"
+      SSL_OBJS=`find $SSL/obj/local/x86/objs/ssl $SSL/obj/local/x86/objs/crypto -type f -name "*.o"`
       ;;
     *)
       FFMPEG_FLAGS=""
@@ -132,9 +107,9 @@ for version in neon armv7 vfp armv6; do
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
   $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
-    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
+    libavutil/*.o libavcodec/*.o  libavformat/*.o libavfilter/*.o libswresample/*.o  libswscale/*.o compat/*.o
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
-  arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so
+  i686-linux-android-strip --strip-unneeded $PREFIX/libffmpeg.so
 
 done
