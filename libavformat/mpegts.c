@@ -106,6 +106,9 @@ struct MpegTSContext {
     /** compute exact PCR for each transport stream packet   */
     int mpeg2ts_compute_pcr;
 
+    /** fix dvb teletext pts                                 */
+    int fix_teletext_pts;
+
     int64_t cur_pcr;    /**< used to estimate the exact PCR  */
     int pcr_incr;       /**< used to estimate the exact PCR  */
 
@@ -131,7 +134,7 @@ struct MpegTSContext {
     int current_pid;
 };
 
-static const AVOption options[] = {
+static const AVOption mpegtsraw_options[] = {
     {"compute_pcr", "Compute exact PCR for each transport stream packet.", offsetof(MpegTSContext, mpeg2ts_compute_pcr), AV_OPT_TYPE_INT,
      {.i64 = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
@@ -140,7 +143,20 @@ static const AVOption options[] = {
 static const AVClass mpegtsraw_class = {
     .class_name = "mpegtsraw demuxer",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = mpegtsraw_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVOption mpegts_options[] = {
+    {"fix_teletext_pts", "Try to fix pts values of dvb teletext streams.", offsetof(MpegTSContext, fix_teletext_pts), AV_OPT_TYPE_INT,
+     {.i64 = 1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass mpegts_class = {
+    .class_name = "mpegts demuxer",
+    .item_name  = av_default_item_name,
+    .option     = mpegts_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -967,6 +983,32 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     pes->pes_header_size += sl_header_bytes;
                     p += sl_header_bytes;
                     buf_size -= sl_header_bytes;
+                }
+                if (pes->ts->fix_teletext_pts && pes->st->codec->codec_id == AV_CODEC_ID_DVB_TELETEXT) {
+                    AVProgram *p = NULL;
+                    while ((p = av_find_program_from_stream(pes->stream, p, pes->st->index))) {
+                        if (p->pcr_pid != -1 && p->discard != AVDISCARD_ALL) {
+                            MpegTSFilter *f = pes->ts->pids[p->pcr_pid];
+                            if (f && f->type == MPEGTS_PES) {
+                                PESContext *pcrpes = f->u.pes_filter.opaque;
+                                if (pcrpes && pcrpes->last_pcr != -1 && pcrpes->st && pcrpes->st->discard != AVDISCARD_ALL) {
+                                    // teletext packets do not always have correct timestamps,
+                                    // the standard says they should be handled after 40.6 ms at most,
+                                    // and the pcr error to this packet should be no more than 100 ms.
+                                    // TODO: we should interpolate the PCR, not just use the last one
+                                    int64_t pcr = pcrpes->last_pcr / 300;
+                                    pes->st->pts_wrap_reference = pcrpes->st->pts_wrap_reference;
+                                    pes->st->pts_wrap_behavior = pcrpes->st->pts_wrap_behavior;
+                                    if (pes->dts == AV_NOPTS_VALUE || pes->dts < pcr) {
+                                        pes->pts = pes->dts = pcr;
+                                    } else if (pes->dts > pcr + 3654 + 9000) {
+                                        pes->pts = pes->dts = pcr + 3654 + 9000;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
             break;
@@ -2325,6 +2367,7 @@ AVInputFormat ff_mpegts_demuxer = {
     .read_close     = mpegts_read_close,
     .read_timestamp = mpegts_get_dts,
     .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
+    .priv_class     = &mpegts_class,
 };
 
 AVInputFormat ff_mpegtsraw_demuxer = {
