@@ -301,7 +301,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 
 static const char *my_program_name;
 
-static const char *config_filename = "/etc/avserver.conf";
+static const char *config_filename;
 
 static int avserver_debug;
 static int no_launch;
@@ -4632,6 +4632,8 @@ static const OptionDef options[] = {
 int main(int argc, char **argv)
 {
     struct sigaction sigact = { { 0 } };
+
+    config_filename = av_strdup("/etc/avserver.conf");
 
     parse_loglevel(argc, argv, options);
     av_register_all();
