@@ -2048,6 +2048,8 @@ static int subtitle_thread(void *arg)
             SDL_LockMutex(is->subpq_mutex);
             is->subpq_size++;
             SDL_UnlockMutex(is->subpq_mutex);
+        } else if (got_subtitle) {
+            avsubtitle_free(&sp->sub);
         }
         av_free_packet(pkt);
     }
