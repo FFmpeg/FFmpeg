@@ -1215,7 +1215,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
     }
 
     for (i = 0; i < ist->nb_filters; i++) {
-        if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
+        if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1 && !do_deinterlace) {
             FrameBuffer      *buf = decoded_frame->opaque;
             AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
                                         decoded_frame->data, decoded_frame->linesize,
