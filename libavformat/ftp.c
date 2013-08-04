@@ -197,8 +197,8 @@ static int ftp_auth(FTPContext *s)
     const char *user = NULL, *pass = NULL;
     char *end = NULL, buf[CONTROL_BUFFER_SIZE], credencials[CREDENTIALS_BUFFER_SIZE];
     int err;
-    const int user_codes[] = {331, 230, 500, 530, 0}; /* 500, 530 are incorrect codes */
-    const int pass_codes[] = {230, 503, 530, 0}; /* 503, 530 are incorrect codes */
+    static const int user_codes[] = {331, 230, 500, 530, 0}; /* 500, 530 are incorrect codes */
+    static const int pass_codes[] = {230, 503, 530, 0}; /* 503, 530 are incorrect codes */
 
     /* Authentication may be repeated, original string has to be saved */
     av_strlcpy(credencials, s->credencials, sizeof(credencials));
@@ -230,8 +230,8 @@ static int ftp_passive_mode(FTPContext *s)
 {
     char *res = NULL, *start = NULL, *end = NULL;
     int i;
-    const char *command = "PASV\r\n";
-    const int pasv_codes[] = {227, 501, 0}; /* 501 is incorrect code */
+    static const char *command = "PASV\r\n";
+    static const int pasv_codes[] = {227, 501, 0}; /* 501 is incorrect code */
 
     if (ftp_send_command(s, command, pasv_codes, &res) != 227 || !res)
         goto fail;
@@ -276,8 +276,8 @@ static int ftp_current_dir(FTPContext *s)
 {
     char *res = NULL, *start = NULL, *end = NULL;
     int i;
-    const char *command = "PWD\r\n";
-    const int pwd_codes[] = {257, 0};
+    static const char *command = "PWD\r\n";
+    static const int pwd_codes[] = {257, 0};
 
     if (ftp_send_command(s, command, pwd_codes, &res) != 257 || !res)
         goto fail;
@@ -314,7 +314,7 @@ static int ftp_file_size(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
     char *res = NULL;
-    const int size_codes[] = {213, 501, 550, 0}; /* 501, 550 are incorrect codes */
+    static const int size_codes[] = {213, 501, 550, 0}; /* 501, 550 are incorrect codes */
 
     snprintf(command, sizeof(command), "SIZE %s\r\n", s->path);
     if (ftp_send_command(s, command, size_codes, &res) == 213 && res) {
@@ -332,7 +332,7 @@ static int ftp_file_size(FTPContext *s)
 static int ftp_retrieve(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int retr_codes[] = {150, 550, 554, 0}; /* 550, 554 are incorrect codes */
+    static const int retr_codes[] = {150, 550, 554, 0}; /* 550, 554 are incorrect codes */
 
     snprintf(command, sizeof(command), "RETR %s\r\n", s->path);
     if (ftp_send_command(s, command, retr_codes, NULL) != 150)
@@ -346,7 +346,7 @@ static int ftp_retrieve(FTPContext *s)
 static int ftp_store(FTPContext *s)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int stor_codes[] = {150, 0};
+    static const int stor_codes[] = {150, 0};
 
     snprintf(command, sizeof(command), "STOR %s\r\n", s->path);
     if (ftp_send_command(s, command, stor_codes, NULL) != 150)
@@ -359,8 +359,8 @@ static int ftp_store(FTPContext *s)
 
 static int ftp_type(FTPContext *s)
 {
-    const char *command = "TYPE I\r\n";
-    const int type_codes[] = {200, 500, 504, 0}; /* 500, 504 are incorrect codes */
+    static const char *command = "TYPE I\r\n";
+    static const int type_codes[] = {200, 500, 504, 0}; /* 500, 504 are incorrect codes */
 
     if (ftp_send_command(s, command, type_codes, NULL) != 200)
         return AVERROR(EIO);
@@ -371,7 +371,7 @@ static int ftp_type(FTPContext *s)
 static int ftp_restart(FTPContext *s, int64_t pos)
 {
     char command[CONTROL_BUFFER_SIZE];
-    const int rest_codes[] = {350, 500, 501, 0}; /* 500, 501 are incorrect codes */
+    static const int rest_codes[] = {350, 500, 501, 0}; /* 500, 501 are incorrect codes */
 
     snprintf(command, sizeof(command), "REST %"PRId64"\r\n", pos);
     if (ftp_send_command(s, command, rest_codes, NULL) != 350)
@@ -386,7 +386,7 @@ static int ftp_connect_control_connection(URLContext *h)
     int err;
     AVDictionary *opts = NULL;
     FTPContext *s = h->priv_data;
-    const int connect_codes[] = {220, 0};
+    static const int connect_codes[] = {220, 0};
 
     if (!s->conn_control) {
         ff_url_join(buf, sizeof(buf), "tcp", NULL,
@@ -462,9 +462,9 @@ static int ftp_connect_data_connection(URLContext *h)
 
 static int ftp_abort(URLContext *h)
 {
-    const char *command = "ABOR\r\n";
+    static const char *command = "ABOR\r\n";
     int err;
-    const int abor_codes[] = {225, 226, 0};
+    static const int abor_codes[] = {225, 226, 0};
     FTPContext *s = h->priv_data;
 
     /* According to RCF 959:
