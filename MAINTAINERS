@@ -62,13 +62,20 @@ Internal Interfaces:
   libavutil/common.h                    Michael Niedermayer
 
 Other:
+  bprint                                Nicolas George
   bswap.h
+  des                                   Reimar Doeffinger
+  float_dsp                             Loren Merritt
+  hash                                  Reimar Doeffinger
   intfloat*                             Michael Niedermayer
   integer.c, integer.h                  Michael Niedermayer
+  lzo                                   Reimar Doeffinger
   mathematics.c, mathematics.h          Michael Niedermayer
   opencl.c, opencl.h                    Wei Gao
   rational.c, rational.h                Michael Niedermayer
+  rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
+  timecode                              Clément Bœsch
 
 
 libavcodec
