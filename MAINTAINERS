@@ -62,12 +62,12 @@ Internal Interfaces:
   libavutil/common.h                    Michael Niedermayer
 
 Other:
-  intfloat*                             Michael Niedermayer
-  rational.c, rational.h                Michael Niedermayer
-  mathematics.c, mathematics.h          Michael Niedermayer
-  integer.c, integer.h                  Michael Niedermayer
   bswap.h
+  intfloat*                             Michael Niedermayer
+  integer.c, integer.h                  Michael Niedermayer
+  mathematics.c, mathematics.h          Michael Niedermayer
   opencl.c, opencl.h                    Wei Gao
+  rational.c, rational.h                Michael Niedermayer
   ripemd.c, ripemd.h                    James Almer
 
 
