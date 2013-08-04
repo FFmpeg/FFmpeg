@@ -789,7 +789,8 @@ static int decode_audio_specific_config(AACContext *ac,
         av_dlog(avctx, "%02x ", avctx->extradata[i]);
     av_dlog(avctx, "\n");
 
-    init_get_bits(&gb, data, bit_size);
+    if ((ret = init_get_bits(&gb, data, bit_size)) < 0)
+        return ret;
 
     if ((i = avpriv_mpeg4audio_get_config(m4ac, data, bit_size,
                                           sync_extension)) < 0)
@@ -2635,7 +2636,8 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((err = init_get_bits(&gb, buf, buf_size * 8)) < 0)
+        return err;
 
     if ((err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb)) < 0)
         return err;
@@ -2878,7 +2880,8 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
     int                 muxlength, err;
     GetBitContext       gb;
 
-    init_get_bits(&gb, avpkt->data, avpkt->size * 8);
+    if ((err = init_get_bits(&gb, avpkt->data, avpkt->size * 8)) < 0)
+        return err;
 
     // check for LOAS sync word
     if (get_bits(&gb, 11) != LOAS_SYNC_WORD)
