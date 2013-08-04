@@ -34,7 +34,6 @@
 #include "metadata.h"
 
 extern const AVMetadataConv ff_riff_info_conv[];
-extern const char ff_riff_tags[][5];
 
 int64_t ff_start_tag(AVIOContext *pb, const char *tag);
 void ff_end_tag(AVIOContext *pb, int64_t start);
