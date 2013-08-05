@@ -613,7 +613,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
     AVFilterContext *first_filter = in->filter_ctx;
-    AVFilter *filter = avfilter_get_by_name("buffer");
+    const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
     InputStream *ist = ifilter->ist;
     AVRational tb = ist->framerate.num ? av_inv_q(ist->framerate) :
                                          ist->st->time_base;
@@ -650,7 +650,7 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
-    if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter, name,
+    if ((ret = avfilter_graph_create_filter(&ifilter->filter, buffer_filt, name,
                                             args.str, NULL, fg->graph)) < 0)
         return ret;
 
@@ -699,7 +699,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
                                         AVFilterInOut *in)
 {
     AVFilterContext *first_filter = in->filter_ctx;
-    AVFilter *filter = avfilter_get_by_name("abuffer");
+    const AVFilter *abuffer_filt = avfilter_get_by_name("abuffer");
     InputStream *ist = ifilter->ist;
     int pad_idx = in->pad_idx;
     AVBPrint args;
@@ -719,7 +719,7 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
 
-    if ((ret = avfilter_graph_create_filter(&ifilter->filter, filter,
+    if ((ret = avfilter_graph_create_filter(&ifilter->filter, abuffer_filt,
                                             name, args.str, NULL,
                                             fg->graph)) < 0)
         return ret;
