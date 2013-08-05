@@ -48,6 +48,7 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --cross-prefix=arm-linux-androideabi- \
   --enable-cross-compile \
   --enable-shared \
+  --enable-optimizations \
   --disable-static \
   --disable-runtime-cpudetect
   --disable-symver \
@@ -68,7 +69,9 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-decoder=svq3 \
   --enable-network \
   --enable-asm \
-  --enable-version3"
+  --enable-version3 \
+  --disable-debug \
+  --optflags=-02"
 
   # --disable-decoder=ac3 --disable-decoder=eac3 --disable-decoder=mlp \
 
@@ -107,7 +110,7 @@ for version in neon armv7 vfp armv6; do
     armv6)
       FFMPEG_FLAGS="--arch=arm \
         $FFMPEG_FLAGS"
-      EXTRA_CFLAGS="-march=armv6"
+      EXTRA_CFLAGS="-march=armv6 -msoft-float"
       EXTRA_LDFLAGS=""
       SSL_OBJS=""
       ;;
