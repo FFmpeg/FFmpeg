@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/get_bits.h"
+#include "libavcodec/mathops.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
@@ -98,6 +99,8 @@ struct MpegTSContext {
     int raw_packet_size;
 
     int pos47;
+    /** position corresponding to pos47, or 0 if pos47 invalid */
+    int64_t pos;
 
     /** if true, all pids are analyzed to find streams       */
     int auto_guess;
@@ -1694,7 +1697,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         return 0;
 
     pos = avio_tell(ts->stream->pb);
-    ts->pos47= pos % ts->raw_packet_size;
+    MOD_UNLIKELY(ts->pos47, pos, ts->raw_packet_size, ts->pos);
 
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
