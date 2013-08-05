@@ -238,11 +238,14 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
  * @param timeout  Polling timeout in milliseconds.
  * @param h        URLContext providing interrupt check
  *                 callback and logging context.
+ * @param will_try_next Whether the caller will try to connect to another
+ *                 address for the same host name, affecting the form of
+ *                 logged errors.
  * @return         0 on success, AVERROR on failure.
  */
 int ff_listen_connect(int fd, const struct sockaddr *addr,
                       socklen_t addrlen, int timeout,
-                      URLContext *h);
+                      URLContext *h, int will_try_next);
 
 int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
 

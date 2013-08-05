@@ -83,7 +83,7 @@ static int unix_open(URLContext *h, const char *filename, int flags)
         }
     } else {
         ret = ff_listen_connect(fd, (struct sockaddr *)&s->addr,
-                                sizeof(s->addr), s->timeout, h);
+                                sizeof(s->addr), s->timeout, h, 0);
         if (ret < 0)
             goto fail;
     }

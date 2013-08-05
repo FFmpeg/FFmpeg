@@ -240,7 +240,8 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
 }
 
 int ff_listen_connect(int fd, const struct sockaddr *addr,
-                      socklen_t addrlen, int timeout, URLContext *h)
+                      socklen_t addrlen, int timeout, URLContext *h,
+                      int will_try_next)
 {
     struct pollfd p = {fd, POLLOUT, 0};
     int ret;
@@ -267,9 +268,13 @@ int ff_listen_connect(int fd, const struct sockaddr *addr,
                 char errbuf[100];
                 ret = AVERROR(ret);
                 av_strerror(ret, errbuf, sizeof(errbuf));
-                av_log(h, AV_LOG_ERROR,
-                       "Connection to %s failed: %s\n",
-                       h->filename, errbuf);
+                if (will_try_next)
+                    av_log(h, AV_LOG_WARNING,
+                           "Connection to %s failed (%s), trying next address\n",
+                           h->filename, errbuf);
+                else
+                    av_log(h, AV_LOG_ERROR, "Connection to %s failed: %s\n",
+                           h->filename, errbuf);
             }
         default:
             return ret;

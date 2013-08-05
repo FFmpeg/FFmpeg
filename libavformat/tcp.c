@@ -100,7 +100,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         }
     } else {
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                     timeout * 100, h)) < 0) {
+                                     timeout * 100, h, cur_ai->ai_next)) < 0) {
 
             if (ret == AVERROR_EXIT)
                 goto fail1;
