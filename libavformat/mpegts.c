@@ -239,6 +239,17 @@ static int discard_pid(MpegTSContext *ts, unsigned int pid)
     int i, j, k;
     int used = 0, discarded = 0;
     struct Program *p;
+
+    /* If none of the programs have .discard=AVDISCARD_ALL then there's
+     * no way we have to discard this packet
+     */
+    for (k = 0; k < ts->stream->nb_programs; k++) {
+        if (ts->stream->programs[k]->discard == AVDISCARD_ALL)
+            break;
+    }
+    if (k == ts->stream->nb_programs)
+        return 0;
+
     for(i=0; i<ts->nb_prg; i++) {
         p = &ts->prg[i];
         for(j=0; j<p->nb_pids; j++) {
