@@ -31,8 +31,8 @@ export CCACHE=; type ccache >/dev/null 2>&1 && export CCACHE=ccache
 function doConfigure()
 {
 	# *NEED* gas-preprocessor.pl file in $PATH , use for asm compile.
-	# wget https://github.com/yuvi/gas-preprocessor/blob/master/gas-preprocessor.pl
-	# wget https://github.com/wens/gas-preprocessor/blob/master/gas-preprocessor.pl
+	# wget https://raw.github.com/yuvi/gas-preprocessor/master/gas-preprocessor.pl
+	# wget https://raw.github.com/wens/gas-preprocessor/master/gas-preprocessor.pl
 	./configure \
 		--prefix=${DIST} \
 		\
