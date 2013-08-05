@@ -394,6 +394,11 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         }
     }
 
+    if (!srcY || !srcU) {
+        av_log(v->s.avctx, AV_LOG_ERROR, "Referenced frame missing.\n");
+        return;
+    }
+
     src_x   = s->mb_x * 16 + (mx   >> 2);
     src_y   = s->mb_y * 16 + (my   >> 2);
     uvsrc_x = s->mb_x *  8 + (uvmx >> 2);
@@ -568,6 +573,11 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
             srcY = s->last_picture.f.data[0];
     } else
         srcY = s->next_picture.f.data[0];
+
+    if (!srcY) {
+        av_log(v->s.avctx, AV_LOG_ERROR, "Referenced frame missing.\n");
+        return;
+    }
 
     if (v->field_mode) {
         if (v->cur_field_type != v->ref_field_type[dir])
@@ -854,6 +864,11 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     } else {
         srcU = s->next_picture.f.data[1] + uvsrc_y * s->uvlinesize + uvsrc_x;
         srcV = s->next_picture.f.data[2] + uvsrc_y * s->uvlinesize + uvsrc_x;
+    }
+
+    if (!srcU) {
+        av_log(v->s.avctx, AV_LOG_ERROR, "Referenced frame missing.\n");
+        return;
     }
 
     if (v->field_mode) {
