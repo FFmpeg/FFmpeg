@@ -32,6 +32,7 @@ version 10:
   the -noaccurate_seek option.
 - avconv -t option can now be used for inputs, to limit the duration of
   data read from an input file
+- incomplete Voxware MetaSound decoder
 
 
 version 9:

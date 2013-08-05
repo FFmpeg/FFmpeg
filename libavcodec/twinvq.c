@@ -688,6 +688,11 @@ static av_cold void init_bitstream_params(TwinVQContext *tctx)
             TWINVQ_WINDOW_TYPE_BITS +
             mtab->fmode[i].sub * (bse_bits[i] + n_ch * TWINVQ_SUB_GAIN_BITS);
 
+    if (tctx->codec == TWINVQ_CODEC_METASOUND) {
+        bsize_no_main_cb[1] += 2;
+        bsize_no_main_cb[2] += 2;
+    }
+
     // The remaining bits are all used for the main spectrum coefficients
     for (i = 0; i < 4; i++) {
         int bit_size, vect_size;
