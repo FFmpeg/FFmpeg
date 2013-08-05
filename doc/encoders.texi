@@ -554,6 +554,9 @@ Possible values:
 Calculate and print SSIM stats.
 @item -intra-refresh @var{integer}
 Use Periodic Intra Refresh instead of IDR frames.
+@item -bluray-compat @var{integer}
+Configure the encoder to be compatible with the bluray standard.
+It is a shorthand for setting "bluray-compat=1 force-cfr=1".
 @item -b-bias @var{integer}
 Influences how often B-frames are used.
 @item -b-pyramid @var{integer}
