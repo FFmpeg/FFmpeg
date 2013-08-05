@@ -5594,6 +5594,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             v->mv_f[1] = tmp[1];
         }
         mb_height = s->mb_height >> v->field_mode;
+
+        if (!mb_height) {
+            av_log(v->s.avctx, AV_LOG_ERROR, "Invalid mb_height.\n");
+            goto err;
+        }
+
         for (i = 0; i <= n_slices; i++) {
             if (i > 0 &&  slices[i - 1].mby_start >= mb_height) {
                 if (v->field_mode <= 0) {
