@@ -641,6 +641,8 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_enc_create.bquant_ratio = 100 * avctx->b_quant_factor;
     if( avctx->max_b_frames > 0  && !x->quicktime_format ) xvid_enc_create.global |= XVID_GLOBAL_PACKED;
 
+    av_assert0(xvid_enc_create.num_plugins + (!!x->ssim) + (!!x->variance_aq) + (!!x->lumi_aq) <= FF_ARRAY_ELEMS(plugins));
+
     /* Create encoder context */
     xerr = xvid_encore(NULL, XVID_ENC_CREATE, &xvid_enc_create, NULL);
     if( xerr ) {
