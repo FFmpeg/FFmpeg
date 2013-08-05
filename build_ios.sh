@@ -141,7 +141,7 @@ for iver in $build_versions; do
 		cd $SOURCE && cp -f $selfname $DIST
 		doConfigure 2>&1 | tee -a $confInfo
 		objs=$(make -n -B | sed -n -e '/printf "AR.*; ar rc /p' | sed -e 's/^printf .* ar rc .*\.a//')
-		(make clean && make && make install) 2>&1 | tee -a $makeInfo
+		(make clean && make && make install) 2>&1 | tee -a $makeInfo; [[ $PIPESTATUS != 0 ]] && kill $$
 		ar rc $libdir/libffmpeg.a $objs
 		lipo_archs="$lipo_archs $libdir/libffmpeg.a"
 	done
