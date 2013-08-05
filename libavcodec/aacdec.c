@@ -2766,7 +2766,8 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     if (INT_MAX / 8 <= buf_size)
         return AVERROR_INVALIDDATA;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((err = init_get_bits(&gb, buf, buf_size * 8)) < 0)
+        return err;
 
     if ((err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb, avpkt)) < 0)
         return err;
