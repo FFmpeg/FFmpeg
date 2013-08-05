@@ -18,7 +18,7 @@ elif [ $OS == 'Darwin' ]; then
 fi
 
 SOURCE=`pwd`
-DEST=$SOURCE/build/android && rm -rf $DEST
+DEST=$SOURCE/build/android # && rm -rf $DEST
 SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
