@@ -490,7 +490,8 @@ static int avi_read_header(AVFormatContext *s)
                     avi->dv_demux = avpriv_dv_init_demux(s);
                     if (!avi->dv_demux)
                         goto fail;
-                }
+                } else
+                    goto fail;
                 s->streams[0]->priv_data = ast;
                 avio_skip(pb, 3 * 4);
                 ast->scale = avio_rl32(pb);
