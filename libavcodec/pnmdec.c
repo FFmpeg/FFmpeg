@@ -58,6 +58,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
+    avctx->bits_per_raw_sample = av_log2(s->maxval) + 1;
 
     switch (avctx->pix_fmt) {
     default:
