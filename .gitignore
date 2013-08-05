@@ -1,5 +1,4 @@
 build/
-Android_local.sh
 iOS_local.sh
 tags
 *.swp
