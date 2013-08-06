@@ -35,6 +35,15 @@ static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
     return (uintptr_t)pic->f.data[3];
 }
 
+#if !FF_API_BUFS_VDPAU
+union AVVDPAUPictureInfo {
+    VdpPictureInfoH264        h264;
+    VdpPictureInfoMPEG1Or2    mpeg;
+    VdpPictureInfoVC1          vc1;
+    VdpPictureInfoMPEG4Part2 mpeg4;
+};
+#endif
+
 struct vdpau_picture_context {
     /**
      * VDPAU picture information.

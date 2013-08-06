@@ -57,12 +57,14 @@
 #define FF_API_CAP_VDPAU 1
 #endif
 
+#if FF_API_BUFS_VDPAU
 union AVVDPAUPictureInfo {
     VdpPictureInfoH264        h264;
     VdpPictureInfoMPEG1Or2    mpeg;
     VdpPictureInfoVC1          vc1;
     VdpPictureInfoMPEG4Part2 mpeg4;
 };
+#endif
 
 /**
  * This structure is used to share data between the libavcodec library and
@@ -88,11 +90,13 @@ typedef struct AVVDPAUContext {
      */
     VdpDecoderRender *render;
 
+#if FF_API_BUFS_VDPAU
     /**
      * VDPAU picture information
      *
      * Set by libavcodec.
      */
+    attribute_deprecated
     union AVVDPAUPictureInfo info;
 
     /**
@@ -100,6 +104,7 @@ typedef struct AVVDPAUContext {
      *
      * Set by libavcodec.
      */
+    attribute_deprecated
     int bitstream_buffers_allocated;
 
     /**
@@ -107,6 +112,7 @@ typedef struct AVVDPAUContext {
      *
      * Set by libavcodec.
      */
+    attribute_deprecated
     int bitstream_buffers_used;
 
    /**
@@ -115,7 +121,9 @@ typedef struct AVVDPAUContext {
      *
      * Set by libavcodec.
      */
+    attribute_deprecated
     VdpBitstreamBuffer *bitstream_buffers;
+#endif
 } AVVDPAUContext;
 
 #if FF_API_CAP_VDPAU
