@@ -114,7 +114,7 @@ typedef struct AVVDPAUContext {
     VdpBitstreamBuffer *bitstream_buffers;
 } AVVDPAUContext;
 
-
+#if FF_API_CAP_VDPAU
 /** @brief The videoSurface is used for rendering. */
 #define FF_VDPAU_STATE_USED_FOR_RENDER 1
 
@@ -153,6 +153,7 @@ struct vdpau_render_state {
     union AVVDPAUPictureInfo info;
 #endif
 };
+#endif
 
 /* @}*/
 
