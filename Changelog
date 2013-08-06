@@ -8,6 +8,9 @@ version <next>
 - ffprobe -show_programs option
 - compand filter
 - RTMP seek support
+- when transcoding with ffmpeg (i.e. not streamcopying), -ss is now accurate
+  even when used as an input option. Previous behavior can be restored with
+  the -noaccurate_seek option.
 
 
 version 2.0:
