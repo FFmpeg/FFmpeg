@@ -196,4 +196,9 @@ void avpriv_report_missing_feature(void *avc,
 void avpriv_request_sample(void *avc,
                            const char *msg, ...) av_printf_format(2, 3);
 
+/**
+ * A wrapper for open() setting O_CLOEXEC.
+ */
+int avpriv_open(const char *filename, int flags, ...);
+
 #endif /* AVUTIL_INTERNAL_H */

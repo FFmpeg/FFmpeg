@@ -18,8 +18,10 @@
 
 #include "config.h"
 #include "file.h"
+#include "internal.h"
 #include "log.h"
 #include "mem.h"
+#include <stdarg.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #if HAVE_UNISTD_H
@@ -33,6 +35,27 @@
 #elif HAVE_MAPVIEWOFFILE
 #include <windows.h>
 #endif
+
+int avpriv_open(const char *filename, int flags, ...)
+{
+    int fd;
+    unsigned int mode = 0;
+    va_list ap;
+
+    va_start(ap, flags);
+    if (flags & O_CREAT)
+        mode = va_arg(ap, unsigned int);
+    va_end(ap);
+
+#ifdef O_CLOEXEC
+    flags |= O_CLOEXEC;
+#endif
+
+    fd = open(filename, flags, mode);
+    if (fd != -1)
+        fcntl(fd, F_SETFD, FD_CLOEXEC);
+    return fd;
+}
 
 typedef struct {
     const AVClass *class;
@@ -49,7 +72,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
                 int log_offset, void *log_ctx)
 {
     FileLogContext file_log_ctx = { &file_log_ctx_class, log_offset, log_ctx };
-    int err, fd = open(filename, O_RDONLY);
+    int err, fd = avpriv_open(filename, O_RDONLY);
     struct stat st;
     av_unused void *ptr;
     off_t off_size;
