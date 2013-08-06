@@ -39,6 +39,21 @@ enum TwinVQFrameType {
     FT_PPC,        ///< Periodic Peak Component (part of the long frame)
 };
 
+#define PPC_SHAPE_CB_SIZE 64
+#define PPC_SHAPE_LEN_MAX 60
+#define SUB_AMP_MAX       4500.0
+#define MULAW_MU          100.0
+#define GAIN_BITS         8
+#define AMP_MAX           13000.0
+#define SUB_GAIN_BITS     5
+#define WINDOW_TYPE_BITS  4
+#define PGAIN_MU          200
+#define LSP_COEFS_MAX     20
+#define LSP_SPLIT_MAX     4
+#define CHANNELS_MAX      2
+#define SUBBLOCKS_MAX     16
+#define BARK_N_COEF_MAX   4
+
 /**
  * Parameters and tables that are different for each frame type
  */
@@ -61,6 +76,27 @@ struct TwinVQFrameMode {
 
     uint8_t         cb_len_read; ///< number of spectrum coefficients to read
 };
+
+typedef struct TwinVQFrameData {
+    int     window_type;
+    enum TwinVQFrameType ftype;
+
+    uint8_t main_coeffs[1024];
+    uint8_t ppc_coeffs[PPC_SHAPE_LEN_MAX];
+
+    uint8_t gain_bits[CHANNELS_MAX];
+    uint8_t sub_gain_bits[CHANNELS_MAX * SUBBLOCKS_MAX];
+
+    uint8_t bark1[CHANNELS_MAX][SUBBLOCKS_MAX][BARK_N_COEF_MAX];
+    uint8_t bark_use_hist[CHANNELS_MAX][SUBBLOCKS_MAX];
+
+    uint8_t lpc_idx1[CHANNELS_MAX];
+    uint8_t lpc_idx2[CHANNELS_MAX][LSP_SPLIT_MAX];
+    uint8_t lpc_hist_idx[CHANNELS_MAX];
+
+    int     p_coef[CHANNELS_MAX];
+    int     g_coef[CHANNELS_MAX];
+} TwinVQFrameData;
 
 /**
  * Parameters and tables that are different for every combination of
@@ -202,22 +238,9 @@ typedef struct TwinVQContext {
 
     // scratch buffers
     float *tmp_buf;
-} TwinVQContext;
 
-#define PPC_SHAPE_CB_SIZE 64
-#define PPC_SHAPE_LEN_MAX 60
-#define SUB_AMP_MAX       4500.0
-#define MULAW_MU          100.0
-#define GAIN_BITS         8
-#define AMP_MAX           13000.0
-#define SUB_GAIN_BITS     5
-#define WINDOW_TYPE_BITS  4
-#define PGAIN_MU          200
-#define LSP_COEFS_MAX     20
-#define LSP_SPLIT_MAX     4
-#define CHANNELS_MAX      2
-#define SUBBLOCKS_MAX     16
-#define BARK_N_COEF_MAX   4
+    TwinVQFrameData bits;
+} TwinVQContext;
 
 /** @note not speed critical, hence not optimized */
 static void memset_float(float *buf, float val, int size)
@@ -363,7 +386,7 @@ static void eval_lpcenv_2parts(TwinVQContext *tctx, enum TwinVQFrameType ftype,
  * bitstream, sum the corresponding vectors and write the result to *out
  * after permutation.
  */
-static void dequant(TwinVQContext *tctx, GetBitContext *gb, float *out,
+static void dequant(TwinVQContext *tctx, const uint8_t *cb_bits, float *out,
                     enum TwinVQFrameType ftype,
                     const int16_t *cb0, const int16_t *cb1, int cb_len)
 {
@@ -379,22 +402,20 @@ static void dequant(TwinVQContext *tctx, GetBitContext *gb, float *out,
         int bitstream_second_part = (i >= tctx->bits_main_spec_change[ftype]);
 
         int bits = tctx->bits_main_spec[0][ftype][bitstream_second_part];
+        tmp0 = *cb_bits++;
         if (bits == 7) {
-            if (get_bits1(gb))
+            if (tmp0 & 0x40)
                 sign0 = -1;
-            bits = 6;
+            tmp0 &= 0x3F;
         }
-        tmp0 = get_bits(gb, bits);
 
         bits = tctx->bits_main_spec[1][ftype][bitstream_second_part];
-
+        tmp1 = *cb_bits++;
         if (bits == 7) {
-            if (get_bits1(gb))
+            if (tmp1 & 0x40)
                 sign1 = -1;
-
-            bits = 6;
+            tmp1 &= 0x3F;
         }
-        tmp1 = get_bits(gb, bits);
 
         tab0 = cb0 + tmp0 * cb_len;
         tab1 = cb1 + tmp1 * cb_len;
@@ -505,10 +526,11 @@ static void decode_ppc(TwinVQContext *tctx, int period_coef,
     add_peak(period, width, shape, ppc_gain, speech, mtab->ppc_shape_len);
 }
 
-static void dec_gain(TwinVQContext *tctx, GetBitContext *gb,
+static void dec_gain(TwinVQContext *tctx,
                      enum TwinVQFrameType ftype, float *out)
 {
-    const TwinVQModeTab *mtab = tctx->mtab;
+    const TwinVQModeTab   *mtab =  tctx->mtab;
+    const TwinVQFrameData *bits = &tctx->bits;
     int i, j;
     int sub        = mtab->fmode[ftype].sub;
     float step     = AMP_MAX / ((1 << GAIN_BITS) - 1);
@@ -517,18 +539,18 @@ static void dec_gain(TwinVQContext *tctx, GetBitContext *gb,
     if (ftype == FT_LONG) {
         for (i = 0; i < tctx->avctx->channels; i++)
             out[i] = (1.0 / (1 << 13)) *
-                     mulawinv(step * 0.5 + step * get_bits(gb, GAIN_BITS),
+                     mulawinv(step * 0.5 + step * bits->gain_bits[i],
                               AMP_MAX, MULAW_MU);
     } else {
         for (i = 0; i < tctx->avctx->channels; i++) {
             float val = (1.0 / (1 << 23)) *
-                        mulawinv(step * 0.5 + step * get_bits(gb, GAIN_BITS),
+                        mulawinv(step * 0.5 + step * bits->gain_bits[i],
                                  AMP_MAX, MULAW_MU);
 
             for (j = 0; j < sub; j++)
                 out[i * sub + j] =
                     val * mulawinv(sub_step * 0.5 +
-                                   sub_step * get_bits(gb, SUB_GAIN_BITS),
+                                   sub_step * bits->sub_gain_bits[i * sub + j],
                                    SUB_AMP_MAX, MULAW_MU);
         }
     }
@@ -727,52 +749,29 @@ static void dec_bark_env(TwinVQContext *tctx, const uint8_t *in, int use_hist,
         }
 }
 
-static void read_and_decode_spectrum(TwinVQContext *tctx, GetBitContext *gb,
-                                     float *out, enum TwinVQFrameType ftype)
+static void read_and_decode_spectrum(TwinVQContext *tctx, float *out,
+                                     enum TwinVQFrameType ftype)
 {
     const TwinVQModeTab *mtab = tctx->mtab;
+    TwinVQFrameData *bits     = &tctx->bits;
     int channels              = tctx->avctx->channels;
     int sub        = mtab->fmode[ftype].sub;
     int block_size = mtab->size / sub;
     float gain[CHANNELS_MAX * SUBBLOCKS_MAX];
     float ppc_shape[PPC_SHAPE_LEN_MAX * CHANNELS_MAX * 4];
-    uint8_t bark1[CHANNELS_MAX][SUBBLOCKS_MAX][BARK_N_COEF_MAX];
-    uint8_t bark_use_hist[CHANNELS_MAX][SUBBLOCKS_MAX];
 
-    uint8_t lpc_idx1[CHANNELS_MAX];
-    uint8_t lpc_idx2[CHANNELS_MAX][LSP_SPLIT_MAX];
-    uint8_t lpc_hist_idx[CHANNELS_MAX];
+    int i, j;
 
-    int i, j, k;
-
-    dequant(tctx, gb, out, ftype,
+    dequant(tctx, bits->main_coeffs, out, ftype,
             mtab->fmode[ftype].cb0, mtab->fmode[ftype].cb1,
             mtab->fmode[ftype].cb_len_read);
 
-    for (i = 0; i < channels; i++)
-        for (j = 0; j < sub; j++)
-            for (k = 0; k < mtab->fmode[ftype].bark_n_coef; k++)
-                bark1[i][j][k] =
-                    get_bits(gb, mtab->fmode[ftype].bark_n_bit);
-
-    for (i = 0; i < channels; i++)
-        for (j = 0; j < sub; j++)
-            bark_use_hist[i][j] = get_bits1(gb);
-
-    dec_gain(tctx, gb, ftype, gain);
-
-    for (i = 0; i < channels; i++) {
-        lpc_hist_idx[i] = get_bits(gb, tctx->mtab->lsp_bit0);
-        lpc_idx1[i]     = get_bits(gb, tctx->mtab->lsp_bit1);
-
-        for (j = 0; j < tctx->mtab->lsp_split; j++)
-            lpc_idx2[i][j] = get_bits(gb, tctx->mtab->lsp_bit2);
-    }
+    dec_gain(tctx, ftype, gain);
 
     if (ftype == FT_LONG) {
         int cb_len_p = (tctx->n_div[3] + mtab->ppc_shape_len * channels - 1) /
                        tctx->n_div[3];
-        dequant(tctx, gb, ppc_shape, FT_PPC, mtab->ppc_shape_cb,
+        dequant(tctx, bits->ppc_coeffs, ppc_shape, FT_PPC, mtab->ppc_shape_cb,
                 mtab->ppc_shape_cb + cb_len_p * PPC_SHAPE_CB_SIZE, cb_len_p);
     }
 
@@ -781,7 +780,7 @@ static void read_and_decode_spectrum(TwinVQContext *tctx, GetBitContext *gb,
         float lsp[LSP_COEFS_MAX];
 
         for (j = 0; j < sub; j++) {
-            dec_bark_env(tctx, bark1[i][j], bark_use_hist[i][j], i,
+            dec_bark_env(tctx, bits->bark1[i][j], bits->bark_use_hist[i][j], i,
                          tctx->tmp_buf, gain[sub * i + j], ftype);
 
             tctx->fdsp.vector_fmul(chunk + block_size * j,
@@ -791,18 +790,17 @@ static void read_and_decode_spectrum(TwinVQContext *tctx, GetBitContext *gb,
 
         if (ftype == FT_LONG) {
             float pgain_step = 25000.0 / ((1 << mtab->pgain_bit) - 1);
-            int p_coef       = get_bits(gb, tctx->mtab->ppc_period_bit);
-            int g_coef       = get_bits(gb, tctx->mtab->pgain_bit);
             float v          = 1.0 / 8192 *
-                               mulawinv(pgain_step * g_coef + pgain_step / 2,
+                               mulawinv(pgain_step * bits->g_coef[i] +
+                                        pgain_step / 2,
                                         25000.0, PGAIN_MU);
 
-            decode_ppc(tctx, p_coef, ppc_shape + i * mtab->ppc_shape_len, v,
-                       chunk);
+            decode_ppc(tctx, bits->p_coef[i],
+                       ppc_shape + i * mtab->ppc_shape_len, v, chunk);
         }
 
-        decode_lsp(tctx, lpc_idx1[i], lpc_idx2[i], lpc_hist_idx[i], lsp,
-                   tctx->lsp_hist[i]);
+        decode_lsp(tctx, bits->lpc_idx1[i], bits->lpc_idx2[i],
+                   bits->lpc_hist_idx[i], lsp, tctx->lsp_hist[i]);
 
         dec_lpc_spectrum_inv(tctx, lsp, ftype, tctx->tmp_buf);
 
@@ -813,6 +811,90 @@ static void read_and_decode_spectrum(TwinVQContext *tctx, GetBitContext *gb,
     }
 }
 
+static void read_cb_data(TwinVQContext *tctx, GetBitContext *gb,
+                         uint8_t *dst, enum TwinVQFrameType ftype)
+{
+    int i;
+
+    for (i = 0; i < tctx->n_div[ftype]; i++) {
+        int bs_second_part = (i >= tctx->bits_main_spec_change[ftype]);
+
+        *dst++ = get_bits(gb, tctx->bits_main_spec[0][ftype][bs_second_part]);
+        *dst++ = get_bits(gb, tctx->bits_main_spec[1][ftype][bs_second_part]);
+    }
+}
+
+static const enum TwinVQFrameType wtype_to_ftype_table[] = {
+    FT_LONG,   FT_LONG, FT_SHORT, FT_LONG,
+    FT_MEDIUM, FT_LONG, FT_LONG,  FT_MEDIUM, FT_MEDIUM
+};
+
+static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
+                                 const uint8_t *buf, int buf_size)
+{
+    TwinVQFrameData     *bits = &tctx->bits;
+    const TwinVQModeTab *mtab = tctx->mtab;
+    int channels              = tctx->avctx->channels;
+    int sub;
+    GetBitContext gb;
+    int i, j, k;
+
+    init_get_bits(&gb, buf, buf_size * 8);
+    skip_bits(&gb, get_bits(&gb, 8));
+
+    bits->window_type = get_bits(&gb, WINDOW_TYPE_BITS);
+
+    if (bits->window_type > 8) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid window type, broken sample?\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    bits->ftype = wtype_to_ftype_table[tctx->bits.window_type];
+
+    sub = mtab->fmode[bits->ftype].sub;
+
+    read_cb_data(tctx, &gb, bits->main_coeffs, bits->ftype);
+
+    for (i = 0; i < channels; i++)
+        for (j = 0; j < sub; j++)
+            for (k = 0; k < mtab->fmode[bits->ftype].bark_n_coef; k++)
+                bits->bark1[i][j][k] =
+                    get_bits(&gb, mtab->fmode[bits->ftype].bark_n_bit);
+
+    for (i = 0; i < channels; i++)
+        for (j = 0; j < sub; j++)
+            bits->bark_use_hist[i][j] = get_bits1(&gb);
+
+    if (bits->ftype == FT_LONG) {
+        for (i = 0; i < channels; i++)
+            bits->gain_bits[i] = get_bits(&gb, GAIN_BITS);
+    } else {
+        for (i = 0; i < channels; i++) {
+            bits->gain_bits[i] = get_bits(&gb, GAIN_BITS);
+            for (j = 0; j < sub; j++)
+                bits->sub_gain_bits[i * sub + j] = get_bits(&gb, SUB_GAIN_BITS);
+        }
+    }
+
+    for (i = 0; i < channels; i++) {
+        bits->lpc_hist_idx[i] = get_bits(&gb, mtab->lsp_bit0);
+        bits->lpc_idx1[i]     = get_bits(&gb, mtab->lsp_bit1);
+
+        for (j = 0; j < mtab->lsp_split; j++)
+            bits->lpc_idx2[i][j] = get_bits(&gb, mtab->lsp_bit2);
+    }
+
+    if (bits->ftype == FT_LONG) {
+        read_cb_data(tctx, &gb, bits->ppc_coeffs, 3);
+        for (i = 0; i < channels; i++) {
+            bits->p_coef[i] = get_bits(&gb, mtab->ppc_period_bit);
+            bits->g_coef[i] = get_bits(&gb, mtab->pgain_bit);
+        }
+    }
+
+    return 0;
+}
+
 static int twinvq_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
@@ -820,15 +902,9 @@ static int twinvq_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     TwinVQContext *tctx = avctx->priv_data;
-    GetBitContext gb;
     const TwinVQModeTab *mtab = tctx->mtab;
     float **out = NULL;
-    enum TwinVQFrameType ftype;
-    int window_type, ret;
-    static const enum TwinVQFrameType wtype_to_ftype_table[] = {
-        FT_LONG,   FT_LONG, FT_SHORT, FT_LONG,
-        FT_MEDIUM, FT_LONG, FT_LONG,  FT_MEDIUM, FT_MEDIUM
-    };
+    int ret;
 
     if (buf_size * 8 < avctx->bit_rate * mtab->size / avctx->sample_rate + 8) {
         av_log(avctx, AV_LOG_ERROR,
@@ -844,20 +920,12 @@ static int twinvq_decode_frame(AVCodecContext *avctx, void *data,
         out = (float **)frame->extended_data;
     }
 
-    init_get_bits(&gb, buf, buf_size * 8);
-    skip_bits(&gb, get_bits(&gb, 8));
-    window_type = get_bits(&gb, WINDOW_TYPE_BITS);
+    if ((ret = twinvq_read_bitstream(avctx, tctx, buf, buf_size)) < 0)
+        return ret;
 
-    if (window_type > 8) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid window type, broken sample?\n");
-        return -1;
-    }
+    read_and_decode_spectrum(tctx, tctx->spectrum, tctx->bits.ftype);
 
-    ftype = wtype_to_ftype_table[window_type];
-
-    read_and_decode_spectrum(tctx, &gb, tctx->spectrum, ftype);
-
-    imdct_output(tctx, ftype, window_type, out);
+    imdct_output(tctx, tctx->bits.ftype, tctx->bits.window_type, out);
 
     FFSWAP(float *, tctx->curr_frame, tctx->prev_frame);
 
