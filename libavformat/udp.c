@@ -326,7 +326,7 @@ static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
     if (res0 == 0)
         goto fail;
     for (res = res0; res; res=res->ai_next) {
-        udp_fd = socket(res->ai_family, SOCK_DGRAM, 0);
+        udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0);
         if (udp_fd != -1) break;
         log_net_error(NULL, AV_LOG_ERROR, "socket");
     }
