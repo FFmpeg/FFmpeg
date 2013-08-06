@@ -10,6 +10,11 @@ fate-ralf: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.rmvb
 FATE_SAMPLES_AVCONV-$(call DEMDEC, SHORTEN, SHORTEN) += fate-lossless-shorten
 fate-lossless-shorten: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.shn -f s16le
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, TAK, TAK) += fate-lossless-tak
+fate-lossless-tak: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/luckynight-partial.tak -f s16le
+fate-lossless-tak: CMP = oneline
+fate-lossless-tak: REF = a28d4e5f2192057f7d4bece870f40bd0
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, TTA, TTA) += fate-lossless-tta
 fate-lossless-tta: CMD = crc -i $(TARGET_SAMPLES)/lossless-audio/inside.tta
 
