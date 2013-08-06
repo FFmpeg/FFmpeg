@@ -383,7 +383,9 @@ enum AVCodecID {
     AV_CODEC_ID_MLP,
     AV_CODEC_ID_GSM_MS, /* as found in WAV */
     AV_CODEC_ID_ATRAC3,
+#if FF_API_VOXWARE
     AV_CODEC_ID_VOXWARE,
+#endif
     AV_CODEC_ID_APE,
     AV_CODEC_ID_NELLYMOSER,
     AV_CODEC_ID_MUSEPACK8,
@@ -415,6 +417,7 @@ enum AVCodecID {
     AV_CODEC_ID_OPUS,
     AV_CODEC_ID_COMFORT_NOISE,
     AV_CODEC_ID_TAK,
+    AV_CODEC_ID_METASOUND,
 
     /* subtitle codecs */
     AV_CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

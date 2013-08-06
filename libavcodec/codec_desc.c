@@ -1923,6 +1923,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Atrac 3 (Adaptive TRansform Acoustic Coding 3)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+#if FF_API_VOXWARE
     {
         .id        = AV_CODEC_ID_VOXWARE,
         .type      = AVMEDIA_TYPE_AUDIO,
@@ -1930,6 +1931,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Voxware RT29 Metasound"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+#endif
     {
         .id        = AV_CODEC_ID_APE,
         .type      = AVMEDIA_TYPE_AUDIO,
@@ -2146,6 +2148,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .name      = "tak",
         .long_name = NULL_IF_CONFIG_SMALL("TAK (Tom's lossless Audio Kompressor)"),
         .props     = AV_CODEC_PROP_LOSSLESS,
+    },
+    {
+        .id        = AV_CODEC_ID_METASOUND,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "metasound",
+        .long_name = NULL_IF_CONFIG_SMALL("Voxware MetaSound"),
+        .props     = AV_CODEC_PROP_LOSSY,
     },
 
     /* subtitle codecs */
