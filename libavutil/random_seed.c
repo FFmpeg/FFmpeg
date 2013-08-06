@@ -30,13 +30,14 @@
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
+#include "internal.h"
 #include "timer.h"
 #include "random_seed.h"
 
 static int read_random(uint32_t *dst, const char *file)
 {
 #if HAVE_UNISTD_H
-    int fd = open(file, O_RDONLY);
+    int fd = avpriv_open(file, O_RDONLY);
     int err = -1;
 
     if (fd == -1)
