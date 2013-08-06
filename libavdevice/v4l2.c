@@ -124,7 +124,7 @@ static int device_open(AVFormatContext *ctx)
         flags |= O_NONBLOCK;
     }
 
-    fd = open(ctx->filename, flags, 0);
+    fd = avpriv_open(ctx->filename, flags);
     if (fd < 0) {
         err = errno;
 

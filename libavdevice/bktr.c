@@ -26,6 +26,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -136,7 +137,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     act.sa_handler = catchsignal;
     sigaction(SIGUSR1, &act, &old);
 
-    *tuner_fd = open("/dev/tuner0", O_RDONLY);
+    *tuner_fd = avpriv_open("/dev/tuner0", O_RDONLY);
     if (*tuner_fd < 0)
         av_log(NULL, AV_LOG_ERROR, "Warning. Tuner not opened, continuing: %s\n", strerror(errno));
 
