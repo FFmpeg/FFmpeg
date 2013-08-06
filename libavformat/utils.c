@@ -2783,9 +2783,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             break;
         }
 
-        if (ic->flags & AVFMT_FLAG_NOBUFFER) {
-            pkt = &pkt1;
-        } else {
+        if (ic->flags & AVFMT_FLAG_NOBUFFER)
+            free_packet_buffer(&ic->packet_buffer, &ic->packet_buffer_end);
+        {
             pkt = add_to_pktbuf(&ic->packet_buffer, &pkt1,
                                 &ic->packet_buffer_end);
             if (!pkt) {
