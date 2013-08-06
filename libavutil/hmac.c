@@ -208,12 +208,12 @@ int main(void)
 {
     uint8_t key1[20], key3[131], data3[50];
     enum AVHMACType i = AV_HMAC_SHA224;
-    const uint8_t key2[]  = "Jefe";
-    const uint8_t data1[] = "Hi There";
-    const uint8_t data2[] = "what do ya want for nothing?";
-    const uint8_t data4[] = "Test Using Larger Than Block-Size Key - Hash Key First";
-    const uint8_t data5[] = "Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data";
-    const uint8_t data6[] = "This is a test using a larger than block-size key and a larger "
+    static const uint8_t key2[]  = "Jefe";
+    static const uint8_t data1[] = "Hi There";
+    static const uint8_t data2[] = "what do ya want for nothing?";
+    static const uint8_t data4[] = "Test Using Larger Than Block-Size Key - Hash Key First";
+    static const uint8_t data5[] = "Test Using Larger Than Block-Size Key and Larger Than One Block-Size Data";
+    static const uint8_t data6[] = "This is a test using a larger than block-size key and a larger "
                             "than block-size data. The key needs to be hashed before being used"
                             " by the HMAC algorithm.";
     AVHMAC *hmac = av_hmac_alloc(AV_HMAC_MD5);
