@@ -28,6 +28,7 @@
 #endif
 
 #include "libavutil/attributes.h"
+#include "libavutil/internal.h"
 #include "avcodec.h"
 #include "libxvid.h"
 #include "mpegvideo.h"
@@ -54,7 +55,7 @@ int ff_tempfile(const char *prefix, char **filename) {
         return -1;
     }
 #if !HAVE_MKSTEMP
-    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
+    fd = avpriv_open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
     fd = mkstemp(*filename);
