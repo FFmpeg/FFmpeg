@@ -56,6 +56,9 @@
 #ifndef FF_API_CAP_VDPAU
 #define FF_API_CAP_VDPAU 1
 #endif
+#ifndef FF_API_BUFS_VDPAU
+#define FF_API_BUFS_VDPAU 1
+#endif
 
 #if FF_API_BUFS_VDPAU
 union AVVDPAUPictureInfo {
