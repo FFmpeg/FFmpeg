@@ -95,9 +95,7 @@ static int do_psnr            = 0;
 static int input_sync;
 static int override_ffserver  = 0;
 
-static int64_t recording_time = INT64_MAX;
-
-static void uninit_options(OptionsContext *o, int is_input)
+static void uninit_options(OptionsContext *o)
 {
     const OptionDef *po = options;
     int i;
@@ -127,27 +125,16 @@ static void uninit_options(OptionsContext *o, int is_input)
     av_freep(&o->audio_channel_maps);
     av_freep(&o->streamid_map);
     av_freep(&o->attachments);
-
-    if (is_input)
-        recording_time = o->recording_time;
-    else
-        recording_time = INT64_MAX;
 }
 
-static void init_options(OptionsContext *o, int is_input)
+static void init_options(OptionsContext *o)
 {
     memset(o, 0, sizeof(*o));
 
-    if (!is_input && recording_time != INT64_MAX) {
-        o->recording_time = recording_time;
-        av_log(NULL, AV_LOG_WARNING,
-                "-t is not an input option, keeping it for the next output;"
-                " consider fixing your command line.\n");
-    } else
-        o->recording_time = INT64_MAX;
     o->stop_time = INT64_MAX;
     o->mux_max_delay  = 0.7;
     o->start_time     = AV_NOPTS_VALUE;
+    o->recording_time = INT64_MAX;
     o->limit_filesize = UINT64_MAX;
     o->chapters_input_file = INT_MAX;
     o->accurate_seek  = 1;
@@ -2492,7 +2479,7 @@ static int open_files(OptionGroupList *l, const char *inout,
         OptionGroup *g = &l->groups[i];
         OptionsContext o;
 
-        init_options(&o, !strcmp(inout, "input"));
+        init_options(&o);
         o.g = g;
 
         ret = parse_optgroup(&o, g);
@@ -2504,7 +2491,7 @@ static int open_files(OptionGroupList *l, const char *inout,
 
         av_log(NULL, AV_LOG_DEBUG, "Opening an %s file: %s.\n", inout, g->arg);
         ret = open_file(&o, g->arg);
-        uninit_options(&o, !strcmp(inout, "input"));
+        uninit_options(&o);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error opening %s file %s.\n",
                    inout, g->arg);
@@ -2612,7 +2599,7 @@ const OptionDef options[] = {
     { "map_chapters",   HAS_ARG | OPT_INT | OPT_EXPERT | OPT_OFFSET |
                         OPT_OUTPUT,                                  { .off = OFFSET(chapters_input_file) },
         "set chapters mapping", "input_file_index" },
-    { "t",              HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT, { .off = OFFSET(recording_time) },
+    { "t",              HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(recording_time) },
         "record or transcode \"duration\" seconds of audio/video",
         "duration" },
     { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
