@@ -64,6 +64,7 @@ typedef struct X264Context {
     int weightb;
     int ssim;
     int intra_refresh;
+    int bluray_compat;
     int b_bias;
     int b_pyramid;
     int mixed_refs;
@@ -433,6 +434,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.b_ssim = x4->ssim;
     if (x4->intra_refresh >= 0)
         x4->params.b_intra_refresh = x4->intra_refresh;
+    if (x4->bluray_compat >= 0) {
+        x4->params.b_bluray_compat = x4->bluray_compat;
+        x4->params.b_vfr_input = 0;
+    }
     if (x4->b_bias != INT_MIN)
         x4->params.i_bframe_bias              = x4->b_bias;
     if (x4->b_pyramid >= 0)
@@ -651,6 +656,7 @@ static const AVOption options[] = {
     { "smart",         NULL, 0, AV_OPT_TYPE_CONST, {.i64 = X264_WEIGHTP_SMART},  INT_MIN, INT_MAX, VE, "weightp" },
     { "ssim",          "Calculate and print SSIM stats.",                 OFFSET(ssim),          AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 1, VE },
     { "intra-refresh", "Use Periodic Intra Refresh instead of IDR frames.",OFFSET(intra_refresh),AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 1, VE },
+    { "bluray-compat", "Bluray compatibility workarounds.",               OFFSET(bluray_compat) ,AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, 1, VE },
     { "b-bias",        "Influences how often B-frames are used",          OFFSET(b_bias),        AV_OPT_TYPE_INT,    { .i64 = INT_MIN}, INT_MIN, INT_MAX, VE },
     { "b-pyramid",     "Keep some B-frames as references.",               OFFSET(b_pyramid),     AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE, "b_pyramid" },
     { "none",          NULL,                                  0, AV_OPT_TYPE_CONST, {.i64 = X264_B_PYRAMID_NONE},   INT_MIN, INT_MAX, VE, "b_pyramid" },
