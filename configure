@@ -2230,7 +2230,8 @@ ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
 ffplay_deps="avcodec avformat swscale swresample sdl"
 ffplay_select="rdft crop_filter"
 ffprobe_deps="avcodec avformat"
-ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer sarestart"
+ffserver_deps="avformat fork sarestart"
+ffserver_select="ffm_muxer rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
 # documentation
