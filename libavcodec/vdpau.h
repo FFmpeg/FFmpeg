@@ -53,6 +53,10 @@
 #include <vdpau/vdpau_x11.h>
 #include "libavutil/avconfig.h"
 
+#ifndef FF_API_CAP_VDPAU
+#define FF_API_CAP_VDPAU 1
+#endif
+
 union AVVDPAUPictureInfo {
     VdpPictureInfoH264        h264;
     VdpPictureInfoMPEG1Or2    mpeg;
