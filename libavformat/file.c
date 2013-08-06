@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include <fcntl.h>
@@ -110,7 +111,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 #ifdef O_BINARY
     access |= O_BINARY;
 #endif
-    fd = open(filename, access, 0666);
+    fd = avpriv_open(filename, access, 0666);
     if (fd == -1)
         return AVERROR(errno);
     c->fd = fd;
