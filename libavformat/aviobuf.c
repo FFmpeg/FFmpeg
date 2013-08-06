@@ -525,6 +525,18 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     return size1 - size;
 }
 
+int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, unsigned char **data)
+{
+    if (s->buf_end - s->buf_ptr >= size && !s->write_flag) {
+        *data = s->buf_ptr;
+        s->buf_ptr += size;
+        return size;
+    } else {
+        *data = buf;
+        return avio_read(s, buf, size);
+    }
+}
+
 int ffio_read_partial(AVIOContext *s, unsigned char *buf, int size)
 {
     int len;
