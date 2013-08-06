@@ -882,7 +882,7 @@ start_sync:
             goto start_sync;
         }
 
-        n= get_stream_idx(d);
+        n = avi->dv_demux ? 0 : get_stream_idx(d);
 
         if(!((i-avi->last_pkt_pos)&1) && get_stream_idx(d+1) < s->nb_streams)
             continue;
@@ -1286,12 +1286,17 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     int64_t pos;
     AVIStream *ast;
 
+    /* Does not matter which stream is requested dv in avi has the
+     * stream information in the first video stream.
+     */
+    if (avi->dv_demux)
+        stream_index = 0;
+
     if (!avi->index_loaded) {
         /* we only load the index on demand */
         avi_load_index(s);
         avi->index_loaded = 1;
     }
-    assert(stream_index>= 0);
 
     st = s->streams[stream_index];
     ast= st->priv_data;
@@ -1309,7 +1314,6 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         /* One and only one real stream for DV in AVI, and it has video  */
         /* offsets. Calling with other stream indexes should have failed */
         /* the av_index_search_timestamp call above.                     */
-        assert(stream_index == 0);
 
         /* Feed the DV video stream version of the timestamp to the */
         /* DV demux so it can synthesize correct timestamps.        */
