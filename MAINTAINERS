@@ -325,7 +325,8 @@ Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   adtsenc.c                             Robert Swain
   afc.c                                 Paul B Mahol
-  aiff.c                                Baptiste Coudurier
+  aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
+  aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   ape.c                                 Kostya Shishkov
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
@@ -372,7 +373,7 @@ Muxers/Demuxers:
   microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
-  movenc.c                              Michael Niedermayer, Baptiste Coudurier
+  movenc.c                              Michael Niedermayer, Baptiste Coudurier, Matthieu Bouron
   mpc.c                                 Kostya Shishkov
   mpeg.c                                Michael Niedermayer
   mpegenc.c                             Michael Niedermayer
