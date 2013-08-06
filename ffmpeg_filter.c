@@ -548,7 +548,7 @@ static int configure_output_audio_filter(FilterGraph *fg, OutputFilter *ofilter,
 {                                                                  \
     AVFilterContext *ctx = inout->filter_ctx;                      \
     AVFilterPad *pads = in ? ctx->input_pads  : ctx->output_pads;  \
-    int       nb_pads = in ? ctx->input_count : ctx->output_count; \
+    int       nb_pads = in ? ctx->nb_inputs   : ctx->nb_outputs;   \
     AVIOContext *pb;                                               \
                                                                    \
     if (avio_open_dyn_buf(&pb) < 0)                                \
