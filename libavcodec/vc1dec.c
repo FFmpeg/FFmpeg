@@ -6052,6 +6052,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             s->uvlinesize                    <<= 1;
         }
         mb_height = s->mb_height >> v->field_mode;
+
+        av_assert0 (mb_height > 0);
+
         for (i = 0; i <= n_slices; i++) {
             if (i > 0 &&  slices[i - 1].mby_start >= mb_height) {
                 if (v->field_mode <= 0) {
