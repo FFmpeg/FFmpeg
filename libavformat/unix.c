@@ -93,7 +93,7 @@ static int unix_open(URLContext *h, const char *filename, int flags)
     return 0;
 
 fail:
-    if (s->listen && ret != EADDRINUSE)
+    if (s->listen && AVUNERROR(ret) != EADDRINUSE)
         unlink(s->addr.sun_path);
     if (fd >= 0)
         closesocket(fd);
