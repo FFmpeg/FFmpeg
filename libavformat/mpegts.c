@@ -99,9 +99,7 @@ struct MpegTSContext {
     /** raw packet size, including FEC if present            */
     int raw_packet_size;
 
-    int pos47;
-    /** position corresponding to pos47, or 0 if pos47 invalid */
-    int64_t pos;
+    int64_t pos47_full;
 
     /** if true, all pids are analyzed to find streams       */
     int auto_guess;
@@ -1860,7 +1858,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         return 0;
 
     pos = avio_tell(ts->stream->pb);
-    MOD_UNLIKELY(ts->pos47, pos, ts->raw_packet_size, ts->pos);
+    ts->pos47_full = pos;
 
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
@@ -2279,7 +2277,8 @@ static av_unused int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     int64_t pos, timestamp;
     uint8_t buf[TS_PACKET_SIZE];
     int pcr_l, pcr_pid = ((PESContext*)s->streams[stream_index]->priv_data)->pcr_pid;
-    pos = ((*ppos  + ts->raw_packet_size - 1 - ts->pos47) / ts->raw_packet_size) * ts->raw_packet_size + ts->pos47;
+    int pos47 = ts->pos47_full % ts->raw_packet_size;
+    pos = ((*ppos  + ts->raw_packet_size - 1 - pos47) / ts->raw_packet_size) * ts->raw_packet_size + pos47;
     while(pos < pos_limit) {
         if (avio_seek(s->pb, pos, SEEK_SET) < 0)
             return AV_NOPTS_VALUE;
@@ -2307,7 +2306,8 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
 {
     MpegTSContext *ts = s->priv_data;
     int64_t pos;
-    pos = ((*ppos  + ts->raw_packet_size - 1 - ts->pos47) / ts->raw_packet_size) * ts->raw_packet_size + ts->pos47;
+    int pos47 = ts->pos47_full % ts->raw_packet_size;
+    pos = ((*ppos  + ts->raw_packet_size - 1 - pos47) / ts->raw_packet_size) * ts->raw_packet_size + pos47;
     ff_read_frame_flush(s);
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
