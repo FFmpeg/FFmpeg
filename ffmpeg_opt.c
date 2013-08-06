@@ -842,6 +842,7 @@ static int open_input_file(OptionsContext *o, const char *filename)
     f->ctx        = ic;
     f->ist_index  = nb_input_streams - ic->nb_streams;
     f->start_time = o->start_time;
+    f->recording_time = o->recording_time;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     f->nb_streams = ic->nb_streams;
     f->rate_emu   = o->rate_emu;
@@ -2599,7 +2600,8 @@ const OptionDef options[] = {
     { "map_chapters",   HAS_ARG | OPT_INT | OPT_EXPERT | OPT_OFFSET |
                         OPT_OUTPUT,                                  { .off = OFFSET(chapters_input_file) },
         "set chapters mapping", "input_file_index" },
-    { "t",              HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT, { .off = OFFSET(recording_time) },
+    { "t",              HAS_ARG | OPT_TIME | OPT_OFFSET |
+                        OPT_INPUT | OPT_OUTPUT,                      { .off = OFFSET(recording_time) },
         "record or transcode \"duration\" seconds of audio/video",
         "duration" },
     { "to",             HAS_ARG | OPT_TIME | OPT_OFFSET | OPT_OUTPUT,  { .off = OFFSET(stop_time) },
