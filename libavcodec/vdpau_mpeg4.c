@@ -31,8 +31,9 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
                                    const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext * const s = avctx->priv_data;
-    AVVDPAUContext *hwctx    = avctx->hwaccel_context;
-    VdpPictureInfoMPEG4Part2 *info = &hwctx->info.mpeg4;
+    Picture *pic             = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    VdpPictureInfoMPEG4Part2 *info = &pic_ctx->info.mpeg4;
     VdpVideoSurface ref;
     int i;
 
@@ -74,8 +75,8 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
         info->non_intra_quantizer_matrix[i] = s->inter_matrix[i];
     }
 
-    ff_vdpau_common_start_frame(avctx, buffer, size);
-    return ff_vdpau_add_buffer(avctx, buffer, size);
+    ff_vdpau_common_start_frame(pic, buffer, size);
+    return ff_vdpau_add_buffer(pic, buffer, size);
 }
 
 static int vdpau_mpeg4_decode_slice(av_unused AVCodecContext *avctx,
@@ -94,6 +95,7 @@ AVHWAccel ff_h263_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg4_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif
 
@@ -106,5 +108,6 @@ AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg4_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
+    .priv_data_size = sizeof(struct vdpau_picture_context),
 };
 #endif

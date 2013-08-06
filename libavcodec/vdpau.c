@@ -38,13 +38,15 @@
  * @{
  */
 
-int ff_vdpau_common_start_frame(AVCodecContext *avctx,
+int ff_vdpau_common_start_frame(Picture *pic,
                                 av_unused const uint8_t *buffer,
                                 av_unused uint32_t size)
 {
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
 
-    hwctx->bitstream_buffers_used = 0;
+    pic_ctx->bitstream_buffers_allocated = 0;
+    pic_ctx->bitstream_buffers_used      = 0;
+    pic_ctx->bitstream_buffers           = NULL;
     return 0;
 }
 
@@ -55,31 +57,32 @@ int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
 {
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
     MpegEncContext *s = avctx->priv_data;
-    VdpVideoSurface surf = ff_vdpau_get_surface_id(s->current_picture_ptr);
+    Picture *pic = s->current_picture_ptr;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    VdpVideoSurface surf = ff_vdpau_get_surface_id(pic);
 
-    hwctx->render(hwctx->decoder, surf, (void *)&hwctx->info,
-                  hwctx->bitstream_buffers_used, hwctx->bitstream_buffers);
+    hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
+                  pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
 
     ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
-    hwctx->bitstream_buffers_used = 0;
+    av_freep(&pic_ctx->bitstream_buffers);
 
     return 0;
 }
 #endif
 
-int ff_vdpau_add_buffer(AVCodecContext *avctx,
-                        const uint8_t *buf, uint32_t size)
+int ff_vdpau_add_buffer(Picture *pic, const uint8_t *buf, uint32_t size)
 {
-    AVVDPAUContext *hwctx = avctx->hwaccel_context;
-    VdpBitstreamBuffer *buffers = hwctx->bitstream_buffers;
+    struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
+    VdpBitstreamBuffer *buffers = pic_ctx->bitstream_buffers;
 
-    buffers = av_fast_realloc(buffers, &hwctx->bitstream_buffers_allocated,
-                              (hwctx->bitstream_buffers_used + 1) * sizeof(*buffers));
+    buffers = av_fast_realloc(buffers, &pic_ctx->bitstream_buffers_allocated,
+                              (pic_ctx->bitstream_buffers_used + 1) * sizeof(*buffers));
     if (!buffers)
         return AVERROR(ENOMEM);
 
-    hwctx->bitstream_buffers = buffers;
-    buffers += hwctx->bitstream_buffers_used++;
+    pic_ctx->bitstream_buffers = buffers;
+    buffers += pic_ctx->bitstream_buffers_used++;
 
     buffers->struct_version  = VDP_BITSTREAM_BUFFER_VERSION;
     buffers->bitstream       = buf;
