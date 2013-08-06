@@ -52,6 +52,7 @@
 #include <vdpau/vdpau.h>
 #include <vdpau/vdpau_x11.h>
 #include "libavutil/avconfig.h"
+#include "libavutil/attributes.h"
 
 #ifndef FF_API_CAP_VDPAU
 #define FF_API_CAP_VDPAU 1
