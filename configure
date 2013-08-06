@@ -1574,6 +1574,7 @@ CONFIG_EXTRA="
     mpegvideoenc
     nettle
     rangecoder
+    riffenc
     rtpdec
     rtpenc_chain
     sinewin
@@ -2024,7 +2025,9 @@ libutvideo_encoder_deps="libutvideo"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
+asf_muxer_select="riffenc"
 asf_stream_muxer_select="asf_muxer"
+avi_muxer_select="riffenc"
 avisynth_demuxer_deps="avisynth"
 dirac_demuxer_select="dirac_parser"
 dts_demuxer_select="dca_parser"
@@ -2038,13 +2041,16 @@ libnut_demuxer_deps="libnut"
 libnut_muxer_deps="libnut"
 matroska_audio_muxer_select="matroska_muxer"
 matroska_demuxer_suggest="bzlib lzo zlib"
+matroska_muxer_select="riffenc"
+mmf_muxer_select="riffenc"
 mov_demuxer_suggest="zlib"
-mov_muxer_select="rtpenc_chain"
+mov_muxer_select="riffenc rtpenc_chain"
 mp3_demuxer_select="mpegaudio_parser"
 mp4_muxer_select="mov_muxer"
 mpegts_muxer_select="adts_muxer latm_muxer"
 mpegtsraw_demuxer_select="mpegts_demuxer"
 mxf_d10_muxer_select="mxf_muxer"
+nut_muxer_select="riffenc"
 ogg_demuxer_select="golomb"
 psp_muxer_select="mov_muxer"
 rtp_demuxer_select="sdp_demuxer"
@@ -2062,6 +2068,8 @@ tgp_muxer_select="mov_muxer"
 vobsub_demuxer_select="mpegps_demuxer"
 w64_demuxer_deps="wav_demuxer"
 w64_muxer_deps="wav_muxer"
+wav_muxer_select="riffenc"
+webm_muxer_select="riffenc"
 
 # indevs / outdevs
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
