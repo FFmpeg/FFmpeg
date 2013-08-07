@@ -62,19 +62,19 @@
 typedef struct {
     void *library;
 #define AVSC_DECLARE_FUNC(name) name##_func name
+    AVSC_DECLARE_FUNC(avs_bit_blt);
+    AVSC_DECLARE_FUNC(avs_clip_get_error);
     AVSC_DECLARE_FUNC(avs_create_script_environment);
     AVSC_DECLARE_FUNC(avs_delete_script_environment);
-    AVSC_DECLARE_FUNC(avs_get_error);
-    AVSC_DECLARE_FUNC(avs_clip_get_error);
-    AVSC_DECLARE_FUNC(avs_invoke);
-    AVSC_DECLARE_FUNC(avs_release_value);
-    AVSC_DECLARE_FUNC(avs_get_video_info);
-    AVSC_DECLARE_FUNC(avs_take_clip);
-    AVSC_DECLARE_FUNC(avs_release_clip);
-    AVSC_DECLARE_FUNC(avs_bit_blt);
     AVSC_DECLARE_FUNC(avs_get_audio);
+    AVSC_DECLARE_FUNC(avs_get_error);
     AVSC_DECLARE_FUNC(avs_get_frame);
+    AVSC_DECLARE_FUNC(avs_get_video_info);
+    AVSC_DECLARE_FUNC(avs_invoke);
+    AVSC_DECLARE_FUNC(avs_release_clip);
+    AVSC_DECLARE_FUNC(avs_release_value);
     AVSC_DECLARE_FUNC(avs_release_video_frame);
+    AVSC_DECLARE_FUNC(avs_take_clip);
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
 
@@ -127,19 +127,19 @@ static av_cold int avisynth_load_library(void) {
     if(!continue_on_fail && !avs_library->name) \
         goto fail; \
 }
+    LOAD_AVS_FUNC(avs_bit_blt, 0);
+    LOAD_AVS_FUNC(avs_clip_get_error, 0);
     LOAD_AVS_FUNC(avs_create_script_environment, 0);
     LOAD_AVS_FUNC(avs_delete_script_environment, 0);
-    LOAD_AVS_FUNC(avs_get_error, 1); // New to AviSynth 2.6
-    LOAD_AVS_FUNC(avs_clip_get_error, 0);
-    LOAD_AVS_FUNC(avs_invoke, 0);
-    LOAD_AVS_FUNC(avs_release_value, 0);
-    LOAD_AVS_FUNC(avs_get_video_info, 0);
-    LOAD_AVS_FUNC(avs_take_clip, 0);
-    LOAD_AVS_FUNC(avs_release_clip, 0);
-    LOAD_AVS_FUNC(avs_bit_blt, 0);
     LOAD_AVS_FUNC(avs_get_audio, 0);
+    LOAD_AVS_FUNC(avs_get_error, 1); // New to AviSynth 2.6
     LOAD_AVS_FUNC(avs_get_frame, 0);
+    LOAD_AVS_FUNC(avs_get_video_info, 0);
+    LOAD_AVS_FUNC(avs_invoke, 0);
+    LOAD_AVS_FUNC(avs_release_clip, 0);
+    LOAD_AVS_FUNC(avs_release_value, 0);
     LOAD_AVS_FUNC(avs_release_video_frame, 0);
+    LOAD_AVS_FUNC(avs_take_clip, 0);
 #undef LOAD_AVS_FUNC
 
     atexit(avisynth_atexit_handler);
