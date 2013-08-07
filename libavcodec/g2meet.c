@@ -389,7 +389,7 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
         return 0;
     zsize = (src[0] << 8) | src[1]; src += 2;
 
-    if (src_end - src < zsize)
+    if (src_end - src < zsize + (sub_type != 2))
         return AVERROR_INVALIDDATA;
 
     ret = uncompress(c->kempf_buf, &dlen, src, zsize);
@@ -411,6 +411,8 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
     for (i = 0; i < (FFALIGN(height, 16) >> 4); i++) {
         for (j = 0; j < (FFALIGN(width, 16) >> 4); j++) {
             if (!bits) {
+                if (src >= src_end)
+                    return AVERROR_INVALIDDATA;
                 bitbuf = *src++;
                 bits   = 8;
             }
