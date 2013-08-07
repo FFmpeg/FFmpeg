@@ -52,8 +52,11 @@ int avpriv_open(const char *filename, int flags, ...)
 #endif
 
     fd = open(filename, flags, mode);
+#if HAVE_FCNTL
     if (fd != -1)
         fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+
     return fd;
 }
 
