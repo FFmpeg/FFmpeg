@@ -290,10 +290,6 @@ static int insert_trim(int64_t start_time, int64_t duration,
     if (duration == INT64_MAX && start_time == AV_NOPTS_VALUE)
         return 0;
 
-    // Use with duration and without output starttime is buggy with trim filters
-    if (start_time == AV_NOPTS_VALUE)
-        return 0;
-
     trim = avfilter_get_by_name(name);
     if (!trim) {
         av_log(NULL, AV_LOG_ERROR, "%s filter not present, cannot limit "
