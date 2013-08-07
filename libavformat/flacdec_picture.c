@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "flacdec.h"
 #include "id3v2.h"
@@ -59,6 +60,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
             ret = AVERROR_INVALIDDATA;
         goto fail;
     }
+    av_assert0(len < sizeof(mimetype));
     mimetype[len] = 0;
 
     while (mime->id != AV_CODEC_ID_NONE) {
