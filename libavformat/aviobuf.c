@@ -490,7 +490,7 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
     return size1 - size;
 }
 
-int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, unsigned char **data)
+int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, const unsigned char **data)
 {
     if (s->buf_end - s->buf_ptr >= size && !s->write_flag) {
         *data = s->buf_ptr;
