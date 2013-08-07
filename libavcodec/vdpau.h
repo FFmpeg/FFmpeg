@@ -70,6 +70,13 @@ union AVVDPAUPictureInfo {
 };
 #endif
 
+struct AVCodecContext;
+struct AVFrame;
+
+typedef int (*AVVDPAU_Render2)(struct AVCodecContext *, struct AVFrame *,
+                               const VdpPictureInfo *, uint32_t,
+                               const VdpBitstreamBuffer *);
+
 /**
  * This structure is used to share data between the libavcodec library and
  * the client video application.
@@ -129,6 +136,7 @@ typedef struct AVVDPAUContext {
     attribute_deprecated
     VdpBitstreamBuffer *bitstream_buffers;
 #endif
+    AVVDPAU_Render2 render2;
 } AVVDPAUContext;
 
 /**
@@ -137,6 +145,9 @@ typedef struct AVVDPAUContext {
  * Allows extending the struct without breaking API/ABI
  */
 AVVDPAUContext *av_alloc_vdpaucontext(void);
+
+AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
+void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
 
 #if FF_API_CAP_VDPAU
 /** @brief The videoSurface is used for rendering. */

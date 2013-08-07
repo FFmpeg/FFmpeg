@@ -43,6 +43,8 @@ AVVDPAUContext *av_alloc_vdpaucontext(void)
     return av_mallocz(sizeof(AVVDPAUContext));
 }
 
+MAKE_ACCESSORS(AVVDPAUContext, vdpau_hwaccel, AVVDPAU_Render2, render2)
+
 int ff_vdpau_common_start_frame(Picture *pic,
                                 av_unused const uint8_t *buffer,
                                 av_unused uint32_t size)
@@ -60,19 +62,24 @@ int ff_vdpau_common_start_frame(Picture *pic,
     CONFIG_VC1_VDPAU_HWACCEL   || CONFIG_WMV3_VDPAU_HWACCEL
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
 {
+    int res = 0;
     AVVDPAUContext *hwctx = avctx->hwaccel_context;
     MpegEncContext *s = avctx->priv_data;
     Picture *pic = s->current_picture_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpVideoSurface surf = ff_vdpau_get_surface_id(pic);
 
+    if (!hwctx->render) {
+        res = hwctx->render2(avctx, &pic->f, (void *)&pic_ctx->info,
+                             pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
+    } else
     hwctx->render(hwctx->decoder, surf, (void *)&pic_ctx->info,
                   pic_ctx->bitstream_buffers_used, pic_ctx->bitstream_buffers);
 
     ff_mpeg_draw_horiz_band(s, 0, s->avctx->height);
     av_freep(&pic_ctx->bitstream_buffers);
 
-    return 0;
+    return res;
 }
 #endif
 
