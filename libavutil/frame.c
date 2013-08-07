@@ -460,7 +460,7 @@ int av_frame_copy_props(AVFrame *dst, const AVFrame *src)
     dst->display_picture_number = src->display_picture_number;
     dst->decode_error_flags  = src->decode_error_flags;
     dst->colorspace          = src->colorspace;
-    dst->color_range         = dst->color_range;
+    dst->color_range         = src->color_range;
 
     av_dict_copy(&dst->metadata, src->metadata, 0);
 
