@@ -224,7 +224,8 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         is_atty = isatty(2) ? 1 : -1;
 #endif
 
-    if (print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev) && *line){
+    if (print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev) &&
+        *line && line[strlen(line) - 1] != '\r'){
         count++;
         if (is_atty == 1)
             fprintf(stderr, "    Last message repeated %d times\r", count);
