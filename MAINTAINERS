@@ -138,8 +138,8 @@ Codecs:
   binkaudio.c                           Peter Ross
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
-  celp_filters.*                        Vitor Sessak
   cdxl.c                                Paul B Mahol
+  celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
@@ -150,8 +150,8 @@ Codecs:
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
-  dxa.c                                 Kostya Shishkov
   dv.c                                  Roman Shaposhnik
+  dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
   ffv1.c                                Michael Niedermayer
   ffwavesynth.c                         Nicolas George
@@ -161,9 +161,9 @@ Codecs:
   g722.c                                Martin Storsjo
   g726.c                                Roman Shaposhnik
   gifdec.c                              Baptiste Coudurier
-  h264*                                 Loren Merritt, Michael Niedermayer
   h261*                                 Michael Niedermayer
   h263*                                 Michael Niedermayer
+  h264*                                 Loren Merritt, Michael Niedermayer
   huffyuv.c                             Michael Niedermayer
   idcinvideo.c                          Mike Melanson
   imc*                                  Benjamin Larsson
@@ -178,8 +178,8 @@ Codecs:
   kmvc.c                                Kostya Shishkov
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libcelt_dec.c                         Nicolas George
-  libgsm.c                              Michel Bardiaux
   libdirac*                             David Conrad
+  libgsm.c                              Michel Bardiaux
   libopenjpeg.c                         Jaikrishnan Menon
   libopenjpegenc.c                      Michael Bradshaw
   libschroedinger*                      David Conrad
@@ -187,8 +187,8 @@ Codecs:
   libtheoraenc.c                        David Conrad
   libutvideo*                           Derek Buitenhuis
   libvorbis.c                           David Conrad
-  libxavs.c                             Stefan Gehrer
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
+  libxavs.c                             Stefan Gehrer
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
@@ -250,8 +250,8 @@ Codecs:
   vda_h264_dec.c                        Xidorn Quan
   vima.c                                Paul B Mahol
   vmnc.c                                Kostya Shishkov
-  vorbis_enc.c                          Oded Shimon
   vorbis_dec.c                          Denes Balatoni, David Conrad
+  vorbis_enc.c                          Oded Shimon
   vp3*                                  Mike Melanson
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
@@ -285,11 +285,11 @@ libavdevice
     libavdevice/avdevice.h
 
 
+  dshow.c                               Roger Pack
   iec61883.c                            Georg Lippitsch
   libdc1394.c                           Roman Shaposhnik
   v4l2.c                                Luca Abeni
   vfwcap.c                              Ramiro Polla
-  dshow.c                               Roger Pack
 
 libavfilter
 ===========
@@ -353,8 +353,8 @@ Muxers/Demuxers:
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
-  ipmovie.c                             Mike Melanson
   img2*.c                               Michael Niedermayer
+  ipmovie.c                             Mike Melanson
   ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
   jacosub*                              Clément Bœsch
@@ -368,8 +368,8 @@ Muxers/Demuxers:
   matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
   metadata*                             Aurelien Jacobs
-  microdvd*                             Aurelien Jacobs
   mgsts.c                               Paul B Mahol
+  microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
   movenc.c                              Michael Niedermayer, Baptiste Coudurier
