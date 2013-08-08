@@ -52,7 +52,7 @@ int ffio_init_context(AVIOContext *s,
  *    will be a copy of buf
  * @return number of bytes read or AVERROR
  */
-int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, unsigned char **data);
+int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, const unsigned char **data);
 
 /**
  * Read size bytes from AVIOContext into buf.
