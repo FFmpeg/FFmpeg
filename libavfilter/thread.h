@@ -22,8 +22,6 @@
 
 #include "avfilter.h"
 
-typedef int (action_func)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
-
 int ff_graph_thread_init(AVFilterGraph *graph);
 
 void ff_graph_thread_free(AVFilterGraph *graph);

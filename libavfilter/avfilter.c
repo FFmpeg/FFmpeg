@@ -371,7 +371,7 @@ static const AVClass avfilter_class = {
     .option           = avfilter_options,
 };
 
-static int default_execute(AVFilterContext *ctx, action_func *func, void *arg,
+static int default_execute(AVFilterContext *ctx, avfilter_action_func *func, void *arg,
                            int *ret, int nb_jobs)
 {
     int i;
