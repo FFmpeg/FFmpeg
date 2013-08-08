@@ -373,7 +373,7 @@ Muxers/Demuxers:
   microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
-  movenc.c                              Michael Niedermayer, Baptiste Coudurier, Matthieu Bouron
+  movenc.c                              Baptiste Coudurier, Matthieu Bouron
   mpc.c                                 Kostya Shishkov
   mpeg.c                                Michael Niedermayer
   mpegenc.c                             Michael Niedermayer
