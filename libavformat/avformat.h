@@ -1237,6 +1237,15 @@ typedef struct AVFormatContext {
      */
     int flush_packets;
 
+    /**
+     * format probing score.
+     * The maximal score is AVPROBE_SCORE_MAX, its set when the demuxer probes
+     * the format.
+     * - encoding: unused
+     * - decoding: set by avformat, read by user via av_format_get_probe_score() (NO direct access)
+     */
+    int probe_score;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavformat and can be changed and
@@ -1295,6 +1304,8 @@ typedef struct AVFormatContext {
      */
     int io_repositioned;
 } AVFormatContext;
+
+int av_format_get_probe_score(const AVFormatContext *s);
 
 /**
  * Returns the method used to set ctx->duration.
@@ -1504,8 +1515,16 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
  * @param logctx the log context
  * @param offset the offset within the bytestream to probe from
  * @param max_probe_size the maximum probe buffer size (zero for default)
- * @return 0 in case of success, a negative value corresponding to an
+ * @return the score in case of success, a negative value corresponding to an
+ *         the maximal score is AVPROBE_SCORE_MAX
  * AVERROR code otherwise
+ */
+int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
+                           const char *filename, void *logctx,
+                           unsigned int offset, unsigned int max_probe_size);
+
+/**
+ * Like av_probe_input_buffer2() but returns 0 on success
  */
 int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,

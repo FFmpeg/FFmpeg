@@ -100,6 +100,11 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 
+int av_format_get_probe_score(const AVFormatContext *s)
+{
+    return s->probe_score;
+}
+
 /* an arbitrarily chosen "sane" max packet size -- 50M */
 #define SANE_CHUNK_SIZE (50000000)
 
@@ -309,7 +314,7 @@ int av_demuxer_open(AVFormatContext *ic){
 }
 
 
-int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
+int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size)
 {
@@ -390,6 +395,15 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     return ret;
 }
 
+int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
+                          const char *filename, void *logctx,
+                          unsigned int offset, unsigned int max_probe_size)
+{
+    int ret = av_probe_input_buffer2(pb, fmt, filename, logctx, offset, max_probe_size);
+    return ret < 0 ? ret : 0;
+}
+
+
 /* open input file and probe the format if necessary */
 static int init_input(AVFormatContext *s, const char *filename, AVDictionary **options)
 {
@@ -400,7 +414,7 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
     if (s->pb) {
         s->flags |= AVFMT_FLAG_CUSTOM_IO;
         if (!s->iformat)
-            return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, s->probesize);
+            return av_probe_input_buffer2(s->pb, &s->iformat, filename, s, 0, s->probesize);
         else if (s->iformat->flags & AVFMT_NOFILE)
             av_log(s, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
                                       "will be ignored with AVFMT_NOFILE format.\n");
@@ -409,14 +423,14 @@ static int init_input(AVFormatContext *s, const char *filename, AVDictionary **o
 
     if ( (s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
         (!s->iformat && (s->iformat = av_probe_input_format2(&pd, 0, &score))))
-        return 0;
+        return score;
 
     if ((ret = avio_open2(&s->pb, filename, AVIO_FLAG_READ | s->avio_flags,
                           &s->interrupt_callback, options)) < 0)
         return ret;
     if (s->iformat)
         return 0;
-    return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, s->probesize);
+    return av_probe_input_buffer2(s->pb, &s->iformat, filename, s, 0, s->probesize);
 }
 
 static AVPacket *add_to_pktbuf(AVPacketList **packet_buffer, AVPacket *pkt,
@@ -476,6 +490,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
 
     if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
+    s->probe_score = ret;
     avio_skip(s->pb, s->skip_initial_bytes);
 
     /* check filename in case an image number is expected */
