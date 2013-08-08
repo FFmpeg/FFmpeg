@@ -871,6 +871,11 @@ separated by @code{/}. If the stream specifier is not specified, the
 bistream filters will be applied to all streams in the output.
 
 Several bitstream filters can be specified, separated by ",".
+
+@item select
+Select the streams that should be mapped to the slave output,
+specified by a stream specifier. If not specified, this defaults to
+all the input streams.
 @end table
 
 Example: encode something and both archive it in a WebM file and stream it

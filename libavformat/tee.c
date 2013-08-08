@@ -30,6 +30,10 @@
 typedef struct {
     AVFormatContext *avf;
     AVBitStreamFilterContext **bsfs; ///< bitstream filters per stream
+
+    /** map from input to output streams indexes,
+     * disabled output streams are set to -1 */
+    int *stream_map;
 } TeeSlave;
 
 typedef struct TeeContext {
@@ -134,24 +138,54 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     AVDictionary *options = NULL;
     AVDictionaryEntry *entry;
     char *filename;
-    char *format = NULL;
+    char *format = NULL, *select = NULL;
     AVFormatContext *avf2 = NULL;
     AVStream *st, *st2;
+    int stream_count;
 
     if ((ret = parse_slave_options(avf, slave, &options, &filename)) < 0)
         return ret;
-    if ((entry = av_dict_get(options, "f", NULL, 0))) {
-        format = entry->value;
-        entry->value = NULL; /* prevent it from being freed */
-        av_dict_set(&options, "f", NULL, 0);
-    }
+
+#define STEAL_OPTION(option, field) do {                                \
+        if ((entry = av_dict_get(options, option, NULL, 0))) {          \
+            field = entry->value;                                       \
+            entry->value = NULL; /* prevent it from being freed */      \
+            av_dict_set(&options, option, NULL, 0);                     \
+        }                                                               \
+    } while (0)
+
+    STEAL_OPTION("f", format);
+    STEAL_OPTION("select", select);
 
     ret = avformat_alloc_output_context2(&avf2, NULL, format, filename);
     if (ret < 0)
         goto end;
 
+    tee_slave->stream_map = av_calloc(avf->nb_streams, sizeof(*tee_slave->stream_map));
+    if (!tee_slave->stream_map) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    stream_count = 0;
     for (i = 0; i < avf->nb_streams; i++) {
         st = avf->streams[i];
+        if (select) {
+            ret = avformat_match_stream_specifier(avf, avf->streams[i], select);
+            if (ret < 0) {
+                av_log(avf, AV_LOG_ERROR,
+                       "Invalid stream specifier '%s' for output '%s'\n",
+                       select, slave);
+                goto end;
+            }
+
+            if (ret == 0) { /* no match */
+                tee_slave->stream_map[i] = -1;
+                continue;
+            }
+        }
+        tee_slave->stream_map[i] = stream_count++;
+
         if (!(st2 = avformat_new_stream(avf2, NULL))) {
             ret = AVERROR(ENOMEM);
             goto end;
@@ -266,6 +300,7 @@ static void close_slaves(AVFormatContext *avf)
                 bsf = bsf_next;
             }
         }
+        av_freep(&tee->slaves[i].stream_map);
 
         avio_close(avf2->pb);
         avf2->pb = NULL;
@@ -329,6 +364,15 @@ static int tee_write_header(AVFormatContext *avf)
     }
 
     tee->nb_slaves = nb_slaves;
+
+    for (i = 0; i < avf->nb_streams; i++) {
+        int j, mapped = 0;
+        for (j = 0; j < tee->nb_slaves; j++)
+            mapped += tee->slaves[j].stream_map[i] >= 0;
+        if (!mapped)
+            av_log(avf, AV_LOG_WARNING, "Input stream #%d is not mapped "
+                   "to any slave.\n", i);
+    }
     return 0;
 
 fail:
@@ -408,29 +452,30 @@ static int tee_write_packet(AVFormatContext *avf, AVPacket *pkt)
     AVPacket pkt2;
     int ret_all = 0, ret;
     unsigned i, s;
+    int s2;
     AVRational tb, tb2;
 
     for (i = 0; i < tee->nb_slaves; i++) {
         avf2 = tee->slaves[i].avf;
         s = pkt->stream_index;
-        if (s >= avf2->nb_streams) {
-            if (!ret_all)
-                ret_all = AVERROR(EINVAL);
+        s2 = tee->slaves[i].stream_map[s];
+        if (s2 < 0)
             continue;
-        }
+
         if ((ret = av_copy_packet(&pkt2, pkt)) < 0 ||
             (ret = av_dup_packet(&pkt2))< 0)
             if (!ret_all) {
                 ret = ret_all;
                 continue;
             }
-        tb  = avf ->streams[s]->time_base;
-        tb2 = avf2->streams[s]->time_base;
+        tb  = avf ->streams[s ]->time_base;
+        tb2 = avf2->streams[s2]->time_base;
         pkt2.pts      = av_rescale_q(pkt->pts,      tb, tb2);
         pkt2.dts      = av_rescale_q(pkt->dts,      tb, tb2);
         pkt2.duration = av_rescale_q(pkt->duration, tb, tb2);
+        pkt2.stream_index = s2;
 
-        filter_packet(avf2, &pkt2, avf2, tee->slaves[i].bsfs[s]);
+        filter_packet(avf2, &pkt2, avf2, tee->slaves[i].bsfs[s2]);
         if ((ret = av_interleaved_write_frame(avf2, &pkt2)) < 0)
             if (!ret_all)
                 ret_all = ret;
