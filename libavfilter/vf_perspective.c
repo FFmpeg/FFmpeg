@@ -301,19 +301,15 @@ static void resample_linear(PerspectiveContext *s,
                     sum   = (sum + (1 << (SUB_PIXEL_BITS - 1))) >> SUB_PIXEL_BITS;
                 }
             } else {
+                if (u < 0)
+                    u = 0;
+                else
+                    u = w - 1;
                 if ((unsigned)v < (unsigned)(h - 1)){
-                    if (u < 0)
-                        u = 0;
-                    else
-                        u = w - 1;
                     index = u + v * src_linesize;
                     sum   = subVI * src[index] + subV * src[index + src_linesize];
                     sum   = (sum + (1 << (SUB_PIXEL_BITS - 1))) >> SUB_PIXEL_BITS;
                 } else {
-                    if (u < 0)
-                        u = 0;
-                    else
-                        u = w - 1;
                     if (v < 0)
                         v = 0;
                     else
