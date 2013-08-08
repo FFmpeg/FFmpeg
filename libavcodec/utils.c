@@ -26,6 +26,7 @@
  */
 
 #include "config.h"
+#include "libavutil/accessors.h"
 #include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
@@ -1028,10 +1029,6 @@ void avcodec_free_frame(AVFrame **frame)
 
     av_freep(frame);
 }
-
-#define MAKE_ACCESSORS(str, name, type, field) \
-    type av_##name##_get_##field(const str *s) { return s->field; } \
-    void av_##name##_set_##field(str *s, type v) { s->field = v; }
 
 MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)

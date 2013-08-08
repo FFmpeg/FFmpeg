@@ -25,6 +25,7 @@
 #include "libavcodec/internal.h"
 #include "libavcodec/raw.h"
 #include "libavcodec/bytestream.h"
+#include "libavutil/accessors.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
@@ -97,10 +98,6 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
     }
     return timestamp;
 }
-
-#define MAKE_ACCESSORS(str, name, type, field) \
-    type av_##name##_get_##field(const str *s) { return s->field; } \
-    void av_##name##_set_##field(str *s, type v) { s->field = v; }
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 
