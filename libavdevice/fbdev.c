@@ -34,6 +34,7 @@
 #include <time.h>
 #include <linux/fb.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -108,7 +109,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     if (avctx->flags & AVFMT_FLAG_NONBLOCK)
         flags |= O_NONBLOCK;
 
-    if ((fbdev->fd = open(avctx->filename, flags)) == -1) {
+    if ((fbdev->fd = avpriv_open(avctx->filename, flags)) == -1) {
         ret = AVERROR(errno);
         av_log(avctx, AV_LOG_ERROR,
                "Could not open framebuffer device '%s': %s\n",
