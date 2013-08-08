@@ -265,7 +265,7 @@ typedef enum {
  */
 
 typedef struct CodecTags{
-    char str[20];
+    char str[22];
     enum AVCodecID id;
 }CodecTags;
 

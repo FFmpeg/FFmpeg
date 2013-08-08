@@ -1566,7 +1566,8 @@ static int matroska_read_header(AVFormatContext *s)
         /* Apply some sanity checks. */
         if (track->type != MATROSKA_TRACK_TYPE_VIDEO &&
             track->type != MATROSKA_TRACK_TYPE_AUDIO &&
-            track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
+            track->type != MATROSKA_TRACK_TYPE_SUBTITLE &&
+            track->type != MATROSKA_TRACK_TYPE_METADATA) {
             av_log(matroska->ctx, AV_LOG_INFO,
                    "Unknown or unsupported track type %"PRIu64"\n",
                    track->type);
@@ -1862,6 +1863,16 @@ static int matroska_read_header(AVFormatContext *s)
             st->codec->bits_per_coded_sample = track->audio.bitdepth;
             if (st->codec->codec_id != AV_CODEC_ID_AAC)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
+        } else if (codec_id == AV_CODEC_ID_WEBVTT) {
+            st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+
+            if (!strcmp(track->codec_id, "D_WEBVTT/CAPTIONS")) {
+                st->disposition |= AV_DISPOSITION_CAPTIONS;
+            } else if (!strcmp(track->codec_id, "D_WEBVTT/DESCRIPTIONS")) {
+                st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
+            } else if (!strcmp(track->codec_id, "D_WEBVTT/METADATA")) {
+                st->disposition |= AV_DISPOSITION_METADATA;
+            }
         } else if (track->type == MATROSKA_TRACK_TYPE_SUBTITLE) {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
 #if FF_API_ASS_SSA
@@ -2228,6 +2239,120 @@ fail:
     return ret;
 }
 
+static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
+                                 MatroskaTrack *track,
+                                 AVStream *st,
+                                 uint8_t *data, int data_len,
+                                 uint64_t timecode,
+                                 uint64_t duration,
+                                 int64_t pos)
+{
+    AVPacket *pkt;
+    uint8_t *id, *settings, *text, *buf;
+    int id_len, settings_len, text_len;
+    uint8_t *p, *q;
+    int err;
+
+    if (data_len <= 0)
+        return AVERROR_INVALIDDATA;
+
+    p = data;
+    q = data + data_len;
+
+    id = p;
+    id_len = -1;
+    while (p < q) {
+        if (*p == '\r' || *p == '\n') {
+            id_len = p - id;
+            if (*p == '\r')
+                p++;
+            break;
+        }
+        p++;
+    }
+
+    if (p >= q || *p != '\n')
+        return AVERROR_INVALIDDATA;
+    p++;
+
+    settings = p;
+    settings_len = -1;
+    while (p < q) {
+        if (*p == '\r' || *p == '\n') {
+            settings_len = p - settings;
+            if (*p == '\r')
+                p++;
+            break;
+        }
+        p++;
+    }
+
+    if (p >= q || *p != '\n')
+        return AVERROR_INVALIDDATA;
+    p++;
+
+    text = p;
+    text_len = q - p;
+    while (text_len > 0) {
+        const int len = text_len - 1;
+        const uint8_t c = p[len];
+        if (c != '\r' && c != '\n')
+            break;
+        text_len = len;
+    }
+
+    if (text_len <= 0)
+        return AVERROR_INVALIDDATA;
+
+    pkt = av_mallocz(sizeof(*pkt));
+    err = av_new_packet(pkt, text_len);
+    if (err < 0) {
+        av_free(pkt);
+        return AVERROR(err);
+    }
+
+    memcpy(pkt->data, text, text_len);
+
+    if (id_len > 0) {
+        buf = av_packet_new_side_data(pkt,
+                                      AV_PKT_DATA_WEBVTT_IDENTIFIER,
+                                      id_len);
+        if (buf == NULL) {
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(buf, id, id_len);
+    }
+
+    if (settings_len > 0) {
+        buf = av_packet_new_side_data(pkt,
+                                      AV_PKT_DATA_WEBVTT_SETTINGS,
+                                      settings_len);
+        if (buf == NULL) {
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(buf, settings, settings_len);
+    }
+
+    // Do we need this for subtitles?
+    // pkt->flags = AV_PKT_FLAG_KEY;
+
+    pkt->stream_index = st->index;
+    pkt->pts = timecode;
+
+    // Do we need this for subtitles?
+    // pkt->dts = timecode;
+
+    pkt->duration = duration;
+    pkt->pos = pos;
+
+    dynarray_add(&matroska->packets, &matroska->num_packets, pkt);
+    matroska->prev_pkt = pkt;
+
+    return 0;
+}
+
 static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 MatroskaTrack *track,
                                 AVStream *st,
@@ -2453,6 +2578,14 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             res = matroska_parse_rm_audio(matroska, track, st, data,
                                           lace_size[n],
                                           timecode, pos);
+            if (res)
+                goto end;
+
+        } else if (st->codec->codec_id == AV_CODEC_ID_WEBVTT) {
+            res = matroska_parse_webvtt(matroska, track, st,
+                                        data, lace_size[n],
+                                        timecode, lace_duration,
+                                        pos);
             if (res)
                 goto end;
 

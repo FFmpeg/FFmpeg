@@ -57,6 +57,11 @@ const CodecTags ff_mkv_codec_tags[]={
     {"A_VORBIS"         , AV_CODEC_ID_VORBIS},
     {"A_WAVPACK4"       , AV_CODEC_ID_WAVPACK},
 
+    {"D_WEBVTT/SUBTITLES"   , AV_CODEC_ID_WEBVTT},
+    {"D_WEBVTT/CAPTIONS"    , AV_CODEC_ID_WEBVTT},
+    {"D_WEBVTT/DESCRIPTIONS", AV_CODEC_ID_WEBVTT},
+    {"D_WEBVTT/METADATA"    , AV_CODEC_ID_WEBVTT},
+
     {"S_TEXT/UTF8"      , AV_CODEC_ID_SUBRIP},
     {"S_TEXT/UTF8"      , AV_CODEC_ID_TEXT},
     {"S_TEXT/UTF8"      , AV_CODEC_ID_SRT},
