@@ -1909,7 +1909,7 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
         return ret;
     }
 
-    if (!memcmp(tracked_method, "connect", 7)) {
+    if (!strcmp(tracked_method, "connect")) {
         if (!rt->is_input) {
             if ((ret = gen_release_stream(s, rt)) < 0)
                 goto fail;
@@ -1935,7 +1935,7 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
                     goto fail;
             }
         }
-    } else if (!memcmp(tracked_method, "createStream", 12)) {
+    } else if (!strcmp(tracked_method, "createStream")) {
         //extract a number from the result
         if (pkt->data[10] || pkt->data[19] != 5 || pkt->data[20]) {
             av_log(s, AV_LOG_WARNING, "Unexpected reply on connect()\n");
@@ -1998,23 +1998,23 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
     int ret = 0;
 
     //TODO: check for the messages sent for wrong state?
-    if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
+    if (ff_amf_match_string(pkt->data, pkt->size, "_error")) {
         if ((ret = handle_invoke_error(s, pkt)) < 0)
             return ret;
-    } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
+    } else if (ff_amf_match_string(pkt->data, pkt->size, "_result")) {
         if ((ret = handle_invoke_result(s, pkt)) < 0)
             return ret;
-    } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
+    } else if (ff_amf_match_string(pkt->data, pkt->size, "onStatus")) {
         if ((ret = handle_invoke_status(s, pkt)) < 0)
             return ret;
-    } else if (!memcmp(pkt->data, "\002\000\010onBWDone", 11)) {
+    } else if (ff_amf_match_string(pkt->data, pkt->size, "onBWDone")) {
         if ((ret = gen_check_bw(s, rt)) < 0)
             return ret;
-    } else if (!memcmp(pkt->data, "\002\000\015releaseStream", 16) ||
-               !memcmp(pkt->data, "\002\000\011FCPublish", 12)     ||
-               !memcmp(pkt->data, "\002\000\007publish", 10)       ||
-               !memcmp(pkt->data, "\002\000\010_checkbw", 11)      ||
-               !memcmp(pkt->data, "\002\000\014createStream", 15)) {
+    } else if (ff_amf_match_string(pkt->data, pkt->size, "releaseStream") ||
+               ff_amf_match_string(pkt->data, pkt->size, "FCPublish")     ||
+               ff_amf_match_string(pkt->data, pkt->size, "publish")       ||
+               ff_amf_match_string(pkt->data, pkt->size, "_checkbw")      ||
+               ff_amf_match_string(pkt->data, pkt->size, "createStream")) {
         if ((ret = send_invoke_response(s, pkt)) < 0)
             return ret;
     }
@@ -2210,7 +2210,8 @@ static int get_packet(URLContext *s, int for_header)
             continue;
         }
         if (rpkt.type == RTMP_PT_VIDEO || rpkt.type == RTMP_PT_AUDIO ||
-           (rpkt.type == RTMP_PT_NOTIFY && !memcmp("\002\000\012onMetaData", rpkt.data, 13))) {
+           (rpkt.type == RTMP_PT_NOTIFY &&
+            ff_amf_match_string(rpkt.data, rpkt.size, "onMetaData"))) {
             ts = rpkt.timestamp;
 
             // generate packet header and put data into buffer for FLV demuxer
