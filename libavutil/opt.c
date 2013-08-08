@@ -962,10 +962,10 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 av_log(av_log_obj, AV_LOG_INFO, "%d/%d", q.num, q.den); }
                 break;
             case AV_OPT_TYPE_PIXEL_FMT:
-                av_log(av_log_obj, AV_LOG_INFO, "%s", av_x_if_null(av_get_pix_fmt_name(opt->default_val.i64), "none"));
+                av_log(av_log_obj, AV_LOG_INFO, "%s", (char *)av_x_if_null(av_get_pix_fmt_name(opt->default_val.i64), "none"));
                 break;
             case AV_OPT_TYPE_SAMPLE_FMT:
-                av_log(av_log_obj, AV_LOG_INFO, "%s", av_x_if_null(av_get_sample_fmt_name(opt->default_val.i64), "none"));
+                av_log(av_log_obj, AV_LOG_INFO, "%s", (char *)av_x_if_null(av_get_sample_fmt_name(opt->default_val.i64), "none"));
                 break;
             case AV_OPT_TYPE_COLOR:
             case AV_OPT_TYPE_IMAGE_SIZE:
