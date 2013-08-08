@@ -182,19 +182,6 @@ void ff_init_qscale_tab(MpegEncContext *s)
     }
 }
 
-static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst,
-                                    const AVFrame *src)
-{
-    dst->pict_type              = src->pict_type;
-    dst->quality                = src->quality;
-    dst->coded_picture_number   = src->coded_picture_number;
-    dst->display_picture_number = src->display_picture_number;
-    //dst->reference              = src->reference;
-    dst->pts                    = src->pts;
-    dst->interlaced_frame       = src->interlaced_frame;
-    dst->top_field_first        = src->top_field_first;
-}
-
 static void update_duplicate_context_after_me(MpegEncContext *dst,
                                               MpegEncContext *src)
 {
@@ -1068,7 +1055,10 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                 }
             }
         }
-        copy_picture_attributes(s, &pic->f, pic_arg);
+        ret = av_frame_copy_props(&pic->f, pic_arg);
+        if (ret < 0)
+            return ret;
+
         pic->f.display_picture_number = display_picture_number;
         pic->f.pts = pts; // we set this here to avoid modifiying pic_arg
     }
@@ -1408,8 +1398,9 @@ no_output_pic:
                 return -1;
             }
 
-            copy_picture_attributes(s, &pic->f,
-                                    &s->reordered_input_picture[0]->f);
+            ret = av_frame_copy_props(&pic->f, &s->reordered_input_picture[0]->f);
+            if (ret < 0)
+                return ret;
 
             /* mark us unused / free shared pic */
             av_frame_unref(&s->reordered_input_picture[0]->f);
