@@ -588,14 +588,14 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
         break;
     case RTMP_PT_INVOKE:
         //TODO: check for the messages sent for wrong state?
-        if (!memcmp(pkt->data, "\002\000\006_error", 9)) {
+        if (ff_amf_match_string(pkt->data, pkt->size, "_error")) {
             uint8_t tmpstr[256];
 
             if (!ff_amf_get_field_value(pkt->data + 9, data_end,
                                         "description", tmpstr, sizeof(tmpstr)))
                 av_log(s, AV_LOG_ERROR, "Server error: %s\n",tmpstr);
             return -1;
-        } else if (!memcmp(pkt->data, "\002\000\007_result", 10)) {
+        } else if (ff_amf_match_string(pkt->data, pkt->size, "_result")) {
             switch (rt->state) {
             case STATE_HANDSHAKED:
                 if (!rt->is_input) {
@@ -636,7 +636,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 rt->state = STATE_READY;
                 break;
             }
-        } else if (!memcmp(pkt->data, "\002\000\010onStatus", 11)) {
+        } else if (ff_amf_match_string(pkt->data, pkt->size, "onStatus")) {
             const uint8_t* ptr = pkt->data + 11;
             uint8_t tmpstr[256];
 
@@ -724,7 +724,8 @@ static int get_packet(URLContext *s, int for_header)
             continue;
         }
         if (rpkt.type == RTMP_PT_VIDEO || rpkt.type == RTMP_PT_AUDIO ||
-           (rpkt.type == RTMP_PT_NOTIFY && !memcmp("\002\000\012onMetaData", rpkt.data, 13))) {
+           (rpkt.type == RTMP_PT_NOTIFY &&
+            ff_amf_match_string(rpkt.data, rpkt.size, "onMetaData"))) {
             ts = rpkt.timestamp;
 
             // generate packet header and put data into buffer for FLV demuxer
