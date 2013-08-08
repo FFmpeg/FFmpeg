@@ -13,6 +13,7 @@ version <next>
   the -noaccurate_seek option.
 - ffmpeg -t option can now be used for inputs, to limit the duration of
   data read from an input file
+- incomplete Voxware MetaSound decoder
 
 
 version 2.0:
