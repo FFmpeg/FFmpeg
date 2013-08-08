@@ -641,6 +641,7 @@ static int read_header(FFV1Context *f)
     }
 
     if (f->colorspace == 0) {
+        if (f->avctx->skip_alpha) f->transparency = 0;
         if (!f->transparency && !f->chroma_planes) {
             if (f->avctx->bits_per_raw_sample <= 8)
                 f->avctx->pix_fmt = AV_PIX_FMT_GRAY8;

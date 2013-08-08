@@ -2865,6 +2865,19 @@ typedef struct AVCodecContext {
 #define FF_SUB_CHARENC_MODE_AUTOMATIC    0  ///< libavcodec will select the mode itself
 #define FF_SUB_CHARENC_MODE_PRE_DECODER  1  ///< the AVPacket data needs to be recoded to UTF-8 before being fed to the decoder, requires iconv
 
+    /**
+     * Skip processing alpha if supported by codec.
+     * Note that if the format uses pre-multiplied alpha (common with VP6,
+     * and recommended due to better video quality/compression)
+     * the image will look as if alpha-blended onto a black background.
+     * However for formats that do not use pre-multiplied alpha
+     * there might be serious artefacts (though e.g. libswscale currently
+     * assumes pre-multiplied alpha anyway).
+     *
+     * - decoding: set by user
+     * - encoding: unused
+     */
+    int skip_alpha;
 } AVCodecContext;
 
 AVRational av_codec_get_pkt_timebase         (const AVCodecContext *avctx);

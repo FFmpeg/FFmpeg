@@ -140,6 +140,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         av_log(avctx, AV_LOG_ERROR, "Invalid alpha mode %d\n", ctx->alpha_info);
         return AVERROR_INVALIDDATA;
     }
+    if (avctx->skip_alpha) ctx->alpha_info = 0;
 
     switch (ctx->chroma_factor) {
     case 2:
@@ -609,7 +610,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     coff[2]     = coff[1] + u_data_size;
     v_data_size = hdr_size > 7 ? AV_RB16(buf + 6) : slice_data_size - coff[2];
     coff[3]     = coff[2] + v_data_size;
-    a_data_size = slice_data_size - coff[3];
+    a_data_size = ctx->alpha_info ? slice_data_size - coff[3] : 0;
 
     /* if V or alpha component size is negative that means that previous
        component sizes are too large */

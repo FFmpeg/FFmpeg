@@ -33,6 +33,8 @@ version <next>
 - SFTP protocol (via libssh)
 - libx264: add ability to encode in YUVJ422P and YUVJ444P
 - Fraps: use BT.709 colorspace by default for yuv, as reference fraps decoder does
+- make decoding alpha optional for prores, ffv1 and vp6 by setting
+  the skip_alpha flag.
 
 
 version 2.0:

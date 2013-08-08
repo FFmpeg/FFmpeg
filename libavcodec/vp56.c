@@ -530,7 +530,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ff_get_buffer(avctx, p, AV_GET_BUFFER_FLAG_REF) < 0)
         return -1;
 
-    if (s->has_alpha) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUVA420P) {
         av_frame_unref(s->alpha_context->frames[VP56_FRAME_CURRENT]);
         if ((ret = av_frame_ref(s->alpha_context->frames[VP56_FRAME_CURRENT], p)) < 0) {
             av_frame_unref(p);
@@ -545,7 +545,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    if (s->has_alpha) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUVA420P) {
         int bak_w = avctx->width;
         int bak_h = avctx->height;
         int bak_cw = avctx->coded_width;
@@ -567,7 +567,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     }
 
-    avctx->execute2(avctx, ff_vp56_decode_mbs, 0, 0, s->has_alpha + 1);
+    avctx->execute2(avctx, ff_vp56_decode_mbs, 0, 0, (avctx->pix_fmt == AV_PIX_FMT_YUVA420P) + 1);
 
     if ((res = av_frame_ref(data, p)) < 0)
         return res;
@@ -690,6 +690,7 @@ av_cold int ff_vp56_init_context(AVCodecContext *avctx, VP56Context *s,
 
     s->avctx = avctx;
     avctx->pix_fmt = has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
+    if (avctx->skip_alpha) avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     ff_h264chroma_init(&s->h264chroma, 8);
     ff_hpeldsp_init(&s->hdsp, avctx->flags);

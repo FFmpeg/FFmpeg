@@ -97,6 +97,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         av_log(avctx, AV_LOG_ERROR, "Invalid alpha mode %d\n", ctx->alpha_info);
         return AVERROR_INVALIDDATA;
     }
+    if (avctx->skip_alpha) ctx->alpha_info = 0;
 
     av_dlog(avctx, "frame type %d\n", ctx->frame_type);
 

@@ -380,6 +380,7 @@ static const AVOption avcodec_options[] = {
 {"auto",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_AUTOMATIC},   INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
 {"pre_decoder", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_SUB_CHARENC_MODE_PRE_DECODER}, INT_MIN, INT_MAX, S|D, "sub_charenc_mode"},
 {"refcounted_frames", NULL, OFFSET(refcounted_frames), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, A|V|D },
+{"skip_alpha", "Skip processing alpha", OFFSET(skip_alpha), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, V|D },
 {NULL},
 };
 
