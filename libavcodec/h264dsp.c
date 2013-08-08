@@ -62,6 +62,34 @@
 #include "h264addpx_template.c"
 #undef BIT_DEPTH
 
+static int h264_find_start_code_candidate_c(const uint8_t *buf, int size)
+{
+    int i = 0;
+#if HAVE_FAST_UNALIGNED
+    /* we check i < size instead of i + 3 / 7 because it is
+     * simpler and there must be FF_INPUT_BUFFER_PADDING_SIZE
+     * bytes at the end.
+     */
+#       if HAVE_FAST_64BIT
+    while (i < size &&
+            !((~*(const uint64_t *)(buf + i) &
+                    (*(const uint64_t *)(buf + i) - 0x0101010101010101ULL)) &
+                    0x8080808080808080ULL))
+        i += 8;
+#       else
+    while (i < size &&
+            !((~*(const uint32_t *)(buf + i) &
+                    (*(const uint32_t *)(buf + i) - 0x01010101U)) &
+                    0x80808080U))
+        i += 4;
+#       endif
+#endif
+    for (; i < size; i++)
+        if (!buf[i])
+            break;
+    return i;
+}
+
 av_cold void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
                              const int chroma_format_idc)
 {
@@ -149,6 +177,7 @@ av_cold void ff_h264dsp_init(H264DSPContext *c, const int bit_depth,
         H264_DSP(8);
         break;
     }
+    c->h264_find_start_code_candidate = h264_find_start_code_candidate_c;
 
     if (ARCH_ARM) ff_h264dsp_init_arm(c, bit_depth, chroma_format_idc);
     if (ARCH_PPC) ff_h264dsp_init_ppc(c, bit_depth, chroma_format_idc);
