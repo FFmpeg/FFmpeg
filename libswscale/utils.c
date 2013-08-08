@@ -299,7 +299,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         FF_ALLOC_OR_GOTO(NULL, filter,
                          dstW * sizeof(*filter) * filterSize, fail);
 
-        xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000)>>7);
+        xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000LL)>>7);
         for (i = 0; i < dstW; i++) {
             int xx = (xDstInSrc - ((filterSize - 1) << 15) + (1 << 15)) >> 16;
 
@@ -315,7 +315,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         FF_ALLOC_OR_GOTO(NULL, filter,
                          dstW * sizeof(*filter) * filterSize, fail);
 
-        xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000)>>7);
+        xDstInSrc = ((dstPos*(int64_t)xInc)>>8) - ((srcPos*0x8000LL)>>7);
         for (i = 0; i < dstW; i++) {
             int xx = (xDstInSrc - ((filterSize - 1) << 15) + (1 << 15)) >> 16;
             int j;
@@ -366,7 +366,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         FF_ALLOC_OR_GOTO(NULL, filter,
                          dstW * sizeof(*filter) * filterSize, fail);
 
-        xDstInSrc = ((dstPos*(int64_t)xInc)>>7) - ((srcPos*0x10000)>>7);
+        xDstInSrc = ((dstPos*(int64_t)xInc)>>7) - ((srcPos*0x10000LL)>>7);
         for (i = 0; i < dstW; i++) {
             int xx = (xDstInSrc - ((filterSize - 2) << 16)) / (1 << 17);
             int j;
