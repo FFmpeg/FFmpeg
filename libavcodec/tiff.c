@@ -705,8 +705,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     tag   = tget_short(&s->gb, s->le);
     type  = tget_short(&s->gb, s->le);
     count = tget_long(&s->gb, s->le);
-    off   = tget_long(&s->gb, s->le);
-    start = bytestream2_tell(&s->gb);
+    start = bytestream2_tell(&s->gb) + 4;
 
     if (type == 0 || type >= FF_ARRAY_ELEMS(type_sizes)) {
         av_log(s->avctx, AV_LOG_DEBUG, "Unknown tiff type (%u) encountered\n",
@@ -718,26 +717,26 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         switch (type) {
         case TIFF_BYTE:
         case TIFF_SHORT:
-            bytestream2_seek(&s->gb, -4, SEEK_CUR);
             value = tget(&s->gb, type, s->le);
             break;
         case TIFF_LONG:
+            off   = tget_long(&s->gb, s->le);
             value = off;
             break;
         case TIFF_STRING:
             if (count <= 4) {
-                bytestream2_seek(&s->gb, -4, SEEK_CUR);
                 break;
             }
         default:
+            off   = tget_long(&s->gb, s->le);
             value = UINT_MAX;
             bytestream2_seek(&s->gb, off, SEEK_SET);
         }
     } else {
-        if (count <= 4 && type_sizes[type] * count <= 4)
-            bytestream2_seek(&s->gb, -4, SEEK_CUR);
-        else
+        if (count > 4 || type_sizes[type] * count > 4) {
+            off   = tget_long(&s->gb, s->le);
             bytestream2_seek(&s->gb, off, SEEK_SET);
+        }
     }
 
     switch (tag) {
