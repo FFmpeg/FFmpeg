@@ -26,7 +26,6 @@
  */
 
 #include "config.h"
-#include "libavutil/accessors.h"
 #include "libavutil/atomic.h"
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"

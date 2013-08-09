@@ -27,8 +27,6 @@
 #include "mem.h"
 #include "samplefmt.h"
 
-#include "accessors.h"
-
 MAKE_ACCESSORS(AVFrame, frame, int64_t, best_effort_timestamp)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_duration)
 MAKE_ACCESSORS(AVFrame, frame, int64_t, pkt_pos)

@@ -25,7 +25,6 @@
 #include "libavcodec/internal.h"
 #include "libavcodec/raw.h"
 #include "libavcodec/bytestream.h"
-#include "libavutil/accessors.h"
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
