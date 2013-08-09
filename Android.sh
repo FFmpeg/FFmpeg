@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# export ANDROID_NDK=
 # Detect ANDROID_NDK
 if [ -z "$ANDROID_NDK" ]; then
    echo "You must define ANDROID_NDK before starting."
@@ -18,7 +19,7 @@ elif [ $OS == 'Darwin' ]; then
 fi
 
 SOURCE=`pwd`
-DEST=$SOURCE/build/android # && rm -rf $DEST
+DEST=$SOURCE/build/android
 SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
@@ -44,9 +45,58 @@ CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
 
 LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
+if [ $1 ]; then
 FFMPEG_FLAGS_COMMON="--target-os=linux \
-  --cross-prefix=arm-linux-androideabi- \
   --enable-cross-compile \
+  --cross-prefix=arm-linux-androideabi- \
+  --enable-shared \
+  --disable-symver \
+  --disable-doc \
+  --disable-ffplay \
+  --disable-ffmpeg \
+  --disable-ffprobe \
+  --disable-ffserver \
+  --disable-avdevice \
+  --disable-avfilter \
+  --disable-encoders  \
+  --disable-muxers \
+  --disable-filters \
+  --disable-devices \
+  --disable-everything \
+  --disable-protocols  \
+  --disable-parsers \
+  --disable-demuxers \
+  --disable-decoders \
+  --disable-bsfs \
+  --enable-swscale  \
+  --enable-network \
+  --enable-protocol=file \
+  --enable-protocol=http \
+  --enable-demuxer=hls \
+  --enable-demuxer=mpegts \
+  --enable-demuxer=mpegtsraw \
+  --enable-demuxer=mpegvideo \
+  --enable-demuxer=mov \
+  --enable-demuxer=flv \
+  --enable-demuxer=mp3 \
+  --enable-decoder=mpeg4 \
+  --enable-decoder=mpegvideo \
+  --enable-decoder=mpeg1video \
+  --enable-decoder=mpeg2video \
+  --enable-decoder=h264 \
+  --enable-decoder=h263 \
+  --enable-decoder=flv \
+  --enable-decoder=aac \
+  --enable-decoder=ac3 \
+  --enable-decoder=mp3 \
+  --enable-asm \
+  --enable-version3 \
+  --disable-debug \
+  --optflags=-02"
+else
+FFMPEG_FLAGS_COMMON="--target-os=linux \
+  --enable-cross-compile \
+  --cross-prefix=arm-linux-androideabi- \
   --enable-shared \
   --enable-optimizations \
   --disable-static \
@@ -72,6 +122,7 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --enable-version3 \
   --disable-debug \
   --optflags=-02"
+fi
 
   # --disable-decoder=ac3 --disable-decoder=eac3 --disable-decoder=mlp \
 
@@ -122,7 +173,7 @@ for version in neon armv7 vfp armv6; do
       ;;
   esac
 
-  PREFIX="$DEST/$version" && mkdir -p $PREFIX
+  PREFIX="$DEST/$version" && rm -rf $PREFIX && mkdir -p $PREFIX
   FFMPEG_FLAGS="$FFMPEG_FLAGS --prefix=$PREFIX"
 
   ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
@@ -134,10 +185,26 @@ for version in neon armv7 vfp armv6; do
   make -j4 || exit 1
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
-  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
-    libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
+
+	if [ $1 ]; then
+		$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+				libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
+	else
+		$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+				libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
+	fi
+
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so
+
+
+echo "  _    __   _    __                           _             "
+echo " | |  / /  (_)  / /_   ____ _   ____ ___     (_)  ___       "
+echo " | | / /  / /  / __/  / __ \/  / __ __  \   / /  / __ \     "
+echo " | |/ /  / /  / /_   / /_/ /  / / / / / /  / /  / /_/ /     "
+echo " |___/  /_/   \__/   \__,_/  /_/ /_/ /_/  /_/   \____/      "
+
+echo "----------------------$version -----------------------------"
 
 done
