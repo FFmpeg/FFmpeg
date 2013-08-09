@@ -166,6 +166,18 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_YUVA444P16LE, MKTAG('Y', '4',  0 , 16 ) },
     { AV_PIX_FMT_YUVA444P16BE, MKTAG(16 ,  0 , '4', 'Y') },
 
+    { AV_PIX_FMT_GBRP,         MKTAG('G', '3', 00 ,  8 ) },
+    { AV_PIX_FMT_GBRP9LE,      MKTAG('G', '3', 00 ,  9 ) },
+    { AV_PIX_FMT_GBRP9BE,      MKTAG( 9 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP10LE,     MKTAG('G', '3', 00 , 10 ) },
+    { AV_PIX_FMT_GBRP10BE,     MKTAG(10 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP12LE,     MKTAG('G', '3', 00 , 12 ) },
+    { AV_PIX_FMT_GBRP12BE,     MKTAG(12 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP14LE,     MKTAG('G', '3', 00 , 14 ) },
+    { AV_PIX_FMT_GBRP14BE,     MKTAG(14 , 00 , '3', 'G') },
+    { AV_PIX_FMT_GBRP16LE,     MKTAG('G', '3', 00 , 16 ) },
+    { AV_PIX_FMT_GBRP16BE,     MKTAG(16 , 00 , '3', 'G') },
+
     /* quicktime */
     { AV_PIX_FMT_YUV420P, MKTAG('R', '4', '2', '0') }, /* Radius DV YUV PAL */
     { AV_PIX_FMT_YUV411P, MKTAG('R', '4', '1', '1') }, /* Radius DV YUV NTSC */
