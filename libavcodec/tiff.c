@@ -41,6 +41,7 @@
 #include "mathops.h"
 #include "tiff.h"
 #include "tiff_data.h"
+#include "thread.h"
 
 typedef struct TiffContext {
     AVCodecContext *avctx;
@@ -492,7 +493,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     return 0;
 }
 
-static int init_image(TiffContext *s, AVFrame *frame)
+static int init_image(TiffContext *s, ThreadFrame *frame)
 {
     int i, ret;
     uint32_t *pal;
@@ -549,14 +550,14 @@ static int init_image(TiffContext *s, AVFrame *frame)
             return ret;
         avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
-    if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (s->palette_is_set) {
-            memcpy(frame->data[1], s->palette, sizeof(s->palette));
+            memcpy(frame->f->data[1], s->palette, sizeof(s->palette));
         } else {
             /* make default grayscale pal */
-            pal = (uint32_t *) frame->data[1];
+            pal = (uint32_t *) frame->f->data[1];
             for (i = 0; i < 1<<s->bpp; i++)
                 pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
@@ -936,6 +937,7 @@ static int decode_frame(AVCodecContext *avctx,
 {
     TiffContext *const s = avctx->priv_data;
     AVFrame *const p = data;
+    ThreadFrame frame = { .f = data };
     unsigned off;
     int le, ret, plane, planes;
     int i, j, entries, stride;
@@ -996,7 +998,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
     /* now we have the data and may start decoding */
-    if ((ret = init_image(s, p)) < 0)
+    if ((ret = init_image(s, &frame)) < 0)
         return ret;
 
     if (s->strips == 1 && !s->stripsize) {
@@ -1135,5 +1137,6 @@ AVCodec ff_tiff_decoder = {
     .init           = tiff_init,
     .close          = tiff_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(tiff_init),
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
 };
