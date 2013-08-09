@@ -7,6 +7,8 @@ HEADERS = avdevice.h                                                    \
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
 
+OBJS-$(HAVE_MSVCRT) += file_open.o
+
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
                                             alsa-audio-dec.o

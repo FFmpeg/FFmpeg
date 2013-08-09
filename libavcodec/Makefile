@@ -26,6 +26,8 @@ OBJS = allcodecs.o                                                      \
        raw.o                                                            \
        utils.o                                                          \
 
+OBJS-$(HAVE_MSVCRT) += file_open.o
+
 # parts needed for many different codecs
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o
