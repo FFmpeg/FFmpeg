@@ -27,46 +27,6 @@
 #include "avformat.h"
 #include "os_support.h"
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
-#undef open
-#undef lseek
-#undef stat
-#undef fstat
-#include <fcntl.h>
-#include <io.h>
-#include <windows.h>
-#include <share.h>
-#include <errno.h>
-
-int ff_win32_open(const char *filename_utf8, int oflag, int pmode)
-{
-    int fd;
-    int num_chars;
-    wchar_t *filename_w;
-
-    /* convert UTF-8 to wide chars */
-    num_chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, filename_utf8, -1, NULL, 0);
-    if (num_chars <= 0)
-        goto fallback;
-    filename_w = av_mallocz(sizeof(wchar_t) * num_chars);
-    if (!filename_w) {
-        errno = ENOMEM;
-        return -1;
-    }
-    MultiByteToWideChar(CP_UTF8, 0, filename_utf8, -1, filename_w, num_chars);
-
-    fd = _wsopen(filename_w, oflag, SH_DENYNO, pmode);
-    av_freep(&filename_w);
-
-    if (fd != -1 || (oflag & O_CREAT))
-        return fd;
-
-fallback:
-    /* filename may be be in CP_ACP */
-    return _sopen(filename_utf8, oflag, SH_DENYNO, pmode);
-}
-#endif
-
 #if CONFIG_NETWORK
 #include <fcntl.h>
 #if !HAVE_POLL_H
