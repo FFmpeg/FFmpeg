@@ -733,7 +733,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             bytestream2_seek(&s->gb, off, SEEK_SET);
         }
     } else {
-        if (count > 4 || type_sizes[type] * count > 4) {
+        if (type_sizes[type] * count > 4) {
             off   = tget_long(&s->gb, s->le);
             bytestream2_seek(&s->gb, off, SEEK_SET);
         }
