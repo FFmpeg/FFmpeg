@@ -277,6 +277,12 @@ For example to read with @command{avplay} a multimedia resource named
 avplay rtmp://myserver/vod/sample
 @end example
 
+To publish to a password protected server, passing the playpath and
+app names separately:
+@example
+avconv -re -i <input> -f flv -rtmp_playpath some/long/path -rtmp_app long/app/name rtmp://username:password@@myserver/
+@end example
+
 @section rtmpe
 
 Encrypted Real-Time Messaging Protocol.
