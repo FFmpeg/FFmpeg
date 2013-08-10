@@ -946,7 +946,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             av_log(av_log_obj, AV_LOG_INFO, " (default ");
             switch (opt->type) {
             case AV_OPT_TYPE_FLAGS:
-                av_log(av_log_obj, AV_LOG_INFO, "%0llX", opt->default_val.i64);
+                av_log(av_log_obj, AV_LOG_INFO, "%"PRIX64, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_DURATION:
             case AV_OPT_TYPE_INT:
