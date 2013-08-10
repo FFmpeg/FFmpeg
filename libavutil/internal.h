@@ -126,7 +126,7 @@
 
 #include "libm.h"
 
-#if defined(_MSC_VER) && !CONFIG_SHARED
+#if defined(_MSC_VER)
 #pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_strtod")
 #pragma comment(linker, "/include:"EXTERN_PREFIX"avpriv_snprintf")
 #endif
