@@ -317,7 +317,7 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
-@section rtmp, rtmpe, rtmps, rtmpt, rtmpte
+@section librtmp rtmp, rtmpe, rtmps, rtmpt, rtmpte
 
 Real-Time Messaging Protocol and its variants supported through
 librtmp.
