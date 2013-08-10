@@ -18,10 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avutil.h"
+#include <fcntl.h>
 #include "network.h"
 #include "url.h"
 #include "libavcodec/internal.h"
+#include "libavutil/avutil.h"
 #include "libavutil/mem.h"
 #include "url.h"
 #include "libavutil/time.h"
@@ -233,6 +234,24 @@ static int ff_poll_interrupt(struct pollfd *p, nfds_t nfds, int timeout,
     if (ret < 0)
         return AVERROR(errno);
     return ret;
+}
+
+int ff_socket(int af, int type, int proto)
+{
+    int fd;
+
+#ifdef SOCK_CLOEXEC
+    fd = socket(af, type | SOCK_CLOEXEC, proto);
+    if (fd == -1 && errno == EINVAL)
+#endif
+    {
+        fd = socket(af, type, proto);
+#if HAVE_FCNTL
+        if (fd != -1)
+            fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+    }
+    return fd;
 }
 
 int ff_listen_bind(int fd, const struct sockaddr *addr,
