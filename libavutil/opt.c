@@ -1506,7 +1506,7 @@ int main(void)
     printf("\nTesting av_set_options_string()\n");
     {
         TestContext test_ctx = { 0 };
-        const char *options[] = {
+        static const char * const options[] = {
             "",
             ":",
             "=",
@@ -1565,7 +1565,7 @@ int main(void)
     printf("\nTesting av_opt_set_from_string()\n");
     {
         TestContext test_ctx = { 0 };
-        const char *options[] = {
+        static const char * const options[] = {
             "",
             "5",
             "5:hello",
@@ -1576,7 +1576,7 @@ int main(void)
             " 5 : hello : size = pal ",
             "a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42"
         };
-        const char *shorthand[] = { "num", "string", NULL };
+        static const char * const shorthand[] = { "num", "string", NULL };
 
         test_ctx.class = &test_class;
         av_opt_set_defaults(&test_ctx);
