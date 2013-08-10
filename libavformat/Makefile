@@ -24,6 +24,8 @@ OBJS = allformats.o         \
        url.o                \
        utils.o              \
 
+OBJS-$(HAVE_MSVCRT) += file_open.o
+
 OBJS-$(CONFIG_NETWORK)                   += network.o
 OBJS-$(CONFIG_RIFFDEC)                   += riffdec.o
 OBJS-$(CONFIG_RIFFENC)                   += riffenc.o

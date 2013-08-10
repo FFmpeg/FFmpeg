@@ -202,6 +202,10 @@ void avpriv_report_missing_feature(void *avc,
 void avpriv_request_sample(void *avc,
                            const char *msg, ...) av_printf_format(2, 3);
 
+#if HAVE_MSVCRT
+#define avpriv_open ff_open
+#endif
+
 /**
  * A wrapper for open() setting O_CLOEXEC.
  */
