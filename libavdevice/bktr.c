@@ -140,7 +140,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     if (*tuner_fd < 0)
         av_log(NULL, AV_LOG_ERROR, "Warning. Tuner not opened, continuing: %s\n", strerror(errno));
 
-    *video_fd = open(video_device, O_RDONLY);
+    *video_fd = avpriv_open(video_device, O_RDONLY);
     if (*video_fd < 0) {
         av_log(NULL, AV_LOG_ERROR, "%s: %s\n", video_device, strerror(errno));
         return -1;
