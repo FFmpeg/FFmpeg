@@ -2313,6 +2313,13 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
                  hostname, sizeof(hostname), &port,
                  path, sizeof(path), s->filename);
 
+    if (strchr(path, ' ')) {
+        av_log(s, AV_LOG_WARNING,
+               "Detected librtmp style URL parameters, these aren't supported "
+               "by the libavformat internal RTMP handler currently enabled. "
+               "See the documentation for the correct way to pass parameters.\n");
+    }
+
     if (auth[0]) {
         char *ptr = strchr(auth, ':');
         if (ptr) {
