@@ -1958,7 +1958,7 @@ Set the carrier frequency. Default is 440 Hz.
 Enable a periodic beep every second with frequency @var{beep_factor} times
 the carrier frequency. Default is 0, meaning the beep is disabled.
 
-@item sample_rate, s
+@item sample_rate, r
 Specify the sample rate, default is 44100.
 
 @item duration, d
