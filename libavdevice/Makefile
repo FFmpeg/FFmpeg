@@ -46,6 +46,8 @@ OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
 SKIPHEADERS-$(CONFIG_DSHOW_INDEV)        += dshow_capture.h
+SKIPHEADERS-$(CONFIG_V4L2_INDEV)         += v4l2-common.h
+SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio_common.h
 
