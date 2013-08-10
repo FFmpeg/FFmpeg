@@ -26,6 +26,7 @@
 #include "avstring.h"
 #include "bprint.h"
 #include "common.h"
+#include "compat/va_copy.h"
 #include "error.h"
 #include "mem.h"
 
