@@ -530,7 +530,7 @@ AVFrame *av_frame_alloc(void);
 void av_frame_free(AVFrame **frame);
 
 /**
- * Setup a new reference to the data described by an given frame.
+ * Setup a new reference to the data described by a given frame.
  *
  * Copy frame properties from src to dst and create a new reference for each
  * AVBufferRef from src.
