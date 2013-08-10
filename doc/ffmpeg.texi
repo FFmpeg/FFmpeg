@@ -1137,7 +1137,7 @@ then it will search for the file @file{libvpx-1080p.ffpreset}.
 
 @itemize
 @item
-For streaming at very low bitrate application, use a low frame rate
+For streaming at very low bitrates, use a low frame rate
 and a small GOP size. This is especially true for RealVideo where
 the Linux player does not seem to be very fast, so it can miss
 frames. An example is:

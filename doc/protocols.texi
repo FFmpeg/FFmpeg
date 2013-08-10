@@ -1,8 +1,8 @@
 @chapter Protocols
 @c man begin PROTOCOLS
 
-Protocols are configured elements in FFmpeg which allow to access
-resources which require the use of a particular protocol.
+Protocols are configured elements in FFmpeg that enable access to
+resources that require specific protocols.
 
 When you configure your FFmpeg build, all the supported protocols are
 enabled by default. You can list all available ones using the

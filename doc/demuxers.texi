@@ -1,7 +1,7 @@
 @chapter Demuxers
 @c man begin DEMUXERS
 
-Demuxers are configured elements in FFmpeg which allow to read the
+Demuxers are configured elements in FFmpeg that can read the
 multimedia streams from a particular type of file.
 
 When you configure your FFmpeg build, all the supported demuxers

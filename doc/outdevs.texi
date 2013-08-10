@@ -1,7 +1,7 @@
 @chapter Output Devices
 @c man begin OUTPUT DEVICES
 
-Output devices are configured elements in FFmpeg which allow to write
+Output devices are configured elements in FFmpeg that can write
 multimedia data to an output device attached to your system.
 
 When you configure your FFmpeg build, all the supported output devices
