@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lavc 55.16.0 - avcodec.h
+  Extend AVPacket API with av_packet_unref, av_packet_ref,
+  av_packet_move_ref, av_packet_copy_props, av_packet_free_side_data.
+
 2013-08-xx - xxxxxxx - lavc 55.13.0 - avcodec.h
   Deprecate the bitstream-related members from struct AVVDPAUContext.
   The bistream buffers no longer need to be explicitly freed.

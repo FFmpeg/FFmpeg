@@ -39,6 +39,7 @@ void ff_packet_free_side_data(AVPacket *pkt)
 }
 
 #if FF_API_DESTRUCT_PACKET
+
 void av_destruct_packet(AVPacket *pkt)
 {
     av_free(pkt->data);
@@ -73,18 +74,26 @@ FF_ENABLE_DEPRECATION_WARNINGS
     pkt->side_data_elems      = 0;
 }
 
-int av_new_packet(AVPacket *pkt, int size)
+static int packet_alloc(AVBufferRef **buf, int size)
 {
-    AVBufferRef *buf = NULL;
-
     if ((unsigned)size >= (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
-    av_buffer_realloc(&buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
+    av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!buf)
         return AVERROR(ENOMEM);
 
-    memset(buf->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset((*buf)->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+    return 0;
+}
+
+int av_new_packet(AVPacket *pkt, int size)
+{
+    AVBufferRef *buf = NULL;
+    int ret = packet_alloc(&buf, size);
+    if (ret < 0)
+        return ret;
 
     av_init_packet(pkt);
     pkt->buf      = buf;
@@ -264,11 +273,18 @@ int av_copy_packet(AVPacket *dst, AVPacket *src)
     return copy_packet_data(dst, src, 0);
 }
 
+void av_packet_free_side_data(AVPacket *pkt)
+{
+    int i;
+    for (i = 0; i < pkt->side_data_elems; i++)
+        av_free(pkt->side_data[i].data);
+    av_freep(&pkt->side_data);
+    pkt->side_data_elems = 0;
+}
+
 void av_free_packet(AVPacket *pkt)
 {
     if (pkt) {
-        int i;
-
 FF_DISABLE_DEPRECATION_WARNINGS
         if (pkt->buf)
             av_buffer_unref(&pkt->buf);
@@ -281,10 +297,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         pkt->data            = NULL;
         pkt->size            = 0;
 
-        for (i = 0; i < pkt->side_data_elems; i++)
-            av_free(pkt->side_data[i].data);
-        av_freep(&pkt->side_data);
-        pkt->side_data_elems = 0;
+        av_packet_free_side_data(pkt);
     }
 }
 
@@ -433,4 +446,72 @@ int av_packet_shrink_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
         }
     }
     return AVERROR(ENOENT);
+}
+
+int av_packet_copy_props(AVPacket *dst, const AVPacket *src)
+{
+    int i;
+
+    dst->pts                  = src->pts;
+    dst->dts                  = src->dts;
+    dst->pos                  = src->pos;
+    dst->duration             = src->duration;
+    dst->convergence_duration = src->convergence_duration;
+    dst->flags                = src->flags;
+    dst->stream_index         = src->stream_index;
+    dst->side_data_elems      = src->side_data_elems;
+
+    for (i = 0; i < src->side_data_elems; i++) {
+         enum AVPacketSideDataType type = src->side_data[i].type;
+         int size          = src->side_data[i].size;
+         uint8_t *src_data = src->side_data[i].data;
+         uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
+
+        if (!dst_data) {
+            av_packet_free_side_data(dst);
+            return AVERROR(ENOMEM);
+        }
+        memcpy(dst_data, src_data, size);
+    }
+
+    return 0;
+}
+
+void av_packet_unref(AVPacket *pkt)
+{
+    av_packet_free_side_data(pkt);
+    av_buffer_unref(&pkt->buf);
+    av_init_packet(pkt);
+    pkt->data = NULL;
+    pkt->size = 0;
+}
+
+int av_packet_ref(AVPacket *dst, AVPacket *src)
+{
+    int ret;
+
+    ret = av_packet_copy_props(dst, src);
+    if (ret < 0)
+        return ret;
+
+    if (!src->buf) {
+        ret = packet_alloc(&dst->buf, src->size);
+        if (ret < 0)
+            goto fail;
+        memcpy(dst->buf->data, src->data, src->size);
+    } else
+        dst->buf = av_buffer_ref(src->buf);
+
+    dst->size = src->size;
+    dst->data = dst->buf->data;
+    return 0;
+fail:
+    av_packet_free_side_data(dst);
+    return ret;
+}
+
+void av_packet_move_ref(AVPacket *dst, AVPacket *src)
+{
+    *dst = *src;
+    av_init_packet(src);
 }
