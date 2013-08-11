@@ -80,7 +80,7 @@ static int packet_alloc(AVBufferRef **buf, int size)
         return AVERROR(EINVAL);
 
     av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!buf)
+    if (!*buf)
         return AVERROR(ENOMEM);
 
     memset((*buf)->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
