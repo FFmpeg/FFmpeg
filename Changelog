@@ -41,6 +41,7 @@ version 10:
 - Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
 - F4V muxer
 - HNM version 4 demuxer and video decoder
+- HEVC decoder
 
 
 version 9:
