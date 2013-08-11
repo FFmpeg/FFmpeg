@@ -747,7 +747,7 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 #if FF_API_GET_BUFFER
 FF_DISABLE_DEPRECATION_WARNINGS
     /*
-     * Wrap an old get_buffer()-allocated buffer in an bunch of AVBuffers.
+     * Wrap an old get_buffer()-allocated buffer in a bunch of AVBuffers.
      * We wrap each plane in its own AVBuffer. Each of those has a reference to
      * a dummy AVBuffer as its private data, unreffing it on free.
      * When all the planes are freed, the dummy buffer's free callback calls

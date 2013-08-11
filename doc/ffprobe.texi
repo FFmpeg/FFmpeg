@@ -113,7 +113,7 @@ ffprobe -show_packets -select_streams v:1 INPUT
 @end example
 
 @item -show_data
-Show payload data, as an hexadecimal and ASCII dump. Coupled with
+Show payload data, as a hexadecimal and ASCII dump. Coupled with
 @option{-show_packets}, it will dump the packets' data. Coupled with
 @option{-show_streams}, it will dump the codec extradata.
 

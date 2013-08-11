@@ -98,7 +98,7 @@ static av_cold int close_decoder(AVCodecContext *avctx)
 /**
  * Decode the RLE data.
  *
- * The subtitle is stored as an Run Length Encoded image.
+ * The subtitle is stored as a Run Length Encoded image.
  *
  * @param avctx contains the current codec context
  * @param sub pointer to the processed subtitle data

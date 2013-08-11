@@ -64,7 +64,7 @@
 #define HIST_SIZE  ((ABS_UP_THRES - ABS_THRES) * HIST_GRAIN + 1)
 
 /**
- * An histogram is an array of HIST_SIZE hist_entry storing all the energies
+ * A histogram is an array of HIST_SIZE hist_entry storing all the energies
  * recorded (with an accuracy of 1/HIST_GRAIN) of the loudnesses from ABS_THRES
  * (at 0) to ABS_UP_THRES (at HIST_SIZE-1).
  * This fixed-size system avoids the need of a list of energies growing

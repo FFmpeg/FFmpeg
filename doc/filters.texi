@@ -1644,7 +1644,7 @@ The filter has no parameters. The input is not modified. Statistics about
 the volume will be printed in the log when the input stream end is reached.
 
 In particular it will show the mean volume (root mean square), maximum
-volume (on a per-sample basis), and the beginning of an histogram of the
+volume (on a per-sample basis), and the beginning of a histogram of the
 registered volume values (from the maximum value to a cumulated 1/1000 of
 the samples).
 
