@@ -56,7 +56,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
     // number of non-zero coefficients
     coeff = get_bits(gb, 6);
     if (get_bits_left(gb) < (coeff << 1))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     // normally we would only need to clear the (63 - coeff) last values,
     // but since we do not know where they are we just clear the whole block
@@ -73,7 +73,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
     // 4 bits per coefficient
     ALIGN(4);
     if (get_bits_left(gb) < (coeff << 2))
-        return -1;
+        return AVERROR_INVALIDDATA;
     while (coeff) {
         ac = get_sbits(gb, 4);
         if (ac == -8)
@@ -84,7 +84,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
     // 8 bits per coefficient
     ALIGN(8);
     if (get_bits_left(gb) < (coeff << 3))
-        return -1;
+        return AVERROR_INVALIDDATA;
     while (coeff) {
         ac = get_sbits(gb, 8);
         PUT_COEFF(ac);
