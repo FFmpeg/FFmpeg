@@ -415,6 +415,13 @@ void show_banner(int argc, char **argv, const OptionDef *options);
 int show_version(void *optctx, const char *opt, const char *arg);
 
 /**
+ * Print the build configuration of the program to stdout. The contents
+ * depend on the definition of FFMPEG_CONFIGURATION.
+ * This option processing function does not utilize the arguments.
+ */
+int show_buildconf(void *optctx, const char *opt, const char *arg);
+
+/**
  * Print the license of the program to stdout. The license depends on
  * the license of the libraries compiled into the program.
  * This option processing function does not utilize the arguments.

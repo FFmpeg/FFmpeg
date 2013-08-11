@@ -4,6 +4,7 @@
     { "help"       , OPT_EXIT, {.func_arg = show_help},         "show help", "topic" },
     { "-help"      , OPT_EXIT, {.func_arg = show_help},         "show help", "topic" },
     { "version"    , OPT_EXIT, {.func_arg = show_version},      "show version" },
+    { "buildconf"  , OPT_EXIT, {.func_arg = show_buildconf},    "show build configuration" },
     { "formats"    , OPT_EXIT, {.func_arg = show_formats  },    "show available formats" },
     { "codecs"     , OPT_EXIT, {.func_arg = show_codecs   },    "show available codecs" },
     { "decoders"   , OPT_EXIT, {.func_arg = show_decoders },    "show available decoders" },
