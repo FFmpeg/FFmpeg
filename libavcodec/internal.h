@@ -140,11 +140,6 @@ int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
 
 void avpriv_color_frame(AVFrame *frame, const int color[4]);
 
-/**
- * Remove and free all side data from packet.
- */
-void ff_packet_free_side_data(AVPacket *pkt);
-
 extern volatile int ff_avcodec_locked;
 int ff_lock_avcodec(AVCodecContext *log_ctx);
 int ff_unlock_avcodec(void);
