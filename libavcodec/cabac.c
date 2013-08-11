@@ -73,8 +73,6 @@ static const uint8_t lps_range[64][4]= {
 {  6,  8,  9, 11}, {  6,  7,  9, 10}, {  6,  7,  8,  9}, {  2,  2,  2,  2},
 };
 
-static uint8_t h264_mps_state[2 * 64];
-
 static const uint8_t mps_state[64]= {
   1, 2, 3, 4, 5, 6, 7, 8,
   9,10,11,12,13,14,15,16,
@@ -146,10 +144,8 @@ void ff_init_cabac_states(void)
             ff_h264_lps_range[j*2*64+2*i+1]= lps_range[i][j];
         }
 
-        ff_h264_mlps_state[128+2*i+0]=
-        h264_mps_state[2 * i + 0] = 2 * mps_state[i] + 0;
-        ff_h264_mlps_state[128+2*i+1]=
-        h264_mps_state[2 * i + 1] = 2 * mps_state[i] + 1;
+        ff_h264_mlps_state[128 + 2 * i + 0] = 2 * mps_state[i] + 0;
+        ff_h264_mlps_state[128 + 2 * i + 1] = 2 * mps_state[i] + 1;
 
         if( i ){
             ff_h264_mlps_state[128-2*i-1]= 2*lps_state[i]+0;
