@@ -295,6 +295,10 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
     if ((e = av_dict_get(st->metadata, "title", NULL, 0)))
         desc = e->value;
 
+    /* use UTF16 only for non-ASCII strings */
+    if (enc == ID3v2_ENCODING_UTF16BOM && string_is_ascii(desc))
+        enc = ID3v2_ENCODING_ISO8859;
+
     /* start writing */
     if (avio_open_dyn_buf(&dyn_buf) < 0)
         return AVERROR(ENOMEM);
