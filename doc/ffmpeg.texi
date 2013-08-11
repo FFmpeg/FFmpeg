@@ -877,13 +877,12 @@ Dump each input packet to stderr.
 When dumping packets, also dump the payload.
 @item -re (@emph{input})
 Read input at native frame rate. Mainly used to simulate a grab device.
+or live input stream (e.g. when reading from a file). Should not be used
+with actual grab devices or live input streams (where it can cause packet
+loss).
 By default @command{ffmpeg} attempts to read the input(s) as fast as possible.
 This option will slow down the reading of the input(s) to the native frame rate
-of the input(s). It is useful for real-time output (e.g. live streaming). If
-your input(s) is coming from some other live streaming source (through HTTP or
-UDP for example) the server might already be in real-time, thus the option will
-likely not be required. On the other hand, this is meaningful if your input(s)
-is a file you are trying to push in real-time.
+of the input(s). It is useful for real-time output (e.g. live streaming).
 @item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
