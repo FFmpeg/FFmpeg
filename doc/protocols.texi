@@ -361,11 +361,17 @@ content across a TCP/IP network.
 
 The required syntax is:
 @example
-rtmp://@var{server}[:@var{port}][/@var{app}][/@var{instance}][/@var{playpath}]
+rtmp://[@var{username}:@var{password}@@]@var{server}[:@var{port}][/@var{app}][/@var{instance}][/@var{playpath}]
 @end example
 
 The accepted parameters are:
 @table @option
+
+@item username
+An optional username (mostly for publishing).
+
+@item password
+An optional password (mostly for publishing).
 
 @item server
 The address of the RTMP server.
