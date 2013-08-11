@@ -711,7 +711,8 @@ static int gen_seek(URLContext *s, RTMPContext *rt, int64_t timestamp)
     uint8_t *p;
     int ret;
 
-    av_log(s, AV_LOG_DEBUG, "Sending seek command for timestamp %lld\n", timestamp);
+    av_log(s, AV_LOG_DEBUG, "Sending seek command for timestamp %"PRId64"\n",
+           timestamp);
 
     if ((ret = ff_rtmp_packet_create(&pkt, 3, RTMP_PT_INVOKE, 0, 26)) < 0)
         return ret;
@@ -2553,11 +2554,12 @@ static int64_t rtmp_seek(URLContext *s, int stream_index, int64_t timestamp,
     RTMPContext *rt = s->priv_data;
     int ret;
     av_log(s, AV_LOG_DEBUG,
-           "Seek on stream index %d at timestamp %lld with flags %08x\n",
+           "Seek on stream index %d at timestamp %"PRId64" with flags %08x\n",
            stream_index, timestamp, flags);
     if ((ret = gen_seek(s, rt, timestamp)) < 0) {
         av_log(s, AV_LOG_ERROR,
-               "Unable to send seek command on stream index %d at timestamp %lld with flags %08x\n",
+               "Unable to send seek command on stream index %d at timestamp "
+               "%"PRId64" with flags %08x\n",
                stream_index, timestamp, flags);
         return ret;
     }
