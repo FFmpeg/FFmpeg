@@ -137,6 +137,10 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
 void ff_init_cabac_states(void)
 {
     int i, j;
+    static int initialized = 0;
+
+    if (initialized)
+        return;
 
     for(i=0; i<64; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
@@ -158,4 +162,6 @@ void ff_init_cabac_states(void)
     for(i=0; i< 63; i++){
       ff_h264_last_coeff_flag_offset_8x8[i] = last_coeff_flag_offset_8x8[i];
     }
+
+    initialized = 1;
 }
