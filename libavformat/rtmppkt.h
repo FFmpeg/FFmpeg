@@ -81,7 +81,7 @@ typedef struct RTMPPacket {
     uint32_t       ts_delta;   ///< timestamp increment to the previous one in milliseconds (latter only for media packets)
     uint32_t       extra;      ///< probably an additional channel ID used during streaming data
     uint8_t        *data;      ///< packet payload
-    int            data_size;  ///< packet payload size
+    int            size;       ///< packet payload size
 } RTMPPacket;
 
 /**
