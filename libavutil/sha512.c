@@ -285,7 +285,7 @@ int main(void)
     int i, j, k;
     AVSHA512 ctx;
     unsigned char digest[64];
-    const int lengths[4] = { 224, 256, 384, 512 };
+    static const int lengths[4] = { 224, 256, 384, 512 };
 
     for (j = 0; j < 4; j++) {
         if (j < 2) printf("Testing SHA-512/%d\n", lengths[j]);
