@@ -824,13 +824,13 @@ int main(void)
         time_t tvi;
         struct tm *tm;
         static char tzstr[] = "TZ=CET-1";
-        const char *time_string[] = {
+        static const char * const time_string[] = {
             "now",
             "12:35:46",
             "2000-12-20 0:02:47.5z",
             "2000-12-20T010247.6",
         };
-        const char *duration_string[] = {
+        static const char * const duration_string[] = {
             "2:34:56.79",
             "-1:23:45.67",
             "42.1729",
