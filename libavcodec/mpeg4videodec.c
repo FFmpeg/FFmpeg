@@ -1626,11 +1626,11 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
     if (s->shape != BIN_ONLY_SHAPE) {
         if (s->shape == RECT_SHAPE) {
-            skip_bits1(gb);   /* marker */
+            check_marker(gb, "before width");
             width = get_bits(gb, 13);
-            skip_bits1(gb);   /* marker */
+            check_marker(gb, "before height");
             height = get_bits(gb, 13);
-            skip_bits1(gb);   /* marker */
+            check_marker(gb, "after height");
             if(width && height && !(s->width && s->codec_tag == AV_RL32("MP4S"))){ /* they should be non zero but who knows ... */
                 if (s->width && s->height &&
                     (s->width != width || s->height != height))
