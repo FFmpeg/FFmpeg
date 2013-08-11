@@ -28,6 +28,7 @@
 #include <vdpau/vdpau.h>
 #include "h264.h"
 #include "mpegvideo.h"
+#include "vdpau.h"
 
 /** Extract VdpVideoSurface from a Picture */
 static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
