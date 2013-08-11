@@ -145,6 +145,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int orig_size = buf_size;
     int keyframe;
     int result;
+    int ret;
     enum {NUV_UNCOMPRESSED = '0', NUV_RTJPEG = '1',
           NUV_RTJPEG_IN_LZO = '2', NUV_LZO = '3',
           NUV_BLACK = 'N', NUV_COPY_LAST = 'L'} comptype;
@@ -239,7 +240,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
         case NUV_RTJPEG_IN_LZO:
         case NUV_RTJPEG: {
-            rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
+            ret = rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
+            if (ret < 0)
+                return ret;
             break;
         }
         case NUV_BLACK: {
