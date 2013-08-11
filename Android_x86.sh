@@ -8,12 +8,13 @@ if [ -z "$ANDROID_NDK" ]; then
 fi
 
 # Detect OS
-OS=`uname -s`
+OS=`uname`
+ARCH=`uname -m`
 if [ $OS == 'Linux' ]; then
-	export HOST_SYSTEM=linux-x86_64
+	export HOST_SYSTEM=linux-$ARCH
 	export CCACHE=ccache
 elif [ $OS == 'Darwin' ]; then
-	export HOST_SYSTEM=darwin-x86_64
+	export HOST_SYSTEM=darwin-$ARCH
 	export CCACHE=
 fi
 
