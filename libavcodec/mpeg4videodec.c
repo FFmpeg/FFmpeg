@@ -356,6 +356,17 @@ static int mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb)
     return 0;
 }
 
+static int decode_new_pred(MpegEncContext *s, GetBitContext *gb){
+    int len = FFMIN(s->time_increment_bits + 3, 15);
+
+    get_bits(gb, len);
+    if (get_bits1(gb))
+        get_bits(gb, len);
+    check_marker(gb, "after new_pred");
+
+    return 0;
+}
+
 /**
  * Decode the next video packet.
  * @return <0 if something went wrong
@@ -438,7 +449,8 @@ int ff_mpeg4_decode_video_packet_header(MpegEncContext *s)
             }
         }
     }
-    //FIXME new-pred stuff
+    if (s->new_pred)
+        decode_new_pred(s, &s->gb);
 
     return 0;
 }
@@ -2024,6 +2036,9 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
             av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
         return FRAME_SKIPPED;
     }
+    if (s->new_pred)
+        decode_new_pred(s, gb);
+
     if (s->shape != BIN_ONLY_SHAPE && ( s->pict_type == AV_PICTURE_TYPE_P
                           || (s->pict_type == AV_PICTURE_TYPE_S && s->vol_sprite_usage==GMC_SPRITE))) {
         /* rounding type for motion estimation */
