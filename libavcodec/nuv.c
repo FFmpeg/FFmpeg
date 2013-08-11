@@ -200,8 +200,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     buf_size -= 12;
     if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO) {
         int outlen = c->decomp_size, inlen = buf_size;
-        if (av_lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
+        if (av_lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen)) {
             av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
+            return AVERROR_INVALIDDATA;
+        }
         buf      = c->decomp_buf;
         buf_size = c->decomp_size;
     }
