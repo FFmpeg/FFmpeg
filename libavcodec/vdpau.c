@@ -38,6 +38,11 @@
  * @{
  */
 
+AVVDPAUContext *av_alloc_vdpaucontext(void)
+{
+    return av_mallocz(sizeof(AVVDPAUContext));
+}
+
 int ff_vdpau_common_start_frame(Picture *pic,
                                 av_unused const uint8_t *buffer,
                                 av_unused uint32_t size)

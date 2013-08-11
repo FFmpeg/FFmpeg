@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lavc 55.26.100 - vdpau.h
+  Add allocation function for AVVDPAUContext, allowing
+  to extend it in the future without breaking ABI/API.
+
 2013-08-xx - xxxxxxx - lavc 55.16.0 - avcodec.h
   Extend AVPacket API with av_packet_unref, av_packet_ref,
   av_packet_move_ref, av_packet_copy_props, av_packet_free_side_data.

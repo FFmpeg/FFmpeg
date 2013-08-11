@@ -73,7 +73,8 @@ union AVVDPAUPictureInfo {
 /**
  * This structure is used to share data between the libavcodec library and
  * the client video application.
- * The user shall zero-allocate the structure and make it available as
+ * The user shall allocate the structure via the av_alloc_vdpau_hwaccel
+ * function and make it available as
  * AVCodecContext.hwaccel_context. Members can be set by the user once
  * during initialization or through each AVCodecContext.get_buffer()
  * function call. In any case, they must be valid prior to calling
@@ -129,6 +130,13 @@ typedef struct AVVDPAUContext {
     VdpBitstreamBuffer *bitstream_buffers;
 #endif
 } AVVDPAUContext;
+
+/**
+ * @brief allocation function for AVVDPAUContext
+ *
+ * Allows extending the struct without breaking API/ABI
+ */
+AVVDPAUContext *av_alloc_vdpaucontext(void);
 
 #if FF_API_CAP_VDPAU
 /** @brief The videoSurface is used for rendering. */
