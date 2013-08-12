@@ -166,7 +166,7 @@ Buffer references ownership and permissions
       WRITE permission.
 
     * Filters that read their input to produce a new frame on output (like
-      scale) need the READ permission on input and and must request a buffer
+      scale) need the READ permission on input and must request a buffer
       with the WRITE permission.
 
     * Filters that intend to keep a reference after the filtering process
