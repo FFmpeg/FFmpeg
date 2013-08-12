@@ -358,7 +358,7 @@ typedef struct MpegEncContext {
     uint8_t *coded_block_base;
     uint8_t *coded_block;          ///< used for coded block pattern prediction (msmpeg4v3, wmv1)
     int16_t (*ac_val_base)[16];
-    int16_t (*ac_val[3])[16];      ///< used for for mpeg4 AC prediction, all 3 arrays must be continuous
+    int16_t (*ac_val[3])[16];      ///< used for mpeg4 AC prediction, all 3 arrays must be continuous
     int mb_skipped;                ///< MUST BE SET only during DECODING
     uint8_t *mbskip_table;        /**< used to avoid copy if macroblock skipped (for black regions for example)
                                    and used for b-frame encoding & decoding (contains skip table of next P Frame) */
