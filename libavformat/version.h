@@ -49,9 +49,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_PKT_DUMP
-#define FF_API_PKT_DUMP                (LIBAVFORMAT_VERSION_MAJOR < 54)
-#endif
 #ifndef FF_API_ALLOC_OUTPUT_CONTEXT
 #define FF_API_ALLOC_OUTPUT_CONTEXT    (LIBAVFORMAT_VERSION_MAJOR < 56)
 #endif

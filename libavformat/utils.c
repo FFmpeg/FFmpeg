@@ -3709,26 +3709,10 @@ static void pkt_dump_internal(void *avcl, FILE *f, int level, AVPacket *pkt, int
         av_hex_dump(f, pkt->data, pkt->size);
 }
 
-#if FF_API_PKT_DUMP
-void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload)
-{
-    AVRational tb = { 1, AV_TIME_BASE };
-    pkt_dump_internal(NULL, f, 0, pkt, dump_payload, tb);
-}
-#endif
-
 void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st)
 {
     pkt_dump_internal(NULL, f, 0, pkt, dump_payload, st->time_base);
 }
-
-#if FF_API_PKT_DUMP
-void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt, int dump_payload)
-{
-    AVRational tb = { 1, AV_TIME_BASE };
-    pkt_dump_internal(avcl, NULL, level, pkt, dump_payload, tb);
-}
-#endif
 
 void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
                       AVStream *st)

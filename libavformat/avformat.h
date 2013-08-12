@@ -1423,12 +1423,6 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  */
 
 
-#if FF_API_PKT_DUMP
-attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
-attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
-                                          int dump_payload);
-#endif
-
 #if FF_API_ALLOC_OUTPUT_CONTEXT
 /**
  * @deprecated deprecated in favor of avformat_alloc_output_context2()
