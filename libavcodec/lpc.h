@@ -67,7 +67,7 @@ typedef struct LPCContext {
     /**
      * Perform autocorrelation on input samples with delay of 0 to lag.
      * @param data  input samples.
-     *              constraints: no alignment needed, but must have have at
+     *              constraints: no alignment needed, but must have at
      *              least lag*sizeof(double) valid bytes preceding it, and
      *              size must be at least (len+1)*sizeof(double) if data is
      *              16-byte aligned or (len+2)*sizeof(double) if data is
