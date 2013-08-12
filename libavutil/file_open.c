@@ -62,7 +62,7 @@ static int win32_open(const char *filename_utf8, int oflag, int pmode)
         return fd;
 
 fallback:
-    /* filename may be be in CP_ACP */
+    /* filename may be in CP_ACP */
     return _sopen(filename_utf8, oflag, SH_DENYNO, pmode);
 }
 #define open win32_open
