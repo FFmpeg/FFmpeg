@@ -119,6 +119,7 @@ typedef struct MJpegDecodeContext {
     unsigned int ljpeg_buffer_size;
 
     int extern_huff;
+    AVDictionary *exif_metadata;
 } MJpegDecodeContext;
 
 int ff_mjpeg_decode_init(AVCodecContext *avctx);

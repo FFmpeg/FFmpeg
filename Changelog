@@ -14,6 +14,7 @@ version <next>
 - ffmpeg -t option can now be used for inputs, to limit the duration of
   data read from an input file
 - incomplete Voxware MetaSound decoder
+- read EXIF metadata from JPEG
 
 
 version 2.0:

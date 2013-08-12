@@ -39,6 +39,9 @@
 #include "mjpeg.h"
 #include "mjpegdec.h"
 #include "jpeglsdec.h"
+#include "tiff.h"
+#include "exif.h"
+#include "bytestream.h"
 
 
 static int build_vlc(VLC *vlc, const uint8_t *bits_table,
@@ -1493,6 +1496,43 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         goto out;
     }
 
+    /* EXIF metadata */
+    if (s->start_code == APP1 && id == AV_RB32("Exif")) {
+        GetByteContext gbytes;
+        int ret, le, ifd_offset, bytes_read;
+        const uint8_t *aligned;
+
+        skip_bits(&s->gb, 16); // skip padding
+        len -= 2;
+
+        // init byte wise reading
+        aligned = align_get_bits(&s->gb);
+        bytestream2_init(&gbytes, aligned, len);
+
+        // read TIFF header
+        ret = ff_tdecode_header(&gbytes, &le, &ifd_offset);
+        if (ret) {
+            av_log(s->avctx, AV_LOG_ERROR, "mjpeg: invalid TIFF header in EXIF data\n");
+            return ret;
+        }
+
+        bytestream2_seek(&gbytes, ifd_offset, SEEK_SET);
+
+        // read 0th IFD and store the metadata
+        // (return values > 0 indicate the presence of subimage metadata)
+        ret = ff_exif_decode_ifd(s->avctx, &gbytes, le, 0, &s->exif_metadata);
+        if (ret < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "mjpeg: error decoding EXIF data\n");
+            return ret;
+        }
+
+        bytes_read = bytestream2_tell(&gbytes);
+        skip_bits(&s->gb, bytes_read << 3);
+        len -= bytes_read;
+
+        goto out;
+    }
+
     /* Apple MJPEG-A */
     if ((s->start_code == APP1) && (len > (0x28 - 8))) {
         id   = get_bits_long(&s->gb, 32);
@@ -1687,6 +1727,8 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int start_code;
     int i, index;
     int ret = 0;
+
+    av_dict_free(&s->exif_metadata);
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
@@ -1916,6 +1958,9 @@ the_end:
         }
     }
 
+    av_dict_copy(avpriv_frame_get_metadatap(data), s->exif_metadata, 0);
+    av_dict_free(&s->exif_metadata);
+
     av_log(avctx, AV_LOG_DEBUG, "decode frame unused %td bytes\n",
            buf_end - buf_ptr);
 //  return buf_end - buf_ptr;
@@ -1942,6 +1987,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
         av_freep(&s->blocks[i]);
         av_freep(&s->last_nnz[i]);
     }
+    av_dict_free(&s->exif_metadata);
     return 0;
 }
 
