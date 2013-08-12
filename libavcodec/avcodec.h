@@ -4834,7 +4834,7 @@ void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
 
 /**
  * Same behaviour av_fast_malloc but the buffer has additional
- * FF_INPUT_BUFFER_PADDING_SIZE at the end which will will always be 0.
+ * FF_INPUT_BUFFER_PADDING_SIZE at the end which will always be 0.
  *
  * In addition the whole buffer will initially and after resizes
  * be 0-initialized so that no uninitialized data will ever appear.
