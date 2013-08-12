@@ -5539,7 +5539,7 @@ when evaluation is done @emph{per frame}, and will evaluate to NAN
 when @option{eval} is set to @samp{init}.
 
 Be aware that frames are taken from each input video in timestamp
-order, hence, if their initial timestamps differ, it is a a good idea
+order, hence, if their initial timestamps differ, it is a good idea
 to pass the two inputs through a @var{setpts=PTS-STARTPTS} filter to
 have them begin in the same zero timestamp, as it does the example for
 the @var{movie} filter.
