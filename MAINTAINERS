@@ -153,6 +153,7 @@ Codecs:
   dv.c                                  Roman Shaposhnik
   dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
+  exif.c, exif.h                        Thilo Borgmann
   ffv1.c                                Michael Niedermayer
   ffwavesynth.c                         Nicolas George
   flac*                                 Justin Ruggles
