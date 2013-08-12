@@ -49,9 +49,6 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_OLD_AVIO
-#define FF_API_OLD_AVIO                (LIBAVFORMAT_VERSION_MAJOR < 55)
-#endif
 #ifndef FF_API_PKT_DUMP
 #define FF_API_PKT_DUMP                (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
