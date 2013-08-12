@@ -359,7 +359,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
     int uvcbp[4][2];
     /**
      * This mask represents the pattern of luma subblocks that should be filtered
-     * in addition to the coded ones because because they lie at the edge of
+     * in addition to the coded ones because they lie at the edge of
      * 8x8 block with different enough motion vectors
      */
     unsigned mvmasks[4];
