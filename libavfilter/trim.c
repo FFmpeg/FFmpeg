@@ -94,7 +94,7 @@ static int config_input(AVFilterLink *inlink)
         s->start_time = s->start_time_dbl * 1e6;
     if (s->end_time_dbl != DBL_MAX)
         s->end_time = s->end_time_dbl * 1e6;
-    if (s->duration_dbl != DBL_MAX)
+    if (s->duration_dbl != 0)
         s->duration = s->duration_dbl * 1e6;
 
     if (s->start_time != INT64_MAX) {
