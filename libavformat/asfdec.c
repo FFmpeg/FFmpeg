@@ -1414,6 +1414,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index,
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
 
+    ff_read_frame_flush(s);
     asf_reset_header(s);
     for (;;) {
         if (av_read_frame(s, pkt) < 0) {
