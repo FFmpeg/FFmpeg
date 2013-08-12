@@ -123,7 +123,8 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
         avctx->width  = c->width  = width;
         avctx->height = c->height = height;
         av_fast_malloc(&c->decomp_buf, &c->decomp_size,
-                       c->height * c->width * 3 / 2);
+                       c->height * c->width * 3 / 2 +
+                       FF_INPUT_BUFFER_PADDING_SIZE);
         if (!c->decomp_buf) {
             av_log(avctx, AV_LOG_ERROR,
                    "Can't allocate decompression buffer.\n");
@@ -197,13 +198,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     buf       = &buf[12];
     buf_size -= 12;
     if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO) {
-        int outlen = c->decomp_size, inlen = buf_size;
+        int outlen = c->decomp_size - FF_INPUT_BUFFER_PADDING_SIZE;
+        int inlen  = buf_size;
         if (av_lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen)) {
             av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
             return AVERROR_INVALIDDATA;
         }
         buf      = c->decomp_buf;
-        buf_size = c->decomp_size;
+        buf_size = outlen;
     }
     if (c->codec_frameheader) {
         int w, h, q;
