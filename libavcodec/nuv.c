@@ -129,6 +129,8 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
         } else
             c->decomp_buf = ptr;
         rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        if (c->pic.data[0])
+            avctx->release_buffer(avctx, &c->pic);
     } else if (quality != c->quality)
         rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
     return 0;
