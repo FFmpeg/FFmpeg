@@ -120,18 +120,21 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
     if (quality >= 0)
         get_quant_quality(c, quality);
     if (width != c->width || height != c->height) {
+        void *ptr;
         if ((ret = av_image_check_size(height, width, 0, avctx)) < 0)
             return ret;
         avctx->width  = c->width  = width;
         avctx->height = c->height = height;
-        av_fast_malloc(&c->decomp_buf, &c->decomp_size,
-                       c->height * c->width * 3 / 2 +
-                       FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!c->decomp_buf) {
+        ptr = av_fast_realloc(c->decomp_buf, &c->decomp_size,
+                              c->height * c->width * 3 / 2 +
+                              FF_INPUT_BUFFER_PADDING_SIZE +
+                              RTJPEG_HEADER_SIZE);
+        if (!ptr) {
             av_log(avctx, AV_LOG_ERROR,
                    "Can't allocate decompression buffer.\n");
             return AVERROR(ENOMEM);
-        }
+        } else
+            c->decomp_buf = ptr;
         ff_rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height,
                               c->lq, c->cq);
     } else if (quality != c->quality)
@@ -221,6 +224,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         q = buf[10];
         if ((result = codec_reinit(avctx, w, h, q)) < 0)
             return result;
+        if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO)
+            buf = c->decomp_buf;
         buf       = &buf[RTJPEG_HEADER_SIZE];
         buf_size -= RTJPEG_HEADER_SIZE;
     }
