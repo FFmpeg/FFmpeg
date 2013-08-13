@@ -45,6 +45,9 @@ typedef struct RTPContext {
     URLContext *rtp_hd, *rtcp_hd;
     int rtp_fd, rtcp_fd, nb_ssm_include_addrs, nb_ssm_exclude_addrs;
     struct sockaddr_storage **ssm_include_addrs, **ssm_exclude_addrs;
+    int write_to_source;
+    struct sockaddr_storage last_rtp_source, last_rtcp_source;
+    socklen_t last_rtp_source_len, last_rtcp_source_len;
 } RTPContext;
 
 /**
@@ -123,6 +126,27 @@ static int compare_addr(const struct sockaddr_storage *a,
     }
 #endif
     return 1;
+}
+
+static int get_port(const struct sockaddr_storage *ss)
+{
+    if (ss->ss_family == AF_INET)
+        return ntohs(((const struct sockaddr_in *)ss)->sin_port);
+#ifdef AF_INET6
+    if (ss->ss_family == AF_INET6)
+        return ntohs(((const struct sockaddr_in6 *)ss)->sin6_port);
+#endif
+    return 0;
+}
+
+static void set_port(struct sockaddr_storage *ss, int port)
+{
+    if (ss->ss_family == AF_INET)
+        ((struct sockaddr_in *)ss)->sin_port = htons(port);
+#ifdef AF_INET6
+    else if (ss->ss_family == AF_INET6)
+        ((struct sockaddr_in6 *)ss)->sin6_port = htons(port);
+#endif
 }
 
 static int rtp_check_source_lists(RTPContext *s, struct sockaddr_storage *source_addr_ptr)
@@ -236,6 +260,7 @@ static void rtp_parse_addr_list(URLContext *h, char *buf,
  *         'connect=0/1'      : do a connect() on the UDP socket
  *         'sources=ip[,ip]'  : list allowed source IP addresses
  *         'block=ip[,ip]'    : list disallowed source IP addresses
+ *         'write_to_source=0/1' : send packets to the source address of the latest received packet
  * deprecated option:
  *         'localport=n'      : set the local port to n
  *
@@ -289,6 +314,9 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             connect = strtol(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "write_to_source", p)) {
+            s->write_to_source = strtol(buf, NULL, 10);
+        }
         if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
             av_strlcpy(include_sources, buf, sizeof(include_sources));
             rtp_parse_addr_list(h, buf, &s->ssm_include_addrs, &s->nb_ssm_include_addrs);
@@ -333,11 +361,11 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 static int rtp_read(URLContext *h, uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
-    struct sockaddr_storage from;
-    socklen_t from_len;
     int len, n, i;
     struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
     int poll_delay = h->flags & AVIO_FLAG_NONBLOCK ? 0 : 100;
+    struct sockaddr_storage *addrs[2] = { &s->last_rtp_source, &s->last_rtcp_source };
+    socklen_t *addr_lens[2] = { &s->last_rtp_source_len, &s->last_rtcp_source_len };
 
     for(;;) {
         if (ff_check_interrupt(&h->interrupt_callback))
@@ -348,16 +376,16 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
             for (i = 1; i >= 0; i--) {
                 if (!(p[i].revents & POLLIN))
                     continue;
-                from_len = sizeof(from);
+                *addr_lens[i] = sizeof(*addrs[i]);
                 len = recvfrom(p[i].fd, buf, size, 0,
-                                (struct sockaddr *)&from, &from_len);
+                                (struct sockaddr *)addrs[i], addr_lens[i]);
                 if (len < 0) {
                     if (ff_neterrno() == AVERROR(EAGAIN) ||
                         ff_neterrno() == AVERROR(EINTR))
                         continue;
                     return AVERROR(EIO);
                 }
-                if (rtp_check_source_lists(s, &from))
+                if (rtp_check_source_lists(s, addrs[i]))
                     continue;
                 return len;
             }
@@ -380,6 +408,57 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
 
     if (size < 2)
         return AVERROR(EINVAL);
+
+    if (s->write_to_source) {
+        int fd;
+        struct sockaddr_storage *source, temp_source;
+        socklen_t *source_len, temp_len;
+        if (!s->last_rtp_source.ss_family && !s->last_rtcp_source.ss_family) {
+            av_log(h, AV_LOG_ERROR,
+                   "Unable to send packet to source, no packets received yet\n");
+            // Intentionally not returning an error here
+            return size;
+        }
+
+        if (RTP_PT_IS_RTCP(buf[1])) {
+            fd = s->rtcp_fd;
+            source     = &s->last_rtcp_source;
+            source_len = &s->last_rtcp_source_len;
+        } else {
+            fd = s->rtp_fd;
+            source     = &s->last_rtp_source;
+            source_len = &s->last_rtp_source_len;
+        }
+        if (!source->ss_family) {
+            source      = &temp_source;
+            source_len  = &temp_len;
+            if (RTP_PT_IS_RTCP(buf[1])) {
+                temp_source = s->last_rtp_source;
+                temp_len    = s->last_rtp_source_len;
+                set_port(source, get_port(source) + 1);
+                av_log(h, AV_LOG_INFO,
+                       "Not received any RTCP packets yet, inferring peer port "
+                       "from the RTP port\n");
+            } else {
+                temp_source = s->last_rtcp_source;
+                temp_len    = s->last_rtcp_source_len;
+                set_port(source, get_port(source) - 1);
+                av_log(h, AV_LOG_INFO,
+                       "Not received any RTP packets yet, inferring peer port "
+                       "from the RTCP port\n");
+            }
+        }
+
+        if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
+            ret = ff_network_wait_fd(fd, 1);
+            if (ret < 0)
+                return ret;
+        }
+        ret = sendto(fd, buf, size, 0, (struct sockaddr *) source,
+                     *source_len);
+
+        return ret < 0 ? ff_neterrno() : ret;
+    }
 
     if (RTP_PT_IS_RTCP(buf[1])) {
         /* RTCP payload type */
