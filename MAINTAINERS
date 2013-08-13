@@ -120,6 +120,8 @@ Generic Parts:
     libpostproc/*                       Michael Niedermayer
   table generation:
     tableprint.c, tableprint.h          Reimar Doeffinger
+  fixed point FFT:
+    fft*                                Zeljko Lukac
 
 Codecs:
   4xm.c                                 Michael Niedermayer
@@ -453,7 +455,7 @@ Operating systems / CPU architectures
 Alpha                                   Mans Rullgard, Falk Hueffner
 ARM                                     Mans Rullgard
 AVR32                                   Mans Rullgard
-MIPS                                    Mans Rullgard
+MIPS                                    Mans Rullgard, Nedeljko Babic
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Luca Barbato
