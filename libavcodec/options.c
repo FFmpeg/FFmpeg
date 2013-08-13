@@ -190,6 +190,10 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
                src, dest);
         return AVERROR(EINVAL);
     }
+
+    av_opt_free(dest);
+    av_free(dest->priv_data);
+
     memcpy(dest, src, sizeof(*dest));
 
     /* set values specific to opened codecs back to their default state */
