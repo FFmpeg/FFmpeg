@@ -722,7 +722,7 @@ static int query_formats(AVFilterContext *ctx)
 
     /* set input and output audio formats
      * Note: ff_set_common_* functions are not used because they affect all the
-     * links, and thus break the video format negociation */
+     * links, and thus break the video format negotiation */
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
