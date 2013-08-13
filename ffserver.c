@@ -3904,7 +3904,7 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
         av->rc_buffer_aggressivity = 1.0;
 
         if (!av->rc_eq)
-            av->rc_eq = "tex^qComp";
+            av->rc_eq = av_strdup("tex^qComp");
         if (!av->i_quant_factor)
             av->i_quant_factor = -0.8;
         if (!av->b_quant_factor)
