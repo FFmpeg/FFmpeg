@@ -1,6 +1,6 @@
 /*
  * Block Gilbert-Moore decoder
- * Copyright (c) 2010 Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * Copyright (c) 2010 Thilo Borgmann <thilo.borgmann _at_ mail.de>
  *
  * This file is part of FFmpeg.
  *
@@ -22,7 +22,7 @@
 /**
  * @file
  * Block Gilbert-Moore decoder as used by MPEG-4 ALS
- * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
  */
 
 #include "libavutil/attributes.h"

@@ -1,6 +1,6 @@
 /*
  * MPEG-4 ALS decoder
- * Copyright (c) 2009 Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * Copyright (c) 2009 Thilo Borgmann <thilo.borgmann _at_ mail.de>
  *
  * This file is part of FFmpeg.
  *
@@ -22,7 +22,7 @@
 /**
  * @file
  * MPEG-4 ALS decoder
- * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
  */
 
 #include "avcodec.h"

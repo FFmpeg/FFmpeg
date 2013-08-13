@@ -1,6 +1,6 @@
 /*
  * EXIF metadata parser
- * Copyright (c) 2013 Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * Copyright (c) 2013 Thilo Borgmann <thilo.borgmann _at_ mail.de>
  *
  * This file is part of FFmpeg.
  *
@@ -22,7 +22,7 @@
 /**
  * @file
  * EXIF metadata parser
- * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
  */
 
 #ifndef AVCODEC_EXIF_H

@@ -1,6 +1,6 @@
 /*
  * TIFF Common Routines
- * Copyright (c) 2013 Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * Copyright (c) 2013 Thilo Borgmann <thilo.borgmann _at_ mail.de>
  *
  * This file is part of FFmpeg.
  *
@@ -22,7 +22,7 @@
 /**
  * @file
  * TIFF Common Routines
- * @author Thilo Borgmann <thilo.borgmann _at_ googlemail.com>
+ * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
  */
 
 #include "tiff_common.h"
