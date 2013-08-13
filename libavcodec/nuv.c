@@ -134,6 +134,7 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
         }
         ff_rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height,
                               c->lq, c->cq);
+        av_frame_unref(&c->pic);
     } else if (quality != c->quality)
         ff_rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height,
                               c->lq, c->cq);
