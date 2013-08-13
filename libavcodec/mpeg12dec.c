@@ -2299,6 +2299,11 @@ static int decode_chunks(AVCodecContext *avctx,
                 if (s2->picture_structure == PICT_BOTTOM_FIELD)
                     mb_y++;
 
+                if (buf_end - buf_ptr < 2) {
+                    av_log(s2->avctx, AV_LOG_ERROR, "slice too small\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
                 if (mb_y >= s2->mb_height) {
                     av_log(s2->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", mb_y, s2->mb_height);
                     return -1;
