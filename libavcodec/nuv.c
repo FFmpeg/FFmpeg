@@ -122,7 +122,9 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
         get_quant_quality(c, quality);
     if (width != c->width || height != c->height) {
         // also reserve space for a possible additional header
-        int buf_size = 24 + height * width * 3 / 2 + FFMAX(AV_LZO_OUTPUT_PADDING, FF_INPUT_BUFFER_PADDING_SIZE);
+        int buf_size = height * width * 3 / 2
+                     + FFMAX(AV_LZO_OUTPUT_PADDING, FF_INPUT_BUFFER_PADDING_SIZE)
+                     + RTJPEG_HEADER_SIZE;
         if (buf_size > INT_MAX/8)
             return -1;
         if ((ret = av_image_check_size(height, width, 0, avctx)) < 0)
