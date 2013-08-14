@@ -26,7 +26,6 @@
 #ifndef AVCODEC_VP56_H
 #define AVCODEC_VP56_H
 
-#include "vp56data.h"
 #include "dsputil.h"
 #include "get_bits.h"
 #include "hpeldsp.h"
@@ -37,6 +36,32 @@
 #include "vp56dsp.h"
 
 typedef struct vp56_context VP56Context;
+
+typedef enum {
+    VP56_FRAME_NONE     =-1,
+    VP56_FRAME_CURRENT  = 0,
+    VP56_FRAME_PREVIOUS = 1,
+    VP56_FRAME_GOLDEN   = 2,
+    VP56_FRAME_GOLDEN2  = 3,
+} VP56Frame;
+
+typedef enum {
+    VP56_MB_INTER_NOVEC_PF = 0,  /**< Inter MB, no vector, from previous frame */
+    VP56_MB_INTRA          = 1,  /**< Intra MB */
+    VP56_MB_INTER_DELTA_PF = 2,  /**< Inter MB, above/left vector + delta, from previous frame */
+    VP56_MB_INTER_V1_PF    = 3,  /**< Inter MB, first vector, from previous frame */
+    VP56_MB_INTER_V2_PF    = 4,  /**< Inter MB, second vector, from previous frame */
+    VP56_MB_INTER_NOVEC_GF = 5,  /**< Inter MB, no vector, from golden frame */
+    VP56_MB_INTER_DELTA_GF = 6,  /**< Inter MB, above/left vector + delta, from golden frame */
+    VP56_MB_INTER_4V       = 7,  /**< Inter MB, 4 vectors, from previous frame */
+    VP56_MB_INTER_V1_GF    = 8,  /**< Inter MB, first vector, from golden frame */
+    VP56_MB_INTER_V2_GF    = 9,  /**< Inter MB, second vector, from golden frame */
+} VP56mb;
+
+typedef struct VP56Tree {
+  int8_t val;
+  int8_t prob_idx;
+} VP56Tree;
 
 typedef struct VP56mv {
     DECLARE_ALIGNED(4, int16_t, x);
