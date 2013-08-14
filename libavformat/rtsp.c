@@ -99,6 +99,7 @@ const AVOption ff_rtsp_options[] = {
 static const AVOption sdp_options[] = {
     RTSP_FLAG_OPTS("sdp_flags", "SDP flags"),
     { "custom_io", "Use custom IO", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_CUSTOM_IO}, 0, 0, DEC, "rtsp_flags" },
+    { "rtcp_to_source", "Send RTCP packets to the source address of received packets", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_RTCP_TO_SOURCE}, 0, 0, DEC, "rtsp_flags" },
     RTSP_MEDIATYPE_OPTS("allowed_media_types", "Media types to accept from the server"),
     RTSP_REORDERING_OPTS(),
     { NULL },
@@ -2171,9 +2172,10 @@ static int sdp_read_header(AVFormatContext *s)
                         namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
             ff_url_join(url, sizeof(url), "rtp", NULL,
                         namebuf, rtsp_st->sdp_port,
-                        "?localport=%d&ttl=%d&connect=%d", rtsp_st->sdp_port,
-                        rtsp_st->sdp_ttl,
-                        rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0);
+                        "?localport=%d&ttl=%d&connect=%d&write_to_source=%d",
+                        rtsp_st->sdp_port, rtsp_st->sdp_ttl,
+                        rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0,
+                        rt->rtsp_flags & RTSP_FLAG_RTCP_TO_SOURCE ? 1 : 0);
 
             append_source_addrs(url, sizeof(url), "sources",
                                 rtsp_st->nb_include_source_addrs,

@@ -411,6 +411,8 @@ typedef struct RTSPState {
                                           source address and port. */
 #define RTSP_FLAG_LISTEN      0x2    /**< Wait for incoming connections. */
 #define RTSP_FLAG_CUSTOM_IO   0x4    /**< Do all IO via the AVIOContext. */
+#define RTSP_FLAG_RTCP_TO_SOURCE 0x8 /**< Send RTCP packets to the source
+                                          address of received packets. */
 
 typedef struct RTSPSource {
     char addr[128]; /**< Source-specific multicast include source IP address (from SDP content) */
