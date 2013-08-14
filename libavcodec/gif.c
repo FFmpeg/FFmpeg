@@ -28,6 +28,7 @@
  * @see http://www.w3.org/Graphics/GIF/spec-gif89a.txt
  */
 
+#define BITSTREAM_WRITER_LE
 #include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
@@ -36,7 +37,6 @@
 #include "lzw.h"
 #include "gif.h"
 
-#define BITSTREAM_WRITER_LE
 #include "put_bits.h"
 
 typedef struct {
