@@ -34,8 +34,8 @@
 void ff_vp56_init_dequant(VP56Context *s, int quantizer)
 {
     s->quantizer = quantizer;
-    s->dequant_dc = vp56_dc_dequant[quantizer] << 2;
-    s->dequant_ac = vp56_ac_dequant[quantizer] << 2;
+    s->dequant_dc = ff_vp56_dc_dequant[quantizer] << 2;
+    s->dequant_ac = ff_vp56_ac_dequant[quantizer] << 2;
 }
 
 static int vp56_get_vectors_predictors(VP56Context *s, int row, int col,
@@ -47,14 +47,14 @@ static int vp56_get_vectors_predictors(VP56Context *s, int row, int col,
     VP56mv mvp;
 
     for (pos=0; pos<12; pos++) {
-        mvp.x = col + vp56_candidate_predictor_pos[pos][0];
-        mvp.y = row + vp56_candidate_predictor_pos[pos][1];
+        mvp.x = col + ff_vp56_candidate_predictor_pos[pos][0];
+        mvp.y = row + ff_vp56_candidate_predictor_pos[pos][1];
         if (mvp.x < 0 || mvp.x >= s->mb_width ||
             mvp.y < 0 || mvp.y >= s->mb_height)
             continue;
         offset = mvp.x + s->mb_width*mvp.y;
 
-        if (vp56_reference_frame[s->macroblocks[offset].type] != ref_frame)
+        if (ff_vp56_reference_frame[s->macroblocks[offset].type] != ref_frame)
             continue;
         if ((s->macroblocks[offset].mv.x == vect[0].x &&
              s->macroblocks[offset].mv.y == vect[0].y) ||
@@ -86,7 +86,7 @@ static void vp56_parse_mb_type_models(VP56Context *s)
         if (vp56_rac_get_prob(c, 174)) {
             int idx = vp56_rac_gets(c, 4);
             memcpy(model->mb_types_stats[ctx],
-                   vp56_pre_def_mb_type_stats[idx][ctx],
+                   ff_vp56_pre_def_mb_type_stats[idx][ctx],
                    sizeof(model->mb_types_stats[ctx]));
         }
         if (vp56_rac_get_prob(c, 254)) {
@@ -95,8 +95,8 @@ static void vp56_parse_mb_type_models(VP56Context *s)
                     if (vp56_rac_get_prob(c, 205)) {
                         int delta, sign = vp56_rac_get(c);
 
-                        delta = vp56_rac_get_tree(c, vp56_pmbtm_tree,
-                                                  vp56_mb_type_model_model);
+                        delta = vp56_rac_get_tree(c, ff_vp56_pmbtm_tree,
+                                                  ff_vp56_mb_type_model_model);
                         if (!delta)
                             delta = 4 * vp56_rac_gets(c, 7);
                         model->mb_types_stats[ctx][type][i] += (delta ^ -sign) + sign;
@@ -156,7 +156,7 @@ static VP56mb vp56_parse_mb_type(VP56Context *s,
     if (vp56_rac_get_prob(c, mb_type_model[0]))
         return prev_type;
     else
-        return vp56_rac_get_tree(c, vp56_pmbt_tree, mb_type_model);
+        return vp56_rac_get_tree(c, ff_vp56_pmbt_tree, mb_type_model);
 }
 
 static void vp56_decode_4mv(VP56Context *s, int row, int col)
@@ -305,7 +305,7 @@ static void vp56_add_predictors_dc(VP56Context *s, VP56Frame ref_frame)
 static void vp56_deblock_filter(VP56Context *s, uint8_t *yuv,
                                 int stride, int dx, int dy)
 {
-    int t = vp56_filter_threshold[s->quantizer];
+    int t = ff_vp56_filter_threshold[s->quantizer];
     if (dx)  s->vp56dsp.edge_filter_hor(yuv +         10-dx , stride, t);
     if (dy)  s->vp56dsp.edge_filter_ver(yuv + stride*(10-dy), stride, t);
 }
@@ -391,7 +391,7 @@ static void vp56_decode_mb(VP56Context *s, int row, int col, int is_alpha)
         mb_type = VP56_MB_INTRA;
     else
         mb_type = vp56_decode_mv(s, row, col);
-    ref_frame = vp56_reference_frame[mb_type];
+    ref_frame = ff_vp56_reference_frame[mb_type];
 
     s->parse_coeff(s);
 
