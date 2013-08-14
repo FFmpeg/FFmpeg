@@ -235,9 +235,10 @@ static void rtp_parse_addr_list(URLContext *h, char *buf,
  *         'localrtcpport=n'  : set the local rtcp port to n
  *         'pkt_size=n'       : set max packet size
  *         'connect=0/1'      : do a connect() on the UDP socket
+ *         'sources=ip[,ip]'  : list allowed source IP addresses
+ *         'block=ip[,ip]'    : list disallowed source IP addresses
  * deprecated option:
  *         'localport=n'      : set the local port to n
- *         'sources=ip[,ip]'  : list allowed source IP addresses
  *
  * if rtcpport isn't set the rtcp port will be the rtp port + 1
  * if local rtp port isn't set any available port will be used for the local
