@@ -2049,7 +2049,7 @@ static void wavpack_encode_sample(WavPackEncodeContext *s, WvChannel *c, int32_t
 {
     WavPackWords *w = &s->w;
     uint32_t ones_count, low, high;
-    int sign = ((sample) < 0) ? 1 : 0;
+    int sign = sample < 0;
 
     if (s->w.c[0].median[0] < 2 && !s->w.holding_zero && s->w.c[1].median[0] < 2) {
         if (w->zeros_acc) {
