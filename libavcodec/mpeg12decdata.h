@@ -33,7 +33,6 @@
 
 
 #define MB_TYPE_ZERO_MV   0x20000000
-#define IS_ZERO_MV(a)   ((a)&MB_TYPE_ZERO_MV)
 
 static const uint8_t table_mb_ptype[7][2] = {
     { 3, 5 }, // 0x01 MB_INTRA
