@@ -34,7 +34,6 @@
 #include "error_resilience.h"
 #include "mpeg12.h"
 #include "mpeg12data.h"
-#include "mpeg12decdata.h"
 #include "bytestream.h"
 #include "xvmc_internal.h"
 #include "thread.h"
@@ -53,6 +52,39 @@ typedef struct Mpeg1Context {
     int closed_gop;                  ///< GOP is closed
     int extradata_decoded;
 } Mpeg1Context;
+
+#define MB_TYPE_ZERO_MV   0x20000000
+
+static const uint32_t ptype2mb_type[7] = {
+                    MB_TYPE_INTRA,
+                    MB_TYPE_L0 | MB_TYPE_CBP | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
+                    MB_TYPE_L0,
+                    MB_TYPE_L0 | MB_TYPE_CBP,
+    MB_TYPE_QUANT | MB_TYPE_INTRA,
+    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_CBP | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
+    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_CBP,
+};
+
+static const uint32_t btype2mb_type[11] = {
+                    MB_TYPE_INTRA,
+                    MB_TYPE_L1,
+                    MB_TYPE_L1   | MB_TYPE_CBP,
+                    MB_TYPE_L0,
+                    MB_TYPE_L0   | MB_TYPE_CBP,
+                    MB_TYPE_L0L1,
+                    MB_TYPE_L0L1 | MB_TYPE_CBP,
+    MB_TYPE_QUANT | MB_TYPE_INTRA,
+    MB_TYPE_QUANT | MB_TYPE_L1   | MB_TYPE_CBP,
+    MB_TYPE_QUANT | MB_TYPE_L0   | MB_TYPE_CBP,
+    MB_TYPE_QUANT | MB_TYPE_L0L1 | MB_TYPE_CBP,
+};
+
+static const uint8_t non_linear_qscale[32] = {
+    0, 1, 2, 3, 4, 5, 6, 7,
+    8,10,12,14,16,18,20,22,
+    24,28,32,36,40,44,48,52,
+    56,64,72,80,88,96,104,112,
+};
 
 /* as H.263, but only 17 codes */
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
