@@ -626,6 +626,11 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
     char name[255];
     int ret, pad_idx = 0;
 
+    if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot connect video filter to audio input\n");
+        return AVERROR(EINVAL);
+    }
+
     if (!fr.num)
         fr = av_guess_frame_rate(input_files[ist->file_index]->ctx, ist->st, NULL);
 
@@ -713,6 +718,11 @@ static int configure_input_audio_filter(FilterGraph *fg, InputFilter *ifilter,
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
+
+    if (ist->st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot connect audio filter to non audio input\n");
+        return AVERROR(EINVAL);
+    }
 
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
