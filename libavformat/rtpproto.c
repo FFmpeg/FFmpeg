@@ -132,7 +132,7 @@ static int get_port(const struct sockaddr_storage *ss)
 {
     if (ss->ss_family == AF_INET)
         return ntohs(((const struct sockaddr_in *)ss)->sin_port);
-#ifdef AF_INET6
+#if HAVE_STRUCT_SOCKADDR_IN6
     if (ss->ss_family == AF_INET6)
         return ntohs(((const struct sockaddr_in6 *)ss)->sin6_port);
 #endif
@@ -143,7 +143,7 @@ static void set_port(struct sockaddr_storage *ss, int port)
 {
     if (ss->ss_family == AF_INET)
         ((struct sockaddr_in *)ss)->sin_port = htons(port);
-#ifdef AF_INET6
+#if HAVE_STRUCT_SOCKADDR_IN6
     else if (ss->ss_family == AF_INET6)
         ((struct sockaddr_in6 *)ss)->sin6_port = htons(port);
 #endif
