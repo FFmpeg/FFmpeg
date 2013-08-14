@@ -262,6 +262,9 @@ int ff_lzw_encode_flush(LZWEncodeState *s,
     if (s->last_code != -1)
         writeCode(s, s->last_code);
     writeCode(s, s->end_code);
+    if (s->mode == FF_LZW_GIF)
+        s->put_bits(&s->pb, 1, 0);
+
     lzw_flush_put_bits(&s->pb);
     s->last_code = -1;
 
