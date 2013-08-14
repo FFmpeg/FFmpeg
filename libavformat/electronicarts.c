@@ -245,7 +245,7 @@ static int process_audio_header_elements(AVFormatContext *s)
     return 1;
 }
 
-static int process_audio_header_eacs(AVFormatContext *s)
+static void process_audio_header_eacs(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb    = s->pb;
@@ -280,11 +280,9 @@ static int process_audio_header_eacs(AVFormatContext *s)
                "unsupported stream type; audio compression_type=%i\n",
                compression_type);
     }
-
-    return 1;
 }
 
-static int process_audio_header_sead(AVFormatContext *s)
+static void process_audio_header_sead(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb    = s->pb;
@@ -293,11 +291,9 @@ static int process_audio_header_sead(AVFormatContext *s)
     ea->bytes        = avio_rl32(pb);  /* 1=8-bit, 2=16-bit */
     ea->num_channels = avio_rl32(pb);
     ea->audio_codec  = AV_CODEC_ID_ADPCM_IMA_EA_SEAD;
-
-    return 1;
 }
 
-static int process_video_header_mdec(AVFormatContext *s)
+static void process_video_header_mdec(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb    = s->pb;
@@ -306,11 +302,9 @@ static int process_video_header_mdec(AVFormatContext *s)
     ea->height      = avio_rl16(pb);
     ea->time_base   = (AVRational) { 1, 15 };
     ea->video_codec = AV_CODEC_ID_MDEC;
-
-    return 1;
 }
 
-static int process_video_header_vp6(AVFormatContext *s)
+static void process_video_header_vp6(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb    = s->pb;
@@ -319,11 +313,9 @@ static int process_video_header_vp6(AVFormatContext *s)
     ea->time_base.den = avio_rl32(pb);
     ea->time_base.num = avio_rl32(pb);
     ea->video_codec   = AV_CODEC_ID_VP6;
-
-    return 1;
 }
 
-static int process_video_header_cmv(AVFormatContext *s)
+static void process_video_header_cmv(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
     int fps;
@@ -333,8 +325,6 @@ static int process_video_header_cmv(AVFormatContext *s)
     if (fps)
         ea->time_base = (AVRational) { 1, fps };
     ea->video_codec = AV_CODEC_ID_CMV;
-
-    return 0;
 }
 
 /* Process EA file header.
@@ -363,7 +353,7 @@ static int process_ea_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "unknown 1SNh headerid\n");
                 return 0;
             }
-            err = process_audio_header_eacs(s);
+            process_audio_header_eacs(s);
             break;
 
         case SCHl_TAG:
@@ -379,11 +369,11 @@ static int process_ea_header(AVFormatContext *s)
             break;
 
         case SEAD_TAG:
-            err = process_audio_header_sead(s);
+            process_audio_header_sead(s);
             break;
 
         case MVIh_TAG:
-            err = process_video_header_cmv(s);
+            process_video_header_cmv(s);
             break;
 
         case kVGT_TAG:
@@ -392,7 +382,7 @@ static int process_ea_header(AVFormatContext *s)
             break;
 
         case mTCD_TAG:
-            err = process_video_header_mdec(s);
+            process_video_header_mdec(s);
             break;
 
         case MPCh_TAG:
@@ -413,7 +403,7 @@ static int process_ea_header(AVFormatContext *s)
             break;
 
         case MVhd_TAG:
-            err = process_video_header_vp6(s);
+            process_video_header_vp6(s);
             break;
         }
 
