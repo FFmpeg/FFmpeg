@@ -228,8 +228,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
-
-    out->pts = in->pts;
+    av_frame_copy_props(out, in);
 
     if (in->sample_aspect_ratio.num == 0) {
         out->sample_aspect_ratio = in->sample_aspect_ratio;
