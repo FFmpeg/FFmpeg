@@ -133,30 +133,18 @@ static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
         ff_default_get_video_buffer(inlink, w, h);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
+                        int nb_jobs)
 {
-    TransContext *trans = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
-    AVFrame *out;
+    TransContext *trans = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
     int plane;
-
-    if (trans->passthrough)
-        return ff_filter_frame(outlink, in);
-
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
-
-    out->pts = in->pts;
-
-    if (in->sample_aspect_ratio.num == 0) {
-        out->sample_aspect_ratio = in->sample_aspect_ratio;
-    } else {
-        out->sample_aspect_ratio.num = in->sample_aspect_ratio.den;
-        out->sample_aspect_ratio.den = in->sample_aspect_ratio.num;
-    }
 
     for (plane = 0; out->data[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? trans->hsub : 0;
@@ -165,12 +153,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int inh  = in->height  >> vsub;
         int outw = FF_CEIL_RSHIFT(out->width,  hsub);
         int outh = FF_CEIL_RSHIFT(out->height, vsub);
+        int start = (outh *  jobnr   ) / nb_jobs;
+        int end   = (outh * (jobnr+1)) / nb_jobs;
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;
 
-        dst = out->data[plane];
         dstlinesize = out->linesize[plane];
+        dst = out->data[plane] + start * dstlinesize;
         src = in->data[plane];
         srclinesize = in->linesize[plane];
 
@@ -180,11 +170,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         if (trans->dir&2) {
-            dst += out->linesize[plane] * (outh-1);
+            dst = out->data[plane] + dstlinesize * (outh-start-1);
             dstlinesize *= -1;
         }
 
-        for (y = 0; y < outh; y++) {
+        for (y = start; y < end; y++) {
             switch (pixstep) {
             case 1:
                 for (x = 0; x < outw; x++)
@@ -219,6 +209,37 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    TransContext *trans = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
+    AVFrame *out;
+
+    if (trans->passthrough)
+        return ff_filter_frame(outlink, in);
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+
+    out->pts = in->pts;
+
+    if (in->sample_aspect_ratio.num == 0) {
+        out->sample_aspect_ratio = in->sample_aspect_ratio;
+    } else {
+        out->sample_aspect_ratio.num = in->sample_aspect_ratio.den;
+        out->sample_aspect_ratio.den = in->sample_aspect_ratio.num;
+    }
+
+    td.in = in, td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
@@ -274,4 +295,5 @@ AVFilter avfilter_vf_transpose = {
 
     .inputs    = avfilter_vf_transpose_inputs,
     .outputs   = avfilter_vf_transpose_outputs,
+    .flags     = AVFILTER_FLAG_SLICE_THREADS,
 };
