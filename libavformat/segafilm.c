@@ -215,6 +215,8 @@ static int film_read_header(AVFormatContext *s)
         film->sample_table[i].sample_offset =
             data_offset + AV_RB32(&scratch[0]);
         film->sample_table[i].sample_size = AV_RB32(&scratch[4]);
+        if (film->sample_table[i].sample_size > INT_MAX / 4)
+            return AVERROR_INVALIDDATA;
         if (AV_RB32(&scratch[8]) == 0xFFFFFFFF) {
             film->sample_table[i].stream = film->audio_stream_index;
             film->sample_table[i].pts = audio_frame_counter;
