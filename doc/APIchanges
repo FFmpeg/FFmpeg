@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lsws 2.5.100 -
+  Add a sws_dither AVOption, allowing to set the dither algorithm used
+
 2013-08-xx - xxxxxxx - lavc 55.27.100 - vdpau.h
   Add a render2 alternative to the render callback function.
 
