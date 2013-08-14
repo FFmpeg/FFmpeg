@@ -1972,6 +1972,10 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     MJpegDecodeContext *s = avctx->priv_data;
     int i, j;
 
+    if (s->interlaced && s->bottom_field == !s->interlace_polarity && s->got_picture && !avctx->frame_number) {
+        av_log(avctx, AV_LOG_INFO, "Single field\n");
+    }
+
     if (s->picture_ptr)
         av_frame_unref(s->picture_ptr);
 
