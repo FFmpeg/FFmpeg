@@ -41,6 +41,7 @@ typedef struct {
     FFDrawContext draw;
     FFDrawColor blank;
     AVFrame *out_ref;
+    uint8_t rgba_color[4];
 } TileContext;
 
 #define REASONABLE_SIZE 1024
@@ -57,6 +58,7 @@ static const AVOption tile_options[] = {
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
     { "padding", "set inner border thickness in pixels", OFFSET(padding),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
+    { "color",   "set the color of the unused area", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
     {NULL},
 };
 
@@ -113,8 +115,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->frame_rate = av_mul_q(inlink->frame_rate,
                                    (AVRational){ 1, tile->nb_frames });
     ff_draw_init(&tile->draw, inlink->format, 0);
-    /* TODO make the color an option, or find an unified way of choosing it */
-    ff_draw_color(&tile->draw, &tile->blank, (uint8_t[]){ 0, 0, 0, -1 });
+    ff_draw_color(&tile->draw, &tile->blank, tile->rgba_color);
 
     outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 

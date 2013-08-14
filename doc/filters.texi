@@ -7119,6 +7119,10 @@ Set the inner border thickness (i.e. the number of pixels between frames). For
 more advanced padding options (such as having different values for the edges),
 refer to the pad video filter.
 
+@item color
+Specify the color of the unused area, it can be the name of a color
+(case insensitive match) or a 0xRRGGBB[AA] sequence.
+The default value of @var{color} is "black".
 @end table
 
 @subsection Examples
