@@ -44,21 +44,21 @@
 #define GSTR_TAG MKTAG('G', 'S', 'T', 'R')
 #define SCDl_TAG MKTAG('S', 'C', 'D', 'l')
 #define SCEl_TAG MKTAG('S', 'C', 'E', 'l')
-#define kVGT_TAG MKTAG('k', 'V', 'G', 'T')  /* TGV i-frame */
-#define fVGT_TAG MKTAG('f', 'V', 'G', 'T')  /* TGV p-frame */
+#define kVGT_TAG MKTAG('k', 'V', 'G', 'T')  /* TGV I-frame */
+#define fVGT_TAG MKTAG('f', 'V', 'G', 'T')  /* TGV P-frame */
 #define mTCD_TAG MKTAG('m', 'T', 'C', 'D')  /* MDEC */
-#define MADk_TAG MKTAG('M', 'A', 'D', 'k')  /* MAD i-frame */
-#define MADm_TAG MKTAG('M', 'A', 'D', 'm')  /* MAD p-frame */
+#define MADk_TAG MKTAG('M', 'A', 'D', 'k')  /* MAD I-frame */
+#define MADm_TAG MKTAG('M', 'A', 'D', 'm')  /* MAD P-frame */
 #define MADe_TAG MKTAG('M', 'A', 'D', 'e')  /* MAD lqp-frame */
-#define MPCh_TAG MKTAG('M', 'P', 'C', 'h')  /* MPEG2 */
-#define TGQs_TAG MKTAG('T', 'G', 'Q', 's')  /* TGQ i-frame (appears in .TGQ files) */
-#define pQGT_TAG MKTAG('p', 'Q', 'G', 'T')  /* TGQ i-frame (appears in .UV files) */
-#define pIQT_TAG MKTAG('p', 'I', 'Q', 'T')  /* TQI/UV2 i-frame (.UV2/.WVE) */
+#define MPCh_TAG MKTAG('M', 'P', 'C', 'h')  /* MPEG-2 */
+#define TGQs_TAG MKTAG('T', 'G', 'Q', 's')  /* TGQ I-frame (appears in .TGQ files) */
+#define pQGT_TAG MKTAG('p', 'Q', 'G', 'T')  /* TGQ I-frame (appears in .UV files) */
+#define pIQT_TAG MKTAG('p', 'I', 'Q', 'T')  /* TQI/UV2 I-frame (.UV2/.WVE) */
 #define MVhd_TAG MKTAG('M', 'V', 'h', 'd')
 #define MV0K_TAG MKTAG('M', 'V', '0', 'K')
 #define MV0F_TAG MKTAG('M', 'V', '0', 'F')
 #define MVIh_TAG MKTAG('M', 'V', 'I', 'h')  /* CMV header */
-#define MVIf_TAG MKTAG('M', 'V', 'I', 'f')  /* CMV i-frame */
+#define MVIf_TAG MKTAG('M', 'V', 'I', 'f')  /* CMV I-frame */
 
 typedef struct EaDemuxContext {
     int big_endian;
@@ -337,10 +337,8 @@ static int process_video_header_cmv(AVFormatContext *s)
     return 0;
 }
 
-/*
- * Process EA file header
- * Returns 1 if the EA file is valid and successfully opened, 0 otherwise
- */
+/* Process EA file header.
+ * Return 1 if the EA file is valid and successfully opened, 0 otherwise. */
 static int process_ea_header(AVFormatContext *s)
 {
     uint32_t blockid, size = 0;
@@ -611,7 +609,7 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             goto get_video_packet;
 
         case mTCD_TAG:
-            avio_skip(pb, 8);               // skip ea dct header
+            avio_skip(pb, 8);               // skip ea DCT header
             chunk_size -= 8;
             goto get_video_packet;
 
