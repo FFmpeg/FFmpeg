@@ -34,7 +34,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
 
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_1)[8][8] = {
+DECLARE_ALIGNED(8, static const uint8_t, dither_8x8_1)[8][8] = {
     {   0,  1,  0,  1,  0,  1,  0,  1,},
     {   1,  0,  1,  0,  1,  0,  1,  0,},
     {   0,  1,  0,  1,  0,  1,  0,  1,},
@@ -44,7 +44,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_1)[8][8] = {
     {   0,  1,  0,  1,  0,  1,  0,  1,},
     {   1,  0,  1,  0,  1,  0,  1,  0,},
 };
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_3)[8][8] = {
+DECLARE_ALIGNED(8, static const uint8_t, dither_8x8_3)[8][8] = {
     {   1,  2,  1,  2,  1,  2,  1,  2,},
     {   3,  0,  3,  0,  3,  0,  3,  0,},
     {   1,  2,  1,  2,  1,  2,  1,  2,},
@@ -54,7 +54,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_3)[8][8] = {
     {   1,  2,  1,  2,  1,  2,  1,  2,},
     {   3,  0,  3,  0,  3,  0,  3,  0,},
 };
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_64)[8][8] = {
+DECLARE_ALIGNED(8, static const uint8_t, dither_8x8_64)[8][8] = {
     {  18, 34, 30, 46, 17, 33, 29, 45,},
     {  50,  2, 62, 14, 49,  1, 61, 13,},
     {  26, 42, 22, 38, 25, 41, 21, 37,},
@@ -65,7 +65,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_64)[8][8] = {
     {  56,  8, 52,  4, 59, 11, 55,  7,},
 };
 extern const uint8_t dither_8x8_128[8][8];
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_256)[8][8] = {
+DECLARE_ALIGNED(8, static const uint8_t, dither_8x8_256)[8][8] = {
     {  72, 136, 120, 184,  68, 132, 116, 180,},
     { 200,   8, 248,  56, 196,   4, 244,  52,},
     { 104, 168,  88, 152, 100, 164,  84, 148,},
