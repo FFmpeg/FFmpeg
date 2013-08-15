@@ -527,9 +527,13 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_wb32(pb, data_size + 11);
     } else {
         avio_w8(pb,flags);
-        if (enc->codec_id == AV_CODEC_ID_VP6F || enc->codec_id == AV_CODEC_ID_VP6A)
-            avio_w8(pb, enc->extradata_size ? enc->extradata[0] : 0);
-        else if (enc->codec_id == AV_CODEC_ID_AAC)
+        if (enc->codec_id == AV_CODEC_ID_VP6F || enc->codec_id == AV_CODEC_ID_VP6A) {
+            if (enc->extradata_size)
+                avio_w8(pb, enc->extradata[0]);
+            else
+                avio_w8(pb, ((FFALIGN(enc->width,  16) - enc->width) << 4) |
+                             (FFALIGN(enc->height, 16) - enc->height));
+        } else if (enc->codec_id == AV_CODEC_ID_AAC)
             avio_w8(pb, 1); // AAC raw
         else if (enc->codec_id == AV_CODEC_ID_H264) {
             avio_w8(pb, 1); // AVC NALU
