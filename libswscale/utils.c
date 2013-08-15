@@ -194,8 +194,6 @@ int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt)
            format_entries[pix_fmt].is_supported_endianness : 0;
 }
 
-extern const int32_t ff_yuv2rgb_coeffs[8][4];
-
 const char *sws_format_name(enum AVPixelFormat format)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);

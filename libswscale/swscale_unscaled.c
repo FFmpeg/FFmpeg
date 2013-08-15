@@ -64,7 +64,6 @@ DECLARE_ALIGNED(8, static const uint8_t, dither_8x8_64)[8][8] = {
     {  24, 40, 20, 36, 27, 43, 23, 39,},
     {  56,  8, 52,  4, 59, 11, 55,  7,},
 };
-extern const uint8_t dither_8x8_128[8][8];
 DECLARE_ALIGNED(8, static const uint8_t, dither_8x8_256)[8][8] = {
     {  72, 136, 120, 184,  68, 132, 116, 180,},
     { 200,   8, 248,  56, 196,   4, 244,  52,},
@@ -875,7 +874,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                     if (dst_depth == 9) { \
                         DITHER_COPY(dstPtr2, dstStride[plane] / 2, wfunc, \
                                     srcPtr2, srcStride[plane] / 2, rfunc, \
-                                    dither_8x8_128, 7, clip9); \
+                                    ff_dither_8x8_128, 7, clip9); \
                     } else { \
                         DITHER_COPY(dstPtr2, dstStride[plane] / 2, wfunc, \
                                     srcPtr2, srcStride[plane] / 2, rfunc, \

@@ -720,6 +720,14 @@ static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
 
+extern const uint8_t ff_dither_4x4_16[4][8];
+extern const uint8_t ff_dither_8x8_32[8][8];
+extern const uint8_t ff_dither_8x8_73[8][8];
+extern const uint8_t ff_dither_8x8_128[8][8];
+extern const uint8_t ff_dither_8x8_220[8][8];
+
+extern const int32_t ff_yuv2rgb_coeffs[8][4];
+
 extern const AVClass sws_context_class;
 
 /**
