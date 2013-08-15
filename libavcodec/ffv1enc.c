@@ -797,6 +797,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (!s->transparency)
         s->plane_count = 2;
+    if (!s->chroma_planes && s->version > 3)
+        s->plane_count--;
+
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
     s->picture_number = 0;
 

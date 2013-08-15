@@ -499,7 +499,7 @@ static int read_extra_header(FFV1Context *f)
     f->chroma_h_shift             = get_symbol(c, state, 0);
     f->chroma_v_shift             = get_symbol(c, state, 0);
     f->transparency               = get_rac(c, state);
-    f->plane_count                = 2 + f->transparency;
+    f->plane_count                = 1 + (f->chroma_planes || f->version<4) + f->transparency;
     f->num_h_slices               = 1 + get_symbol(c, state, 0);
     f->num_v_slices               = 1 + get_symbol(c, state, 0);
 
