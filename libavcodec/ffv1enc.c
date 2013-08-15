@@ -535,7 +535,7 @@ static int write_extradata(FFV1Context *f)
     put_symbol(c, state, f->version, 0);
     if (f->version > 2) {
         if (f->version == 3)
-            f->minor_version = 3;
+            f->minor_version = 4;
         put_symbol(c, state, f->minor_version, 0);
     }
 
