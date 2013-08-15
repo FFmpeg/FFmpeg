@@ -118,7 +118,7 @@ static int compare_addr(const struct sockaddr_storage *a,
                 ((const struct sockaddr_in *)b)->sin_addr.s_addr);
     }
 
-#if defined(IPPROTO_IPV6)
+#if HAVE_STRUCT_SOCKADDR_IN6
     if (a->ss_family == AF_INET6) {
         const uint8_t *s6_addr_a = ((const struct sockaddr_in6 *)a)->sin6_addr.s6_addr;
         const uint8_t *s6_addr_b = ((const struct sockaddr_in6 *)b)->sin6_addr.s6_addr;
