@@ -84,6 +84,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_MPEG4,        MKTAG('G', 'E', 'O', 'X') },
     /* flipped video */
     { AV_CODEC_ID_MPEG4,        MKTAG('H', 'D', 'X', '4') },
+    { AV_CODEC_ID_MPEG4,        MKTAG('D', 'M', '4', 'V') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'M', 'K', '2') },
     { AV_CODEC_ID_MPEG4,        MKTAG('D', 'I', 'G', 'I') },
     { AV_CODEC_ID_MPEG4,        MKTAG('I', 'N', 'M', 'C') },
