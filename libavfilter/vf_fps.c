@@ -40,6 +40,8 @@ typedef struct FPSContext {
     int64_t first_pts;      ///< pts of the first frame that arrived on this filter
     int64_t pts;            ///< pts of the first frame currently in the fifo
 
+    double start_time;      ///< pts, in seconds, of the expected first frame
+
     AVRational framerate;   ///< target framerate
     char *fps;              ///< a string describing target framerate
 
@@ -54,6 +56,7 @@ typedef struct FPSContext {
 #define V AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption options[] = {
     { "fps", "A string describing desired output framerate", OFFSET(fps), AV_OPT_TYPE_STRING, { .str = "25" }, .flags = V },
+    { "start_time", "Assume the first PTS should be this value.", OFFSET(start_time), AV_OPT_TYPE_DOUBLE, { .dbl = AV_NOPTS_VALUE}, INT64_MIN, INT64_MAX, V },
     { NULL },
 };
 
@@ -78,6 +81,7 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     s->pts          = AV_NOPTS_VALUE;
+    s->first_pts    = AV_NOPTS_VALUE;
 
     av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", s->framerate.num, s->framerate.den);
     return 0;
@@ -177,7 +181,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             if (ret < 0)
                 return ret;
 
-            s->first_pts = s->pts = buf->pts;
+            if (s->start_time != AV_NOPTS_VALUE) {
+                double first_pts = s->start_time * AV_TIME_BASE;
+                first_pts = FFMIN(FFMAX(first_pts, INT64_MIN), INT64_MAX);
+                s->first_pts = s->pts = av_rescale_q(first_pts, AV_TIME_BASE_Q,
+                                                     inlink->time_base);
+                av_log(ctx, AV_LOG_VERBOSE, "Set first pts to (in:%"PRId64" out:%"PRId64")\n",
+                       s->first_pts, av_rescale_q(first_pts, AV_TIME_BASE_Q,
+                                                  outlink->time_base));
+            } else {
+                s->first_pts = s->pts = buf->pts;
+            }
         } else {
             av_log(ctx, AV_LOG_WARNING, "Discarding initial frame(s) with no "
                    "timestamp.\n");
