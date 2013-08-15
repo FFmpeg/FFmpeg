@@ -719,9 +719,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_RGB32:
         s->colorspace = 1;
         s->transparency = 1;
+        s->chroma_planes = 1;
         break;
     case AV_PIX_FMT_0RGB32:
         s->colorspace = 1;
+        s->chroma_planes = 1;
         break;
     case AV_PIX_FMT_GBRP9:
         if (!avctx->bits_per_raw_sample)
