@@ -35,6 +35,7 @@ static const AVCodecTag flv_video_codec_ids[] = {
     { AV_CODEC_ID_FLASHSV,  FLV_CODECID_SCREEN },
     { AV_CODEC_ID_FLASHSV2, FLV_CODECID_SCREEN2 },
     { AV_CODEC_ID_VP6F,     FLV_CODECID_VP6 },
+    { AV_CODEC_ID_VP6A,     FLV_CODECID_VP6A },
     { AV_CODEC_ID_H264,     FLV_CODECID_H264 },
     { AV_CODEC_ID_NONE,     0 }
 };
@@ -436,7 +437,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *data = NULL;
     int flags = 0, flags_size;
 
-    if (enc->codec_id == AV_CODEC_ID_VP6F ||
+    if (enc->codec_id == AV_CODEC_ID_VP6F || enc->codec_id == AV_CODEC_ID_VP6A ||
         enc->codec_id == AV_CODEC_ID_AAC)
         flags_size = 2;
     else if (enc->codec_id == AV_CODEC_ID_H264)
@@ -526,7 +527,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         avio_wb32(pb, data_size + 11);
     } else {
         avio_w8(pb,flags);
-        if (enc->codec_id == AV_CODEC_ID_VP6F)
+        if (enc->codec_id == AV_CODEC_ID_VP6F || enc->codec_id == AV_CODEC_ID_VP6A)
             avio_w8(pb, enc->extradata_size ? enc->extradata[0] : 0);
         else if (enc->codec_id == AV_CODEC_ID_AAC)
             avio_w8(pb, 1); // AAC raw
