@@ -550,6 +550,20 @@ static int read_extra_header(FFV1Context *f)
         }
     }
 
+    if (f->avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(f->avctx, AV_LOG_DEBUG,
+               "global: ver:%d.%d, coder:%d, colorspace: %d bpr:%d chroma:%d(%d:%d), alpha:%d slices:%dx%d qtabs:%d ec:%d intra:%d\n",
+               f->version, f->minor_version,
+               f->ac,
+               f->colorspace,
+               f->avctx->bits_per_raw_sample,
+               f->chroma_planes, f->chroma_h_shift, f->chroma_v_shift,
+               f->transparency,
+               f->num_h_slices, f->num_v_slices,
+               f->quant_table_count,
+               f->ec,
+               f->intra
+              );
     return 0;
 }
 
