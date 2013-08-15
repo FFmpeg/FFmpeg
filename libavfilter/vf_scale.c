@@ -71,6 +71,7 @@ typedef struct {
     const AVClass *class;
     struct SwsContext *sws;     ///< software scaler context
     struct SwsContext *isws[2]; ///< software scaler context for interlaced material
+    AVDictionary *opts;
 
     /**
      * New dimensions. Special values are:
@@ -105,7 +106,7 @@ typedef struct {
     int force_original_aspect_ratio;
 } ScaleContext;
 
-static av_cold int init(AVFilterContext *ctx)
+static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
 {
     ScaleContext *scale = ctx->priv;
     int ret;
@@ -149,6 +150,8 @@ static av_cold int init(AVFilterContext *ctx)
         if (ret < 0)
             return ret;
     }
+    scale->opts = *opts;
+    *opts = NULL;
 
     return 0;
 }
@@ -160,6 +163,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     sws_freeContext(scale->isws[0]);
     sws_freeContext(scale->isws[1]);
     scale->sws = NULL;
+    av_dict_free(&scale->opts);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -324,6 +328,17 @@ static int config_props(AVFilterLink *outlink)
             *s = sws_alloc_context();
             if (!*s)
                 return AVERROR(ENOMEM);
+
+            if (scale->opts) {
+                AVDictionaryEntry *e = NULL;
+
+                while ((e = av_dict_get(scale->opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
+                    const char *token = e->key;
+                    const char *value = e->value;
+                    if ((ret = av_opt_set(*s, token, value, 0)) < 0)
+                        return ret;
+                }
+            }
 
             av_opt_set_int(*s, "srcw", inlink ->w, 0);
             av_opt_set_int(*s, "srch", inlink ->h >> !!i, 0);
@@ -490,6 +505,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static const AVClass *child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : sws_get_class();
+}
+
 #define OFFSET(x) offsetof(ScaleContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
@@ -523,7 +543,13 @@ static const AVOption scale_options[] = {
     { NULL },
 };
 
-AVFILTER_DEFINE_CLASS(scale);
+static const AVClass scale_class = {
+    .class_name       = "scale",
+    .item_name        = av_default_item_name,
+    .option           = scale_options,
+    .version          = LIBAVUTIL_VERSION_INT,
+    .child_class_next = child_class_next,
+};
 
 static const AVFilterPad avfilter_vf_scale_inputs[] = {
     {
@@ -547,7 +573,7 @@ AVFilter avfilter_vf_scale = {
     .name      = "scale",
     .description = NULL_IF_CONFIG_SMALL("Scale the input video to width:height size and/or convert the image format."),
 
-    .init      = init,
+    .init_dict = init_dict,
     .uninit    = uninit,
 
     .query_formats = query_formats,

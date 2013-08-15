@@ -6403,6 +6403,23 @@ Set full range (0-255 in case of 8-bit luma).
 Set "MPEG" range (16-235 in case of 8-bit luma).
 @end table
 
+@item sws_dither
+Set the dithering algorithm
+
+@table @samp
+@item auto
+Choose automatically.
+
+@item none
+No dithering
+
+@item bayer
+bayer dither
+
+@item ed
+error diffusion dither
+@end table
+
 @item force_original_aspect_ratio
 Enable decreasing or increasing output video width or height if necessary to
 keep the original aspect ratio. Possible values:
