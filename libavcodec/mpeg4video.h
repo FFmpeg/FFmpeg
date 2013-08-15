@@ -63,6 +63,9 @@ extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
 extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
 
 extern const uint16_t ff_mpeg4_intra_vlc[103][2];
+extern const int8_t ff_mpeg4_intra_level[102];
+extern const int8_t ff_mpeg4_intra_run[102];
+
 extern RLTable ff_mpeg4_rl_intra;
 
 /* Note this is identical to the intra rvlc except that it is reordered. */
