@@ -49,7 +49,7 @@ typedef struct HLSContext {
     int has_video;
     int64_t start_pts;
     int64_t end_pts;
-    int64_t duration;      ///< last segment duration computed so far, in seconds
+    int64_t duration;      // last segment duration computed so far, in seconds
     int nb_entries;
     ListEntry *list;
     ListEntry *end_list;
