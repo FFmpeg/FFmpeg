@@ -26,7 +26,9 @@
 #ifndef AVCODEC_VP6DATA_H
 #define AVCODEC_VP6DATA_H
 
-#include "vp56data.h"
+#include <stdint.h>
+
+#include "vp56.h"
 
 static const uint8_t vp6_def_fdv_vector_model[2][8] = {
     { 247, 210, 135, 68, 138, 220, 239, 246 },
