@@ -163,18 +163,6 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
 /** Tell is a format is contained in the provided list terminated by -1. */
 int ff_fmt_is_in(int fmt, const int *fmts);
 
-/**
- * Return a copy of a list of integers terminated by -1, or NULL in
- * case of copy failure.
- */
-int *ff_copy_int_list(const int * const list);
-
-/**
- * Return a copy of a list of 64-bit integers, or NULL in case of
- * copy failure.
- */
-int64_t *ff_copy_int64_list(const int64_t * const list);
-
 /* Functions to parse audio format arguments */
 
 /**

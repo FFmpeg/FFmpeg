@@ -274,20 +274,6 @@ int ff_fmt_is_in(int fmt, const int *fmts)
     }                                                                   \
 }
 
-int *ff_copy_int_list(const int * const list)
-{
-    int *ret = NULL;
-    COPY_INT_LIST(ret, list, int);
-    return ret;
-}
-
-int64_t *ff_copy_int64_list(const int64_t * const list)
-{
-    int64_t *ret = NULL;
-    COPY_INT_LIST(ret, list, int64_t);
-    return ret;
-}
-
 #define MAKE_FORMAT_LIST(type, field, count_field)                      \
     type *formats;                                                      \
     int count = 0;                                                      \
