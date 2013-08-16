@@ -96,10 +96,6 @@ static uint32_t read_arbitary(AVIOContext *pb)
     return word;
 }
 
-/*
- * Process PT/GSTR sound header
- * return 1 if success, 0 if invalid format, otherwise AVERROR_xxx
- */
 static int process_audio_header_elements(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
@@ -255,10 +251,6 @@ static int process_audio_header_elements(AVFormatContext *s)
     return 1;
 }
 
-/*
- * Process EACS sound header
- * return 1 if success, 0 if invalid format, otherwise AVERROR_xxx
- */
 static int process_audio_header_eacs(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
@@ -298,10 +290,6 @@ static int process_audio_header_eacs(AVFormatContext *s)
     return 1;
 }
 
-/*
- * Process SEAD sound header
- * return 1 if success, 0 if invalid format, otherwise AVERROR_xxx
- */
 static int process_audio_header_sead(AVFormatContext *s)
 {
     EaDemuxContext *ea = s->priv_data;
