@@ -333,9 +333,7 @@ static int config_props(AVFilterLink *outlink)
                 AVDictionaryEntry *e = NULL;
 
                 while ((e = av_dict_get(scale->opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-                    const char *token = e->key;
-                    const char *value = e->value;
-                    if ((ret = av_opt_set(*s, token, value, 0)) < 0)
+                    if ((ret = av_opt_set(*s, e->key, e->value, 0)) < 0)
                         return ret;
                 }
             }
