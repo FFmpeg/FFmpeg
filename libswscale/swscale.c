@@ -46,7 +46,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_128)[8][8] = {
     { 112, 16, 104,  8, 118, 22, 110, 14, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, ff_sws_pb_64)[8] = {
+DECLARE_ALIGNED(8, static const uint8_t, sws_pb_64)[8] = {
     64, 64, 64, 64, 64, 64, 64, 64
 };
 
@@ -448,7 +448,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     }
 
     if (!should_dither) {
-        c->chrDither8 = c->lumDither8 = ff_sws_pb_64;
+        c->chrDither8 = c->lumDither8 = sws_pb_64;
     }
     lastDstY = dstY;
 

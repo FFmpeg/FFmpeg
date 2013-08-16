@@ -34,7 +34,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
-DECLARE_ALIGNED(8, const uint8_t, dithers)[8][8][8]={
+DECLARE_ALIGNED(8, static const uint8_t, dithers)[8][8][8]={
 {
   {   0,  1,  0,  1,  0,  1,  0,  1,},
   {   1,  0,  1,  0,  1,  0,  1,  0,},
