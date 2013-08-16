@@ -185,61 +185,6 @@ enum AVPixelFormat ff_mp2ff_pix_fmt(int mp){
     return mp == conversion_map[i].fmt ? conversion_map[i].pix_fmt : AV_PIX_FMT_NONE;
 }
 
-static void ff_sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
-{
-        static int firstTime=1;
-        *flags=0;
-
-#if ARCH_X86
-        if(ff_gCpuCaps.hasMMX)
-                __asm__ volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
-#endif
-        if(firstTime)
-        {
-                firstTime=0;
-                *flags= SWS_PRINT_INFO;
-        }
-        else if( ff_mp_msg_test(MSGT_VFILTER,MSGL_DBG2) ) *flags= SWS_PRINT_INFO;
-
-        switch(SWS_BILINEAR)
-        {
-                case 0: *flags|= SWS_FAST_BILINEAR; break;
-                case 1: *flags|= SWS_BILINEAR; break;
-                case 2: *flags|= SWS_BICUBIC; break;
-                case 3: *flags|= SWS_X; break;
-                case 4: *flags|= SWS_POINT; break;
-                case 5: *flags|= SWS_AREA; break;
-                case 6: *flags|= SWS_BICUBLIN; break;
-                case 7: *flags|= SWS_GAUSS; break;
-                case 8: *flags|= SWS_SINC; break;
-                case 9: *flags|= SWS_LANCZOS; break;
-                case 10:*flags|= SWS_SPLINE; break;
-                default:*flags|= SWS_BILINEAR; break;
-        }
-
-        *srcFilterParam= NULL;
-        *dstFilterParam= NULL;
-}
-
-//exact copy from vf_scale.c
-// will use sws_flags & src_filter (from cmd line)
-struct SwsContext *ff_sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
-{
-        int flags, i;
-        SwsFilter *dstFilterParam, *srcFilterParam;
-        enum AVPixelFormat dfmt, sfmt;
-
-        for(i=0; conversion_map[i].fmt && dstFormat != conversion_map[i].fmt; i++);
-        dfmt= conversion_map[i].pix_fmt;
-        for(i=0; conversion_map[i].fmt && srcFormat != conversion_map[i].fmt; i++);
-        sfmt= conversion_map[i].pix_fmt;
-
-        if (srcFormat == IMGFMT_RGB8 || srcFormat == IMGFMT_BGR8) sfmt = AV_PIX_FMT_PAL8;
-        ff_sws_getFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
-
-        return sws_getContext(srcW, srcH, sfmt, dstW, dstH, dfmt, flags , srcFilterParam, dstFilterParam, NULL);
-}
-
 typedef struct {
     const AVClass *class;
     vf_instance_t vf;
