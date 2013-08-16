@@ -904,7 +904,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
                avctx->slices);
         return AVERROR(ENOSYS);
 slices_ok:
-        write_extradata(s);
+        if ((ret = write_extradata(s)) < 0)
+            return ret;
     }
 
     if ((ret = ffv1_init_slice_contexts(s)) < 0)
