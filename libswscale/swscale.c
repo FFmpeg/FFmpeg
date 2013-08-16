@@ -35,7 +35,7 @@
 #include "swscale_internal.h"
 #include "swscale.h"
 
-DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_128)[][8] = {
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_128)[9][8] = {
     {  36, 68,  60, 92,  34, 66,  58, 90, },
     { 100,  4, 124, 28,  98,  2, 122, 26, },
     {  52, 84,  44, 76,  50, 82,  42, 74, },
@@ -44,6 +44,7 @@ DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_128)[][8] = {
     {  96,  0, 120, 24, 102,  6, 126, 30, },
     {  48, 80,  40, 72,  54, 86,  46, 78, },
     { 112, 16, 104,  8, 118, 22, 110, 14, },
+    {  36, 68,  60, 92,  34, 66,  58, 90, },
 };
 
 DECLARE_ALIGNED(8, static const uint8_t, sws_pb_64)[8] = {
