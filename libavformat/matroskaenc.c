@@ -121,6 +121,9 @@ typedef struct MatroskaMuxContext {
 /** per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max */
 #define MAX_CUEPOINT_SIZE(num_tracks) 12 + MAX_CUETRACKPOS_SIZE*num_tracks
 
+/** Seek preroll value for opus */
+#define OPUS_SEEK_PREROLL 80000000
+
 
 static int ebml_id_size(unsigned int id)
 {
@@ -640,6 +643,10 @@ static int mkv_write_tracks(AVFormatContext *s)
                     break;
                 }
             }
+        }
+
+        if (codec->codec_id == AV_CODEC_ID_OPUS) {
+            put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
         }
 
         if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
