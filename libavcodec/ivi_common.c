@@ -35,8 +35,35 @@
 #include "ivi_common.h"
 #include "ivi_dsp.h"
 
-extern const IVIHuffDesc ff_ivi_mb_huff_desc[8];  ///< static macroblock huffman tables
-extern const IVIHuffDesc ff_ivi_blk_huff_desc[8]; ///< static block huffman tables
+/**
+ * These are 2x8 predefined Huffman codebooks for coding macroblock/block
+ * signals. They are specified using "huffman descriptors" in order to
+ * avoid huge static tables. The decoding tables will be generated at
+ * startup from these descriptors.
+ */
+/** static macroblock huffman tables */
+static const IVIHuffDesc ivi_mb_huff_desc[8] = {
+    {8,  {0, 4, 5, 4, 4, 4, 6, 6}},
+    {12, {0, 2, 2, 3, 3, 3, 3, 5, 3, 2, 2, 2}},
+    {12, {0, 2, 3, 4, 3, 3, 3, 3, 4, 3, 2, 2}},
+    {12, {0, 3, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2}},
+    {13, {0, 4, 4, 3, 3, 3, 3, 2, 3, 3, 2, 1, 1}},
+    {9,  {0, 4, 4, 4, 4, 3, 3, 3, 2}},
+    {10, {0, 4, 4, 4, 4, 3, 3, 2, 2, 2}},
+    {12, {0, 4, 4, 4, 3, 3, 2, 3, 2, 2, 2, 2}}
+};
+
+/** static block huffman tables */
+static const IVIHuffDesc ivi_blk_huff_desc[8] = {
+    {10, {1, 2, 3, 4, 4, 7, 5, 5, 4, 1}},
+    {11, {2, 3, 4, 4, 4, 7, 5, 4, 3, 3, 2}},
+    {12, {2, 4, 5, 5, 5, 5, 6, 4, 4, 3, 1, 1}},
+    {13, {3, 3, 4, 4, 5, 6, 6, 4, 4, 3, 2, 1, 1}},
+    {11, {3, 4, 4, 5, 5, 5, 6, 5, 4, 2, 2}},
+    {13, {3, 4, 5, 5, 5, 5, 6, 4, 3, 3, 2, 1, 1}},
+    {13, {3, 4, 5, 5, 5, 6, 5, 4, 3, 3, 2, 1, 1}},
+    {9,  {3, 4, 4, 5, 5, 5, 6, 5, 5}}
+};
 
 static VLC ivi_mb_vlc_tabs [8]; ///< static macroblock Huffman tables
 static VLC ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
@@ -132,11 +159,11 @@ av_cold void ff_ivi_init_static_vlc(void)
     for (i = 0; i < 8; i++) {
         ivi_mb_vlc_tabs[i].table = table_data + i * 2 * 8192;
         ivi_mb_vlc_tabs[i].table_allocated = 8192;
-        ivi_create_huff_from_desc(&ff_ivi_mb_huff_desc[i],
+        ivi_create_huff_from_desc(&ivi_mb_huff_desc[i],
                                   &ivi_mb_vlc_tabs[i], 1);
         ivi_blk_vlc_tabs[i].table = table_data + (i * 2 + 1) * 8192;
         ivi_blk_vlc_tabs[i].table_allocated = 8192;
-        ivi_create_huff_from_desc(&ff_ivi_blk_huff_desc[i],
+        ivi_create_huff_from_desc(&ivi_blk_huff_desc[i],
                                   &ivi_blk_vlc_tabs[i], 1);
     }
     initialized_vlcs = 1;
@@ -1071,35 +1098,6 @@ av_cold int ff_ivi_decode_close(AVCodecContext *avctx)
 
     return 0;
 }
-
-
-/**
- * These are 2x8 predefined Huffman codebooks for coding macroblock/block
- * signals. They are specified using "huffman descriptors" in order to
- * avoid huge static tables. The decoding tables will be generated at
- * startup from these descriptors.
- */
-const IVIHuffDesc ff_ivi_mb_huff_desc[8] = {
-    {8,  {0, 4, 5, 4, 4, 4, 6, 6}},
-    {12, {0, 2, 2, 3, 3, 3, 3, 5, 3, 2, 2, 2}},
-    {12, {0, 2, 3, 4, 3, 3, 3, 3, 4, 3, 2, 2}},
-    {12, {0, 3, 4, 4, 3, 3, 3, 3, 3, 2, 2, 2}},
-    {13, {0, 4, 4, 3, 3, 3, 3, 2, 3, 3, 2, 1, 1}},
-    {9,  {0, 4, 4, 4, 4, 3, 3, 3, 2}},
-    {10, {0, 4, 4, 4, 4, 3, 3, 2, 2, 2}},
-    {12, {0, 4, 4, 4, 3, 3, 2, 3, 2, 2, 2, 2}}
-};
-
-const IVIHuffDesc ff_ivi_blk_huff_desc[8] = {
-    {10, {1, 2, 3, 4, 4, 7, 5, 5, 4, 1}},
-    {11, {2, 3, 4, 4, 4, 7, 5, 4, 3, 3, 2}},
-    {12, {2, 4, 5, 5, 5, 5, 6, 4, 4, 3, 1, 1}},
-    {13, {3, 3, 4, 4, 5, 6, 6, 4, 4, 3, 2, 1, 1}},
-    {11, {3, 4, 4, 5, 5, 5, 6, 5, 4, 2, 2}},
-    {13, {3, 4, 5, 5, 5, 5, 6, 4, 3, 3, 2, 1, 1}},
-    {13, {3, 4, 5, 5, 5, 6, 5, 4, 3, 3, 2, 1, 1}},
-    {9,  {3, 4, 4, 5, 5, 5, 6, 5, 5}}
-};
 
 
 /**
