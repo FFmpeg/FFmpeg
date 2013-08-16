@@ -226,8 +226,6 @@ int sws_isSupportedEndiannessConversion(enum AVPixelFormat pix_fmt)
            format_entries[pix_fmt].is_supported_endianness : 0;
 }
 
-extern const int32_t ff_yuv2rgb_coeffs[8][4];
-
 #if FF_API_SWS_FORMAT_NAME
 const char *sws_format_name(enum AVPixelFormat format)
 {
