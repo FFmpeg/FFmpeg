@@ -34,6 +34,7 @@
 
 #include "avcodec.h"
 #include "get_bits.h"
+#include "h263.h"
 #include "hpeldsp.h"
 #include "internal.h"
 #include "mathops.h"
@@ -41,8 +42,6 @@
 
 #undef NDEBUG
 #include <assert.h>
-
-extern const uint8_t ff_mvtab[33][2];
 
 static VLC svq1_block_type;
 static VLC svq1_motion_component;
