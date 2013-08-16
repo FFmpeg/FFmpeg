@@ -36,6 +36,7 @@
   #include <windows.h>
   #undef EXTERN_C
   #include "compat/avisynth/avisynth_c.h"
+  #include "compat/avisynth/avisynth_c_25.h"
   #define AVISYNTH_LIB "avisynth"
 #else
   #include <dlfcn.h>
@@ -471,9 +472,20 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
     for (i = 0; i < avs->n_planes; i++) {
         plane = avs->planes[i];
         src_p = avs_get_read_ptr_p(frame, plane);
+        pitch = avs_get_pitch_p(frame, plane);
+
+#ifdef _WIN32
+        if (avs_library->avs_get_version(avs->clip) == 3) {
+            rowsize = avs_get_row_size_p_25(frame, plane);
+            planeheight = avs_get_height_p_25(frame, plane);
+        } else {
+            rowsize = avs_get_row_size_p(frame, plane);
+            planeheight = avs_get_height_p(frame, plane);
+        }
+#else
         rowsize = avs_get_row_size_p(frame, plane);
         planeheight = avs_get_height_p(frame, plane);
-        pitch = avs_get_pitch_p(frame, plane);
+#endif
 
         // Flip RGB video.
         if (avs_is_rgb24(avs->vi) || avs_is_rgb(avs->vi)) {
@@ -481,26 +493,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
             pitch = -pitch;
         }
 
-    // An issue with avs_bit_blt on 2.5.8 prevents video from working correctly.
-    // This problem doesn't exist for 2.6 and AvxSynth, so enable the workaround
-    // for 2.5.8 only. This only displays the warning and exits if the script has
-    // video. 2.5.8's internal interface version is 3, so avs_get_version allows
-    // it to work only in the circumstance that the interface is 5 or higher (4 is
-    // unused).  There's a strong chance that AvxSynth, having been based on 2.5.8,
-    // would also be identified as interface version 3, but since AvxSynth doesn't
-    // suffer from this problem, special-case it.
-#ifdef _WIN32
-    if (avs_library->avs_get_version(avs->clip) > 3) {
         avs_library->avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch, rowsize, planeheight);
-    } else {
-        av_log(s, AV_LOG_ERROR, "Video input from AviSynth 2.5.8 is not supported. Please upgrade to 2.6.\n");
-        avs->error = 1;
-        av_freep(&pkt->data);
-        return AVERROR_UNKNOWN;
-    }
-#else
-        avs_library->avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch, rowsize, planeheight);
-#endif
         dst_p += rowsize * planeheight;
     }
 
