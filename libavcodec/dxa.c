@@ -262,7 +262,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     case 3:
     case 4:
     case 5:
-        if (!tmpptr) {
+        if (!tmpptr && (compr & 1)) {
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
             return AVERROR_INVALIDDATA;
         }
