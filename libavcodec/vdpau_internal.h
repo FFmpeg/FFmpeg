@@ -25,10 +25,12 @@
 #define AVCODEC_VDPAU_INTERNAL_H
 
 #include <stdint.h>
+#if CONFIG_VDPAU
 #include <vdpau/vdpau.h>
+#include "vdpau.h"
+#endif
 #include "h264.h"
 #include "mpegvideo.h"
-#include "vdpau.h"
 
 /** Extract VdpVideoSurface from a Picture */
 static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
@@ -36,6 +38,7 @@ static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
     return (uintptr_t)pic->f.data[3];
 }
 
+#if CONFIG_VDPAU
 #if !FF_API_BUFS_VDPAU
 union AVVDPAUPictureInfo {
     VdpPictureInfoH264        h264;
@@ -66,6 +69,7 @@ struct vdpau_picture_context {
      */
     VdpBitstreamBuffer *bitstream_buffers;
 };
+#endif
 
 int ff_vdpau_common_start_frame(Picture *pic,
                                 const uint8_t *buffer, uint32_t size);
