@@ -52,6 +52,7 @@
 #include "golomb.h"
 #include "hpeldsp.h"
 #include "rectangle.h"
+#include "vdpau_internal.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>

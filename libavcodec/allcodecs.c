@@ -163,6 +163,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(H264,              h264);
     REGISTER_DECODER(H264_CRYSTALHD,    h264_crystalhd);
     REGISTER_DECODER(H264_VDA,          h264_vda);
+    REGISTER_DECODER(H264_VDPAU,        h264_vdpau);
     REGISTER_ENCDEC (HUFFYUV,           huffyuv);
     REGISTER_DECODER(IDCIN,             idcin);
     REGISTER_DECODER(IFF_BYTERUN1,      iff_byterun1);
@@ -191,7 +192,10 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (MPEG2VIDEO,        mpeg2video);
     REGISTER_ENCDEC (MPEG4,             mpeg4);
     REGISTER_DECODER(MPEG4_CRYSTALHD,   mpeg4_crystalhd);
+    REGISTER_DECODER(MPEG4_VDPAU,       mpeg4_vdpau);
     REGISTER_DECODER(MPEGVIDEO,         mpegvideo);
+    REGISTER_DECODER(MPEG_VDPAU,        mpeg_vdpau);
+    REGISTER_DECODER(MPEG1_VDPAU,       mpeg1_vdpau);
     REGISTER_DECODER(MPEG2_CRYSTALHD,   mpeg2_crystalhd);
     REGISTER_DECODER(MSA1,              msa1);
     REGISTER_DECODER(MSMPEG4_CRYSTALHD, msmpeg4_crystalhd);
@@ -270,6 +274,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(VBLE,              vble);
     REGISTER_DECODER(VC1,               vc1);
     REGISTER_DECODER(VC1_CRYSTALHD,     vc1_crystalhd);
+    REGISTER_DECODER(VC1_VDPAU,         vc1_vdpau);
     REGISTER_DECODER(VC1IMAGE,          vc1image);
     REGISTER_DECODER(VCR1,              vcr1);
     REGISTER_DECODER(VMDVIDEO,          vmdvideo);
@@ -286,6 +291,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC (WMV2,              wmv2);
     REGISTER_DECODER(WMV3,              wmv3);
     REGISTER_DECODER(WMV3_CRYSTALHD,    wmv3_crystalhd);
+    REGISTER_DECODER(WMV3_VDPAU,        wmv3_vdpau);
     REGISTER_DECODER(WMV3IMAGE,         wmv3image);
     REGISTER_DECODER(WNV1,              wnv1);
     REGISTER_DECODER(XAN_WC3,           xan_wc3);
