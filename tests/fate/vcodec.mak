@@ -55,7 +55,7 @@ fate-vsynth%-dv-50:              DECOPTS = -sws_flags neighbor
 fate-vsynth%-dv-50:              FMT     = dv
 
 FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1.0
-fate-vsynth%-ffv1:               ENCOPTS = -slices 4 -strict -2
+fate-vsynth%-ffv1:               ENCOPTS = -slices 4
 fate-vsynth%-ffv1.0:             CODEC   = ffv1
 
 FATE_VCODEC-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff
