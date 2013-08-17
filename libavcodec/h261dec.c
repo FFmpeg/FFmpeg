@@ -378,9 +378,11 @@ static int h261_decode_mb(H261Context *h)
     // Read mtype
     h->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
     if (h->mtype < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "illegal mtype %d\n", h->mtype);
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid mtype index %d\n",
+               h->mtype);
         return SLICE_ERROR;
     }
+    av_assert0(h->mtype < FF_ARRAY_ELEMS(ff_h261_mtype_map));
     h->mtype = ff_h261_mtype_map[h->mtype];
 
     // Read mquant
