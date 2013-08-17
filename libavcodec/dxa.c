@@ -246,6 +246,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             return AVERROR_UNKNOWN;
         }
     }
+
+    if (avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(avctx, AV_LOG_DEBUG, "compr:%2d, dsize:%d\n", compr, (int)dsize);
+
     switch(compr){
     case -1:
         frame->key_frame = 0;
