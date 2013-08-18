@@ -2324,6 +2324,7 @@ static av_unused int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
         if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return AV_NOPTS_VALUE;
         if (buf[0] != 0x47) {
+            avio_seek(s->pb, -TS_PACKET_SIZE, SEEK_CUR);
             if (mpegts_resync(s) < 0)
                 return AV_NOPTS_VALUE;
             pos = avio_tell(s->pb);
