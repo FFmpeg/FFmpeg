@@ -1264,20 +1264,42 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    AVIOContext *pb = s->pb->seekable ? s->pb : mkv->dyn_bc;
-    AVCodecContext *codec = s->streams[pkt->stream_index]->codec;
-    int ret, keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
-    int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
-    int cluster_size = avio_tell(pb) - (s->pb->seekable ? mkv->cluster_pos : 0);
+    int codec_type          = s->streams[pkt->stream_index]->codec->codec_type;
+    int keyframe            = !!(pkt->flags & AV_PKT_FLAG_KEY);
+    int cluster_size;
+    int cluster_size_limit;
+    int64_t cluster_time;
+    int64_t cluster_time_limit;
+    AVIOContext *pb;
+    int ret;
+
+    if (mkv->tracks[pkt->stream_index].write_dts)
+        cluster_time = pkt->dts - mkv->cluster_pts;
+    else
+        cluster_time = pkt->pts - mkv->cluster_pts;
 
     // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
     // after 4k and on a keyframe
+    if (s->pb->seekable) {
+        pb = s->pb;
+        cluster_size = avio_tell(pb) - mkv->cluster_pos;
+        cluster_time_limit = 5000;
+        cluster_size_limit = 5 * 1024 * 1024;
+    } else {
+        pb = mkv->dyn_bc;
+        cluster_size = avio_tell(pb);
+        cluster_time_limit = 1000;
+        cluster_size_limit = 32 * 1024;
+    }
+
     if (mkv->cluster_pos &&
-        ((!s->pb->seekable && (cluster_size > 32*1024 || ts > mkv->cluster_pts + 1000))
-         ||                      cluster_size > 5*1024*1024 || ts > mkv->cluster_pts + 5000
-         || (codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe && cluster_size > 4*1024))) {
+        (cluster_size > cluster_size_limit ||
+         cluster_time > cluster_time_limit ||
+         (codec_type == AVMEDIA_TYPE_VIDEO && keyframe &&
+          cluster_size > 4 * 1024))) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
-               " bytes, pts %" PRIu64 "\n", avio_tell(pb), ts);
+               " bytes, pts %" PRIu64 "dts %" PRIu64 "\n",
+               avio_tell(pb), pkt->pts, pkt->dts);
         end_ebml_master(pb, mkv->cluster);
         mkv->cluster_pos = 0;
         if (mkv->dyn_bc)
@@ -1296,7 +1318,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     // buffer an audio packet to ensure the packet containing the video
     // keyframe's timecode is contained in the same cluster for WebM
-    if (codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+    if (codec_type == AVMEDIA_TYPE_AUDIO) {
         mkv->cur_audio_pkt = *pkt;
         if (pkt->buf) {
             mkv->cur_audio_pkt.buf = av_buffer_ref(pkt->buf);
