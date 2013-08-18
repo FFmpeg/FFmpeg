@@ -1974,7 +1974,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size, co
         /* check packet sync byte */
         if ((*data)[0] != 0x47) {
             /* find a new packet start */
-            avio_seek(pb, -TS_PACKET_SIZE, SEEK_CUR);
+            avio_seek(pb, -raw_packet_size, SEEK_CUR);
             if (mpegts_resync(s) < 0)
                 return AVERROR(EAGAIN);
             else
