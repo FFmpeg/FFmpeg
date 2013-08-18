@@ -1862,7 +1862,8 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         return 0;
 
     pos = avio_tell(ts->stream->pb);
-    ts->pos47_full = pos;
+    av_assert0(pos >= TS_PACKET_SIZE);
+    ts->pos47_full = pos - TS_PACKET_SIZE;
 
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
@@ -1910,7 +1911,7 @@ static void reanalyze(MpegTSContext *ts) {
     int64_t pos = avio_tell(pb);
     if(pos < 0)
         return;
-    pos += ts->raw_packet_size - ts->pos47_full;
+    pos -= ts->pos47_full;
     if (pos == TS_PACKET_SIZE) {
         ts->size_stat[0] ++;
     } else if (pos == TS_DVHS_PACKET_SIZE) {
