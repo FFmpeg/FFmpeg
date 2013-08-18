@@ -1929,7 +1929,7 @@ static void reanalyze(MpegTSContext *ts) {
         } else if (ts->size_stat[2] > SIZE_STAT_THRESHOLD) {
             newsize = TS_FEC_PACKET_SIZE;
         }
-        if (newsize) {
+        if (newsize && newsize != ts->raw_packet_size) {
             av_log(ts->stream, AV_LOG_WARNING, "changing packet size to %d\n", newsize);
             ts->raw_packet_size = newsize;
         }
