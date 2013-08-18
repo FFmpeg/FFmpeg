@@ -1025,6 +1025,20 @@ static int mov_read_avid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return mov_read_extradata(c, pb, atom, AV_CODEC_ID_AVUI);
 }
 
+static int mov_read_targa_y216(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int ret = mov_read_extradata(c, pb, atom, AV_CODEC_ID_TARGA_Y216);
+
+    if (!ret && c->fc->nb_streams >= 1) {
+        AVCodecContext *avctx = c->fc->streams[c->fc->nb_streams-1]->codec;
+        if (avctx->extradata_size >= 40) {
+            avctx->height = AV_RB16(&avctx->extradata[36]);
+            avctx->width  = AV_RB16(&avctx->extradata[38]);
+        }
+    }
+    return ret;
+}
+
 static int mov_read_ares(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVCodecContext *codec = c->fc->streams[c->fc->nb_streams-1]->codec;
@@ -2888,6 +2902,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('d','v','c','1'), mov_read_dvc1 },
 { MKTAG('s','b','g','p'), mov_read_sbgp },
 { MKTAG('u','u','i','d'), mov_read_uuid },
+{ MKTAG('C','i','n', 0x8e), mov_read_targa_y216 },
 { 0, NULL }
 };
 
