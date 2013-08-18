@@ -100,7 +100,9 @@ typedef struct MatroskaMuxContext {
     int have_attachments;
 
     int reserve_cues_space;
+    int cluster_size_limit;
     int64_t cues_pos;
+    int64_t cluster_time_limit;
 } MatroskaMuxContext;
 
 
@@ -994,6 +996,21 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->cur_audio_pkt.size = 0;
 
     avio_flush(pb);
+
+    // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
+    // after 4k and on a keyframe
+    if (pb->seekable) {
+        if (mkv->cluster_time_limit < 0)
+            mkv->cluster_time_limit = 5000;
+        if (mkv->cluster_size_limit < 0)
+            mkv->cluster_size_limit = 5 * 1024 * 1024;
+    } else {
+        if (mkv->cluster_time_limit < 0)
+            mkv->cluster_time_limit = 1000;
+        if (mkv->cluster_size_limit < 0)
+            mkv->cluster_size_limit = 32 * 1024;
+    }
+
     return 0;
 }
 
@@ -1267,9 +1284,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     int codec_type          = s->streams[pkt->stream_index]->codec->codec_type;
     int keyframe            = !!(pkt->flags & AV_PKT_FLAG_KEY);
     int cluster_size;
-    int cluster_size_limit;
     int64_t cluster_time;
-    int64_t cluster_time_limit;
     AVIOContext *pb;
     int ret;
 
@@ -1283,18 +1298,14 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (s->pb->seekable) {
         pb = s->pb;
         cluster_size = avio_tell(pb) - mkv->cluster_pos;
-        cluster_time_limit = 5000;
-        cluster_size_limit = 5 * 1024 * 1024;
     } else {
         pb = mkv->dyn_bc;
         cluster_size = avio_tell(pb);
-        cluster_time_limit = 1000;
-        cluster_size_limit = 32 * 1024;
     }
 
     if (mkv->cluster_pos &&
-        (cluster_size > cluster_size_limit ||
-         cluster_time > cluster_time_limit ||
+        (cluster_size > mkv->cluster_size_limit ||
+         cluster_time > mkv->cluster_time_limit ||
          (codec_type == AVMEDIA_TYPE_VIDEO && keyframe &&
           cluster_size > 4 * 1024))) {
         av_log(s, AV_LOG_DEBUG, "Starting new cluster at offset %" PRIu64
@@ -1421,8 +1432,9 @@ static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
 #define OFFSET(x) offsetof(MatroskaMuxContext, x)
 #define FLAGS AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "reserve_index_space", "Reserve a given amount of space (in bytes) at the beginning "
-        "of the file for the index (cues).", OFFSET(reserve_cues_space), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },
+    { "reserve_index_space", "Reserve a given amount of space (in bytes) at the beginning of the file for the index (cues).", OFFSET(reserve_cues_space), AV_OPT_TYPE_INT,   { .i64 = 0 },   0, INT_MAX,   FLAGS },
+    { "cluster_size_limit",  "Store at most the provided amount of bytes in a cluster. ",                                     OFFSET(cluster_size_limit), AV_OPT_TYPE_INT  , { .i64 = -1 }, -1, INT_MAX,   FLAGS },
+    { "cluster_time_limit",  "Store at most the provided number of milliseconds in a cluster.",                               OFFSET(cluster_time_limit), AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, FLAGS },
     { NULL },
 };
 
