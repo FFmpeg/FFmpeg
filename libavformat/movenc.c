@@ -3126,6 +3126,8 @@ static int mov_write_header(AVFormatContext *s)
             }
         } else if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
             track->timescale = st->codec->time_base.den;
+        } else if (st->codec->codec_type == AVMEDIA_TYPE_DATA) {
+            track->timescale = st->codec->time_base.den;
         }
         if (!track->height)
             track->height = st->codec->height;
