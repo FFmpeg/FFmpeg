@@ -1203,6 +1203,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
        dstFormat == AV_PIX_FMT_RGB4_BYTE ||
        dstFormat == AV_PIX_FMT_BGR8 ||
        dstFormat == AV_PIX_FMT_RGB8) {
+        if (c->dither == SWS_DITHER_AUTO)
+            c->dither = (flags & SWS_FULL_CHR_H_INT) ? SWS_DITHER_ED : SWS_DITHER_BAYER;
         if (c->dither == SWS_DITHER_ED && !(flags & SWS_FULL_CHR_H_INT)) {
             av_log(c, AV_LOG_DEBUG,
                 "Error diffusion dither is only supported in full chroma interpolation for destination format '%s'\n",
