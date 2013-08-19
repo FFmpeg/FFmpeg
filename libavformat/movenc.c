@@ -3074,7 +3074,9 @@ static int mov_write_header(AVFormatContext *s)
         }
     }
 
-    mov->tracks = av_mallocz(mov->nb_streams * sizeof(*mov->tracks));
+    // Reserve an extra stream for chapters for the case where chapters
+    // are written in the trailer
+    mov->tracks = av_mallocz((mov->nb_streams + 1) * sizeof(*mov->tracks));
     if (!mov->tracks)
         return AVERROR(ENOMEM);
 
@@ -3212,8 +3214,19 @@ static int mov_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int res = 0;
     int i;
+    int64_t moov_pos;
 
-    int64_t moov_pos = avio_tell(pb);
+    // If there were no chapters when the header was written, but there
+    // are chapters now, write them in the trailer.  This only works
+    // when we are not doing fragments.
+    if (!mov->chapter_track && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+        if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters) {
+            mov->chapter_track = mov->nb_streams++;
+            mov_create_chapter_track(s, mov->chapter_track);
+        }
+    }
+
+    moov_pos = avio_tell(pb);
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
         /* Write size of mdat tag */
