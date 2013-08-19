@@ -156,6 +156,8 @@ typedef struct MOVMuxContext {
     int max_fragment_size;
     int ism_lookahead;
     AVIOContext *mdat_buf;
+
+    int64_t reserved_moov_pos;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
@@ -165,6 +167,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_SEPARATE_MOOF 16
 #define FF_MOV_FLAG_FRAG_CUSTOM 32
 #define FF_MOV_FLAG_ISML 64
+#define FF_MOV_FLAG_FASTSTART 128
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
