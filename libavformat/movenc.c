@@ -3059,7 +3059,7 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     mov->nb_streams = s->nb_streams;
-    if (mov->mode & (MODE_MOV|MODE_IPOD) && s->nb_chapters)
+    if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters)
         mov->chapter_track = mov->nb_streams++;
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
