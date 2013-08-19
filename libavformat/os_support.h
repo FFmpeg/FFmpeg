@@ -86,11 +86,6 @@ static inline int is_dos_path(const char *path)
 #endif
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
-int ff_win32_open(const char *filename, int oflag, int pmode);
-#define open ff_win32_open
-#endif
-
 #if CONFIG_NETWORK
 #if !HAVE_SOCKLEN_T
 typedef int socklen_t;

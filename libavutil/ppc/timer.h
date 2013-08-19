@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #define AV_READ_TIME read_time
 
 static inline uint64_t read_time(void)

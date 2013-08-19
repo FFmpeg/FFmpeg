@@ -30,6 +30,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "audio.h"
@@ -51,7 +52,6 @@ typedef struct {
     /* video only */
     int               w, h;
     enum AVPixelFormat  pix_fmt;
-    char               *pix_fmt_str;
     AVRational        pixel_aspect;
     char              *sws_param;
 
@@ -78,13 +78,13 @@ typedef struct {
         return AVERROR(EINVAL);\
     }
 
-int av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
+int attribute_align_arg av_buffersrc_write_frame(AVFilterContext *ctx, const AVFrame *frame)
 {
     return av_buffersrc_add_frame_flags(ctx, (AVFrame *)frame,
                                         AV_BUFFERSRC_FLAG_KEEP_REF);
 }
 
-int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
+int attribute_align_arg av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
 {
     return av_buffersrc_add_frame_flags(ctx, frame, 0);
 }
@@ -92,7 +92,7 @@ int av_buffersrc_add_frame(AVFilterContext *ctx, AVFrame *frame)
 static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
                                            AVFrame *frame, int flags);
 
-int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
+int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
 {
     AVFrame *copy = NULL;
     int ret = 0;
@@ -116,8 +116,8 @@ int av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags
     return ret;
 }
 
-static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *ctx,
-                                                               AVFrame *frame, int flags)
+static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
+                                           AVFrame *frame, int flags)
 {
     BufferSourceContext *s = ctx->priv;
     AVFrame *copy;
@@ -174,6 +174,7 @@ static int attribute_align_arg av_buffersrc_add_frame_internal(AVFilterContext *
 }
 
 #if FF_API_AVFILTERBUFFER
+FF_DISABLE_DEPRECATION_WARNINGS
 static void compat_free_buffer(void *opaque, uint8_t *data)
 {
     AVFilterBufferRef *buf = opaque;
@@ -284,6 +285,7 @@ fail:
 
     return ret;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 
 int av_buffersrc_buffer(AVFilterContext *ctx, AVFilterBufferRef *buf)
 {

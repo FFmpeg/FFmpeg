@@ -68,7 +68,7 @@ static const AVOption concat_options[] = {
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|F},
     { "unsafe", "enable unsafe mode",
       OFFSET(unsafe),
-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, A|A|F},
+      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, V|A|F},
     { 0 }
 };
 
@@ -134,10 +134,13 @@ static int config_output(AVFilterLink *outlink)
     outlink->format              = inlink->format;
     for (seg = 1; seg < cat->nb_segments; seg++) {
         inlink = ctx->inputs[in_no += ctx->nb_outputs];
+        if (!outlink->sample_aspect_ratio.num)
+            outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
         /* possible enhancement: unsafe mode, do not check */
         if (outlink->w                       != inlink->w                       ||
             outlink->h                       != inlink->h                       ||
-            outlink->sample_aspect_ratio.num != inlink->sample_aspect_ratio.num ||
+            outlink->sample_aspect_ratio.num != inlink->sample_aspect_ratio.num &&
+                                                inlink->sample_aspect_ratio.num ||
             outlink->sample_aspect_ratio.den != inlink->sample_aspect_ratio.den) {
             av_log(ctx, AV_LOG_ERROR, "Input link %s parameters "
                    "(size %dx%d, SAR %d:%d) do not match the corresponding "

@@ -37,17 +37,17 @@
  * Pixel format.
  *
  * @note
- * PIX_FMT_RGB32 is handled in an endian-specific manner. An RGBA
+ * AV_PIX_FMT_RGB32 is handled in an endian-specific manner. An RGBA
  * color is put together as:
  *  (A << 24) | (R << 16) | (G << 8) | B
  * This is stored as BGRA on little-endian CPU architectures and ARGB on
  * big-endian CPUs.
  *
  * @par
- * When the pixel format is palettized RGB (PIX_FMT_PAL8), the palettized
+ * When the pixel format is palettized RGB (AV_PIX_FMT_PAL8), the palettized
  * image data is stored in AVFrame.data[0]. The palette is transported in
  * AVFrame.data[1], is 1024 bytes long (256 4-byte entries) and is
- * formatted the same as in PIX_FMT_RGB32 described above (i.e., it is
+ * formatted the same as in AV_PIX_FMT_RGB32 described above (i.e., it is
  * also endian-specific). Note also that the individual RGB palette
  * components stored in AVFrame.data[1] should be in the range 0..255.
  * This is important as many custom PAL8 video codecs that were designed
@@ -103,11 +103,13 @@ enum AVPixelFormat {
     AV_PIX_FMT_YUV440P,   ///< planar YUV 4:4:0 (1 Cr & Cb sample per 1x2 Y samples)
     AV_PIX_FMT_YUVJ440P,  ///< planar YUV 4:4:0 full scale (JPEG), deprecated in favor of PIX_FMT_YUV440P and setting color_range
     AV_PIX_FMT_YUVA420P,  ///< planar YUV 4:2:0, 20bpp, (1 Cr & Cb sample per 2x2 Y & A samples)
+#if FF_API_VDPAU
     AV_PIX_FMT_VDPAU_H264,///< H.264 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     AV_PIX_FMT_VDPAU_MPEG1,///< MPEG-1 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     AV_PIX_FMT_VDPAU_MPEG2,///< MPEG-2 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     AV_PIX_FMT_VDPAU_WMV3,///< WMV3 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
     AV_PIX_FMT_VDPAU_VC1, ///< VC-1 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
+#endif
     AV_PIX_FMT_RGB48BE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as big-endian
     AV_PIX_FMT_RGB48LE,   ///< packed RGB 16:16:16, 48bpp, 16R, 16G, 16B, the 2-byte value for each R/G/B component is stored as little-endian
 
@@ -131,7 +133,9 @@ enum AVPixelFormat {
     AV_PIX_FMT_YUV422P16BE,  ///< planar YUV 4:2:2, 32bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
     AV_PIX_FMT_YUV444P16LE,  ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
     AV_PIX_FMT_YUV444P16BE,  ///< planar YUV 4:4:4, 48bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+#if FF_API_VDPAU
     AV_PIX_FMT_VDPAU_MPEG4,  ///< MPEG4 HW decoding with VDPAU, data[0] contains a vdpau_render_state struct which contains the bitstream of the slices as well as various fields extracted from headers
+#endif
     AV_PIX_FMT_DXVA2_VLD,    ///< HW decoding through DXVA2, Picture.data[3] contains a LPDIRECT3DSURFACE9 pointer
 
     AV_PIX_FMT_RGB444LE,  ///< packed RGB 4:4:4, 16bpp, (msb)4A 4R 4G 4B(lsb), little-endian, most significant bits to 0
@@ -142,9 +146,11 @@ enum AVPixelFormat {
     AV_PIX_FMT_BGR48BE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as big-endian
     AV_PIX_FMT_BGR48LE,   ///< packed RGB 16:16:16, 48bpp, 16B, 16G, 16R, the 2-byte value for each R/G/B component is stored as little-endian
 
-    //the following 10 formats have the disadvantage of needing 1 format for each bit depth, thus
-    //If you want to support multiple bit depths, then using AV_PIX_FMT_YUV420P16* with the bpp stored separately
-    //is better
+    /**
+     * The following 12 formats have the disadvantage of needing 1 format for each bit depth.
+     * Notice that each 9/10 bits sample is stored in 16 bits with extra padding.
+     * If you want to support multiple bit depths, then using AV_PIX_FMT_YUV420P16* with the bpp stored separately is better.
+     */
     AV_PIX_FMT_YUV420P9BE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian
     AV_PIX_FMT_YUV420P9LE, ///< planar YUV 4:2:0, 13.5bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
     AV_PIX_FMT_YUV420P10BE,///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), big-endian

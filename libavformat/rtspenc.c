@@ -145,6 +145,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
     uint8_t *interleave_header, *interleaved_packet;
 
     size = avio_close_dyn_buf(rtpctx->pb, &buf);
+    rtpctx->pb = NULL;
     ptr = buf;
     while (size > 4) {
         uint32_t packet_len = AV_RB32(ptr);
@@ -171,8 +172,7 @@ static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
         size -= packet_len;
     }
     av_free(buf);
-    ffio_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
-    return 0;
+    return ffio_open_dyn_packet_buf(&rtpctx->pb, RTSP_TCP_MAX_PACKET_SIZE);
 }
 
 static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)

@@ -36,7 +36,6 @@
 #include "mpeg12data.h"
 #include "mpeg12decdata.h"
 #include "bytestream.h"
-#include "vdpau_internal.h"
 #include "xvmc_internal.h"
 #include "thread.h"
 
@@ -672,8 +671,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             s->current_picture.mb_type[s->mb_x + s->mb_y*s->mb_stride] =
                 mb_type | MB_TYPE_SKIP;
 
-//            assert(s->current_picture.mb_type[s->mb_x + s->mb_y * s->mb_stride - 1] & (MB_TYPE_16x16 | MB_TYPE_16x8));
-
             if ((s->mv[0][0][0] | s->mv[0][0][1] | s->mv[1][0][0] | s->mv[1][0][1]) == 0)
                 s->mb_skipped = 1;
         }
@@ -1123,10 +1120,6 @@ static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_NONE
 };
 
-static inline int uses_vdpau(AVCodecContext *avctx) {
-    return avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG1 || avctx->pix_fmt == AV_PIX_FMT_VDPAU_MPEG2;
-}
-
 static enum AVPixelFormat mpeg_get_pixelformat(AVCodecContext *avctx)
 {
     Mpeg1Context *s1 = avctx->priv_data;
@@ -1153,7 +1146,7 @@ static void setup_hwaccel_for_pixfmt(AVCodecContext *avctx)
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
     // until then pix_fmt may be changed right after codec init
     if (avctx->pix_fmt == AV_PIX_FMT_XVMC_MPEG2_IDCT ||
-        avctx->hwaccel || uses_vdpau(avctx))
+        avctx->hwaccel)
         if (avctx->idct_algo == FF_IDCT_AUTO)
             avctx->idct_algo = FF_IDCT_SIMPLE;
 }
@@ -2130,7 +2123,8 @@ static int decode_chunks(AVCodecContext *avctx,
         buf_ptr = avpriv_find_start_code(buf_ptr, buf_end, &start_code);
         if (start_code > 0x1ff) {
             if (!skip_frame) {
-                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)) {
+                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+                    !avctx->hwaccel) {
                     int i;
                     av_assert0(avctx->thread_count > 1);
 
@@ -2138,10 +2132,6 @@ static int decode_chunks(AVCodecContext *avctx,
                     for (i = 0; i < s->slice_count; i++)
                         s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
-
-                if ((CONFIG_MPEG_VDPAU_DECODER || CONFIG_MPEG1_VDPAU_DECODER)
-                    && uses_vdpau(avctx))
-                    ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
 
                 ret = slice_end(avctx, picture);
                 if (ret < 0)
@@ -2194,7 +2184,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 s2->intra_dc_precision= 3;
                 s2->intra_matrix[0]= 1;
             }
-            if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) && s->slice_count) {
+            if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+                !avctx->hwaccel && s->slice_count) {
                 int i;
 
                 avctx->execute(avctx, slice_decode_thread,
@@ -2308,6 +2299,11 @@ static int decode_chunks(AVCodecContext *avctx,
                 if (s2->picture_structure == PICT_BOTTOM_FIELD)
                     mb_y++;
 
+                if (buf_end - buf_ptr < 2) {
+                    av_log(s2->avctx, AV_LOG_ERROR, "slice too small\n");
+                    return AVERROR_INVALIDDATA;
+                }
+
                 if (mb_y >= s2->mb_height) {
                     av_log(s2->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", mb_y, s2->mb_height);
                     return -1;
@@ -2364,12 +2360,8 @@ static int decode_chunks(AVCodecContext *avctx,
                     return AVERROR_INVALIDDATA;
                 }
 
-                if (uses_vdpau(avctx)) {
-                    s->slice_count++;
-                    break;
-                }
-
-                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)) {
+                if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) &&
+                    !avctx->hwaccel) {
                     int threshold = (s2->mb_height * s->slice_count +
                                      s2->slice_context_count / 2) /
                                     s2->slice_context_count;
@@ -2583,36 +2575,4 @@ AVCodec ff_mpeg_xvmc_decoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video XvMC (X-Video Motion Compensation)"),
 };
 
-#endif
-
-#if CONFIG_MPEG_VDPAU_DECODER
-AVCodec ff_mpeg_vdpau_decoder = {
-    .name           = "mpegvideo_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG2VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
-                      CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
-    .flush          = flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
-};
-#endif
-
-#if CONFIG_MPEG1_VDPAU_DECODER
-AVCodec ff_mpeg1_vdpau_decoder = {
-    .name           = "mpeg1video_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_MPEG1VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
-                      CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
-    .flush          = flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
-};
 #endif

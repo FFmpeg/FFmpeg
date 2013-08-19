@@ -157,7 +157,7 @@ typedef struct LongTermPrediction {
 typedef struct IndividualChannelStream {
     uint8_t max_sfb;            ///< number of scalefactor bands per group
     enum WindowSequence window_sequence[2];
-    uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sinus window.
+    uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sine window.
     int num_window_groups;
     uint8_t group_len[8];
     LongTermPrediction ltp;

@@ -39,8 +39,10 @@ typedef struct ASFStream {
     /* use for reading */
     AVPacket pkt;
     int frag_offset;
+    int packet_obj_size;
     int timestamp;
     int64_t duration;
+    int skip_to_key;
 
     int ds_span;                /* descrambling  */
     int ds_packet_size;

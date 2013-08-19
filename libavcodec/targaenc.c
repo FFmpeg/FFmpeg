@@ -29,10 +29,6 @@
 #include "rle.h"
 #include "targa.h"
 
-typedef struct TargaContext {
-    AVFrame picture;
-} TargaContext;
-
 /**
  * RLE compress the image, with maximum size of out_size
  * @param outbuf Output buffer
@@ -174,24 +170,10 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int targa_encode_init(AVCodecContext *avctx)
-{
-    TargaContext *s = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&s->picture);
-    s->picture.key_frame= 1;
-    s->picture.pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame= &s->picture;
-
-    return 0;
-}
-
 AVCodec ff_targa_encoder = {
     .name           = "targa",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TARGA,
-    .priv_data_size = sizeof(TargaContext),
-    .init           = targa_encode_init,
     .encode2        = targa_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,

@@ -532,7 +532,7 @@ QPEL_OP(put_no_rnd_, _no_rnd_, mmxext)
     } while (0)
 
 static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
-                                     int mm_flags)
+                                     int cpu_flags)
 {
 #if HAVE_MMX_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -565,7 +565,7 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 }
 
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
-                                        int mm_flags)
+                                        int cpu_flags)
 {
 #if HAVE_MMXEXT_EXTERNAL
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
@@ -577,7 +577,7 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_no_rnd_qpel, 1,  8, mmxext, );
 
     /* slower than cmov version on AMD */
-    if (!(mm_flags & AV_CPU_FLAG_3DNOW))
+    if (!(cpu_flags & AV_CPU_FLAG_3DNOW))
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmxext;
 
     c->scalarproduct_int16          = ff_scalarproduct_int16_mmxext;
@@ -592,7 +592,7 @@ static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
 }
 
 static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
-                                     int mm_flags)
+                                     int cpu_flags)
 {
 #if HAVE_SSE_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -616,7 +616,7 @@ static av_cold void dsputil_init_sse(DSPContext *c, AVCodecContext *avctx,
 }
 
 static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
-                                      int mm_flags)
+                                      int cpu_flags)
 {
 #if HAVE_SSE2_INLINE
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
@@ -632,14 +632,14 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 #if HAVE_SSE2_EXTERNAL
     c->scalarproduct_int16          = ff_scalarproduct_int16_sse2;
     c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_sse2;
-    if (mm_flags & AV_CPU_FLAG_ATOM) {
+    if (cpu_flags & AV_CPU_FLAG_ATOM) {
         c->vector_clip_int32 = ff_vector_clip_int32_int_sse2;
     } else {
         c->vector_clip_int32 = ff_vector_clip_int32_sse2;
     }
     if (avctx->flags & CODEC_FLAG_BITEXACT) {
         c->apply_window_int16 = ff_apply_window_int16_sse2;
-    } else if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
+    } else if (!(cpu_flags & AV_CPU_FLAG_SSE2SLOW)) {
         c->apply_window_int16 = ff_apply_window_int16_round_sse2;
     }
     c->bswap_buf = ff_bswap32_buf_sse2;
@@ -647,25 +647,25 @@ static av_cold void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 }
 
 static av_cold void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
-                                       int mm_flags)
+                                       int cpu_flags)
 {
 #if HAVE_SSSE3_EXTERNAL
     c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_ssse3;
-    if (mm_flags & AV_CPU_FLAG_SSE4) // not really sse4, just slow on Conroe
+    if (cpu_flags & AV_CPU_FLAG_SSE4) // not really SSE4, just slow on Conroe
         c->add_hfyu_left_prediction = ff_add_hfyu_left_prediction_sse4;
 
-    if (mm_flags & AV_CPU_FLAG_ATOM)
+    if (cpu_flags & AV_CPU_FLAG_ATOM)
         c->apply_window_int16 = ff_apply_window_int16_ssse3_atom;
     else
         c->apply_window_int16 = ff_apply_window_int16_ssse3;
-    if (!(mm_flags & (AV_CPU_FLAG_SSE42|AV_CPU_FLAG_3DNOW))) // cachesplit
+    if (!(cpu_flags & (AV_CPU_FLAG_SSE42 | AV_CPU_FLAG_3DNOW))) // cachesplit
         c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_ssse3;
     c->bswap_buf = ff_bswap32_buf_ssse3;
 #endif /* HAVE_SSSE3_EXTERNAL */
 }
 
 static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
-                                      int mm_flags)
+                                      int cpu_flags)
 {
 #if HAVE_SSE4_EXTERNAL
     c->vector_clip_int32 = ff_vector_clip_int32_sse4;
@@ -674,14 +674,14 @@ static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
 
 av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_7REGS && HAVE_INLINE_ASM
-    if (mm_flags & AV_CPU_FLAG_CMOV)
+    if (cpu_flags & AV_CPU_FLAG_CMOV)
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_cmov;
 #endif
 
-    if (mm_flags & AV_CPU_FLAG_MMX) {
+    if (cpu_flags & AV_CPU_FLAG_MMX) {
 #if HAVE_INLINE_ASM
         const int idct_algo = avctx->idct_algo;
 
@@ -692,12 +692,12 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
                 c->idct                  = ff_simple_idct_mmx;
                 c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
             } else if (idct_algo == FF_IDCT_XVIDMMX) {
-                if (mm_flags & AV_CPU_FLAG_SSE2) {
+                if (cpu_flags & AV_CPU_FLAG_SSE2) {
                     c->idct_put              = ff_idct_xvid_sse2_put;
                     c->idct_add              = ff_idct_xvid_sse2_add;
                     c->idct                  = ff_idct_xvid_sse2;
                     c->idct_permutation_type = FF_SSE2_IDCT_PERM;
-                } else if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+                } else if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
                     c->idct_put              = ff_idct_xvid_mmxext_put;
                     c->idct_add              = ff_idct_xvid_mmxext_add;
                     c->idct                  = ff_idct_xvid_mmxext;
@@ -710,23 +710,23 @@ av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
         }
 #endif /* HAVE_INLINE_ASM */
 
-        dsputil_init_mmx(c, avctx, mm_flags);
+        dsputil_init_mmx(c, avctx, cpu_flags);
     }
 
-    if (mm_flags & AV_CPU_FLAG_MMXEXT)
-        dsputil_init_mmxext(c, avctx, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
+        dsputil_init_mmxext(c, avctx, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSE)
-        dsputil_init_sse(c, avctx, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_SSE)
+        dsputil_init_sse(c, avctx, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSE2)
-        dsputil_init_sse2(c, avctx, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_SSE2)
+        dsputil_init_sse2(c, avctx, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSSE3)
-        dsputil_init_ssse3(c, avctx, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_SSSE3)
+        dsputil_init_ssse3(c, avctx, cpu_flags);
 
-    if (mm_flags & AV_CPU_FLAG_SSE4)
-        dsputil_init_sse4(c, avctx, mm_flags);
+    if (cpu_flags & AV_CPU_FLAG_SSE4)
+        dsputil_init_sse4(c, avctx, cpu_flags);
 
     if (CONFIG_ENCODERS)
         ff_dsputilenc_init_mmx(c, avctx);

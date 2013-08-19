@@ -353,7 +353,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 static int dnxhd_write_header(AVCodecContext *avctx, uint8_t *buf)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
-    const uint8_t header_prefix[5] = { 0x00,0x00,0x02,0x80,0x01 };
+    static const uint8_t header_prefix[5] = { 0x00,0x00,0x02,0x80,0x01 };
 
     memset(buf, 0, 640);
 

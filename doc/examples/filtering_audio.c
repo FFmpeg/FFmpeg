@@ -38,8 +38,8 @@
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
 
-const char *filter_descr = "aresample=8000,aformat=sample_fmts=s16:channel_layouts=mono";
-const char *player       = "ffplay -f s16le -ar 8000 -ac 1 -";
+static const char *filter_descr = "aresample=8000,aformat=sample_fmts=s16:channel_layouts=mono";
+static const char *player       = "ffplay -f s16le -ar 8000 -ac 1 -";
 
 static AVFormatContext *fmt_ctx;
 static AVCodecContext *dec_ctx;
@@ -90,9 +90,9 @@ static int init_filters(const char *filters_descr)
     AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
-    const enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
-    const int64_t out_channel_layouts[] = { AV_CH_LAYOUT_MONO, -1 };
-    const int out_sample_rates[] = { 8000, -1 };
+    static const enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
+    static const int64_t out_channel_layouts[] = { AV_CH_LAYOUT_MONO, -1 };
+    static const int out_sample_rates[] = { 8000, -1 };
     const AVFilterLink *outlink;
     AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
 

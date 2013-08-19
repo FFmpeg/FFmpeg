@@ -140,9 +140,9 @@ typedef struct {
 static inline int put_codeword(PutBitContext *pb, vorbis_enc_codebook *cb,
                                int entry)
 {
-    assert(entry >= 0);
-    assert(entry < cb->nentries);
-    assert(cb->lens[entry]);
+    av_assert2(entry >= 0);
+    av_assert2(entry < cb->nentries);
+    av_assert2(cb->lens[entry]);
     if (pb->size_in_bits - put_bits_count(pb) < cb->lens[entry])
         return AVERROR(EINVAL);
     put_bits(pb, cb->lens[entry], cb->codewords[entry]);
@@ -189,7 +189,7 @@ static int ready_codebook(vorbis_enc_codebook *cb)
                 cb->pow2[i] += cb->dimensions[i * cb->ndimensions + j] * cb->dimensions[i * cb->ndimensions + j];
                 div *= vals;
             }
-            cb->pow2[i] /= 2.;
+            cb->pow2[i] /= 2.0;
         }
     }
     return 0;
@@ -198,7 +198,7 @@ static int ready_codebook(vorbis_enc_codebook *cb)
 static int ready_residue(vorbis_enc_residue *rc, vorbis_enc_context *venc)
 {
     int i;
-    assert(rc->type == 2);
+    av_assert0(rc->type == 2);
     rc->maxes = av_mallocz(sizeof(float[2]) * rc->classifications);
     if (!rc->maxes)
         return AVERROR(ENOMEM);
@@ -728,7 +728,7 @@ static void floor_fit(vorbis_enc_context *venc, vorbis_enc_floor *fc,
 {
     int range = 255 / fc->multiplier + 1;
     int i;
-    float tot_average = 0.;
+    float tot_average = 0.0;
     float averages[MAX_FLOOR_VALUES];
     for (i = 0; i < fc->values; i++) {
         averages[i] = get_floor_average(fc, coeffs, i);
@@ -878,10 +878,10 @@ static int residue_encode(vorbis_enc_context *venc, vorbis_enc_residue *rc,
     int classes[MAX_CHANNELS][NUM_RESIDUE_PARTITIONS];
     int classwords = venc->codebooks[rc->classbook].ndimensions;
 
-    assert(rc->type == 2);
-    assert(real_ch == 2);
+    av_assert0(rc->type == 2);
+    av_assert0(real_ch == 2);
     for (p = 0; p < partitions; p++) {
-        float max1 = 0., max2 = 0.;
+        float max1 = 0.0, max2 = 0.0;
         int s = rc->begin + p * psize;
         for (k = s; k < s + psize; k += 2) {
             max1 = FFMAX(max1, fabs(coeffs[          k / real_ch]));
@@ -968,7 +968,7 @@ static int apply_window_and_mdct(vorbis_enc_context *venc,
     int i, channel;
     const float * win = venc->win[0];
     int window_len = 1 << (venc->log2_blocksize[0] - 1);
-    float n = (float)(1 << venc->log2_blocksize[0]) / 4.;
+    float n = (float)(1 << venc->log2_blocksize[0]) / 4.0;
     // FIXME use dsp
 
     if (!venc->have_saved && !samples)

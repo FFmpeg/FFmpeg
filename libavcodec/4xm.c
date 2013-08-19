@@ -842,6 +842,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 20)
         return AVERROR_INVALIDDATA;
 
+    av_assert0(avctx->width % 16 == 0 && avctx->height % 16 == 0);
+
     if (buf_size < AV_RL32(buf + 4) + 8) {
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n",
                buf_size, AV_RL32(buf + 4));

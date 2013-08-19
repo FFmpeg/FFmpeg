@@ -49,6 +49,12 @@ static int zero12v_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "Width 1 not supported.\n");
         return AVERROR_INVALIDDATA;
     }
+
+    if (   avctx->codec_tag == MKTAG('0', '1', '2', 'v')
+        && avpkt->size % avctx->height == 0
+        && avpkt->size / avctx->height * 3 >= width * 8)
+        stride = avpkt->size / avctx->height;
+
     if (avpkt->size < avctx->height * stride) {
         av_log(avctx, AV_LOG_ERROR, "Packet too small: %d instead of %d\n",
                avpkt->size, avctx->height * stride);

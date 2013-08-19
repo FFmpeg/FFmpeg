@@ -19,9 +19,18 @@
 #ifndef AVCODEC_DCADSP_H
 #define AVCODEC_DCADSP_H
 
+#include "avfft.h"
+#include "synth_filter.h"
+
 typedef struct DCADSPContext {
     void (*lfe_fir)(float *out, const float *in, const float *coefs,
                     int decifactor, float scale);
+    void (*qmf_32_subbands)(float samples_in[32][8], int sb_act,
+                            SynthFilterContext *synth, FFTContext *imdct,
+                            float synth_buf_ptr[512],
+                            int *synth_buf_offset, float synth_buf2[32],
+                            const float window[512], float *samples_out,
+                            float raXin[32], float scale);
 } DCADSPContext;
 
 void ff_dcadsp_init(DCADSPContext *s);

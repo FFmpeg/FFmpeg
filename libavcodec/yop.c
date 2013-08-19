@@ -118,6 +118,8 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
     }
 
     s->frame = av_frame_alloc();
+    if (!s->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }

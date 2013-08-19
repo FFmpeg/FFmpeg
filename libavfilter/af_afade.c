@@ -200,11 +200,10 @@ FADE(flt, float)
 FADE(s16, int16_t)
 FADE(s32, int32_t)
 
-static int config_output(AVFilterLink *outlink)
+static int config_input(AVFilterLink *inlink)
 {
-    AVFilterContext *ctx    = outlink->src;
+    AVFilterContext *ctx    = inlink->dst;
     AudioFadeContext *afade = ctx->priv;
-    AVFilterLink *inlink    = ctx->inputs[0];
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBL:  afade->fade_samples = fade_samples_dbl;  break;
@@ -218,9 +217,9 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (afade->duration)
-        afade->nb_samples = afade->duration * inlink->sample_rate / AV_TIME_BASE;
+        afade->nb_samples = av_rescale(afade->duration, inlink->sample_rate, AV_TIME_BASE);
     if (afade->start_time)
-        afade->start_sample = afade->start_time * inlink->sample_rate / AV_TIME_BASE;
+        afade->start_sample = av_rescale(afade->start_time, inlink->sample_rate, AV_TIME_BASE);
 
     return 0;
 }
@@ -275,6 +274,7 @@ static const AVFilterPad avfilter_af_afade_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
@@ -283,7 +283,6 @@ static const AVFilterPad avfilter_af_afade_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .config_props = config_output,
     },
     { NULL }
 };

@@ -108,20 +108,20 @@ void ff_prefetch_3dnow(uint8_t *buf, ptrdiff_t stride, int h);
 av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
 {
 #if HAVE_YASM
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
-    if (bpc <= 8 && mm_flags & AV_CPU_FLAG_MMX) {
+    if (bpc <= 8 && cpu_flags & AV_CPU_FLAG_MMX) {
         ctx->emulated_edge_mc = emulated_edge_mc_mmx;
     }
-    if (mm_flags & AV_CPU_FLAG_3DNOW) {
+    if (cpu_flags & AV_CPU_FLAG_3DNOW) {
         ctx->prefetch = ff_prefetch_3dnow;
     }
 #endif /* ARCH_X86_32 */
-    if (mm_flags & AV_CPU_FLAG_MMXEXT) {
+    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
         ctx->prefetch = ff_prefetch_mmxext;
     }
-    if (bpc <= 8 && mm_flags & AV_CPU_FLAG_SSE) {
+    if (bpc <= 8 && cpu_flags & AV_CPU_FLAG_SSE) {
         ctx->emulated_edge_mc = emulated_edge_mc_sse;
     }
 #endif /* HAVE_YASM */

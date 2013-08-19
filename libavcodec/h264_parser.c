@@ -65,30 +65,9 @@ static int h264_find_frame_end(H264Context *h, const uint8_t *buf,
         }
 
         if (state == 7) {
-#if HAVE_FAST_UNALIGNED
-            /* we check i < buf_size instead of i + 3 / 7 because it is
-             * simpler and there must be FF_INPUT_BUFFER_PADDING_SIZE
-             * bytes at the end.
-             */
-#    if HAVE_FAST_64BIT
-            while (i < next_avc &&
-                   !((~*(const uint64_t *)(buf + i) &
-                      (*(const uint64_t *)(buf + i) - 0x0101010101010101ULL)) &
-                      0x8080808080808080ULL))
-                i += 8;
-#    else
-            while (i < next_avc &&
-                   !((~*(const uint32_t *)(buf + i) &
-                      (*(const uint32_t *)(buf + i) - 0x01010101U)) &
-                      0x80808080U))
-                i += 4;
-#    endif
-#endif
-            for (; i < next_avc; i++)
-                if (!buf[i]) {
-                    state = 2;
-                    break;
-                }
+            i += h->h264dsp.h264_find_start_code_candidate(buf + i, next_avc - i);
+            if (i < next_avc)
+                state = 2;
         } else if (state <= 2) {
             if (buf[i] == 1)
                 state ^= 5;            // 2->7, 1->4, 0->5
@@ -172,6 +151,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     h->sei_dpb_output_delay         = 0;
     h->sei_cpb_removal_delay        = -1;
     h->sei_buffering_period_present = 0;
+    h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
 
     if (!buf_size)
         return 0;
@@ -287,7 +267,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                     h->delta_poc[1] = get_se_golomb(&h->gb);
             }
 
-            ff_init_poc(h, field_poc, NULL);
+            ff_init_poc(h, field_poc, &s->output_picture_number);
 
             if (h->sps.pic_struct_present_flag) {
                 switch (h->sei_pic_struct) {
@@ -465,6 +445,7 @@ static av_cold int init(AVCodecParserContext *s)
     H264Context *h = s->priv_data;
     h->thread_context[0]   = h;
     h->slice_context_count = 1;
+    ff_h264dsp_init(&h->h264dsp, 8, 1);
     return 0;
 }
 

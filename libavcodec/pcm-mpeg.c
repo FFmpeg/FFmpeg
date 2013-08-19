@@ -1,6 +1,6 @@
 /*
  * LPCM codecs for PCM formats found in MPEG streams
- * Copyright (c) 2009 Christian Schmidt
+ * Copyright (c) 2009, 2013 Christian Schmidt
  *
  * This file is part of FFmpeg.
  *
@@ -72,7 +72,7 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     avctx->bits_per_coded_sample = bits_per_samples[header[3] >> 6];
     if (!(avctx->bits_per_coded_sample == 16 || avctx->bits_per_coded_sample == 24)) {
         av_log(avctx, AV_LOG_ERROR, "unsupported sample depth (%d)\n", avctx->bits_per_coded_sample);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     avctx->sample_fmt = avctx->bits_per_coded_sample == 16 ? AV_SAMPLE_FMT_S16 :
                                                              AV_SAMPLE_FMT_S32;
@@ -94,7 +94,7 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
         avctx->sample_rate = 0;
         av_log(avctx, AV_LOG_ERROR, "reserved sample rate (%d)\n",
                header[2] & 0x0f);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /*
@@ -108,7 +108,7 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     if (!avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "reserved channel configuration (%d)\n",
                channel_layout);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     avctx->bit_rate = FFALIGN(avctx->channels, 2) * avctx->sample_rate *
@@ -136,11 +136,11 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     if (buf_size < 4) {
         av_log(avctx, AV_LOG_ERROR, "PCM packet too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
-    if (pcm_bluray_parse_header(avctx, src))
-        return -1;
+    if ((retval = pcm_bluray_parse_header(avctx, src)))
+        return retval;
     src += 4;
     buf_size -= 4;
 

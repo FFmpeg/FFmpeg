@@ -125,7 +125,7 @@ static VLC              vec4_vlc;         ///< 4 coefficients per symbol
 static VLC              vec2_vlc;         ///< 2 coefficients per symbol
 static VLC              vec1_vlc;         ///< 1 coefficient per symbol
 static VLC              coef_vlc[2];      ///< coefficient run length vlc codes
-static float            sin64[33];        ///< sinus table for decorrelation
+static float            sin64[33];        ///< sine table for decorrelation
 
 /**
  * @brief frame specific decoder context for a single channel
@@ -458,7 +458,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
                      1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
                      / (1 << (s->bits_per_sample - 1)));
 
-    /** init MDCT windows: simple sinus window */
+    /** init MDCT windows: simple sine window */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
         const int win_idx = WMAPRO_BLOCK_MAX_BITS - i;
         ff_init_ff_sine_windows(win_idx);

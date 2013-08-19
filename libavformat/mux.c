@@ -32,6 +32,7 @@
 #include "id3v2.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
@@ -585,7 +586,9 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
         return AVERROR(ENOMEM);
     this_pktl->pkt = *pkt;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
     pkt->destruct  = NULL;           // do not free original but only the copy
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     pkt->buf       = NULL;
     av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-allocated memory

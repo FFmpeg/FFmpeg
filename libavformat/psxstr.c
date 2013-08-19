@@ -30,6 +30,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
@@ -237,7 +238,9 @@ static int str_read_packet(AVFormatContext *s,
                     pkt->size= -1;
                     pkt->buf = NULL;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
                     pkt->destruct = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
                     return 0;
                 }

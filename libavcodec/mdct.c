@@ -34,7 +34,11 @@
 #if CONFIG_FFT_FLOAT
 #   define RSCALE(x) (x)
 #else
+#if CONFIG_FFT_FIXED_32
+#   define RSCALE(x) (((x) + 32) >> 6)
+#else /* CONFIG_FFT_FIXED_32 */
 #   define RSCALE(x) ((x) >> 1)
+#endif /* CONFIG_FFT_FIXED_32 */
 #endif
 
 /**

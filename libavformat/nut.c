@@ -144,6 +144,19 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('Y', '4',   0,  16) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(16,    0, '4', 'Y') },
 
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,   8) },
+
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,   9) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG( 9,    0, '3', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  10) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(10,    0, '3', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  12) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(12,    0, '3', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  14) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(14,    0, '3', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '3',   0,  16) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(16,    0, '3', 'G') },
+
     { AV_CODEC_ID_NONE,             0 }
 };
 

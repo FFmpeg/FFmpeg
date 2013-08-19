@@ -52,7 +52,6 @@
 #include "golomb.h"
 #include "hpeldsp.h"
 #include "rectangle.h"
-#include "vdpau_internal.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -650,8 +649,8 @@ static int svq3_decode_mb(SVQ3Context *s, unsigned int mb_type)
         dir = i_mb_type_info[mb_type - 8].pred_mode;
         dir = (dir >> 1) ^ 3 * (dir & 1) ^ 1;
 
-        if ((h->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, dir, 0)) == -1) {
-            av_log(h->avctx, AV_LOG_ERROR, "check_intra_pred_mode = -1\n");
+        if ((h->intra16x16_pred_mode = ff_h264_check_intra_pred_mode(h, dir, 0)) < 0) {
+            av_log(h->avctx, AV_LOG_ERROR, "check_intra_pred_mode < 0\n");
             return -1;
         }
 

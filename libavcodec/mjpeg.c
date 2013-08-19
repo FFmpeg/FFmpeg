@@ -38,7 +38,7 @@
  * The spec says that the values given produce "good" quality, and
  * when divided by 2, "very good" quality.
  */
-const unsigned char std_luminance_quant_tbl[64] = {
+static const unsigned char std_luminance_quant_tbl[64] = {
     16,  11,  10,  16,  24,  40,  51,  61,
     12,  12,  14,  19,  26,  58,  60,  55,
     14,  13,  16,  24,  40,  57,  69,  56,
@@ -48,7 +48,7 @@ const unsigned char std_luminance_quant_tbl[64] = {
     49,  64,  78,  87, 103, 121, 120, 101,
     72,  92,  95,  98, 112, 100, 103,  99
 };
-const unsigned char std_chrominance_quant_tbl[64] = {
+static const unsigned char std_chrominance_quant_tbl[64] = {
     17,  18,  24,  47,  99,  99,  99,  99,
     18,  21,  26,  66,  99,  99,  99,  99,
     24,  26,  56,  99,  99,  99,  99,  99,

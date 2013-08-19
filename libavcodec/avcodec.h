@@ -29,6 +29,7 @@
 
 #include <errno.h>
 #include "libavutil/samplefmt.h"
+#include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/buffer.h"
 #include "libavutil/cpu.h"
@@ -418,7 +419,9 @@ enum AVCodecID {
     AV_CODEC_ID_MLP,
     AV_CODEC_ID_GSM_MS, /* as found in WAV */
     AV_CODEC_ID_ATRAC3,
+#if FF_API_VOXWARE
     AV_CODEC_ID_VOXWARE,
+#endif
     AV_CODEC_ID_APE,
     AV_CODEC_ID_NELLYMOSER,
     AV_CODEC_ID_MUSEPACK8,
@@ -450,6 +453,7 @@ enum AVCodecID {
     AV_CODEC_ID_OPUS_DEPRECATED,
     AV_CODEC_ID_COMFORT_NOISE,
     AV_CODEC_ID_TAK_DEPRECATED,
+    AV_CODEC_ID_METASOUND,
     AV_CODEC_ID_FFWAVESYNTH = MKBETAG('F','F','W','S'),
     AV_CODEC_ID_SONIC       = MKBETAG('S','O','N','C'),
     AV_CODEC_ID_SONIC_LS    = MKBETAG('S','O','N','L'),
@@ -627,26 +631,6 @@ enum AVColorTransferCharacteristic{
     AVCOL_TRC_NB             , ///< Not part of ABI
 };
 
-enum AVColorSpace{
-    AVCOL_SPC_RGB         = 0,
-    AVCOL_SPC_BT709       = 1, ///< also ITU-R BT1361 / IEC 61966-2-4 xvYCC709 / SMPTE RP177 Annex B
-    AVCOL_SPC_UNSPECIFIED = 2,
-    AVCOL_SPC_FCC         = 4,
-    AVCOL_SPC_BT470BG     = 5, ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM / IEC 61966-2-4 xvYCC601
-    AVCOL_SPC_SMPTE170M   = 6, ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC / functionally identical to above
-    AVCOL_SPC_SMPTE240M   = 7,
-    AVCOL_SPC_YCOCG       = 8, ///< Used by Dirac / VC-2 and H.264 FRext, see ITU-T SG16
-    AVCOL_SPC_NB             , ///< Not part of ABI
-};
-#define AVCOL_SPC_YCGCO AVCOL_SPC_YCOCG
-
-enum AVColorRange{
-    AVCOL_RANGE_UNSPECIFIED = 0,
-    AVCOL_RANGE_MPEG        = 1, ///< the normal 219*2^(n-8) "MPEG" YUV ranges
-    AVCOL_RANGE_JPEG        = 2, ///< the normal     2^n-1   "JPEG" YUV ranges
-    AVCOL_RANGE_NB             , ///< Not part of ABI
-};
-
 /**
  *  X   X      3 4 X      X are luma samples,
  *             1 2        1-6 are possible chroma positions
@@ -781,10 +765,12 @@ typedef struct RcOverride{
  * This can be used to prevent truncation of the last audio samples.
  */
 #define CODEC_CAP_SMALL_LAST_FRAME 0x0040
+#if FF_API_CAP_VDPAU
 /**
  * Codec can export data for HW decoding (VDPAU).
  */
 #define CODEC_CAP_HWACCEL_VDPAU    0x0080
+#endif
 /**
  * Codec can output multiple frames per AVPacket
  * Normally demuxers return one frame at a time, demuxers which do not do
@@ -1930,7 +1916,7 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      * @deprecated Deprecated in favor of request_channel_layout.
      */
-    int request_channels;
+    attribute_deprecated int request_channels;
 #endif
 
     /**
@@ -3092,11 +3078,13 @@ typedef struct AVHWAccel {
  */
 
 /**
- * four components are given, that's all.
- * the last component is alpha
+ * Picture data structure.
+ *
+ * Up to four components can be stored into it, the last component is
+ * alpha.
  */
 typedef struct AVPicture {
-    uint8_t *data[AV_NUM_DATA_POINTERS];
+    uint8_t *data[AV_NUM_DATA_POINTERS];    ///< pointers to the image data planes
     int linesize[AV_NUM_DATA_POINTERS];     ///< number of bytes per line
 } AVPicture;
 
@@ -3296,7 +3284,7 @@ const AVClass *avcodec_get_subtitle_rect_class(void);
  * can use this AVCodecContext to decode/encode video/audio data.
  *
  * @param dest target codec context, should be initialized with
- *             avcodec_alloc_context3(), but otherwise uninitialized
+ *             avcodec_alloc_context3(NULL), but otherwise uninitialized
  * @param src source codec context
  * @return AVERROR() on error (e.g. memory allocation error), 0 on success
  */
@@ -3555,6 +3543,66 @@ int av_packet_split_side_data(AVPacket *pkt);
 
 
 /**
+ * Convenience function to free all the side data stored.
+ * All the other fields stay untouched.
+ *
+ * @param pkt packet
+ */
+void av_packet_free_side_data(AVPacket *pkt);
+
+/**
+ * Setup a new reference to the data described by a given packet
+ *
+ * If src is reference-counted, setup dst as a new reference to the
+ * buffer in src. Otherwise allocate a new buffer in dst and copy the
+ * data from src into it.
+ *
+ * All the other fields are copied from src.
+ *
+ * @see av_packet_unref
+ *
+ * @param dst Destination packet
+ * @param src Source packet
+ *
+ * @return 0 on success, a negative AVERROR on error.
+ */
+int av_packet_ref(AVPacket *dst, AVPacket *src);
+
+/**
+ * Wipe the packet.
+ *
+ * Unreference the buffer referenced by the packet and reset the
+ * remaining packet fields to their default values.
+ *
+ * @param pkt The packet to be unreferenced.
+ */
+void av_packet_unref(AVPacket *pkt);
+
+/**
+ * Move every field in src to dst and reset src.
+ *
+ * @see av_packet_unref
+ *
+ * @param src Source packet, will be reset
+ * @param dst Destination packet
+ */
+void av_packet_move_ref(AVPacket *dst, AVPacket *src);
+
+/**
+ * Copy only "properties" fields from src to dst.
+ *
+ * Properties for the purpose of this function are all the fields
+ * beside those related to the packet data (buf, data, size)
+ *
+ * @param dst Destination packet
+ * @param src Source packet
+ *
+ * @return 0 on success AVERROR on failure.
+ *
+ */
+int av_packet_copy_props(AVPacket *dst, const AVPacket *src);
+
+/**
  * @}
  */
 
@@ -3623,6 +3671,28 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
  */
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[AV_NUM_DATA_POINTERS]);
+
+/**
+ * Converts AVChromaLocation to swscale x/y chroma position.
+ *
+ * The positions represent the chroma (0,0) position in a coordinates system
+ * with luma (0,0) representing the origin and luma(1,1) representing 256,256
+ *
+ * @param xpos  horizontal chroma sample position
+ * @param ypos  vertical   chroma sample position
+ */
+int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos);
+
+/**
+ * Converts swscale x/y chroma position to AVChromaLocation.
+ *
+ * The positions represent the chroma (0,0) position in a coordinates system
+ * with luma (0,0) representing the origin and luma(1,1) representing 256,256
+ *
+ * @param xpos  horizontal chroma sample position
+ * @param ypos  vertical   chroma sample position
+ */
+enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos);
 
 #if FF_API_OLD_DECODE_AUDIO
 /**
@@ -3955,6 +4025,14 @@ typedef struct AVCodecParserContext {
      * AV_PICTURE_STRUCTURE_TOP_FIELD.
      */
     enum AVPictureStructure picture_structure;
+
+    /**
+     * Picture number incremented in presentation or output order.
+     * This field may be reinitialized at the first picture of a new sequence.
+     *
+     * For example, this corresponds to H.264 PicOrderCnt.
+     */
+    int output_picture_number;
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
@@ -4286,15 +4364,18 @@ void av_resample_close(struct AVResampleContext *c);
  */
 
 /**
- * Allocate memory for a picture.  Call avpicture_free() to free it.
+ * Allocate memory for the pixels of a picture and setup the AVPicture
+ * fields for it.
  *
- * @see avpicture_fill()
+ * Call avpicture_free() to free it.
  *
- * @param picture the picture to be filled in
- * @param pix_fmt the format of the picture
- * @param width the width of the picture
- * @param height the height of the picture
- * @return zero if successful, a negative value if not
+ * @param picture            the picture structure to be filled in
+ * @param pix_fmt            the pixel format of the picture
+ * @param width              the width of the picture
+ * @param height             the height of the picture
+ * @return zero if successful, a negative error code otherwise
+ *
+ * @see av_image_alloc(), avpicture_fill()
  */
 int avpicture_alloc(AVPicture *picture, enum AVPixelFormat pix_fmt, int width, int height);
 
@@ -4308,8 +4389,25 @@ int avpicture_alloc(AVPicture *picture, enum AVPixelFormat pix_fmt, int width, i
 void avpicture_free(AVPicture *picture);
 
 /**
- * Fill in the AVPicture fields, always assume a linesize alignment of
- * 1.
+ * Setup the picture fields based on the specified image parameters
+ * and the provided image data buffer.
+ *
+ * The picture fields are filled in by using the image data buffer
+ * pointed to by ptr.
+ *
+ * If ptr is NULL, the function will fill only the picture linesize
+ * array and return the required size for the image buffer.
+ *
+ * To allocate an image buffer and fill the picture data in one call,
+ * use avpicture_alloc().
+ *
+ * @param picture       the picture to be filled in
+ * @param ptr           buffer where the image data is stored, or NULL
+ * @param pix_fmt       the pixel format of the image
+ * @param width         the width of the image in pixels
+ * @param height        the height of the image in pixels
+ * @return the size in bytes required for src, a negative error code
+ * in case of failure
  *
  * @see av_image_fill_arrays()
  */
@@ -4317,19 +4415,36 @@ int avpicture_fill(AVPicture *picture, const uint8_t *ptr,
                    enum AVPixelFormat pix_fmt, int width, int height);
 
 /**
- * Copy pixel data from an AVPicture into a buffer, always assume a
- * linesize alignment of 1.
+ * Copy pixel data from an AVPicture into a buffer.
+ *
+ * avpicture_get_size() can be used to compute the required size for
+ * the buffer to fill.
+ *
+ * @param src        source picture with filled data
+ * @param pix_fmt    picture pixel format
+ * @param width      picture width
+ * @param height     picture height
+ * @param dest       destination buffer
+ * @param dest_size  destination buffer size in bytes
+ * @return the number of bytes written to dest, or a negative value
+ * (error code) on error, for example if the destination buffer is not
+ * big enough
  *
  * @see av_image_copy_to_buffer()
  */
-int avpicture_layout(const AVPicture* src, enum AVPixelFormat pix_fmt,
+int avpicture_layout(const AVPicture *src, enum AVPixelFormat pix_fmt,
                      int width, int height,
                      unsigned char *dest, int dest_size);
 
 /**
  * Calculate the size in bytes that a picture of the given width and height
  * would occupy if stored in the given picture format.
- * Always assume a linesize alignment of 1.
+ *
+ * @param pix_fmt    picture pixel format
+ * @param width      picture width
+ * @param height     picture height
+ * @return the computed picture buffer size or a negative error code
+ * in case of error
  *
  * @see av_image_get_buffer_size().
  */
@@ -4666,10 +4781,10 @@ AVBitStreamFilterContext *av_bitstream_filter_init(const char *name);
  * If the return value is positive, an output buffer is allocated and
  * is availble in *poutbuf, and is distinct from the input buffer.
  *
- * If the return value is 0, the output output buffer is not allocated
- * and the output buffer should be considered identical to the input
- * buffer, or in case *poutbuf was set it points to the input buffer
- * (not necessarily to its starting address).
+ * If the return value is 0, the output buffer is not allocated and
+ * should be considered identical to the input buffer, or in case
+ * *poutbuf was set it points to the input buffer (not necessarily to
+ * its starting address).
  */
 int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                                AVCodecContext *avctx, const char *args,
@@ -4719,7 +4834,7 @@ void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
 
 /**
  * Same behaviour av_fast_malloc but the buffer has additional
- * FF_INPUT_BUFFER_PADDING_SIZE at the end which will will always be 0.
+ * FF_INPUT_BUFFER_PADDING_SIZE at the end which will always be 0.
  *
  * In addition the whole buffer will initially and after resizes
  * be 0-initialized so that no uninitialized data will ever appear.

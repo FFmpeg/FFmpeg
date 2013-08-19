@@ -234,8 +234,8 @@ Just create an "input.avs" text file with this single line ...
   ffmpeg -i input.avs
 @end example
 
-For ANY other help on Avisynth, please visit the
-@uref{http://www.avisynth.org/, Avisynth homepage}.
+For ANY other help on AviSynth, please visit the
+@uref{http://www.avisynth.org/, AviSynth homepage}.
 
 @section How can I join video files?
 

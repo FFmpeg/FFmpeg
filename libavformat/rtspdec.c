@@ -29,6 +29,7 @@
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
+#include "rtpproto.h"
 #include "rtsp.h"
 #include "rdt.h"
 #include "url.h"

@@ -57,7 +57,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     AShowInfoContext *s  = ctx->priv;
     char chlayout_str[128];
     uint32_t checksum = 0;
-    int channels    = av_get_channel_layout_nb_channels(buf->channel_layout);
+    int channels    = inlink->channels;
     int planar      = av_sample_fmt_is_planar(buf->format);
     int block_align = av_get_bytes_per_sample(buf->format) * (planar ? 1 : channels);
     int data_size   = buf->nb_samples * block_align;

@@ -91,7 +91,7 @@ static void audiogen(AVLFG *rnd, void **data, enum AVSampleFormat sample_fmt,
 
     k = 0;
 
-    /* 1 second of single freq sinus at 1000 Hz */
+    /* 1 second of single freq sine at 1000 Hz */
     a = 0;
     for (i = 0; i < 1 * sample_rate && k < nb_samples; i++, k++) {
         v = sin(a) * 0.30;

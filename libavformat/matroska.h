@@ -156,6 +156,7 @@
 /* IDs in the cuetrackposition master */
 #define MATROSKA_ID_CUETRACK   0xF7
 #define MATROSKA_ID_CUECLUSTERPOSITION 0xF1
+#define MATROSKA_ID_CUERELATIVEPOSITION 0xF0
 #define MATROSKA_ID_CUEBLOCKNUMBER 0x5378
 
 /* IDs in the tags master */

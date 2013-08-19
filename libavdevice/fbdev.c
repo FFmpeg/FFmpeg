@@ -34,6 +34,7 @@
 #include <time.h>
 #include <linux/fb.h>
 
+#include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -57,6 +58,7 @@ static const struct rgb_pixfmt_map_entry rgb_pixfmt_map[] = {
     {  32,       3,           2,           8,            0,   AV_PIX_FMT_ABGR  },
     {  24,       0,           8,          16,            0,   AV_PIX_FMT_RGB24 },
     {  24,      16,           8,           0,            0,   AV_PIX_FMT_BGR24 },
+    {  16,      11,           5,           0,           16,   AV_PIX_FMT_RGB565 },
 };
 
 static enum AVPixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varinfo)
@@ -79,7 +81,6 @@ typedef struct {
     AVClass *class;          ///< class for private options
     int frame_size;          ///< size in bytes of a grabbed frame
     AVRational framerate_q;  ///< framerate
-    char *framerate;         ///< framerate string set by a private option
     int64_t time_frame;      ///< time for the next frame to output (in 1/1000000 units)
 
     int fd;                  ///< framebuffer device file descriptor
@@ -100,12 +101,6 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     enum AVPixelFormat pix_fmt;
     int ret, flags = O_RDONLY;
 
-    ret = av_parse_video_rate(&fbdev->framerate_q, fbdev->framerate);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", fbdev->framerate);
-        return ret;
-    }
-
     if (!(st = avformat_new_stream(avctx, NULL)))
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in microseconds */
@@ -114,7 +109,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     if (avctx->flags & AVFMT_FLAG_NONBLOCK)
         flags |= O_NONBLOCK;
 
-    if ((fbdev->fd = open(avctx->filename, flags)) == -1) {
+    if ((fbdev->fd = avpriv_open(avctx->filename, flags)) == -1) {
         ret = AVERROR(errno);
         av_log(avctx, AV_LOG_ERROR,
                "Could not open framebuffer device '%s': %s\n",
@@ -245,7 +240,7 @@ static av_cold int fbdev_read_close(AVFormatContext *avctx)
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "framerate","", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { "framerate","", OFFSET(framerate_q), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 

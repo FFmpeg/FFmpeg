@@ -793,6 +793,12 @@ static int mov_read_moov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int ret;
 
+    if (c->found_moov) {
+        av_log(c->fc, AV_LOG_WARNING, "Found duplicated MOOV Atom. Skipped it\n");
+        avio_skip(pb, atom.size);
+        return 0;
+    }
+
     if ((ret = mov_read_default(c, pb, atom)) < 0)
         return ret;
     /* we parsed the 'moov' atom, we can terminate the parsing as soon as we find the 'mdat' */
@@ -837,6 +843,11 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
+
+    if (sc->time_scale) {
+        av_log(c->fc, AV_LOG_ERROR, "Multiple mdhd?\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     version = avio_r8(pb);
     if (version > 1) {
@@ -2958,8 +2969,10 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             left = a.size - avio_tell(pb) + start_pos;
             if (left > 0) /* skip garbage at atom end */
                 avio_skip(pb, left);
-            else if(left < 0) {
-                av_log(c->fc, AV_LOG_DEBUG, "undoing overread of %"PRId64" in '%.4s'\n", -left, (char*)&a.type);
+            else if (left < 0) {
+                av_log(c->fc, AV_LOG_WARNING,
+                       "overread end of atom '%.4s' by %"PRId64" bytes\n",
+                       (char*)&a.type, -left);
                 avio_seek(pb, left, SEEK_CUR);
             }
         }

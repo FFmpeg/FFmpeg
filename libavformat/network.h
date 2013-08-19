@@ -90,7 +90,7 @@ int ff_network_wait_fd(int fd, int write);
  * @fd Socket descriptor
  * @write Set 1 to wait for socket able to be read, 0 to be written
  * @timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
- * @param int_cb Interrupt callback, is checked after each ff_network_wait_fd call
+ * @param int_cb Interrupt callback, is checked before each ff_network_wait_fd call
  * @return 0 if data can be read/written, AVERROR(ETIMEDOUT) if timeout expired, or negative error code
  */
 int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
@@ -251,12 +251,17 @@ int ff_listen_bind(int fd, const struct sockaddr *addr,
  * @param timeout  Polling timeout in milliseconds.
  * @param h        URLContext providing interrupt check
  *                 callback and logging context.
+ * @param will_try_next Whether the caller will try to connect to another
+ *                 address for the same host name, affecting the form of
+ *                 logged errors.
  * @return         0 on success, AVERROR on failure.
  */
 int ff_listen_connect(int fd, const struct sockaddr *addr,
                       socklen_t addrlen, int timeout,
-                      URLContext *h);
+                      URLContext *h, int will_try_next);
 
 int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
+
+int ff_socket(int domain, int type, int protocol);
 
 #endif /* AVFORMAT_NETWORK_H */

@@ -124,10 +124,10 @@ FATE_FILTER_VSYNTH-$(CONFIG_CROP_FILTER) += fate-filter-crop
 fate-filter-crop: CMD = video_filter "crop=iw-100:ih-100:100:100"
 
 FATE_FILTER_VSYNTH-$(call ALLYES, CROP_FILTER SCALE_FILTER) += fate-filter-crop_scale
-fate-filter-crop_scale: CMD = video_filter "crop=iw-100:ih-100:100:100,scale=400:-1"
+fate-filter-crop_scale: CMD = video_filter "crop=iw-100:ih-100:100:100,scale=w=400:h=-1"
 
 FATE_FILTER_VSYNTH-$(call ALLYES, CROP_FILTER SCALE_FILTER VFLIP_FILTER) += fate-filter-crop_scale_vflip
-fate-filter-crop_scale_vflip: CMD = video_filter "null,null,crop=iw-200:ih-200:200:200,crop=iw-20:ih-20:20:20,scale=200:200,scale=250:250,vflip,vflip,null,scale=200:200,crop=iw-100:ih-100:100:100,vflip,scale=200:200,null,vflip,crop=iw-100:ih-100:100:100,null"
+fate-filter-crop_scale_vflip: CMD = video_filter "null,null,crop=iw-200:ih-200:200:200,crop=iw-20:ih-20:20:20,scale=w=200:h=200,scale=w=250:h=250,vflip,vflip,null,scale=w=200:h=200,crop=iw-100:ih-100:100:100,vflip,scale=w=200:h=200,null,vflip,crop=iw-100:ih-100:100:100,null"
 
 FATE_FILTER_VSYNTH-$(call ALLYES, CROP_FILTER VFLIP_FILTER) += fate-filter-crop_vflip
 fate-filter-crop_vflip: CMD = video_filter "crop=iw-100:ih-100:100:100,vflip"
@@ -136,10 +136,10 @@ FATE_FILTER_VSYNTH-$(CONFIG_NULL_FILTER) += fate-filter-null
 fate-filter-null: CMD = video_filter "null"
 
 FATE_FILTER_VSYNTH-$(CONFIG_SCALE_FILTER) += fate-filter-scale200
-fate-filter-scale200: CMD = video_filter "scale=200:200"
+fate-filter-scale200: CMD = video_filter "scale=w=200:h=200"
 
 FATE_FILTER_VSYNTH-$(CONFIG_SCALE_FILTER) += fate-filter-scale500
-fate-filter-scale500: CMD = video_filter "scale=500:500"
+fate-filter-scale500: CMD = video_filter "scale=w=500:h=500"
 
 FATE_FILTER_VSYNTH-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip
 fate-filter-vflip: CMD = video_filter "vflip"
@@ -194,6 +194,32 @@ fate-filter-setdar: CMD = video_filter "setdar=dar=16/9"
 
 FATE_FILTER_VSYNTH-$(CONFIG_SETSAR_FILTER) += fate-filter-setsar
 fate-filter-setsar: CMD = video_filter "setsar=sar=16/11"
+
+FATE_STEREO3D += fate-filter-stereo3d-al-sbsl
+fate-filter-stereo3d-al-sbsl: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=al:sbsl
+
+FATE_STEREO3D += fate-filter-stereo3d-ar-abl
+fate-filter-stereo3d-ar-abl: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=ar:abl
+
+FATE_STEREO3D += fate-filter-stereo3d-abr-mr
+fate-filter-stereo3d-abr-mr: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=abr:mr
+
+FATE_STEREO3D += fate-filter-stereo3d-abr-ml
+fate-filter-stereo3d-abr-ml: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=abr:ml
+
+FATE_STEREO3D  += fate-filter-stereo3d-sbsl-abl
+fate-filter-stereo3d-sbsl-abl: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=sbsl:abl
+
+FATE_STEREO3D += fate-filter-stereo3d-sbsl-abr
+fate-filter-stereo3d-sbsl-abr: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=sbsl:abr
+
+FATE_STEREO3D += fate-filter-stereo3d-sbsl-al
+fate-filter-stereo3d-sbsl-al: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=sbsl:al
+
+FATE_STEREO3D += fate-filter-stereo3d-sbsl-sbsr
+fate-filter-stereo3d-sbsl-sbsr: CMD = framecrc -c:v pgmyuv -i $(SRC) -vframes 5 -flags +bitexact -sws_flags +accurate_rnd+bitexact -vf stereo3d=sbsl:sbsr
+
+FATE_FILTER_VSYNTH-$(CONFIG_STEREO3D_FILTER) += $(FATE_STEREO3D)
 
 FATE_FILTER_VSYNTH-$(CONFIG_THUMBNAIL_FILTER) += fate-filter-thumbnail
 fate-filter-thumbnail: CMD = video_filter "thumbnail=10"

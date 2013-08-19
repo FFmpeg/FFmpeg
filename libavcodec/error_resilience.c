@@ -854,7 +854,6 @@ void ff_er_frame_end(ERContext *s)
     if (!s->avctx->err_recognition || s->error_count == 0              ||
         s->avctx->lowres                                               ||
         s->avctx->hwaccel                                              ||
-        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU          ||
         !s->cur_pic || s->cur_pic->field_picture                               ||
         s->error_count == 3 * s->mb_width *
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {

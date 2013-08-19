@@ -946,7 +946,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             av_log(av_log_obj, AV_LOG_INFO, " (default ");
             switch (opt->type) {
             case AV_OPT_TYPE_FLAGS:
-                av_log(av_log_obj, AV_LOG_INFO, "%0llX", opt->default_val.i64);
+                av_log(av_log_obj, AV_LOG_INFO, "%"PRIX64, opt->default_val.i64);
                 break;
             case AV_OPT_TYPE_DURATION:
             case AV_OPT_TYPE_INT:
@@ -960,6 +960,12 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_RATIONAL: {
                 AVRational q = av_d2q(opt->default_val.dbl, INT_MAX);
                 av_log(av_log_obj, AV_LOG_INFO, "%d/%d", q.num, q.den); }
+                break;
+            case AV_OPT_TYPE_PIXEL_FMT:
+                av_log(av_log_obj, AV_LOG_INFO, "%s", (char *)av_x_if_null(av_get_pix_fmt_name(opt->default_val.i64), "none"));
+                break;
+            case AV_OPT_TYPE_SAMPLE_FMT:
+                av_log(av_log_obj, AV_LOG_INFO, "%s", (char *)av_x_if_null(av_get_sample_fmt_name(opt->default_val.i64), "none"));
                 break;
             case AV_OPT_TYPE_COLOR:
             case AV_OPT_TYPE_IMAGE_SIZE:
@@ -1288,6 +1294,9 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
 
     c= *(AVClass**)obj;
 
+    if (!c)
+        return NULL;
+
     if (search_flags & AV_OPT_SEARCH_CHILDREN) {
         if (search_flags & AV_OPT_SEARCH_FAKE_OBJ) {
             const AVClass *child = NULL;
@@ -1497,7 +1506,7 @@ int main(void)
     printf("\nTesting av_set_options_string()\n");
     {
         TestContext test_ctx = { 0 };
-        const char *options[] = {
+        static const char * const options[] = {
             "",
             ":",
             "=",
@@ -1556,7 +1565,7 @@ int main(void)
     printf("\nTesting av_opt_set_from_string()\n");
     {
         TestContext test_ctx = { 0 };
-        const char *options[] = {
+        static const char * const options[] = {
             "",
             "5",
             "5:hello",
@@ -1567,7 +1576,7 @@ int main(void)
             " 5 : hello : size = pal ",
             "a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42"
         };
-        const char *shorthand[] = { "num", "string", NULL };
+        static const char * const shorthand[] = { "num", "string", NULL };
 
         test_ctx.class = &test_class;
         av_opt_set_defaults(&test_ctx);

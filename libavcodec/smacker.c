@@ -48,7 +48,7 @@
  */
 typedef struct SmackVContext {
     AVCodecContext *avctx;
-    AVFrame pic;
+    AVFrame *pic;
 
     int *mmap_tbl, *mclr_tbl, *full_tbl, *type_tbl;
     int mmap_last[3], mclr_last[3], full_last[3], type_last[3];
@@ -387,19 +387,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (avpkt->size <= 769)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_reget_buffer(avctx, &smk->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, smk->pic)) < 0)
         return ret;
 
     /* make the palette available on the way out */
-    pal = (uint32_t*)smk->pic.data[1];
+    pal = (uint32_t*)smk->pic->data[1];
     bytestream2_init(&gb2, avpkt->data, avpkt->size);
     flags = bytestream2_get_byteu(&gb2);
-    smk->pic.palette_has_changed = flags & 1;
-    smk->pic.key_frame = !!(flags & 2);
-    if(smk->pic.key_frame)
-        smk->pic.pict_type = AV_PICTURE_TYPE_I;
+    smk->pic->palette_has_changed = flags & 1;
+    smk->pic->key_frame = !!(flags & 2);
+    if (smk->pic->key_frame)
+        smk->pic->pict_type = AV_PICTURE_TYPE_I;
     else
-        smk->pic.pict_type = AV_PICTURE_TYPE_P;
+        smk->pic->pict_type = AV_PICTURE_TYPE_P;
 
     for(i = 0; i < 256; i++)
         *pal++ = 0xFFU << 24 | bytestream2_get_be24u(&gb2);
@@ -414,8 +414,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     bw = avctx->width >> 2;
     bh = avctx->height >> 2;
     blocks = bw * bh;
-    out = smk->pic.data[0];
-    stride = smk->pic.linesize[0];
+    out = smk->pic->data[0];
+    stride = smk->pic->linesize[0];
     while(blk < blocks) {
         int type, run, mode;
         uint16_t pix;
@@ -429,7 +429,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 int hi, lo;
                 clr = smk_get_code(&gb, smk->mclr_tbl, smk->mclr_last);
                 map = smk_get_code(&gb, smk->mmap_tbl, smk->mmap_last);
-                out = smk->pic.data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
+                out = smk->pic->data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
                 hi = clr >> 8;
                 lo = clr & 0xFF;
                 for(i = 0; i < 4; i++) {
@@ -450,7 +450,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 else if(get_bits1(&gb)) mode = 2;
             }
             while(run-- && blk < blocks){
-                out = smk->pic.data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
+                out = smk->pic->data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
                 switch(mode){
                 case 0:
                     for(i = 0; i < 4; i++) {
@@ -502,7 +502,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             mode = type >> 8;
             while(run-- && blk < blocks){
                 uint32_t col;
-                out = smk->pic.data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
+                out = smk->pic->data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
                 col = mode * 0x01010101;
                 for(i = 0; i < 4; i++) {
                     *((uint32_t*)out) = col;
@@ -515,7 +515,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     }
 
-    if ((ret = av_frame_ref(data, &smk->pic)) < 0)
+    if ((ret = av_frame_ref(data, smk->pic)) < 0)
         return ret;
 
     *got_frame = 1;
@@ -539,7 +539,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->avctx = avctx;
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    avcodec_get_frame_defaults(&c->pic);
 
     /* decode huffman trees from extradata */
     if(avctx->extradata_size < 16){
@@ -550,6 +549,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ret = decode_header_trees(c);
     if (ret < 0)
         return ret;
+
+    c->pic = av_frame_alloc();
+    if (!c->pic)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -570,7 +573,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&smk->full_tbl);
     av_freep(&smk->type_tbl);
 
-    av_frame_unref(&smk->pic);
+    av_frame_free(&smk->pic);
 
     return 0;
 }

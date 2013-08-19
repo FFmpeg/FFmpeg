@@ -949,11 +949,11 @@ Trim the input so that the output contains one continuous subpart of the input.
 This filter accepts the following options:
 @table @option
 @item start
-Timestamp (in seconds) of the start of the kept section. I.e. the audio sample
+Specify time of the start of the kept section, i.e. the audio sample
 with the timestamp @var{start} will be the first sample in the output.
 
 @item end
-Timestamp (in seconds) of the first audio sample that will be dropped. I.e. the
+Specify time of the first audio sample that will be dropped, i.e. the
 audio sample immediately preceding the one with the timestamp @var{end} will be
 the last sample in the output.
 
@@ -966,7 +966,7 @@ Same as @var{end}, except this option sets the end timestamp in samples instead
 of seconds.
 
 @item duration
-Maximum duration of the output in seconds.
+Specify maximum duration of the output.
 
 @item start_sample
 Number of the first sample that should be passed to output.
@@ -974,6 +974,10 @@ Number of the first sample that should be passed to output.
 @item end_sample
 Number of the first sample that should be dropped.
 @end table
+
+@option{start}, @option{end}, @option{duration} are expressed as time
+duration specifications, check the "Time duration" section in the
+ffmpeg-utils manual.
 
 Note that the first two sets of the start/end options and the @option{duration}
 option look at the frame timestamp, while the _sample options simply count the
@@ -1171,6 +1175,83 @@ ffmpeg -i in.wav -filter_complex
 front_center.wav -map '[LFE]' lfe.wav -map '[SL]' side_left.wav -map '[SR]'
 side_right.wav
 @end example
+
+@section compand
+
+Compress or expand audio dynamic range.
+
+A description of the accepted options follows.
+
+@table @option
+@item attacks
+@item decays
+Set list of times in seconds for each channel over which the instantaneous
+level of the input signal is averaged to determine its volume.
+@option{attacks} refers to increase of volume and @option{decays} refers
+to decrease of volume.
+For most situations, the attack time (response to the audio getting louder)
+should be shorter than the decay time because the human ear is more sensitive
+to sudden loud audio than sudden soft audio.
+Typical value for attack is @code{0.3} seconds and for decay @code{0.8}
+seconds.
+
+@item points
+Set list of points for transfer function, specified in dB relative to maximum
+possible signal amplitude.
+Each key points list need to be defined using the following syntax:
+@code{x0/y0 x1/y1 x2/y2 ...}.
+
+The input values must be in strictly increasing order but the transfer
+function does not have to be monotonically rising.
+The point @code{0/0} is assumed but may be overridden (by @code{0/out-dBn}).
+Typical values for the transfer function are @code{-70/-70 -60/-20}.
+
+@item soft-knee
+Set amount for which the points at where adjacent line segments on the
+transfer function meet will be rounded. Defaults is @code{0.01}.
+
+@item gain
+Set additional gain in dB to be applied at all points on the transfer function
+and allows easy adjustment of the overall gain.
+Default is @code{0}.
+
+@item volume
+Set initial volume in dB to be assumed for each channel when filtering starts.
+This permits the user to supply a nominal level initially, so that,
+for example, a very large gain is not applied to initial signal levels before
+the companding has begun to operate. A typical value for audio which is
+initially quiet is -90 dB. Default is @code{0}.
+
+@item delay
+Set delay in seconds. Default is @code{0}. The input audio
+is analysed immediately, but audio is delayed before being fed to the
+volume adjuster. Specifying a delay approximately equal to the attack/decay
+times allows the filter to effectively operate in predictive rather than
+reactive mode.
+@end table
+
+@subsection Examples
+@itemize
+@item
+Make music with both quiet and loud passages suitable for listening
+in a noisy environment:
+@example
+compand=.3 .3:1 1:-90/-60 -60/-40 -40/-30 -20/-20:6:0:-90:0.2
+@end example
+
+@item
+Noise-gate for when the noise is at a lower level than the signal:
+@example
+compand=.1 .1:.2 .2:-900/-900 -50.1/-900 -50/-50:.01:0:-90:.1
+@end example
+
+@item
+Here is another noise-gate, this time for when the noise is at a higher level
+than the signal (making it, in some ways, similar to squelch):
+@example
+compand=.1 .1:.1 .1:-45.1/-45.1 -45/-900 0/-900:.01:45:-90:.1
+@end example
+@end itemize
 
 @section earwax
 
@@ -1563,7 +1644,7 @@ The filter has no parameters. The input is not modified. Statistics about
 the volume will be printed in the log when the input stream end is reached.
 
 In particular it will show the mean volume (root mean square), maximum
-volume (on a per-sample basis), and the beginning of an histogram of the
+volume (on a per-sample basis), and the beginning of a histogram of the
 registered volume values (from the maximum value to a cumulated 1/1000 of
 the samples).
 
@@ -1877,7 +1958,7 @@ Set the carrier frequency. Default is 440 Hz.
 Enable a periodic beep every second with frequency @var{beep_factor} times
 the carrier frequency. Default is 0, meaning the beep is disabled.
 
-@item sample_rate, s
+@item sample_rate, r
 Specify the sample rate, default is 44100.
 
 @item duration, d
@@ -2367,6 +2448,11 @@ Convert source to grayscale:
 @example
 colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3
 @end example
+@item
+Simulate sepia tones:
+@example
+colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
+@end example
 @end itemize
 
 @section colormatrix
@@ -2849,6 +2935,11 @@ Specify the thickness of the fuzzy edge of the rectangle (added to
 When set to 1, a green rectangle is drawn on the screen to simplify
 finding the right @var{x}, @var{y}, @var{w}, and @var{h} parameters.
 The default value is 0.
+
+The rectangle is drawn on the outermost pixels which will be (partly)
+replaced with interpolated values. The values of the next pixels
+immediately outside this rectangle in each direction will be used to
+compute the interpolated pixel values inside the rectangle.
 
 @end table
 
@@ -5063,7 +5154,7 @@ optimal individual vectors. Default value is 1.
 
 Apply an MPlayer filter to the input video.
 
-This filter provides a wrapper around most of the filters of
+This filter provides a wrapper around some of the filters of
 MPlayer/MEncoder.
 
 This wrapper is considered experimental. Some of the wrapped filters
@@ -5071,7 +5162,7 @@ may not work properly and we may drop support for them, as they will
 be implemented natively into FFmpeg. Thus you should avoid
 depending on them when writing portable scripts.
 
-The filters accepts the parameters:
+The filter accepts the parameters:
 @var{filter_name}[:=]@var{filter_params}
 
 @var{filter_name} is the name of a supported MPlayer filter,
@@ -5086,7 +5177,6 @@ The list of the currently supported filters follows:
 @item fil
 @item fspp
 @item ilpack
-@item perspective
 @item phase
 @item pp7
 @item pullup
@@ -5449,7 +5539,7 @@ when evaluation is done @emph{per frame}, and will evaluate to NAN
 when @option{eval} is set to @samp{init}.
 
 Be aware that frames are taken from each input video in timestamp
-order, hence, if their initial timestamps differ, it is a a good idea
+order, hence, if their initial timestamps differ, it is a good idea
 to pass the two inputs through a @var{setpts=PTS-STARTPTS} filter to
 have them begin in the same zero timestamp, as it does the example for
 the @var{movie} filter.
@@ -5712,6 +5802,44 @@ corner of the output padded area:
 pad="2*iw:2*ih:ow-iw:oh-ih"
 @end example
 @end itemize
+
+@section perspective
+
+Correct perspective of video not recorded perpendicular to the screen.
+
+A description of the accepted parameters follows.
+
+@table @option
+@item x0
+@item y0
+@item x1
+@item y1
+@item x2
+@item y2
+@item x3
+@item y3
+Set coordinates expression for top left, top right, bottom left and bottom right corners.
+Default values are @code{0:0:W:0:0:H:W:H} with which perspective will remain unchanged.
+
+The expressions can use the following variables:
+
+@table @option
+@item W
+@item H
+the width and height of video frame.
+@end table
+
+@item interpolation
+Set interpolation for perspective correction.
+
+It accepts the following values:
+@table @samp
+@item linear
+@item cubic
+@end table
+
+Default value is @samp{linear}.
+@end table
 
 @section pixdesctest
 
@@ -6166,33 +6294,45 @@ Scale (resize) the input video, using the libswscale library.
 The scale filter forces the output display aspect ratio to be the same
 of the input, by changing the output sample aspect ratio.
 
+If the input image format is different from the format requested by
+the next filter, the scale filter will convert the input to the
+requested format.
+
+@subsection Options
 The filter accepts the following options:
 
 @table @option
 @item width, w
-Set the output video width expression. Default value is @code{iw}. See
-below for the list of accepted constants.
-
 @item height, h
-Set the output video height expression. Default value is @code{ih}.
-See below for the list of accepted constants.
+Set the output video dimension expression. Default value is the input
+dimension.
+
+If the value is 0, the input width is used for the output.
+
+If one of the values is -1, the scale filter will use a value that
+maintains the aspect ratio of the input image, calculated from the
+other specified dimension. If both of them are -1, the input size is
+used
+
+See below for the list of accepted constants for use in the dimension
+expression.
 
 @item interl
-Set the interlacing. It accepts the following values:
+Set the interlacing mode. It accepts the following values:
 
-@table @option
+@table @samp
 @item 1
-force interlaced aware scaling
+Force interlaced aware scaling.
 
 @item 0
-do not apply interlaced scaling
+Do not apply interlaced scaling.
 
 @item -1
-select interlaced aware scaling depending on whether the source frames
-are flagged as interlaced or not
+Select interlaced aware scaling depending on whether the source frames
+are flagged as interlaced or not.
 @end table
 
-Default value is @code{0}.
+Default value is @samp{0}.
 
 @item flags
 Set libswscale scaling flags. If not explictly specified the filter
@@ -6201,12 +6341,118 @@ applies a bilinear scaling algorithm.
 @item size, s
 Set the video size, the value must be a valid abbreviation or in the
 form @var{width}x@var{height}.
+
+@item in_color_matrix
+@item out_color_matrix
+Set in/output YCbCr color space type.
+
+This allows the autodetected value to be overridden as well as allows forcing
+a specific value used for the output and encoder.
+
+If not specified, the color space type depends on the pixel format.
+
+Possible values:
+
+@table @samp
+@item auto
+Choose automatically.
+
+@item bt709
+Format conforming to International Telecommunication Union (ITU)
+Recommendation BT.709.
+
+@item fcc
+Set color space conforming to the United States Federal Communications
+Commission (FCC) Code of Federal Regulations (CFR) Title 47 (2003) 73.682 (a).
+
+@item bt601
+Set color space conforming to:
+
+@itemize
+@item
+ITU Radiocommunication Sector (ITU-R) Recommendation BT.601
+
+@item
+ITU-R Rec. BT.470-6 (1998) Systems B, B1, and G
+
+@item
+Society of Motion Picture and Television Engineers (SMPTE) ST 170:2004
+
+@end itemize
+
+@item smpte240m
+Set color space conforming to SMPTE ST 240:1999.
 @end table
 
-The values of the @var{w} and @var{h} options are expressions
+@item in_range
+@item out_range
+Set in/output YCbCr sample range.
+
+This allows the autodetected value to be overridden as well as allows forcing
+a specific value used for the output and encoder. If not specified, the
+range depends on the pixel format. Possible values:
+
+@table @samp
+@item auto
+Choose automatically.
+
+@item jpeg/full/pc
+Set full range (0-255 in case of 8-bit luma).
+
+@item mpeg/tv
+Set "MPEG" range (16-235 in case of 8-bit luma).
+@end table
+
+@item sws_dither
+Set the dithering algorithm
+
+@table @samp
+@item auto
+Choose automatically.
+
+@item none
+No dithering
+
+@item bayer
+bayer dither
+
+@item ed
+error diffusion dither
+@end table
+
+@item force_original_aspect_ratio
+Enable decreasing or increasing output video width or height if necessary to
+keep the original aspect ratio. Possible values:
+
+@table @samp
+@item disable
+Scale the video as specified and disable this feature.
+
+@item decrease
+The output video dimensions will automatically be decreased if needed.
+
+@item increase
+The output video dimensions will automatically be increased if needed.
+
+@end table
+
+One useful instance of this option is that when you know a specific device's
+maximum allowed resolution, you can use this to limit the output video to
+that, while retaining the aspect ratio. For example, device A allows
+1280x720 playback, and your video is 1920x800. Using this option (set it to
+decrease) and specifying 1280x720 to the command line makes the output
+1280x533.
+
+Please note that this is a different thing than specifying -1 for @option{w}
+or @option{h}, you still need to specify the output resolution for this option
+to work.
+
+@end table
+
+The values of the @option{w} and @option{h} options are expressions
 containing the following constants:
 
-@table @option
+@table @var
 @item in_w
 @item in_h
 the input width and height
@@ -6217,7 +6463,7 @@ same as @var{in_w} and @var{in_h}
 
 @item out_w
 @item out_h
-the output (cropped) width and height
+the output (scaled) width and height
 
 @item ow
 @item oh
@@ -6230,24 +6476,13 @@ same as @var{iw} / @var{ih}
 input sample aspect ratio
 
 @item dar
-input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
+input display aspect ratio. Calculated from @code{(iw / ih) * sar}.
 
 @item hsub
 @item vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
-
-If the input image format is different from the format requested by
-the next filter, the scale filter will convert the input to the
-requested format.
-
-If the value for @var{w} or @var{h} is 0, the respective input
-size is used for the output.
-
-If the value for @var{w} or @var{h} is -1, the scale filter will use, for the
-respective output size, a value that maintains the aspect ratio of the input
-image.
 
 @subsection Examples
 
@@ -7066,11 +7301,11 @@ Trim the input so that the output contains one continuous subpart of the input.
 This filter accepts the following options:
 @table @option
 @item start
-Timestamp (in seconds) of the start of the kept section. I.e. the frame with the
+Specify time of the start of the kept section, i.e. the frame with the
 timestamp @var{start} will be the first frame in the output.
 
 @item end
-Timestamp (in seconds) of the first frame that will be dropped. I.e. the frame
+Specify time of the first frame that will be dropped, i.e. the frame
 immediately preceding the one with the timestamp @var{end} will be the last
 frame in the output.
 
@@ -7083,7 +7318,7 @@ Same as @var{end}, except this option sets the end timestamp in timebase units
 instead of seconds.
 
 @item duration
-Maximum duration of the output in seconds.
+Specify maximum duration of the output.
 
 @item start_frame
 Number of the first frame that should be passed to output.
@@ -7091,6 +7326,10 @@ Number of the first frame that should be passed to output.
 @item end_frame
 Number of the first frame that should be dropped.
 @end table
+
+@option{start}, @option{end}, @option{duration} are expressed as time
+duration specifications, check the "Time duration" section in the
+ffmpeg-utils manual.
 
 Note that the first two sets of the start/end options and the @option{duration}
 option look at the frame timestamp, while the _frame variants simply count the

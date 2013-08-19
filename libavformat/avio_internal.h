@@ -38,6 +38,23 @@ int ffio_init_context(AVIOContext *s,
 
 
 /**
+ * Read size bytes from AVIOContext, returning a pointer.
+ * Note that the data pointed at by the returned pointer is only
+ * valid until the next call that references the same IO context.
+ * @param s IO context
+ * @param buf pointer to buffer into which to assemble the requested
+ *    data if it is not available in contiguous addresses in the
+ *    underlying buffer
+ * @param size number of bytes requested
+ * @param data address at which to store pointer: this will be a
+ *    a direct pointer into the underlying buffer if the requested
+ *    number of bytes are available at contiguous addresses, otherwise
+ *    will be a copy of buf
+ * @return number of bytes read or AVERROR
+ */
+int ffio_read_indirect(AVIOContext *s, unsigned char *buf, int size, const unsigned char **data);
+
+/**
  * Read size bytes from AVIOContext into buf.
  * This reads at most 1 packet. If that is not enough fewer bytes will be
  * returned.

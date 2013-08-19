@@ -272,9 +272,15 @@ Set the file size limit, expressed in bytes.
 
 @item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
-@var{position}. When used as an output option (before an output filename),
-decodes but discards input until the timestamps reach @var{position}. This is
-slower, but more accurate.
+@var{position}. Note the in most formats it is not possible to seek exactly, so
+@command{ffmpeg} will seek to the closest seek point before @var{position}.
+When transcoding and @option{-accurate_seek} is enabled (the default), this
+extra segment between the seek point and @var{position} will be decoded and
+discarded. When doing stream copy or when @option{-noaccurate_seek} is used, it
+will be preserved.
+
+When used as an output option (before an output filename), decodes but discards
+input until the timestamps reach @var{position}.
 
 @var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
 
@@ -871,13 +877,12 @@ Dump each input packet to stderr.
 When dumping packets, also dump the payload.
 @item -re (@emph{input})
 Read input at native frame rate. Mainly used to simulate a grab device.
+or live input stream (e.g. when reading from a file). Should not be used
+with actual grab devices or live input streams (where it can cause packet
+loss).
 By default @command{ffmpeg} attempts to read the input(s) as fast as possible.
 This option will slow down the reading of the input(s) to the native frame rate
-of the input(s). It is useful for real-time output (e.g. live streaming). If
-your input(s) is coming from some other live streaming source (through HTTP or
-UDP for example) the server might already be in real-time, thus the option will
-likely not be required. On the other hand, this is meaningful if your input(s)
-is a file you are trying to push in real-time.
+of the input(s). It is useful for real-time output (e.g. live streaming).
 @item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
@@ -1060,6 +1065,12 @@ This option is similar to @option{-filter_complex}, the only difference is that
 its argument is the name of the file from which a complex filtergraph
 description is to be read.
 
+@item -accurate_seek (@emph{input})
+This option enables or disables accurate seeking in input files with the
+@option{-ss} option. It is enabled by default, so seeking is accurate when
+transcoding. Use @option{-noaccurate_seek} to disable it, which may be useful
+e.g. when copying some streams and transcoding the others.
+
 @item -override_ffserver (@emph{global})
 Overrides the input specifications from ffserver. Using this option you can
 map any input stream to ffserver and control many aspects of the encoding from
@@ -1125,7 +1136,7 @@ then it will search for the file @file{libvpx-1080p.ffpreset}.
 
 @itemize
 @item
-For streaming at very low bitrate application, use a low frame rate
+For streaming at very low bitrates, use a low frame rate
 and a small GOP size. This is especially true for RealVideo where
 the Linux player does not seem to be very fast, so it can miss
 frames. An example is:

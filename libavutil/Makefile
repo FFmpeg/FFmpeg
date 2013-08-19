@@ -81,6 +81,7 @@ OBJS = adler32.o                                                        \
        eval.o                                                           \
        fifo.o                                                           \
        file.o                                                           \
+       file_open.o                                                      \
        float_dsp.o                                                      \
        frame.o                                                          \
        hash.o                                                           \

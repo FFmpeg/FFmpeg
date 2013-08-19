@@ -10,6 +10,8 @@ HEADERS = avdevice.h                                                    \
 OBJS    = alldevices.o                                                  \
           avdevice.o                                                    \
 
+OBJS-$(HAVE_MSVCRT) += file_open.o
+
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
                                             alsa-audio-dec.o timefilter.o
@@ -44,6 +46,8 @@ OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
 SKIPHEADERS-$(CONFIG_DSHOW_INDEV)        += dshow_capture.h
+SKIPHEADERS-$(CONFIG_V4L2_INDEV)         += v4l2-common.h
+SKIPHEADERS-$(CONFIG_V4L2_OUTDEV)        += v4l2-common.h
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio_common.h
 

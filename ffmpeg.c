@@ -751,7 +751,9 @@ static void do_subtitle_out(AVFormatContext *s,
         nb = 1;
 
     /* shift timestamp to honor -ss and make check_recording_time() work with -t */
-    pts = sub->pts - output_files[ost->file_index]->start_time;
+    pts = sub->pts;
+    if (output_files[ost->file_index]->start_time != AV_NOPTS_VALUE)
+        pts -= output_files[ost->file_index]->start_time;
     for (i = 0; i < nb; i++) {
         ost->sync_opts = av_rescale_q(pts, AV_TIME_BASE_Q, enc->time_base);
         if (!check_recording_time(ost))
@@ -1070,10 +1072,11 @@ static int reap_filters(void)
             }
             frame_pts = AV_NOPTS_VALUE;
             if (filtered_frame->pts != AV_NOPTS_VALUE) {
+                int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
                 filtered_frame->pts = frame_pts = av_rescale_q(filtered_frame->pts,
                                                 ost->filter->filter->inputs[0]->time_base,
                                                 ost->st->codec->time_base) -
-                                    av_rescale_q(of->start_time,
+                                    av_rescale_q(start_time,
                                                 AV_TIME_BASE_Q,
                                                 ost->st->codec->time_base);
             }
@@ -1377,7 +1380,7 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
     if (ost->source_index != ist_index)
         return 0;
 
-    if (of->start_time && ist->pts < of->start_time)
+    if (of->start_time != AV_NOPTS_VALUE && ist->pts < of->start_time)
         return 0;
 
     return 1;
@@ -1386,8 +1389,10 @@ static int check_output_constraints(InputStream *ist, OutputStream *ost)
 static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
-    int64_t ost_tb_start_time = av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
-    int64_t ist_tb_start_time = av_rescale_q(of->start_time, AV_TIME_BASE_Q, ist->st->time_base);
+    InputFile   *f = input_files [ist->file_index];
+    int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
+    int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
+    int64_t ist_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ist->st->time_base);
     AVPicture pict;
     AVPacket opkt;
 
@@ -1398,7 +1403,7 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
         return;
 
     if (pkt->pts == AV_NOPTS_VALUE) {
-        if (!ost->frame_number && ist->pts < of->start_time &&
+        if (!ost->frame_number && ist->pts < start_time &&
             !ost->copy_prior_start)
             return;
     } else {
@@ -1408,9 +1413,19 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     if (of->recording_time != INT64_MAX &&
-        ist->pts >= of->recording_time + of->start_time) {
+        ist->pts >= of->recording_time + start_time) {
         close_output_stream(ost);
         return;
+    }
+
+    if (f->recording_time != INT64_MAX) {
+        start_time = f->ctx->start_time;
+        if (f->start_time != AV_NOPTS_VALUE)
+            start_time += f->start_time;
+        if (ist->pts >= f->recording_time + start_time) {
+            close_output_stream(ost);
+            return;
+        }
     }
 
     /* force the input stream PTS */
@@ -2336,7 +2351,7 @@ static int transcode_init(void)
                 if (!strncmp(ost->enc->name, "libx264", 7) &&
                     codec->pix_fmt == AV_PIX_FMT_NONE &&
                     ost->filter->filter->inputs[0]->format != AV_PIX_FMT_YUV420P)
-                    av_log(NULL, AV_LOG_INFO,
+                    av_log(NULL, AV_LOG_WARNING,
                            "No pixel format specified, %s for H.264 encoding chosen.\n"
                            "Use -pix_fmt yuv420p for compatibility with outdated media players.\n",
                            av_get_pix_fmt_name(ost->filter->filter->inputs[0]->format));

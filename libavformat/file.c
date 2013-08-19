@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include <fcntl.h>
@@ -49,10 +50,17 @@ typedef struct FileContext {
     const AVClass *class;
     int fd;
     int trunc;
+    int blocksize;
 } FileContext;
 
 static const AVOption file_options[] = {
     { "truncate", "Truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
+    { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVOption pipe_options[] = {
+    { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL }
 };
 
@@ -63,17 +71,28 @@ static const AVClass file_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVClass pipe_class = {
+    .class_name = "pipe",
+    .item_name  = av_default_item_name,
+    .option     = pipe_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
-    int r = read(c->fd, buf, size);
+    int r;
+    size = FFMIN(size, c->blocksize);
+    r = read(c->fd, buf, size);
     return (-1 == r)?AVERROR(errno):r;
 }
 
 static int file_write(URLContext *h, const unsigned char *buf, int size)
 {
     FileContext *c = h->priv_data;
-    int r = write(c->fd, buf, size);
+    int r;
+    size = FFMIN(size, c->blocksize);
+    r = write(c->fd, buf, size);
     return (-1 == r)?AVERROR(errno):r;
 }
 
@@ -132,7 +151,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
 #ifdef O_BINARY
     access |= O_BINARY;
 #endif
-    fd = open(filename, access, 0666);
+    fd = avpriv_open(filename, access, 0666);
     if (fd == -1)
         return AVERROR(errno);
     c->fd = fd;
@@ -217,6 +236,7 @@ URLProtocol ff_pipe_protocol = {
     .url_get_file_handle = file_get_handle,
     .url_check           = file_check,
     .priv_data_size      = sizeof(FileContext),
+    .priv_data_class     = &pipe_class,
 };
 
 #endif /* CONFIG_PIPE_PROTOCOL */

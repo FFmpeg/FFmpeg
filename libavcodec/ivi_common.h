@@ -160,9 +160,9 @@ typedef struct IVIBandDesc {
     int             num_tiles;      ///< number of tiles in this band
     IVITile         *tiles;         ///< array of tile descriptors
     InvTransformPtr *inv_transform;
+    int             transform_size;
     DCTransformPtr  *dc_transform;
     int             is_2d_trans;    ///< 1 indicates that the two-dimensional inverse transform is used
-    int             transform_size; ///< block size of the transform
     int32_t         checksum;       ///< for debug purposes
     int             checksum_present;
     int             bufsize;        ///< band buffer size in bytes

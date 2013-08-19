@@ -146,7 +146,8 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     s->dest[1] = s->current_picture.f.data[1] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
     s->dest[2] = s->current_picture.f.data[2] + (s->mb_y * (16 >> s->chroma_y_shift) * s->uvlinesize) + s->mb_x * (16 >> s->chroma_x_shift);
 
-    assert(ref == 0);
+    if (ref)
+        av_log(s->avctx, AV_LOG_DEBUG, "Interlaced error concealment is not fully implemented\n");
     ff_MPV_decode_mb(s, s->block);
 }
 
@@ -385,10 +386,10 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
             free_picture_tables(pic);
 
     if (shared) {
-        assert(pic->f.data[0]);
+        av_assert0(pic->f.data[0]);
         pic->shared = 1;
     } else {
-        assert(!pic->f.data[0]);
+        av_assert0(!pic->f.data[0]);
 
         if (alloc_frame_buffer(s, pic) < 0)
             return -1;
@@ -1668,7 +1669,7 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return ret;
     }
 
-    assert(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
+    av_assert0(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
                                                  s->last_picture_ptr->f.data[0]));
 
     if (s->picture_structure!= PICT_FRAME) {
@@ -1721,7 +1722,6 @@ void ff_MPV_frame_end(MpegEncContext *s)
         ff_xvmc_field_end(s);
    } else if ((s->er.error_count || s->encoding || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
               !s->avctx->hwaccel &&
-              !(s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
               s->unrestricted_mv &&
               s->current_picture.reference &&
               !s->intra_only &&
@@ -1760,7 +1760,7 @@ void ff_MPV_frame_end(MpegEncContext *s)
             break;
         }
     }
-    assert(i < MAX_PICTURE_COUNT);
+    av_assert0(i < MAX_PICTURE_COUNT);
 #endif
 
     // clear copies, to avoid confusion
@@ -2925,7 +2925,6 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
     }
 
     if (!avctx->hwaccel &&
-        !(avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
         draw_edges &&
         cur->reference &&
         !(avctx->flags & CODEC_FLAG_EMU_EDGE)) {

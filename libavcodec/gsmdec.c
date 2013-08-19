@@ -34,6 +34,14 @@
 
 static av_cold int gsm_init(AVCodecContext *avctx)
 {
+    if (avctx->codec_tag == 0x0032 &&
+        avctx->bit_rate != 13000 &&
+        avctx->bit_rate != 17912 &&
+        avctx->bit_rate != 35824 &&
+        avctx->bit_rate != 71656) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported audio mode\n");
+        return AVERROR_PATCHWELCOME;
+    }
     avctx->channels       = 1;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     if (!avctx->sample_rate)

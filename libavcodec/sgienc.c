@@ -28,21 +28,12 @@
 #define SGI_SINGLE_CHAN 2
 #define SGI_MULTI_CHAN 3
 
-typedef struct SgiContext {
-    AVFrame picture;
-} SgiContext;
-
 static av_cold int encode_init(AVCodecContext *avctx)
 {
-    SgiContext *s = avctx->priv_data;
-
     if (avctx->width > 65535 || avctx->height > 65535) {
         av_log(avctx, AV_LOG_ERROR, "SGI does not support resolutions above 65535x65535\n");
         return -1;
     }
-
-    avcodec_get_frame_defaults(&s->picture);
-    avctx->coded_frame = &s->picture;
 
     return 0;
 }
@@ -50,14 +41,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *frame, int *got_packet)
 {
-    SgiContext *s = avctx->priv_data;
-    AVFrame * const p = &s->picture;
+    AVFrame * const p = (AVFrame *)frame;
     uint8_t *offsettab, *lengthtab, *in_buf, *encode_buf, *buf;
     int x, y, z, length, tablesize, ret;
     unsigned int width, height, depth, dimension, bytes_per_channel, pixmax, put_be;
     unsigned char *end_buf;
 
-    *p = *frame;
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
@@ -214,7 +203,6 @@ AVCodec ff_sgi_encoder = {
     .name           = "sgi",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGI,
-    .priv_data_size = sizeof(SgiContext),
     .init           = encode_init,
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){

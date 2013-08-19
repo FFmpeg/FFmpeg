@@ -33,7 +33,7 @@ static int config_props_output(AVFilterLink *outlink)
     SeparateFieldsContext *sf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
 
-    sf->nb_planes = av_pix_fmt_count_planes(inlink->format);;
+    sf->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if (inlink->h & 1) {
         av_log(ctx, AV_LOG_ERROR, "height must be even\n");

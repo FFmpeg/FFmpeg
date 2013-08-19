@@ -34,7 +34,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
-DECLARE_ALIGNED(8, const uint8_t, dithers)[8][8][8]={
+DECLARE_ALIGNED(8, static const uint8_t, dithers)[8][8][8]={
 {
   {   0,  1,  0,  1,  0,  1,  0,  1,},
   {   1,  0,  1,  0,  1,  0,  1,  0,},
@@ -109,7 +109,7 @@ DECLARE_ALIGNED(8, const uint8_t, dithers)[8][8][8]={
   { 112, 16,104,  8,118, 22,110, 14,},
 }};
 
-const uint16_t dither_scale[15][16]={
+static const uint16_t dither_scale[15][16]={
 {    2,    3,    3,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,},
 {    2,    3,    7,    7,   13,   13,   25,   25,   25,   25,   25,   25,   25,   25,   25,   25,},
 {    3,    3,    4,   15,   15,   29,   57,   57,   57,  113,  113,  113,  113,  113,  113,  113,},
@@ -1180,7 +1180,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
     /* yuv2bgr */
     if ((srcFormat == AV_PIX_FMT_YUV420P || srcFormat == AV_PIX_FMT_YUV422P ||
          srcFormat == AV_PIX_FMT_YUVA420P) && isAnyRGB(dstFormat) &&
-        !(flags & (SWS_ACCURATE_RND|SWS_ERROR_DIFFUSION)) && !(dstH & 1)) {
+        !(flags & SWS_ACCURATE_RND) && c->dither != SWS_DITHER_ED && !(dstH & 1)) {
         c->swScale = ff_yuv2rgb_get_func_ptr(c);
     }
 

@@ -62,19 +62,20 @@
 typedef struct {
     void *library;
 #define AVSC_DECLARE_FUNC(name) name##_func name
+    AVSC_DECLARE_FUNC(avs_bit_blt);
+    AVSC_DECLARE_FUNC(avs_clip_get_error);
     AVSC_DECLARE_FUNC(avs_create_script_environment);
     AVSC_DECLARE_FUNC(avs_delete_script_environment);
-    AVSC_DECLARE_FUNC(avs_get_error);
-    AVSC_DECLARE_FUNC(avs_clip_get_error);
-    AVSC_DECLARE_FUNC(avs_invoke);
-    AVSC_DECLARE_FUNC(avs_release_value);
-    AVSC_DECLARE_FUNC(avs_get_video_info);
-    AVSC_DECLARE_FUNC(avs_take_clip);
-    AVSC_DECLARE_FUNC(avs_release_clip);
-    AVSC_DECLARE_FUNC(avs_bit_blt);
     AVSC_DECLARE_FUNC(avs_get_audio);
+    AVSC_DECLARE_FUNC(avs_get_error);
     AVSC_DECLARE_FUNC(avs_get_frame);
+    AVSC_DECLARE_FUNC(avs_get_version);
+    AVSC_DECLARE_FUNC(avs_get_video_info);
+    AVSC_DECLARE_FUNC(avs_invoke);
+    AVSC_DECLARE_FUNC(avs_release_clip);
+    AVSC_DECLARE_FUNC(avs_release_value);
     AVSC_DECLARE_FUNC(avs_release_video_frame);
+    AVSC_DECLARE_FUNC(avs_take_clip);
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
 
@@ -127,19 +128,20 @@ static av_cold int avisynth_load_library(void) {
     if(!continue_on_fail && !avs_library->name) \
         goto fail; \
 }
+    LOAD_AVS_FUNC(avs_bit_blt, 0);
+    LOAD_AVS_FUNC(avs_clip_get_error, 0);
     LOAD_AVS_FUNC(avs_create_script_environment, 0);
     LOAD_AVS_FUNC(avs_delete_script_environment, 0);
-    LOAD_AVS_FUNC(avs_get_error, 1); // New to AviSynth 2.6
-    LOAD_AVS_FUNC(avs_clip_get_error, 0);
-    LOAD_AVS_FUNC(avs_invoke, 0);
-    LOAD_AVS_FUNC(avs_release_value, 0);
-    LOAD_AVS_FUNC(avs_get_video_info, 0);
-    LOAD_AVS_FUNC(avs_take_clip, 0);
-    LOAD_AVS_FUNC(avs_release_clip, 0);
-    LOAD_AVS_FUNC(avs_bit_blt, 0);
     LOAD_AVS_FUNC(avs_get_audio, 0);
+    LOAD_AVS_FUNC(avs_get_error, 1); // New to AviSynth 2.6
     LOAD_AVS_FUNC(avs_get_frame, 0);
+    LOAD_AVS_FUNC(avs_get_version, 0);
+    LOAD_AVS_FUNC(avs_get_video_info, 0);
+    LOAD_AVS_FUNC(avs_invoke, 0);
+    LOAD_AVS_FUNC(avs_release_clip, 0);
+    LOAD_AVS_FUNC(avs_release_value, 0);
     LOAD_AVS_FUNC(avs_release_video_frame, 0);
+    LOAD_AVS_FUNC(avs_take_clip, 0);
 #undef LOAD_AVS_FUNC
 
     atexit(avisynth_atexit_handler);
@@ -479,7 +481,26 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
             pitch = -pitch;
         }
 
+    // An issue with avs_bit_blt on 2.5.8 prevents video from working correctly.
+    // This problem doesn't exist for 2.6 and AvxSynth, so enable the workaround
+    // for 2.5.8 only. This only displays the warning and exits if the script has
+    // video. 2.5.8's internal interface version is 3, so avs_get_version allows
+    // it to work only in the circumstance that the interface is 5 or higher (4 is
+    // unused).  There's a strong chance that AvxSynth, having been based on 2.5.8,
+    // would also be identified as interface version 3, but since AvxSynth doesn't
+    // suffer from this problem, special-case it.
+#ifdef _WIN32
+    if (avs_library->avs_get_version(avs->clip) > 3) {
         avs_library->avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch, rowsize, planeheight);
+    } else {
+        av_log(s, AV_LOG_ERROR, "Video input from AviSynth 2.5.8 is not supported. Please upgrade to 2.6.\n");
+        avs->error = 1;
+        av_freep(&pkt->data);
+        return AVERROR_UNKNOWN;
+    }
+#else
+        avs_library->avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch, rowsize, planeheight);
+#endif
         dst_p += rowsize * planeheight;
     }
 

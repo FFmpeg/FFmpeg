@@ -388,7 +388,7 @@ int main(void)
     int i, j, k;
     AVRIPEMD ctx;
     unsigned char digest[40];
-    const int lengths[4] = { 128, 160, 256, 320 };
+    static const int lengths[4] = { 128, 160, 256, 320 };
 
     for (j = 0; j < 4; j++) {
         printf("Testing RIPEMD-%d\n", lengths[j]);

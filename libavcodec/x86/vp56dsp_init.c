@@ -32,16 +32,16 @@ void ff_vp6_filter_diag4_sse2(uint8_t *dst, uint8_t *src, int stride,
 
 av_cold void ff_vp56dsp_init_x86(VP56DSPContext* c, enum AVCodecID codec)
 {
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
     if (CONFIG_VP6_DECODER && codec == AV_CODEC_ID_VP6) {
 #if ARCH_X86_32
-        if (EXTERNAL_MMX(mm_flags)) {
+        if (EXTERNAL_MMX(cpu_flags)) {
             c->vp6_filter_diag4 = ff_vp6_filter_diag4_mmx;
         }
 #endif
 
-        if (EXTERNAL_SSE2(mm_flags)) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
             c->vp6_filter_diag4 = ff_vp6_filter_diag4_sse2;
         }
     }

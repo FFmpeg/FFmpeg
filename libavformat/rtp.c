@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 
@@ -144,7 +145,7 @@ enum AVCodecID ff_rtp_codec_id(const char *buf, enum AVMediaType codec_type)
     int i;
 
     for (i = 0; rtp_payload_types[i].pt >= 0; i++)
-        if (!strcmp(buf, rtp_payload_types[i].enc_name) && (codec_type == rtp_payload_types[i].codec_type))
+        if (!av_strcasecmp(buf, rtp_payload_types[i].enc_name) && (codec_type == rtp_payload_types[i].codec_type))
             return rtp_payload_types[i].codec_id;
 
     return AV_CODEC_ID_NONE;

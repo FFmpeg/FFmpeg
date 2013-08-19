@@ -28,7 +28,7 @@
 #define AVCODEC_BINTEXT_H
 
 /* flag values passed between avformat and avcodec;
- * while these are identical to the XBIN flags, they are are also used
+ * while these are identical to the XBIN flags, they are also used
  * for the BINTEXT and IDF decoders.
  */
 #define BINTEXT_PALETTE  0x1

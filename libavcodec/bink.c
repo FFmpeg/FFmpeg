@@ -143,7 +143,7 @@ enum BlockTypes {
 };
 
 /**
- * Initialize length length in all bundles.
+ * Initialize length in all bundles.
  *
  * @param c     decoder context
  * @param width plane width

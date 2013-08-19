@@ -56,14 +56,16 @@ static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst,
 
 static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
                                              const uint8_t *src, int w,
-                                             int *red, int *green, int *blue, int *alpha)
+                                             int *red, int *green, int *blue,
+                                             int *alpha)
 {
     int i;
-    int r,g,b,a;
+    int r, g, b, a;
     r = *red;
     g = *green;
     b = *blue;
     a = *alpha;
+
     for (i = 0; i < FFMIN(w, 4); i++) {
         const int rt = src[i * 4 + R];
         const int gt = src[i * 4 + G];
@@ -87,29 +89,32 @@ static inline void sub_left_prediction_bgr32(HYuvContext *s, uint8_t *dst,
     *alpha = src[(w - 1) * 4 + A];
 }
 
-static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst, const uint8_t *src, int w, int *red, int *green, int *blue){
+static inline void sub_left_prediction_rgb24(HYuvContext *s, uint8_t *dst,
+                                             uint8_t *src, int w,
+                                             int *red, int *green, int *blue)
+{
     int i;
-    int r,g,b;
+    int r, g, b;
     r = *red;
     g = *green;
     b = *blue;
-    for (i = 0; i < FFMIN(w,16); i++) {
-        const int rt = src[i*3 + 0];
-        const int gt = src[i*3 + 1];
-        const int bt = src[i*3 + 2];
-        dst[i*3 + 0] = rt - r;
-        dst[i*3 + 1] = gt - g;
-        dst[i*3 + 2] = bt - b;
+    for (i = 0; i < FFMIN(w, 16); i++) {
+        const int rt = src[i * 3 + 0];
+        const int gt = src[i * 3 + 1];
+        const int bt = src[i * 3 + 2];
+        dst[i * 3 + 0] = rt - r;
+        dst[i * 3 + 1] = gt - g;
+        dst[i * 3 + 2] = bt - b;
         r = rt;
         g = gt;
         b = bt;
     }
 
-    s->dsp.diff_bytes(dst + 48, src + 48, src + 48 - 3, w*3 - 48);
+    s->dsp.diff_bytes(dst + 48, src + 48, src + 48 - 3, w * 3 - 48);
 
-    *red   = src[(w - 1)*3 + 0];
-    *green = src[(w - 1)*3 + 1];
-    *blue  = src[(w - 1)*3 + 2];
+    *red   = src[(w - 1) * 3 + 0];
+    *green = src[(w - 1) * 3 + 1];
+    *blue  = src[(w - 1) * 3 + 2];
 }
 
 static int store_table(HYuvContext *s, const uint8_t *len, uint8_t *buf)
@@ -157,7 +162,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
         if (s->width & 1) {
-            av_log(avctx, AV_LOG_ERROR, "width must be even for this colorspace\n");
+            av_log(avctx, AV_LOG_ERROR, "Width must be even for this colorspace.\n");
             return AVERROR(EINVAL);
         }
         s->bitstream_bpp = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? 12 : 16;
@@ -384,43 +389,48 @@ static inline int encode_bgra_bitstream(HYuvContext *s, int count, int planes)
 {
     int i;
 
-    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 4*planes*count) {
+    if (s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb) >> 3) <
+        4 * planes * count) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
         return -1;
     }
 
-#define LOAD3\
-            int g =  s->temp[0][planes==3 ? 3*i + 1 : 4*i + G];\
-            int b = (s->temp[0][planes==3 ? 3*i + 2 : 4*i + B] - g) & 0xff;\
-            int r = (s->temp[0][planes==3 ? 3*i + 0 : 4*i + R] - g) & 0xff;\
-            int a =  s->temp[0][planes*i + A];
-#define STAT3\
-            s->stats[0][b]++;\
-            s->stats[1][g]++;\
-            s->stats[2][r]++;\
-            if(planes==4) s->stats[2][a]++;
-#define WRITE3\
-            put_bits(&s->pb, s->len[1][g], s->bits[1][g]);\
-            put_bits(&s->pb, s->len[0][b], s->bits[0][b]);\
-            put_bits(&s->pb, s->len[2][r], s->bits[2][r]);\
-            if(planes==4) put_bits(&s->pb, s->len[2][a], s->bits[2][a]);
+#define LOAD_GBRA                                                       \
+    int g = s->temp[0][planes == 3 ? 3 * i + 1 : 4 * i + G];            \
+    int b =(s->temp[0][planes == 3 ? 3 * i + 2 : 4 * i + B] - g) & 0xFF;\
+    int r =(s->temp[0][planes == 3 ? 3 * i + 0 : 4 * i + R] - g) & 0xFF;\
+    int a = s->temp[0][planes * i + A];
+
+#define STAT_BGRA                                                       \
+    s->stats[0][b]++;                                                   \
+    s->stats[1][g]++;                                                   \
+    s->stats[2][r]++;                                                   \
+    if (planes == 4)                                                    \
+        s->stats[2][a]++;
+
+#define WRITE_GBRA                                                      \
+    put_bits(&s->pb, s->len[1][g], s->bits[1][g]);                      \
+    put_bits(&s->pb, s->len[0][b], s->bits[0][b]);                      \
+    put_bits(&s->pb, s->len[2][r], s->bits[2][r]);                      \
+    if (planes == 4)                                                    \
+        put_bits(&s->pb, s->len[2][a], s->bits[2][a]);
 
     if ((s->flags & CODEC_FLAG_PASS1) &&
         (s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)) {
         for (i = 0; i < count; i++) {
-            LOAD3;
-            STAT3;
+            LOAD_GBRA;
+            STAT_BGRA;
         }
     } else if (s->context || (s->flags & CODEC_FLAG_PASS1)) {
         for (i = 0; i < count; i++) {
-            LOAD3;
-            STAT3;
-            WRITE3;
+            LOAD_GBRA;
+            STAT_BGRA;
+            WRITE_GBRA;
         }
     } else {
         for (i = 0; i < count; i++) {
-            LOAD3;
-            WRITE3;
+            LOAD_GBRA;
+            WRITE_GBRA;
         }
     }
     return 0;
@@ -578,41 +588,48 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         put_bits(&s->pb, 8, leftg = data[G]);
         put_bits(&s->pb, 8, leftb = data[B]);
 
-        sub_left_prediction_bgr32(s, s->temp[0], data + 4, width - 1, &leftr, &leftg, &leftb, &lefta);
+        sub_left_prediction_bgr32(s, s->temp[0], data + 4, width - 1,
+                                  &leftr, &leftg, &leftb, &lefta);
         encode_bgra_bitstream(s, width - 1, 4);
 
         for (y = 1; y < s->height; y++) {
             uint8_t *dst = data + y*stride;
             if (s->predictor == PLANE && s->interlaced < y) {
                 s->dsp.diff_bytes(s->temp[1], dst, dst - fake_stride, width * 4);
-                sub_left_prediction_bgr32(s, s->temp[0], s->temp[1], width, &leftr, &leftg, &leftb, &lefta);
+                sub_left_prediction_bgr32(s, s->temp[0], s->temp[1], width,
+                                          &leftr, &leftg, &leftb, &lefta);
             } else {
-                sub_left_prediction_bgr32(s, s->temp[0], dst, width, &leftr, &leftg, &leftb, &lefta);
+                sub_left_prediction_bgr32(s, s->temp[0], dst, width,
+                                          &leftr, &leftg, &leftb, &lefta);
             }
             encode_bgra_bitstream(s, width, 4);
         }
-    }else if(avctx->pix_fmt == AV_PIX_FMT_RGB24){
-        uint8_t *data = p->data[0] + (height-1)*p->linesize[0];
+    } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
+        uint8_t *data = p->data[0] + (height - 1) * p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
         int y;
         int leftr, leftg, leftb;
 
-        put_bits(&s->pb, 8, leftr= data[0]);
-        put_bits(&s->pb, 8, leftg= data[1]);
-        put_bits(&s->pb, 8, leftb= data[2]);
+        put_bits(&s->pb, 8, leftr = data[0]);
+        put_bits(&s->pb, 8, leftg = data[1]);
+        put_bits(&s->pb, 8, leftb = data[2]);
         put_bits(&s->pb, 8, 0);
 
-        sub_left_prediction_rgb24(s, s->temp[0], data+3, width-1, &leftr, &leftg, &leftb);
+        sub_left_prediction_rgb24(s, s->temp[0], data + 3, width - 1,
+                                  &leftr, &leftg, &leftb);
         encode_bgra_bitstream(s, width-1, 3);
 
-        for(y=1; y<s->height; y++){
-            uint8_t *dst = data + y*stride;
-            if(s->predictor == PLANE && s->interlaced < y){
-                s->dsp.diff_bytes(s->temp[1], dst, dst - fake_stride, width*3);
-                sub_left_prediction_rgb24(s, s->temp[0], s->temp[1], width, &leftr, &leftg, &leftb);
-            }else{
-                sub_left_prediction_rgb24(s, s->temp[0], dst, width, &leftr, &leftg, &leftb);
+        for (y = 1; y < s->height; y++) {
+            uint8_t *dst = data + y * stride;
+            if (s->predictor == PLANE && s->interlaced < y) {
+                s->dsp.diff_bytes(s->temp[1], dst, dst - fake_stride,
+                                  width * 3);
+                sub_left_prediction_rgb24(s, s->temp[0], s->temp[1], width,
+                                          &leftr, &leftg, &leftb);
+            } else {
+                sub_left_prediction_rgb24(s, s->temp[0], dst, width,
+                                          &leftr, &leftg, &leftb);
             }
             encode_bgra_bitstream(s, width, 3);
         }
@@ -677,7 +694,8 @@ AVCodec ff_huffyuv_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
+        AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
 };
@@ -693,7 +711,8 @@ AVCodec ff_ffvhuff_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_RGB24,
+        AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
 };

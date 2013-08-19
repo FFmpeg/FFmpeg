@@ -106,6 +106,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case AV_PIX_FMT_GBRP12:
     case AV_PIX_FMT_GBRP14:
     case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_XYZ12:
         color_space = CLRSPC_SRGB;
         break;
     case AV_PIX_FMT_YUV410P:
@@ -280,6 +281,38 @@ static int libopenjpeg_copy_packed8(AVCodecContext *avctx, const AVFrame *frame,
     return 1;
 }
 
+// for XYZ 12 bit
+static int libopenjpeg_copy_packed12(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
+{
+    int compno;
+    int x;
+    int y;
+    int image_index;
+    int frame_index;
+    const int numcomps = image->numcomps;
+    uint16_t *frame_ptr = (uint16_t*)frame->data[0];
+
+    for (compno = 0; compno < numcomps; ++compno) {
+        if (image->comps[compno].w > frame->linesize[0] / numcomps) {
+            av_log(avctx, AV_LOG_ERROR, "Error: frame's linesize is too small for the image\n");
+            return 0;
+        }
+    }
+
+    for (compno = 0; compno < numcomps; ++compno) {
+        for (y = 0; y < avctx->height; ++y) {
+            image_index = y * avctx->width;
+            frame_index = y * (frame->linesize[0] / 2) + compno;
+            for (x = 0; x < avctx->width; ++x) {
+                image->comps[compno].data[image_index++] = frame_ptr[frame_index] >> 4;
+                frame_index += numcomps;
+            }
+        }
+    }
+
+    return 1;
+}
+
 static int libopenjpeg_copy_packed16(AVCodecContext *avctx, const AVFrame *frame, opj_image_t *image)
 {
     int compno;
@@ -400,6 +433,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_RGBA:
     case AV_PIX_FMT_GRAY8A:
         cpyresult = libopenjpeg_copy_packed8(avctx, frame, image);
+        break;
+    case AV_PIX_FMT_XYZ12:
+        cpyresult = libopenjpeg_copy_packed12(avctx, frame, image);
         break;
     case AV_PIX_FMT_RGB48:
     case AV_PIX_FMT_RGBA64:
@@ -574,6 +610,7 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
+        AV_PIX_FMT_XYZ12,
         AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),

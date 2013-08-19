@@ -121,7 +121,7 @@ static inline int mdec_decode_block_intra(MDECContext *a, int16_t *block, int n)
 static inline int decode_mb(MDECContext *a, int16_t block[6][64])
 {
     int i, ret;
-    const int block_index[6] = { 5, 4, 0, 1, 2, 3 };
+    static const int block_index[6] = { 5, 4, 0, 1, 2, 3 };
 
     a->dsp.clear_blocks(block[0]);
 

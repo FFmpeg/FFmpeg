@@ -361,7 +361,7 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
         }
 
         for (bnd = 0; bnd < block->num_rematrixing_bands; bnd++) {
-            /* calculate calculate sum of squared coeffs for one band in one block */
+            /* calculate sum of squared coeffs for one band in one block */
             int start = ff_ac3_rematrix_band_tab[bnd];
             int end   = FFMIN(nb_coefs, ff_ac3_rematrix_band_tab[bnd+1]);
             CoefSumType sum[4];

@@ -59,9 +59,7 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
         AVDictionaryEntry *e = NULL;
 
         while ((e = av_dict_get(*opts, "", e, AV_DICT_IGNORE_SUFFIX))) {
-            const char *token = e->key;
-            const char *value = e->value;
-            if ((ret = av_opt_set(aresample->swr, token, value, 0)) < 0)
+            if ((ret = av_opt_set(aresample->swr, e->key, e->value, 0)) < 0)
                 goto end;
         }
         av_dict_free(opts);

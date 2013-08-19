@@ -24,6 +24,8 @@
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/h264dsp.h"
 
+int ff_h264_find_start_code_candidate_armv6(const uint8_t *buf, int size);
+
 void ff_h264_v_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
                                      int beta, int8_t *tc0);
 void ff_h264_h_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
@@ -106,6 +108,8 @@ av_cold void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth,
 {
     int cpu_flags = av_get_cpu_flags();
 
+    if (have_armv6(cpu_flags))
+        c->h264_find_start_code_candidate = ff_h264_find_start_code_candidate_armv6;
     if (have_neon(cpu_flags))
         h264dsp_init_neon(c, bit_depth, chroma_format_idc);
 }

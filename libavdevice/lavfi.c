@@ -286,7 +286,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
                                      30);
         } else if (link->type == AVMEDIA_TYPE_AUDIO) {
             st->codec->codec_id    = av_get_pcm_codec(link->format, -1);
-            st->codec->channels    = av_get_channel_layout_nb_channels(link->channel_layout);
+            st->codec->channels    = avfilter_link_get_channels(link);
             st->codec->sample_fmt  = link->format;
             st->codec->sample_rate = link->sample_rate;
             st->codec->time_base   = link->time_base;

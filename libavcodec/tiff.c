@@ -41,6 +41,7 @@
 #include "mathops.h"
 #include "tiff.h"
 #include "tiff_data.h"
+#include "thread.h"
 
 typedef struct TiffContext {
     AVCodecContext *avctx;
@@ -69,38 +70,6 @@ typedef struct TiffContext {
     int geotag_count;
     TiffGeoTag *geotags;
 } TiffContext;
-
-static unsigned tget_short(GetByteContext *gb, int le)
-{
-    unsigned v = le ? bytestream2_get_le16(gb) : bytestream2_get_be16(gb);
-    return v;
-}
-
-static unsigned tget_long(GetByteContext *gb, int le)
-{
-    unsigned v = le ? bytestream2_get_le32(gb) : bytestream2_get_be32(gb);
-    return v;
-}
-
-static double tget_double(GetByteContext *gb, int le)
-{
-    av_alias64 i = { .u64 = le ? bytestream2_get_le64(gb) : bytestream2_get_be64(gb)};
-    return i.f64;
-}
-
-static unsigned tget(GetByteContext *gb, int type, int le)
-{
-    switch (type) {
-    case TIFF_BYTE:
-        return bytestream2_get_byte(gb);
-    case TIFF_SHORT:
-        return tget_short(gb, le);
-    case TIFF_LONG:
-        return tget_long(gb, le);
-    default:
-        return UINT_MAX;
-    }
-}
 
 static void free_geotags(TiffContext *const s)
 {
@@ -245,111 +214,13 @@ static char *doubles2str(double *dp, int count, const char *sep)
     return ap0;
 }
 
-static char *shorts2str(int16_t *sp, int count, const char *sep)
-{
-    int i;
-    char *ap, *ap0;
-    uint64_t component_len;
-    if (!sep) sep = ", ";
-    component_len = 7LL + strlen(sep);
-    if (count >= (INT_MAX - 1)/component_len)
-        return NULL;
-    ap = av_malloc(component_len * count + 1);
-    if (!ap)
-        return NULL;
-    ap0   = ap;
-    ap[0] = '\0';
-    for (i = 0; i < count; i++) {
-        unsigned l = snprintf(ap, component_len, "%d%s", sp[i], sep);
-        if (l >= component_len) {
-            av_free(ap0);
-            return NULL;
-        }
-        ap += l;
-    }
-    ap0[strlen(ap0) - strlen(sep)] = '\0';
-    return ap0;
-}
-
-static int add_doubles_metadata(int count,
-                                const char *name, const char *sep,
-                                TiffContext *s, AVFrame *frame)
-{
-    char *ap;
-    int i;
-    double *dp;
-
-    if (count >= INT_MAX / sizeof(int64_t) || count <= 0)
-        return AVERROR_INVALIDDATA;
-    if (bytestream2_get_bytes_left(&s->gb) < count * sizeof(int64_t))
-        return AVERROR_INVALIDDATA;
-
-    dp = av_malloc(count * sizeof(double));
-    if (!dp)
-        return AVERROR(ENOMEM);
-
-    for (i = 0; i < count; i++)
-        dp[i] = tget_double(&s->gb, s->le);
-    ap = doubles2str(dp, count, sep);
-    av_freep(&dp);
-    if (!ap)
-        return AVERROR(ENOMEM);
-    av_dict_set(avpriv_frame_get_metadatap(frame), name, ap, AV_DICT_DONT_STRDUP_VAL);
-    return 0;
-}
-
-static int add_shorts_metadata(int count, const char *name,
-                               const char *sep, TiffContext *s, AVFrame *frame)
-{
-    char *ap;
-    int i;
-    int16_t *sp;
-
-    if (count >= INT_MAX / sizeof(int16_t) || count <= 0)
-        return AVERROR_INVALIDDATA;
-    if (bytestream2_get_bytes_left(&s->gb) < count * sizeof(int16_t))
-        return AVERROR_INVALIDDATA;
-
-    sp = av_malloc(count * sizeof(int16_t));
-    if (!sp)
-        return AVERROR(ENOMEM);
-
-    for (i = 0; i < count; i++)
-        sp[i] = tget_short(&s->gb, s->le);
-    ap = shorts2str(sp, count, sep);
-    av_freep(&sp);
-    if (!ap)
-        return AVERROR(ENOMEM);
-    av_dict_set(avpriv_frame_get_metadatap(frame), name, ap, AV_DICT_DONT_STRDUP_VAL);
-    return 0;
-}
-
-static int add_string_metadata(int count, const char *name,
-                               TiffContext *s, AVFrame *frame)
-{
-    char *value;
-
-    if (bytestream2_get_bytes_left(&s->gb) < count || count < 0)
-        return AVERROR_INVALIDDATA;
-
-    value = av_malloc(count + 1);
-    if (!value)
-        return AVERROR(ENOMEM);
-
-    bytestream2_get_bufferu(&s->gb, value, count);
-    value[count] = 0;
-
-    av_dict_set(avpriv_frame_get_metadatap(frame), name, value, AV_DICT_DONT_STRDUP_VAL);
-    return 0;
-}
-
 static int add_metadata(int count, int type,
                         const char *name, const char *sep, TiffContext *s, AVFrame *frame)
 {
     switch(type) {
-    case TIFF_DOUBLE: return add_doubles_metadata(count, name, sep, s, frame);
-    case TIFF_SHORT : return add_shorts_metadata(count, name, sep, s, frame);
-    case TIFF_STRING: return add_string_metadata(count, name, s, frame);
+    case TIFF_DOUBLE: return ff_tadd_doubles_metadata(count, name, sep, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
+    case TIFF_SHORT : return ff_tadd_shorts_metadata(count, name, sep, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
+    case TIFF_STRING: return ff_tadd_string_metadata(count, name, &s->gb, s->le, avpriv_frame_get_metadatap(frame));
     default         : return AVERROR_INVALIDDATA;
     };
 }
@@ -622,7 +493,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t *dst, int stride,
     return 0;
 }
 
-static int init_image(TiffContext *s, AVFrame *frame)
+static int init_image(TiffContext *s, ThreadFrame *frame)
 {
     int i, ret;
     uint32_t *pal;
@@ -679,14 +550,14 @@ static int init_image(TiffContext *s, AVFrame *frame)
             return ret;
         avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
-    if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
     if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if (s->palette_is_set) {
-            memcpy(frame->data[1], s->palette, sizeof(s->palette));
+            memcpy(frame->f->data[1], s->palette, sizeof(s->palette));
         } else {
             /* make default grayscale pal */
-            pal = (uint32_t *) frame->data[1];
+            pal = (uint32_t *) frame->f->data[1];
             for (i = 0; i < 1<<s->bpp; i++)
                 pal[i] = 0xFFU << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
@@ -702,42 +573,33 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     uint32_t *pal;
     double *dp;
 
-    tag   = tget_short(&s->gb, s->le);
-    type  = tget_short(&s->gb, s->le);
-    count = tget_long(&s->gb, s->le);
-    off   = tget_long(&s->gb, s->le);
-    start = bytestream2_tell(&s->gb);
-
-    if (type == 0 || type >= FF_ARRAY_ELEMS(type_sizes)) {
-        av_log(s->avctx, AV_LOG_DEBUG, "Unknown tiff type (%u) encountered\n",
-               type);
-        return 0;
+    ret = ff_tread_tag(&s->gb, s->le, &tag, &type, &count, &start);
+    if (ret < 0) {
+        goto end;
     }
 
     if (count == 1) {
         switch (type) {
         case TIFF_BYTE:
         case TIFF_SHORT:
-            bytestream2_seek(&s->gb, -4, SEEK_CUR);
-            value = tget(&s->gb, type, s->le);
+            value = ff_tget(&s->gb, type, s->le);
             break;
         case TIFF_LONG:
+            off   = ff_tget_long(&s->gb, s->le);
             value = off;
             break;
         case TIFF_STRING:
             if (count <= 4) {
-                bytestream2_seek(&s->gb, -4, SEEK_CUR);
                 break;
             }
         default:
+            off   = bytestream2_tell(&s->gb);
             value = UINT_MAX;
-            bytestream2_seek(&s->gb, off, SEEK_SET);
         }
     } else {
-        if (count <= 4 && type_sizes[type] * count <= 4)
-            bytestream2_seek(&s->gb, -4, SEEK_CUR);
-        else
-            bytestream2_seek(&s->gb, off, SEEK_SET);
+        if (type_sizes[type] * count > 4) {
+            off   = bytestream2_tell(&s->gb);
+        }
     }
 
     switch (tag) {
@@ -769,7 +631,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
                 if (bytestream2_get_bytes_left(&s->gb) < type_sizes[type] * count)
                     return AVERROR_INVALIDDATA;
                 for (i = 0; i < count; i++)
-                    s->bpp += tget(&s->gb, type, s->le);
+                    s->bpp += ff_tget(&s->gb, type, s->le);
                 break;
             default:
                 s->bpp = -1;
@@ -909,7 +771,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             for (i = 0; i < count / 3; i++) {
                 if (k == 2)
                     pal[i] = 0xFFU << 24;
-                j =  (tget(&s->gb, type, s->le) >> off) << (k * 8);
+                j =  (ff_tget(&s->gb, type, s->le) >> off) << (k * 8);
                 pal[i] |= j;
             }
         }
@@ -929,7 +791,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 #define ADD_METADATA(count, name, sep)\
     if ((ret = add_metadata(count, type, name, sep, s, frame)) < 0) {\
         av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");\
-        return ret;\
+        goto end;\
     }
     case TIFF_MODEL_PIXEL_SCALE:
         ADD_METADATA(count, "ModelPixelScaleTag", NULL);
@@ -943,7 +805,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case TIFF_GEO_KEY_DIRECTORY:
         ADD_METADATA(1, "GeoTIFF_Version", NULL);
         ADD_METADATA(2, "GeoTIFF_Key_Revision", ".");
-        s->geotag_count   = tget_short(&s->gb, s->le);
+        s->geotag_count   = ff_tget_short(&s->gb, s->le);
         if (s->geotag_count > count / 4 - 1) {
             s->geotag_count = count / 4 - 1;
             av_log(s->avctx, AV_LOG_WARNING, "GeoTIFF key directory buffer shorter than specified\n");
@@ -956,17 +818,17 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         if (!s->geotags) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
             s->geotag_count = 0;
-            return AVERROR(ENOMEM);
+            goto end;
         }
         for (i = 0; i < s->geotag_count; i++) {
-            s->geotags[i].key    = tget_short(&s->gb, s->le);
-            s->geotags[i].type   = tget_short(&s->gb, s->le);
-            s->geotags[i].count  = tget_short(&s->gb, s->le);
+            s->geotags[i].key    = ff_tget_short(&s->gb, s->le);
+            s->geotags[i].type   = ff_tget_short(&s->gb, s->le);
+            s->geotags[i].count  = ff_tget_short(&s->gb, s->le);
 
             if (!s->geotags[i].type)
-                s->geotags[i].val  = get_geokey_val(s->geotags[i].key, tget_short(&s->gb, s->le));
+                s->geotags[i].val  = get_geokey_val(s->geotags[i].key, ff_tget_short(&s->gb, s->le));
             else
-                s->geotags[i].offset = tget_short(&s->gb, s->le);
+                s->geotags[i].offset = ff_tget_short(&s->gb, s->le);
         }
         break;
     case TIFF_GEO_DOUBLE_PARAMS:
@@ -977,10 +839,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         dp = av_malloc(count * sizeof(double));
         if (!dp) {
             av_log(s->avctx, AV_LOG_ERROR, "Error allocating temporary buffer\n");
-            return AVERROR(ENOMEM);
+            goto end;
         }
         for (i = 0; i < count; i++)
-            dp[i] = tget_double(&s->gb, s->le);
+            dp[i] = ff_tget_double(&s->gb, s->le);
         for (i = 0; i < s->geotag_count; i++) {
             if (s->geotags[i].type == TIFF_GEO_DOUBLE_PARAMS) {
                 if (s->geotags[i].count == 0
@@ -1065,6 +927,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             return AVERROR_INVALIDDATA;
         }
     }
+end:
     bytestream2_seek(&s->gb, start, SEEK_SET);
     return 0;
 }
@@ -1074,8 +937,9 @@ static int decode_frame(AVCodecContext *avctx,
 {
     TiffContext *const s = avctx->priv_data;
     AVFrame *const p = data;
+    ThreadFrame frame = { .f = data };
     unsigned off;
-    int id, le, ret, plane, planes;
+    int le, ret, plane, planes;
     int i, j, entries, stride;
     unsigned soff, ssize;
     uint8_t *dst;
@@ -1085,15 +949,11 @@ static int decode_frame(AVCodecContext *avctx,
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
     // parse image header
-    if (avpkt->size < 8)
-        return AVERROR_INVALIDDATA;
-    id   = bytestream2_get_le16u(&s->gb);
-    if (id == 0x4949)
-        le = 1;
-    else if (id == 0x4D4D)
-        le = 0;
-    else {
-        av_log(avctx, AV_LOG_ERROR, "TIFF header not found\n");
+    if ((ret = ff_tdecode_header(&s->gb, &le, &off))) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid TIFF header\n");
+        return ret;
+    } else if (off >= UINT_MAX - 14 || avpkt->size < off + 14) {
+        av_log(avctx, AV_LOG_ERROR, "IFD offset is greater than image size\n");
         return AVERROR_INVALIDDATA;
     }
     s->le         = le;
@@ -1104,23 +964,11 @@ static int decode_frame(AVCodecContext *avctx,
     s->fill_order = 0;
     free_geotags(s);
 
-    // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
-    // that further identifies the file as a TIFF file"
-    if (tget_short(&s->gb, le) != 42) {
-        av_log(avctx, AV_LOG_ERROR,
-               "The answer to life, universe and everything is not correct!\n");
-        return AVERROR_INVALIDDATA;
-    }
     // Reset these offsets so we can tell if they were set this frame
     s->stripsizesoff = s->strippos = 0;
     /* parse image file directory */
-    off = tget_long(&s->gb, le);
-    if (off >= UINT_MAX - 14 || avpkt->size < off + 14) {
-        av_log(avctx, AV_LOG_ERROR, "IFD offset is greater than image size\n");
-        return AVERROR_INVALIDDATA;
-    }
     bytestream2_seek(&s->gb, off, SEEK_SET);
-    entries = tget_short(&s->gb, le);
+    entries = ff_tget_short(&s->gb, le);
     if (bytestream2_get_bytes_left(&s->gb) < entries * 12)
         return AVERROR_INVALIDDATA;
     for (i = 0; i < entries; i++) {
@@ -1150,7 +998,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
     /* now we have the data and may start decoding */
-    if ((ret = init_image(s, p)) < 0)
+    if ((ret = init_image(s, &frame)) < 0)
         return ret;
 
     if (s->strips == 1 && !s->stripsize) {
@@ -1180,12 +1028,12 @@ static int decode_frame(AVCodecContext *avctx,
         dst    = p->data[plane];
     for (i = 0; i < s->height; i += s->rps) {
         if (s->stripsizesoff)
-            ssize = tget(&stripsizes, s->sstype, s->le);
+            ssize = ff_tget(&stripsizes, s->sstype, s->le);
         else
             ssize = s->stripsize;
 
         if (s->strippos)
-            soff = tget(&stripdata, s->sot, s->le);
+            soff = ff_tget(&stripdata, s->sot, s->le);
         else
             soff = s->stripoff;
 
@@ -1289,5 +1137,6 @@ AVCodec ff_tiff_decoder = {
     .init           = tiff_init,
     .close          = tiff_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(tiff_init),
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
 };

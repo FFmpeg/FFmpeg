@@ -349,7 +349,7 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
             Y1 = av_clip_uint8(Y1);
             Y2 = av_clip_uint8(Y2);
         }
-        if (c->flags & SWS_ERROR_DIFFUSION) {
+        if (c->dither == SWS_DITHER_ED) {
             Y1 += (7*err + 1*c->dither_error[0][i] + 5*c->dither_error[0][i+1] + 3*c->dither_error[0][i+2] + 8 - 256)>>4;
             c->dither_error[0][i] = err;
             acc = 2*acc + (Y1 >= 128);
@@ -386,7 +386,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
     int  yalpha1 = 4096 - yalpha;
     int i;
 
-    if (c->flags & SWS_ERROR_DIFFUSION) {
+    if (c->dither == SWS_DITHER_ED) {
         int err = 0;
         int acc = 0;
         for (i = 0; i < dstW; i +=2) {
@@ -443,7 +443,7 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
     const uint8_t * const d128 = dither_8x8_220[y & 7];
     int i;
 
-    if (c->flags & SWS_ERROR_DIFFUSION) {
+    if (c->dither == SWS_DITHER_ED) {
         int err = 0;
         int acc = 0;
         for (i = 0; i < dstW; i +=2) {

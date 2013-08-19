@@ -47,6 +47,11 @@ Files that have MIPS copyright notice in them:
 * libavutil/mips/
       float_dsp_mips.c
       libm_mips.h
+* libavcodec/
+      fft_fixed_32.c
+      fft_init_table.c
+      fft_table.h
+      mdct_fixed_32.c
 * libavcodec/mips/
       aaccoder_mips.c
       aacpsy_mips.h

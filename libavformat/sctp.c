@@ -198,7 +198,7 @@ static int sctp_open(URLContext *h, const char *uri, int flags)
 
     cur_ai = ai;
 
-    fd = socket(cur_ai->ai_family, SOCK_STREAM, IPPROTO_SCTP);
+    fd = ff_socket(cur_ai->ai_family, SOCK_STREAM, IPPROTO_SCTP);
     if (fd < 0)
         goto fail;
 

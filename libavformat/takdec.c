@@ -99,7 +99,7 @@ static int tak_read_header(AVFormatContext *s)
                 }
             }
 
-            init_get_bits(&gb, buffer, (size - 3) * 8);
+            init_get_bits8(&gb, buffer, size - 3);
             break;
         case TAK_METADATA_MD5: {
             uint8_t md5[16];

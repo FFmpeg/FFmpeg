@@ -43,6 +43,7 @@ typedef struct SegmentListEntry {
     int index;
     double start_time, end_time;
     int64_t start_pts;
+    int64_t offset_pts;
     char filename[1024];
     struct SegmentListEntry *next;
 } SegmentListEntry;
@@ -85,12 +86,12 @@ typedef struct {
     int nb_frames;         ///< number of elments in the frames array
     int frame_count;
 
-    char *time_delta_str;  ///< approximation value duration used for the segment times
     int64_t time_delta;
     int  individual_header_trailer; /**< Set by a private option. */
     int  write_header_trailer; /**< Set by a private option. */
 
     int reset_timestamps;  ///< reset timestamps at the begin of each segment
+    int64_t initial_offset;    ///< initial timestamps offset, expressed in microseconds
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
 
@@ -554,15 +555,6 @@ static int seg_write_header(AVFormatContext *s)
         }
     }
 
-    if (seg->time_delta_str) {
-        if ((ret = av_parse_time(&seg->time_delta, seg->time_delta_str, 1)) < 0) {
-            av_log(s, AV_LOG_ERROR,
-                   "Invalid time duration specification '%s' for delta option\n",
-                   seg->time_delta_str);
-            return ret;
-        }
-    }
-
     if (seg->list) {
         if (seg->list_type == LIST_TYPE_UNDEFINED) {
             if      (av_match_ext(seg->list, "csv" )) seg->list_type = LIST_TYPE_CSV;
@@ -644,7 +636,7 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
     SegmentContext *seg = s->priv_data;
     AVFormatContext *oc = seg->avf;
     AVStream *st = s->streams[pkt->stream_index];
-    int64_t end_pts = INT64_MAX;
+    int64_t end_pts = INT64_MAX, offset;
     int start_frame = INT_MAX;
     int ret;
 
@@ -694,23 +686,23 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
         seg->is_first_pkt = 0;
     }
 
-    if (seg->reset_timestamps) {
-        av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s dts:%s dts_time:%s",
-               pkt->stream_index,
-               av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q),
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
+    av_log(s, AV_LOG_DEBUG, "stream:%d start_pts_time:%s pts:%s pts_time:%s dts:%s dts_time:%s",
+           pkt->stream_index,
+           av_ts2timestr(seg->cur_entry.start_pts, &AV_TIME_BASE_Q),
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
-        /* compute new timestamps */
-        if (pkt->pts != AV_NOPTS_VALUE)
-            pkt->pts -= av_rescale_q(seg->cur_entry.start_pts, AV_TIME_BASE_Q, st->time_base);
-        if (pkt->dts != AV_NOPTS_VALUE)
-            pkt->dts -= av_rescale_q(seg->cur_entry.start_pts, AV_TIME_BASE_Q, st->time_base);
+    /* compute new timestamps */
+    offset = av_rescale_q(seg->initial_offset - (seg->reset_timestamps ? seg->cur_entry.start_pts : 0),
+                          AV_TIME_BASE_Q, st->time_base);
+    if (pkt->pts != AV_NOPTS_VALUE)
+        pkt->pts += offset;
+    if (pkt->dts != AV_NOPTS_VALUE)
+        pkt->dts += offset;
 
-        av_log(s, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
-               av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
-               av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
-    }
+    av_log(s, AV_LOG_DEBUG, " -> pts:%s pts_time:%s dts:%s dts_time:%s\n",
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &st->time_base));
 
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
 
@@ -784,7 +776,7 @@ static const AVOption options[] = {
     { "hls", "Apple HTTP Live Streaming compatible", 0, AV_OPT_TYPE_CONST, {.i64=LIST_TYPE_M3U8 }, INT_MIN, INT_MAX, E, "list_type" },
 
     { "segment_time",      "set segment duration",                       OFFSET(time_str),AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,       E },
-    { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta_str), AV_OPT_TYPE_STRING, {.str = "0"}, 0, 0, E },
+    { "segment_time_delta","set approximation value used for the segment times", OFFSET(time_delta), AV_OPT_TYPE_DURATION, {.i64 = 0}, 0, 0, E },
     { "segment_times",     "set segment split time points",              OFFSET(times_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_frames",    "set segment split frame numbers",            OFFSET(frames_str),AV_OPT_TYPE_STRING,{.str = NULL},  0, 0,       E },
     { "segment_wrap",      "set number after which the index wraps",     OFFSET(segment_idx_wrap), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, E },
@@ -793,6 +785,7 @@ static const AVOption options[] = {
     { "individual_header_trailer", "write header/trailer to each segment", OFFSET(individual_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "reset_timestamps", "reset timestamps at the begin of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
+    { "initial_offset", "set initial timestamp offset", OFFSET(initial_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E },
     { NULL },
 };
 

@@ -2015,22 +2015,28 @@ static int mov_write_tmpo_tag(AVIOContext *pb, AVFormatContext *s)
     return size;
 }
 
-/* iTunes track number */
+/* iTunes track or disc number */
 static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
-                              AVFormatContext *s)
+                              AVFormatContext *s, int disc)
 {
-    AVDictionaryEntry *t = av_dict_get(s->metadata, "track", NULL, 0);
+    AVDictionaryEntry *t = av_dict_get(s->metadata,
+                                       disc ? "disc" : "track",
+                                       NULL, 0);
     int size = 0, track = t ? atoi(t->value) : 0;
     if (track) {
+        int tracks = 0;
+        char *slash = strchr(t->value, '/');
+        if (slash)
+            tracks = atoi(slash + 1);
         avio_wb32(pb, 32); /* size */
-        ffio_wfourcc(pb, "trkn");
+        ffio_wfourcc(pb, disc ? "disk" : "trkn");
         avio_wb32(pb, 24); /* size */
         ffio_wfourcc(pb, "data");
         avio_wb32(pb, 0);        // 8 bytes empty
         avio_wb32(pb, 0);
         avio_wb16(pb, 0);        // empty
-        avio_wb16(pb, track);    // track number
-        avio_wb16(pb, 0);        // total track number
+        avio_wb16(pb, track);    // track / disc number
+        avio_wb16(pb, tracks);   // total track / disc number
         avio_wb16(pb, 0);        // empty
         size = 32;
     }
@@ -2093,7 +2099,8 @@ static int mov_write_ilst_tag(AVIOContext *pb, MOVMuxContext *mov,
     mov_write_int8_metadata  (s, pb, "stik",    "media_type",1);
     mov_write_int8_metadata  (s, pb, "hdvd",    "hd_video",  1);
     mov_write_int8_metadata  (s, pb, "pgap",    "gapless_playback",1);
-    mov_write_trkn_tag(pb, mov, s);
+    mov_write_trkn_tag(pb, mov, s, 0); // track number
+    mov_write_trkn_tag(pb, mov, s, 1); // disc number
     mov_write_tmpo_tag(pb, s);
     return update_size(pb, pos);
 }
@@ -2409,7 +2416,7 @@ static int mov_write_isml_manifest(AVIOContext *pb, MOVMuxContext *mov)
 {
     int64_t pos = avio_tell(pb);
     int i;
-    const uint8_t uuid[] = {
+    static const uint8_t uuid[] = {
         0xa5, 0xd4, 0x0b, 0x30, 0xe8, 0x14, 0x11, 0xdd,
         0xba, 0x2f, 0x08, 0x00, 0x20, 0x0c, 0x9a, 0x66
     };
@@ -2602,7 +2609,7 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
 static int mov_write_tfxd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
-    const uint8_t uuid[] = {
+    static const uint8_t uuid[] = {
         0x6d, 0x1d, 0x9b, 0x05, 0x42, 0xd5, 0x44, 0xe6,
         0x80, 0xe2, 0x14, 0x1d, 0xaf, 0xf7, 0x57, 0xb2
     };
@@ -2624,7 +2631,7 @@ static int mov_write_tfrf_tag(AVIOContext *pb, MOVMuxContext *mov,
 {
     int n = track->nb_frag_info - 1 - entry, i;
     int size = 8 + 16 + 4 + 1 + 16*n;
-    const uint8_t uuid[] = {
+    static const uint8_t uuid[] = {
         0xd4, 0x80, 0x7e, 0xf2, 0xca, 0x39, 0x46, 0x95,
         0x8e, 0x54, 0x26, 0xcb, 0x9e, 0x46, 0xa7, 0x9f
     };
@@ -3538,7 +3545,7 @@ static int mov_write_header(AVFormatContext *s)
      * is enabled, we don't support non-seekable output at all. */
     if (!s->pb->seekable &&
         ((!(mov->flags & FF_MOV_FLAG_FRAGMENT) &&
-          !(s->oformat && !strcmp(s->oformat->name, "ismv")))
+          strcmp(s->oformat->name, "ismv"))
          || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return -1;
@@ -3547,23 +3554,32 @@ static int mov_write_header(AVFormatContext *s)
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
 
-    if (s->oformat != NULL) {
-        if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
-        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
-        else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
-        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
-        else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
-        else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
-        else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
+    if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
+    else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3GP|MODE_3G2;
+    else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
+    else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
+    else if (!strcmp("ipod",s->oformat->name)) mov->mode = MODE_IPOD;
+    else if (!strcmp("ismv",s->oformat->name)) mov->mode = MODE_ISM;
+    else if (!strcmp("f4v", s->oformat->name)) mov->mode = MODE_F4V;
 
-        mov_write_ftyp_tag(pb,s);
-        if (mov->mode == MODE_PSP) {
-            if (s->nb_streams != 2) {
-                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-                return -1;
+    mov_write_ftyp_tag(pb,s);
+    if (mov->mode == MODE_PSP) {
+        int video_streams_nb = 0, audio_streams_nb = 0, other_streams_nb = 0;
+        for (i = 0; i < s->nb_streams; i++) {
+            AVStream *st = s->streams[i];
+            if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                video_streams_nb++;
+            else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                audio_streams_nb++;
+            else
+                other_streams_nb++;
             }
-            mov_write_uuidprof_tag(pb, s);
+
+        if (video_streams_nb != 1 || audio_streams_nb != 1 || other_streams_nb) {
+            av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+            return -1;
         }
+        mov_write_uuidprof_tag(pb, s);
     }
 
     mov->nb_streams = s->nb_streams;

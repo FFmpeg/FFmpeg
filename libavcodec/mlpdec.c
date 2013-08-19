@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/channel_layout.h"
 #include "get_bits.h"
@@ -401,10 +402,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     uint8_t checksum;
     uint8_t lossless_check;
     int start_count = get_bits_count(gbp);
-    const int max_matrix_channel = m->avctx->codec_id == AV_CODEC_ID_MLP
-                                 ? MAX_MATRIX_CHANNEL_MLP
-                                 : MAX_MATRIX_CHANNEL_TRUEHD;
-    int max_channel, min_channel, matrix_channel;
+    int min_channel, max_channel, max_matrix_channel;
+    const int std_max_matrix_channel = m->avctx->codec_id == AV_CODEC_ID_MLP
+                                     ? MAX_MATRIX_CHANNEL_MLP
+                                     : MAX_MATRIX_CHANNEL_TRUEHD;
 
     sync_word = get_bits(gbp, 13);
 
@@ -423,18 +424,18 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     skip_bits(gbp, 16); /* Output timestamp */
 
-    min_channel    = get_bits(gbp, 4);
-    max_channel    = get_bits(gbp, 4);
-    matrix_channel = get_bits(gbp, 4);
+    min_channel        = get_bits(gbp, 4);
+    max_channel        = get_bits(gbp, 4);
+    max_matrix_channel = get_bits(gbp, 4);
 
-    if (matrix_channel > max_matrix_channel) {
+    if (max_matrix_channel > std_max_matrix_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Max matrix channel cannot be greater than %d.\n",
-               max_matrix_channel);
+               std_max_matrix_channel);
         return AVERROR_INVALIDDATA;
     }
 
-    if (max_channel != matrix_channel) {
+    if (max_channel != max_matrix_channel) {
         av_log(m->avctx, AV_LOG_ERROR,
                "Max channel must be equal max matrix channel.\n");
         return AVERROR_INVALIDDATA;
@@ -456,11 +457,12 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         return AVERROR_INVALIDDATA;
     }
 
-    s->min_channel = min_channel;
-    s->max_channel = max_channel;
-    s->max_matrix_channel = matrix_channel;
+    s->min_channel        = min_channel;
+    s->max_channel        = max_channel;
+    s->max_matrix_channel = max_matrix_channel;
 
 #if FF_API_REQUEST_CHANNELS
+FF_DISABLE_DEPRECATION_WARNINGS
     if (m->avctx->request_channels > 0 &&
         m->avctx->request_channels <= s->max_channel + 1 &&
         m->max_decoded_substream > substr) {
@@ -469,6 +471,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
                "Further substreams will be skipped.\n",
                s->max_channel + 1, substr);
         m->max_decoded_substream = substr;
+FF_ENABLE_DEPRECATION_WARNINGS
     } else
 #endif
     if (m->avctx->request_channel_layout == s->ch_layout &&

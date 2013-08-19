@@ -150,7 +150,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     av_frame_copy_props(outpic, inpic);
     outpic->interlaced_frame = 0;
 
-    for (plane = 0; inpic->data[plane] && plane < 4; plane++) {
+    for (plane = 0; plane < 4 && inpic->data[plane] && inpic->linesize[plane]; plane++) {
         h = plane == 0 ? inlink->h : FF_CEIL_RSHIFT(inlink->h, kerndeint->vsub);
         bwidth = kerndeint->tmp_bwidth[plane];
 

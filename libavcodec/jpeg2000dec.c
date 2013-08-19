@@ -28,6 +28,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "internal.h"
@@ -37,6 +38,7 @@
 #define JP2_SIG_TYPE    0x6A502020
 #define JP2_SIG_VALUE   0x0D0A870A
 #define JP2_CODESTREAM  0x6A703263
+#define JP2_HEADER      0x6A703268
 
 #define HAD_COC 0x01
 #define HAD_QCC 0x02
@@ -72,6 +74,10 @@ typedef struct Jpeg2000DecoderContext {
     int             cdx[4], cdy[4];
     int             precision;
     int             ncomponents;
+    int             colour_space;
+    uint32_t        palette[256];
+    int8_t          pal8;
+    int             cdef[4];
     int             tile_width, tile_height;
     unsigned        numXtiles, numYtiles;
     int             maxtilelen;
@@ -154,12 +160,74 @@ static int tag_tree_decode(Jpeg2000DecoderContext *s, Jpeg2000TgtNode *node,
     return curval;
 }
 
+static int pix_fmt_match(enum AVPixelFormat pix_fmt, int components,
+                         int bpc, uint32_t log2_chroma_wh, int pal8)
+{
+    int match = 1;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+
+    if (desc->nb_components != components) {
+        return 0;
+    }
+
+    switch (components) {
+    case 4:
+        match = match && desc->comp[3].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >> 14 & 3) == 0 &&
+                         (log2_chroma_wh >> 12 & 3) == 0;
+    case 3:
+        match = match && desc->comp[2].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >> 10 & 3) == desc->log2_chroma_w &&
+                         (log2_chroma_wh >>  8 & 3) == desc->log2_chroma_h;
+    case 2:
+        match = match && desc->comp[1].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >>  6 & 3) == desc->log2_chroma_w &&
+                         (log2_chroma_wh >>  4 & 3) == desc->log2_chroma_h;
+
+    case 1:
+        match = match && desc->comp[0].depth_minus1 + 1 >= bpc &&
+                         (log2_chroma_wh >>  2 & 3) == 0 &&
+                         (log2_chroma_wh       & 3) == 0 &&
+                         (desc->flags & AV_PIX_FMT_FLAG_PAL) == pal8 * AV_PIX_FMT_FLAG_PAL;
+    }
+    return match;
+}
+
+// pix_fmts with lower bpp have to be listed before
+// similar pix_fmts with higher bpp.
+#define RGB_PIXEL_FORMATS   AV_PIX_FMT_PAL8,AV_PIX_FMT_RGB24,AV_PIX_FMT_RGBA,AV_PIX_FMT_RGB48,AV_PIX_FMT_RGBA64
+#define GRAY_PIXEL_FORMATS  AV_PIX_FMT_GRAY8,AV_PIX_FMT_GRAY8A,AV_PIX_FMT_GRAY16
+#define YUV_PIXEL_FORMATS   AV_PIX_FMT_YUV410P,AV_PIX_FMT_YUV411P,AV_PIX_FMT_YUVA420P, \
+                            AV_PIX_FMT_YUV420P,AV_PIX_FMT_YUV422P,AV_PIX_FMT_YUVA422P, \
+                            AV_PIX_FMT_YUV440P,AV_PIX_FMT_YUV444P,AV_PIX_FMT_YUVA444P, \
+                            AV_PIX_FMT_YUV420P9,AV_PIX_FMT_YUV422P9,AV_PIX_FMT_YUV444P9, \
+                            AV_PIX_FMT_YUVA420P9,AV_PIX_FMT_YUVA422P9,AV_PIX_FMT_YUVA444P9, \
+                            AV_PIX_FMT_YUV420P10,AV_PIX_FMT_YUV422P10,AV_PIX_FMT_YUV444P10, \
+                            AV_PIX_FMT_YUVA420P10,AV_PIX_FMT_YUVA422P10,AV_PIX_FMT_YUVA444P10, \
+                            AV_PIX_FMT_YUV420P12,AV_PIX_FMT_YUV422P12,AV_PIX_FMT_YUV444P12, \
+                            AV_PIX_FMT_YUV420P14,AV_PIX_FMT_YUV422P14,AV_PIX_FMT_YUV444P14, \
+                            AV_PIX_FMT_YUV420P16,AV_PIX_FMT_YUV422P16,AV_PIX_FMT_YUV444P16, \
+                            AV_PIX_FMT_YUVA420P16,AV_PIX_FMT_YUVA422P16,AV_PIX_FMT_YUVA444P16
+#define XYZ_PIXEL_FORMATS   AV_PIX_FMT_XYZ12
+
+static const enum AVPixelFormat rgb_pix_fmts[]  = {RGB_PIXEL_FORMATS};
+static const enum AVPixelFormat gray_pix_fmts[] = {GRAY_PIXEL_FORMATS};
+static const enum AVPixelFormat yuv_pix_fmts[]  = {YUV_PIXEL_FORMATS};
+static const enum AVPixelFormat xyz_pix_fmts[]  = {XYZ_PIXEL_FORMATS};
+static const enum AVPixelFormat all_pix_fmts[]  = {RGB_PIXEL_FORMATS,
+                                                   GRAY_PIXEL_FORMATS,
+                                                   YUV_PIXEL_FORMATS,
+                                                   XYZ_PIXEL_FORMATS};
+
 /* marker segments */
 /* get sizes and offsets of image, tiles; number of components */
 static int get_siz(Jpeg2000DecoderContext *s)
 {
     int i;
     int ncomponents;
+    uint32_t log2_chroma_wh = 0;
+    const enum AVPixelFormat *possible_fmts = NULL;
+    int possible_fmts_nb = 0;
 
     if (bytestream2_get_bytes_left(&s->g) < 36)
         return AVERROR_INVALIDDATA;
@@ -205,13 +273,11 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->sgnd[i]   = !!(x & 0x80);
         s->cdx[i]    = bytestream2_get_byteu(&s->g);
         s->cdy[i]    = bytestream2_get_byteu(&s->g);
-        if (s->cdx[i] != 1 || s->cdy[i] != 1) {
-            avpriv_request_sample(s->avctx,
-                                  "CDxy values %d %d for component %d",
-                                  s->cdx[i], s->cdy[i], i);
-            if (!s->cdx[i] || !s->cdy[i])
-                return AVERROR_INVALIDDATA;
+        if (!s->cdx[i] || !s->cdy[i]) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid sample seperation\n");
+            return AVERROR_INVALIDDATA;
         }
+        log2_chroma_wh |= s->cdy[i] >> 1 << i * 4 | s->cdx[i] >> 1 << i * 4 + 2;
     }
 
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
@@ -242,35 +308,46 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->avctx->height = ff_jpeg2000_ceildivpow2(s->height - s->image_offset_y,
                                                s->reduction_factor);
 
-    switch (s->ncomponents) {
-    case 1:
-        if (s->precision > 8)
-            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16;
-        else
-            s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-        break;
-    case 3:
-        switch (s->avctx->profile) {
-        case FF_PROFILE_JPEG2000_DCINEMA_2K:
-        case FF_PROFILE_JPEG2000_DCINEMA_4K:
-            /* XYZ color-space for digital cinema profiles */
-            s->avctx->pix_fmt = AV_PIX_FMT_XYZ12;
+    if (s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_2K ||
+        s->avctx->profile == FF_PROFILE_JPEG2000_DCINEMA_4K) {
+        possible_fmts = xyz_pix_fmts;
+        possible_fmts_nb = FF_ARRAY_ELEMS(xyz_pix_fmts);
+    } else {
+        switch (s->colour_space) {
+        case 16:
+            possible_fmts = rgb_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(rgb_pix_fmts);
+            break;
+        case 17:
+            possible_fmts = gray_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(gray_pix_fmts);
+            break;
+        case 18:
+            possible_fmts = yuv_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(yuv_pix_fmts);
             break;
         default:
-            if (s->precision > 8)
-                s->avctx->pix_fmt = AV_PIX_FMT_RGB48;
-            else
-                s->avctx->pix_fmt = AV_PIX_FMT_RGB24;
+            possible_fmts = all_pix_fmts;
+            possible_fmts_nb = FF_ARRAY_ELEMS(all_pix_fmts);
             break;
         }
-        break;
-    case 4:
-        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
-        break;
-    default:
-        /* pixel format can not be identified */
-        s->avctx->pix_fmt = AV_PIX_FMT_NONE;
-        break;
+    }
+    for (i = 0; i < possible_fmts_nb; ++i) {
+        if (pix_fmt_match(possible_fmts[i], ncomponents, s->precision, log2_chroma_wh, s->pal8)) {
+            s->avctx->pix_fmt = possible_fmts[i];
+            break;
+        }
+    }
+    if (s->avctx->pix_fmt == AV_PIX_FMT_NONE) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Unknown pix_fmt, profile: %d, colour_space: %d, "
+               "components: %d, precision: %d, "
+               "cdx[1]: %d, cdy[1]: %d, cdx[2]: %d, cdy[2]: %d\n",
+               s->avctx->profile, s->colour_space, ncomponents, s->precision,
+               ncomponents > 2 ? s->cdx[1] : 0,
+               ncomponents > 2 ? s->cdy[1] : 0,
+               ncomponents > 2 ? s->cdx[2] : 0,
+               ncomponents > 2 ? s->cdy[2] : 0);
     }
     return 0;
 }
@@ -1024,7 +1101,7 @@ static void dequantization_int(int x, int y, Jpeg2000Cblk *cblk,
         int32_t *datap = &comp->i_data[(comp->coord[0][1] - comp->coord[0][0]) * (y + j) + x];
         int *src = t1->data[j];
         for (i = 0; i < w; ++i)
-            datap[i] = (src[i] * band->i_stepsize + (1 << 15)) >> 16;
+            datap[i] = (src[i] * band->i_stepsize + (1 << 14)) >> 15;
     }
 }
 
@@ -1157,6 +1234,13 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
     if (tile->codsty[0].mct)
         mct_decode(s, tile);
 
+    if (s->cdef[0] < 0) {
+        for (x = 0; x < s->ncomponents; x++)
+            s->cdef[x] = x + 1;
+        if ((s->ncomponents & 1) == 0)
+            s->cdef[s->ncomponents-1] = 0;
+    }
+
     if (s->precision <= 8) {
         for (compno = 0; compno < s->ncomponents; compno++) {
             Jpeg2000Component *comp = tile->comp + compno;
@@ -1165,14 +1249,21 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             int32_t *i_datap = comp->i_data;
             int cbps = s->cbps[compno];
             int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
+            int planar = !!picture->data[2];
+            int pixelsize = planar ? 1 : s->ncomponents;
+            int plane = 0;
+
+            if (planar)
+                plane = s->cdef[compno] ? s->cdef[compno]-1 : (s->ncomponents-1);
+
 
             y    = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            line = picture->data[0] + y * picture->linesize[0];
+            line = picture->data[plane] + y * picture->linesize[plane];
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint8_t *dst;
 
                 x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
-                dst = line + x * s->ncomponents + compno;
+                dst = line + x * pixelsize + compno*!planar;
 
                 if (codsty->transform == FF_DWT97) {
                     for (; x < w; x += s->cdx[compno]) {
@@ -1181,7 +1272,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         val = av_clip(val, 0, (1 << cbps) - 1);
                         *dst = val << (8 - cbps);
                         datap++;
-                        dst += s->ncomponents;
+                        dst += pixelsize;
                     }
                 } else {
                     for (; x < w; x += s->cdx[compno]) {
@@ -1190,10 +1281,10 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         val = av_clip(val, 0, (1 << cbps) - 1);
                         *dst = val << (8 - cbps);
                         i_datap++;
-                        dst += s->ncomponents;
+                        dst += pixelsize;
                     }
                 }
-                line += picture->linesize[0];
+                line += picture->linesize[plane];
             }
         }
     } else {
@@ -1205,14 +1296,20 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
             uint16_t *linel;
             int cbps = s->cbps[compno];
             int w = tile->comp[compno].coord[0][1] - s->image_offset_x;
+            int planar = !!picture->data[2];
+            int pixelsize = planar ? 1 : s->ncomponents;
+            int plane = 0;
+
+            if (planar)
+                plane = s->cdef[compno] ? s->cdef[compno]-1 : (s->ncomponents-1);
 
             y     = tile->comp[compno].coord[1][0] - s->image_offset_y;
-            linel = (uint16_t *)picture->data[0] + y * (picture->linesize[0] >> 1);
+            linel = (uint16_t *)picture->data[plane] + y * (picture->linesize[plane] >> 1);
             for (; y < tile->comp[compno].coord[1][1] - s->image_offset_y; y += s->cdy[compno]) {
                 uint16_t *dst;
 
                 x   = tile->comp[compno].coord[0][0] - s->image_offset_x;
-                dst = linel + (x * s->ncomponents + compno);
+                dst = linel + (x * pixelsize + compno*!planar);
                 if (codsty->transform == FF_DWT97) {
                     for (; x < w; x += s-> cdx[compno]) {
                         int  val = lrintf(*datap) + (1 << (cbps - 1));
@@ -1221,7 +1318,7 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         /* align 12 bit values in little-endian mode */
                         *dst = val << (16 - cbps);
                         datap++;
-                        dst += s->ncomponents;
+                        dst += pixelsize;
                     }
                 } else {
                     for (; x < w; x += s-> cdx[compno]) {
@@ -1231,10 +1328,10 @@ static int jpeg2000_decode_tile(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile,
                         /* align 12 bit values in little-endian mode */
                         *dst = val << (16 - cbps);
                         i_datap++;
-                        dst += s->ncomponents;
+                        dst += pixelsize;
                     }
                 }
-                linel += picture->linesize[0] >> 1;
+                linel += picture->linesize[plane] >> 1;
             }
         }
     }
@@ -1376,26 +1473,101 @@ static int jpeg2000_read_bitstream_packets(Jpeg2000DecoderContext *s)
 
 static int jp2_find_codestream(Jpeg2000DecoderContext *s)
 {
-    uint32_t atom_size, atom;
-    int found_codestream = 0, search_range = 10;
+    uint32_t atom_size, atom, atom_end;
+    int search_range = 10;
 
-    while (!found_codestream && search_range
+    while (search_range
            &&
            bytestream2_get_bytes_left(&s->g) >= 8) {
         atom_size = bytestream2_get_be32u(&s->g);
         atom      = bytestream2_get_be32u(&s->g);
-        if (atom == JP2_CODESTREAM) {
-            found_codestream = 1;
+        atom_end  = bytestream2_tell(&s->g) + atom_size - 8;
+
+        if (atom == JP2_CODESTREAM)
+            return 1;
+
+        if (bytestream2_get_bytes_left(&s->g) < atom_size || atom_end < atom_size)
+            return 0;
+
+        if (atom == JP2_HEADER &&
+                   atom_size >= 16) {
+            uint32_t atom2_size, atom2, atom2_end;
+            do {
+                atom2_size = bytestream2_get_be32u(&s->g);
+                atom2      = bytestream2_get_be32u(&s->g);
+                atom2_end  = bytestream2_tell(&s->g) + atom2_size - 8;
+                if (atom2_size < 8 || atom2_end > atom_end || atom2_end < atom2_size)
+                    break;
+                if (atom2 == JP2_CODESTREAM) {
+                    return 1;
+                } else if (atom2 == MKBETAG('c','o','l','r') && atom2_size >= 7) {
+                    int method = bytestream2_get_byteu(&s->g);
+                    bytestream2_skipu(&s->g, 2);
+                    if (method == 1) {
+                        s->colour_space = bytestream2_get_be32u(&s->g);
+                    }
+                } else if (atom2 == MKBETAG('p','c','l','r') && atom2_size >= 6) {
+                    int i, size, colour_count, colour_channels, colour_depth[3];
+                    uint32_t r, g, b;
+                    colour_count = bytestream2_get_be16u(&s->g);
+                    colour_channels = bytestream2_get_byteu(&s->g);
+                    // FIXME: Do not ignore channel_sign
+                    colour_depth[0] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
+                    colour_depth[1] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
+                    colour_depth[2] = (bytestream2_get_byteu(&s->g) & 0x7f) + 1;
+                    size = (colour_depth[0] + 7 >> 3) * colour_count +
+                           (colour_depth[1] + 7 >> 3) * colour_count +
+                           (colour_depth[2] + 7 >> 3) * colour_count;
+                    if (colour_count > 256   ||
+                        colour_channels != 3 ||
+                        colour_depth[0] > 16 ||
+                        colour_depth[1] > 16 ||
+                        colour_depth[2] > 16 ||
+                        atom2_size < size) {
+                        avpriv_request_sample(s->avctx, "Unknown palette");
+                        bytestream2_seek(&s->g, atom2_end, SEEK_SET);
+                        continue;
+                    }
+                    s->pal8 = 1;
+                    for (i = 0; i < colour_count; i++) {
+                        if (colour_depth[0] <= 8) {
+                            r = bytestream2_get_byteu(&s->g) << 8 - colour_depth[0];
+                            r |= r >> colour_depth[0];
+                        } else {
+                            r = bytestream2_get_be16u(&s->g) >> colour_depth[0] - 8;
+                        }
+                        if (colour_depth[1] <= 8) {
+                            g = bytestream2_get_byteu(&s->g) << 8 - colour_depth[1];
+                            r |= r >> colour_depth[1];
+                        } else {
+                            g = bytestream2_get_be16u(&s->g) >> colour_depth[1] - 8;
+                        }
+                        if (colour_depth[2] <= 8) {
+                            b = bytestream2_get_byteu(&s->g) << 8 - colour_depth[2];
+                            r |= r >> colour_depth[2];
+                        } else {
+                            b = bytestream2_get_be16u(&s->g) >> colour_depth[2] - 8;
+                        }
+                        s->palette[i] = 0xffu << 24 | r << 16 | g << 8 | b;
+                    }
+                } else if (atom2 == MKBETAG('c','d','e','f') && atom2_size >= 2) {
+                    int n = bytestream2_get_be16u(&s->g);
+                    for (; n>0; n--) {
+                        int cn   = bytestream2_get_be16(&s->g);
+                        int av_unused typ  = bytestream2_get_be16(&s->g);
+                        int asoc = bytestream2_get_be16(&s->g);
+                        if (cn < 4 || asoc < 4)
+                            s->cdef[cn] = asoc;
+                    }
+                }
+                bytestream2_seek(&s->g, atom2_end, SEEK_SET);
+            } while (atom_end - atom2_end >= 8);
         } else {
-            if (bytestream2_get_bytes_left(&s->g) < atom_size - 8)
-                return 0;
-            bytestream2_skipu(&s->g, atom_size - 8);
             search_range--;
         }
+        bytestream2_seek(&s->g, atom_end, SEEK_SET);
     }
 
-    if (found_codestream)
-        return 1;
     return 0;
 }
 
@@ -1410,6 +1582,7 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
     s->avctx     = avctx;
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
     s->curtileno = -1;
+    memset(s->cdef, -1, sizeof(s->cdef));
 
     if (bytestream2_get_bytes_left(&s->g) < 2) {
         ret = AVERROR_INVALIDDATA;
@@ -1456,6 +1629,9 @@ static int jpeg2000_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
+    if (s->avctx->pix_fmt == AV_PIX_FMT_PAL8)
+        memcpy(picture->data[1], s->palette, 256 * sizeof(uint32_t));
+
     return bytestream2_tell(&s->g);
 
 end:
@@ -1466,6 +1642,7 @@ end:
 static void jpeg2000_init_static_data(AVCodec *codec)
 {
     ff_jpeg2000_init_tier1_luts();
+    ff_mqc_init_context_tables();
 }
 
 #define OFFSET(x) offsetof(Jpeg2000DecoderContext, x)

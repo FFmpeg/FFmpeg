@@ -428,7 +428,7 @@ static int parse_fragment(AVFormatContext *s, const char *filename, int64_t *sta
         if (len < 8 || len >= *moof_size)
             goto fail;
         if (tag == MKTAG('u','u','i','d')) {
-            const uint8_t tfxd[] = {
+            static const uint8_t tfxd[] = {
                 0x6d, 0x1d, 0x9b, 0x05, 0x42, 0xd5, 0x44, 0xe6,
                 0x80, 0xe2, 0x14, 0x1d, 0xaf, 0xf7, 0x57, 0xb2
             };

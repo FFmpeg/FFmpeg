@@ -88,7 +88,7 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
             int i = wf->position >> wf->sector_bits;
             if (i >= wf->nb_sectors ||
                 (wf->sectors[i] != wf->sectors[i - 1] + (1 << (wf->sector_bits - WTV_SECTOR_BITS)) &&
-                avio_seek(pb, (int64_t)wf->sectors[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)) {
+                avio_seek(pb, wf->sectors[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)) {
                 wf->error = 1;
                 break;
             }
@@ -113,7 +113,7 @@ static int64_t wtvfile_seek(void *opaque, int64_t offset, int whence)
         offset = wf->length;
 
     wf->error = offset < 0 || offset >= wf->length ||
-                avio_seek(pb, ((int64_t)wf->sectors[offset >> wf->sector_bits] << WTV_SECTOR_BITS)
+                avio_seek(pb, (wf->sectors[offset >> wf->sector_bits] << WTV_SECTOR_BITS)
                               + (offset & ((1 << wf->sector_bits) - 1)), SEEK_SET) < 0;
     wf->position = offset;
     return offset;
@@ -183,7 +183,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         }
         wf->nb_sectors = 0;
         for (i = 0; i < nb_sectors1; i++) {
-            if (avio_seek(s->pb, (int64_t)sectors1[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)
+            if (avio_seek(s->pb, sectors1[i] << WTV_SECTOR_BITS, SEEK_SET) < 0)
                 break;
             wf->nb_sectors += read_ints(s->pb, wf->sectors + i * WTV_SECTOR_SIZE / 4, WTV_SECTOR_SIZE / 4);
         }
@@ -213,7 +213,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
 
     /* seek to initial sector */
     wf->position = 0;
-    if (avio_seek(s->pb, (int64_t)wf->sectors[0] << WTV_SECTOR_BITS, SEEK_SET) < 0) {
+    if (avio_seek(s->pb, wf->sectors[0] << WTV_SECTOR_BITS, SEEK_SET) < 0) {
         av_free(wf->sectors);
         av_free(wf);
         return NULL;

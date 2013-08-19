@@ -56,7 +56,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
     // number of non-zero coefficients
     coeff = get_bits(gb, 6);
     if (get_bits_left(gb) < (coeff << 1))
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     // normally we would only need to clear the (63 - coeff) last values,
     // but since we do not know where they are we just clear the whole block
@@ -73,7 +73,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
     // 4 bits per coefficient
     ALIGN(4);
     if (get_bits_left(gb) < (coeff << 2))
-        return -1;
+        return AVERROR_INVALIDDATA;
     while (coeff) {
         ac = get_sbits(gb, 4);
         if (ac == -8)
@@ -84,7 +84,7 @@ static inline int get_block(GetBitContext *gb, int16_t *block, const uint8_t *sc
     // 8 bits per coefficient
     ALIGN(8);
     if (get_bits_left(gb) < (coeff << 3))
-        return -1;
+        return AVERROR_INVALIDDATA;
     while (coeff) {
         ac = get_sbits(gb, 8);
         PUT_COEFF(ac);
@@ -107,10 +107,13 @@ int ff_rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
                                   const uint8_t *buf, int buf_size) {
     GetBitContext gb;
     int w = c->w / 16, h = c->h / 16;
-    int x, y;
+    int x, y, ret;
     uint8_t *y1 = f->data[0], *y2 = f->data[0] + 8 * f->linesize[0];
     uint8_t *u = f->data[1], *v = f->data[2];
-    init_get_bits(&gb, buf, buf_size * 8);
+
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
+
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
 #define BLOCK(quant, dst, stride) do { \

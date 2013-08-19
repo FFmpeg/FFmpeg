@@ -129,7 +129,6 @@ extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_fil;
 extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_ilpack;
-extern const vf_info_t ff_vf_info_perspective;
 extern const vf_info_t ff_vf_info_phase;
 extern const vf_info_t ff_vf_info_pp7;
 extern const vf_info_t ff_vf_info_pullup;
@@ -145,7 +144,6 @@ static const vf_info_t* const filters[]={
     &ff_vf_info_fil,
     &ff_vf_info_fspp,
     &ff_vf_info_ilpack,
-    &ff_vf_info_perspective,
     &ff_vf_info_phase,
     &ff_vf_info_pp7,
     &ff_vf_info_pullup,

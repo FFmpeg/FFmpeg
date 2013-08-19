@@ -101,7 +101,7 @@ int main(void)
     for (n0 = 0; n0 < 40; n0 = 2 * n0 + 1) {
         for (n1 = 0; n1 < 10; n1 = 2 * n1 + 1) {
             double best_error = 1000000000;
-            double bestpar0   = 1;
+            double bestpar0   = n0 ? 1 : 100000;
             double bestpar1   = 1;
             int better, i;
 
@@ -150,7 +150,7 @@ int main(void)
             }
             ff_timefilter_destroy(tf);
 #else
-            printf(" [%f %f %9f]", bestpar0, bestpar1, best_error);
+            printf(" [%12f %11f %9f]", bestpar0, bestpar1, best_error);
 #endif
         }
         printf("\n");

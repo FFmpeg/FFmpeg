@@ -551,7 +551,9 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
         pkt->data     = s->buf_start[buf.index];
         pkt->size     = buf.bytesused;
 #if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
         pkt->destruct = dummy_release_buffer;
+FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
         buf_descriptor = av_malloc(sizeof(struct buff_data));

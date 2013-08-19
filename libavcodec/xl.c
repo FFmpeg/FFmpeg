@@ -41,19 +41,18 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    AVFrame * const p = data;
+    int buf_size       = avpkt->size;
+    AVFrame *const p   = data;
     uint8_t *Y, *U, *V;
     int i, j, ret;
     int stride;
     uint32_t val;
     int y0, y1, y2, y3 = 0, c0 = 0, c1 = 0;
 
-    if (avctx->width & 3) {
+    if (avctx->width % 4) {
         av_log(avctx, AV_LOG_ERROR, "width is not a multiple of 4\n");
         return AVERROR_INVALIDDATA;
     }
-
     if (buf_size < avctx->width * avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
         return AVERROR_INVALIDDATA;
@@ -76,27 +75,27 @@ static int decode_frame(AVCodecContext *avctx,
 
         for (j = 0; j < avctx->width; j += 4) {
             /* value is stored in LE dword with word swapped */
-            val = AV_RL32(buf);
+            val  = AV_RL32(buf);
             buf -= 4;
-            val = ((val >> 16) & 0xFFFF) | ((val & 0xFFFF) << 16);
+            val  = ((val >> 16) & 0xFFFF) | ((val & 0xFFFF) << 16);
 
-            if(!j)
+            if (!j)
                 y0 = (val & 0x1F) << 2;
             else
                 y0 = y3 + xl_table[val & 0x1F];
             val >>= 5;
-            y1 = y0 + xl_table[val & 0x1F];
+            y1    = y0 + xl_table[val & 0x1F];
             val >>= 5;
-            y2 = y1 + xl_table[val & 0x1F];
+            y2    = y1 + xl_table[val & 0x1F];
             val >>= 6; /* align to word */
-            y3 = y2 + xl_table[val & 0x1F];
+            y3    = y2 + xl_table[val & 0x1F];
             val >>= 5;
-            if(!j)
+            if (!j)
                 c0 = (val & 0x1F) << 2;
             else
                 c0 += xl_table[val & 0x1F];
             val >>= 5;
-            if(!j)
+            if (!j)
                 c1 = (val & 0x1F) << 2;
             else
                 c1 += xl_table[val & 0x1F];
@@ -111,9 +110,9 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         buf += avctx->width + 4;
-        Y += p->linesize[0];
-        U += p->linesize[1];
-        V += p->linesize[2];
+        Y   += p->linesize[0];
+        U   += p->linesize[1];
+        V   += p->linesize[2];
     }
 
     *got_frame = 1;
@@ -129,11 +128,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 }
 
 AVCodec ff_xl_decoder = {
-    .name           = "xl",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_VIXL,
-    .init           = decode_init,
-    .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Miro VideoXL"),
+    .name         = "xl",
+    .type         = AVMEDIA_TYPE_VIDEO,
+    .id           = AV_CODEC_ID_VIXL,
+    .init         = decode_init,
+    .decode       = decode_frame,
+    .capabilities = CODEC_CAP_DR1,
+    .long_name    = NULL_IF_CONFIG_SMALL("Miro VideoXL"),
 };

@@ -399,6 +399,11 @@ typedef struct RTSPState {
      * Size of RTP packet reordering queue.
      */
     int reordering_queue_size;
+
+    /**
+     * User-Agent string
+     */
+    char *user_agent;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
@@ -406,6 +411,12 @@ typedef struct RTSPState {
                                           source address and port. */
 #define RTSP_FLAG_LISTEN      0x2    /**< Wait for incoming connections. */
 #define RTSP_FLAG_CUSTOM_IO   0x4    /**< Do all IO via the AVIOContext. */
+#define RTSP_FLAG_RTCP_TO_SOURCE 0x8 /**< Send RTCP packets to the source
+                                          address of received packets. */
+
+typedef struct RTSPSource {
+    char addr[128]; /**< Source-specific multicast include source IP address (from SDP content) */
+} RTSPSource;
 
 /**
  * Describe a single stream, as identified by a single m= line block in the
@@ -430,6 +441,10 @@ typedef struct RTSPStream {
     //@{
     int sdp_port;             /**< port (from SDP content) */
     struct sockaddr_storage sdp_ip; /**< IP address (from SDP content) */
+    int nb_include_source_addrs; /**< Number of source-specific multicast include source IP addresses (from SDP content) */
+    struct RTSPSource **include_source_addrs; /**< Source-specific multicast include source IP addresses (from SDP content) */
+    int nb_exclude_source_addrs; /**< Number of source-specific multicast exclude source IP addresses (from SDP content) */
+    struct RTSPSource **exclude_source_addrs; /**< Source-specific multicast exclude source IP addresses (from SDP content) */
     int sdp_ttl;              /**< IP Time-To-Live (from SDP content) */
     int sdp_payload_type;     /**< payload type */
     //@}

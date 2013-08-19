@@ -828,7 +828,7 @@ static int synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
     if (length == 0) {
         // If no data use noise
         for (sb=sb_min; sb < sb_max; sb++)
-            build_sb_samples_from_noise (q, sb);
+            build_sb_samples_from_noise(q, sb);
 
         return 0;
     }
@@ -841,12 +841,12 @@ static int synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
         else if (sb >= 24)
             joined_stereo = 1;
         else
-            joined_stereo = (get_bits_left(gb) >= 1) ? get_bits1 (gb) : 0;
+            joined_stereo = (get_bits_left(gb) >= 1) ? get_bits1(gb) : 0;
 
         if (joined_stereo) {
             if (get_bits_left(gb) >= 16)
                 for (j = 0; j < 16; j++)
-                    sign_bits[j] = get_bits1 (gb);
+                    sign_bits[j] = get_bits1(gb);
 
             for (j = 0; j < 64; j++)
                 if (q->coding_method[1][sb][j] > q->coding_method[0][sb][j])
@@ -1071,7 +1071,7 @@ static int init_quantized_coeffs_elem0(int8_t *quantized_coeffs,
  * @param q         context
  * @param gb        bitreader context
  */
-static void init_tone_level_dequantization (QDM2Context *q, GetBitContext *gb)
+static void init_tone_level_dequantization(QDM2Context *q, GetBitContext *gb)
 {
     int sb, j, k, n, ch;
 

@@ -272,7 +272,7 @@ static int img_read_header(AVFormatContext *s1)
             if (find_image_range(&first_index, &last_index, s->path,
                                  s->start_number, s->start_number_range) < 0) {
                 av_log(s1, AV_LOG_ERROR,
-                       "Could find no file with with path '%s' and index in the range %d-%d\n",
+                       "Could find no file with path '%s' and index in the range %d-%d\n",
                        s->path, s->start_number, s->start_number + s->start_number_range - 1);
                 return AVERROR(ENOENT);
             }

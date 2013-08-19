@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "file.h"
+#include "internal.h"
 #include "log.h"
 #include "mem.h"
 #include <fcntl.h>
@@ -49,7 +50,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
                 int log_offset, void *log_ctx)
 {
     FileLogContext file_log_ctx = { &file_log_ctx_class, log_offset, log_ctx };
-    int err, fd = open(filename, O_RDONLY);
+    int err, fd = avpriv_open(filename, O_RDONLY);
     struct stat st;
     av_unused void *ptr;
     off_t off_size;

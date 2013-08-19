@@ -76,7 +76,7 @@ struct x11grab {
     int  draw_mouse;         /**< Set by a private option. */
     int  follow_mouse;       /**< Set by a private option. */
     int  show_region;        /**< set by a private option. */
-    char *framerate;         /**< Set by a private option. */
+    AVRational framerate;         /**< Set by a private option. */
 
     Cursor c;
     Window region_win;       /**< This is used by show_region option. */
@@ -167,7 +167,6 @@ x11grab_read_header(AVFormatContext *s1)
     int use_shm;
     char *dpyname, *offset;
     int ret = 0;
-    AVRational framerate;
 
     dpyname = av_strdup(s1->filename);
     if (!dpyname)
@@ -185,10 +184,6 @@ x11grab_read_header(AVFormatContext *s1)
         *offset= 0;
     }
 
-    if ((ret = av_parse_video_rate(&framerate, x11grab->framerate)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Could not parse framerate: %s.\n", x11grab->framerate);
-        goto out;
-    }
     av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n",
            s1->filename, dpyname, x_off, y_off, x11grab->width, x11grab->height);
 
@@ -309,7 +304,7 @@ x11grab_read_header(AVFormatContext *s1)
 
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel/8;
     x11grab->dpy = dpy;
-    x11grab->time_base  = av_inv_q(framerate);
+    x11grab->time_base  = av_inv_q(x11grab->framerate);
     x11grab->time_frame = av_gettime() / av_q2d(x11grab->time_base);
     x11grab->x_off = x_off;
     x11grab->y_off = y_off;
@@ -603,7 +598,7 @@ static const AVOption options[] = {
     { "centered",     "keep the mouse pointer at the center of grabbing region when following",
       0, AV_OPT_TYPE_CONST, {.i64 = -1}, INT_MIN, INT_MAX, DEC, "follow_mouse" },
 
-    { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_STRING,     {.str = "ntsc"}, 0, 0, DEC },
+    { "framerate",  "set video frame rate",      OFFSET(framerate),   AV_OPT_TYPE_VIDEO_RATE, {.str = "ntsc"}, 0, 0, DEC },
     { "show_region", "show the grabbing region", OFFSET(show_region), AV_OPT_TYPE_INT,        {.i64 = 0}, 0, 1, DEC },
     { "video_size",  "set video frame size",     OFFSET(width),       AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
     { NULL },

@@ -214,7 +214,7 @@ static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
     frame->width  = w;
     frame->height = h;
 
-    for (plane = 0; plane < 4 && frame->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
         int hsub = s->draw.hsub[plane];
         int vsub = s->draw.vsub[plane];
         frame->data[plane] += (s->x >> hsub) * s->draw.pixelstep[plane] +
@@ -311,7 +311,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int i;
 
         out = in;
-        for (i = 0; i < 4 && out->data[i]; i++) {
+        for (i = 0; i < 4 && out->data[i] && out->linesize[i]; i++) {
             int hsub = s->draw.hsub[i];
             int vsub = s->draw.vsub[i];
             out->data[i] -= (s->x >> hsub) * s->draw.pixelstep[i] +

@@ -57,8 +57,8 @@ enum KeyType {
 };
 
 struct segment {
-    int previous_duration; // in seconds
-    int duration; // in seconds
+    int64_t previous_duration; // in seconds
+    int64_t duration;
     char url[MAX_URL_SIZE];
     char key[MAX_URL_SIZE];
     enum KeyType key_type;
@@ -85,7 +85,7 @@ struct variant {
     int64_t input_offset;
 
     int finished;
-    int target_duration;
+    int64_t target_duration;
     int start_seq_no;
     int n_segments;
     struct segment **segments;
@@ -210,7 +210,8 @@ static void handle_key_args(struct key_info *info, const char *key,
 static int parse_playlist(HLSContext *c, const char *url,
                           struct variant *var, AVIOContext *in)
 {
-    int ret = 0, duration = 0, is_segment = 0, is_variant = 0, bandwidth = 0, previous_duration1 = 0, previous_duration = 0;
+    int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
+    int64_t duration = 0, previous_duration1 = 0, previous_duration = 0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
@@ -275,7 +276,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                     goto fail;
                 }
             }
-            var->target_duration = atoi(ptr);
+            var->target_duration = atoi(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#EXT-X-MEDIA-SEQUENCE:", &ptr)) {
             if (!var) {
                 var = new_variant(c, 0, url, NULL);
@@ -292,7 +293,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             previous_duration = previous_duration1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
-            duration   = atoi(ptr);
+            duration   = atof(ptr) * AV_TIME_BASE;
         } else if (av_strstart(line, "#", NULL)) {
             continue;
         } else if (line[0]) {
@@ -425,7 +426,6 @@ restart:
         int64_t reload_interval = v->n_segments > 0 ?
                                   v->segments[v->n_segments - 1]->duration :
                                   v->target_duration;
-        reload_interval *= 1000000;
 
 reload:
         if (!v->finished &&
@@ -435,7 +435,7 @@ reload:
             /* If we need to reload the playlist again below (if
              * there's still no more segments), switch to a reload
              * interval of half the target duration. */
-            reload_interval = v->target_duration * 500000LL;
+            reload_interval = v->target_duration / 2;
         }
         if (v->cur_seq_no < v->start_seq_no) {
             av_log(NULL, AV_LOG_WARNING,
@@ -475,7 +475,8 @@ reload:
     c->end_of_segment = 1;
     c->cur_seq_no = v->cur_seq_no;
 
-    if (v->ctx && v->ctx->nb_streams && v->parent->nb_streams >= v->stream_offset + v->ctx->nb_streams) {
+    if (v->ctx && v->ctx->nb_streams &&
+        v->parent->nb_streams >= v->stream_offset + v->ctx->nb_streams) {
         v->needed = 0;
         for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams;
              i++) {
@@ -544,7 +545,7 @@ static int hls_read_header(AVFormatContext *s)
         int64_t duration = 0;
         for (i = 0; i < c->variants[0]->n_segments; i++)
             duration += c->variants[0]->segments[i]->duration;
-        s->duration = duration * AV_TIME_BASE;
+        s->duration = duration;
         s->pb->seekable |= AVIO_SEEKABLE_NORMAL;
     } else {
         s->pb->seekable = 0;
@@ -555,7 +556,8 @@ static int hls_read_header(AVFormatContext *s)
         struct variant *v = c->variants[i];
         AVInputFormat *in_fmt = NULL;
         char bitrate_str[20];
-        AVProgram *program = NULL;
+        AVProgram *program;
+
         if (v->n_segments == 0)
             continue;
 
@@ -591,18 +593,17 @@ static int hls_read_header(AVFormatContext *s)
             goto fail;
         }
         v->ctx->pb       = &v->pb;
+        v->stream_offset = stream_offset;
         ret = avformat_open_input(&v->ctx, v->segments[0]->url, in_fmt, NULL);
         if (ret < 0)
             goto fail;
 
-        v->stream_offset = stream_offset;
         v->ctx->ctx_flags &= ~AVFMTCTX_NOHEADER;
         ret = avformat_find_stream_info(v->ctx, NULL);
         if (ret < 0)
             goto fail;
         snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
 
-        /* Create new AVprogram for variant i */
         program = av_new_program(s, i);
         if (!program)
             goto fail;
@@ -699,8 +700,11 @@ start:
                     reset_packet(&var->pkt);
                     break;
                 } else {
-                    if (c->first_timestamp == AV_NOPTS_VALUE)
-                        c->first_timestamp = var->pkt.dts;
+                    if (c->first_timestamp == AV_NOPTS_VALUE &&
+                        var->pkt.dts       != AV_NOPTS_VALUE)
+                        c->first_timestamp = av_rescale_q(var->pkt.dts,
+                            var->ctx->streams[var->pkt.stream_index]->time_base,
+                            AV_TIME_BASE_Q);
                 }
 
                 if (c->seek_timestamp == AV_NOPTS_VALUE)
@@ -719,24 +723,34 @@ start:
                     c->seek_timestamp = AV_NOPTS_VALUE;
                     break;
                 }
+                av_free_packet(&var->pkt);
+                reset_packet(&var->pkt);
             }
         }
-        /* Check if this stream has the packet with the lowest dts */
+        /* Check if this stream still is on an earlier segment number, or
+         * has the packet with the lowest dts */
         if (var->pkt.data) {
-            if(minvariant < 0) {
+            struct variant *minvar = c->variants[minvariant];
+            if (minvariant < 0 || var->cur_seq_no < minvar->cur_seq_no) {
                 minvariant = i;
-            } else {
-                struct variant *minvar = c->variants[minvariant];
-                int64_t dts    =    var->pkt.dts;
-                int64_t mindts = minvar->pkt.dts;
-                AVStream *st   =    var->ctx->streams[   var->pkt.stream_index];
-                AVStream *minst= minvar->ctx->streams[minvar->pkt.stream_index];
+            } else if (var->cur_seq_no == minvar->cur_seq_no) {
+                int64_t dts     =    var->pkt.dts;
+                int64_t mindts  = minvar->pkt.dts;
+                AVStream *st    =    var->ctx->streams[var->pkt.stream_index];
+                AVStream *minst = minvar->ctx->streams[minvar->pkt.stream_index];
 
-                if(   st->start_time != AV_NOPTS_VALUE)    dts -=    st->start_time;
-                if(minst->start_time != AV_NOPTS_VALUE) mindts -= minst->start_time;
-
-                if (av_compare_ts(dts, st->time_base, mindts, minst->time_base) < 0)
+                if (dts == AV_NOPTS_VALUE) {
                     minvariant = i;
+                } else if (mindts != AV_NOPTS_VALUE) {
+                    if (st->start_time    != AV_NOPTS_VALUE)
+                        dts    -= st->start_time;
+                    if (minst->start_time != AV_NOPTS_VALUE)
+                        mindts -= minst->start_time;
+
+                    if (av_compare_ts(dts, st->time_base,
+                                      mindts, minst->time_base) < 0)
+                        minvariant = i;
+                }
             }
         }
     }
@@ -784,7 +798,7 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
                                        s->streams[stream_index]->time_base.den,
                                        flags & AVSEEK_FLAG_BACKWARD ?
                                        AV_ROUND_DOWN : AV_ROUND_UP);
-    timestamp = av_rescale_rnd(timestamp, 1, stream_index >= 0 ?
+    timestamp = av_rescale_rnd(timestamp, AV_TIME_BASE, stream_index >= 0 ?
                                s->streams[stream_index]->time_base.den :
                                AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
                                AV_ROUND_DOWN : AV_ROUND_UP);
@@ -797,12 +811,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_variants; i++) {
         /* Reset reading */
         struct variant *var = c->variants[i];
-        int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ? 0 :
-                      av_rescale_rnd(c->first_timestamp, 1, stream_index >= 0 ?
-                               s->streams[stream_index]->time_base.den :
-                               AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
-                               AV_ROUND_DOWN : AV_ROUND_UP);
-         if (var->input) {
+        int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ?
+                      0 : c->first_timestamp;
+        if (var->input) {
             ffurl_close(var->input);
             var->input = NULL;
         }

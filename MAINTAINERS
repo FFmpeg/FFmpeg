@@ -46,7 +46,7 @@ Miscellaneous Areas
 documentation                           Mike Melanson
 website                                 Robert Swain, Lou Logan
 build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
-project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger
+project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger, Alexander Strasser
 mailinglists                            Michael Niedermayer, Baptiste Coudurier, Lou Logan
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
@@ -62,13 +62,20 @@ Internal Interfaces:
   libavutil/common.h                    Michael Niedermayer
 
 Other:
-  intfloat*                             Michael Niedermayer
-  rational.c, rational.h                Michael Niedermayer
-  mathematics.c, mathematics.h          Michael Niedermayer
-  integer.c, integer.h                  Michael Niedermayer
+  bprint                                Nicolas George
   bswap.h
+  des                                   Reimar Doeffinger
+  float_dsp                             Loren Merritt
+  hash                                  Reimar Doeffinger
+  intfloat*                             Michael Niedermayer
+  integer.c, integer.h                  Michael Niedermayer
+  lzo                                   Reimar Doeffinger
+  mathematics.c, mathematics.h          Michael Niedermayer
   opencl.c, opencl.h                    Wei Gao
+  rational.c, rational.h                Michael Niedermayer
+  rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
+  timecode                              Clément Bœsch
 
 
 libavcodec
@@ -113,6 +120,8 @@ Generic Parts:
     libpostproc/*                       Michael Niedermayer
   table generation:
     tableprint.c, tableprint.h          Reimar Doeffinger
+  fixed point FFT:
+    fft*                                Zeljko Lukac
 
 Codecs:
   4xm.c                                 Michael Niedermayer
@@ -131,8 +140,8 @@ Codecs:
   binkaudio.c                           Peter Ross
   bmp.c                                 Mans Rullgard, Kostya Shishkov
   cavs*                                 Stefan Gehrer
-  celp_filters.*                        Vitor Sessak
   cdxl.c                                Paul B Mahol
+  celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cljr                                  Alex Beregszaszi
   cllc.c                                Derek Buitenhuis
@@ -143,9 +152,10 @@ Codecs:
   dca.c                                 Kostya Shishkov, Benjamin Larsson
   dnxhd*                                Baptiste Coudurier
   dpcm.c                                Mike Melanson
-  dxa.c                                 Kostya Shishkov
   dv.c                                  Roman Shaposhnik
+  dxa.c                                 Kostya Shishkov
   eacmv*, eaidct*, eat*                 Peter Ross
+  exif.c, exif.h                        Thilo Borgmann
   ffv1.c                                Michael Niedermayer
   ffwavesynth.c                         Nicolas George
   flac*                                 Justin Ruggles
@@ -154,9 +164,9 @@ Codecs:
   g722.c                                Martin Storsjo
   g726.c                                Roman Shaposhnik
   gifdec.c                              Baptiste Coudurier
-  h264*                                 Loren Merritt, Michael Niedermayer
   h261*                                 Michael Niedermayer
   h263*                                 Michael Niedermayer
+  h264*                                 Loren Merritt, Michael Niedermayer
   huffyuv.c                             Michael Niedermayer
   idcinvideo.c                          Mike Melanson
   imc*                                  Benjamin Larsson
@@ -171,8 +181,8 @@ Codecs:
   kmvc.c                                Kostya Shishkov
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libcelt_dec.c                         Nicolas George
-  libgsm.c                              Michel Bardiaux
   libdirac*                             David Conrad
+  libgsm.c                              Michel Bardiaux
   libopenjpeg.c                         Jaikrishnan Menon
   libopenjpegenc.c                      Michael Bradshaw
   libschroedinger*                      David Conrad
@@ -180,8 +190,8 @@ Codecs:
   libtheoraenc.c                        David Conrad
   libutvideo*                           Derek Buitenhuis
   libvorbis.c                           David Conrad
-  libxavs.c                             Stefan Gehrer
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
+  libxavs.c                             Stefan Gehrer
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
@@ -243,8 +253,8 @@ Codecs:
   vda_h264_dec.c                        Xidorn Quan
   vima.c                                Paul B Mahol
   vmnc.c                                Kostya Shishkov
-  vorbis_enc.c                          Oded Shimon
   vorbis_dec.c                          Denes Balatoni, David Conrad
+  vorbis_enc.c                          Oded Shimon
   vp3*                                  Mike Melanson
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
@@ -278,11 +288,11 @@ libavdevice
     libavdevice/avdevice.h
 
 
+  dshow.c                               Roger Pack
   iec61883.c                            Georg Lippitsch
   libdc1394.c                           Roman Shaposhnik
   v4l2.c                                Luca Abeni
   vfwcap.c                              Ramiro Polla
-  dshow.c                               Roger Pack
 
 libavfilter
 ===========
@@ -292,11 +302,13 @@ Generic parts:
 
 Filters:
   af_amerge.c                           Nicolas George
+  af_aresample.c                        Michael Niedermayer
   af_astreamsync.c                      Nicolas George
   af_atempo.c                           Pavel Koshevoy
   af_pan.c                              Nicolas George
   vf_delogo.c                           Jean Delvare (CC <khali@linux-fr.org>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
+  vf_scale.c                            Michael Niedermayer
   vf_yadif.c                            Michael Niedermayer
 
 Sources:
@@ -316,7 +328,8 @@ Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   adtsenc.c                             Robert Swain
   afc.c                                 Paul B Mahol
-  aiff.c                                Baptiste Coudurier
+  aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
+  aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   ape.c                                 Kostya Shishkov
   ass*                                  Aurelien Jacobs
   astdec.c                              Paul B Mahol
@@ -344,8 +357,8 @@ Muxers/Demuxers:
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
   iff.c                                 Jaikrishnan Menon
-  ipmovie.c                             Mike Melanson
   img2*.c                               Michael Niedermayer
+  ipmovie.c                             Mike Melanson
   ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
   jacosub*                              Clément Bœsch
@@ -359,11 +372,11 @@ Muxers/Demuxers:
   matroskadec.c                         Aurelien Jacobs
   matroskaenc.c                         David Conrad
   metadata*                             Aurelien Jacobs
-  microdvd*                             Aurelien Jacobs
   mgsts.c                               Paul B Mahol
+  microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
   mov.c                                 Michael Niedermayer, Baptiste Coudurier
-  movenc.c                              Michael Niedermayer, Baptiste Coudurier
+  movenc.c                              Baptiste Coudurier, Matthieu Bouron
   mpc.c                                 Kostya Shishkov
   mpeg.c                                Michael Niedermayer
   mpegenc.c                             Michael Niedermayer
@@ -442,7 +455,7 @@ Operating systems / CPU architectures
 Alpha                                   Mans Rullgard, Falk Hueffner
 ARM                                     Mans Rullgard
 AVR32                                   Mans Rullgard
-MIPS                                    Mans Rullgard
+MIPS                                    Mans Rullgard, Nedeljko Babic
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Luca Barbato
@@ -458,7 +471,6 @@ Releases
 
 2.0                                     Michael Niedermayer
 1.2                                     Michael Niedermayer
-1.1                                     Michael Niedermayer
 
 If you want to maintain an older release, please contact us
 

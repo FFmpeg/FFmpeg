@@ -121,7 +121,7 @@ FATE_VIDEO-$(call DEMDEC, SEGAFILM, CINEPAK) += fate-film-cvid
 fate-film-cvid: CMD = framecrc -i $(TARGET_SAMPLES)/film/logo-capcom.cpk -an
 
 FATE_FLIC += fate-flic-af11-palette-change
-fate-flic-af11-palette-change: CMD = framecrc -i $(TARGET_SAMPLES)/fli/fli-engines.fli -t 3.3 -pix_fmt rgb24
+fate-flic-af11-palette-change: CMD = framecrc -i $(TARGET_SAMPLES)/fli/fli-engines.fli -t 3.31 -pix_fmt rgb24
 
 FATE_FLIC += fate-flic-af12
 fate-flic-af12: CMD = framecrc -i $(TARGET_SAMPLES)/fli/jj00c2.fli -pix_fmt rgb24

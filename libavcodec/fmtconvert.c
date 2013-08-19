@@ -24,10 +24,21 @@
 #include "fmtconvert.h"
 #include "libavutil/common.h"
 
-static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src, float mul, int len){
+static void int32_to_float_fmul_scalar_c(float *dst, const int32_t *src,
+                                         float mul, int len)
+{
     int i;
     for(i=0; i<len; i++)
         dst[i] = src[i] * mul;
+}
+
+static void int32_to_float_fmul_array8_c(FmtConvertContext *c, float *dst,
+                                         const int32_t *src, const float *mul,
+                                         int len)
+{
+    int i;
+    for (i = 0; i < len; i += 8)
+        c->int32_to_float_fmul_scalar(&dst[i], &src[i], *mul++, 8);
 }
 
 static av_always_inline int float_to_int16_one(const float *src){
@@ -79,6 +90,7 @@ void ff_float_interleave_c(float *dst, const float **src, unsigned int len,
 av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
 {
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
+    c->int32_to_float_fmul_array8 = int32_to_float_fmul_array8_c;
     c->float_to_int16             = float_to_int16_c;
     c->float_to_int16_interleave  = float_to_int16_interleave_c;
     c->float_interleave           = ff_float_interleave_c;

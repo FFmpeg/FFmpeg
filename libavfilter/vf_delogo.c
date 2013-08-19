@@ -58,9 +58,9 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                          uint8_t *src, int src_linesize,
                          int w, int h, AVRational sar,
                          int logo_x, int logo_y, int logo_w, int logo_h,
-                         int band, int show, int direct)
+                         unsigned int band, int show, int direct)
 {
-    int x, y, dist;
+    int x, y;
     uint64_t interp, weightl, weightr, weightt, weightb;
     uint8_t *xdst, *xsrc;
 
@@ -125,7 +125,8 @@ static void apply_delogo(uint8_t *dst, int dst_linesize,
                 x >= logo_x+band && x < logo_x+logo_w-band) {
                 *xdst = interp;
             } else {
-                dist = 0;
+                unsigned dist = 0;
+
                 if      (x < logo_x+band)
                     dist = FFMAX(dist, logo_x-x+band);
                 else if (x >= logo_x+logo_w-band)
@@ -236,7 +237,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (!sar.num)
         sar.num = sar.den = 1;
 
-    for (plane = 0; plane < 4 && in->data[plane]; plane++) {
+    for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
         int hsub = plane == 1 || plane == 2 ? hsub0 : 0;
         int vsub = plane == 1 || plane == 2 ? vsub0 : 0;
 

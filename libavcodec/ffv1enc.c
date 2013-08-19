@@ -535,7 +535,7 @@ static int write_extradata(FFV1Context *f)
     put_symbol(c, state, f->version, 0);
     if (f->version > 2) {
         if (f->version == 3)
-            f->minor_version = 3;
+            f->minor_version = 4;
         put_symbol(c, state, f->minor_version, 0);
     }
 
@@ -719,9 +719,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_RGB32:
         s->colorspace = 1;
         s->transparency = 1;
+        s->chroma_planes = 1;
         break;
     case AV_PIX_FMT_0RGB32:
         s->colorspace = 1;
+        s->chroma_planes = 1;
         break;
     case AV_PIX_FMT_GBRP9:
         if (!avctx->bits_per_raw_sample)
@@ -797,6 +799,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (!s->transparency)
         s->plane_count = 2;
+    if (!s->chroma_planes && s->version > 3)
+        s->plane_count--;
+
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &s->chroma_h_shift, &s->chroma_v_shift);
     s->picture_number = 0;
 

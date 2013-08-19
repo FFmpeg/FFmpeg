@@ -132,7 +132,7 @@ static void copy_picture_field(AVFrame *src_frame, AVFrame *dst_frame,
 
         av_assert0(linesize >= 0);
 
-        lines /= 2;
+        lines = (lines + (field_type == FIELD_UPPER)) / 2;
         if (field_type == FIELD_LOWER)
             srcp += src_frame->linesize[plane];
         if (field_type == FIELD_LOWER)

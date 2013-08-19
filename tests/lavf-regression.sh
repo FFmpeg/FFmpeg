@@ -235,8 +235,8 @@ if [ -n "$do_pam" ] ; then
 do_image_formats pam
 do_image_formats pam "-pix_fmt rgba"
 do_image_formats pam "-pix_fmt gray"
-do_image_formats pam "-pix_fmt gray16be"
-do_image_formats pam "-pix_fmt rgb48be"
+do_image_formats pam "-pix_fmt gray16be" "-pix_fmt gray16be"
+do_image_formats pam "-pix_fmt rgb48be" "-pix_fmt rgb48be"
 do_image_formats pam "-pix_fmt monob"
 fi
 

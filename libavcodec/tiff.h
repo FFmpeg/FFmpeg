@@ -31,6 +31,7 @@
 #define AVCODEC_TIFF_H
 
 #include <stdint.h>
+#include "tiff_common.h"
 
 /** abridged list of TIFF tags */
 enum TiffTags {
@@ -97,22 +98,6 @@ enum TiffCompr {
     TIFF_DEFLATE  = 0x80B2
 };
 
-enum TiffTypes {
-    TIFF_BYTE = 1,
-    TIFF_STRING,
-    TIFF_SHORT,
-    TIFF_LONG,
-    TIFF_RATIONAL,
-    TIFF_SBYTE,
-    TIFF_UNDEFINED,
-    TIFF_SSHORT,
-    TIFF_SLONG,
-    TIFF_SRATIONAL,
-    TIFF_FLOAT,
-    TIFF_DOUBLE,
-    TIFF_IFD
-};
-
 enum TiffGeoTagKey {
     TIFF_GT_MODEL_TYPE_GEOKEY                = 1024,
     TIFF_GT_RASTER_TYPE_GEOKEY               = 1025,
@@ -165,11 +150,6 @@ enum TiffGeoTagType {
     GEOTIFF_SHORT  = 0,
     GEOTIFF_DOUBLE = 34736,
     GEOTIFF_STRING = 34737
-};
-
-/** sizes of various TIFF field types (string size = 100)*/
-static const uint8_t type_sizes[14] = {
-    0, 1, 100, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4
 };
 
 typedef struct TiffGeoTag {

@@ -56,7 +56,7 @@ enum HexTile_Flags {
  */
 typedef struct VmncContext {
     AVCodecContext *avctx;
-    AVFrame pic;
+    AVFrame *frame;
 
     int bpp;
     int bpp2;
@@ -295,12 +295,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     uint8_t *outptr;
     const uint8_t *src = buf;
     int dx, dy, w, h, depth, enc, chunks, res, size_left, ret;
+    AVFrame *frame = c->frame;
 
-    if ((ret = ff_reget_buffer(avctx, &c->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
         return ret;
 
-    c->pic.key_frame = 0;
-    c->pic.pict_type = AV_PICTURE_TYPE_P;
+    frame->key_frame = 0;
+    frame->pict_type = AV_PICTURE_TYPE_P;
 
     //restore screen after cursor
     if(c->screendta) {
@@ -320,10 +321,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             dy = 0;
         }
         if((w > 0) && (h > 0)) {
-            outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
+            outptr = frame->data[0] + dx * c->bpp2 + dy * frame->linesize[0];
             for(i = 0; i < h; i++) {
                 memcpy(outptr, c->screendta + i * c->cur_w * c->bpp2, w * c->bpp2);
-                outptr += c->pic.linesize[0];
+                outptr += frame->linesize[0];
             }
         }
     }
@@ -339,7 +340,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         w  = AV_RB16(src); src += 2;
         h  = AV_RB16(src); src += 2;
         enc = AV_RB32(src); src += 4;
-        outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
+        outptr = frame->data[0] + dx * c->bpp2 + dy * frame->linesize[0];
         size_left = buf_size - (src - buf);
         switch(enc) {
         case MAGIC_WMVd: // cursor
@@ -360,9 +361,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR, "Cursor hot spot is not in image: %ix%i of %ix%i cursor size\n", c->cur_hx, c->cur_hy, c->cur_w, c->cur_h);
                 c->cur_hx = c->cur_hy = 0;
             }
-            c->curbits = av_realloc(c->curbits, c->cur_w * c->cur_h * c->bpp2);
-            c->curmask = av_realloc(c->curmask, c->cur_w * c->cur_h * c->bpp2);
-            c->screendta = av_realloc(c->screendta, c->cur_w * c->cur_h * c->bpp2);
+            c->curbits = av_realloc_f(c->curbits, c->cur_w * c->cur_h, c->bpp2);
+            c->curmask = av_realloc_f(c->curmask, c->cur_w * c->cur_h, c->bpp2);
+            c->screendta = av_realloc_f(c->screendta, c->cur_w * c->cur_h, c->bpp2);
+            if (!c->curbits || !c->curmask || !c->screendta)
+                return AVERROR(ENOMEM);
             load_cursor(c, src);
             src += w * h * c->bpp2 * 2;
             break;
@@ -380,8 +383,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             src += 4;
             break;
         case MAGIC_WMVi: // ServerInitialization struct
-            c->pic.key_frame = 1;
-            c->pic.pict_type = AV_PICTURE_TYPE_I;
+            frame->key_frame = 1;
+            frame->pict_type = AV_PICTURE_TYPE_I;
             depth = *src++;
             if(depth != c->bpp) {
                 av_log(avctx, AV_LOG_INFO, "Depth mismatch. Container %i bpp, Frame data: %i bpp\n", c->bpp, depth);
@@ -407,7 +410,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR, "Premature end of data! (need %i got %i)\n", w * h * c->bpp2, size_left);
                 return -1;
             }
-            paint_raw(outptr, w, h, src, c->bpp2, c->bigendian, c->pic.linesize[0]);
+            paint_raw(outptr, w, h, src, c->bpp2, c->bigendian, frame->linesize[0]);
             src += w * h * c->bpp2;
             break;
         case 0x00000005: // HexTile encoded rectangle
@@ -415,7 +418,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR, "Incorrect frame size: %ix%i+%ix%i of %ix%i\n", w, h, dx, dy, c->width, c->height);
                 return -1;
             }
-            res = decode_hextile(c, outptr, src, size_left, w, h, c->pic.linesize[0]);
+            res = decode_hextile(c, outptr, src, size_left, w, h, frame->linesize[0]);
             if(res < 0)
                 return -1;
             src += res;
@@ -443,17 +446,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             dy = 0;
         }
         if((w > 0) && (h > 0)) {
-            outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
+            outptr = frame->data[0] + dx * c->bpp2 + dy * frame->linesize[0];
             for(i = 0; i < h; i++) {
                 memcpy(c->screendta + i * c->cur_w * c->bpp2, outptr, w * c->bpp2);
-                outptr += c->pic.linesize[0];
+                outptr += frame->linesize[0];
             }
-            outptr = c->pic.data[0];
-            put_cursor(outptr, c->pic.linesize[0], c, c->cur_x, c->cur_y);
+            outptr = frame->data[0];
+            put_cursor(outptr, frame->linesize[0], c, c->cur_x, c->cur_y);
         }
     }
     *got_frame      = 1;
-    if ((ret = av_frame_ref(data, &c->pic)) < 0)
+    if ((ret = av_frame_ref(data, frame)) < 0)
         return ret;
 
     /* always report that the buffer was completely consumed */
@@ -478,7 +481,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->bpp = avctx->bits_per_coded_sample;
     c->bpp2 = c->bpp/8;
-    avcodec_get_frame_defaults(&c->pic);
 
     switch(c->bpp){
     case 8:
@@ -495,7 +497,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avcodec_get_frame_defaults(&c->pic);
+    c->frame = av_frame_alloc();
+    if (!c->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -511,7 +515,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     VmncContext * const c = avctx->priv_data;
 
-    av_frame_unref(&c->pic);
+    av_frame_free(&c->frame);
 
     av_free(c->curbits);
     av_free(c->curmask);

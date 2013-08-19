@@ -116,29 +116,29 @@ static void float_interleave_sse(float *dst, const float **src,
 av_cold void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 {
 #if HAVE_YASM
-    int mm_flags = av_get_cpu_flags();
+    int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_MMX(mm_flags)) {
+    if (EXTERNAL_MMX(cpu_flags)) {
         c->float_interleave = float_interleave_mmx;
 
-        if (EXTERNAL_AMD3DNOW(mm_flags)) {
+        if (EXTERNAL_AMD3DNOW(cpu_flags)) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16 = ff_float_to_int16_3dnow;
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnow;
             }
         }
-        if (EXTERNAL_AMD3DNOWEXT(mm_flags)) {
+        if (EXTERNAL_AMD3DNOWEXT(cpu_flags)) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnowext;
             }
         }
-        if (EXTERNAL_SSE(mm_flags)) {
+        if (EXTERNAL_SSE(cpu_flags)) {
             c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse;
             c->float_to_int16 = ff_float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
             c->float_interleave = float_interleave_sse;
         }
-        if (EXTERNAL_SSE2(mm_flags)) {
+        if (EXTERNAL_SSE2(cpu_flags)) {
             c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse2;
             c->float_to_int16 = ff_float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;

@@ -340,7 +340,7 @@ int main(void)
     int i, j, k;
     AVSHA ctx;
     unsigned char digest[32];
-    const int lengths[3] = { 160, 224, 256 };
+    static const int lengths[3] = { 160, 224, 256 };
 
     for (j = 0; j < 3; j++) {
         printf("Testing SHA-%d\n", lengths[j]);

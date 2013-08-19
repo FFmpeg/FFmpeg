@@ -190,7 +190,7 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
                         h->rects[0]->w, h->rects[0]->h >> 1))
         return -1;
 
-    // Enforce total height to be be multiple of 2
+    // Enforce total height to be a multiple of 2
     if (h->rects[0]->h & 1) {
         put_xsub_rle(&pb, h->rects[0]->w, PADDING_COLOR);
         avpriv_align_put_bits(&pb);

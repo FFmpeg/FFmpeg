@@ -29,8 +29,8 @@
 #include "libavutil/avutil.h"
 
 #define LIBAVCODEC_VERSION_MAJOR 55
-#define LIBAVCODEC_VERSION_MINOR  18
-#define LIBAVCODEC_VERSION_MICRO 102
+#define LIBAVCODEC_VERSION_MINOR  28
+#define LIBAVCODEC_VERSION_MICRO 100
 
 #define LIBAVCODEC_VERSION_INT  AV_VERSION_INT(LIBAVCODEC_VERSION_MAJOR, \
                                                LIBAVCODEC_VERSION_MINOR, \
@@ -90,6 +90,15 @@
 #endif
 #ifndef FF_API_LOWRES
 #define FF_API_LOWRES            (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_CAP_VDPAU
+#define FF_API_CAP_VDPAU         (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_BUFS_VDPAU
+#define FF_API_BUFS_VDPAU        (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
+#ifndef FF_API_VOXWARE
+#define FF_API_VOXWARE           (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
 
 #endif /* AVCODEC_VERSION_H */

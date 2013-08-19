@@ -240,7 +240,7 @@ static void eval_ir(const float *Az, int pitch_lag, float *freq,
     float tmp1[SUBFR_SIZE+1], tmp2[LP_FILTER_ORDER+1];
     int i;
 
-    tmp1[0] = 1.;
+    tmp1[0] = 1.0;
     for (i = 0; i < LP_FILTER_ORDER; i++) {
         tmp1[i+1] = Az[i] * ff_pow_0_55[i];
         tmp2[i  ] = Az[i] * ff_pow_0_7 [i];

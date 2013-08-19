@@ -34,15 +34,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#ifdef _WIN32
-#include <direct.h>
-#define mkdir(a, b) _mkdir(a)
-#endif
 
 #include "cmdutils.h"
 
 #include "libavformat/avformat.h"
+#include "libavformat/os_support.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 

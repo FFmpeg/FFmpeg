@@ -61,6 +61,14 @@
 
 struct SwsContext;
 
+typedef enum SwsDither {
+    SWS_DITHER_NONE = 0,
+    SWS_DITHER_AUTO,
+    SWS_DITHER_BAYER,
+    SWS_DITHER_ED,
+    NB_SWS_DITHER,
+} SwsDither;
+
 typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t *dst[], int dstStride[]);
@@ -382,6 +390,10 @@ typedef struct SwsContext {
     int dst0Alpha;
     int srcXYZ;
     int dstXYZ;
+    int src_h_chr_pos;
+    int dst_h_chr_pos;
+    int src_v_chr_pos;
+    int dst_v_chr_pos;
     int yuv2rgb_y_offset;
     int yuv2rgb_y_coeff;
     int yuv2rgb_v2r_coeff;
@@ -480,7 +492,10 @@ typedef struct SwsContext {
 #define RGB_GAMMA (2.2f)
     int16_t *xyzgamma;
     int16_t *rgbgamma;
+    int16_t *xyzgammainv;
+    int16_t *rgbgammainv;
     int16_t xyz2rgb_matrix[3][4];
+    int16_t rgb2xyz_matrix[3][4];
 
     /* function pointers for swScale() */
     yuv2planar1_fn yuv2plane1;
@@ -586,6 +601,8 @@ typedef struct SwsContext {
     void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width);
 
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
+
+    SwsDither dither;
 } SwsContext;
 //FIXME check init (where 0)
 
@@ -797,8 +814,6 @@ static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
 
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
-extern const uint8_t dithers[8][8][8];
-extern const uint16_t dither_scale[15][16];
 
 
 extern const AVClass sws_context_class;

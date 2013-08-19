@@ -1,8 +1,8 @@
 @chapter Protocols
 @c man begin PROTOCOLS
 
-Protocols are configured elements in FFmpeg which allow to access
-resources which require the use of a particular protocol.
+Protocols are configured elements in FFmpeg that enable access to
+resources that require specific protocols.
 
 When you configure your FFmpeg build, all the supported protocols are
 enabled by default. You can list all available ones using the
@@ -128,6 +128,20 @@ ffmpeg -i file:input.mpeg output.mpeg
 The ff* tools default to the file protocol, that is a resource
 specified with the name "FILE.mpeg" is interpreted as the URL
 "file:FILE.mpeg".
+
+This protocol accepts the following options:
+
+@table @option
+@item truncate
+Truncate existing files on write, if set to 1. A value of 0 prevents
+truncating. Default value is 1.
+
+@item blocksize
+Set I/O operation maximum block size, in bytes. Default value is
+@code{INT_MAX}, which results in not limiting the requested block size.
+Setting this value reasonably low improves user termination request reaction
+time, which is valuable for files on slow medium.
+@end table
 
 @section ftp
 
@@ -325,6 +339,16 @@ ffmpeg -i test.wav -f avi pipe:1 | cat > test.avi
 ffmpeg -i test.wav -f avi pipe: | cat > test.avi
 @end example
 
+This protocol accepts the following options:
+
+@table @option
+@item blocksize
+Set I/O operation maximum block size, in bytes. Default value is
+@code{INT_MAX}, which results in not limiting the requested block size.
+Setting this value reasonably low improves user termination request reaction
+time, which is valuable if data transmission is slow.
+@end table
+
 Note that some formats (typically MOV), require the output protocol to
 be seekable, so they will fail with the pipe output protocol.
 
@@ -337,11 +361,17 @@ content across a TCP/IP network.
 
 The required syntax is:
 @example
-rtmp://@var{server}[:@var{port}][/@var{app}][/@var{instance}][/@var{playpath}]
+rtmp://[@var{username}:@var{password}@@]@var{server}[:@var{port}][/@var{app}][/@var{instance}][/@var{playpath}]
 @end example
 
 The accepted parameters are:
 @table @option
+
+@item username
+An optional username (mostly for publishing).
+
+@item password
+An optional password (mostly for publishing).
 
 @item server
 The address of the RTMP server.
@@ -393,7 +423,8 @@ times to construct arbitrary AMF sequences.
 
 @item rtmp_flashver
 Version of the Flash plugin used to run the SWF player. The default
-is LNX 9,0,124,2.
+is LNX 9,0,124,2. (When publishing, the default is FMLE/3.0 (compatible;
+<libavformat version>).)
 
 @item rtmp_flush_interval
 Number of packets flushed in the same request (RTMPT only). The default
@@ -443,6 +474,12 @@ For example to read with @command{ffplay} a multimedia resource named
 ffplay rtmp://myserver/vod/sample
 @end example
 
+To publish to a password protected server, passing the playpath and
+app names separately:
+@example
+ffmpeg -re -i <input> -f flv -rtmp_playpath some/long/path -rtmp_app long/app/name rtmp://username:password@@myserver/
+@end example
+
 @section rtmpe
 
 Encrypted Real-Time Messaging Protocol.
@@ -483,7 +520,7 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
-@section rtmp, rtmpe, rtmps, rtmpt, rtmpte
+@section librtmp rtmp, rtmpe, rtmps, rtmpt, rtmpte
 
 Real-Time Messaging Protocol and its variants supported through
 librtmp.
@@ -912,5 +949,25 @@ To receive over UDP from a remote endpoint:
 @example
 ffmpeg -i udp://[@var{multicast-address}]:@var{port}
 @end example
+
+@section unix
+
+Unix local socket
+
+The required syntax for a Unix socket URL is:
+
+@example
+unix://@var{filepath}
+@end example
+
+The following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+
+@table @option
+@item timeout
+Timeout in ms.
+@item listen
+Create the Unix socket in listening mode.
+@end table
 
 @c man end PROTOCOLS

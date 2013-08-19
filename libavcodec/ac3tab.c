@@ -114,7 +114,7 @@ const uint8_t ff_ac3_enc_channel_map[8][2][6] = {
 };
 
 /**
- * Table to remap channels from from AC-3 order to SMPTE order.
+ * Table to remap channels from AC-3 order to SMPTE order.
  * [channel_mode][lfe][ch]
  */
 const uint8_t ff_ac3_dec_channel_map[8][2][6] = {

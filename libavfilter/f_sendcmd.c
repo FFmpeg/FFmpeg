@@ -39,7 +39,7 @@
 
 static inline char *make_command_flags_str(AVBPrint *pbuf, int flags)
 {
-    const char *flag_strings[] = { "enter", "leave" };
+    static const char * const flag_strings[] = { "enter", "leave" };
     int i, is_first = 1;
 
     av_bprint_init(pbuf, 0, AV_BPRINT_SIZE_AUTOMATIC);

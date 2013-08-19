@@ -778,6 +778,7 @@ static int decode_frame(AVCodecContext *avctx,
         ptr += picture->linesize[0];
     }
 
+    picture->pict_type = AV_PICTURE_TYPE_I;
     *got_frame = 1;
 
     return buf_size;

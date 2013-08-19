@@ -74,7 +74,7 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
     tile_size = (ctx->gop_flags & 0x40) ? 64 << get_bits(&ctx->gb, 2) : 0;
     if (tile_size > 256) {
         av_log(avctx, AV_LOG_ERROR, "Invalid tile size: %d\n", tile_size);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* decode number of wavelet bands */
@@ -85,7 +85,7 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
     if (is_scalable && (pic_conf.luma_bands != 4 || pic_conf.chroma_bands != 1)) {
         av_log(avctx, AV_LOG_ERROR, "Scalability: unsupported subdivision! Luma bands: %d, chroma bands: %d\n",
                pic_conf.luma_bands, pic_conf.chroma_bands);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pic_size_indx = get_bits(&ctx->gb, 4);
@@ -98,8 +98,8 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     if (ctx->gop_flags & 2) {
-        av_log(avctx, AV_LOG_ERROR, "YV12 picture format not supported!\n");
-        return -1;
+        avpriv_report_missing_feature(avctx, "YV12 picture format");
+        return AVERROR_PATCHWELCOME;
     }
 
     pic_conf.chroma_height = (pic_conf.pic_height + 3) >> 2;
@@ -113,11 +113,11 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     /* check if picture layout was changed and reallocate buffers */
-    if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf)) {
+    if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf) || ctx->gop_invalid) {
         result = ff_ivi_init_planes(ctx->planes, &pic_conf);
-        if (result) {
+        if (result < 0) {
             av_log(avctx, AV_LOG_ERROR, "Couldn't reallocate color planes!\n");
-            return -1;
+            return result;
         }
         ctx->pic_conf = pic_conf;
         ctx->is_scalable = is_scalable;
@@ -146,50 +146,55 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
             }
 
             if (get_bits1(&ctx->gb)) {
-                av_log(avctx, AV_LOG_ERROR, "Extended transform info encountered!\n");
-                return -1;
+                avpriv_report_missing_feature(avctx, "Extended transform info");
+                return AVERROR_PATCHWELCOME;
             }
 
             /* select transform function and scan pattern according to plane and band number */
             switch ((p << 2) + i) {
             case 0:
-                band->inv_transform = ff_ivi_inverse_slant_8x8;
-                band->dc_transform  = ff_ivi_dc_slant_2d;
-                band->scan          = ff_zigzag_direct;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_inverse_slant_8x8;
+                band->dc_transform   = ff_ivi_dc_slant_2d;
+                band->scan           = ff_zigzag_direct;
+                band->transform_size = 8;
                 break;
 
             case 1:
-                band->inv_transform = ff_ivi_row_slant8;
-                band->dc_transform  = ff_ivi_dc_row_slant;
-                band->scan          = ff_ivi_vertical_scan_8x8;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_row_slant8;
+                band->dc_transform   = ff_ivi_dc_row_slant;
+                band->scan           = ff_ivi_vertical_scan_8x8;
+                band->transform_size = 8;
                 break;
 
             case 2:
-                band->inv_transform = ff_ivi_col_slant8;
-                band->dc_transform  = ff_ivi_dc_col_slant;
-                band->scan          = ff_ivi_horizontal_scan_8x8;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_col_slant8;
+                band->dc_transform   = ff_ivi_dc_col_slant;
+                band->scan           = ff_ivi_horizontal_scan_8x8;
+                band->transform_size = 8;
                 break;
 
             case 3:
-                band->inv_transform = ff_ivi_put_pixels_8x8;
-                band->dc_transform  = ff_ivi_put_dc_pixel_8x8;
-                band->scan          = ff_ivi_horizontal_scan_8x8;
-                band->transform_size= 8;
+                band->inv_transform  = ff_ivi_put_pixels_8x8;
+                band->dc_transform   = ff_ivi_put_dc_pixel_8x8;
+                band->scan           = ff_ivi_horizontal_scan_8x8;
+                band->transform_size = 8;
                 break;
 
             case 4:
-                band->inv_transform = ff_ivi_inverse_slant_4x4;
-                band->dc_transform  = ff_ivi_dc_slant_2d;
-                band->scan          = ff_ivi_direct_scan_4x4;
-                band->transform_size= 4;
+                band->inv_transform  = ff_ivi_inverse_slant_4x4;
+                band->dc_transform   = ff_ivi_dc_slant_2d;
+                band->scan           = ff_ivi_direct_scan_4x4;
+                band->transform_size = 4;
                 break;
             }
 
             band->is_2d_trans = band->inv_transform == ff_ivi_inverse_slant_8x8 ||
                                 band->inv_transform == ff_ivi_inverse_slant_4x4;
+
+            if (band->transform_size != band->blk_size) {
+                av_log(avctx, AV_LOG_ERROR, "transform and block size mismatch (%d != %d)\n", band->transform_size, band->blk_size);
+                return AVERROR_INVALIDDATA;
+            }
 
             /* select dequant matrix according to plane and band number */
             if (!p) {
@@ -216,7 +221,7 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
 
             if (get_bits(&ctx->gb, 2)) {
                 av_log(avctx, AV_LOG_ERROR, "End marker missing!\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
     }
@@ -246,17 +251,17 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
     if (blk_size_changed) {
         result = ff_ivi_init_tiles(ctx->planes, pic_conf.tile_width,
                                    pic_conf.tile_height);
-        if (result) {
+        if (result < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "Couldn't reallocate internal structures!\n");
-            return -1;
+            return result;
         }
     }
 
     if (ctx->gop_flags & 8) {
         if (get_bits(&ctx->gb, 3)) {
             av_log(avctx, AV_LOG_ERROR, "Alignment bits are not zero!\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         if (get_bits1(&ctx->gb))
@@ -305,25 +310,27 @@ static inline void skip_hdr_extension(GetBitContext *gb)
  */
 static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 {
+    int ret;
+
     if (get_bits(&ctx->gb, 5) != 0x1F) {
         av_log(avctx, AV_LOG_ERROR, "Invalid picture start code!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->prev_frame_type = ctx->frame_type;
     ctx->frame_type      = get_bits(&ctx->gb, 3);
     if (ctx->frame_type >= 5) {
         av_log(avctx, AV_LOG_ERROR, "Invalid frame type: %d \n", ctx->frame_type);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->frame_num = get_bits(&ctx->gb, 8);
 
     if (ctx->frame_type == FRAMETYPE_INTRA) {
-        ctx->gop_invalid = 1;
-        if (decode_gop_header(ctx, avctx)) {
+        if ((ret = decode_gop_header(ctx, avctx)) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid GOP header, skipping frames.\n");
-            return AVERROR_INVALIDDATA;
+            ctx->gop_invalid = 1;
+            return ret;
         }
         ctx->gop_invalid = 0;
     }
@@ -346,8 +353,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
             skip_hdr_extension(&ctx->gb); /* XXX: untested */
 
         /* decode macroblock huffman codebook */
-        if (ff_ivi_dec_huff_desc(&ctx->gb, ctx->frame_flags & 0x40, IVI_MB_HUFF, &ctx->mb_vlc, avctx))
-            return -1;
+        ret = ff_ivi_dec_huff_desc(&ctx->gb, ctx->frame_flags & 0x40,
+                                   IVI_MB_HUFF, &ctx->mb_vlc, avctx);
+        if (ret < 0)
+            return ret;
 
         skip_bits(&ctx->gb, 3); /* FIXME: unknown meaning! */
     }
@@ -369,7 +378,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                            AVCodecContext *avctx)
 {
-    int         i;
+    int         i, ret;
     uint8_t     band_flags;
 
     band_flags = get_bits(&ctx->gb, 8);
@@ -393,7 +402,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
         if (band->num_corr > 61) {
             av_log(avctx, AV_LOG_ERROR, "Too many corrections: %d\n",
                    band->num_corr);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         /* read correction pairs */
@@ -405,8 +414,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
     band->rvmap_sel = (band_flags & 0x40) ? get_bits(&ctx->gb, 3) : 8;
 
     /* decode block huffman codebook */
-    if (ff_ivi_dec_huff_desc(&ctx->gb, band_flags & 0x80, IVI_BLK_HUFF, &band->blk_vlc, avctx))
-        return -1;
+    ret = ff_ivi_dec_huff_desc(&ctx->gb, band_flags & 0x80, IVI_BLK_HUFF,
+                               &band->blk_vlc, avctx);
+    if (ret < 0)
+        return ret;
 
     band->checksum_present = get_bits1(&ctx->gb);
     if (band->checksum_present)
@@ -473,7 +484,7 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             if (get_bits1(&ctx->gb)) {
                 if (ctx->frame_type == FRAMETYPE_INTRA) {
                     av_log(avctx, AV_LOG_ERROR, "Empty macroblock in an INTRA picture!\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 mb->type = 1; /* empty macroblocks are always INTER */
                 mb->cbp  = 0; /* all blocks are empty */
@@ -646,7 +657,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     result = ff_ivi_init_planes(ctx->planes, &ctx->pic_conf);
     if (result) {
         av_log(avctx, AV_LOG_ERROR, "Couldn't allocate color planes!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->buf_switch = 0;

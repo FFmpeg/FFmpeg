@@ -614,6 +614,7 @@ attached_pic=0
 [format]
 filename=tests/data/ffprobe-test.nut
 nb_streams=3
+nb_programs=0
 format_name=nut
 start_time=0.000000
 duration=0.120000

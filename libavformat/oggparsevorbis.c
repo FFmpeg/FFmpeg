@@ -41,10 +41,10 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
     int i, cnum, h, m, s, ms, keylen = strlen(key);
     AVChapter *chapter = NULL;
 
-    if (keylen < 9 || sscanf(key, "CHAPTER%02d", &cnum) != 1)
+    if (keylen < 9 || sscanf(key, "CHAPTER%03d", &cnum) != 1)
         return 0;
 
-    if (keylen == 9) {
+    if (keylen <= 10) {
         if (sscanf(val, "%02d:%02d:%02d.%03d", &h, &m, &s, &ms) < 4)
             return 0;
 
@@ -52,7 +52,7 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
                        ms + 1000*(s + 60*(m + 60*h)),
                        AV_NOPTS_VALUE, NULL);
         av_free(val);
-    } else if (!strcmp(key+9, "NAME")) {
+    } else if (!strcmp(key+(keylen-4), "NAME")) {
         for(i = 0; i < as->nb_chapters; i++)
             if (as->chapters[i]->id == cnum) {
                 chapter = as->chapters[i];
@@ -136,11 +136,15 @@ ff_vorbis_comment(AVFormatContext * as, AVDictionary **m, const uint8_t *buf, in
 
                 if (!pict) {
                     av_log(as, AV_LOG_WARNING, "out-of-memory error. Skipping cover art block.\n");
+                    av_freep(&tt);
+                    av_freep(&ct);
                     continue;
                 }
                 if ((ret = av_base64_decode(pict, ct, vl)) > 0)
                     ret = ff_flac_parse_picture(as, pict, ret);
                 av_freep(&pict);
+                av_freep(&tt);
+                av_freep(&ct);
                 if (ret < 0) {
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
                     continue;
@@ -233,14 +237,14 @@ vorbis_header (AVFormatContext * s, int idx)
     struct oggvorbis_private *priv;
     int pkt_type = os->buf[os->pstart];
 
-    if (!(pkt_type & 1))
-        return os->private ? 0 : -1;
-
     if (!os->private) {
         os->private = av_mallocz(sizeof(struct oggvorbis_private));
         if (!os->private)
             return -1;
     }
+
+    if (!(pkt_type & 1))
+        return 0;
 
     if (os->psize < 1 || pkt_type > 5)
         return -1;

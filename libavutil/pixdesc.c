@@ -26,7 +26,7 @@
 #include "common.h"
 #include "pixfmt.h"
 #include "pixdesc.h"
-
+#include "internal.h"
 #include "intreadwrite.h"
 #include "avstring.h"
 
@@ -855,6 +855,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_ALPHA,
     },
+#if FF_API_VDPAU
     [AV_PIX_FMT_VDPAU_H264] = {
         .name = "vdpau_h264",
         .log2_chroma_w = 1,
@@ -891,6 +892,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_h = 1,
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+#endif
     [AV_PIX_FMT_RGB48BE] = {
         .name = "rgb48be",
         .nb_components = 3,
@@ -1737,6 +1739,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
     },
 };
 
+FF_DISABLE_DEPRECATION_WARNINGS
 static enum AVPixelFormat get_pix_fmt_internal(const char *name)
 {
     enum AVPixelFormat pix_fmt;
@@ -1854,6 +1857,7 @@ enum AVPixelFormat av_pix_fmt_desc_get_id(const AVPixFmtDescriptor *desc)
 
     return desc - av_pix_fmt_descriptors;
 }
+FF_ENABLE_DEPRECATION_WARNINGS
 
 int av_pix_fmt_get_chroma_sub_sample(enum AVPixelFormat pix_fmt,
                                      int *h_shift, int *v_shift)

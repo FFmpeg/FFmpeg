@@ -15,6 +15,38 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lsws 2.5.100 -
+  Add a sws_dither AVOption, allowing to set the dither algorithm used
+
+2013-08-xx - xxxxxxx - lavc 55.27.100 - vdpau.h
+  Add a render2 alternative to the render callback function.
+
+2013-08-xx - xxxxxxx - lavc 55.26.100 - vdpau.h
+  Add allocation function for AVVDPAUContext, allowing
+  to extend it in the future without breaking ABI/API.
+
+2013-08-xx - xxxxxxx - lavc 55.16.0 - avcodec.h
+  Extend AVPacket API with av_packet_unref, av_packet_ref,
+  av_packet_move_ref, av_packet_copy_props, av_packet_free_side_data.
+
+2013-08-xx - xxxxxxx - lavc 55.13.0 - avcodec.h
+  Deprecate the bitstream-related members from struct AVVDPAUContext.
+  The bistream buffers no longer need to be explicitly freed.
+
+2013-08-xx - xxxxxxx - lavc 55.12.0 - avcodec.h
+  Deprecate the CODEC_CAP_HWACCEL_VDPAU codec capability. Use CODEC_CAP_HWACCEL
+  and select the AV_PIX_FMT_VDPAU format with get_format() instead.
+
+2013-08-xx - xxxxxxx - lavu 52.14.0 - pixfmt.h
+  Deprecate AV_PIX_FMT_VDPAU_*. Use AV_PIX_FMT_VDPAU instead.
+
+2013-08-xx - xxxxxxx - lavc 55.11.0 - avcodec.h
+  Add output_picture_number to AVCodecParserContext.
+
+2013-07-XX - xxxxxxx - XXXXXXXXXXXXXX - avcodec.h
+  Add avcodec_chroma_pos_to_enum()
+  Add avcodec_enum_to_chroma_pos()
+
 2013-07-03 - xxxxxxx - lavfi 3.78.100 - avfilter.h
   Deprecate avfilter_graph_parse() in favor of the equivalent
   avfilter_graph_parse_ptr().

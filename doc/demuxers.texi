@@ -1,7 +1,7 @@
 @chapter Demuxers
 @c man begin DEMUXERS
 
-Demuxers are configured elements in FFmpeg which allow to read the
+Demuxers are configured elements in FFmpeg that can read the
 multimedia streams from a particular type of file.
 
 When you configure your FFmpeg build, all the supported demuxers
@@ -256,6 +256,19 @@ terminating with the ".png" suffix:
 ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
 @end example
 @end itemize
+
+@section mpegts
+
+MPEG-2 transport stream demuxer.
+
+@table @option
+
+@item fix_teletext_pts
+Overrides teletext packet PTS and DTS values with the timestamps calculated
+from the PCR of the first program which the teletext stream is part of and is
+not discarded. Default value is 1, set this option to 0 if you want your
+teletext packet PTS and DTS values untouched.
+@end table
 
 @section rawvideo
 

@@ -64,7 +64,7 @@
 #define HIST_SIZE  ((ABS_UP_THRES - ABS_THRES) * HIST_GRAIN + 1)
 
 /**
- * An histogram is an array of HIST_SIZE hist_entry storing all the energies
+ * A histogram is an array of HIST_SIZE hist_entry storing all the energies
  * recorded (with an accuracy of 1/HIST_GRAIN) of the loudnesses from ABS_THRES
  * (at 0) to ABS_UP_THRES (at HIST_SIZE-1).
  * This fixed-size system avoids the need of a list of energies growing
@@ -722,7 +722,7 @@ static int query_formats(AVFilterContext *ctx)
 
     /* set input and output audio formats
      * Note: ff_set_common_* functions are not used because they affect all the
-     * links, and thus break the video format negociation */
+     * links, and thus break the video format negotiation */
     formats = ff_make_format_list(sample_fmts);
     if (!formats)
         return AVERROR(ENOMEM);

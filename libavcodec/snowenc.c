@@ -62,10 +62,10 @@ static void find_sse(SnowContext *s, Plane *p, int *score, int score_stride, IDW
             int sx= (x-xo + step/2) / step / Q2_STEP;
             int sy= (y-yo + step/2) / step / Q2_STEP;
             int v= r0[x + y*p->width] - r1[x + y*p->width];
-            assert(sx>=0 && sy>=0 && sx < score_stride);
+            av_assert2(sx>=0 && sy>=0 && sx < score_stride);
             v= ((v+8)>>4)<<4;
             score[sx + sy*score_stride] += v*v;
-            assert(score[sx + sy*score_stride] >= 0);
+            av_assert2(score[sx + sy*score_stride] >= 0);
         }
     }
 }
@@ -963,10 +963,10 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, const IDWTELEM *src,
 
                         if(run_index <= max_index)
                             put_symbol2(&s->c, b->state[1], run, 3);
-                        assert(v);
+                        av_assert2(v);
                     }else{
                         run--;
-                        assert(!v);
+                        av_assert2(!v);
                     }
                 }
                 if(v){
