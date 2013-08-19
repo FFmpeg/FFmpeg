@@ -6,8 +6,8 @@ SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
-#$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
-#  --system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
+$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
+  --system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
 
 export PATH=$TOOLCHAIN/bin:$PATH
 export CC="ccache arm-linux-androideabi-gcc"
@@ -55,7 +55,7 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --enable-version3"
 
 
-for version in vfp; do
+for version in neon; do
 
   cd $SOURCE
 
@@ -119,6 +119,6 @@ for version in vfp; do
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   arm-linux-androideabi-strip --strip-unneeded $PREFIX/libffmpeg.so
 
-  adb push $PREFIX/libffmpeg.so /data/data/io.vov.vitamio.demo/libs/
+  adb push $PREFIX/libffmpeg.so /data/data/me.abitno.vplayer.t/libs/
 
 done

@@ -122,6 +122,7 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --enable-asm \
   --enable-version3 \
   --disable-debug \
+  --enable-librtmp \
   --optflags=-02"
 fi
 
