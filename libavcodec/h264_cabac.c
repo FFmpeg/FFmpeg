@@ -1986,8 +1986,8 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl)
                 mb_type= bits - 4; /* B_L0_Bi_* through B_Bi_Bi_* */
             }
         }
-            partition_count= b_mb_type_info[mb_type].partition_count;
-            mb_type=         b_mb_type_info[mb_type].type;
+            partition_count = ff_h264_b_mb_type_info[mb_type].partition_count;
+            mb_type         = ff_h264_b_mb_type_info[mb_type].type;
     } else if (sl->slice_type_nos == AV_PICTURE_TYPE_P) {
         if( get_cabac_noinline( &sl->cabac, &sl->cabac_state[14] ) == 0 ) {
             /* P-type */
@@ -1998,8 +1998,8 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl)
                 /* P_L0_D8x16, P_L0_D16x8 */
                 mb_type= 2 - get_cabac_noinline( &sl->cabac, &sl->cabac_state[17] );
             }
-            partition_count= p_mb_type_info[mb_type].partition_count;
-            mb_type=         p_mb_type_info[mb_type].type;
+            partition_count = ff_h264_p_mb_type_info[mb_type].partition_count;
+            mb_type         = ff_h264_p_mb_type_info[mb_type].type;
         } else {
             mb_type = decode_cabac_intra_mb_type(sl, 17, 0);
             goto decode_intra_mb;
@@ -2011,9 +2011,9 @@ int ff_h264_decode_mb_cabac(const H264Context *h, H264SliceContext *sl)
         assert(sl->slice_type_nos == AV_PICTURE_TYPE_I);
 decode_intra_mb:
         partition_count = 0;
-        cbp= i_mb_type_info[mb_type].cbp;
-        sl->intra16x16_pred_mode = i_mb_type_info[mb_type].pred_mode;
-        mb_type= i_mb_type_info[mb_type].type;
+        cbp                      = ff_h264_i_mb_type_info[mb_type].cbp;
+        sl->intra16x16_pred_mode = ff_h264_i_mb_type_info[mb_type].pred_mode;
+        mb_type                  = ff_h264_i_mb_type_info[mb_type].type;
     }
     if (MB_FIELD(sl))
         mb_type |= MB_TYPE_INTERLACED;
@@ -2097,8 +2097,8 @@ decode_intra_mb:
         if (sl->slice_type_nos == AV_PICTURE_TYPE_B ) {
             for( i = 0; i < 4; i++ ) {
                 sl->sub_mb_type[i] = decode_cabac_b_mb_sub_type(sl);
-                sub_partition_count[i] = b_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
-                sl->sub_mb_type[i]     = b_sub_mb_type_info[sl->sub_mb_type[i]].type;
+                sub_partition_count[i] = ff_h264_b_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
+                sl->sub_mb_type[i]     = ff_h264_b_sub_mb_type_info[sl->sub_mb_type[i]].type;
             }
             if (IS_DIRECT(sl->sub_mb_type[0] | sl->sub_mb_type[1] |
                           sl->sub_mb_type[2] | sl->sub_mb_type[3])) {
@@ -2113,8 +2113,8 @@ decode_intra_mb:
         } else {
             for( i = 0; i < 4; i++ ) {
                 sl->sub_mb_type[i] = decode_cabac_p_mb_sub_type(sl);
-                sub_partition_count[i] = p_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
-                sl->sub_mb_type[i]     = p_sub_mb_type_info[sl->sub_mb_type[i]].type;
+                sub_partition_count[i] = ff_h264_p_sub_mb_type_info[sl->sub_mb_type[i]].partition_count;
+                sl->sub_mb_type[i]     = ff_h264_p_sub_mb_type_info[sl->sub_mb_type[i]].type;
             }
         }
 
@@ -2397,7 +2397,7 @@ decode_intra_mb:
                 for (c = 0; c < 2; c++)
                     decode_cabac_residual_dc_422(h, sl, sl->mb + ((256 + 16*16*c) << pixel_shift), 3,
                                                  CHROMA_DC_BLOCK_INDEX + c,
-                                                 chroma422_dc_scan, 8);
+                                                 ff_h264_chroma422_dc_scan, 8);
             }
 
             if( cbp&0x20 ) {
@@ -2421,7 +2421,8 @@ decode_intra_mb:
             if( cbp&0x30 ){
                 int c;
                 for (c = 0; c < 2; c++)
-                    decode_cabac_residual_dc(h, sl, sl->mb + ((256 + 16*16*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
+                    decode_cabac_residual_dc(h, sl, sl->mb + ((256 + 16 * 16 * c) << pixel_shift),
+                                             3, CHROMA_DC_BLOCK_INDEX + c, ff_h264_chroma_dc_scan, 4);
             }
 
             if( cbp&0x20 ) {

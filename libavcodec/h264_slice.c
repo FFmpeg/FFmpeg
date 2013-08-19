@@ -1081,7 +1081,7 @@ int ff_h264_decode_slice_header(H264Context *h, H264SliceContext *sl)
     } else
         sl->slice_type_fixed = 0;
 
-    slice_type = golomb_to_pict_type[slice_type];
+    slice_type         = ff_h264_golomb_to_pict_type[slice_type];
     sl->slice_type     = slice_type;
     sl->slice_type_nos = slice_type & 3;
 
