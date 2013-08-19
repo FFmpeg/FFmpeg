@@ -73,6 +73,8 @@ typedef struct {
     int32_t hue_sin;
     int32_t hue_cos;
     double   var_values[VAR_NB];
+    uint8_t  lut_u[256][256];
+    uint8_t  lut_v[256][256];
 } HueContext;
 
 #define OFFSET(x) offsetof(HueContext, x)
@@ -94,10 +96,41 @@ static inline void compute_sin_and_cos(HueContext *hue)
     /*
      * Scale the value to the norm of the resulting (U,V) vector, that is
      * the saturation.
-     * This will be useful in the process_chrominance function.
+     * This will be useful in the apply_lut function.
      */
     hue->hue_sin = rint(sin(hue->hue) * (1 << 16) * hue->saturation);
     hue->hue_cos = rint(cos(hue->hue) * (1 << 16) * hue->saturation);
+}
+
+static inline void create_chrominance_lut(HueContext *h, const int32_t c,
+                                          const int32_t s)
+{
+    int32_t i, j, u, v, new_u, new_v;
+
+    /*
+     * If we consider U and V as the components of a 2D vector then its angle
+     * is the hue and the norm is the saturation
+     */
+    for (i = 0; i < 256; i++) {
+        for (j = 0; j < 256; j++) {
+            /* Normalize the components from range [16;140] to [-112;112] */
+            u = i - 128;
+            v = j - 128;
+            /*
+             * Apply the rotation of the vector : (c * u) - (s * v)
+             *                                    (s * u) + (c * v)
+             * De-normalize the components (without forgetting to scale 128
+             * by << 16)
+             * Finally scale back the result by >> 16
+             */
+            new_u = ((c * u) - (s * v) + (1 << 15) + (128 << 16)) >> 16;
+            new_v = ((s * u) + (c * v) + (1 << 15) + (128 << 16)) >> 16;
+
+            /* Prevent a potential overflow */
+            h->lut_u[i][j] = av_clip_uint8_c(new_u);
+            h->lut_v[i][j] = av_clip_uint8_c(new_v);
+        }
+    }
 }
 
 static int set_expr(AVExpr **pexpr_ptr, char **expr_ptr,
@@ -202,36 +235,20 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static void process_chrominance(uint8_t *udst, uint8_t *vdst, const int dst_linesize,
-                                uint8_t *usrc, uint8_t *vsrc, const int src_linesize,
-                                int w, int h,
-                                const int32_t c, const int32_t s)
+static void apply_lut(HueContext *s,
+                      uint8_t *udst, uint8_t *vdst, const int dst_linesize,
+                      uint8_t *usrc, uint8_t *vsrc, const int src_linesize,
+                      int w, int h)
 {
-    int32_t u, v, new_u, new_v;
     int i;
 
-    /*
-     * If we consider U and V as the components of a 2D vector then its angle
-     * is the hue and the norm is the saturation
-     */
     while (h--) {
         for (i = 0; i < w; i++) {
-            /* Normalize the components from range [16;140] to [-112;112] */
-            u = usrc[i] - 128;
-            v = vsrc[i] - 128;
-            /*
-             * Apply the rotation of the vector : (c * u) - (s * v)
-             *                                    (s * u) + (c * v)
-             * De-normalize the components (without forgetting to scale 128
-             * by << 16)
-             * Finally scale back the result by >> 16
-             */
-            new_u = ((c * u) - (s * v) + (1 << 15) + (128 << 16)) >> 16;
-            new_v = ((s * u) + (c * v) + (1 << 15) + (128 << 16)) >> 16;
+            const int u = usrc[i];
+            const int v = vsrc[i];
 
-            /* Prevent a potential overflow */
-            udst[i] = av_clip_uint8_c(new_u);
-            vdst[i] = av_clip_uint8_c(new_v);
+            udst[i] = s->lut_u[u][v];
+            vdst[i] = s->lut_v[u][v];
         }
 
         usrc += src_linesize;
@@ -249,6 +266,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     HueContext *hue = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outpic;
+    const int32_t old_hue_sin = hue->hue_sin, old_hue_cos = hue->hue_cos;
     int direct = 0;
 
     if (av_frame_is_writable(inpic)) {
@@ -292,6 +310,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
            hue->var_values[VAR_T], (int)hue->var_values[VAR_N]);
 
     compute_sin_and_cos(hue);
+    if (old_hue_sin != hue->hue_sin || old_hue_cos != hue->hue_cos)
+        create_chrominance_lut(hue, hue->hue_cos, hue->hue_sin);
 
     if (!direct) {
         av_image_copy_plane(outpic->data[0], outpic->linesize[0],
@@ -303,11 +323,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
                                 inlink->w, inlink->h);
     }
 
-    process_chrominance(outpic->data[1], outpic->data[2], outpic->linesize[1],
-                        inpic->data[1],  inpic->data[2],  inpic->linesize[1],
-                        FF_CEIL_RSHIFT(inlink->w, hue->hsub),
-                        FF_CEIL_RSHIFT(inlink->h, hue->vsub),
-                        hue->hue_cos, hue->hue_sin);
+    apply_lut(hue, outpic->data[1], outpic->data[2], outpic->linesize[1],
+              inpic->data[1],  inpic->data[2],  inpic->linesize[1],
+              FF_CEIL_RSHIFT(inlink->w, hue->hsub),
+              FF_CEIL_RSHIFT(inlink->h, hue->vsub));
 
     if (!direct)
         av_frame_free(&inpic);
