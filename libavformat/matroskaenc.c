@@ -1628,7 +1628,6 @@ static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_RA_288,    0xFFFFFFFF },
     { AV_CODEC_ID_COOK,      0xFFFFFFFF },
     { AV_CODEC_ID_TRUEHD,    0xFFFFFFFF },
-    { AV_CODEC_ID_WAVPACK,   0xFFFFFFFF },
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
 
