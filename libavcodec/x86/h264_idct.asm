@@ -30,7 +30,6 @@
 
 SECTION_RODATA
 
-; FIXME this table is a duplicate from h264data.h, and will be removed once the tables from, h264 have been split
 scan8_mem: db  4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8
            db  6+ 1*8, 7+ 1*8, 6+ 2*8, 7+ 2*8
            db  4+ 3*8, 5+ 3*8, 4+ 4*8, 5+ 4*8
