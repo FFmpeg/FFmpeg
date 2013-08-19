@@ -1205,18 +1205,22 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
        dstFormat == AV_PIX_FMT_RGB8) {
         if (c->dither == SWS_DITHER_AUTO)
             c->dither = (flags & SWS_FULL_CHR_H_INT) ? SWS_DITHER_ED : SWS_DITHER_BAYER;
-        if (c->dither == SWS_DITHER_ED && !(flags & SWS_FULL_CHR_H_INT)) {
-            av_log(c, AV_LOG_DEBUG,
-                "Error diffusion dither is only supported in full chroma interpolation for destination format '%s'\n",
-                av_get_pix_fmt_name(dstFormat));
-            flags   |= SWS_FULL_CHR_H_INT;
-            c->flags = flags;
+        if (!(flags & SWS_FULL_CHR_H_INT)) {
+            if (c->dither == SWS_DITHER_ED) {
+                av_log(c, AV_LOG_DEBUG,
+                    "Desired dithering only supported in full chroma interpolation for destination format '%s'\n",
+                    av_get_pix_fmt_name(dstFormat));
+                flags   |= SWS_FULL_CHR_H_INT;
+                c->flags = flags;
+            }
         }
-        if (c->dither != SWS_DITHER_ED && (flags & SWS_FULL_CHR_H_INT)) {
-            av_log(c, AV_LOG_DEBUG,
-                "Ordered dither is not supported in full chroma interpolation for destination format '%s'\n",
-                av_get_pix_fmt_name(dstFormat));
-            c->dither = SWS_DITHER_ED;
+        if (flags & SWS_FULL_CHR_H_INT) {
+            if (c->dither == SWS_DITHER_BAYER) {
+                av_log(c, AV_LOG_DEBUG,
+                    "Ordered dither is not supported in full chroma interpolation for destination format '%s'\n",
+                    av_get_pix_fmt_name(dstFormat));
+                c->dither = SWS_DITHER_ED;
+            }
         }
     }
     if (isPlanarRGB(dstFormat)) {
