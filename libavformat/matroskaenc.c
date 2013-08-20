@@ -1534,6 +1534,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         mkv->cluster_pos = -1;
         if (mkv->dyn_bc)
             mkv_flush_dynbuf(s);
+        avio_flush(s->pb);
     }
 
     // check if we have an audio packet cached
