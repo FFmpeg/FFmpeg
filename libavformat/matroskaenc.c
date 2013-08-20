@@ -1561,6 +1561,29 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    AVIOContext *pb;
+    if (s->pb->seekable)
+        pb = s->pb;
+    else
+        pb = mkv->dyn_bc;
+    if (!pkt) {
+        if (mkv->cluster_pos != -1) {
+            av_log(s, AV_LOG_DEBUG, "Flushing cluster at offset %" PRIu64
+                   " bytes\n", avio_tell(pb));
+            end_ebml_master(pb, mkv->cluster);
+            mkv->cluster_pos = -1;
+            if (mkv->dyn_bc)
+                mkv_flush_dynbuf(s);
+            avio_flush(s->pb);
+        }
+        return 0;
+    }
+    return mkv_write_packet(s, pkt);
+}
+
 static int mkv_write_trailer(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -1703,10 +1726,10 @@ AVOutputFormat ff_matroska_muxer = {
     .video_codec       = CONFIG_LIBX264_ENCODER ?
                          AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
     .write_header      = mkv_write_header,
-    .write_packet      = mkv_write_packet,
+    .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
-                         AVFMT_TS_NONSTRICT,
+                         AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
     .codec_tag         = (const AVCodecTag* const []){
          ff_codec_bmp_tags, ff_codec_wav_tags,
          additional_audio_tags, additional_video_tags, 0
@@ -1739,10 +1762,10 @@ AVOutputFormat ff_webm_muxer = {
     .video_codec       = AV_CODEC_ID_VP8,
     .subtitle_codec    = AV_CODEC_ID_WEBVTT,
     .write_header      = mkv_write_header,
-    .write_packet      = mkv_write_packet,
+    .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
-                         AVFMT_TS_NONSTRICT,
+                         AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
     .priv_class        = &webm_class,
 };
 #endif
@@ -1764,9 +1787,10 @@ AVOutputFormat ff_matroska_audio_muxer = {
                          AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
     .video_codec       = AV_CODEC_ID_NONE,
     .write_header      = mkv_write_header,
-    .write_packet      = mkv_write_packet,
+    .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
-    .flags             = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT,
+    .flags             = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT |
+                         AVFMT_ALLOW_FLUSH,
     .codec_tag         = (const AVCodecTag* const []){
         ff_codec_wav_tags, additional_audio_tags, 0
     },
