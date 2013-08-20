@@ -382,7 +382,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     y      = fs->slice_y;
 
     if (!fs->ac) {
-        if (f->version == 3 && f->minor_version > 1 || f->version > 3)
+        if (f->version == 3 && f->micro_version > 1 || f->version > 3)
             get_rac(&fs->c, (uint8_t[]) { 129 });
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
         init_get_bits(&fs->gb,
@@ -485,7 +485,7 @@ static int read_extra_header(FFV1Context *f)
     f->version = get_symbol(c, state, 0);
     if (f->version > 2) {
         c->bytestream_end -= 4;
-        f->minor_version = get_symbol(c, state, 0);
+        f->micro_version = get_symbol(c, state, 0);
     }
     f->ac = f->avctx->coder_type = get_symbol(c, state, 0);
     if (f->ac > 1) {
@@ -536,7 +536,7 @@ static int read_extra_header(FFV1Context *f)
 
     if (f->version > 2) {
         f->ec = get_symbol(c, state, 0);
-        if (f->minor_version > 2)
+        if (f->micro_version > 2)
             f->intra = get_symbol(c, state, 0);
     }
 
@@ -553,7 +553,7 @@ static int read_extra_header(FFV1Context *f)
     if (f->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(f->avctx, AV_LOG_DEBUG,
                "global: ver:%d.%d, coder:%d, colorspace: %d bpr:%d chroma:%d(%d:%d), alpha:%d slices:%dx%d qtabs:%d ec:%d intra:%d\n",
-               f->version, f->minor_version,
+               f->version, f->micro_version,
                f->ac,
                f->colorspace,
                f->avctx->bits_per_raw_sample,
