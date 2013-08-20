@@ -1,0 +1,25 @@
+[FRAME]
+media_type=video
+key_frame=1
+pkt_pts=0
+pkt_pts_time=0.000000
+pkt_dts=0
+pkt_dts_time=0.000000
+pkt_duration=1
+pkt_duration_time=0.040000
+pkt_pos=N/A
+pkt_size=67604
+width=200
+height=112
+pix_fmt=rgb24
+sample_aspect_ratio=N/A
+pict_type=?
+coded_picture_number=0
+display_picture_number=0
+interlaced_frame=0
+top_field_first=0
+repeat_pict=0
+TAG:document_name=image_small.tiff
+TAG:page_number=0 / 1
+TAG:software=ImageMagick 6.5.8-0 2010-02-09 Q16 http://www.imagemagick.org
+[/FRAME]

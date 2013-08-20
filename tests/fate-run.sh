@@ -75,6 +75,10 @@ probefmt(){
     run ffprobe -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
+probeframes(){
+    run ffprobe -show_frames -v 0 "$@"
+}
+
 ffmpeg(){
     dec_opts="-threads $threads -thread_type $thread_type"
     ffmpeg_args="-nostats -cpuflags $cpuflags"
