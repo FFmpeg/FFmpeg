@@ -521,10 +521,10 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     VP8_BILINEAR_MC_FUNC(1, 8);
     VP8_BILINEAR_MC_FUNC(2, 4);
 
-    if (ARCH_X86)
-        ff_vp8dsp_init_x86(dsp);
     if (ARCH_ARM)
         ff_vp8dsp_init_arm(dsp);
     if (ARCH_PPC)
         ff_vp8dsp_init_ppc(dsp);
+    if (ARCH_X86)
+        ff_vp8dsp_init_x86(dsp);
 }
