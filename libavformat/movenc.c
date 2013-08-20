@@ -1430,11 +1430,11 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
     const char *hdlr, *descr = NULL, *hdlr_type = NULL;
     int64_t pos = avio_tell(pb);
 
-    if (!track) { /* no media --> data handler */
-        hdlr      = "dhlr";
-        hdlr_type = "url ";
-        descr     = "DataHandler";
-    } else {
+    hdlr      = "dhlr";
+    hdlr_type = "url ";
+    descr     = "DataHandler";
+
+    if (track) {
         hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
         if (track->enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             hdlr_type = "vide";
@@ -1451,16 +1451,20 @@ static int mov_write_hdlr_tag(AVIOContext *pb, MOVTrack *track)
             else                                      hdlr_type = "text";
             descr = "SubtitleHandler";
             }
-        } else if (track->enc->codec_tag == MKTAG('t','m','c','d')) {
-            hdlr_type = "tmcd";
-            descr = "TimeCodeHandler";
         } else if (track->enc->codec_tag == MKTAG('r','t','p',' ')) {
             hdlr_type = "hint";
             descr     = "HintHandler";
+        } else if (track->enc->codec_tag == MKTAG('t','m','c','d')) {
+            hdlr_type = "tmcd";
+            descr = "TimeCodeHandler";
         } else {
-            hdlr      = "dhlr";
-            hdlr_type = "url ";
-            descr     = "DataHandler";
+            char tag_buf[32];
+            av_get_codec_tag_string(tag_buf, sizeof(tag_buf),
+                                    track->enc->codec_tag);
+
+            av_log(track->enc, AV_LOG_WARNING,
+                   "Unknown hldr_type for %s / 0x%04X, writing dummy values\n",
+                   tag_buf, track->enc->codec_tag);
         }
     }
 
