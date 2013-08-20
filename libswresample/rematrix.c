@@ -103,9 +103,6 @@ static int even(int64_t layout){
 }
 
 static int clean_layout(SwrContext *s, int64_t layout){
-    if((layout & AV_CH_LAYOUT_STEREO_DOWNMIX) == AV_CH_LAYOUT_STEREO_DOWNMIX)
-        return AV_CH_LAYOUT_STEREO;
-
     if(layout && layout != AV_CH_FRONT_CENTER && !(layout&(layout-1))) {
         char buf[128];
         av_get_channel_layout_string(buf, sizeof(buf), -1, layout);
@@ -144,6 +141,11 @@ av_cold static int auto_matrix(SwrContext *s)
 
     in_ch_layout = clean_layout(s, s->in_ch_layout);
     out_ch_layout = clean_layout(s, s->out_ch_layout);
+
+    if(   out_ch_layout == AV_CH_LAYOUT_STEREO_DOWNMIX
+       && (in_ch_layout & AV_CH_LAYOUT_STEREO_DOWNMIX) == 0
+    )
+        out_ch_layout = AV_CH_LAYOUT_STEREO;
 
     if(!sane_layout(in_ch_layout)){
         av_get_channel_layout_string(buf, sizeof(buf), -1, s->in_ch_layout);
