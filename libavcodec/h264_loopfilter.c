@@ -34,7 +34,6 @@
 #include "mathops.h"
 #include "rectangle.h"
 
-//#undef NDEBUG
 #include <assert.h>
 
 /* Deblocking filter (p153) */

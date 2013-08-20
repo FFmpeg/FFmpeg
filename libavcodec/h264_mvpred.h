@@ -32,7 +32,6 @@
 #include "avcodec.h"
 #include "h264.h"
 
-//#undef NDEBUG
 #include <assert.h>
 
 static av_always_inline int fetch_diagonal_mv(H264Context *h, const int16_t **C,

@@ -35,7 +35,6 @@
 #include "h264_mvpred.h"
 #include "golomb.h"
 
-//#undef NDEBUG
 #include <assert.h>
 
 static const uint8_t golomb_to_inter_cbp_gray[16]={

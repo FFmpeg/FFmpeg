@@ -30,7 +30,6 @@
  * MJPEG decoder.
  */
 
-// #define DEBUG
 #include <assert.h>
 
 #include "libavutil/imgutils.h"

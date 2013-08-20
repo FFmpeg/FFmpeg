@@ -30,7 +30,6 @@
  * MJPEG encoder.
  */
 
-//#define DEBUG
 #include <assert.h>
 
 #include "avcodec.h"

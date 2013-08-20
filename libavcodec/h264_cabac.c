@@ -41,7 +41,6 @@
 #include "x86/h264_i386.h"
 #endif
 
-//#undef NDEBUG
 #include <assert.h>
 
 /* Cabac pre state table */

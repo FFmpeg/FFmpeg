@@ -30,7 +30,6 @@
 #include "h264.h"
 #include "golomb.h"
 
-//#undef NDEBUG
 #include <assert.h>
 
 static const uint8_t sei_num_clock_ts_table[9] = {
