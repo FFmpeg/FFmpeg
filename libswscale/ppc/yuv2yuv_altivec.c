@@ -24,9 +24,10 @@
 #include <inttypes.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
-#include "libavutil/cpu.h"
 
 #if HAVE_ALTIVEC
 
@@ -183,7 +184,7 @@ static int yv12touyvy_unscaled_altivec(SwsContext *c, const uint8_t *src[],
 
 #endif /* HAVE_ALTIVEC */
 
-void ff_get_unscaled_swscale_ppc(SwsContext *c)
+av_cold void ff_get_unscaled_swscale_ppc(SwsContext *c)
 {
 #if HAVE_ALTIVEC
     if ((av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) && !(c->srcW & 15) &&

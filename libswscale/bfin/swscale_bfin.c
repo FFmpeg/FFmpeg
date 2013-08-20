@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libswscale/swscale_internal.h"
 
 #if defined (__FDPIC__) && CONFIG_SRAM
@@ -71,7 +72,7 @@ static int yuyvtoyv12_unscaled(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
-void ff_get_unscaled_swscale_bfin(SwsContext *c)
+av_cold void ff_get_unscaled_swscale_bfin(SwsContext *c)
 {
     if (c->dstFormat == AV_PIX_FMT_YUV420P && c->srcFormat == AV_PIX_FMT_UYVY422) {
         av_log(NULL, AV_LOG_VERBOSE,

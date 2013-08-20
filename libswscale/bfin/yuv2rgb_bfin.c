@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "libavutil/attributes.h"
 #include "libswscale/swscale_internal.h"
 
 #if defined(__FDPIC__) && CONFIG_SRAM
@@ -167,7 +168,7 @@ static int bfin_yuv420_bgr565(SwsContext *c, const uint8_t **in, int *instrides,
                            outstrides, ff_bfin_yuv2rgb565_line, 0, 565);
 }
 
-SwsFunc ff_yuv2rgb_init_bfin(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_bfin(SwsContext *c)
 {
     SwsFunc f;
 
