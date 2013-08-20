@@ -183,7 +183,7 @@ static int yv12touyvy_unscaled_altivec(SwsContext *c, const uint8_t *src[],
 
 #endif /* HAVE_ALTIVEC */
 
-void ff_swscale_get_unscaled_ppc(SwsContext *c)
+void ff_get_unscaled_swscale_ppc(SwsContext *c)
 {
 #if HAVE_ALTIVEC
     if ((av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) && !(c->srcW & 15) &&

@@ -573,8 +573,7 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_vis(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
-SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c);
-void ff_bfin_get_unscaled_swscale(SwsContext *c);
+SwsFunc ff_yuv2rgb_init_bfin(SwsContext *c);
 
 const char *sws_format_name(enum AVPixelFormat format);
 
@@ -735,8 +734,8 @@ extern const AVClass sws_context_class;
  * source and destination formats, bit depths, flags, etc.
  */
 void ff_get_unscaled_swscale(SwsContext *c);
-
-void ff_swscale_get_unscaled_ppc(SwsContext *c);
+void ff_get_unscaled_swscale_bfin(SwsContext *c);
+void ff_get_unscaled_swscale_ppc(SwsContext *c);
 
 /**
  * Return function pointer to fastest main scaler path function depending

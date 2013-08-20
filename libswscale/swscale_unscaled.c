@@ -1090,9 +1090,9 @@ void ff_get_unscaled_swscale(SwsContext *c)
     }
 
     if (ARCH_BFIN)
-        ff_bfin_get_unscaled_swscale(c);
+        ff_get_unscaled_swscale_bfin(c);
     if (ARCH_PPC)
-        ff_swscale_get_unscaled_ppc(c);
+        ff_get_unscaled_swscale_ppc(c);
 }
 
 static void reset_ptr(const uint8_t *src[], int format)

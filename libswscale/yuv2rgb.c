@@ -565,7 +565,7 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     else if (HAVE_VIS)
         t = ff_yuv2rgb_init_vis(c);
     else if (ARCH_BFIN)
-        t = ff_yuv2rgb_get_func_ptr_bfin(c);
+        t = ff_yuv2rgb_init_bfin(c);
     else if (ARCH_PPC)
         t = ff_yuv2rgb_init_ppc(c);
 

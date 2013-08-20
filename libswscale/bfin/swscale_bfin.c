@@ -71,7 +71,7 @@ static int yuyvtoyv12_unscaled(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
-void ff_bfin_get_unscaled_swscale(SwsContext *c)
+void ff_get_unscaled_swscale_bfin(SwsContext *c)
 {
     if (c->dstFormat == AV_PIX_FMT_YUV420P && c->srcFormat == AV_PIX_FMT_UYVY422) {
         av_log(NULL, AV_LOG_VERBOSE,
