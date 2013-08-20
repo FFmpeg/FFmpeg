@@ -3672,6 +3672,9 @@ static int mov_write_header(AVFormatContext *s)
             }else{
                 track->sample_size = (av_get_bits_per_sample(st->codec->codec_id) >> 3) * st->codec->channels;
             }
+            if (st->codec->codec_id == AV_CODEC_ID_ILBC) {
+                track->audio_vbr = 1;
+            }
             if (track->mode != MODE_MOV &&
                 track->enc->codec_id == AV_CODEC_ID_MP3 && track->timescale < 16000) {
                 av_log(s, AV_LOG_ERROR, "track %d: muxing mp3 at %dhz is not supported\n",
