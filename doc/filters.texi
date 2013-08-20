@@ -3239,16 +3239,6 @@ Either a string (e.g. "yellow") or in 0xRRGGBB[AA] format
 (e.g. "0xff00ff"), possibly followed by an alpha specifier.
 The default value of @var{boxcolor} is "white".
 
-@item draw
-Set an expression which specifies if the text should be drawn. If the
-expression evaluates to 0, the text is not drawn. This is useful for
-specifying that the text should be drawn only when specific conditions
-are met.
-
-Default value is "1".
-
-See below for the list of accepted constants and functions.
-
 @item expansion
 Select how the @var{text} is expanded. Can be either @code{none},
 @code{strftime} (deprecated) or
@@ -3548,7 +3538,7 @@ drawtext="fontsize=60:fontfile=FreeSerif.ttf:fontcolor=green:text=g:x=(w-max_gly
 @item
 Show text for 1 second every 3 seconds:
 @example
-drawtext="fontfile=FreeSerif.ttf:fontcolor=white:x=100:y=x/dar:draw=lt(mod(t\,3)\,1):text='blink'"
+drawtext="fontfile=FreeSerif.ttf:fontcolor=white:x=100:y=x/dar:enable=lt(mod(t\,3)\,1):text='blink'"
 @end example
 
 @item
