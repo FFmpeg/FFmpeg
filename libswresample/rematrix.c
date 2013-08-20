@@ -123,13 +123,14 @@ av_cold static int auto_matrix(SwrContext *s)
     float maxval;
 
     in_ch_layout = clean_layout(s, s->in_ch_layout);
+    out_ch_layout = clean_layout(s, s->out_ch_layout);
+
     if(!sane_layout(in_ch_layout)){
         av_get_channel_layout_string(buf, sizeof(buf), -1, s->in_ch_layout);
         av_log(s, AV_LOG_ERROR, "Input channel layout '%s' is not supported\n", buf);
         return AVERROR(EINVAL);
     }
 
-    out_ch_layout = clean_layout(s, s->out_ch_layout);
     if(!sane_layout(out_ch_layout)){
         av_get_channel_layout_string(buf, sizeof(buf), -1, s->out_ch_layout);
         av_log(s, AV_LOG_ERROR, "Output channel layout '%s' is not supported\n", buf);
