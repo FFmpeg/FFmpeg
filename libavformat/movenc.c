@@ -82,15 +82,21 @@ static int64_t update_size(AVIOContext *pb, int64_t pos)
     return curpos - pos;
 }
 
+static int co64_required(const MOVTrack *track)
+{
+    if (track->entry > 0 && track->cluster[track->entry - 1].pos + track->data_offset > UINT32_MAX)
+        return 1;
+    return 0;
+}
+
 /* Chunk offset atom */
 static int mov_write_stco_tag(AVIOContext *pb, MOVTrack *track)
 {
     int i;
-    int mode64 = 0; //   use 32 bit size variant if possible
+    int mode64 = co64_required(track); // use 32 bit size variant if possible
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
-    if (pos > UINT32_MAX) {
-        mode64 = 1;
+    if (mode64) {
         ffio_wfourcc(pb, "co64");
     } else
         ffio_wfourcc(pb, "stco");
