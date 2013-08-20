@@ -21,12 +21,13 @@
 
 #include "config.h"
 #include "libavutil/cpu.h"
+#include "libavutil/cpu_internal.h"
 
-#define have_armv5te(flags) (HAVE_ARMV5TE && ((flags) & AV_CPU_FLAG_ARMV5TE))
-#define have_armv6(flags)   (HAVE_ARMV6   && ((flags) & AV_CPU_FLAG_ARMV6))
-#define have_armv6t2(flags) (HAVE_ARMV6T2 && ((flags) & AV_CPU_FLAG_ARMV6T2))
-#define have_vfp(flags)     (HAVE_VFP     && ((flags) & AV_CPU_FLAG_VFP))
-#define have_vfpv3(flags)   (HAVE_VFPV3   && ((flags) & AV_CPU_FLAG_VFPV3))
-#define have_neon(flags)    (HAVE_NEON    && ((flags) & AV_CPU_FLAG_NEON))
+#define have_armv5te(flags) CPUEXT(flags, ARMV5TE)
+#define have_armv6(flags)   CPUEXT(flags, ARMV6)
+#define have_armv6t2(flags) CPUEXT(flags, ARMV6T2)
+#define have_vfp(flags)     CPUEXT(flags, VFP)
+#define have_vfpv3(flags)   CPUEXT(flags, VFPV3)
+#define have_neon(flags)    CPUEXT(flags, NEON)
 
 #endif /* AVUTIL_ARM_CPU_H */
