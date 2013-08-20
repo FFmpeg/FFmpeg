@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2006 Luca Barbato <lu_zero@gentoo.org>
- *
  * This file is part of Libav.
  *
  * Libav is free software; you can redistribute it and/or
@@ -18,23 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVUTIL_PPC_CPU_H
+#define AVUTIL_PPC_CPU_H
+
 #include "config.h"
-#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/float_dsp.h"
-#include "libavutil/ppc/cpu.h"
-#include "float_dsp_altivec.h"
+#include "libavutil/cpu_internal.h"
 
-av_cold void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int bit_exact)
-{
-    if (!PPC_ALTIVEC(av_get_cpu_flags()))
-        return;
+#define PPC_ALTIVEC(flags) CPUEXT(flags, ALTIVEC)
 
-    fdsp->vector_fmul = ff_vector_fmul_altivec;
-    fdsp->vector_fmul_add = ff_vector_fmul_add_altivec;
-    fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_altivec;
-
-    if (!bit_exact) {
-        fdsp->vector_fmul_window = ff_vector_fmul_window_altivec;
-    }
-}
+#endif /* AVUTIL_PPC_CPU_H */
