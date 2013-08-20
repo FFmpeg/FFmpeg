@@ -964,7 +964,7 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 #endif /* HAVE_YASM */
 
 #if HAVE_INLINE_ASM
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (INLINE_MMX(cpu_flags)) {
         const int dct_algo = avctx->dct_algo;
         if (avctx->bits_per_raw_sample <= 8 &&
             (dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)) {
@@ -998,7 +998,7 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 
         c->ssd_int8_vs_int16 = ssd_int8_vs_int16_mmx;
 
-        if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
+        if (INLINE_MMXEXT(cpu_flags)) {
             c->sum_abs_dctelem = sum_abs_dctelem_mmxext;
             c->vsad[4]         = vsad_intra16_mmxext;
 
@@ -1009,12 +1009,12 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
             c->sub_hfyu_median_prediction = sub_hfyu_median_prediction_mmxext;
         }
 
-        if (cpu_flags & AV_CPU_FLAG_SSE2) {
+        if (INLINE_SSE2(cpu_flags)) {
             c->sum_abs_dctelem= sum_abs_dctelem_sse2;
         }
 
 #if HAVE_SSSE3_INLINE
-        if (cpu_flags & AV_CPU_FLAG_SSSE3) {
+        if (INLINE_SSSE3(cpu_flags)) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->try_8x8basis= try_8x8basis_ssse3;
             }
@@ -1023,7 +1023,7 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
         }
 #endif
 
-        if (cpu_flags & AV_CPU_FLAG_3DNOW) {
+        if (INLINE_AMD3DNOW(cpu_flags)) {
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->try_8x8basis= try_8x8basis_3dnow;
             }
