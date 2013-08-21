@@ -273,6 +273,11 @@ static int get_siz(Jpeg2000DecoderContext *s)
         s->sgnd[i]   = !!(x & 0x80);
         s->cdx[i]    = bytestream2_get_byteu(&s->g);
         s->cdy[i]    = bytestream2_get_byteu(&s->g);
+        if (   !s->cdx[i] || s->cdx[i] == 3 || s->cdx[i] > 4
+            || !s->cdy[i] || s->cdy[i] == 3 || s->cdy[i] > 4) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid sample seperation\n");
+            return AVERROR_INVALIDDATA;
+        }
         log2_chroma_wh |= s->cdy[i] >> 1 << i * 4 | s->cdx[i] >> 1 << i * 4 + 2;
     }
 
