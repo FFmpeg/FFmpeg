@@ -132,7 +132,7 @@ static inline int decode_hrd_parameters(H264Context *h, SPS *sps)
 
     if (cpb_count > 32U) {
         av_log(h->avctx, AV_LOG_ERROR, "cpb_count %d invalid\n", cpb_count);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     get_bits(&h->gb, 4); /* bit_rate_scale */
@@ -166,7 +166,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
             sps->sar = pixel_aspect[aspect_ratio_idc];
         } else {
             av_log(h->avctx, AV_LOG_ERROR, "illegal aspect ratio\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else {
         sps->sar.num =
@@ -215,7 +215,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
             av_log(h->avctx, AV_LOG_ERROR,
                    "time_scale/num_units_in_tick invalid or unsupported (%d/%d)\n",
                    sps->time_scale, sps->num_units_in_tick);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         sps->fixed_frame_rate_flag = get_bits1(&h->gb);
     }
@@ -223,11 +223,11 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
     sps->nal_hrd_parameters_present_flag = get_bits1(&h->gb);
     if (sps->nal_hrd_parameters_present_flag)
         if (decode_hrd_parameters(h, sps) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     sps->vcl_hrd_parameters_present_flag = get_bits1(&h->gb);
     if (sps->vcl_hrd_parameters_present_flag)
         if (decode_hrd_parameters(h, sps) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
     if (sps->nal_hrd_parameters_present_flag ||
         sps->vcl_hrd_parameters_present_flag)
         get_bits1(&h->gb);     /* low_delay_hrd_flag */
@@ -253,7 +253,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps)
             /* max_dec_frame_buffering || max_dec_frame_buffering > 16 */) {
             av_log(h->avctx, AV_LOG_ERROR,
                    "illegal num_reorder_frames %d\n", sps->num_reorder_frames);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -339,11 +339,11 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
 
     if (sps_id >= MAX_SPS_COUNT) {
         av_log(h->avctx, AV_LOG_ERROR, "sps_id (%d) out of range\n", sps_id);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     sps = av_mallocz(sizeof(SPS));
-    if (sps == NULL)
-        return -1;
+    if (!sps)
+        return AVERROR(ENOMEM);
 
     sps->time_offset_length   = 24;
     sps->profile_idc          = profile_idc;
@@ -597,8 +597,8 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length)
     }
 
     pps = av_mallocz(sizeof(PPS));
-    if (pps == NULL)
-        return -1;
+    if (!pps)
+        return AVERROR(ENOMEM);
     pps->sps_id = get_ue_golomb_31(&h->gb);
     if ((unsigned)pps->sps_id >= MAX_SPS_COUNT ||
         h->sps_buffers[pps->sps_id] == NULL) {
