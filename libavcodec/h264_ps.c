@@ -32,9 +32,6 @@
 #include "h264data.h" //FIXME FIXME FIXME (just for zigzag_scan)
 #include "golomb.h"
 
-
-#include <assert.h>
-
 #define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
 #define MIN_LOG2_MAX_FRAME_NUM    4
 
@@ -193,7 +190,6 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->sar.num=
         sps->sar.den= 0;
     }
-//            s->avctx->aspect_ratio= sar_width*s->width / (float)(s->height*sar_height);
 
     if(get_bits1(&h->gb)){      /* overscan_info_present_flag */
         get_bits1(&h->gb);      /* overscan_appropriate_flag */
