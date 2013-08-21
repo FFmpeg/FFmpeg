@@ -19,6 +19,9 @@ SOURCE=`pwd`
 SSL=${SOURCE}/../opensslmirror/build/ios
 SSLINCLUDE=${SSL}/release/universal/include
 SSLLIBS=${SSL}/release/universal/lib
+RTMP=${SOURCE}/../rtmpdump/build/ios/built
+RTMPINCLUDE=${RTMP}/release/universal/include
+RTMPLIBS=${RTMP}/release/universal/lib
 
 export DEVRootReal="${DEVELOPER}/Platforms/iPhoneOS.platform/Developer"
 export SDKRootReal="${DEVRootReal}/SDKs/iPhoneOS${SDKVERSION}.sdk"
@@ -26,13 +29,14 @@ export DEVRootSimulator="${DEVELOPER}/Platforms/iPhoneSimulator.platform/Develop
 export SDKRootSimulator="${DEVRootSimulator}/SDKs/iPhoneSimulator${SDKVERSION}.sdk"
 export PATH=$HOME/bin:$PATH
 export CCACHE=; type ccache >/dev/null 2>&1 && export CCACHE=ccache
+export PKG_CONFIG_LIBDIR=${SSLLIBS}/pkgconfig:${RTMPLIBS}/pkgconfig
 
 
 function doConfigure()
 {
 	# *NEED* gas-preprocessor.pl file in $PATH , use for asm compile.
+	# wget https://raw.github.com/libav/gas-preprocessor/master/gas-preprocessor.pl
 	# wget https://raw.github.com/yuvi/gas-preprocessor/master/gas-preprocessor.pl
-	# wget https://raw.github.com/wens/gas-preprocessor/master/gas-preprocessor.pl
 	./configure \
 		--prefix=${DIST} \
 		\
@@ -63,9 +67,10 @@ function doConfigure()
 		--disable-parser=dca \
 		--disable-devices \
 		\
-		--disable-bzlib \
-		--disable-zlib \
-		--disable-iconv \
+		--enable-bzlib \
+		--enable-zlib \
+		--enable-iconv \
+		--enable-librtmp \
 		--enable-openssl \
 		\
 		--enable-cross-compile \
@@ -90,7 +95,7 @@ function doConfigure()
 
 
 build_date=`date "+%Y%m%dT%H%M%S"`
-#build_date=20130801T182243
+#build_date=built
 build_versions="release debug"
 #build_versions="debug"
 build_archs="armv7 armv7s i386"
@@ -147,14 +152,16 @@ for iver in $build_versions; do
 	done
 
 	export PATH=${DEVRootReal}/usr/bin:$path_old
-	univs=${DEST}/$build_date/$iver/universal && mkdir -p $univs/lib
-	lipo $lipo_archs -create -output $univs/lib/libffmpeg.a
+	univs=${DEST}/$build_date/$iver/universal
+	univslib=$univs/lib && mkdir -p $univslib
+	lipo $lipo_archs -create -output $univslib/libffmpeg_tmp.a
+	libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
 	ranlib $univs/lib/libffmpeg.a
 done
 
 [[ $? == 0 ]] && {
 	cd ${DEST} && rm -f built && ln -s $build_date built
-	printf "\nFFmpeg build successful!!\n"
+	printf "\nFFmpeg build successfully!!\n\n"
 }
 
 exit 0
