@@ -3628,7 +3628,9 @@ static int mov_write_header(AVFormatContext *s)
         mov->nb_streams += mov->nb_meta_tmcd;
     }
 
-    mov->tracks = av_mallocz(mov->nb_streams * sizeof(*mov->tracks));
+    // Reserve an extra stream for chapters for the case where chapters
+    // are written in the trailer
+    mov->tracks = av_mallocz((mov->nb_streams + 1) * sizeof(*mov->tracks));
     if (!mov->tracks)
         return AVERROR(ENOMEM);
 
@@ -3897,9 +3899,9 @@ static int mov_write_trailer(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     AVIOContext *pb = s->pb;
-    int64_t moov_pos;
     int res = 0;
     int i;
+    int64_t moov_pos;
 
     /*
      * Before actually writing the trailer, make sure that there are no
@@ -3911,6 +3913,16 @@ static int mov_write_trailer(AVFormatContext *s)
             !trk->last_sample_is_subtitle_end) {
             mov_write_subtitle_end_packet(s, i, trk->track_duration);
             trk->last_sample_is_subtitle_end = 1;
+        }
+    }
+
+    // If there were no chapters when the header was written, but there
+    // are chapters now, write them in the trailer.  This only works
+    // when we are not doing fragments.
+    if (!mov->chapter_track && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+        if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters) {
+            mov->chapter_track = mov->nb_streams++;
+            mov_create_chapter_track(s, mov->chapter_track);
         }
     }
 
