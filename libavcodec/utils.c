@@ -184,7 +184,7 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
     s->height       = FF_CEIL_RSHIFT(height, s->lowres);
 }
 
-#if (ARCH_ARM && HAVE_NEON) || ARCH_PPC || HAVE_MMX
+#if HAVE_NEON || ARCH_PPC || HAVE_MMX
 #   define STRIDE_ALIGN 16
 #else
 #   define STRIDE_ALIGN 8
