@@ -147,8 +147,8 @@ static inline void qtrle_decode_2n4bpp(QtrleContext *s, int row_ptr,
                 }
                 CHECK_PIXEL_PTR(rle_code * num_pixels);
                 while (rle_code--) {
-                    for (i = 0; i < num_pixels; i++)
-                        rgb[pixel_ptr++] = pi[i];
+                    memcpy(&rgb[pixel_ptr], &pi, num_pixels);
+                    pixel_ptr += num_pixels;
                 }
             } else {
                 /* copy the same pixel directly to output 4 times */
