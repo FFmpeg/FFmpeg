@@ -135,7 +135,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     if(buf_size<=0)
         return -1;
 
-    init_get_bits(&rc.gb, buf, buf_size*8);
+    init_get_bits8(&rc.gb, buf, buf_size);
     rc.save  = 0;
     rc.run   = 0;
     rc.run2  = 0;
