@@ -48,7 +48,6 @@
 #include "thread.h"
 #include "vdpau_internal.h"
 
-// #undef NDEBUG
 #include <assert.h>
 
 const uint16_t ff_h264_mb_sizes[4] = { 256, 384, 512, 768 };

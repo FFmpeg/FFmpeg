@@ -33,7 +33,6 @@
 #include "golomb.h"
 
 
-//#undef NDEBUG
 #include <assert.h>
 
 #define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
