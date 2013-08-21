@@ -4715,12 +4715,16 @@ defaults to "1".
 @item H
 Specify the hue angle as a number of radians. It accepts an
 expression, and defaults to "0".
+
+@item b
+Specify the brightness in the [-10,10] range. It accepts an expression and
+defaults to "0".
 @end table
 
 @option{h} and @option{H} are mutually exclusive, and can't be
 specified at the same time.
 
-The @option{h}, @option{H} and @option{s} option values are
+The @option{b}, @option{h}, @option{H} and @option{s} option values are
 expressions containing the following constants:
 
 @table @option
@@ -4790,10 +4794,11 @@ hue="s=max(0\, min(1\, (START+DURATION-t)/DURATION))"
 
 This filter supports the following commands:
 @table @option
+@item b
 @item s
 @item h
 @item H
-Modify the hue and/or the saturation of the input video.
+Modify the hue and/or the saturation and/or brightness of the input video.
 The command accepts the same syntax of the corresponding option.
 
 If the specified expression is not valid, it is kept at its current
