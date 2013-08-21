@@ -22,6 +22,7 @@ fi
 SOURCE=`pwd`
 DEST=$SOURCE/build/android
 SSL=$SOURCE/../openssl
+RTMP=$SOURCE/../rtmpdump
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
@@ -42,7 +43,8 @@ CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
   -Wno-psabi -Wa,--noexecstack \
   -D__ARM_ARCH_5__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5TE__ \
   -DANDROID -DNDEBUG \
-  -I$SSL/include"
+  -I$SSL/include \
+  -I$RTMP"
 
 LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
@@ -122,7 +124,6 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --enable-asm \
   --enable-version3 \
   --disable-debug \
-  --enable-librtmp \
   --optflags=-02"
 fi
 
@@ -139,19 +140,23 @@ for version in neon armv7 vfp armv6; do
       FFMPEG_FLAGS="--arch=armv7-a \
         --cpu=cortex-a8 \
         --enable-openssl \
+        --enable-librtmp \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad"
-      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
+      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a -L$RTMP/libs/armeabi-v7a"
       SSL_OBJS=`find $SSL/obj/local/armeabi-v7a/objs/ssl $SSL/obj/local/armeabi-v7a/objs/crypto -type f -name "*.o"`
+      RTMP_OBJS=`find $RTMP/obj/local/armeabi-v7a/objs/rtmp -type f -name "*.o"`
       ;;
     armv7)
       FFMPEG_FLAGS="--arch=armv7-a \
         --cpu=cortex-a8 \
         --enable-openssl \
+        --enable-librtmp \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp"
-      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
+      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a -L$RTMP/libs/armeabi-v7a"
       SSL_OBJS=`find $SSL/obj/local/armeabi-v7a/objs/ssl $SSL/obj/local/armeabi-v7a/objs/crypto -type f -name "*.o"`
+      RTMP_OBJS=`find $RTMP/obj/local/armeabi-v7a/objs/rtmp -type f -name "*.o"`
       ;;
     vfp)
       FFMPEG_FLAGS="--arch=arm \
@@ -159,6 +164,7 @@ for version in neon armv7 vfp armv6; do
       EXTRA_CFLAGS="-march=armv6 -mfpu=vfp -mfloat-abi=softfp"
       EXTRA_LDFLAGS=""
       SSL_OBJS=""
+      RTMP_OBJS=""
       ;;
     armv6)
       FFMPEG_FLAGS="--arch=arm \
@@ -166,12 +172,14 @@ for version in neon armv7 vfp armv6; do
       EXTRA_CFLAGS="-march=armv6 -msoft-float"
       EXTRA_LDFLAGS=""
       SSL_OBJS=""
+      RTMP_OBJS=""
       ;;
     *)
       FFMPEG_FLAGS=""
       EXTRA_CFLAGS=""
       EXTRA_LDFLAGS=""
       SSL_OBJS=""
+      RTMP_OBJS=""
       ;;
   esac
 
@@ -189,10 +197,10 @@ for version in neon armv7 vfp armv6; do
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
 
 	if [ $1 ]; then
-		$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+		$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS $RTMP_OBJS \
 				libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
 	else
-		$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+		$CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS $RTMP_OBJS \
 				libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
 	fi
 
