@@ -177,7 +177,8 @@ static int decode_frame(AVCodecContext *avctx,
         a->bitstream_buffer[i]     = buf[i + 1];
         a->bitstream_buffer[i + 1] = buf[i];
     }
-    init_get_bits(&a->gb, a->bitstream_buffer, buf_size * 8);
+    if ((ret = init_get_bits8(&a->gb, a->bitstream_buffer, buf_size)) < 0)
+        return ret;
 
     /* skip over 4 preamble bytes in stream (typically 0xXX 0xXX 0x00 0x38) */
     skip_bits(&a->gb, 32);
