@@ -59,8 +59,8 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
     int rle_code;
     int pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char pi0, pi1;  /* 2 8-pixel values */
-    unsigned char *rgb = s->frame.data[0];
+    uint8_t pi0, pi1;  /* 2 8-pixel values */
+    uint8_t *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
     int skip;
     /* skip & 0x80 appears to mean 'start a new line', which can be interpreted
@@ -77,7 +77,7 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
     lines_to_change++;
     while (lines_to_change) {
         skip     =              bytestream2_get_byte(&s->g);
-        rle_code = (signed char)bytestream2_get_byte(&s->g);
+        rle_code = (int8_t)bytestream2_get_byte(&s->g);
         if (rle_code == 0)
             break;
         if(skip & 0x80) {
@@ -122,8 +122,8 @@ static inline void qtrle_decode_2n4bpp(QtrleContext *s, int row_ptr,
     int rle_code, i;
     int pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char pi[16];  /* 16 palette indices */
-    unsigned char *rgb = s->frame.data[0];
+    uint8_t pi[16];  /* 16 palette indices */
+    uint8_t *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
     int num_pixels = (bpp == 4) ? 8 : 16;
 
@@ -131,7 +131,7 @@ static inline void qtrle_decode_2n4bpp(QtrleContext *s, int row_ptr,
         pixel_ptr = row_ptr + (num_pixels * (bytestream2_get_byte(&s->g) - 1));
         CHECK_PIXEL_PTR(0);
 
-        while ((rle_code = (signed char)bytestream2_get_byte(&s->g)) != -1) {
+        while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (num_pixels * (bytestream2_get_byte(&s->g) - 1));
@@ -178,15 +178,15 @@ static void qtrle_decode_8bpp(QtrleContext *s, int row_ptr, int lines_to_change)
     int rle_code;
     int pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char pi1, pi2, pi3, pi4;  /* 4 palette indexes */
-    unsigned char *rgb = s->frame.data[0];
+    uint8_t pi1, pi2, pi3, pi4;  /* 4 palette indexes */
+    uint8_t *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (4 * (bytestream2_get_byte(&s->g) - 1));
         CHECK_PIXEL_PTR(0);
 
-        while ((rle_code = (signed char)bytestream2_get_byte(&s->g)) != -1) {
+        while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (4 * (bytestream2_get_byte(&s->g) - 1));
@@ -227,15 +227,15 @@ static void qtrle_decode_16bpp(QtrleContext *s, int row_ptr, int lines_to_change
     int rle_code;
     int pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned short rgb16;
-    unsigned char *rgb = s->frame.data[0];
+    uint16_t rgb16;
+    uint8_t *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (bytestream2_get_byte(&s->g) - 1) * 2;
         CHECK_PIXEL_PTR(0);
 
-        while ((rle_code = (signed char)bytestream2_get_byte(&s->g)) != -1) {
+        while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (bytestream2_get_byte(&s->g) - 1) * 2;
@@ -248,7 +248,7 @@ static void qtrle_decode_16bpp(QtrleContext *s, int row_ptr, int lines_to_change
                 CHECK_PIXEL_PTR(rle_code * 2);
 
                 while (rle_code--) {
-                    *(unsigned short *)(&rgb[pixel_ptr]) = rgb16;
+                    *(uint16_t *)(&rgb[pixel_ptr]) = rgb16;
                     pixel_ptr += 2;
                 }
             } else {
@@ -257,7 +257,7 @@ static void qtrle_decode_16bpp(QtrleContext *s, int row_ptr, int lines_to_change
                 /* copy pixels directly to output */
                 while (rle_code--) {
                     rgb16 = bytestream2_get_be16(&s->g);
-                    *(unsigned short *)(&rgb[pixel_ptr]) = rgb16;
+                    *(uint16_t *)(&rgb[pixel_ptr]) = rgb16;
                     pixel_ptr += 2;
                 }
             }
@@ -271,15 +271,15 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
     int rle_code;
     int pixel_ptr;
     int row_inc = s->frame.linesize[0];
-    unsigned char r, g, b;
-    unsigned char *rgb = s->frame.data[0];
+    uint8_t r, g, b;
+    uint8_t *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (bytestream2_get_byte(&s->g) - 1) * 3;
         CHECK_PIXEL_PTR(0);
 
-        while ((rle_code = (signed char)bytestream2_get_byte(&s->g)) != -1) {
+        while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (bytestream2_get_byte(&s->g) - 1) * 3;
@@ -319,14 +319,14 @@ static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change
     int pixel_ptr;
     int row_inc = s->frame.linesize[0];
     unsigned int argb;
-    unsigned char *rgb = s->frame.data[0];
+    uint8_t *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
 
     while (lines_to_change--) {
         pixel_ptr = row_ptr + (bytestream2_get_byte(&s->g) - 1) * 4;
         CHECK_PIXEL_PTR(0);
 
-        while ((rle_code = (signed char)bytestream2_get_byte(&s->g)) != -1) {
+        while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (bytestream2_get_byte(&s->g) - 1) * 4;
