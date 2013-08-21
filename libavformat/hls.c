@@ -57,7 +57,7 @@ enum KeyType {
 };
 
 struct segment {
-    int64_t previous_duration; // in seconds
+    int previous_duration; // in seconds
     int64_t duration;
     char url[MAX_URL_SIZE];
     char key[MAX_URL_SIZE];
@@ -83,6 +83,7 @@ struct variant {
     int stream_offset;
     int64_t input_size;
     int64_t input_offset;
+
 
     int finished;
     int64_t target_duration;
@@ -210,8 +211,8 @@ static void handle_key_args(struct key_info *info, const char *key,
 static int parse_playlist(HLSContext *c, const char *url,
                           struct variant *var, AVIOContext *in)
 {
-    int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0;
-    int64_t duration = 0, previous_duration1 = 0, previous_duration = 0;
+    int ret = 0, is_segment = 0, is_variant = 0, bandwidth = 0, previous_duration1 = 0, previous_duration = 0;
+    int64_t duration = 0;
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
@@ -290,7 +291,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             if (var)
                 var->finished = 1;
         } else if (av_strstart(line, "#EXT-X-DISCONTINUITY", &ptr)) {
-            previous_duration = previous_duration1;
+          previous_duration = previous_duration1;
         } else if (av_strstart(line, "#EXTINF:", &ptr)) {
             is_segment = 1;
             duration   = atof(ptr) * AV_TIME_BASE;
@@ -321,6 +322,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                 }
                 previous_duration1 += duration;
                 seg->previous_duration = previous_duration;
+
                 seg->duration = duration;
                 seg->key_type = key_type;
                 if (has_iv) {
@@ -409,6 +411,7 @@ cleanup:
       var->input_size = ffurl_size(var->input);
       var->input_offset = 0;
     }
+
     av_dict_free(&opts);
     return ret;
 }
@@ -457,8 +460,7 @@ reload:
 
         ret = open_input(c, v);
         if (ret < 0)
-          return ret;
-          /*goto reload;*/
+            return ret;
     }
 
     if (v->input_size < 0 || v->input_offset < v->input_size) {
@@ -468,6 +470,7 @@ reload:
         return ret;
       }
     }
+
     ffurl_close(v->input);
     v->input = NULL;
     v->cur_seq_no++;
@@ -548,7 +551,7 @@ static int hls_read_header(AVFormatContext *s)
         s->duration = duration;
         s->pb->seekable |= AVIO_SEEKABLE_NORMAL;
     } else {
-        s->pb->seekable = 0;
+      s->pb->seekable = 0;
     }
 
     /* Open the demuxer for each variant */
@@ -716,10 +719,11 @@ start:
                 }
 
                 st = var->ctx->streams[var->pkt.stream_index];
-                int64_t pred = var->segments[var->cur_seq_no - var->start_seq_no]->previous_duration / av_q2d(s->streams[var->pkt.stream_index]->time_base);
-                pred = var->pkt.dts != AV_NOPTS_VALUE && var->pkt.dts < pred ? var->pkt.dts + pred : var->pkt.dts;
-                ts_diff = av_rescale_rnd(pred, AV_TIME_BASE, st->time_base.den, AV_ROUND_DOWN) - c->seek_timestamp;
-                if (ts_diff >= 0 && (c->seek_flags  & AVSEEK_FLAG_ANY || var->pkt.flags & AV_PKT_FLAG_KEY)) {
+                ts_diff = av_rescale_rnd(var->pkt.dts, AV_TIME_BASE,
+                                         st->time_base.den, AV_ROUND_DOWN) -
+                          c->seek_timestamp;
+                if (ts_diff >= 0 && (c->seek_flags  & AVSEEK_FLAG_ANY ||
+                                     var->pkt.flags & AV_PKT_FLAG_KEY)) {
                     c->seek_timestamp = AV_NOPTS_VALUE;
                     break;
                 }
