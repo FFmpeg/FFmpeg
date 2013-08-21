@@ -110,8 +110,8 @@ static void qtrle_decode_1bpp(QtrleContext *s, int row_ptr, int lines_to_change)
             rle_code *= 2;
             CHECK_PIXEL_PTR(rle_code);
 
-            while (rle_code--)
-                rgb[pixel_ptr++] = bytestream2_get_byte(&s->g);
+            bytestream2_get_buffer(&s->g, &rgb[pixel_ptr], rle_code);
+            pixel_ptr += rle_code;
         }
     }
 }
@@ -214,9 +214,8 @@ static void qtrle_decode_8bpp(QtrleContext *s, int row_ptr, int lines_to_change)
                 rle_code *= 4;
                 CHECK_PIXEL_PTR(rle_code);
 
-                while (rle_code--) {
-                    rgb[pixel_ptr++] = bytestream2_get_byte(&s->g);
-                }
+                bytestream2_get_buffer(&s->g, &rgb[pixel_ptr], rle_code);
+                pixel_ptr += rle_code;
             }
         }
         row_ptr += row_inc;
