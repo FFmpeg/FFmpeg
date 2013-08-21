@@ -85,16 +85,18 @@ static int get_stream_info(AVCodecContext *avctx)
         }
         channel_counts[ctype]++;
     }
-    av_log(avctx, AV_LOG_DEBUG, "%d channels - front:%d side:%d back:%d lfe:%d top:%d\n",
+    av_log(avctx, AV_LOG_DEBUG,
+           "%d channels - front:%d side:%d back:%d lfe:%d top:%d\n",
            info->numChannels,
            channel_counts[ACT_FRONT], channel_counts[ACT_SIDE],
            channel_counts[ACT_BACK],  channel_counts[ACT_LFE],
            channel_counts[ACT_FRONT_TOP] + channel_counts[ACT_SIDE_TOP] +
-           channel_counts[ACT_BACK_TOP] +  channel_counts[ACT_TOP]);
+           channel_counts[ACT_BACK_TOP]  + channel_counts[ACT_TOP]);
 
     switch (channel_counts[ACT_FRONT]) {
     case 4:
-        ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER;
+        ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_LEFT_OF_CENTER |
+                     AV_CH_FRONT_RIGHT_OF_CENTER;
         break;
     case 3:
         ch_layout |= AV_CH_LAYOUT_STEREO | AV_CH_FRONT_CENTER;
@@ -106,8 +108,9 @@ static int get_stream_info(AVCodecContext *avctx)
         ch_layout |= AV_CH_FRONT_CENTER;
         break;
     default:
-        av_log(avctx, AV_LOG_WARNING, "unsupported number of front channels: %d\n",
-                channel_counts[ACT_FRONT]);
+        av_log(avctx, AV_LOG_WARNING,
+               "unsupported number of front channels: %d\n",
+               channel_counts[ACT_FRONT]);
         ch_error = 1;
         break;
     }
@@ -115,7 +118,8 @@ static int get_stream_info(AVCodecContext *avctx)
         if (channel_counts[ACT_SIDE] == 2) {
             ch_layout |= AV_CH_SIDE_LEFT | AV_CH_SIDE_RIGHT;
         } else {
-            av_log(avctx, AV_LOG_WARNING, "unsupported number of side channels: %d\n",
+            av_log(avctx, AV_LOG_WARNING,
+                   "unsupported number of side channels: %d\n",
                    channel_counts[ACT_SIDE]);
             ch_error = 1;
         }
@@ -132,8 +136,9 @@ static int get_stream_info(AVCodecContext *avctx)
             ch_layout |= AV_CH_BACK_CENTER;
             break;
         default:
-            av_log(avctx, AV_LOG_WARNING, "unsupported number of back channels: %d\n",
-                    channel_counts[ACT_BACK]);
+            av_log(avctx, AV_LOG_WARNING,
+                   "unsupported number of back channels: %d\n",
+                   channel_counts[ACT_BACK]);
             ch_error = 1;
             break;
         }
@@ -142,7 +147,8 @@ static int get_stream_info(AVCodecContext *avctx)
         if (channel_counts[ACT_LFE] == 1) {
             ch_layout |= AV_CH_LOW_FREQUENCY;
         } else {
-            av_log(avctx, AV_LOG_WARNING, "unsupported number of LFE channels: %d\n",
+            av_log(avctx, AV_LOG_WARNING,
+                   "unsupported number of LFE channels: %d\n",
                    channel_counts[ACT_LFE]);
             ch_error = 1;
         }
@@ -184,14 +190,16 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
     }
 
     if (avctx->extradata_size) {
-        if ((err = aacDecoder_ConfigRaw(s->handle, &avctx->extradata, &avctx->extradata_size)) != AAC_DEC_OK) {
+        if ((err = aacDecoder_ConfigRaw(s->handle, &avctx->extradata,
+                                        &avctx->extradata_size)) != AAC_DEC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set extradata\n");
             return AVERROR_INVALIDDATA;
         }
     }
 
     if (s->conceal_method != CONCEAL_METHOD_DEFAULT) {
-        if ((err = aacDecoder_SetParam(s->handle, AAC_CONCEAL_METHOD, s->conceal_method)) != AAC_DEC_OK) {
+        if ((err = aacDecoder_SetParam(s->handle, AAC_CONCEAL_METHOD,
+                                       s->conceal_method)) != AAC_DEC_OK) {
             av_log(avctx, AV_LOG_ERROR, "Unable to set error concealment method\n");
             return AVERROR_UNKNOWN;
         }
@@ -241,7 +249,8 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
         goto end;
     }
     if (err != AAC_DEC_OK) {
-        av_log(avctx, AV_LOG_ERROR, "aacDecoder_DecodeFrame() failed: %x\n", err);
+        av_log(avctx, AV_LOG_ERROR,
+               "aacDecoder_DecodeFrame() failed: %x\n", err);
         ret = AVERROR_UNKNOWN;
         goto end;
     }
@@ -280,7 +289,8 @@ static av_cold void fdk_aac_decode_flush(AVCodecContext *avctx)
     if (!s->handle)
         return;
 
-    if ((err = aacDecoder_SetParam(s->handle, AAC_TPDEC_CLEAR_BUFFER, 1)) != AAC_DEC_OK)
+    if ((err = aacDecoder_SetParam(s->handle,
+                                   AAC_TPDEC_CLEAR_BUFFER, 1)) != AAC_DEC_OK)
         av_log(avctx, AV_LOG_WARNING, "failed to clear buffer when flushing\n");
 }
 
