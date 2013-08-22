@@ -103,7 +103,7 @@ static int parse_bsfs(void *log_ctx, const char *bsfs_spec,
                       AVBitStreamFilterContext **bsfs)
 {
     char *bsf_name, *buf, *saveptr;
-    int ret;
+    int ret = 0;
 
     if (!(buf = av_strdup(bsfs_spec)))
         return AVERROR(ENOMEM);
