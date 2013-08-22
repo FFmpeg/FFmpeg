@@ -60,7 +60,10 @@ typedef struct PNGDecContext {
     uint32_t palette[256];
     uint8_t *crow_buf;
     uint8_t *last_row;
+    int last_row_size;
     uint8_t *tmp_row;
+    uint8_t *buffer;
+    int buffer_size;
     int pass;
     int crow_size; /* compressed row size (include filter type) */
     int row_size; /* decompressed row size */
@@ -509,7 +512,6 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size            = avpkt->size;
     AVFrame *p;
     AVDictionary *metadata  = NULL;
-    uint8_t *crow_buf_base  = NULL;
     uint32_t tag, length;
     int64_t sig;
     int ret;
@@ -667,7 +669,7 @@ static int decode_frame(AVCodecContext *avctx,
                 if (avctx->pix_fmt == AV_PIX_FMT_PAL8)
                     memcpy(p->data[1], s->palette, 256 * sizeof(uint32_t));
                 /* empty row is used if differencing to the first row */
-                s->last_row = av_mallocz(s->row_size);
+                av_fast_padded_mallocz(&s->last_row, &s->last_row_size, s->row_size);
                 if (!s->last_row)
                     goto fail;
                 if (s->interlace_type ||
@@ -677,12 +679,12 @@ static int decode_frame(AVCodecContext *avctx,
                         goto fail;
                 }
                 /* compressed row */
-                crow_buf_base = av_malloc(s->row_size + 16);
-                if (!crow_buf_base)
+                av_fast_padded_malloc(&s->buffer, &s->buffer_size, s->row_size + 16);
+                if (!s->buffer)
                     goto fail;
 
                 /* we want crow_buf+1 to be 16-byte aligned */
-                s->crow_buf          = crow_buf_base + 15;
+                s->crow_buf          = s->buffer + 15;
                 s->zstream.avail_out = s->crow_size;
                 s->zstream.next_out  = s->crow_buf;
             }
@@ -861,9 +863,7 @@ static int decode_frame(AVCodecContext *avctx,
     ret = bytestream2_tell(&s->gb);
  the_end:
     inflateEnd(&s->zstream);
-    av_free(crow_buf_base);
     s->crow_buf = NULL;
-    av_freep(&s->last_row);
     av_freep(&s->tmp_row);
     return ret;
  fail:
@@ -914,6 +914,10 @@ static av_cold int png_dec_end(AVCodecContext *avctx)
     av_frame_free(&s->last_picture.f);
     ff_thread_release_buffer(avctx, &s->picture);
     av_frame_free(&s->picture.f);
+    av_freep(&s->buffer);
+    s->buffer_size = 0;
+    av_freep(&s->last_row);
+    s->last_row_size = 0;
 
     return 0;
 }
