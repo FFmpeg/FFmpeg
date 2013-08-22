@@ -1391,7 +1391,9 @@ static int mov_write_tkhd_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     (version == 1) ? avio_wb32(pb, 104) : avio_wb32(pb, 92); /* size */
     ffio_wfourcc(pb, "tkhd");
     avio_w8(pb, version);
-    avio_wb24(pb, 0xf); /* flags (track enabled) */
+    avio_wb24(pb, (track->flags & MOV_TRACK_ENABLED) ?
+                  MOV_TKHD_FLAG_ENABLED | MOV_TKHD_FLAG_IN_MOVIE :
+                  MOV_TKHD_FLAG_IN_MOVIE);
     if (version == 1) {
         avio_wb64(pb, track->time);
         avio_wb64(pb, track->time);
@@ -3028,6 +3030,56 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     return 0;
 }
 
+/*
+ * st->disposition controls the "enabled" flag in the tkhd tag.
+ * QuickTime will not play a track if it is not enabled.  So make sure
+ * that one track of each type (audio, video, subtitle) is enabled.
+ *
+ * Subtitles are special.  For audio and video, setting "enabled" also
+ * makes the track "default" (i.e. it is rendered when played). For
+ * subtitles, an "enabled" subtitle is not rendered by default, but
+ * if no subtitle is enabled, the subtitle menu in QuickTime will be
+ * empty!
+ */
+static void enable_tracks(AVFormatContext *s)
+{
+    MOVMuxContext *mov = s->priv_data;
+    int i;
+    uint8_t enabled[AVMEDIA_TYPE_NB];
+    int first[AVMEDIA_TYPE_NB];
+
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
+        enabled[i] = 0;
+        first[i] = -1;
+    }
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+
+        if (st->codec->codec_type <= AVMEDIA_TYPE_UNKNOWN ||
+            st->codec->codec_type >= AVMEDIA_TYPE_NB)
+            continue;
+
+        if (first[st->codec->codec_type] < 0)
+            first[st->codec->codec_type] = i;
+        if (st->disposition & AV_DISPOSITION_DEFAULT) {
+            mov->tracks[i].flags |= MOV_TRACK_ENABLED;
+            enabled[st->codec->codec_type] = 1;
+        }
+    }
+
+    for (i = 0; i < AVMEDIA_TYPE_NB; i++) {
+        switch (i) {
+        case AVMEDIA_TYPE_VIDEO:
+        case AVMEDIA_TYPE_AUDIO:
+        case AVMEDIA_TYPE_SUBTITLE:
+            if (!enabled[i] && first[i] >= 0)
+                mov->tracks[first[i]].flags |= MOV_TRACK_ENABLED;
+            break;
+        }
+    }
+}
+
 static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
@@ -3181,6 +3233,8 @@ static int mov_write_header(AVFormatContext *s)
             memcpy(track->vos_data, st->codec->extradata, track->vos_len);
         }
     }
+
+    enable_tracks(s);
 
     if (mov->mode == MODE_ISM) {
         /* If no fragmentation options have been set, set a default. */
