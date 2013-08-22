@@ -587,7 +587,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         tag = av_dict_get(st->metadata, "language", NULL, 0);
         put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, tag ? tag->value:"und");
 
-        if (st->disposition)
+        // The default value for TRACKFLAGDEFAULT is 1, so add element
+        // if we need to clear it.
+        if (!(st->disposition & AV_DISPOSITION_DEFAULT))
             put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGDEFAULT, !!(st->disposition & AV_DISPOSITION_DEFAULT));
 
         // look for a codec ID string specific to mkv to use,
