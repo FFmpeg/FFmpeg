@@ -93,16 +93,10 @@ static int supports_edts(MOVMuxContext *mov)
     return (mov->use_editlist<0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) || mov->use_editlist>0;
 }
 
-static int is_co64_required(const MOVTrack *track)
+static int co64_required(const MOVTrack *track)
 {
-    int i;
-
-    for (i = 0; i < track->entry; i++) {
-        if (!track->cluster[i].chunkNum)
-            continue;
-        if (track->cluster[i].pos + track->data_offset > UINT32_MAX)
-            return 1;
-    }
+    if (track->entry > 0 && track->cluster[track->entry - 1].pos + track->data_offset > UINT32_MAX)
+        return 1;
     return 0;
 }
 
@@ -110,7 +104,7 @@ static int is_co64_required(const MOVTrack *track)
 static int mov_write_stco_tag(AVIOContext *pb, MOVTrack *track)
 {
     int i;
-    int mode64 = is_co64_required(track); // use 32 bit size variant if possible
+    int mode64 = co64_required(track); // use 32 bit size variant if possible
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
     if (mode64)
