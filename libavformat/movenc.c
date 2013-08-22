@@ -52,7 +52,7 @@ static const AVOption options[] = {
     { "separate_moof", "Write separate moof/mdat atoms for each track", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SEPARATE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_custom", "Flush fragments on caller requests", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_CUSTOM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "isml", "Create a live smooth streaming feed (for pushing to a publishing point)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_ISML}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
-    { "faststart", "Run a second pass to put the moov at the beginning of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FASTSTART}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "faststart", "Run a second pass to put the index (moov atom) at the beginning of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FASTSTART}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -73,6 +73,8 @@ static const AVClass flavor ## _muxer_class = {\
     .option     = options,\
     .version    = LIBAVUTIL_VERSION_INT,\
 };
+
+static int get_moov_size(AVFormatContext *s);
 
 //FIXME support 64 bit variant with wide placeholders
 static int64_t update_size(AVIOContext *pb, int64_t pos)
@@ -3003,21 +3005,6 @@ static void mov_parse_vc1_frame(AVPacket *pkt, MOVTrack *trk, int fragment)
     }
 }
 
-static int get_moov_size(AVFormatContext *s)
-{
-    int ret;
-    uint8_t *buf;
-    AVIOContext *moov_buf;
-    MOVMuxContext *mov = s->priv_data;
-
-    if ((ret = avio_open_dyn_buf(&moov_buf)) < 0)
-        return ret;
-    mov_write_moov_tag(moov_buf, mov, s);
-    ret = avio_close_dyn_buf(moov_buf, &buf);
-    av_free(buf);
-    return ret;
-}
-
 static int mov_flush_fragment(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -3535,7 +3522,8 @@ static int mov_write_header(AVFormatContext *s)
 
     /* faststart: moov at the beginning of the file, if supported */
     if (mov->flags & FF_MOV_FLAG_FASTSTART) {
-        if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+        if ((mov->flags & FF_MOV_FLAG_FRAGMENT) ||
+            (s->flags & AVFMT_FLAG_CUSTOM_IO))
             mov->flags &= ~FF_MOV_FLAG_FASTSTART;
         else
             mov->reserved_moov_size = -1;
@@ -3743,8 +3731,11 @@ static int mov_write_header(AVFormatContext *s)
             avio_skip(pb, mov->reserved_moov_size);
     }
 
-    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT))
+    if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+        if (mov->flags & FF_MOV_FLAG_FASTSTART)
+            mov->reserved_moov_pos = avio_tell(pb);
         mov_write_mdat_tag(pb, mov);
+    }
 
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         mov->time = ff_iso8601_to_unix_time(t->value);
@@ -3801,11 +3792,26 @@ static int mov_write_header(AVFormatContext *s)
     return -1;
 }
 
-/**
+static int get_moov_size(AVFormatContext *s)
+{
+    int ret;
+    uint8_t *buf;
+    AVIOContext *moov_buf;
+    MOVMuxContext *mov = s->priv_data;
+
+    if ((ret = avio_open_dyn_buf(&moov_buf)) < 0)
+        return ret;
+    mov_write_moov_tag(moov_buf, mov, s);
+    ret = avio_close_dyn_buf(moov_buf, &buf);
+    av_free(buf);
+    return ret;
+}
+
+/*
  * This function gets the moov size if moved to the top of the file: the chunk
  * offset table can switch between stco (32-bit entries) to co64 (64-bit
- * entries) when the moov is moved to the top, so the size of the moov would
- * change. It also updates the chunk offset tables.
+ * entries) when the moov is moved to the beginning, so the size of the moov
+ * would change. It also updates the chunk offset tables.
  */
 static int compute_moov_size(AVFormatContext *s)
 {
@@ -3823,7 +3829,7 @@ static int compute_moov_size(AVFormatContext *s)
     if (moov_size2 < 0)
         return moov_size2;
 
-    /* if the size changed, we just switched from stco to co64 and needs to
+    /* if the size changed, we just switched from stco to co64 and need to
      * update the offsets */
     if (moov_size2 != moov_size)
         for (i = 0; i < mov->nb_streams; i++)
@@ -3926,9 +3932,9 @@ static int mov_write_trailer(AVFormatContext *s)
         }
     }
 
-    moov_pos = avio_tell(pb);
-
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
+        moov_pos = avio_tell(pb);
+
         /* Write size of mdat tag */
         if (mov->mdat_size + 8 <= UINT32_MAX) {
             avio_seek(pb, mov->mdat_pos, SEEK_SET);
@@ -3944,8 +3950,8 @@ static int mov_write_trailer(AVFormatContext *s)
         }
         avio_seek(pb, mov->reserved_moov_size > 0 ? mov->reserved_moov_pos : moov_pos, SEEK_SET);
 
-        if (mov->reserved_moov_size == -1) {
-            av_log(s, AV_LOG_INFO, "Starting second pass: moving header on top of the file\n");
+        if (mov->flags & FF_MOV_FLAG_FASTSTART) {
+            av_log(s, AV_LOG_INFO, "Starting second pass: moving the moov atom to the beginning of the file\n");
             res = shift_data(s);
             if (res == 0) {
                 avio_seek(s->pb, mov->reserved_moov_pos, SEEK_SET);

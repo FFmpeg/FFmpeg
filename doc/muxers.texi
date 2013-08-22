@@ -451,8 +451,8 @@ pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
 @item -movflags faststart
-Run a second pass moving the moov atom on top of the file. This
-operation can take a while, and will not work in various situations such
+Run a second pass moving the index (moov atom) to the beginning of the file.
+This operation can take a while, and will not work in various situations such
 as fragmented output, thus it is not enabled by default.
 @item -movflags rtphint
 Add RTP hinting tracks to the output file.

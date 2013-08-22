@@ -156,8 +156,6 @@ typedef struct MOVMuxContext {
 
     int flags;
     int rtp_flags;
-    int reserved_moov_size; ///< 0 for disabled, -1 for automatic, size otherwise
-    int64_t reserved_moov_pos;
 
     int iods_skip;
     int iods_video_profile;
@@ -172,6 +170,9 @@ typedef struct MOVMuxContext {
 
     int use_editlist;
     int video_track_timescale;
+
+    int reserved_moov_size; ///< 0 for disabled, -1 for automatic, size otherwise
+    int64_t reserved_moov_pos;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
