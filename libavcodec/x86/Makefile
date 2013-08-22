@@ -4,6 +4,7 @@ OBJS                                   += x86/constants.o               \
 OBJS-$(CONFIG_AAC_DECODER)             += x86/sbrdsp_init.o
 OBJS-$(CONFIG_AC3DSP)                  += x86/ac3dsp_init.o
 OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
+OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
