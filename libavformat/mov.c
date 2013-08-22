@@ -1370,6 +1370,29 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
     return 0;
 }
 
+static int mov_skip_multiple_stsd(MOVContext *c, AVIOContext *pb,
+                                  int codec_tag, int format,
+                                  int size)
+{
+    int video_codec_id = ff_codec_get_id(ff_codec_movvideo_tags, format);
+
+    if (codec_tag &&
+        (codec_tag == AV_RL32("avc1") ||
+         (codec_tag != format &&
+          (c->fc->video_codec_id ? video_codec_id != c->fc->video_codec_id
+                                 : codec_tag != MKTAG('j','p','e','g'))))) {
+        /* Multiple fourcc, we skip JPEG. This is not correct, we should
+         * export it as a separate AVStream but this needs a few changes
+         * in the MOV demuxer, patch welcome. */
+
+        av_log(c->fc, AV_LOG_WARNING, "multiple fourcc not supported\n");
+        avio_skip(pb, size);
+        return 1;
+    }
+
+    return 0;
+}
+
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
@@ -1401,22 +1424,10 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             return AVERROR_INVALIDDATA;
         }
 
-        if (st->codec->codec_tag &&
-            st->codec->codec_tag != format &&
-            (c->fc->video_codec_id ? ff_codec_get_id(ff_codec_movvideo_tags, format) != c->fc->video_codec_id
-                                   : st->codec->codec_tag != MKTAG('j','p','e','g'))
-           ){
-            /* Multiple fourcc, we skip JPEG. This is not correct, we should
-             * export it as a separate AVStream but this needs a few changes
-             * in the MOV demuxer, patch welcome. */
-        multiple_stsd:
-            av_log(c->fc, AV_LOG_WARNING, "multiple fourcc not supported\n");
-            avio_skip(pb, size - (avio_tell(pb) - start_pos));
+        if (mov_skip_multiple_stsd(c, pb, st->codec->codec_tag, format,
+                                   size - (avio_tell(pb) - start_pos)))
             continue;
-        }
-        /* we cannot demux concatenated h264 streams because of different extradata */
-        if (st->codec->codec_tag && st->codec->codec_tag == AV_RL32("avc1"))
-            goto multiple_stsd;
+
         sc->pseudo_stream_id = st->codec->codec_tag ? -1 : pseudo_stream_id;
         sc->dref_id= dref_id;
 
