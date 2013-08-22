@@ -142,7 +142,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 static const AVOption muxoptions[] = {
     { "updatefirst",  "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       1, ENC },
     { "update",       "continuously overwrite one file", OFFSET(update),  AV_OPT_TYPE_INT, { .i64 = 0 }, 0,       1, ENC },
-    { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 1, INT_MAX, ENC },
+    { "start_number", "set first number in the sequence", OFFSET(img_number), AV_OPT_TYPE_INT,  { .i64 = 1 }, 0, INT_MAX, ENC },
     { "strftime",     "use strftime for filename", OFFSET(use_strftime), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, ENC },
     { NULL },
 };
