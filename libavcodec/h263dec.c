@@ -757,6 +757,21 @@ intrax8_decoded:
     }
 
     if(s->last_picture_ptr || s->low_delay){
+        if (   pict->format == AV_PIX_FMT_YUV420P
+            && (s->codec_tag == AV_RL32("GEOV") || s->codec_tag == AV_RL32("GEOX"))) {
+            int x, y, p;
+            av_frame_make_writable(pict);
+            for (p=0; p<3; p++) {
+                int w = -((-pict-> width)>>!!p);
+                int h = -((-pict->height)>>!!p);
+                int linesize = pict->linesize[p];
+                for (y=0; y<(h>>1); y++)
+                    for (x=0; x<w; x++)
+                        FFSWAP(int,
+                               pict->data[p][x + y*linesize],
+                               pict->data[p][x + (h-1-y)*linesize]);
+            }
+        }
         *got_frame = 1;
     }
 
