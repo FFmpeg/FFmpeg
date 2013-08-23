@@ -2384,6 +2384,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     MOVStreamContext *sc;
     int version;
+    int flags;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2391,13 +2392,8 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc = st->priv_data;
 
     version = avio_r8(pb);
-    avio_rb24(pb); /* flags */
-    /*
-    MOV_TRACK_ENABLED 0x0001
-    MOV_TRACK_IN_MOVIE 0x0002
-    MOV_TRACK_IN_PREVIEW 0x0004
-    MOV_TRACK_IN_POSTER 0x0008
-    */
+    flags = avio_rb24(pb);
+    st->disposition |= (flags & MOV_TKHD_FLAG_ENABLED) ? AV_DISPOSITION_DEFAULT : 0;
 
     if (version == 1) {
         avio_rb64(pb);

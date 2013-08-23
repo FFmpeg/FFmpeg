@@ -202,6 +202,11 @@ void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 #define MOV_FRAG_SAMPLE_FLAG_DEPENDS_NO                0x02000000
 #define MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES               0x01000000
 
+#define MOV_TKHD_FLAG_ENABLED       0x0001
+#define MOV_TKHD_FLAG_IN_MOVIE      0x0002
+#define MOV_TKHD_FLAG_IN_PREVIEW    0x0004
+#define MOV_TKHD_FLAG_IN_POSTER     0x0008
+
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
