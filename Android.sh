@@ -186,6 +186,8 @@ for version in neon armv7 vfp armv6; do
   PREFIX="$DEST/$version" && rm -rf $PREFIX && mkdir -p $PREFIX
   FFMPEG_FLAGS="$FFMPEG_FLAGS --prefix=$PREFIX"
 
+  sed -i 's/require_pkg_config librtmp librtmp\/rtmp.h RTMP_Socket/prepend extralibs -lrtmp/g' configure
+
   ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
   cp config.* $PREFIX
   [ $PIPESTATUS == 0 ] || exit 1
