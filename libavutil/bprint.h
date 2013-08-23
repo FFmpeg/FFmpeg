@@ -133,6 +133,15 @@ void av_vbprintf(AVBPrint *buf, const char *fmt, va_list vl_arg);
  */
 void av_bprint_chars(AVBPrint *buf, char c, unsigned n);
 
+/**
+ * Append data to a print buffer.
+ *
+ * param buf  bprint buffer to use
+ * param data pointer to data
+ * param size size of data
+ */
+void av_bprint_append_data(AVBPrint *buf, const char *data, unsigned size);
+
 struct tm;
 /**
  * Append a formatted date and time to a print buffer.
