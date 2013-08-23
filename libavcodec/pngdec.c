@@ -868,8 +868,8 @@ static int decode_frame(AVCodecContext *avctx,
     return ret;
  fail:
     av_dict_free(&metadata);
+    ff_thread_report_progress(&s->picture, INT_MAX, 0);
     ret = AVERROR_INVALIDDATA;
-    ff_thread_release_buffer(avctx, &s->picture);
     goto the_end;
 }
 
