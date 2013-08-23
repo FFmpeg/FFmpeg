@@ -108,6 +108,11 @@ static int redspark_read_header(AVFormatContext *s)
     if (bytestream2_get_byteu(&gbc)) // Loop flag
         coef_off += 16;
 
+    if (coef_off + codec->channels * (32 + 14) > HEADER_SIZE) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     codec->extradata_size = 32 * codec->channels;
     codec->extradata = av_malloc(codec->extradata_size);
     if (!codec->extradata) {
