@@ -160,6 +160,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     ret = avformat_alloc_output_context2(&avf2, NULL, format, filename);
     if (ret < 0)
         goto end;
+    av_dict_copy(&avf2->metadata, avf->metadata, 0);
 
     tee_slave->stream_map = av_calloc(avf->nb_streams, sizeof(*tee_slave->stream_map));
     if (!tee_slave->stream_map) {
