@@ -224,7 +224,7 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
         if (!comp->i_data)
             return AVERROR(ENOMEM);
     }
-    comp->reslevel = av_malloc_array(codsty->nreslevels, sizeof(*comp->reslevel));
+    comp->reslevel = av_calloc(codsty->nreslevels, sizeof(*comp->reslevel));
     if (!comp->reslevel)
         return AVERROR(ENOMEM);
     /* LOOP on resolution levels */
