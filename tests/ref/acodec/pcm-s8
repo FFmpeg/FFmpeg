@@ -1,4 +1,4 @@
-d931dc4fffa2d3398e0f31f97e7d6c3a *tests/data/fate/acodec-pcm-s8.mov
+00a9d90e06e8ecb79e5dd4c6c8460836 *tests/data/fate/acodec-pcm-s8.mov
 529853 tests/data/fate/acodec-pcm-s8.mov
 651d4eb8d98dfcdda96ae6c43d8f156b *tests/data/fate/acodec-pcm-s8.out.wav
 stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400

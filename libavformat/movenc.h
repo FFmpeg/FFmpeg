@@ -89,13 +89,13 @@ typedef struct MOVTrack {
     int         has_keyframes;
 #define MOV_TRACK_CTTS         0x0001
 #define MOV_TRACK_STPS         0x0002
+#define MOV_TRACK_ENABLED      0x0004
     uint32_t    flags;
 #define MOV_TIMECODE_FLAG_DROPFRAME     0x0001
 #define MOV_TIMECODE_FLAG_24HOURSMAX    0x0002
 #define MOV_TIMECODE_FLAG_ALLOWNEGATIVE 0x0004
     uint32_t    timecode_flags;
     int         language;
-    int         secondary;
     int         track_id;
     int         tag; ///< stsd fourcc
     AVCodecContext *enc;
