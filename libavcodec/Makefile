@@ -621,7 +621,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 OBJS-$(CONFIG_VIMA_DECODER)               += vima.o adpcm_data.o
 
 # hardware accelerators
-OBJS-$(CONFIG_H263_VAAPI_HWACCEL)         += vaapi_mpeg4.o
+OBJS-$(CONFIG_H263_VAAPI_HWACCEL)         += vaapi_mpeg4.o vaapi_mpeg.o
 OBJS-$(CONFIG_H263_VDPAU_HWACCEL)         += vdpau_mpeg4.o
 OBJS-$(CONFIG_H264_DXVA2_HWACCEL)         += dxva2_h264.o
 OBJS-$(CONFIG_H264_VAAPI_HWACCEL)         += vaapi_h264.o
