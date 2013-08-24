@@ -50,6 +50,11 @@ static av_cold int vcr1_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
+    if (avctx->width & 7) {
+        av_log(avctx, AV_LOG_ERROR, "Width %d is not divisble by 8.\n", avctx->width);
+        return AVERROR_INVALIDDATA;
+    }
+
     return 0;
 }
 
@@ -85,9 +90,13 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
+    if (buf_size < 32)
+        goto packet_small;
+
     for (i = 0; i < 16; i++) {
         a->delta[i] = *bytestream++;
         bytestream++;
+        buf_size--;
     }
 
     for (y = 0; y < avctx->height; y++) {
@@ -98,8 +107,12 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
             uint8_t *cb = &a->picture.data[1][(y >> 2) * a->picture.linesize[1]];
             uint8_t *cr = &a->picture.data[2][(y >> 2) * a->picture.linesize[2]];
 
+            if (buf_size < 4 + avctx->width)
+                goto packet_small;
+
             for (i = 0; i < 4; i++)
                 a->offset[i] = *bytestream++;
+            buf_size -= 4;
 
             offset = a->offset[0] - a->delta[bytestream[2] & 0xF];
             for (x = 0; x < avctx->width; x += 4) {
@@ -113,8 +126,12 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                 *cr++       = bytestream[1];
 
                 bytestream += 4;
+                buf_size   -= 4;
             }
         } else {
+            if (buf_size < avctx->width / 2)
+                goto packet_small;
+
             offset = a->offset[y & 3] - a->delta[bytestream[2] & 0xF];
 
             for (x = 0; x < avctx->width; x += 8) {
@@ -128,6 +145,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                 luma[7]     = offset += a->delta[bytestream[1] >>  4];
                 luma       += 8;
                 bytestream += 4;
+                buf_size   -= 4;
             }
         }
     }
@@ -136,6 +154,9 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame = 1;
 
     return buf_size;
+packet_small:
+    av_log(avctx, AV_LOG_ERROR, "Input packet too small.\n");
+    return AVERROR_INVALIDDATA;
 }
 
 AVCodec ff_vcr1_decoder = {
