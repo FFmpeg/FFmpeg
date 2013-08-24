@@ -31,6 +31,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "j2k.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 
 #define JP2_SIG_TYPE    0x6A502020
@@ -301,6 +302,10 @@ static int get_cox(J2kDecoderContext *s, J2kCodingStyle *c)
           c->nreslevels = bytestream2_get_byteu(&s->g) + 1; // num of resolution levels - 1
      c->log2_cblk_width = bytestream2_get_byteu(&s->g) + 2; // cblk width
     c->log2_cblk_height = bytestream2_get_byteu(&s->g) + 2; // cblk height
+
+    if (c->log2_cblk_width > 6 || c->log2_cblk_height > 6) {
+        return AVERROR_PATCHWELCOME;
+    }
 
     c->cblk_style = bytestream2_get_byteu(&s->g);
     if (c->cblk_style != 0){ // cblk style
@@ -718,6 +723,9 @@ static int decode_cblk(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kT1Contex
     int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y, clnpass_cnt = 0;
     int bpass_csty_symbol = J2K_CBLK_BYPASS & codsty->cblk_style;
     int vert_causal_ctx_csty_symbol = J2K_CBLK_VSC & codsty->cblk_style;
+
+    av_assert0(width  <= J2K_MAX_CBLKW);
+    av_assert0(height <= J2K_MAX_CBLKH);
 
     for (y = 0; y < height+2; y++)
         memset(t1->flags[y], 0, (width+2)*sizeof(int));
