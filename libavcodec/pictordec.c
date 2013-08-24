@@ -233,7 +233,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     } else {
-        avpriv_request_sample(s, "Uncompressed image");
+        avpriv_request_sample(avctx, "Uncompressed image");
         return avpkt->size;
     }
 finish:
