@@ -154,7 +154,7 @@ static int parse_strk(AVFormatContext *s,
 
     if (fourxm->tracks[track].channels    <= 0 ||
         fourxm->tracks[track].sample_rate <= 0 ||
-        fourxm->tracks[track].bits        < 0) {
+        fourxm->tracks[track].bits        <= 0) {
         av_log(s, AV_LOG_ERROR, "audio header invalid\n");
         return AVERROR_INVALIDDATA;
     }
