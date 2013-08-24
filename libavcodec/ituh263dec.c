@@ -1033,6 +1033,7 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
                 height = ff_h263_format[format][1];
                 s->avctx->sample_aspect_ratio= (AVRational){12,11};
             }
+            s->avctx->sample_aspect_ratio.den <<= s->ehc_mode;
             if ((width == 0) || (height == 0))
                 return -1;
             s->width = width;

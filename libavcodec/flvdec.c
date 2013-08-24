@@ -107,6 +107,9 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     }
     s->f_code = 1;
 
+    if (s->ehc_mode)
+        s->avctx->sample_aspect_ratio= (AVRational){1,2};
+
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
         av_log(s->avctx, AV_LOG_DEBUG, "%c esc_type:%d, qp:%d num:%d\n",
                s->droppable ? 'D' : av_get_picture_type_char(s->pict_type),

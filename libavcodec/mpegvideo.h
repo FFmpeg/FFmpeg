@@ -545,6 +545,7 @@ typedef struct MpegEncContext {
     int prev_mb_info, last_mb_info;
     uint8_t *mb_info_ptr;
     int mb_info_size;
+    int ehc_mode;
 
     /* H.263+ specific */
     int umvplus;                    ///< == H263+ && unrestricted_mv
