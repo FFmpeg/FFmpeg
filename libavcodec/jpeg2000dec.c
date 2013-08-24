@@ -379,6 +379,11 @@ static int get_cox(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c)
         return AVERROR_INVALIDDATA;
     }
 
+    if (c->log2_cblk_width > 6 || c->log2_cblk_height > 6) {
+        avpriv_request_sample(s->avctx, "cblk size > 64");
+        return AVERROR_PATCHWELCOME;
+    }
+
     c->cblk_style = bytestream2_get_byteu(&s->g);
     if (c->cblk_style != 0) { // cblk style
         av_log(s->avctx, AV_LOG_WARNING, "extra cblk styles %X\n", c->cblk_style);
@@ -1019,6 +1024,9 @@ static int decode_cblk(Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
     int clnpass_cnt = 0;
     int bpass_csty_symbol           = codsty->cblk_style & JPEG2000_CBLK_BYPASS;
     int vert_causal_ctx_csty_symbol = codsty->cblk_style & JPEG2000_CBLK_VSC;
+
+    av_assert0(width  <= JPEG2000_MAX_CBLKW);
+    av_assert0(height <= JPEG2000_MAX_CBLKH);
 
     for (y = 0; y < height; y++)
         memset(t1->data[y], 0, width * sizeof(**t1->data));
