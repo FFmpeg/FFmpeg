@@ -1757,8 +1757,13 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
         int bit_rate = 0;
         for(i=0;i<ic->nb_streams;i++) {
             st = ic->streams[i];
-            if (st->codec->bit_rate > 0)
-            bit_rate += st->codec->bit_rate;
+            if (st->codec->bit_rate > 0) {
+                if (INT_MAX - st->codec->bit_rate > bit_rate) {
+                    bit_rate = 0;
+                    break;
+                }
+                bit_rate += st->codec->bit_rate;
+            }
         }
         ic->bit_rate = bit_rate;
     }
