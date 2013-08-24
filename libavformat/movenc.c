@@ -3378,8 +3378,6 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     MOVTrack *track = &mov->tracks[tracknum];
     AVPacket pkt = { .stream_index = tracknum, .flags = AV_PKT_FLAG_KEY };
     int i, len;
-    // These properties are required to make QT recognize the chapter track
-    uint8_t chapter_properties[43] = { 0, 0, 0, 0, 0, 0, 0, 1, };
 
     track->mode = mov->mode;
     track->tag = MKTAG('t','e','x','t');
@@ -3387,6 +3385,8 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     track->enc = avcodec_alloc_context3(NULL);
     track->enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
 #if 0
+    // These properties are required to make QT recognize the chapter track
+    uint8_t chapter_properties[43] = { 0, 0, 0, 0, 0, 0, 0, 1, };
     track->enc->extradata = av_malloc(sizeof(chapter_properties));
     if (track->enc->extradata == NULL)
         return AVERROR(ENOMEM);
