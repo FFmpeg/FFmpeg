@@ -545,7 +545,7 @@ int avfilter_graph_parse_ptr(AVFilterGraph *graph, const char *filters,
         if ((ret = parse_filter(&filter, &filters, graph, index, log_ctx)) < 0)
             goto end;
 
-        if (filter->input_count == 1 && !curr_inputs && !index) {
+        if (filter->nb_inputs == 1 && !curr_inputs && !index) {
             /* First input pad, assume it is "[in]" if not specified */
             const char *tmp = "[in]";
             if ((ret = parse_inputs(&tmp, &curr_inputs, &open_outputs, log_ctx)) < 0)
