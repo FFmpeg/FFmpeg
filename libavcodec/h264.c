@@ -1787,6 +1787,10 @@ static int decode_update_thread_context(AVCodecContext *dst,
         h->mb_type_pool      = NULL;
         h->ref_index_pool    = NULL;
         h->motion_val_pool   = NULL;
+        for (i = 0; i < 2; i++) {
+            h->rbsp_buffer[i] = NULL;
+            h->rbsp_buffer_size[i] = 0;
+        }
 
         if (h1->context_initialized) {
         h->context_initialized = 0;
@@ -1807,10 +1811,6 @@ static int decode_update_thread_context(AVCodecContext *dst,
         }
         }
 
-        for (i = 0; i < 2; i++) {
-            h->rbsp_buffer[i]      = NULL;
-            h->rbsp_buffer_size[i] = 0;
-        }
         h->bipred_scratchpad = NULL;
         h->edge_emu_buffer   = NULL;
 
