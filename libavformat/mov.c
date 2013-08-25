@@ -1306,6 +1306,23 @@ static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
     st->codec->height = sc->height;
 }
 
+static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
+                                AVStream *st, MOVStreamContext *sc,
+                                int size)
+{
+    if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
+        st->codec->extradata_size = size;
+        st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
+        avio_read(pb, st->codec->extradata, size);
+    } else {
+        /* other codec type, just skip (rtp, mp4s ...) */
+        avio_skip(pb, size);
+    }
+    return 0;
+}
+
 static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
                                    AVStream *st, MOVStreamContext *sc)
 {
@@ -1409,7 +1426,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
          pseudo_stream_id++) {
         //Parsing Sample description table
         enum AVCodecID id;
-        int dref_id = 1;
+        int ret, dref_id = 1;
         MOVAtom a = { AV_RL32("stsd") };
         int64_t start_pos = avio_tell(pb);
         uint32_t size = avio_rb32(pb); /* size */
@@ -1448,13 +1465,14 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             mov_parse_stsd_subtitle(c, pb, st, sc,
                                     size - (avio_tell(pb) - start_pos));
         } else {
-            /* other codec type, just skip (rtp, mp4s, tmcd ...) */
-            avio_skip(pb, size - (avio_tell(pb) - start_pos));
+            ret = mov_parse_stsd_data(c, pb, st, sc,
+                                      size - (avio_tell(pb) - start_pos));
+            if (ret < 0)
+                return ret;
         }
         /* this will read extra atoms at the end (wave, alac, damr, avcC, SMI ...) */
         a.size = size - (avio_tell(pb) - start_pos);
         if (a.size > 8) {
-            int ret;
             if ((ret = mov_read_default(c, pb, a)) < 0)
                 return ret;
         } else if (a.size > 0)
