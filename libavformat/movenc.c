@@ -3018,6 +3018,8 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
     track->tag = MKTAG('t','e','x','t');
     track->timescale = MOV_TIMESCALE;
     track->enc = avcodec_alloc_context3(NULL);
+    if (!track->enc)
+        return AVERROR(ENOMEM);
     track->enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
     track->enc->extradata = av_malloc(sizeof(chapter_properties));
     if (track->enc->extradata == NULL)
@@ -3037,6 +3039,8 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
             len      = strlen(t->value);
             pkt.size = len + 2;
             pkt.data = av_malloc(pkt.size);
+            if (!pkt.data)
+                return AVERROR(ENOMEM);
             AV_WB16(pkt.data, len);
             memcpy(pkt.data + 2, t->value, len);
             ff_mov_write_packet(s, &pkt);
