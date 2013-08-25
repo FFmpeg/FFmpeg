@@ -309,10 +309,6 @@ int av_demuxer_open(AVFormatContext *ic){
 }
 
 
-/** size of probe buffer, for guessing file type from file contents */
-#define PROBE_BUF_MIN 2048
-#define PROBE_BUF_MAX (1<<20)
-
 int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size)
