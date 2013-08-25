@@ -1767,6 +1767,8 @@ static int decode_update_thread_context(AVCodecContext *dst,
         for (i = 0; i < MAX_PPS_COUNT; i++)
             av_freep(h->pps_buffers + i);
 
+        av_freep(&h->rbsp_buffer[0]);
+        av_freep(&h->rbsp_buffer[1]);
         memcpy(h, h1, offsetof(H264Context, intra_pcm_ptr));
         memcpy(&h->cabac, &h1->cabac,
                sizeof(H264Context) - offsetof(H264Context, cabac));
