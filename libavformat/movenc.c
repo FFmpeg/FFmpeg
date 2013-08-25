@@ -1060,6 +1060,19 @@ static int mov_write_rtp_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "tmcd");               /* Data format */
+    avio_wb32(pb, 0);                       /* Reserved */
+    avio_wb32(pb, 1);                       /* Data reference index */
+    if (track->enc->extradata_size)
+        avio_write(pb, track->enc->extradata, track->enc->extradata_size);
+    return update_size(pb, pos);
+}
+
 static int mov_write_stsd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1075,6 +1088,8 @@ static int mov_write_stsd_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_subtitle_tag(pb, track);
     else if (track->enc->codec_tag == MKTAG('r','t','p',' '))
         mov_write_rtp_tag(pb, track);
+    else if (track->enc->codec_tag == MKTAG('t','m','c','d'))
+        mov_write_tmcd_tag(pb, track);
     return update_size(pb, pos);
 }
 
@@ -1324,6 +1339,8 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
         else                                      mov_write_nmhd_tag(pb);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
+    } else if (track->tag == MKTAG('t','m','c','d')) {
+        mov_write_gmhd_tag(pb);
     }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
