@@ -193,9 +193,9 @@ av_cold void ff_get_unscaled_swscale_ppc(SwsContext *c)
 
         // unscaled YV12 -> packed YUV, we want speed
         if (dstFormat == AV_PIX_FMT_YUYV422)
-            c->swScale = yv12toyuy2_unscaled_altivec;
+            c->swscale = yv12toyuy2_unscaled_altivec;
         else if (dstFormat == AV_PIX_FMT_UYVY422)
-            c->swScale = yv12touyvy_unscaled_altivec;
+            c->swscale = yv12touyvy_unscaled_altivec;
     }
 #endif /* HAVE_ALTIVEC */
 }

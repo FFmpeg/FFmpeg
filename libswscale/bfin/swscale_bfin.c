@@ -77,11 +77,11 @@ av_cold void ff_get_unscaled_swscale_bfin(SwsContext *c)
     if (c->dstFormat == AV_PIX_FMT_YUV420P && c->srcFormat == AV_PIX_FMT_UYVY422) {
         av_log(NULL, AV_LOG_VERBOSE,
                "selecting Blackfin optimized uyvytoyv12_unscaled\n");
-        c->swScale = uyvytoyv12_unscaled;
+        c->swscale = uyvytoyv12_unscaled;
     }
     if (c->dstFormat == AV_PIX_FMT_YUV420P && c->srcFormat == AV_PIX_FMT_YUYV422) {
         av_log(NULL, AV_LOG_VERBOSE,
                "selecting Blackfin optimized yuyvtoyv12_unscaled\n");
-        c->swScale = yuyvtoyv12_unscaled;
+        c->swscale = yuyvtoyv12_unscaled;
     }
 }

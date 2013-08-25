@@ -337,7 +337,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1,
     if (DEBUG_SWSCALE_BUFFERS)                  \
         av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
-static int swScale(SwsContext *c, const uint8_t *src[],
+static int swscale(SwsContext *c, const uint8_t *src[],
                    int srcStride[], int srcSliceY,
                    int srcSliceH, uint8_t *dst[], int dstStride[])
 {
@@ -407,7 +407,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     srcStride[1] <<= c->vChrDrop;
     srcStride[2] <<= c->vChrDrop;
 
-    DEBUG_BUFFERS("swScale() %p[%d] %p[%d] %p[%d] %p[%d] -> %p[%d] %p[%d] %p[%d] %p[%d]\n",
+    DEBUG_BUFFERS("swscale() %p[%d] %p[%d] %p[%d] %p[%d] -> %p[%d] %p[%d] %p[%d] %p[%d]\n",
                   src[0], srcStride[0], src[1], srcStride[1],
                   src[2], srcStride[2], src[3], srcStride[3],
                   dst[0], dstStride[0], dst[1], dstStride[1],
@@ -718,7 +718,7 @@ static int swScale(SwsContext *c, const uint8_t *src[],
     return dstY - lastDstY;
 }
 
-static av_cold void sws_init_swScale_c(SwsContext *c)
+static av_cold void sws_init_swscale(SwsContext *c)
 {
     enum AVPixelFormat srcFormat = c->srcFormat;
 
@@ -770,12 +770,12 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
 
 SwsFunc ff_getSwsFunc(SwsContext *c)
 {
-    sws_init_swScale_c(c);
+    sws_init_swscale(c);
 
     if (ARCH_PPC)
         ff_sws_init_swscale_ppc(c);
     if (ARCH_X86)
         ff_sws_init_swscale_x86(c);
 
-    return swScale;
+    return swscale;
 }

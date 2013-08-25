@@ -263,7 +263,7 @@ typedef struct SwsContext {
      * Note that src, dst, srcStride, dstStride will be copied in the
      * sws_scale() wrapper so they can be freely modified here.
      */
-    SwsFunc swScale;
+    SwsFunc swscale;
     int srcW;                     ///< Width  of source      luma/alpha planes.
     int srcH;                     ///< Height of source      luma/alpha planes.
     int dstH;                     ///< Height of destination luma/alpha planes.
@@ -454,7 +454,7 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, uint64_t, sparc_coeffs)[10];
 #endif
 
-    /* function pointers for swScale() */
+    /* function pointers for swscale() */
     yuv2planar1_fn yuv2plane1;
     yuv2planarX_fn yuv2planeX;
     yuv2interleavedX_fn yuv2nv12cX;
@@ -730,7 +730,7 @@ extern const int32_t ff_yuv2rgb_coeffs[8][4];
 extern const AVClass sws_context_class;
 
 /**
- * Set c->swScale to an unscaled converter if one exists for the specific
+ * Set c->swscale to an unscaled converter if one exists for the specific
  * source and destination formats, bit depths, flags, etc.
  */
 void ff_get_unscaled_swscale(SwsContext *c);
