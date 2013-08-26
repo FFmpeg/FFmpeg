@@ -816,7 +816,6 @@ SKIPHEADERS-$(CONFIG_VDA)              += vda.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 
 TESTPROGS = cabac                                                       \
-            dct                                                         \
             fft                                                         \
             fft-fixed                                                   \
             fft-fixed32                                                 \
@@ -826,6 +825,7 @@ TESTPROGS = cabac                                                       \
             rangecoder                                                  \
             snowenc                                                     \
 
+TESTPROGS-$(CONFIG_DCT) += dct
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
