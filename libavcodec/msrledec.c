@@ -211,8 +211,8 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             switch(depth){
             case  8:
                 pix[0] = bytestream2_get_byte(gb);
-                for(i = 0; i < p1; i++)
-                        *output++ = pix[0];
+                memset(output, pix[0], p1);
+                output += p1;
                 break;
             case 16:
                 pix16  = bytestream2_get_le16(gb);
