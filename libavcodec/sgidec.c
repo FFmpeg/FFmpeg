@@ -138,9 +138,10 @@ static int read_uncompressed_sgi(unsigned char* out_buf, SgiState *s)
     for (y = s->height - 1; y >= 0; y--) {
         out_end = out_buf + (y * s->linesize);
         if (s->bytes_per_channel == 1) {
-            for (x = s->width; x > 0; x--)
-                for (z = 0; z < s->depth; z++)
-                    *out_end++ = bytestream2_get_byteu(&gp[z]);
+            for (x = s->width; x > 0; x--) {
+                bytestream2_get_bufferu(&gp[z], out_end, s->depth);
+                out_end += s->depth;
+            }
         } else {
             uint16_t *out16 = (uint16_t *)out_end;
             for (x = s->width; x > 0; x--)
