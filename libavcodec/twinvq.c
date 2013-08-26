@@ -489,6 +489,12 @@ int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
         out = (float **)frame->extended_data;
     }
 
+    if (buf_size < avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Frame too small (%d bytes). Truncated file?\n", buf_size);
+        return AVERROR(EINVAL);
+    }
+
     if ((ret = tctx->read_bitstream(avctx, tctx, buf, buf_size)) < 0)
         return ret;
 
@@ -506,7 +512,7 @@ int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return buf_size;
+    return avctx->block_align;
 }
 
 /**

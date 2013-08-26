@@ -258,12 +258,6 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
     GetBitContext gb;
     int i, j, k;
 
-    if (buf_size * 8 < avctx->bit_rate * mtab->size / avctx->sample_rate + 8) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        return AVERROR(EINVAL);
-    }
-
     init_get_bits(&gb, buf, buf_size * 8);
     skip_bits(&gb, get_bits(&gb, 8));
 
@@ -402,6 +396,9 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
                isampf, isampf);
         return -1;
     }
+
+    avctx->block_align = (avctx->bit_rate * tctx->mtab->size
+                                          / avctx->sample_rate + 15) / 8;
 
     tctx->codec          = TWINVQ_CODEC_VQF;
     tctx->read_bitstream = twinvq_read_bitstream;

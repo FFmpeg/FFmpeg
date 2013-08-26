@@ -170,12 +170,6 @@ static int metasound_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
     GetBitContext gb;
     int i, j, k;
 
-    if (buf_size * 8 < avctx->bit_rate * mtab->size / avctx->sample_rate) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        return AVERROR(EINVAL);
-    }
-
     init_get_bits(&gb, buf, buf_size * 8);
 
     bits->window_type = get_bits(&gb, TWINVQ_WINDOW_TYPE_BITS);
@@ -322,6 +316,9 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
                isampf, isampf);
         return AVERROR(ENOSYS);
     }
+
+    avctx->block_align = (avctx->bit_rate * tctx->mtab->size
+                                          / avctx->sample_rate + 7) / 8;
 
     tctx->codec          = TWINVQ_CODEC_METASOUND;
     tctx->read_bitstream = metasound_read_bitstream;
