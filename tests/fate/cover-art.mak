@@ -30,7 +30,8 @@ FATE_COVER_ART-$(CONFIG_OGG_DEMUXER) += fate-cover-art-ogg
 fate-cover-art-ogg: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/ogg_vorbiscomment_cover.opus -map 0:v -c:v copy -f rawvideo
 fate-cover-art-ogg: REF = 7f117e073620eabb4ed02680cf70af41
 
-FATE_COVER_ART = $(FATE_COVER_ART-yes)
+FCA_TEMP-$(call ALLYES, RAWVIDEO_MUXER FILE_PROTOCOL) = $(FATE_COVER_ART-yes)
+FATE_COVER_ART = $(FCA_TEMP-yes)
 
 $(FATE_COVER_ART): CMP = oneline
 FATE_SAMPLES_AVCONV += $(FATE_COVER_ART)
