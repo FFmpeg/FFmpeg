@@ -1238,6 +1238,39 @@ enum AVCodecID ff_mov_get_lpcm_codec_id(int bps, int flags)
     return ff_get_pcm_codec_id(bps, flags & 1, flags & 2, flags & 4 ? -1 : 0);
 }
 
+static int mov_codec_id(AVStream *st, uint32_t format)
+{
+    int id = ff_codec_get_id(ff_codec_movaudio_tags, format);
+
+    if (id <= 0 &&
+        ((format & 0xFFFF) == 'm' + ('s' << 8) ||
+         (format & 0xFFFF) == 'T' + ('S' << 8)))
+        id = ff_codec_get_id(ff_codec_wav_tags, av_bswap32(format) & 0xFFFF);
+
+    if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO && id > 0) {
+        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
+    } else if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO &&
+               /* skip old asf mpeg4 tag */
+               format && format != MKTAG('m','p','4','s')) {
+        id = ff_codec_get_id(ff_codec_movvideo_tags, format);
+        if (id <= 0)
+            id = ff_codec_get_id(ff_codec_bmp_tags, format);
+        if (id > 0)
+            st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        else if (st->codec->codec_type == AVMEDIA_TYPE_DATA ||
+                    (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
+                    st->codec->codec_id == AV_CODEC_ID_NONE)) {
+            id = ff_codec_get_id(ff_codec_movsubtitle_tags, format);
+            if (id > 0)
+                st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
+        }
+    }
+
+    st->codec->codec_tag = format;
+
+    return id;
+}
+
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
@@ -1287,28 +1320,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         sc->pseudo_stream_id = st->codec->codec_tag ? -1 : pseudo_stream_id;
         sc->dref_id= dref_id;
 
-        st->codec->codec_tag = format;
-        id = ff_codec_get_id(ff_codec_movaudio_tags, format);
-        if (id<=0 && ((format&0xFFFF) == 'm'+('s'<<8) || (format&0xFFFF) == 'T'+('S'<<8)))
-            id = ff_codec_get_id(ff_codec_wav_tags, av_bswap32(format)&0xFFFF);
-
-        if (st->codec->codec_type != AVMEDIA_TYPE_VIDEO && id > 0) {
-            st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        } else if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO && /* do not overwrite codec type */
-                   format && format != MKTAG('m','p','4','s')) { /* skip old asf mpeg4 tag */
-            id = ff_codec_get_id(ff_codec_movvideo_tags, format);
-            if (id <= 0)
-                id = ff_codec_get_id(ff_codec_bmp_tags, format);
-            if (id > 0)
-                st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            else if (st->codec->codec_type == AVMEDIA_TYPE_DATA ||
-                     (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE &&
-                      st->codec->codec_id == AV_CODEC_ID_NONE)){
-                id = ff_codec_get_id(ff_codec_movsubtitle_tags, format);
-                if (id > 0)
-                    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-            }
-        }
+        id = mov_codec_id(st, format);
 
         av_dlog(c->fc, "size=%"PRId64" 4CC= %c%c%c%c codec_type=%d\n", size,
                 (format >> 0) & 0xff, (format >> 8) & 0xff, (format >> 16) & 0xff,
