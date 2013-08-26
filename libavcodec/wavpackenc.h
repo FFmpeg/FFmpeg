@@ -637,7 +637,7 @@ static const WavPackDecorrSpec very_high_specs[] = {
  { 0, 1, { -1,18,18, 2,18, 3, 5,18, 2,18, 6, 8, 4, 5, 7,-1 } },
 };
 
-static const WavPackDecorrSpec const *decorr_filters[] = {
+static const WavPackDecorrSpec *decorr_filters[] = {
     &fast_specs[0], &default_specs[0], &high_specs[0], &very_high_specs[0],
 };
 
