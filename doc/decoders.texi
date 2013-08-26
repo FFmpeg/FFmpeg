@@ -60,6 +60,78 @@ This decoder generates wave patterns according to predefined sequences. Its
 use is purely internal and the format of the data it accepts is not publicly
 documented.
 
+@section libcelt
+
+libcelt decoder wrapper
+
+libcelt allows libavcodec to decode the Xiph CELT ultra-low delay audio codec.
+Requires the presence of the libcelt headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libcelt}.
+
+@section libgsm
+
+libgsm decoder wrapper
+
+libgsm allows libavcodec to decode the GSM full rate audio codec. Requires
+the presence of the libgsm headers and library during configuration. You need
+to explicitly configure the build with @code{--enable-libgsm}.
+
+This decoder supports both the ordinary GSM and the Microsoft variant.
+
+@section libilbc
+
+libilbc decoder wrapper
+
+libilbc allows libavcodec to decode the Internet Low Bitrate Codec (iLBC)
+audio codec. Requires the presence of the libilbc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libilbc}.
+
+@subsection Options
+
+The following option is supported by the libilbc wrapper.
+
+@table @option
+@item enhance
+
+Enable the enhancement of the decoded audio when set to 1. The default
+value is 0 (disabled).
+
+@end table
+
+@section libopencore-amrnb
+
+libopencore-amrnb decoder wrapper
+
+libopencore-amrnb allows libavcodec to decode the Adaptive Multi-Rate
+Narrowband audio codec. Using it requires the presence of the
+libopencore-amrnb headers and library during configuration. You need to
+explicitly configure the build with @code{--enable-libopencore-amrnb}.
+
+An FFmpeg native decoder for AMR-NB exists, so users can decode AMR-NB
+without this library.
+
+@section libopencore-amrwb
+
+libopencore-amrwb decoder wrapper.
+
+libopencore-amrwb allows libavcodec to decode the Adaptive Multi-Rate
+Wideband audio codec. Using it requires the presence of the
+libopencore-amrwb headers and library during configuration. You need to
+explicitly configure the build with @code{--enable-libopencore-amrwb}.
+
+An FFmpeg native decoder for AMR-WB exists, so users can decode AMR-WB
+without this library.
+
+@section libopus
+
+libopus decoder wrapper.
+
+libopus allows libavcodec to decode the Opus Interactive Audio Codec.
+Requires the presence of the libopus headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopus}.
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders
