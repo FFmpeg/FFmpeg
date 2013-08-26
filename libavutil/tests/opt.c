@@ -41,7 +41,7 @@ typedef struct TestContext {
     enum AVSampleFormat sample_fmt;
     int64_t duration;
     uint8_t color[4];
-    int64_t channel_layout;
+    AVChannelLayout channel_layout;
     void *binary;
     int binary_size;
     void *binary1;
@@ -81,7 +81,7 @@ static const AVOption test_options[]= {
     {"video_rate", "set videorate",      OFFSET(video_rate),     AV_OPT_TYPE_VIDEO_RATE,     { .str = "25" },                   0,         INT_MAX, 1 },
     {"duration",   "set duration",       OFFSET(duration),       AV_OPT_TYPE_DURATION,       { .i64 = 1000 },                   0, INT64_MAX, 1 },
     {"color",      "set color",          OFFSET(color),          AV_OPT_TYPE_COLOR,          { .str = "pink" },                 0,         0, 1 },
-    {"cl",         "set channel layout", OFFSET(channel_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, { .i64 = AV_CH_LAYOUT_HEXAGONAL }, 0, INT64_MAX, 1 },
+    {"cl",         "set channel layout", OFFSET(channel_layout), AV_OPT_TYPE_CHLAYOUT,       { .str = "hexagonal" },            0,         0, 1 },
     {"bin",        "set binary value",   OFFSET(binary),         AV_OPT_TYPE_BINARY,         { .str="62696e00" },               0,         0, 1 },
     {"bin1",       "set binary value",   OFFSET(binary1),        AV_OPT_TYPE_BINARY,         { .str=NULL },                     0,         0, 1 },
     {"bin2",       "set binary value",   OFFSET(binary2),        AV_OPT_TYPE_BINARY,         { .str="" },                       0,         0, 1 },
@@ -138,7 +138,7 @@ int main(void)
         printf("sample_fmt=%s\n", av_get_sample_fmt_name(test_ctx.sample_fmt));
         printf("duration=%"PRId64"\n", test_ctx.duration);
         printf("color=%d %d %d %d\n", test_ctx.color[0], test_ctx.color[1], test_ctx.color[2], test_ctx.color[3]);
-        printf("channel_layout=%"PRId64"=%"PRId64"\n", test_ctx.channel_layout, (int64_t)AV_CH_LAYOUT_HEXAGONAL);
+        printf("channel_layout=%"PRId64"=%"PRId64"\n", test_ctx.channel_layout.u.mask, (int64_t)AV_CH_LAYOUT_HEXAGONAL);
         if (test_ctx.binary)
             printf("binary=%x %x %x %x\n", ((uint8_t*)test_ctx.binary)[0], ((uint8_t*)test_ctx.binary)[1], ((uint8_t*)test_ctx.binary)[2], ((uint8_t*)test_ctx.binary)[3]);
         printf("binary_size=%d\n", test_ctx.binary_size);
@@ -280,7 +280,7 @@ int main(void)
             "color=blue",
             "color=0x223300",
             "color=0x42FF07AA",
-            "cl=stereo+downmix",
+            "cl=FL+FR",
             "cl=foo",
             "bin=boguss",
             "bin=111",

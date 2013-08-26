@@ -33,7 +33,7 @@ TestContext AVOptions:
   -video_rate        <video_rate> E.......... set videorate (default "25")
   -duration          <duration>   E.......... set duration (default 0.001)
   -color             <color>      E.......... set color (default "pink")
-  -cl                <channel_layout> E.......... set channel layout (default 0x137)
+  -cl                <channel_layout> E.......... set channel layout (default "hexagonal")
   -bin               <binary>     E.......... set binary value
   -bin1              <binary>     E.......... set binary value
   -bin2              <binary>     E.......... set binary value
@@ -115,7 +115,7 @@ name: sample_fmt  get: s16              set: OK               get: s16          
 name: video_rate  get: 25/1             set: OK               get: 25/1             OK
 name: duration    get: 0.001            set: OK               get: 0.001            OK
 name: color       get: 0xffc0cbff       set: OK               get: 0xffc0cbff       OK
-name: cl          get: 0x137            set: OK               get: 0x137            OK
+name: cl          get: hexagonal        set: OK               get: hexagonal        OK
 name: bin         get: 62696E00         set: OK               get: 62696E00         OK
 name: bin1        get:                  set: OK               get:                  OK
 name: bin2        get:                  set: OK               get:                  OK
@@ -129,7 +129,7 @@ name: dict1       get:                  set: OK               get:              
 name: dict2       get: happy=\:-)       set: OK               get: happy=\:-)       OK
 
 Test av_opt_serialize()
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
 Setting entry with key 'num' to value '0'
 Setting entry with key 'toggle' to value '1'
 Setting entry with key 'rational' to value '1/1'
@@ -142,7 +142,7 @@ Setting entry with key 'sample_fmt' to value 's16'
 Setting entry with key 'video_rate' to value '25/1'
 Setting entry with key 'duration' to value '0.001'
 Setting entry with key 'color' to value '0xffc0cbff'
-Setting entry with key 'cl' to value '0x137'
+Setting entry with key 'cl' to value 'hexagonal'
 Setting entry with key 'bin' to value '62696E00'
 Setting entry with key 'bin1' to value ''
 Setting entry with key 'bin2' to value ''
@@ -154,7 +154,7 @@ Setting entry with key 'bool2' to value 'true'
 Setting entry with key 'bool3' to value 'false'
 Setting entry with key 'dict1' to value ''
 Setting entry with key 'dict2' to value 'happy=\:-)'
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=0x137,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
 
 Testing av_set_options_string()
 Setting options string ''
@@ -296,9 +296,9 @@ OK    'color=0x223300'
 Setting options string 'color=0x42FF07AA'
 Setting entry with key 'color' to value '0x42FF07AA'
 OK    'color=0x42FF07AA'
-Setting options string 'cl=stereo+downmix'
-Setting entry with key 'cl' to value 'stereo+downmix'
-OK    'cl=stereo+downmix'
+Setting options string 'cl=FL+FR'
+Setting entry with key 'cl' to value 'FL+FR'
+OK    'cl=FL+FR'
 Setting options string 'cl=foo'
 Setting entry with key 'cl' to value 'foo'
 Unable to parse option value "foo" as channel layout
