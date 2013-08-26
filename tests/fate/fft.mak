@@ -55,5 +55,5 @@ $(FATE_FFT_FIXED32): libavcodec/fft-fixed32-test$(EXESUF)
 $(FATE_FFT_FIXED32): CMD = run libavcodec/fft-fixed32-test $(CPUFLAGS:%=-c%) $(ARGS)
 $(FATE_FFT_FIXED32): REF = /dev/null
 
-FATE-$(call ALLYES, AVCODEC FFT) += $(FATE_FFT) $(FATE_FFT_FIXED) $(FATE_FFT_FIXED32)
+FATE-$(call ALLYES, AVCODEC FFT MDCT) += $(FATE_FFT) $(FATE_FFT_FIXED) $(FATE_FFT_FIXED32)
 fate-fft: $(FATE_FFT) $(FATE_FFT_FIXED) $(FATE_FFT_FIXED32)
