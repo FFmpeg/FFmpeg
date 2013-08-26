@@ -3101,6 +3101,30 @@ static void enable_tracks(AVFormatContext *s)
     }
 }
 
+static void mov_free(AVFormatContext *s)
+{
+    MOVMuxContext *mov = s->priv_data;
+    int i;
+
+    if (mov->chapter_track) {
+        if (mov->tracks[mov->chapter_track].enc)
+            av_free(mov->tracks[mov->chapter_track].enc->extradata);
+        av_freep(&mov->tracks[mov->chapter_track].enc);
+    }
+
+    for (i = 0; i < mov->nb_streams; i++) {
+        if (mov->tracks[i].tag == MKTAG('r','t','p',' '))
+            ff_mov_close_hinting(&mov->tracks[i]);
+        av_freep(&mov->tracks[i].cluster);
+        av_freep(&mov->tracks[i].frag_info);
+
+        if (mov->tracks[i].vos_len)
+            av_free(mov->tracks[i].vos_data);
+    }
+
+    av_freep(&mov->tracks);
+}
+
 static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
@@ -3305,7 +3329,7 @@ static int mov_write_header(AVFormatContext *s)
 
     return 0;
  error:
-    av_freep(&mov->tracks);
+    mov_free(s);
     return -1;
 }
 
@@ -3469,15 +3493,7 @@ static int mov_write_trailer(AVFormatContext *s)
         mov_write_mfra_tag(pb, mov);
     }
 
-    if (mov->chapter_track) {
-        if (mov->tracks[mov->chapter_track].enc)
-            av_free(mov->tracks[mov->chapter_track].enc->extradata);
-        av_freep(&mov->tracks[mov->chapter_track].enc);
-    }
-
     for (i = 0; i < mov->nb_streams; i++) {
-        if (mov->tracks[i].tag == MKTAG('r','t','p',' '))
-            ff_mov_close_hinting(&mov->tracks[i]);
         if (mov->flags & FF_MOV_FLAG_FRAGMENT &&
             mov->tracks[i].vc1_info.struct_offset && s->pb->seekable) {
             int64_t off = avio_tell(pb);
@@ -3488,14 +3504,9 @@ static int mov_write_trailer(AVFormatContext *s)
                 avio_seek(pb, off, SEEK_SET);
             }
         }
-        av_freep(&mov->tracks[i].cluster);
-        av_freep(&mov->tracks[i].frag_info);
-
-        if (mov->tracks[i].vos_len)
-            av_free(mov->tracks[i].vos_data);
     }
 
-    av_freep(&mov->tracks);
+    mov_free(s);
 
     return res;
 }
