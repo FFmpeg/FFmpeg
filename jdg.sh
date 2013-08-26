@@ -1,8 +1,10 @@
 #!/bin/bash
 
-DEST=`pwd`/build/android && rm -rf $DEST
+DEST=`pwd`/build/android
 SOURCE=`pwd`
 SSL=$SOURCE/../openssl
+RTMP=$SOURCE/../rtmpdump
+
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
@@ -23,7 +25,8 @@ CFLAGS="-std=c99 -O3 -Wall -mthumb -pipe -fpic -fasm \
   -Wno-psabi -Wa,--noexecstack \
   -D__ARM_ARCH_5__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5TE__ \
   -DANDROID -DNDEBUG \
-  -I$SSL/include"
+  -I$SSL/include \
+  -I$RTMP"
 
 LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
@@ -50,6 +53,7 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-decoder=dca \
   --disable-decoder=svq3 \
   --enable-openssl \
+  --enable-librtmp \
   --enable-network \
   --enable-asm \
   --enable-version3"
@@ -67,16 +71,18 @@ for version in neon; do
         --cpu=cortex-a8 \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv7-a -mfpu=neon -mfloat-abi=softfp -mvectorize-with-neon-quad"
-      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
+      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a -L$RTMP/libs/armeabi-v7a"
       SSL_OBJS=`find $SSL/obj/local/armeabi-v7a/objs/ssl $SSL/obj/local/armeabi-v7a/objs/crypto -type f -name "*.o"`
+      RTMP_OBJS=`find $RTMP/obj/local/armeabi-v7a/objs/rtmp -type f -name "*.o"`
       ;;
     armv7)
       FFMPEG_FLAGS="--arch=armv7-a \
         --cpu=cortex-a8 \
         $FFMPEG_FLAGS"
       EXTRA_CFLAGS="-march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=softfp"
-      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a"
+      EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$SSL/libs/armeabi-v7a -L$RTMP/libs/armeabi-v7a"
       SSL_OBJS=`find $SSL/obj/local/armeabi-v7a/objs/ssl $SSL/obj/local/armeabi-v7a/objs/crypto -type f -name "*.o"`
+      RTMP_OBJS=`find $RTMP/obj/local/armeabi-v7a/objs/rtmp -type f -name "*.o"`
       ;;
     vfp)
       FFMPEG_FLAGS="--arch=arm \
@@ -100,19 +106,19 @@ for version in neon; do
       ;;
   esac
 
-  PREFIX="$DEST/$version" && mkdir -p $PREFIX
+  PREFIX="$DEST/$version" && rm -rf $PREFIX && mkdir -p $PREFIX
   FFMPEG_FLAGS="$FFMPEG_FLAGS --prefix=$PREFIX"
 
   # ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
-  cp config.* $PREFIX
-  [ $PIPESTATUS == 0 ] || exit 1
+  #cp config.* $PREFIX
+  #[ $PIPESTATUS == 0 ] || exit 1
 
   #make clean
   #find . -name "*.o" -type f -delete
   make -j4 || exit 1
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
-  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
+  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS $RTMP_OBJS\
     libavutil/*.o libavutil/arm/*.o libavcodec/*.o libavcodec/arm/*.o libavformat/*.o libavfilter/*.o libswresample/*.o libswresample/arm/*.o libswscale/*.o compat/*.o
 
 
