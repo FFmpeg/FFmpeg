@@ -1271,11 +1271,122 @@ static int mov_codec_id(AVStream *st, uint32_t format)
     return id;
 }
 
+static void mov_parse_stsd_video(MOVContext *c, AVIOContext *pb,
+                                 AVStream *st, MOVStreamContext *sc)
+{
+    unsigned int color_depth, len, j;
+    int color_greyscale;
+    int color_table_id;
+
+    avio_rb16(pb); /* version */
+    avio_rb16(pb); /* revision level */
+    avio_rb32(pb); /* vendor */
+    avio_rb32(pb); /* temporal quality */
+    avio_rb32(pb); /* spatial quality */
+
+    st->codec->width  = avio_rb16(pb); /* width */
+    st->codec->height = avio_rb16(pb); /* height */
+
+    avio_rb32(pb); /* horiz resolution */
+    avio_rb32(pb); /* vert resolution */
+    avio_rb32(pb); /* data size, always 0 */
+    avio_rb16(pb); /* frames per samples */
+
+    len = avio_r8(pb); /* codec name, pascal string */
+    if (len > 31)
+        len = 31;
+    mov_read_mac_string(c, pb, len, st->codec->codec_name, 32);
+    if (len < 31)
+        avio_skip(pb, 31 - len);
+    /* codec_tag YV12 triggers an UV swap in rawdec.c */
+    if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25)) {
+        st->codec->codec_tag = MKTAG('I', '4', '2', '0');
+        st->codec->width &= ~1;
+        st->codec->height &= ~1;
+    }
+    /* Flash Media Server uses tag H263 with Sorenson Spark */
+    if (st->codec->codec_tag == MKTAG('H','2','6','3') &&
+        !memcmp(st->codec->codec_name, "Sorenson H263", 13))
+        st->codec->codec_id = AV_CODEC_ID_FLV1;
+
+    st->codec->bits_per_coded_sample = avio_rb16(pb); /* depth */
+    color_table_id = avio_rb16(pb); /* colortable id */
+    av_dlog(c->fc, "depth %d, ctab id %d\n",
+            st->codec->bits_per_coded_sample, color_table_id);
+    /* figure out the palette situation */
+    color_depth     = st->codec->bits_per_coded_sample & 0x1F;
+    color_greyscale = st->codec->bits_per_coded_sample & 0x20;
+
+    /* if the depth is 2, 4, or 8 bpp, file is palettized */
+    if ((color_depth == 2) || (color_depth == 4) || (color_depth == 8)) {
+        /* for palette traversal */
+        unsigned int color_start, color_count, color_end;
+        unsigned char a, r, g, b;
+
+        if (color_greyscale) {
+            int color_index, color_dec;
+            /* compute the greyscale palette */
+            st->codec->bits_per_coded_sample = color_depth;
+            color_count = 1 << color_depth;
+            color_index = 255;
+            color_dec   = 256 / (color_count - 1);
+            for (j = 0; j < color_count; j++) {
+                if (st->codec->codec_id == AV_CODEC_ID_CINEPAK){
+                    r = g = b = color_count - 1 - color_index;
+                } else
+                r = g = b = color_index;
+                sc->palette[j] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
+                color_index -= color_dec;
+                if (color_index < 0)
+                    color_index = 0;
+            }
+        } else if (color_table_id) {
+            const uint8_t *color_table;
+            /* if flag bit 3 is set, use the default palette */
+            color_count = 1 << color_depth;
+            if (color_depth == 2)
+                color_table = ff_qt_default_palette_4;
+            else if (color_depth == 4)
+                color_table = ff_qt_default_palette_16;
+            else
+                color_table = ff_qt_default_palette_256;
+
+            for (j = 0; j < color_count; j++) {
+                r = color_table[j * 3 + 0];
+                g = color_table[j * 3 + 1];
+                b = color_table[j * 3 + 2];
+                sc->palette[j] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
+            }
+        } else {
+            /* load the palette from the file */
+            color_start = avio_rb32(pb);
+            color_count = avio_rb16(pb);
+            color_end   = avio_rb16(pb);
+            if ((color_start <= 255) && (color_end <= 255)) {
+                for (j = color_start; j <= color_end; j++) {
+                    /* each A, R, G, or B component is 16 bits;
+                        * only use the top 8 bits */
+                    a = avio_r8(pb);
+                    avio_r8(pb);
+                    r = avio_r8(pb);
+                    avio_r8(pb);
+                    g = avio_r8(pb);
+                    avio_r8(pb);
+                    b = avio_r8(pb);
+                    avio_r8(pb);
+                    sc->palette[j] = (a << 24 ) | (r << 16) | (g << 8) | (b);
+                }
+            }
+        }
+        sc->has_palette = 1;
+    }
+}
+
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
     MOVStreamContext *sc;
-    int j, pseudo_stream_id;
+    int pseudo_stream_id;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -1327,118 +1438,8 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 (format >> 24) & 0xff, st->codec->codec_type);
 
         if (st->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
-            unsigned int color_depth, len;
-            int color_greyscale;
-            int color_table_id;
-
             st->codec->codec_id = id;
-            avio_rb16(pb); /* version */
-            avio_rb16(pb); /* revision level */
-            avio_rb32(pb); /* vendor */
-            avio_rb32(pb); /* temporal quality */
-            avio_rb32(pb); /* spatial quality */
-
-            st->codec->width = avio_rb16(pb); /* width */
-            st->codec->height = avio_rb16(pb); /* height */
-
-            avio_rb32(pb); /* horiz resolution */
-            avio_rb32(pb); /* vert resolution */
-            avio_rb32(pb); /* data size, always 0 */
-            avio_rb16(pb); /* frames per samples */
-
-            len = avio_r8(pb); /* codec name, pascal string */
-            if (len > 31)
-                len = 31;
-            mov_read_mac_string(c, pb, len, st->codec->codec_name, 32);
-            if (len < 31)
-                avio_skip(pb, 31 - len);
-            /* codec_tag YV12 triggers an UV swap in rawdec.c */
-            if (!memcmp(st->codec->codec_name, "Planar Y'CbCr 8-bit 4:2:0", 25)){
-                st->codec->codec_tag=MKTAG('I', '4', '2', '0');
-                st->codec->width &= ~1;
-                st->codec->height &= ~1;
-            }
-            /* Flash Media Server uses tag H263 with Sorenson Spark */
-            if (format == MKTAG('H','2','6','3') &&
-                !memcmp(st->codec->codec_name, "Sorenson H263", 13))
-                st->codec->codec_id = AV_CODEC_ID_FLV1;
-
-            st->codec->bits_per_coded_sample = avio_rb16(pb); /* depth */
-            color_table_id = avio_rb16(pb); /* colortable id */
-            av_dlog(c->fc, "depth %d, ctab id %d\n",
-                   st->codec->bits_per_coded_sample, color_table_id);
-            /* figure out the palette situation */
-            color_depth = st->codec->bits_per_coded_sample & 0x1F;
-            color_greyscale = st->codec->bits_per_coded_sample & 0x20;
-
-            /* if the depth is 2, 4, or 8 bpp, file is palettized */
-            if ((color_depth == 2) || (color_depth == 4) ||
-                (color_depth == 8)) {
-                /* for palette traversal */
-                unsigned int color_start, color_count, color_end;
-                unsigned char a, r, g, b;
-
-                if (color_greyscale) {
-                    int color_index, color_dec;
-                    /* compute the greyscale palette */
-                    st->codec->bits_per_coded_sample = color_depth;
-                    color_count = 1 << color_depth;
-                    color_index = 255;
-                    color_dec = 256 / (color_count - 1);
-                    for (j = 0; j < color_count; j++) {
-                        if (id == AV_CODEC_ID_CINEPAK){
-                            r = g = b = color_count - 1 - color_index;
-                        }else
-                        r = g = b = color_index;
-                        sc->palette[j] =
-                            (0xFFU << 24) | (r << 16) | (g << 8) | (b);
-                        color_index -= color_dec;
-                        if (color_index < 0)
-                            color_index = 0;
-                    }
-                } else if (color_table_id) {
-                    const uint8_t *color_table;
-                    /* if flag bit 3 is set, use the default palette */
-                    color_count = 1 << color_depth;
-                    if (color_depth == 2)
-                        color_table = ff_qt_default_palette_4;
-                    else if (color_depth == 4)
-                        color_table = ff_qt_default_palette_16;
-                    else
-                        color_table = ff_qt_default_palette_256;
-
-                    for (j = 0; j < color_count; j++) {
-                        r = color_table[j * 3 + 0];
-                        g = color_table[j * 3 + 1];
-                        b = color_table[j * 3 + 2];
-                        sc->palette[j] =
-                            (0xFFU << 24) | (r << 16) | (g << 8) | (b);
-                    }
-                } else {
-                    /* load the palette from the file */
-                    color_start = avio_rb32(pb);
-                    color_count = avio_rb16(pb);
-                    color_end = avio_rb16(pb);
-                    if ((color_start <= 255) &&
-                        (color_end <= 255)) {
-                        for (j = color_start; j <= color_end; j++) {
-                            /* each A, R, G, or B component is 16 bits;
-                             * only use the top 8 bits */
-                            a = avio_r8(pb);
-                            avio_r8(pb);
-                            r = avio_r8(pb);
-                            avio_r8(pb);
-                            g = avio_r8(pb);
-                            avio_r8(pb);
-                            b = avio_r8(pb);
-                            avio_r8(pb);
-                            sc->palette[j] =
-                                (a << 24 ) | (r << 16) | (g << 8) | (b);
-                        }
-                    }
-                }
-                sc->has_palette = 1;
-            }
+            mov_parse_stsd_video(c, pb, st, sc);
         } else if (st->codec->codec_type==AVMEDIA_TYPE_AUDIO) {
             int bits_per_sample, flags;
             uint16_t version = avio_rb16(pb);
