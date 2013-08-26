@@ -88,4 +88,15 @@ the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
 
+@section flv
+
+Adobe Flash Video Format demuxer.
+
+This demuxer is used to demux FLV files and RTMP network streams.
+
+@table @option
+@item -flv_demuxer @var{bool}
+Allocate the streams according to the onMetaData array content.
+@end table
+
 @c man end INPUT DEVICES
