@@ -3470,7 +3470,8 @@ static int mov_write_trailer(AVFormatContext *s)
     }
 
     if (mov->chapter_track) {
-        av_free(mov->tracks[mov->chapter_track].enc->extradata);
+        if (mov->tracks[mov->chapter_track].enc)
+            av_free(mov->tracks[mov->chapter_track].enc->extradata);
         av_freep(&mov->tracks[mov->chapter_track].enc);
     }
 
