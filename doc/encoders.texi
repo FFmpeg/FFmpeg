@@ -725,8 +725,7 @@ users can encode to this format without this library.
 
 The following options are supported by the libxvid wrapper. Some of
 the following options are listed but are not documented, and
-correspond to shared codec options. See @ref{codec-options,,the Codec
-Options chapter} for their documentation. The other shared options
+correspond to shared codec options. The other shared options
 which are not listed have no effect for the libxvid encoder.
 
 @table @option
