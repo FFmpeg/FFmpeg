@@ -116,6 +116,7 @@ for iver in $build_versions; do
 		confInfo=${DIST}/configure_out.log
 		makeInfo=${DIST}/make_out.log
 
+		[[ $iver == "debug" && $iarch != "armv7" ]] && continue
 		case $iarch in
 			arm*)
 				export PATH=${DEVRootReal}/usr/bin:$path_old
