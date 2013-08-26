@@ -1471,6 +1471,20 @@ static void mov_parse_stsd_audio(MOVContext *c, AVIOContext *pb,
     }
 }
 
+static void mov_parse_stsd_subtitle(MOVContext *c, AVIOContext *pb,
+                                    AVStream *st, MOVStreamContext *sc,
+                                    int size)
+{
+    // ttxt stsd contains display flags, justification, background
+    // color, fonts, and default styles, so fake an atom to read it
+    MOVAtom fake_atom = { .size = size };
+    // mp4s contains a regular esds atom
+    if (st->codec->codec_tag != AV_RL32("mp4s"))
+        mov_read_glbl(c, pb, fake_atom);
+    st->codec->width  = sc->width;
+    st->codec->height = sc->height;
+}
+
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
 {
     AVStream *st;
@@ -1533,14 +1547,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             st->codec->codec_id = id;
             mov_parse_stsd_audio(c, pb, st, sc);
         } else if (st->codec->codec_type==AVMEDIA_TYPE_SUBTITLE){
-            // ttxt stsd contains display flags, justification, background
-            // color, fonts, and default styles, so fake an atom to read it
-            MOVAtom fake_atom = { .size = size - (avio_tell(pb) - start_pos) };
-            if (format != AV_RL32("mp4s")) // mp4s contains a regular esds atom
-                mov_read_glbl(c, pb, fake_atom);
-            st->codec->codec_id= id;
-            st->codec->width = sc->width;
-            st->codec->height = sc->height;
+            st->codec->codec_id = id;
+            mov_parse_stsd_subtitle(c, pb, st, sc,
+                                    size - (avio_tell(pb) - start_pos));
         } else {
             if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
                 MOVStreamContext *tmcd_ctx = st->priv_data;
