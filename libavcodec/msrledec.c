@@ -184,9 +184,9 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic,
             }
 
             if ((depth == 8) || (depth == 24)) {
-                for(i = 0; i < p2 * (depth >> 3); i++) {
-                    *output++ = bytestream2_get_byteu(gb);
-                }
+                bytestream2_get_bufferu(gb, output, p2 * (depth >> 3));
+                output += p2 * (depth >> 3);
+
                 // RLE8 copy is actually padded - and runs are not!
                 if(depth == 8 && (p2 & 1)) {
                     bytestream2_skip(gb, 1);
