@@ -232,8 +232,6 @@ static int concat_read_header(AVFormatContext *avf)
                 av_log(avf, AV_LOG_ERROR, "Line %d: invalid version\n", line);
                 FAIL(AVERROR_INVALIDDATA);
             }
-            if (cat->safe < 0)
-                cat->safe = 1;
         } else {
             av_log(avf, AV_LOG_ERROR, "Line %d: unknown keyword '%s'\n",
                    line, keyword);
@@ -415,8 +413,7 @@ static int concat_seek(AVFormatContext *avf, int stream,
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "safe", "enable safe mode",
-      OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
+    { "safe", "enable safe mode", OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = 1}, -1, 1, DEC },
     { NULL }
 };
 
