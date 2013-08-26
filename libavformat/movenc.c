@@ -1140,9 +1140,30 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_rtp_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "rtp ");
+    avio_wb32(pb, 0); /* Reserved */
+    avio_wb16(pb, 0); /* Reserved */
+    avio_wb16(pb, 1); /* Data-reference index */
+
+    avio_wb16(pb, 1); /* Hint track version */
+    avio_wb16(pb, 1); /* Highest compatible version */
+    avio_wb32(pb, track->max_packet_size); /* Max packet size */
+
+    avio_wb32(pb, 12); /* size */
+    ffio_wfourcc(pb, "tims");
+    avio_wb32(pb, track->timescale);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
+#if 1
     int frame_duration = av_rescale(track->timescale, track->enc->time_base.num, track->enc->time_base.den);
     int nb_frames = 1.0/av_q2d(track->enc->time_base) + 0.5;
 
@@ -1162,26 +1183,15 @@ static int mov_write_tmcd_tag(AVIOContext *pb, MOVTrack *track)
     avio_w8(pb, nb_frames);                 /* Number of frames */
     avio_wb24(pb, 0);                       /* Reserved */
     /* TODO: source reference string */
-    return update_size(pb, pos);
-}
+#else
 
-static int mov_write_rtp_tag(AVIOContext *pb, MOVTrack *track)
-{
-    int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size */
-    ffio_wfourcc(pb, "rtp ");
-    avio_wb32(pb, 0); /* Reserved */
-    avio_wb16(pb, 0); /* Reserved */
-    avio_wb16(pb, 1); /* Data-reference index */
-
-    avio_wb16(pb, 1); /* Hint track version */
-    avio_wb16(pb, 1); /* Highest compatible version */
-    avio_wb32(pb, track->max_packet_size); /* Max packet size */
-
-    avio_wb32(pb, 12); /* size */
-    ffio_wfourcc(pb, "tims");
-    avio_wb32(pb, track->timescale);
-
+    ffio_wfourcc(pb, "tmcd");               /* Data format */
+    avio_wb32(pb, 0);                       /* Reserved */
+    avio_wb32(pb, 1);                       /* Data reference index */
+    if (track->enc->extradata_size)
+        avio_write(pb, track->enc->extradata, track->enc->extradata_size);
+#endif
     return update_size(pb, pos);
 }
 
@@ -1510,10 +1520,10 @@ static int mov_write_minf_tag(AVIOContext *pb, MOVTrack *track)
         } else {
             mov_write_nmhd_tag(pb);
         }
-    } else if (track->tag == MKTAG('t','m','c','d')) {
-        mov_write_gmhd_tag(pb, track);
     } else if (track->tag == MKTAG('r','t','p',' ')) {
         mov_write_hmhd_tag(pb);
+    } else if (track->tag == MKTAG('t','m','c','d')) {
+        mov_write_gmhd_tag(pb, track);
     }
     if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
         mov_write_hdlr_tag(pb, NULL);
