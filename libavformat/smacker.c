@@ -210,7 +210,8 @@ static int smacker_read_header(AVFormatContext *s)
 
 
     /* load trees to extradata, they will be unpacked by decoder */
-    st->codec->extradata = av_malloc(smk->treesize + 16 + FF_INPUT_BUFFER_PADDING_SIZE);
+    st->codec->extradata = av_mallocz(smk->treesize + 16 +
+                                      FF_INPUT_BUFFER_PADDING_SIZE);
     st->codec->extradata_size = smk->treesize + 16;
     if(!st->codec->extradata){
         av_log(s, AV_LOG_ERROR, "Cannot allocate %i bytes of extradata\n", smk->treesize + 16);
@@ -305,12 +306,14 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* if audio chunks are present, put them to stack and retrieve later */
         for(i = 0; i < 7; i++) {
             if(flags & 1) {
-                unsigned int size;
+                uint32_t size;
                 uint8_t *tmpbuf;
 
                 size = avio_rl32(s->pb) - 4;
-                if(size + 4L > frame_size)
+                if (!size || size + 4L > frame_size) {
+                    av_log(s, AV_LOG_ERROR, "Invalid audio part size\n");
                     return AVERROR_INVALIDDATA;
+                }
                 frame_size -= size;
                 frame_size -= 4;
                 smk->curstream++;
