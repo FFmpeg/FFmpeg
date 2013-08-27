@@ -3834,7 +3834,8 @@ static int mov_write_header(AVFormatContext *s)
         mov->time += 0x7C25B080; // 1970 based -> 1904 based
 
     if (mov->chapter_track)
-        mov_create_chapter_track(s, mov->chapter_track);
+        if (mov_create_chapter_track(s, mov->chapter_track) < 0)
+            goto error;
 
     if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Initialize the hint tracks for each audio and video stream */
@@ -4019,7 +4020,8 @@ static int mov_write_trailer(AVFormatContext *s)
     if (!mov->chapter_track && !(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
         if (mov->mode & (MODE_MP4|MODE_MOV|MODE_IPOD) && s->nb_chapters) {
             mov->chapter_track = mov->nb_streams++;
-            mov_create_chapter_track(s, mov->chapter_track);
+            if ((res = mov_create_chapter_track(s, mov->chapter_track)) < 0)
+                goto error;
         }
     }
 
@@ -4082,6 +4084,7 @@ static int mov_write_trailer(AVFormatContext *s)
         }
     }
 
+error:
     mov_free(s);
 
     return res;
