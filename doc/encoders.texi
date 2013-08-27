@@ -412,6 +412,131 @@ Selected by Encoder (default)
 
 @end table
 
+@section libmp3lame
+
+LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper
+
+Requires the presence of the libmp3lame headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libmp3lame}.
+
+@subsection Option Mapping
+
+The following options are supported by the libmp3lame wrapper,
+the LAME-equivalent options follow the FFmpeg ones.
+
+@multitable @columnfractions .2 .2
+@item FFmpeg            @tab LAME
+@item b                 @tab b
+FFmpeg @code{b} option is expressed in bits/s, lame @code{bitrate}
+in kilobits/s.
+@item q                 @tab V
+Quality setting for VBR.
+@item compression_level @tab q
+Algorithm quality. Valid options are integers from 0-9.
+@item reservoir         @tab N.A.
+Enable use of bit reservoir. LAME has this enabled by default.
+@item joint_stereo      @tab -m j
+Enables the the encoder to use (on a frame by frame basis) either L/R
+stereo or mid/side stereo.
+@end multitable
+
+@section libopencore-amrnb
+
+OpenCORE Adaptive Multi-Rate Narrowband encoder.
+
+Requires the presence of the libopencore-amrnb headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libopencore-amrnb --enable-version3}.
+
+This is a mono-only encoder. Officially it only supports 8000Hz sample rate,
+but you can override it by setting @option{strict} to @samp{unofficial} or
+lower.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set bitrate in bits per second. Only the following bitrates are supported,
+otherwise libavcodec will round to the nearest valid bitrate.
+
+@table @option
+@item 4750
+@item 5150
+@item 5900
+@item 6700
+@item 7400
+@item 7950
+@item 10200
+@item 12200
+@end table
+
+@item dtx
+Allow discontinuous transmission (generate comfort noise) when set to 1. The
+default value is 0 (disabled).
+
+@end table
+
+@section libvo-aacenc
+
+VisualOn AAC encoder
+
+Requires the presence of the libvo-aacenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvo-aacenc --enable-version3}.
+
+@subsection Options
+
+The VisualOn AAC encoder only support encoding AAC-LC and up to 2
+channels. It is also CBR-only. It is considered to be worse than the
+native experimental FFmpeg AAC encoder.
+
+@table @option
+
+@item b
+Bitrate.
+
+@end table
+
+@section libvo-amrwbenc
+
+VisualOn Adaptive Multi-Rate Wideband encoder
+
+Requires the presence of the libvo-amrwbenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvo-amrwbenc --enable-version3}.
+
+This is a mono-only encoder. Officially it only supports 16000Hz sample
+rate, but you can override it by setting @option{strict} to
+@samp{unofficial} or lower.
+
+@subsection Options
+
+@table @option
+
+@item b
+Set bitrate in bits/s. Only the following bitrates are supported, otherwise
+libavcodec will round to the nearest valid bitrate.
+
+@table @samp
+@item 6600
+@item 8850
+@item 12650
+@item 14250
+@item 15850
+@item 18250
+@item 19850
+@item 23050
+@item 23850
+@end table
+
+@item dtx
+Allow discontinuous transmission (generate comfort noise) when set to 1. The
+default value is 0 (disabled).
+
+@end table
+
 @c man end AUDIO ENCODERS
 
 @chapter Video Encoders
@@ -584,5 +709,117 @@ ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
 
 For more information about libx264 and the supported options see:
 @url{http://www.videolan.org/developers/x264.html}
+
+@section libxvid
+
+Xvid MPEG-4 Part 2 encoder wrapper.
+
+This encoder requires the presence of the libxvidcore headers and library
+during configuration. You need to explicitly configure the build with
+@code{--enable-libxvid --enable-gpl}.
+
+The native @code{mpeg4} encoder supports the MPEG-4 Part 2 format, so
+users can encode to this format without this library.
+
+@subsection Options
+
+The following options are supported by the libxvid wrapper. Some of
+the following options are listed but are not documented, and
+correspond to shared codec options. The other shared options
+which are not listed have no effect for the libxvid encoder.
+
+@table @option
+@item b
+
+@item g
+
+@item qmin
+
+@item qmax
+
+@item mpeg_quant
+
+@item threads
+
+@item bf
+
+@item b_qfactor
+
+@item b_qoffset
+
+@item flags
+Set specific encoding flags. Possible values:
+
+@table @samp
+
+@item mv4
+Use four motion vector by macroblock.
+
+@item aic
+Enable high quality AC prediction.
+
+@item gray
+Only encode grayscale.
+
+@item gmc
+Enable the use of global motion compensation (GMC).
+
+@item qpel
+Enable quarter-pixel motion compensation.
+
+@item cgop
+Enable closed GOP.
+
+@item global_header
+Place global headers in extradata instead of every keyframe.
+
+@end table
+
+@item trellis
+
+@item me_method
+Set motion estimation method. Possible values in decreasing order of
+speed and increasing order of quality:
+
+@table @samp
+@item zero
+Use no motion estimation (default).
+
+@item phods
+@item x1
+@item log
+Enable advanced diamond zonal search for 16x16 blocks and half-pixel
+refinement for 16x16 blocks. @samp{x1} and @samp{log} are aliases for
+@samp{phods}.
+
+@item epzs
+Enable all of the things described above, plus advanced diamond zonal
+search for 8x8 blocks, half-pixel refinement for 8x8 blocks, and motion
+estimation on chroma planes.
+
+@item full
+Enable all of the things described above, plus extended 16x16 and 8x8
+blocks search.
+@end table
+
+@item mbd
+Set macroblock decision algorithm. Possible values in the increasing
+order of quality:
+
+@table @samp
+@item simple
+Use macroblock comparing function algorithm (default).
+
+@item bits
+Enable rate distortion-based half pixel and quarter pixel refinement for
+16x16 blocks.
+
+@item rd
+Enable all of the things described above, plus rate distortion-based
+half pixel and quarter pixel refinement for 8x8 blocks, and rate
+distortion-based search using square pattern.
+@end table
+
+@end table
 
 @c man end VIDEO ENCODERS
