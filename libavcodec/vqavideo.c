@@ -135,8 +135,15 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
 
     /* load up the VQA parameters from the header */
     s->vqa_version = s->avctx->extradata[0];
-    if (s->vqa_version < 1 || s->vqa_version > 3) {
-        av_log(s->avctx, AV_LOG_ERROR, "unsupported version %d\n", s->vqa_version);
+    switch (s->vqa_version) {
+    case 1:
+    case 2:
+        break;
+    case 3:
+        av_log_missing_feature(avctx, "VQA Version 3", 0);
+        return AVERROR_PATCHWELCOME;
+    default:
+        av_log_missing_feature(avctx, "VQA Version", 1);
         return AVERROR_PATCHWELCOME;
     }
     s->width = AV_RL16(&s->avctx->extradata[6]);
