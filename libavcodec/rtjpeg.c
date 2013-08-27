@@ -108,10 +108,13 @@ int ff_rtjpeg_decode_frame_yuv420(RTJpegContext *c, AVFrame *f,
                                   const uint8_t *buf, int buf_size) {
     GetBitContext gb;
     int w = c->w / 16, h = c->h / 16;
-    int x, y;
+    int x, y, ret;
     uint8_t *y1 = f->data[0], *y2 = f->data[0] + 8 * f->linesize[0];
     uint8_t *u = f->data[1], *v = f->data[2];
-    init_get_bits(&gb, buf, buf_size * 8);
+
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
+
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
 #define BLOCK(quant, dst, stride) do { \
