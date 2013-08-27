@@ -1178,6 +1178,7 @@ ARCH_EXT_LIST_X86='
     amd3dnowext
     avx
     fma4
+    i686
     mmx
     mmxext
     sse
@@ -1290,7 +1291,6 @@ HAVE_LIST="
     gettimeofday
     gnu_as
     gsm_h
-    i686
     ibm_asm
     inet_aton
     io_h
@@ -1480,7 +1480,9 @@ ppc4xx_deps="ppc"
 
 vis_deps="sparc"
 
-x86_64_suggest="fast_cmov i686"
+cpunop_deps="i686"
+x86_64_select="i686"
+x86_64_suggest="fast_cmov"
 
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
@@ -3567,7 +3569,7 @@ EOF
         check_yasm "vextractf128 xmm0, ymm0, 0" && enable yasm ||
             die "yasm not found, use --disable-yasm for a crippled build"
         check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        check_yasm "CPU amdnop" && enabled i686 && enable cpunop
+        check_yasm "CPU amdnop" && enable cpunop
     fi
 
     case "$cpu" in
