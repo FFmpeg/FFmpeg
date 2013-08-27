@@ -345,6 +345,8 @@ static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
 
             tile->ref_mbs = 0;
             if (p || b) {
+                if (tile->num_MBs != ref_tile->num_MBs)
+                    return AVERROR_INVALIDDATA;
                 tile->ref_mbs = ref_tile->mbs;
                 ref_tile++;
             }
@@ -984,6 +986,14 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
         ctx->buf_invalid[ctx->dst_buf] = 0;
+    } else {
+        if (ctx->is_scalable)
+            return AVERROR_INVALIDDATA;
+
+        for (p = 0; p < 3; p++) {
+            if (!ctx->planes[p].bands[0].buf)
+                return AVERROR_INVALIDDATA;
+        }
     }
     if (ctx->buf_invalid[ctx->dst_buf])
         return -1;
