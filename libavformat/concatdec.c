@@ -99,7 +99,7 @@ static int add_file(AVFormatContext *avf, char *filename, ConcatFile **rfile,
     av_freep(&filename);
 
     if (cat->nb_files >= *nb_files_alloc) {
-        size_t n = FFMAX(*nb_files_alloc * 2, 16);
+        size_t n = FFMAX(*nb_files_alloc * 2, 128);
         ConcatFile *new_files;
         if (n <= cat->nb_files || n > SIZE_MAX / sizeof(*cat->files) ||
             !(new_files = av_realloc(cat->files, n * sizeof(*cat->files))))
@@ -158,6 +158,31 @@ static int concat_read_close(AVFormatContext *avf)
     return 0;
 }
 
+static int recalc_segment_duration(AVFormatContext *avf)
+{
+    ConcatContext *cat = avf->priv_data;
+    int ret = 0, i;
+    AVFormatContext *ctx = NULL;
+
+    for (i = 0; i < cat->nb_files; i++) {
+        ConcatFile *f = &cat->files[i];
+        if (ctx)
+            avformat_close_input(&ctx);
+        if ((ret = avformat_open_input(&ctx, f->url, NULL, NULL)) < 0 ||
+                (ret = avformat_find_stream_info(ctx, NULL)) < 0) {
+            av_log(avf, AV_LOG_DEBUG, "(recalc)Impossible to open '%s'\n", f->url);
+            goto done;
+        }
+        if (ctx->duration != AV_NOPTS_VALUE)
+            f->duration = ctx->duration;
+    }
+
+done:
+    if (ctx)
+        avformat_close_input(&ctx);
+    return ret;
+}
+
 static int concat_read_header(AVFormatContext *avf)
 {
     ConcatContext *cat = avf->priv_data;
@@ -207,8 +232,6 @@ static int concat_read_header(AVFormatContext *avf)
                 av_log(avf, AV_LOG_ERROR, "Line %d: invalid version\n", line);
                 FAIL(AVERROR_INVALIDDATA);
             }
-            if (cat->safe < 0)
-                cat->safe = 1;
         } else {
             av_log(avf, AV_LOG_ERROR, "Line %d: unknown keyword '%s'\n",
                    line, keyword);
@@ -219,6 +242,14 @@ static int concat_read_header(AVFormatContext *avf)
         FAIL(ret);
     if (!cat->nb_files)
         FAIL(AVERROR_INVALIDDATA);
+
+    for (i = 0; i < cat->nb_files; i++) {
+        if (cat->files[i].duration == AV_NOPTS_VALUE)
+            break;
+    }
+    if (i != cat->nb_files) {
+        recalc_segment_duration(avf);
+    }
 
     for (i = 0; i < cat->nb_files; i++) {
         if (cat->files[i].start_time == AV_NOPTS_VALUE)
@@ -279,6 +310,8 @@ static int concat_read_packet(AVFormatContext *avf, AVPacket *pkt)
             (ret = open_next_file(avf)) < 0)
             break;
     }
+    if (ret < 0)
+        return ret;
     delta = av_rescale_q(cat->cur_file->start_time - cat->avf->start_time,
                          AV_TIME_BASE_Q,
                          cat->avf->streams[pkt->stream_index]->time_base);
@@ -382,8 +415,7 @@ static int concat_seek(AVFormatContext *avf, int stream,
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "safe", "enable safe mode",
-      OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, DEC },
+    { "safe", "enable safe mode", OFFSET(safe), AV_OPT_TYPE_INT, {.i64 = 1}, -1, 1, DEC },
     { NULL }
 };
 

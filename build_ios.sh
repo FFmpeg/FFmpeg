@@ -90,7 +90,7 @@ function doConfigure()
 		\
 		${DEBUGS} \
 
-		ret=$?; cp -f ./config.log ${DIST}/; [[ $ret != 0 ]] && kill $$
+		ret=$?; cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && kill $$
 }
 
 
@@ -99,7 +99,7 @@ build_date=`date "+%Y%m%dT%H%M%S"`
 build_versions="release debug"
 #build_versions="debug"
 build_archs="armv7 armv7s i386"
-#build_archs="i386"
+#build_archs="armv7"
 path_old=$PATH
 
 for iver in $build_versions; do
@@ -116,6 +116,7 @@ for iver in $build_versions; do
 		confInfo=${DIST}/configure_out.log
 		makeInfo=${DIST}/make_out.log
 
+		[[ $iver == "debug" && $iarch != "armv7" ]] && continue
 		case $iarch in
 			arm*)
 				export PATH=${DEVRootReal}/usr/bin:$path_old
