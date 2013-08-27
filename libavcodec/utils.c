@@ -2598,6 +2598,9 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             if (enc->bits_per_raw_sample &&
                 enc->bits_per_raw_sample <= av_pix_fmt_desc_get(enc->pix_fmt)->comp[0].depth_minus1)
                 av_strlcatf(detail, sizeof(detail), "%d bpc, ", enc->bits_per_raw_sample);
+            if (enc->color_range != AVCOL_RANGE_UNSPECIFIED)
+                av_strlcatf(detail, sizeof(detail),
+                            enc->color_range == AVCOL_RANGE_MPEG ? "tv, ": "pc, ");
             if (strlen(detail) > 1) {
                 detail[strlen(detail) - 2] = 0;
                 av_strlcatf(buf, buf_size, "%s)", detail);
