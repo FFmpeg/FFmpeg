@@ -5,7 +5,7 @@ Version 9.13:
 - matroska: add the Opus mapping
 - mp3enc: Properly write bitrate value in XING header (Fixes: debian/736088)
 - origin/pu/9 oggdec: add support for Opus in Ogg demuxing (Fixes: libav/603, debian/720563)
-- apedec: do not buffer decoded samples over AVPackets
+- apedec: do not buffer decoded samples over AVPackets (Fixes: debian/744901)
 - isom: lpcm in mov default to big endian
 - movdec: handle 0x7fff langcode as macintosh per the specs
 - h264: reset next_output_pic earlier in start_frame() (Fixes: libav/672, debian/741240, ubuntu/1288206)
