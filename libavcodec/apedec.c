@@ -822,7 +822,6 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
     int16_t *samples;
     int i, ret;
     int blockstodecode;
-    int bytes_used = 0;
 
     /* this should never be negative, but bad things will happen if it is, so
        check it just to make sure. */
@@ -877,7 +876,6 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
         }
 
-        bytes_used = buf_size;
     }
 
     if (!s->data) {
@@ -920,7 +918,7 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame_ptr   = 1;
     *(AVFrame *)data = s->frame;
 
-    return bytes_used;
+    return (s->samples == 0) ? buf_size : 0;
 }
 
 static void ape_flush(AVCodecContext *avctx)
