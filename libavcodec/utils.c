@@ -2601,6 +2601,21 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             if (enc->color_range != AVCOL_RANGE_UNSPECIFIED)
                 av_strlcatf(detail, sizeof(detail),
                             enc->color_range == AVCOL_RANGE_MPEG ? "tv, ": "pc, ");
+            if (enc->colorspace<9U) {
+                static const char *name[] =  {
+                    "GBR",
+                    "bt709",
+                    NULL,
+                    NULL,
+                    "fcc",
+                    "bt470bg",
+                    "smpte170m",
+                    "smpte240m",
+                    "YCgCo",
+                };
+                if (name[enc->colorspace])
+                    av_strlcatf(detail, sizeof(detail), "%s, ", name[enc->colorspace]);
+            }
             if (strlen(detail) > 1) {
                 detail[strlen(detail) - 2] = 0;
                 av_strlcatf(buf, buf_size, "%s)", detail);
