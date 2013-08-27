@@ -374,6 +374,10 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
                                   log2w, log2h, stride)) < 0)
             return ret;
     } else if (code == 3 && f->version < 2) {
+        if (start > src || src > end) {
+            av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
+            return AVERROR_INVALIDDATA;
+        }
         mcdc(dst, src, log2w, h, stride, 1, 0);
     } else if (code == 4) {
         if (bytestream2_get_bytes_left(&f->g) < 1) {
@@ -393,6 +397,10 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src,
     } else if (code == 5) {
         if (bytestream2_get_bytes_left(&f->g2) < 2) {
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (start > src || src > end) {
+            av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return AVERROR_INVALIDDATA;
         }
         mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16u(&f->g2));
@@ -757,7 +765,10 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
     unsigned int prestream_size;
     const uint8_t *prestream;
 
-    if (bitstream_size > (1<<26) || length < bitstream_size + 12) {
+    if (bitstream_size > (1 << 26))
+        return AVERROR_INVALIDDATA;
+
+    if (length < bitstream_size + 12) {
         av_log(f->avctx, AV_LOG_ERROR, "packet size too small\n");
         return AVERROR_INVALIDDATA;
     }
@@ -766,7 +777,6 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length)
     prestream      =             buf + bitstream_size + 12;
 
     if (prestream_size + bitstream_size + 12 != length
-        || bitstream_size > (1 << 26)
         || prestream_size > (1 << 26)) {
         av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d %d\n",
                prestream_size, bitstream_size, length);

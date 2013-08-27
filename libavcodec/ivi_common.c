@@ -85,7 +85,7 @@ static int ivi_create_huff_from_desc(const IVIHuffDesc *cb, VLC *vlc, int flag)
 
             bits[pos] = i + cb->xbits[i] + not_last_row;
             if (bits[pos] > IVI_VLC_BITS)
-                return -1; /* invalid descriptor */
+                return AVERROR_INVALIDDATA; /* invalid descriptor */
 
             codewords[pos] = inv_bits((prefix | j), bits[pos]);
             if (!bits[pos])
@@ -489,7 +489,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
                     } else {
                         if (sym >= 256U) {
                             av_log(avctx, AV_LOG_ERROR, "Invalid sym encountered: %d.\n", sym);
-                            return -1;
+                            return AVERROR_INVALIDDATA;
                         }
                         run = rvmap->runtab[sym];
                         val = rvmap->valtab[sym];
@@ -512,7 +512,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile
                 }// while
 
                 if (scan_pos >= num_coeffs && sym != rvmap->eob_sym)
-                    return -1; /* corrupt block data */
+                    return AVERROR_INVALIDDATA; /* corrupt block data */
 
                 /* undoing DC coeff prediction for intra-blocks */
                 if (is_intra && band->is_2d_trans) {
@@ -804,8 +804,16 @@ static int decode_band(IVI45DecContext *ctx,
                 break;
 
             result = ivi_decode_blocks(&ctx->gb, band, tile, avctx);
-            if (result < 0 || ((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
-                av_log(avctx, AV_LOG_ERROR, "Corrupted tile data encountered!\n");
+            if (result < 0) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Corrupted tile data encountered!\n");
+                break;
+            }
+
+            if (((get_bits_count(&ctx->gb) - pos) >> 3) != tile->data_size) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Tile data_size mismatch!\n");
+                result = AVERROR_INVALIDDATA;
                 break;
             }
 
@@ -857,14 +865,14 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (result) {
         av_log(avctx, AV_LOG_ERROR,
                "Error while decoding picture header: %d\n", result);
-        return -1;
+        return result;
     }
     if (ctx->gop_invalid)
         return AVERROR_INVALIDDATA;
 
     if (ctx->gop_flags & IVI5_IS_PROTECTED) {
         av_log(avctx, AV_LOG_ERROR, "Password-protected clip!\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     ctx->switch_buffers(ctx);
@@ -876,10 +884,10 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         for (p = 0; p < 3; p++) {
             for (b = 0; b < ctx->planes[p].num_bands; b++) {
                 result = decode_band(ctx, &ctx->planes[p].bands[b], avctx);
-                if (result) {
+                if (result < 0) {
                     av_log(avctx, AV_LOG_ERROR,
                            "Error while decoding band: %d, plane: %d\n", b, p);
-                    return -1;
+                    return result;
                 }
             }
         }
