@@ -535,8 +535,8 @@ static void build_sb_samples_from_noise(QDM2Context *q, int sb)
  * @param channels         number of channels
  * @param coding_method    q->coding_method[0][0][0]
  */
-static void fix_coding_method_array(int sb, int channels,
-                                    sb_int8_array coding_method)
+static int fix_coding_method_array(int sb, int channels,
+                                   sb_int8_array coding_method)
 {
     int j, k;
     int ch;
@@ -544,6 +544,8 @@ static void fix_coding_method_array(int sb, int channels,
 
     for (ch = 0; ch < channels; ch++) {
         for (j = 0; j < 64; ) {
+            if (coding_method[ch][sb][j] < 8)
+                return -1;
             if ((coding_method[ch][sb][j] - 8) > 22) {
                 run      = 1;
                 case_val = 8;
@@ -589,6 +591,7 @@ static void fix_coding_method_array(int sb, int channels,
             j += run;
         }
     }
+    return 0;
 }
 
 /**
@@ -817,7 +820,7 @@ static int synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                                       int length, int sb_min, int sb_max)
 {
     int sb, j, k, n, ch, run, channels;
-    int joined_stereo, zero_encoding, chs;
+    int joined_stereo, zero_encoding;
     int type34_first;
     float type34_div = 0;
     float type34_predictor;
@@ -855,7 +858,11 @@ static int synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                 if (q->coding_method[1][sb][j] > q->coding_method[0][sb][j])
                     q->coding_method[0][sb][j] = q->coding_method[1][sb][j];
 
-            fix_coding_method_array(sb, q->nb_channels, q->coding_method);
+            if (fix_coding_method_array(sb, q->nb_channels,
+                                            q->coding_method)) {
+                build_sb_samples_from_noise(q, sb);
+                continue;
+            }
             channels = 1;
         }
 
@@ -978,16 +985,18 @@ static int synthfilt_build_sb_samples(QDM2Context *q, GetBitContext *gb,
                 }
 
                 if (joined_stereo) {
-                    float tmp[10][MPA_MAX_CHANNELS];
-
-                    for (k = 0; k < run; k++) {
-                        tmp[k][0] = samples[k];
-                        tmp[k][1] = (sign_bits[(j + k) / 8]) ? -samples[k] : samples[k];
+                    for (k = 0; k < run && j + k < 128; k++) {
+                        q->sb_samples[0][j + k][sb] =
+                            q->tone_level[0][sb][(j + k) / 2] * samples[k];
+                        if (q->nb_channels == 2) {
+                            if (sign_bits[(j + k) / 8])
+                                q->sb_samples[1][j + k][sb] =
+                                    q->tone_level[1][sb][(j + k) / 2] * -samples[k];
+                            else
+                                q->sb_samples[1][j + k][sb] =
+                                    q->tone_level[1][sb][(j + k) / 2] * samples[k];
+                        }
                     }
-                    for (chs = 0; chs < q->nb_channels; chs++)
-                        for (k = 0; k < run; k++)
-                            if ((j + k) < 128)
-                                q->sb_samples[chs][j + k][sb] = q->tone_level[chs][sb][((j + k)/2)] * tmp[k][chs];
                 } else {
                     for (k = 0; k < run; k++)
                         if ((j + k) < 128)

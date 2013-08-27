@@ -44,16 +44,22 @@ static VLC ivi_blk_vlc_tabs[8]; ///< static block Huffman tables
 typedef void (*ivi_mc_func) (int16_t *buf, const int16_t *ref_buf,
                              uint32_t pitch, int mc_type);
 
-static int ivi_mc(ivi_mc_func mc, int16_t *buf, const int16_t *ref_buf,
-                  int offs, int mv_x, int mv_y, uint32_t pitch,
-                  int mc_type)
+static int ivi_mc(IVIBandDesc *band, ivi_mc_func mc,
+                  int offs, int mv_x, int mv_y, int mc_type)
 {
-    int ref_offs = offs + mv_y * pitch + mv_x;
+    int ref_offs = offs + mv_y * band->pitch + mv_x;
+    int buf_size = band->pitch * band->aheight;
+    int min_size = band->pitch * (band->blk_size - 1) + band->blk_size;
+    int ref_size = (mc_type > 1) * band->pitch + (mc_type & 1);
 
-    if (offs < 0 || ref_offs < 0 || !ref_buf)
+    if (offs < 0 || ref_offs < 0 || !band->ref_buf)
+        return AVERROR_INVALIDDATA;
+    if (buf_size - min_size < offs)
+        return AVERROR_INVALIDDATA;
+    if (buf_size - min_size - ref_size < ref_offs)
         return AVERROR_INVALIDDATA;
 
-    mc(buf + offs, ref_buf + ref_offs, pitch, mc_type);
+    mc(band->buf + offs, band->ref_buf + ref_offs, band->pitch, mc_type);
 
     return 0;
 }
@@ -239,6 +245,7 @@ static av_cold void ivi_free_buffers(IVIPlaneDesc *planes)
             av_freep(&planes[p].bands[b].tiles);
         }
         av_freep(&planes[p].bands);
+        planes[p].num_bands = 0;
     }
 }
 
@@ -250,6 +257,10 @@ av_cold int ff_ivi_init_planes(IVIPlaneDesc *planes, const IVIPicConfig *cfg)
     IVIBandDesc *band;
 
     ivi_free_buffers(planes);
+
+    if (cfg->pic_width < 1 || cfg->pic_height < 1 ||
+        cfg->luma_bands < 1 || cfg->chroma_bands < 1)
+        return AVERROR_INVALIDDATA;
 
     /* fill in the descriptor of the luminance plane */
     planes[0].width     = cfg->pic_width;
@@ -411,6 +422,20 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
     return len;
 }
 
+static int ivi_dc_transform(IVIBandDesc *band, int *prev_dc, int buf_offs,
+                            int blk_size)
+{
+    int buf_size = band->pitch * band->aheight - buf_offs;
+    int min_size = (blk_size - 1) * band->pitch + blk_size;
+
+    if (min_size > buf_size)
+        return AVERROR_INVALIDDATA;
+
+    band->dc_transform(prev_dc, band->buf + buf_offs,
+                       band->pitch, blk_size);
+
+    return 0;
+}
 
 static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
                                    ivi_mc_func mc, int mv_x, int mv_y,
@@ -428,6 +453,12 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
     int num_coeffs = blk_size * blk_size;
     int col_mask   = blk_size - 1;
     int scan_pos   = -1;
+    int min_size   = band->pitch * (band->transform_size - 1) +
+                     band->transform_size;
+    int buf_size   = band->pitch * band->aheight - offs;
+
+    if (min_size > buf_size)
+        return AVERROR_INVALIDDATA;
 
     if (!band->scan) {
         av_log(avctx, AV_LOG_ERROR, "Scan pattern is not set.\n");
@@ -498,8 +529,7 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
 
     /* apply motion compensation */
     if (!is_intra)
-        return ivi_mc(mc, band->buf, band->ref_buf, offs, mv_x, mv_y,
-                      band->pitch, mc_type);
+        return ivi_mc(band, mc, offs, mv_x, mv_y, mc_type);
 
     return 0;
 }
@@ -595,11 +625,12 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
                 /* for intra blocks apply the dc slant transform */
                 /* for inter - perform the motion compensation without delta */
                 if (is_intra) {
-                    band->dc_transform(&prev_dc, band->buf + buf_offs,
-                                       band->pitch, blk_size);
+                    ret = ivi_dc_transform(band, &prev_dc, buf_offs, blk_size);
+                    if (ret < 0)
+                        return ret;
                 } else {
-                    ret = ivi_mc(mc_no_delta_func, band->buf, band->ref_buf,
-                                 buf_offs, mv_x, mv_y, band->pitch, mc_type);
+                    ret = ivi_mc(band, mc_no_delta_func, buf_offs,
+                                 mv_x, mv_y, mc_type);
                     if (ret < 0)
                         return ret;
                 }
@@ -721,8 +752,8 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
             for (blk = 0; blk < num_blocks; blk++) {
                 /* adjust block position in the buffer according with its number */
                 offs = mb->buf_offs + band->blk_size * ((blk & 1) + !!(blk & 2) * band->pitch);
-                ret = ivi_mc(mc_no_delta_func, band->buf, band->ref_buf,
-                             offs, mv_x, mv_y, band->pitch, mc_type);
+                ret = ivi_mc(band, mc_no_delta_func, offs,
+                             mv_x, mv_y, mc_type);
                 if (ret < 0)
                     return ret;
             }
