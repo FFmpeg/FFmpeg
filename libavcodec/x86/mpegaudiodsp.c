@@ -252,9 +252,9 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
     }
 
 #if HAVE_SSE2_INLINE
-    if (cpu_flags & AV_CPU_FLAG_SSE2) {
-        s->apply_window_float = apply_window_mp3;
-    }
+    /*if (cpu_flags & AV_CPU_FLAG_SSE2) {*/
+        /*s->apply_window_float = apply_window_mp3;*/
+    /*}*/
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_YASM

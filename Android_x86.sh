@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# export ANDROID_NDK=
 # Detect ANDROID_NDK
 if [ -z "$ANDROID_NDK" ]; then
    echo "You must define ANDROID_NDK before starting."
@@ -19,12 +20,13 @@ elif [ $OS == 'Darwin' ]; then
 fi
 
 SOURCE=`pwd`
-DEST=$SOURCE/build/android # && rm -rf $DEST
+DEST=$SOURCE/build/android
 SSL=$SOURCE/../openssl
+RTMP=$SOURCE/../rtmpdump
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
-$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.7 \
+$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.7 --arch=x86 \
   --system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
 
 export PATH=$TOOLCHAIN/bin:$PATH
@@ -38,20 +40,21 @@ CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
   -fmodulo-sched -fmodulo-sched-allow-regmoves \
   -fgraphite -fgraphite-identity -floop-block -floop-flatten \
   -floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
-  -Wno-psabi -Wa,--noexecstack -fpic \
+  -Wno-psabi -Wa,--noexecstack \
   -DANDROID -DNDEBUG \
-  -I$SSL/include"
+  -I$SSL/include \
+  -I$RTMP"
 
+LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
-LDFLAGS="-lm"
 
 FFMPEG_FLAGS_COMMON="--target-os=linux \
   --arch=x86
+  --cpu=i686
   --cross-prefix=i686-linux-android- \
   --enable-cross-compile \
   --enable-shared \
   --disable-static \
-  --disable-runtime-cpudetect
   --disable-symver \
   --disable-doc \
   --disable-ffplay \
@@ -70,8 +73,12 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-decoder=svq3 \
   --enable-openssl \
   --enable-network \
-  --enable-version3"
-
+  --enable-version3 \
+  --disable-amd3dnow \
+  --disable-amd3dnowext \
+  --enable-asm \
+  --enable-yasm \
+  --enable-pic "
 
 for version in x86; do
 
@@ -81,22 +88,24 @@ for version in x86; do
 
   case $version in
     x86)
-      FFMPEG_FLAGS="$FFMPEG_FLAGS \
-				--disable-asm"
-      EXTRA_CFLAGS="-march=i686 -mtune=atom -mstackrealign -msse3 -mfpmath=sse -m32"
-      EXTRA_LDFLAGS="-L$SSL/libs/x86"
+      EXTRA_CFLAGS="-march=atom -msse3 -ffast-math -mfpmath=sse"
+      EXTRA_LDFLAGS="-L$SSL/libs/x86 -L$RTMP/libs/armeabi-v7a"
       SSL_OBJS=`find $SSL/obj/local/x86/objs/ssl $SSL/obj/local/x86/objs/crypto -type f -name "*.o"`
+      RTMP_OBJS=`find $RTMP/obj/local/x86/objs/rtmp -type f -name "*.o"`
       ;;
     *)
       FFMPEG_FLAGS=""
       EXTRA_CFLAGS=""
       EXTRA_LDFLAGS=""
       SSL_OBJS=""
+      RTMP_OBJS=""
       ;;
   esac
 
-  PREFIX="$DEST/$version" && mkdir -p $PREFIX
+  PREFIX="$DEST/$version" && rm -rf $PREFIX && mkdir -p $PREFIX
   FFMPEG_FLAGS="$FFMPEG_FLAGS --prefix=$PREFIX"
+
+  sed -i 's/require_pkg_config librtmp librtmp\/rtmp.h RTMP_Socket/prepend extralibs -lrtmp/g' configure
 
   ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
   cp config.* $PREFIX
@@ -107,10 +116,19 @@ for version in x86; do
   make -j4 || exit 1
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
-  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
-    libavutil/*.o libavcodec/*.o  libavformat/*.o libavfilter/*.o libswresample/*.o  libswscale/*.o compat/*.o
+  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS $RTMP_OBJS \
+		libavutil/*.o libavutil/x86/*.o libavcodec/*.o libavcodec/x86/*.o libavformat/*.o libavfilter/*.o libavfilter/x86/*.o libswresample/*.o libswresample/x86/*.o libswscale/*.o libswscale/x86/*.o compat/*.o
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
   i686-linux-android-strip --strip-unneeded $PREFIX/libffmpeg.so
+
+
+echo "  _    __   _    __                           _             "
+echo " | |  / /  (_)  / /_   ____ _   ____ ___     (_)  ___       "
+echo " | | / /  / /  / __/  / __ \/  / __ __  \   / /  / __ \     "
+echo " | |/ /  / /  / /_   / /_/ /  / / / / / /  / /  / /_/ /     "
+echo " |___/  /_/   \__/   \__,_/  /_/ /_/ /_/  /_/   \____/      "
+
+echo "----------------------$version -----------------------------"
 
 done
