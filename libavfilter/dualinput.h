@@ -26,18 +26,20 @@
 
 #include <stdint.h>
 #include "bufferqueue.h"
+#include "framesync.h"
 #include "internal.h"
 
 typedef struct {
+    FFFrameSync fs;
+    FFFrameSyncIn second_input; /* must be immediately after fs */
+
     uint8_t frame_requested;
-    uint8_t second_eof;
-    AVFrame *second_frame;
-    struct FFBufQueue queue[2];
     AVFrame *(*process)(AVFilterContext *ctx, AVFrame *main, const AVFrame *second);
     int shortest;               ///< terminate stream when the second input terminates
     int repeatlast;             ///< repeat last second frame
 } FFDualInputContext;
 
+int ff_dualinput_init(AVFilterContext *ctx, FFDualInputContext *s);
 int ff_dualinput_filter_frame_main(FFDualInputContext *s, AVFilterLink *inlink, AVFrame *in);
 int ff_dualinput_filter_frame_second(FFDualInputContext *s, AVFilterLink *inlink, AVFrame *in);
 int ff_dualinput_request_frame(FFDualInputContext *s, AVFilterLink *outlink);

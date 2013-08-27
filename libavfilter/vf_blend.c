@@ -368,6 +368,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
     BlendContext *b = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
+    int ret;
 
     if (toplink->format != bottomlink->format) {
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
@@ -398,6 +399,9 @@ static int config_output(AVFilterLink *outlink)
     b->hsub = pix_desc->log2_chroma_w;
     b->vsub = pix_desc->log2_chroma_h;
     b->nb_planes = av_pix_fmt_count_planes(toplink->format);
+
+    if ((ret = ff_dualinput_init(ctx, &b->dinput)) < 0)
+        return ret;
 
     return 0;
 }
