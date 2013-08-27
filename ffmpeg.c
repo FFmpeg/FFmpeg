@@ -1659,7 +1659,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
         if (!frame_sample_aspect->num)
             *frame_sample_aspect = ist->st->sample_aspect_ratio;
-        if (ist->dr1 && decoded_frame->type==FF_BUFFER_TYPE_USER && !changed) {
+        if (ist->dr1 && decoded_frame->type==FF_BUFFER_TYPE_USER && !changed && !do_deinterlace) {
             FrameBuffer      *buf = decoded_frame->opaque;
             AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
                                         decoded_frame->data, decoded_frame->linesize,
