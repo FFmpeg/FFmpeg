@@ -29,6 +29,17 @@ the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
 
+@section asf
+
+Advanced Systems Format demuxer.
+
+This demuxer is used to demux ASF files and MMS network streams.
+
+@table @option
+@item -no_resync_search @var{bool}
+Do not try to resynchronize by looking for a certain optional start code.
+@end table
+
 @anchor{concat}
 @section concat
 
@@ -110,7 +121,7 @@ Adobe Flash Video Format demuxer.
 This demuxer is used to demux FLV files and RTMP network streams.
 
 @table @option
-@item -flv_demuxer @var{bool}
+@item -flv_metadata @var{bool}
 Allocate the streams according to the onMetaData array content.
 @end table
 
