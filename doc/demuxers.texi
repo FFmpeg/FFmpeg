@@ -103,6 +103,17 @@ probed and 0 otherwise.
 
 @end table
 
+@section flv
+
+Adobe Flash Video Format demuxer.
+
+This demuxer is used to demux FLV files and RTMP network streams.
+
+@table @option
+@item -flv_demuxer @var{bool}
+Allocate the streams according to the onMetaData array content.
+@end table
+
 @section libgme
 
 The Game Music Emu library is a collection of video game music file emulators.
