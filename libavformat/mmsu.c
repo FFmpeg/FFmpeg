@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include <fcntl.h>
 #if HAVE_SETMODE
 #include <io.h>
@@ -30,41 +31,37 @@
 #include "asf.h"
 #include "libavutil/intreadwrite.h"
 
-int mmst = 0;
-int mmsh = 0;
+extern URLProtocol ff_mmst_protocol;
+extern URLProtocol ff_mmsh_protocol;
+
+static int mmst = 0;
+static int mmsh = 0;
+
 
 static int mmsu_open(URLContext *h, const char *uri, int flags) {
-  extern URLProtocol ff_mmst_protocol;
-  extern URLProtocol ff_mmsh_protocol;
-  int ret;
-
+  int ret = -1;
+  av_log(NULL, AV_LOG_INFO, "mmsu.c: mms_open\n");
   if ((ret = ff_mmst_protocol.url_open(h, uri, flags)) == 0)
     mmst = 1;
   else if ((ret = ff_mmsh_protocol.url_open(h, uri, flags)) == 0)
     mmsh = 1;
-
   return ret;
 }
 
 static int mmsu_read(URLContext *h, uint8_t *buf, int size) {
-  extern URLProtocol ff_mmst_protocol;
-  extern URLProtocol ff_mmsh_protocol;
   if (mmst)
     return ff_mmst_protocol.url_read(h, buf, size);
   else if (mmsh)
     return ff_mmsh_protocol.url_read(h, buf, size);
-
-  return 0;
+  return -1;
 }
 
 static int mmsu_close(URLContext *h) {
-  extern URLProtocol ff_mmst_protocol;
-  extern URLProtocol ff_mmsh_protocol;
   if (mmst)
     return ff_mmst_protocol.url_close(h);
   else if (mmsh)
     return ff_mmsh_protocol.url_close(h);
-
+  mmst = mmsh = 0;
   return 0;
 }
 
