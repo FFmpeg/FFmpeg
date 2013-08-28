@@ -137,10 +137,6 @@ non-monotonic negative timestamps.
 Flush the underlying I/O stream after each packet. Default 1 enables it, and
 has the effect of reducing the latency; 0 disables it and may slightly
 increase performance in some cases.
-
-@item probe_score @var{integer} (@emph{input})
-This field is only accessible programatically, its value represents the score
-by which the format was detected.
 @end table
 
 @c man end FORMAT OPTIONS
