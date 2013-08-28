@@ -436,6 +436,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     unsigned char *buf = NULL;
     uint8_t *mime_type;
     int ret = 0, probe_size, buf_offset = 0;
+    int score = 0;
 
     if (!max_probe_size) {
         max_probe_size = PROBE_BUF_MAX;
@@ -458,12 +459,12 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
 
     for(probe_size= PROBE_BUF_MIN; probe_size<=max_probe_size && !*fmt;
         probe_size = FFMIN(probe_size<<1, FFMAX(max_probe_size, probe_size+1))) {
-        int score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
         void *buftmp;
 
         if (probe_size < offset) {
             continue;
         }
+        score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
 
         /* read probe data */
         buftmp = av_realloc(buf, probe_size + AVPROBE_PADDING_SIZE);
@@ -504,7 +505,7 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     /* rewind. reuse probe buffer to avoid seeking */
     ret = ffio_rewind_with_probe_data(pb, &buf, pd.buf_size);
 
-    return ret;
+    return ret < 0 ? ret : score;
 }
 
 /* open input file and probe the format if necessary */
