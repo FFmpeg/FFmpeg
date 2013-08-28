@@ -185,6 +185,7 @@
       <xsd:attribute name="duration"         type="xsd:float"/>
       <xsd:attribute name="size"             type="xsd:long"/>
       <xsd:attribute name="bit_rate"         type="xsd:long"/>
+      <xsd:attribute name="probe_score"      type="xsd:int"/>
     </xsd:complexType>
 
     <xsd:complexType name="tagType">
