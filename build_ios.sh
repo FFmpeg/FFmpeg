@@ -31,6 +31,11 @@ export PATH=$HOME/bin:$PATH
 export CCACHE=; type ccache >/dev/null 2>&1 && export CCACHE=ccache
 export PKG_CONFIG_LIBDIR=${SSLLIBS}/pkgconfig:${RTMPLIBS}/pkgconfig
 
+function die()
+{
+	kill $$
+	exit 1; exit 1; exit 1; exit 1;
+}
 
 function doConfigure()
 {
@@ -90,33 +95,43 @@ function doConfigure()
 		\
 		${DEBUGS} \
 
-		ret=$?; cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && kill $$
+		ret=$?; cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && die
+}
+
+function doMake()
+{
+	(make clean && make) || die
+	## MMS stream failed by optimizations flag "-O1/-O2/-O3", so ...
+	sed -e '/^CFLAGS=/s/ -O[123s]/ -O0/' config.mak > config.O0.mak
+	mv -f config.O0.mak config.mak
+	cd libavformat && rm -f mms.o mmst.o mmsh.o mmsu.o && cd ..
+	make && make install || die
 }
 
 
 build_date=`date "+%Y%m%dT%H%M%S"`
 #build_date=built
 build_versions="release debug"
-#build_versions="debug"
+#build_versions="release"
 build_archs="armv7 armv7s i386"
 #build_archs="armv7"
 path_old=$PATH
 
 for iver in $build_versions; do
 	case $iver in
-		release)	export DEBUGS="--disable-debug --enable-optimizations --optflags=-O3" ;;
+		release)	export DEBUGS="--disable-debug --disable-optimizations --optflags=-O3" ;; # -O3 failed to open mms stream!
 		debug)		export DEBUGS="--enable-debug=3 --disable-optimizations" ;;
 	esac
 
 	lipo_archs=
 	for iarch in $build_archs; do
+		[[ $iver == "debug" && $iarch != "armv7" ]] && continue
 		export ARCH=$iarch
 		export DIST=${DEST}/$build_date/$iver/$iarch && mkdir -p ${DIST}
 		libdir=${DIST}/lib && mkdir -p $libdir
 		confInfo=${DIST}/configure_out.log
 		makeInfo=${DIST}/make_out.log
 
-		[[ $iver == "debug" && $iarch != "armv7" ]] && continue
 		case $iarch in
 			arm*)
 				export PATH=${DEVRootReal}/usr/bin:$path_old
@@ -147,7 +162,7 @@ for iver in $build_versions; do
 		cd $SOURCE && cp -f $selfname $DIST
 		doConfigure 2>&1 | tee -a $confInfo
 		objs=$(make -n -B | sed -n -e '/printf "AR.*; ar rc /p' | sed -e 's/^printf .* ar rc .*\.a//')
-		(make clean && make && make install) 2>&1 | tee -a $makeInfo; [[ $PIPESTATUS != 0 ]] && kill $$
+		doMake 2>&1 | tee -a $makeInfo
 		ar rc $libdir/libffmpeg.a $objs
 		lipo_archs="$lipo_archs $libdir/libffmpeg.a"
 	done
@@ -157,10 +172,11 @@ for iver in $build_versions; do
 	univslib=$univs/lib && mkdir -p $univslib
 	lipo $lipo_archs -create -output $univslib/libffmpeg_tmp.a
 	libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
-	ranlib $univs/lib/libffmpeg.a
+	ranlib $univslib/libffmpeg.a
+	[[ $iver == "release" ]] && strip -S $univslib/libffmpeg.a; res=$? || res=0
 done
 
-[[ $? == 0 ]] && {
+[[ $res == 0 ]] && {
 	cd ${DEST} && rm -f built && ln -s $build_date built
 	printf "\nFFmpeg build successfully!!\n\n"
 }
