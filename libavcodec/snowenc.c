@@ -203,6 +203,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.obmc_scratchpad= av_mallocz(MB_SIZE*MB_SIZE*12*sizeof(uint32_t));
+    if (!s->m.me.scratchpad || !s->m.me.map || !s->m.me.score_map || !s->m.obmc_scratchpad)
+        return AVERROR(ENOMEM);
+
     ff_h263_encode_init(&s->m); //mv_penalty
 
     s->max_ref_frames = FFMAX(FFMIN(avctx->refs, MAX_REF_FRAMES), 1);
@@ -210,6 +213,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if(avctx->flags&CODEC_FLAG_PASS1){
         if(!avctx->stats_out)
             avctx->stats_out = av_mallocz(256);
+
+        if (!avctx->stats_out)
+            return AVERROR(ENOMEM);
     }
     if((avctx->flags&CODEC_FLAG_PASS2) || !(avctx->flags&CODEC_FLAG_QSCALE)){
         if(ff_rate_control_init(&s->m) < 0)
@@ -248,6 +254,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         for(i=0; i<s->max_ref_frames; i++){
             s->ref_mvs[i]= av_mallocz(size*sizeof(int16_t[2]));
             s->ref_scores[i]= av_mallocz(size*sizeof(uint32_t));
+            if (!s->ref_mvs[i] || !s->ref_scores[i])
+                return AVERROR(ENOMEM);
         }
     }
 
