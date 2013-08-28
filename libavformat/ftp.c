@@ -133,7 +133,8 @@ static int ftp_status(FTPContext *s, char **line, const int response_codes[])
 
     while (!code_found || dash) {
         if ((err = ftp_get_line(s, buf, sizeof(buf))) < 0) {
-            av_bprint_finalize(&line_buffer, NULL);
+            if (line)
+                av_bprint_finalize(&line_buffer, NULL);
             return err;
         }
 
