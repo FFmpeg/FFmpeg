@@ -31,6 +31,7 @@ export PATH=$HOME/bin:$PATH
 export CCACHE=; type ccache >/dev/null 2>&1 && export CCACHE=ccache
 export PKG_CONFIG_LIBDIR=${SSLLIBS}/pkgconfig:${RTMPLIBS}/pkgconfig
 
+
 function die()
 {
 	kill $$
@@ -173,12 +174,10 @@ for iver in $build_versions; do
 	lipo $lipo_archs -create -output $univslib/libffmpeg_tmp.a
 	libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
 	ranlib $univslib/libffmpeg.a
-	[[ $iver == "release" ]] && strip -S $univslib/libffmpeg.a; res=$? || res=0
+	[[ $iver == "release" ]] && strip -S $univslib/libffmpeg.a
 done
 
-[[ $res == 0 ]] && {
-	cd ${DEST} && rm -f built && ln -s $build_date built
-	printf "\nFFmpeg build successfully!!\n\n"
-}
+cd ${DEST} && rm -f built && ln -s $build_date built
+printf "\nFFmpeg build successfully!!\n\n"
 
 exit 0
