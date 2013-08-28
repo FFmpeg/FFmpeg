@@ -89,6 +89,9 @@ int ff_snow_alloc_blocks(SnowContext *s){
 
     av_free(s->block);
     s->block= av_mallocz(w * h * sizeof(BlockNode) << (s->block_max_depth*2));
+    if (!s->block)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -528,6 +531,8 @@ int ff_snow_common_init_after_header(AVCodecContext *avctx) {
                 //FIXME avoid this realloc
                 av_freep(&b->x_coeff);
                 b->x_coeff=av_mallocz(((b->width+1) * b->height+1)*sizeof(x_and_coeff));
+                if (!b->x_coeff)
+                    goto fail;
             }
             w= (w+1)>>1;
             h= (h+1)>>1;
@@ -541,7 +546,7 @@ fail:
 
 #define USE_HALFPEL_PLANE 0
 
-static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *frame){
+static int halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *frame){
     int p,x,y;
 
     for(p=0; p<3; p++){
@@ -554,6 +559,8 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
         halfpel[1][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
         halfpel[2][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
         halfpel[3][p] = (uint8_t*) av_malloc(ls * (h + 2 * EDGE_WIDTH)) + EDGE_WIDTH * (1 + ls);
+        if (!halfpel[1][p] || !halfpel[2][p] || !halfpel[3][p])
+            return AVERROR(ENOMEM);
 
         halfpel[0][p]= src;
         for(y=0; y<h; y++){
@@ -581,6 +588,7 @@ static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *fr
 
 //FIXME border!
     }
+    return 0;
 }
 
 void ff_snow_release_buffer(AVCodecContext *avctx)
@@ -620,8 +628,10 @@ int ff_snow_frame_start(SnowContext *s){
     for(i=s->max_ref_frames-1; i>0; i--)
         av_frame_move_ref(&s->last_picture[i], &s->last_picture[i-1]);
     memmove(s->halfpel_plane+1, s->halfpel_plane, (s->max_ref_frames-1)*sizeof(void*)*4*4);
-    if(USE_HALFPEL_PLANE && s->current_picture.data[0])
-        halfpel_interpol(s, s->halfpel_plane[0], &s->current_picture);
+    if(USE_HALFPEL_PLANE && s->current_picture.data[0]) {
+        if((ret = halfpel_interpol(s, s->halfpel_plane[0], &s->current_picture)) < 0)
+            return ret;
+    }
     av_frame_move_ref(&s->last_picture[0], &s->current_picture);
     av_frame_move_ref(&s->current_picture, &tmp);
 
