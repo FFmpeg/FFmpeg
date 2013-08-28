@@ -137,7 +137,7 @@ typedef struct  win32_cond_t {
 static void pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
 {
     win32_cond_t *win32_cond = NULL;
-    if (_WIN32_WINNT >= 0x0600 || cond_init) {
+    if (cond_init) {
         cond_init(cond);
         return;
     }
@@ -162,7 +162,7 @@ static void pthread_cond_destroy(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->ptr;
     /* native condition variables do not destroy */
-    if (_WIN32_WINNT >= 0x0600 || cond_init)
+    if (cond_init)
         return;
 
     /* non native condition variables */
@@ -179,7 +179,7 @@ static void pthread_cond_broadcast(pthread_cond_t *cond)
     win32_cond_t *win32_cond = cond->ptr;
     int have_waiter;
 
-    if (_WIN32_WINNT >= 0x0600 || cond_broadcast) {
+    if (cond_broadcast) {
         cond_broadcast(cond);
         return;
     }
@@ -209,7 +209,7 @@ static int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     win32_cond_t *win32_cond = cond->ptr;
     int last_waiter;
-    if (_WIN32_WINNT >= 0x0600 || cond_wait) {
+    if (cond_wait) {
         cond_wait(cond, mutex, INFINITE);
         return 0;
     }
@@ -241,7 +241,7 @@ static void pthread_cond_signal(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->ptr;
     int have_waiter;
-    if (_WIN32_WINNT >= 0x0600 || cond_signal) {
+    if (cond_signal) {
         cond_signal(cond);
         return;
     }
