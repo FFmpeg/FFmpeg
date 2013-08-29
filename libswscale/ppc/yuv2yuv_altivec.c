@@ -188,7 +188,7 @@ av_cold void ff_get_unscaled_swscale_ppc(SwsContext *c)
 {
 #if HAVE_ALTIVEC
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
-        return NULL;
+        return;
 
     if (!(c->srcW & 15) && !(c->flags & SWS_BITEXACT) &&
         c->srcFormat == AV_PIX_FMT_YUV420P) {
