@@ -568,6 +568,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     for (i = 0; i < 4 && pool->pools[i]; i++) {
         const int h_shift = i == 0 ? 0 : h_chroma_shift;
         const int v_shift = i == 0 ? 0 : v_chroma_shift;
+        int is_planar = pool->pools[2] || (i==0 && s->pix_fmt == AV_PIX_FMT_GRAY8);
 
         pic->linesize[i] = pool->linesize[i];
 
@@ -576,7 +577,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
             goto fail;
 
         // no edge if EDGE EMU or not planar YUV
-        if ((s->flags & CODEC_FLAG_EMU_EDGE) || !pool->pools[2])
+        if ((s->flags & CODEC_FLAG_EMU_EDGE) || !is_planar)
             pic->data[i] = pic->buf[i]->data;
         else {
             pic->data[i] = pic->buf[i]->data +
