@@ -184,7 +184,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             if (ret < 0)
                 return ret;
 
-            if (s->start_time != DBL_MAX) {
+            if (s->start_time != DBL_MAX && s->start_time != AV_NOPTS_VALUE) {
                 double first_pts = s->start_time * AV_TIME_BASE;
                 first_pts = FFMIN(FFMAX(first_pts, INT64_MIN), INT64_MAX);
                 s->first_pts = s->pts = av_rescale_q(first_pts, AV_TIME_BASE_Q,
