@@ -601,14 +601,14 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
 {
     SwsFunc t = NULL;
 
+    if (ARCH_BFIN)
+        t = ff_yuv2rgb_init_bfin(c);
+    if (ARCH_PPC)
+        t = ff_yuv2rgb_init_ppc(c);
+    if (HAVE_VIS)
+        t = ff_yuv2rgb_init_vis(c);
     if (ARCH_X86)
         t = ff_yuv2rgb_init_x86(c);
-    else if (HAVE_VIS)
-        t = ff_yuv2rgb_init_vis(c);
-    else if (ARCH_BFIN)
-        t = ff_yuv2rgb_init_bfin(c);
-    else if (ARCH_PPC)
-        t = ff_yuv2rgb_init_ppc(c);
 
     if (t)
         return t;

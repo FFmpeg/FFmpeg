@@ -888,8 +888,8 @@ av_cold void ff_vc1dsp_init(VC1DSPContext* dsp) {
     dsp->sprite_v_double_twoscale = sprite_v_double_twoscale_c;
 #endif
 
-    if (ARCH_X86)
-        ff_vc1dsp_init_x86(dsp);
     if (ARCH_PPC)
         ff_vc1dsp_init_ppc(dsp);
+    if (ARCH_X86)
+        ff_vc1dsp_init_x86(dsp);
 }
