@@ -254,7 +254,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     int s_context= 2*left->level + 2*top->level + tl->level + tr->level;
     int ref, best_ref, ref_score, ref_mx, ref_my;
 
-    assert(sizeof(s->block_state) >= 256);
+    av_assert0(sizeof(s->block_state) >= 256);
     if(s->keyframe){
         set_blocks(s, level, x, y, pl, pcb, pcr, 0, 0, 0, BLOCK_INTRA);
         return 0;
@@ -388,10 +388,10 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     iscore += (s->lambda2*(get_rac_count(&ic)-base_bits))>>FF_LAMBDA_SHIFT;
 
 //    assert(score==256*256*256*64-1);
-    assert(iscore < 255*255*256 + s->lambda2*10);
-    assert(iscore >= 0);
-    assert(l>=0 && l<=255);
-    assert(pl>=0 && pl<=255);
+    av_assert1(iscore < 255*255*256 + s->lambda2*10);
+    av_assert1(iscore >= 0);
+    av_assert1(l>=0 && l<=255);
+    av_assert1(pl>=0 && pl<=255);
 
     if(level==0){
         int varc= iscore >> 8;
@@ -731,7 +731,7 @@ static int get_4block_rd(SnowContext *s, int mb_x, int mb_y, int plane_index){
                 memcpy(dst + w + y2*ref_stride, src + w + y2*ref_stride, x+block_w - w);
         }
 
-        assert(block_w== 8 || block_w==16);
+        av_assert1(block_w== 8 || block_w==16);
         distortion += s->dsp.me_cmp[block_w==8](&s->m, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
     }
 
@@ -1606,8 +1606,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int block_height= (height+15)>>4;
         int stride= s->current_picture.linesize[0];
 
-        assert(s->current_picture.data[0]);
-        assert(s->last_picture[0].data[0]);
+        av_assert0(s->current_picture.data[0]);
+        av_assert0(s->last_picture[0].data[0]);
 
         s->m.avctx= s->avctx;
         s->m.current_picture.f.data[0] = s->current_picture.data[0];
@@ -1750,7 +1750,7 @@ redo_frame:
                         decorrelate(s, b, b->ibuf, b->stride, pic->pict_type == AV_PICTURE_TYPE_P, 0);
                     if (!s->no_bitstream)
                     encode_subband(s, b, b->ibuf, b->parent ? b->parent->ibuf : NULL, b->stride, orientation);
-                    assert(b->parent==NULL || b->parent->stride == b->stride*2);
+                    av_assert0(b->parent==NULL || b->parent->stride == b->stride*2);
                     if(orientation==0)
                         correlate(s, b, b->ibuf, b->stride, 1, 0);
                 }
