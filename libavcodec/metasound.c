@@ -301,11 +301,35 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
     case (1 << 16) + ( 8 << 8) +  8:
         tctx->mtab = &ff_metasound_mode0808;
         break;
+    case (2 << 16) + ( 8 << 8) +  8:
+        tctx->mtab = &ff_metasound_mode0808s;
+        break;
+    case (1 << 16) + (11 << 8) + 10:
+        tctx->mtab = &ff_metasound_mode1110;
+        break;
+    case (2 << 16) + (11 << 8) + 10:
+        tctx->mtab = &ff_metasound_mode1110s;
+        break;
     case (1 << 16) + (16 << 8) + 16:
         tctx->mtab = &ff_metasound_mode1616;
         break;
+    case (2 << 16) + (16 << 8) + 16:
+        tctx->mtab = &ff_metasound_mode1616s;
+        break;
     case (1 << 16) + (44 << 8) + 32:
         tctx->mtab = &ff_metasound_mode4432;
+        break;
+    case (2 << 16) + (44 << 8) + 32:
+        tctx->mtab = &ff_metasound_mode4432s;
+        break;
+    case (1 << 16) + (44 << 8) + 40:
+        tctx->mtab = &ff_metasound_mode4440;
+        break;
+    case (2 << 16) + (44 << 8) + 40:
+        tctx->mtab = &ff_metasound_mode4440s;
+        break;
+    case (1 << 16) + (44 << 8) + 48:
+        tctx->mtab = &ff_metasound_mode4448;
         break;
     case (2 << 16) + (44 << 8) + 48:
         tctx->mtab = &ff_metasound_mode4448s;
