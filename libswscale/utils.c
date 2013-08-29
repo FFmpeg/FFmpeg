@@ -46,6 +46,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "rgb2rgb.h"
@@ -532,7 +533,7 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             minFilterSize = min;
     }
 
-    if (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) {
+    if (PPC_ALTIVEC(cpu_flags)) {
         // we can handle the special case 4, so we don't want to go the full 8
         if (minFilterSize < 5)
             filterAlign = 4;
@@ -990,7 +991,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                              contrast, saturation);
     // FIXME factorize
 
-    if (HAVE_ALTIVEC && av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)
+    if (PPC_ALTIVEC(av_get_cpu_flags()))
         ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness,
                                        contrast, saturation);
     }
@@ -1412,8 +1413,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         {
             const int filterAlign =
                 (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 4 :
-                (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
-                1;
+                PPC_ALTIVEC(cpu_flags)                    ? 8 : 1;
 
             if (initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,
@@ -1440,8 +1440,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     {
         const int filterAlign =
             (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 2 :
-            (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
-            1;
+            PPC_ALTIVEC(cpu_flags)                    ? 8 : 1;
 
         if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize,
                        c->lumYInc, srcH, dstH, filterAlign, (1 << 12),
@@ -1592,7 +1591,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             av_log(c, AV_LOG_INFO, "using 3DNOW\n");
         else if (INLINE_MMX(cpu_flags))
             av_log(c, AV_LOG_INFO, "using MMX\n");
-        else if (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC)
+        else if (PPC_ALTIVEC(cpu_flags))
             av_log(c, AV_LOG_INFO, "using AltiVec\n");
         else
             av_log(c, AV_LOG_INFO, "using C\n");
