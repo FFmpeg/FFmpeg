@@ -129,6 +129,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
     ff_set_cmp(&s->dsp, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
 
     s->input_picture = av_frame_alloc();
+    if (!s->input_picture)
+        return AVERROR(ENOMEM);
     if ((ret = ff_get_buffer(s->avctx, s->input_picture, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
