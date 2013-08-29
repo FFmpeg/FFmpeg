@@ -107,10 +107,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV444P:
 //    case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV420P:
-//     case AV_PIX_FMT_GRAY8:
 //    case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_YUV410P:
+        s->nb_planes = 3;
         s->colorspace_type= 0;
+        break;
+    case AV_PIX_FMT_GRAY8:
+        s->nb_planes = 1;
+        s->colorspace_type = 1;
         break;
 /*    case AV_PIX_FMT_RGB32:
         s->colorspace= 1;
@@ -363,13 +367,16 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     l= (sum + block_s/2)/block_s;
     iscore = pix_norm1(current_data[0], stride, block_w) - 2*l*sum + l*l*block_s;
 
-    block_s= block_w*block_w>>(s->chroma_h_shift + s->chroma_v_shift);
-    sum = pix_sum(current_data[1], uvstride, block_w>>s->chroma_h_shift, block_w>>s->chroma_v_shift);
-    cb= (sum + block_s/2)/block_s;
-//    iscore += pix_norm1(&current_mb[1][0], uvstride, block_w>>1) - 2*cb*sum + cb*cb*block_s;
-    sum = pix_sum(current_data[2], uvstride, block_w>>s->chroma_h_shift, block_w>>s->chroma_v_shift);
-    cr= (sum + block_s/2)/block_s;
-//    iscore += pix_norm1(&current_mb[2][0], uvstride, block_w>>1) - 2*cr*sum + cr*cr*block_s;
+    if (s->nb_planes > 2) {
+        block_s= block_w*block_w>>(s->chroma_h_shift + s->chroma_v_shift);
+        sum = pix_sum(current_data[1], uvstride, block_w>>s->chroma_h_shift, block_w>>s->chroma_v_shift);
+        cb= (sum + block_s/2)/block_s;
+    //    iscore += pix_norm1(&current_mb[1][0], uvstride, block_w>>1) - 2*cb*sum + cb*cb*block_s;
+        sum = pix_sum(current_data[2], uvstride, block_w>>s->chroma_h_shift, block_w>>s->chroma_v_shift);
+        cr= (sum + block_s/2)/block_s;
+    //    iscore += pix_norm1(&current_mb[2][0], uvstride, block_w>>1) - 2*cr*sum + cr*cr*block_s;
+    }else
+        cb = cr = 0;
 
     ic= s->c;
     ic.bytestream_start=
@@ -379,8 +386,10 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
         put_rac(&ic, &i_state[4 + s_context], 1);
     put_rac(&ic, &i_state[1 + left->type + top->type], 1);
     put_symbol(&ic, &i_state[32],  l-pl , 1);
-    put_symbol(&ic, &i_state[64], cb-pcb, 1);
-    put_symbol(&ic, &i_state[96], cr-pcr, 1);
+    if (s->nb_planes > 2) {
+        put_symbol(&ic, &i_state[64], cb-pcb, 1);
+        put_symbol(&ic, &i_state[96], cr-pcr, 1);
+    }
     i_len= ic.bytestream - ic.bytestream_start;
     iscore += (s->lambda2*(get_rac_count(&ic)-base_bits))>>FF_LAMBDA_SHIFT;
 
@@ -471,8 +480,10 @@ static void encode_q_branch2(SnowContext *s, int level, int x, int y){
         pred_mv(s, &pmx, &pmy, 0, left, top, tr);
         put_rac(&s->c, &s->block_state[1 + (left->type&1) + (top->type&1)], 1);
         put_symbol(&s->c, &s->block_state[32], b->color[0]-pl , 1);
-        put_symbol(&s->c, &s->block_state[64], b->color[1]-pcb, 1);
-        put_symbol(&s->c, &s->block_state[96], b->color[2]-pcr, 1);
+        if (s->nb_planes > 2) {
+            put_symbol(&s->c, &s->block_state[64], b->color[1]-pcb, 1);
+            put_symbol(&s->c, &s->block_state[96], b->color[2]-pcr, 1);
+        }
         set_blocks(s, level, x, y, b->color[0], b->color[1], b->color[2], pmx, pmy, 0, BLOCK_INTRA);
     }else{
         pred_mv(s, &pmx, &pmy, b->ref, left, top, tr);
@@ -1072,7 +1083,7 @@ static void iterative_me(SnowContext *s){
                 }
 
                 // intra(black) = neighbors' contribution to the current block
-                for(i=0; i<3; i++)
+                for(i=0; i < s->nb_planes; i++)
                     color[i]= get_dc(s, mb_x, mb_y, i);
 
                 // get previous score (cannot be cached due to OBMC)
@@ -1350,7 +1361,7 @@ static void correlate(SnowContext *s, SubBand *b, IDWTELEM *src, int stride, int
 static void encode_qlogs(SnowContext *s){
     int plane_index, level, orientation;
 
-    for(plane_index=0; plane_index<2; plane_index++){
+    for(plane_index=0; plane_index<FFMIN(s->nb_planes, 2); plane_index++){
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1:0; orientation<4; orientation++){
                 if(orientation==2) continue;
@@ -1388,8 +1399,10 @@ static void encode_header(SnowContext *s){
         put_symbol(&s->c, s->header_state, s->temporal_decomposition_count, 0);
         put_symbol(&s->c, s->header_state, s->spatial_decomposition_count, 0);
         put_symbol(&s->c, s->header_state, s->colorspace_type, 0);
-        put_symbol(&s->c, s->header_state, s->chroma_h_shift, 0);
-        put_symbol(&s->c, s->header_state, s->chroma_v_shift, 0);
+        if (s->nb_planes > 2) {
+            put_symbol(&s->c, s->header_state, s->chroma_h_shift, 0);
+            put_symbol(&s->c, s->header_state, s->chroma_v_shift, 0);
+        }
         put_rac(&s->c, s->header_state, s->spatial_scalability);
 //        put_rac(&s->c, s->header_state, s->rate_scalability);
         put_symbol(&s->c, s->header_state, s->max_ref_frames-1, 0);
@@ -1399,7 +1412,7 @@ static void encode_header(SnowContext *s){
 
     if(!s->keyframe){
         int update_mc=0;
-        for(plane_index=0; plane_index<2; plane_index++){
+        for(plane_index=0; plane_index<FFMIN(s->nb_planes, 2); plane_index++){
             Plane *p= &s->plane[plane_index];
             update_mc |= p->last_htaps   != p->htaps;
             update_mc |= p->last_diag_mc != p->diag_mc;
@@ -1407,7 +1420,7 @@ static void encode_header(SnowContext *s){
         }
         put_rac(&s->c, s->header_state, update_mc);
         if(update_mc){
-            for(plane_index=0; plane_index<2; plane_index++){
+            for(plane_index=0; plane_index<FFMIN(s->nb_planes, 2); plane_index++){
                 Plane *p= &s->plane[plane_index];
                 put_rac(&s->c, s->header_state, p->diag_mc);
                 put_symbol(&s->c, s->header_state, p->htaps/2-1, 0);
@@ -1552,7 +1565,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ff_init_range_encoder(c, pkt->data, pkt->size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
-    for(i=0; i<3; i++){
+    for(i=0; i < s->nb_planes; i++){
         int hshift= i ? s->chroma_h_shift : 0;
         int vshift= i ? s->chroma_v_shift : 0;
         for(y=0; y<(height>>vshift); y++)
@@ -1670,7 +1683,7 @@ redo_frame:
     ff_snow_common_init_after_header(avctx);
 
     if(s->last_spatial_decomposition_count != s->spatial_decomposition_count){
-        for(plane_index=0; plane_index<3; plane_index++){
+        for(plane_index=0; plane_index < s->nb_planes; plane_index++){
             calculate_visual_weight(s, &s->plane[plane_index]);
         }
     }
@@ -1680,7 +1693,7 @@ redo_frame:
     encode_blocks(s, 1);
     s->m.mv_bits = 8*(s->c.bytestream - s->c.bytestream_start) - s->m.misc_bits;
 
-    for(plane_index=0; plane_index<3; plane_index++){
+    for(plane_index=0; plane_index < s->nb_planes; plane_index++){
         Plane *p= &s->plane[plane_index];
         int w= p->width;
         int h= p->height;
@@ -1872,6 +1885,7 @@ AVCodec ff_snow_encoder = {
     .close          = encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     },
     .long_name      = NULL_IF_CONFIG_SMALL("Snow"),

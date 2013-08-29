@@ -159,6 +159,7 @@ typedef struct SnowContext{
     int b_height;
     int block_max_depth;
     int last_block_max_depth;
+    int nb_planes;
     Plane plane[MAX_PLANES];
     BlockNode *block;
 #define ME_CACHE_SIZE 1024
