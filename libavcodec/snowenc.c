@@ -34,9 +34,6 @@
 #include "mpegvideo.h"
 #include "h263.h"
 
-#undef NDEBUG
-#include <assert.h>
-
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
