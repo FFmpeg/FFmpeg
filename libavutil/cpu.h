@@ -105,9 +105,4 @@ int av_parse_cpu_caps(unsigned *flags, const char *s);
  */
 int av_cpu_count(void);
 
-/* The following CPU-specific functions shall not be called directly. */
-int ff_get_cpu_flags_arm(void);
-int ff_get_cpu_flags_ppc(void);
-int ff_get_cpu_flags_x86(void);
-
 #endif /* AVUTIL_CPU_H */
