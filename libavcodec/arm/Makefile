@@ -52,11 +52,13 @@ ARMV6-OBJS-$(CONFIG_VP8_DECODER)       += arm/vp8_armv6.o               \
                                           arm/vp8dsp_init_armv6.o       \
                                           arm/vp8dsp_armv6.o
 
+VFP-OBJS                               += arm/fmtconvert_vfp.o
+
 VFP-OBJS-$(CONFIG_DCA_DECODER)         += arm/dcadsp_vfp.o              \
                                           arm/synth_filter_vfp.o
 VFP-OBJS-$(CONFIG_FFT)                 += arm/fft_vfp.o
 VFP-OBJS-$(CONFIG_MDCT)                += arm/mdct_vfp.o
-VFP-OBJS-$(HAVE_ARMV6)                 += arm/fmtconvert_vfp.o
+VFP-OBJS-$(HAVE_ARMV6)                 += arm/fmtconvert_vfp_armv6.o
 
 NEON-OBJS                              += arm/fmtconvert_neon.o
 

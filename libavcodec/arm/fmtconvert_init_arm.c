@@ -43,16 +43,15 @@ av_cold void ff_fmt_convert_init_arm(FmtConvertContext *c, AVCodecContext *avctx
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (have_vfp(cpu_flags) && have_armv6(cpu_flags)) {
+    if (have_vfp(cpu_flags)) {
         if (!have_vfpv3(cpu_flags)) {
-            // These functions don't use anything armv6 specific in themselves,
-            // but ff_float_to_int16_vfp which is in the same assembly source
-            // file does, thus the whole file requires armv6 to be built.
             c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_vfp;
             c->int32_to_float_fmul_array8 = ff_int32_to_float_fmul_array8_vfp;
         }
 
-        c->float_to_int16 = ff_float_to_int16_vfp;
+        if (have_armv6(cpu_flags)) {
+            c->float_to_int16 = ff_float_to_int16_vfp;
+        }
     }
 
     if (have_neon(cpu_flags)) {
