@@ -76,7 +76,7 @@ function doConfigure()
 		--enable-bzlib \
 		--enable-zlib \
 		--enable-iconv \
-		--enable-librtmp \
+		--disable-librtmp \
 		--enable-openssl \
 		\
 		--enable-cross-compile \
@@ -111,10 +111,10 @@ function doMake()
 
 
 build_date=`date "+%Y%m%dT%H%M%S"`
-#build_date=built
 build_versions="release debug"
-#build_versions="release"
 build_archs="armv7 armv7s i386"
+#build_versions="release"
+#build_date=built
 #build_archs="armv7"
 path_old=$PATH
 
@@ -172,12 +172,13 @@ for iver in $build_versions; do
 	univs=${DEST}/$build_date/$iver/universal
 	univslib=$univs/lib && mkdir -p $univslib
 	lipo $lipo_archs -create -output $univslib/libffmpeg_tmp.a
-	libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
+	#libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
+	libtool -static -o $univslib/libffmpeg.a -L$univslib -lffmpeg_tmp
 	ranlib $univslib/libffmpeg.a
 	[[ $iver == "release" ]] && strip -S $univslib/libffmpeg.a
 done
 
-cd ${DEST} && rm -f built && ln -s $build_date built
+[[ $build_date != built ]] && cd ${DEST} && rm -f built && ln -s $build_date built
 printf "\nFFmpeg build successfully!!\n\n"
 
 exit 0
