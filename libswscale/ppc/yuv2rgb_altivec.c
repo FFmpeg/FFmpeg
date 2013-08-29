@@ -100,6 +100,8 @@
 #include "libavutil/pixdesc.h"
 #include "yuv2rgb_altivec.h"
 
+#if HAVE_ALTIVEC
+
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
 
@@ -524,14 +526,17 @@ static int altivec_uyvy_rgb32(SwsContext *c, const unsigned char **in,
     return srcSliceH;
 }
 
+#endif /* HAVE_ALTIVEC */
+
 /* Ok currently the acceleration routine only supports
  * inputs of widths a multiple of 16
  * and heights a multiple 2
  *
  * So we just fall back to the C codes for this.
  */
-av_cold SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
+av_cold SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c)
 {
+#if HAVE_ALTIVEC
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return NULL;
 
@@ -587,19 +592,25 @@ av_cold SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
         }
         break;
     }
+#endif /* HAVE_ALTIVEC */
+
     return NULL;
 }
 
-av_cold void ff_yuv2rgb_init_tables_altivec(SwsContext *c,
-                                            const int inv_table[4],
-                                            int brightness,
-                                            int contrast,
-                                            int saturation)
+av_cold void ff_yuv2rgb_init_tables_ppc(SwsContext *c,
+                                        const int inv_table[4],
+                                        int brightness,
+                                        int contrast,
+                                        int saturation)
 {
+#if HAVE_ALTIVEC
     union {
         DECLARE_ALIGNED(16, signed short, tmp)[8];
         vector signed short vec;
     } buf;
+
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+        return;
 
     buf.tmp[0] = ((0xffffLL) * contrast >> 8) >> 9;                               // cy
     buf.tmp[1] = -256 * brightness;                                               // oy
@@ -616,7 +627,10 @@ av_cold void ff_yuv2rgb_init_tables_altivec(SwsContext *c,
     c->CGU    = vec_splat((vector signed short) buf.vec, 4);
     c->CGV    = vec_splat((vector signed short) buf.vec, 5);
     return;
+#endif /* HAVE_ALTIVEC */
 }
+
+#if HAVE_ALTIVEC
 
 static av_always_inline void yuv2packedX_altivec(SwsContext *c,
                                                  const int16_t *lumFilter,
@@ -850,3 +864,5 @@ YUV2PACKEDX_WRAPPER(argb,  AV_PIX_FMT_ARGB);
 YUV2PACKEDX_WRAPPER(rgba,  AV_PIX_FMT_RGBA);
 YUV2PACKEDX_WRAPPER(rgb24, AV_PIX_FMT_RGB24);
 YUV2PACKEDX_WRAPPER(bgr24, AV_PIX_FMT_BGR24);
+
+#endif /* HAVE_ALTIVEC */

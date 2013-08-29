@@ -1320,8 +1320,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
 
     if (ARCH_BFIN)
         ff_bfin_get_unscaled_swscale(c);
-    if (HAVE_ALTIVEC)
-        ff_swscale_get_unscaled_altivec(c);
+    if (ARCH_PPC)
+        ff_swscale_get_unscaled_ppc(c);
 }
 
 /* Convert the palette to the same packed 32-bit format as the palette */

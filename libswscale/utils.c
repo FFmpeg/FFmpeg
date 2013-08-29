@@ -991,9 +991,9 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
                              contrast, saturation);
     // FIXME factorize
 
-    if (PPC_ALTIVEC(av_get_cpu_flags()))
-        ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness,
-                                       contrast, saturation);
+    if (ARCH_PPC)
+        ff_yuv2rgb_init_tables_ppc(c, inv_table, brightness,
+                                   contrast, saturation);
     }
 
     fill_rgb2yuv_table(c, table, dstRange);

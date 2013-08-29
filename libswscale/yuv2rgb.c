@@ -605,10 +605,10 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
         t = ff_yuv2rgb_init_x86(c);
     else if (HAVE_VIS)
         t = ff_yuv2rgb_init_vis(c);
-    else if (HAVE_ALTIVEC)
-        t = ff_yuv2rgb_init_altivec(c);
     else if (ARCH_BFIN)
         t = ff_yuv2rgb_get_func_ptr_bfin(c);
+    else if (ARCH_PPC)
+        t = ff_yuv2rgb_init_ppc(c);
 
     if (t)
         return t;
