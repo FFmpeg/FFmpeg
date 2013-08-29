@@ -34,18 +34,6 @@ void ff_mdct_calc_neon(FFTContext *s, FFTSample *output, const FFTSample *input)
 
 void ff_rdft_calc_neon(struct RDFTContext *s, FFTSample *z);
 
-void ff_synth_filter_float_vfp(FFTContext *imdct,
-                               float *synth_buf_ptr, int *synth_buf_offset,
-                               float synth_buf2[32], const float window[512],
-                               float out[32], const float in[32],
-                               float scale);
-
-void ff_synth_filter_float_neon(FFTContext *imdct,
-                                float *synth_buf_ptr, int *synth_buf_offset,
-                                float synth_buf2[32], const float window[512],
-                                float out[32], const float in[32],
-                                float scale);
-
 av_cold void ff_fft_init_arm(FFTContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -78,17 +66,5 @@ av_cold void ff_rdft_init_arm(RDFTContext *s)
 
     if (have_neon(cpu_flags))
         s->rdft_calc    = ff_rdft_calc_neon;
-}
-#endif
-
-#if CONFIG_DCA_DECODER
-av_cold void ff_synth_filter_init_arm(SynthFilterContext *s)
-{
-    int cpu_flags = av_get_cpu_flags();
-
-    if (have_vfp(cpu_flags) && !have_vfpv3(cpu_flags))
-        s->synth_filter_float = ff_synth_filter_float_vfp;
-    if (have_neon(cpu_flags))
-        s->synth_filter_float = ff_synth_filter_float_neon;
 }
 #endif
