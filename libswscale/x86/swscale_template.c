@@ -1640,7 +1640,7 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 }
 #endif /* COMPILE_TEMPLATE_MMXEXT */
 
-static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
+static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
 {
     enum AVPixelFormat dstFormat = c->dstFormat;
 
