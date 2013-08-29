@@ -672,7 +672,7 @@ static av_cold void dsputil_init_sse4(DSPContext *c, AVCodecContext *avctx,
 #endif /* HAVE_SSE4_EXTERNAL */
 }
 
-av_cold void ff_dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx)
+av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
 
