@@ -678,7 +678,7 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_7REGS && HAVE_INLINE_ASM
-    if (cpu_flags & AV_CPU_FLAG_CMOV)
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_CMOV)
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_cmov;
 #endif
 
