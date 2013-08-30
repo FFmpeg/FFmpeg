@@ -653,7 +653,12 @@ static int mkv_write_tracks(AVFormatContext *s)
         }
 
         if (codec->codec_id == AV_CODEC_ID_OPUS) {
+            uint64_t codec_delay =av_rescale_q(codec->delay,
+                                               (AVRational){1, codec->sample_rate},
+                                               (AVRational){1, 1000000000});
+            put_ebml_uint(pb, MATROSKA_ID_CODECDELAY, codec_delay);
             put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
+
         }
 
         if (mkv->mode == MODE_WEBM && !(codec->codec_id == AV_CODEC_ID_VP8 ||
