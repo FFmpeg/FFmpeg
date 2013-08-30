@@ -26,6 +26,19 @@
 #define AV_CPU_FLAG_AMD3DNOW    AV_CPU_FLAG_3DNOW
 #define AV_CPU_FLAG_AMD3DNOWEXT AV_CPU_FLAG_3DNOWEXT
 
+#define X86_AMD3DNOW(flags)         CPUEXT(flags, AMD3DNOW)
+#define X86_AMD3DNOWEXT(flags)      CPUEXT(flags, AMD3DNOWEXT)
+#define X86_MMX(flags)              CPUEXT(flags, MMX)
+#define X86_MMXEXT(flags)           CPUEXT(flags, MMXEXT)
+#define X86_SSE(flags)              CPUEXT(flags, SSE)
+#define X86_SSE2(flags)             CPUEXT(flags, SSE2)
+#define X86_SSE3(flags)             CPUEXT(flags, SSE3)
+#define X86_SSSE3(flags)            CPUEXT(flags, SSSE3)
+#define X86_SSE4(flags)             CPUEXT(flags, SSE4)
+#define X86_SSE42(flags)            CPUEXT(flags, SSE42)
+#define X86_AVX(flags)              CPUEXT(flags, AVX)
+#define X86_FMA4(flags)             CPUEXT(flags, FMA4)
+
 #define EXTERNAL_AMD3DNOW(flags)    CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOW)
 #define EXTERNAL_AMD3DNOWEXT(flags) CPUEXT_SUFFIX(flags, _EXTERNAL, AMD3DNOWEXT)
 #define EXTERNAL_MMX(flags)         CPUEXT_SUFFIX(flags, _EXTERNAL, MMX)

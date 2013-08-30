@@ -1411,9 +1411,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         } else
 #endif /* HAVE_MMXEXT_INLINE */
         {
-            const int filterAlign =
-                (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 4 :
-                PPC_ALTIVEC(cpu_flags)                    ? 8 : 1;
+            const int filterAlign = X86_MMX(cpu_flags)     ? 4 :
+                                    PPC_ALTIVEC(cpu_flags) ? 8 : 1;
 
             if (initFilter(&c->hLumFilter, &c->hLumFilterPos,
                            &c->hLumFilterSize, c->lumXInc,
@@ -1438,9 +1437,8 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     /* precalculate vertical scaler filter coefficients */
     {
-        const int filterAlign =
-            (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? 2 :
-            PPC_ALTIVEC(cpu_flags)                    ? 8 : 1;
+        const int filterAlign = X86_MMX(cpu_flags)     ? 2 :
+                                PPC_ALTIVEC(cpu_flags) ? 8 : 1;
 
         if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize,
                        c->lumYInc, srcH, dstH, filterAlign, (1 << 12),
