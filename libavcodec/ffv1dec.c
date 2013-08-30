@@ -483,6 +483,10 @@ static int read_extra_header(FFV1Context *f)
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
 
     f->version = get_symbol(c, state, 0);
+    if (f->version < 2) {
+        av_log(f->avctx, AV_LOG_ERROR, "Invalid version in global header\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (f->version > 2) {
         c->bytestream_end -= 4;
         f->micro_version = get_symbol(c, state, 0);
