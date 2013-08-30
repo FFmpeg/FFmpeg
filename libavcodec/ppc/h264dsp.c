@@ -745,7 +745,9 @@ av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
                                  const int chroma_format_idc)
 {
 #if HAVE_ALTIVEC
-    if (av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) {
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+        return;
+
     if (bit_depth == 8) {
         c->h264_idct_add = h264_idct_add_altivec;
         if (chroma_format_idc == 1)
@@ -763,7 +765,6 @@ av_cold void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth,
         c->weight_h264_pixels_tab[1]   = weight_h264_pixels8_altivec;
         c->biweight_h264_pixels_tab[0] = biweight_h264_pixels16_altivec;
         c->biweight_h264_pixels_tab[1] = biweight_h264_pixels8_altivec;
-    }
     }
 #endif /* HAVE_ALTIVEC */
 }
