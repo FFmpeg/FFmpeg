@@ -562,6 +562,7 @@ static int read_header(FFV1Context *f)
     memset(state, 128, sizeof(state));
 
     if (f->version < 2) {
+        int chroma_planes, chroma_h_shift, chroma_v_shift, transparency;
         unsigned v= get_symbol(c, state, 0);
         if (v >= 2) {
             av_log(f->avctx, AV_LOG_ERROR, "invalid version %d in ver01 header\n", v);
@@ -579,10 +580,26 @@ static int read_header(FFV1Context *f)
         if (f->version > 0)
             f->avctx->bits_per_raw_sample = get_symbol(c, state, 0);
 
-        f->chroma_planes  = get_rac(c, state);
-        f->chroma_h_shift = get_symbol(c, state, 0);
-        f->chroma_v_shift = get_symbol(c, state, 0);
-        f->transparency   = get_rac(c, state);
+        chroma_planes  = get_rac(c, state);
+        chroma_h_shift = get_symbol(c, state, 0);
+        chroma_v_shift = get_symbol(c, state, 0);
+        transparency   = get_rac(c, state);
+
+        if (f->plane_count) {
+            if (   chroma_planes != f->chroma_planes
+                || chroma_h_shift!= f->chroma_h_shift
+                || chroma_v_shift!= f->chroma_v_shift
+                || transparency  != f->transparency) {
+                av_log(f->avctx, AV_LOG_ERROR, "Invalid change of global parameters\n");
+                return AVERROR_INVALIDDATA;
+            }
+        }
+
+        f->chroma_planes  = chroma_planes;
+        f->chroma_h_shift = chroma_h_shift;
+        f->chroma_v_shift = chroma_v_shift;
+        f->transparency   = transparency;
+
         f->plane_count    = 2 + f->transparency;
     }
 
