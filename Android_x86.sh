@@ -22,7 +22,6 @@ fi
 SOURCE=`pwd`
 DEST=$SOURCE/build/android
 SSL=$SOURCE/../openssl
-RTMP=$SOURCE/../rtmpdump
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
@@ -42,8 +41,7 @@ CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
   -floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
   -Wno-psabi -Wa,--noexecstack \
   -DANDROID -DNDEBUG \
-  -I$SSL/include \
-  -I$RTMP"
+  -I$SSL/include "
 
 LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
@@ -89,23 +87,19 @@ for version in x86; do
   case $version in
     x86)
       EXTRA_CFLAGS="-march=atom -msse3 -ffast-math -mfpmath=sse"
-      EXTRA_LDFLAGS="-L$SSL/libs/x86 -L$RTMP/libs/armeabi-v7a"
+      EXTRA_LDFLAGS="-L$SSL/libs/x86"
       SSL_OBJS=`find $SSL/obj/local/x86/objs/ssl $SSL/obj/local/x86/objs/crypto -type f -name "*.o"`
-      RTMP_OBJS=`find $RTMP/obj/local/x86/objs/rtmp -type f -name "*.o"`
       ;;
     *)
       FFMPEG_FLAGS=""
       EXTRA_CFLAGS=""
       EXTRA_LDFLAGS=""
       SSL_OBJS=""
-      RTMP_OBJS=""
       ;;
   esac
 
   PREFIX="$DEST/$version" && rm -rf $PREFIX && mkdir -p $PREFIX
   FFMPEG_FLAGS="$FFMPEG_FLAGS --prefix=$PREFIX"
-
-  sed -i 's/require_pkg_config librtmp librtmp\/rtmp.h RTMP_Socket/prepend extralibs -lrtmp/g' configure
 
   ./configure $FFMPEG_FLAGS --extra-cflags="$CFLAGS $EXTRA_CFLAGS" --extra-ldflags="$LDFLAGS $EXTRA_LDFLAGS" | tee $PREFIX/configuration.txt
   cp config.* $PREFIX
@@ -116,7 +110,7 @@ for version in x86; do
   make -j4 || exit 1
 
   rm libavcodec/log2_tab.o libavformat/log2_tab.o libswresample/log2_tab.o
-  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS $RTMP_OBJS \
+  $CC -o $PREFIX/libffmpeg.so -shared $LDFLAGS $EXTRA_LDFLAGS $SSL_OBJS \
 		libavutil/*.o libavutil/x86/*.o libavcodec/*.o libavcodec/x86/*.o libavformat/*.o libavfilter/*.o libavfilter/x86/*.o libswresample/*.o libswresample/x86/*.o libswscale/*.o libswscale/x86/*.o compat/*.o
 
   cp $PREFIX/libffmpeg.so $PREFIX/libffmpeg-debug.so
