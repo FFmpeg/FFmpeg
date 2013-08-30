@@ -1,5 +1,5 @@
 /*
- * LPCM codecs for PCM formats found in MPEG streams
+ * LPCM codecs for PCM format found in Blu-ray PCM streams
  * Copyright (c) 2009, 2013 Christian Schmidt
  *
  * This file is part of Libav.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * PCM codecs for encodings found in MPEG streams (DVD/Blu-ray)
+ * PCM codec for Blu-ray PCM audio tracks
  */
 
 #include "libavutil/channel_layout.h"
