@@ -26,6 +26,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/videodsp.h"
 
 #if HAVE_YASM
@@ -111,17 +112,17 @@ av_cold void ff_videodsp_init_x86(VideoDSPContext *ctx, int bpc)
     int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
-    if (bpc <= 8 && cpu_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(cpu_flags) && bpc <= 8) {
         ctx->emulated_edge_mc = emulated_edge_mc_mmx;
     }
-    if (cpu_flags & AV_CPU_FLAG_3DNOW) {
+    if (EXTERNAL_AMD3DNOW(cpu_flags)) {
         ctx->prefetch = ff_prefetch_3dnow;
     }
 #endif /* ARCH_X86_32 */
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
         ctx->prefetch = ff_prefetch_mmxext;
     }
-    if (bpc <= 8 && cpu_flags & AV_CPU_FLAG_SSE) {
+    if (EXTERNAL_SSE(cpu_flags) && bpc <= 8) {
         ctx->emulated_edge_mc = emulated_edge_mc_sse;
     }
 #endif /* HAVE_YASM */

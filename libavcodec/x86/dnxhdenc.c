@@ -23,6 +23,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dnxhdenc.h"
 
 #if HAVE_SSE2_INLINE
@@ -58,7 +59,7 @@ static void get_pixels_8x4_sym_sse2(int16_t *block, const uint8_t *pixels, int l
 av_cold void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx)
 {
 #if HAVE_SSE2_INLINE
-    if (av_get_cpu_flags() & AV_CPU_FLAG_SSE2) {
+    if (INLINE_SSE2(av_get_cpu_flags())) {
         if (ctx->cid_table->bit_depth == 8)
             ctx->get_pixels_8x4_sym = get_pixels_8x4_sym_sse2;
     }

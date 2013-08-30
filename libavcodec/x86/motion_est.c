@@ -26,6 +26,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "dsputil_x86.h"
 
 #if HAVE_INLINE_ASM
@@ -437,7 +438,7 @@ av_cold void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx)
 #if HAVE_INLINE_ASM
     int cpu_flags = av_get_cpu_flags();
 
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (INLINE_MMX(cpu_flags)) {
         c->pix_abs[0][0] = sad16_mmx;
         c->pix_abs[0][1] = sad16_x2_mmx;
         c->pix_abs[0][2] = sad16_y2_mmx;
@@ -450,7 +451,7 @@ av_cold void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx)
         c->sad[0]= sad16_mmx;
         c->sad[1]= sad8_mmx;
     }
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
+    if (INLINE_MMXEXT(cpu_flags)) {
         c->pix_abs[0][0] = sad16_mmxext;
         c->pix_abs[1][0] = sad8_mmxext;
 
@@ -466,7 +467,7 @@ av_cold void ff_dsputil_init_pix_mmx(DSPContext *c, AVCodecContext *avctx)
             c->pix_abs[1][3] = sad8_xy2_mmxext;
         }
     }
-    if ((cpu_flags & AV_CPU_FLAG_SSE2) && !(cpu_flags & AV_CPU_FLAG_3DNOW) && avctx->codec_id != AV_CODEC_ID_SNOW) {
+    if (INLINE_SSE2(cpu_flags) && !(cpu_flags & AV_CPU_FLAG_3DNOW) && avctx->codec_id != AV_CODEC_ID_SNOW) {
         c->sad[0]= sad16_sse2;
     }
 #endif /* HAVE_INLINE_ASM */

@@ -23,6 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/dsputil.h"
 #include "libavcodec/simple_idct.h"
 #include "dsputil_x86.h"
@@ -681,7 +682,7 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
         c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_cmov;
 #endif
 
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (X86_MMX(cpu_flags)) {
 #if HAVE_INLINE_ASM
         const int idct_algo = avctx->idct_algo;
 
@@ -713,19 +714,19 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
         dsputil_init_mmx(c, avctx, cpu_flags);
     }
 
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
+    if (X86_MMXEXT(cpu_flags))
         dsputil_init_mmxext(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE)
+    if (X86_SSE(cpu_flags))
         dsputil_init_sse(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE2)
+    if (X86_SSE2(cpu_flags))
         dsputil_init_sse2(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSSE3)
+    if (EXTERNAL_SSSE3(cpu_flags))
         dsputil_init_ssse3(c, avctx, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE4)
+    if (EXTERNAL_SSE4(cpu_flags))
         dsputil_init_sse4(c, avctx, cpu_flags);
 
     if (CONFIG_ENCODERS)
