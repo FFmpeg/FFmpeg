@@ -215,7 +215,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 
 failed_alloc:
-    av_destruct_packet(pkt);
+    av_free_packet(pkt);
     return AVERROR(ENOMEM);
 }
 
@@ -237,7 +237,7 @@ int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
     return 0;
 
 failed_alloc:
-    av_destruct_packet(pkt);
+    av_free_packet(pkt);
     return AVERROR(ENOMEM);
 }
 
