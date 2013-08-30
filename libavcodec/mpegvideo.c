@@ -1594,13 +1594,13 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
                                          &h_chroma_shift, &v_chroma_shift);
         if (s->pict_type == AV_PICTURE_TYPE_B && s->next_picture_ptr && s->next_picture_ptr->f.data[0])
-            av_log(avctx, AV_LOG_INFO,
+            av_log(avctx, AV_LOG_DEBUG,
                    "allocating dummy last picture for B frame\n");
         else if (s->pict_type != AV_PICTURE_TYPE_I)
             av_log(avctx, AV_LOG_ERROR,
                    "warning: first frame is no keyframe\n");
         else if (s->picture_structure != PICT_FRAME)
-            av_log(avctx, AV_LOG_INFO,
+            av_log(avctx, AV_LOG_DEBUG,
                    "allocate dummy last picture for field based first keyframe\n");
 
         /* Allocate a dummy frame */
