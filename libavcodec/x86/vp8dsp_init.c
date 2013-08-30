@@ -381,7 +381,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_sse;
     }
 
-    if (EXTERNAL_SSE2(cpu_flags) && (cpu_flags & AV_CPU_FLAG_SSE2SLOW)) {
+    if (HAVE_SSE2_EXTERNAL && cpu_flags & (AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_SSE2SLOW)) {
         VP8_LUMA_MC_FUNC(0, 16, sse2);
         VP8_MC_FUNC(1, 8, sse2);
         VP8_BILINEAR_MC_FUNC(0, 16, sse2);
