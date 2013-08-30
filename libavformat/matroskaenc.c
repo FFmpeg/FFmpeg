@@ -44,6 +44,7 @@
 
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
+#include "libavcodec/internal.h"
 
 typedef struct ebml_master {
     int64_t         pos;                ///< absolute offset in the file where the master's elements start
@@ -1289,7 +1290,7 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     uint8_t *data = NULL, *side_data = NULL;
     int offset = 0, size = pkt->size, side_data_size = 0;
     int64_t ts = mkv->tracks[pkt->stream_index].write_dts ? pkt->dts : pkt->pts;
-    uint64_t additional_id = 0;
+    uint64_t additional_id = 0, discard_padding = 0;
     ebml_master block_group, block_additions, block_more;
 
     av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
@@ -1315,6 +1316,16 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     }
 
     side_data = av_packet_get_side_data(pkt,
+                                        AV_PKT_DATA_SKIP_SAMPLES,
+                                        &side_data_size);
+
+    if (side_data && side_data_size >= 10) {
+        discard_padding = av_rescale_q(AV_RL32(side_data + 4),
+                                       (AVRational){1, codec->sample_rate},
+                                       (AVRational){1, 1000000000});
+    }
+
+    side_data = av_packet_get_side_data(pkt,
                                         AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                         &side_data_size);
     if (side_data) {
@@ -1323,7 +1334,7 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         side_data_size -= 8;
     }
 
-    if (side_data_size && additional_id == 1) {
+    if ((side_data_size && additional_id == 1) || discard_padding) {
         block_group = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, 0);
         blockid = MATROSKA_ID_BLOCK;
     }
@@ -1337,6 +1348,10 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     if (data != pkt->data)
         av_free(data);
 
+    if (discard_padding) {
+        put_ebml_uint(pb, MATROSKA_ID_DISCARDPADDING, discard_padding);
+    }
+
     if (side_data_size && additional_id == 1) {
         block_additions = start_ebml_master(pb, MATROSKA_ID_BLOCKADDITIONS, 0);
         block_more = start_ebml_master(pb, MATROSKA_ID_BLOCKMORE, 0);
@@ -1346,6 +1361,8 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         avio_write(pb, side_data, side_data_size);
         end_ebml_master(pb, block_more);
         end_ebml_master(pb, block_additions);
+    }
+    if ((side_data_size && additional_id == 1) || discard_padding) {
         end_ebml_master(pb, block_group);
     }
 }
@@ -1562,6 +1579,9 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
             ret = mkv->cur_audio_pkt.buf ? 0 : AVERROR(ENOMEM);
         } else
             ret = av_dup_packet(&mkv->cur_audio_pkt);
+            if (mkv->cur_audio_pkt.side_data_elems > 0) {
+                ret = av_copy_packet_side_data(&mkv->cur_audio_pkt, &mkv->cur_audio_pkt);
+            }
     } else
         ret = mkv_write_packet_internal(s, pkt);
     return ret;
