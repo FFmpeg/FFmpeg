@@ -31,7 +31,6 @@
 #include "internal.h"
 
 typedef struct {
-    AVCodecContext *avctx;
     AVFrame *prev;
 } KgvContext;
 
@@ -158,7 +157,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     KgvContext * const c = avctx->priv_data;
 
-    c->avctx = avctx;
     avctx->pix_fmt = AV_PIX_FMT_RGB555;
     avctx->flags  |= CODEC_FLAG_EMU_EDGE;
 
