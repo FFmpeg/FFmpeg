@@ -60,7 +60,7 @@ typedef struct PNGDecContext {
     uint32_t palette[256];
     uint8_t *crow_buf;
     uint8_t *last_row;
-    int last_row_size;
+    unsigned int last_row_size;
     uint8_t *tmp_row;
     unsigned int tmp_row_size;
     uint8_t *buffer;
