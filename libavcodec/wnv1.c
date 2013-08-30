@@ -31,8 +31,6 @@
 
 
 typedef struct WNV1Context {
-    AVCodecContext *avctx;
-
     int shift;
     GetBitContext gb;
 } WNV1Context;
@@ -133,10 +131,8 @@ static int decode_frame(AVCodecContext *avctx,
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
-    WNV1Context * const l = avctx->priv_data;
     static VLC_TYPE code_table[1 << CODE_VLC_BITS][2];
 
-    l->avctx       = avctx;
     avctx->pix_fmt = AV_PIX_FMT_YUV422P;
 
     code_vlc.table           = code_table;
