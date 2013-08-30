@@ -38,7 +38,67 @@ function die()
 	exit 1; exit 1; exit 1; exit 1;
 }
 
-function doConfigure()
+function doConfigureSina()
+{
+	./configure \
+		--prefix=${DIST} \
+		\
+		--enable-version3 \
+		\
+		--disable-shared \
+		--disable-small \
+		--disable-runtime-cpudetect \
+		\
+		--disable-programs \
+		--disable-doc \
+		--enable-swscale  \
+		--disable-avresample \
+		--enable-network \
+		\
+		--disable-everything \
+		--enable-filters \
+		--enable-parsers \
+		--enable-protocol=file \
+		--enable-protocol=http \
+		--enable-demuxer=hls \
+		--enable-demuxer=mpegts \
+		--enable-demuxer=mpegtsraw \
+		--enable-demuxer=mpegvideo \
+		--enable-demuxer=mov \
+		--enable-demuxer=flv \
+		--enable-demuxer=mp3 \
+		--enable-decoder=mpeg4 \
+		--enable-decoder=mpegvideo \
+		--enable-decoder=mpeg1video \
+		--enable-decoder=mpeg2video \
+		--enable-decoder=h264 \
+		--enable-decoder=h263 \
+		--enable-decoder=flv \
+		--enable-decoder=aac \
+		--enable-decoder=ac3 \
+		--enable-decoder=mp3 \
+		\
+		--enable-openssl \
+		\
+		--enable-cross-compile \
+		--sysroot=${SDKRoot} \
+		--target-os=darwin \
+		--cc="${CC}" \
+		--extra-cflags="-DVPLAYER_IOS -arch ${ARCH} -pipe -I${SSLINCLUDE} ${EXCFLAGS}" \
+		--extra-ldflags="-arch ${ARCH} -isysroot ${SDKRoot} -L${SSLLIBS} ${EXCLDFLAGS}" \
+		${ADVANCED} \
+		--enable-pic \
+		--enable-thumb \
+		--disable-symver \
+		--enable-hardcoded-tables \
+		--disable-memalign-hack \
+		\
+		${OPTZFLAGS} \
+		\
+		${DEBUGS}
+}
+
+function doConfigureAll()
 {
 	# *NEED* gas-preprocessor.pl file in $PATH , use for asm compile.
 	# wget https://raw.github.com/libav/gas-preprocessor/master/gas-preprocessor.pl
@@ -94,9 +154,19 @@ function doConfigure()
 		\
 		${OPTZFLAGS} \
 		\
-		${DEBUGS} \
+		${DEBUGS}
+}
 
-		ret=$?; cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && die
+# $1	version
+function doConfigure()
+{
+	ver="$1";
+	if [[ $ver == "sina" ]]; then
+		doConfigureSina
+	else
+		doConfigureAll
+	fi
+	ret=$?; cp -f ./config.log ./config.h ${DIST}/; [[ $ret != 0 ]] && die
 }
 
 function doMake()
@@ -111,22 +181,23 @@ function doMake()
 
 
 build_date=`date "+%Y%m%dT%H%M%S"`
-build_versions="release debug"
+build_versions="release debug sina"
 build_archs="armv7 armv7s i386"
-#build_versions="release"
+#build_versions="sina"
 #build_date=built
-#build_archs="armv7"
+#build_archs="armv7 armv7s i386"
 path_old=$PATH
 
 for iver in $build_versions; do
 	case $iver in
-		release)	export DEBUGS="--disable-debug --disable-optimizations --optflags=-O3" ;; # -O3 failed to open mms stream!
-		debug)		export DEBUGS="--enable-debug=3 --disable-optimizations" ;;
+		release|sina)	export DEBUGS="--disable-debug --disable-optimizations --optflags=-O3" ;; # -O3 failed to open mms stream!
+		debug)			export DEBUGS="--enable-debug=3 --disable-optimizations" ;;
 	esac
 
 	lipo_archs=
 	for iarch in $build_archs; do
 		[[ $iver == "debug" && $iarch != "armv7" ]] && continue
+		[[ $iver == "sina" && $iarch == "i386" ]] && continue
 		export ARCH=$iarch
 		export DIST=${DEST}/$build_date/$iver/$iarch && mkdir -p ${DIST}
 		libdir=${DIST}/lib && mkdir -p $libdir
@@ -161,7 +232,7 @@ for iver in $build_versions; do
 		esac
 
 		cd $SOURCE && cp -f $selfname $DIST
-		doConfigure 2>&1 | tee -a $confInfo
+		doConfigure "$iver" 2>&1 | tee -a $confInfo
 		objs=$(make -n -B | sed -n -e '/printf "AR.*; ar rc /p' | sed -e 's/^printf .* ar rc .*\.a//')
 		doMake 2>&1 | tee -a $makeInfo
 		ar rc $libdir/libffmpeg.a $objs
@@ -175,7 +246,7 @@ for iver in $build_versions; do
 	#libtool -static -o $univslib/libffmpeg.a -L$univslib -L$RTMPLIBS -lffmpeg_tmp -lrtmp
 	libtool -static -o $univslib/libffmpeg.a -L$univslib -lffmpeg_tmp
 	ranlib $univslib/libffmpeg.a
-	[[ $iver == "release" ]] && strip -S $univslib/libffmpeg.a
+	[[ $iver != "debug" ]] && strip -S $univslib/libffmpeg.a
 done
 
 [[ $build_date != built ]] && cd ${DEST} && rm -f built && ln -s $build_date built
