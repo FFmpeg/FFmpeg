@@ -64,6 +64,7 @@ function doConfigureSina()
 		--enable-demuxer=mpegts \
 		--enable-demuxer=mpegtsraw \
 		--enable-demuxer=mpegvideo \
+		--enable-demuxer=concat \
 		--enable-demuxer=mov \
 		--enable-demuxer=flv \
 		--enable-demuxer=mp3 \
