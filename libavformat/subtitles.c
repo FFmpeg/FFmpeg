@@ -85,7 +85,9 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)
 
     if (q->current_sub_idx == q->nb_subs)
         return AVERROR_EOF;
-    av_copy_packet(pkt, sub);
+    if (av_copy_packet(pkt, sub) < 0) {
+        return AVERROR(ENOMEM);
+    }
 
     pkt->dts = pkt->pts;
     q->current_sub_idx++;
