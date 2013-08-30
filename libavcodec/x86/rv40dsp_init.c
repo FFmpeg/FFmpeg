@@ -232,6 +232,13 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         QPEL_MC_SET(put_, _mmx)
 #endif
     }
+    if (EXTERNAL_AMD3DNOW(cpu_flags)) {
+        c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_3dnow;
+        c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_3dnow;
+#if ARCH_X86_32
+        QPEL_MC_SET(avg_, _3dnow)
+#endif
+    }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         c->avg_chroma_pixels_tab[0]     = ff_avg_rv40_chroma_mc8_mmxext;
         c->avg_chroma_pixels_tab[1]     = ff_avg_rv40_chroma_mc4_mmxext;
@@ -241,12 +248,6 @@ av_cold void ff_rv40dsp_init_x86(RV34DSPContext *c)
         c->rv40_weight_pixels_tab[1][1] = ff_rv40_weight_func_nornd_8_mmxext;
 #if ARCH_X86_32
         QPEL_MC_SET(avg_, _mmxext)
-#endif
-    } else if (EXTERNAL_AMD3DNOW(cpu_flags)) {
-        c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_3dnow;
-        c->avg_chroma_pixels_tab[1] = ff_avg_rv40_chroma_mc4_3dnow;
-#if ARCH_X86_32
-        QPEL_MC_SET(avg_, _3dnow)
 #endif
     }
     if (EXTERNAL_SSE2(cpu_flags)) {

@@ -568,11 +568,10 @@ av_cold void ff_MPV_common_init_x86(MpegEncContext *s)
         if(!(s->flags & CODEC_FLAG_BITEXACT))
             s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_mmx;
         s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_mmx;
-        if (INLINE_SSE2(cpu_flags)) {
-            s->denoise_dct= denoise_dct_sse2;
-        } else {
-                s->denoise_dct= denoise_dct_mmx;
-        }
+        s->denoise_dct = denoise_dct_mmx;
+    }
+    if (INLINE_SSE2(cpu_flags)) {
+        s->denoise_dct = denoise_dct_sse2;
     }
 #endif /* HAVE_MMX_INLINE */
 }

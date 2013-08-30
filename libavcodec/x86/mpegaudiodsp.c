@@ -258,16 +258,20 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 #endif /* HAVE_SSE2_INLINE */
 
 #if HAVE_YASM
+    if (EXTERNAL_SSE(cpu_flags)) {
+        s->imdct36_blocks_float = imdct36_blocks_sse;
+    }
+    if (EXTERNAL_SSE2(cpu_flags)) {
+        s->imdct36_blocks_float = imdct36_blocks_sse2;
+    }
+    if (EXTERNAL_SSE3(cpu_flags)) {
+        s->imdct36_blocks_float = imdct36_blocks_sse3;
+    }
+    if (EXTERNAL_SSSE3(cpu_flags)) {
+        s->imdct36_blocks_float = imdct36_blocks_ssse3;
+    }
     if (EXTERNAL_AVX(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
-    } else if (EXTERNAL_SSSE3(cpu_flags)) {
-        s->imdct36_blocks_float = imdct36_blocks_ssse3;
-    } else if (EXTERNAL_SSE3(cpu_flags)) {
-        s->imdct36_blocks_float = imdct36_blocks_sse3;
-    } else if (EXTERNAL_SSE2(cpu_flags)) {
-        s->imdct36_blocks_float = imdct36_blocks_sse2;
-    } else if (EXTERNAL_SSE(cpu_flags)) {
-        s->imdct36_blocks_float = imdct36_blocks_sse;
     }
 #endif /* HAVE_YASM */
 }

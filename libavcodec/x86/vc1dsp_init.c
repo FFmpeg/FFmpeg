@@ -103,13 +103,14 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
     if (EXTERNAL_MMX(cpu_flags)) {
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_mmx;
     }
+    if (EXTERNAL_AMD3DNOW(cpu_flags)) {
+        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_3dnow;
+    }
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         ASSIGN_LF(mmxext);
         dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_mmxext;
 
         dsp->avg_vc1_mspel_pixels_tab[0]         = avg_vc1_mspel_mc00_mmxext;
-    } else if (EXTERNAL_AMD3DNOW(cpu_flags)) {
-        dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = ff_avg_vc1_chroma_mc8_nornd_3dnow;
     }
     if (EXTERNAL_SSE2(cpu_flags)) {
         dsp->vc1_v_loop_filter8  = ff_vc1_v_loop_filter8_sse2;
