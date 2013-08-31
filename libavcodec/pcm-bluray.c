@@ -46,7 +46,7 @@
  */
 
 /**
- * Parse the header of a LPCM frame read from a MPEG-TS stream
+ * Parse the header of a LPCM frame read from a Blu-ray MPEG-TS stream
  * @param avctx the codec context
  * @param header pointer to the first four bytes of the data packet
  */
@@ -56,8 +56,9 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
     static const uint8_t bits_per_samples[4] = { 0, 16, 20, 24 };
     static const uint32_t channel_layouts[16] = {
         0, AV_CH_LAYOUT_MONO, 0, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_SURROUND,
-        AV_CH_LAYOUT_2_1, AV_CH_LAYOUT_4POINT0, AV_CH_LAYOUT_2_2, AV_CH_LAYOUT_5POINT0,
-        AV_CH_LAYOUT_5POINT1, AV_CH_LAYOUT_7POINT0, AV_CH_LAYOUT_7POINT1, 0, 0, 0, 0
+        AV_CH_LAYOUT_2_1, AV_CH_LAYOUT_4POINT0, AV_CH_LAYOUT_2_2,
+        AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1, AV_CH_LAYOUT_7POINT0,
+        AV_CH_LAYOUT_7POINT1, 0, 0, 0, 0
     };
     static const uint8_t channels[16] = {
         0, 1, 0, 2, 3, 3, 4, 4, 5, 6, 7, 8, 0, 0, 0, 0
@@ -74,8 +75,8 @@ static int pcm_bluray_parse_header(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "unsupported sample depth (%d)\n", avctx->bits_per_coded_sample);
         return AVERROR_INVALIDDATA;
     }
-    avctx->sample_fmt = avctx->bits_per_coded_sample == 16 ? AV_SAMPLE_FMT_S16 :
-                                                             AV_SAMPLE_FMT_S32;
+    avctx->sample_fmt = avctx->bits_per_coded_sample == 16 ? AV_SAMPLE_FMT_S16
+                                                           : AV_SAMPLE_FMT_S32;
     if (avctx->sample_fmt == AV_SAMPLE_FMT_S32)
         avctx->bits_per_raw_sample = avctx->bits_per_coded_sample;
 
@@ -148,7 +149,8 @@ static int pcm_bluray_decode_frame(AVCodecContext *avctx, void *data,
 
     /* There's always an even number of channels in the source */
     num_source_channels = FFALIGN(avctx->channels, 2);
-    sample_size = (num_source_channels * (avctx->sample_fmt == AV_SAMPLE_FMT_S16 ? 16 : 24)) >> 3;
+    sample_size = (num_source_channels *
+                   (avctx->sample_fmt == AV_SAMPLE_FMT_S16 ? 16 : 24)) >> 3;
     samples = buf_size / sample_size;
 
     /* get output buffer */
