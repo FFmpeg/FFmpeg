@@ -140,16 +140,17 @@ static av_cold void uninit(AVFilterContext *ctx)
     AV_PIX_FMT_ABGR,         AV_PIX_FMT_BGRA,         \
     AV_PIX_FMT_RGB24,        AV_PIX_FMT_BGR24
 
-static enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
-static enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
-static enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat yuv_pix_fmts[] = { YUV_FORMATS, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat rgb_pix_fmts[] = { RGB_FORMATS, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat all_pix_fmts[] = { RGB_FORMATS, YUV_FORMATS, AV_PIX_FMT_NONE };
 
 static int query_formats(AVFilterContext *ctx)
 {
     LutContext *s = ctx->priv;
 
-    enum AVPixelFormat *pix_fmts = s->is_rgb ? rgb_pix_fmts :
-                                 s->is_yuv ? yuv_pix_fmts : all_pix_fmts;
+    const enum AVPixelFormat *pix_fmts = s->is_rgb ? rgb_pix_fmts :
+                                                     s->is_yuv ? yuv_pix_fmts :
+                                                                 all_pix_fmts;
 
     ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
     return 0;
