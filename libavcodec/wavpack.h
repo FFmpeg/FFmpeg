@@ -22,6 +22,8 @@
 #ifndef AVCODEC_WAVPACK_H
 #define AVCODEC_WAVPACK_H
 
+#include "libavutil/common.h"
+
 #define MAX_TERMS      16
 #define MAX_TERM        8
 
