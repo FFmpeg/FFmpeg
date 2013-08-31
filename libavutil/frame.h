@@ -509,6 +509,12 @@ enum AVColorRange av_frame_get_color_range(const AVFrame *frame);
 void    av_frame_set_color_range(AVFrame *frame, enum AVColorRange val);
 
 /**
+ * Get the name of a colorspace.
+ * @return a static string identifying the colorspace; can be NULL.
+ */
+const char *av_get_colorspace_name(enum AVColorSpace val);
+
+/**
  * Allocate an AVFrame and set its fields to default values.  The resulting
  * struct must be freed using av_frame_free().
  *
