@@ -1423,7 +1423,7 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         st  = s->streams[index];
         ast = st->priv_data;
 
-        if (first_packet && first_packet_pos && len) {
+        if (first_packet && first_packet_pos) {
             data_offset  = first_packet_pos - pos;
             first_packet = 0;
         }
