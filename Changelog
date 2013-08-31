@@ -16,6 +16,7 @@ version <next>
 - incomplete Voxware MetaSound decoder
 - read EXIF metadata from JPEG
 - DVB teletext decoder
+- phase filter ported from libmpcodecs
 
 
 version 2.0:

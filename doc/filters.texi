@@ -5854,6 +5854,67 @@ It accepts the following values:
 Default value is @samp{linear}.
 @end table
 
+@section phase
+
+Delay interlaced video by one field time so that the field order changes.
+
+The intended use is to fix PAL movies that have been captured with the
+opposite field order to the film-to-video transfer.
+
+A description of the accepted parameters follows.
+
+@table @option
+@item mode
+Set phase mode.
+
+It accepts the following values:
+@table @samp
+@item t
+Capture field order top-first, transfer bottom-first.
+Filter will delay the bottom field.
+
+@item b
+Capture field order bottom-first, transfer top-first.
+Filter will delay the top field.
+
+@item p
+Capture and transfer with the same field order. This mode only exists
+for the documentation of the other options to refer to, but if you
+actually select it, the filter will faithfully do nothing.
+
+@item a
+Capture field order determined automatically by field flags, transfer
+opposite.
+Filter selects among @samp{t} and @samp{b} modes on a frame by frame
+basis using field flags. If no field information is available,
+then this works just like @samp{u}.
+
+@item u
+Capture unknown or varying, transfer opposite.
+Filter selects among @samp{t} and @samp{b} on a frame by frame basis by
+analyzing the images and selecting the alternative that produces best
+match between the fields.
+
+@item T
+Capture top-first, transfer unknown or varying.
+Filter selects among @samp{t} and @samp{p} using image analysis.
+
+@item B
+Capture bottom-first, transfer unknown or varying.
+Filter selects among @samp{b} and @samp{p} using image analysis.
+
+@item A
+Capture determined by field flags, transfer unknown or varying.
+Filter selects among @samp{t}, @samp{b} and @samp{p} using field flags and
+image analysis. If no field information is available, then this works just
+like @samp{U}. This is the default mode.
+
+@item U
+Both capture and transfer unknown or varying.
+Filter selects among @samp{t}, @samp{b} and @samp{p} using image analysis only.
+@end table
+@end table
+
 @section pixdesctest
 
 Pixel format descriptor test filter, mainly useful for internal
