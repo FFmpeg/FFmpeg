@@ -24,6 +24,7 @@
 #ifndef AVCODEC_VDPAU_INTERNAL_H
 #define AVCODEC_VDPAU_INTERNAL_H
 
+#include "config.h"
 #include <stdint.h>
 #if CONFIG_VDPAU
 #include <vdpau/vdpau.h>
