@@ -1364,6 +1364,8 @@ static void jpeg2000_dec_cleanup(Jpeg2000DecoderContext *s)
         }
     }
     av_freep(&s->tile);
+    memset(s->codsty, 0, sizeof(s->codsty));
+    memset(s->qntsty, 0, sizeof(s->qntsty));
     s->numXtiles = s->numYtiles = 0;
 }
 
