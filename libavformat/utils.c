@@ -2858,7 +2858,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             }
             if (pkt->duration) {
                 st->info->codec_info_duration        += pkt->duration;
-                st->info->codec_info_duration_fields += st->parser && st->codec->ticks_per_frame==2 ? st->parser->repeat_pict + 1 : 2;
+                st->info->codec_info_duration_fields += st->parser && st->need_parsing && st->codec->ticks_per_frame==2 ? st->parser->repeat_pict + 1 : 2;
             }
         }
 #if FF_API_R_FRAME_RATE
