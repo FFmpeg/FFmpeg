@@ -3876,6 +3876,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
 
     if (h->ref_count[0]) h->er.last_pic = &h->ref_list[0][0];
     if (h->ref_count[1]) h->er.next_pic = &h->ref_list[1][0];
+    h->er.ref_count = h->ref_count[0];
 
     if (h->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(h->avctx, AV_LOG_DEBUG,
@@ -4267,7 +4268,6 @@ static void er_add_slice(H264Context *h, int startx, int starty,
     if (CONFIG_ERROR_RESILIENCE) {
         ERContext *er = &h->er;
 
-        er->ref_count = h->ref_count[0];
         ff_er_add_slice(er, startx, starty, endx, endy, status);
     }
 }
