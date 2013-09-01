@@ -2112,6 +2112,9 @@ wallclock (RTC) time in microseconds
 @item RTCSTART
 wallclock (RTC) time at the start of the movie in microseconds
 
+@item TB
+timebase of the input timestamps
+
 @end table
 
 Some examples follow:
