@@ -236,10 +236,8 @@ static int pcm_dvd_decode_frame(AVCodecContext *avctx, void *data,
 
     /* get output buffer */
     frame->nb_samples = blocks * s->samples_per_block;
-    if ((retval = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((retval = ff_get_buffer(avctx, frame, 0)) < 0)
         return retval;
-    }
     dst = frame->data[0];
 
     /* consume leftover samples from last packet */
