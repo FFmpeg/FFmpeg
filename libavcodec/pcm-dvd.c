@@ -56,8 +56,7 @@ static av_cold int pcm_dvd_decode_uninit(AVCodecContext *avctx)
 {
     PCMDVDContext *s = avctx->priv_data;
 
-    if (s->extra_samples)
-        av_free(s->extra_samples);
+    av_freep(&s->extra_samples);
 
     return 0;
 }
