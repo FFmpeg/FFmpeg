@@ -82,6 +82,7 @@ Standard options:
   --prefix=PREFIX          install in PREFIX [$prefix]
   --bindir=DIR             install binaries in DIR [PREFIX/bin]
   --datadir=DIR            install data files in DIR [PREFIX/share/ffmpeg]
+  --docdir=DIR             install documentation in DIR [PREFIX/share/doc/ffmpeg]
   --libdir=DIR             install libs in DIR [PREFIX/lib]
   --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]
   --incdir=DIR             install includes in DIR [PREFIX/include]
@@ -1602,6 +1603,7 @@ CMDLINE_SELECT="
 PATHS_LIST='
     bindir
     datadir
+    docdir
     incdir
     libdir
     mandir
@@ -2270,6 +2272,7 @@ logfile="config.log"
 prefix_default="/usr/local"
 bindir_default='${prefix}/bin'
 datadir_default='${prefix}/share/ffmpeg'
+docdir_default='${prefix}/share/doc/ffmpeg'
 incdir_default='${prefix}/include'
 libdir_default='${prefix}/lib'
 mandir_default='${prefix}/share/man'
@@ -4683,6 +4686,7 @@ SHLIBDIR=\$(DESTDIR)$shlibdir
 INCDIR=\$(DESTDIR)$incdir
 BINDIR=\$(DESTDIR)$bindir
 DATADIR=\$(DESTDIR)$datadir
+DOCDIR=\$(DESTDIR)$docdir
 MANDIR=\$(DESTDIR)$mandir
 SRC_PATH=$source_path
 ifndef MAIN_MAKEFILE
