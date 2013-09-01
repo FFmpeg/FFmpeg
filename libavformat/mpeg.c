@@ -535,7 +535,6 @@ static int mpegps_read_packet(AVFormatContext *s,
         if(lpcm_header_len == 6) {
             codec_id = AV_CODEC_ID_MLP;
         } else {
-            /* 16 bit form will be handled as AV_CODEC_ID_PCM_S16BE */
             codec_id = AV_CODEC_ID_PCM_DVD;
         }
     } else if (startcode >= 0xb0 && startcode <= 0xbf) {
@@ -570,8 +569,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         st->codec->sample_rate = 8000;
     }
     st->request_probe     = request_probe;
-    if (codec_id != AV_CODEC_ID_PCM_S16BE)
-        st->need_parsing = AVSTREAM_PARSE_FULL;
+    st->need_parsing = AVSTREAM_PARSE_FULL;
  found:
     if(st->discard >= AVDISCARD_ALL)
         goto skip;
@@ -581,28 +579,6 @@ static int mpegps_read_packet(AVFormatContext *s,
                 goto skip;
             avio_skip(s->pb, 6);
             len -=6;
-      } else {
-        int b1, freq;
-
-        /* for LPCM, we just skip the header and consider it is raw
-           audio data */
-        if (len <= 3)
-            goto skip;
-        avio_r8(s->pb); /* emphasis (1), muse(1), reserved(1), frame number(5) */
-        b1 = avio_r8(s->pb); /* quant (2), freq(2), reserved(1), channels(3) */
-        avio_r8(s->pb); /* dynamic range control (0x80 = off) */
-        len -= 3;
-        freq = (b1 >> 4) & 3;
-        st->codec->sample_rate = lpcm_freq_tab[freq];
-        st->codec->channels = 1 + (b1 & 7);
-        st->codec->bits_per_coded_sample = 16 + ((b1 >> 6) & 3) * 4;
-        st->codec->bit_rate = st->codec->channels *
-                              st->codec->sample_rate *
-                              st->codec->bits_per_coded_sample;
-        if (st->codec->bits_per_coded_sample == 16)
-            st->codec->codec_id = AV_CODEC_ID_PCM_S16BE;
-        else if (st->codec->bits_per_coded_sample == 28)
-            return AVERROR(EINVAL);
       }
     }
     ret = av_get_packet(s->pb, pkt, len);
