@@ -88,15 +88,20 @@ $(DOCS) doc/doxy/html: | doc/
 doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
 	$(M)$(SRC_PATH)/doc/doxy-wrapper.sh $(SRC_PATH) $^
 
+install-doc:
+
 install-man:
 
-ifdef CONFIG_MANPAGES
-install-progs-$(CONFIG_HTMLPAGES): install-doc
-install-progs-$(CONFIG_DOC): install-man
+ifdef CONFIG_HTMLPAGES
+install-progs-$(CONFIG_DOC): install-doc
 
 install-doc: $(HTMLPAGES)
 	$(Q)mkdir -p "$(DOCDIR)"
 	$(INSTALL) -m 644 $(HTMLPAGES) "$(DOCDIR)"
+endif
+
+ifdef CONFIG_MANPAGES
+install-progs-$(CONFIG_DOC): install-man
 
 install-man: $(MANPAGES)
 	$(Q)mkdir -p "$(MANDIR)/man1"
