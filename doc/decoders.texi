@@ -158,4 +158,45 @@ ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
 7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
 @end table
 
+@section libzvbi-teletext
+
+Libzvbi allows libavcodec to decode DVB teletext pages and DVB teletext
+subtitles. Requires the presence of the libzvbi headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libzvbi}.
+
+@subsection Options
+
+@table @option
+@item txt_page
+List of teletext page numbers to decode. You may use the special * string to
+match all pages. Pages that do not match the specified list are dropped.
+Default value is *.
+@item txt_chop_top
+Discards the top teletext line. Default value is 1.
+@item txt_format
+Specifies the format of the decoded subtitles. The teletext decoder is capable
+of decoding the teletext pages to bitmaps or to simple text, you should use
+"bitmap" for teletext pages, because certain graphics and colors cannot be
+expressed in simple text. You might use "text" for teletext based subtitles if
+your application can handle simple text based subtitles. Default value is
+bitmap.
+@item txt_left
+X offset of generated bitmaps, default is 0.
+@item txt_top
+Y offset of generated bitmaps, default is 0.
+@item txt_chop_spaces
+Chops leading and trailing spaces and removes empty lines from the generated
+text. This option is useful for teletext based subtitles where empty spaces may
+be present at the start or at the end of the lines or empty lines may be
+present between the subtitle lines because of double-sized teletext charactes.
+Default value is 1.
+@item txt_duration
+Sets the display duration of the decoded teletext pages or subtitles in
+miliseconds. Default value is 30000 which is 30 seconds.
+@item txt_transparent
+Force transparent background of the generated teletext bitmaps. Default value
+is 0 which means an opaque (black) background.
+@end table
+
 @c man end SUBTILES DECODERS

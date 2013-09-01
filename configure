@@ -242,6 +242,7 @@ External library support:
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-libzmq          enable message passing via libzmq [no]
+  --enable-libzvbi         enable teletext support via libzvbi [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
   --enable-openssl         enable openssl [no]
@@ -1205,6 +1206,7 @@ EXTERNAL_LIBRARY_LIST="
     libxavs
     libxvid
     libzmq
+    libzvbi
     openal
     opencl
     openssl
@@ -2044,6 +2046,7 @@ libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 libutvideo_decoder_deps="libutvideo"
 libutvideo_encoder_deps="libutvideo"
+libzvbi_teletext_decoder_deps="libzvbi"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -3767,6 +3770,7 @@ die_license_disabled gpl libvidstab
 die_license_disabled gpl libx264
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
+die_license_disabled gpl libzvbi
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libaacplus
@@ -4245,6 +4249,7 @@ enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
+enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi
 enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
                                check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
@@ -4635,6 +4640,7 @@ echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
 echo "opencl enabled            ${opencl-no}"
+echo "libzvbi enabled           ${libzvbi-no}"
 echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
