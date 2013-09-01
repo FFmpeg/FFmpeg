@@ -31,6 +31,7 @@
 typedef struct PCMDVDContext {
     uint32_t last_header;    // Cached header to see if parsing is needed
     int block_size;          // Size of a block of samples in bytes
+    int last_block_size;     // Size of the last block of samples in bytes
     int samples_per_block;   // Number of samples per channel per block
     int groups_per_block;    // Number of 20/24bit sample groups per block
     uint8_t *extra_samples;  // Pointer to leftover samples from a frame
@@ -223,6 +224,11 @@ static int pcm_dvd_decode_frame(AVCodecContext *avctx, void *data,
 
     if ((retval = pcm_dvd_parse_header(avctx, src)))
         return retval;
+    if (s->last_block_size != s->block_size) {
+        av_log(avctx, AV_LOG_WARNING, "block_size has changed\n");
+        s->extra_sample_count = 0;
+    }
+    s->last_block_size = s->block_size;
     src      += 3;
     buf_size -= 3;
 
