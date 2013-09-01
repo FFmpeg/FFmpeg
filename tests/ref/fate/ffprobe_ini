@@ -620,6 +620,7 @@ start_time=0.000000
 duration=0.120000
 size=1054812
 bit_rate=70320800
+probe_score=100
 
 [format.tags]
 title=ffprobe test file

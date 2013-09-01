@@ -46,7 +46,7 @@
         </stream>
     </streams>
 
-    <format filename="tests/data/ffprobe-test.nut" nb_streams="3" nb_programs="0" format_name="nut" start_time="0.000000" duration="0.120000" size="1054812" bit_rate="70320800">
+    <format filename="tests/data/ffprobe-test.nut" nb_streams="3" nb_programs="0" format_name="nut" start_time="0.000000" duration="0.120000" size="1054812" bit_rate="70320800" probe_score="100">
         <tag key="title" value="ffprobe test file"/>
         <tag key="comment" value="&apos;A comment with CSV, XML &amp; JSON special chars&apos;: &lt;tag value=&quot;x&quot;&gt;"/>
         <tag key="comment2" value="I ♥ Üñîçød€"/>

@@ -590,6 +590,7 @@
         "duration": "0.120000",
         "size": "1054812",
         "bit_rate": "70320800",
+        "probe_score": 100,
         "tags": {
             "title": "ffprobe test file",
             "comment": "'A comment with CSV, XML & JSON special chars': <tag value=\"x\">",

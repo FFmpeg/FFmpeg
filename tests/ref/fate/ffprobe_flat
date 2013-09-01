@@ -545,6 +545,7 @@ format.start_time="0.000000"
 format.duration="0.120000"
 format.size="1054812"
 format.bit_rate="70320800"
+format.probe_score=100
 format.tags.title="ffprobe test file"
 format.tags.comment="'A comment with CSV, XML & JSON special chars': <tag value=\"x\">"
 format.tags.comment2="I ♥ Üñîçød€"
