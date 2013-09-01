@@ -916,12 +916,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 static int init_thread_copy(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
+    int i;
 
     f->picture.f      = NULL;
     f->last_picture.f = NULL;
     f->sample_buffer  = NULL;
-    f->quant_table_count = 0;
     f->slice_count = 0;
+
+    for (i = 0; i < f->quant_table_count; i++) {
+        av_assert0(f->version > 1);
+        f->initial_states[i] = av_memdup(f->initial_states[i],
+                                         f->context_count[i] * sizeof(*f->initial_states[i]));
+    }
 
     return 0;
 }
@@ -936,12 +942,9 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         return 0;
 
     if (!fdst->picture.f) {
+        FFV1Context bak = *fdst;
         memcpy(fdst, fsrc, sizeof(*fdst));
-
-        for (i = 0; i < fdst->quant_table_count; i++) {
-            fdst->initial_states[i] = av_malloc(fdst->context_count[i] * sizeof(*fdst->initial_states[i]));
-            memcpy(fdst->initial_states[i], fsrc->initial_states[i], fdst->context_count[i] * sizeof(*fdst->initial_states[i]));
-        }
+        memcpy(fdst->initial_states, bak.initial_states, sizeof(fdst->initial_states));
 
         fdst->picture.f      = av_frame_alloc();
         fdst->last_picture.f = av_frame_alloc();
