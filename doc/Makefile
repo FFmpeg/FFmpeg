@@ -91,7 +91,8 @@ doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(INSTHEADERS)
 install-man:
 
 ifdef CONFIG_MANPAGES
-install-progs-$(CONFIG_DOC): install-doc install-man
+install-progs-$(CONFIG_HTMLPAGES): install-doc
+install-progs-$(CONFIG_DOC): install-man
 
 install-doc: $(HTMLPAGES)
 	$(Q)mkdir -p "$(DOCDIR)"
