@@ -747,7 +747,7 @@ static int is_intra_more_likely(ERContext *s)
             }
         }
     }
-    // printf("is_intra_likely: %d type:%d\n", is_intra_likely, s->pict_type);
+//      av_log(NULL, AV_LOG_ERROR, "is_intra_likely: %d type:%d\n", is_intra_likely, s->pict_type);
     return is_intra_likely > 0;
 }
 
