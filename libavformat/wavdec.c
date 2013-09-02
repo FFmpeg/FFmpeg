@@ -697,7 +697,7 @@ static int w64_read_header(AVFormatContext *s)
             avio_skip(pb, end - avio_tell(pb));
         } else {
             av_log(s, AV_LOG_DEBUG, "unknown guid: "FF_PRI_GUID"\n", FF_ARG_GUID(guid));
-            avio_skip(pb, size - 24);
+            avio_skip(pb, FFALIGN(size, INT64_C(8)) - 24);
         }
     }
 
