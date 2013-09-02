@@ -512,6 +512,10 @@ static int wma_decode_block(WMACodecContext *s)
        coef escape coding */
     total_gain = 1;
     for(;;) {
+        if (get_bits_left(&s->gb) < 7) {
+            av_log(s->avctx, AV_LOG_ERROR, "total_gain overread\n");
+            return AVERROR_INVALIDDATA;
+        }
         a = get_bits(&s->gb, 7);
         total_gain += a;
         if (a != 127)
