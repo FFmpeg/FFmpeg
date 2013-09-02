@@ -11,12 +11,11 @@ fi
 # Detect OS
 OS=`uname`
 ARCH=`uname -m`
+export CCACHE=; type ccache >/dev/null 2>&1 && export CCACHE=ccache
 if [ $OS == 'Linux' ]; then
 	export HOST_SYSTEM=linux-$ARCH
-	export CCACHE=ccache
 elif [ $OS == 'Darwin' ]; then
 	export HOST_SYSTEM=darwin-$ARCH
-	export CCACHE=
 fi
 
 SOURCE=`pwd`
@@ -47,9 +46,11 @@ LDFLAGS="-lm -lz -Wl,--no-undefined -Wl,-z,noexecstack"
 
 if [ $1 ]; then
 	FFMPEG_FLAGS_COMMON="--target-os=linux \
+	    --enable-cross-compile \
+		--cross-prefix=i686-linux-android- \
 		--arch=x86
 		--cpu=i686
-		--cross-prefix=i686-linux-android- \
+		
 		--enable-runtime-cpudetect
 		--enable-shared \
 		--disable-symver \
@@ -68,7 +69,6 @@ if [ $1 ]; then
 		--enable-parsers \
 		--enable-swscale  \
 		--enable-network \
-		--enable-openssl \
 		--enable-protocol=file \
 		--enable-protocol=http \
 		--enable-protocol=rtmp \
@@ -99,6 +99,7 @@ if [ $1 ]; then
 		--enable-decoder=mp3 \
 		--disable-amd3dnow \
 		--disable-amd3dnowext \
+		--enable-openssl \
 		--enable-asm \
 		--enable-yasm \
 		--enable-pic "
@@ -113,8 +114,8 @@ else
 		--enable-shared \
 		--disable-static \
 		--disable-symver \
-		--disable-doc \
 		--disable-programs \
+		--disable-doc \
 		--disable-avdevice \
 		--disable-postproc \
 		--disable-encoders \
