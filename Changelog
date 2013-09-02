@@ -1,6 +1,90 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 9.9:
+- 4xm: check that bits per sample is strictly positive
+- 4xm: Check that the read track value is non-negative
+- 4xm: Reject not a multiple of 16 dimension
+- 8bps: Bound-check the input buffer
+- aac: Check init_get_bits return value
+- aac: return meaningful errors
+- ac3: Clean up the error paths
+- ac3dec: Don't consume more data than the actual input packet size
+- ac3dec: Increment channel pointers only once per channel
+- ac3: Do not clash with normal AVERROR
+- ac3: Return proper error codes
+- adpcm: Write the correct number of samples for ima-dk4
+- alac: Check that the channels fit at the given offset
+- alac: Limit max_samples_per_frame
+- alsdec: Clean up error paths
+- alsdec: Fix the clipping range
+- ape demuxer: check for EOF in potentially long loops
+- atrac3: Error on impossible encoding/channel combinations
+- atrac3: fix error handling
+- atrac3: set the getbits context the right buffer_end
+- avconv: do not use lavfi direct rendering with -deinterlace
+- avidec: Let the inner dv demuxer take care of discarding
+- avio: Handle AVERROR_EOF in the same way as the return value 0
+- bink: Bound check the quantization matrix.
+- dca: Error out on missing DSYNC
+- dca: Respect the current limits in the downmixing capabilities
+- dsicinav: Bound-check the source buffer when needed
+- dsicinav: Clip the source size to the expected maximum
+- dv: Add a guard to not overread the ppcm array
+- dxa: Make sure the reference frame exists
+- h261: check the mtype index
+- iff: Do not read over the source buffer
+- imc: Catch a division by zero
+- indeo4: Check the quantization matrix index
+- indeo4: Do not access missing reference MV
+- indeo4: Validate scantable dimension
+- indeo5: return proper error codes
+- indeo: Bound-check before applying motion compensation
+- indeo: Bound-check before applying transform
+- indeo: Do not reference mismatched tiles
+- indeo: Reject impossible FRAMETYPE_NULL
+- indeo: Sanitize ff_ivi_init_planes fail paths
+- lavf: avoid integer overflow when estimating bitrate
+- lavf: Make sure avg_frame_rate can be calculated without integer overflow
+- matroskadec: Check that .lang was allocated and set before reading it
+- mjpegb: Detect changing number of planes in interlaced video
+- mlpdec: Do not set invalid context in read_restart_header
+- mov: Do not allow updating the time scale after it has been set
+- mov: Seek back if overreading an individual atom
+- mpegvideo: Avoid 32-bit wrapping of linesize multiplications
+- nuv: check ff_rtjpeg_decode_frame_yuv420 return value
+- nuv: Do not ignore lzo decompression failures
+- nuv: Pad the lzo outbuf
+- nuv: Reset the frame on resize
+- nuv: return meaningful error codes.
+- nuv: Use av_fast_realloc
+- ogg: Always alloc the private context in vorbis_header
+- ogg: Fix potential infinite discard loop
+- oma: check geob tag boundary
+- oma: correctly mark and decrypt partial packets
+- oma: refactor seek function
+- pcm: always use codec->id instead of codec_id
+- pcx: Do not overread source buffer in pcx_rle_decode
+- pictordec: break out of both decoding loops when y drops below 0
+- pictordec: pass correct context to avpriv_request_sample
+- qdm2: check and reset dithering index per channel
+- qdm2: Conceal broken samples
+- qdm2: refactor joined stereo support
+- qdm2: use init_static_data
+- rmdec: Use the AVIOContext given as parameter in rm_read_metadata()
+- rtjpeg: Use init_get_bits8
+- rtmp: Do not misuse memcmp
+- rtmp: rename data_size to size
+- segafilm: Error out on impossible packet size
+- vc1: check mb_height validity.
+- vc1: check the source buffer in vc1_mc functions
+- vcr1: add sanity checks
+- vqavideo: check the version
+- westwood_vqa: do not free extradata on error in read_header
+- wmavoice: conceal clearly corrupted blocks
+- wtv: Mark attachment with a negative stream id
+- xl: Make sure the width is valid
+
 version 9.8:
 - kmvc: Clip pixel position to valid range
 - kmvc: Use fixed sized arrays in the context
