@@ -3508,7 +3508,7 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     track->enc = avcodec_alloc_context3(NULL);
     track->enc->codec_type = AVMEDIA_TYPE_DATA;
     track->enc->codec_tag  = track->tag;
-    track->enc->time_base  = src_st->codec->time_base;
+    track->enc->time_base  = av_inv_q(rate);
 
     /* the tmcd track just contains one packet with the frame number */
     pkt.data = av_malloc(pkt.size);
