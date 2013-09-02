@@ -2961,8 +2961,6 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->sample_count += samples_in_chunk;
     mov->mdat_size    += size;
 
-    avio_flush(pb);
-
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
         ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
                                  reformatted_data, size);
