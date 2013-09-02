@@ -687,6 +687,10 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             standard.index = i;
             if (v4l2_ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
                 ret = AVERROR(errno);
+                if (ret == AVERROR(EINVAL)) {
+                    tpf = &streamparm.parm.capture.timeperframe;
+                    break;
+                }
                 av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_ENUMSTD): %s\n", av_err2str(ret));
                 return ret;
             }
