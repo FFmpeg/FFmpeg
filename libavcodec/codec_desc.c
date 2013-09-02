@@ -1920,7 +1920,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_ATRAC3,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "atrac3",
-        .long_name = NULL_IF_CONFIG_SMALL("Atrac 3 (Adaptive TRansform Acoustic Coding 3)"),
+        .long_name = NULL_IF_CONFIG_SMALL("ATRAC3 (Adaptive TRansform Acoustic Coding 3)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
 #if FF_API_VOXWARE
@@ -1985,7 +1985,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_ATRAC3P,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "atrac3p",
-        .long_name = NULL_IF_CONFIG_SMALL("Sony ATRAC3+"),
+        .long_name = NULL_IF_CONFIG_SMALL("ATRAC3+ (Adaptive TRansform Acoustic Coding 3+)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {
@@ -2034,7 +2034,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_ATRAC1,
         .type      = AVMEDIA_TYPE_AUDIO,
         .name      = "atrac1",
-        .long_name = NULL_IF_CONFIG_SMALL("Atrac 1 (Adaptive TRansform Acoustic Coding)"),
+        .long_name = NULL_IF_CONFIG_SMALL("ATRAC1 (Adaptive TRansform Acoustic Coding)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {

@@ -1,5 +1,5 @@
 /*
- * Atrac common functions
+ * ATRAC common functions
  * Copyright (c) 2006-2008 Maxim Poliakovski
  * Copyright (c) 2006-2008 Benjamin Larsson
  *

@@ -1,5 +1,5 @@
 /*
- * Atrac common data
+ * ATRAC common data
  * Copyright (c) 2009 Maxim Poliakovski
  * Copyright (c) 2009 Benjamin Larsson
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * Atrac common header
+ * ATRAC common header
  */
 
 #ifndef AVCODEC_ATRAC_H
