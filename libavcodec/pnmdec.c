@@ -24,7 +24,7 @@
 #include "put_bits.h"
 #include "pnm.h"
 
-static void samplecpy(void *dst, const void *src, int n, int maxval)
+static void samplecpy(uint8_t *dst, const uint8_t *src, int n, int maxval)
 {
     if (maxval <= 255) {
         memcpy(dst, src, n);
