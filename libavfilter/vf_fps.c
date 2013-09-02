@@ -201,7 +201,7 @@ static int end_frame(AVFilterLink *inlink)
     }
 
     /* now wait for the next timestamp */
-    if (buf->pts == AV_NOPTS_VALUE) {
+    if (buf->pts == AV_NOPTS_VALUE || av_fifo_size(s->fifo) <= 0) {
         return write_to_fifo(s->fifo, buf);
     }
 
