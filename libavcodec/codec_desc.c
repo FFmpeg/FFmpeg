@@ -226,6 +226,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
     {
+        .id        = AV_CODEC_ID_H265,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "h265",
+        .long_name = NULL_IF_CONFIG_SMALL("H.265 / HEVC"),
+        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
+    },
+    {
         .id        = AV_CODEC_ID_INDEO3,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "indeo3",
