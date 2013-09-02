@@ -916,7 +916,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 static int init_thread_copy(AVCodecContext *avctx)
 {
     FFV1Context *f = avctx->priv_data;
-    int i;
+    int i, ret;
 
     f->picture.f      = NULL;
     f->last_picture.f = NULL;
@@ -929,7 +929,41 @@ static int init_thread_copy(AVCodecContext *avctx)
                                          f->context_count[i] * sizeof(*f->initial_states[i]));
     }
 
+    f->picture.f      = av_frame_alloc();
+    f->last_picture.f = av_frame_alloc();
+
+    if ((ret = ffv1_init_slice_contexts(f)) < 0)
+        return ret;
+
     return 0;
+}
+
+static void copy_fields(FFV1Context *fsdst, FFV1Context *fssrc, FFV1Context *fsrc)
+{
+    fsdst->version             = fsrc->version;
+    fsdst->minor_version       = fsrc->minor_version;
+    fsdst->chroma_planes       = fsrc->chroma_planes;
+    fsdst->chroma_h_shift      = fsrc->chroma_h_shift;
+    fsdst->chroma_v_shift      = fsrc->chroma_v_shift;
+    fsdst->transparency        = fsrc->transparency;
+    fsdst->plane_count         = fsrc->plane_count;
+    fsdst->ac                  = fsrc->ac;
+    fsdst->colorspace          = fsrc->colorspace;
+
+    fsdst->ec                  = fsrc->ec;
+    fsdst->intra               = fsrc->intra;
+    fsdst->slice_damaged       = fssrc->slice_damaged;
+    fsdst->key_frame_ok        = fsrc->key_frame_ok;
+
+    fsdst->bits_per_raw_sample = fsrc->bits_per_raw_sample;
+    fsdst->packed_at_lsb       = fsrc->packed_at_lsb;
+    fsdst->slice_count         = fsrc->slice_count;
+    if (fsrc->version<3){
+        fsdst->slice_x             = fssrc->slice_x;
+        fsdst->slice_y             = fssrc->slice_y;
+        fsdst->slice_width         = fssrc->slice_width;
+        fsdst->slice_height        = fssrc->slice_height;
+    }
 }
 
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
@@ -941,32 +975,29 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (dst == src)
         return 0;
 
-    if (!fdst->picture.f) {
+    {
         FFV1Context bak = *fdst;
         memcpy(fdst, fsrc, sizeof(*fdst));
         memcpy(fdst->initial_states, bak.initial_states, sizeof(fdst->initial_states));
-
-        fdst->picture.f      = av_frame_alloc();
-        fdst->last_picture.f = av_frame_alloc();
-
-        if ((ret = ffv1_init_slice_contexts(fdst)) < 0)
-            return ret;
+        memcpy(fdst->slice_context,  bak.slice_context , sizeof(fdst->slice_context));
+        fdst->picture      = bak.picture;
+        fdst->last_picture = bak.last_picture;
+        for (i = 0; i<fdst->num_h_slices * fdst->num_v_slices; i++) {
+            FFV1Context *fssrc = fsrc->slice_context[i];
+            FFV1Context *fsdst = fdst->slice_context[i];
+            copy_fields(fsdst, fssrc, fsrc);
+        }
+        av_assert0(!fdst->plane[0].state);
+        av_assert0(!fdst->sample_buffer);
     }
 
     av_assert1(fdst->slice_count == fsrc->slice_count);
 
-    fdst->key_frame_ok = fsrc->key_frame_ok;
 
     ff_thread_release_buffer(dst, &fdst->picture);
     if (fsrc->picture.f->data[0]) {
         if ((ret = ff_thread_ref_frame(&fdst->picture, &fsrc->picture)) < 0)
             return ret;
-    }
-    for (i = 0; i < fdst->slice_count; i++) {
-        FFV1Context *fsdst = fdst->slice_context[i];
-        FFV1Context *fssrc = fsrc->slice_context[i];
-
-        fsdst->slice_damaged = fssrc->slice_damaged;
     }
 
     fdst->fsrc = fsrc;
