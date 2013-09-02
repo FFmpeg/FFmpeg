@@ -31,7 +31,7 @@ static void samplecpy(uint8_t *dst, const uint8_t *src, int n, int maxval)
     } else {
         int i;
         for (i=0; i<n/2; i++) {
-            ((uint16_t *)dst)[i] = av_be2ne16(((uint16_t *)src)[i]);
+            ((uint16_t *)dst)[i] = AV_RB16(src+2*i);
         }
     }
 }
