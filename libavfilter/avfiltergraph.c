@@ -661,7 +661,8 @@ static int reduce_formats_on_filter(AVFilterContext *filter)
             if (inlink->type != outlink->type || fmts->nb_channel_layouts == 1)
                 continue;
 
-            if (fmts->all_layouts) {
+            if (fmts->all_layouts &&
+                (!FF_LAYOUT2COUNT(fmt) || fmts->all_counts)) {
                 /* Turn the infinite list into a singleton */
                 fmts->all_layouts = fmts->all_counts  = 0;
                 ff_add_channel_layout(&outlink->in_channel_layouts, fmt);
