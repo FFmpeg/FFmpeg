@@ -171,7 +171,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     frame->nb_samples = total_samples;
-    *got_frame_ptr   = 1;
+    *got_frame_ptr   = total_samples > 0;
     return avpkt->size;
 }
 
