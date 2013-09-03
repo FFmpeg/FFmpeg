@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/internal.h"
 
 typedef struct VCR1Context {
@@ -65,9 +66,6 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
 
-    if (buf_size < 32)
-        goto packet_small;
-
     for (i = 0; i < 16; i++) {
         a->delta[i] = *bytestream++;
         bytestream++;
@@ -82,8 +80,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
             uint8_t *cb = &p->data[1][(y >> 2) * p->linesize[1]];
             uint8_t *cr = &p->data[2][(y >> 2) * p->linesize[2]];
 
-            if (buf_size < 4 + avctx->width)
-                goto packet_small;
+            av_assert0 (buf_size >= 4 + avctx->width);
 
             for (i = 0; i < 4; i++)
                 a->offset[i] = *bytestream++;
@@ -104,8 +101,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                 buf_size   -= 4;
             }
         } else {
-            if (buf_size < avctx->width / 2)
-                goto packet_small;
+            av_assert0 (buf_size >= avctx->width / 2);
 
             offset = a->offset[y & 3] - a->delta[bytestream[2] & 0xF];
 
@@ -128,9 +124,6 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     *got_frame = 1;
 
     return buf_size;
-packet_small:
-    av_log(avctx, AV_LOG_ERROR, "Input packet too small.\n");
-    return AVERROR_INVALIDDATA;
 }
 
 AVCodec ff_vcr1_decoder = {
