@@ -201,7 +201,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (bytestream2_get_le16(&s->g)) {
         x = 0;
         plane = 0;
-        while (y >= 0 && bytestream2_get_bytes_left(&s->g) >= 6) {
+        while (bytestream2_get_bytes_left(&s->g) >= 6) {
             int stop_size, marker, t1, t2;
 
             t1        = bytestream2_get_bytes_left(&s->g);
@@ -211,7 +211,7 @@ static int decode_frame(AVCodecContext *avctx,
             bytestream2_skip(&s->g, 2);
             marker    = bytestream2_get_byte(&s->g);
 
-            while (plane < s->nb_planes && y >= 0 &&
+            while (plane < s->nb_planes &&
                    bytestream2_get_bytes_left(&s->g) > stop_size) {
                 int run = 1;
                 val = bytestream2_get_byte(&s->g);
@@ -234,7 +234,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
 
-        if (x < avctx->width && y >= 0) {
+        if (x < avctx->width) {
             int run = (y + 1) * avctx->width - x;
             if (bits_per_plane == 8)
                 picmemset_8bpp(s, frame, val, run, &x, &y);
