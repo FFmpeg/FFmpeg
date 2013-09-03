@@ -347,7 +347,7 @@ static int oma_read_header(AVFormatContext *s)
         st->codec->sample_rate = samplerate;
         st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
 
-        /* fake the atrac3 extradata
+        /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
         st->codec->extradata_size = 14;
         edata = av_mallocz(14 + FF_INPUT_BUFFER_PADDING_SIZE);

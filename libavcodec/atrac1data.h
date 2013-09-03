@@ -1,5 +1,5 @@
 /*
- * Atrac 1 compatible decoder data
+ * ATRAC 1 compatible decoder data
  * Copyright (c) 2009 Maxim Poliakovski
  * Copyright (c) 2009 Benjamin Larsson
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * Atrac 1 compatible decoder data
+ * ATRAC1 compatible decoder data
  */
 
 #ifndef AVCODEC_ATRAC1DATA_H

@@ -1,5 +1,5 @@
 /*
- * Atrac 3 compatible decoder
+ * ATRAC3 compatible decoder
  * Copyright (c) 2006-2008 Maxim Poliakovski
  * Copyright (c) 2006-2008 Benjamin Larsson
  *
@@ -22,10 +22,10 @@
 
 /**
  * @file
- * Atrac 3 compatible decoder.
+ * ATRAC3 compatible decoder.
  * This decoder handles Sony's ATRAC3 data.
  *
- * Container formats used to store atrac 3 data:
+ * Container formats used to store ATRAC3 data:
  * RealMedia (.rm), RIFF WAV (.wav, .at3), Sony OpenMG (.oma, .aa3).
  *
  * To use this decoder, a calling application must supply the extradata
@@ -1002,6 +1002,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_atrac3_decoder = {
     .name             = "atrac3",
+    .long_name        = NULL_IF_CONFIG_SMALL("ATRAC3 (Adaptive TRansform Acoustic Coding 3)"),
     .type             = AVMEDIA_TYPE_AUDIO,
     .id               = AV_CODEC_ID_ATRAC3,
     .priv_data_size   = sizeof(ATRAC3Context),
@@ -1009,7 +1010,6 @@ AVCodec ff_atrac3_decoder = {
     .close            = atrac3_decode_close,
     .decode           = atrac3_decode_frame,
     .capabilities     = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
-    .long_name        = NULL_IF_CONFIG_SMALL("Atrac 3 (Adaptive TRansform Acoustic Coding 3)"),
     .sample_fmts      = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                         AV_SAMPLE_FMT_NONE },
 };

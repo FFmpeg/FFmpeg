@@ -624,7 +624,7 @@ version 0.6:
 - LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
 - WMA Pro decoder
 - Core Audio Format demuxer
-- Atrac1 decoder
+- ATRAC1 decoder
 - MD STUDIO audio demuxer
 - RF64 support in WAV demuxer
 - MPEG-4 Audio Lossless Coding (ALS) decoder
@@ -752,7 +752,7 @@ version 0.5:
 - Interplay C93 demuxer and video decoder
 - Bethsoft VID demuxer and video decoder
 - CRYO APC demuxer
-- Atrac3 decoder
+- ATRAC3 decoder
 - V.Flash PTX decoder
 - RoQ muxer, RoQ audio encoder
 - Renderware TXD demuxer and decoder

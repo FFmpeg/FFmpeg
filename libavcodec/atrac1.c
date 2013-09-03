@@ -1,5 +1,5 @@
 /*
- * Atrac 1 compatible decoder
+ * ATRAC1 compatible decoder
  * Copyright (c) 2009 Maxim Poliakovski
  * Copyright (c) 2009 Benjamin Larsson
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * Atrac 1 compatible decoder.
+ * ATRAC1 compatible decoder.
  * This decoder handles raw ATRAC1 data and probably SDDS data.
  */
 
@@ -377,6 +377,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_atrac1_decoder = {
     .name           = "atrac1",
+    .long_name      = NULL_IF_CONFIG_SMALL("ATRAC1 (Adaptive TRansform Acoustic Coding)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ATRAC1,
     .priv_data_size = sizeof(AT1Ctx),
@@ -384,7 +385,6 @@ AVCodec ff_atrac1_decoder = {
     .close          = atrac1_decode_end,
     .decode         = atrac1_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Atrac 1 (Adaptive TRansform Acoustic Coding)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
