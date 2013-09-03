@@ -3252,8 +3252,14 @@ void av_close_input_file(AVFormatContext *s)
 
 void avformat_close_input(AVFormatContext **ps)
 {
-    AVFormatContext *s = *ps;
-    AVIOContext *pb = s->pb;
+    AVFormatContext *s;
+    AVIOContext *pb;
+
+    if (!ps || !*ps)
+        return;
+
+    s = *ps;
+    pb = s->pb;
 
     if ((s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
         (s->flags & AVFMT_FLAG_CUSTOM_IO))
