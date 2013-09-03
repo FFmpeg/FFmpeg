@@ -2668,6 +2668,11 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                          enc->time_base.num / g, enc->time_base.den / g);
         }
         break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        if (enc->width)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     ", %dx%d", enc->width, enc->height);
+        break;
     default:
         return;
     }
