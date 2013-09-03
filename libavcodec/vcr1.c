@@ -123,7 +123,7 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame = 1;
 
-    return buf_size;
+    return bytestream - avpkt->data;
 }
 
 AVCodec ff_vcr1_decoder = {
