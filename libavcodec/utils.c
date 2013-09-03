@@ -2398,7 +2398,12 @@ av_cold int ff_codec_close_recursive(AVCodecContext *avctx)
 
 av_cold int avcodec_close(AVCodecContext *avctx)
 {
-    int ret = ff_lock_avcodec(avctx);
+    int ret;
+
+    if (!avctx)
+        return 0;
+
+    ret = ff_lock_avcodec(avctx);
     if (ret < 0)
         return ret;
 
