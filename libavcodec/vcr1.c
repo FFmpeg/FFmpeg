@@ -49,10 +49,9 @@ static av_cold int vcr1_decode_init(AVCodecContext *avctx)
 static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
-    const uint8_t *buf        = avpkt->data;
     VCR1Context *const a      = avctx->priv_data;
     AVFrame *const p          = data;
-    const uint8_t *bytestream = buf;
+    const uint8_t *bytestream = avpkt->data;
     const uint8_t *bytestream_end = bytestream + avpkt->size;
     int i, x, y, ret;
 
