@@ -385,6 +385,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_ADPCM_IMA_DK4,   0x0061 },
     /* rogue format number */
     { AV_CODEC_ID_ADPCM_IMA_DK3,   0x0062 },
+    { AV_CODEC_ID_ADPCM_G726,      0x0064 },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   0x0069 },
     { AV_CODEC_ID_METASOUND,       0x0075 },
     { AV_CODEC_ID_AAC,             0x00ff },
