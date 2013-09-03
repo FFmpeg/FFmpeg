@@ -50,13 +50,13 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                              int *got_frame, AVPacket *avpkt)
 {
     const uint8_t *buf        = avpkt->data;
-    int buf_size              = avpkt->size;
     VCR1Context *const a      = avctx->priv_data;
     AVFrame *const p          = data;
     const uint8_t *bytestream = buf;
+    const uint8_t *bytestream_end = bytestream + avpkt->size;
     int i, x, y, ret;
 
-    if(buf_size < 16 + avctx->height + avctx->width*avctx->height*5/8){
+    if(avpkt->size < 16 + avctx->height + avctx->width*avctx->height*5/8){
         av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
         return AVERROR(EINVAL);
     }
@@ -69,7 +69,6 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     for (i = 0; i < 16; i++) {
         a->delta[i] = *bytestream++;
         bytestream++;
-        buf_size--;
     }
 
     for (y = 0; y < avctx->height; y++) {
@@ -80,11 +79,10 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
             uint8_t *cb = &p->data[1][(y >> 2) * p->linesize[1]];
             uint8_t *cr = &p->data[2][(y >> 2) * p->linesize[2]];
 
-            av_assert0 (buf_size >= 4 + avctx->width);
+            av_assert0 (bytestream_end - bytestream >= 4 + avctx->width);
 
             for (i = 0; i < 4; i++)
                 a->offset[i] = *bytestream++;
-            buf_size -= 4;
 
             offset = a->offset[0] - a->delta[bytestream[2] & 0xF];
             for (x = 0; x < avctx->width; x += 4) {
@@ -98,10 +96,9 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                 *cr++       = bytestream[1];
 
                 bytestream += 4;
-                buf_size   -= 4;
             }
         } else {
-            av_assert0 (buf_size >= avctx->width / 2);
+            av_assert0 (bytestream_end - bytestream >= avctx->width / 2);
 
             offset = a->offset[y & 3] - a->delta[bytestream[2] & 0xF];
 
@@ -116,7 +113,6 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
                 luma[7]     = offset += a->delta[bytestream[1] >>  4];
                 luma       += 8;
                 bytestream += 4;
-                buf_size   -= 4;
             }
         }
     }
