@@ -575,6 +575,10 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
             av_log(link->src, AV_LOG_ERROR, "Cannot select channel layout for"
                    " the link between filters %s and %s.\n", link->src->name,
                    link->dst->name);
+            if (!link->in_channel_layouts->all_counts)
+                av_log(link->src, AV_LOG_ERROR, "Unknown channel layouts not "
+                       "supported, try specifying a channel layout using "
+                       "'aformat=channel_layouts=something'.\n");
             return AVERROR(EINVAL);
         }
         link->in_channel_layouts->nb_channel_layouts = 1;
