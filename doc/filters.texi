@@ -5190,7 +5190,6 @@ The list of the currently supported filters follows:
 @item fil
 @item fspp
 @item ilpack
-@item phase
 @item pp7
 @item pullup
 @item qp
