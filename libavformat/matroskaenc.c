@@ -103,6 +103,7 @@ typedef struct MatroskaMuxContext {
     int cluster_size_limit;
     int64_t cues_pos;
     int64_t cluster_time_limit;
+    int wrote_chapters;
 } MatroskaMuxContext;
 
 
@@ -710,7 +711,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     AVRational scale = {1, 1E9};
     int i, ret;
 
-    if (!s->nb_chapters)
+    if (!s->nb_chapters || mkv->wrote_chapters)
         return 0;
 
     ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CHAPTERS, avio_tell(pb));
@@ -743,6 +744,8 @@ static int mkv_write_chapters(AVFormatContext *s)
     }
     end_ebml_master(pb, editionentry);
     end_ebml_master(pb, chapters);
+
+    mkv->wrote_chapters = 1;
     return 0;
 }
 
@@ -1389,6 +1392,11 @@ static int mkv_write_trailer(AVFormatContext *s)
         mkv_flush_dynbuf(s);
     } else if (mkv->cluster_pos) {
         end_ebml_master(pb, mkv->cluster);
+    }
+
+    if (mkv->mode != MODE_WEBM) {
+        ret = mkv_write_chapters(s);
+        if (ret < 0) return ret;
     }
 
     if (pb->seekable) {
