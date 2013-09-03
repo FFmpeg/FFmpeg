@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Clément Bœsch <ubitux@gmail.com>
+ * Copyright (c) 2012 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
