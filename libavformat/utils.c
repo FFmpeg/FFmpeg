@@ -1779,6 +1779,7 @@ int ff_find_last_ts(AVFormatContext *s, int stream_index, int64_t *ts, int64_t *
         int64_t tmp_ts = ff_read_timestamp(s, stream_index, &tmp_pos, INT64_MAX, read_timestamp);
         if(tmp_ts == AV_NOPTS_VALUE)
             break;
+        av_assert0(tmp_pos > pos_max);
         ts_max  = tmp_ts;
         pos_max = tmp_pos;
         if(tmp_pos >= filesize)
