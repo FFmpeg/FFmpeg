@@ -22,6 +22,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/imgutils.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -285,6 +286,29 @@ static int return_frame(AVFilterContext *ctx, int is_second)
     return ret;
 }
 
+static int checkstride(YADIFContext *yadif, const AVFrame *a, const AVFrame *b)
+{
+    int i;
+    for (i = 0; i < yadif->csp->nb_components; i++)
+        if (a->linesize[i] != b->linesize[i])
+            return 1;
+    return 0;
+}
+
+static void fixstride(AVFilterLink *link, AVFrame *f)
+{
+    AVFrame *dst = ff_default_get_video_buffer(link, f->width, f->height);
+    if(!dst)
+        return;
+    av_frame_copy_props(dst, f);
+    av_image_copy(dst->data, dst->linesize,
+                  f->data, f->linesize,
+                  dst->format, dst->width, dst->height);
+    av_frame_unref(f);
+    av_frame_move_ref(f, dst);
+    av_frame_free(&dst);
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
@@ -303,6 +327,19 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 
     if (!yadif->cur)
         return 0;
+
+    if (checkstride(yadif, yadif->next, yadif->cur)) {
+        av_log(ctx, AV_LOG_VERBOSE, "Reallocating frame due to differing stride\n");
+        fixstride(link, yadif->next);
+    }
+    if (checkstride(yadif, yadif->next, yadif->cur))
+        fixstride(link, yadif->cur);
+    if (yadif->prev && checkstride(yadif, yadif->next, yadif->prev))
+        fixstride(link, yadif->prev);
+    if (checkstride(yadif, yadif->next, yadif->cur) || (yadif->prev && checkstride(yadif, yadif->next, yadif->prev))) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to reallocate frame\n");
+        return -1;
+    }
 
     if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
         yadif->out  = av_frame_clone(yadif->cur);
