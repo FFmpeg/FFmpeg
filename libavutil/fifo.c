@@ -19,6 +19,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "avassert.h"
 #include "common.h"
 #include "fifo.h"
 
@@ -144,6 +146,7 @@ int av_fifo_generic_read(AVFifoBuffer *f, void *dest, int buf_size,
 /** Discard data from the FIFO. */
 void av_fifo_drain(AVFifoBuffer *f, int size)
 {
+    av_assert2(av_fifo_size(f) >= size);
     f->rptr += size;
     if (f->rptr >= f->end)
         f->rptr -= f->end - f->buffer;
