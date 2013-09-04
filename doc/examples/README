@@ -14,5 +14,5 @@ correctly configured.
 2) Build the examples in-tree
 
 Assuming you are in the source FFmpeg checkout directory, you need to build
-FFmpeg (no need to make install in any prefix). Then you can go into the
+FFmpeg (no need to make install in any prefix). Then you can go into
 doc/examples and run a command such as PKG_CONFIG_PATH=pc-uninstalled make.
