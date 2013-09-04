@@ -96,14 +96,42 @@ year-month-day.
 @anchor{time duration syntax}
 @section Time duration
 
-The accepted syntax is:
+There are two accepted syntaxes for expressing time duration.
+
 @example
-[-][HH:]MM:SS[.m...]
-[-]S+[.m...]
+[-][@var{HH}:]@var{MM}:@var{SS}[.@var{m}...]
 @end example
 
-@var{HH} expresses the number of hours, @var{MM} the number a of minutes
-and @var{SS} the number of seconds.
+@var{HH} expresses the number of hours, @var{MM} the number of minutes
+for a maximum of 2 digits, and @var{SS} the number of seconds for a
+maximum of 2 digits. The @var{m} at the end expresses decimal value for
+@var{SS}.
+
+@emph{or}
+
+@example
+[-]@var{S}+[.@var{m}...]
+@end example
+
+@var{S} expresses the number of seconds, with the optional decimal part
+@var{m}.
+
+In both expressions, the optional @samp{-} indicates negative duration.
+
+@subsection Examples
+
+The following examples are all valid time duration:
+
+@table @samp
+@item 55
+55 seconds
+
+@item 12:03:45
+12 hours, 03 minutes and 45 seconds
+
+@item 23.189
+23.189 seconds
+@end table
 
 @anchor{video size syntax}
 @section Video size
