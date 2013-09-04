@@ -511,11 +511,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 static int allocate_buffers(ALACContext *alac)
 {
     int ch;
-    int buf_size;
-
-    if (alac->max_samples_per_frame > INT_MAX / sizeof(int32_t))
-        goto buf_alloc_fail;
-    buf_size = alac->max_samples_per_frame * sizeof(int32_t);
+    int buf_size = alac->max_samples_per_frame * sizeof(int32_t);
 
     for (ch = 0; ch < FFMIN(alac->channels, 2); ch++) {
         FF_ALLOC_OR_GOTO(alac->avctx, alac->predict_error_buffer[ch],
@@ -546,7 +542,8 @@ static int alac_set_info(ALACContext *alac)
     bytestream2_skipu(&gb, 12); // size:4, alac:4, version:4
 
     alac->max_samples_per_frame = bytestream2_get_be32u(&gb);
-    if (!alac->max_samples_per_frame || alac->max_samples_per_frame > INT_MAX) {
+    if (!alac->max_samples_per_frame ||
+        alac->max_samples_per_frame > INT_MAX / sizeof(int32_t)) {
         av_log(alac->avctx, AV_LOG_ERROR, "max samples per frame invalid: %u\n",
                alac->max_samples_per_frame);
         return AVERROR_INVALIDDATA;
