@@ -790,7 +790,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
     uint16_t (*buffer)[4];
     int left[4], top[4], topleft[4];
     const int linesize = s->linesize[0];
-    const int mask     = (1 << s->bits) - 1;
+    const int mask     = ((1 << s->bits) - 1) << point_transform;
     int resync_mb_y = 0;
     int resync_mb_x = 0;
 
