@@ -7830,6 +7830,45 @@ vignette='PI/4+random(1)*PI/50':eval=frame
 
 @end itemize
 
+@section w3fdif
+
+Deinterlace the input video ("w3fdif" stands for "Weston 3 Field
+Deinterlacing Filter").
+
+Based on the process described by Martin Weston for BBC R&D, and
+implemented based on the de-interlace algorithm written by Jim
+Easterbrook for BBC R&D, the Weston 3 field deinterlacing filter
+uses filter coefficients calculated by BBC R&D.
+
+There are two sets of filter coefficients, so called "simple":
+and "complex". Which set of filter coefficients is used can
+be set by passing an optional parameter:
+
+@table @option
+@item filter
+Set the interlacing filter coefficients. Accepts one of the following values:
+
+@table @samp
+@item simple
+Simple filter coefficient set.
+@item complex
+More-complex filter coefficient set.
+@end table
+Default value is @samp{complex}.
+
+@item deint
+Specify which frames to deinterlace. Accept one of the following values:
+
+@table @samp
+@item all
+Deinterlace all frames,
+@item interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+Default value is @samp{all}.
+@end table
+
 @anchor{yadif}
 @section yadif
 
