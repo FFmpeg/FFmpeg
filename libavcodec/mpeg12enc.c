@@ -50,11 +50,6 @@ static const uint8_t svcd_scan_offset_placeholder[14] = {
     0xff, 0xff, 0xff,
 };
 
-static void mpeg1_encode_block(MpegEncContext *s,
-                         int16_t *block,
-                         int component);
-static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code);    // RAL: f_code parameter added
-
 static uint8_t mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static uint8_t fcode_tab[MAX_MV*2+1];
 
@@ -432,6 +427,164 @@ static inline void put_mb_modes(MpegEncContext *s, int n, int bits,
     }
 }
 
+// RAL: Parameter added: f_or_b_code
+static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
+{
+    if (val == 0) {
+        /* zero vector */
+        put_bits(&s->pb,
+                 ff_mpeg12_mbMotionVectorTable[0][1],
+                 ff_mpeg12_mbMotionVectorTable[0][0]);
+    } else {
+        int code, sign, bits;
+        int bit_size = f_or_b_code - 1;
+        int range = 1 << bit_size;
+        /* modulo encoding */
+        val = sign_extend(val, 5 + bit_size);
+
+        if (val >= 0) {
+            val--;
+            code = (val >> bit_size) + 1;
+            bits = val & (range - 1);
+            sign = 0;
+        } else {
+            val = -val;
+            val--;
+            code = (val >> bit_size) + 1;
+            bits = val & (range - 1);
+            sign = 1;
+        }
+
+        assert(code > 0 && code <= 16);
+
+        put_bits(&s->pb,
+                 ff_mpeg12_mbMotionVectorTable[code][1],
+                 ff_mpeg12_mbMotionVectorTable[code][0]);
+
+        put_bits(&s->pb, 1, sign);
+        if (bit_size > 0) {
+            put_bits(&s->pb, bit_size, bits);
+        }
+    }
+}
+
+static inline void encode_dc(MpegEncContext *s, int diff, int component)
+{
+  if(((unsigned) (diff+255)) >= 511){
+        int index;
+
+        if(diff<0){
+            index= av_log2_16bit(-2*diff);
+            diff--;
+        }else{
+            index= av_log2_16bit(2*diff);
+        }
+        if (component == 0) {
+            put_bits(
+                &s->pb,
+                ff_mpeg12_vlc_dc_lum_bits[index] + index,
+                (ff_mpeg12_vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1)));
+        }else{
+            put_bits(
+                &s->pb,
+                ff_mpeg12_vlc_dc_chroma_bits[index] + index,
+                (ff_mpeg12_vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1)));
+        }
+  }else{
+    if (component == 0) {
+        put_bits(
+            &s->pb,
+            mpeg1_lum_dc_uni[diff+255]&0xFF,
+            mpeg1_lum_dc_uni[diff+255]>>8);
+    } else {
+        put_bits(
+            &s->pb,
+            mpeg1_chr_dc_uni[diff+255]&0xFF,
+            mpeg1_chr_dc_uni[diff+255]>>8);
+    }
+  }
+}
+
+static void mpeg1_encode_block(MpegEncContext *s,
+                               int16_t *block,
+                               int n)
+{
+    int alevel, level, last_non_zero, dc, diff, i, j, run, last_index, sign;
+    int code, component;
+    const uint16_t (*table_vlc)[2] = ff_rl_mpeg1.table_vlc;
+
+    last_index = s->block_last_index[n];
+
+    /* DC coef */
+    if (s->mb_intra) {
+        component = (n <= 3 ? 0 : (n&1) + 1);
+        dc = block[0]; /* overflow is impossible */
+        diff = dc - s->last_dc[component];
+        encode_dc(s, diff, component);
+        s->last_dc[component] = dc;
+        i = 1;
+        if (s->intra_vlc_format)
+            table_vlc = ff_rl_mpeg2.table_vlc;
+    } else {
+        /* encode the first coefficient : needs to be done here because
+           it is handled slightly differently */
+        level = block[0];
+        if (abs(level) == 1) {
+                code = ((uint32_t)level >> 31); /* the sign bit */
+                put_bits(&s->pb, 2, code | 0x02);
+                i = 1;
+        } else {
+            i = 0;
+            last_non_zero = -1;
+            goto next_coef;
+        }
+    }
+
+    /* now quantify & encode AC coefs */
+    last_non_zero = i - 1;
+
+    for(;i<=last_index;i++) {
+        j = s->intra_scantable.permutated[i];
+        level = block[j];
+    next_coef:
+        /* encode using VLC */
+        if (level != 0) {
+            run = i - last_non_zero - 1;
+
+            alevel= level;
+            MASK_ABS(sign, alevel);
+            sign&=1;
+
+            if (alevel <= mpeg1_max_level[0][run]){
+                code= mpeg1_index_run[0][run] + alevel - 1;
+                /* store the vlc & sign at once */
+                put_bits(&s->pb, table_vlc[code][1]+1, (table_vlc[code][0]<<1) + sign);
+            } else {
+                /* escape seems to be pretty rare <5% so I do not optimize it */
+                put_bits(&s->pb, table_vlc[111][1], table_vlc[111][0]);
+                /* escape: only clip in this case */
+                put_bits(&s->pb, 6, run);
+                if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO){
+                    if (alevel < 128) {
+                        put_sbits(&s->pb, 8, level);
+                    } else {
+                        if (level < 0) {
+                            put_bits(&s->pb, 16, 0x8001 + level + 255);
+                        } else {
+                            put_sbits(&s->pb, 16, level);
+                        }
+                    }
+                }else{
+                    put_sbits(&s->pb, 12, level);
+                }
+            }
+            last_non_zero = i;
+        }
+    }
+    /* end of block */
+    put_bits(&s->pb, table_vlc[112][1], table_vlc[112][0]);
+}
+
 static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                                                    int16_t block[6][64],
                                                    int motion_x, int motion_y,
@@ -663,47 +816,6 @@ void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[6][64], int motion_x, i
     else                                mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 8);
 }
 
-// RAL: Parameter added: f_or_b_code
-static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
-{
-    if (val == 0) {
-        /* zero vector */
-        put_bits(&s->pb,
-                 ff_mpeg12_mbMotionVectorTable[0][1],
-                 ff_mpeg12_mbMotionVectorTable[0][0]);
-    } else {
-        int code, sign, bits;
-        int bit_size = f_or_b_code - 1;
-        int range = 1 << bit_size;
-        /* modulo encoding */
-        val = sign_extend(val, 5 + bit_size);
-
-        if (val >= 0) {
-            val--;
-            code = (val >> bit_size) + 1;
-            bits = val & (range - 1);
-            sign = 0;
-        } else {
-            val = -val;
-            val--;
-            code = (val >> bit_size) + 1;
-            bits = val & (range - 1);
-            sign = 1;
-        }
-
-        assert(code > 0 && code <= 16);
-
-        put_bits(&s->pb,
-                 ff_mpeg12_mbMotionVectorTable[code][1],
-                 ff_mpeg12_mbMotionVectorTable[code][0]);
-
-        put_bits(&s->pb, 1, sign);
-        if (bit_size > 0) {
-            put_bits(&s->pb, bit_size, bits);
-        }
-    }
-}
-
 av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
 {
     static int done=0;
@@ -800,123 +912,6 @@ av_cold void ff_mpeg1_encode_init(MpegEncContext *s)
     }
     s->inter_ac_vlc_length=
     s->inter_ac_vlc_last_length= uni_mpeg1_ac_vlc_len;
-}
-
-static inline void encode_dc(MpegEncContext *s, int diff, int component)
-{
-  if(((unsigned) (diff+255)) >= 511){
-        int index;
-
-        if(diff<0){
-            index= av_log2_16bit(-2*diff);
-            diff--;
-        }else{
-            index= av_log2_16bit(2*diff);
-        }
-        if (component == 0) {
-            put_bits(
-                &s->pb,
-                ff_mpeg12_vlc_dc_lum_bits[index] + index,
-                (ff_mpeg12_vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1)));
-        }else{
-            put_bits(
-                &s->pb,
-                ff_mpeg12_vlc_dc_chroma_bits[index] + index,
-                (ff_mpeg12_vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1)));
-        }
-  }else{
-    if (component == 0) {
-        put_bits(
-            &s->pb,
-            mpeg1_lum_dc_uni[diff+255]&0xFF,
-            mpeg1_lum_dc_uni[diff+255]>>8);
-    } else {
-        put_bits(
-            &s->pb,
-            mpeg1_chr_dc_uni[diff+255]&0xFF,
-            mpeg1_chr_dc_uni[diff+255]>>8);
-    }
-  }
-}
-
-static void mpeg1_encode_block(MpegEncContext *s,
-                               int16_t *block,
-                               int n)
-{
-    int alevel, level, last_non_zero, dc, diff, i, j, run, last_index, sign;
-    int code, component;
-    const uint16_t (*table_vlc)[2] = ff_rl_mpeg1.table_vlc;
-
-    last_index = s->block_last_index[n];
-
-    /* DC coef */
-    if (s->mb_intra) {
-        component = (n <= 3 ? 0 : (n&1) + 1);
-        dc = block[0]; /* overflow is impossible */
-        diff = dc - s->last_dc[component];
-        encode_dc(s, diff, component);
-        s->last_dc[component] = dc;
-        i = 1;
-        if (s->intra_vlc_format)
-            table_vlc = ff_rl_mpeg2.table_vlc;
-    } else {
-        /* encode the first coefficient : needs to be done here because
-           it is handled slightly differently */
-        level = block[0];
-        if (abs(level) == 1) {
-                code = ((uint32_t)level >> 31); /* the sign bit */
-                put_bits(&s->pb, 2, code | 0x02);
-                i = 1;
-        } else {
-            i = 0;
-            last_non_zero = -1;
-            goto next_coef;
-        }
-    }
-
-    /* now quantify & encode AC coefs */
-    last_non_zero = i - 1;
-
-    for(;i<=last_index;i++) {
-        j = s->intra_scantable.permutated[i];
-        level = block[j];
-    next_coef:
-        /* encode using VLC */
-        if (level != 0) {
-            run = i - last_non_zero - 1;
-
-            alevel= level;
-            MASK_ABS(sign, alevel);
-            sign&=1;
-
-            if (alevel <= mpeg1_max_level[0][run]){
-                code= mpeg1_index_run[0][run] + alevel - 1;
-                /* store the vlc & sign at once */
-                put_bits(&s->pb, table_vlc[code][1]+1, (table_vlc[code][0]<<1) + sign);
-            } else {
-                /* escape seems to be pretty rare <5% so I do not optimize it */
-                put_bits(&s->pb, table_vlc[111][1], table_vlc[111][0]);
-                /* escape: only clip in this case */
-                put_bits(&s->pb, 6, run);
-                if(s->codec_id == AV_CODEC_ID_MPEG1VIDEO){
-                    if (alevel < 128) {
-                        put_sbits(&s->pb, 8, level);
-                    } else {
-                        if (level < 0) {
-                            put_bits(&s->pb, 16, 0x8001 + level + 255);
-                        } else {
-                            put_sbits(&s->pb, 16, level);
-                        }
-                    }
-                }else{
-                    put_sbits(&s->pb, 12, level);
-                }
-            }
-            last_non_zero = i;
-        }
-    }
-    /* end of block */
-    put_bits(&s->pb, table_vlc[112][1], table_vlc[112][0]);
 }
 
 #define OFFSET(x) offsetof(MpegEncContext, x)
