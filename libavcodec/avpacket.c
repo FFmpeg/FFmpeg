@@ -309,7 +309,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     if (!pkt->side_data)
         return NULL;
 
-    pkt->side_data[elems].data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    pkt->side_data[elems].data = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!pkt->side_data[elems].data)
         return NULL;
     pkt->side_data[elems].size = size;
