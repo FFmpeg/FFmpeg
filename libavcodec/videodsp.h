@@ -29,6 +29,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int emuedge_linesize_type;
+
 typedef struct VideoDSPContext {
     /**
      * Copy a rectangular area of samples to a temporary buffer and replicate
