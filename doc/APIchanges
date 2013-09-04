@@ -15,10 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2013-xx-xx - xxxxxxx - lavc 55.31.101 - avcodec.h
+2013-09-04 - 3e1f507 - lavc 55.31.101 - avcodec.h
   avcodec_close() argument can be NULL.
 
-2013-xx-xx - xxxxxxx - lavf 55.16.101 - avformat.h
+2013-09-04 - 36cd017 - lavf 55.16.101 - avformat.h
   avformat_close_input() argument can be NULL and point on NULL.
 
 2013-08-29 - e31db62 - lavf 55.15.100 - avformat.h
