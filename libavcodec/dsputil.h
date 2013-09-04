@@ -33,6 +33,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 
+typedef int emuedge_linesize_type;
 
 //#define DEBUG
 /* dct code */
