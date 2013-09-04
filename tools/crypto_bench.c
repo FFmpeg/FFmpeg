@@ -257,7 +257,7 @@ static void run_implementation(const uint8_t *input, uint8_t *output,
     for (i = 0; i < 8; i++) /* heat caches */
         impl->run(output, input, size);
     for (i = 0; i < nruns; i++) {
-        memset(output, 0, size); /* avoid lefovers from previous runs */
+        memset(output, 0, size); /* avoid leftovers from previous runs */
         t0 = AV_READ_TIME();
         impl->run(output, input, size);
         t1 = AV_READ_TIME();
@@ -332,7 +332,7 @@ int main(int argc, char **argv)
                          ((USE_EXT_LIBS) & USE_crypto)   ? "+crypto"   : "",
                          ((USE_EXT_LIBS) & USE_gcrypt)   ? "+gcrypt"   : "",
                          ((USE_EXT_LIBS) & USE_tomcrypt) ? "+tomcrypt" : "");
-                fprintf(stderr, "Built with the following external librares:\n"
+                fprintf(stderr, "Built with the following external libraries:\n"
                         "make VERSUS=%s\n", buf + 1);
             } else {
                 fprintf(stderr, "Built without external libraries; use\n"
