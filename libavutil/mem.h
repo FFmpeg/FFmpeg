@@ -102,8 +102,10 @@ av_alloc_size(1, 2) static inline void *av_malloc_array(size_t nmemb, size_t siz
  * Allocate or reallocate a block of memory.
  * If ptr is NULL and size > 0, allocate a new block. If
  * size is zero, free the memory block pointed to by ptr.
+ * @note Pointers provided by av_malloc family of functions cannot be
+ * passed to av_realloc().
  * @param ptr Pointer to a memory block already allocated with
- * av_malloc(z)() or av_realloc() or NULL.
+ * av_realloc() or NULL.
  * @param size Size in bytes for the memory block to be allocated or
  * reallocated.
  * @return Pointer to a newly reallocated block or NULL if the block
@@ -126,8 +128,10 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
  * Allocate or reallocate an array.
  * If ptr is NULL and nmemb > 0, allocate a new block. If
  * nmemb is zero, free the memory block pointed to by ptr.
+ * @note Pointers provided by av_malloc family of functions cannot be
+ * passed to av_realloc_array().
  * @param ptr Pointer to a memory block already allocated with
- * av_malloc(z)() or av_realloc() or NULL.
+ * av_realloc() or NULL.
  * @param nmemb Number of elements
  * @param size Size of the single element
  * @return Pointer to a newly reallocated block or NULL if the block
@@ -139,8 +143,10 @@ av_alloc_size(2, 3) void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
  * Allocate or reallocate an array.
  * If *ptr is NULL and nmemb > 0, allocate a new block. If
  * nmemb is zero, free the memory block pointed to by ptr.
+ * @note Pointers provided by av_malloc family of functions cannot be
+ * passed to av_reallocp_array().
  * @param ptr Pointer to a pointer to a memory block already allocated
- * with av_malloc(z)() or av_realloc(), or pointer to a pointer to NULL.
+ * with av_realloc(), or pointer to a pointer to NULL.
  * The pointer is updated on success, or freed on failure.
  * @param nmemb Number of elements
  * @param size Size of the single element
