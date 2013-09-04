@@ -780,6 +780,12 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
     int resync_mb_y = 0;
     int resync_mb_x = 0;
 
+    if (s->nb_components != 3 && s->nb_components != 4)
+        return AVERROR_INVALIDDATA;
+    if (s->v_max != 1 || s->h_max != 1 || !s->lossless)
+        return AVERROR_INVALIDDATA;
+
+
     s->restart_count = s->restart_interval;
 
     av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size,
