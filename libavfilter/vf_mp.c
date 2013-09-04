@@ -123,7 +123,6 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-extern const vf_info_t ff_vf_info_dint;
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
 extern const vf_info_t ff_vf_info_fil;
@@ -137,7 +136,6 @@ extern const vf_info_t ff_vf_info_uspp;
 
 
 static const vf_info_t* const filters[]={
-    &ff_vf_info_dint,
     &ff_vf_info_eq2,
     &ff_vf_info_eq,
     &ff_vf_info_fil,
