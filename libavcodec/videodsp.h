@@ -29,6 +29,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int emuedge_linesize_type;
+
 #define EMULATED_EDGE(depth) \
 void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,\
                          int block_w, int block_h,\

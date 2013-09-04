@@ -27,7 +27,7 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
 {
     int x, y;
     int start_y, start_x, end_y, end_x;
-    int linesize = linesize_arg;
+    emuedge_linesize_type linesize = linesize_arg;
 
     if (!w || !h)
         return;

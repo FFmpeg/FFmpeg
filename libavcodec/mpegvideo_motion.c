@@ -214,7 +214,8 @@ void mpeg_motion_internal(MpegEncContext *s,
 {
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int dxy, uvdxy, mx, my, src_x, src_y,
-        uvsrc_x, uvsrc_y, v_edge_pos, uvlinesize, linesize;
+        uvsrc_x, uvsrc_y, v_edge_pos;
+    emuedge_linesize_type uvlinesize, linesize;
 
 #if 0
 if(s->quarter_sample)

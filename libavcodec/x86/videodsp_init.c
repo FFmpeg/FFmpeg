@@ -46,7 +46,7 @@ static av_always_inline void emulated_edge_mc(uint8_t *buf, const uint8_t *src,
                                               emu_edge_core_func *core_fn)
 {
     int start_y, start_x, end_y, end_x, src_y_add = 0;
-    int linesize = linesize_arg;
+    emuedge_linesize_type linesize = linesize_arg;
 
     if(!w || !h)
         return;
