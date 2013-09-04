@@ -1015,9 +1015,9 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
         if (depth & 0x80)
             clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
-        if (depth & 0x40)
+        else if (depth & 0x40)
             clut->clut16[entry_id] = RGBA(r,g,b,255 - alpha);
-        if (depth & 0x20)
+        else if (depth & 0x20)
             clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
     }
     }
