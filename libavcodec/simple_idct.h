@@ -37,6 +37,11 @@ void ff_simple_idct_8(int16_t *block);
 void ff_simple_idct_put_10(uint8_t *dest, int line_size, int16_t *block);
 void ff_simple_idct_add_10(uint8_t *dest, int line_size, int16_t *block);
 void ff_simple_idct_10(int16_t *block);
+
+void ff_simple_idct_put_12(uint8_t *dest, int line_size, int16_t *block);
+void ff_simple_idct_add_12(uint8_t *dest, int line_size, int16_t *block);
+void ff_simple_idct_12(int16_t *block);
+
 /**
  * Special version of ff_simple_idct_10() which does dequantization
  * and scales by a factor of 2 more between the two IDCTs to account

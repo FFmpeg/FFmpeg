@@ -2720,6 +2720,11 @@ av_cold void ff_dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_add              = ff_simple_idct_add_10;
             c->idct                  = ff_simple_idct_10;
             c->idct_permutation_type = FF_NO_IDCT_PERM;
+        } else if (avctx->bits_per_raw_sample == 12) {
+            c->idct_put              = ff_simple_idct_put_12;
+            c->idct_add              = ff_simple_idct_add_12;
+            c->idct                  = ff_simple_idct_12;
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
         } else {
         if(avctx->idct_algo==FF_IDCT_INT){
             c->idct_put= jref_idct_put;
