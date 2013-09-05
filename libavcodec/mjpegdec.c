@@ -1121,6 +1121,12 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                                 return AVERROR_INVALIDDATA;
                             }
                             s->dsp.idct_put(ptr, linesize[c], s->block);
+                            if (s->bits & 7) {
+                                int block_x, block_y;
+                                    for (block_y=0; block_y<8; block_y++)
+                                        for (block_x=0; block_x<8; block_x++)
+                                            *(ptr + 2*block_x + block_y*linesize[c]) <<= 8 - s->bits;
+                            }
                         }
                     } else {
                         int block_idx  = s->block_stride[c] * (v * mb_y + y) +
