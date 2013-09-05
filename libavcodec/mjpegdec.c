@@ -232,11 +232,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     if (s->bits == 9 && !s->pegasus_rct)
         s->rct  = 1;    // FIXME ugly
 
-    if (s->bits != 8 && !s->lossless) {
-        av_log(s->avctx, AV_LOG_ERROR, "only 8 bits/component accepted\n");
-        return -1;
-    }
-
     if(s->lossless && s->avctx->lowres){
         av_log(s->avctx, AV_LOG_ERROR, "lowres is not possible with lossless jpeg\n");
         return -1;
@@ -267,6 +262,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     if (s->ls && !(s->bits <= 8 || nb_components == 1)) {
         avpriv_report_missing_feature(s->avctx,
                                       "JPEG-LS that is not <= 8 "
+                                      "bits/component or 16-bit gray");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (!s->lossless && !(s->bits <= 8 || nb_components == 1)) {
+        avpriv_report_missing_feature(s->avctx,
+                                      "lossy that is not <= 8 "
                                       "bits/component or 16-bit gray");
         return AVERROR_PATCHWELCOME;
     }
@@ -1052,6 +1053,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
     const uint8_t *reference_data[MAX_COMPONENTS];
     int linesize[MAX_COMPONENTS];
     GetBitContext mb_bitmask_gb;
+    int bytes_per_pixel = 1 + (s->bits > 8);
 
     if (mb_bitmask)
         init_get_bits(&mb_bitmask_gb, mb_bitmask, s->mb_width * s->mb_height);
@@ -1101,7 +1103,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                 y = 0;
                 for (j = 0; j < n; j++) {
                     block_offset = (((linesize[c] * (v * mb_y + y) * 8) +
-                                     (h * mb_x + x) * 8) >> s->avctx->lowres);
+                                     (h * mb_x + x) * 8 * bytes_per_pixel) >> s->avctx->lowres);
 
                     if (s->interlaced && s->bottom_field)
                         block_offset += linesize[c] >> 1;
@@ -1123,9 +1125,15 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                             s->dsp.idct_put(ptr, linesize[c], s->block);
                             if (s->bits & 7) {
                                 int block_x, block_y;
+                                if (s->bits > 8) {
+                                    for (block_y=0; block_y<8; block_y++)
+                                        for (block_x=0; block_x<8; block_x++)
+                                            *(uint16_t*)(ptr + 2*block_x + block_y*linesize[c]) <<= 16 - s->bits;
+                                } else {
                                     for (block_y=0; block_y<8; block_y++)
                                         for (block_x=0; block_x<8; block_x++)
                                             *(ptr + 2*block_x + block_y*linesize[c]) <<= 8 - s->bits;
+                                }
                             }
                         }
                     } else {
