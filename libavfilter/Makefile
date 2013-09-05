@@ -225,7 +225,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/mp_image.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/img_format.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq2.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_eq.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fil.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_fspp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_ilpack.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_pp7.o
