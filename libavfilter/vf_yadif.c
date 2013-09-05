@@ -66,7 +66,7 @@ typedef struct ThreadData {
             CHECK( 1) CHECK( 2) }} }} \
         }\
  \
-        if (mode < 2) { \
+        if (!(mode&2)) { \
             int b = (prev2[2 * mrefs] + next2[2 * mrefs])>>1; \
             int f = (prev2[2 * prefs] + next2[2 * prefs])>>1; \
             int max = FFMAX3(d - e, d - c, FFMIN(b - c, f - e)); \
