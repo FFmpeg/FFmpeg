@@ -760,7 +760,7 @@ static int handle_rstn(MJpegDecodeContext *s, int nb_components)
         if(s->restart_count == 0 && s->avctx->codec_id == AV_CODEC_ID_THP){
             align_get_bits(&s->gb);
             for (i = 0; i < nb_components; i++) /* reset dc */
-                s->last_dc[i] = 1024;
+                s->last_dc[i] = (4 << s->bits);
         }
 
         i = 8 + ((-get_bits_count(&s->gb)) & 7);
@@ -774,7 +774,7 @@ static int handle_rstn(MJpegDecodeContext *s, int nb_components)
                     skip_bits(&s->gb, 8);
                 if (get_bits_left(&s->gb) >= 8 && (get_bits(&s->gb, 8) & 0xF8) == 0xD0) {
                     for (i = 0; i < nb_components; i++) /* reset dc */
-                        s->last_dc[i] = 1024;
+                        s->last_dc[i] = (4 << s->bits);
                     reset = 1;
                 } else
                     skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
@@ -1315,7 +1315,7 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s, const uint8_t *mb_bitmask,
 
 next_field:
     for (i = 0; i < nb_components; i++)
-        s->last_dc[i] = 1024;
+        s->last_dc[i] = (4 << s->bits);
 
     if (s->lossless) {
         av_assert0(s->picture_ptr == &s->picture);
