@@ -170,7 +170,6 @@ static const AVFilterPad asetnsamples_inputs[] = {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
         .filter_frame   = filter_frame,
-        .needs_writable = 1,
     },
     {  NULL }
 };
