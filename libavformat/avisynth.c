@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "libavcodec/internal.h"
