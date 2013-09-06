@@ -182,7 +182,7 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
 
 void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 {
-    if (size <= 0 || nmemb >= INT_MAX / size)
+    if (!size || nmemb >= INT_MAX / size)
         return NULL;
     return av_realloc(ptr, nmemb * size);
 }
