@@ -1044,6 +1044,20 @@ static av_always_inline void mjpeg_copy_block(MJpegDecodeContext *s,
     }
 }
 
+static void shift_output(MJpegDecodeContext *s, uint8_t *ptr, int linesize)
+{
+    int block_x, block_y;
+    if (s->bits > 8) {
+        for (block_y=0; block_y<8; block_y++)
+            for (block_x=0; block_x<8; block_x++)
+                *(uint16_t*)(ptr + 2*block_x + block_y*linesize) <<= 16 - s->bits;
+    } else {
+        for (block_y=0; block_y<8; block_y++)
+            for (block_x=0; block_x<8; block_x++)
+                *(ptr + block_x + block_y*linesize) <<= 8 - s->bits;
+    }
+}
+
 static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                              int Al, const uint8_t *mb_bitmask,
                              const AVFrame *reference)
@@ -1123,18 +1137,8 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah,
                                 return AVERROR_INVALIDDATA;
                             }
                             s->dsp.idct_put(ptr, linesize[c], s->block);
-                            if (s->bits & 7) {
-                                int block_x, block_y;
-                                if (s->bits > 8) {
-                                    for (block_y=0; block_y<8; block_y++)
-                                        for (block_x=0; block_x<8; block_x++)
-                                            *(uint16_t*)(ptr + 2*block_x + block_y*linesize[c]) <<= 16 - s->bits;
-                                } else {
-                                    for (block_y=0; block_y<8; block_y++)
-                                        for (block_x=0; block_x<8; block_x++)
-                                            *(ptr + 2*block_x + block_y*linesize[c]) <<= 8 - s->bits;
-                                }
-                            }
+                            if (s->bits & 7)
+                                shift_output(s, ptr, linesize[c]);
                         }
                     } else {
                         int block_idx  = s->block_stride[c] * (v * mb_y + y) +
