@@ -59,7 +59,7 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
     }
 
     /* Set output properties */
-    avctx->bits_per_coded_sample = bits;
+    avctx->bits_per_raw_sample = bits;
     if (bits > 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     else
@@ -80,10 +80,10 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
             avctx->channel_layout = AV_CH_LAYOUT_5POINT1_BACK | AV_CH_LAYOUT_STEREO_DOWNMIX;
     }
     avctx->sample_rate = 48000;
-    avctx->bit_rate    = 48000 * avctx->channels * (avctx->bits_per_coded_sample + 4) +
+    avctx->bit_rate    = 48000 * avctx->channels * (avctx->bits_per_raw_sample + 4) +
                          32 * (48000 / (buf_size * 8 /
                                         (avctx->channels *
-                                         (avctx->bits_per_coded_sample + 4))));
+                                         (avctx->bits_per_raw_sample + 4))));
 
     return frame_size;
 }
@@ -104,14 +104,14 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
     buf      += AES3_HEADER_LEN;
 
     /* get output buffer */
-    block_size = (avctx->bits_per_coded_sample + 4) / 4;
+    block_size = (avctx->bits_per_raw_sample + 4) / 4;
     frame->nb_samples = 2 * (buf_size / block_size) / avctx->channels;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     buf_size = (frame->nb_samples * avctx->channels / 2) * block_size;
 
-    if (avctx->bits_per_coded_sample == 24) {
+    if (avctx->bits_per_raw_sample == 24) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 6; buf_size -= 7) {
             *o++ = (ff_reverse[buf[2]]        << 24) |
@@ -123,7 +123,7 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                    (ff_reverse[buf[3] & 0x0f] <<  4);
             buf += 7;
         }
-    } else if (avctx->bits_per_coded_sample == 20) {
+    } else if (avctx->bits_per_raw_sample == 20) {
         uint32_t *o = (uint32_t *)frame->data[0];
         for (; buf_size > 5; buf_size -= 6) {
             *o++ = (ff_reverse[buf[2] & 0xf0] << 28) |
