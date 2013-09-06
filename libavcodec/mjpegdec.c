@@ -1182,6 +1182,7 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
     int linesize  = s->linesize[c];
     int last_scan = 0;
     int16_t *quant_matrix = s->quant_matrixes[s->quant_sindex[0]];
+    int bytes_per_pixel = 1 + (s->bits > 8);
 
     av_assert0(ss>=0 && Ah>=0 && Al>=0);
     if (se < ss || se > 63) {
@@ -1223,7 +1224,9 @@ static int mjpeg_decode_scan_progressive_ac(MJpegDecodeContext *s, int ss,
 
             if (last_scan) {
                     s->dsp.idct_put(ptr, linesize, *block);
-                    ptr += 8 >> s->avctx->lowres;
+                    if (s->bits & 7)
+                        shift_output(s, ptr, linesize);
+                    ptr += bytes_per_pixel*8 >> s->avctx->lowres;
             }
             if (handle_rstn(s, 0))
                 EOBRUN = 0;
