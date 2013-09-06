@@ -54,13 +54,13 @@ typedef struct XanContext {
     AVCodecContext *avctx;
     AVFrame *last_frame;
 
-    const unsigned char *buf;
+    const uint8_t *buf;
     int size;
 
     /* scratch space */
-    unsigned char *buffer1;
+    uint8_t *buffer1;
     int buffer1_size;
-    unsigned char *buffer2;
+    uint8_t *buffer2;
     int buffer2_size;
 
     unsigned *palettes;
@@ -101,15 +101,15 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int xan_huffman_decode(unsigned char *dest, int dest_len,
-                              const unsigned char *src, int src_len)
+static int xan_huffman_decode(uint8_t *dest, int dest_len,
+                              const uint8_t *src, int src_len)
 {
-    unsigned char byte = *src++;
-    unsigned char ival = byte + 0x16;
-    const unsigned char * ptr = src + byte*2;
+    uint8_t byte = *src++;
+    uint8_t ival = byte + 0x16;
+    const uint8_t * ptr = src + byte*2;
     int ptr_len = src_len - 1 - byte*2;
-    unsigned char val = ival;
-    unsigned char *dest_end = dest + dest_len;
+    uint8_t val = ival;
+    uint8_t *dest_end = dest + dest_len;
     GetBitContext gb;
 
     if (ptr_len < 0)
@@ -139,13 +139,13 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
  *
  * @param dest destination buffer of dest_len, must be padded with at least 130 bytes
  */
-static void xan_unpack(unsigned char *dest, int dest_len,
-                       const unsigned char *src, int src_len)
+static void xan_unpack(uint8_t *dest, int dest_len,
+                       const uint8_t *src, int src_len)
 {
-    unsigned char opcode;
+    uint8_t opcode;
     int size;
-    unsigned char *dest_org = dest;
-    unsigned char *dest_end = dest + dest_len;
+    uint8_t *dest_org = dest;
+    uint8_t *dest_end = dest + dest_len;
     GetByteContext ctx;
 
     bytestream2_init(&ctx, src, src_len);
@@ -194,14 +194,14 @@ static void xan_unpack(unsigned char *dest, int dest_len,
 }
 
 static inline void xan_wc3_output_pixel_run(XanContext *s, AVFrame *frame,
-    const unsigned char *pixel_buffer, int x, int y, int pixel_count)
+    const uint8_t *pixel_buffer, int x, int y, int pixel_count)
 {
     int stride;
     int line_inc;
     int index;
     int current_x;
     int width = s->avctx->width;
-    unsigned char *palette_plane;
+    uint8_t *palette_plane;
 
     palette_plane = frame->data[0];
     stride = frame->linesize[0];
@@ -233,7 +233,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, AVFrame *frame,
     int curframe_index, prevframe_index;
     int curframe_x, prevframe_x;
     int width = s->avctx->width;
-    unsigned char *palette_plane, *prev_palette_plane;
+    uint8_t *palette_plane, *prev_palette_plane;
 
     if (y + motion_y < 0 || y + motion_y >= s->avctx->height ||
         x + motion_x < 0 || x + motion_x >= s->avctx->width)
@@ -287,23 +287,23 @@ static int xan_wc3_decode_frame(XanContext *s, AVFrame *frame)
     int width  = s->avctx->width;
     int height = s->avctx->height;
     int total_pixels = width * height;
-    unsigned char opcode;
-    unsigned char flag = 0;
+    uint8_t opcode;
+    uint8_t flag = 0;
     int size = 0;
     int motion_x, motion_y;
     int x, y;
 
-    unsigned char *opcode_buffer = s->buffer1;
-    unsigned char *opcode_buffer_end = s->buffer1 + s->buffer1_size;
+    uint8_t *opcode_buffer = s->buffer1;
+    uint8_t *opcode_buffer_end = s->buffer1 + s->buffer1_size;
     int opcode_buffer_size = s->buffer1_size;
-    const unsigned char *imagedata_buffer = s->buffer2;
+    const uint8_t *imagedata_buffer = s->buffer2;
 
     /* pointers to segments inside the compressed chunk */
-    const unsigned char *huffman_segment;
-    const unsigned char *size_segment;
-    const unsigned char *vector_segment;
-    const unsigned char *imagedata_segment;
-    const unsigned char *buf_end = s->buf + s->size;
+    const uint8_t *huffman_segment;
+    const uint8_t *size_segment;
+    const uint8_t *vector_segment;
+    const uint8_t *imagedata_segment;
+    const uint8_t *buf_end = s->buf + s->size;
     int huffman_offset, size_offset, vector_offset, imagedata_offset,
         imagedata_size;
 
