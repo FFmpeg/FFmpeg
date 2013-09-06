@@ -77,7 +77,7 @@ void *av_malloc(size_t size)
     long diff;
 #endif
 
-    /* let's disallow possible ambiguous cases */
+    /* let's disallow possibly ambiguous cases */
     if (size > (max_alloc_size - 32))
         return NULL;
 
@@ -144,7 +144,7 @@ void *av_realloc(void *ptr, size_t size)
     int diff;
 #endif
 
-    /* let's disallow possible ambiguous cases */
+    /* let's disallow possibly ambiguous cases */
     if (size > (max_alloc_size - 32))
         return NULL;
 
