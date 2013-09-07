@@ -190,7 +190,9 @@ static void echo_samples_## name ##p(AudioEchoContext *ctx,                 \
     const double in_gain = ctx->in_gain;                                    \
     const int nb_echoes = ctx->nb_echoes;                                   \
     const int max_samples = ctx->max_samples;                               \
-    int i, j, chan, index;                                                  \
+    int i, j, chan, av_uninit(index);                                       \
+                                                                            \
+    av_assert1(channels > 0); /* would corrupt delay_index */               \
                                                                             \
     for (chan = 0; chan < channels; chan++) {                               \
         const type *s = (type *)src[chan];                                  \
