@@ -50,7 +50,8 @@ static int gsm_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
             s->duration   = GSM_FRAME_SIZE;
             break;
         case AV_CODEC_ID_GSM_MS:
-            s->block_size = GSM_MS_BLOCK_SIZE;
+            s->block_size = avctx->block_align ? avctx->block_align
+                                               : GSM_MS_BLOCK_SIZE;
             s->duration   = GSM_FRAME_SIZE * 2;
             break;
         default:

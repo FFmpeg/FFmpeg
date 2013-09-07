@@ -22,10 +22,24 @@
 #define AVCODEC_GSM_H
 
 /* bytes per block */
-#define GSM_BLOCK_SIZE    33
-#define GSM_MS_BLOCK_SIZE 65
+#define GSM_BLOCK_SIZE     33
+#define GSM_MS_BLOCK_SIZE  65
+#define MSN_MIN_BLOCK_SIZE 41
 
 /* samples per block */
 #define GSM_FRAME_SIZE 160
+
+enum GSMModes {
+    GSM_13000 = 0,
+    MSN_12400,
+    MSN_11800,
+    MSN_11200,
+    MSN_10600,
+    MSN_10000,
+    MSN_9400,
+    MSN_8800,
+    MSN_8200,
+    NUM_GSM_MODES
+};
 
 #endif /* AVCODEC_GSM_H */
