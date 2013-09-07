@@ -387,7 +387,7 @@ static int filter_packet(void *log_ctx, AVPacket *pkt,
                          AVFormatContext *fmt_ctx, AVBitStreamFilterContext *bsf_ctx)
 {
     AVCodecContext *enc_ctx = fmt_ctx->streams[pkt->stream_index]->codec;
-    int ret;
+    int ret = 0;
 
     while (bsf_ctx) {
         AVPacket new_pkt = *pkt;
