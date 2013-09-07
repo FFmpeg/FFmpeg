@@ -232,7 +232,6 @@ static const AVFilterPad avfilter_vf_setpts_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_input,
         .filter_frame     = filter_frame,
     },
@@ -270,7 +269,6 @@ static const AVFilterPad asetpts_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
         .config_props     = config_input,
         .filter_frame     = filter_frame,
     },

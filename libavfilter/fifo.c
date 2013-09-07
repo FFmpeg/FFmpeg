@@ -254,7 +254,6 @@ static const AVFilterPad avfilter_vf_fifo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = add_to_queue,
     },
     { NULL }
@@ -286,7 +285,6 @@ static const AVFilterPad avfilter_af_afifo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
         .filter_frame     = add_to_queue,
     },
     { NULL }

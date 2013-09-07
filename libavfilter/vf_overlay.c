@@ -601,7 +601,6 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .config_props = config_input_main,
         .filter_frame = filter_frame_main,
         .needs_writable = 1,

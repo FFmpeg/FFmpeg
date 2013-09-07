@@ -141,7 +141,6 @@ static const AVFilterPad silencedetect_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
         .filter_frame     = filter_frame,
     },
     { NULL }

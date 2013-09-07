@@ -553,7 +553,6 @@ static const AVFilterPad removelogo_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_props_input,
         .filter_frame     = filter_frame,
     },

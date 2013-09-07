@@ -318,7 +318,6 @@ static const AVFilterPad avfilter_vf_crop_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .filter_frame     = filter_frame,
-        .get_video_buffer = ff_null_get_video_buffer,
         .config_props     = config_input,
     },
     { NULL }

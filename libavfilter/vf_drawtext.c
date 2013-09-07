@@ -1041,7 +1041,6 @@ static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
         .config_props     = config_input,
         .needs_writable   = 1,

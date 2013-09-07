@@ -129,7 +129,6 @@ static const AVFilterPad avfilter_vf_settb_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
     },
     { NULL }
@@ -165,7 +164,6 @@ static const AVFilterPad avfilter_af_asettb_inputs[] = {
     {
         .name             = "default",
         .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
         .filter_frame     = filter_frame,
     },
     { NULL }
