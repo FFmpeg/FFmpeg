@@ -98,16 +98,16 @@ static const AVOption blackframe_options[] = {
                                                  OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, 255,     FLAGS },
     { "thresh", "threshold below which a pixel value is considered black",
                                                  OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, 255,     FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(blackframe);
 
 static const AVFilterPad avfilter_vf_blackframe_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -121,15 +121,11 @@ static const AVFilterPad avfilter_vf_blackframe_outputs[] = {
 };
 
 AVFilter avfilter_vf_blackframe = {
-    .name        = "blackframe",
-    .description = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
-
-    .priv_size = sizeof(BlackFrameContext),
-    .priv_class = &blackframe_class,
-
+    .name          = "blackframe",
+    .description   = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
+    .priv_size     = sizeof(BlackFrameContext),
+    .priv_class    = &blackframe_class,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_blackframe_inputs,
-
-    .outputs   = avfilter_vf_blackframe_outputs,
+    .inputs        = avfilter_vf_blackframe_inputs,
+    .outputs       = avfilter_vf_blackframe_outputs,
 };

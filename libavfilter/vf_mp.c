@@ -784,11 +784,11 @@ static const AVFilterPad mp_outputs[] = {
 };
 
 AVFilter avfilter_vf_mp = {
-    .name      = "mp",
-    .description = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
-    .init = init,
-    .uninit = uninit,
-    .priv_size = sizeof(MPContext),
+    .name          = "mp",
+    .description   = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
+    .init          = init,
+    .uninit        = uninit,
+    .priv_size     = sizeof(MPContext),
     .query_formats = query_formats,
     .inputs        = mp_inputs,
     .outputs       = mp_outputs,

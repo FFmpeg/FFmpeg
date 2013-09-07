@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -74,7 +73,7 @@ static const AVOption join_options[] = {
     { "map",            "A comma-separated list of channels maps in the format "
                         "'input_stream.input_channel-output_channel.",
                                                     OFFSET(map),                AV_OPT_TYPE_STRING,                 .flags = A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(join);
@@ -513,13 +512,10 @@ AVFilter avfilter_af_join = {
                                            "multi-channel output."),
     .priv_size      = sizeof(JoinContext),
     .priv_class     = &join_class,
-
     .init           = join_init,
     .uninit         = join_uninit,
     .query_formats  = join_query_formats,
-
-    .inputs  = NULL,
-    .outputs = avfilter_af_join_outputs,
-
-    .flags   = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .inputs         = NULL,
+    .outputs        = avfilter_af_join_outputs,
+    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

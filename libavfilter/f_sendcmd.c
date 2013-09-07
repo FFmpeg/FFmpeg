@@ -86,7 +86,7 @@ static const AVOption options[] = {
     { "c",        "set commands", OFFSET(commands_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "filename", "set commands file",  OFFSET(commands_filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "f",        "set commands file",  OFFSET(commands_filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
-    {NULL},
+    { NULL }
 };
 
 #define SPACES " \f\t\n\r"
@@ -512,9 +512,9 @@ AVFILTER_DEFINE_CLASS(sendcmd);
 
 static const AVFilterPad sendcmd_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -528,14 +528,14 @@ static const AVFilterPad sendcmd_outputs[] = {
 };
 
 AVFilter avfilter_vf_sendcmd = {
-    .name      = "sendcmd",
+    .name        = "sendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
-    .init   = init,
-    .uninit = uninit,
-    .priv_size = sizeof(SendCmdContext),
-    .inputs    = sendcmd_inputs,
-    .outputs   = sendcmd_outputs,
-    .priv_class = &sendcmd_class,
+    .init        = init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(SendCmdContext),
+    .inputs      = sendcmd_inputs,
+    .outputs     = sendcmd_outputs,
+    .priv_class  = &sendcmd_class,
 };
 
 #endif
@@ -547,9 +547,9 @@ AVFILTER_DEFINE_CLASS(asendcmd);
 
 static const AVFilterPad asendcmd_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -563,14 +563,14 @@ static const AVFilterPad asendcmd_outputs[] = {
 };
 
 AVFilter avfilter_af_asendcmd = {
-    .name      = "asendcmd",
+    .name        = "asendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
-    .init   = init,
-    .uninit = uninit,
-    .priv_size = sizeof(SendCmdContext),
-    .inputs    = asendcmd_inputs,
-    .outputs   = asendcmd_outputs,
-    .priv_class = &asendcmd_class,
+    .init        = init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(SendCmdContext),
+    .inputs      = asendcmd_inputs,
+    .outputs     = asendcmd_outputs,
+    .priv_class  = &asendcmd_class,
 };
 
 #endif

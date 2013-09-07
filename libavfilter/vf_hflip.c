@@ -166,11 +166,10 @@ static const AVFilterPad avfilter_vf_hflip_outputs[] = {
 };
 
 AVFilter avfilter_vf_hflip = {
-    .name      = "hflip",
-    .description = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
-    .priv_size = sizeof(FlipContext),
+    .name          = "hflip",
+    .description   = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
+    .priv_size     = sizeof(FlipContext),
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_hflip_inputs,
-    .outputs   = avfilter_vf_hflip_outputs,
+    .inputs        = avfilter_vf_hflip_inputs,
+    .outputs       = avfilter_vf_hflip_outputs,
 };

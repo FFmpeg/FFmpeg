@@ -142,7 +142,7 @@ static const AVOption blend_options[] = {
     { "all_opacity", "set opacity for all color components", OFFSET(all_opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
     { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(blend);
@@ -432,13 +432,13 @@ static int filter_frame_bottom(AVFilterLink *inlink, AVFrame *buf)
 
 static const AVFilterPad blend_inputs[] = {
     {
-        .name             = "top",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame_top,
+        .name          = "top",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame_top,
     },{
-        .name             = "bottom",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame_bottom,
+        .name          = "bottom",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame_bottom,
     },
     { NULL }
 };

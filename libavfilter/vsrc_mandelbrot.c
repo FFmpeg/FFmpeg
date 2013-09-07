@@ -414,19 +414,17 @@ static const AVFilterPad mandelbrot_outputs[] = {
         .request_frame = request_frame,
         .config_props  = config_props,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_vsrc_mandelbrot = {
-    .name        = "mandelbrot",
-    .description = NULL_IF_CONFIG_SMALL("Render a Mandelbrot fractal."),
-
-    .priv_size = sizeof(MBContext),
-    .init      = init,
-    .uninit    = uninit,
-
+    .name          = "mandelbrot",
+    .description   = NULL_IF_CONFIG_SMALL("Render a Mandelbrot fractal."),
+    .priv_size     = sizeof(MBContext),
+    .priv_class    = &mandelbrot_class,
+    .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = NULL,
     .outputs       = mandelbrot_outputs,
-    .priv_class    = &mandelbrot_class,
 };

@@ -288,9 +288,9 @@ static const AVFilterPad idet_inputs[] = {
 
 static const AVFilterPad idet_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_output,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
     },
     { NULL }
 };
@@ -298,7 +298,6 @@ static const AVFilterPad idet_outputs[] = {
 AVFilter avfilter_vf_idet = {
     .name          = "idet",
     .description   = NULL_IF_CONFIG_SMALL("Interlace detect Filter."),
-
     .priv_size     = sizeof(IDETContext),
     .init          = init,
     .uninit        = uninit,

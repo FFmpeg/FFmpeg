@@ -61,7 +61,7 @@ typedef struct PSNRContext {
 static const AVOption psnr_options[] = {
     {"stats_file", "Set file where to store per-frame difference information", OFFSET(stats_file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     {"f",          "Set file where to store per-frame difference information", OFFSET(stats_file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(psnr);
@@ -351,14 +351,14 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad psnr_inputs[] = {
     {
-        .name             = "main",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame_main,
+        .name         = "main",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame_main,
     },{
-        .name             = "reference",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame_ref,
-        .config_props     = config_input_ref,
+        .name         = "reference",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame_ref,
+        .config_props = config_input_ref,
     },
     { NULL }
 };
@@ -374,13 +374,13 @@ static const AVFilterPad psnr_outputs[] = {
 };
 
 AVFilter avfilter_vf_psnr = {
-    .name           = "psnr",
-    .description    = NULL_IF_CONFIG_SMALL("Calculate the PSNR between two video streams."),
-    .init           = init,
-    .uninit         = uninit,
-    .query_formats  = query_formats,
-    .priv_size      = sizeof(PSNRContext),
-    .priv_class     = &psnr_class,
-    .inputs         = psnr_inputs,
-    .outputs        = psnr_outputs,
+    .name          = "psnr",
+    .description   = NULL_IF_CONFIG_SMALL("Calculate the PSNR between two video streams."),
+    .init          = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .priv_size     = sizeof(PSNRContext),
+    .priv_class    = &psnr_class,
+    .inputs        = psnr_inputs,
+    .outputs       = psnr_outputs,
 };

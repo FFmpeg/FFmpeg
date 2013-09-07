@@ -363,9 +363,9 @@ static const AVFilterPad tinterlace_inputs[] = {
 
 static const AVFilterPad tinterlace_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_out_props,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_out_props,
     },
     { NULL }
 };

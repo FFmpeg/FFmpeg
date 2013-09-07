@@ -45,7 +45,7 @@ typedef struct ChannelSplitContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption channelsplit_options[] = {
     { "channel_layout", "Input channel layout.", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, { .str = "stereo" }, .flags = A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(channelsplit);
@@ -129,9 +129,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
 static const AVFilterPad avfilter_af_channelsplit_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -141,12 +141,9 @@ AVFilter avfilter_af_channelsplit = {
     .description    = NULL_IF_CONFIG_SMALL("Split audio into per-channel streams."),
     .priv_size      = sizeof(ChannelSplitContext),
     .priv_class     = &channelsplit_class,
-
     .init           = init,
     .query_formats  = query_formats,
-
-    .inputs  = avfilter_af_channelsplit_inputs,
-    .outputs = NULL,
-
-    .flags   = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .inputs         = avfilter_af_channelsplit_inputs,
+    .outputs        = NULL,
+    .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

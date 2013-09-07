@@ -267,17 +267,17 @@ static const AVOption transpose_options[] = {
         { "portrait",  "preserve portrait geometry",   0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_PORTRAIT},  INT_MIN, INT_MAX, FLAGS, "passthrough" },
         { "landscape", "preserve landscape geometry",  0, AV_OPT_TYPE_CONST, {.i64=TRANSPOSE_PT_TYPE_LANDSCAPE}, INT_MIN, INT_MAX, FLAGS, "passthrough" },
 
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(transpose);
 
 static const AVFilterPad avfilter_vf_transpose_inputs[] = {
     {
-        .name        = "default",
-        .type        = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer= get_video_buffer,
-        .filter_frame = filter_frame,
+        .name             = "default",
+        .type             = AVMEDIA_TYPE_VIDEO,
+        .get_video_buffer = get_video_buffer,
+        .filter_frame     = filter_frame,
     },
     { NULL }
 };
@@ -292,15 +292,12 @@ static const AVFilterPad avfilter_vf_transpose_outputs[] = {
 };
 
 AVFilter avfilter_vf_transpose = {
-    .name      = "transpose",
-    .description = NULL_IF_CONFIG_SMALL("Transpose input video."),
-
-    .priv_size = sizeof(TransContext),
-    .priv_class = &transpose_class,
-
+    .name          = "transpose",
+    .description   = NULL_IF_CONFIG_SMALL("Transpose input video."),
+    .priv_size     = sizeof(TransContext),
+    .priv_class    = &transpose_class,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_transpose_inputs,
-    .outputs   = avfilter_vf_transpose_outputs,
-    .flags     = AVFILTER_FLAG_SLICE_THREADS,
+    .inputs        = avfilter_vf_transpose_inputs,
+    .outputs       = avfilter_vf_transpose_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

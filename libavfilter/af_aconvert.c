@@ -47,7 +47,7 @@ typedef struct {
 static const AVOption aconvert_options[] = {
     { "sample_fmt",     "", OFFSET(format_str),         AV_OPT_TYPE_STRING, .flags = A|F },
     { "channel_layout", "", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, .flags = A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aconvert);

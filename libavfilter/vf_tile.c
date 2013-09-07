@@ -59,7 +59,7 @@ static const AVOption tile_options[] = {
     { "padding", "set inner border thickness in pixels", OFFSET(padding),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1024, FLAGS },
     { "color",   "set the color of the unused area", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(tile);

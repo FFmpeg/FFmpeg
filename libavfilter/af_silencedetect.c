@@ -48,7 +48,7 @@ static const AVOption silencedetect_options[] = {
     { "noise",     "set noise tolerance",              OFFSET(noise),     AV_OPT_TYPE_DOUBLE, {.dbl=0.001},          0, DBL_MAX,  FLAGS },
     { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
     { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(silencedetect);
@@ -139,9 +139,9 @@ static int query_formats(AVFilterContext *ctx)
 
 static const AVFilterPad silencedetect_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

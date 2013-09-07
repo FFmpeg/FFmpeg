@@ -551,10 +551,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad removelogo_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_props_input,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

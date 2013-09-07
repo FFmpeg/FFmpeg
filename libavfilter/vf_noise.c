@@ -455,18 +455,18 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad noise_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
-        .config_props     = config_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
 
 static const AVFilterPad noise_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };

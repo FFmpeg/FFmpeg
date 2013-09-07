@@ -187,7 +187,7 @@ static const AVOption amix_options[] = {
     { "dropout_transition", "Transition time, in seconds, for volume "
                             "renormalization when an input stream ends.",
             OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { .dbl = 2.0 }, 0, INT_MAX, A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(amix);
@@ -547,17 +547,14 @@ static const AVFilterPad avfilter_af_amix_outputs[] = {
 };
 
 AVFilter avfilter_af_amix = {
-    .name          = "amix",
-    .description   = NULL_IF_CONFIG_SMALL("Audio mixing."),
-    .priv_size     = sizeof(MixContext),
-    .priv_class    = &amix_class,
-
+    .name           = "amix",
+    .description    = NULL_IF_CONFIG_SMALL("Audio mixing."),
+    .priv_size      = sizeof(MixContext),
+    .priv_class     = &amix_class,
     .init           = init,
     .uninit         = uninit,
     .query_formats  = query_formats,
-
-    .inputs    = NULL,
-    .outputs   = avfilter_af_amix_outputs,
-
-    .flags     = AVFILTER_FLAG_DYNAMIC_INPUTS,
+    .inputs         = NULL,
+    .outputs        = avfilter_af_amix_outputs,
+    .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };

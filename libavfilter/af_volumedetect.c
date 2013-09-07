@@ -133,9 +133,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad volumedetect_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -151,7 +151,6 @@ static const AVFilterPad volumedetect_outputs[] = {
 AVFilter avfilter_af_volumedetect = {
     .name          = "volumedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect audio volume."),
-
     .priv_size     = sizeof(VolDetectContext),
     .query_formats = query_formats,
     .uninit        = uninit,

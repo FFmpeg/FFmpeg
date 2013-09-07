@@ -93,7 +93,7 @@ static const AVOption life_options[] = {
     { "life_color",  "set life color",  OFFSET( life_color), AV_OPT_TYPE_COLOR, {.str="white"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "death_color", "set death color", OFFSET(death_color), AV_OPT_TYPE_COLOR, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "mold_color",  "set mold color",  OFFSET( mold_color), AV_OPT_TYPE_COLOR, {.str="black"}, CHAR_MIN, CHAR_MAX, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(life);
@@ -438,13 +438,13 @@ static const AVFilterPad life_outputs[] = {
 };
 
 AVFilter avfilter_vsrc_life = {
-    .name        = "life",
-    .description = NULL_IF_CONFIG_SMALL("Create life."),
-    .priv_size = sizeof(LifeContext),
-    .init      = init,
-    .uninit    = uninit,
+    .name          = "life",
+    .description   = NULL_IF_CONFIG_SMALL("Create life."),
+    .priv_size     = sizeof(LifeContext),
+    .priv_class    = &life_class,
+    .init          = init,
+    .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = NULL,
     .outputs       = life_outputs,
-    .priv_class    = &life_class,
 };

@@ -92,7 +92,7 @@ static const AVOption options[] = {
     { "g",  "set G expression",            OFFSET(comp_expr_str[G]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
     { "b",  "set B expression",            OFFSET(comp_expr_str[B]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
     { "a",  "set A expression",            OFFSET(comp_expr_str[A]),  AV_OPT_TYPE_STRING, { .str = "val" }, .flags = FLAGS },
-    { NULL },
+    { NULL }
 };
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -331,17 +331,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 }
 
 static const AVFilterPad inputs[] = {
-    { .name            = "default",
-      .type            = AVMEDIA_TYPE_VIDEO,
-      .filter_frame    = filter_frame,
-      .config_props    = config_props,
+    { .name         = "default",
+      .type         = AVMEDIA_TYPE_VIDEO,
+      .filter_frame = filter_frame,
+      .config_props = config_props,
     },
-    { .name = NULL}
+    { NULL }
 };
 static const AVFilterPad outputs[] = {
-    { .name            = "default",
-      .type            = AVMEDIA_TYPE_VIDEO, },
-    { .name = NULL}
+    { .name = "default",
+      .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
 };
 
 #define DEFINE_LUT_FILTER(name_, description_)                          \
@@ -350,11 +351,9 @@ static const AVFilterPad outputs[] = {
         .description   = NULL_IF_CONFIG_SMALL(description_),            \
         .priv_size     = sizeof(LutContext),                            \
         .priv_class    = &name_ ## _class,                              \
-                                                                        \
         .init          = name_##_init,                                  \
         .uninit        = uninit,                                        \
         .query_formats = query_formats,                                 \
-                                                                        \
         .inputs        = inputs,                                        \
         .outputs       = outputs,                                       \
         .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,        \
@@ -411,7 +410,7 @@ DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input vid
 
 static const AVOption negate_options[] = {
     { "negate_alpha", NULL, OFFSET(negate_alpha), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(negate);

@@ -259,17 +259,15 @@ static const AVFilterPad color_outputs[] = {
 };
 
 AVFilter avfilter_vsrc_color = {
-    .name        = "color",
-    .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
-
-    .priv_class = &color_class,
-    .priv_size = sizeof(TestSourceContext),
-    .init      = color_init,
-    .uninit    = uninit,
-
-    .query_formats = color_query_formats,
-    .inputs        = NULL,
-    .outputs       = color_outputs,
+    .name            = "color",
+    .description     = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input."),
+    .priv_class      = &color_class,
+    .priv_size       = sizeof(TestSourceContext),
+    .init            = color_init,
+    .uninit          = uninit,
+    .query_formats   = color_query_formats,
+    .inputs          = NULL,
+    .outputs         = color_outputs,
     .process_command = color_process_command,
 };
 
@@ -392,15 +390,15 @@ static const AVFilterPad haldclutsrc_outputs[] = {
 };
 
 AVFilter avfilter_vsrc_haldclutsrc = {
-    .name            = "haldclutsrc",
-    .description     = NULL_IF_CONFIG_SMALL("Provide an identity Hald CLUT."),
-    .priv_class      = &haldclutsrc_class,
-    .priv_size       = sizeof(TestSourceContext),
-    .init            = haldclutsrc_init,
-    .uninit          = uninit,
-    .query_formats   = haldclutsrc_query_formats,
-    .inputs          = NULL,
-    .outputs         = haldclutsrc_outputs,
+    .name          = "haldclutsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Provide an identity Hald CLUT."),
+    .priv_class    = &haldclutsrc_class,
+    .priv_size     = sizeof(TestSourceContext),
+    .init          = haldclutsrc_init,
+    .uninit        = uninit,
+    .query_formats = haldclutsrc_query_formats,
+    .inputs        = NULL,
+    .outputs       = haldclutsrc_outputs,
 };
 #endif /* CONFIG_HALDCLUTSRC_FILTER */
 
@@ -432,12 +430,12 @@ static const AVFilterPad nullsrc_outputs[] = {
 AVFilter avfilter_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
-    .init       = nullsrc_init,
-    .uninit     = uninit,
-    .priv_size  = sizeof(TestSourceContext),
-    .priv_class = &nullsrc_class,
-    .inputs     = NULL,
-    .outputs    = nullsrc_outputs,
+    .init        = nullsrc_init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(TestSourceContext),
+    .priv_class  = &nullsrc_class,
+    .inputs      = NULL,
+    .outputs     = nullsrc_outputs,
 };
 
 #endif /* CONFIG_NULLSRC_FILTER */
@@ -669,11 +667,9 @@ AVFilter avfilter_vsrc_testsrc = {
     .priv_class    = &testsrc_class,
     .init          = test_init,
     .uninit        = uninit,
-
     .query_formats = test_query_formats,
-
-    .inputs    = NULL,
-    .outputs   = avfilter_vsrc_testsrc_outputs,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_testsrc_outputs,
 };
 
 #endif /* CONFIG_TESTSRC_FILTER */
@@ -787,12 +783,9 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
     .priv_class    = &rgbtestsrc_class,
     .init          = rgbtest_init,
     .uninit        = uninit,
-
     .query_formats = rgbtest_query_formats,
-
-    .inputs    = NULL,
-
-    .outputs   = avfilter_vsrc_rgbtestsrc_outputs,
+    .inputs        = NULL,
+    .outputs       = avfilter_vsrc_rgbtestsrc_outputs,
 };
 
 #endif /* CONFIG_RGBTESTSRC_FILTER */
@@ -938,16 +931,15 @@ static av_cold int smptebars_init(AVFilterContext *ctx)
 }
 
 AVFilter avfilter_vsrc_smptebars = {
-    .name      = "smptebars",
-    .description = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
-    .priv_size = sizeof(TestSourceContext),
-    .init      = smptebars_init,
-    .uninit    = uninit,
-
+    .name          = "smptebars",
+    .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE color bars."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &smptebars_class,
+    .init          = smptebars_init,
+    .uninit        = uninit,
     .query_formats = smptebars_query_formats,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
-    .priv_class    = &smptebars_class,
 };
 
 #endif  /* CONFIG_SMPTEBARS_FILTER */
@@ -1042,16 +1034,15 @@ static av_cold int smptehdbars_init(AVFilterContext *ctx)
 }
 
 AVFilter avfilter_vsrc_smptehdbars = {
-    .name      = "smptehdbars",
-    .description = NULL_IF_CONFIG_SMALL("Generate SMPTE HD color bars."),
-    .priv_size = sizeof(TestSourceContext),
-    .init      = smptehdbars_init,
-    .uninit    = uninit,
-
+    .name          = "smptehdbars",
+    .description   = NULL_IF_CONFIG_SMALL("Generate SMPTE HD color bars."),
+    .priv_size     = sizeof(TestSourceContext),
+    .priv_class    = &smptehdbars_class,
+    .init          = smptehdbars_init,
+    .uninit        = uninit,
     .query_formats = smptebars_query_formats,
     .inputs        = NULL,
     .outputs       = smptebars_outputs,
-    .priv_class    = &smptehdbars_class,
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */

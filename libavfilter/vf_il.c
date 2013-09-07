@@ -184,18 +184,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
 static const AVFilterPad inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
-        .config_props     = config_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
 
 static const AVFilterPad outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };

@@ -223,7 +223,7 @@ static const AVOption drawtext_options[]= {
         { "monochrome",                  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_MONOCHROME },                  .flags = FLAGS, .unit = "ft_load_flags" },
         { "linear_design",               NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_LINEAR_DESIGN },               .flags = FLAGS, .unit = "ft_load_flags" },
         { "no_autohint",                 NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FT_LOAD_NO_AUTOHINT },                 .flags = FLAGS, .unit = "ft_load_flags" },
-    { NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(drawtext);
@@ -1039,11 +1039,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 static const AVFilterPad avfilter_vf_drawtext_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
-        .config_props     = config_input,
-        .needs_writable   = 1,
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .filter_frame   = filter_frame,
+        .config_props   = config_input,
+        .needs_writable = 1,
     },
     { NULL }
 };
@@ -1064,13 +1064,12 @@ AVFilter avfilter_vf_drawtext = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_drawtext_inputs,
-    .outputs   = avfilter_vf_drawtext_outputs,
+    .inputs        = avfilter_vf_drawtext_inputs,
+    .outputs       = avfilter_vf_drawtext_outputs,
     .process_command = command,
 #if FF_API_DRAWTEXT_OLD_TIMELINE
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 #else
-    .flags           = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 #endif
 };

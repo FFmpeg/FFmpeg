@@ -69,7 +69,7 @@ static const AVOption concat_options[] = {
     { "unsafe", "enable unsafe mode",
       OFFSET(unsafe),
       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, V|A|F},
-    { 0 }
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(concat);

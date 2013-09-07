@@ -316,18 +316,18 @@ static const AVOption fade_options[] = {
                                                     OFFSET(duration),    AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
     { "d",           "Duration of the effect in seconds.",
                                                     OFFSET(duration),    AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(fade);
 
 static const AVFilterPad avfilter_vf_fade_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_props,
-        .filter_frame     = filter_frame,
-        .needs_writable   = 1,
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .config_props   = config_props,
+        .filter_frame   = filter_frame,
+        .needs_writable = 1,
     },
     { NULL }
 };
@@ -347,8 +347,7 @@ AVFilter avfilter_vf_fade = {
     .priv_size     = sizeof(FadeContext),
     .priv_class    = &fade_class,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_fade_inputs,
-    .outputs   = avfilter_vf_fade_outputs,
-    .flags     = AVFILTER_FLAG_SLICE_THREADS,
+    .inputs        = avfilter_vf_fade_inputs,
+    .outputs       = avfilter_vf_fade_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

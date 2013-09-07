@@ -775,10 +775,10 @@ static const AVFilterPad haldclut_inputs[] = {
 
 static const AVFilterPad haldclut_outputs[] = {
     {
-        .name = "default",
-        .type = AVMEDIA_TYPE_VIDEO,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
-        .config_props = config_output,
+        .config_props  = config_output,
     },
     { NULL }
 };

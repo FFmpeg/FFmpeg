@@ -101,11 +101,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
 static const AVFilterPad inputs[] = {
     {
-        .name       = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
-    { NULL },
+    { NULL }
 };
 
 static const AVFilterPad outputs[] = {
@@ -113,7 +113,7 @@ static const AVFilterPad outputs[] = {
         .name = "default",
         .type = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_af_ashowinfo = {

@@ -45,7 +45,7 @@ typedef struct {
 static const AVOption filt_name##_options[] = {                     \
    { "nb_inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, .flags = flags_ }, \
    { "n",         "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, .flags = flags_ }, \
-   { NULL },                                                        \
+   { NULL }                                                         \
 }
 
 inline static int push_frame(AVFilterContext *ctx)

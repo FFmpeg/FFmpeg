@@ -214,9 +214,9 @@ static const AVFilterPad inputs[] = {
 
 static const AVFilterPad outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_out_props,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_out_props,
     },
     { NULL }
 };
@@ -225,12 +225,9 @@ AVFilter avfilter_vf_interlace = {
     .name          = "interlace",
     .description   = NULL_IF_CONFIG_SMALL("Convert progressive video into interlaced."),
     .uninit        = uninit,
-
     .priv_class    = &interlace_class,
     .priv_size     = sizeof(InterlaceContext),
     .query_formats = query_formats,
-
     .inputs        = inputs,
     .outputs       = outputs,
 };
-

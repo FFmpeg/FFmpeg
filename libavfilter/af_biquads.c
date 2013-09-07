@@ -62,8 +62,8 @@
  *               V
  */
 
-#include "libavutil/opt.h"
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -479,7 +479,7 @@ static const AVOption equalizer_options[] = {
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(equalizer, "Apply two-pole peaking equalization (EQ) filter.");
@@ -497,7 +497,7 @@ static const AVOption bass_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(bass, "Boost or cut lower frequencies.");
@@ -515,7 +515,7 @@ static const AVOption treble_options[] = {
     {"w",     "set shelf transition steep", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 99999, FLAGS},
     {"gain", "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
     {"g",    "set gain", OFFSET(gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(treble, "Boost or cut upper frequencies.");
@@ -532,7 +532,7 @@ static const AVOption bandpass_options[] = {
     {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"csg",   "use constant skirt gain", OFFSET(csg), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(bandpass, "Apply a two-pole Butterworth band-pass filter.");
@@ -548,7 +548,7 @@ static const AVOption bandreject_options[] = {
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"width", "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
     {"w",     "set band-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0, 999, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(bandreject, "Apply a two-pole Butterworth band-reject filter.");
@@ -566,7 +566,7 @@ static const AVOption lowpass_options[] = {
     {"w",     "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
     {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
     {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(lowpass, "Apply a low-pass filter with 3dB point frequency.");
@@ -584,7 +584,7 @@ static const AVOption highpass_options[] = {
     {"w",     "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
     {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
     {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(highpass, "Apply a high-pass filter with 3dB point frequency.");
@@ -600,7 +600,7 @@ static const AVOption allpass_options[] = {
     {"s", "slope", 0, AV_OPT_TYPE_CONST, {.i64=SLOPE}, 0, 0, FLAGS, "width_type"},
     {"width", "set filter-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=707.1}, 0, 99999, FLAGS},
     {"w",     "set filter-width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=707.1}, 0, 99999, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(allpass, "Apply a two-pole all-pass filter.");
@@ -613,7 +613,7 @@ static const AVOption biquad_options[] = {
     {"b0", NULL, OFFSET(b0), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
     {"b1", NULL, OFFSET(b1), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
     {"b2", NULL, OFFSET(b2), AV_OPT_TYPE_DOUBLE, {.dbl=1}, INT16_MIN, INT16_MAX, FLAGS},
-    {NULL},
+    {NULL}
 };
 
 DEFINE_BIQUAD_FILTER(biquad, "Apply a biquad IIR filter with the given coefficients.");

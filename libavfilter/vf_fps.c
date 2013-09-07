@@ -70,7 +70,7 @@ static const AVOption fps_options[] = {
     { "down", "round towards -infty", OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_DOWN     }, 0, 5, V|F, "round" },
     { "up",   "round towards +infty", OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_UP       }, 0, 5, V|F, "round" },
     { "near", "round to nearest",     OFFSET(rounding), AV_OPT_TYPE_CONST, { .i64 = AV_ROUND_NEAR_INF }, 0, 5, V|F, "round" },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(fps);
@@ -273,8 +273,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
 static const AVFilterPad avfilter_vf_fps_inputs[] = {
     {
-        .name        = "default",
-        .type        = AVMEDIA_TYPE_VIDEO,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -293,13 +293,10 @@ static const AVFilterPad avfilter_vf_fps_outputs[] = {
 AVFilter avfilter_vf_fps = {
     .name        = "fps",
     .description = NULL_IF_CONFIG_SMALL("Force constant framerate."),
-
-    .init      = init,
-    .uninit    = uninit,
-
-    .priv_size = sizeof(FPSContext),
-    .priv_class = &fps_class,
-
-    .inputs    = avfilter_vf_fps_inputs,
-    .outputs   = avfilter_vf_fps_outputs,
+    .init        = init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(FPSContext),
+    .priv_class  = &fps_class,
+    .inputs      = avfilter_vf_fps_inputs,
+    .outputs     = avfilter_vf_fps_outputs,
 };

@@ -367,7 +367,7 @@ static const AVOption pad_options[] = {
     { "x",      "set the x offset expression for the input image position", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "y",      "set the y offset expression for the input image position", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "color",  "set the color of the padded area border", OFFSET(rgba_color), AV_OPT_TYPE_COLOR, {.str = "black"}, .flags = FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(pad);
@@ -395,12 +395,9 @@ static const AVFilterPad avfilter_vf_pad_outputs[] = {
 AVFilter avfilter_vf_pad = {
     .name          = "pad",
     .description   = NULL_IF_CONFIG_SMALL("Pad input image to width:height[:x:y[:color]] (default x and y: 0, default color: black)."),
-
     .priv_size     = sizeof(PadContext),
     .priv_class    = &pad_class,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_pad_inputs,
-
-    .outputs   = avfilter_vf_pad_outputs,
+    .inputs        = avfilter_vf_pad_inputs,
+    .outputs       = avfilter_vf_pad_outputs,
 };

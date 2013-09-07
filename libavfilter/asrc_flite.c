@@ -271,13 +271,13 @@ static const AVFilterPad flite_outputs[] = {
 };
 
 AVFilter avfilter_asrc_flite = {
-    .name        = "flite",
-    .description = NULL_IF_CONFIG_SMALL("Synthesize voice from text using libflite."),
+    .name          = "flite",
+    .description   = NULL_IF_CONFIG_SMALL("Synthesize voice from text using libflite."),
     .query_formats = query_formats,
-    .init        = init,
-    .uninit      = uninit,
-    .priv_size   = sizeof(FliteContext),
-    .inputs      = NULL,
-    .outputs     = flite_outputs,
-    .priv_class  = &flite_class,
+    .init          = init,
+    .uninit        = uninit,
+    .priv_size     = sizeof(FliteContext),
+    .inputs        = NULL,
+    .outputs       = flite_outputs,
+    .priv_class    = &flite_class,
 };

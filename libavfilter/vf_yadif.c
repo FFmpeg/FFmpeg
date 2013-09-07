@@ -512,16 +512,16 @@ static const AVOption yadif_options[] = {
     CONST("all",        "deinterlace all frames",                       YADIF_DEINT_ALL,         "deint"),
     CONST("interlaced", "only deinterlace frames marked as interlaced", YADIF_DEINT_INTERLACED,  "deint"),
 
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(yadif);
 
 static const AVFilterPad avfilter_vf_yadif_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -539,13 +539,11 @@ static const AVFilterPad avfilter_vf_yadif_outputs[] = {
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
-
     .priv_size     = sizeof(YADIFContext),
     .priv_class    = &yadif_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_yadif_inputs,
-    .outputs   = avfilter_vf_yadif_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .inputs        = avfilter_vf_yadif_inputs,
+    .outputs       = avfilter_vf_yadif_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

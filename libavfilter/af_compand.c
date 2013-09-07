@@ -72,7 +72,7 @@ static const AVOption compand_options[] = {
     { "gain", "set output gain", OFFSET(gain_dB), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, A },
     { "volume", "set initial volume", OFFSET(initial_volume), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 0, A },
     { "delay", "set delay for samples before sending them to volume adjuster", OFFSET(delay), AV_OPT_TYPE_DOUBLE, {.dbl=0}, 0, 20, A },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(compand);
@@ -492,7 +492,7 @@ static const AVFilterPad compand_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL },
+    { NULL }
 };
 
 static const AVFilterPad compand_outputs[] = {
@@ -502,7 +502,7 @@ static const AVFilterPad compand_outputs[] = {
         .config_props  = config_output,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_af_compand = {

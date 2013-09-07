@@ -19,10 +19,10 @@
  *
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
-#include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "internal.h"
@@ -52,7 +52,7 @@ static const AVOption aecho_options[] = {
     { "out_gain", "set signal output gain", OFFSET(out_gain), AV_OPT_TYPE_FLOAT,  {.dbl=0.3}, 0, 1, A },
     { "delays",   "set list of signal delays", OFFSET(delays), AV_OPT_TYPE_STRING, {.str="1000"}, 0, 0, A },
     { "decays",   "set list of signal decays", OFFSET(decays), AV_OPT_TYPE_STRING, {.str="0.5"}, 0, 0, A },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aecho);
@@ -333,7 +333,7 @@ static const AVFilterPad aecho_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL },
+    { NULL }
 };
 
 static const AVFilterPad aecho_outputs[] = {
@@ -343,7 +343,7 @@ static const AVFilterPad aecho_outputs[] = {
         .config_props  = config_output,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_af_aecho = {

@@ -292,10 +292,10 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad phase_inputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame,
-        .config_props  = config_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };

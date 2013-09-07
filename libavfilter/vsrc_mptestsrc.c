@@ -79,7 +79,7 @@ static const AVOption mptestsrc_options[]= {
         { "ring1",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING1},       INT_MIN, INT_MAX, FLAGS, "test" },
         { "ring2",       "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_RING2},       INT_MIN, INT_MAX, FLAGS, "test" },
         { "all",         "", 0, AV_OPT_TYPE_CONST, {.i64=TEST_ALL},         INT_MIN, INT_MAX, FLAGS, "test" },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(mptestsrc);
@@ -350,14 +350,12 @@ static const AVFilterPad mptestsrc_outputs[] = {
 };
 
 AVFilter avfilter_vsrc_mptestsrc = {
-    .name      = "mptestsrc",
-    .description = NULL_IF_CONFIG_SMALL("Generate various test pattern."),
-    .priv_size = sizeof(MPTestContext),
-    .init      = init,
-
-    .query_formats   = query_formats,
-
-    .inputs         = NULL,
-    .outputs        = mptestsrc_outputs,
-    .priv_class     = &mptestsrc_class,
+    .name          = "mptestsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Generate various test pattern."),
+    .priv_size     = sizeof(MPTestContext),
+    .priv_class    = &mptestsrc_class,
+    .init          = init,
+    .query_formats = query_formats,
+    .inputs        = NULL,
+    .outputs       = mptestsrc_outputs,
 };

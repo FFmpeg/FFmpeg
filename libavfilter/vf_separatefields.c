@@ -88,26 +88,26 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
 static const AVFilterPad separatefields_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 static const AVFilterPad separatefields_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props_output,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props_output,
     },
     { NULL }
 };
 
 AVFilter avfilter_vf_separatefields = {
-    .name          = "separatefields",
-    .description   = NULL_IF_CONFIG_SMALL("Split input video frames into fields."),
-    .priv_size     = sizeof(SeparateFieldsContext),
-    .inputs        = separatefields_inputs,
-    .outputs       = separatefields_outputs,
+    .name        = "separatefields",
+    .description = NULL_IF_CONFIG_SMALL("Split input video frames into fields."),
+    .priv_size   = sizeof(SeparateFieldsContext),
+    .inputs      = separatefields_inputs,
+    .outputs     = separatefields_outputs,
 };

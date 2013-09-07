@@ -228,7 +228,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static const AVOption gradfun_options[] = {
     { "strength", "The maximum amount by which the filter will change any one pixel.", OFFSET(strength), AV_OPT_TYPE_FLOAT, { .dbl = 1.2 }, 0.51, 64, FLAGS },
     { "radius",   "The neighborhood to fit the gradient to.",                          OFFSET(radius),   AV_OPT_TYPE_INT,   { .i64 = 16  }, 4,    32, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(gradfun);

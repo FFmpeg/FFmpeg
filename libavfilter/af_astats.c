@@ -51,7 +51,7 @@ typedef struct {
 
 static const AVOption astats_options[] = {
     { "length", "set the window length", OFFSET(time_constant), AV_OPT_TYPE_DOUBLE, {.dbl=.05}, .01, 10, FLAGS },
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(astats);

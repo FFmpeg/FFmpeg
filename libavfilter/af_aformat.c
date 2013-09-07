@@ -52,7 +52,7 @@ static const AVOption aformat_options[] = {
     { "sample_fmts",     "A comma-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A|F },
     { "sample_rates",    "A comma-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A|F },
     { "channel_layouts", "A comma-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aformat);
@@ -142,7 +142,6 @@ AVFilter avfilter_af_aformat = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AFormatContext),
     .priv_class    = &aformat_class,
-
     .inputs        = avfilter_af_aformat_inputs,
     .outputs       = avfilter_af_aformat_outputs,
 };

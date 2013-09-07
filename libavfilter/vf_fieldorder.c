@@ -157,17 +157,17 @@ static const AVOption fieldorder_options[] = {
     { "order", "output field order", OFFSET(dst_tff), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "order" },
         { "bff", "bottom field first", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, .flags=FLAGS, .unit = "order" },
         { "tff", "top field first",    0, AV_OPT_TYPE_CONST, { .i64 = 1 }, .flags=FLAGS, .unit = "order" },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(fieldorder);
 
 static const AVFilterPad avfilter_vf_fieldorder_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_input,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

@@ -538,7 +538,7 @@ static const AVOption scale_options[] = {
     { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
     { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
-    { NULL },
+    { NULL }
 };
 
 static const AVClass scale_class = {
@@ -551,8 +551,8 @@ static const AVClass scale_class = {
 
 static const AVFilterPad avfilter_vf_scale_inputs[] = {
     {
-        .name        = "default",
-        .type        = AVMEDIA_TYPE_VIDEO,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -568,17 +568,13 @@ static const AVFilterPad avfilter_vf_scale_outputs[] = {
 };
 
 AVFilter avfilter_vf_scale = {
-    .name      = "scale",
-    .description = NULL_IF_CONFIG_SMALL("Scale the input video to width:height size and/or convert the image format."),
-
-    .init_dict = init_dict,
-    .uninit    = uninit,
-
+    .name          = "scale",
+    .description   = NULL_IF_CONFIG_SMALL("Scale the input video to width:height size and/or convert the image format."),
+    .init_dict     = init_dict,
+    .uninit        = uninit,
     .query_formats = query_formats,
-
-    .priv_size = sizeof(ScaleContext),
-    .priv_class = &scale_class,
-
-    .inputs    = avfilter_vf_scale_inputs,
-    .outputs   = avfilter_vf_scale_outputs,
+    .priv_size     = sizeof(ScaleContext),
+    .priv_class    = &scale_class,
+    .inputs        = avfilter_vf_scale_inputs,
+    .outputs       = avfilter_vf_scale_outputs,
 };

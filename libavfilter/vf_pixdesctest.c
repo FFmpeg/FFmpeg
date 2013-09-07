@@ -128,11 +128,8 @@ static const AVFilterPad avfilter_vf_pixdesctest_outputs[] = {
 AVFilter avfilter_vf_pixdesctest = {
     .name        = "pixdesctest",
     .description = NULL_IF_CONFIG_SMALL("Test pixel format definitions."),
-
-    .priv_size = sizeof(PixdescTestContext),
-    .uninit    = uninit,
-
-    .inputs    = avfilter_vf_pixdesctest_inputs,
-
-    .outputs   = avfilter_vf_pixdesctest_outputs,
+    .priv_size   = sizeof(PixdescTestContext),
+    .uninit      = uninit,
+    .inputs      = avfilter_vf_pixdesctest_inputs,
+    .outputs     = avfilter_vf_pixdesctest_outputs,
 };

@@ -435,14 +435,12 @@ static const AVFilterPad hue_outputs[] = {
 };
 
 AVFilter avfilter_vf_hue = {
-    .name        = "hue",
-    .description = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
-
-    .priv_size = sizeof(HueContext),
-
-    .init          = init,
-    .uninit        = uninit,
-    .query_formats = query_formats,
+    .name            = "hue",
+    .description     = NULL_IF_CONFIG_SMALL("Adjust the hue and saturation of the input video."),
+    .priv_size       = sizeof(HueContext),
+    .init            = init,
+    .uninit          = uninit,
+    .query_formats   = query_formats,
     .process_command = process_command,
     .inputs          = hue_inputs,
     .outputs         = hue_outputs,

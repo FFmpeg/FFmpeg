@@ -209,10 +209,10 @@ static int query_formats(AVFilterContext *ctx)
 
 static const AVFilterPad thumbnail_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_props,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

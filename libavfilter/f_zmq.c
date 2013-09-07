@@ -211,9 +211,9 @@ AVFILTER_DEFINE_CLASS(zmq);
 
 static const AVFilterPad zmq_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -246,9 +246,9 @@ AVFILTER_DEFINE_CLASS(azmq);
 
 static const AVFilterPad azmq_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

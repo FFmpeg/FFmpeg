@@ -391,7 +391,6 @@ static const AVOption pan_options[] = {
 
 AVFILTER_DEFINE_CLASS(pan);
 
-
 static const AVFilterPad pan_inputs[] = {
     {
         .name         = "default",

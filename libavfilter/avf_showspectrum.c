@@ -79,7 +79,7 @@ static const AVOption showspectrum_options[] = {
     { "log",  "logarithmic", 0, AV_OPT_TYPE_CONST, {.i64=LOG},    0, 0, FLAGS, "scale" },
     { "lin",  "linear",      0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "scale" },
     { "saturation", "color saturation multiplier", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl = 1}, -10, 10, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(showspectrum);
@@ -491,12 +491,12 @@ static const AVFilterPad showspectrum_outputs[] = {
 };
 
 AVFilter avfilter_avf_showspectrum = {
-    .name           = "showspectrum",
-    .description    = NULL_IF_CONFIG_SMALL("Convert input audio to a spectrum video output."),
-    .uninit         = uninit,
-    .query_formats  = query_formats,
-    .priv_size      = sizeof(ShowSpectrumContext),
-    .inputs         = showspectrum_inputs,
-    .outputs        = showspectrum_outputs,
-    .priv_class     = &showspectrum_class,
+    .name          = "showspectrum",
+    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spectrum video output."),
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .priv_size     = sizeof(ShowSpectrumContext),
+    .inputs        = showspectrum_inputs,
+    .outputs       = showspectrum_outputs,
+    .priv_class    = &showspectrum_class,
 };

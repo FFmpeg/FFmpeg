@@ -325,7 +325,7 @@ static const AVOption hqdn3d_options[] = {
     { "chroma_spatial", "spatial chroma strength",  OFFSET(strength[CHROMA_SPATIAL]), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
     { "luma_tmp",       "temporal luma strength",   OFFSET(strength[LUMA_TMP]),       AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
     { "chroma_tmp",     "temporal chroma strength", OFFSET(strength[CHROMA_TMP]),     AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(hqdn3d);
@@ -352,14 +352,12 @@ static const AVFilterPad avfilter_vf_hqdn3d_outputs[] = {
 AVFilter avfilter_vf_hqdn3d = {
     .name          = "hqdn3d",
     .description   = NULL_IF_CONFIG_SMALL("Apply a High Quality 3D Denoiser."),
-
     .priv_size     = sizeof(HQDN3DContext),
     .priv_class    = &hqdn3d_class,
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_hqdn3d_inputs,
-    .outputs   = avfilter_vf_hqdn3d_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .inputs        = avfilter_vf_hqdn3d_inputs,
+    .outputs       = avfilter_vf_hqdn3d_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

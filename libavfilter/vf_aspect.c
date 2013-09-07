@@ -140,10 +140,10 @@ AVFILTER_DEFINE_CLASS(setdar);
 
 static const AVFilterPad avfilter_vf_setdar_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = setdar_config_props,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = setdar_config_props,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -157,15 +157,13 @@ static const AVFilterPad avfilter_vf_setdar_outputs[] = {
 };
 
 AVFilter avfilter_vf_setdar = {
-    .name      = "setdar",
+    .name        = "setdar",
     .description = NULL_IF_CONFIG_SMALL("Set the frame display aspect ratio."),
-    .init      = init,
-    .priv_size = sizeof(AspectContext),
-    .priv_class = &setdar_class,
-
-    .inputs    = avfilter_vf_setdar_inputs,
-
-    .outputs   = avfilter_vf_setdar_outputs,
+    .init        = init,
+    .priv_size   = sizeof(AspectContext),
+    .priv_class  = &setdar_class,
+    .inputs      = avfilter_vf_setdar_inputs,
+    .outputs     = avfilter_vf_setdar_outputs,
 };
 
 #endif /* CONFIG_SETDAR_FILTER */
@@ -204,10 +202,10 @@ AVFILTER_DEFINE_CLASS(setsar);
 
 static const AVFilterPad avfilter_vf_setsar_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = setsar_config_props,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = setsar_config_props,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -221,15 +219,13 @@ static const AVFilterPad avfilter_vf_setsar_outputs[] = {
 };
 
 AVFilter avfilter_vf_setsar = {
-    .name      = "setsar",
+    .name        = "setsar",
     .description = NULL_IF_CONFIG_SMALL("Set the pixel sample aspect ratio."),
-    .init      = init,
-    .priv_size = sizeof(AspectContext),
-    .priv_class = &setsar_class,
-
-    .inputs    = avfilter_vf_setsar_inputs,
-
-    .outputs   = avfilter_vf_setsar_outputs,
+    .init        = init,
+    .priv_size   = sizeof(AspectContext),
+    .priv_class  = &setsar_class,
+    .inputs      = avfilter_vf_setsar_inputs,
+    .outputs     = avfilter_vf_setsar_outputs,
 };
 
 #endif /* CONFIG_SETSAR_FILTER */

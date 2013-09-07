@@ -72,7 +72,7 @@ static const AVOption afade_options[] = {
     { "cub",          "cubic",                                       0,                    AV_OPT_TYPE_CONST,  {.i64 = CUB  }, 0, 0, FLAGS, "curve" },
     { "squ",          "square root",                                 0,                    AV_OPT_TYPE_CONST,  {.i64 = SQU  }, 0, 0, FLAGS, "curve" },
     { "cbr",          "cubic root",                                  0,                    AV_OPT_TYPE_CONST,  {.i64 = CBR  }, 0, 0, FLAGS, "curve" },
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(afade);
@@ -281,8 +281,8 @@ static const AVFilterPad avfilter_af_afade_inputs[] = {
 
 static const AVFilterPad avfilter_af_afade_outputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
     },
     { NULL }
 };

@@ -54,7 +54,7 @@ static const AVOption anullsrc_options[]= {
     { "r",              "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0, FLAGS },
     { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 0, INT_MAX, FLAGS },
     { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 0, INT_MAX, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(anullsrc);
@@ -135,15 +135,12 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
 };
 
 AVFilter avfilter_asrc_anullsrc = {
-    .name        = "anullsrc",
-    .description = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
-
-    .init        = init,
+    .name          = "anullsrc",
+    .description   = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
+    .init          = init,
     .query_formats = query_formats,
-    .priv_size   = sizeof(ANullContext),
-
-    .inputs      = NULL,
-
-    .outputs     = avfilter_asrc_anullsrc_outputs,
-    .priv_class = &anullsrc_class,
+    .priv_size     = sizeof(ANullContext),
+    .inputs        = NULL,
+    .outputs       = avfilter_asrc_anullsrc_outputs,
+    .priv_class    = &anullsrc_class,
 };

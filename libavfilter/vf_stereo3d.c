@@ -187,7 +187,7 @@ static const AVOption stereo3d_options[] = {
     { "sbs2r", "side by side half width right first", 0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_2_RL},  0, 0, FLAGS, "out" },
     { "sbsl",  "side by side left first",             0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_LR},    0, 0, FLAGS, "out" },
     { "sbsr",  "side by side right first",            0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_RL},    0, 0, FLAGS, "out" },
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(stereo3d);
@@ -628,9 +628,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad stereo3d_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

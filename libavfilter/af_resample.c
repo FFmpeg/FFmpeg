@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -298,9 +297,9 @@ static const AVClass resample_class = {
 
 static const AVFilterPad avfilter_af_resample_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = filter_frame,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -320,11 +319,9 @@ AVFilter avfilter_af_resample = {
     .description   = NULL_IF_CONFIG_SMALL("Audio resampling and conversion."),
     .priv_size     = sizeof(ResampleContext),
     .priv_class    = &resample_class,
-
-    .init_dict      = init,
-    .uninit         = uninit,
-    .query_formats  = query_formats,
-
-    .inputs    = avfilter_af_resample_inputs,
-    .outputs   = avfilter_af_resample_outputs,
+    .init_dict     = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .inputs        = avfilter_af_resample_inputs,
+    .outputs       = avfilter_af_resample_outputs,
 };

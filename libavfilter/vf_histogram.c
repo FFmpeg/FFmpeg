@@ -71,7 +71,7 @@ static const AVOption histogram_options[] = {
     { "levels_mode", "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"},
     { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "levels_mode" },
     { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "levels_mode" },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(histogram);

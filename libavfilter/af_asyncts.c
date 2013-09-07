@@ -56,7 +56,7 @@ static const AVOption asyncts_options[] = {
                     "(in seconds) to trigger padding/trimmin the data.",        OFFSET(min_delta_sec), AV_OPT_TYPE_FLOAT, { .dbl = 0.1 }, 0, INT_MAX, A|F },
     { "max_comp",   "Maximum compensation in samples per second.",              OFFSET(max_comp),      AV_OPT_TYPE_INT,   { .i64 = 500 }, 0, INT_MAX, A|F },
     { "first_pts",  "Assume the first pts should be this value.",               OFFSET(first_pts),     AV_OPT_TYPE_INT64, { .i64 = AV_NOPTS_VALUE }, INT64_MIN, INT64_MAX, A|F },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(asyncts);
@@ -292,9 +292,9 @@ fail:
 
 static const AVFilterPad avfilter_af_asyncts_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = filter_frame
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .filter_frame  = filter_frame
     },
     { NULL }
 };
@@ -312,13 +312,10 @@ static const AVFilterPad avfilter_af_asyncts_outputs[] = {
 AVFilter avfilter_af_asyncts = {
     .name        = "asyncts",
     .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps"),
-
     .init        = init,
     .uninit      = uninit,
-
     .priv_size   = sizeof(ASyncContext),
     .priv_class  = &asyncts_class,
-
     .inputs      = avfilter_af_asyncts_inputs,
     .outputs     = avfilter_af_asyncts_outputs,
 };
