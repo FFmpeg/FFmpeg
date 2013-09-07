@@ -22,6 +22,7 @@
  *
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -214,8 +215,10 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     AVFilterLink *inlink = ctx->inputs[0];
     const int channels = inlink->channels;
     const int nb_samples = frame->nb_samples;
-    int chan, i, dindex, oindex, count;
+    int chan, i, av_uninit(dindex), oindex, av_uninit(count);
     AVFrame *out_frame = NULL;
+
+    av_assert1(channels > 0); /* would corrupt delay_count and delay_index */
 
     for (chan = 0; chan < channels; chan++) {
         const double *src = (double *)frame->data[chan];
