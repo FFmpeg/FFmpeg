@@ -135,6 +135,8 @@ static int parse_strk(AVFormatContext *s,
         av_log(s, AV_LOG_ERROR, "current_track too large\n");
         return AVERROR_INVALIDDATA;
     }
+    if (track < 0)
+        return AVERROR_INVALIDDATA;
     if (track + 1 > fourxm->track_count) {
         fourxm->tracks = av_realloc_f(fourxm->tracks, track + 1, sizeof(AudioTrack));
         if (!fourxm->tracks)
