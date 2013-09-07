@@ -237,6 +237,8 @@ static int decode_frame(AVCodecContext *avctx,
 
                 if (bits_per_plane == 8) {
                     picmemset_8bpp(s, val, run, &x, &y);
+                    if (y < 0)
+                        goto finish;
                 } else {
                     picmemset(s, val, run, &x, &y, &plane, bits_per_plane);
                 }
@@ -257,6 +259,7 @@ static int decode_frame(AVCodecContext *avctx,
             y--;
         }
     }
+finish:
 
     *got_frame      = 1;
     *(AVFrame*)data = s->frame;
