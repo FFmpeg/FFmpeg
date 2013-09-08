@@ -557,16 +557,19 @@ Requires the presence of the libvo-aacenc headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libvo-aacenc --enable-version3}.
 
+This encoder is considered to be worse than the
+@ref{aacenc,,native experimental FFmpeg AAC encoder}, according to
+multiple sources.
+
 @subsection Options
 
 The VisualOn AAC encoder only support encoding AAC-LC and up to 2
-channels. It is also CBR-only. It is considered to be worse than the
-native experimental FFmpeg AAC encoder.
+channels. It is also CBR-only.
 
 @table @option
 
 @item b
-Bitrate.
+Set bit rate in bits/s.
 
 @end table
 
