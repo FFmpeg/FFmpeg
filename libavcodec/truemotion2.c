@@ -169,9 +169,9 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     /* allocate space for codes - it is exactly ceil(nodes / 2) entries */
     huff.max_num = (huff.nodes + 1) >> 1;
-    huff.nums    = av_mallocz(huff.max_num * sizeof(int));
-    huff.bits    = av_mallocz(huff.max_num * sizeof(uint32_t));
-    huff.lens    = av_mallocz(huff.max_num * sizeof(int));
+    huff.nums    = av_calloc(huff.max_num, sizeof(int));
+    huff.bits    = av_calloc(huff.max_num, sizeof(uint32_t));
+    huff.lens    = av_calloc(huff.max_num, sizeof(int));
 
     if (!huff.nums || !huff.bits || !huff.lens) {
         res = AVERROR(ENOMEM);
@@ -198,7 +198,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
         else {
             code->bits = huff.max_bits;
             code->length = huff.max_num;
-            code->recode = av_malloc(code->length * sizeof(int));
+            code->recode = av_malloc_array(code->length, sizeof(int));
             if (!code->recode) {
                 res = AVERROR(ENOMEM);
                 goto fail;
@@ -933,8 +933,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ff_dsputil_init(&l->dsp, avctx);
 
-    l->last  = av_malloc(4 * sizeof(*l->last)  * (w >> 2));
-    l->clast = av_malloc(4 * sizeof(*l->clast) * (w >> 2));
+    l->last  = av_malloc_array(w >> 2, 4 * sizeof(*l->last) );
+    l->clast = av_malloc_array(w >> 2, 4 * sizeof(*l->clast));
 
     for (i = 0; i < TM2_NUM_STREAMS; i++) {
         l->tokens[i] = NULL;
@@ -943,15 +943,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     w += 8;
     h += 8;
-    l->Y1_base = av_mallocz(sizeof(*l->Y1_base) * w * h);
-    l->Y2_base = av_mallocz(sizeof(*l->Y2_base) * w * h);
+    l->Y1_base = av_calloc(w * h, sizeof(*l->Y1_base));
+    l->Y2_base = av_calloc(w * h, sizeof(*l->Y2_base));
     l->y_stride = w;
     w = (w + 1) >> 1;
     h = (h + 1) >> 1;
-    l->U1_base = av_mallocz(sizeof(*l->U1_base) * w * h);
-    l->V1_base = av_mallocz(sizeof(*l->V1_base) * w * h);
-    l->U2_base = av_mallocz(sizeof(*l->U2_base) * w * h);
-    l->V2_base = av_mallocz(sizeof(*l->V1_base) * w * h);
+    l->U1_base = av_calloc(w * h, sizeof(*l->U1_base));
+    l->V1_base = av_calloc(w * h, sizeof(*l->V1_base));
+    l->U2_base = av_calloc(w * h, sizeof(*l->U2_base));
+    l->V2_base = av_calloc(w * h, sizeof(*l->V1_base));
     l->uv_stride = w;
     l->cur = 0;
     if (!l->Y1_base || !l->Y2_base || !l->U1_base ||
