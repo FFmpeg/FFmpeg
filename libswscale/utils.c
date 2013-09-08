@@ -1899,14 +1899,12 @@ void sws_convVec(SwsVector *a, SwsVector *b)
 
 SwsVector *sws_cloneVec(SwsVector *a)
 {
-    int i;
     SwsVector *vec = sws_allocVec(a->length);
 
     if (!vec)
         return NULL;
 
-    for (i = 0; i < a->length; i++)
-        vec->coeff[i] = a->coeff[i];
+    memcpy(vec->coeff, a->coeff, a->length * sizeof(*a->coeff));
 
     return vec;
 }
