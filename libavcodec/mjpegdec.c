@@ -1047,13 +1047,14 @@ static av_always_inline void mjpeg_copy_block(MJpegDecodeContext *s,
 static void shift_output(MJpegDecodeContext *s, uint8_t *ptr, int linesize)
 {
     int block_x, block_y;
+    int size = 8 >> s->avctx->lowres;
     if (s->bits > 8) {
-        for (block_y=0; block_y<8; block_y++)
-            for (block_x=0; block_x<8; block_x++)
+        for (block_y=0; block_y<size; block_y++)
+            for (block_x=0; block_x<size; block_x++)
                 *(uint16_t*)(ptr + 2*block_x + block_y*linesize) <<= 16 - s->bits;
     } else {
-        for (block_y=0; block_y<8; block_y++)
-            for (block_x=0; block_x<8; block_x++)
+        for (block_y=0; block_y<size; block_y++)
+            for (block_x=0; block_x<size; block_x++)
                 *(ptr + block_x + block_y*linesize) <<= 8 - s->bits;
     }
 }
