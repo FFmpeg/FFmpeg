@@ -96,4 +96,17 @@ const char *ff_smil_get_attr_ptr(const char *s, const char *attr);
  */
 void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
 
+/**
+ * Get the number of characters to increment to jump to the next line, or to
+ * the end of the string.
+ */
+static av_always_inline int ff_subtitles_next_line(const char *ptr)
+{
+    int n = strcspn(ptr, "\n");
+    ptr += n;
+    if (*ptr == '\n')
+        n++;
+    return n;
+}
+
 #endif /* AVFORMAT_SUBTITLES_H */
