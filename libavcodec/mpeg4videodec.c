@@ -1912,7 +1912,9 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         s->divx_build= build;
         s->divx_packed= e==3 && last=='p';
         if(s->divx_packed && !s->showed_packed_warning) {
-            av_log(s->avctx, AV_LOG_WARNING, "Invalid and inefficient vfw-avi packed B frames detected\n");
+            av_log(s->avctx, AV_LOG_WARNING, "Video uses a non-standard and "
+                   "wasteful way to store B-frames ('packed B-frames'). "
+                   "Consider using a tool like VirtualDub or avidemux to fix it.\n");
             s->showed_packed_warning=1;
         }
     }
