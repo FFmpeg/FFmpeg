@@ -27,10 +27,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 
-/* TODO:
- * - add 2, 4 and 16 bit depth support
- */
-
 #include <zlib.h>
 
 #define IOBUF_SIZE 4096

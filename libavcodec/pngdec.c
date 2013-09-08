@@ -30,10 +30,6 @@
 #include "pngdsp.h"
 #include "thread.h"
 
-/* TODO:
- * - add 16 bit depth support
- */
-
 #include <zlib.h>
 
 typedef struct PNGDecContext {
