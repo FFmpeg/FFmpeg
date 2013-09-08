@@ -228,7 +228,7 @@ static inline int is_eol(char c)
 
 void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
 {
-    char eol_buf[5];
+    char eol_buf[5], last_was_cr = 0;
     int n = 0, i = 0, nb_eol = 0;
 
     av_bprint_clear(buf);
@@ -245,12 +245,13 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
 
         /* line break buffering: we don't want to add the trailing \r\n */
         if (is_eol(c)) {
-            nb_eol += c == '\n';
+            nb_eol += c == '\n' || last_was_cr;
             if (nb_eol == 2)
                 break;
             eol_buf[i++] = c;
             if (i == sizeof(eol_buf) - 1)
                 break;
+            last_was_cr = c == '\r';
             continue;
         }
 
