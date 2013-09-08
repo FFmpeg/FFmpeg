@@ -701,6 +701,7 @@ static int vobsub_read_header(AVFormatContext *s)
             st->id = stream_id;
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
             st->codec->codec_id   = AV_CODEC_ID_DVD_SUBTITLE;
+            avpriv_set_pts_info(st, 64, 1, 1000);
             av_dict_set(&st->metadata, "language", id, 0);
             av_log(s, AV_LOG_DEBUG, "IDX stream[%d] id=%s\n", stream_id, id);
             header_parsed = 1;
@@ -865,6 +866,21 @@ static int vobsub_read_seek(AVFormatContext *s, int stream_index,
                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
 {
     MpegDemuxContext *vobsub = s->priv_data;
+
+    /* Rescale requested timestamps based on the first stream (timebase is the
+     * same for all subtitles stream within a .idx/.sub). Rescaling is done just
+     * like in avformat_seek_file(). */
+    if (stream_index == -1 && s->nb_streams != 1) {
+        AVRational time_base = s->streams[0]->time_base;
+        ts = av_rescale_q(ts, AV_TIME_BASE_Q, time_base);
+        min_ts = av_rescale_rnd(min_ts, time_base.den,
+                                time_base.num * (int64_t)AV_TIME_BASE,
+                                AV_ROUND_UP   | AV_ROUND_PASS_MINMAX);
+        max_ts = av_rescale_rnd(max_ts, time_base.den,
+                                time_base.num * (int64_t)AV_TIME_BASE,
+                                AV_ROUND_DOWN | AV_ROUND_PASS_MINMAX);
+    }
+
     return ff_subtitles_queue_seek(&vobsub->q, s, stream_index,
                                    min_ts, ts, max_ts, flags);
 }
