@@ -93,14 +93,14 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     av_dlog(avctx, "header size %d\n", hdr_size);
     if (hdr_size > data_size) {
         av_log(avctx, AV_LOG_ERROR, "error, wrong header size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     version = AV_RB16(buf + 2);
     av_dlog(avctx, "%.4s version %d\n", buf+4, version);
     if (version > 1) {
         av_log(avctx, AV_LOG_ERROR, "unsupported version: %d\n", version);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     width  = AV_RB16(buf + 8);
@@ -108,7 +108,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (width != avctx->width || height != avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "picture resolution change: %dx%d -> %dx%d\n",
                avctx->width, avctx->height, width, height);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     ctx->frame_type = (buf[12] >> 2) & 3;
@@ -142,7 +142,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (flags & 2) {
         if(buf + data_size - ptr < 64) {
             av_log(avctx, AV_LOG_ERROR, "Header truncated\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         permute(ctx->qmat_luma, ctx->prodsp.idct_permutation, ptr);
         ptr += 64;
@@ -153,7 +153,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (flags & 1) {
         if(buf + data_size - ptr < 64) {
             av_log(avctx, AV_LOG_ERROR, "Header truncated\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         permute(ctx->qmat_chroma, ctx->prodsp.idct_permutation, ptr);
     } else {
@@ -175,13 +175,13 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     hdr_size = buf[0] >> 3;
     if (hdr_size < 8 || hdr_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "error, wrong picture header size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pic_data_size = AV_RB32(buf + 1);
     if (pic_data_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "error, wrong picture data size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     log2_slice_mb_width  = buf[7] >> 4;
@@ -189,7 +189,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     if (log2_slice_mb_width > 3 || log2_slice_mb_height) {
         av_log(avctx, AV_LOG_ERROR, "unsupported slice resolution: %dx%d\n",
                1 << log2_slice_mb_width, 1 << log2_slice_mb_height);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->mb_width  = (avctx->width  + 15) >> 4;
@@ -213,7 +213,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
 
     if (hdr_size + slice_count*2 > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "error, wrong slice count\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     // parse slice information
@@ -240,7 +240,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
 
         if (slice->data_size < 6) {
             av_log(avctx, AV_LOG_ERROR, "error, wrong slice data size\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
         mb_x += slice_mb_count;
@@ -251,14 +251,14 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
         }
         if (data_ptr > buf + buf_size) {
             av_log(avctx, AV_LOG_ERROR, "error, slice out of bounds\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
     if (mb_x || mb_y != ctx->mb_height) {
         av_log(avctx, AV_LOG_ERROR, "error wrong mb count y %d h %d\n",
                mb_y, ctx->mb_height);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return pic_data_size;
@@ -541,7 +541,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     if (y_data_size < 0 || u_data_size < 0 || v_data_size < 0
         || hdr_size+y_data_size+u_data_size+v_data_size > slice->data_size){
         av_log(avctx, AV_LOG_ERROR, "invalid plane data size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     buf += hdr_size;
@@ -621,11 +621,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *frame = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    int frame_hdr_size, pic_size;
+    int frame_hdr_size, pic_size, ret;
 
     if (buf_size < 28 || AV_RL32(buf + 4) != AV_RL32("icpf")) {
         av_log(avctx, AV_LOG_ERROR, "invalid frame header\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->frame = frame;
@@ -638,24 +638,24 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     frame_hdr_size = decode_frame_header(ctx, buf, buf_size, avctx);
     if (frame_hdr_size < 0)
-        return -1;
+        return frame_hdr_size;
 
     buf += frame_hdr_size;
     buf_size -= frame_hdr_size;
 
-    if (ff_get_buffer(avctx, frame, 0) < 0)
-        return -1;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
 
  decode_picture:
     pic_size = decode_picture_header(avctx, buf, buf_size);
     if (pic_size < 0) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture header\n");
-        return -1;
+        return pic_size;
     }
 
-    if (decode_picture(avctx)) {
+    if ((ret = decode_picture(avctx)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture\n");
-        return -1;
+        return ret;
     }
 
     buf += pic_size;
