@@ -1617,7 +1617,6 @@ const AVCodecTag additional_audio_tags[] = {
 };
 
 const AVCodecTag additional_video_tags[] = {
-    { AV_CODEC_ID_PRORES,    0xFFFFFFFF },
     { AV_CODEC_ID_RV10,      0xFFFFFFFF },
     { AV_CODEC_ID_RV20,      0xFFFFFFFF },
     { AV_CODEC_ID_RV30,      0xFFFFFFFF },
