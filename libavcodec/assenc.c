@@ -80,9 +80,16 @@ static int ass_encode_frame(AVCodecContext *avctx,
              * will be "Marked=N" instead of the layer num, so we will
              * have layer=0, which is fine. */
             layer = strtol(ass, &p, 10);
-            if (*p) p += strcspn(p, ",") + 1; // skip layer or marked
-            if (*p) p += strcspn(p, ",") + 1; // skip start timestamp
-            if (*p) p += strcspn(p, ",") + 1; // skip end timestamp
+
+#define SKIP_ENTRY(ptr) do {        \
+    char *sep = strchr(ptr, ',');   \
+    if (sep)                        \
+        ptr = sep + 1;              \
+} while (0)
+
+            SKIP_ENTRY(p); // skip layer or marked
+            SKIP_ENTRY(p); // skip start timestamp
+            SKIP_ENTRY(p); // skip end timestamp
             snprintf(ass_line, sizeof(ass_line), "%d,%ld,%s", ++s->id, layer, p);
             ass_line[strcspn(ass_line, "\r\n")] = 0;
             ass = ass_line;
