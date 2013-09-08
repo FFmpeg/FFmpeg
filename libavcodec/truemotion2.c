@@ -957,14 +957,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!l->Y1_base || !l->Y2_base || !l->U1_base ||
         !l->V1_base || !l->U2_base || !l->V2_base ||
         !l->last    || !l->clast) {
-        av_freep(l->Y1_base);
-        av_freep(l->Y2_base);
-        av_freep(l->U1_base);
-        av_freep(l->U2_base);
-        av_freep(l->V1_base);
-        av_freep(l->V2_base);
-        av_freep(l->last);
-        av_freep(l->clast);
+        av_freep(&l->Y1_base);
+        av_freep(&l->Y2_base);
+        av_freep(&l->U1_base);
+        av_freep(&l->U2_base);
+        av_freep(&l->V1_base);
+        av_freep(&l->V2_base);
+        av_freep(&l->last);
+        av_freep(&l->clast);
         av_frame_free(&l->pic);
         return AVERROR(ENOMEM);
     }
