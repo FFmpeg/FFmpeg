@@ -48,6 +48,11 @@ typedef struct PSNRContext {
     int nb_components;
     int planewidth[4];
     int planeheight[4];
+
+    void (*compute_mse)(struct PSNRContext *s,
+                        const uint8_t *m[4], const int ml[4],
+                        const uint8_t *r[4], const int rl[4],
+                        int w, int h, double mse[4]);
 } PSNRContext;
 
 #define OFFSET(x) offsetof(PSNRContext, x)
@@ -61,7 +66,7 @@ static const AVOption psnr_options[] = {
 
 AVFILTER_DEFINE_CLASS(psnr);
 
-static inline int pow2(int base)
+static inline unsigned pow2(unsigned base)
 {
     return base*base;
 }
@@ -94,7 +99,34 @@ void compute_images_mse(PSNRContext *s,
             ref_line += ref_linesize;
             main_line += main_linesize;
         }
-        mse[c] = m / (outw * outh);
+        mse[c] = m / (double)(outw * outh);
+    }
+}
+
+static inline
+void compute_images_mse_16bit(PSNRContext *s,
+                        const uint8_t *main_data[4], const int main_linesizes[4],
+                        const uint8_t *ref_data[4], const int ref_linesizes[4],
+                        int w, int h, double mse[4])
+{
+    int i, c, j;
+
+    for (c = 0; c < s->nb_components; c++) {
+        const int outw = s->planewidth[c];
+        const int outh = s->planeheight[c];
+        const uint16_t *main_line = (uint16_t *)main_data[c];
+        const uint16_t *ref_line = (uint16_t *)ref_data[c];
+        const int ref_linesize = ref_linesizes[c] / 2;
+        const int main_linesize = main_linesizes[c] / 2;
+        uint64_t m = 0;
+
+        for (i = 0; i < outh; i++) {
+            for (j = 0; j < outw; j++)
+                m += pow2(main_line[j] - ref_line[j]);
+            ref_line += ref_linesize;
+            main_line += main_linesize;
+        }
+        mse[c] = m / (double)(outw * outh);
     }
 }
 
@@ -119,8 +151,8 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
     int j, c;
     AVDictionary **metadata = avpriv_frame_get_metadatap(main);
 
-    compute_images_mse(s, (const uint8_t **)main->data, main->linesize,
-                       (const uint8_t **)ref->data, ref->linesize,
+    s->compute_mse(s, (const uint8_t **)main->data, main->linesize,
+                      (const uint8_t **)ref->data, ref->linesize,
                        main->width, main->height, comp_mse);
 
     for (j = 0; j < s->nb_components; j++)
@@ -184,13 +216,17 @@ static av_cold int init(AVFilterContext *ctx)
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum PixelFormat pix_fmts[] = {
-        AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV422P,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ422P,
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ411P,
-        AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
+#define PF_NOALPHA(suf) AV_PIX_FMT_YUV420##suf,  AV_PIX_FMT_YUV422##suf,  AV_PIX_FMT_YUV444##suf
+#define PF_ALPHA(suf)   AV_PIX_FMT_YUVA420##suf, AV_PIX_FMT_YUVA422##suf, AV_PIX_FMT_YUVA444##suf
+#define PF(suf)         PF_NOALPHA(suf), PF_ALPHA(suf)
+        PF(P), PF(P9), PF(P10), PF_NOALPHA(P12), PF_NOALPHA(P14), PF(P16),
+        AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
+        AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
 
@@ -217,21 +253,31 @@ static int config_input_ref(AVFilterLink *inlink)
     }
 
     switch (inlink->format) {
-    case AV_PIX_FMT_YUV410P:
-    case AV_PIX_FMT_YUV411P:
-    case AV_PIX_FMT_YUV420P:
-    case AV_PIX_FMT_YUV422P:
-    case AV_PIX_FMT_YUV440P:
-    case AV_PIX_FMT_YUV444P:
-    case AV_PIX_FMT_YUVA420P:
-    case AV_PIX_FMT_YUVA422P:
-    case AV_PIX_FMT_YUVA444P:
-        s->max[0] = 235;
-        s->max[3] = 255;
-        s->max[1] = s->max[2] = 240;
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY16:
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GBRAP16:
+    case AV_PIX_FMT_YUVJ411P:
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUVJ440P:
+    case AV_PIX_FMT_YUVJ444P:
+        s->max[0] = (1 << (desc->comp[0].depth_minus1 + 1)) - 1;
+        s->max[1] = (1 << (desc->comp[1].depth_minus1 + 1)) - 1;
+        s->max[2] = (1 << (desc->comp[2].depth_minus1 + 1)) - 1;
+        s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
         break;
     default:
-        s->max[0] = s->max[1] = s->max[2] = s->max[3] = 255;
+        s->max[0] = 235 * (1 << (desc->comp[0].depth_minus1 - 7));
+        s->max[1] = 240 * (1 << (desc->comp[1].depth_minus1 - 7));
+        s->max[2] = 240 * (1 << (desc->comp[2].depth_minus1 - 7));
+        s->max[3] = (1 << (desc->comp[3].depth_minus1 + 1)) - 1;
     }
 
     s->is_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
@@ -248,6 +294,8 @@ static int config_input_ref(AVFilterLink *inlink)
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
+
+    s->compute_mse = desc->comp[0].depth_minus1 > 7 ? compute_images_mse_16bit : compute_images_mse;
 
     return 0;
 }
