@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Clément Bœsch
+ * Copyright (c) 2012-2013 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
@@ -94,6 +94,28 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)
     return 0;
 }
 
+static int search_sub_ts(const FFDemuxSubtitlesQueue *q, int64_t ts)
+{
+    int s1 = 0, s2 = q->nb_subs - 1;
+
+    if (s2 < s1)
+        return AVERROR(ERANGE);
+
+    for (;;) {
+        int mid;
+
+        if (s1 == s2)
+            return s1;
+        if (s1 == s2 - 1)
+            return q->subs[s1].pts <= q->subs[s2].pts ? s1 : s2;
+        mid = (s1 + s2) / 2;
+        if (q->subs[mid].pts <= ts)
+            s1 = mid;
+        else
+            s2 = mid;
+    }
+}
+
 int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int stream_index,
                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags)
 {
@@ -104,23 +126,23 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
             return AVERROR(ERANGE);
         q->current_sub_idx = ts;
     } else {
-        int i, idx = -1;
-        int64_t min_ts_diff = INT64_MAX;
+        int i, idx = search_sub_ts(q, ts);
         int64_t ts_selected;
-        /* TODO: q->subs[] is sorted by pts so we could do a binary search */
-        for (i = 0; i < q->nb_subs; i++) {
-            int64_t pts = q->subs[i].pts;
-            uint64_t ts_diff = FFABS(pts - ts);
-            if ((stream_index == -1 || q->subs[i].stream_index == stream_index) &&
-                pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
-                min_ts_diff = ts_diff;
-                idx = i;
-            }
-        }
+
         if (idx < 0)
-            return AVERROR(ERANGE);
-        /* look back in the latest subtitles for overlapping subtitles */
+            return idx;
+        for (i = idx; i < q->nb_subs && q->subs[i].pts < min_ts; i++)
+            if (stream_index == -1 || q->subs[i].stream_index == stream_index)
+                idx = i;
+        for (i = idx; i > 0 && q->subs[i].pts > max_ts; i--)
+            if (stream_index == -1 || q->subs[i].stream_index == stream_index)
+                idx = i;
+
         ts_selected = q->subs[idx].pts;
+        if (ts_selected < min_ts || ts_selected > max_ts)
+            return AVERROR(ERANGE);
+
+        /* look back in the latest subtitles for overlapping subtitles */
         for (i = idx - 1; i >= 0; i--) {
             int64_t pts = q->subs[i].pts;
             if (q->subs[i].duration <= 0 ||
