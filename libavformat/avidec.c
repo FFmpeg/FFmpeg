@@ -987,7 +987,7 @@ static AVStream *get_subtitle_pkt(AVFormatContext *s, AVStream *next_st,
     return sub_st;
 }
 
-static int get_stream_idx(int *d)
+static int get_stream_idx(unsigned *d)
 {
     if (d[0] >= '0' && d[0] <= '9' &&
         d[1] >= '0' && d[1] <= '9') {
