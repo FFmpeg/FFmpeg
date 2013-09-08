@@ -108,7 +108,8 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
         for (i = 0; i < q->nb_subs; i++) {
             int64_t pts = q->subs[i].pts;
             uint64_t ts_diff = FFABS(pts - ts);
-            if (pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
+            if ((stream_index == -1 || q->subs[i].stream_index == stream_index) &&
+                pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
                 min_ts_diff = ts_diff;
                 idx = i;
             }
@@ -118,13 +119,24 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
         /* look back in the latest subtitles for overlapping subtitles */
         ts_selected = q->subs[idx].pts;
         for (i = idx - 1; i >= 0; i--) {
-            if (q->subs[i].duration <= 0)
+            if (q->subs[i].duration <= 0 ||
+                (stream_index != -1 && q->subs[i].stream_index != stream_index))
                 continue;
             if (q->subs[i].pts > ts_selected - q->subs[i].duration)
                 idx = i;
             else
                 break;
         }
+
+        /* If the queue is used to store multiple subtitles streams (like with
+         * VobSub) and the stream index is not specified, we need to make sure
+         * to focus on the smallest file position offset for a same timestamp;
+         * queue is ordered by pts and then filepos, so we can take the first
+         * entry for a given timestamp. */
+        if (stream_index == -1)
+            while (idx > 0 && q->subs[idx - 1].pts == q->subs[idx].pts)
+                idx--;
+
         q->current_sub_idx = idx;
     }
     return 0;
