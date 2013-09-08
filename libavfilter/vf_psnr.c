@@ -45,7 +45,9 @@ typedef struct PSNRContext {
     int is_rgb;
     uint8_t rgba_map[4];
     char comps[4];
-    const AVPixFmtDescriptor *desc;
+    int nb_components;
+    int planewidth[4];
+    int planeheight[4];
 } PSNRContext;
 
 #define OFFSET(x) offsetof(PSNRContext, x)
@@ -70,18 +72,16 @@ static inline double get_psnr(double mse, uint64_t nb_frames, int max)
 }
 
 static inline
-void compute_images_mse(const uint8_t *main_data[4], const int main_linesizes[4],
+void compute_images_mse(PSNRContext *s,
+                        const uint8_t *main_data[4], const int main_linesizes[4],
                         const uint8_t *ref_data[4], const int ref_linesizes[4],
-                        int w, int h, const AVPixFmtDescriptor *desc,
-                        double mse[4])
+                        int w, int h, double mse[4])
 {
     int i, c, j;
 
-    for (c = 0; c < desc->nb_components; c++) {
-        int hsub = c == 1 || c == 2 ? desc->log2_chroma_w : 0;
-        int vsub = c == 1 || c == 2 ? desc->log2_chroma_h : 0;
-        const int outw = FF_CEIL_RSHIFT(w, hsub);
-        const int outh = FF_CEIL_RSHIFT(h, vsub);
+    for (c = 0; c < s->nb_components; c++) {
+        const int outw = s->planewidth[c];
+        const int outh = s->planeheight[c];
         const uint8_t *main_line = main_data[c];
         const uint8_t *ref_line = ref_data[c];
         const int ref_linesize = ref_linesizes[c];
@@ -119,13 +119,13 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
     int j, c;
     AVDictionary **metadata = avpriv_frame_get_metadatap(main);
 
-    compute_images_mse((const uint8_t **)main->data, main->linesize,
+    compute_images_mse(s, (const uint8_t **)main->data, main->linesize,
                        (const uint8_t **)ref->data, ref->linesize,
-                       main->width, main->height, s->desc, comp_mse);
+                       main->width, main->height, comp_mse);
 
-    for (j = 0; j < s->desc->nb_components; j++)
+    for (j = 0; j < s->nb_components; j++)
         mse += comp_mse[j];
-    mse /= s->desc->nb_components;
+    mse /= s->nb_components;
 
     s->min_mse = FFMIN(s->min_mse, mse);
     s->max_mse = FFMAX(s->max_mse, mse);
@@ -133,7 +133,7 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
     s->mse += mse;
     s->nb_frames++;
 
-    for (j = 0; j < s->desc->nb_components; j++) {
+    for (j = 0; j < s->nb_components; j++) {
         c = s->is_rgb ? s->rgba_map[j] : j;
         set_meta(metadata, "lavfi.psnr.mse.", s->comps[j], comp_mse[c]);
         set_meta(metadata, "lavfi.psnr.mse_avg", 0, mse);
@@ -143,11 +143,11 @@ static AVFrame *do_psnr(AVFilterContext *ctx, AVFrame *main,
 
     if (s->stats_file) {
         fprintf(s->stats_file, "n:%"PRId64" mse_avg:%0.2f ", s->nb_frames, mse);
-        for (j = 0; j < s->desc->nb_components; j++) {
+        for (j = 0; j < s->nb_components; j++) {
             c = s->is_rgb ? s->rgba_map[j] : j;
             fprintf(s->stats_file, "mse_%c:%0.2f ", s->comps[j], comp_mse[c]);
         }
-        for (j = 0; j < s->desc->nb_components; j++) {
+        for (j = 0; j < s->nb_components; j++) {
             c = s->is_rgb ? s->rgba_map[j] : j;
             fprintf(s->stats_file, "psnr_%c:%0.2f ", s->comps[j],
                     get_psnr(comp_mse[c], 1, s->max[c]));
@@ -200,11 +200,12 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input_ref(AVFilterLink *inlink)
 {
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx  = inlink->dst;
     PSNRContext *s = ctx->priv;
     int j;
 
-    s->desc = av_pix_fmt_desc_get(inlink->format);
+    s->nb_components = desc->nb_components;
     if (ctx->inputs[0]->w != ctx->inputs[1]->w ||
         ctx->inputs[0]->h != ctx->inputs[1]->h) {
         av_log(ctx, AV_LOG_ERROR, "Width and heigth of input videos must be same.\n");
@@ -239,9 +240,14 @@ static int config_input_ref(AVFilterLink *inlink)
     s->comps[2] = s->is_rgb ? 'b' : 'v' ;
     s->comps[3] = 'a';
 
-    for (j = 0; j < s->desc->nb_components; j++)
+    for (j = 0; j < s->nb_components; j++)
         s->average_max += s->max[j];
-    s->average_max /= s->desc->nb_components;
+    s->average_max /= s->nb_components;
+
+    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
     return 0;
 }
