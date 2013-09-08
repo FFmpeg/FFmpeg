@@ -445,10 +445,6 @@ Enable use of bit reservoir when set to 1. Default value is 1. LAME
 has this enabled by default, but can be overriden by use
 @option{--nores} option.
 
-@item joint_stereo (@emph{-m j})
-Enable the encoder to use (on a frame by frame basis) either L/R
-stereo or mid/side stereo. Default value is 1.
-
 @end table
 
 @section libopencore-amrnb
