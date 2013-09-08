@@ -122,10 +122,11 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
         /* look back in the latest subtitles for overlapping subtitles */
         ts_selected = q->subs[idx].pts;
         for (i = idx - 1; i >= 0; i--) {
+            int64_t pts = q->subs[i].pts;
             if (q->subs[i].duration <= 0 ||
                 (stream_index != -1 && q->subs[i].stream_index != stream_index))
                 continue;
-            if (q->subs[i].pts > ts_selected - q->subs[i].duration)
+            if (pts >= min_ts && pts > ts_selected - q->subs[i].duration)
                 idx = i;
             else
                 break;
