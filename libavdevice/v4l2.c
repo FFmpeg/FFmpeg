@@ -325,8 +325,8 @@ static void list_standards(AVFormatContext *ctx)
                 return;
             }
         }
-        av_log(ctx, AV_LOG_INFO, "%2d, %16llx, %s\n",
-               standard.index, standard.id, standard.name);
+        av_log(ctx, AV_LOG_INFO, "%2d, %16"PRIx64", %s\n",
+               standard.index, (uint64_t)standard.id, standard.name);
     }
 }
 
@@ -692,7 +692,7 @@ static int v4l2_set_parameters(AVFormatContext *s1)
             }
             if (standard.id == s->std_id) {
                 av_log(s1, AV_LOG_DEBUG,
-                       "Current standard: %s, id: %"PRIu64", frameperiod: %d/%d\n",
+                       "Current standard: %s, id: %"PRIx64", frameperiod: %d/%d\n",
                        standard.name, (uint64_t)standard.id, tpf->numerator, tpf->denominator);
                 break;
             }
@@ -845,8 +845,8 @@ static int v4l2_read_header(AVFormatContext *s1)
         return res;
     }
     s->std_id = input.std;
-    av_log(s1, AV_LOG_DEBUG, "Current input_channel: %d, input_name: %s\n",
-           s->channel, input.name);
+    av_log(s1, AV_LOG_DEBUG, "Current input_channel: %d, input_name: %s, input_std: %"PRIx64"\n",
+           s->channel, input.name, (uint64_t)input.std);
 
     if (s->list_format) {
         list_formats(s1, s->fd, s->list_format);
