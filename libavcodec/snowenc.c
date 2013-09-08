@@ -1550,7 +1550,7 @@ static void calculate_visual_weight(SnowContext *s, Plane *p){
 }
 
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                        const AVFrame *pict, int *got_packet)
+                        AVFrame *pict, int *got_packet)
 {
     SnowContext *s = avctx->priv_data;
     RangeCoder * const c= &s->c;
