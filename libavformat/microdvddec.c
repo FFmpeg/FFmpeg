@@ -47,7 +47,7 @@ static int microdvd_probe(AVProbeData *p)
             sscanf(ptr, "{%*d}{%*d}%c",  &c) != 1 &&
             sscanf(ptr, "{DEFAULT}{}%c", &c) != 1)
             return 0;
-        ptr += strcspn(ptr, "\n") + 1;
+        ptr += ff_subtitles_next_line(ptr);
     }
     return AVPROBE_SCORE_MAX;
 }

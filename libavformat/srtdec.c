@@ -44,7 +44,7 @@ static int srt_probe(AVProbeData *p)
             && sscanf(ptr, "%*d:%*2d:%*2d%*1[,.]%*3d --> %*d:%*2d:%*2d%*1[,.]%3d", &v) == 1)
             return AVPROBE_SCORE_MAX;
         num = atoi(ptr);
-        ptr += strcspn(ptr, "\n") + 1;
+        ptr += ff_subtitles_next_line(ptr);
     }
     return 0;
 }
@@ -65,12 +65,10 @@ static int64_t get_pts(const char **buf, int *duration,
             int64_t start = (hh1*3600LL + mm1*60LL + ss1) * 1000LL + ms1;
             int64_t end   = (hh2*3600LL + mm2*60LL + ss2) * 1000LL + ms2;
             *duration = end - start;
-            *buf += strcspn(*buf, "\n");
-            *buf += !!**buf;
+            *buf += ff_subtitles_next_line(*buf);
             return start;
         }
-        *buf += strcspn(*buf, "\n");
-        *buf += !!**buf;
+        *buf += ff_subtitles_next_line(*buf);
     }
     return AV_NOPTS_VALUE;
 }
