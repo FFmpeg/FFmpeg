@@ -27,6 +27,7 @@
 #include "avc.h"
 #include "flacenc.h"
 #include "avlanguage.h"
+#include "subtitles.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/sha.h"
 #include "libavutil/intreadwrite.h"
@@ -1179,7 +1180,7 @@ static int srt_get_duration(uint8_t **buf)
             s_hsec += 1000*s_sec;       e_hsec += 1000*e_sec;
             duration = e_hsec - s_hsec;
         }
-        *buf += strcspn(*buf, "\n") + 1;
+        *buf += ff_subtitles_next_line(*buf);
     }
     return duration;
 }

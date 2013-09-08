@@ -43,7 +43,7 @@ static int mpl2_probe(AVProbeData *p)
         if (sscanf(ptr, "[%"PRId64"][%"PRId64"]%c", &start, &end, &c) != 3 &&
             sscanf(ptr, "[%"PRId64"][]%c",          &start,       &c) != 2)
             return 0;
-        ptr += strcspn(ptr, "\r\n") + 1;
+        ptr += ff_subtitles_next_line(ptr);
         if (ptr >= ptr_end)
             return 0;
     }
