@@ -622,47 +622,32 @@ static int read_header(FFV1Context *f)
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P; break;
             case 0x20: f->avctx->pix_fmt = AV_PIX_FMT_YUV411P; break;
             case 0x22: f->avctx->pix_fmt = AV_PIX_FMT_YUV410P; break;
-            default:
-                av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return AVERROR(ENOSYS);
             }
         } else if (f->avctx->bits_per_raw_sample <= 8 && f->transparency) {
             switch(16*f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P; break;
-            default:
-                av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return AVERROR(ENOSYS);
             }
-        } else if (f->avctx->bits_per_raw_sample == 9) {
+        } else if (f->avctx->bits_per_raw_sample == 9 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P9; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P9; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P9; break;
-            default:
-                av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return AVERROR(ENOSYS);
             }
-        } else if (f->avctx->bits_per_raw_sample == 10) {
+        } else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P10; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P10; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P10; break;
-            default:
-                av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return AVERROR(ENOSYS);
             }
-        } else {
+        } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P16; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P16; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P16; break;
-            default:
-                av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
-                return AVERROR(ENOSYS);
             }
         }
     } else if (f->colorspace == 1) {
@@ -684,6 +669,10 @@ static int read_header(FFV1Context *f)
         else                 f->avctx->pix_fmt = AV_PIX_FMT_0RGB32;
     } else {
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
+        return AVERROR(ENOSYS);
+    }
+    if (f->avctx->pix_fmt == AV_PIX_FMT_NONE) {
+        av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
         return AVERROR(ENOSYS);
     }
 
