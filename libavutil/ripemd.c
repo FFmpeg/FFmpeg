@@ -88,7 +88,7 @@ static const int WB[80] = {
 
 #define rol(value, bits) ((value << bits) | (value >> (32 - bits)))
 
-#define SWAP(a,b) if (ext) { int t = a; a = b; b = t; }
+#define SWAP(a,b) if (ext) { t = a; a = b; b = t; }
 
 #define ROUND128_0_TO_15(a,b,c,d,e,f,g,h)                               \
     a = rol(a + ((  b ^ c  ^ d)      + block[WA[n]]),         ROTA[n]); \
@@ -112,7 +112,7 @@ static const int WB[80] = {
 
 static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int ext)
 {
-    uint32_t a, b, c, d, e, f, g, h;
+    uint32_t a, b, c, d, e, f, g, h, t;
     uint32_t block[16];
     int n;
 
@@ -129,6 +129,36 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
     for (n = 0; n < 16; n++)
         block[n] = AV_RL32(buffer + 4 * n);
     n = 0;
+
+#if CONFIG_SMALL
+    for (; n < 16;) {
+        ROUND128_0_TO_15(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    SWAP(a,e)
+
+    for (; n < 32;) {
+        ROUND128_16_TO_31(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    SWAP(b,f)
+
+    for (; n < 48;) {
+        ROUND128_32_TO_47(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    SWAP(c,g)
+
+    for (; n < 64;) {
+        ROUND128_48_TO_63(a,b,c,d,e,f,g,h);
+        t = d; d = c; c = b; b = a; a = t;
+        t = h; h = g; g = f; f = e; e = t;
+    }
+    SWAP(d,h)
+#else
 
 #define R128_0                         \
     ROUND128_0_TO_15(a,b,c,d,e,f,g,h); \
@@ -165,6 +195,7 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
 
     R128_48; R128_48; R128_48; R128_48;
     SWAP(d,h)
+#endif
 
     if (ext) {
         state[0] += a; state[1] += b; state[2] += c; state[3] += d;
@@ -210,7 +241,7 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64], int e
 
 static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int ext)
 {
-    uint32_t a, b, c, d, e, f, g, h, i, j;
+    uint32_t a, b, c, d, e, f, g, h, i, j, t;
     uint32_t block[16];
     int n;
 
@@ -228,6 +259,43 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int e
     for (n = 0; n < 16; n++)
         block[n] = AV_RL32(buffer + 4 * n);
     n = 0;
+
+#if CONFIG_SMALL
+    for (; n < 16;) {
+        ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(b,g)
+
+    for (; n < 32;) {
+        ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(d,i)
+
+    for (; n < 48;) {
+        ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(a,f)
+
+    for (; n < 64;) {
+        ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(c,h)
+
+    for (; n < 80;) {
+        ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
+        t = e; e = d; d = c; c = b; b = a; a = t;
+        t = j; j = i; i = h; h = g; g = f; f = t;
+    }
+    SWAP(e,j)
+#else
 
 #define R160_0                             \
     ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j); \
@@ -283,6 +351,7 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64], int e
     R160_64; R160_64; R160_64;
     ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
     SWAP(e,j)
+#endif
 
     if (ext) {
         state[0] += a; state[1] += b; state[2] += c; state[3] += d; state[4] += e;
