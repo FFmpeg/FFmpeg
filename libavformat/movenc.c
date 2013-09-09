@@ -52,6 +52,7 @@ static const AVOption options[] = {
     { "frag_custom", "Flush fragments on caller requests", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_CUSTOM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "isml", "Create a live smooth streaming feed (for pushing to a publishing point)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_ISML}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "faststart", "Run a second pass to put the index (moov atom) at the beginning of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FASTSTART}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "omit_tfhd_offset", "Omit the base data offset in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_OMIT_TFHD_OFFSET}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
@@ -2212,8 +2213,8 @@ static int mov_write_mfhd_tag(AVIOContext *pb, MOVMuxContext *mov)
     return 0;
 }
 
-static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
-                              int64_t moof_offset)
+static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track, int64_t moof_offset)
 {
     int64_t pos = avio_tell(pb);
     uint32_t flags = MOV_TFHD_DEFAULT_SIZE | MOV_TFHD_DEFAULT_DURATION |
@@ -2223,6 +2224,8 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVTrack *track,
     } else {
         flags |= MOV_TFHD_DEFAULT_FLAGS;
     }
+    if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET)
+        flags &= ~MOV_TFHD_BASE_DATA_OFFSET;
 
     /* Don't set a default sample size, the silverlight player refuses
      * to play files with that set. Don't set a default sample duration,
@@ -2267,7 +2270,8 @@ static uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
            (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC);
 }
 
-static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track, int moof_size)
+static int mov_write_trun_tag(AVIOContext *pb, MOVMuxContext *mov,
+                              MOVTrack *track, int moof_size)
 {
     int64_t pos = avio_tell(pb);
     uint32_t flags = MOV_TRUN_DATA_OFFSET;
@@ -2292,8 +2296,13 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track, int moof_size)
     avio_wb24(pb, flags);
 
     avio_wb32(pb, track->entry); /* sample count */
-    avio_wb32(pb, moof_size + 8 + track->data_offset +
-                  track->cluster[0].pos); /* data offset */
+    if (mov->flags & FF_MOV_FLAG_OMIT_TFHD_OFFSET &&
+        !(mov->flags & FF_MOV_FLAG_SEPARATE_MOOF) &&
+        track->track_id != 1)
+        avio_wb32(pb, 0); /* Later tracks follow immediately after the previous one */
+    else
+        avio_wb32(pb, moof_size + 8 + track->data_offset +
+                      track->cluster[0].pos); /* data offset */
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS)
         avio_wb32(pb, get_sample_flags(track, &track->cluster[0]));
 
@@ -2389,8 +2398,8 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "traf");
 
-    mov_write_tfhd_tag(pb, track, moof_offset);
-    mov_write_trun_tag(pb, track, moof_size);
+    mov_write_tfhd_tag(pb, mov, track, moof_offset);
+    mov_write_trun_tag(pb, mov, track, moof_size);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
 
