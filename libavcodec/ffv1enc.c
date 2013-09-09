@@ -692,11 +692,17 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV444P9:
     case AV_PIX_FMT_YUV422P9:
     case AV_PIX_FMT_YUV420P9:
+    case AV_PIX_FMT_YUVA444P9:
+    case AV_PIX_FMT_YUVA422P9:
+    case AV_PIX_FMT_YUVA420P9:
         if (!avctx->bits_per_raw_sample)
             s->bits_per_raw_sample = 9;
     case AV_PIX_FMT_YUV444P10:
     case AV_PIX_FMT_YUV420P10:
     case AV_PIX_FMT_YUV422P10:
+    case AV_PIX_FMT_YUVA444P10:
+    case AV_PIX_FMT_YUVA422P10:
+    case AV_PIX_FMT_YUVA420P10:
         s->packed_at_lsb = 1;
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 10;
@@ -704,6 +710,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV444P16:
     case AV_PIX_FMT_YUV422P16:
     case AV_PIX_FMT_YUV420P16:
+    case AV_PIX_FMT_YUVA444P16:
+    case AV_PIX_FMT_YUVA422P16:
+    case AV_PIX_FMT_YUVA420P16:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample) {
             s->bits_per_raw_sample = 16;
         } else if (!s->bits_per_raw_sample) {
@@ -729,15 +738,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_YUV410P:
-        s->chroma_planes = desc->nb_components < 3 ? 0 : 1;
-        s->colorspace = 0;
-        break;
     case AV_PIX_FMT_YUVA444P:
     case AV_PIX_FMT_YUVA422P:
     case AV_PIX_FMT_YUVA420P:
-        s->chroma_planes = 1;
+        s->chroma_planes = desc->nb_components < 3 ? 0 : 1;
         s->colorspace = 0;
-        s->transparency = 1;
+        s->transparency = desc->nb_components == 4;
         break;
     case AV_PIX_FMT_RGB32:
         s->colorspace = 1;
@@ -1218,6 +1224,9 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YUV410P,   AV_PIX_FMT_0RGB32,    AV_PIX_FMT_RGB32,     AV_PIX_FMT_YUV420P16,
         AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16, AV_PIX_FMT_YUV444P9,  AV_PIX_FMT_YUV422P9,
         AV_PIX_FMT_YUV420P9,  AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
+        AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
         AV_PIX_FMT_NONE

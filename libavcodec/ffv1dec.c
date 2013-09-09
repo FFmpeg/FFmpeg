@@ -668,6 +668,13 @@ static int read_header(FFV1Context *f)
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P9; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P9; break;
             }
+        } else if (f->avctx->bits_per_raw_sample == 9 && f->transparency) {
+            f->packed_at_lsb = 1;
+            switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
+            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P9; break;
+            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P9; break;
+            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P9; break;
+            }
         } else if (f->avctx->bits_per_raw_sample == 10 && !f->transparency) {
             f->packed_at_lsb = 1;
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
@@ -675,11 +682,24 @@ static int read_header(FFV1Context *f)
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P10; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P10; break;
             }
+        } else if (f->avctx->bits_per_raw_sample == 10 && f->transparency) {
+            f->packed_at_lsb = 1;
+            switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
+            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P10; break;
+            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P10; break;
+            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P10; break;
+            }
         } else if (f->avctx->bits_per_raw_sample == 16 && !f->transparency){
             switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
             case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUV444P16; break;
             case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUV422P16; break;
             case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUV420P16; break;
+            }
+        } else if (f->avctx->bits_per_raw_sample == 16 && f->transparency){
+            switch(16 * f->chroma_h_shift + f->chroma_v_shift) {
+            case 0x00: f->avctx->pix_fmt = AV_PIX_FMT_YUVA444P16; break;
+            case 0x10: f->avctx->pix_fmt = AV_PIX_FMT_YUVA422P16; break;
+            case 0x11: f->avctx->pix_fmt = AV_PIX_FMT_YUVA420P16; break;
             }
         }
     } else if (f->colorspace == 1) {
