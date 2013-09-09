@@ -465,6 +465,8 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
             st->codec->extradata_size = ffio_limit(pb, sizeX - 40);
             st->codec->extradata      = av_mallocz(st->codec->extradata_size +
                                                    FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codec->extradata)
+                return AVERROR(ENOMEM);
             avio_read(pb, st->codec->extradata, st->codec->extradata_size);
         }
 
