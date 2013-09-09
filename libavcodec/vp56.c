@@ -475,13 +475,15 @@ static int vp56_size_changed(VP56Context *s)
         return -1;
     }
 
-    s->above_blocks = av_realloc(s->above_blocks,
-                                 (4*s->mb_width+6) * sizeof(*s->above_blocks));
-    s->macroblocks = av_realloc(s->macroblocks,
-                                s->mb_width*s->mb_height*sizeof(*s->macroblocks));
+    av_reallocp_array(&s->above_blocks, 4*s->mb_width+6,
+                      sizeof(*s->above_blocks));
+    av_reallocp_array(&s->macroblocks, s->mb_width*s->mb_height,
+                      sizeof(*s->macroblocks));
     av_free(s->edge_emu_buffer_alloc);
     s->edge_emu_buffer_alloc = av_malloc(16*stride);
     s->edge_emu_buffer = s->edge_emu_buffer_alloc;
+    if (!s->above_blocks || !s->macroblocks || !s->edge_emu_buffer_alloc)
+        return AVERROR(ENOMEM);
     if (s->flip < 0)
         s->edge_emu_buffer += 15 * stride;
 
