@@ -3133,6 +3133,7 @@ static int mov_write_header(AVFormatContext *s)
     /* Set the FRAGMENT flag if any of the fragmentation methods are
      * enabled. */
     if (mov->max_fragment_duration || mov->max_fragment_size ||
+        (s->oformat && !strcmp(s->oformat->name, "ismv")) ||
         mov->flags & (FF_MOV_FLAG_EMPTY_MOOV |
                       FF_MOV_FLAG_FRAG_KEYFRAME |
                       FF_MOV_FLAG_FRAG_CUSTOM))
@@ -3151,9 +3152,7 @@ static int mov_write_header(AVFormatContext *s)
     /* Non-seekable output is ok if using fragmentation. If ism_lookahead
      * is enabled, we don't support non-seekable output at all. */
     if (!s->pb->seekable &&
-        ((!(mov->flags & FF_MOV_FLAG_FRAGMENT) &&
-          !(s->oformat && !strcmp(s->oformat->name, "ismv")))
-         || mov->ism_lookahead)) {
+        (!(mov->flags & FF_MOV_FLAG_FRAGMENT) || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
         return -1;
     }
@@ -3288,8 +3287,7 @@ static int mov_write_header(AVFormatContext *s)
                             FF_MOV_FLAG_FRAG_CUSTOM)) &&
             !mov->max_fragment_duration && !mov->max_fragment_size)
             mov->max_fragment_duration = 5000000;
-        mov->flags |= FF_MOV_FLAG_EMPTY_MOOV | FF_MOV_FLAG_SEPARATE_MOOF |
-                      FF_MOV_FLAG_FRAGMENT;
+        mov->flags |= FF_MOV_FLAG_EMPTY_MOOV | FF_MOV_FLAG_SEPARATE_MOOF;
     }
 
     if (!(mov->flags & FF_MOV_FLAG_FRAGMENT)) {
