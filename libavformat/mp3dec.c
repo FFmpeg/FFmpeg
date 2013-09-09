@@ -282,5 +282,5 @@ AVInputFormat ff_mp3_demuxer = {
     .read_seek      = mp3_seek,
     .priv_data_size = sizeof(MP3DecContext),
     .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "mp2,mp3,m2a", /* XXX: use probe */
+    .extensions     = "mp2,mp3,m2a,mpa", /* XXX: use probe */
 };
