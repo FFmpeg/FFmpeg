@@ -169,12 +169,18 @@ static int tgv_decode_inter(TgvContext *s, AVFrame *frame,
 
     /* allocate codebook buffers as necessary */
     if (num_mvs > s->num_mvs) {
-        s->mv_codebook = av_realloc(s->mv_codebook, num_mvs*2*sizeof(int));
+        if (av_reallocp_array(&s->mv_codebook, num_mvs, sizeof(*s->mv_codebook))) {
+            s->num_mvs = 0;
+            return AVERROR(ENOMEM);
+        }
         s->num_mvs = num_mvs;
     }
 
     if (num_blocks_packed > s->num_blocks_packed) {
-        s->block_codebook = av_realloc(s->block_codebook, num_blocks_packed*16);
+        if (av_reallocp_array(&s->block_codebook, num_blocks_packed, sizeof(*s->block_codebook))) {
+            s->num_blocks_packed = 0;
+            return AVERROR(ENOMEM);
+        }
         s->num_blocks_packed = num_blocks_packed;
     }
 
