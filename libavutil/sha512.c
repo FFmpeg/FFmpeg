@@ -150,27 +150,32 @@ static void sha512_transform(uint64_t *state, const uint8_t buffer[128])
         a = T1 + T2;
     }
 #else
-    for (i = 0; i < 16 - 7;) {
-        ROUND512_0_TO_15(a, b, c, d, e, f, g, h);
-        ROUND512_0_TO_15(h, a, b, c, d, e, f, g);
-        ROUND512_0_TO_15(g, h, a, b, c, d, e, f);
-        ROUND512_0_TO_15(f, g, h, a, b, c, d, e);
-        ROUND512_0_TO_15(e, f, g, h, a, b, c, d);
-        ROUND512_0_TO_15(d, e, f, g, h, a, b, c);
-        ROUND512_0_TO_15(c, d, e, f, g, h, a, b);
-        ROUND512_0_TO_15(b, c, d, e, f, g, h, a);
-    }
 
-    for (; i < 80 - 7;) {
-        ROUND512_16_TO_80(a, b, c, d, e, f, g, h);
-        ROUND512_16_TO_80(h, a, b, c, d, e, f, g);
-        ROUND512_16_TO_80(g, h, a, b, c, d, e, f);
-        ROUND512_16_TO_80(f, g, h, a, b, c, d, e);
-        ROUND512_16_TO_80(e, f, g, h, a, b, c, d);
-        ROUND512_16_TO_80(d, e, f, g, h, a, b, c);
-        ROUND512_16_TO_80(c, d, e, f, g, h, a, b);
-        ROUND512_16_TO_80(b, c, d, e, f, g, h, a);
-    }
+#define R512_0 \
+    ROUND512_0_TO_15(a, b, c, d, e, f, g, h); \
+    ROUND512_0_TO_15(h, a, b, c, d, e, f, g); \
+    ROUND512_0_TO_15(g, h, a, b, c, d, e, f); \
+    ROUND512_0_TO_15(f, g, h, a, b, c, d, e); \
+    ROUND512_0_TO_15(e, f, g, h, a, b, c, d); \
+    ROUND512_0_TO_15(d, e, f, g, h, a, b, c); \
+    ROUND512_0_TO_15(c, d, e, f, g, h, a, b); \
+    ROUND512_0_TO_15(b, c, d, e, f, g, h, a)
+
+    i = 0;
+    R512_0; R512_0;
+
+#define R512_16 \
+    ROUND512_16_TO_80(a, b, c, d, e, f, g, h); \
+    ROUND512_16_TO_80(h, a, b, c, d, e, f, g); \
+    ROUND512_16_TO_80(g, h, a, b, c, d, e, f); \
+    ROUND512_16_TO_80(f, g, h, a, b, c, d, e); \
+    ROUND512_16_TO_80(e, f, g, h, a, b, c, d); \
+    ROUND512_16_TO_80(d, e, f, g, h, a, b, c); \
+    ROUND512_16_TO_80(c, d, e, f, g, h, a, b); \
+    ROUND512_16_TO_80(b, c, d, e, f, g, h, a)
+
+    R512_16; R512_16; R512_16; R512_16;
+    R512_16; R512_16; R512_16; R512_16;
 #endif
     state[0] += a;
     state[1] += b;
