@@ -286,6 +286,18 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
         }
     }
 
+    if (s->slice_coding_mode == 1) {
+        for (x = 0; x < w; x++) {
+            int i;
+            int v = sample[0][x];
+            for (i = bits-1; i>=0; i--) {
+                uint8_t state = 128;
+                put_rac(c, &state, (v>>i) & 1);
+            }
+        }
+        return 0;
+    }
+
     for (x = 0; x < w; x++) {
         int diff, context;
 
@@ -426,11 +438,13 @@ static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int s
                 r = *((uint16_t*)(src[2] + x*2 + stride[2]*y));
             }
 
-            b -= g;
-            r -= g;
-            g += (b + r) >> 2;
-            b += offset;
-            r += offset;
+            if (s->slice_coding_mode != 1) {
+                b -= g;
+                r -= g;
+                g += (b + r) >> 2;
+                b += offset;
+                r += offset;
+            }
 
             sample[0][0][x] = g;
             sample[1][0][x] = b;
@@ -441,10 +455,10 @@ static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int s
             int ret;
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
-            if (lbd)
+            if (lbd && s->slice_coding_mode == 0)
                 ret = encode_line(s, w, sample[p], (p + 1) / 2, 9);
             else
-                ret = encode_line(s, w, sample[p], (p + 1) / 2, bits + 1);
+                ret = encode_line(s, w, sample[p], (p + 1) / 2, bits + (s->slice_coding_mode != 1));
             if (ret < 0)
                 return ret;
         }
@@ -960,6 +974,12 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs)
         put_symbol(c, state, 1 + !f->picture.f->top_field_first, 0);
     put_symbol(c, state, f->picture.f->sample_aspect_ratio.num, 0);
     put_symbol(c, state, f->picture.f->sample_aspect_ratio.den, 0);
+    if (f->version > 3) {
+        put_rac(c, state, fs->slice_coding_mode == 1);
+        if (fs->slice_coding_mode == 1)
+            ffv1_clear_slice_state(f, fs);
+        put_symbol(c, state, fs->slice_coding_mode, 0);
+    }
 }
 
 static int encode_slice(AVCodecContext *c, void *arg)
@@ -972,7 +992,12 @@ static int encode_slice(AVCodecContext *c, void *arg)
     int y            = fs->slice_y;
     AVFrame *const p = f->picture.f;
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step_minus1 + 1;
+    int ret;
+    RangeCoder c_bak = fs->c;
 
+    fs->slice_coding_mode = 0;
+
+retry:
     if (p->key_frame)
         ffv1_clear_slice_state(f, fs);
     if (f->version > 2) {
@@ -993,21 +1018,33 @@ static int encode_slice(AVCodecContext *c, void *arg)
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
-        encode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);
+        ret = encode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0);
 
         if (f->chroma_planes) {
-            encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
-            encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
+            ret |= encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1);
+            ret |= encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1);
         }
         if (fs->transparency)
-            encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2);
+            ret |= encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2);
     } else {
         uint8_t *planes[3] = {p->data[0] + ps*x + y*p->linesize[0],
                               p->data[1] + ps*x + y*p->linesize[1],
                               p->data[2] + ps*x + y*p->linesize[2]};
-        encode_rgb_frame(fs, planes, width, height, p->linesize);
+        ret = encode_rgb_frame(fs, planes, width, height, p->linesize);
     }
     emms_c();
+
+    if (ret < 0) {
+        av_assert0(fs->slice_coding_mode == 0);
+        if (fs->version < 4 || !fs->ac) {
+            av_log(c, AV_LOG_ERROR, "Buffer too small\n");
+            return ret;
+        }
+        av_log(c, AV_LOG_DEBUG, "Coding slice as PCM\n");
+        fs->slice_coding_mode = 1;
+        fs->c = c_bak;
+        goto retry;
+    }
 
     return 0;
 }
@@ -1024,6 +1061,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, ret;
     int64_t maxsize =   FF_MIN_BUFFER_SIZE
                       + avctx->width*avctx->height*35LL*4;
+
+    if (f->version > 3)
+        maxsize = FF_MIN_BUFFER_SIZE + avctx->width*avctx->height*3*4;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, maxsize)) < 0)
         return ret;
