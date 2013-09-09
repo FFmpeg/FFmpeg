@@ -138,7 +138,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         vclass   = XWD_STATIC_GRAY;
         break;
     default:
-        av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
+        av_log(avctx, AV_LOG_ERROR, "unsupported pixel format\n");
         return AVERROR(EINVAL);
     }
 
