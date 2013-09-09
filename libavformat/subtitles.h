@@ -99,8 +99,8 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf);
 /**
  * Get the number of characters to increment to jump to the next line, or to
  * the end of the string.
- * The function handles the following line breaks schemes: LF (any sane
- * system), CRLF (MS), or standalone CR (old MacOS).
+ * The function handles the following line breaks schemes:
+ * LF, CRLF (MS), or standalone CR (old MacOS).
  */
 static av_always_inline int ff_subtitles_next_line(const char *ptr)
 {
