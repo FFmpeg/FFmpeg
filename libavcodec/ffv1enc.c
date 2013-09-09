@@ -1015,9 +1015,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t keystate    = 128;
     uint8_t *buf_p;
     int i, ret;
+    int64_t maxsize =   FF_MIN_BUFFER_SIZE
+                      + avctx->width*avctx->height*35LL*4;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*((8*2+1+1)*4)/8
-                                            + FF_MIN_BUFFER_SIZE)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, maxsize)) < 0)
         return ret;
 
     ff_init_range_encoder(c, pkt->data, pkt->size);
