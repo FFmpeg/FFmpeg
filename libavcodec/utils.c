@@ -1425,14 +1425,14 @@ free_and_end:
     goto end;
 }
 
-int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size)
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size)
 {
     if (avpkt->size < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid negative user packet size %d\n", avpkt->size);
         return AVERROR(EINVAL);
     }
     if (size < 0 || size > INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid minimum required packet size %d (max allowed is %d)\n",
+        av_log(avctx, AV_LOG_ERROR, "Invalid minimum required packet size %"PRId64" (max allowed is %d)\n",
                size, INT_MAX - FF_INPUT_BUFFER_PADDING_SIZE);
         return AVERROR(EINVAL);
     }
@@ -1456,7 +1456,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
         if (avpkt->size < size) {
-            av_log(avctx, AV_LOG_ERROR, "User packet is too small (%d < %d)\n", avpkt->size, size);
+            av_log(avctx, AV_LOG_ERROR, "User packet is too small (%d < %"PRId64")\n", avpkt->size, size);
             return AVERROR(EINVAL);
         }
 
@@ -1472,7 +1472,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else {
         int ret = av_new_packet(avpkt, size);
         if (ret < 0)
-            av_log(avctx, AV_LOG_ERROR, "Failed to allocate packet of size %d\n", size);
+            av_log(avctx, AV_LOG_ERROR, "Failed to allocate packet of size %"PRId64"\n", size);
         return ret;
     }
 }

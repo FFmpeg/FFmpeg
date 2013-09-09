@@ -171,7 +171,7 @@ int avpriv_unlock_avformat(void);
  * @param size    the minimum required packet size
  * @return        0 on success, negative error code on failure
  */
-int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int size);
+int ff_alloc_packet2(AVCodecContext *avctx, AVPacket *avpkt, int64_t size);
 
 int ff_alloc_packet(AVPacket *avpkt, int size);
 
