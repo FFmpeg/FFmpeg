@@ -353,10 +353,10 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
     return 0;
 }
 
-static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
+static int encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
                          int stride, int plane_index)
 {
-    int x, y, i;
+    int x, y, i, ret;
     const int ring_size = s->avctx->context_model ? 3 : 2;
     int16_t *sample[3];
     s->run_index = 0;
@@ -373,7 +373,8 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
         if (s->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
                 sample[0][x] = src[x + stride * y];
-            encode_line(s, w, sample, plane_index, 8);
+            if((ret = encode_line(s, w, sample, plane_index, 8)) < 0)
+                return ret;
         } else {
             if (s->packed_at_lsb) {
                 for (x = 0; x < w; x++) {
@@ -384,13 +385,15 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h,
                     sample[0][x] = ((uint16_t*)(src + stride*y))[x] >> (16 - s->bits_per_raw_sample);
                 }
             }
-            encode_line(s, w, sample, plane_index, s->bits_per_raw_sample);
+            if((ret = encode_line(s, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
+                return ret;
         }
 // STOP_TIMER("encode line") }
     }
+    return 0;
 }
 
-static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int stride[3])
+static int encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int stride[3])
 {
     int x, y, p, i;
     const int ring_size = s->avctx->context_model ? 3 : 2;
@@ -435,14 +438,18 @@ static void encode_rgb_frame(FFV1Context *s, uint8_t *src[3], int w, int h, int 
             sample[3][0][x] = a;
         }
         for (p = 0; p < 3 + s->transparency; p++) {
+            int ret;
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
             if (lbd)
-                encode_line(s, w, sample[p], (p + 1) / 2, 9);
+                ret = encode_line(s, w, sample[p], (p + 1) / 2, 9);
             else
-                encode_line(s, w, sample[p], (p + 1) / 2, bits + 1);
+                ret = encode_line(s, w, sample[p], (p + 1) / 2, bits + 1);
+            if (ret < 0)
+                return ret;
         }
     }
+    return 0;
 }
 
 static void write_quant_table(RangeCoder *c, int16_t *quant_table)
