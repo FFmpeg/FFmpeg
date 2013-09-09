@@ -1706,7 +1706,7 @@ static int mxf_write_header(AVFormatContext *s)
                 ret = av_timecode_init(&mxf->tc, rate, 0, 0, s);
             if (ret < 0)
                 return ret;
-            sc->video_bit_rate = st->codec->bit_rate;
+            sc->video_bit_rate = st->codec->bit_rate ? st->codec->bit_rate : st->codec->rc_max_rate;
             if (s->oformat == &ff_mxf_d10_muxer) {
                 if (sc->video_bit_rate == 50000000) {
                     if (mxf->time_base.den == 25) sc->index = 3;
