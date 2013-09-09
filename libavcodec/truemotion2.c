@@ -342,7 +342,11 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
         tm2_free_codes(&codes);
         return AVERROR_INVALIDDATA;
     }
-    ctx->tokens[stream_id]   = av_realloc(ctx->tokens[stream_id], toks * sizeof(int));
+    ret = av_reallocp_array(&ctx->tokens[stream_id], toks, sizeof(int));
+    if (ret < 0) {
+        ctx->tok_lens[stream_id] = 0;
+        return ret;
+    }
     ctx->tok_lens[stream_id] = toks;
     len = bytestream2_get_be32(&gb);
     if (len > 0) {
