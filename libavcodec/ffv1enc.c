@@ -275,7 +275,7 @@ static av_always_inline int encode_line(FFV1Context *s, int w,
     int run_mode  = 0;
 
     if (s->ac) {
-        if (c->bytestream_end - c->bytestream < w * 20) {
+        if (c->bytestream_end - c->bytestream < w * 35) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return AVERROR_INVALIDDATA;
         }
