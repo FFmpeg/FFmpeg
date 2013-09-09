@@ -57,7 +57,7 @@ static av_cold int bmp_encode_init(AVCodecContext *avctx){
         break;
     default:
         av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     return 0;
