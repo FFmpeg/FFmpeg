@@ -2267,7 +2267,7 @@ static uint32_t get_sample_flags(MOVTrack *track, MOVIentry *entry)
            (MOV_FRAG_SAMPLE_FLAG_DEPENDS_YES | MOV_FRAG_SAMPLE_FLAG_IS_NON_SYNC);
 }
 
-static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track, int moof_size)
 {
     int64_t pos = avio_tell(pb);
     uint32_t flags = MOV_TRUN_DATA_OFFSET;
@@ -2292,8 +2292,8 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb24(pb, flags);
 
     avio_wb32(pb, track->entry); /* sample count */
-    track->moof_size_offset = avio_tell(pb);
-    avio_wb32(pb, 0); /* data offset */
+    avio_wb32(pb, moof_size + 8 + track->data_offset +
+                  track->cluster[0].pos); /* data offset */
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS)
         avio_wb32(pb, get_sample_flags(track, &track->cluster[0]));
 
@@ -2382,14 +2382,15 @@ static int mov_write_tfrf_tags(AVIOContext *pb, MOVMuxContext *mov,
 }
 
 static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
-                              MOVTrack *track, int64_t moof_offset)
+                              MOVTrack *track, int64_t moof_offset,
+                              int moof_size)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "traf");
 
     mov_write_tfhd_tag(pb, track, moof_offset);
-    mov_write_trun_tag(pb, track);
+    mov_write_trun_tag(pb, track, moof_size);
     if (mov->mode == MODE_ISM) {
         mov_write_tfxd_tag(pb, track);
 
@@ -2407,10 +2408,11 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVMuxContext *mov,
     return update_size(pb, pos);
 }
 
-static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
+static int mov_write_moof_tag_internal(AVIOContext *pb, MOVMuxContext *mov,
+                                       int tracks, int moof_size)
 {
-    int64_t pos = avio_tell(pb), end;
-    int i, moof_size;
+    int64_t pos = avio_tell(pb);
+    int i;
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "moof");
@@ -2422,23 +2424,24 @@ static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
             continue;
         if (!track->entry)
             continue;
-        mov_write_traf_tag(pb, mov, track, pos);
+        mov_write_traf_tag(pb, mov, track, pos, moof_size);
     }
-
-    end = avio_tell(pb);
-    moof_size = end - pos;
-    for (i = 0; i < mov->nb_streams; i++) {
-        MOVTrack *track = &mov->tracks[i];
-        if (tracks >= 0 && i != tracks)
-            continue;
-        if (!track->entry)
-            continue;
-        avio_seek(pb, mov->tracks[i].moof_size_offset, SEEK_SET);
-        avio_wb32(pb, moof_size + 8 + mov->tracks[i].data_offset);
-    }
-    avio_seek(pb, end, SEEK_SET);
 
     return update_size(pb, pos);
+}
+
+static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
+{
+    AVIOContext *avio_buf;
+    int ret, moof_size;
+    uint8_t *buf;
+
+    if ((ret = avio_open_dyn_buf(&avio_buf)) < 0)
+        return ret;
+    mov_write_moof_tag_internal(avio_buf, mov, tracks, 0);
+    moof_size = avio_close_dyn_buf(avio_buf, &buf);
+    av_free(buf);
+    return mov_write_moof_tag_internal(pb, mov, tracks, moof_size);
 }
 
 static int mov_write_tfra_tag(AVIOContext *pb, MOVTrack *track)
