@@ -28,7 +28,7 @@
  */
 
 #include "libavutil/avconfig.h"
-#include "libavutil/version.h"
+#include "version.h"
 
 /**
  * Pixel format.

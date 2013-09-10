@@ -31,7 +31,7 @@
 #include <windows.h>
 #endif
 
-#include "libavutil/time.h"
+#include "time.h"
 #include "error.h"
 
 int64_t av_gettime(void)
