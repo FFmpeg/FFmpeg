@@ -41,7 +41,7 @@
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
 #define AC3_ID   0x80
-#define DTS_ID   0x8a
+#define DTS_ID   0x88
 #define LPCM_ID  0xa0
 #define SUB_ID   0x20
 
