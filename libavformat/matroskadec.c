@@ -290,6 +290,7 @@ typedef struct {
     EbmlBin  bin;
     uint64_t additional_id;
     EbmlBin  additional;
+    uint64_t discard_padding;
 } MatroskaBlock;
 
 static EbmlSyntax ebml_header[] = {
@@ -563,6 +564,7 @@ static EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_BLOCKADDITIONS, EBML_NEST, 0, 0, {.n=matroska_blockadditions} },
     { MATROSKA_ID_SIMPLEBLOCK,    EBML_BIN,  0, offsetof(MatroskaBlock,bin) },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, offsetof(MatroskaBlock,duration) },
+    { MATROSKA_ID_DISCARDPADDING, EBML_UINT, 0, offsetof(MatroskaBlock,discard_padding) },
     { MATROSKA_ID_BLOCKREFERENCE, EBML_UINT, 0, offsetof(MatroskaBlock,reference) },
     { MATROSKA_ID_CODECSTATE,     EBML_NONE },
     { 1,                          EBML_UINT, 0, offsetof(MatroskaBlock,non_simple), {.u=1} },
@@ -2360,7 +2362,8 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 uint8_t *data, int pkt_size,
                                 uint64_t timecode, uint64_t lace_duration,
                                 int64_t pos, int is_keyframe,
-                                uint8_t *additional, uint64_t additional_id, int additional_size)
+                                uint8_t *additional, uint64_t additional_id, int additional_size,
+                                uint64_t discard_padding)
 {
     MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
@@ -2423,6 +2426,21 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         memcpy(side_data + 8, additional, additional_size);
     }
 
+    if (discard_padding) {
+        uint8_t *side_data = av_packet_new_side_data(pkt,
+                                                     AV_PKT_DATA_SKIP_SAMPLES,
+                                                     10);
+        if(side_data == NULL) {
+            av_free_packet(pkt);
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
+        AV_WL32(side_data, 0);
+        AV_WL32(side_data + 4, av_rescale_q(discard_padding,
+                                            (AVRational){1, 1000000000},
+                                            (AVRational){1, st->codec->sample_rate}));
+    }
+
     if (track->ms_compat)
         pkt->dts = timecode;
     else
@@ -2482,7 +2500,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                                 int size, int64_t pos, uint64_t cluster_time,
                                 uint64_t block_duration, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
-                                int64_t cluster_pos)
+                                int64_t cluster_pos, uint64_t discard_padding)
 {
     uint64_t timecode = AV_NOPTS_VALUE;
     MatroskaTrack *track;
@@ -2594,7 +2612,8 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
             res = matroska_parse_frame(matroska, track, st, data, lace_size[n],
                                       timecode, lace_duration,
                                       pos, !n? is_keyframe : 0,
-                                      additional, additional_id, additional_size);
+                                      additional, additional_id, additional_size,
+                                      discard_padding);
             if (res)
                 goto end;
         }
@@ -2661,7 +2680,8 @@ static int matroska_parse_cluster_incremental(MatroskaDemuxContext *matroska)
                                        blocks[i].duration, is_keyframe,
                                        additional, blocks[i].additional_id,
                                        blocks[i].additional.size,
-                                       matroska->current_cluster_pos);
+                                       matroska->current_cluster_pos,
+                                       blocks[i].discard_padding);
         }
     }
 
@@ -2691,7 +2711,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
                                      blocks[i].bin.data, blocks[i].bin.size,
                                      blocks[i].bin.pos,  cluster.timecode,
                                      blocks[i].duration, is_keyframe, NULL, 0, 0,
-                                     pos);
+                                     pos, blocks[i].discard_padding);
         }
     ebml_free(matroska_cluster, &cluster);
     return res;
