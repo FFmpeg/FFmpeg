@@ -28,7 +28,7 @@ lock(){
 checkout(){
     case "$repo" in
         file:*|/*) src="${repo#file:}"      ;;
-        git:*)     git clone "$repo" "$src" ;;
+        git:*)     git clone --quiet "$repo" "$src" ;;
     esac
 }
 
