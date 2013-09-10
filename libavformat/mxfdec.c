@@ -410,18 +410,20 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
 static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
-    MXFPartition *partition, *tmp_part;
+    MXFPartition *partition;
     UID op;
     uint64_t footer_partition;
     uint32_t nb_essence_containers;
+    int err;
 
     if (mxf->partitions_count+1 >= UINT_MAX / sizeof(*mxf->partitions))
         return AVERROR(ENOMEM);
 
-    tmp_part = av_realloc(mxf->partitions, (mxf->partitions_count + 1) * sizeof(*mxf->partitions));
-    if (!tmp_part)
-        return AVERROR(ENOMEM);
-    mxf->partitions = tmp_part;
+    if ((err = av_reallocp_array(&mxf->partitions, mxf->partitions_count + 1,
+                                 sizeof(*mxf->partitions))) < 0) {
+        mxf->partitions_count = 0;
+        return err;
+    }
 
     if (mxf->parsing_backward) {
         /* insert the new partition pack in the middle
@@ -546,13 +548,15 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
 
 static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
 {
-    MXFMetadataSet **tmp;
+    int err;
+
     if (mxf->metadata_sets_count+1 >= UINT_MAX / sizeof(*mxf->metadata_sets))
         return AVERROR(ENOMEM);
-    tmp = av_realloc(mxf->metadata_sets, (mxf->metadata_sets_count + 1) * sizeof(*mxf->metadata_sets));
-    if (!tmp)
-        return AVERROR(ENOMEM);
-    mxf->metadata_sets = tmp;
+    if ((err = av_reallocp_array(&mxf->metadata_sets, mxf->metadata_sets_count + 1,
+                                 sizeof(*mxf->metadata_sets))) < 0) {
+        mxf->metadata_sets_count = 0;
+        return err;
+    }
     mxf->metadata_sets[mxf->metadata_sets_count] = metadata_set;
     mxf->metadata_sets_count++;
     return 0;

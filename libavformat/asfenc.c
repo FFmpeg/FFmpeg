@@ -788,10 +788,14 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (start_sec != (int)(asf->last_indexed_pts / INT64_C(10000000))) {
             for (i = asf->nb_index_count; i < start_sec; i++) {
                 if (i >= asf->nb_index_memory_alloc) {
+                    int err;
                     asf->nb_index_memory_alloc += ASF_INDEX_BLOCK;
-                    asf->index_ptr              = (ASFIndex *)av_realloc(asf->index_ptr,
-                                                                         sizeof(ASFIndex) *
-                                                                         asf->nb_index_memory_alloc);
+                    if ((err = av_reallocp_array(&asf->index_ptr,
+                                                asf->nb_index_memory_alloc,
+                                                sizeof(*asf->index_ptr))) < 0) {
+                       asf->nb_index_memory_alloc = 0;
+                       return err;
+                   }
                 }
                 // store
                 asf->index_ptr[i].packet_number = (uint32_t)packet_st;

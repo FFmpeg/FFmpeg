@@ -2574,14 +2574,11 @@ AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c)
 {
     AVStream *st;
     int i;
-    AVStream **streams;
 
-    if (s->nb_streams >= INT_MAX/sizeof(*streams))
+    if (av_reallocp_array(&s->streams, s->nb_streams + 1, sizeof(*s->streams)) < 0) {
+        s->nb_streams = 0;
         return NULL;
-    streams = av_realloc(s->streams, (s->nb_streams + 1) * sizeof(*streams));
-    if (!streams)
-        return NULL;
-    s->streams = streams;
+    }
 
     st = av_mallocz(sizeof(AVStream));
     if (!st)
@@ -2674,7 +2671,6 @@ void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
 {
     int i, j;
     AVProgram *program=NULL;
-    void *tmp;
 
     if (idx >= ac->nb_streams) {
         av_log(ac, AV_LOG_ERROR, "stream index %d is not valid\n", idx);
@@ -2689,10 +2685,12 @@ void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
             if(program->stream_index[j] == idx)
                 return;
 
-        tmp = av_realloc(program->stream_index, sizeof(unsigned int)*(program->nb_stream_indexes+1));
-        if(!tmp)
+        if (av_reallocp_array(&program->stream_index,
+                              program->nb_stream_indexes + 1,
+                              sizeof(*program->stream_index)) < 0) {
+            program->nb_stream_indexes = 0;
             return;
-        program->stream_index = tmp;
+        }
         program->stream_index[program->nb_stream_indexes++] = idx;
         return;
     }

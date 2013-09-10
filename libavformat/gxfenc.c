@@ -342,11 +342,13 @@ static int gxf_write_map_packet(AVFormatContext *s, int rewrite)
 
     if (!rewrite) {
         if (!(gxf->map_offsets_nb % 30)) {
-            gxf->map_offsets = av_realloc(gxf->map_offsets,
-                                          (gxf->map_offsets_nb+30)*sizeof(*gxf->map_offsets));
-            if (!gxf->map_offsets) {
+            int err;
+            if ((err = av_reallocp_array(&gxf->map_offsets,
+                                         gxf->map_offsets_nb + 30,
+                                         sizeof(*gxf->map_offsets))) < 0) {
+                gxf->map_offsets_nb = 0;
                 av_log(s, AV_LOG_ERROR, "could not realloc map offsets\n");
-                return -1;
+                return err;
             }
         }
         gxf->map_offsets[gxf->map_offsets_nb++] = pos; // do not increment here
@@ -873,11 +875,13 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (!(gxf->flt_entries_nb % 500)) {
-            gxf->flt_entries = av_realloc(gxf->flt_entries,
-                                          (gxf->flt_entries_nb+500)*sizeof(*gxf->flt_entries));
-            if (!gxf->flt_entries) {
+            int err;
+            if ((err = av_reallocp_array(&gxf->flt_entries,
+                                         gxf->flt_entries_nb + 500,
+                                         sizeof(*gxf->flt_entries))) < 0) {
+                gxf->flt_entries_nb = 0;
                 av_log(s, AV_LOG_ERROR, "could not reallocate flt entries\n");
-                return -1;
+                return err;
             }
         }
         gxf->flt_entries[gxf->flt_entries_nb++] = packet_start_offset;
