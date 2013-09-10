@@ -3610,9 +3610,11 @@ static int mov_write_header(AVFormatContext *s)
     /* faststart: moov at the beginning of the file, if supported */
     if (mov->flags & FF_MOV_FLAG_FASTSTART) {
         if ((mov->flags & FF_MOV_FLAG_FRAGMENT) ||
-            (s->flags & AVFMT_FLAG_CUSTOM_IO))
+            (s->flags & AVFMT_FLAG_CUSTOM_IO)) {
+            av_log(s, AV_LOG_WARNING, "The faststart flag is incompatible "
+                   "with fragmentation and custom IO, disabling faststart\n");
             mov->flags &= ~FF_MOV_FLAG_FASTSTART;
-        else
+        } else
             mov->reserved_moov_size = -1;
     }
 
