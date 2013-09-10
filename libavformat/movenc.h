@@ -123,6 +123,7 @@ typedef struct MOVTrack {
     int64_t     data_offset;
     int64_t     frag_start;
     int         frag_discont;
+    int         entries_flushed;
 
     int         nb_frag_info;
     MOVFragmentInfo *frag_info;
@@ -172,6 +173,7 @@ typedef struct MOVMuxContext {
     AVFormatContext *fc;
 
     int use_editlist;
+    int frag_interleave;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
