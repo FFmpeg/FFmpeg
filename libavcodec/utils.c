@@ -2112,6 +2112,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         uint8_t *side;
         int side_size;
+        uint32_t discard_padding = 0;
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
@@ -2146,6 +2147,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             avctx->internal->skip_samples = AV_RL32(side);
             av_log(avctx, AV_LOG_DEBUG, "skip %d samples due to side data\n",
                    avctx->internal->skip_samples);
+            discard_padding = AV_RL32(side + 4);
         }
         if (avctx->internal->skip_samples && *got_frame_ptr) {
             if(frame->nb_samples <= avctx->internal->skip_samples){
@@ -2173,6 +2175,25 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                        avctx->internal->skip_samples, frame->nb_samples);
                 frame->nb_samples -= avctx->internal->skip_samples;
                 avctx->internal->skip_samples = 0;
+            }
+        }
+
+        if (discard_padding > 0 && discard_padding <= frame->nb_samples && *got_frame_ptr) {
+            if (discard_padding == frame->nb_samples) {
+                *got_frame_ptr = 0;
+            } else {
+                if(avctx->pkt_timebase.num && avctx->sample_rate) {
+                    int64_t diff_ts = av_rescale_q(frame->nb_samples - discard_padding,
+                                                   (AVRational){1, avctx->sample_rate},
+                                                   avctx->pkt_timebase);
+                    if (av_frame_get_pkt_duration(frame) >= diff_ts)
+                        av_frame_set_pkt_duration(frame, av_frame_get_pkt_duration(frame) - diff_ts);
+                } else {
+                    av_log(avctx, AV_LOG_WARNING, "Could not update timestamps for discarded samples.\n");
+                }
+                av_log(avctx, AV_LOG_DEBUG, "discard %d/%d samples\n",
+                       discard_padding, frame->nb_samples);
+                frame->nb_samples -= discard_padding;
             }
         }
 
