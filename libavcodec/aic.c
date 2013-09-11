@@ -215,12 +215,14 @@ static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
             idx = -1;
             do {
                 GET_CODE(val, skip_type, skip_bits);
+                if (val < 0)
+                    return AVERROR_INVALIDDATA;
                 idx += val + 1;
                 if (idx >= num_coeffs)
                     break;
                 GET_CODE(val, coeff_type, coeff_bits);
                 val++;
-                if (val >= 0x10000)
+                if (val >= 0x10000 || val < 0)
                     return AVERROR_INVALIDDATA;
                 dst[scan[idx]] = val;
             } while (idx < num_coeffs - 1);
@@ -230,7 +232,7 @@ static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
         for (mb = 0; mb < slice_width; mb++) {
             for (idx = 0; idx < num_coeffs; idx++) {
                 GET_CODE(val, coeff_type, coeff_bits);
-                if (val >= 0x10000)
+                if (val >= 0x10000 || val < 0)
                     return AVERROR_INVALIDDATA;
                 dst[scan[idx]] = val;
             }
