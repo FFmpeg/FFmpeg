@@ -180,6 +180,8 @@ static int smacker_read_header(AVFormatContext *s)
         smk->indexes[i] = -1;
         if (smk->rates[i]) {
             ast[i] = avformat_new_stream(s, NULL);
+            if (!ast[i])
+                return AVERROR(ENOMEM);
             smk->indexes[i] = ast[i]->index;
             ast[i]->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             if (smk->aflags[i] & SMK_AUD_BINKAUD) {
