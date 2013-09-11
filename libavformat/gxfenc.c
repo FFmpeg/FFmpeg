@@ -968,6 +968,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
                                          gxf->flt_entries_nb + 500,
                                          sizeof(*gxf->flt_entries))) < 0) {
                 gxf->flt_entries_nb = 0;
+                gxf->nb_fields = 0;
                 av_log(s, AV_LOG_ERROR, "could not reallocate flt entries\n");
                 return err;
             }
