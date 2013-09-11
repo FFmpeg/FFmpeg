@@ -30,7 +30,12 @@
 #include "audio_frame_queue.h"
 #include "psymodel.h"
 
-#define AAC_CODER_NB 4
+#define AAC_CODER_FAAC    0
+#define AAC_CODER_ANMR    1
+#define AAC_CODER_TWOLOOP 2
+#define AAC_CODER_FAST    3
+
+#define AAC_CODER_NB      4
 
 typedef struct AACEncOptions {
     int stereo_mode;
