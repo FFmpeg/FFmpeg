@@ -709,7 +709,11 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
 
 %macro const 2+
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
-    global %1
+    %ifidn __OUTPUT_FORMAT__,elf
+        global %1:data hidden
+    %else
+        global %1
+    %endif
     %1: %2
 %endmacro
 
