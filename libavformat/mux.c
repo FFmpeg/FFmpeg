@@ -404,6 +404,7 @@ static int compute_pkt_fields2(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    int ret;
     if (!(s->oformat->flags & (AVFMT_TS_NEGATIVE | AVFMT_NOTIMESTAMPS))) {
         AVRational time_base = s->streams[pkt->stream_index]->time_base;
         int64_t offset = 0;
@@ -420,7 +421,12 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
         if (pkt->pts != AV_NOPTS_VALUE)
             pkt->pts += offset;
     }
-    return s->oformat->write_packet(s, pkt);
+    ret = s->oformat->write_packet(s, pkt);
+
+    if (s->pb && ret >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
+        avio_flush(s->pb);
+
+    return ret;
 }
 
 int av_write_frame(AVFormatContext *s, AVPacket *pkt)

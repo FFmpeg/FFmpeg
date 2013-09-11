@@ -894,6 +894,7 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_NOBUFFER     0x0040 ///< Do not buffer frames when possible
 #define AVFMT_FLAG_CUSTOM_IO    0x0080 ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
 #define AVFMT_FLAG_DISCARD_CORRUPT  0x0100 ///< Discard frames marked corrupted
+#define AVFMT_FLAG_FLUSH_PACKETS    0x0200 ///< Flush the AVIOContext every packet.
 
     /**
      * decoding: size of data to probe; encoding: unused.
