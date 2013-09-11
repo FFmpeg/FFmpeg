@@ -365,7 +365,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, mkv_seekhead *seekhead)
         currentpos = seekhead->filepos;
     }
 fail:
-    av_free(seekhead->entries);
+    av_freep(&seekhead->entries);
     av_free(seekhead);
 
     return currentpos;
@@ -1685,7 +1685,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     }
 
     end_ebml_master(pb, mkv->segment);
-    av_free(mkv->tracks);
+    av_freep(&mkv->tracks);
     av_freep(&mkv->cues->entries);
     av_freep(&mkv->cues);
 
