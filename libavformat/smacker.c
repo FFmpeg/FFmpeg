@@ -320,7 +320,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             flags >>= 1;
         }
-        if (frame_size < 0)
+        if (frame_size < 0 || frame_size >= INT_MAX/2)
             return AVERROR_INVALIDDATA;
         if (av_new_packet(pkt, frame_size + 769))
             return AVERROR(ENOMEM);
