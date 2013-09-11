@@ -224,6 +224,10 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
     while (bytestream2_get_le32(&gb) != MKTAG('f', 'm', 't', ' ')) {
         len = bytestream2_get_le32(&gb);
         bytestream2_skip(&gb, len);
+        if (bytestream2_get_bytes_left(&gb) < 16) {
+            av_log(avctx, AV_LOG_ERROR, "no fmt chunk found\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
     len = bytestream2_get_le32(&gb);
 
