@@ -223,6 +223,9 @@ static int nut_read_header(AVFormatContext * avf) {
         AVStream * st = avformat_new_stream(avf, NULL);
         int j;
 
+        if (!st)
+            return AVERROR(ENOMEM);
+
         for (j = 0; j < s[i].fourcc_len && j < 8; j++) st->codec->codec_tag |= s[i].fourcc[j]<<(j*8);
 
         st->codec->has_b_frames = s[i].decode_delay;
