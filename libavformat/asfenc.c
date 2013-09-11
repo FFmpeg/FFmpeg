@@ -884,7 +884,7 @@ static int asf_write_trailer(AVFormatContext *s)
         asf_write_header1(s, file_size, data_size - asf->data_offset);
     }
 
-    av_free(asf->index_ptr);
+    av_freep(&asf->index_ptr);
     return 0;
 }
 
