@@ -945,16 +945,15 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     uint32_t id = syntax->id;
     uint64_t length;
     int res;
+    void *newelem;
 
     data = (char *)data + syntax->data_offset;
     if (syntax->list_elem_size) {
         EbmlList *list = data;
-        if ((res = av_reallocp_array(&list->elem,
-                                     list->nb_elem + 1,
-                                     syntax->list_elem_size)) < 0) {
-            list->nb_elem = 0;
-            return res;
-        }
+        newelem = av_realloc(list->elem, (list->nb_elem+1)*syntax->list_elem_size);
+        if (!newelem)
+            return AVERROR(ENOMEM);
+        list->elem = newelem;
         data = (char*)list->elem + list->nb_elem*syntax->list_elem_size;
         memset(data, 0, syntax->list_elem_size);
         list->nb_elem++;
