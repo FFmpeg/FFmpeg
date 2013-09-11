@@ -6,7 +6,7 @@
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
 ;*          Jason Garrett-Glaser <darkshikari@gmail.com>
-;*          Henrik Gramner <hengar-6@student.ltu.se>
+;*          Henrik Gramner <henrik@gramner.com>
 ;*
 ;* Permission to use, copy, modify, and/or distribute this software for any
 ;* purpose with or without fee is hereby granted, provided that the above
@@ -62,23 +62,17 @@
     %define mangle(x) x
 %endif
 
-; Name of the .rodata section.
-; Kludge: Something on OS X fails to align .rodata even given an align attribute,
-; so use a different read-only section.
+; aout does not support align=
+; NOTE: This section is out of sync with x264, in order to
+; keep supporting OS/2.
 %macro SECTION_RODATA 0-1 16
-    %ifidn __OUTPUT_FORMAT__,macho64
-        SECTION .text align=%1
-    %elifidn __OUTPUT_FORMAT__,macho
-        SECTION .text align=%1
-        fakegot:
-    %elifidn __OUTPUT_FORMAT__,aout
+    %ifidn __OUTPUT_FORMAT__,aout
         section .text
     %else
         SECTION .rodata align=%1
     %endif
 %endmacro
 
-; aout does not support align=
 %macro SECTION_TEXT 0-1 16
     %ifidn __OUTPUT_FORMAT__,aout
         SECTION .text
