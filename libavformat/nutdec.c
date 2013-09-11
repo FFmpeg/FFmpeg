@@ -243,6 +243,8 @@ static int decode_main_header(NUTContext *nut)
 
     GET_V(nut->time_base_count, tmp > 0 && tmp < INT_MAX / sizeof(AVRational));
     nut->time_base = av_malloc(nut->time_base_count * sizeof(AVRational));
+    if (!nut->time_base)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < nut->time_base_count; i++) {
         GET_V(nut->time_base[i].num, tmp > 0 && tmp < (1ULL << 31));
@@ -338,7 +340,9 @@ static int decode_main_header(NUTContext *nut)
         return AVERROR_INVALIDDATA;
     }
 
-    nut->stream = av_mallocz(sizeof(StreamContext) * stream_count);
+    nut->stream = av_calloc(stream_count, sizeof(StreamContext));
+    if (!nut->stream)
+        return AVERROR(ENOMEM);
     for (i = 0; i < stream_count; i++)
         avformat_new_stream(s, NULL);
 
@@ -413,6 +417,8 @@ static int decode_stream_header(NUTContext *nut)
     if (st->codec->extradata_size) {
         st->codec->extradata = av_mallocz(st->codec->extradata_size +
                                           FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!st->codec->extradata)
+            return AVERROR(ENOMEM);
         avio_read(bc, st->codec->extradata, st->codec->extradata_size);
     }
 
@@ -628,8 +634,12 @@ static int find_and_decode_index(NUTContext *nut)
     s->duration_estimation_method = AVFMT_DURATION_FROM_PTS;
 
     GET_V(syncpoint_count, tmp < INT_MAX / 8 && tmp > 0);
-    syncpoints   = av_malloc(sizeof(int64_t) *  syncpoint_count);
-    has_keyframe = av_malloc(sizeof(int8_t)  * (syncpoint_count + 1));
+    syncpoints   = av_malloc_array(syncpoint_count, sizeof(int64_t));
+    has_keyframe = av_malloc_array(syncpoint_count + 1, sizeof(int8_t));
+    if (!syncpoints || !has_keyframe) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     for (i = 0; i < syncpoint_count; i++) {
         syncpoints[i] = ffio_read_varlen(bc);
         if (syncpoints[i] <= 0)
