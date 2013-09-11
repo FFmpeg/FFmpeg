@@ -757,11 +757,10 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %assign cpuflags_cache64  (1<<17)
 %assign cpuflags_slowctz  (1<<18)
 %assign cpuflags_lzcnt    (1<<19)
-%assign cpuflags_misalign (1<<20)
-%assign cpuflags_aligned  (1<<21) ; not a cpu feature, but a function variant
-%assign cpuflags_atom     (1<<22)
-%assign cpuflags_bmi1     (1<<23)|cpuflags_lzcnt
-%assign cpuflags_bmi2     (1<<24)|cpuflags_bmi1
+%assign cpuflags_aligned  (1<<20) ; not a cpu feature, but a function variant
+%assign cpuflags_atom     (1<<21)
+%assign cpuflags_bmi1     (1<<22)|cpuflags_lzcnt
+%assign cpuflags_bmi2     (1<<23)|cpuflags_bmi1
 
 %define    cpuflag(x) ((cpuflags & (cpuflags_ %+ x)) == (cpuflags_ %+ x))
 %define notcpuflag(x) ((cpuflags & (cpuflags_ %+ x)) != (cpuflags_ %+ x))
