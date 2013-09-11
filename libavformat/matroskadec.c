@@ -950,7 +950,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
     data = (char *)data + syntax->data_offset;
     if (syntax->list_elem_size) {
         EbmlList *list = data;
-        newelem = av_realloc(list->elem, (list->nb_elem+1)*syntax->list_elem_size);
+        newelem = av_realloc_array(list->elem, list->nb_elem+1, syntax->list_elem_size);
         if (!newelem)
             return AVERROR(ENOMEM);
         list->elem = newelem;
