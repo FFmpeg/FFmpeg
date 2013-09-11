@@ -1,7 +1,7 @@
 ;*****************************************************************************
 ;* x86inc.asm: x264asm abstraction layer
 ;*****************************************************************************
-;* Copyright (C) 2005-2012 x264 project
+;* Copyright (C) 2005-2013 x264 project
 ;*
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
@@ -718,7 +718,7 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     extern %1
 %endmacro
 
-%macro const 2+
+%macro const 1-2+
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
     %ifidn __OUTPUT_FORMAT__,elf
         global %1:data hidden
@@ -760,9 +760,8 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %assign cpuflags_misalign (1<<20)
 %assign cpuflags_aligned  (1<<21) ; not a cpu feature, but a function variant
 %assign cpuflags_atom     (1<<22)
-%assign cpuflags_bmi1     (1<<23)
+%assign cpuflags_bmi1     (1<<23)|cpuflags_lzcnt
 %assign cpuflags_bmi2     (1<<24)|cpuflags_bmi1
-%assign cpuflags_tbm      (1<<25)|cpuflags_bmi1
 
 %define    cpuflag(x) ((cpuflags & (cpuflags_ %+ x)) == (cpuflags_ %+ x))
 %define notcpuflag(x) ((cpuflags & (cpuflags_ %+ x)) != (cpuflags_ %+ x))
