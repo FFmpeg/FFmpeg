@@ -88,7 +88,7 @@ static int vmd_read_header(AVFormatContext *s)
     unsigned char *raw_frame_table;
     int raw_frame_table_size;
     int64_t current_offset;
-    int i, j;
+    int i, j, ret;
     unsigned int total_frames;
     int64_t current_audio_pts = 0;
     unsigned char chunk[BYTES_PER_FRAME_RECORD];
@@ -175,15 +175,13 @@ static int vmd_read_header(AVFormatContext *s)
     raw_frame_table = av_malloc(raw_frame_table_size);
     vmd->frame_table = av_malloc((vmd->frame_count * vmd->frames_per_block + sound_buffers) * sizeof(vmd_frame));
     if (!raw_frame_table || !vmd->frame_table) {
-        av_free(raw_frame_table);
-        av_free(vmd->frame_table);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto error;
     }
     if (avio_read(pb, raw_frame_table, raw_frame_table_size) !=
         raw_frame_table_size) {
-        av_free(raw_frame_table);
-        av_free(vmd->frame_table);
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error;
     }
 
     total_frames = 0;
@@ -199,6 +197,11 @@ static int vmd_read_header(AVFormatContext *s)
             avio_read(pb, chunk, BYTES_PER_FRAME_RECORD);
             type = chunk[0];
             size = AV_RL32(&chunk[2]);
+            if (size > INT_MAX / 2) {
+                av_log(s, AV_LOG_ERROR, "Invalid frame size\n");
+                ret = AVERROR_INVALIDDATA;
+                goto error;
+            }
             if(!size && type != 1)
                 continue;
             switch(type) {
@@ -235,6 +238,11 @@ static int vmd_read_header(AVFormatContext *s)
     vmd->frame_count = total_frames;
 
     return 0;
+
+error:
+    av_free(raw_frame_table);
+    av_free(vmd->frame_table);
+    return ret;
 }
 
 static int vmd_read_packet(AVFormatContext *s,
