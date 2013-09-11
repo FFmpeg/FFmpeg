@@ -1,6 +1,6 @@
 /*
  * LPCM codecs for PCM formats found in Video DVD streams
- * Copyright (c) 2009-2013 Christian Schmidt
+ * Copyright (c) 2013 Christian Schmidt
  *
  * This file is part of Libav.
  *
@@ -54,8 +54,7 @@ static av_cold int pcm_dvd_decode_uninit(AVCodecContext *avctx)
 {
     PCMDVDContext *s = avctx->priv_data;
 
-    if (s->extra_samples)
-        av_free(s->extra_samples);
+    av_freep(&s->extra_samples);
 
     return 0;
 }
