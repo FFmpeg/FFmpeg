@@ -46,7 +46,6 @@ static av_cold int pcm_dvd_decode_init(AVCodecContext *avctx)
     /* reserve space for 8 channels, 3 bytes/sample, 4 samples/block */
     if (!(s->extra_samples = av_malloc(8 * 3 * 4)))
         return AVERROR(ENOMEM);
-    s->extra_sample_count = 0;
 
     return 0;
 }
@@ -80,6 +79,9 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
      * header[1] quant (2), freq(2), reserved(1), channels(3)
      * header[2] dynamic range control (0x80 = off)
      */
+
+    /* Discard potentially existing leftover samples from old channel layout */
+    s->extra_sample_count = 0;
 
     /* get the sample depth and derive the sample format from it */
     avctx->bits_per_coded_sample = 16 + (header[1] >> 6 & 3) * 4;
