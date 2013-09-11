@@ -334,14 +334,18 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
             %if stack_size < 0
                 %assign stack_size -stack_size
             %endif
-            %if mmsize != 8
-                %assign xmm_regs_used %2
+            %assign stack_size_padded stack_size
+            %if WIN64
+                %assign stack_size_padded stack_size_padded + 32 ; reserve 32 bytes for shadow space
+                %if mmsize != 8
+                    %assign xmm_regs_used %2
+                    %if xmm_regs_used > 8
+                        %assign stack_size_padded stack_size_padded + (xmm_regs_used-8)*16
+                    %endif
+                %endif
             %endif
             %if mmsize <= 16 && HAVE_ALIGNED_STACK
-                %assign stack_size_padded stack_size + %%stack_alignment - gprsize - (stack_offset & (%%stack_alignment - 1))
-                %if xmm_regs_used > 6
-                    %assign stack_size_padded stack_size_padded + (xmm_regs_used - 6) * 16
-                %endif
+                %assign stack_size_padded stack_size_padded + %%stack_alignment - gprsize - (stack_offset & (%%stack_alignment - 1))
                 SUB rsp, stack_size_padded
             %else
                 %assign %%reg_num (regs_used - 1)
@@ -351,14 +355,6 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
                 ; stack in a single instruction (i.e. mov rsp, rstk or mov
                 ; rsp, [rsp+stack_size_padded])
                 mov  rstk, rsp
-                %assign stack_size_padded stack_size
-                %if xmm_regs_used > 6
-                    %assign stack_size_padded stack_size_padded + (xmm_regs_used - 6) * 16
-                    %if mmsize == 32 && xmm_regs_used & 1
-                        ; re-align to 32 bytes
-                        %assign stack_size_padded (stack_size_padded + 16)
-                    %endif
-                %endif
                 %if %1 < 0 ; need to store rsp on stack
                     sub  rsp, gprsize+stack_size_padded
                     and  rsp, ~(%%stack_alignment-1)
@@ -370,9 +366,7 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
                     %xdefine rstkm rstk
                 %endif
             %endif
-            %if xmm_regs_used > 6
-                WIN64_PUSH_XMM
-            %endif
+            WIN64_PUSH_XMM
         %endif
     %endif
 %endmacro
@@ -433,39 +427,54 @@ DECLARE_REG 14, R15, 120
 %endmacro
 
 %macro WIN64_PUSH_XMM 0
-    %assign %%i xmm_regs_used
-    %rep (xmm_regs_used-6)
-        %assign %%i %%i-1
-        movaps [rsp + (%%i-6)*16 + stack_size + (~stack_offset&8)], xmm %+ %%i
-    %endrep
+    ; Use the shadow space to store XMM6 and XMM7, the rest needs stack space allocated.
+    %if xmm_regs_used > 6
+        movaps [rstk + stack_offset +  8], xmm6
+    %endif
+    %if xmm_regs_used > 7
+        movaps [rstk + stack_offset + 24], xmm7
+    %endif
+    %if xmm_regs_used > 8
+        %assign %%i 8
+        %rep xmm_regs_used-8
+            movaps [rsp + (%%i-8)*16 + stack_size + 32], xmm %+ %%i
+            %assign %%i %%i+1
+        %endrep
+    %endif
 %endmacro
 
 %macro WIN64_SPILL_XMM 1
     %assign xmm_regs_used %1
     ASSERT xmm_regs_used <= 16
-    %if xmm_regs_used > 6
-        SUB rsp, (xmm_regs_used-6)*16+16
-        WIN64_PUSH_XMM
+    %if xmm_regs_used > 8
+        %assign stack_size_padded (xmm_regs_used-8)*16 + (~stack_offset&8) + 32
+        SUB rsp, stack_size_padded
     %endif
+    WIN64_PUSH_XMM
 %endmacro
 
 %macro WIN64_RESTORE_XMM_INTERNAL 1
-    %if xmm_regs_used > 6
+    %assign %%pad_size 0
+    %if xmm_regs_used > 8
         %assign %%i xmm_regs_used
-        %rep (xmm_regs_used-6)
+        %rep xmm_regs_used-8
             %assign %%i %%i-1
-            movaps xmm %+ %%i, [%1 + (%%i-6)*16+stack_size+(~stack_offset&8)]
+            movaps xmm %+ %%i, [%1 + (%%i-8)*16 + stack_size + 32]
         %endrep
-        %if stack_size_padded == 0
-            add %1, (xmm_regs_used-6)*16+16
-        %endif
     %endif
     %if stack_size_padded > 0
         %if stack_size > 0 && (mmsize == 32 || HAVE_ALIGNED_STACK == 0)
             mov rsp, rstkm
         %else
             add %1, stack_size_padded
+            %assign %%pad_size stack_size_padded
         %endif
+    %endif
+    %if xmm_regs_used > 7
+        movaps xmm7, [%1 + stack_offset - %%pad_size + 24]
+    %endif
+    %if xmm_regs_used > 6
+        movaps xmm6, [%1 + stack_offset - %%pad_size +  8]
     %endif
 %endmacro
 
@@ -683,12 +692,12 @@ BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, 
     %endif
     align function_align
     %2:
-    RESET_MM_PERMUTATION ; not really needed, but makes disassembly somewhat nicer
-    %xdefine rstk rsp
-    %assign stack_offset 0
-    %assign stack_size 0
-    %assign stack_size_padded 0
-    %assign xmm_regs_used 0
+    RESET_MM_PERMUTATION        ; needed for x86-64, also makes disassembly somewhat nicer
+    %xdefine rstk rsp           ; copy of the original stack pointer, used when greater alignment than the known stack alignment is required
+    %assign stack_offset 0      ; stack pointer offset relative to the return address
+    %assign stack_size 0        ; amount of stack space that can be freely used inside a function
+    %assign stack_size_padded 0 ; total amount of allocated stack space, including space for callee-saved xmm registers on WIN64 and alignment padding
+    %assign xmm_regs_used 0     ; number of XMM registers requested, used for dealing with callee-saved registers on WIN64
     %ifnidn %3, ""
         PROLOGUE %3
     %endif

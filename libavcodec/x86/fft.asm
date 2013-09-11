@@ -667,13 +667,13 @@ cglobal imdct_calc, 3,5,3
     push    r1
     push    r0
 %else
-    sub     rsp, 8
+    sub     rsp, 8+32*WIN64 ; allocate win64 shadow space
 %endif
     call    r4
 %if ARCH_X86_32
     add     esp, 12
 %else
-    add     rsp, 8
+    add     rsp, 8+32*WIN64
 %endif
     POP     r1
     POP     r3
