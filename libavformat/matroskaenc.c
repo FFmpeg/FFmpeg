@@ -307,7 +307,7 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
     if (seekhead->max_entries > 0 && seekhead->max_entries <= seekhead->num_entries)
         return -1;
 
-    entries = av_realloc(entries, (seekhead->num_entries + 1) * sizeof(mkv_seekhead_entry));
+    entries = av_realloc_array(entries, seekhead->num_entries + 1, sizeof(mkv_seekhead_entry));
     if (entries == NULL)
         return AVERROR(ENOMEM);
 
@@ -388,7 +388,7 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t clus
     if (ts < 0)
         return 0;
 
-    entries = av_realloc(entries, (cues->num_entries + 1) * sizeof(mkv_cuepoint));
+    entries = av_realloc_array(entries, cues->num_entries + 1, sizeof(mkv_cuepoint));
     if (entries == NULL)
         return AVERROR(ENOMEM);
 
