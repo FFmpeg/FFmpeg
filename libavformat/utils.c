@@ -3300,7 +3300,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 
     if (s->nb_streams >= INT_MAX/sizeof(*streams))
         return NULL;
-    streams = av_realloc(s->streams, (s->nb_streams + 1) * sizeof(*streams));
+    streams = av_realloc_array(s->streams, s->nb_streams + 1, sizeof(*streams));
     if (!streams)
         return NULL;
     s->streams = streams;
@@ -3422,7 +3422,7 @@ void ff_program_add_stream_index(AVFormatContext *ac, int progid, unsigned int i
             if(program->stream_index[j] == idx)
                 return;
 
-        tmp = av_realloc(program->stream_index, sizeof(unsigned int)*(program->nb_stream_indexes+1));
+        tmp = av_realloc_array(program->stream_index, program->nb_stream_indexes+1, sizeof(unsigned int));
         if(!tmp)
             return;
         program->stream_index = tmp;
