@@ -257,6 +257,12 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     if(ctx.last[0] == -1) ctx.last[0] = huff.current++;
     if(ctx.last[1] == -1) ctx.last[1] = huff.current++;
     if(ctx.last[2] == -1) ctx.last[2] = huff.current++;
+    if (ctx.last[0] >= huff.length ||
+        ctx.last[1] >= huff.length ||
+        ctx.last[2] >= huff.length) {
+        av_log(smk->avctx, AV_LOG_ERROR, "Huffman codes out of range\n");
+        err = AVERROR_INVALIDDATA;
+    }
 
     *recodes = huff.values;
 
