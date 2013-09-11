@@ -885,42 +885,42 @@ INIT_XMM
 
 %macro PERMUTE 2-* ; takes a list of pairs to swap
 %rep %0/2
-    %xdefine tmp%2 m%2
-    %xdefine ntmp%2 nm%2
+    %xdefine %%tmp%2 m%2
     %rotate 2
 %endrep
 %rep %0/2
-    %xdefine m%1 tmp%2
-    %xdefine nm%1 ntmp%2
-    %undef tmp%2
-    %undef ntmp%2
+    %xdefine m%1 %%tmp%2
+    CAT_XDEFINE n, m%1, %1
     %rotate 2
 %endrep
 %endmacro
 
-%macro SWAP 2-* ; swaps a single chain (sometimes more concise than pairs)
-%rep %0-1
-%ifdef m%1
-    %xdefine tmp m%1
-    %xdefine m%1 m%2
-    %xdefine m%2 tmp
-    CAT_XDEFINE n, m%1, %1
-    CAT_XDEFINE n, m%2, %2
-%else
-    ; If we were called as "SWAP m0,m1" rather than "SWAP 0,1" infer the original numbers here.
-    ; Be careful using this mode in nested macros though, as in some cases there may be
-    ; other copies of m# that have already been dereferenced and don't get updated correctly.
-    %xdefine %%n1 n %+ %1
-    %xdefine %%n2 n %+ %2
-    %xdefine tmp m %+ %%n1
-    CAT_XDEFINE m, %%n1, m %+ %%n2
-    CAT_XDEFINE m, %%n2, tmp
-    CAT_XDEFINE n, m %+ %%n1, %%n1
-    CAT_XDEFINE n, m %+ %%n2, %%n2
+%macro SWAP 2+ ; swaps a single chain (sometimes more concise than pairs)
+%ifnum %1 ; SWAP 0, 1, ...
+    SWAP_INTERNAL_NUM %1, %2
+%else ; SWAP m0, m1, ...
+    SWAP_INTERNAL_NAME %1, %2
 %endif
-    %undef tmp
+%endmacro
+
+%macro SWAP_INTERNAL_NUM 2-*
+    %rep %0-1
+        %xdefine %%tmp m%1
+        %xdefine m%1 m%2
+        %xdefine m%2 %%tmp
+        CAT_XDEFINE n, m%1, %1
+        CAT_XDEFINE n, m%2, %2
     %rotate 1
-%endrep
+    %endrep
+%endmacro
+
+%macro SWAP_INTERNAL_NAME 2-*
+    %xdefine %%args n %+ %1
+    %rep %0-1
+        %xdefine %%args %%args, n %+ %2
+    %rotate 1
+    %endrep
+    SWAP_INTERNAL_NUM %%args
 %endmacro
 
 ; If SAVE_MM_PERMUTATION is placed at the end of a function, then any later
