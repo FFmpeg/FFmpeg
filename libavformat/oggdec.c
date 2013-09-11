@@ -88,7 +88,7 @@ static int ogg_restore(AVFormatContext *s, int discard)
     struct ogg *ogg = s->priv_data;
     AVIOContext *bc = s->pb;
     struct ogg_state *ost = ogg->state;
-    int i;
+    int i, err;
 
     if (!ost)
         return 0;
@@ -96,7 +96,6 @@ static int ogg_restore(AVFormatContext *s, int discard)
     ogg->state = ost->next;
 
     if (!discard) {
-        struct ogg_stream *old_streams = ogg->streams;
 
         for (i = 0; i < ogg->nstreams; i++)
             av_free(ogg->streams[i].buf);
@@ -105,16 +104,13 @@ static int ogg_restore(AVFormatContext *s, int discard)
         ogg->page_pos = -1;
         ogg->curidx   = ost->curidx;
         ogg->nstreams = ost->nstreams;
-        ogg->streams  = av_realloc(ogg->streams,
-                                   ogg->nstreams * sizeof(*ogg->streams));
-
-        if (ogg->streams) {
+        if ((err = av_reallocp_array(&ogg->streams, ogg->nstreams,
+                                     sizeof(*ogg->streams))) < 0) {
+            ogg->nstreams = 0;
+            return err;
+        } else
             memcpy(ogg->streams, ost->streams,
                    ost->nstreams * sizeof(*ogg->streams));
-        } else {
-            av_free(old_streams);
-            ogg->nstreams = 0;
-        }
     }
 
     av_free(ost);

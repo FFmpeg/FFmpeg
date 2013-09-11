@@ -2062,7 +2062,6 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     unsigned int stps_index = 0;
     unsigned int i, j;
     uint64_t stream_size = 0;
-    AVIndexEntry *mem;
 
     /* adjust first dts according to edit list */
     if ((sc->empty_duration || sc->start_time) && mov->time_scale > 0) {
@@ -2097,10 +2096,12 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             return;
         if (sc->sample_count >= UINT_MAX / sizeof(*st->index_entries) - st->nb_index_entries)
             return;
-        mem = av_realloc(st->index_entries, (st->nb_index_entries + sc->sample_count) * sizeof(*st->index_entries));
-        if (!mem)
+        if (av_reallocp_array(&st->index_entries,
+                              st->nb_index_entries + sc->sample_count,
+                              sizeof(*st->index_entries)) < 0) {
+            st->nb_index_entries = 0;
             return;
-        st->index_entries = mem;
+        }
         st->index_entries_allocated_size = (st->nb_index_entries + sc->sample_count) * sizeof(*st->index_entries);
 
         for (i = 0; i < sc->chunk_count; i++) {
@@ -2207,10 +2208,12 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
         av_dlog(mov->fc, "chunk count %d\n", total);
         if (total >= UINT_MAX / sizeof(*st->index_entries) - st->nb_index_entries)
             return;
-        mem = av_realloc(st->index_entries, (st->nb_index_entries + total) * sizeof(*st->index_entries));
-        if (!mem)
+        if (av_reallocp_array(&st->index_entries,
+                              st->nb_index_entries + total,
+                              sizeof(*st->index_entries)) < 0) {
+            st->nb_index_entries = 0;
             return;
-        st->index_entries = mem;
+        }
         st->index_entries_allocated_size = (st->nb_index_entries + total) * sizeof(*st->index_entries);
 
         // populate index
@@ -2581,16 +2584,18 @@ static int mov_read_chap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_trex(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVTrackExt *trex;
+    int err;
 
     if ((uint64_t)c->trex_count+1 >= UINT_MAX / sizeof(*c->trex_data))
         return AVERROR_INVALIDDATA;
-    trex = av_realloc(c->trex_data, (c->trex_count+1)*sizeof(*c->trex_data));
-    if (!trex)
-        return AVERROR(ENOMEM);
+    if ((err = av_reallocp_array(&c->trex_data, c->trex_count + 1,
+                                 sizeof(*c->trex_data))) < 0) {
+        c->trex_count = 0;
+        return err;
+    }
 
     c->fc->duration = AV_NOPTS_VALUE; // the duration from mvhd is not representing the whole file when fragments are used.
 
-    c->trex_data = trex;
     trex = &c->trex_data[c->trex_count++];
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
@@ -2612,7 +2617,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t dts;
     int data_offset = 0;
     unsigned entries, first_sample_flags = frag->flags;
-    int flags, distance, i, found_keyframe = 0;
+    int flags, distance, i, found_keyframe = 0, err;
 
     for (i = 0; i < c->fc->nb_streams; i++) {
         if (c->fc->streams[i]->id == frag->track_id) {
@@ -2650,12 +2655,11 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     if ((uint64_t)entries+sc->ctts_count >= UINT_MAX/sizeof(*sc->ctts_data))
         return AVERROR_INVALIDDATA;
-    ctts_data = av_realloc(sc->ctts_data,
-                           (entries+sc->ctts_count)*sizeof(*sc->ctts_data));
-    if (!ctts_data)
-        return AVERROR(ENOMEM);
-    sc->ctts_data = ctts_data;
-
+    if ((err = av_reallocp_array(&sc->ctts_data, entries + sc->ctts_count,
+                                 sizeof(*sc->ctts_data))) < 0) {
+        sc->ctts_count = 0;
+        return err;
+    }
     if (flags & MOV_TRUN_DATA_OFFSET)        data_offset        = avio_rb32(pb);
     if (flags & MOV_TRUN_FIRST_SAMPLE_FLAGS) first_sample_flags = avio_rb32(pb);
     dts    = sc->track_end - sc->time_offset;

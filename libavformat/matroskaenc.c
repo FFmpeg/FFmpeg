@@ -302,14 +302,17 @@ static mkv_seekhead * mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset
 static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid, uint64_t filepos)
 {
     mkv_seekhead_entry *entries = seekhead->entries;
+    int err;
 
     // don't store more elements than we reserved space for
     if (seekhead->max_entries > 0 && seekhead->max_entries <= seekhead->num_entries)
         return -1;
 
-    entries = av_realloc(entries, (seekhead->num_entries + 1) * sizeof(mkv_seekhead_entry));
-    if (entries == NULL)
-        return AVERROR(ENOMEM);
+    if ((err = av_reallocp_array(&entries, seekhead->num_entries + 1,
+                                 sizeof(*entries))) < 0) {
+        seekhead->num_entries = 0;
+        return err;
+    }
 
     entries[seekhead->num_entries  ].elementid = elementid;
     entries[seekhead->num_entries++].segmentpos = filepos - seekhead->segment_offset;
@@ -384,13 +387,16 @@ static mkv_cues * mkv_start_cues(int64_t segment_offset)
 static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos, int64_t relative_pos)
 {
     mkv_cuepoint *entries = cues->entries;
+    int err;
 
     if (ts < 0)
         return 0;
 
-    entries = av_realloc(entries, (cues->num_entries + 1) * sizeof(mkv_cuepoint));
-    if (entries == NULL)
-        return AVERROR(ENOMEM);
+    if ((err = av_reallocp_array(&entries, cues->num_entries + 1,
+                                 sizeof(*entries))) < 0) {
+        cues->num_entries = 0;
+        return err;
+    }
 
     entries[cues->num_entries  ].pts = ts;
     entries[cues->num_entries  ].tracknum = stream + 1;
