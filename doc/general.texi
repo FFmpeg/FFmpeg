@@ -605,7 +605,6 @@ following image formats are supported:
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
     @tab encoding supported through external library libx264
-@item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)  @tab  E  @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item HuffYUV FFmpeg variant @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
@@ -658,7 +657,6 @@ following image formats are supported:
 @item Motion Pixels video    @tab     @tab  X
 @item MPEG-1 video           @tab  X  @tab  X
 @item MPEG-1/2 video XvMC (X-Video Motion Compensation)  @tab     @tab  X
-@item MPEG-1/2 video (VDPAU acceleration)  @tab     @tab  X
 @item MPEG-2 video           @tab  X  @tab  X
 @item MPEG-4 part 2          @tab  X  @tab  X
     @tab libxvidcore can be used alternatively for encoding.
