@@ -708,6 +708,7 @@ static int gxf_write_header(AVFormatContext *s)
     GXFStreamContext *vsc = NULL;
     uint8_t tracks[255] = {0};
     int i, media_info = 0;
+    int ret;
     AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
     if (!pb->seekable) {
@@ -828,7 +829,8 @@ static int gxf_write_header(AVFormatContext *s)
     gxf_init_timecode_track(&gxf->timecode_track, vsc);
     gxf->flags |= 0x200000; // time code track is non-drop frame
 
-    gxf_write_map_packet(s, 0);
+    if ((ret = gxf_write_map_packet(s, 0)) < 0)
+        return ret;
     gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
 
@@ -852,6 +854,7 @@ static int gxf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t end;
     int i;
+    int ret;
 
     ff_audio_interleave_close(s);
 
@@ -859,14 +862,16 @@ static int gxf_write_trailer(AVFormatContext *s)
     end = avio_tell(pb);
     avio_seek(pb, 0, SEEK_SET);
     /* overwrite map, flt and umf packets with new values */
-    gxf_write_map_packet(s, 1);
+    if ((ret = gxf_write_map_packet(s, 1)) < 0)
+        return ret;
     gxf_write_flt_packet(s);
     gxf_write_umf_packet(s);
     avio_flush(pb);
     /* update duration in all map packets */
     for (i = 1; i < gxf->map_offsets_nb; i++) {
         avio_seek(pb, gxf->map_offsets[i], SEEK_SET);
-        gxf_write_map_packet(s, 1);
+        if ((ret = gxf_write_map_packet(s, 1)) < 0)
+            return ret;
         avio_flush(pb);
     }
 
@@ -945,6 +950,7 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t pos = avio_tell(pb);
     int padding = 0;
     int packet_start_offset = avio_tell(pb) / 1024;
+    int ret;
 
     gxf_write_packet_header(pb, PKT_MEDIA);
     if (st->codec->codec_id == AV_CODEC_ID_MPEG2VIDEO && pkt->size % 4) /* MPEG-2 frames must be padded */
@@ -974,7 +980,8 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     gxf->packet_count++;
     if (gxf->packet_count == 100) {
-        gxf_write_map_packet(s, 0);
+        if ((ret = gxf_write_map_packet(s, 0)) < 0)
+            return ret;
         gxf->packet_count = 0;
     }
 
