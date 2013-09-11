@@ -791,7 +791,11 @@ static const AVOption aacenc_options[] = {
         {"auto",     "Selected by the Encoder", 0, AV_OPT_TYPE_CONST, {.i64 = -1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
         {"ms_off",   "Disable Mid/Side coding", 0, AV_OPT_TYPE_CONST, {.i64 =  0 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
         {"ms_force", "Force Mid/Side for the whole frame if possible", 0, AV_OPT_TYPE_CONST, {.i64 =  1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
-    {"aac_coder", "", offsetof(AACEncContext, options.aac_coder), AV_OPT_TYPE_INT, {.i64 = 2}, 0, AAC_CODER_NB-1, AACENC_FLAGS},
+    {"aac_coder", "", offsetof(AACEncContext, options.aac_coder), AV_OPT_TYPE_INT, {.i64 = AAC_CODER_TWOLOOP}, 0, AAC_CODER_NB-1, AACENC_FLAGS, "aac_coder"},
+        {"faac",     "FAAC-inspired method",      0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAAC},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
+        {"anmr",     "ANMR method",               0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_ANMR},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
+        {"twoloop",  "Two loop searching method", 0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_TWOLOOP}, INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
+        {"fast",     "Constant quantizer",        0, AV_OPT_TYPE_CONST, {.i64 = AAC_CODER_FAST},    INT_MIN, INT_MAX, AACENC_FLAGS, "aac_coder"},
     {NULL}
 };
 
