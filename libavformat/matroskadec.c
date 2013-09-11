@@ -2558,12 +2558,12 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     if (matroska->skip_to_keyframe && track->type != MATROSKA_TRACK_TYPE_SUBTITLE) {
         if (timecode < matroska->skip_to_timecode)
             return res;
-        if (!st->skip_to_keyframe) {
+        if (is_keyframe)
+            matroska->skip_to_keyframe = 0;
+        else if (!st->skip_to_keyframe) {
             av_log(matroska->ctx, AV_LOG_ERROR, "File is broken, keyframes not correctly marked!\n");
             matroska->skip_to_keyframe = 0;
         }
-        if (is_keyframe)
-            matroska->skip_to_keyframe = 0;
     }
 
     res = matroska_parse_laces(matroska, &data, &size, (flags & 0x06) >> 1,
