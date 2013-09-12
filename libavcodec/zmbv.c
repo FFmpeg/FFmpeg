@@ -510,7 +510,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
 
     if (c->comp == 0) { //Uncompressed data
         if (c->decomp_size < len) {
-            av_log(avctx, AV_LOG_ERROR, "decomp buffer too small\n");
+            av_log(avctx, AV_LOG_ERROR, "Buffer too small\n");
             return AVERROR_INVALIDDATA;
         }
         memcpy(c->decomp_buf, buf, len);
