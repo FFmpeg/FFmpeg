@@ -432,6 +432,9 @@ static av_cold int init(AVFilterContext *ctx)
             return ret;
     }
 
+    n->line_noise     = line_noise_c;
+    n->line_noise_avg = line_noise_avg_c;
+
     if (HAVE_MMX_INLINE &&
         cpu_flags & AV_CPU_FLAG_MMX) {
         n->line_noise = line_noise_mmx;
