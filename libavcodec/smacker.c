@@ -102,7 +102,7 @@ static int smacker_decode_tree(GetBitContext *gb, HuffContext *hc, uint32_t pref
         return AVERROR_INVALIDDATA;
     }
     if(!get_bits1(gb)){ //Leaf
-        if(hc->current >= 256){
+        if(hc->current >= hc->length){
             av_log(NULL, AV_LOG_ERROR, "Tree size exceeded!\n");
             return AVERROR_INVALIDDATA;
         }
