@@ -467,6 +467,11 @@ static int decode_pic(AVSContext *h) {
     int skip_count = -1;
     enum cavs_mb mb_type;
 
+    if (!h->top_qp) {
+        av_log(h, AV_LOG_ERROR, "No sequence header decoded yet\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!s->context_initialized) {
         s->avctx->idct_algo = FF_IDCT_CAVS;
         if (MPV_common_init(s) < 0)
