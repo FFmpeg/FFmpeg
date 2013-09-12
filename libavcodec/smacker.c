@@ -212,8 +212,10 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
 
     if(get_bits1(gb)) {
         res = smacker_decode_tree(gb, &tmp1, 0, 0);
-        if (res < 0)
-            return res;
+        if (res < 0) {
+            err = res;
+            goto error;
+        }
         skip_bits1(gb);
         if(tmp1.current > 1) {
             res = init_vlc(&vlc[0], SMKTREE_BITS, tmp1.length,
@@ -231,8 +233,10 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     }
     if(get_bits1(gb)){
         res = smacker_decode_tree(gb, &tmp2, 0, 0);
-        if (res < 0)
-            return res;
+        if (res < 0) {
+            err = res;
+            goto error;
+        }
         skip_bits1(gb);
         if(tmp2.current > 1) {
             res = init_vlc(&vlc[1], SMKTREE_BITS, tmp2.length,
