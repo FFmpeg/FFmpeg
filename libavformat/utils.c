@@ -449,7 +449,7 @@ fail:
 
 /*******************************************************/
 
-static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
+static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
 {
     if(st->codec->codec_id == AV_CODEC_ID_PROBE){
         AVProbeData *pd = &st->probe_data;
@@ -457,7 +457,10 @@ static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
         --st->probe_packets;
 
         if (pkt) {
-            pd->buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
+            int err;
+            if ((err = av_reallocp(&pd->buf, pd->buf_size + pkt->size +
+                                   AVPROBE_PADDING_SIZE)) < 0)
+                return err;
             memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
             pd->buf_size += pkt->size;
             memset(pd->buf+pd->buf_size, 0, AVPROBE_PADDING_SIZE);
@@ -466,7 +469,7 @@ static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
             if (!pd->buf_size) {
                 av_log(s, AV_LOG_ERROR, "nothing to probe for stream %d\n",
                        st->index);
-                return;
+                return 0;
             }
         }
 
@@ -480,11 +483,12 @@ static void probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
             }
         }
     }
+    return 0;
 }
 
 int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i;
+    int ret, i, err;
     AVStream *st;
 
     for(;;){
@@ -497,7 +501,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
                 s->raw_packet_buffer_remaining_size < pkt->size) {
                 AVProbeData *pd;
                 if (st->probe_packets) {
-                    probe_codec(s, st, NULL);
+                    if ((err = probe_codec(s, st, NULL)) < 0)
+                        return err;
                 }
                 pd = &st->probe_data;
                 av_freep(&pd->buf);
@@ -519,7 +524,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->probe_packets) {
-                    probe_codec(s, st, NULL);
+                    if ((err = probe_codec(s, st, NULL)) < 0)
+                        return err;
                 }
             }
             continue;
@@ -555,7 +561,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         add_to_pktbuf(&s->raw_packet_buffer, pkt, &s->raw_packet_buffer_end);
         s->raw_packet_buffer_remaining_size -= pkt->size;
 
-        probe_codec(s, st, pkt);
+        if ((err = probe_codec(s, st, pkt)) < 0)
+            return err;
     }
 }
 
