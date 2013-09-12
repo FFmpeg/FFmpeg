@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
 #include "oggdec.h"
 #include "avformat.h"
 #include "internal.h"
@@ -772,6 +773,18 @@ retry:
     pkt->flags    = os->pflags;
     pkt->duration = os->pduration;
     pkt->pos      = fpos;
+
+    if (os->end_trimming) {
+        uint8_t *side_data = av_packet_new_side_data(pkt,
+                                                     AV_PKT_DATA_SKIP_SAMPLES,
+                                                     10);
+        if(side_data == NULL) {
+            av_free_packet(pkt);
+            av_free(pkt);
+            return AVERROR(ENOMEM);
+        }
+        AV_WL32(side_data + 4, os->end_trimming);
+    }
 
     return psize;
 }
