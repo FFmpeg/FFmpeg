@@ -204,6 +204,11 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     tmp2.bits = av_mallocz(256 * 4);
     tmp2.lengths = av_mallocz(256 * sizeof(int));
     tmp2.values = av_mallocz(256 * sizeof(int));
+    if (!tmp1.bits || !tmp1.lengths || !tmp1.values ||
+        !tmp2.bits || !tmp2.lengths || !tmp2.values) {
+        err = AVERROR(ENOMEM);
+        goto error;
+    }
 
     if(get_bits1(gb)) {
         res = smacker_decode_tree(gb, &tmp1, 0, 0);
@@ -216,7 +221,8 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
                         tmp1.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
             if(res < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-                return AVERROR_INVALIDDATA;
+                err = res;
+                goto error;
             }
         }
     }
@@ -234,7 +240,8 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
                         tmp2.bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
             if(res < 0) {
                 av_log(smk->avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-                return AVERROR_INVALIDDATA;
+                err = res;
+                goto error;
             }
         }
     }
@@ -261,8 +268,10 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
     huff.maxlength = 0;
     huff.current = 0;
     huff.values = av_mallocz(huff.length * sizeof(int));
-    if (!huff.values)
-        return AVERROR(ENOMEM);
+    if (!huff.values) {
+        err = AVERROR(ENOMEM);
+        goto error;
+    }
 
     if (smacker_decode_bigtree(gb, &huff, &ctx) < 0)
         err = -1;
@@ -278,6 +287,7 @@ static int smacker_decode_header_tree(SmackVContext *smk, GetBitContext *gb, int
 
     *recodes = huff.values;
 
+error:
     if(vlc[0].table)
         ff_free_vlc(&vlc[0]);
     if(vlc[1].table)
@@ -306,6 +316,8 @@ static int decode_header_trees(SmackVContext *smk) {
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MMAP tree\n");
         smk->mmap_tbl = av_malloc(sizeof(int) * 2);
+        if (!smk->mmap_tbl)
+            return AVERROR(ENOMEM);
         smk->mmap_tbl[0] = 0;
         smk->mmap_last[0] = smk->mmap_last[1] = smk->mmap_last[2] = 1;
     } else {
@@ -316,6 +328,8 @@ static int decode_header_trees(SmackVContext *smk) {
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MCLR tree\n");
         smk->mclr_tbl = av_malloc(sizeof(int) * 2);
+        if (!smk->mclr_tbl)
+            return AVERROR(ENOMEM);
         smk->mclr_tbl[0] = 0;
         smk->mclr_last[0] = smk->mclr_last[1] = smk->mclr_last[2] = 1;
     } else {
@@ -326,6 +340,8 @@ static int decode_header_trees(SmackVContext *smk) {
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping FULL tree\n");
         smk->full_tbl = av_malloc(sizeof(int) * 2);
+        if (!smk->full_tbl)
+            return AVERROR(ENOMEM);
         smk->full_tbl[0] = 0;
         smk->full_last[0] = smk->full_last[1] = smk->full_last[2] = 1;
     } else {
@@ -336,6 +352,8 @@ static int decode_header_trees(SmackVContext *smk) {
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping TYPE tree\n");
         smk->type_tbl = av_malloc(sizeof(int) * 2);
+        if (!smk->type_tbl)
+            return AVERROR(ENOMEM);
         smk->type_tbl[0] = 0;
         smk->type_last[0] = smk->type_last[1] = smk->type_last[2] = 1;
     } else {
@@ -656,16 +674,14 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         h[i].bits = av_mallocz(256 * 4);
         h[i].lengths = av_mallocz(256 * sizeof(int));
         h[i].values = av_mallocz(256 * sizeof(int));
+        if (!h[i].bits || !h[i].lengths || !h[i].values) {
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
         skip_bits1(&gb);
         if (smacker_decode_tree(&gb, &h[i], 0, 0) < 0) {
-            for (; i >= 0; i--) {
-                if (vlc[i].table)
-                    ff_free_vlc(&vlc[i]);
-                av_free(h[i].bits);
-                av_free(h[i].lengths);
-                av_free(h[i].values);
-            }
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto error;
         }
         skip_bits1(&gb);
         if(h[i].current > 1) {
@@ -674,7 +690,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     h[i].bits, sizeof(uint32_t), sizeof(uint32_t), INIT_VLC_LE);
             if(res < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Cannot build VLC table\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto error;
             }
         }
     }
@@ -765,6 +782,10 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+    *got_frame_ptr = 1;
+    ret = buf_size;
+
+error:
     for(i = 0; i < 4; i++) {
         if(vlc[i].table)
             ff_free_vlc(&vlc[i]);
@@ -773,9 +794,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         av_free(h[i].values);
     }
 
-    *got_frame_ptr = 1;
-
-    return buf_size;
+    return ret;
 }
 
 AVCodec ff_smacker_decoder = {
