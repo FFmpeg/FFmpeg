@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "simple_idct.h"
 #include "proresdec.h"
+#include "proresdata.h"
 
 static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[64])
 {
@@ -40,28 +41,6 @@ static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[
     for (i = 0; i < 64; i++)
         dst[i] = permutation[src[i]];
 }
-
-static const uint8_t progressive_scan[64] = {
-     0,  1,  8,  9,  2,  3, 10, 11,
-    16, 17, 24, 25, 18, 19, 26, 27,
-     4,  5, 12, 20, 13,  6,  7, 14,
-    21, 28, 29, 22, 15, 23, 30, 31,
-    32, 33, 40, 48, 41, 34, 35, 42,
-    49, 56, 57, 50, 43, 36, 37, 44,
-    51, 58, 59, 52, 45, 38, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63
-};
-
-static const uint8_t interlaced_scan[64] = {
-     0,  8,  1,  9, 16, 24, 17, 25,
-     2, 10,  3, 11, 18, 26, 19, 27,
-    32, 40, 33, 34, 41, 48, 56, 49,
-    42, 35, 43, 50, 57, 58, 51, 59,
-     4, 12,  5,  6, 13, 20, 28, 21,
-    14,  7, 15, 22, 29, 36, 44, 37,
-    30, 23, 31, 38, 45, 52, 60, 53,
-    46, 39, 47, 54, 61, 62, 55, 63,
-};
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
@@ -76,8 +55,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_init_scantable_permutation(idct_permutation,
                                   ctx->prodsp.idct_permutation_type);
 
-    permute(ctx->progressive_scan, progressive_scan, idct_permutation);
-    permute(ctx->interlaced_scan, interlaced_scan, idct_permutation);
+    permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
+    permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
     return 0;
 }
