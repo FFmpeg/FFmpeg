@@ -3552,7 +3552,7 @@ case $target_os in
             # Link to the import library instead of the normal static library
             # for shared libs.
             LD_LIB='%.lib'
-            # Cannot build shared and static libs at the same time with MSVC.
+            # Cannot build both shared and static libs with MSVC or icl.
             disable static
         fi
         shlibdir_default="$bindir_default"
