@@ -931,6 +931,11 @@ static int decode_pic(AVSContext *h)
     int skip_count    = -1;
     enum cavs_mb mb_type;
 
+    if (!h->top_qp) {
+        av_log(h->avctx, AV_LOG_ERROR, "No sequence header decoded yet\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     skip_bits(&h->gb, 16);//bbv_dwlay
     if (h->stc == PIC_PB_START_CODE) {
         h->cur.f->pict_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
