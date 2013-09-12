@@ -18,6 +18,7 @@ version <next>
 - DVB teletext decoder
 - phase filter ported from libmpcodecs
 - w3fdif filter
+- Opus support in Matroska
 
 
 version 2.0:
