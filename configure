@@ -2372,6 +2372,18 @@ ccc_flags(){
    done
 }
 
+cparser_flags(){
+    for flag; do
+        case $flag in
+            -Wno-switch)             echo -Wno-switch-enum ;;
+            -Wno-format-zero-length) ;;
+            -Wdisabled-optimization) ;;
+            -Wno-pointer-sign)       echo -Wno-other ;;
+            *)                       echo $flag ;;
+        esac
+    done
+}
+
 msvc_common_flags(){
     for flag; do
         case $flag in
@@ -2661,6 +2673,13 @@ probe_cc(){
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
+    elif $_cc --version 2>/dev/null | grep -q ^cparser; then
+        _type=cparser
+        _ident=$($_cc --version | head -n1)
+        _depflags='-MMD'
+        _cflags_speed='-O4'
+        _cflags_size='-O2'
+        _flags_filter=cparser_flags
     fi
 
     eval ${pfx}_type=\$_type
@@ -3981,6 +4000,9 @@ elif enabled clang; then
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
+elif enabled cparser; then
+    add_cflags -Wno-missing-variable-declarations
+    add_cflags -Wno-empty-statement
 elif enabled armcc; then
     # 2523: use of inline assembler is deprecated
     add_cflags -W${armcc_opt},--diag_suppress=2523
