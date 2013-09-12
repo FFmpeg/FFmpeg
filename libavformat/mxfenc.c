@@ -76,6 +76,7 @@ typedef struct {
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
+    int video_bit_rate;
 } MXFStreamContext;
 
 typedef struct {
@@ -976,13 +977,14 @@ static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
 {
     AVIOContext *pb = s->pb;
+    MXFStreamContext *sc = st->priv_data;
     int profile_and_level = (st->codec->profile<<4) | st->codec->level;
 
     mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key, 8+5);
 
     // bit rate
     mxf_write_local_tag(pb, 4, 0x8000);
-    avio_wb32(pb, st->codec->bit_rate);
+    avio_wb32(pb, sc->video_bit_rate);
 
     // profile and level
     mxf_write_local_tag(pb, 1, 0x8007);
@@ -1708,14 +1710,15 @@ static int mxf_write_header(AVFormatContext *s)
                 ret = av_timecode_init(&mxf->tc, rate, 0, 0, s);
             if (ret < 0)
                 return ret;
+            sc->video_bit_rate = st->codec->bit_rate ? st->codec->bit_rate : st->codec->rc_max_rate;
             if (s->oformat == &ff_mxf_d10_muxer) {
-                if (st->codec->bit_rate == 50000000) {
+                if (sc->video_bit_rate == 50000000) {
                     if (mxf->time_base.den == 25) sc->index = 3;
                     else                          sc->index = 5;
-                } else if (st->codec->bit_rate == 40000000) {
+                } else if (sc->video_bit_rate == 40000000) {
                     if (mxf->time_base.den == 25) sc->index = 7;
                     else                          sc->index = 9;
-                } else if (st->codec->bit_rate == 30000000) {
+                } else if (sc->video_bit_rate == 30000000) {
                     if (mxf->time_base.den == 25) sc->index = 11;
                     else                          sc->index = 13;
                 } else {
@@ -1724,7 +1727,7 @@ static int mxf_write_header(AVFormatContext *s)
                 }
 
                 mxf->edit_unit_byte_count = KAG_SIZE; // system element
-                mxf->edit_unit_byte_count += 16 + 4 + (uint64_t)st->codec->bit_rate *
+                mxf->edit_unit_byte_count += 16 + 4 + (uint64_t)sc->video_bit_rate *
                     mxf->time_base.num / (8*mxf->time_base.den);
                 mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
                 mxf->edit_unit_byte_count += 16 + 4 + 4 + spf->samples_per_frame[0]*8*4;
@@ -1858,7 +1861,8 @@ static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacke
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int packet_size = (uint64_t)st->codec->bit_rate*mxf->time_base.num /
+    MXFStreamContext *sc = st->priv_data;
+    int packet_size = (uint64_t)sc->video_bit_rate*mxf->time_base.num /
         (8*mxf->time_base.den); // frame size
     int pad;
 
