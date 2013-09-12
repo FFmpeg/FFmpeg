@@ -350,6 +350,7 @@ static int get_siz(Jpeg2000DecoderContext *s)
                ncomponents > 2 ? s->cdx[2] : 0,
                ncomponents > 2 ? s->cdy[2] : 0);
     }
+    s->avctx->bits_per_raw_sample = s->precision;
     return 0;
 }
 
