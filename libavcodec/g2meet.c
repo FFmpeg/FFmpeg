@@ -490,7 +490,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
     cursor_hot_y  = bytestream2_get_byte(gb);
     cursor_fmt    = bytestream2_get_byte(gb);
 
-    cursor_stride = cursor_w * 4;
+    cursor_stride = FFALIGN(cursor_w, 32) * 4;
 
     if (cursor_w < 1 || cursor_w > 256 ||
         cursor_h < 1 || cursor_h > 256) {
@@ -513,11 +513,6 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
     if (cursor_fmt != 1 && cursor_fmt != 32) {
         avpriv_report_missing_feature(avctx, "Cursor format %d",
                                       cursor_fmt);
-        return AVERROR_PATCHWELCOME;
-    }
-
-    if (cursor_fmt == 1 && cursor_w % 32) {
-        avpriv_report_missing_feature(avctx, "odd monochrome cursor width %d", cursor_w);
         return AVERROR_PATCHWELCOME;
     }
 
