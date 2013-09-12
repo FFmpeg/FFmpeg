@@ -217,14 +217,14 @@ static int smacker_read_header(AVFormatContext *s)
     st->codec->extradata_size = smk->treesize + 16;
     if(!st->codec->extradata){
         av_log(s, AV_LOG_ERROR, "Cannot allocate %i bytes of extradata\n", smk->treesize + 16);
-        av_free(smk->frm_size);
-        av_free(smk->frm_flags);
+        av_freep(&smk->frm_size);
+        av_freep(&smk->frm_flags);
         return AVERROR(ENOMEM);
     }
     ret = avio_read(pb, st->codec->extradata + 16, st->codec->extradata_size - 16);
     if(ret != st->codec->extradata_size - 16){
-        av_free(smk->frm_size);
-        av_free(smk->frm_flags);
+        av_freep(&smk->frm_size);
+        av_freep(&smk->frm_flags);
         return AVERROR(EIO);
     }
     ((int32_t*)st->codec->extradata)[0] = av_le2ne32(smk->mmap_size);
@@ -369,9 +369,9 @@ static int smacker_read_close(AVFormatContext *s)
     int i;
 
     for(i = 0; i < 7; i++)
-        av_free(smk->bufs[i]);
-    av_free(smk->frm_size);
-    av_free(smk->frm_flags);
+        av_freep(&smk->bufs[i]);
+    av_freep(&smk->frm_size);
+    av_freep(&smk->frm_flags);
 
     return 0;
 }
