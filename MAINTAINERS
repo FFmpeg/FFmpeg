@@ -65,13 +65,16 @@ Other:
   bprint                                Nicolas George
   bswap.h
   des                                   Reimar Doeffinger
+  eval.c, eval.h                        Michael Niedermayer
   float_dsp                             Loren Merritt
   hash                                  Reimar Doeffinger
   intfloat*                             Michael Niedermayer
   integer.c, integer.h                  Michael Niedermayer
   lzo                                   Reimar Doeffinger
   mathematics.c, mathematics.h          Michael Niedermayer
+  mem.c, mem.h                          Michael Niedermayer
   opencl.c, opencl.h                    Wei Gao
+  opt.c, opt.h                          Michael Niedermayer
   rational.c, rational.h                Michael Niedermayer
   rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
@@ -86,10 +89,6 @@ Generic Parts:
     avcodec.h                           Michael Niedermayer
   utility code:
     utils.c                             Michael Niedermayer
-    mem.c                               Michael Niedermayer
-    opt.c, opt.h                        Michael Niedermayer
-  arithmetic expression evaluator:
-    eval.c                              Michael Niedermayer
   audio and video frame extraction:
     parser.c                            Michael Niedermayer
   bitstream reading:
