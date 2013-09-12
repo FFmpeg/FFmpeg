@@ -552,6 +552,26 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
 /*
  *
+ * Uninit smacker decoder
+ *
+ */
+static av_cold int decode_end(AVCodecContext *avctx)
+{
+    SmackVContext * const smk = avctx->priv_data;
+
+    av_freep(&smk->mmap_tbl);
+    av_freep(&smk->mclr_tbl);
+    av_freep(&smk->full_tbl);
+    av_freep(&smk->type_tbl);
+
+    av_frame_free(&smk->pic);
+
+    return 0;
+}
+
+
+/*
+ *
  * Init smacker decoder
  *
  */
@@ -571,33 +591,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     ret = decode_header_trees(c);
-    if (ret < 0)
+    if (ret < 0) {
+        decode_end(avctx);
         return ret;
+    }
 
     c->pic = av_frame_alloc();
     if (!c->pic)
         return AVERROR(ENOMEM);
-
-    return 0;
-}
-
-
-
-/*
- *
- * Uninit smacker decoder
- *
- */
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    SmackVContext * const smk = avctx->priv_data;
-
-    av_freep(&smk->mmap_tbl);
-    av_freep(&smk->mclr_tbl);
-    av_freep(&smk->full_tbl);
-    av_freep(&smk->type_tbl);
-
-    av_frame_free(&smk->pic);
 
     return 0;
 }
