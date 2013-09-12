@@ -139,8 +139,8 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     int i, t, seekd;
     GetBitContext gb;
 
-    if (s->nb_streams<=0) {
-        av_log(s, AV_LOG_ERROR, "cannot parse stream table before stream header\n");
+    if (s->nb_streams == 0) {
+        av_log(s, AV_LOG_ERROR, "No stream added before parsing seek table\n");
         return;
     }
 
