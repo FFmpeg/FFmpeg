@@ -294,23 +294,21 @@ static mkv_seekhead * mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset
 
 static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid, uint64_t filepos)
 {
-    mkv_seekhead_entry *entries = seekhead->entries;
     int err;
 
     // don't store more elements than we reserved space for
     if (seekhead->max_entries > 0 && seekhead->max_entries <= seekhead->num_entries)
         return -1;
 
-    if ((err = av_reallocp_array(&entries, seekhead->num_entries + 1,
-                                 sizeof(*entries))) < 0) {
+    if ((err = av_reallocp_array(&seekhead->entries, seekhead->num_entries + 1,
+                                 sizeof(*seekhead->entries))) < 0) {
         seekhead->num_entries = 0;
         return err;
     }
 
-    entries[seekhead->num_entries  ].elementid = elementid;
-    entries[seekhead->num_entries++].segmentpos = filepos - seekhead->segment_offset;
+    seekhead->entries[seekhead->num_entries].elementid    = elementid;
+    seekhead->entries[seekhead->num_entries++].segmentpos = filepos - seekhead->segment_offset;
 
-    seekhead->entries = entries;
     return 0;
 }
 
@@ -379,23 +377,21 @@ static mkv_cues * mkv_start_cues(int64_t segment_offset)
 
 static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos)
 {
-    mkv_cuepoint *entries = cues->entries;
     int err;
 
     if (ts < 0)
         return 0;
 
-    if ((err = av_reallocp_array(&entries, cues->num_entries + 1,
-                                 sizeof(*entries))) < 0) {
+    if ((err = av_reallocp_array(&cues->entries, cues->num_entries + 1,
+                                 sizeof(*cues->entries))) < 0) {
         cues->num_entries = 0;
         return err;
     }
 
-    entries[cues->num_entries  ].pts = ts;
-    entries[cues->num_entries  ].tracknum = stream + 1;
-    entries[cues->num_entries++].cluster_pos = cluster_pos - cues->segment_offset;
+    cues->entries[cues->num_entries].pts           = ts;
+    cues->entries[cues->num_entries].tracknum      = stream + 1;
+    cues->entries[cues->num_entries++].cluster_pos = cluster_pos - cues->segment_offset;
 
-    cues->entries = entries;
     return 0;
 }
 
