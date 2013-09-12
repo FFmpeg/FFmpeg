@@ -42,6 +42,7 @@ version 10:
 - F4V muxer
 - HNM version 4 demuxer and video decoder
 - HEVC decoder
+- raw HEVC demuxer
 
 
 version 9:
