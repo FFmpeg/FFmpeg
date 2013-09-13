@@ -507,6 +507,8 @@ unk_pixfmt:
             av_freep(&s->last_nnz[i]);
             s->blocks[i]       = av_malloc(size * sizeof(**s->blocks));
             s->last_nnz[i]     = av_mallocz(size * sizeof(**s->last_nnz));
+            if (!s->blocks[i] || !s->last_nnz[i])
+                return AVERROR(ENOMEM);
             s->block_stride[i] = bw * s->h_count[i];
         }
         memset(s->coefs_finished, 0, sizeof(s->coefs_finished));
