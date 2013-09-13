@@ -347,6 +347,33 @@ aconvert=u8:auto
 @end example
 @end itemize
 
+@section adelay
+
+Delay one or more audio channels.
+
+Samples in delayed channel are filled with silence.
+
+The filter accepts the following option:
+
+@table @option
+@item delays
+Set list of delays in milliseconds for each channel separated by '|'.
+At least one delay greater than 0 should be provided.
+Unused delays will be silently ignored. If number of given delays is
+smaller than number of channels all remaining channels will not be delayed.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Delay first channel by 1.5 seconds, the third channel by 0.5 seconds and leave
+the second channel (and any other channels that may be present) unchanged.
+@example
+adelay=1500:0:500
+@end example
+@end itemize
+
 @section aecho
 
 Apply echoing to the input audio.

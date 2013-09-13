@@ -23,6 +23,8 @@ version <next>
 - FFV1: YUVA(444,422,420) 9, 10 and 16 bit support
 - changed DTS stream id in lavf mpeg ps muxer from 0x8a to 0x88, to be
   more consistent with other muxers.
+- adelay filter
+
 
 version 2.0:
 
