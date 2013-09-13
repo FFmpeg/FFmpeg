@@ -1987,7 +1987,7 @@ void ff_check_pixfmt_descriptors(void){
                 av_assert0(8*(c->step_minus1+1) >= c->depth_minus1+1);
             }
             av_read_image_line(tmp, (void*)data, linesize, d, 0, 0, j, 2, 0);
-            if (!memcmp(d->name, "bayer_", 6))
+            if (!strncmp(d->name, "bayer_", 6))
                 continue;
             av_assert0(tmp[0] == 0 && tmp[1] == 0);
             tmp[0] = tmp[1] = (1<<(c->depth_minus1 + 1)) - 1;
