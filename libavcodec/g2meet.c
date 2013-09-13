@@ -802,10 +802,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         c->got_header = 1;
 
     if (c->width && c->height && c->framebuf) {
-        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
             return ret;
-        }
 
         pic->key_frame = got_header;
         pic->pict_type = got_header ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
