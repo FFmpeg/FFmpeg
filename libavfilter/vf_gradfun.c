@@ -169,7 +169,7 @@ static int config_input(AVFilterLink *inlink)
     int vsub = desc->log2_chroma_h;
 
     av_freep(&s->buf);
-    s->buf = av_mallocz((FFALIGN(inlink->w, 16) * (s->radius + 1) / 2 + 32) * sizeof(uint16_t));
+    s->buf = av_calloc((FFALIGN(inlink->w, 16) * (s->radius + 1) / 2 + 32), sizeof(*s->buf));
     if (!s->buf)
         return AVERROR(ENOMEM);
 
