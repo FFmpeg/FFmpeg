@@ -57,7 +57,6 @@ typedef struct {
     const AVClass *class;
     int nb_planes;
     int linesize[4];
-    int bytewidth[4];
     int height[4];
     FilterParams all;
     FilterParams param[4];
@@ -196,9 +195,6 @@ static int config_input(AVFilterLink *inlink)
 
     n->height[1] = n->height[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     n->height[0] = n->height[3] = inlink->h;
-
-    n->bytewidth [1] = n->bytewidth [2] = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w) * ((desc->comp[0].depth_minus1 + 1) / 8);
-    n->bytewidth [0] = n->bytewidth [3] = inlink->w * ((desc->comp[0].depth_minus1 + 1) / 8);
 
     return 0;
 }
@@ -381,7 +377,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
         noise(td->out->data[plane] + start * td->out->linesize[plane],
               td->in->data[plane]  + start * td->in->linesize[plane],
               td->out->linesize[plane], td->in->linesize[plane],
-              s->bytewidth[plane], start, end, s, plane);
+              s->linesize[plane], start, end, s, plane);
     }
     return 0;
 }
