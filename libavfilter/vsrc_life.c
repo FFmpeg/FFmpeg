@@ -194,8 +194,8 @@ static int init_pattern_from_file(AVFilterContext *ctx)
         life->h = h;
     }
 
-    if (!(life->buf[0] = av_mallocz(sizeof(char) * life->h * life->w)) ||
-        !(life->buf[1] = av_mallocz(sizeof(char) * life->h * life->w))) {
+    if (!(life->buf[0] = av_calloc(life->h * life->w, sizeof(*life->buf[0]))) ||
+        !(life->buf[1] = av_calloc(life->h * life->w, sizeof(*life->buf[1])))) {
         av_free(life->buf[0]);
         av_free(life->buf[1]);
         return AVERROR(ENOMEM);
@@ -236,8 +236,8 @@ static int init(AVFilterContext *ctx)
         /* fill the grid randomly */
         int i;
 
-        if (!(life->buf[0] = av_mallocz(sizeof(char) * life->h * life->w)) ||
-            !(life->buf[1] = av_mallocz(sizeof(char) * life->h * life->w))) {
+        if (!(life->buf[0] = av_calloc(life->h * life->w, sizeof(*life->buf[0]))) ||
+            !(life->buf[1] = av_calloc(life->h * life->w, sizeof(*life->buf[1])))) {
             av_free(life->buf[0]);
             av_free(life->buf[1]);
             return AVERROR(ENOMEM);
