@@ -249,35 +249,38 @@ void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
  * @param pads Pointer to the pointer to the beginning of the list of pads
  * @param links Pointer to the pointer to the beginning of the list of links
  * @param newpad The new pad to add. A copy is made when adding.
+ * @return >= 0 in case of success, a negative AVERROR code on error
  */
-void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
+int ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
                    AVFilterPad **pads, AVFilterLink ***links,
                    AVFilterPad *newpad);
 
 /** Insert a new input pad for the filter. */
-static inline void ff_insert_inpad(AVFilterContext *f, unsigned index,
+static inline int ff_insert_inpad(AVFilterContext *f, unsigned index,
                                    AVFilterPad *p)
 {
-    ff_insert_pad(index, &f->nb_inputs, offsetof(AVFilterLink, dstpad),
+    int ret = ff_insert_pad(index, &f->nb_inputs, offsetof(AVFilterLink, dstpad),
                   &f->input_pads, &f->inputs, p);
 #if FF_API_FOO_COUNT
 FF_DISABLE_DEPRECATION_WARNINGS
     f->input_count = f->nb_inputs;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+    return ret;
 }
 
 /** Insert a new output pad for the filter. */
-static inline void ff_insert_outpad(AVFilterContext *f, unsigned index,
+static inline int ff_insert_outpad(AVFilterContext *f, unsigned index,
                                     AVFilterPad *p)
 {
-    ff_insert_pad(index, &f->nb_outputs, offsetof(AVFilterLink, srcpad),
+    int ret = ff_insert_pad(index, &f->nb_outputs, offsetof(AVFilterLink, srcpad),
                   &f->output_pads, &f->outputs, p);
 #if FF_API_FOO_COUNT
 FF_DISABLE_DEPRECATION_WARNINGS
     f->output_count = f->nb_outputs;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+    return ret;
 }
 
 /**
