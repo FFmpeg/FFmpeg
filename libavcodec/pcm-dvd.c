@@ -1,6 +1,6 @@
 /*
  * LPCM codecs for PCM formats found in Video DVD streams
- * Copyright (c) 2009-2013 Christian Schmidt
+ * Copyright (c) 2013 Christian Schmidt
  *
  * This file is part of FFmpeg.
  *
