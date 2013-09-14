@@ -864,7 +864,7 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
             for (i=0; i<s->nb_streams; i++) {
                 int j;
                 StreamContext *nus = &nut->stream[i];
-                nus->keyframe_pts = av_realloc(nus->keyframe_pts, 2*nut->sp_count*sizeof(*nus->keyframe_pts));
+                av_reallocp_array(&nus->keyframe_pts, 2*nut->sp_count, sizeof(*nus->keyframe_pts));
                 if (!nus->keyframe_pts)
                     return AVERROR(ENOMEM);
                 for (j=nut->sp_count == 1 ? 0 : nut->sp_count; j<2*nut->sp_count; j++)
