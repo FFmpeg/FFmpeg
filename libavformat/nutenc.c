@@ -680,10 +680,10 @@ static int nut_write_header(AVFormatContext *s)
 
     nut->avf = s;
 
-    nut->stream   = av_mallocz(sizeof(StreamContext ) * s->nb_streams);
-    nut->chapter  = av_mallocz(sizeof(ChapterContext) * s->nb_chapters);
-    nut->time_base= av_mallocz(sizeof(AVRational    ) *(s->nb_streams +
-                                                        s->nb_chapters));
+    nut->stream   = av_calloc(s->nb_streams,  sizeof(*nut->stream ));
+    nut->chapter  = av_calloc(s->nb_chapters, sizeof(*nut->chapter));
+    nut->time_base= av_calloc(s->nb_streams +
+                              s->nb_chapters, sizeof(*nut->time_base));
     if (!nut->stream || !nut->chapter || !nut->time_base) {
         av_freep(&nut->stream);
         av_freep(&nut->chapter);
