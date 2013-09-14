@@ -20,7 +20,7 @@
 
 /**
  * @file
- * audio to video multimedia vector scope filter
+ * audio to video multimedia vectorscope filter
  */
 
 #include "libavutil/avassert.h"
@@ -263,7 +263,7 @@ static const AVFilterPad audiovectorscope_outputs[] = {
 
 AVFilter avfilter_avf_avectorscope = {
     .name          = "avectorscope",
-    .description   = NULL_IF_CONFIG_SMALL("Display audio vector scope."),
+    .description   = NULL_IF_CONFIG_SMALL("Convert input audio to vectorscope video output."),
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AudioVectorScopeContext),
