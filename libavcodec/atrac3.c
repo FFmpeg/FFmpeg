@@ -773,7 +773,7 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
 
 
         /* set the bitstream reader at the start of the second Sound Unit*/
-        init_get_bits(&q->gb,ptr1,q->bits_per_frame);
+        init_get_bits(&q->gb, ptr1, (q->bytes_per_frame - i) * 8);
 
         /* Fill the Weighting coeffs delay buffer */
         memmove(q->weighting_delay,&(q->weighting_delay[2]),4*sizeof(int));
