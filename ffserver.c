@@ -48,6 +48,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
@@ -4423,6 +4424,14 @@ static int parse_ffconfig(const char *filename)
                 } else {
                     video_enc.time_base.num = frame_rate.den;
                     video_enc.time_base.den = frame_rate.num;
+                }
+            }
+        } else if (!av_strcasecmp(cmd, "PixelFormat")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.pix_fmt = av_get_pix_fmt(arg);
+                if (video_enc.pix_fmt == AV_PIX_FMT_NONE) {
+                    ERROR("Unknown pixel format: %s\n", arg);
                 }
             }
         } else if (!av_strcasecmp(cmd, "VideoGopSize")) {
