@@ -104,7 +104,6 @@ static int wsvqa_read_header(AVFormatContext *s,
     header = (unsigned char *)st->codec->extradata;
     if (avio_read(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
-        av_free(st->codec->extradata);
         return AVERROR(EIO);
     }
     st->codec->width = AV_RL16(&header[6]);
