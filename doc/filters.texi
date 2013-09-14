@@ -7853,8 +7853,15 @@ percentage to zoom (default: 0)
 @end table
 
 @item optzoom
-if 1 then optimal zoom value is determined (default).
-Optimal zoom means no (or only little) border should be visible.
+set optimal zooming to avoid borders
+@table @samp
+@item 0
+disabled
+@item 1
+optimal static zoom value is determined (only very strong movements will lead to visible borders) (default)
+@item 2
+optimal adaptive zoom value is determined (no borders will be visible)
+@end table
 Note that the value given at zoom is added to the one calculated
 here.
 

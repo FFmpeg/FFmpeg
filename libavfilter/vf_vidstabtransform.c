@@ -67,7 +67,7 @@ static const AVOption vidstabtransform_options[] = {
     {"zoom",      "percentage to zoom >0: zoom in, <0 zoom out",                    OFFSETC(zoom),
                    AV_OPT_TYPE_DOUBLE, {.dbl = 0},     -100, 100,  FLAGS},
     {"optzoom",   "0: nothing, 1: determine optimal zoom (added to 'zoom')",        OFFSETC(optZoom),
-                   AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,    FLAGS},
+                   AV_OPT_TYPE_INT,    {.i64 = 1},        0, 2,    FLAGS},
     {"interpol",  "type of interpolation",                                          OFFSETC(interpolType),
                    AV_OPT_TYPE_INT,    {.i64 = 2},        0, 3,    FLAGS, "interpol"},
     {  "no",      "no interpolation",                                               0,
