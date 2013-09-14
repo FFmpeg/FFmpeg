@@ -19,6 +19,7 @@ version <next>
 - phase filter ported from libmpcodecs
 - w3fdif filter
 - Opus support in Matroska
+- FFV1 version 1.3 is stable and no longer experimental
 
 
 version 2.0:
