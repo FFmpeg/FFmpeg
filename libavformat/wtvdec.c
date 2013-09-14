@@ -423,6 +423,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     st->codec->codec_id   = CODEC_ID_MJPEG;
     st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
     st->codec->extradata  = av_mallocz(filesize);
+    st->id = -1;
     if (!st->codec->extradata)
         goto done;
     st->codec->extradata_size = filesize;
