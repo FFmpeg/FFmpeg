@@ -1520,7 +1520,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         end_ebml_master(pb, blockgroup);
     }
 
-    if (codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe) {
+    if ((codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe) || codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, ts, mkv->cluster_pos, relative_packet_pos);
         if (ret < 0) return ret;
     }
