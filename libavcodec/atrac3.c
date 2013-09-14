@@ -690,7 +690,8 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
     if (result) return result;
 
     pSnd->numComponents = decodeTonalComponents (gb, pSnd->components, pSnd->bandsCoded);
-    if (pSnd->numComponents == -1) return -1;
+    if (pSnd->numComponents < 0)
+        return pSnd->numComponents;
 
     numSubbands = decodeSpectrum (gb, pSnd->spectrum);
 
