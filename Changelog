@@ -20,7 +20,9 @@ version <next>
 - w3fdif filter
 - Opus support in Matroska
 - FFV1 version 1.3 is stable and no longer experimental
-
+- FFV1: YUVA(444,422,420) 9, 10 and 16 bit support
+- changed DTS stream id in lavf mpeg ps muxer from 0x8a to 0x88, to be
+  more consistent with other muxers.
 
 version 2.0:
 
