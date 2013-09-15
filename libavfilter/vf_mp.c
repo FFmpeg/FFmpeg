@@ -38,7 +38,6 @@
 #include "libmpcodecs/img_format.h"
 #include "libmpcodecs/cpudetect.h"
 #include "libmpcodecs/av_helpers.h"
-#include "libmpcodecs/vf_scale.h"
 #include "libmpcodecs/libvo/fastmemcpy.h"
 
 #include "libswscale/swscale.h"
