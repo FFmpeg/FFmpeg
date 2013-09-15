@@ -1316,7 +1316,7 @@ enum {
  *
  * @param graphctx the filter graph
  * @param log_ctx context used for logging
- * @return 0 in case of success, a negative AVERROR code otherwise
+ * @return >= 0 in case of success, a negative AVERROR code otherwise
  */
 int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx);
 

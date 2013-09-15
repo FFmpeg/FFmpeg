@@ -78,7 +78,7 @@ static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
  * @param s The read-only AVIOContext to rewind
  * @param buf The probe buffer containing the first buf_size bytes of the file
  * @param buf_size The size of buf
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char **buf, int buf_size);
@@ -125,7 +125,7 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  *
  * @param s Used to return the pointer to the created AVIOContext.
  * In case of failure the pointed to value is set to NULL.
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffio_fdopen(AVIOContext **s, URLContext *h);

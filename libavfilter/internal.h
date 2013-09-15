@@ -169,7 +169,7 @@ int ff_fmt_is_in(int fmt, const int *fmts);
  * @param ret pixel format pointer to where the value should be written
  * @param arg string to parse
  * @param log_ctx log context
- * @return 0 in case of success, a negative AVERROR code on error
+ * @return >= 0 in case of success, a negative AVERROR code on error
  */
 int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ctx);
 
@@ -179,7 +179,7 @@ int ff_parse_pixel_format(enum AVPixelFormat *ret, const char *arg, void *log_ct
  * @param ret unsigned integer pointer to where the value should be written
  * @param arg string to parse
  * @param log_ctx log context
- * @return 0 in case of success, a negative AVERROR code on error
+ * @return >= 0 in case of success, a negative AVERROR code on error
  */
 int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
 
@@ -189,7 +189,7 @@ int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx);
  * @param ret unsigned AVRational pointer to where the value should be written
  * @param arg string to parse
  * @param log_ctx log context
- * @return 0 in case of success, a negative AVERROR code on error
+ * @return >= 0 in case of success, a negative AVERROR code on error
  */
 int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx);
 
@@ -199,7 +199,7 @@ int ff_parse_time_base(AVRational *ret, const char *arg, void *log_ctx);
  * @param ret integer pointer to where the value should be written
  * @param arg string to parse
  * @param log_ctx log context
- * @return 0 in case of success, a negative AVERROR code on error
+ * @return >= 0 in case of success, a negative AVERROR code on error
  */
 int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
 
@@ -209,7 +209,7 @@ int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
  * @param ret 64bit integer pointer to where the value should be written.
  * @param arg string to parse
  * @param log_ctx log context
- * @return 0 in case of success, a negative AVERROR code on error
+ * @return >= 0 in case of success, a negative AVERROR code on error
  */
 int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx);
 

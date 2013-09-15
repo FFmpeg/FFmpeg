@@ -101,7 +101,7 @@ typedef struct URLProtocol {
  * is to be opened
  * @param int_cb interrupt callback to use for the URLContext, may be
  * NULL
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
@@ -130,7 +130,7 @@ int ffurl_connect(URLContext *uc, AVDictionary **options);
  * @param options  A dictionary filled with protocol-private options. On return
  * this parameter will be destroyed and replaced with a dict containing options
  * that were not found. May be NULL.
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_open(URLContext **puc, const char *filename, int flags,
