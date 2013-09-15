@@ -357,7 +357,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     switch (pix_fmt_id) {
     case 0x11111100:
         if (s->rgb)
-            s->avctx->pix_fmt = AV_PIX_FMT_BGR24;
+            s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_BGR48;
         else {
             if (s->component_id[0] == 'Q' && s->component_id[1] == 'F' && s->component_id[2] == 'A') {
                 s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_GBRP : AV_PIX_FMT_GBRP16;
@@ -887,8 +887,14 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
         } else {
             for(i=0; i<nb_components; i++) {
                 int c= s->comp_index[i];
-                for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                    ptr[3*mb_x+2-c] = buffer[mb_x][i];
+                if (s->bits <= 8) {
+                    for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
+                        ptr[3*mb_x+2-c] = buffer[mb_x][i];
+                    }
+                } else {
+                    for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
+                        ((uint16_t*)ptr)[3*mb_x+2-c] = buffer[mb_x][i];
+                    }
                 }
             }
         }
