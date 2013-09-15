@@ -190,8 +190,8 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
     }
 
     for (chan = 0; chan < channels; chan++) {
-        const double *src = (double *)frame->data[chan];
-        double *dst = (double *)out_frame->data[chan];
+        const double *src = (double *)frame->extended_data[chan];
+        double *dst = (double *)out_frame->extended_data[chan];
         ChanParam *cp = &s->channels[chan];
 
         for (i = 0; i < nb_samples; i++) {
@@ -221,7 +221,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     av_assert1(channels > 0); /* would corrupt delay_count and delay_index */
 
     for (chan = 0; chan < channels; chan++) {
-        const double *src = (double *)frame->data[chan];
+        const double *src = (double *)frame->extended_data[chan];
         double *dbuf = (double *)s->delayptrs[chan];
         ChanParam *cp = &s->channels[chan];
         double *dst;
@@ -242,7 +242,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
                     s->pts += av_rescale_q(nb_samples - i, (AVRational){1, inlink->sample_rate}, inlink->time_base);
                 }
 
-                dst = (double *)out_frame->data[chan];
+                dst = (double *)out_frame->extended_data[chan];
                 dst[oindex++] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume), -1, 1);
             } else {
                 count++;
@@ -276,7 +276,7 @@ static int compand_drain(AVFilterLink *outlink)
 
     for (chan = 0; chan < channels; chan++) {
         double *dbuf = (double *)s->delayptrs[chan];
-        double *dst = (double *)frame->data[chan];
+        double *dst = (double *)frame->extended_data[chan];
         ChanParam *cp = &s->channels[chan];
 
         dindex = s->delay_index;

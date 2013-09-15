@@ -282,7 +282,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         av_frame_copy_props(out_frame, frame);
     }
 
-    s->echo_samples(s, s->delayptrs, frame->data, out_frame->data,
+    s->echo_samples(s, s->delayptrs, frame->extended_data, out_frame->extended_data,
                     frame->nb_samples, inlink->channels);
 
     if (frame != out_frame)
@@ -314,7 +314,7 @@ static int request_frame(AVFilterLink *outlink)
                                outlink->channels,
                                frame->format);
 
-        s->echo_samples(s, s->delayptrs, frame->data, frame->data,
+        s->echo_samples(s, s->delayptrs, frame->extended_data, frame->extended_data,
                         frame->nb_samples, outlink->channels);
 
         frame->pts = s->next_pts;
