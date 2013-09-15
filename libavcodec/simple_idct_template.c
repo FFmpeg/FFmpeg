@@ -64,6 +64,7 @@
 
 #elif BIT_DEPTH == 10 || BIT_DEPTH == 12
 
+#if BIT_DEPTH == 10
 #define W1 90901
 #define W2 85627
 #define W3 77062
@@ -72,13 +73,20 @@
 #define W6 35468
 #define W7 18081
 
-#if BIT_DEPTH == 10
 #define ROW_SHIFT 15
 #define COL_SHIFT 20
 #define DC_SHIFT 1
 #else
-#define ROW_SHIFT 17
-#define COL_SHIFT 18
+#define W1 45451
+#define W2 42813
+#define W3 38531
+#define W4 32767
+#define W5 25746
+#define W6 17734
+#define W7 9041
+
+#define ROW_SHIFT 16
+#define COL_SHIFT 17
 #define DC_SHIFT -1
 #endif
 
