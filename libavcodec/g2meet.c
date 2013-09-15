@@ -453,7 +453,7 @@ static int g2m_init_buffers(G2MContext *c)
     if (!c->synth_tile || !c->jpeg_tile ||
         c->old_tile_w < c->tile_width ||
         c->old_tile_h < c->tile_height) {
-        c->tile_stride = FFALIGN(c->tile_width * 3, 16);
+        c->tile_stride = FFALIGN(c->tile_width, 16) * 3;
         aligned_height = FFALIGN(c->tile_height,    16);
         av_free(c->synth_tile);
         av_free(c->jpeg_tile);
