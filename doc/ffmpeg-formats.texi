@@ -76,6 +76,9 @@ Enable RTP MP4A-LATM payload.
 Reduce the latency introduced by optional buffering
 @end table
 
+@item seek2any @var{integer} (@emph{input})
+Forces seeking to enable seek to any mode if set to 1. Default is 0.
+
 @item analyzeduration @var{integer} (@emph{input})
 Specify how many microseconds are analyzed to probe the input. A
 higher value will allow to detect more accurate information, but will
@@ -142,6 +145,12 @@ Use wallclock as timestamps.
 @item avoid_negative_ts @var{integer} (@emph{output})
 Shift timestamps to make them positive. 1 enables, 0 disables, default
 of -1 enables when required by target format.
+
+@item skip_initial_bytes @var{integer} (@emph{input})
+Set number initial bytes to skip. Default is 0.
+
+@item correct_ts_overflow @var{integer} (@emph{input})
+Correct single timestamp overflows if set to 1. Default is 1.
 @end table
 
 @c man end FORMAT OPTIONS
