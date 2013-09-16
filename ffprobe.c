@@ -1936,18 +1936,18 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         AVCodec *codec;
 
         if (stream->codec->codec_id == AV_CODEC_ID_PROBE) {
-            av_log(NULL, AV_LOG_ERROR,
+            av_log(NULL, AV_LOG_WARNING,
                    "Failed to probe codec for input stream %d\n",
                     stream->index);
         } else if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
-            av_log(NULL, AV_LOG_ERROR,
+            av_log(NULL, AV_LOG_WARNING,
                     "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);
         } else {
             AVDictionary *opts = filter_codec_opts(codec_opts, stream->codec->codec_id,
                                                    fmt_ctx, stream, codec);
             if (avcodec_open2(stream->codec, codec, &opts) < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Error while opening codec for input stream %d\n",
+                av_log(NULL, AV_LOG_WARNING, "Could not open codec for input stream %d\n",
                        stream->index);
             }
             if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
