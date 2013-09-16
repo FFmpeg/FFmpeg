@@ -1487,7 +1487,9 @@ static int guess_ni_flag(AVFormatContext *s)
     avio_seek(s->pb, oldpos, SEEK_SET);
     if (last_start > first_end)
         return 1;
-    idx= av_mallocz(sizeof(*idx) * s->nb_streams);
+    idx= av_calloc(s->nb_streams, sizeof(*idx));
+    if (!idx)
+        return 0;
     for (min_pos=pos=0; min_pos!=INT64_MAX; pos= min_pos+1LU) {
         int64_t max_dts = INT64_MIN/2, min_dts= INT64_MAX/2;
         min_pos = INT64_MAX;
