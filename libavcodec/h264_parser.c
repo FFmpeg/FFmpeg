@@ -132,8 +132,8 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         case NAL_SLICE:
         case NAL_IDR_SLICE:
             // Do not walk the whole buffer just to decode slice header
-            if (src_length > 20)
-                src_length = 20;
+            if (src_length > 60)
+                src_length = 60;
             break;
         }
         ptr = ff_h264_decode_nal(h, buf, &dst_length, &consumed, src_length);
@@ -219,7 +219,17 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                     h->delta_poc[1] = get_se_golomb(&h->gb);
             }
 
+            /* Decode POC of this picture. */
+            field_poc[0] = field_poc[1] = INT_MAX;
             ff_init_poc(h, field_poc, &s->output_picture_number);
+
+            /* Set up the prev_ values for decoding POC of the next picture. */
+            h->prev_frame_num        = h->frame_num;
+            h->prev_frame_num_offset = h->frame_num_offset;
+            if (h->nal_ref_idc != 0) {
+                h->prev_poc_msb = h->poc_msb;
+                h->prev_poc_lsb = h->poc_lsb;
+            }
 
             if (h->sps.pic_struct_present_flag) {
                 switch (h->sei_pic_struct) {
