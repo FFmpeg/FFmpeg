@@ -34,6 +34,7 @@ version 10:
   data read from an input file
 - incomplete Voxware MetaSound decoder
 - WebP decoder
+- Error Resilient AAC syntax (ER AAC LC) decoding
 
 
 version 9:

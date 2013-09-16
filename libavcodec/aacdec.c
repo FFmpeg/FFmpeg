@@ -706,7 +706,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
                                      MPEG4AudioConfig *m4ac,
                                      int channel_config)
 {
-    int extension_flag, ret;
+    int extension_flag, ret, ep_config, res_flags;
     uint8_t layout_map[MAX_ELEM_ID*4][3];
     int tags = 0;
 
@@ -752,13 +752,29 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         case AOT_ER_AAC_LTP:
         case AOT_ER_AAC_SCALABLE:
         case AOT_ER_AAC_LD:
-            skip_bits(gb, 3);      /* aacSectionDataResilienceFlag
-                                    * aacScalefactorDataResilienceFlag
-                                    * aacSpectralDataResilienceFlag
-                                    */
+            res_flags = get_bits(gb, 3);
+            if (res_flags) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "AAC data resilience not supported (flags %x)\n",
+                       res_flags);
+                return AVERROR_PATCHWELCOME;
+            }
             break;
         }
         skip_bits1(gb);    // extensionFlag3 (TBD in version 3)
+    }
+    switch (m4ac->object_type) {
+    case AOT_ER_AAC_LC:
+    case AOT_ER_AAC_LTP:
+    case AOT_ER_AAC_SCALABLE:
+    case AOT_ER_AAC_LD:
+        ep_config = get_bits(gb, 2);
+        if (ep_config) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "epConfig %d is not supported.\n",
+                   ep_config);
+            return AVERROR_PATCHWELCOME;
+        }
     }
     return 0;
 }
@@ -808,6 +824,7 @@ static int decode_audio_specific_config(AACContext *ac,
     case AOT_AAC_MAIN:
     case AOT_AAC_LC:
     case AOT_AAC_LTP:
+    case AOT_ER_AAC_LC:
         if ((ret = decode_ga_specific_config(ac, avctx, &gb,
                                             m4ac, m4ac->chan_config)) < 0)
             return ret;
@@ -1079,7 +1096,8 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
                 if (decode_prediction(ac, ics, gb)) {
                     return AVERROR_INVALIDDATA;
                 }
-            } else if (ac->oc[1].m4ac.object_type == AOT_AAC_LC) {
+            } else if (ac->oc[1].m4ac.object_type == AOT_AAC_LC ||
+                       ac->oc[1].m4ac.object_type == AOT_ER_AAC_LC) {
                 av_log(ac->avctx, AV_LOG_ERROR,
                        "Prediction is not allowed in AAC-LC.\n");
                 return AVERROR_INVALIDDATA;
@@ -1701,7 +1719,7 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
     TemporalNoiseShaping    *tns = &sce->tns;
     IndividualChannelStream *ics = &sce->ics;
     float *out = sce->coeffs;
-    int global_gain, pulse_present = 0;
+    int global_gain, er_syntax, pulse_present = 0;
     int ret;
 
     /* This assignment is to silence a GCC warning about the variable being used
@@ -1724,6 +1742,9 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
         return ret;
 
     pulse_present = 0;
+    er_syntax = ac->oc[1].m4ac.object_type == AOT_ER_AAC_LC ||
+                ac->oc[1].m4ac.object_type == AOT_ER_AAC_LTP ||
+                ac->oc[1].m4ac.object_type == AOT_ER_AAC_LD;
     if (!scale_flag) {
         if ((pulse_present = get_bits1(gb))) {
             if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
@@ -1737,12 +1758,19 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
                 return AVERROR_INVALIDDATA;
             }
         }
-        if ((tns->present = get_bits1(gb)) && decode_tns(ac, tns, gb, ics))
-            return AVERROR_INVALIDDATA;
+        tns->present = get_bits1(gb);
+        if (tns->present && !er_syntax)
+            if (decode_tns(ac, tns, gb, ics) < 0)
+                return AVERROR_INVALIDDATA;
         if (get_bits1(gb)) {
             avpriv_request_sample(ac->avctx, "SSR");
             return AVERROR_PATCHWELCOME;
         }
+        // I see no textual basis in the spec for this occuring after SSR gain
+        // control, but this is what both reference and real implmentations do
+        if (tns->present && er_syntax)
+            if (decode_tns(ac, tns, gb, ics) < 0)
+                return AVERROR_INVALIDDATA;
     }
 
     if (decode_spectrum_and_dequant(ac, out, gb, sce->sf, pulse_present,
@@ -2466,6 +2494,61 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     return size;
 }
 
+static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
+                               int *got_frame_ptr, GetBitContext *gb)
+{
+    AACContext *ac = avctx->priv_data;
+    ChannelElement *che;
+    int err, i;
+    int samples = 1024;
+    int chan_config = ac->oc[1].m4ac.chan_config;
+
+    ac->frame = data;
+
+    if ((err = frame_configure_elements(avctx)) < 0)
+        return err;
+
+    ac->tags_mapped = 0;
+
+    if (chan_config < 0 || chan_config >= 8) {
+        avpriv_request_sample(avctx, "Unknown ER channel configuration %d",
+                              ac->oc[1].m4ac.chan_config);
+        return AVERROR_INVALIDDATA;
+    }
+    for (i = 0; i < tags_per_config[chan_config]; i++) {
+        const int elem_type = aac_channel_layout_map[chan_config-1][i][0];
+        const int elem_id   = aac_channel_layout_map[chan_config-1][i][1];
+        if (!(che=get_che(ac, elem_type, elem_id))) {
+            av_log(ac->avctx, AV_LOG_ERROR,
+                   "channel element %d.%d is not allocated\n",
+                   elem_type, elem_id);
+            return AVERROR_INVALIDDATA;
+        }
+        skip_bits(gb, 4);
+        switch (elem_type) {
+        case TYPE_SCE:
+            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
+            break;
+        case TYPE_CPE:
+            err = decode_cpe(ac, gb, che);
+            break;
+        case TYPE_LFE:
+            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
+            break;
+        }
+        if (err < 0)
+            return err;
+    }
+
+    spectral_to_sample(ac);
+
+    ac->frame->nb_samples = samples;
+    *got_frame_ptr = 1;
+
+    skip_bits_long(gb, get_bits_left(gb));
+    return 0;
+}
+
 static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
                                 int *got_frame_ptr, GetBitContext *gb)
 {
@@ -2639,7 +2722,16 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
     if ((err = init_get_bits(&gb, buf, buf_size * 8)) < 0)
         return err;
 
-    if ((err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb)) < 0)
+    switch (ac->oc[1].m4ac.object_type) {
+    case AOT_ER_AAC_LC:
+    case AOT_ER_AAC_LTP:
+    case AOT_ER_AAC_LD:
+        err = aac_decode_er_frame(avctx, data, got_frame_ptr, &gb);
+        break;
+    default:
+        err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb);
+    }
+    if (err < 0)
         return err;
 
     buf_consumed = (get_bits_count(&gb) + 7) >> 3;
