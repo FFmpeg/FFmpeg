@@ -67,12 +67,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static int packet_alloc(AVBufferRef **buf, int size)
 {
+    int ret;
     if ((unsigned)size >= (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
-    av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!*buf)
-        return AVERROR(ENOMEM);
+    ret = av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (ret < 0)
+        return ret;
 
     memset((*buf)->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
