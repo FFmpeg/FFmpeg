@@ -2228,6 +2228,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                              AV_TIME_BASE_Q) >= ic->max_analyze_duration) {
                 av_log(ic, AV_LOG_WARNING, "max_analyze_duration %d reached\n",
                        ic->max_analyze_duration);
+                if (ic->flags & AVFMT_FLAG_NOBUFFER)
+                    av_packet_unref(pkt);
                 break;
             }
         }
@@ -2255,6 +2257,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
          * the container. */
         try_decode_frame(st, pkt,
                          (options && i < orig_nb_streams) ? &options[i] : NULL);
+
+        if (ic->flags & AVFMT_FLAG_NOBUFFER)
+            av_packet_unref(pkt);
 
         st->codec_info_nb_frames++;
         count++;
