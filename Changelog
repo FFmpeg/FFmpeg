@@ -35,6 +35,7 @@ version 10:
 - incomplete Voxware MetaSound decoder
 - WebP decoder
 - Error Resilient AAC syntax (ER AAC LC) decoding
+- Low Delay AAC (ER AAC LD) decoding
 
 
 version 9:

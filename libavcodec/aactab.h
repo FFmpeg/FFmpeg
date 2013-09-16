@@ -45,6 +45,7 @@
  * @{
  */
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_long_1024)[1024];
+DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_long_512 )[512];
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_short_128)[128];
 // @}
 
@@ -52,6 +53,7 @@ DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_short_128)[128];
  * @{
  */
 extern const uint8_t ff_aac_num_swb_1024[];
+extern const uint8_t ff_aac_num_swb_512 [];
 extern const uint8_t ff_aac_num_swb_128 [];
 // @}
 
@@ -69,6 +71,7 @@ extern const float *ff_aac_codebook_vector_vals[];
 extern const uint16_t *ff_aac_codebook_vector_idx[];
 
 extern const uint16_t * const ff_swb_offset_1024[13];
+extern const uint16_t * const ff_swb_offset_512 [13];
 extern const uint16_t * const ff_swb_offset_128 [13];
 
 extern const uint8_t ff_tns_max_bands_1024[13];
