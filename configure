@@ -2540,6 +2540,7 @@ pixfmts_super2xsai_test_deps="super2xsai_filter"
 tinterlace_merge_test_deps="tinterlace_filter"
 tinterlace_pad_test_deps="tinterlace_filter"
 zmq_filter_deps="libzmq"
+zoompan_filter_deps="swscale"
 
 # examples
 avio_reading="avformat avcodec avutil"

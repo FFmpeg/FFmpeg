@@ -8680,6 +8680,94 @@ Only deinterlace frames marked as interlaced.
 The default value is @code{all}.
 @end table
 
+@section zoompan
+
+Apply Zoom & Pan effect.
+
+This filter accepts the following options:
+
+@table @option
+@item zoom, z
+Set the zoom expression. Default is 1.
+
+@item x
+@item y
+Set the x and y expression. Default is 0.
+
+@item d
+Set the duration expression in number of frames.
+This sets for how many number of frames effect will last for
+single input image.
+
+@item s
+Set the output image size, default is 'hd720'.
+@end table
+
+Each expression can contain the following constants:
+
+@table @option
+@item in_w, iw
+Input width.
+
+@item in_h, ih
+Input height.
+
+@item out_w, ow
+Output width.
+
+@item out_h, oh
+Output height.
+
+@item in
+Input frame count.
+
+@item on
+Output frame count.
+
+@item x
+@item y
+Last calculated 'x' and 'y' position from 'x' and 'y' expression
+for current input frame.
+
+@item px
+@item py
+'x' and 'y' of last output frame of previous input frame or 0 when there was
+not yet such frame (first input frame).
+
+@item zoom
+Last calculated zoom from 'z' expression for current input frame.
+
+@item pzoom
+Last calculated zoom of last output frame of previous input frame.
+
+@item duration
+Number of output frames for current input frame. Calculated from 'd' expression
+for each input frame.
+
+@item pduration
+number of output frames created for previous input frame
+
+@item a
+Rational number: input width / input height
+
+@item sar
+sample aspect ratio
+
+@item dar
+display aspect ratio
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Zoom-in up to 1.5 and pan at same time to some spot near center of picture:
+@example
+zoompan=z=min(zoom+0.0015\,1.5):d=700:x=if(gte(zoom\,1.5)\,x\,x+1/a):y=if(gte(zoom\,1.5)\,y\,y+1):s=640x360"
+@end example
+@end itemize
+
 @c man end VIDEO FILTERS
 
 @chapter Video Sources

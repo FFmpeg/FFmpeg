@@ -27,6 +27,7 @@ version <next>:
 - display matrix export and rotation api
 - WebVTT encoder
 - showcqt multimedia filter
+- zoompan filter
 
 
 version 2.2:
