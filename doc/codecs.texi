@@ -836,6 +836,10 @@ Possible values:
 
 @item aac_eld
 
+@item mpeg2_aac_low
+
+@item mpeg2_aac_he
+
 @item dts
 
 @item dts_es
