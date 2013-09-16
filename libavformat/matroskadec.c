@@ -1488,6 +1488,10 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             track->audio.sub_packet_h    = avio_rb16(&b);
             track->audio.frame_size      = avio_rb16(&b);
             track->audio.sub_packet_size = avio_rb16(&b);
+            if (flavor <= 0 || track->audio.coded_framesize <= 0 ||
+                track->audio.sub_packet_h <= 0 || track->audio.frame_size <= 0 ||
+                track->audio.sub_packet_size <= 0)
+                return AVERROR_INVALIDDATA;
             track->audio.buf = av_malloc(track->audio.frame_size * track->audio.sub_packet_h);
             if (codec_id == CODEC_ID_RA_288) {
                 st->codec->block_align = track->audio.coded_framesize;
