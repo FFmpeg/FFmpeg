@@ -496,8 +496,9 @@ static void unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
                 dst[idx++] = alpha_val >> 6;
             else
                 dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
-            if (idx >= num_coeffs)
+            if (idx >= num_coeffs) {
                 break;
+            }
         } while (get_bits1(gb));
         val = get_bits(gb, 4);
         if (!val)
