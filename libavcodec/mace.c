@@ -229,8 +229,8 @@ static av_cold int mace_decode_init(AVCodecContext * avctx)
 {
     MACEContext *ctx = avctx->priv_data;
 
-    if (avctx->channels > 2)
-        return -1;
+    if (avctx->channels > 2 || avctx->channels < 1)
+        return AVERROR(EINVAL);
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
 
     avcodec_get_frame_defaults(&ctx->frame);
