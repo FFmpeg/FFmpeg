@@ -2088,39 +2088,38 @@ static int handle_notify(URLContext *s, RTMPPacket *pkt) {
         if (ff_amf_read_string(&gbc, statusmsg,
                                sizeof(statusmsg), &stringlen))
             return AVERROR_INVALIDDATA;
-        if (strcmp(statusmsg, "onMetaData")) {
-            av_log(s, AV_LOG_INFO, "Expecting onMetadata but got %s\n",
-                   statusmsg);
-            return 0;
-        }
-
-        /* Provide ECMAArray to flv */
-        ts = pkt->timestamp;
-
-        // generate packet header and put data into buffer for FLV demuxer
-        if (rt->flv_off < rt->flv_size) {
-            old_flv_size  = rt->flv_size;
-            rt->flv_size += datatowritelength + 15;
-        } else {
-            old_flv_size = 0;
-            rt->flv_size = datatowritelength + 15;
-            rt->flv_off  = 0;
-        }
-
-        cp = av_realloc(rt->flv_data, rt->flv_size);
-        if (!cp)
-            return AVERROR(ENOMEM);
-        rt->flv_data = cp;
-        bytestream2_init_writer(&pbc, cp, rt->flv_size);
-        bytestream2_skip_p(&pbc, old_flv_size);
-        bytestream2_put_byte(&pbc, pkt->type);
-        bytestream2_put_be24(&pbc, datatowritelength);
-        bytestream2_put_be24(&pbc, ts);
-        bytestream2_put_byte(&pbc, ts >> 24);
-        bytestream2_put_be24(&pbc, 0);
-        bytestream2_put_buffer(&pbc, datatowrite, datatowritelength);
-        bytestream2_put_be32(&pbc, 0);
+    } else {
+        datatowrite       = pkt->data;
+        datatowritelength = pkt->size;
     }
+
+    /* Provide ECMAArray to flv */
+    ts = pkt->timestamp;
+
+    // generate packet header and put data into buffer for FLV demuxer
+    if (rt->flv_off < rt->flv_size) {
+        old_flv_size  = rt->flv_size;
+        rt->flv_size += datatowritelength + 15;
+    } else {
+        old_flv_size = 0;
+        rt->flv_size = datatowritelength + 15;
+        rt->flv_off  = 0;
+    }
+
+    cp = av_realloc(rt->flv_data, rt->flv_size);
+    if (!cp)
+        return AVERROR(ENOMEM);
+    rt->flv_data = cp;
+    bytestream2_init_writer(&pbc, cp, rt->flv_size);
+    bytestream2_skip_p(&pbc, old_flv_size);
+    bytestream2_put_byte(&pbc, pkt->type);
+    bytestream2_put_be24(&pbc, datatowritelength);
+    bytestream2_put_be24(&pbc, ts);
+    bytestream2_put_byte(&pbc, ts >> 24);
+    bytestream2_put_be24(&pbc, 0);
+    bytestream2_put_buffer(&pbc, datatowrite, datatowritelength);
+    bytestream2_put_be32(&pbc, 0);
+
     return 0;
 }
 
