@@ -85,7 +85,7 @@ typedef struct RTMPContext {
     char          *app;                       ///< name of application
     char          *conn;                      ///< append arbitrary AMF data to the Connect message
     ClientState   state;                      ///< current state
-    int           main_channel_id;            ///< an additional channel ID which is used for some invocations
+    int           stream_id;                  ///< ID assigned by the server for the stream
     uint8_t*      flv_data;                   ///< buffer with data for demuxer
     int           flv_size;                   ///< current buffer size
     int           flv_off;                    ///< number of bytes read from current buffer
@@ -655,7 +655,7 @@ static int gen_delete_stream(URLContext *s, RTMPContext *rt)
     ff_amf_write_string(&p, "deleteStream");
     ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
-    ff_amf_write_number(&p, rt->main_channel_id);
+    ff_amf_write_number(&p, rt->stream_id);
 
     return rtmp_send_packet(rt, &pkt, 0);
 }
@@ -675,7 +675,7 @@ static int gen_buffer_time(URLContext *s, RTMPContext *rt)
 
     p = pkt.data;
     bytestream_put_be16(&p, 3);
-    bytestream_put_be32(&p, rt->main_channel_id);
+    bytestream_put_be32(&p, rt->stream_id);
     bytestream_put_be32(&p, rt->client_buffer_time);
 
     return rtmp_send_packet(rt, &pkt, 0);
@@ -697,7 +697,7 @@ static int gen_play(URLContext *s, RTMPContext *rt)
                                      0, 29 + strlen(rt->playpath))) < 0)
         return ret;
 
-    pkt.extra = rt->main_channel_id;
+    pkt.extra = rt->stream_id;
 
     p = pkt.data;
     ff_amf_write_string(&p, "play");
@@ -721,7 +721,7 @@ static int gen_seek(URLContext *s, RTMPContext *rt, int64_t timestamp)
     if ((ret = ff_rtmp_packet_create(&pkt, 3, RTMP_PT_INVOKE, 0, 26)) < 0)
         return ret;
 
-    pkt.extra = rt->main_channel_id;
+    pkt.extra = rt->stream_id;
 
     p = pkt.data;
     ff_amf_write_string(&p, "seek");
@@ -747,7 +747,7 @@ static int gen_publish(URLContext *s, RTMPContext *rt)
                                      0, 30 + strlen(rt->playpath))) < 0)
         return ret;
 
-    pkt.extra = rt->main_channel_id;
+    pkt.extra = rt->stream_id;
 
     p = pkt.data;
     ff_amf_write_string(&p, "publish");
@@ -1980,7 +1980,7 @@ static int handle_invoke_result(URLContext *s, RTMPPacket *pkt)
         if (pkt->data[10] || pkt->data[19] != 5 || pkt->data[20]) {
             av_log(s, AV_LOG_WARNING, "Unexpected reply on connect()\n");
         } else {
-            rt->main_channel_id = av_int2double(AV_RB64(pkt->data + 21));
+            rt->stream_id = av_int2double(AV_RB64(pkt->data + 21));
         }
 
         if (!rt->is_input) {
@@ -2667,7 +2667,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
                                              pkttype, ts, pktsize)) < 0)
                 return ret;
 
-            rt->out_pkt.extra = rt->main_channel_id;
+            rt->out_pkt.extra = rt->stream_id;
             rt->flv_data = rt->out_pkt.data;
 
             if (pkttype == RTMP_PT_NOTIFY)
