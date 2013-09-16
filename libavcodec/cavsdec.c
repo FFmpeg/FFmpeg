@@ -948,6 +948,11 @@ static int decode_pic(AVSContext *h)
     int ret;
     enum cavs_mb mb_type;
 
+    if (!h->top_qp) {
+        av_log(h->avctx, AV_LOG_ERROR, "No sequence header decoded yet\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     av_frame_unref(h->cur.f);
 
     skip_bits(&h->gb, 16);//bbv_dwlay
@@ -1177,8 +1182,6 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         case PIC_PB_START_CODE:
             *got_frame = 0;
             if (!h->got_keyframe)
-                break;
-            if(!h->top_qp)
                 break;
             init_get_bits(&h->gb, buf_ptr, input_size);
             h->stc = stc;
