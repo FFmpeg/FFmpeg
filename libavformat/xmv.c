@@ -43,6 +43,8 @@
                            XMV_AUDIO_ADPCM51_FRONTCENTERLOW | \
                            XMV_AUDIO_ADPCM51_REARLEFTRIGHT)
 
+#define XMV_BLOCK_ALIGN_SIZE 36
+
 typedef struct XMVAudioTrack {
     uint16_t compression;
     uint16_t channels;
@@ -207,7 +209,7 @@ static int xmv_read_header(AVFormatContext *s)
         track->bit_rate      = track->bits_per_sample *
                                track->sample_rate *
                                track->channels;
-        track->block_align   = 36 * track->channels;
+        track->block_align   = XMV_BLOCK_ALIGN_SIZE * track->channels;
         track->block_samples = 64;
         track->codec_id      = ff_wav_codec_get_id(track->compression,
                                                    track->bits_per_sample);
@@ -224,7 +226,8 @@ static int xmv_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_WARNING, "Unsupported 5.1 ADPCM audio stream "
                                       "(0x%04X)\n", track->flags);
 
-        if (!track->channels || !track->sample_rate) {
+        if (!track->channels || !track->sample_rate ||
+             track->channels >= UINT16_MAX / XMV_BLOCK_ALIGN_SIZE) {
             av_log(s, AV_LOG_ERROR, "Invalid parameters for audio track %d.\n",
                    audio_track);
             ret = AVERROR_INVALIDDATA;
