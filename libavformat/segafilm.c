@@ -209,7 +209,7 @@ static int film_read_header(AVFormatContext *s)
     for (i = 0; i < film->sample_count; i++) {
         /* load the next sample record and transfer it to an internal struct */
         if (avio_read(pb, scratch, 16) != 16) {
-            av_free(film->sample_table);
+            av_freep(&film->sample_table);
             return AVERROR(EIO);
         }
         film->sample_table[i].sample_offset =
@@ -321,8 +321,8 @@ static int film_read_close(AVFormatContext *s)
 {
     FilmDemuxContext *film = s->priv_data;
 
-    av_free(film->sample_table);
-    av_free(film->stereo_buffer);
+    av_freep(&film->sample_table);
+    av_freep(&film->stereo_buffer);
 
     return 0;
 }
