@@ -771,6 +771,8 @@ Allow non spec compliant speedup tricks.
 Deprecated, use mpegvideo private options instead.
 @item noout
 Skip bitstream encoding.
+@item ignorecrop
+Ignore cropping information from sps.
 @item local_header
 Place global headers at every keyframe instead of in extradata.
 @item chunks
