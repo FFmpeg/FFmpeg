@@ -524,7 +524,7 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
         av_log(s->avctx, AV_LOG_WARNING,
                "mjpeg_decode_dc: bad vlc: %d:%d (%p)\n",
                0, dc_index, &s->vlcs[0][dc_index]);
-        return 0xffff;
+        return 0xfffff;
     }
 
     if (code)
@@ -541,7 +541,7 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
 
     /* DC coef */
     val = mjpeg_decode_dc(s, dc_index);
-    if (val == 0xffff) {
+    if (val == 0xfffff) {
         av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
@@ -589,7 +589,7 @@ static int decode_dc_progressive(MJpegDecodeContext *s, int16_t *block,
     int val;
     s->dsp.clear_block(block);
     val = mjpeg_decode_dc(s, dc_index);
-    if (val == 0xffff) {
+    if (val == 0xfffff) {
         av_log(s->avctx, AV_LOG_ERROR, "error dc\n");
         return AVERROR_INVALIDDATA;
     }
@@ -853,7 +853,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                 PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
 
                 dc = mjpeg_decode_dc(s, s->dc_index[i]);
-                if(dc == 0xFFFF)
+                if(dc == 0xFFFFF)
                     return -1;
 
                 left[i] = buffer[mb_x][i] =
@@ -944,7 +944,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         int pred, dc;
 
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
-                        if(dc == 0xFFFF)
+                        if(dc == 0xFFFFF)
                             return -1;
                         if(bits<=8){
                         ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
@@ -1012,7 +1012,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor,
                         int pred;
 
                         dc = mjpeg_decode_dc(s, s->dc_index[i]);
-                        if(dc == 0xFFFF)
+                        if(dc == 0xFFFFF)
                             return -1;
                         if(bits<=8){
                             ptr = s->picture.data[c] +
