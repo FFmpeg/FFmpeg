@@ -142,8 +142,13 @@ static int smacker_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_ERROR, "Too many frames: %i\n", smk->frames);
         return AVERROR_INVALIDDATA;
     }
-    smk->frm_size = av_malloc(smk->frames * 4);
+    smk->frm_size = av_malloc_array(smk->frames, sizeof(*smk->frm_size));
     smk->frm_flags = av_malloc(smk->frames);
+    if (!smk->frm_size || !smk->frm_flags) {
+        av_freep(&smk->frm_size);
+        av_freep(&smk->frm_flags);
+        return AVERROR(ENOMEM);
+    }
 
     smk->is_ver4 = (smk->magic != MKTAG('S', 'M', 'K', '2'));
 
