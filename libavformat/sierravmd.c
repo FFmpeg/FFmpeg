@@ -252,8 +252,8 @@ static int vmd_read_header(AVFormatContext *s)
     return 0;
 
 error:
-    av_free(raw_frame_table);
-    av_free(vmd->frame_table);
+    av_freep(&raw_frame_table);
+    av_freep(&vmd->frame_table);
     return ret;
 }
 
@@ -304,7 +304,7 @@ static int vmd_read_close(AVFormatContext *s)
 {
     VmdDemuxContext *vmd = s->priv_data;
 
-    av_free(vmd->frame_table);
+    av_freep(&vmd->frame_table);
 
     return 0;
 }
