@@ -25,6 +25,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -192,7 +193,11 @@ static const AVOption stereo3d_options[] = {
 
 AVFILTER_DEFINE_CLASS(stereo3d);
 
-static const enum AVPixelFormat anaglyph_pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat anaglyph_pix_fmts[] = {
+    AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_NONE
+};
+
 static const enum AVPixelFormat other_pix_fmts[] = {
     AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
     AV_PIX_FMT_RGB48BE, AV_PIX_FMT_BGR48BE,
@@ -388,11 +393,15 @@ static int config_output(AVFilterLink *outlink)
     case ANAGLYPH_YB_GRAY:
     case ANAGLYPH_YB_HALF:
     case ANAGLYPH_YB_COLOR:
-    case ANAGLYPH_YB_DUBOIS:
-        s->ana_matrix[0] = &ana_coeff[s->out.format][0][0];
-        s->ana_matrix[1] = &ana_coeff[s->out.format][1][0];
-        s->ana_matrix[2] = &ana_coeff[s->out.format][2][0];
+    case ANAGLYPH_YB_DUBOIS: {
+        uint8_t rgba_map[4];
+
+        ff_fill_rgba_map(rgba_map, outlink->format);
+        s->ana_matrix[rgba_map[0]] = &ana_coeff[s->out.format][0][0];
+        s->ana_matrix[rgba_map[1]] = &ana_coeff[s->out.format][1][0];
+        s->ana_matrix[rgba_map[2]] = &ana_coeff[s->out.format][2][0];
         break;
+    }
     case SIDE_BY_SIDE_2_LR:
         aspect.den      *= 2;
     case SIDE_BY_SIDE_LR:
