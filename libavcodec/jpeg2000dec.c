@@ -1284,6 +1284,10 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
                 av_log(s->avctx, AV_LOG_ERROR, "Missing SOT\n");
                 return AVERROR_INVALIDDATA;
             }
+            if (!s->tile) {
+                av_log(s->avctx, AV_LOG_ERROR, "Missing SIZ\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             tile = s->tile + s->curtileno;
             tp = tile->tile_part + tile->tp_idx;
