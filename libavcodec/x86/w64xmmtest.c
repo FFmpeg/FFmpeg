@@ -78,3 +78,9 @@ wrap(avcodec_encode_subtitle(AVCodecContext *avctx,
 {
     testxmmclobbers(avcodec_encode_subtitle, avctx, buf, buf_size, sub);
 }
+
+wrap(avcodec_encode_video2(AVCodecContext *avctx, AVPacket *avpkt,
+                           const AVFrame *frame, int *got_packet_ptr))
+{
+    testxmmclobbers(avcodec_encode_video2, avctx, avpkt, frame, got_packet_ptr);
+}
