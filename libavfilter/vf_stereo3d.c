@@ -133,7 +133,7 @@ typedef struct Stereo3DContext {
     StereoComponent in, out;
     int width, height;
     int row_step;
-    int ana_matrix[3][6];
+    const int *ana_matrix[3];
     int nb_planes;
     int linesize[4];
     int pheight[4];
@@ -389,7 +389,9 @@ static int config_output(AVFilterLink *outlink)
     case ANAGLYPH_YB_HALF:
     case ANAGLYPH_YB_COLOR:
     case ANAGLYPH_YB_DUBOIS:
-        memcpy(s->ana_matrix, ana_coeff[s->out.format], sizeof(s->ana_matrix));
+        s->ana_matrix[0] = &ana_coeff[s->out.format][0][0];
+        s->ana_matrix[1] = &ana_coeff[s->out.format][1][0];
+        s->ana_matrix[2] = &ana_coeff[s->out.format][2][0];
         break;
     case SIDE_BY_SIDE_2_LR:
         aspect.den      *= 2;
@@ -577,15 +579,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ANAGLYPH_YB_HALF:
     case ANAGLYPH_YB_COLOR:
     case ANAGLYPH_YB_DUBOIS: {
-        int i, x, y, il, ir, o;
+        int x, y, il, ir, o;
         uint8_t *lsrc = ileft->data[0];
         uint8_t *rsrc = iright->data[0];
         uint8_t *dst = out->data[0];
         int out_width = s->out.width;
-        int *ana_matrix[3];
-
-        for (i = 0; i < 3; i++)
-            ana_matrix[i] = s->ana_matrix[i];
+        const int **ana_matrix = s->ana_matrix;
 
         for (y = 0; y < s->out.height; y++) {
             o   = out->linesize[0] * y;
