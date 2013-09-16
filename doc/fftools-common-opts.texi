@@ -59,10 +59,18 @@ Show license.
 
 @item -h, -?, -help, --help [@var{arg}]
 Show help. An optional parameter may be specified to print help about a specific
-item.
+item. If no argument is specified, only basic (non advanced) tool
+options are shown.
 
 Possible values of @var{arg} are:
 @table @option
+@item long
+Print advanced tool options in addition to the basic tool options.
+
+@item full
+Print complete list of options, including shared and private options
+for encoders, decoders, demuxers, muxers, filters, etc.
+
 @item decoder=@var{decoder_name}
 Print detailed information about the decoder named @var{decoder_name}. Use the
 @option{-decoders} option to get a list of all decoders.
@@ -82,7 +90,6 @@ Print detailed information about the muxer named @var{muxer_name}. Use the
 @item filter=@var{filter_name}
 Print detailed information about the filter name @var{filter_name}. Use the
 @option{-filters} option to get a list of all filters.
-
 @end table
 
 @item -version
