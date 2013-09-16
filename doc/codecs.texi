@@ -84,9 +84,6 @@ Apply interlaced motion estimation.
 Use closed gop.
 @end table
 
-@item sub_id @var{integer}
-Deprecated, currently unused.
-
 @item me_method @var{integer} (@emph{encoding,video})
 Set motion estimation method.
 
@@ -386,10 +383,6 @@ Possible values:
 
 @item simplemmx
 
-@item libmpeg2mmx
-
-@item mmi
-
 @item arm
 
 @item altivec
@@ -405,10 +398,6 @@ Possible values:
 @item simpleneon
 
 @item simplealpha
-
-@item h264
-
-@item vp3
 
 @item ipp
 
@@ -771,8 +760,6 @@ Set noise reduction.
 @item rc_init_occupancy @var{integer} (@emph{encoding,video})
 Set number of bits which should be loaded into the rc buffer before
 decoding starts.
-
-@item inter_threshold @var{integer} (@emph{encoding,video})
 
 @item flags2 @var{flags} (@emph{decoding/encoding,audio,video})
 
