@@ -472,7 +472,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static inline uint8_t ana_convert(const int *coeff, uint8_t *left, uint8_t *right)
+static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)
 {
     int sum;
 
@@ -589,8 +589,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ANAGLYPH_YB_COLOR:
     case ANAGLYPH_YB_DUBOIS: {
         int x, y, il, ir, o;
-        uint8_t *lsrc = ileft->data[0];
-        uint8_t *rsrc = iright->data[0];
+        const uint8_t *lsrc = ileft->data[0];
+        const uint8_t *rsrc = iright->data[0];
         uint8_t *dst = out->data[0];
         int out_width = s->out.width;
         const int **ana_matrix = s->ana_matrix;
