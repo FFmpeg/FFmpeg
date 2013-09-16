@@ -636,7 +636,7 @@ static int avi_write_trailer(AVFormatContext *s)
     for (i=0; i<s->nb_streams; i++) {
          AVIStream *avist= s->streams[i]->priv_data;
          for (j=0; j<avist->indexes.ents_allocated/AVI_INDEX_CLUSTER_SIZE; j++)
-              av_free(avist->indexes.cluster[j]);
+              av_freep(&avist->indexes.cluster[j]);
          av_freep(&avist->indexes.cluster);
          avist->indexes.ents_allocated = avist->indexes.entry = 0;
     }
