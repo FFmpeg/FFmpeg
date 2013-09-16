@@ -693,7 +693,7 @@ static int gen_play(URLContext *s, RTMPContext *rt)
 
     av_log(s, AV_LOG_DEBUG, "Sending play command for '%s'\n", rt->playpath);
 
-    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_VIDEO_CHANNEL, RTMP_PT_INVOKE,
+    if ((ret = ff_rtmp_packet_create(&pkt, RTMP_SOURCE_CHANNEL, RTMP_PT_INVOKE,
                                      0, 29 + strlen(rt->playpath))) < 0)
         return ret;
 
@@ -2637,7 +2637,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         if (rt->flv_header_bytes < 11) {
             const uint8_t *header = rt->flv_header;
             int copy = FFMIN(11 - rt->flv_header_bytes, size_temp);
-            int channel = RTMP_SOURCE_CHANNEL;
+            int channel = RTMP_AUDIO_CHANNEL;
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
             size_temp            -= copy;
