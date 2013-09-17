@@ -550,8 +550,7 @@ static av_cold int rv40_decode_init(AVCodecContext *avctx)
     int ret;
 
     r->rv30 = 0;
-    ret = ff_rv34_decode_init(avctx);
-    if (ret < 0)
+    if ((ret = ff_rv34_decode_init(avctx)) < 0)
         return ret;
     if(!aic_top_vlc.bits)
         rv40_init_tables();

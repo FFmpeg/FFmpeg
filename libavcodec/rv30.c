@@ -251,8 +251,7 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
     int ret;
 
     r->rv30 = 1;
-    ret = ff_rv34_decode_init(avctx);
-    if (ret < 0)
+    if ((ret = ff_rv34_decode_init(avctx)) < 0)
         return ret;
     if(avctx->extradata_size < 2){
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
