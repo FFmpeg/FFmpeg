@@ -589,8 +589,12 @@ static int probe_codec(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
 
         if (pkt) {
             uint8_t *new_buf = av_realloc(pd->buf, pd->buf_size+pkt->size+AVPROBE_PADDING_SIZE);
-            if(!new_buf)
+            if(!new_buf) {
+                av_log(s, AV_LOG_WARNING,
+                       "Failed to reallocate probe buffer for stream %d\n",
+                       st->index);
                 goto no_packet;
+            }
             pd->buf = new_buf;
             memcpy(pd->buf+pd->buf_size, pkt->data, pkt->size);
             pd->buf_size += pkt->size;
