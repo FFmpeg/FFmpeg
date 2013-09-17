@@ -2309,7 +2309,7 @@ static int get_packet(URLContext *s, int for_header)
 static int rtmp_close(URLContext *h)
 {
     RTMPContext *rt = h->priv_data;
-    int ret = 0;
+    int ret = 0, i, j;
 
     if (!rt->is_input) {
         rt->flv_data = NULL;
@@ -2320,6 +2320,9 @@ static int rtmp_close(URLContext *h)
     }
     if (rt->state > STATE_HANDSHAKED)
         ret = gen_delete_stream(h, rt);
+    for (i = 0; i < 2; i++)
+        for (j = 0; j < RTMP_CHANNELS; j++)
+            ff_rtmp_packet_destroy(&rt->prev_pkt[i][j]);
 
     free_tracked_methods(rt);
     av_freep(&rt->flv_data);
