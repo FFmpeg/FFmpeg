@@ -504,7 +504,8 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             !strcmp(key, "audiosamplerate") ||
             !strcmp(key, "audiosamplesize") ||
             !strcmp(key, "stereo")          ||
-            !strcmp(key, "audiocodecid"))
+            !strcmp(key, "audiocodecid")    ||
+            !strcmp(key, "datastream"))
             return 0;
 
         if (amf_type == AMF_DATA_TYPE_BOOL) {
