@@ -123,8 +123,8 @@ static void cmv_decode_inter(CmvContext *s, AVFrame *frame, const uint8_t *buf,
             int yoffset = ((buf[i] >> 4)) - 7;
             if (s->last_frame->data[0])
                 cmv_motcomp(frame->data[0], frame->linesize[0],
-                          s->last_frame->data[0], s->last_frame->linesize[0],
-                          x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
+                            s->last_frame->data[0], s->last_frame->linesize[0],
+                            x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
         }
         i++;
     }
