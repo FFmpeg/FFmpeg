@@ -960,8 +960,8 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
 {
     const AVPixFmtDescriptor *desc_dst;
     const AVPixFmtDescriptor *desc_src;
-    memcpy(c->srcColorspaceTable, inv_table, sizeof(int) * 4);
-    memcpy(c->dstColorspaceTable, table, sizeof(int) * 4);
+    memmove(c->srcColorspaceTable, inv_table, sizeof(int) * 4);
+    memmove(c->dstColorspaceTable, table, sizeof(int) * 4);
 
     handle_formats(c);
     desc_dst = av_pix_fmt_desc_get(c->dstFormat);
