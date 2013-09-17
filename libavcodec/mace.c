@@ -226,8 +226,8 @@ static void chomp6(ChannelData *chd, int16_t *output, uint8_t val, int tab_idx)
 
 static av_cold int mace_decode_init(AVCodecContext * avctx)
 {
-    if (avctx->channels > 2 || avctx->channels <= 0)
-        return -1;
+    if (avctx->channels > 2 || avctx->channels < 1)
+        return AVERROR(EINVAL);
     avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
 
     return 0;
