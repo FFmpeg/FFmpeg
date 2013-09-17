@@ -43,6 +43,7 @@
 typedef struct {
     AVClass *avclass;
     opj_image_t *image;
+    opj_cio_t *stream;
     opj_cparameters_t enc_params;
     opj_cinfo_t *compress;
     opj_event_mgr_t event_mgr;
@@ -75,7 +76,7 @@ static void info_callback(const char *msg, void *data)
 static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *parameters)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-    opj_image_cmptparm_t *cmptparm;
+    opj_image_cmptparm_t cmptparm[4] = {{0}};
     opj_image_t *img;
     int i;
     int sub_dx[4];
@@ -151,11 +152,6 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         return NULL;
     }
 
-    cmptparm = av_mallocz(numcomps * sizeof(*cmptparm));
-    if (!cmptparm) {
-        av_log(avctx, AV_LOG_ERROR, "Not enough memory\n");
-        return NULL;
-    }
     for (i = 0; i < numcomps; i++) {
         cmptparm[i].prec = desc->comp[i].depth_minus1 + 1;
         cmptparm[i].bpp  = desc->comp[i].depth_minus1 + 1;
@@ -167,7 +163,14 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     }
 
     img = opj_image_create(numcomps, cmptparm, color_space);
-    av_freep(&cmptparm);
+
+    // x0, y0 is the top left corner of the image
+    // x1, y1 is the width, height of the reference grid
+    img->x0 = 0;
+    img->y0 = 0;
+    img->x1 = (avctx->width  - 1) * parameters->subsampling_dx + 1;
+    img->y1 = (avctx->height - 1) * parameters->subsampling_dy + 1;
+
     return img;
 }
 
@@ -224,16 +227,24 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    avctx->coded_frame = avcodec_alloc_frame();
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
-        goto fail;
-    }
-
     ctx->image = mj2_create_image(avctx, &ctx->enc_params);
     if (!ctx->image) {
         av_log(avctx, AV_LOG_ERROR, "Error creating the mj2 image\n");
         err = AVERROR(EINVAL);
+        goto fail;
+    }
+    opj_setup_encoder(ctx->compress, &ctx->enc_params, ctx->image);
+
+    ctx->stream = opj_cio_open((opj_common_ptr)ctx->compress, NULL, 0);
+    if (!ctx->stream) {
+        av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    avctx->coded_frame = avcodec_alloc_frame();
+    if (!avctx->coded_frame) {
+        av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
         goto fail;
     }
 
@@ -246,7 +257,12 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     return 0;
 
 fail:
-    av_freep(&ctx->compress);
+    opj_cio_close(ctx->stream);
+    ctx->stream = NULL;
+    opj_destroy_compress(ctx->compress);
+    ctx->compress = NULL;
+    opj_image_destroy(ctx->image);
+    ctx->image = NULL;
     av_freep(&avctx->coded_frame);
     return err;
 }
@@ -416,17 +432,10 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     LibOpenJPEGContext *ctx = avctx->priv_data;
     opj_cinfo_t *compress = ctx->compress;
     opj_image_t *image    = ctx->image;
-    opj_cio_t *stream;
+    opj_cio_t *stream     = ctx->stream;
     int cpyresult = 0;
     int ret, len;
     AVFrame gbrframe;
-
-    // x0, y0 is the top left corner of the image
-    // x1, y1 is the width, height of the reference grid
-    image->x0 = 0;
-    image->y0 = 0;
-    image->x1 = (avctx->width  - 1) * ctx->enc_params.subsampling_dx + 1;
-    image->y1 = (avctx->height - 1) * ctx->enc_params.subsampling_dy + 1;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGB24:
@@ -513,29 +522,20 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    opj_setup_encoder(compress, &ctx->enc_params, image);
-    stream = opj_cio_open((opj_common_ptr)compress, NULL, 0);
-    if (!stream) {
-        av_log(avctx, AV_LOG_ERROR, "Error creating the cio stream\n");
-        return AVERROR(ENOMEM);
-    }
-
+    cio_seek(stream, 0);
     if (!opj_encode(compress, stream, image, NULL)) {
-        opj_cio_close(stream);
         av_log(avctx, AV_LOG_ERROR, "Error during the opj encode\n");
         return -1;
     }
 
     len = cio_tell(stream);
     if ((ret = ff_alloc_packet2(avctx, pkt, len)) < 0) {
-        opj_cio_close(stream);
         return ret;
     }
 
     memcpy(pkt->data, stream->buffer, len);
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
-    opj_cio_close(stream);
     return 0;
 }
 
@@ -543,8 +543,12 @@ static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
 {
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
+    opj_cio_close(ctx->stream);
+    ctx->stream = NULL;
     opj_destroy_compress(ctx->compress);
+    ctx->compress = NULL;
     opj_image_destroy(ctx->image);
+    ctx->image = NULL;
     av_freep(&avctx->coded_frame);
     return 0;
 }
