@@ -128,6 +128,25 @@ void *av_realloc(void *ptr, size_t size) av_alloc_size(2);
 void *av_realloc_f(void *ptr, size_t nelem, size_t elsize);
 
 /**
+ * Allocate or reallocate a block of memory.
+ * If *ptr is NULL and size > 0, allocate a new block. If
+ * size is zero, free the memory block pointed to by ptr.
+ * @param   ptr Pointer to a pointer to a memory block already allocated
+ *          with av_realloc(), or pointer to a pointer to NULL.
+ *          The pointer is updated on success, or freed on failure.
+ * @param   size Size in bytes for the memory block to be allocated or
+ *          reallocated
+ * @return  Zero on success, an AVERROR error code on failure.
+ * @warning Pointers originating from the av_malloc() family of functions must
+ *          not be passed to av_reallocp(). The former can be implemented using
+ *          memalign() (or other functions), and there is no guarantee that
+ *          pointers from such functions can be passed to realloc() at all.
+ *          The situation is undefined according to POSIX and may crash with
+ *          some libc implementations.
+ */
+int av_reallocp(void *ptr, size_t size);
+
+/**
  * Allocate or reallocate an array.
  * If ptr is NULL and nmemb > 0, allocate a new block. If
  * nmemb is zero, free the memory block pointed to by ptr.

@@ -180,6 +180,22 @@ void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
     return r;
 }
 
+int av_reallocp(void *ptr, size_t size)
+{
+    void **ptrptr = ptr;
+    void *ret;
+
+    ret = av_realloc(*ptrptr, size);
+
+    if (!ret) {
+        av_freep(ptr);
+        return AVERROR(ENOMEM);
+    }
+
+    *ptrptr = ret;
+    return 0;
+}
+
 void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
 {
     if (!size || nmemb >= INT_MAX / size)
