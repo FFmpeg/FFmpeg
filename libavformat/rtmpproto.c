@@ -2638,6 +2638,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         if (rt->flv_header_bytes < 11) {
             const uint8_t *header = rt->flv_header;
             int copy = FFMIN(11 - rt->flv_header_bytes, size_temp);
+            int channel = RTMP_SOURCE_CHANNEL;
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
             size_temp            -= copy;
@@ -2651,16 +2652,19 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             bytestream_get_be24(&header);
             rt->flv_size = pktsize;
 
+            if (pkttype == RTMP_PT_VIDEO)
+                channel = RTMP_VIDEO_CHANNEL;
+
             //force 12bytes header
             if (((pkttype == RTMP_PT_VIDEO || pkttype == RTMP_PT_AUDIO) && ts == 0) ||
                 pkttype == RTMP_PT_NOTIFY) {
                 if (pkttype == RTMP_PT_NOTIFY)
                     pktsize += 16;
-                rt->prev_pkt[1][RTMP_SOURCE_CHANNEL].channel_id = 0;
+                rt->prev_pkt[1][channel].channel_id = 0;
             }
 
             //this can be a big packet, it's better to send it right here
-            if ((ret = ff_rtmp_packet_create(&rt->out_pkt, RTMP_SOURCE_CHANNEL,
+            if ((ret = ff_rtmp_packet_create(&rt->out_pkt, channel,
                                              pkttype, ts, pktsize)) < 0)
                 return ret;
 
