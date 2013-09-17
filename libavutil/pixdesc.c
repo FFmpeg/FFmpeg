@@ -1392,6 +1392,42 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
        },
         .flags = AV_PIX_FMT_FLAG_BE,
     },
+    [AV_PIX_FMT_NV16] = {
+        .name = "nv16",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 0, 1, 0, 7 },        /* Y */
+            { 1, 1, 1, 0, 7 },        /* U */
+            { 1, 1, 2, 0, 7 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_NV20LE] = {
+        .name = "nv20le",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 0, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 1, 1, 3, 0, 9 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR,
+    },
+    [AV_PIX_FMT_NV20BE] = {
+        .name = "nv20be",
+        .nb_components = 3,
+        .log2_chroma_w = 1,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 0, 1, 0, 9 },        /* Y */
+            { 1, 1, 1, 0, 9 },        /* U */
+            { 1, 1, 3, 0, 9 },        /* V */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
+    },
 };
 
 FF_DISABLE_DEPRECATION_WARNINGS
