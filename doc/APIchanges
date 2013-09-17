@@ -15,7 +15,7 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
-2013-09-xx - xxxxxxx - lavu 52.13.0 - mem.h
+2013-09-16 - 3feb3d6 - lavu 52.15.0 - mem.h
   Add av_reallocp.
 
 2013-09-04 - 3e1f507 - lavc 55.31.101 - avcodec.h
@@ -37,22 +37,22 @@ API changes, most recent first:
   Add allocation function for AVVDPAUContext, allowing
   to extend it in the future without breaking ABI/API.
 
-2013-08-xx - xxxxxxx - lavc 55.16.0 - avcodec.h
+2013-08-10 - 5a9a9d4 - lavc 55.16.0 - avcodec.h
   Extend AVPacket API with av_packet_unref, av_packet_ref,
   av_packet_move_ref, av_packet_copy_props, av_packet_free_side_data.
 
-2013-08-xx - xxxxxxx - lavc 55.13.0 - avcodec.h
+2013-08-05 - f824535 - lavc 55.13.0 - avcodec.h
   Deprecate the bitstream-related members from struct AVVDPAUContext.
   The bistream buffers no longer need to be explicitly freed.
 
-2013-08-xx - xxxxxxx - lavc 55.12.0 - avcodec.h
+2013-08-05 - 549294f - lavc 55.12.0 - avcodec.h
   Deprecate the CODEC_CAP_HWACCEL_VDPAU codec capability. Use CODEC_CAP_HWACCEL
   and select the AV_PIX_FMT_VDPAU format with get_format() instead.
 
-2013-08-xx - xxxxxxx - lavu 52.14.0 - pixfmt.h
+2013-08-05 - a0ad5d0 - lavu 52.14.0 - pixfmt.h
   Deprecate AV_PIX_FMT_VDPAU_*. Use AV_PIX_FMT_VDPAU instead.
 
-2013-08-xx - xxxxxxx - lavc 55.11.0 - avcodec.h
+2013-08-02 - a8b1927 - lavc 55.11.0 - avcodec.h
   Add output_picture_number to AVCodecParserContext.
 
 2013-07-XX - xxxxxxx - XXXXXXXXXXXXXX - avcodec.h
@@ -63,7 +63,7 @@ API changes, most recent first:
   Deprecate avfilter_graph_parse() in favor of the equivalent
   avfilter_graph_parse_ptr().
 
-2013-06-xx - xxxxxxx - lavc 55.10.0 - avcodec.h
+2013-06-24 - 95d5246 - lavc 55.10.0 - avcodec.h
   Add MPEG-2 AAC profiles
 
 2013-06-xx - xxxxxxx - lavf 55.10.100 - avformat.h
@@ -76,7 +76,7 @@ API changes, most recent first:
    av_ripemd_update()
    av_ripemd_final()
 
-2013-06-05 - fc962d4 - lavu 52.13.0 - mem.h
+2013-06-04 - fc962d4 - lavu 52.13.0 - mem.h
   Add av_realloc_array and av_reallocp_array
 
 2013-05-30 - 682b227 - lavu 52.35.100
@@ -86,17 +86,17 @@ API changes, most recent first:
    av_sha512_update()
    av_sha512_final()
 
-2013-05-24 - xxxxxxx - lavfi 3.70.100 - avfilter.h
+2013-05-24 - 129bb23 - lavfi 3.10.0 / 3.70.100 - avfilter.h
   Add support for slice multithreading to lavfi. Filters supporting threading
   are marked with AVFILTER_FLAG_SLICE_THREADS.
   New fields AVFilterContext.thread_type, AVFilterGraph.thread_type and
   AVFilterGraph.nb_threads (accessible directly or through AVOptions) may be
   used to configure multithreading.
 
-2013-05-24 - xxxxxxx - lavu 52.34.100 - cpu.h
+2013-05-24 - 2a6eaea - lavu 52.12.0 / 52.34.100 - cpu.h
   Add av_cpu_count() function for getting the number of logical CPUs.
 
-2013-05-24 - xxxxxxx - lavc 55.12.100 - avcodec.h
+2013-05-24 - b493847 - lavc 55.7.0 / 55.12.100 - avcodec.h
   Add picture_structure to AVCodecParserContext.
 
 2013-05-17 - xxxxxxx - lavu 52.33.100 - opt.h
@@ -260,13 +260,13 @@ API changes, most recent first:
 2012-03-26 - a67d9cf - lavfi 2.66.100
   Add avfilter_fill_frame_from_{audio_,}buffer_ref() functions.
 
-2013-05-xx - xxxxxxx - lavu 52.11.0 - pixdesc.h
+2013-05-15 - e6c4ac7 - lavu 52.11.0 - pixdesc.h
   Replace PIX_FMT_* flags with AV_PIX_FMT_FLAG_*.
 
-2013-04-xx - xxxxxxx - lavc 55.4.0 - avcodec.h
+2013-04-03 - 507b1e4 - lavc 55.4.0 - avcodec.h
   Add field_order to AVCodecParserContext.
 
-2013-03-xx - xxxxxxx - lavc 55.2.0 - avcodec.h
+2013-04-19 - 5e83d9a - lavc 55.2.0 - avcodec.h
   Add CODEC_FLAG_UNALIGNED to allow decoders to produce unaligned output.
 
 2013-04-11 - lavfi 3.8.0
