@@ -869,7 +869,7 @@ static int asf_write_trailer(AVFormatContext *s)
     /* write index */
     data_size = avio_tell(s->pb);
     if (!asf->is_streamed && asf->next_start_sec) {
-        if ((ret = update_index(s, asf->end_sec + 1, 0, 0)) < ret)
+        if ((ret = update_index(s, asf->end_sec + 1, 0, 0)) < 0)
             return ret;
         asf_write_index(s, asf->index_ptr, asf->maximum_packet, asf->next_start_sec);
     }
