@@ -356,6 +356,10 @@ static av_cold int twinvq_decode_init(AVCodecContext *avctx)
                                                  : AV_CH_LAYOUT_STEREO;
 
     ibps = avctx->bit_rate / (1000 * avctx->channels);
+    if (ibps < 8 || ibps > 48) {
+        av_log(avctx, AV_LOG_ERROR, "Bad bitrate per channel value %d\n", ibps);
+        return AVERROR_INVALIDDATA;
+    }
 
     switch ((isampf << 8) + ibps) {
     case (8 << 8) + 8:
