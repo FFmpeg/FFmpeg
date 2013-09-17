@@ -63,6 +63,7 @@ typedef enum {
     STATE_SEEKING,    ///< client has started the seek operation. Back on STATE_PLAYING when the time comes
     STATE_PUBLISHING, ///< client has started sending multimedia data to server (for output)
     STATE_RECEIVING,  ///< received a publish command (for input)
+    STATE_SENDING,    ///< received a play command (for output)
     STATE_STOPPED,    ///< the broadcast has been stopped
 } ClientState;
 
@@ -1898,6 +1899,13 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
         // Send onStatus(NetStream.Publish.Start)
         return write_status(s, pkt, "NetStream.Publish.Start",
                            filename);
+    } else if (!strcmp(command, "play")) {
+        ret = write_begin(s);
+        if (ret < 0)
+            return ret;
+        rt->state = STATE_SENDING;
+        return write_status(s, pkt, "NetStream.Play.Start",
+                            filename);
     } else {
         if ((ret = ff_rtmp_packet_create(&spkt, RTMP_SYSTEM_CHANNEL,
                                          RTMP_PT_INVOKE, 0,
@@ -2044,6 +2052,7 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
     } else if (ff_amf_match_string(pkt->data, pkt->size, "releaseStream") ||
                ff_amf_match_string(pkt->data, pkt->size, "FCPublish")     ||
                ff_amf_match_string(pkt->data, pkt->size, "publish")       ||
+               ff_amf_match_string(pkt->data, pkt->size, "play")          ||
                ff_amf_match_string(pkt->data, pkt->size, "_checkbw")      ||
                ff_amf_match_string(pkt->data, pkt->size, "createStream")) {
         if ((ret = send_invoke_response(s, pkt)) < 0)
@@ -2232,6 +2241,7 @@ static int get_packet(URLContext *s, int for_header)
         }
         if (for_header && (rt->state == STATE_PLAYING    ||
                            rt->state == STATE_PUBLISHING ||
+                           rt->state == STATE_SENDING    ||
                            rt->state == STATE_RECEIVING)) {
             ff_rtmp_packet_destroy(&rpkt);
             return 0;
@@ -2521,7 +2531,6 @@ reconnect:
     } else {
         if (read_connect(s, s->priv_data) < 0)
             goto fail;
-        rt->is_input = 1;
     }
 
     do {
