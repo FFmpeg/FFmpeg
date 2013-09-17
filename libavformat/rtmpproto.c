@@ -406,7 +406,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     GetByteContext gbc;
 
     if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
-                                   rt->prev_pkt[1])) < 0)
+                                   rt->prev_pkt[0])) < 0)
         return ret;
     cp = pkt.data;
     bytestream2_init(&gbc, cp, pkt.size);
