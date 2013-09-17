@@ -357,7 +357,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     switch (pix_fmt_id) {
     case 0x11111100:
         if (s->rgb)
-            s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_BGR48;
+            s->avctx->pix_fmt = s->bits <= 9 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_BGR48;
         else {
             if (s->component_id[0] == 'Q' && s->component_id[1] == 'F' && s->component_id[2] == 'A') {
                 s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_GBRP : AV_PIX_FMT_GBRP16;
@@ -371,7 +371,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         break;
     case 0x11111111:
         if (s->rgb)
-            s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_ABGR : AV_PIX_FMT_RGBA64;
+            s->avctx->pix_fmt = s->bits <= 9 ? AV_PIX_FMT_ABGR : AV_PIX_FMT_RGBA64;
         else {
             s->avctx->pix_fmt = s->bits <= 8 ? AV_PIX_FMT_YUVA444P : AV_PIX_FMT_YUVA444P16;
             s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
@@ -872,6 +872,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                     for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
                         ptr[4*mb_x+3-c] = buffer[mb_x][i];
                     }
+                } else if(s->bits == 9) {
+                    return AVERROR_PATCHWELCOME;
                 } else {
                     for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
                         ((uint16_t*)ptr)[4*mb_x+c] = buffer[mb_x][i];
@@ -897,6 +899,8 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                     for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
                         ptr[3*mb_x+2-c] = buffer[mb_x][i];
                     }
+                } else if(s->bits == 9) {
+                    return AVERROR_PATCHWELCOME;
                 } else {
                     for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
                         ((uint16_t*)ptr)[3*mb_x+2-c] = buffer[mb_x][i];
