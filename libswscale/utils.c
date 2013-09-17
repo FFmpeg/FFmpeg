@@ -1546,7 +1546,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     av_assert0(c->chrDstH <= dstH);
 
     if (flags & SWS_PRINT_INFO) {
-        const char *scaler;
+        const char *scaler, *cpucaps;
         if (flags & SWS_FAST_BILINEAR)
             scaler = "FAST_BILINEAR scaler";
         else if (flags & SWS_BILINEAR)
@@ -1586,15 +1586,17 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
                av_get_pix_fmt_name(dstFormat));
 
         if (INLINE_MMXEXT(cpu_flags))
-            av_log(c, AV_LOG_INFO, "using MMXEXT\n");
+            cpucaps = "MMXEXT";
         else if (INLINE_AMD3DNOW(cpu_flags))
-            av_log(c, AV_LOG_INFO, "using 3DNOW\n");
+            cpucaps = "3DNOW";
         else if (INLINE_MMX(cpu_flags))
-            av_log(c, AV_LOG_INFO, "using MMX\n");
+            cpucaps = "MMX";
         else if (PPC_ALTIVEC(cpu_flags))
-            av_log(c, AV_LOG_INFO, "using AltiVec\n");
+            cpucaps = "AltiVec";
         else
-            av_log(c, AV_LOG_INFO, "using C\n");
+            cpucaps = "C";
+
+        av_log(c, AV_LOG_INFO, "using %s\n", cpucaps);
 
         av_log(c, AV_LOG_VERBOSE, "%dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
         av_log(c, AV_LOG_DEBUG,
