@@ -999,6 +999,11 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_PATCHWELCOME;
     }
 
+    if (!ctx->planes[0].bands) {
+        av_log(avctx, AV_LOG_ERROR, "Color planes not initialized yet\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     ctx->switch_buffers(ctx);
 
     //{ START_TIMER;
