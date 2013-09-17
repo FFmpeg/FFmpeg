@@ -1761,13 +1761,84 @@ static int handle_invoke_error(URLContext *s, RTMPPacket *pkt)
     return ret;
 }
 
+static int write_begin(URLContext *s)
+{
+    RTMPContext *rt = s->priv_data;
+    PutByteContext pbc;
+    RTMPPacket spkt = { 0 };
+    int ret;
+
+    // Send Stream Begin 1
+    if ((ret = ff_rtmp_packet_create(&spkt, RTMP_NETWORK_CHANNEL,
+                                     RTMP_PT_PING, 0, 6)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to create response packet\n");
+        return ret;
+    }
+
+    bytestream2_init_writer(&pbc, spkt.data, spkt.size);
+    bytestream2_put_be16(&pbc, 0);          // 0 -> Stream Begin
+    bytestream2_put_be32(&pbc, rt->nb_streamid);
+
+    ret = ff_rtmp_packet_write(rt->stream, &spkt, rt->out_chunk_size,
+                               rt->prev_pkt[1]);
+
+    ff_rtmp_packet_destroy(&spkt);
+
+    return ret;
+}
+
+static int write_status(URLContext *s, RTMPPacket *pkt,
+                        const char *status, const char *filename)
+{
+    RTMPContext *rt = s->priv_data;
+    RTMPPacket spkt = { 0 };
+    char statusmsg[128];
+    uint8_t *pp;
+    int ret;
+
+    if ((ret = ff_rtmp_packet_create(&spkt, RTMP_SYSTEM_CHANNEL,
+                                     RTMP_PT_INVOKE, 0,
+                                     RTMP_PKTDATA_DEFAULT_SIZE)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Unable to create response packet\n");
+        return ret;
+    }
+
+    pp = spkt.data;
+    spkt.extra = pkt->extra;
+    ff_amf_write_string(&pp, "onStatus");
+    ff_amf_write_number(&pp, 0);
+    ff_amf_write_null(&pp);
+
+    ff_amf_write_object_start(&pp);
+    ff_amf_write_field_name(&pp, "level");
+    ff_amf_write_string(&pp, "status");
+    ff_amf_write_field_name(&pp, "code");
+    ff_amf_write_string(&pp, status);
+    ff_amf_write_field_name(&pp, "description");
+    snprintf(statusmsg, sizeof(statusmsg),
+             "%s is now published", filename);
+    ff_amf_write_string(&pp, statusmsg);
+    ff_amf_write_field_name(&pp, "details");
+    ff_amf_write_string(&pp, filename);
+    ff_amf_write_field_name(&pp, "clientid");
+    snprintf(statusmsg, sizeof(statusmsg), "%s", LIBAVFORMAT_IDENT);
+    ff_amf_write_string(&pp, statusmsg);
+    ff_amf_write_object_end(&pp);
+
+    spkt.size = pp - spkt.data;
+    ret = ff_rtmp_packet_write(rt->stream, &spkt, rt->out_chunk_size,
+                               rt->prev_pkt[1]);
+    ff_rtmp_packet_destroy(&spkt);
+
+    return ret;
+}
+
 static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     double seqnum;
     char filename[64];
     char command[64];
-    char statusmsg[128];
     int stringlen;
     char *pchar;
     const uint8_t *p = pkt->data;
@@ -1820,52 +1891,13 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
         pp = spkt.data;
         ff_amf_write_string(&pp, "onFCPublish");
     } else if (!strcmp(command, "publish")) {
-        PutByteContext pbc;
-        // Send Stream Begin 1
-        if ((ret = ff_rtmp_packet_create(&spkt, RTMP_NETWORK_CHANNEL,
-                                         RTMP_PT_PING, 0, 6)) < 0) {
-            av_log(s, AV_LOG_ERROR, "Unable to create response packet\n");
-            return ret;
-        }
-        pp = spkt.data;
-        bytestream2_init_writer(&pbc, pp, spkt.size);
-        bytestream2_put_be16(&pbc, 0);          // 0 -> Stream Begin
-        bytestream2_put_be32(&pbc, rt->nb_streamid);
-        ret = ff_rtmp_packet_write(rt->stream, &spkt, rt->out_chunk_size,
-                                   rt->prev_pkt[1]);
-        ff_rtmp_packet_destroy(&spkt);
+        ret = write_begin(s);
         if (ret < 0)
             return ret;
 
         // Send onStatus(NetStream.Publish.Start)
-        if ((ret = ff_rtmp_packet_create(&spkt, RTMP_SYSTEM_CHANNEL,
-                                         RTMP_PT_INVOKE, 0,
-                                         RTMP_PKTDATA_DEFAULT_SIZE)) < 0) {
-            av_log(s, AV_LOG_ERROR, "Unable to create response packet\n");
-            return ret;
-        }
-        spkt.extra = pkt->extra;
-        pp = spkt.data;
-        ff_amf_write_string(&pp, "onStatus");
-        ff_amf_write_number(&pp, 0);
-        ff_amf_write_null(&pp);
-
-        ff_amf_write_object_start(&pp);
-        ff_amf_write_field_name(&pp, "level");
-        ff_amf_write_string(&pp, "status");
-        ff_amf_write_field_name(&pp, "code");
-        ff_amf_write_string(&pp, "NetStream.Publish.Start");
-        ff_amf_write_field_name(&pp, "description");
-        snprintf(statusmsg, sizeof(statusmsg),
-                 "%s is now published", filename);
-        ff_amf_write_string(&pp, statusmsg);
-        ff_amf_write_field_name(&pp, "details");
-        ff_amf_write_string(&pp, filename);
-        ff_amf_write_field_name(&pp, "clientid");
-        snprintf(statusmsg, sizeof(statusmsg), "%s", LIBAVFORMAT_IDENT);
-        ff_amf_write_string(&pp, statusmsg);
-        ff_amf_write_object_end(&pp);
-
+        return write_status(s, pkt, "NetStream.Publish.Start",
+                           filename);
     } else {
         if ((ret = ff_rtmp_packet_create(&spkt, RTMP_SYSTEM_CHANNEL,
                                          RTMP_PT_INVOKE, 0,
