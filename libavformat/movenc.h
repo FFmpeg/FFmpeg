@@ -182,6 +182,7 @@ typedef struct MOVMuxContext {
 #define FF_MOV_FLAG_FRAG_CUSTOM 32
 #define FF_MOV_FLAG_ISML 64
 #define FF_MOV_FLAG_FASTSTART 128
+#define FF_MOV_FLAG_OMIT_TFHD_OFFSET 256
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 
