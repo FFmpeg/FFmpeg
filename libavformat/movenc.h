@@ -124,7 +124,6 @@ typedef struct MOVTrack {
     HintSampleQueue sample_queue;
 
     AVIOContext *mdat_buf;
-    int64_t     moof_size_offset;
     int64_t     data_offset;
     int64_t     frag_start;
     int64_t     tfrf_offset;
