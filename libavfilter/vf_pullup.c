@@ -166,7 +166,7 @@ static int config_input(AVFilterLink *inlink)
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if (mp + 1 > s->nb_planes) {
-        av_log(ctx, AV_LOG_WARNING, "input format does not have such plane\n");
+        av_log(ctx, AV_LOG_ERROR, "input format does not have such plane\n");
         return AVERROR(EINVAL);
     }
 
