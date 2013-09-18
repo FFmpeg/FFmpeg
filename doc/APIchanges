@@ -27,7 +27,7 @@ API changes, most recent first:
 2013-08-29 - e31db62 - lavf 55.15.100 - avformat.h
   Add av_format_get_probe_score().
 
-2013-08-xx - xxxxxxx - lsws 2.5.100 -
+2013-08-15 - 1e0e193 - lsws 2.5.100 -
   Add a sws_dither AVOption, allowing to set the dither algorithm used
 
 2013-08-xx - xxxxxxx - lavc 55.27.100 - vdpau.h
@@ -55,21 +55,21 @@ API changes, most recent first:
 2013-08-02 - 82fdfe8 / a8b1927 - lavc 55.20.100 / 55.11.0 - avcodec.h
   Add output_picture_number to AVCodecParserContext.
 
-2013-07-XX - xxxxxxx - XXXXXXXXXXXXXX - avcodec.h
+2013-07-23 - abc8110 - lavc 55.19.100 - avcodec.h
   Add avcodec_chroma_pos_to_enum()
   Add avcodec_enum_to_chroma_pos()
 
-2013-07-03 - xxxxxxx - lavfi 3.78.100 - avfilter.h
+2013-07-03 - 838bd73 - lavfi 3.78.100 - avfilter.h
   Deprecate avfilter_graph_parse() in favor of the equivalent
   avfilter_graph_parse_ptr().
 
 2013-06-24 - af5f9c0 / 95d5246 - lavc 55.17.100 / 55.10.0 - avcodec.h
   Add MPEG-2 AAC profiles
 
-2013-06-xx - xxxxxxx - lavf 55.10.100 - avformat.h
+2013-06-25 - 95d5246 - lavf 55.10.100 - avformat.h
   Add AV_DISPOSITION_* flags to indicate text track kind.
 
-2013-06-xx - xxxxxxx - lavu 52.36.100
+2013-06-15 - 99b8cd0 - lavu 52.36.100
   Add AVRIPEMD:
    av_ripemd_alloc()
    av_ripemd_init()
@@ -99,42 +99,42 @@ API changes, most recent first:
 2013-05-24 - 0c25c39 / b493847 - lavc 55.7.0 / 55.12.100 - avcodec.h
   Add picture_structure to AVCodecParserContext.
 
-2013-05-17 - xxxxxxx - lavu 52.33.100 - opt.h
+2013-05-17 - 3a751ea - lavu 52.33.100 - opt.h
   Add AV_OPT_TYPE_COLOR value to AVOptionType enum.
 
-2013-05-13 - xxxxxxx - lavu 52.31.100 - mem.h
+2013-05-13 - e398416 - lavu 52.31.100 - mem.h
   Add av_dynarray2_add().
 
-2013-05-12 - xxxxxxx - lavfi 3.65.100
+2013-05-12 - 1776177 - lavfi 3.65.100
   Add AVFILTER_FLAG_SUPPORT_TIMELINE* filter flags.
 
-2013-04-19 - xxxxxxx - lavc 55.4.100
+2013-04-19 - 380cfce - lavc 55.4.100
   Add AV_CODEC_PROP_TEXT_SUB property for text based subtitles codec.
 
-2013-04-18 - xxxxxxx - lavf 55.3.100
+2013-04-18 - 7c1a002 - lavf 55.3.100
   The matroska demuxer can now output proper verbatim ASS packets. It will
   become the default starting lavf 56.0.100.
 
-2013-04-10 - xxxxxxx - lavu 25.26.100 - avutil.h,opt.h
+2013-04-10 - af0d270 - lavu 25.26.100 - avutil.h,opt.h
   Add av_int_list_length()
   and av_opt_set_int_list().
 
-2013-03-30 - xxxxxxx - lavu 52.24.100 - samplefmt.h
+2013-03-30 - 5c73645 - lavu 52.24.100 - samplefmt.h
   Add av_samples_alloc_array_and_samples().
 
-2013-03-29 - xxxxxxx - lavf 55.1.100 - avformat.h
+2013-03-29 - ef7b6b4 - lavf 55.1.100 - avformat.h
   Add av_guess_frame_rate()
 
-2013-03-20 - xxxxxxx - lavu 52.22.100 - opt.h
+2013-03-20 - 8d928a9 - lavu 52.22.100 - opt.h
   Add AV_OPT_TYPE_DURATION value to AVOptionType enum.
 
-2013-03-17 - xxxxxx - lavu 52.20.100 - opt.h
+2013-03-17 - 7aa9af5 - lavu 52.20.100 - opt.h
   Add AV_OPT_TYPE_VIDEO_RATE value to AVOptionType enum.
 
-2013-03-07 - xxxxxx - lavu 52.18.100 - avstring.h,bprint.h
+2013-03-07 - 9767ec6 - lavu 52.18.100 - avstring.h,bprint.h
   Add av_escape() and av_bprint_escape() API.
 
-2013-02-24 - xxxxxx - lavfi 3.41.100 - buffersink.h
+2013-02-24 - b59cd08 - lavfi 3.41.100 - buffersink.h
   Add sample_rates field to AVABufferSinkParams.
 
 2013-01-17 - a1a707f - lavf 54.61.100
