@@ -933,7 +933,7 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
 
 }
 
-static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
+static int dvbsub_parse_clut_segment(AVCodecContext *avctx,
                                         const uint8_t *buf, int buf_size)
 {
     DVBSubContext *ctx = avctx->priv_data;
@@ -986,7 +986,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
         if (depth == 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid clut depth 0x%x!\n", *buf);
-            return;
+            return 0;
         }
 
         full_range = (*buf++) & 1;
@@ -1012,6 +1012,11 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
         YUV_TO_RGB2_CCIR(r, g, b, y);
 
         av_dlog(avctx, "clut %d := (%d,%d,%d,%d)\n", entry_id, r, g, b, alpha);
+        if (!!(depth & 0x80) + !!(depth & 0x40) + !!(depth & 0x20) > 1) {
+            av_dlog(avctx, "More than one bit level marked: %x\n", depth);
+            if (avctx->strict_std_compliance > FF_COMPLIANCE_NORMAL)
+                return AVERROR_INVALIDDATA;
+        }
 
         if (depth & 0x80)
             clut->clut4[entry_id] = RGBA(r,g,b,255 - alpha);
@@ -1021,6 +1026,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
             clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
     }
     }
+    return 0;
 }
 
 
@@ -1456,6 +1462,7 @@ static int dvbsub_decode(AVCodecContext *avctx,
     int page_id;
     int segment_length;
     int i;
+    int ret;
     int got_segment = 0;
 
     av_dlog(avctx, "DVB sub packet:\n");
@@ -1502,7 +1509,8 @@ static int dvbsub_decode(AVCodecContext *avctx,
                 got_segment |= 2;
                 break;
             case DVBSUB_CLUT_SEGMENT:
-                dvbsub_parse_clut_segment(avctx, p, segment_length);
+                ret = dvbsub_parse_clut_segment(avctx, p, segment_length);
+                if (ret < 0) return ret;
                 got_segment |= 4;
                 break;
             case DVBSUB_OBJECT_SEGMENT:
