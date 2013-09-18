@@ -718,17 +718,17 @@ static av_cold void uninit(AVFilterContext *ctx)
     int i;
 
     f = s->head;
-    do {
-        if (!f)
-            break;
-
+    while (f) {
         av_free(f->diffs);
         av_free(f->combs);
         av_free(f->vars);
+        if (f == s->last) {
+            av_freep(&s->last);
+            break;
+        }
         f = f->next;
         av_freep(&f->prev);
-    } while (f != s->last);
-    av_freep(&s->last);
+    };
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->buffers); i++) {
         av_freep(&s->buffers[i].planes[0]);
