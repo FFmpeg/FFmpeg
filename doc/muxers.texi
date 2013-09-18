@@ -878,15 +878,18 @@ specified by a stream specifier. If not specified, this defaults to
 all the input streams.
 @end table
 
-Example: encode something and both archive it in a WebM file and stream it
+Some examples follow.
+@itemize
+@item
+Encode something and both archive it in a WebM file and stream it
 as MPEG-TS over UDP (the streams need to be explicitly mapped):
-
 @example
 ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
 @end example
 
-Example: use @command{ffmpeg} to encode the input, and send the output
+@item
+Use @command{ffmpeg} to encode the input, and send the output
 to three different destinations. The @code{dump_extra} bitstream
 filter is used to add extradata information to all the output video
 keyframes packets, as requested by the MPEG-TS format. The select
@@ -896,6 +899,7 @@ audio packets.
 ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac -strict experimental
        -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
 @end example
+@end itemize
 
 Note: some codecs may need different options depending on the output format;
 the auto-detection of this can not work with the tee muxer. The main example
