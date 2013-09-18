@@ -76,7 +76,7 @@ typedef struct TrackedMethod {
 typedef struct RTMPContext {
     const AVClass *class;
     URLContext*   stream;                     ///< TCP stream used in interactions with RTMP server
-    RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets
+    RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets ([0] for reading, [1] for writing)
     int           in_chunk_size;              ///< size of the chunks incoming RTMP packets are divided into
     int           out_chunk_size;             ///< size of the chunks outgoing RTMP packets are divided into
     int           is_input;                   ///< input/output flag
