@@ -5206,7 +5206,6 @@ The list of the currently supported filters follows:
 @item fspp
 @item ilpack
 @item pp7
-@item qp
 @item softpulldown
 @item uspp
 @end table
