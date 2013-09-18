@@ -2070,7 +2070,7 @@ static int handle_notify(URLContext *s, RTMPPacket *pkt) {
     GetByteContext gbc;
     PutByteContext pbc;
     uint32_t ts;
-    int old_flv_size;
+    int old_flv_size, err;
     const uint8_t *datatowrite;
     unsigned datatowritelength;
 
@@ -2098,22 +2098,23 @@ static int handle_notify(URLContext *s, RTMPPacket *pkt) {
         old_flv_size  = rt->flv_size;
         rt->flv_size += datatowritelength + 15;
     } else {
-        int err;
         old_flv_size = 0;
         rt->flv_size = datatowritelength + 15;
         rt->flv_off  = 0;
-        if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
-            return err;
-        bytestream2_init_writer(&pbc, rt->flv_data, rt->flv_size);
-        bytestream2_skip_p(&pbc, old_flv_size);
-        bytestream2_put_byte(&pbc, pkt->type);
-        bytestream2_put_be24(&pbc, datatowritelength);
-        bytestream2_put_be24(&pbc, ts);
-        bytestream2_put_byte(&pbc, ts >> 24);
-        bytestream2_put_be24(&pbc, 0);
-        bytestream2_put_buffer(&pbc, datatowrite, datatowritelength);
-        bytestream2_put_be32(&pbc, 0);
     }
+
+    if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
+        return err;
+    bytestream2_init_writer(&pbc, rt->flv_data, rt->flv_size);
+    bytestream2_skip_p(&pbc, old_flv_size);
+    bytestream2_put_byte(&pbc, pkt->type);
+    bytestream2_put_be24(&pbc, datatowritelength);
+    bytestream2_put_be24(&pbc, ts);
+    bytestream2_put_byte(&pbc, ts >> 24);
+    bytestream2_put_be24(&pbc, 0);
+    bytestream2_put_buffer(&pbc, datatowrite, datatowritelength);
+    bytestream2_put_be32(&pbc, 0);
+
     return 0;
 }
 
