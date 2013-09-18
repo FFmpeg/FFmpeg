@@ -48,7 +48,7 @@ typedef struct PullupFrame {
 
 typedef struct PullupContext {
     const AVClass *class;
-    int junk_left, junk_right, junk_top, junk_down, junk_bottom;
+    int junk_left, junk_right, junk_top, junk_bottom;
     int metric_plane;
     int strict_breaks;
     int strict_pairs;
