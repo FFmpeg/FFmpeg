@@ -82,6 +82,8 @@ typedef struct RTMPPacket {
     uint32_t       extra;      ///< probably an additional channel ID used during streaming data
     uint8_t        *data;      ///< packet payload
     int            size;       ///< packet payload size
+    int            offset;     ///< amount of data read so far
+    int            read;       ///< amount read, including headers
 } RTMPPacket;
 
 /**
