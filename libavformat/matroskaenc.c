@@ -1095,6 +1095,10 @@ static int mkv_write_header(AVFormatContext *s)
         put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , LIBAVFORMAT_IDENT);
         put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, LIBAVFORMAT_IDENT);
         put_ebml_binary(pb, MATROSKA_ID_SEGMENTUID, segment_uid, 16);
+    } else {
+        const char *ident = "Lavf";
+        put_ebml_string(pb, MATROSKA_ID_MUXINGAPP , ident);
+        put_ebml_string(pb, MATROSKA_ID_WRITINGAPP, ident);
     }
 
     if (tag = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
