@@ -104,12 +104,9 @@ static void sample_queue_push(HintSampleQueue *queue, uint8_t *data, int size,
     if (size <= 14)
         return;
     if (!queue->samples || queue->len >= queue->size) {
-        HintSample *samples;
         queue->size += 10;
-        samples = av_realloc(queue->samples, sizeof(HintSample)*queue->size);
-        if (!samples)
+        if (av_reallocp(&queue->samples, sizeof(*queue->samples) * queue->size) < 0)
             return;
-        queue->samples = samples;
     }
     queue->samples[queue->len].data = data;
     queue->samples[queue->len].size = size;

@@ -172,8 +172,10 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
     switch (packing_scheme) {
     case 3: /* one data packet spread over 1 or multiple RTP packets */
         if (qt->pkt.size > 0 && qt->timestamp == *timestamp) {
-            qt->pkt.data = av_realloc(qt->pkt.data, qt->pkt.size + alen +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
+            int err;
+            if ((err = av_reallocp(&qt->pkt.data, qt->pkt.size + alen +
+                                   FF_INPUT_BUFFER_PADDING_SIZE)) < 0)
+                return err;
         } else {
             av_freep(&qt->pkt.data);
             av_init_packet(&qt->pkt);
@@ -181,8 +183,6 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
             qt->pkt.size = 0;
             qt->timestamp = *timestamp;
         }
-        if (!qt->pkt.data)
-            return AVERROR(ENOMEM);
         memcpy(qt->pkt.data + qt->pkt.size, buf + avio_tell(&pb), alen);
         qt->pkt.size += alen;
         if (has_marker_bit) {

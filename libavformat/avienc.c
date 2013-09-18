@@ -533,13 +533,13 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (s->pb->seekable) {
+        int err;
         AVIIndex* idx = &avist->indexes;
         int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
         int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
         if (idx->ents_allocated <= idx->entry) {
-            idx->cluster = av_realloc(idx->cluster, (cl+1)*sizeof(void*));
-            if (!idx->cluster)
-                return -1;
+            if ((err = av_reallocp(&idx->cluster, (cl + 1) * sizeof(*idx->cluster))) < 0)
+                return err;
             idx->cluster[cl] = av_malloc(AVI_INDEX_CLUSTER_SIZE*sizeof(AVIIentry));
             if (!idx->cluster[cl])
                 return -1;
