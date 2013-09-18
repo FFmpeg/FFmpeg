@@ -975,3 +975,36 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
     av_free(s);
     return size - padding;
 }
+
+static int null_buf_write(void *opaque, uint8_t *buf, int buf_size)
+{
+    DynBuffer *d = opaque;
+
+    d->pos += buf_size;
+    if (d->pos > d->size)
+        d->size = d->pos;
+    return buf_size;
+}
+
+int ffio_open_null_buf(AVIOContext **s)
+{
+    int ret = url_open_dyn_buf_internal(s, 0);
+    if (ret >= 0) {
+        AVIOContext *pb = *s;
+        pb->write_packet = null_buf_write;
+    }
+    return ret;
+}
+
+int ffio_close_null_buf(AVIOContext *s)
+{
+    DynBuffer *d = s->opaque;
+    int size;
+
+    avio_flush(s);
+
+    size = d->size;
+    av_free(d);
+    av_free(s);
+    return size;
+}
