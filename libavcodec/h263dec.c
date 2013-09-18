@@ -672,7 +672,7 @@ retry:
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version==5){
         ret = ff_wmv2_decode_secondary_picture_header(s);
         if(ret<0) return ret;
-        if(ret==1) goto intrax8_decoded;
+        if(ret==1) goto frame_end;
     }
 
     /* decode each macroblock */
@@ -705,7 +705,18 @@ retry:
 
     av_assert1(s->bitstream_buffer_size==0);
 frame_end:
+    ff_er_frame_end(&s->er);
+
+    if (avctx->hwaccel) {
+        if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
+            return ret;
+    }
+
+    ff_MPV_frame_end(s);
+
     /* divx 5.01+ bitstream reorder stuff */
+    /* Since this clobbers the input buffer and hwaccel codecs still need the
+     * data during hwaccel->end_frame we should not do this any earlier */
     if(s->codec_id==AV_CODEC_ID_MPEG4 && s->divx_packed){
         int current_pos= s->gb.buffer == s->bitstream_buffer ? 0 : (get_bits_count(&s->gb)>>3);
         int startcode_found=0;
@@ -731,16 +742,6 @@ frame_end:
             s->bitstream_buffer_size= buf_size - current_pos;
         }
     }
-
-intrax8_decoded:
-    ff_er_frame_end(&s->er);
-
-    if (avctx->hwaccel) {
-        if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
-            return ret;
-    }
-
-    ff_MPV_frame_end(s);
 
     if (!s->divx_packed && avctx->hwaccel)
         ff_thread_finish_setup(avctx);
