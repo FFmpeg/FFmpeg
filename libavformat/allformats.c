@@ -348,4 +348,5 @@ void av_register_all(void)
     REGISTER_PROTOCOL(LIBRTMPS,         librtmps);
     REGISTER_PROTOCOL(LIBRTMPT,         librtmpt);
     REGISTER_PROTOCOL(LIBRTMPTE,        librtmpte);
+    REGISTER_PROTOCOL(LIBSSH,           libssh);
 }

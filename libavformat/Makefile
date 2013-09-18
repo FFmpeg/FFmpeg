@@ -425,6 +425,7 @@ OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o
 OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o
 OBJS-$(CONFIG_LIBQUVI_DEMUXER)           += libquvi.o
 OBJS-$(CONFIG_LIBRTMP)                   += librtmp.o
+OBJS-$(CONFIG_LIBSSH_PROTOCOL)           += libssh.o
 
 # protocols I/O
 OBJS-$(CONFIG_APPLEHTTP_PROTOCOL)        += hlsproto.o

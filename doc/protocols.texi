@@ -520,6 +520,38 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
+@section libssh
+
+Secure File Transfer Protocol via libssh
+
+Allow to read from or write to remote resources using SFTP protocol.
+
+Following syntax is required.
+
+@example
+sftp://[user[:password]@@]server[:port]/path/to/remote/resource.mpeg
+@end example
+
+This protocol accepts the following options.
+
+@table @option
+@item timeout
+Set timeout of socket I/O operations used by the underlying low level
+operation. By default it is set to -1, which means that the timeout
+is not specified.
+
+@item truncate
+Truncate existing files on write, if set to 1. A value of 0 prevents
+truncating. Default value is 1.
+
+@end table
+
+Example: Play a file stored on remote server.
+
+@example
+ffplay sftp://user:password@@server_address:22/home/user/resource.mpeg
+@end example
+
 @section librtmp rtmp, rtmpe, rtmps, rtmpt, rtmpte
 
 Real-Time Messaging Protocol and its variants supported through
