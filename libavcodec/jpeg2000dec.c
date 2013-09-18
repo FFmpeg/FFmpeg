@@ -1390,12 +1390,12 @@ static int jpeg2000_read_main_headers(Jpeg2000DecoderContext *s)
             Jpeg2000Tile *tile;
             Jpeg2000TilePart *tp;
 
-            if (s->curtileno < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Missing SOT\n");
-                return AVERROR_INVALIDDATA;
-            }
             if (!s->tile) {
                 av_log(s->avctx, AV_LOG_ERROR, "Missing SIZ\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if (s->curtileno < 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "Missing SOT\n");
                 return AVERROR_INVALIDDATA;
             }
 
