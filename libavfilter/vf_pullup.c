@@ -161,13 +161,19 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     PullupContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const int mp = s->metric_plane;
+    int mp = s->metric_plane;
+
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    if (mp + 1 > s->nb_planes) {
+        av_log(ctx, AV_LOG_WARNING, "input format does not have such plane\n");
+        return AVERROR(EINVAL);
+    }
 
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
-    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     s->metric_w      = (s->planewidth[mp]  - ((s->junk_left + s->junk_right)  << 3)) >> 3;
     s->metric_h      = (s->planeheight[mp] - ((s->junk_top  + s->junk_bottom) << 1)) >> 3;
