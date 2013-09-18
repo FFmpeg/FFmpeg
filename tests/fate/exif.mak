@@ -11,4 +11,4 @@ FATE_SAMPLES_EXIF-$(call ALLYES, MP3_DEMUXER IMAGE2_DEMUXER MJPEG_DECODER) += fa
 fate-exif-image-embedded: CMD = probeframes $(TARGET_SAMPLES)/exif/embedded_small.mp3
 
 # add all -yes targets to the tested targets
-FATE_SAMPLES_FFMPEG += $(FATE_SAMPLES_EXIF-yes)
+FATE_SAMPLES_FFPROBE += $(FATE_SAMPLES_EXIF-yes)
