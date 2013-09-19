@@ -351,7 +351,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         smk->cur_frame++;
         smk->nextpos = avio_tell(s->pb);
     } else {
-        if (smk->stream_id[smk->curstream] < 0)
+        if (smk->stream_id[smk->curstream] < 0 || !smk->bufs[smk->curstream])
             return AVERROR_INVALIDDATA;
         if (av_new_packet(pkt, smk->buf_sizes[smk->curstream]))
             return AVERROR(ENOMEM);
