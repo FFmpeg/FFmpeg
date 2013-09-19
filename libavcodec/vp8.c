@@ -1854,8 +1854,8 @@ static int vp8_decode_mb_row_sliced(AVCodecContext *avctx, void *tdata,
     return 0;
 }
 
-static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
-                            AVPacket *avpkt)
+int ff_vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt)
 {
     VP8Context *s = avctx->priv_data;
     int ret, i, referenced, num_jobs;
@@ -2009,7 +2009,7 @@ err:
     return ret;
 }
 
-static av_cold int vp8_decode_free(AVCodecContext *avctx)
+av_cold int ff_vp8_decode_free(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
     int i;
@@ -2032,7 +2032,7 @@ static av_cold int vp8_init_frames(VP8Context *s)
     return 0;
 }
 
-static av_cold int vp8_decode_init(AVCodecContext *avctx)
+av_cold int ff_vp8_decode_init(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
     int ret;
@@ -2046,7 +2046,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
     ff_vp8dsp_init(&s->vp8dsp);
 
     if ((ret = vp8_init_frames(s)) < 0) {
-        vp8_decode_free(avctx);
+        ff_vp8_decode_free(avctx);
         return ret;
     }
 
@@ -2061,7 +2061,7 @@ static av_cold int vp8_decode_init_thread_copy(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if ((ret = vp8_init_frames(s)) < 0) {
-        vp8_decode_free(avctx);
+        ff_vp8_decode_free(avctx);
         return ret;
     }
 
@@ -2147,7 +2147,7 @@ static int webp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     pkt.data = buf;
     pkt.size = buf_size;
 
-    return vp8_decode_frame(avctx, data, data_size, &pkt);
+    return ff_vp8_decode_frame(avctx, data, data_size, &pkt);
 }
 
 AVCodec ff_vp8_decoder = {
@@ -2155,9 +2155,9 @@ AVCodec ff_vp8_decoder = {
     .type                  = AVMEDIA_TYPE_VIDEO,
     .id                    = AV_CODEC_ID_VP8,
     .priv_data_size        = sizeof(VP8Context),
-    .init                  = vp8_decode_init,
-    .close                 = vp8_decode_free,
-    .decode                = vp8_decode_frame,
+    .init                  = ff_vp8_decode_init,
+    .close                 = ff_vp8_decode_free,
+    .decode                = ff_vp8_decode_frame,
     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
     .flush                 = vp8_decode_flush,
     .long_name             = NULL_IF_CONFIG_SMALL("On2 VP8"),
@@ -2165,17 +2165,17 @@ AVCodec ff_vp8_decoder = {
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
 };
 
-AVCodec ff_webp_decoder = {
-    .name                  = "webp",
-    .type                  = AVMEDIA_TYPE_VIDEO,
-    .id                    = AV_CODEC_ID_WEBP,
-    .priv_data_size        = sizeof(VP8Context),
-    .init                  = vp8_decode_init,
-    .close                 = vp8_decode_free,
-    .decode                = webp_decode_frame,
-    .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
-    .flush                 = vp8_decode_flush,
-    .long_name             = NULL_IF_CONFIG_SMALL("WebP"),
-    .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
-    .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
-};
+// AVCodec ff_webp_decoder = {
+//     .name                  = "webp",
+//     .type                  = AVMEDIA_TYPE_VIDEO,
+//     .id                    = AV_CODEC_ID_WEBP,
+//     .priv_data_size        = sizeof(VP8Context),
+//     .init                  = vp8_decode_init,
+//     .close                 = vp8_decode_free,
+//     .decode                = webp_decode_frame,
+//     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
+//     .flush                 = vp8_decode_flush,
+//     .long_name             = NULL_IF_CONFIG_SMALL("WebP"),
+//     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp8_decode_init_thread_copy),
+//     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp8_decode_update_thread_context),
+// };

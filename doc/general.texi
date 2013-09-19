@@ -488,6 +488,8 @@ following image formats are supported:
     @tab YUV, JPEG and some extension is not supported yet.
 @item Truevision Targa  @tab X @tab X
     @tab Targa (.TGA) image format
+@item WebP         @tab @tab X
+    @tab WebP image format
 @item XBM  @tab X @tab X
     @tab X BitMap image format
 @item XFace @tab X @tab X

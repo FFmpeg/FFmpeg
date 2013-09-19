@@ -476,6 +476,7 @@ OBJS-$(CONFIG_VQA_DECODER)             += vqavideo.o
 OBJS-$(CONFIG_WAVPACK_DECODER)         += wavpack.o
 OBJS-$(CONFIG_WAVPACK_ENCODER)         += wavpackenc.o
 OBJS-$(CONFIG_WEBP_DECODER)            += vp8.o vp8dsp.o vp56rac.o
+OBJS-$(CONFIG_WEBP_DECODER)            += webp.o
 OBJS-$(CONFIG_WEBVTT_DECODER)          += webvttdec.o
 OBJS-$(CONFIG_WMALOSSLESS_DECODER)     += wmalosslessdec.o wma_common.o
 OBJS-$(CONFIG_WMAPRO_DECODER)          += wmaprodec.o wma.o wma_common.o

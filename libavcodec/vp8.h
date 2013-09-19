@@ -271,4 +271,11 @@ typedef struct VP8Context {
     int mb_layout;
 } VP8Context;
 
+int ff_vp8_decode_init(AVCodecContext *avctx);
+
+int ff_vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
+                        AVPacket *avpkt);
+
+int ff_vp8_decode_free(AVCodecContext *avctx);
+
 #endif /* AVCODEC_VP8_H */

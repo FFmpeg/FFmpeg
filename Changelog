@@ -26,6 +26,7 @@ version <next>
 - adelay filter
 - pullup filter ported from libmpcodecs
 - ffprobe -read_intervals option
+- Lossless and alpha support for WebP decoder
 
 
 version 2.0:
