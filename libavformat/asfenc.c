@@ -762,12 +762,14 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, AVStream *avst,
 static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
+    AVIOContext *pb = s->pb;
     ASFStream *stream;
     int64_t duration;
     AVCodecContext *codec;
     int64_t packet_st, pts;
     int start_sec, i;
     int flags = pkt->flags;
+    uint64_t offset = avio_tell(pb);
 
     codec  = s->streams[pkt->stream_index]->codec;
     stream = &asf->streams[pkt->stream_index];
@@ -802,6 +804,8 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
                 // store
                 asf->index_ptr[i].packet_number = (uint32_t)packet_st;
                 asf->index_ptr[i].packet_count  = (uint16_t)(asf->nb_packets - packet_st);
+                asf->index_ptr[i].send_time     = start_sec * INT64_C(10000000);
+                asf->index_ptr[i].offset        = offset;
                 asf->maximum_packet             = FFMAX(asf->maximum_packet,
                                                         (uint16_t)(asf->nb_packets - packet_st));
             }
