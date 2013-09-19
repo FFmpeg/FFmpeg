@@ -290,6 +290,7 @@ struct AACContext {
      */
     FFTContext mdct;
     FFTContext mdct_small;
+    FFTContext mdct_ld;
     FFTContext mdct_ltp;
     FmtConvertContext fmt_conv;
     AVFloatDSPContext fdsp;

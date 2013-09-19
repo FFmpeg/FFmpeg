@@ -34,10 +34,15 @@
 #include <stdint.h>
 
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_1024)[1024];
+DECLARE_ALIGNED(32, float,  ff_aac_kbd_long_512 )[512];
 DECLARE_ALIGNED(32, float,  ff_aac_kbd_short_128)[128];
 
 const uint8_t ff_aac_num_swb_1024[] = {
     41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40
+};
+
+const uint8_t ff_aac_num_swb_512[] = {
+     0,  0,  0, 36, 36, 37, 31, 31,  0,  0,  0,  0,  0
 };
 
 const uint8_t ff_aac_num_swb_128[] = {
@@ -1114,6 +1119,14 @@ static const uint16_t swb_offset_1024_48[] = {
     928, 1024
 };
 
+static const uint16_t swb_offset_512_48[] = {
+      0,   4,   8,  12,  16,  20,  24,  28,
+     32,  36,  40,  44,  48,  52,  56,  60,
+     68,  76,  84,  92, 100, 112, 124, 136,
+    148, 164, 184, 208, 236, 268, 300, 332,
+    364, 396, 428, 460, 512
+};
+
 static const uint16_t swb_offset_128_48[] = {
      0,   4,   8,  12,  16,  20,  28,  36,
     44,  56,  68,  80,  96, 112, 128
@@ -1129,6 +1142,14 @@ static const uint16_t swb_offset_1024_32[] = {
     928, 960, 992, 1024
 };
 
+static const uint16_t swb_offset_512_32[] = {
+      0,   4,   8,  12,  16,  20,  24,  28,
+     32,  36,  40,  44,  48,  52,  56,  64,
+     72,  80,  88,  96, 108, 120, 132, 144,
+    160, 176, 192, 212, 236, 260, 288, 320,
+    352, 384, 416, 448, 480, 512
+};
+
 static const uint16_t swb_offset_1024_24[] = {
       0,   4,   8,  12,  16,  20,  24,  28,
      32,  36,  40,  44,  52,  60,  68,  76,
@@ -1136,6 +1157,13 @@ static const uint16_t swb_offset_1024_24[] = {
     160, 172, 188, 204, 220, 240, 260, 284,
     308, 336, 364, 396, 432, 468, 508, 552,
     600, 652, 704, 768, 832, 896, 960, 1024
+};
+
+static const uint16_t swb_offset_512_24[] = {
+      0,   4,   8,  12,  16,  20,  24,  28,
+     32,  36,  40,  44,  52,  60,  68,  80,
+     92, 104, 120, 140, 164, 192, 224, 256,
+    288, 320, 352, 384, 416, 448, 480, 512,
 };
 
 static const uint16_t swb_offset_128_24[] = {
@@ -1177,6 +1205,14 @@ const uint16_t * const ff_swb_offset_1024[] = {
     swb_offset_1024_24, swb_offset_1024_24, swb_offset_1024_16,
     swb_offset_1024_16, swb_offset_1024_16, swb_offset_1024_8,
     swb_offset_1024_8
+};
+
+const uint16_t * const ff_swb_offset_512[] = {
+    NULL,               NULL,               NULL,
+    swb_offset_512_48,  swb_offset_512_48,  swb_offset_512_32,
+    swb_offset_512_24,  swb_offset_512_24,  NULL,
+    NULL,               NULL,               NULL,
+    NULL
 };
 
 const uint16_t * const ff_swb_offset_128[] = {
