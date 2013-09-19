@@ -140,10 +140,17 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t offs[4];
     int i, j, is_chroma, planes;
     enum AVPixelFormat pix_fmt;
+    int prev_pic_bit, expected_size;
+
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too short\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     header = AV_RL32(buf);
     version = header & 0xff;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
+    prev_pic_bit = header & (1U << 31); /* bit 31 means same as previous pic */
 
     if (version > 5) {
         av_log(avctx, AV_LOG_ERROR,
@@ -162,16 +169,19 @@ static int decode_frame(AVCodecContext *avctx,
     }
     avctx->pix_fmt = pix_fmt;
 
-    switch(version) {
+    expected_size = header_size;
+
+    switch (version) {
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
-        if ( (buf_size != avctx->width*avctx->height*3/2+header_size) &&
-             (buf_size != header_size) ) {
+        if (!prev_pic_bit)
+            expected_size += avctx->width * avctx->height * 3 / 2;
+        if (buf_size != expected_size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid frame length %d (should be %d)\n",
-                   buf_size, avctx->width*avctx->height*3/2+header_size);
-            return -1;
+                   buf_size, expected_size);
+            return AVERROR_INVALIDDATA;
         }
 
         if (( (avctx->width % 8) != 0) || ( (avctx->height % 2) != 0 )) {
@@ -188,8 +198,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
         }
-        /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1U<<31))? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
+        f->pict_type = prev_pic_bit ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
         f->key_frame = f->pict_type == AV_PICTURE_TYPE_I;
 
         if (f->pict_type == AV_PICTURE_TYPE_I) {
@@ -213,12 +222,13 @@ static int decode_frame(AVCodecContext *avctx,
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
-        if ( (buf_size != avctx->width*avctx->height*3+header_size) &&
-             (buf_size != header_size) ) {
+        if (!prev_pic_bit)
+            expected_size += avctx->width * avctx->height * 3;
+        if (buf_size != expected_size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid frame length %d (should be %d)\n",
-                   buf_size, avctx->width*avctx->height*3+header_size);
-            return -1;
+                   buf_size, expected_size);
+            return AVERROR_INVALIDDATA;
         }
 
         f->reference = 1;
@@ -229,8 +239,7 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
             return -1;
         }
-        /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1U<<31))? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
+        f->pict_type = prev_pic_bit ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
         f->key_frame = f->pict_type == AV_PICTURE_TYPE_I;
 
         if (f->pict_type == AV_PICTURE_TYPE_I) {
