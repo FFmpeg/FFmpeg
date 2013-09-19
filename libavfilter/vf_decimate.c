@@ -86,7 +86,7 @@ static void calc_diffs(const DecimateContext *dm, struct qitem *q,
 
     memset(bdiffs, 0, dm->bdiffsize * sizeof(*bdiffs));
 
-    for (plane = 0; plane < (dm->chroma ? 3 : 1); plane++) {
+    for (plane = 0; plane < (dm->chroma && f1->data[2] ? 3 : 1); plane++) {
         int x, y, xl;
         const int linesize1 = f1->linesize[plane];
         const int linesize2 = f2->linesize[plane];
