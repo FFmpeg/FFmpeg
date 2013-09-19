@@ -72,7 +72,6 @@ static int bmv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     BMVContext *c = s->priv_data;
     int type, err;
-    void *tmp;
 
     while (c->get_next) {
         if (s->pb->eof_reached)
