@@ -111,9 +111,10 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 
     if (err < 0)
         concat_close(h);
-    else if ((err = av_reallocp(&nodes, data->length * sizeof(*nodes))) < 0)
+    else if (!(nodes = av_realloc(nodes, data->length * sizeof(*nodes)))) {
         concat_close(h);
-    else
+        err = AVERROR(ENOMEM);
+    } else
         data->nodes = nodes;
     return err;
 }
