@@ -314,7 +314,7 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         for(i = 0; i < 7; i++) {
             if(flags & 1) {
                 uint32_t size;
-                uint8_t *tmpbuf;
+                int err;
 
                 size = avio_rl32(s->pb) - 4;
                 if (!size || size + 4L > frame_size) {
@@ -324,10 +324,8 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 frame_size -= size;
                 frame_size -= 4;
                 smk->curstream++;
-                tmpbuf = av_realloc(smk->bufs[smk->curstream], size);
-                if (!tmpbuf)
-                    return AVERROR(ENOMEM);
-                smk->bufs[smk->curstream] = tmpbuf;
+                if ((err = av_reallocp(&smk->bufs[smk->curstream], size)) < 0)
+                    return err;
                 smk->buf_sizes[smk->curstream] = size;
                 ret = avio_read(s->pb, smk->bufs[smk->curstream], size);
                 if(ret != size)

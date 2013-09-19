@@ -453,12 +453,13 @@ fail:
 
 static int add_fragment(OutputStream *os, const char *file, const char *infofile, int64_t start_time, int64_t duration, int64_t start_pos, int64_t size)
 {
+    int err;
     Fragment *frag;
     if (os->nb_fragments >= os->fragments_size) {
         os->fragments_size = (os->fragments_size + 1) * 2;
-        os->fragments = av_realloc(os->fragments, sizeof(*os->fragments)*os->fragments_size);
-        if (!os->fragments)
-            return AVERROR(ENOMEM);
+        if ((err = av_reallocp(&os->fragments, sizeof(*os->fragments) *
+                               os->fragments_size)) < 0)
+            return err;
     }
     frag = av_mallocz(sizeof(*frag));
     if (!frag)

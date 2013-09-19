@@ -85,14 +85,12 @@ static int rtmp_http_send_cmd(URLContext *h, const char *cmd)
 static int rtmp_http_write(URLContext *h, const uint8_t *buf, int size)
 {
     RTMP_HTTPContext *rt = h->priv_data;
-    void *ptr;
 
     if (rt->out_size + size > rt->out_capacity) {
+        int err;
         rt->out_capacity = (rt->out_size + size) * 2;
-        ptr = av_realloc(rt->out_data, rt->out_capacity);
-        if (!ptr)
-            return AVERROR(ENOMEM);
-        rt->out_data = ptr;
+        if ((err = av_reallocp(&rt->out_data, rt->out_capacity)) < 0)
+            return err;
     }
 
     memcpy(rt->out_data + rt->out_size, buf, size);

@@ -355,12 +355,8 @@ int av_probe_input_buffer2(AVIOContext *pb, AVInputFormat **fmt,
         score = probe_size < max_probe_size ? AVPROBE_SCORE_RETRY : 0;
 
         /* read probe data */
-        buftmp = av_realloc(buf, probe_size + AVPROBE_PADDING_SIZE);
-        if(!buftmp){
-            av_free(buf);
-            return AVERROR(ENOMEM);
-        }
-        buf=buftmp;
+        if ((ret = av_reallocp(&buf, probe_size + AVPROBE_PADDING_SIZE)) < 0)
+            return ret;
         if ((ret = avio_read(pb, buf + buf_offset, probe_size - buf_offset)) < 0) {
             /* fail if error was not end of file, otherwise, lower score */
             if (ret != AVERROR_EOF) {

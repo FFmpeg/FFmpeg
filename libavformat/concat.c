@@ -56,7 +56,7 @@ static av_cold int concat_close(URLContext *h)
 
 static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 {
-    char *node_uri = NULL, *tmp_uri;
+    char *node_uri = NULL;
     int err = 0;
     int64_t size;
     size_t  len, i;
@@ -85,11 +85,8 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
     for (i = 0; *uri; i++) {
         /* parsing uri */
         len = strcspn(uri, AV_CAT_SEPARATOR);
-        if (!(tmp_uri = av_realloc(node_uri, len+1))) {
-            err = AVERROR(ENOMEM);
+        if ((err = av_reallocp(&node_uri, len + 1)) < 0)
             break;
-        } else
-            node_uri = tmp_uri;
         av_strlcpy(node_uri, uri, len+1);
         uri += len + strspn(uri+len, AV_CAT_SEPARATOR);
 
@@ -114,10 +111,9 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 
     if (err < 0)
         concat_close(h);
-    else if (!(nodes = av_realloc(nodes, data->length * sizeof(*nodes)))) {
+    else if ((err = av_reallocp(&nodes, data->length * sizeof(*nodes))) < 0)
         concat_close(h);
-        err = AVERROR(ENOMEM);
-    } else
+    else
         data->nodes = nodes;
     return err;
 }
