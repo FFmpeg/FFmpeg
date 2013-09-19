@@ -23,6 +23,7 @@
 #include "url.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #if CONFIG_GNUTLS
 #include <gnutls/gnutls.h>
 #include <gnutls/x509.h>
@@ -69,6 +70,9 @@ typedef struct {
     int fd;
     char *ca_file;
     int verify;
+    char *cert_file;
+    char *key_file;
+    int listen;
 } TLSContext;
 
 #define OFFSET(x) offsetof(TLSContext, x)
@@ -77,6 +81,9 @@ typedef struct {
 static const AVOption options[] = {
     {"ca_file",    "Certificate Authority database file", OFFSET(ca_file),   AV_OPT_TYPE_STRING, .flags = D|E },
     {"tls_verify", "Verify the peer certificate",         OFFSET(verify),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = D|E },
+    {"cert_file",  "Certificate file",                    OFFSET(cert_file), AV_OPT_TYPE_STRING, .flags = D|E },
+    {"key_file",   "Private key file",                    OFFSET(key_file),  AV_OPT_TYPE_STRING, .flags = D|E },
+    {"listen",     "Listen for incoming connections",     OFFSET(listen),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, .flags = D|E },
     { NULL }
 };
 
@@ -135,7 +142,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     TLSContext *c = h->priv_data;
     int ret;
     int port;
-    char buf[200], host[200];
+    char buf[200], host[200], opts[50] = "";
     int numerichost = 0;
     struct addrinfo hints = { 0 }, *ai = NULL;
     const char *proxy_path;
@@ -143,8 +150,11 @@ static int tls_open(URLContext *h, const char *uri, int flags)
 
     ff_tls_init();
 
+    if (c->listen)
+        snprintf(opts, sizeof(opts), "?listen=1");
+
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
-    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, NULL);
+    ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, "%s", opts);
 
     hints.ai_flags = AI_NUMERICHOST;
     if (!getaddrinfo(host, NULL, &hints, &ai)) {
@@ -174,8 +184,8 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     c->fd = ffurl_get_file_handle(c->tcp);
 
 #if CONFIG_GNUTLS
-    gnutls_init(&c->session, GNUTLS_CLIENT);
-    if (!numerichost)
+    gnutls_init(&c->session, c->listen ? GNUTLS_SERVER : GNUTLS_CLIENT);
+    if (!c->listen && !numerichost)
         gnutls_server_name_set(c->session, GNUTLS_NAME_DNS, host, strlen(host));
     gnutls_certificate_allocate_credentials(&c->cred);
     if (c->ca_file)
@@ -186,6 +196,18 @@ static int tls_open(URLContext *h, const char *uri, int flags)
 #endif
     gnutls_certificate_set_verify_flags(c->cred, c->verify ?
                                         GNUTLS_VERIFY_ALLOW_X509_V1_CA_CRT : 0);
+    if (c->cert_file && c->key_file) {
+        ret = gnutls_certificate_set_x509_key_file(c->cred,
+                                                   c->cert_file, c->key_file,
+                                                   GNUTLS_X509_FMT_PEM);
+        if (ret < 0) {
+            av_log(h, AV_LOG_ERROR,
+                   "Unable to set cert/key files %s and %s: %s\n",
+                   c->cert_file, c->key_file, gnutls_strerror(ret));
+            ret = AVERROR(EIO);
+            goto fail;
+        }
+    }
     gnutls_credentials_set(c->session, GNUTLS_CRD_CERTIFICATE, c->cred);
     gnutls_transport_set_ptr(c->session, (gnutls_transport_ptr_t)
                                          (intptr_t) c->fd);
@@ -230,7 +252,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         }
     }
 #elif CONFIG_OPENSSL
-    c->ctx = SSL_CTX_new(TLSv1_client_method());
+    c->ctx = SSL_CTX_new(c->listen ? TLSv1_server_method() : TLSv1_client_method());
     if (!c->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
@@ -238,6 +260,18 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     }
     if (c->ca_file)
         SSL_CTX_load_verify_locations(c->ctx, c->ca_file, NULL);
+    if (c->cert_file && !SSL_CTX_use_certificate_chain_file(c->ctx, c->cert_file)) {
+        av_log(h, AV_LOG_ERROR, "Unable to load cert file %s: %s\n",
+               c->cert_file, ERR_error_string(ERR_get_error(), NULL));
+        ret = AVERROR(EIO);
+        goto fail;
+    }
+    if (c->key_file && !SSL_CTX_use_PrivateKey_file(c->ctx, c->key_file, SSL_FILETYPE_PEM)) {
+        av_log(h, AV_LOG_ERROR, "Unable to load key file %s: %s\n",
+               c->key_file, ERR_error_string(ERR_get_error(), NULL));
+        ret = AVERROR(EIO);
+        goto fail;
+    }
     // Note, this doesn't check that the peer certificate actually matches
     // the requested hostname.
     if (c->verify)
@@ -249,10 +283,10 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
     SSL_set_fd(c->ssl, c->fd);
-    if (!numerichost)
+    if (!c->listen && !numerichost)
         SSL_set_tlsext_host_name(c->ssl, host);
     while (1) {
-        ret = SSL_connect(c->ssl);
+        ret = c->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
         if (ret > 0)
             break;
         if (ret == 0) {

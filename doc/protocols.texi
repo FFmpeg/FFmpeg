@@ -599,6 +599,19 @@ the host name is validated as well.)
 This is disabled by default since it requires a CA database to be
 provided by the caller in many cases.
 
+@item cert_file
+A file containing a certificate to use in the handshake with the peer.
+(When operating as server, in listen mode, this is more often required
+by the peer, while client certificates only are mandated in certain
+setups.)
+
+@item key_file
+A file containing the private key for the certificate.
+
+@item listen=@var{1|0}
+If enabled, listen for connections on the provided port, and assume
+the server role in the handshake instead of the client role.
+
 @end table
 
 @section udp
