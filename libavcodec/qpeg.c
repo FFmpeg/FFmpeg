@@ -191,6 +191,8 @@ static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
                     filled = 0;
                     dst -= stride;
                     height--;
+                    if (height < 0)
+                        break;
                 }
             }
         } else if(code >= 0xC0) { /* copy code: 0xC0..0xDF */
@@ -202,6 +204,8 @@ static void qpeg_decode_inter(QpegContext *qctx, uint8_t *dst,
                     filled = 0;
                     dst -= stride;
                     height--;
+                    if (height < 0)
+                        break;
                 }
             }
         } else if(code >= 0x80) { /* skip code: 0x80..0xBF */
