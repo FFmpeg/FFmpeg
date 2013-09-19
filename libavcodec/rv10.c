@@ -449,6 +449,9 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Extradata is too small.\n");
         return AVERROR_INVALIDDATA;
     }
+    if ((ret = av_image_check_size(avctx->coded_width,
+                                   avctx->coded_height, 0, avctx)) < 0)
+        return ret;
 
     ff_MPV_decode_defaults(s);
 
