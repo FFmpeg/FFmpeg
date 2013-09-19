@@ -190,6 +190,12 @@ int ff_h264_decode_sei(H264Context *h)
             size += show_bits(&h->gb, 8);
         while (get_bits(&h->gb, 8) == 255);
 
+        if (size > get_bits_left(&h->gb) / 8) {
+            av_log(h->avctx, AV_LOG_ERROR, "SEI type %d truncated at %d\n",
+                   type, get_bits_left(&h->gb));
+            return AVERROR_INVALIDDATA;
+        }
+
         switch (type) {
         case SEI_TYPE_PIC_TIMING: // Picture timing SEI
             ret = decode_picture_timing(h);
