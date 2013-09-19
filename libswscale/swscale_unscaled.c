@@ -879,8 +879,13 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t *src[], int srcStride[],
             srcPtr += ALT32_CORR;
 
         if ((dstFormat == AV_PIX_FMT_RGB32_1 || dstFormat == AV_PIX_FMT_BGR32_1) &&
-            !isRGBA32(srcFormat))
+            !isRGBA32(srcFormat)) {
+            int i;
+            av_assert0(ALT32_CORR == 1);
+            for (i = 0; i < srcSliceH; i++)
+                dstPtr[dstStride[0] * (srcSliceY + i)] = 255;
             dstPtr += ALT32_CORR;
+        }
 
         if (dstStride[0] * srcBpp == srcStride[0] * dstBpp && srcStride[0] > 0 &&
             !(srcStride[0] % srcBpp) && !dst_bswap && !src_bswap)
