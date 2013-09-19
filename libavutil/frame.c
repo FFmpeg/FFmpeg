@@ -81,7 +81,7 @@ const char *av_get_colorspace_name(enum AVColorSpace val)
         [AVCOL_SPC_SMPTE240M] = "smpte240m",
         [AVCOL_SPC_YCOCG]     = "YCgCo",
     };
-    if (val < 0 || val >= FF_ARRAY_ELEMS(name))
+    if ((unsigned)val >= FF_ARRAY_ELEMS(name))
         return NULL;
     return name[val];
 }
