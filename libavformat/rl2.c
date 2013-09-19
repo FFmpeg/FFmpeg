@@ -107,6 +107,10 @@ static av_cold int rl2_read_header(AVFormatContext *s)
     rate = avio_rl16(pb);
     channels = avio_rl16(pb);
     def_sound_size = avio_rl16(pb);
+    if (!channels || channels > 42) {
+        av_log(s, AV_LOG_ERROR, "Invalid number of channels: %d\n", channels);
+        return AVERROR_INVALIDDATA;
+    }
 
     /** setup video stream */
     st = avformat_new_stream(s, NULL);
