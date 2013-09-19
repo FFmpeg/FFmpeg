@@ -212,6 +212,7 @@ int ff_h264_decode_sei(H264Context *h)
                 return ret;
             break;
         default:
+            av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
             skip_bits(&h->gb, 8 * size);
         }
 
