@@ -580,6 +580,11 @@ static int dca_parse_frame_header(DCAContext *s)
     s->lfe               = get_bits(&s->gb, 2);
     s->predictor_history = get_bits(&s->gb, 1);
 
+    if (s->lfe > 2) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid LFE value: %d\n", s->lfe);
+        return AVERROR_INVALIDDATA;
+    }
+
     /* TODO: check CRC */
     if (s->crc_present)
         s->header_crc    = get_bits(&s->gb, 16);
