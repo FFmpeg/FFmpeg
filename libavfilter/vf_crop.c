@@ -334,7 +334,7 @@ static const AVFilterPad avfilter_vf_crop_outputs[] = {
 
 AVFilter avfilter_vf_crop = {
     .name          = "crop",
-    .description   = NULL_IF_CONFIG_SMALL("Crop the input video to width:height:x:y."),
+    .description   = NULL_IF_CONFIG_SMALL("Crop the input video."),
     .priv_size     = sizeof(CropContext),
     .priv_class    = &crop_class,
     .query_formats = query_formats,

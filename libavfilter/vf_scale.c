@@ -569,7 +569,7 @@ static const AVFilterPad avfilter_vf_scale_outputs[] = {
 
 AVFilter avfilter_vf_scale = {
     .name          = "scale",
-    .description   = NULL_IF_CONFIG_SMALL("Scale the input video to width:height size and/or convert the image format."),
+    .description   = NULL_IF_CONFIG_SMALL("Scale the input video size and/or convert the image format."),
     .init_dict     = init_dict,
     .uninit        = uninit,
     .query_formats = query_formats,
