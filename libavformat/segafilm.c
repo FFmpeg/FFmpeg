@@ -111,6 +111,11 @@ static int film_read_header(AVFormatContext *s)
             return AVERROR(EIO);
         film->audio_samplerate = AV_RB16(&scratch[24]);
         film->audio_channels = scratch[21];
+        if (!film->audio_channels || film->audio_channels > 2) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid number of channels: %d\n", film->audio_channels);
+            return AVERROR_INVALIDDATA;
+        }
         film->audio_bits = scratch[22];
         if (scratch[23] == 2)
             film->audio_type = AV_CODEC_ID_ADPCM_ADX;
