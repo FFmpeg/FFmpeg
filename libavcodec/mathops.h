@@ -224,4 +224,14 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
     return b - (a < b * b);
 }
 
+static inline int8_t ff_u8_to_s8(uint8_t a)
+{
+    union {
+        uint8_t u8;
+        int8_t  s8;
+    } b;
+    b.u8 = a;
+    return b.s8;
+}
+
 #endif /* AVCODEC_MATHOPS_H */
