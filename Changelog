@@ -27,6 +27,7 @@ version <next>
 - pullup filter ported from libmpcodecs
 - ffprobe -read_intervals option
 - Lossless and alpha support for WebP decoder
+- Error Resilient AAC syntax (ER AAC LC) decoding
 
 
 version 2.0:
