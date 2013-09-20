@@ -21,6 +21,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -291,6 +292,64 @@ static int64_t unix_to_file_time(int ti)
     return t;
 }
 
+static int32_t get_send_time(ASFContext *asf, int64_t pres_time, uint64_t *offset)
+{
+    int i;
+    int32_t send_time = 0;
+    *offset = asf->data_offset + DATA_HEADER_SIZE;
+    for (i = 0; i < asf->next_start_sec; i++) {
+        if (pres_time <= asf->index_ptr[i].send_time)
+            break;
+        send_time = asf->index_ptr[i].send_time;
+        *offset   = asf->index_ptr[i].offset;
+    }
+
+    return send_time / 10000;
+}
+
+static int asf_write_markers(AVFormatContext *s)
+{
+    ASFContext *asf = s->priv_data;
+    AVIOContext *pb = s->pb;
+    int i;
+    AVRational scale = {1, 10000000};
+    int64_t hpos = put_header(pb, &ff_asf_marker_header);
+
+    ff_put_guid(pb, &ff_asf_reserved_4);// ASF spec mandates this reserved value
+    avio_wl32(pb, s->nb_chapters);     // markers count
+    avio_wl16(pb, 0);                  // ASF spec mandates 0 for this
+    avio_wl16(pb, 0);                  // name length 0, no name given
+
+    for (i = 0; i < s->nb_chapters; i++) {
+        AVChapter *c = s->chapters[i];
+        AVDictionaryEntry *t = av_dict_get(c->metadata, "title", NULL, 0);
+        int64_t pres_time = av_rescale_q(c->start, c->time_base, scale);
+        uint64_t offset;
+        int32_t send_time = get_send_time(asf, pres_time, &offset);
+        int len = 0;
+        uint8_t *buf;
+        AVIOContext *dyn_buf;
+        if (t) {
+            if (avio_open_dyn_buf(&dyn_buf) < 0)
+                return AVERROR(ENOMEM);
+            avio_put_str16le(dyn_buf, t->value);
+            len = avio_close_dyn_buf(dyn_buf, &buf);
+        }
+        avio_wl64(pb, offset);            // offset of the packet with send_time
+        avio_wl64(pb, pres_time + PREROLL_TIME * 10000); // presentation time
+        avio_wl16(pb, 12 + len);          // entry length
+        avio_wl32(pb, send_time);         // send time
+        avio_wl32(pb, 0);                 // flags, should be 0
+        avio_wl32(pb, len / 2);           // marker desc length in WCHARS!
+        if (t) {
+            avio_write(pb, buf, len);     // marker desc
+            av_freep(&buf);
+        }
+    }
+    end_header(pb, hpos);
+    return 0;
+}
+
 /* write the header (used two times if non streamed) */
 static int asf_write_header1(AVFormatContext *s, int64_t file_size,
                              int64_t data_chunk_size)
@@ -392,7 +451,12 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         }
         end_header(pb, hpos);
     }
-
+    /* chapters using ASF markers */
+    if (!asf->is_streamed && s->nb_chapters) {
+        int ret;
+        if (ret = asf_write_markers(s))
+            return ret;
+    }
     /* stream headers */
     for (n = 0; n < s->nb_streams; n++) {
         int64_t es_pos;

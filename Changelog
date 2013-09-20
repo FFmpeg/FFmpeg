@@ -29,6 +29,7 @@ version <next>
 - Lossless and alpha support for WebP decoder
 - Error Resilient AAC syntax (ER AAC LC) decoding
 - Low Delay AAC (ER AAC LD) decoding
+- mux chapters in ASF files
 
 
 version 2.0:
