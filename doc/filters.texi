@@ -1400,6 +1400,104 @@ ffmpeg -i fl -i fr -i fc -i sl -i sr -i lfe -filter_complex
 out
 @end example
 
+@section ladspa
+
+Load a LADSPA (Linux Audio Developer's Simple Plugin API) plugin.
+
+@table @option
+@item file, f
+Specifies the name of LADSPA plugin library to load. If the environment
+variable @env{LADSPA_PATH} is defined, the LADSPA plugin is searched in
+each one of the directories specified by the colon separated list in
+@env{LADSPA_PATH}, otherwise in the standard LADSPA paths, which are in
+this order: @file{HOME/.ladspa/lib/}, @file{/usr/local/lib/ladspa/},
+@file{/usr/lib/ladspa/}.
+
+@item plugin, p
+Specifies the plugin within the library. Some libraries contain only
+one plugin, but others contain many of them. If this is not set filter
+will list all available plugins within the specified library.
+
+@item controls, c
+Set the '|' separated list of controls which are zero or more floating point
+values that determine the behavior of the loaded plugin (for example delay,
+threshold or gain).
+Controls need to be defined using the following syntax:
+c0=@var{value0}|c1=@var{value1}|c2=@var{value2}|..., where
+@var{valuei} is the value set on the @var{i}-th control.
+If @option{controls} is set to @code{help}, all available controls and
+their valid ranges are printed.
+
+@item sample_rate, s
+Specify the sample rate, default to 44100. Only used if plugin have
+zero inputs.
+
+@item nb_samples, n
+Set the number of samples per channel per each output frame, default
+is 1024. Only used if plugin have zero inputs.
+
+@item duration, d
+Set the minimum duration of the sourced audio. See the function
+@code{av_parse_time()} for the accepted format, also check the "Time duration"
+section in the ffmpeg-utils manual.
+Note that the resulting duration may be greater than the specified duration,
+as the generated audio is always cut at the end of a complete frame.
+If not specified, or the expressed duration is negative, the audio is
+supposed to be generated forever.
+Only used if plugin have zero inputs.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+List all available plugins within amp (LADSPA example plugin) library:
+@example
+ladspa=file=amp
+@end example
+
+@item
+List all available controls and their valid ranges for @code{vcf_notch}
+plugin from @code{VCF} library:
+@example
+ladspa=f=vcf:p=vcf_notch:c=help
+@end example
+
+@item
+Simulate low quality audio equipment using @code{Computer Music Toolkit} (CMT)
+plugin library:
+@example
+ladspa=file=cmt:plugin=lofi:controls=c0=22|c1=12|c2=12
+@end example
+
+@item
+Add reverberation to the audio using TAP-plugins
+(Tom's Audio Processing plugins):
+@example
+ladspa=file=tap_reverb:tap_reverb
+@end example
+
+@item
+Generate white noise, with 0.2 amplitude:
+@example
+ladspa=file=cmt:noise_source_white:c=c0=.2
+@end example
+
+@item
+Generate 20 bpm clicks using plugin @code{C* Click - Metronome} from the
+@code{C* Audio Plugin Suite} (CAPS) library:
+@example
+ladspa=file=caps:Click:c=c1=20'
+@end example
+
+@item
+Apply @code{C* Eq10X2 - Stereo 10-band equaliser} effect:
+@example
+ladspa=caps:Eq10X2:c=c0=-48|c9=-24|c3=12|c4=2
+@end example
+@end itemize
+
 @section lowpass
 
 Apply a low-pass filter with 3dB point frequency.
