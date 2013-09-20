@@ -4428,8 +4428,6 @@ static int execute_decode_slices(H264Context *h, int context_count)
     return 0;
 }
 
-static const uint8_t start_code[] = { 0x00, 0x00, 0x01 };
-
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                             int parse_extradata)
 {
