@@ -143,6 +143,11 @@ static int decode_frame(AVCodecContext *avctx,
     const int planes = 3;
     uint8_t *out;
 
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     header      = AV_RL32(buf);
     version     = header & 0xff;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
