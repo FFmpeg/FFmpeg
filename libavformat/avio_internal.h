@@ -130,4 +130,22 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  */
 int ffio_fdopen(AVIOContext **s, URLContext *h);
 
+/**
+ * Open a write-only fake memory stream. The written data is not stored
+ * anywhere - this is only used for measuring the amount of data
+ * written.
+ *
+ * @param s new IO context
+ * @return zero if no error.
+ */
+int ffio_open_null_buf(AVIOContext **s);
+
+/**
+ * Close a null buffer.
+ *
+ * @param s an IO context opened by ffio_open_null_buf
+ * @return the number of bytes written to the null buffer
+ */
+int ffio_close_null_buf(AVIOContext *s);
+
 #endif /* AVFORMAT_AVIO_INTERNAL_H */
