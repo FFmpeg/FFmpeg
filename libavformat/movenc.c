@@ -2741,13 +2741,11 @@ static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
 {
     AVIOContext *avio_buf;
     int ret, moof_size;
-    uint8_t *buf;
 
-    if ((ret = avio_open_dyn_buf(&avio_buf)) < 0)
+    if ((ret = ffio_open_null_buf(&avio_buf)) < 0)
         return ret;
     mov_write_moof_tag_internal(avio_buf, mov, tracks, 0);
-    moof_size = avio_close_dyn_buf(avio_buf, &buf);
-    av_free(buf);
+    moof_size = ffio_close_null_buf(avio_buf);
     return mov_write_moof_tag_internal(pb, mov, tracks, moof_size);
 }
 
@@ -3897,16 +3895,13 @@ static int mov_write_header(AVFormatContext *s)
 static int get_moov_size(AVFormatContext *s)
 {
     int ret;
-    uint8_t *buf;
     AVIOContext *moov_buf;
     MOVMuxContext *mov = s->priv_data;
 
-    if ((ret = avio_open_dyn_buf(&moov_buf)) < 0)
+    if ((ret = ffio_open_null_buf(&moov_buf)) < 0)
         return ret;
     mov_write_moov_tag(moov_buf, mov, s);
-    ret = avio_close_dyn_buf(moov_buf, &buf);
-    av_free(buf);
-    return ret;
+    return ffio_close_null_buf(moov_buf);
 }
 
 /*
