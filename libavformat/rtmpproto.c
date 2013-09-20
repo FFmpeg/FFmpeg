@@ -2186,6 +2186,7 @@ static int get_packet(URLContext *s, int for_header)
 {
     RTMPContext *rt = s->priv_data;
     int ret;
+    uint8_t *p;
     const uint8_t *next;
     uint32_t size;
     uint32_t ts, cts, pts=0;
@@ -2257,13 +2258,14 @@ static int get_packet(URLContext *s, int for_header)
             rt->flv_size = rpkt.size + 15;
             if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
                 return err;
-            bytestream_put_byte(&rt->flv_data, rpkt.type);
-            bytestream_put_be24(&rt->flv_data, rpkt.size);
-            bytestream_put_be24(&rt->flv_data, ts);
-            bytestream_put_byte(&rt->flv_data, ts >> 24);
-            bytestream_put_be24(&rt->flv_data, 0);
-            bytestream_put_buffer(&rt->flv_data, rpkt.data, rpkt.size);
-            bytestream_put_be32(&rt->flv_data, 0);
+            p = rt->flv_data;
+            bytestream_put_byte(&p, rpkt.type);
+            bytestream_put_be24(&p, rpkt.size);
+            bytestream_put_be24(&p, ts);
+            bytestream_put_byte(&p, ts >> 24);
+            bytestream_put_be24(&p, 0);
+            bytestream_put_buffer(&p, rpkt.data, rpkt.size);
+            bytestream_put_be32(&p, 0);
             ff_rtmp_packet_destroy(&rpkt);
             return 0;
         } else if (rpkt.type == RTMP_PT_NOTIFY) {
@@ -2276,7 +2278,6 @@ static int get_packet(URLContext *s, int for_header)
             return 0;
         } else if (rpkt.type == RTMP_PT_METADATA) {
             int err;
-            uint8_t *p;
             // we got raw FLV data, make it available for FLV demuxer
             rt->flv_off  = 0;
             rt->flv_size = rpkt.size;
