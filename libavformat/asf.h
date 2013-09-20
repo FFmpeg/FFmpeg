@@ -88,6 +88,8 @@ typedef struct ASFMainHeader {
 typedef struct ASFIndex {
     uint32_t packet_number;
     uint16_t packet_count;
+    uint64_t send_time;
+    uint64_t offset;
 } ASFIndex;
 
 extern const ff_asf_guid ff_asf_header;
