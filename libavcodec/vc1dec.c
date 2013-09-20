@@ -5483,8 +5483,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (!s->context_initialized) {
-        if (ff_msmpeg4_decode_init(avctx) < 0 || vc1_decode_init_alloc_tables(v) < 0)
+        if (ff_msmpeg4_decode_init(avctx) < 0)
             return -1;
+        if (vc1_decode_init_alloc_tables(v) < 0) {
+            MPV_common_end(s);
+            return -1;
+        }
 
         s->low_delay = !avctx->has_b_frames || v->res_sprite;
 
