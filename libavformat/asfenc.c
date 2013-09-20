@@ -183,6 +183,8 @@
      1 -         /* Payload Flags */                      \
      2 * PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS)
 
+#define DATA_HEADER_SIZE 50
+
 typedef struct {
     uint32_t seqno;
     int is_streamed;
@@ -520,14 +522,14 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     cur_pos     = avio_tell(pb);
     header_size = cur_pos - header_offset;
     if (asf->is_streamed) {
-        header_size += 8 + 30 + 50;
+        header_size += 8 + 30 + DATA_HEADER_SIZE;
 
         avio_seek(pb, header_offset - 10 - 30, SEEK_SET);
         avio_wl16(pb, header_size);
         avio_seek(pb, header_offset - 2 - 30, SEEK_SET);
         avio_wl16(pb, header_size);
 
-        header_size -= 8 + 30 + 50;
+        header_size -= 8 + 30 + DATA_HEADER_SIZE;
     }
     header_size += 24 + 6;
     avio_seek(pb, header_offset - 14, SEEK_SET);
@@ -556,10 +558,10 @@ static int asf_write_header(AVFormatContext *s)
     asf->nb_index_memory_alloc = ASF_INDEX_BLOCK;
     asf->maximum_packet        = 0;
 
-    /* the data-chunk-size has to be 50, which is data_size - asf->data_offset
-     *  at the moment this function is done. It is needed to use asf as
-     *  streamable format. */
-    if (asf_write_header1(s, 0, 50) < 0) {
+    /* the data-chunk-size has to be 50 (DATA_HEADER_SIZE), which is
+     * data_size - asf->data_offset at the moment this function is done.
+     * It is needed to use asf as a streamable format. */
+    if (asf_write_header1(s, 0, DATA_HEADER_SIZE) < 0) {
         //av_free(asf);
         return -1;
     }
