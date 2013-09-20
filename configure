@@ -2754,7 +2754,7 @@ msvc_flags(){
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4554 \
-                                       -wd4996 -wd4273 ;;
+                                       -wd4273 ;;
         esac
     done
 }
@@ -2979,7 +2979,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
@@ -4533,6 +4533,7 @@ elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     enabled_all x86_32 debug && add_cflags -Oy-
     enabled debug && add_ldflags -debug
+    enable pragma_deprecated
     if enabled icl; then
         # basically -fstrict-aliasing that does not work (correctly) on icl 13.x
         check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
