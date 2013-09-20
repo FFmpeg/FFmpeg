@@ -45,7 +45,6 @@ static void free_buffers(VP8Context *s)
             pthread_mutex_destroy(&s->thread_data[i].lock);
 #endif
             av_freep(&s->thread_data[i].filter_strength);
-            av_freep(&s->thread_data[i].edge_emu_buffer);
         }
     av_freep(&s->thread_data);
     av_freep(&s->macroblocks_base);
@@ -1186,7 +1185,7 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
     uint8_t *src = ref->f->data[0];
 
     if (AV_RN32A(mv)) {
-
+        int src_linesize = linesize;
         int mx = (mv->x << 1)&7, mx_idx = subpel_idx[0][mx];
         int my = (mv->y << 1)&7, my_idx = subpel_idx[0][my];
 
@@ -1198,12 +1197,15 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
         src += y_off * linesize + x_off;
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src - my_idx * linesize - mx_idx, linesize,
-                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
+                                     src - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx],
+                                     block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
-            src = td->edge_emu_buffer + mx_idx + linesize * my_idx;
+            src = td->edge_emu_buffer + mx_idx + 32 * my_idx;
+            src_linesize = 32;
         }
-        mc_func[my_idx][mx_idx](dst, linesize, src, linesize, block_h, mx, my);
+        mc_func[my_idx][mx_idx](dst, linesize, src, src_linesize, block_h, mx, my);
     } else {
         ff_thread_await_progress(ref, (3 + y_off + block_h) >> 4, 0);
         mc_func[0][0](dst, linesize, src + y_off * linesize + x_off, linesize, block_h, 0, 0);
@@ -1248,17 +1250,21 @@ void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1, uint8_t *dst
         ff_thread_await_progress(ref, (3 + y_off + block_h + subpel_idx[2][my]) >> 3, 0);
         if (x_off < mx_idx || x_off >= width  - block_w - subpel_idx[2][mx] ||
             y_off < my_idx || y_off >= height - block_h - subpel_idx[2][my]) {
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src1 - my_idx * linesize - mx_idx, linesize,
-                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
+                                     src1 - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx],
+                                     block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
-            src1 = td->edge_emu_buffer + mx_idx + linesize * my_idx;
-            mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
+            src1 = td->edge_emu_buffer + mx_idx + 32 * my_idx;
+            mc_func[my_idx][mx_idx](dst1, linesize, src1, 32, block_h, mx, my);
 
-            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, src2 - my_idx * linesize - mx_idx, linesize,
-                                     block_w + subpel_idx[1][mx], block_h + subpel_idx[1][my],
+            s->vdsp.emulated_edge_mc(td->edge_emu_buffer, 32,
+                                     src2 - my_idx * linesize - mx_idx, linesize,
+                                     block_w + subpel_idx[1][mx],
+                                     block_h + subpel_idx[1][my],
                                      x_off - mx_idx, y_off - my_idx, width, height);
-            src2 = td->edge_emu_buffer + mx_idx + linesize * my_idx;
-            mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
+            src2 = td->edge_emu_buffer + mx_idx + 32 * my_idx;
+            mc_func[my_idx][mx_idx](dst2, linesize, src2, 32, block_h, mx, my);
         } else {
             mc_func[my_idx][mx_idx](dst1, linesize, src1, linesize, block_h, mx, my);
             mc_func[my_idx][mx_idx](dst2, linesize, src2, linesize, block_h, mx, my);
@@ -1943,10 +1949,6 @@ int ff_vp8_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     s->linesize   = curframe->tf.f->linesize[0];
     s->uvlinesize = curframe->tf.f->linesize[1];
-
-    if (!s->thread_data[0].edge_emu_buffer)
-        for (i = 0; i < MAX_THREADS; i++)
-            s->thread_data[i].edge_emu_buffer = av_malloc(21*s->linesize);
 
     memset(s->top_nnz, 0, s->mb_width*sizeof(*s->top_nnz));
     /* Zero macroblock structures for top/top-left prediction from outside the frame. */

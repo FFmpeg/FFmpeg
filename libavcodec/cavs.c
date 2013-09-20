@@ -405,7 +405,8 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic,
           || full_my < 0-extra_height
           || full_mx + 16/*FIXME*/ > pic_width + extra_width
           || full_my + 16/*FIXME*/ > pic_height + extra_height){
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_y - 2 - 2*h->l_stride, h->l_stride,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->l_stride,
+                            src_y - 2 - 2*h->l_stride, h->l_stride,
                             16+5, 16+5/*FIXME*/, full_mx-2, full_my-2, pic_width, pic_height);
         src_y= h->edge_emu_buffer + 2 + 2*h->l_stride;
         emu=1;
@@ -414,14 +415,14 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic,
     qpix_op[luma_xy](dest_y, src_y, h->l_stride); //FIXME try variable height perhaps?
 
     if(emu){
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cb, h->c_stride,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->c_stride, src_cb, h->c_stride,
                             9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
         src_cb= h->edge_emu_buffer;
     }
     chroma_op(dest_cb, src_cb, h->c_stride, chroma_height, mx&7, my&7);
 
     if(emu){
-        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr, h->c_stride,
+        h->vdsp.emulated_edge_mc(h->edge_emu_buffer, h->c_stride, src_cr, h->c_stride,
                             9, 9/*FIXME*/, (mx>>3), (my>>3), pic_width>>1, pic_height>>1);
         src_cr= h->edge_emu_buffer;
     }

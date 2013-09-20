@@ -405,8 +405,9 @@ void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
     }
 }
 
-typedef void emulated_edge_mc_func(uint8_t *dst, const uint8_t *src,
-                                   ptrdiff_t linesize, int block_w, int block_h,
+typedef void emulated_edge_mc_func(uint8_t *dst, ptrdiff_t dst_stride,
+                                   const uint8_t *src, ptrdiff_t src_linesize,
+                                   int block_w, int block_h,
                                    int src_x, int src_y, int w, int h);
 
 static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
@@ -454,7 +455,7 @@ static av_always_inline void gmc(uint8_t *dst, uint8_t *src,
 
     src += ix + iy * stride;
     if (need_emu) {
-        emu_edge_fn(edge_buf, src, stride, w + 1, h + 1, ix, iy, width, height);
+        emu_edge_fn(edge_buf, stride, src, stride, w + 1, h + 1, ix, iy, width, height);
         src = edge_buf;
     }
 
