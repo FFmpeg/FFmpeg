@@ -272,8 +272,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int i;
 
     if (avctx->extradata_size < 1) {
-        av_log(avctx, AV_LOG_ERROR, "No extradata provided\n");
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_WARNING, "No extradata provided\n");
     }
 
     ff_asv_common_init(avctx);
