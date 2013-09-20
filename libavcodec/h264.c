@@ -4559,8 +4559,11 @@ again:
                 (h->avctx->active_thread_type & FF_THREAD_FRAME) &&
                 (hx->nal_unit_type != NAL_PPS &&
                  hx->nal_unit_type != NAL_SPS)) {
-                av_log(avctx, AV_LOG_INFO, "Ignoring NAL unit %d during "
-                       "extradata parsing\n", hx->nal_unit_type);
+                if (hx->nal_unit_type < NAL_AUD ||
+                    hx->nal_unit_type > NAL_AUXILIARY_SLICE)
+                    av_log(avctx, AV_LOG_INFO,
+                           "Ignoring NAL unit %d during extradata parsing\n",
+                           hx->nal_unit_type);
                 hx->nal_unit_type = NAL_FF_IGNORE;
             }
             err = 0;
