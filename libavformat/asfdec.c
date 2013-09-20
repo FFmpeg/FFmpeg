@@ -679,6 +679,7 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
 static int asf_read_marker(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
+    ASFContext *asf = s->priv_data;
     int i, count, name_len, ret;
     char name[1024];
 
@@ -696,6 +697,7 @@ static int asf_read_marker(AVFormatContext *s, int64_t size)
 
         avio_rl64(pb);             // offset, 8 bytes
         pres_time = avio_rl64(pb); // presentation time
+        pres_time -= asf->hdr.preroll * 10000;
         avio_rl16(pb);             // entry length
         avio_rl32(pb);             // send time
         avio_rl32(pb);             // flags
