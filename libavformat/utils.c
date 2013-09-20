@@ -2373,7 +2373,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 double best_error = 0.01;
 
                 if (delta_dts     >= INT64_MAX / st->time_base.num ||
-                    delta_packets >= INT64_MAX / st->time_base.den)
+                    delta_packets >= INT64_MAX / st->time_base.den ||
+                    delta_dts < 0)
                     continue;
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           delta_packets*(int64_t)st->time_base.den,
