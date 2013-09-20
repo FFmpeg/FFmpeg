@@ -562,7 +562,6 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (s->pb->seekable) {
-        int err;
         AVIIndex* idx = &avist->indexes;
         int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
         int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
