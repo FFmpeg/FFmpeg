@@ -9181,13 +9181,13 @@ select='not(mod(n\,100))'
 @item
 Select only frames contained in the 10-20 time interval:
 @example
-select='gte(t\,10)*lte(t\,20)'
+select=between(t\,10\,20)
 @end example
 
 @item
 Select only I frames contained in the 10-20 time interval:
 @example
-select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
+select=between(t\,10\,20)*eq(pict_type\,I)
 @end example
 
 @item
