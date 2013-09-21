@@ -2181,6 +2181,47 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
     return 0;
 }
 
+static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
+{
+    int ret, old_flv_size, type;
+    const uint8_t *next;
+    uint8_t *p;
+    uint32_t size;
+    uint32_t ts, cts, pts = 0;
+
+    old_flv_size = update_offset(rt, pkt->size);
+
+    if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
+        return ret;
+
+    next = pkt->data;
+    p    = rt->flv_data + old_flv_size;
+
+    /* copy data while rewriting timestamps */
+    ts = pkt->timestamp;
+
+    while (next - pkt->data < pkt->size - 11) {
+        type = bytestream_get_byte(&next);
+        size = bytestream_get_be24(&next);
+        cts  = bytestream_get_be24(&next);
+        cts |= bytestream_get_byte(&next) << 24;
+        if (!pts)
+            pts = cts;
+        ts += cts - pts;
+        pts = cts;
+        bytestream_put_byte(&p, type);
+        bytestream_put_be24(&p, size);
+        bytestream_put_be24(&p, ts);
+        bytestream_put_byte(&p, ts >> 24);
+        memcpy(p, next, size + 3 + 4);
+        next += size + 3 + 4;
+        p    += size + 3 + 4;
+    }
+    memcpy(p, next, 11);
+
+    return 0;
+}
+
 /**
  * Interact with the server by receiving and sending RTMP packets until
  * there is some significant data (media data or expected status notification).
@@ -2196,10 +2237,6 @@ static int get_packet(URLContext *s, int for_header)
 {
     RTMPContext *rt = s->priv_data;
     int ret;
-    uint8_t *p;
-    const uint8_t *next;
-    uint32_t size;
-    uint32_t ts, cts, pts=0;
 
     if (rt->state == STATE_STOPPED)
         return AVERROR_EOF;
@@ -2266,30 +2303,7 @@ static int get_packet(URLContext *s, int for_header)
             ff_rtmp_packet_destroy(&rpkt);
             return ret;
         } else if (rpkt.type == RTMP_PT_METADATA) {
-            int err;
-            // we got raw FLV data, make it available for FLV demuxer
-            rt->flv_off  = 0;
-            rt->flv_size = rpkt.size;
-            if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
-                return err;
-            /* rewrite timestamps */
-            next = rpkt.data;
-            ts = rpkt.timestamp;
-            while (next - rpkt.data < rpkt.size - 11) {
-                next++;
-                size = bytestream_get_be24(&next);
-                p=next;
-                cts = bytestream_get_be24(&next);
-                cts |= bytestream_get_byte(&next) << 24;
-                if (pts==0)
-                    pts=cts;
-                ts += cts - pts;
-                pts = cts;
-                bytestream_put_be24(&p, ts);
-                bytestream_put_byte(&p, ts >> 24);
-                next += size + 3 + 4;
-            }
-            memcpy(rt->flv_data, rpkt.data, rpkt.size);
+            ret = handle_metadata(rt, &rpkt);
             ff_rtmp_packet_destroy(&rpkt);
             return 0;
         }
