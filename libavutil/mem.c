@@ -185,6 +185,10 @@ int av_reallocp(void *ptr, size_t size)
     void **ptrptr = ptr;
     void *ret;
 
+    if (!size) {
+        av_freep(ptr);
+        return 0;
+    }
     ret = av_realloc(*ptrptr, size);
 
     if (!ret) {
