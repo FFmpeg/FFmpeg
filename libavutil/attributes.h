@@ -64,10 +64,6 @@
 #    define av_pure
 #endif
 
-#ifndef av_restrict
-#define av_restrict restrict
-#endif
-
 #if AV_GCC_VERSION_AT_LEAST(2,6)
 #    define av_const __attribute__((const))
 #else
