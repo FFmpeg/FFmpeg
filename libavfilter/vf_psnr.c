@@ -91,7 +91,7 @@ void compute_images_mse(PSNRContext *s,
         const uint8_t *ref_line = ref_data[c];
         const int ref_linesize = ref_linesizes[c];
         const int main_linesize = main_linesizes[c];
-        int m = 0;
+        uint64_t m = 0;
 
         for (i = 0; i < outh; i++) {
             for (j = 0; j < outw; j++)
