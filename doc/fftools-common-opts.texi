@@ -278,11 +278,12 @@ muxer:
 ffmpeg -i input.flac -id3v2_version 3 out.mp3
 @end example
 
-All codec AVOptions are obviously per-stream, so the chapter on stream
-specifiers applies to them
+All codec AVOptions are per-stream, and thus a stream specifier
+should be attached to them.
 
-Note @option{-nooption} syntax cannot be used for boolean AVOptions,
-use @option{-option 0}/@option{-option 1}.
+Note: the @option{-nooption} syntax cannot be used for boolean
+AVOptions, use @option{-option 0}/@option{-option 1}.
 
-Note2 old undocumented way of specifying per-stream AVOptions by prepending
-v/a/s to the options name is now obsolete and will be removed soon.
+Note: the old undocumented way of specifying per-stream AVOptions by
+prepending v/a/s to the options name is now obsolete and will be
+removed soon.
