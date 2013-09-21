@@ -28,7 +28,6 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
-#include "libavutil/opt.h"
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
