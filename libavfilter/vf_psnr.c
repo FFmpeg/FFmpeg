@@ -94,8 +94,10 @@ void compute_images_mse(PSNRContext *s,
         uint64_t m = 0;
 
         for (i = 0; i < outh; i++) {
+            int m2 = 0;
             for (j = 0; j < outw; j++)
-                m += pow2(main_line[j] - ref_line[j]);
+                m2 += pow2(main_line[j] - ref_line[j]);
+            m += m2;
             ref_line += ref_linesize;
             main_line += main_linesize;
         }
