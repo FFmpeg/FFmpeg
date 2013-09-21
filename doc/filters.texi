@@ -9,9 +9,10 @@ To illustrate the sorts of things that are possible, we consider the
 following filtergraph.
 
 @example
+                [main]
 input --> split ---------------------> overlay --> output
             |                             ^
-            |                             |
+            |[tmp]                  [flip]|
             +-----> crop --> vflip -------+
 @end example
 
