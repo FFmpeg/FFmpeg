@@ -33,7 +33,6 @@
 #include "internal.h"
 #include "mpegvideo.h"
 #include "dnxhdenc.h"
-#include "internal.h"
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 #define DNX10BIT_QMAT_SHIFT 18 // The largest value that will not lead to overflow for 10bit samples.

@@ -30,7 +30,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "internal.h"
 #include "get_bits.h"
 #include "acelp_vectors.h"
 #include "celp_filters.h"

@@ -174,7 +174,6 @@ void ff_init_cabac_states(void)
 
 #include "libavutil/lfg.h"
 #include "avcodec.h"
-#include "cabac.h"
 
 static inline void put_cabac_bit(CABACContext *c, int b){
     put_bits(&c->pb, 1, b);

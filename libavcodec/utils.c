@@ -40,7 +40,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/dict.h"
-#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"

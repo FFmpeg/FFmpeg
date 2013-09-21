@@ -22,7 +22,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
-#include "internal.h"
 #include "dsputil.h"
 #include "internal.h"
 #include "snow_dwt.h"
