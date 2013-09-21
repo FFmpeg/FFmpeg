@@ -53,6 +53,7 @@
 #define TCURL_MAX_LENGTH 512
 #define FLASHVER_MAX_LENGTH 64
 #define RTMP_PKTDATA_DEFAULT_SIZE 4096
+#define RTMP_HEADER 11
 
 /** RTMP protocol handler state */
 typedef enum {
@@ -95,7 +96,7 @@ typedef struct RTMPContext {
     uint32_t      bytes_read;                 ///< number of bytes read from server
     uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
     int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
-    uint8_t       flv_header[11];             ///< partial incoming flv packet header
+    uint8_t       flv_header[RTMP_HEADER];    ///< partial incoming flv packet header
     int           flv_header_bytes;           ///< number of initialized bytes in flv_header
     int           nb_invokes;                 ///< keeps track of invoke messages
     char*         tcurl;                      ///< url of the target stream
@@ -2001,7 +2002,7 @@ static int handle_invoke_status(URLContext *s, RTMPPacket *pkt)
 {
     RTMPContext *rt = s->priv_data;
     const uint8_t *data_end = pkt->data + pkt->size;
-    const uint8_t *ptr = pkt->data + 11;
+    const uint8_t *ptr = pkt->data + RTMP_HEADER;
     uint8_t tmpstr[256];
     int i, t;
 
@@ -2200,7 +2201,7 @@ static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
     /* copy data while rewriting timestamps */
     ts = pkt->timestamp;
 
-    while (next - pkt->data < pkt->size - 11) {
+    while (next - pkt->data < pkt->size - RTMP_HEADER) {
         type = bytestream_get_byte(&next);
         size = bytestream_get_be24(&next);
         cts  = bytestream_get_be24(&next);
@@ -2217,7 +2218,7 @@ static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
         next += size + 3 + 4;
         p    += size + 3 + 4;
     }
-    memcpy(p, next, 11);
+    memcpy(p, next, RTMP_HEADER);
 
     return 0;
 }
@@ -2644,14 +2645,14 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
             continue;
         }
 
-        if (rt->flv_header_bytes < 11) {
+        if (rt->flv_header_bytes < RTMP_HEADER) {
             const uint8_t *header = rt->flv_header;
-            int copy = FFMIN(11 - rt->flv_header_bytes, size_temp);
+            int copy = FFMIN(RTMP_HEADER - rt->flv_header_bytes, size_temp);
             int channel = RTMP_AUDIO_CHANNEL;
             bytestream_get_buffer(&buf_temp, rt->flv_header + rt->flv_header_bytes, copy);
             rt->flv_header_bytes += copy;
             size_temp            -= copy;
-            if (rt->flv_header_bytes < 11)
+            if (rt->flv_header_bytes < RTMP_HEADER)
                 break;
 
             pkttype = bytestream_get_byte(&header);
