@@ -37,7 +37,6 @@
 #include "libavutil/cpu.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/opt.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "gradfun.h"

@@ -36,7 +36,6 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "audio.h"
 
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame);
 

@@ -28,7 +28,6 @@
 #include <stdio.h>
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"

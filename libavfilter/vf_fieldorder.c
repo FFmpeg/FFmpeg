@@ -23,7 +23,6 @@
  * video field order filter, heavily influenced by vf_pad.c
  */
 
-#include "libavutil/opt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"

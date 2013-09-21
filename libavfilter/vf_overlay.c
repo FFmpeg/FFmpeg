@@ -30,7 +30,6 @@
 #include "libavutil/common.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
-#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
