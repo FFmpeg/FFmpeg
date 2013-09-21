@@ -70,6 +70,7 @@ typedef struct {
     int             tracknum;
     int64_t         cluster_pos;        ///< file offset of the cluster containing the block
     int64_t         relative_pos;       ///< relative offset from the position of the cluster containing the block
+    int64_t         duration;           ///< duration of the block according to time base
 } mkv_cuepoint;
 
 typedef struct {
@@ -119,9 +120,9 @@ typedef struct MatroskaMuxContext {
  * offset, 4 bytes for target EBML ID */
 #define MAX_SEEKENTRY_SIZE 21
 
-/** per-cuepoint-track - 4 1-byte EBML IDs, 4 1-byte EBML sizes, 3
+/** per-cuepoint-track - 5 1-byte EBML IDs, 5 1-byte EBML sizes, 4
  * 8-byte uint max */
-#define MAX_CUETRACKPOS_SIZE 32
+#define MAX_CUETRACKPOS_SIZE 42
 
 /** per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max */
 #define MAX_CUEPOINT_SIZE(num_tracks) 12 + MAX_CUETRACKPOS_SIZE*num_tracks
@@ -381,7 +382,8 @@ static mkv_cues * mkv_start_cues(int64_t segment_offset)
     return cues;
 }
 
-static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos, int64_t relative_pos)
+static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t cluster_pos, int64_t relative_pos,
+                            int64_t duration)
 {
     mkv_cuepoint *entries = cues->entries;
 
@@ -396,7 +398,8 @@ static int mkv_add_cuepoint(mkv_cues *cues, int stream, int64_t ts, int64_t clus
     cues->entries[cues->num_entries].pts           = ts;
     cues->entries[cues->num_entries].tracknum      = stream + 1;
     cues->entries[cues->num_entries].cluster_pos   = cluster_pos - cues->segment_offset;
-    cues->entries[cues->num_entries++].relative_pos= relative_pos;
+    cues->entries[cues->num_entries].relative_pos  = relative_pos;
+    cues->entries[cues->num_entries++].duration    = duration;
 
     return 0;
 }
@@ -432,6 +435,8 @@ static int64_t mkv_write_cues(AVIOContext *pb, mkv_cues *cues, mkv_track *tracks
             put_ebml_uint(pb, MATROSKA_ID_CUETRACK           , entry[j].tracknum   );
             put_ebml_uint(pb, MATROSKA_ID_CUECLUSTERPOSITION , entry[j].cluster_pos);
             put_ebml_uint(pb, MATROSKA_ID_CUERELATIVEPOSITION, entry[j].relative_pos);
+            if (entry[j].duration != -1)
+                put_ebml_uint(pb, MATROSKA_ID_CUEDURATION    , entry[j].duration);
             end_ebml_master(pb, track_positions);
         }
         i += j - 1;
@@ -1521,7 +1526,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     }
 
     if ((codec->codec_type == AVMEDIA_TYPE_VIDEO && keyframe) || codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-        ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, ts, mkv->cluster_pos, relative_packet_pos);
+        ret = mkv_add_cuepoint(mkv->cues, pkt->stream_index, ts, mkv->cluster_pos, relative_packet_pos,
+                               codec->codec_type == AVMEDIA_TYPE_SUBTITLE ? duration : -1);
         if (ret < 0) return ret;
     }
 
