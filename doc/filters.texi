@@ -1404,6 +1404,8 @@ out
 
 Load a LADSPA (Linux Audio Developer's Simple Plugin API) plugin.
 
+To enable compilation of this filter you need to configure FFmpeg with "--enable-ladspa".
+
 @table @option
 @item file, f
 Specifies the name of LADSPA plugin library to load. If the environment
