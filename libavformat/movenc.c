@@ -3179,7 +3179,7 @@ static int mov_write_header(AVFormatContext *s)
     if (!s->pb->seekable &&
         (!(mov->flags & FF_MOV_FLAG_FRAGMENT) || mov->ism_lookahead)) {
         av_log(s, AV_LOG_ERROR, "muxer does not support non seekable output\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 
@@ -3187,7 +3187,7 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->mode == MODE_PSP) {
         if (s->nb_streams != 2) {
             av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         mov_write_uuidprof_tag(pb, s);
     }
