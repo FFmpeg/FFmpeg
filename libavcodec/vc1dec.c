@@ -6013,12 +6013,16 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 if (v->field_mode && i == n_slices1 + 2) {
                     if ((header_ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
                         av_log(v->s.avctx, AV_LOG_ERROR, "Field header damaged\n");
+                        if (avctx->err_recognition & AV_EF_EXPLODE)
+                            goto err;
                         continue;
                     }
                 } else if (get_bits1(&s->gb)) {
                     v->pic_header_flag = 1;
                     if ((header_ret = ff_vc1_parse_frame_header_adv(v, &s->gb)) < 0) {
                         av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
+                        if (avctx->err_recognition & AV_EF_EXPLODE)
+                            goto err;
                         continue;
                     }
                 }
