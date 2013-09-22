@@ -993,8 +993,10 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
     size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
     if (size > INT_MAX || (uint64_t)atom.size > INT_MAX)
         return AVERROR_INVALIDDATA;
-    if ((err = av_reallocp(&st->codec->extradata, size)) < 0)
+    if ((err = av_reallocp(&st->codec->extradata, size)) < 0) {
+        st->codec->extradata_size = 0;
         return err;
+    }
     buf = st->codec->extradata + st->codec->extradata_size;
     st->codec->extradata_size= size - FF_INPUT_BUFFER_PADDING_SIZE;
     AV_WB32(       buf    , atom.size + 8);
