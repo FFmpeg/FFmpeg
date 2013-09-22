@@ -188,7 +188,7 @@ fixup_vorbis_headers(AVFormatContext * as, struct oggvorbis_private *priv,
     return offset;
 }
 
-static int vorbis_cleanup(AVFormatContext *s, int idx)
+static void vorbis_cleanup(AVFormatContext *s, int idx)
 {
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;

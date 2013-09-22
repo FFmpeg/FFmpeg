@@ -2670,6 +2670,7 @@ void avformat_free_context(AVFormatContext *s)
             av_free_packet(&st->cur_pkt);
         }
         av_dict_free(&st->metadata);
+        av_freep(&st->probe_data.buf);
         av_freep(&st->index_entries);
         av_freep(&st->codec->extradata);
         av_freep(&st->codec->subtitle_header);
