@@ -717,7 +717,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
             src++;
             *samples++ = cs->predictor;
         }
-        for (n = nb_samples >> (1 - st); n > 0; n--, src++) {
+        for (n = (nb_samples >> (1 - st)) - 1; n > 0; n--) {
             uint8_t v = *src;
             *samples++ = adpcm_ima_expand_nibble(&c->status[0 ], v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
