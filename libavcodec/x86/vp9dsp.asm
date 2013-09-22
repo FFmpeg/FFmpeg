@@ -219,3 +219,60 @@ filter_v_fn avg
 INIT_XMM ssse3
 filter_v_fn put
 filter_v_fn avg
+
+%macro fpel_fn 6
+%if %2 == 4
+%define %%srcfn movh
+%define %%dstfn movh
+%else
+%define %%srcfn movu
+%define %%dstfn mova
+%endif
+
+%if %2 <= 16
+cglobal %1%2, 5, 7, 4, dst, dstride, src, sstride, h, dstride3, sstride3
+    lea  sstride3q, [sstrideq*3]
+    lea  dstride3q, [dstrideq*3]
+%else
+cglobal %1%2, 5, 5, 4, dst, dstride, src, sstride, h
+%endif
+.loop:
+    %%srcfn     m0, [srcq]
+    %%srcfn     m1, [srcq+s%3]
+    %%srcfn     m2, [srcq+s%4]
+    %%srcfn     m3, [srcq+s%5]
+    lea       srcq, [srcq+sstrideq*%6]
+%ifidn %1, avg
+    pavgb       m0, [dstq]
+    pavgb       m1, [dstq+d%3]
+    pavgb       m2, [dstq+d%4]
+    pavgb       m3, [dstq+d%5]
+%endif
+    %%dstfn [dstq], m0
+    %%dstfn [dstq+d%3], m1
+    %%dstfn [dstq+d%4], m2
+    %%dstfn [dstq+d%5], m3
+    lea       dstq, [dstq+dstrideq*%6]
+    sub         hd, %6
+    jnz .loop
+    RET
+%endmacro
+
+%define d16 16
+%define s16 16
+INIT_MMX mmx
+fpel_fn put, 4,  strideq, strideq*2, stride3q, 4
+fpel_fn put, 8,  strideq, strideq*2, stride3q, 4
+INIT_MMX sse
+fpel_fn avg, 4,  strideq, strideq*2, stride3q, 4
+fpel_fn avg, 8,  strideq, strideq*2, stride3q, 4
+INIT_XMM sse
+fpel_fn put, 16, strideq, strideq*2, stride3q, 4
+fpel_fn put, 32, mmsize,  strideq,   strideq+mmsize, 2
+fpel_fn put, 64, mmsize,  mmsize*2,  mmsize*3, 1
+INIT_XMM sse2
+fpel_fn avg, 16, strideq, strideq*2, stride3q, 4
+fpel_fn avg, 32, mmsize,  strideq,   strideq+mmsize, 2
+fpel_fn avg, 64, mmsize,  mmsize*2,  mmsize*3, 1
+%undef s16
+%undef d16

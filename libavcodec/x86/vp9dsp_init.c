@@ -27,6 +27,22 @@
 
 #if HAVE_YASM
 
+#define fpel_func(avg, sz, opt) \
+void ff_##avg##sz##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
+                          const uint8_t *src, ptrdiff_t src_stride, \
+                          int h, int mx, int my)
+fpel_func(put,  4, mmx);
+fpel_func(put,  8, mmx);
+fpel_func(put, 16, sse);
+fpel_func(put, 32, sse);
+fpel_func(put, 64, sse);
+fpel_func(avg,  4, sse);
+fpel_func(avg,  8, sse);
+fpel_func(avg, 16, sse2);
+fpel_func(avg, 32, sse2);
+fpel_func(avg, 64, sse2);
+#undef fpel_func
+
 #define mc_func(avg, sz, dir, opt) \
 void ff_##avg##_8tap_1d_##dir##_##sz##_##opt(uint8_t *dst, ptrdiff_t dst_stride, \
                                              const uint8_t *src, ptrdiff_t src_stride, \
@@ -141,6 +157,13 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
+#define init_fpel(idx1, idx2, sz, type, opt) \
+    dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][0][0] = \
+    dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][0][0] = \
+    dsp->mc[idx1][FILTER_8TAP_SHARP  ][idx2][0][0] = \
+    dsp->mc[idx1][FILTER_BILINEAR    ][idx2][0][0] = ff_##type##sz##_##opt
+
+
 #define init_subpel1(idx1, idx2, idxh, idxv, sz, dir, type, opt) \
     dsp->mc[idx1][FILTER_8TAP_SMOOTH ][idx2][idxh][idxv] = type##_8tap_smooth_##sz##dir##_##opt; \
     dsp->mc[idx1][FILTER_8TAP_REGULAR][idx2][idxh][idxv] = type##_8tap_regular_##sz##dir##_##opt; \
@@ -158,11 +181,31 @@ av_cold void ff_vp9dsp_init_x86(VP9DSPContext *dsp)
     init_subpel2(idx, 0, 1, v, type, opt); \
     init_subpel2(idx, 1, 0, h, type, opt)
 
+    if (cpu_flags & AV_CPU_FLAG_MMX) {
+        init_fpel(4, 0,  4, put, mmx);
+        init_fpel(3, 0,  8, put, mmx);
+    }
+
+    if (cpu_flags & AV_CPU_FLAG_SSE) {
+        init_fpel(2, 0, 16, put, sse);
+        init_fpel(1, 0, 32, put, sse);
+        init_fpel(0, 0, 64, put, sse);
+        init_fpel(4, 1,  4, avg, sse);
+        init_fpel(3, 1,  8, avg, sse);
+    }
+
+    if (cpu_flags & AV_CPU_FLAG_SSE2) {
+        init_fpel(2, 1, 16, avg, sse2);
+        init_fpel(1, 1, 32, avg, sse2);
+        init_fpel(0, 1, 64, avg, sse2);
+    }
+
     if (cpu_flags & AV_CPU_FLAG_SSSE3) {
         init_subpel3(0, put, ssse3);
         init_subpel3(1, avg, ssse3);
     }
 
+#undef init_fpel
 #undef init_subpel1
 #undef init_subpel2
 #undef init_subpel3
