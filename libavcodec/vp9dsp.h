@@ -112,4 +112,6 @@ typedef struct VP9DSPContext {
 
 void ff_vp9dsp_init(VP9DSPContext *dsp);
 
+void ff_vp9dsp_init_x86(VP9DSPContext *dsp);
+
 #endif /* AVCODEC_VP9DSP_H */

@@ -700,7 +700,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
     extern %1
 %endmacro
 
-%macro const 2+
+%macro const 1-2+
     %xdefine %1 mangle(private_prefix %+ _ %+ %1)
     global %1
     %1: %2
