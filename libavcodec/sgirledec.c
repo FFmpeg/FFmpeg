@@ -82,6 +82,8 @@ static int decode_sgirle8(AVCodecContext *avctx, uint8_t *dst, const uint8_t *sr
         if (v > 0 && v < 0xC0) {
             do {
                 int length = FFMIN(v, width - x);
+                if (length <= 0)
+                    break;
                 memset(dst + y*linesize + x, RGB332_TO_BGR8(*src), length);
                 INC_XY(length);
                 v   -= length;
@@ -91,7 +93,7 @@ static int decode_sgirle8(AVCodecContext *avctx, uint8_t *dst, const uint8_t *sr
             v -= 0xC0;
             do {
                 int length = FFMIN3(v, width - x, src_end - src);
-                if (src_end - src < length)
+                if (src_end - src < length || length <= 0)
                     break;
                 memcpy_rgb332_to_bgr8(dst + y*linesize + x, src, length);
                 INC_XY(length);
