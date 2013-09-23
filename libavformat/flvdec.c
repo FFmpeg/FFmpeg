@@ -653,35 +653,84 @@ static void clear_index_entries(AVFormatContext *s, int64_t pos)
     }
 }
 
+static int amf_skip_tag(AVIOContext *pb, AMFDataType type)
+{
+    int nb = -1, ret, parse_name = 1;
+
+    switch (type) {
+    case AMF_DATA_TYPE_NUMBER:
+        avio_skip(pb, 8);
+        break;
+    case AMF_DATA_TYPE_BOOL:
+        avio_skip(pb, 1);
+        break;
+    case AMF_DATA_TYPE_STRING:
+        avio_skip(pb, avio_rb16(pb));
+        break;
+    case AMF_DATA_TYPE_ARRAY:
+        parse_name = 0;
+    case AMF_DATA_TYPE_MIXEDARRAY:
+        nb = avio_rb32(pb);
+    case AMF_DATA_TYPE_OBJECT:
+        while(!pb->eof_reached && (nb-- > 0 || type != AMF_DATA_TYPE_ARRAY)) {
+            if (parse_name) {
+                int size = avio_rb16(pb);
+                if (!size) {
+                    avio_skip(pb, 1);
+                    break;
+                }
+                avio_skip(pb, size);
+            }
+            if ((ret = amf_skip_tag(pb, avio_r8(pb))) < 0)
+                return ret;
+        }
+        break;
+    case AMF_DATA_TYPE_NULL:
+    case AMF_DATA_TYPE_OBJECT_END:
+        break;
+    default:
+        return AVERROR_INVALIDDATA;
+    }
+    return 0;
+}
+
 static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
                            int64_t dts, int64_t next)
 {
     AVIOContext *pb = s->pb;
     AVStream *st    = NULL;
-    AMFDataType type;
     char buf[20];
-    int ret, i, length;
+    int ret = AVERROR_INVALIDDATA;
+    int i, length = -1;
 
-    type = avio_r8(pb);
-    if (type == AMF_DATA_TYPE_MIXEDARRAY)
+    switch (avio_r8(pb)) {
+    case AMF_DATA_TYPE_MIXEDARRAY:
         avio_seek(pb, 4, SEEK_CUR);
-    else if (type != AMF_DATA_TYPE_OBJECT)
-        return AVERROR_INVALIDDATA;
+    case AMF_DATA_TYPE_OBJECT:
+        break;
+    default:
+        goto skip;
+    }
 
-    amf_get_string(pb, buf, sizeof(buf));
-    if (strcmp(buf, "type") || avio_r8(pb) != AMF_DATA_TYPE_STRING)
-        return AVERROR_INVALIDDATA;
+    while ((ret = amf_get_string(pb, buf, sizeof(buf))) > 0) {
+        AMFDataType type = avio_r8(pb);
+        if (type == AMF_DATA_TYPE_STRING && !strcmp(buf, "text")) {
+            length = avio_rb16(pb);
+            ret    = av_get_packet(pb, pkt, length);
+            if (ret < 0)
+                goto skip;
+            else
+                break;
+        } else {
+            if ((ret = amf_skip_tag(pb, type)) < 0)
+                goto skip;
+        }
+    }
 
-    amf_get_string(pb, buf, sizeof(buf));
-    // FIXME parse it as codec_id
-    amf_get_string(pb, buf, sizeof(buf));
-    if (strcmp(buf, "text") || avio_r8(pb) != AMF_DATA_TYPE_STRING)
-        return AVERROR_INVALIDDATA;
-
-    length = avio_rb16(pb);
-    ret    = av_get_packet(s->pb, pkt, length);
-    if (ret < 0)
-        return AVERROR(EIO);
+    if (length < 0) {
+        ret = AVERROR_INVALIDDATA;
+        goto skip;
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
@@ -703,6 +752,7 @@ static int flv_data_packet(AVFormatContext *s, AVPacket *pkt,
     pkt->stream_index = st->index;
     pkt->flags       |= AV_PKT_FLAG_KEY;
 
+skip:
     avio_seek(s->pb, next + 4, SEEK_SET);
 
     return ret;
