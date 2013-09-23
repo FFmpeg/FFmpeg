@@ -111,6 +111,7 @@ static void jpeg_table_header(MpegEncContext *s)
     int i, j, size;
     uint8_t *ptr;
 
+    if (s->avctx->codec_id != AV_CODEC_ID_LJPEG) {
     /* quant matrixes */
     put_marker(p, DQT);
 #ifdef TWOMATRIXES
@@ -132,6 +133,7 @@ static void jpeg_table_header(MpegEncContext *s)
         put_bits(p, 8, s->chroma_intra_matrix[j]);
     }
 #endif
+    }
 
     if(s->avctx->active_thread_type & FF_THREAD_SLICE){
         put_marker(p, DRI);
