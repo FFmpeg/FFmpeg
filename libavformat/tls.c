@@ -73,7 +73,14 @@ static int do_tls_poll(URLContext *h, int ret)
     TLSContext *c = h->priv_data;
     struct pollfd p = { c->fd, 0, 0 };
 #if CONFIG_GNUTLS
-    if (ret != GNUTLS_E_AGAIN && ret != GNUTLS_E_INTERRUPTED) {
+    switch (ret) {
+    case GNUTLS_E_AGAIN:
+    case GNUTLS_E_INTERRUPTED:
+        break;
+    case GNUTLS_E_WARNING_ALERT_RECEIVED:
+        av_log(h, AV_LOG_WARNING, "%s\n", gnutls_strerror(ret));
+        break;
+    default:
         av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
         return AVERROR(EIO);
     }
