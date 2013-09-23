@@ -171,11 +171,7 @@ static int nprobe(AVFormatContext *s, uint8_t *enc_header, unsigned size,
     taglen  = AV_RB32(&enc_header[pos + 32]);
     datalen = AV_RB32(&enc_header[pos + 36]) >> 4;
 
-    pos += 44;
-    if (size - pos < taglen)
-        return -1;
-
-    pos += taglen;
+    pos += 44L + taglen;
 
     if (pos + (((uint64_t)datalen) << 4) > size)
         return -1;
