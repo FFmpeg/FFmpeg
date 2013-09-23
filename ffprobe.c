@@ -1636,7 +1636,7 @@ static int read_interval_packets(WriterContext *w, AVFormatContext *fmt_ctx,
     AVPacket pkt, pkt1;
     AVFrame frame;
     int ret = 0, i = 0, frame_count = 0;
-    int64_t start, end = interval->end;
+    int64_t start = -INT64_MAX, end = interval->end;
     int has_start = 0, has_end = interval->has_end && !interval->end_is_offset;
 
     av_init_packet(&pkt);
