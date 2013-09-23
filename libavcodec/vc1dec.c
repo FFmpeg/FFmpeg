@@ -5534,7 +5534,8 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
 
     if (s->avctx->codec_id == AV_CODEC_ID_WMV3IMAGE || s->avctx->codec_id == AV_CODEC_ID_VC1IMAGE) {
         for (i = 0; i < 4; i++)
-            if (!(v->sr_rows[i >> 1][i & 1] = av_malloc(v->output_width))) return -1;
+            if (!(v->sr_rows[i >> 1][i & 1] = av_malloc(v->output_width)))
+                return AVERROR(ENOMEM);
     }
 
     if (!v->mv_type_mb_plane || !v->direct_mb_plane || !v->acpred_plane || !v->over_flags_plane ||
