@@ -136,11 +136,15 @@ ff_vorbis_comment(AVFormatContext * as, AVDictionary **m, const uint8_t *buf, in
 
                 if (!pict) {
                     av_log(as, AV_LOG_WARNING, "out-of-memory error. Skipping cover art block.\n");
+                    av_freep(&tt);
+                    av_freep(&ct);
                     continue;
                 }
                 if ((ret = av_base64_decode(pict, ct, vl)) > 0)
                     ret = ff_flac_parse_picture(as, pict, ret);
                 av_freep(&pict);
+                av_freep(&tt);
+                av_freep(&ct);
                 if (ret < 0) {
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
                     continue;
