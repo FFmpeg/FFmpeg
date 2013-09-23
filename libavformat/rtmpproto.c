@@ -2058,63 +2058,73 @@ static int handle_invoke(URLContext *s, RTMPPacket *pkt)
     return ret;
 }
 
-static int handle_notify(URLContext *s, RTMPPacket *pkt) {
-    RTMPContext *rt  = s->priv_data;
-    const uint8_t *p = NULL;
-    uint8_t commandbuffer[64];
-    char statusmsg[128];
-    int stringlen;
-    GetByteContext gbc;
-    PutByteContext pbc;
-    uint32_t ts;
-    int old_flv_size, err;
-    const uint8_t *datatowrite;
-    unsigned datatowritelength;
-
-    p = pkt->data;
-    bytestream2_init(&gbc, p, pkt->size);
-    if (ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
-                           &stringlen))
-        return AVERROR_INVALIDDATA;
-    if (!strcmp(commandbuffer, "@setDataFrame")) {
-        datatowrite       = gbc.buffer;
-        datatowritelength = bytestream2_get_bytes_left(&gbc);
-        if (ff_amf_read_string(&gbc, statusmsg,
-                               sizeof(statusmsg), &stringlen))
-            return AVERROR_INVALIDDATA;
-    } else {
-        datatowrite       = pkt->data;
-        datatowritelength = pkt->size;
-    }
-
-    /* Provide ECMAArray to flv */
-    ts = pkt->timestamp;
+static int update_offset(RTMPContext *rt, int size)
+{
+    int old_flv_size;
 
     // generate packet header and put data into buffer for FLV demuxer
     if (rt->flv_off < rt->flv_size) {
         // There is old unread data in the buffer, thus append at the end
         old_flv_size  = rt->flv_size;
-        rt->flv_size += datatowritelength + 15;
+        rt->flv_size += size + 15;
     } else {
         // All data has been read, write the new data at the start of the buffer
         old_flv_size = 0;
-        rt->flv_size = datatowritelength + 15;
+        rt->flv_size = size + 15;
         rt->flv_off  = 0;
     }
 
-    if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
-        return err;
+    return old_flv_size;
+}
+
+static int append_flv_data(RTMPContext *rt, RTMPPacket *pkt, int skip)
+{
+    int old_flv_size, ret;
+    PutByteContext pbc;
+    const uint8_t *data = pkt->data + skip;
+    const int size      = pkt->size - skip;
+    uint32_t ts         = pkt->timestamp;
+
+    old_flv_size = update_offset(rt, size);
+
+    if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
+        return ret;
     bytestream2_init_writer(&pbc, rt->flv_data, rt->flv_size);
     bytestream2_skip_p(&pbc, old_flv_size);
     bytestream2_put_byte(&pbc, pkt->type);
-    bytestream2_put_be24(&pbc, datatowritelength);
+    bytestream2_put_be24(&pbc, size);
     bytestream2_put_be24(&pbc, ts);
     bytestream2_put_byte(&pbc, ts >> 24);
     bytestream2_put_be24(&pbc, 0);
-    bytestream2_put_buffer(&pbc, datatowrite, datatowritelength);
+    bytestream2_put_buffer(&pbc, data, size);
     bytestream2_put_be32(&pbc, 0);
 
     return 0;
+}
+
+static int handle_notify(URLContext *s, RTMPPacket *pkt)
+{
+    RTMPContext *rt  = s->priv_data;
+    uint8_t commandbuffer[64];
+    char statusmsg[128];
+    int stringlen, ret, skip = 0;
+    GetByteContext gbc;
+
+    bytestream2_init(&gbc, pkt->data, pkt->size);
+    if (ff_amf_read_string(&gbc, commandbuffer, sizeof(commandbuffer),
+                           &stringlen))
+        return AVERROR_INVALIDDATA;
+
+    // Skip the @setDataFrame string and validate it is a notification
+    if (!strcmp(commandbuffer, "@setDataFrame")) {
+        skip = gbc.buffer - pkt->data;
+        ret = ff_amf_read_string(&gbc, statusmsg,
+                                 sizeof(statusmsg), &stringlen);
+        if (ret < 0)
+            return AVERROR_INVALIDDATA;
+    }
+
+    return append_flv_data(rt, pkt, skip);
 }
 
 /**
@@ -2244,35 +2254,14 @@ static int get_packet(URLContext *s, int for_header)
             ff_rtmp_packet_destroy(&rpkt);
             continue;
         }
-        if (rpkt.type == RTMP_PT_VIDEO || rpkt.type == RTMP_PT_AUDIO ||
-           (rpkt.type == RTMP_PT_NOTIFY &&
-            ff_amf_match_string(rpkt.data, rpkt.size, "onMetaData"))) {
-            int err;
-            ts = rpkt.timestamp;
-
-            // generate packet header and put data into buffer for FLV demuxer
-            rt->flv_off  = 0;
-            rt->flv_size = rpkt.size + 15;
-            if ((err = av_reallocp(&rt->flv_data, rt->flv_size)) < 0)
-                return err;
-            p = rt->flv_data;
-            bytestream_put_byte(&p, rpkt.type);
-            bytestream_put_be24(&p, rpkt.size);
-            bytestream_put_be24(&p, ts);
-            bytestream_put_byte(&p, ts >> 24);
-            bytestream_put_be24(&p, 0);
-            bytestream_put_buffer(&p, rpkt.data, rpkt.size);
-            bytestream_put_be32(&p, 0);
+        if (rpkt.type == RTMP_PT_VIDEO || rpkt.type == RTMP_PT_AUDIO) {
+            ret = append_flv_data(rt, &rpkt, 0);
             ff_rtmp_packet_destroy(&rpkt);
-            return 0;
+            return ret;
         } else if (rpkt.type == RTMP_PT_NOTIFY) {
             ret = handle_notify(s, &rpkt);
             ff_rtmp_packet_destroy(&rpkt);
-            if (ret) {
-                av_log(s, AV_LOG_ERROR, "Handle notify error\n");
-                return ret;
-            }
-            return 0;
+            return ret;
         } else if (rpkt.type == RTMP_PT_METADATA) {
             int err;
             // we got raw FLV data, make it available for FLV demuxer
