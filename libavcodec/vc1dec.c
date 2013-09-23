@@ -6072,7 +6072,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         int header_ret = 0;
 
-
         ff_mpeg_er_frame_start(s);
 
         v->bits = buf_size * 8;
