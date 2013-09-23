@@ -379,8 +379,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
     }
 
 
-retry:
-
     if(s->bitstream_buffer_size && (s->divx_packed || buf_size<20)){ //divx 5.01+/xvid frame reorder
         init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size*8);
     }else
@@ -562,17 +560,6 @@ retry:
         /* and other parameters. So then we could init the picture   */
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
-
-    if (!avctx->coded_width || !avctx->coded_height) {
-        ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
-
-        s->parse_context.buffer=0;
-        ff_MPV_common_end(s);
-        s->parse_context= pc;
-        avcodec_set_dimensions(avctx, s->width, s->height);
-
-        goto retry;
-    }
 
     if (s->width  != avctx->coded_width  ||
         s->height != avctx->coded_height ||
