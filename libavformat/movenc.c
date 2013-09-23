@@ -3826,7 +3826,7 @@ static int mov_write_header(AVFormatContext *s)
         if (!(mov->flags & (FF_MOV_FLAG_FRAG_KEYFRAME |
                             FF_MOV_FLAG_FRAG_CUSTOM)) &&
             !mov->max_fragment_duration && !mov->max_fragment_size)
-            mov->max_fragment_duration = 5000000;
+            mov->flags |= FF_MOV_FLAG_FRAG_KEYFRAME;
     }
 
     if (mov->reserved_moov_size){
