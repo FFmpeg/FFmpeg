@@ -579,12 +579,16 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             case AV_CODEC_ID_ADPCM_EA_R1:
             case AV_CODEC_ID_ADPCM_EA_R2:
             case AV_CODEC_ID_ADPCM_IMA_EA_EACS:
-                if (pkt->size >= 4)
-                    pkt->duration = AV_RL32(pkt->data);
-                break;
             case AV_CODEC_ID_ADPCM_EA_R3:
-                if (pkt->size >= 4)
+                if (pkt->size < 4) {
+                    av_log(s, AV_LOG_ERROR, "Packet is too short\n");
+                    av_free_packet(pkt);
+                    return AVERROR_INVALIDDATA;
+                }
+                if (ea->audio_codec == AV_CODEC_ID_ADPCM_EA_R3)
                     pkt->duration = AV_RB32(pkt->data);
+                else
+                    pkt->duration = AV_RL32(pkt->data);
                 break;
             case AV_CODEC_ID_ADPCM_IMA_EA_SEAD:
                 pkt->duration = ret * 2 / ea->num_channels;
