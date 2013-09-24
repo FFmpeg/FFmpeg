@@ -696,6 +696,15 @@ av_cold int MPV_common_init(MpegEncContext *s)
     s->flags  = s->avctx->flags;
     s->flags2 = s->avctx->flags2;
 
+    /* set chroma shifts */
+    avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &s->chroma_x_shift,
+                                  &s->chroma_y_shift);
+
+    /* convert fourcc to upper case */
+    s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
+
+    s->stream_codec_tag   = avpriv_toupper4(s->avctx->stream_codec_tag);
+
     if (s->width && s->height) {
         s->mb_width   = (s->width + 15) / 16;
         s->mb_stride  = s->mb_width + 1;
@@ -703,10 +712,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
         s->b4_stride  = s->mb_width * 4 + 1;
         mb_array_size = s->mb_height * s->mb_stride;
         mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
-
-        /* set chroma shifts */
-        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &s->chroma_x_shift,
-                                      &s->chroma_y_shift);
 
         /* set default edge pos, will be overriden
          * in decode_header if needed */
@@ -725,11 +730,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
         y_size  = s->b8_stride * (2 * s->mb_height + 1);
         c_size  = s->mb_stride * (s->mb_height + 1);
         yc_size = y_size + 2   * c_size;
-
-        /* convert fourcc to upper case */
-        s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
-
-        s->stream_codec_tag   = avpriv_toupper4(s->avctx->stream_codec_tag);
 
         s->avctx->coded_frame = (AVFrame *)&s->current_picture;
 
