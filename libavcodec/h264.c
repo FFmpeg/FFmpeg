@@ -4757,7 +4757,9 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                     first_slice = hx->nal_unit_type;
                 }
 
-            if (avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc == 0 && h->nal_unit_type != NAL_SEI)
+            if (avctx->skip_frame >= AVDISCARD_NONREF &&
+                h->nal_ref_idc == 0 &&
+                h->nal_unit_type != NAL_SEI)
                 continue;
 
 again:
