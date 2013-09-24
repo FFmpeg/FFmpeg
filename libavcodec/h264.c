@@ -4771,8 +4771,11 @@ again:
                 case NAL_DPA:
                 case NAL_DPB:
                 case NAL_DPC:
+                    av_log(h->avctx, AV_LOG_WARNING,
+                           "Ignoring NAL %d in global header/extradata\n",
+                           hx->nal_unit_type);
+                    // fall through to next case
                 case NAL_AUXILIARY_SLICE:
-                    av_log(h->avctx, AV_LOG_WARNING, "Ignoring NAL %d in global header/extradata\n", hx->nal_unit_type);
                     hx->nal_unit_type = NAL_FF_IGNORE;
                 }
             }
