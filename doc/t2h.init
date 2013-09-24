@@ -17,6 +17,7 @@ my $TEMPLATE_HEADER = $ENV{"FFMPEG_HEADER"} || <<EOT;
 </head>
 <body>
 <div id="container">
+<div id="body">
 EOT
 
 $PRE_BODY_CLOSE = '</div></div>';
@@ -32,7 +33,7 @@ sub FFmpeg_print_page_foot($$)
         T2H_DEFAULT_program_string() : program_string();
     print $fh '<footer class="footer pagination-right">' . "\n";
     print $fh '<span class="label label-info">' . $program_string;
-    print $fh "</span></footer></div>\n";
+    print $fh "</span></footer></div></div></body>\n";
 }
 
 $float = \&FFmpeg_float;

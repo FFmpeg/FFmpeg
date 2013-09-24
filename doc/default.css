@@ -1,3 +1,7 @@
+a.summary-letter {
+    text-decoration: none;
+}
+
 a {
     color: #2D6198;
 }
@@ -45,11 +49,16 @@ body {
     text-align: center;
 }
 
-h1, h2, h3 {
+h1 a, h2 a, h3 a, h4 a {
+    text-decoration: inherit;
+    color: inherit;
+}
+
+h1, h2, h3, h4 {
     padding-left: 0.4em;
     border-radius: 4px;
-    padding-bottom: 0.2em;
-    padding-top: 0.2em;
+    padding-bottom: 0.25em;
+    padding-top: 0.25em;
     border: 1px solid #6A996A;
 }
 
@@ -63,15 +72,22 @@ h1 {
 
 h2 {
     color: #313131;
-    font-size: 0.9em;
+    font-size: 1.0em;
     background-color: #ABE3AB;
 }
 
 h3 {
     color: #313131;
+    font-size: 0.9em;
+    margin-bottom: -6px;
+    background-color: #BBF3BB;
+}
+
+h4 {
+    color: #313131;
     font-size: 0.8em;
     margin-bottom: -8px;
-    background-color: #BBF3BB;
+    background-color: #D1FDD1;
 }
 
 img {
