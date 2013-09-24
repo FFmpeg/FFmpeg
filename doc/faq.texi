@@ -537,11 +537,12 @@ In this specific case please look at RFC 4629 to see how it should be done.
 
 @section AVStream.r_frame_rate is wrong, it is much larger than the frame rate.
 
-r_frame_rate is NOT the average frame rate, it is the smallest frame rate
+@code{r_frame_rate} is NOT the average frame rate, it is the smallest frame rate
 that can accurately represent all timestamps. So no, it is not
 wrong if it is larger than the average!
-For example, if you have mixed 25 and 30 fps content, then r_frame_rate
-will be 150.
+For example, if you have mixed 25 and 30 fps content, then @code{r_frame_rate}
+will be 150 (it is the least common multiple).
+If you are looking for the average frame rate, see @code{AVStream.avg_frame_rate}.
 
 @section Why is @code{make fate} not running all tests?
 
