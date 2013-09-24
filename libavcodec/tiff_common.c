@@ -207,6 +207,37 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
 }
 
 
+int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
+                           GetByteContext *gb, int le, AVDictionary **metadata)
+{
+    AVBPrint bp;
+    char *ap;
+    int i;
+
+    if (count >= INT_MAX / sizeof(int8_t) || count <= 0)
+        return AVERROR_INVALIDDATA;
+    if (bytestream2_get_bytes_left(gb) < count * sizeof(int8_t))
+        return AVERROR_INVALIDDATA;
+    if (!sep) sep = ", ";
+
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+
+    for (i = 0; i < count; i++) {
+        av_bprintf(&bp, "%s%i", (i ? sep : ""), bytestream2_get_byte(gb));
+    }
+
+    if ((i = av_bprint_finalize(&bp, &ap))) {
+        return i;
+    }
+    if (!ap) {
+        return AVERROR(ENOMEM);
+    }
+
+    av_dict_set(metadata, name, ap, AV_DICT_DONT_STRDUP_VAL);
+
+    return 0;
+}
+
 int ff_tadd_string_metadata(int count, const char *name,
                             GetByteContext *gb, int le, AVDictionary **metadata)
 {
