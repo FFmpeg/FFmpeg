@@ -87,7 +87,7 @@ static int check(char *file)
 
     av_hash_init(hash);
     for (;;) {
-        ssize_t size = read(fd, buffer, SIZE);
+        int size = read(fd, buffer, SIZE);
         if (size < 0) {
             close(fd);
             finish();
