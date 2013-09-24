@@ -2387,14 +2387,12 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 
     offset = src_y * s->uvlinesize + src_x;
     ptr = ref_picture[1] + offset;
-    if (s->flags & CODEC_FLAG_EMU_EDGE) {
-        if ((unsigned) src_x > FFMAX(h_edge_pos - (!!sx) - block_s, 0) ||
-            (unsigned) src_y > FFMAX(v_edge_pos - (!!sy) - block_s, 0)) {
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize,
-                                    9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
-            ptr = s->edge_emu_buffer;
-            emu = 1;
-        }
+    if ((unsigned) src_x > FFMAX(h_edge_pos - (!!sx) - block_s, 0) ||
+        (unsigned) src_y > FFMAX(v_edge_pos - (!!sy) - block_s, 0)) {
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize,
+                                9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
+        ptr = s->edge_emu_buffer;
+        emu = 1;
     }
     sx = (sx << 2) >> lowres;
     sy = (sy << 2) >> lowres;
