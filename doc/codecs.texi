@@ -779,19 +779,19 @@ decoding starts.
 Possible values:
 @table @samp
 @item fast
-allow non spec compliant speedup tricks
+Allow non spec compliant speedup tricks.
 @item sgop
-Deprecated, use mpegvideo private options instead
+Deprecated, use mpegvideo private options instead.
 @item noout
-skip bitstream encoding
+Skip bitstream encoding.
 @item local_header
-place global headers at every keyframe instead of in extradata
+Place global headers at every keyframe instead of in extradata.
 @item chunks
-Frame data might be split into multiple chunks
+Frame data might be split into multiple chunks.
 @item showall
-Show all frames before the first keyframe
+Show all frames before the first keyframe.
 @item skiprd
-Deprecated, use mpegvideo private options instead
+Deprecated, use mpegvideo private options instead.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})
