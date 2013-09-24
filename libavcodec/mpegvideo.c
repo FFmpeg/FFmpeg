@@ -1019,17 +1019,17 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
     s->flags  = s->avctx->flags;
     s->flags2 = s->avctx->flags2;
 
+    /* set chroma shifts */
+    av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                     &s->chroma_x_shift,
+                                     &s->chroma_y_shift);
+
+    /* convert fourcc to upper case */
+    s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
+
+    s->stream_codec_tag   = avpriv_toupper4(s->avctx->stream_codec_tag);
+
     if (s->width && s->height) {
-        /* set chroma shifts */
-        av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                         &s->chroma_x_shift,
-                                         &s->chroma_y_shift);
-
-        /* convert fourcc to upper case */
-        s->codec_tag          = avpriv_toupper4(s->avctx->codec_tag);
-
-        s->stream_codec_tag   = avpriv_toupper4(s->avctx->stream_codec_tag);
-
         s->avctx->coded_frame = &s->current_picture.f;
 
         if (s->encoding) {
