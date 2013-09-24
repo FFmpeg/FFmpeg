@@ -662,6 +662,18 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&ctx->input_pads[0].name);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    LADSPA_Data value;
+    unsigned long port;
+
+    if (sscanf(cmd, "c%ld", &port) + sscanf(args, "%f", &value) != 2)
+        return AVERROR(EINVAL);
+
+    return set_control(ctx, port, value);
+}
+
 static const AVFilterPad ladspa_outputs[] = {
     {
         .name          = "default",
@@ -680,6 +692,7 @@ AVFilter avfilter_af_ladspa = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .process_command = process_command,
     .inputs        = 0,
     .outputs       = ladspa_outputs,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS,

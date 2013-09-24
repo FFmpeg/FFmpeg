@@ -1502,6 +1502,16 @@ ladspa=caps:Eq10X2:c=c0=-48|c9=-24|c3=12|c4=2
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item cN
+Modify the @var{N}-th control value.
+
+If the specified value is not valid, it is ignored and prior one is kept.
+@end table
+
 @section lowpass
 
 Apply a low-pass filter with 3dB point frequency.
