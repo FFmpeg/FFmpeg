@@ -349,6 +349,40 @@ static void *try_load(const char *dir, const char *soname)
     return ret;
 }
 
+static int set_control(AVFilterContext *ctx, unsigned long port, LADSPA_Data value)
+{
+    LADSPAContext *s = ctx->priv;
+    const char *label = s->desc->Label;
+    LADSPA_PortRangeHint *h = (LADSPA_PortRangeHint *)s->desc->PortRangeHints +
+                              s->icmap[port];
+
+    if (port >= s->nb_inputcontrols) {
+        av_log(ctx, AV_LOG_ERROR, "Control c%ld is out of range [0 - %lu].\n",
+               port, s->nb_inputcontrols);
+        return AVERROR(EINVAL);
+    }
+
+    if (LADSPA_IS_HINT_BOUNDED_BELOW(h->HintDescriptor) &&
+            value < h->LowerBound) {
+        av_log(ctx, AV_LOG_ERROR,
+                "%s: input control c%ld is below lower boundary of %0.4f.\n",
+                label, port, h->LowerBound);
+        return AVERROR(EINVAL);
+    }
+
+    if (LADSPA_IS_HINT_BOUNDED_ABOVE(h->HintDescriptor) &&
+            value > h->UpperBound) {
+        av_log(ctx, AV_LOG_ERROR,
+                "%s: input control c%ld is above upper boundary of %0.4f.\n",
+                label, port, h->UpperBound);
+        return AVERROR(EINVAL);
+    }
+
+    s->ictlv[port] = value;
+
+    return 0;
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     LADSPAContext *s = ctx->priv;
@@ -495,8 +529,8 @@ static av_cold int init(AVFilterContext *ctx)
     // Parse control parameters
     p = s->options;
     while (s->options) {
-        LADSPA_PortRangeHint *h;
         LADSPA_Data val;
+        int ret;
 
         if (!(arg = av_strtok(p, "|", &saveptr)))
             break;
@@ -507,30 +541,9 @@ static av_cold int init(AVFilterContext *ctx)
             return AVERROR(EINVAL);
         }
 
-        if (i < 0 || i >= s->nb_inputcontrols) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Control c%d is out of range [0 - %lu].\n",
-                   i, s->nb_inputcontrols);
-            return AVERROR(EINVAL);
-        }
-
-        h = (LADSPA_PortRangeHint *)s->desc->PortRangeHints + s->icmap[i];
-        s->ictlv[i]           = val;
+        if ((ret = set_control(ctx, i, val)) < 0)
+            return ret;
         s->ctl_needs_value[i] = 0;
-        if (LADSPA_IS_HINT_BOUNDED_BELOW(h->HintDescriptor) &&
-                val < h->LowerBound) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "%s: input control c%d is below lower boundary of %0.4f.\n",
-                   s->desc->Label, i, h->LowerBound);
-            return AVERROR(EINVAL);
-        }
-        if (LADSPA_IS_HINT_BOUNDED_ABOVE(h->HintDescriptor) &&
-                val > h->UpperBound) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "%s: input control c%d is above upper boundary of %0.4f.\n",
-                   s->desc->Label, i, h->UpperBound);
-            return AVERROR(EINVAL);
-        }
     }
 
     // Check if any controls are not set
