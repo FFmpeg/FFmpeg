@@ -629,6 +629,11 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         s->inter_quant_bias = -(1 << (QUANT_BIAS_SHIFT - 2));
     }
 
+    if (avctx->qmin > avctx->qmax || avctx->qmin <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "qmin and or qmax are invalid, they must be 0 < min <= max\n");
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->intra_quant_bias = avctx->intra_quant_bias;
     if (avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
