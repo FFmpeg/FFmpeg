@@ -596,17 +596,6 @@ retry:
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
 
-    if ((!avctx->coded_width || !avctx->coded_height) && 0) {
-        ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
-
-        s->parse_context.buffer=0;
-        ff_MPV_common_end(s);
-        s->parse_context= pc;
-        avcodec_set_dimensions(avctx, s->width, s->height);
-
-        goto retry;
-    }
-
     if (s->width  != avctx->coded_width  ||
         s->height != avctx->coded_height ||
         s->context_reinit) {
