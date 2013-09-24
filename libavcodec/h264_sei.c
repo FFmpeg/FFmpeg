@@ -318,6 +318,9 @@ int ff_h264_decode_sei(H264Context *h)
         case SEI_TYPE_FRAME_PACKING:
             if (decode_frame_packing(h, size) < 0)
                 return -1;
+            break;
+        default:
+            av_log(h->avctx, AV_LOG_DEBUG, "unknown SEI type %d\n", type);
         }
         skip_bits_long(&h->gb, next - get_bits_count(&h->gb));
 
