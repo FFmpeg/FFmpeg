@@ -475,9 +475,10 @@ read @uref{http://www.tux.org/lkml/#s15, "Programming Religion"}.
 
 @section Why are the ffmpeg programs devoid of debugging symbols?
 
-The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
-information. Those binaries are stripped to create ffmpeg, ffplay, etc. If
-you need the debug information, use the *_g versions.
+The build process creates @command{ffmpeg_g}, @command{ffplay_g}, etc. which
+contain full debug information. Those binaries are stripped to create
+@command{ffmpeg}, @command{ffplay}, etc. If you need the debug information, use
+the *_g versions.
 
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
