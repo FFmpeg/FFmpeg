@@ -950,5 +950,7 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h)
 
 void ff_h264_draw_horiz_band(H264Context *h, int y, int height);
 int ff_init_poc(H264Context *h, int pic_field_poc[2], int *pic_poc);
+int ff_pred_weight_table(H264Context *h);
+int ff_set_ref_count(H264Context *h);
 
 #endif /* AVCODEC_H264_H */
