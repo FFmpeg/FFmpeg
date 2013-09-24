@@ -92,8 +92,6 @@ $Texi2HTML::THISDOC{program_authors}
 
 $description
 <meta name="keywords" content="$longtitle">
-<meta name="resource-type" content="document">
-<meta name="distribution" content="global">
 <meta name="Generator" content="$Texi2HTML::THISDOC{program}">
 $encoding
 $CSS_LINES
