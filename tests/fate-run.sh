@@ -225,7 +225,7 @@ fi
 
 if test -e "$ref" || test $cmp = "oneline" ; then
     case $cmp in
-        diff)   diff -u -a -b "$ref" "$outfile"         >$cmpfile ;;
+        diff)   diff -u -b "$ref" "$outfile"            >$cmpfile ;;
         oneoff) oneoff     "$ref" "$outfile"            >$cmpfile ;;
         stddev) stddev     "$ref" "$outfile"            >$cmpfile ;;
         oneline)oneline    "$ref" "$outfile"            >$cmpfile ;;
