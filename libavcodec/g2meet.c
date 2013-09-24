@@ -490,7 +490,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
     cursor_hot_y  = bytestream2_get_byte(gb);
     cursor_fmt    = bytestream2_get_byte(gb);
 
-    cursor_stride = FFALIGN(cursor_w, 32) * 4;
+    cursor_stride = FFALIGN(cursor_w, c->cursor_fmt==1 ? 32 : 1) * 4;
 
     if (cursor_w < 1 || cursor_w > 256 ||
         cursor_h < 1 || cursor_h > 256) {
