@@ -754,6 +754,11 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st = c->fc->streams[c->fc->nb_streams-1];
     sc = st->priv_data;
 
+    if (sc->time_scale) {
+        av_log(c->fc, AV_LOG_ERROR, "Multiple mdhd?\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     version = avio_r8(pb);
     if (version > 1) {
         av_log_ask_for_sample(c, "unsupported version %d\n", version);

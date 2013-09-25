@@ -188,11 +188,13 @@ static void cin_decode_rle(const unsigned char *src, int src_size, unsigned char
     while (src < src_end && dst < dst_end) {
         code = *src++;
         if (code & 0x80) {
+            if (src >= src_end)
+                break;
             len = code - 0x7F;
             memset(dst, *src++, FFMIN(len, dst_end - dst));
         } else {
             len = code + 1;
-            memcpy(dst, src, FFMIN(len, dst_end - dst));
+            memcpy(dst, src, FFMIN3(len, dst_end - dst, src_end - src));
             src += len;
         }
         dst += len;

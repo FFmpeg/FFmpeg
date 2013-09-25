@@ -1159,6 +1159,12 @@ static int decode_blocks(ALSDecContext *ctx, unsigned int ra_frame,
     return 0;
 }
 
+static inline int als_weighting(GetBitContext *gb, int k, int off)
+{
+    int idx = av_clip(decode_rice(gb, k) + off,
+                      0, FF_ARRAY_ELEMS(mcc_weightings) - 1);
+    return mcc_weightings[idx];
+}
 
 /** Read the channel data.
   */
@@ -1179,14 +1185,14 @@ static int read_channel_data(ALSDecContext *ctx, ALSChannelData *cd, int c)
 
         if (current->master_channel != c) {
             current->time_diff_flag = get_bits1(gb);
-            current->weighting[0]   = mcc_weightings[av_clip(decode_rice(gb, 1) + 16, 0, 31)];
-            current->weighting[1]   = mcc_weightings[av_clip(decode_rice(gb, 2) + 14, 0, 31)];
-            current->weighting[2]   = mcc_weightings[av_clip(decode_rice(gb, 1) + 16, 0, 31)];
+            current->weighting[0]   = als_weighting(gb, 1, 16);
+            current->weighting[1]   = als_weighting(gb, 2, 14);
+            current->weighting[2]   = als_weighting(gb, 1, 16);
 
             if (current->time_diff_flag) {
-                current->weighting[3] = mcc_weightings[av_clip(decode_rice(gb, 1) + 16, 0, 31)];
-                current->weighting[4] = mcc_weightings[av_clip(decode_rice(gb, 1) + 16, 0, 31)];
-                current->weighting[5] = mcc_weightings[av_clip(decode_rice(gb, 1) + 16, 0, 31)];
+                current->weighting[3] = als_weighting(gb, 1, 16);
+                current->weighting[4] = als_weighting(gb, 1, 16);
+                current->weighting[5] = als_weighting(gb, 1, 16);
 
                 current->time_diff_sign  = get_bits1(gb);
                 current->time_diff_index = get_bits(gb, ctx->ltp_lag_length - 3) + 3;

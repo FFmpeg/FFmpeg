@@ -679,6 +679,9 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
         quant_idx = q;
     }
 
+    if (quant_idx >= 16)
+        return AVERROR_INVALIDDATA;
+
     quant = quant_matrices[quant_idx];
 
     block[0] = (block[0] * quant[0]) >> 11;
