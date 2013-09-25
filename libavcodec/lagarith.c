@@ -174,7 +174,15 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
 
     if (cumul_prob & (cumul_prob - 1)) {
         uint64_t mul = softfloat_reciprocal(cumul_prob);
-        for (i = 1; i < 257; i++) {
+        for (i = 1; i <= 128; i++) {
+            rac->prob[i] = softfloat_mul(rac->prob[i], mul);
+            scaled_cumul_prob += rac->prob[i];
+        }
+        if (scaled_cumul_prob <= 0) {
+            av_log(rac->avctx, AV_LOG_ERROR, "Scaled probabilities invalid\n");
+            return AVERROR_INVALIDDATA;
+        }
+        for (; i < 257; i++) {
             rac->prob[i] = softfloat_mul(rac->prob[i], mul);
             scaled_cumul_prob += rac->prob[i];
         }
