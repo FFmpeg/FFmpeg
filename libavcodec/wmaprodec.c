@@ -500,6 +500,9 @@ static int decode_subframe_length(WMAProDecodeCtx *s, int offset)
     if (offset == s->samples_per_frame - s->min_samples_per_subframe)
         return s->min_samples_per_subframe;
 
+    if (get_bits_left(&s->gb) < 1)
+        return AVERROR_INVALIDDATA;
+
     /** 1 bit indicates if the subframe is of maximum length */
     if (s->max_subframe_len_bit) {
         if (get_bits1(&s->gb))
