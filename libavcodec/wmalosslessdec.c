@@ -1178,8 +1178,10 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         s->packet_done = 0;
 
         /* sanity check for the buffer length */
-        if (buf_size < avctx->block_align)
-            return 0;
+        if (buf_size < avctx->block_align) {
+            av_log(avctx, AV_LOG_ERROR, "buf size %d invalid\n", buf_size);
+            return AVERROR_INVALIDDATA;
+        }
 
         s->next_packet_start = buf_size - avctx->block_align;
         buf_size             = avctx->block_align;
