@@ -381,6 +381,8 @@ static int png_decode_idat(PNGDecContext *s, int length)
             s->zstream.avail_out = s->crow_size;
             s->zstream.next_out  = s->crow_buf;
         }
+        if (ret == Z_STREAM_END)
+            break;
     }
     return 0;
 }
