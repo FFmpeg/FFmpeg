@@ -202,7 +202,8 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
     frame_size -= 16;
 
     /* iterate through the chunks */
-    while ((frame_size >= 6) && (num_chunks > 0)) {
+    while ((frame_size >= 6) && (num_chunks > 0) &&
+            bytestream2_get_bytes_left(&g2) >= 4) {
         int stream_ptr_after_chunk;
         chunk_size = bytestream2_get_le32(&g2);
         if (chunk_size > frame_size) {
@@ -519,7 +520,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     frame_size -= 16;
 
     /* iterate through the chunks */
-    while ((frame_size > 0) && (num_chunks > 0)) {
+    while ((frame_size > 0) && (num_chunks > 0) &&
+            bytestream2_get_bytes_left(&g2) >= 4) {
         int stream_ptr_after_chunk;
         chunk_size = bytestream2_get_le32(&g2);
         if (chunk_size > frame_size) {
