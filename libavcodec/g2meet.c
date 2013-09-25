@@ -540,6 +540,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
                     bits <<= 1;
                 }
             }
+            dst += c->cursor_stride - c->cursor_w * 4;
         }
 
         dst = c->cursor;
@@ -565,6 +566,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
                     bits <<= 1;
                 }
             }
+            dst += c->cursor_stride - c->cursor_w * 4;
         }
         break;
     case 32: // full colour
@@ -578,6 +580,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
                 *dst++ = val >> 16;
                 *dst++ = val >> 24;
             }
+            dst += c->cursor_stride - c->cursor_w * 4;
         }
         break;
     default:
