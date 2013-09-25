@@ -1593,6 +1593,8 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
 
     ff_h264_decode_init_vlc();
 
+    ff_init_cabac_states();
+
     h->pixel_shift        = 0;
     h->sps.bit_depth_luma = avctx->bits_per_raw_sample = 8;
 
@@ -1629,7 +1631,6 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
         h->low_delay           = 0;
     }
 
-    ff_init_cabac_states();
     avctx->internal->allocate_progress = 1;
 
     return 0;
