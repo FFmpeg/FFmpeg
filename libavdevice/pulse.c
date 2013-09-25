@@ -32,6 +32,9 @@
 #include "libavformat/avformat.h"
 #include "libavformat/internal.h"
 #include "libavutil/opt.h"
+#include "libavutil/time.h"
+
+#include <time.h>
 
 #define DEFAULT_CODEC_ID AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE)
 
@@ -109,7 +112,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     st->codec->channels    = pd->channels;
     avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
-    pd->pts = AV_NOPTS_VALUE;
+    pd->pts = av_gettime(); /* AV_NOPTS_VALUE; */
     pd->frame_duration = (pd->frame_size * 1000000LL * 8) /
         (pd->sample_rate * pd->channels * av_get_bits_per_sample(codec_id));
 
