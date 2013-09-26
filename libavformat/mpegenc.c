@@ -265,8 +265,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,int only_for_str
     flush_put_bits(&pb);
     size = put_bits_ptr(&pb) - pb.buf;
     /* patch packet size */
-    buf[4] = (size - 6) >> 8;
-    buf[5] = (size - 6) & 0xff;
+    AV_WB16(buf + 4, size - 6);
 
     return size;
 }
