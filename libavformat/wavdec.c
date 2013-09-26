@@ -369,6 +369,10 @@ static int wav_read_header(AVFormatContext *s)
             avio_rl24(pb);
             avio_rl24(pb);
             wav->smv_frames_per_jpeg = avio_rl24(pb);
+            if (wav->smv_frames_per_jpeg > 65536) {
+                av_log(s, AV_LOG_ERROR, "too many frames per jpeg\n");
+                return AVERROR_INVALIDDATA;
+            }
             AV_WL32(vst->codec->extradata, wav->smv_frames_per_jpeg);
             wav->smv_cur_pt = 0;
             goto break_loop;
