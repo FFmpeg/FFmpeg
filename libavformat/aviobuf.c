@@ -880,8 +880,11 @@ static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 
     if (new_allocated_size > d->allocated_size) {
         int err;
-        if ((err = av_reallocp(&d->buffer, new_allocated_size)) < 0)
+        if ((err = av_reallocp(&d->buffer, new_allocated_size)) < 0) {
+            d->allocated_size = 0;
+            d->size = 0;
             return err;
+        }
         d->allocated_size = new_allocated_size;
     }
     memcpy(d->buffer + d->pos, buf, buf_size);

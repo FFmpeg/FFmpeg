@@ -174,8 +174,10 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         if (qt->pkt.size > 0 && qt->timestamp == *timestamp) {
             int err;
             if ((err = av_reallocp(&qt->pkt.data, qt->pkt.size + alen +
-                                   FF_INPUT_BUFFER_PADDING_SIZE)) < 0)
+                                   FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                qt->pkt.size = 0;
                 return err;
+            }
         } else {
             av_freep(&qt->pkt.data);
             av_init_packet(&qt->pkt);

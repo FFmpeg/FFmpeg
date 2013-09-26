@@ -124,8 +124,10 @@ theora_header (AVFormatContext * s, int idx)
     }
 
     if ((err = av_reallocp(&st->codec->extradata,
-                           cds + FF_INPUT_BUFFER_PADDING_SIZE)) < 0)
+                           cds + FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+        st->codec->extradata_size = 0;
         return err;
+    }
     cdp = st->codec->extradata + st->codec->extradata_size;
     *cdp++ = os->psize >> 8;
     *cdp++ = os->psize & 0xff;

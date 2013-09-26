@@ -89,8 +89,11 @@ static int rtmp_http_write(URLContext *h, const uint8_t *buf, int size)
     if (rt->out_size + size > rt->out_capacity) {
         int err;
         rt->out_capacity = (rt->out_size + size) * 2;
-        if ((err = av_reallocp(&rt->out_data, rt->out_capacity)) < 0)
+        if ((err = av_reallocp(&rt->out_data, rt->out_capacity)) < 0) {
+            rt->out_size = 0;
+            rt->out_capacity = 0;
             return err;
+        }
     }
 
     memcpy(rt->out_data + rt->out_size, buf, size);

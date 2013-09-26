@@ -315,8 +315,10 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 frame_size -= size;
                 frame_size -= 4;
                 smk->curstream++;
-                if ((err = av_reallocp(&smk->bufs[smk->curstream], size)) < 0)
+                if ((err = av_reallocp(&smk->bufs[smk->curstream], size)) < 0) {
+                    smk->buf_sizes[smk->curstream] = 0;
                     return err;
+                }
                 smk->buf_sizes[smk->curstream] = size;
                 ret = avio_read(s->pb, smk->bufs[smk->curstream], size);
                 if(ret != size)

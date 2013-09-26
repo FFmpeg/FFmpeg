@@ -538,8 +538,11 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
         int cl = idx->entry / AVI_INDEX_CLUSTER_SIZE;
         int id = idx->entry % AVI_INDEX_CLUSTER_SIZE;
         if (idx->ents_allocated <= idx->entry) {
-            if ((err = av_reallocp(&idx->cluster, (cl + 1) * sizeof(*idx->cluster))) < 0)
+            if ((err = av_reallocp(&idx->cluster, (cl + 1) * sizeof(*idx->cluster))) < 0) {
+                idx->ents_allocated = 0;
+                idx->entry = 0;
                 return err;
+            }
             idx->cluster[cl] = av_malloc(AVI_INDEX_CLUSTER_SIZE*sizeof(AVIIentry));
             if (!idx->cluster[cl])
                 return -1;
