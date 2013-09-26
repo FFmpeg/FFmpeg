@@ -955,7 +955,9 @@ retry:
 
         if(next_pkt && next_pkt->dts - scr > max_delay)
             continue;
-
+        if (   stream->predecode_packet
+            && stream->predecode_packet->size > stream->buffer_index)
+            rel_space += 1<<28;
         if(rel_space > best_score){
             best_score= rel_space;
             best_i = i;
