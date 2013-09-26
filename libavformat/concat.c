@@ -74,7 +74,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
                 return AVERROR(ENAMETOOLONG);
             }
 
-    if (!(nodes = av_malloc(sizeof(*nodes) * len))) {
+    if (!(nodes = av_realloc(NULL, sizeof(*nodes) * len))) {
         return AVERROR(ENOMEM);
     } else
         data->nodes = nodes;
