@@ -94,6 +94,7 @@ OBJS-$(CONFIG_JOIN_FILTER)                   += af_join.o
 OBJS-$(CONFIG_LADSPA_FILTER)                 += af_ladspa.o
 OBJS-$(CONFIG_LOWPASS_FILTER)                += af_biquads.o
 OBJS-$(CONFIG_PAN_FILTER)                    += af_pan.o
+OBJS-$(CONFIG_REPLAYGAIN_FILTER)             += af_replaygain.o
 OBJS-$(CONFIG_RESAMPLE_FILTER)               += af_resample.o
 OBJS-$(CONFIG_SILENCEDETECT_FILTER)          += af_silencedetect.o
 OBJS-$(CONFIG_TREBLE_FILTER)                 += af_biquads.o

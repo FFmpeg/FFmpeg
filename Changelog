@@ -40,6 +40,7 @@ version <next>
 - dpx parser
 - max_error_rate parameter in ffmpeg
 - PulseAudio output device
+- ReplayGain scanner
 
 
 version 2.0:
