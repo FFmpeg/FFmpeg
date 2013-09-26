@@ -948,7 +948,7 @@ retry:
             return 0;
         if(avail_data==0)
             continue;
-        assert(avail_data>0);
+        av_assert0(avail_data>0);
 
         if(space < s->packet_size && !ignore_constraints)
             continue;
