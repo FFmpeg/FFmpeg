@@ -853,29 +853,44 @@ ffplay tcp://@var{hostname}:@var{port}
 
 @section tls
 
-Transport Layer Security/Secure Sockets Layer
+Transport Layer Security (TLS) / Secure Sockets Layer (SSL)
 
 The required syntax for a TLS/SSL url is:
 @example
 tls://@var{hostname}:@var{port}[?@var{options}]
 @end example
 
+The following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+
 @table @option
+
+@item ca_file, cafile=@var{filename}
+A file containing certificate authority (CA) root certificates to treat
+as trusted. If the linked TLS library contains a default this might not
+need to be specified for verification to work, but not all libraries and
+setups have defaults built in.
+The file must be in OpenSSL PEM format.
+
+@item tls_verify=@var{1|0}
+If enabled, try to verify the peer that we are communicating with.
+Note, if using OpenSSL, this currently only makes sure that the
+peer certificate is signed by one of the root certificates in the CA
+database, but it does not validate that the certificate actually
+matches the host name we are trying to connect to. (With GnuTLS,
+the host name is validated as well.)
+
+This is disabled by default since it requires a CA database to be
+provided by the caller in many cases.
 
 @item listen
 Act as a server, listening for an incoming connection.
-
-@item cafile=@var{filename}
-Certificate authority file. The file must be in OpenSSL PEM format.
 
 @item cert=@var{filename}
 Certificate file. The file must be in OpenSSL PEM format.
 
 @item key=@var{filename}
 Private key file.
-
-@item verify=@var{0|1}
-Verify the peer's certificate.
 
 @end table
 
