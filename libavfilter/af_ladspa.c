@@ -612,6 +612,8 @@ static int query_formats(AVFilterContext *ctx)
 
         ff_set_common_channel_layouts(ctx, layouts);
     } else {
+        AVFilterLink *outlink = ctx->outputs[0];
+
         if (s->nb_inputs >= 1) {
             AVFilterLink *inlink = ctx->inputs[0];
             int64_t inlayout = FF_COUNT2LAYOUT(s->nb_inputs);
@@ -619,10 +621,12 @@ static int query_formats(AVFilterContext *ctx)
             layouts = NULL;
             ff_add_channel_layout(&layouts, inlayout);
             ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
+
+            if (!s->nb_outputs)
+                ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
         }
 
         if (s->nb_outputs >= 1) {
-            AVFilterLink *outlink = ctx->outputs[0];
             int64_t outlayout = FF_COUNT2LAYOUT(s->nb_outputs);
 
             layouts = NULL;
