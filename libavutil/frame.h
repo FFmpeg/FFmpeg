@@ -84,6 +84,9 @@ typedef struct AVFrame {
      *
      * For audio, only linesize[0] may be set. For planar audio, each channel
      * plane must be the same size.
+     *
+     * @note The linesize may be larger than the size of usable data -- there
+     * may be extra padding present for performance reasons.
      */
     int linesize[AV_NUM_DATA_POINTERS];
 
