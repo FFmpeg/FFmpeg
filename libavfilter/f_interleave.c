@@ -102,7 +102,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return push_frame(ctx);
 }
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     InterleaveContext *interleave = ctx->priv;
     const AVFilterPad *outpad = &ctx->filter->outputs[0];

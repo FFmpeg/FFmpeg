@@ -74,7 +74,7 @@ typedef struct TrimContext {
     int eof;
 } TrimContext;
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     TrimContext *s = ctx->priv;
 

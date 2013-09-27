@@ -98,7 +98,7 @@ AVFILTER_DEFINE_CLASS(noise);
 static const int8_t patt[4] = { -1, 0, 1, 0 };
 
 #define RAND_N(range) ((int) ((double) range * av_lfg_get(lfg) / (UINT_MAX + 1.0)))
-static int init_noise(NoiseContext *n, int comp)
+static av_cold int init_noise(NoiseContext *n, int comp)
 {
     int8_t *noise = av_malloc(MAX_NOISE * sizeof(int8_t));
     FilterParams *fp = &n->param[comp];
