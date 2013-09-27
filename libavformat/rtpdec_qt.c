@@ -180,6 +180,8 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
             av_freep(&qt->pkt.data);
             av_init_packet(&qt->pkt);
             qt->pkt.data = av_malloc(alen + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!qt->pkt.data)
+                return AVERROR(ENOMEM);
             qt->pkt.size = 0;
             qt->timestamp = *timestamp;
         }
