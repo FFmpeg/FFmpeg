@@ -240,7 +240,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
             ret = AVERROR(EIO);
             goto fail;
         }
-    } else if (c->cert_file || c->key_file) {
+    } else if (c->cert_file || c->key_file)
         av_log(h, AV_LOG_ERROR, "cert and key required\n");
     gnutls_credentials_set(c->session, GNUTLS_CRD_CERTIFICATE, c->cred);
     gnutls_transport_set_ptr(c->session, (gnutls_transport_ptr_t)
