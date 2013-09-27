@@ -315,6 +315,9 @@ static int decode_element(AVCodecContext *avctx, void *data, int ch_index,
             rice_history_mult[ch] = get_bits(&alac->gb, 3);
             lpc_order[ch]         = get_bits(&alac->gb, 5);
 
+            if (lpc_order[ch] >= alac->max_samples_per_frame)
+                return AVERROR_INVALIDDATA;
+
             /* read the predictor table */
             for (i = lpc_order[ch] - 1; i >= 0; i--)
                 lpc_coefs[ch][i] = get_sbits(&alac->gb, 16);
