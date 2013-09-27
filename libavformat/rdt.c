@@ -423,8 +423,10 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
                 if (first == -1) first = n;
                 if (rdt->nb_rmst < count) {
                     if ((err = av_reallocp(&rdt->rmst,
-                                           count * sizeof(*rdt->rmst))) < 0)
+                                           count * sizeof(*rdt->rmst))) < 0) {
+                        rdt->nb_rmst = 0;
                         return err;
+                    }
                     memset(rdt->rmst + rdt->nb_rmst, 0,
                            (count - rdt->nb_rmst) * sizeof(*rdt->rmst));
                     rdt->nb_rmst = count;

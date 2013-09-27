@@ -694,9 +694,10 @@ static int avi_read_header(AVFormatContext *s)
                         st->codec->extradata_size += 9;
                         if ((ret = av_reallocp(&st->codec->extradata,
                                                st->codec->extradata_size +
-                                               FF_INPUT_BUFFER_PADDING_SIZE)) < 0)
+                                               FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                            st->codec->extradata_size = 0;
                             return ret;
-                        else
+                        } else
                             memcpy(st->codec->extradata + st->codec->extradata_size - 9,
                                    "BottomUp", 9);
                     }

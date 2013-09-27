@@ -337,8 +337,10 @@ static MMSSCPacketType get_tcp_server_response(MMSTContext *mmst)
                 if(!mms->header_parsed) {
                     if ((err = av_reallocp(&mms->asf_header,
                                            mms->asf_header_size +
-                                           mms->remaining_in_len)) < 0)
+                                           mms->remaining_in_len)) < 0) {
+                        mms->asf_header_size = 0;
                         return err;
+                    }
                     memcpy(mms->asf_header + mms->asf_header_size,
                            mms->read_in_ptr, mms->remaining_in_len);
                     mms->asf_header_size += mms->remaining_in_len;

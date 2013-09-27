@@ -317,9 +317,12 @@ vorbis_header (AVFormatContext * s, int idx)
             }
         }
     } else {
-        int ret;
-        st->codec->extradata_size =
-            fixup_vorbis_headers(s, priv, &st->codec->extradata);
+        int ret = fixup_vorbis_headers(s, priv, &st->codec->extradata);
+        if (ret < 0) {
+            st->codec->extradata_size = 0;
+            return ret;
+        }
+        st->codec->extradata_size = ret;
         if ((ret = avpriv_vorbis_parse_extradata(st->codec, &priv->vp))) {
             av_freep(&st->codec->extradata);
             st->codec->extradata_size = 0;
