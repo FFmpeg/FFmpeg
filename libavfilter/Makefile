@@ -158,6 +158,7 @@ OBJS-$(CONFIG_LUT_FILTER)                    += vf_lut.o
 OBJS-$(CONFIG_LUTRGB_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_LUTYUV_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_MCDEINT_FILTER)                += vf_mcdeint.o
+OBJS-$(CONFIG_MERGEPLANES_FILTER)            += vf_mergeplanes.o framesync.o
 OBJS-$(CONFIG_MP_FILTER)                     += vf_mp.o
 OBJS-$(CONFIG_MPDECIMATE_FILTER)             += vf_mpdecimate.o
 OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o

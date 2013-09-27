@@ -5260,6 +5260,65 @@ lutyuv=y='bitand(val, 128+64+32)'
 @end example
 @end itemize
 
+@section mergeplanes
+
+Merge color channel components from several video streams.
+
+The filter accepts up to 4 input streams, and merge selected input
+planes to the output video.
+
+This filter accepts the following options:
+@table @option
+@item mapping
+Set input to output plane mapping. Default is @code{0}.
+
+The mappings is specified as a bitmap. It should be specified as a
+hexadecimal number in the form 0xAa[Bb[Cc[Dd]]]. 'Aa' describes the
+mapping for the first plane of the output stream. 'A' sets the number of
+the input stream to use (from 0 to 3), and 'a' the plane number of the
+corresponding input to use (from 0 to 3). The rest of the mappings is
+similar, 'Bb' describes the mapping for the output stream second
+plane, 'Cc' describes the mapping for the output stream third plane and
+'Dd' describes the mapping for the output stream fourth plane.
+
+@item format
+Set output pixel format. Default is @code{yuva444p}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Merge three gray video streams of same width and height into single video stream:
+@example
+[a0][a1][a2]mergeplanes=0x001020:yuv444p
+@end example
+
+@item
+Merge 1st yuv444p stream and 2nd gray video stream into yuva444p video stream:
+@example
+[a0][a1]mergeplanes=0x00010210:yuva444p
+@end example
+
+@item
+Swap Y and A plane in yuva444p stream:
+@example
+format=yuva444p,mergeplanes=0x03010200:yuva444p
+@end example
+
+@item
+Swap U and V plane in yuv420p stream:
+@example
+format=yuv420p,mergeplanes=0x000201:yuv420p
+@end example
+
+@item
+Cast a rgb24 clip to yuv444p:
+@example
+format=rgb24,mergeplanes=0x000102:yuv444p
+@end example
+@end itemize
+
 @section mcdeint
 
 Apply motion-compensation deinterlacing.

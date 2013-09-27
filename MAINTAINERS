@@ -334,6 +334,7 @@ Filters:
   vf_extractplanes.c                    Paul B Mahol
   vf_histogram.c                        Paul B Mahol
   vf_il.c                               Paul B Mahol
+  vf_mergeplanes.c                      Paul B Mahol
   vf_psnr.c                             Paul B Mahol
   vf_scale.c                            Michael Niedermayer
   vf_separatefields.c                   Paul B Mahol
