@@ -115,7 +115,7 @@ static int get_packet_header(AVFormatContext *s)
     uint32_t version, audio_format, header_size, channels, tmp;
     AVStream *st;
     uint8_t header[LXF_MAX_PACKET_HEADER_SIZE];
-    const uint8_t *p;
+    const uint8_t *p = header + LXF_IDENT_LENGTH;
 
     //find and read the ident
     if ((ret = sync(s, header)) < 0)
@@ -125,11 +125,11 @@ static int get_packet_header(AVFormatContext *s)
     if (ret != 8)
         return ret < 0 ? ret : AVERROR_EOF;
 
-    p = header + LXF_IDENT_LENGTH;
     version     = bytestream_get_le32(&p);
     header_size = bytestream_get_le32(&p);
     if (version > 1)
-        avpriv_request_sample(s, "format version %i", version);
+        avpriv_request_sample(s, "Unknown format version %i\n", version);
+
     if (header_size < (version ? 72 : 60) ||
         header_size > LXF_MAX_PACKET_HEADER_SIZE ||
         (header_size & 3)) {
@@ -140,9 +140,8 @@ static int get_packet_header(AVFormatContext *s)
     //read the rest of the packet header
     if ((ret = avio_read(pb, header + (p - header),
                           header_size - (p - header))) !=
-                          header_size - (p - header)) {
+                          header_size - (p - header))
         return ret < 0 ? ret : AVERROR_EOF;
-    }
 
     if (check_checksum(header, header_size))
         av_log(s, AV_LOG_ERROR, "checksum error\n");
@@ -167,7 +166,8 @@ static int get_packet_header(AVFormatContext *s)
             break;
         }
 
-        if (version == 0) p += 8;
+        if (version == 0)
+            p += 8;
         audio_format = bytestream_get_le32(&p);
         channels     = bytestream_get_le32(&p);
         track_size   = bytestream_get_le32(&p);
