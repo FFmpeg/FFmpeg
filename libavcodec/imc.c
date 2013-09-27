@@ -451,8 +451,13 @@ static int bit_allocation(IMCContext *q, IMCChannel *chctx,
     for (i = 0; i < BANDS; i++)
         highest = FFMAX(highest, chctx->flcoeffs1[i]);
 
-    for (i = 0; i < BANDS - 1; i++)
+    for (i = 0; i < BANDS - 1; i++) {
+        if (chctx->flcoeffs5[i] <= 0) {
+            av_log(NULL, AV_LOG_ERROR, "flcoeffs5 %f invalid\n", chctx->flcoeffs5[i]);
+            return AVERROR_INVALIDDATA;
+        }
         chctx->flcoeffs4[i] = chctx->flcoeffs3[i] - log2f(chctx->flcoeffs5[i]);
+    }
     chctx->flcoeffs4[BANDS - 1] = limit;
 
     highest = highest * 0.25;
