@@ -1070,7 +1070,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
     int ret;
 
     if (buf_size < 4)
-        return 0;
+        return AVERROR_INVALIDDATA;
 
     length = (AV_RB16(buf) & 0xfff) * 2;
 
