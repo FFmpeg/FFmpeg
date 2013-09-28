@@ -321,7 +321,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
                            const uint8_t *buf, const uint8_t *end_buf)
 {
     unsigned tag, type, count, off, value = 0;
-    int i, j;
+    int i;
     uint32_t *pal;
     const uint8_t *rp, *gp, *bp;
 
@@ -527,10 +527,11 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start,
         bp  = buf + count / 3 * off * 2;
         off = (type_sizes[type] - 1) << 3;
         for (i = 0; i < count / 3; i++) {
-            j      = (tget(&rp, type, s->le) >> off) << 16;
-            j     |= (tget(&gp, type, s->le) >> off) << 8;
-            j     |= tget(&bp, type, s->le) >> off;
-            pal[i] = j;
+            uint32_t p = 0xFF000000;
+            p |= (tget(&rp, type, s->le) >> off) << 16;
+            p |= (tget(&gp, type, s->le) >> off) << 8;
+            p |=  tget(&bp, type, s->le) >> off;
+            pal[i] = p;
         }
         s->palette_is_set = 1;
         break;
