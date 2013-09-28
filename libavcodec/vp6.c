@@ -238,7 +238,8 @@ static int vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
 
     ff_free_vlc(vlc);
     /* then build the huffman tree according to probabilities */
-    return ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp,
+    return ff_huff_build_tree(s->avctx, vlc, size, FF_HUFFMAN_BITS,
+                              nodes, vp6_huff_cmp,
                               FF_HUFFMAN_FLAG_HNODE_FIRST);
 }
 
