@@ -163,7 +163,7 @@ static int vqf_read_header(AVFormatContext *s)
 
         header_size -= len;
 
-    } while (header_size >= 0);
+    } while (header_size >= 0 && !url_feof(s->pb));
 
     switch (rate_flag) {
     case -1:
