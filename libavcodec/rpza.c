@@ -203,7 +203,7 @@ static void rpza_decode_stream(RpzaContext *s)
 
         /* Fill block with 16 colors */
         case 0x00:
-            if (s->size - stream_ptr < 16)
+            if (s->size - stream_ptr < 30)
                 return;
             block_ptr = row_ptr + pixel_ptr;
             for (pixel_y = 0; pixel_y < 4; pixel_y++) {
