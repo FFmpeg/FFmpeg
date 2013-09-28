@@ -1476,7 +1476,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         uint8_t *output_plane = s->current_frame.f->data    [plane] + s->data_offset[plane];
         uint8_t *  last_plane = s->   last_frame.f->data    [plane] + s->data_offset[plane];
         uint8_t *golden_plane = s-> golden_frame.f->data    [plane] + s->data_offset[plane];
-        int stride            = s->current_frame.f->linesize[plane];
+        ptrdiff_t stride      = s->current_frame.f->linesize[plane];
         int plane_width       = s->width  >> (plane && s->chroma_x_shift);
         int plane_height      = s->height >> (plane && s->chroma_y_shift);
         int8_t (*motion_val)[2] = s->motion_val[!!plane];

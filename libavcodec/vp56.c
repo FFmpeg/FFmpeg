@@ -311,7 +311,7 @@ static void vp56_deblock_filter(VP56Context *s, uint8_t *yuv,
 }
 
 static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
-                    int stride, int x, int y)
+                    ptrdiff_t stride, int x, int y)
 {
     uint8_t *dst = s->frames[VP56_FRAME_CURRENT]->data[plane] + s->block_offset[b];
     uint8_t *src_block;

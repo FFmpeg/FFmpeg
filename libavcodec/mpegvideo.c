@@ -2179,7 +2179,7 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
                                      uint8_t *dest, uint8_t *src,
                                      int field_based, int field_select,
                                      int src_x, int src_y,
-                                     int width, int height, int stride,
+                                     int width, int height, ptrdiff_t stride,
                                      int h_edge_pos, int v_edge_pos,
                                      int w, int h, h264_chroma_mc_func *pix_op,
                                      int motion_x, int motion_y)
@@ -2235,8 +2235,8 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
                                                 int h, int mb_y)
 {
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
-    int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, uvlinesize, linesize, sx, sy,
-        uvsx, uvsy;
+    int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, sx, sy, uvsx, uvsy;
+    ptrdiff_t uvlinesize, linesize;
     const int lowres     = s->avctx->lowres;
     const int op_index   = FFMIN(lowres-1+s->chroma_x_shift, 3);
     const int block_s    = 8>>lowres;
@@ -2367,7 +2367,8 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres + 1;
     const int v_edge_pos = s->v_edge_pos >> lowres + 1;
-    int emu = 0, src_x, src_y, offset, sx, sy;
+    int emu = 0, src_x, src_y, sx, sy;
+    ptrdiff_t offset;
     uint8_t *ptr;
 
     if (s->quarter_sample) {

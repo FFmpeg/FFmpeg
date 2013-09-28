@@ -985,7 +985,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             direct = 0;
 
         av_dlog(s->avctx, "%d %d %d %d\n", pic_arg->linesize[0],
-                pic_arg->linesize[1], s->linesize, s->uvlinesize);
+                pic_arg->linesize[1], (int) s->linesize, (int) s->uvlinesize);
 
         if (direct) {
             i = ff_find_unused_picture(s, 1);
@@ -1771,7 +1771,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     int dct_offset = s->linesize * 8; // default for progressive frames
     int uv_dct_offset = s->uvlinesize * 8;
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
-    int wrap_y, wrap_c;
+    ptrdiff_t wrap_y, wrap_c;
 
     for (i = 0; i < mb_block_count; i++)
         skip_dct[i] = s->skipdct;

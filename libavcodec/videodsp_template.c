@@ -21,13 +21,12 @@
 
 #include "bit_depth_template.c"
 void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
-                                      ptrdiff_t linesize_arg,
+                                      ptrdiff_t linesize,
                                       int block_w, int block_h,
                                       int src_x, int src_y, int w, int h)
 {
     int x, y;
     int start_y, start_x, end_y, end_x;
-    emuedge_linesize_type linesize = linesize_arg;
 
     if (!w || !h)
         return;

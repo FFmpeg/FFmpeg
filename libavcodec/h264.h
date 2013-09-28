@@ -306,7 +306,7 @@ typedef struct H264Context {
 
     /* coded dimensions -- 16 * mb w/h */
     int width, height;
-    int linesize, uvlinesize;
+    ptrdiff_t linesize, uvlinesize;
     int chroma_x_shift, chroma_y_shift;
 
     int qscale;
@@ -379,8 +379,8 @@ typedef struct H264Context {
     uint32_t *mb2br_xy;
     int b_stride;       // FIXME use s->b4_stride
 
-    int mb_linesize;    ///< may be equal to s->linesize or s->linesize * 2, for mbaff
-    int mb_uvlinesize;
+    ptrdiff_t mb_linesize;    ///< may be equal to s->linesize or s->linesize * 2, for mbaff
+    ptrdiff_t mb_uvlinesize;
 
     unsigned current_sps_id; ///< id of the current SPS
     SPS sps; ///< current sps
