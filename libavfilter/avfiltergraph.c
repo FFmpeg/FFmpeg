@@ -182,11 +182,15 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
 {
     AVFilterContext **filters, *s;
 
-    if (graph->thread_type && !graph->internal->thread) {
-        int ret = ff_graph_thread_init(graph);
-        if (ret < 0) {
-            av_log(graph, AV_LOG_ERROR, "Error initializing threading.\n");
-            return NULL;
+    if (graph->thread_type && !graph->internal->thread_execute) {
+        if (graph->execute) {
+            graph->internal->thread_execute = graph->execute;
+        } else {
+            int ret = ff_graph_thread_init(graph);
+            if (ret < 0) {
+                av_log(graph, AV_LOG_ERROR, "Error initializing threading.\n");
+                return NULL;
+            }
         }
     }
 

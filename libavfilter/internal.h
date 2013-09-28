@@ -146,13 +146,11 @@ struct AVFilterPad {
 
 struct AVFilterGraphInternal {
     void *thread;
-    int (*thread_execute)(AVFilterContext *ctx, action_func *func, void *arg,
-                          int *ret, int nb_jobs);
+    avfilter_execute_func *thread_execute;
 };
 
 struct AVFilterInternal {
-    int (*execute)(AVFilterContext *ctx, action_func *func, void *arg,
-                   int *ret, int nb_jobs);
+    avfilter_execute_func *execute;
 };
 
 #if FF_API_AVFILTERBUFFER
