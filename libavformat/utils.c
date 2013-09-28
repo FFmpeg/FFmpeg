@@ -996,7 +996,8 @@ static void update_initial_durations(AVFormatContext *s, AVStream *st,
             }
         }
         if(pktl && pktl->pkt.dts != st->first_dts) {
-            av_log(s, AV_LOG_DEBUG, "first_dts %s not matching first dts %s in the queue\n", av_ts2str(st->first_dts), av_ts2str(pktl->pkt.dts));
+            av_log(s, AV_LOG_DEBUG, "first_dts %s not matching first dts %s (pts %s, duration %d) in the queue\n",
+                   av_ts2str(st->first_dts), av_ts2str(pktl->pkt.dts), av_ts2str(pktl->pkt.pts), pktl->pkt.duration);
             return;
         }
         if(!pktl) {
