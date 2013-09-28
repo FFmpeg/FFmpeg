@@ -422,27 +422,21 @@ static int request_frame(AVFilterLink *outlink)
     return ff_dualinput_request_frame(&b->dinput, outlink);
 }
 
-static int filter_frame_top(AVFilterLink *inlink, AVFrame *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     BlendContext *b = inlink->dst->priv;
-    return ff_dualinput_filter_frame_main(&b->dinput, inlink, buf);
-}
-
-static int filter_frame_bottom(AVFilterLink *inlink, AVFrame *buf)
-{
-    BlendContext *b = inlink->dst->priv;
-    return ff_dualinput_filter_frame_second(&b->dinput, inlink, buf);
+    return ff_dualinput_filter_frame(&b->dinput, inlink, buf);
 }
 
 static const AVFilterPad blend_inputs[] = {
     {
         .name          = "top",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame_top,
+        .filter_frame  = filter_frame,
     },{
         .name          = "bottom",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame_bottom,
+        .filter_frame  = filter_frame,
     },
     { NULL }
 };

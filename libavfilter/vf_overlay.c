@@ -549,16 +549,10 @@ static AVFrame *do_blend(AVFilterContext *ctx, AVFrame *mainpic,
     return mainpic;
 }
 
-static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
+static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     OverlayContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame_main(&s->dinput, inlink, inpicref);
-}
-
-static int filter_frame_over(AVFilterLink *inlink, AVFrame *inpicref)
-{
-    OverlayContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame_second(&s->dinput, inlink, inpicref);
+    return ff_dualinput_filter_frame(&s->dinput, inlink, inpicref);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -606,14 +600,14 @@ static const AVFilterPad avfilter_vf_overlay_inputs[] = {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_main,
-        .filter_frame = filter_frame_main,
+        .filter_frame = filter_frame,
         .needs_writable = 1,
     },
     {
         .name         = "overlay",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_overlay,
-        .filter_frame = filter_frame_over,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

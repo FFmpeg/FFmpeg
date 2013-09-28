@@ -667,16 +667,10 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int filter_frame_main(AVFilterLink *inlink, AVFrame *inpicref)
+static int filter_frame_hald(AVFilterLink *inlink, AVFrame *inpicref)
 {
     LUT3DContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame_main(&s->dinput, inlink, inpicref);
-}
-
-static int filter_frame_clut(AVFilterLink *inlink, AVFrame *inpicref)
-{
-    LUT3DContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame_second(&s->dinput, inlink, inpicref);
+    return ff_dualinput_filter_frame(&s->dinput, inlink, inpicref);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -766,12 +760,12 @@ static const AVFilterPad haldclut_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_main,
+        .filter_frame = filter_frame_hald,
         .config_props = config_input,
     },{
         .name         = "clut",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_clut,
+        .filter_frame = filter_frame_hald,
         .config_props = config_clut,
     },
     { NULL }

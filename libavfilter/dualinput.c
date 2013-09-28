@@ -66,14 +66,8 @@ int ff_dualinput_init(AVFilterContext *ctx, FFDualInputContext *s)
     return ff_framesync_configure(&s->fs);
 }
 
-int ff_dualinput_filter_frame_main(FFDualInputContext *s,
+int ff_dualinput_filter_frame(FFDualInputContext *s,
                                    AVFilterLink *inlink, AVFrame *in)
-{
-    return ff_framesync_filter_frame(&s->fs, inlink, in);
-}
-
-int ff_dualinput_filter_frame_second(FFDualInputContext *s,
-                                     AVFilterLink *inlink, AVFrame *in)
 {
     return ff_framesync_filter_frame(&s->fs, inlink, in);
 }
