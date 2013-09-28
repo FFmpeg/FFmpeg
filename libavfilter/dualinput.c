@@ -37,7 +37,6 @@ static int process_frame(FFFrameSync *fs)
         mainpic = s->process(ctx, mainpic, secondpic);
     ret = ff_filter_frame(ctx->outputs[0], mainpic);
     av_assert1(ret != AVERROR(EAGAIN));
-    s->frame_requested = 0;
     return ret;
 }
 
