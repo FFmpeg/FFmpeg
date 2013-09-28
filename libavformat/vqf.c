@@ -182,6 +182,13 @@ static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         break;
     }
 
+    if (read_bitrate / st->codec->channels <  8 ||
+        read_bitrate / st->codec->channels > 48) {
+        av_log(s, AV_LOG_ERROR, "Invalid bitrate per channel %d\n",
+               read_bitrate / st->codec->channels);
+        return AVERROR_INVALIDDATA;
+    }
+
     switch (((st->codec->sample_rate/1000) << 8) +
             read_bitrate/st->codec->channels) {
     case (11<<8) + 8 :
