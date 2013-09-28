@@ -653,6 +653,11 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         if (size > 0)
             avio_skip(pb, size);
     }
+    if (codec->sample_rate <= 0) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Invalid sample rate: %d\n", codec->sample_rate);
+        return AVERROR_INVALIDDATA;
+    }
     codec->codec_id = ff_wav_codec_get_id(id, codec->bits_per_coded_sample);
     if (codec->codec_id == AV_CODEC_ID_AAC_LATM) {
         /* channels and sample_rate values are those prior to applying SBR and/or PS */
