@@ -378,6 +378,10 @@ static int png_decode_idat(PNGDecContext *s, int length)
             s->zstream.avail_out = s->crow_size;
             s->zstream.next_out = s->crow_buf;
         }
+        if (ret == Z_STREAM_END && s->zstream.avail_in > 0) {
+            av_log(NULL, AV_LOG_WARNING, "%d undecompressed bytes left in buffer\n", s->zstream.avail_in);
+            return 0;
+        }
     }
     return 0;
 }
