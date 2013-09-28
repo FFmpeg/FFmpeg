@@ -117,6 +117,9 @@ typedef struct AVFrame {
      * preference, this is 16 or 32 for modern desktop CPUs.
      * Some code requires such alignment other code can be slower without
      * correct alignment, for yet other it makes no difference.
+     *
+     * @note The linesize may be larger than the size of usable data -- there
+     * may be extra padding present for performance reasons.
      */
     int linesize[AV_NUM_DATA_POINTERS];
 
