@@ -40,6 +40,7 @@
 #include "thread.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')
+#define VLC_BITS 11
 
 /**
  * local variable storage
@@ -94,7 +95,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     for (i = 0; i < 256; i++)
         nodes[i].count = bytestream_get_le32(&src);
     size -= 1024;
-    if ((ret = ff_huff_build_tree(s->avctx, &vlc, 256, FF_HUFFMAN_BITS,
+    if ((ret = ff_huff_build_tree(s->avctx, &vlc, 256, VLC_BITS,
                                   nodes, huff_cmp,
                                   FF_HUFFMAN_FLAG_ZERO_COUNT)) < 0)
         return ret;
@@ -106,7 +107,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for (j = 0; j < h; j++) {
         for (i = 0; i < w*step; i += step) {
-            dst[i] = get_vlc2(&gb, vlc.table, FF_HUFFMAN_BITS, 3);
+            dst[i] = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
              */
