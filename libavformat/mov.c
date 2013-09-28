@@ -1642,6 +1642,10 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         sample_count=avio_rb32(pb);
         sample_duration = avio_rb32(pb);
+        if (sample_count < 0) {
+            av_log(c->fc, AV_LOG_ERROR, "Invalid sample_count=%d\n", sample_count);
+            return AVERROR_INVALIDDATA;
+        }
         sc->stts_data[i].count= sample_count;
         sc->stts_data[i].duration= sample_duration;
 
