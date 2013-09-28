@@ -467,7 +467,7 @@ static int ea_read_header(AVFormatContext *s)
     }
 
     if (ea->audio_codec) {
-        if (ea->num_channels <= 0) {
+        if (ea->num_channels <= 0 || ea->num_channels > 2) {
             av_log(s, AV_LOG_WARNING,
                    "Unsupported number of channels: %d\n", ea->num_channels);
             ea->audio_codec = 0;
