@@ -104,6 +104,7 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
     int ptr_len = src_len - 1 - byte*2;
     unsigned char val = ival;
     unsigned char *dest_end = dest + dest_len;
+    unsigned char *dest_start = dest;
     GetBitContext gb;
 
     if (ptr_len < 0)
@@ -119,13 +120,13 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
 
         if (val < 0x16) {
             if (dest >= dest_end)
-                return 0;
+                return dest_len;
             *dest++ = val;
             val = ival;
         }
     }
 
-    return 0;
+    return dest - dest_start;
 }
 
 /**
@@ -274,7 +275,7 @@ static int xan_wc3_decode_frame(XanContext *s) {
     unsigned char flag = 0;
     int size = 0;
     int motion_x, motion_y;
-    int x, y;
+    int x, y, ret;
 
     unsigned char *opcode_buffer = s->buffer1;
     unsigned char *opcode_buffer_end = s->buffer1 + s->buffer1_size;
@@ -308,9 +309,10 @@ static int xan_wc3_decode_frame(XanContext *s) {
     bytestream2_init(&vector_segment, s->buf + vector_offset, s->size - vector_offset);
     imagedata_segment = s->buf + imagedata_offset;
 
-    if (xan_huffman_decode(opcode_buffer, opcode_buffer_size,
-                           huffman_segment, s->size - huffman_offset) < 0)
+    if ((ret = xan_huffman_decode(opcode_buffer, opcode_buffer_size,
+                                  huffman_segment, s->size - huffman_offset)) < 0)
         return AVERROR_INVALIDDATA;
+    opcode_buffer_end = opcode_buffer + ret;
 
     if (imagedata_segment[0] == 2) {
         xan_unpack(s->buffer2, s->buffer2_size,
