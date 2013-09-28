@@ -99,7 +99,7 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 
-static AVCodec *find_decoder(AVStream *st, enum AVCodecID codec_id)
+static AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
 {
     if (st->codec->codec)
         return st->codec->codec;
@@ -2438,7 +2438,7 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
 }
 
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
-static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
+static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
     const AVCodec *codec;
     int got_picture = 1, ret = 0;
@@ -2452,7 +2452,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     if (!avcodec_is_open(st->codec) && !st->info->found_decoder) {
         AVDictionary *thread_opt = NULL;
 
-        codec = find_decoder(st, st->codec->codec_id);
+        codec = find_decoder(s, st, st->codec->codec_id);
 
         if (!codec) {
             st->info->found_decoder = -1;
@@ -2703,7 +2703,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                        avcodec_get_name(st->codec->codec_id));
             }
         }
-        codec = find_decoder(st, st->codec->codec_id);
+        codec = find_decoder(ic, st, st->codec->codec_id);
 
         /* force thread count to 1 since the h264 decoder will not extract SPS
          *  and PPS to extradata during multi-threaded decoding */
@@ -2933,7 +2933,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
            least one frame of codec data, this makes sure the codec initializes
            the channel configuration and does not only trust the values from the container.
         */
-        try_decode_frame(st, pkt, (options && i < orig_nb_streams ) ? &options[i] : NULL);
+        try_decode_frame(ic, st, pkt, (options && i < orig_nb_streams ) ? &options[i] : NULL);
 
         st->codec_info_nb_frames++;
         count++;
@@ -2951,7 +2951,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             /* flush the decoders */
             if (st->info->found_decoder == 1) {
                 do {
-                    err = try_decode_frame(st, &empty_pkt,
+                    err = try_decode_frame(ic, st, &empty_pkt,
                                             (options && i < orig_nb_streams) ?
                                             &options[i] : NULL);
                 } while (err > 0 && !has_codec_parameters(st, NULL));
@@ -3154,7 +3154,7 @@ int av_find_best_stream(AVFormatContext *ic,
         if (st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED|AV_DISPOSITION_VISUAL_IMPAIRED))
             continue;
         if (decoder_ret) {
-            decoder = find_decoder(st, st->codec->codec_id);
+            decoder = find_decoder(ic, st, st->codec->codec_id);
             if (!decoder) {
                 if (ret < 0)
                     ret = AVERROR_DECODER_NOT_FOUND;
