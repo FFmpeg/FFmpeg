@@ -99,6 +99,14 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
 
+static AVCodec *find_decoder(AVStream *st, enum AVCodecID codec_id)
+{
+    if (st->codec->codec)
+        return st->codec->codec;
+
+    return avcodec_find_decoder(codec_id);
+}
+
 int av_format_get_probe_score(const AVFormatContext *s)
 {
     return s->probe_score;
@@ -2444,8 +2452,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     if (!avcodec_is_open(st->codec) && !st->info->found_decoder) {
         AVDictionary *thread_opt = NULL;
 
-        codec = st->codec->codec ? st->codec->codec :
-                                   avcodec_find_decoder(st->codec->codec_id);
+        codec = find_decoder(st, st->codec->codec_id);
 
         if (!codec) {
             st->info->found_decoder = -1;
@@ -2696,8 +2703,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                        avcodec_get_name(st->codec->codec_id));
             }
         }
-        codec = st->codec->codec ? st->codec->codec :
-                                   avcodec_find_decoder(st->codec->codec_id);
+        codec = find_decoder(st, st->codec->codec_id);
 
         /* force thread count to 1 since the h264 decoder will not extract SPS
          *  and PPS to extradata during multi-threaded decoding */
@@ -3148,7 +3154,7 @@ int av_find_best_stream(AVFormatContext *ic,
         if (st->disposition & (AV_DISPOSITION_HEARING_IMPAIRED|AV_DISPOSITION_VISUAL_IMPAIRED))
             continue;
         if (decoder_ret) {
-            decoder = avcodec_find_decoder(st->codec->codec_id);
+            decoder = find_decoder(st, st->codec->codec_id);
             if (!decoder) {
                 if (ret < 0)
                     ret = AVERROR_DECODER_NOT_FOUND;
