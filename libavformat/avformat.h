@@ -1315,9 +1315,39 @@ typedef struct AVFormatContext {
      * Demuxers can use the flag to detect such changes.
      */
     int io_repositioned;
+
+    /**
+     * Forced video codec.
+     * This allows forcing a specific decoder, even when there are multiple with
+     * the same codec_id.
+     * Demuxing: Set by user via av_format_set_video_codec (NO direct access).
+     */
+    AVCodec *video_codec;
+
+    /**
+     * Forced audio codec.
+     * This allows forcing a specific decoder, even when there are multiple with
+     * the same codec_id.
+     * Demuxing: Set by user via av_format_set_audio_codec (NO direct access).
+     */
+    AVCodec *audio_codec;
+
+    /**
+     * Forced subtitle codec.
+     * This allows forcing a specific decoder, even when there are multiple with
+     * the same codec_id.
+     * Demuxing: Set by user via av_format_set_subtitle_codec (NO direct access).
+     */
+    AVCodec *subtitle_codec;
 } AVFormatContext;
 
 int av_format_get_probe_score(const AVFormatContext *s);
+AVCodec * av_format_get_video_codec(const AVFormatContext *s);
+void      av_format_set_video_codec(AVFormatContext *s, AVCodec *c);
+AVCodec * av_format_get_audio_codec(const AVFormatContext *s);
+void      av_format_set_audio_codec(AVFormatContext *s, AVCodec *c);
+AVCodec * av_format_get_subtitle_codec(const AVFormatContext *s);
+void      av_format_set_subtitle_codec(AVFormatContext *s, AVCodec *c);
 
 /**
  * Returns the method used to set ctx->duration.

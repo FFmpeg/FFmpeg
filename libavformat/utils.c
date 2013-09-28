@@ -98,11 +98,26 @@ static int64_t wrap_timestamp(AVStream *st, int64_t timestamp)
 }
 
 MAKE_ACCESSORS(AVStream, stream, AVRational, r_frame_rate)
+MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, video_codec)
+MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, audio_codec)
+MAKE_ACCESSORS(AVFormatContext, format, AVCodec *, subtitle_codec)
 
 static AVCodec *find_decoder(AVFormatContext *s, AVStream *st, enum AVCodecID codec_id)
 {
     if (st->codec->codec)
         return st->codec->codec;
+
+    switch(st->codec->codec_type){
+    case AVMEDIA_TYPE_VIDEO:
+        if(s->video_codec)    return s->video_codec;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        if(s->audio_codec)    return s->audio_codec;
+        break;
+    case AVMEDIA_TYPE_SUBTITLE:
+        if(s->subtitle_codec) return s->subtitle_codec;
+        break;
+    }
 
     return avcodec_find_decoder(codec_id);
 }

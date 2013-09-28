@@ -15,6 +15,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-10-02 - xxxxxxx - lavf 55.19.100 - avformat.h
+  Add audio/video/subtitle AVCodec fields to AVFormatContext to force specific
+  decoders
+
 2013-08-xx - xxxxxxx - lavfi 3.11.0 - avfilter.h
   Add AVFilterGraph.execute and AVFilterGraph.opaque for custom slice threading
   implementations.
