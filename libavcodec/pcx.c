@@ -195,6 +195,7 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
         if (*buf++ != 12) {
             av_log(avctx, AV_LOG_ERROR, "expected palette after image data\n");
+            ret = buf_size;
             goto end;
         }
 
