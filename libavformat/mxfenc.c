@@ -1660,7 +1660,7 @@ static void mxf_gen_umid(AVFormatContext *s)
     AV_WB64(mxf->umid  , umid);
     AV_WB64(mxf->umid+8, umid>>8);
 
-    mxf->instance_number = seed;
+    mxf->instance_number = seed & 0xFFFFFF;
 }
 
 static int mxf_write_header(AVFormatContext *s)
