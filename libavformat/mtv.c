@@ -105,8 +105,8 @@ static int mtv_read_header(AVFormatContext *s)
         mtv->img_height=mtv->img_segment_size / (mtv->img_bpp>>3)
                         / mtv->img_width;
     }
-    if(!mtv->img_height || !mtv->img_width){
-        av_log(s, AV_LOG_ERROR, "width or height is invalid and I cannot calculate them from other information\n");
+    if(!mtv->img_height || !mtv->img_width || !mtv->img_segment_size){
+        av_log(s, AV_LOG_ERROR, "width or height or segment_size is invalid and I cannot calculate them from other information\n");
         return AVERROR(EINVAL);
     }
 
