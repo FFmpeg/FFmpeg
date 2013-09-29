@@ -52,6 +52,10 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid frame height: %d.\n", avctx->height);
         return AVERROR(EINVAL);
     }
+    if (avctx->width & 1) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid frame width: %d.\n", avctx->width);
+        return AVERROR(EINVAL);
+    }
 
     s->buffer_size = avctx->width * avctx->height;
     s->y_buffer = av_malloc(s->buffer_size);
@@ -300,8 +304,7 @@ static int xan_decode_frame_type0(AVCodecContext *avctx)
         ybuf[j+1] = cur << 1;
         last = cur;
     }
-    if(j < avctx->width)
-        ybuf[j]  = last << 1;
+    ybuf[j]  = last << 1;
     prev_buf = ybuf;
     ybuf += avctx->width;
 
@@ -314,8 +317,7 @@ static int xan_decode_frame_type0(AVCodecContext *avctx)
             ybuf[j+1] = cur << 1;
             last = cur;
         }
-        if(j < avctx->width)
-            ybuf[j] = last << 1;
+        ybuf[j] = last << 1;
         prev_buf = ybuf;
         ybuf += avctx->width;
     }
@@ -375,8 +377,7 @@ static int xan_decode_frame_type1(AVCodecContext *avctx)
             ybuf[j+1] = cur;
             last = cur;
         }
-        if(j < avctx->width)
-            ybuf[j] = last;
+        ybuf[j] = last;
         ybuf += avctx->width;
     }
 
