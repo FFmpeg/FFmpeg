@@ -90,7 +90,7 @@ int ff_tadd_rational_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         nom   = ff_tget_long(gb, le);
@@ -124,7 +124,7 @@ int ff_tadd_long_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         av_bprintf(&bp, "%s%i", (i ? sep : ""), ff_tget_long(gb, le));
@@ -156,7 +156,7 @@ int ff_tadd_doubles_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, 100 * count);
 
     for (i = 0; i < count; i++) {
         av_bprintf(&bp, "%s%f", (i ? sep : ""), ff_tget_double(gb, le));
@@ -188,7 +188,7 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         av_bprintf(&bp, "%s%i", (i ? sep : ""), ff_tget_short(gb, le));
@@ -220,7 +220,7 @@ int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
         return AVERROR_INVALIDDATA;
     if (!sep) sep = ", ";
 
-    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
         av_bprintf(&bp, "%s%i", (i ? sep : ""), bytestream2_get_byte(gb));
