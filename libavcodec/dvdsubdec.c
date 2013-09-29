@@ -35,6 +35,9 @@ typedef struct DVDSubContext
   int      has_palette;
   uint8_t  colormap[4];
   uint8_t  alpha[256];
+#ifdef DEBUG
+  int sub_id;
+#endif
 } DVDSubContext;
 
 static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *rgba, int num_values)
@@ -504,11 +507,16 @@ static int dvdsub_decode(AVCodecContext *avctx,
         goto no_subtitle;
 
 #if defined(DEBUG)
+    {
+    char ppm_name[32];
+
+    snprintf(ppm_name, sizeof(ppm_name), "/tmp/%05d.ppm", ctx->sub_id++);
     av_dlog(NULL, "start=%d ms end =%d ms\n",
             sub->start_display_time,
             sub->end_display_time);
-    ppm_save("/tmp/a.ppm", sub->rects[0]->pict.data[0],
+    ppm_save(ppm_name, sub->rects[0]->pict.data[0],
              sub->rects[0]->w, sub->rects[0]->h, sub->rects[0]->pict.data[1]);
+    }
 #endif
 
     *data_size = 1;
