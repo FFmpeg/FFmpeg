@@ -77,6 +77,16 @@ typedef struct {
     FFDrawColor color;
 } RotContext;
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+    int inw,  inh;
+    int outw, outh;
+    int plane;
+    int xi, yi;
+    int xprime, yprime;
+    int c, s;
+} ThreadData;
+
 #define OFFSET(x) offsetof(RotContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
@@ -299,6 +309,76 @@ static uint8_t *interpolate_bilinear(uint8_t *dst_color,
 
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
 
+static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    RotContext *rot = ctx->priv;
+    const int outw = td->outw, outh = td->outh;
+    const int inw = td->inw, inh = td->inh;
+    const int plane = td->plane;
+    const int xi = td->xi, yi = td->yi;
+    const int c = td->c, s = td->s;
+    const int start = (outh *  job   ) / nb_jobs;
+    const int end   = (outh * (job+1)) / nb_jobs;
+    int xprime = td->xprime + start * s;
+    int yprime = td->yprime + start * c;
+    int i, j, x, y;
+
+    for (j = start; j < end; j++) {
+        x = xprime + xi + FIXP*inw/2;
+        y = yprime + yi + FIXP*inh/2;
+
+        for (i = 0; i < outw; i++) {
+            int32_t v;
+            int x1, y1;
+            uint8_t *pin, *pout;
+            x += c;
+            y -= s;
+            x1 = x>>16;
+            y1 = y>>16;
+
+            /* the out-of-range values avoid border artifacts */
+            if (x1 >= -1 && x1 <= inw && y1 >= -1 && y1 <= inh) {
+                uint8_t inp_inv[4]; /* interpolated input value */
+                pout = out->data[plane] + j * out->linesize[plane] + i * rot->draw.pixelstep[plane];
+                if (rot->use_bilinear) {
+                    pin = interpolate_bilinear(inp_inv,
+                                               in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
+                                               x, y, inw-1, inh-1);
+                } else {
+                    int x2 = av_clip(x1, 0, inw-1);
+                    int y2 = av_clip(y1, 0, inh-1);
+                    pin = in->data[plane] + y2 * in->linesize[plane] + x2 * rot->draw.pixelstep[plane];
+                }
+                switch (rot->draw.pixelstep[plane]) {
+                case 1:
+                    *pout = *pin;
+                    break;
+                case 2:
+                    *((uint16_t *)pout) = *((uint16_t *)pin);
+                    break;
+                case 3:
+                    v = AV_RB24(pin);
+                    AV_WB24(pout, v);
+                    break;
+                case 4:
+                    *((uint32_t *)pout) = *((uint32_t *)pin);
+                    break;
+                default:
+                    memcpy(pout, pin, rot->draw.pixelstep[plane]);
+                    break;
+                }
+            }
+        }
+        xprime += s;
+        yprime += c;
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -334,66 +414,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < rot->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? rot->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? rot->vsub : 0;
-        int inw  = FF_CEIL_RSHIFT(inlink->w, hsub);
-        int inh  = FF_CEIL_RSHIFT(inlink->h, vsub);
-        int outw = FF_CEIL_RSHIFT(outlink->w, hsub);
-        int outh = FF_CEIL_RSHIFT(outlink->h, vsub);
+        const int outw = FF_CEIL_RSHIFT(outlink->w, hsub);
+        const int outh = FF_CEIL_RSHIFT(outlink->h, vsub);
+        ThreadData td = { .in = in,   .out  = out,
+                          .inw  = FF_CEIL_RSHIFT(inlink->w, hsub),
+                          .inh  = FF_CEIL_RSHIFT(inlink->h, vsub),
+                          .outh = outh, .outw = outw,
+                          .xi = -outw/2 * c, .yi =  outw/2 * s,
+                          .xprime = -outh/2 * s,
+                          .yprime = -outh/2 * c,
+                          .plane = plane, .c = c, .s = s };
 
-        const int xi = -outw/2 * c;
-        const int yi =  outw/2 * s;
-        int xprime = -outh/2 * s;
-        int yprime = -outh/2 * c;
-        int i, j, x, y;
 
-        for (j = 0; j < outh; j++) {
-            x = xprime + xi + FIXP*inw/2;
-            y = yprime + yi + FIXP*inh/2;
-
-            for (i = 0; i < outw; i++) {
-                int32_t v;
-                int x1, y1;
-                uint8_t *pin, *pout;
-                x += c;
-                y -= s;
-                x1 = x>>16;
-                y1 = y>>16;
-
-                /* the out-of-range values avoid border artifacts */
-                if (x1 >= -1 && x1 <= inw && y1 >= -1 && y1 <= inh) {
-                    uint8_t inp_inv[4]; /* interpolated input value */
-                    pout = out->data[plane] + j * out->linesize[plane] + i * rot->draw.pixelstep[plane];
-                    if (rot->use_bilinear) {
-                        pin = interpolate_bilinear(inp_inv,
-                                                   in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
-                                                   x, y, inw-1, inh-1);
-                    } else {
-                        int x2 = av_clip(x1, 0, inw-1);
-                        int y2 = av_clip(y1, 0, inh-1);
-                        pin = in->data[plane] + y2 * in->linesize[plane] + x2 * rot->draw.pixelstep[plane];
-                    }
-                    switch (rot->draw.pixelstep[plane]) {
-                    case 1:
-                        *pout = *pin;
-                        break;
-                    case 2:
-                        *((uint16_t *)pout) = *((uint16_t *)pin);
-                        break;
-                    case 3:
-                        v = AV_RB24(pin);
-                        AV_WB24(pout, v);
-                        break;
-                    case 4:
-                        *((uint32_t *)pout) = *((uint32_t *)pin);
-                        break;
-                    default:
-                        memcpy(pout, pin, rot->draw.pixelstep[plane]);
-                        break;
-                    }
-                }
-            }
-            xprime += s;
-            yprime += c;
-        }
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ctx->graph->nb_threads));
     }
 
     av_frame_free(&in);
@@ -452,5 +485,5 @@ AVFilter avfilter_vf_rotate = {
     .inputs        = rotate_inputs,
     .outputs       = rotate_outputs,
     .priv_class    = &rotate_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
