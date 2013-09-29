@@ -184,6 +184,21 @@ static void guess_palette(DVDSubContext* ctx,
     }
 }
 
+static void reset_rects(AVSubtitle *sub_header)
+{
+    int i;
+
+    if (sub_header->rects != NULL) {
+        for (i = 0; i < sub_header->num_rects; i++) {
+            av_freep(&sub_header->rects[i]->pict.data[0]);
+            av_freep(&sub_header->rects[i]->pict.data[1]);
+            av_freep(&sub_header->rects[i]);
+        }
+        av_freep(&sub_header->rects);
+        sub_header->num_rects = 0;
+    }
+}
+
 #define READ_OFFSET(a) (big_offsets ? AV_RB32(a) : AV_RB16(a))
 
 static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
@@ -324,15 +339,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
             if (h < 0)
                 h = 0;
             if (w > 0 && h > 0) {
-                if (sub_header->rects != NULL) {
-                    for (i = 0; i < sub_header->num_rects; i++) {
-                        av_freep(&sub_header->rects[i]->pict.data[0]);
-                        av_freep(&sub_header->rects[i]->pict.data[1]);
-                        av_freep(&sub_header->rects[i]);
-                    }
-                    av_freep(&sub_header->rects);
-                    sub_header->num_rects = 0;
-                }
+                reset_rects(sub_header);
 
                 bitmap = av_malloc(w * h);
                 sub_header->rects = av_mallocz(sizeof(*sub_header->rects));
@@ -374,15 +381,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     if (sub_header->num_rects > 0)
         return is_menu;
  fail:
-    if (sub_header->rects != NULL) {
-        for (i = 0; i < sub_header->num_rects; i++) {
-            av_freep(&sub_header->rects[i]->pict.data[0]);
-            av_freep(&sub_header->rects[i]->pict.data[1]);
-            av_freep(&sub_header->rects[i]);
-        }
-        av_freep(&sub_header->rects);
-        sub_header->num_rects = 0;
-    }
+    reset_rects(sub_header);
     return -1;
 }
 
