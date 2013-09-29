@@ -35,6 +35,8 @@ typedef struct DVDSubContext
   int      has_palette;
   uint8_t  colormap[4];
   uint8_t  alpha[256];
+  uint8_t *buf;
+  int      buf_size;
 #ifdef DEBUG
   int sub_id;
 #endif
@@ -229,6 +231,9 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     }
 
     cmd_pos = READ_OFFSET(buf + cmd_pos);
+
+    if (cmd_pos < 0 || cmd_pos > buf_size - 2 - offset_size)
+        return AVERROR(EAGAIN);
 
     while (cmd_pos > 0 && cmd_pos < buf_size - 2 - offset_size) {
         date = AV_RB16(buf + cmd_pos);
@@ -485,6 +490,25 @@ static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
 }
 #endif
 
+static int append_to_cached_buf(AVCodecContext *avctx,
+                                const uint8_t *buf, int buf_size)
+{
+    DVDSubContext *ctx = avctx->priv_data;
+
+    if (ctx->buf_size > 0xffff - buf_size) {
+        av_log(avctx, AV_LOG_WARNING, "Attempt to reconstruct "
+               "too large SPU packets aborted.\n");
+        av_freep(&ctx->buf);
+        return AVERROR_INVALIDDATA;
+    }
+    ctx->buf = av_realloc(ctx->buf, ctx->buf_size + buf_size);
+    if (!ctx->buf)
+        return AVERROR(ENOMEM);
+    memcpy(ctx->buf + ctx->buf_size, buf, buf_size);
+    ctx->buf_size += buf_size;
+    return 0;
+}
+
 static int dvdsub_decode(AVCodecContext *avctx,
                          void *data, int *data_size,
                          AVPacket *avpkt)
@@ -495,7 +519,21 @@ static int dvdsub_decode(AVCodecContext *avctx,
     AVSubtitle *sub = data;
     int is_menu;
 
+    if (ctx->buf) {
+        int ret = append_to_cached_buf(avctx, buf, buf_size);
+        if (ret < 0) {
+            *data_size = 0;
+            return ret;
+        }
+        buf = ctx->buf;
+        buf_size = ctx->buf_size;
+    }
+
     is_menu = decode_dvd_subtitles(ctx, sub, buf, buf_size);
+    if (is_menu == AVERROR(EAGAIN)) {
+        *data_size = 0;
+        return append_to_cached_buf(avctx, buf, buf_size);
+    }
 
     if (is_menu < 0) {
     no_subtitle:
@@ -519,6 +557,8 @@ static int dvdsub_decode(AVCodecContext *avctx,
     }
 #endif
 
+    av_freep(&ctx->buf);
+    ctx->buf_size = 0;
     *data_size = 1;
     return buf_size;
 }
@@ -592,6 +632,14 @@ static av_cold int dvdsub_init(AVCodecContext *avctx)
     return 1;
 }
 
+static av_cold int dvdsub_close(AVCodecContext *avctx)
+{
+    DVDSubContext *ctx = avctx->priv_data;
+    av_freep(&ctx->buf);
+    ctx->buf_size = 0;
+    return 0;
+}
+
 #define OFFSET(field) offsetof(DVDSubContext, field)
 #define VD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
@@ -612,6 +660,7 @@ AVCodec ff_dvdsub_decoder = {
     .priv_data_size = sizeof(DVDSubContext),
     .init           = dvdsub_init,
     .decode         = dvdsub_decode,
+    .close          = dvdsub_close,
     .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
     .priv_class     = &dvdsub_class,
 };
