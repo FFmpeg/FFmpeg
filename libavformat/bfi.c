@@ -144,9 +144,7 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
 
         pkt->pts          = bfi->audio_frame;
         bfi->audio_frame += ret;
-    }
-
-    else {
+    } else if (bfi->video_size > 0) {
 
         //Tossing a video packet at the video decoder.
         ret = av_get_packet(pb, pkt, bfi->video_size);
@@ -154,10 +152,13 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
             return ret;
 
         pkt->pts          = bfi->video_frame;
-        bfi->video_frame += bfi->video_size ? ret / bfi->video_size : 1;
+        bfi->video_frame += ret / bfi->video_size;
 
         /* One less frame to read. A cursory decrement. */
         bfi->nframes--;
+    } else {
+        /* Empty video packet */
+        ret = AVERROR(EAGAIN);
     }
 
     bfi->avflag       = !bfi->avflag;
