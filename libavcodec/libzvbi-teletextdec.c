@@ -355,39 +355,39 @@ teletext_decode_frame(AVCodecContext *avctx,
         ctx->pts = av_rescale_q(pkt->pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
 
     if (left) {
-    // We allow unreasonably big packets, even if the standard only allows a max size of 1472
-    if ((pesheader_size + left) < 184 || (pesheader_size + left) > 65504 || (pesheader_size + left) % 184 != 0)
-        return AVERROR_INVALIDDATA;
+        // We allow unreasonably big packets, even if the standard only allows a max size of 1472
+        if ((pesheader_size + left) < 184 || (pesheader_size + left) > 65504 || (pesheader_size + left) % 184 != 0)
+            return AVERROR_INVALIDDATA;
 
-    memset(pesheader + 14, 0xff, pesheader_size - 14);
-    AV_WB16(pesheader + 4, left + pesheader_size - 6);
+        memset(pesheader + 14, 0xff, pesheader_size - 14);
+        AV_WB16(pesheader + 4, left + pesheader_size - 6);
 
-    /* PTS is deliberately left as 0 in the PES header, otherwise libzvbi uses
-     * it to detect dropped frames. Unforunatey the guessed packet PTS values
-     * (see mpegts demuxer) are not accurate enough to pass that test. */
-    vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, NULL, &pesheader_buf, &pesheader_size);
+        /* PTS is deliberately left as 0 in the PES header, otherwise libzvbi uses
+         * it to detect dropped frames. Unforunatey the guessed packet PTS values
+         * (see mpegts demuxer) are not accurate enough to pass that test. */
+        vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, NULL, &pesheader_buf, &pesheader_size);
 
-    while (left > 0) {
-        int64_t pts = 0;
-        unsigned int lines = vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, &pts, &buf, &left);
+        while (left > 0) {
+            int64_t pts = 0;
+            unsigned int lines = vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, &pts, &buf, &left);
 #ifdef DEBUG
-        av_log(avctx, AV_LOG_DEBUG,
-               "ctx=%p buf_size=%d left=%u lines=%u pts=%f pkt_pts=%f\n",
-               ctx, pkt->size, left, lines, (double)pts/90000.0, (double)pkt->pts/90000.0);
+            av_log(avctx, AV_LOG_DEBUG,
+                   "ctx=%p buf_size=%d left=%u lines=%u pts=%f pkt_pts=%f\n",
+                   ctx, pkt->size, left, lines, (double)pts/90000.0, (double)pkt->pts/90000.0);
 #endif
-        if (lines > 0) {
+            if (lines > 0) {
 #ifdef DEBUGx
-            int i;
-            for(i=0; i<lines; ++i)
-                av_log(avctx, AV_LOG_DEBUG,
-                       "lines=%d id=%x\n", i, ctx->sliced[i].id);
+                int i;
+                for(i=0; i<lines; ++i)
+                    av_log(avctx, AV_LOG_DEBUG,
+                           "lines=%d id=%x\n", i, ctx->sliced[i].id);
 #endif
-            vbi_decode(ctx->vbi, ctx->sliced, lines, (double)pts/90000.0);
-            ctx->lines_processed += lines;
+                vbi_decode(ctx->vbi, ctx->sliced, lines, (double)pts/90000.0);
+                ctx->lines_processed += lines;
+            }
         }
-    }
-    ctx->pts = AV_NOPTS_VALUE;
-    ret = pkt->size;
+        ctx->pts = AV_NOPTS_VALUE;
+        ret = pkt->size;
     }
 
     // is there a subtitle to pass?
