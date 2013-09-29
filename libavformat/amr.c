@@ -132,8 +132,6 @@ static int amr_read_packet(AVFormatContext *s, AVPacket *pkt)
         };
 
         size = packed_size[mode];
-    } else {
-        av_assert0(0);
     }
 
     if (!size || av_new_packet(pkt, size))
