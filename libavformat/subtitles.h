@@ -25,11 +25,17 @@
 #include "avformat.h"
 #include "libavutil/bprint.h"
 
+enum sub_sort {
+    SUB_SORT_TS_POS = 0,    ///< sort by timestamps, then position
+    SUB_SORT_POS_TS,        ///< sort by position, then timestamps
+};
+
 typedef struct {
     AVPacket *subs;         ///< array of subtitles packets
     int nb_subs;            ///< number of subtitles packets
     int allocated_size;     ///< allocated size for subs
     int current_sub_idx;    ///< current position for the read packet callback
+    enum sub_sort sort;     ///< sort method to use when finalizing subtitles
 } FFDemuxSubtitlesQueue;
 
 /**

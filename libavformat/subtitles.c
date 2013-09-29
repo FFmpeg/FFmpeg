@@ -57,7 +57,7 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
     return sub;
 }
 
-static int cmp_pkt_sub(const void *a, const void *b)
+static int cmp_pkt_sub_ts_pos(const void *a, const void *b)
 {
     const AVPacket *s1 = a;
     const AVPacket *s2 = b;
@@ -69,11 +69,25 @@ static int cmp_pkt_sub(const void *a, const void *b)
     return s1->pts > s2->pts ? 1 : -1;
 }
 
+static int cmp_pkt_sub_pos_ts(const void *a, const void *b)
+{
+    const AVPacket *s1 = a;
+    const AVPacket *s2 = b;
+    if (s1->pos == s2->pos) {
+        if (s1->pts == s2->pts)
+            return 0;
+        return s1->pts > s2->pts ? 1 : -1;
+    }
+    return s1->pos > s2->pos ? 1 : -1;
+}
+
 void ff_subtitles_queue_finalize(FFDemuxSubtitlesQueue *q)
 {
     int i;
 
-    qsort(q->subs, q->nb_subs, sizeof(*q->subs), cmp_pkt_sub);
+    qsort(q->subs, q->nb_subs, sizeof(*q->subs),
+          q->sort == SUB_SORT_TS_POS ? cmp_pkt_sub_ts_pos
+                                     : cmp_pkt_sub_pos_ts);
     for (i = 0; i < q->nb_subs; i++)
         if (q->subs[i].duration == -1 && i < q->nb_subs - 1)
             q->subs[i].duration = q->subs[i + 1].pts - q->subs[i].pts;
