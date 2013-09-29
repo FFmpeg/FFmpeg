@@ -379,7 +379,7 @@ static int oma_read_header(AVFormatContext *s)
             return AVERROR_INVALIDDATA;
         }
         st->codec->sample_rate = samplerate;
-        st->codec->bit_rate    = samplerate * framesize * 8 / 1024;
+        st->codec->bit_rate    = samplerate * framesize * 8 / 2048;
         avpriv_set_pts_info(st, 64, 1, samplerate);
         av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
         break;
