@@ -379,6 +379,10 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 av_log(ctx, AV_LOG_WARNING, "VBV buffer size not set, muxing may fail\n");
                 stream->max_buffer_size = 230*1024; //FIXME this is probably too small as default
             }
+            if (stream->max_buffer_size > 1024 * 8191) {
+                av_log(ctx, AV_LOG_WARNING, "buffer size %d, too large\n", stream->max_buffer_size);
+                stream->max_buffer_size = 1024 * 8191;
+            }
             s->video_bound++;
             break;
         case AVMEDIA_TYPE_SUBTITLE:
