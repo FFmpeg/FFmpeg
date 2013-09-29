@@ -84,8 +84,8 @@
  *                                      input, in_samples);
  *     handle_output(output, out_samples);
  *     av_freep(&output);
- *  }
- *  @endcode
+ * }
+ * @endcode
  *
  * When the conversion is finished, the conversion
  * context and everything associated with it must be freed with swr_free().
