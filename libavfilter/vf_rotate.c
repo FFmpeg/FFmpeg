@@ -337,7 +337,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         int inw  = FF_CEIL_RSHIFT(inlink->w, hsub);
         int inh  = FF_CEIL_RSHIFT(inlink->h, vsub);
         int outw = FF_CEIL_RSHIFT(outlink->w, hsub);
-        int outh = FF_CEIL_RSHIFT(outlink->h, hsub);
+        int outh = FF_CEIL_RSHIFT(outlink->h, vsub);
 
         const int xi = -outw/2 * c;
         const int yi =  outw/2 * s;
