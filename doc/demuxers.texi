@@ -262,20 +262,20 @@ Use @command{ffmpeg} for creating a video from the images in the file
 sequence @file{img-001.jpeg}, @file{img-002.jpeg}, ..., assuming an
 input frame rate of 10 frames per second:
 @example
-ffmpeg -i 'img-%03d.jpeg' -r 10 out.mkv
+ffmpeg -framerate 10 -i 'img-%03d.jpeg' out.mkv
 @end example
 
 @item
 As above, but start by reading from a file with index 100 in the sequence:
 @example
-ffmpeg -start_number 100 -i 'img-%03d.jpeg' -r 10 out.mkv
+ffmpeg -framerate 10 -start_number 100 -i 'img-%03d.jpeg' out.mkv
 @end example
 
 @item
 Read images matching the "*.png" glob pattern , that is all the files
 terminating with the ".png" suffix:
 @example
-ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
+ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
 
