@@ -905,7 +905,8 @@ fail:
 
 static int read_gab2_sub(AVStream *st, AVPacket *pkt)
 {
-    if (pkt->data && !strcmp(pkt->data, "GAB2") && AV_RL16(pkt->data + 5) == 2) {
+    if (pkt->size >= 7 &&
+        !strcmp(pkt->data, "GAB2") && AV_RL16(pkt->data + 5) == 2) {
         uint8_t desc[256];
         int score      = AVPROBE_SCORE_EXTENSION, ret;
         AVIStream *ast = st->priv_data;
