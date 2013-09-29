@@ -428,6 +428,10 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
         bitrate += bitrate / 20;
         bitrate += 10000;
         s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
+        if (s->mux_rate >= (1<<22)) {
+            av_log(ctx, AV_LOG_WARNING, "mux rate %d is too large\n", s->mux_rate);
+            s->mux_rate = (1<<22) - 1;
+        }
     }
 
     if (s->is_vcd) {
