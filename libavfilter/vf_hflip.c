@@ -75,34 +75,30 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 {
-    AVFilterContext *ctx  = inlink->dst;
-    FlipContext *s     = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out;
+    FlipContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
     uint8_t *inrow, *outrow;
     int i, j, plane, step;
-
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(out, in);
-
-    /* copy palette if required */
-    if (av_pix_fmt_desc_get(inlink->format)->flags & AV_PIX_FMT_FLAG_PAL)
-        memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
 
     for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
         const int width  = s->planewidth[plane];
         const int height = s->planeheight[plane];
+        const int start = (height *  job   ) / nb_jobs;
+        const int end   = (height * (job+1)) / nb_jobs;
+
         step = s->max_step[plane];
 
-        outrow = out->data[plane];
-        inrow  = in ->data[plane] + (width - 1) * step;
-        for (i = 0; i < height; i++) {
+        outrow = out->data[plane] + start * out->linesize[plane];
+        inrow  = in ->data[plane] + start * in->linesize[plane] + (width - 1) * step;
+        for (i = start; i < end; i++) {
             switch (step) {
             case 1:
                 for (j = 0; j < width; j++)
@@ -148,6 +144,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx  = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
+    AVFrame *out;
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+
+    /* copy palette if required */
+    if (av_pix_fmt_desc_get(inlink->format)->flags & AV_PIX_FMT_FLAG_PAL)
+        memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
+
+    td.in = in, td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
@@ -177,4 +197,5 @@ AVFilter avfilter_vf_hflip = {
     .query_formats = query_formats,
     .inputs        = avfilter_vf_hflip_inputs,
     .outputs       = avfilter_vf_hflip_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
