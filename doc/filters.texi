@@ -6606,7 +6606,7 @@ Default value is @samp{0}.
 
 @item flags
 Set libswscale scaling flags. If not explictly specified the filter
-applies a bilinear scaling algorithm.
+applies a bicubic scaling algorithm.
 See @ref{sws_flags,,the ffmpeg-scaler manual,ffmpeg-scaler} for
 the complete list of values.
 
