@@ -622,6 +622,10 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
             sum += filter[i * filterSize + j];
         }
         sum = (sum + one / 2) / one;
+        if (!sum) {
+            av_log(NULL, AV_LOG_WARNING, "SwScaler: zero vector in scaling\n");
+            sum = 1;
+        }
         for (j = 0; j < *outFilterSize; j++) {
             int64_t v = filter[i * filterSize + j] + error;
             int intV  = ROUNDED_DIV(v, sum);
