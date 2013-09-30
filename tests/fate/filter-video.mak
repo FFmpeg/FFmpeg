@@ -244,6 +244,9 @@ fate-filter-pixfmts-crop:  CMD = pixfmts "100:100:100:100"
 FATE_FILTER_PIXFMTS-$(CONFIG_FIELD_FILTER) += fate-filter-pixfmts-field
 fate-filter-pixfmts-field: CMD = pixfmts "bottom"
 
+FATE_FILTER_PIXFMTS-$(CONFIG_FIELDORDER_FILTER) += fate-filter-pixfmts-fieldorder
+fate-filter-pixfmts-fieldorder: CMD = pixfmts "tff" "setfield=bff,"
+
 FATE_FILTER_PIXFMTS-$(CONFIG_HFLIP_FILTER) += fate-filter-pixfmts-hflip
 fate-filter-pixfmts-hflip: CMD = pixfmts
 
