@@ -1,3 +1,4 @@
+@anchor{scaler_options}
 @chapter Scaler Options
 @c man begin SCALER OPTIONS
 
