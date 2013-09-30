@@ -96,6 +96,24 @@ Set scaling algorithm parameters. The specified values are specific of
 some scaling algorithms and ignored by others. The specified values
 are floating point number values.
 
+@item sws_dither
+Set the dithering algorithm. Accepts one of the following
+values. Default value is @samp{auto}.
+
+@table @samp
+@item auto
+automatic choice
+
+@item none
+no dithering
+
+@item bayer
+bayer dither
+
+@item ed
+error diffusion dither
+@end table
+
 @end table
 
 @c man end SCALER OPTIONS
