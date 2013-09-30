@@ -1,7 +1,7 @@
 /*
  * Sony OpenMG (OMA) demuxer
  *
- * Copyright (c) 2008 Maxim Poliakovski
+ * Copyright (c) 2008, 2013 Maxim Poliakovski
  *               2008 Benjamin Larsson
  *               2011 David Goldwich
  *
@@ -285,7 +285,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
 static int oma_read_header(AVFormatContext *s)
 {
     int     ret, framesize, jsflag, samplerate;
-    uint32_t codec_params;
+    uint32_t codec_params, channel_id;
     int16_t eid;
     uint8_t buf[EA3_HEADER_SIZE];
     uint8_t *edata;
@@ -365,7 +365,14 @@ static int oma_read_header(AVFormatContext *s)
         avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
         break;
     case OMA_CODECID_ATRAC3P:
-        st->codec->channels = (codec_params >> 10) & 7;
+        channel_id = (codec_params >> 10) & 7;
+        if (!channel_id) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid ATRAC-X channel id: %d\n", channel_id);
+            return AVERROR_INVALIDDATA;
+        }
+        st->codec->channel_layout = ff_oma_chid_to_native_layout[channel_id - 1];
+        st->codec->channels       = ff_oma_chid_to_num_channels[channel_id - 1];
         framesize = ((codec_params & 0x3FF) * 8) + 8;
         samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7] * 100;
         if (!samplerate) {
