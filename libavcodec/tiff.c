@@ -51,7 +51,7 @@ typedef struct TiffContext {
     int palette_is_set;
     int le;
     enum TiffCompr compr;
-    int invert;
+    enum TiffPhotometric photometric;
     int fax_opts;
     int predictor;
     int fill_order;
@@ -447,20 +447,31 @@ static int tiff_decode_tag(TiffContext *s)
     case TIFF_PREDICTOR:
         s->predictor = value;
         break;
-    case TIFF_INVERT:
+    case TIFF_PHOTOMETRIC:
         switch (value) {
-        case 0:
-            s->invert = 1;
+        case TIFF_PHOTOMETRIC_WHITE_IS_ZERO:
+        case TIFF_PHOTOMETRIC_BLACK_IS_ZERO:
+        case TIFF_PHOTOMETRIC_RGB:
+        case TIFF_PHOTOMETRIC_PALETTE:
+            s->photometric = value;
             break;
-        case 1:
-            s->invert = 0;
-            break;
-        case 2:
-        case 3:
-            break;
+        case TIFF_PHOTOMETRIC_ALPHA_MASK:
+        case TIFF_PHOTOMETRIC_SEPARATED:
+        case TIFF_PHOTOMETRIC_YCBCR:
+        case TIFF_PHOTOMETRIC_CIE_LAB:
+        case TIFF_PHOTOMETRIC_ICC_LAB:
+        case TIFF_PHOTOMETRIC_ITU_LAB:
+        case TIFF_PHOTOMETRIC_CFA:
+        case TIFF_PHOTOMETRIC_LOG_L:
+        case TIFF_PHOTOMETRIC_LOG_LUV:
+        case TIFF_PHOTOMETRIC_LINEAR_RAW:
+            avpriv_report_missing_feature(s->avctx,
+                                          "PhotometricInterpretation 0x%04X",
+                                          value);
+            return AVERROR_PATCHWELCOME;
         default:
-            av_log(s->avctx, AV_LOG_ERROR, "Color mode %d is not supported\n",
-                   value);
+            av_log(s->avctx, AV_LOG_ERROR, "PhotometricInterpretation %u is "
+                   "unknown\n", value);
             return AVERROR_INVALIDDATA;
         }
         break;
@@ -546,10 +557,10 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "TIFF header not found\n");
         return AVERROR_INVALIDDATA;
     }
-    s->le         = le;
-    s->invert     = 0;
-    s->compr      = TIFF_RAW;
-    s->fill_order = 0;
+    s->le          = le;
+    s->photometric = TIFF_PHOTOMETRIC_NONE;
+    s->compr       = TIFF_RAW;
+    s->fill_order  = 0;
     // As TIFF 6.0 specification puts it "An arbitrary but carefully chosen number
     // that further identifies the file as a TIFF file"
     if (tget_short(&s->gb, le) != 42) {
@@ -633,7 +644,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (s->invert) {
+    if (s->photometric == TIFF_PHOTOMETRIC_WHITE_IS_ZERO) {
         dst = p->data[0];
         for (i = 0; i < s->height; i++) {
             for (j = 0; j < p->linesize[0]; j++)

@@ -37,7 +37,7 @@ enum TiffTags {
     TIFF_HEIGHT,
     TIFF_BPP,
     TIFF_COMPR,
-    TIFF_INVERT             = 0x106,
+    TIFF_PHOTOMETRIC        = 0x106,
     TIFF_FILL_ORDER         = 0x10A,
     TIFF_STRIP_OFFS         = 0x111,
     TIFF_SAMPLES_PER_PIXEL  = 0x115,
@@ -80,6 +80,24 @@ enum TiffTypes {
     TIFF_SHORT,
     TIFF_LONG,
     TIFF_RATIONAL,
+};
+
+enum TiffPhotometric {
+    TIFF_PHOTOMETRIC_NONE       = -1,
+    TIFF_PHOTOMETRIC_WHITE_IS_ZERO,      /* mono or grayscale, 0 is white */
+    TIFF_PHOTOMETRIC_BLACK_IS_ZERO,      /* mono or grayscale, 0 is black */
+    TIFF_PHOTOMETRIC_RGB,                /* RGB or RGBA*/
+    TIFF_PHOTOMETRIC_PALETTE,            /* Uses a palette */
+    TIFF_PHOTOMETRIC_ALPHA_MASK,         /* Transparency mask */
+    TIFF_PHOTOMETRIC_SEPARATED,          /* CMYK or some other ink set */
+    TIFF_PHOTOMETRIC_YCBCR,              /* YCbCr */
+    TIFF_PHOTOMETRIC_CIE_LAB    = 8,     /* 1976 CIE L*a*b* */
+    TIFF_PHOTOMETRIC_ICC_LAB,            /* ICC L*a*b* */
+    TIFF_PHOTOMETRIC_ITU_LAB,            /* ITU L*a*b* */
+    TIFF_PHOTOMETRIC_CFA        = 32803, /* Color Filter Array (DNG) */
+    TIFF_PHOTOMETRIC_LOG_L      = 32844, /* CIE Log2(L) */
+    TIFF_PHOTOMETRIC_LOG_LUV,            /* CIE Log L*u*v* */
+    TIFF_PHOTOMETRIC_LINEAR_RAW = 34892, /* Linear Raw (DNG) */
 };
 
 /** sizes of various TIFF field types (string size = 100)*/

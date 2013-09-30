@@ -56,7 +56,7 @@ typedef struct TiffEncoderContext {
     unsigned int bpp;                       ///< bits per pixel
     int compr;                              ///< compression level
     int bpp_tab_size;                       ///< bpp_tab size
-    int photometric_interpretation;         ///< photometric interpretation
+    enum TiffPhotometric photometric_interpretation;  ///< photometric interpretation
     int strips;                             ///< number of strips
     int rps;                                ///< row per strip
     uint8_t entries[TIFF_MAX_ENTRY * 12];   ///< entries in header
@@ -237,23 +237,23 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         pfd    = av_pix_fmt_desc_get(avctx->pix_fmt);
         s->bpp = av_get_bits_per_pixel(pfd);
         if (pfd->flags & AV_PIX_FMT_FLAG_PAL)
-            s->photometric_interpretation = 3;
+            s->photometric_interpretation = TIFF_PHOTOMETRIC_PALETTE;
         else if (pfd->flags & AV_PIX_FMT_FLAG_RGB)
-            s->photometric_interpretation = 2;
+            s->photometric_interpretation = TIFF_PHOTOMETRIC_RGB;
         else
-            s->photometric_interpretation = 1;
+            s->photometric_interpretation = TIFF_PHOTOMETRIC_BLACK_IS_ZERO;
         s->bpp_tab_size = pfd->nb_components;
         for (i = 0; i < s->bpp_tab_size; i++)
             bpp_tab[i] = s->bpp / s->bpp_tab_size;
         break;
     case AV_PIX_FMT_MONOBLACK:
         s->bpp                        = 1;
-        s->photometric_interpretation = 1;
+        s->photometric_interpretation = TIFF_PHOTOMETRIC_BLACK_IS_ZERO;
         s->bpp_tab_size               = 0;
         break;
     case AV_PIX_FMT_MONOWHITE:
         s->bpp                        = 1;
-        s->photometric_interpretation = 0;
+        s->photometric_interpretation = TIFF_PHOTOMETRIC_WHITE_IS_ZERO;
         s->bpp_tab_size               = 0;
         break;
     case AV_PIX_FMT_YUV420P:
@@ -262,7 +262,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
         av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &shift_h, &shift_v);
-        s->photometric_interpretation = 6;
+        s->photometric_interpretation = TIFF_PHOTOMETRIC_YCBCR;
         s->bpp                        = 8 + (16 >> (shift_h + shift_v));
         s->subsampling[0]             = 1 << shift_h;
         s->subsampling[1]             = 1 << shift_v;
@@ -410,9 +410,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (s->bpp_tab_size)
         add_entry(s, TIFF_BPP, TIFF_SHORT, s->bpp_tab_size, bpp_tab);
 
-    add_entry1(s, TIFF_COMPR,      TIFF_SHORT, s->compr);
-    add_entry1(s, TIFF_INVERT,     TIFF_SHORT, s->photometric_interpretation);
-    add_entry(s,  TIFF_STRIP_OFFS, TIFF_LONG,  strips, strip_offsets);
+    add_entry1(s, TIFF_COMPR,       TIFF_SHORT, s->compr);
+    add_entry1(s, TIFF_PHOTOMETRIC, TIFF_SHORT, s->photometric_interpretation);
+    add_entry(s,  TIFF_STRIP_OFFS,  TIFF_LONG,  strips, strip_offsets);
 
     if (s->bpp_tab_size)
         add_entry1(s, TIFF_SAMPLES_PER_PIXEL, TIFF_SHORT, s->bpp_tab_size);
