@@ -1,6 +1,7 @@
 /*
- * ATRAC common data
- * Copyright (c) 2009 Maxim Poliakovski
+ * common functions for the ATRAC family of decoders
+ *
+ * Copyright (c) 2009-2013 Maxim Poliakovski
  * Copyright (c) 2009 Benjamin Larsson
  *
  * This file is part of Libav.
@@ -30,7 +31,21 @@
 
 extern float ff_atrac_sf_table[64];
 
+/**
+ * Generate common tables.
+ */
 void ff_atrac_generate_tables(void);
+
+/**
+ * Quadrature mirror synthesis filter.
+ *
+ * @param inlo      lower part of spectrum
+ * @param inhi      higher part of spectrum
+ * @param nIn       size of spectrum buffer
+ * @param pOut      out buffer
+ * @param delayBuf  delayBuf buffer
+ * @param temp      temp buffer
+ */
 void ff_atrac_iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp);
 
 #endif /* AVCODEC_ATRAC_H */
