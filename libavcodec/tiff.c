@@ -300,7 +300,6 @@ static int tiff_decode_tag(TiffContext *s)
 {
     unsigned tag, type, count, off, value = 0;
     int i, start;
-    uint32_t *pal;
 
     if (bytestream2_get_bytes_left(&s->gb) < 12)
         return AVERROR_INVALIDDATA;
@@ -485,7 +484,6 @@ static int tiff_decode_tag(TiffContext *s)
         break;
     case TIFF_PAL: {
         GetByteContext pal_gb[3];
-        pal = (uint32_t *) s->palette;
         off = type_sizes[type];
         if (count / 3 > 256 ||
             bytestream2_get_bytes_left(&s->gb) < count / 3 * off * 3)
@@ -499,7 +497,7 @@ static int tiff_decode_tag(TiffContext *s)
             p |= (tget(&pal_gb[0], type, s->le) >> off) << 16;
             p |= (tget(&pal_gb[1], type, s->le) >> off) << 8;
             p |=  tget(&pal_gb[2], type, s->le) >> off;
-            pal[i] = p;
+            s->palette[i] = p;
         }
         s->palette_is_set = 1;
         break;
