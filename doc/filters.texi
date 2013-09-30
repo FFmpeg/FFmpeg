@@ -6597,6 +6597,7 @@ Default value is @samp{0}.
 @item flags
 Set libswscale scaling flags. If not explictly specified the filter
 applies a bilinear scaling algorithm.
+See the @ref{sws_flags,,,ffmpeg-scaler.texi} for the values.
 
 @item size, s
 Set the video size, the value must be a valid abbreviation or in the
