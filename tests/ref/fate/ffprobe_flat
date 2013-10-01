@@ -434,6 +434,7 @@ streams.stream.0.codec_tag="0x10445350"
 streams.stream.0.sample_fmt="s16"
 streams.stream.0.sample_rate="44100"
 streams.stream.0.channels=1
+streams.stream.0.channel_layout="unknown"
 streams.stream.0.bits_per_sample=16
 streams.stream.0.id="N/A"
 streams.stream.0.r_frame_rate="0/0"

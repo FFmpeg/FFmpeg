@@ -138,6 +138,7 @@
       <xsd:attribute name="sample_fmt"       type="xsd:string"/>
       <xsd:attribute name="sample_rate"      type="xsd:int"/>
       <xsd:attribute name="channels"         type="xsd:int"/>
+      <xsd:attribute name="channel_layout"   type="xsd:string"/>
       <xsd:attribute name="bits_per_sample"  type="xsd:int"/>
 
       <xsd:attribute name="id"               type="xsd:string"/>

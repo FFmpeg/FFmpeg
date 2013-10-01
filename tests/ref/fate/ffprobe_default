@@ -491,6 +491,7 @@ codec_tag=0x10445350
 sample_fmt=s16
 sample_rate=44100
 channels=1
+channel_layout=unknown
 bits_per_sample=16
 id=N/A
 r_frame_rate=0/0

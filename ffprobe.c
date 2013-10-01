@@ -1823,6 +1823,15 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             else   print_str_opt("sample_fmt", "unknown");
             print_val("sample_rate",     dec_ctx->sample_rate, unit_hertz_str);
             print_int("channels",        dec_ctx->channels);
+
+            if (dec_ctx->channel_layout) {
+                av_bprint_clear(&pbuf);
+                av_bprint_channel_layout(&pbuf, dec_ctx->channels, dec_ctx->channel_layout);
+                print_str    ("channel_layout", pbuf.str);
+            } else {
+                print_str_opt("channel_layout", "unknown");
+            }
+
             print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
             break;
 
