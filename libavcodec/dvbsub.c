@@ -268,9 +268,8 @@ static int dvb_encode_rle8(uint8_t **pq, int buf_size,
     return len;
 }
 
-static int encode_dvb_subtitles(AVCodecContext *avctx,
-                                uint8_t *outbuf, int buf_size,
-                                const AVSubtitle *h)
+static int dvbsub_encode(AVCodecContext *avctx, uint8_t *outbuf, int buf_size,
+                         const AVSubtitle *h)
 {
     DVBSubtitleContext *s = avctx->priv_data;
     uint8_t *q, *pseg_len;
@@ -507,16 +506,6 @@ static int encode_dvb_subtitles(AVCodecContext *avctx,
 
     s->object_version = (s->object_version + 1) & 0xf;
     return q - outbuf;
-}
-
-static int dvbsub_encode(AVCodecContext *avctx,
-                         unsigned char *buf, int buf_size,
-                         const AVSubtitle *sub)
-{
-    int ret;
-
-    ret = encode_dvb_subtitles(avctx, buf, buf_size, sub);
-    return ret;
 }
 
 AVCodec ff_dvbsub_encoder = {
