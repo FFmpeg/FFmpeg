@@ -57,3 +57,33 @@ $(eval $(call FATE_VP8_FULL))
 $(eval $(call FATE_VP8_FULL,-emu-edge,-flags +emu_edge))
 FATE_SAMPLES_AVCONV-$(CONFIG_VP8_DECODER) += $(FATE_VP8-yes)
 fate-vp8: $(FATE_VP8-yes)
+
+define FATE_VP9_SUITE
+FATE_VP9-$(CONFIG_MATROSKA_DEMUXER) += fate-vp9$(2)-$(1)
+fate-vp9$(2)-$(1): CMD = framemd5 $(3) -i $(TARGET_SAMPLES)/vp9-test-vectors/vp90-2-$(1).webm
+fate-vp9$(2)-$(1): REF = $(SRC_PATH)/tests/ref/fate/vp9-$(1)
+endef
+
+VP9_Q = 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 \
+        16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 \
+        32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 \
+        48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63
+VP9_SHARP = 1 2 3 4 5 6 7
+VP9_SIZE_A = 08 10 16 18 32 34 64 66
+VP9_SIZE_B = 196 198 200 202 208 210 224 226
+
+define FATE_VP9_FULL
+$(foreach Q,$(VP9_Q),$(eval $(call FATE_VP9_SUITE,00-quantizer-$(Q),$(1),$(2))))
+$(foreach SHARP,$(VP9_SHARP),$(eval $(call FATE_VP9_SUITE,01-sharpness-$(SHARP),$(1),$(2))))
+$(foreach W,$(VP9_SIZE_A),$(eval $(foreach H,$(VP9_SIZE_A),$(eval $(call FATE_VP9_SUITE,02-size-$(W)x$(H),$(1),$(2))))))
+$(foreach W,$(VP9_SIZE_B),$(eval $(foreach H,$(VP9_SIZE_B),$(eval $(call FATE_VP9_SUITE,03-size-$(W)x$(H),$(1),$(2))))))
+$(eval $(call FATE_VP9_SUITE,03-deltaq,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,2pass-akiyo,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,segmentation-akiyo,$(1),$(2)))
+$(eval $(call FATE_VP9_SUITE,tiling-pedestrian,$(1),$(2)))
+endef
+
+$(eval $(call FATE_VP9_FULL))
+$(eval $(call FATE_VP9_FULL,-emu-edge,-flags +emu_edge))
+FATE_SAMPLES_AVCONV-$(CONFIG_VP9_DECODER) += $(FATE_VP9-yes)
+fate-vp9: $(FATE_VP9-yes)

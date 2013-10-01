@@ -94,7 +94,7 @@ Then pass @code{--enable-libtwolame} to configure to enable it.
 
 @section libvpx
 
-FFmpeg can make use of the libvpx library for VP8 encoding.
+FFmpeg can make use of the libvpx library for VP8/VP9 encoding.
 
 Go to @url{http://www.webmproject.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libvpx} to configure to
@@ -676,6 +676,8 @@ following image formats are supported:
     @tab fourcc: VP60,VP61,VP62
 @item VP8                    @tab  E  @tab  X
     @tab fourcc: VP80, encoding supported through external library libvpx
+@item VP9                    @tab  E  @tab  X
+    @tab encoding supported through external library libvpx
 @item Pinnacle TARGA CineWave YUV16 @tab     @tab  X
     @tab fourcc: Y216
 @item Prores                 @tab     @tab  X
