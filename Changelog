@@ -47,6 +47,7 @@ version 10:
 - Live HDS muxer
 - setsar/setdar filters now support variables in ratio expressions
 - dar variable in the scale filter now returns the actual DAR (i.e. a * sar)
+- VP9 decoder
 
 
 version 9:

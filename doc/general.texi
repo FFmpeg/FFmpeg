@@ -594,6 +594,8 @@ following image formats are supported:
     @tab fourcc: VP60,VP61,VP62
 @item VP8                    @tab  E  @tab  X
     @tab fourcc: VP80, encoding supported through external library libvpx
+@item VP9                    @tab  E  @tab  X
+    @tab Encoding supported through external library libvpx
 @item planar RGB             @tab     @tab  X
     @tab fourcc: 8BPS
 @item Q-team QPEG            @tab     @tab  X
