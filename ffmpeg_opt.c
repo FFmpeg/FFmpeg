@@ -84,6 +84,7 @@ int print_stats       = -1;
 int qp_hist           = 0;
 int stdin_interaction = 1;
 int frame_bits_per_raw_sample = 0;
+float max_error_rate  = 2.0/3;
 
 
 static int intra_only         = 0;
@@ -2717,6 +2718,8 @@ const OptionDef options[] = {
         "extract an attachment into a file", "filename" },
     { "debug_ts",       OPT_BOOL | OPT_EXPERT,                       { &debug_ts },
         "print timestamp debugging info" },
+    { "max_error_rate",  HAS_ARG | OPT_FLOAT,                        { &max_error_rate },
+        "maximum error rate", "ratio of errors (0.0: no errors, 1.0: 100% errors) above which ffmpeg returns an error instead of success." },
 
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },
