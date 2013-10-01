@@ -48,6 +48,7 @@ typedef struct HistogramContext {
     int            waveform_mode;
     int            display_mode;
     int            levels_mode;
+    const AVPixFmtDescriptor *desc;
 } HistogramContext;
 
 #define OFFSET(x) offsetof(HistogramContext, x)
@@ -117,9 +118,9 @@ static const uint8_t white_gbrp_color[4] = { 255, 255, 255, 255 };
 static int config_input(AVFilterLink *inlink)
 {
     HistogramContext *h = inlink->dst->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
-    h->ncomp = desc->nb_components;
+    h->desc  = av_pix_fmt_desc_get(inlink->format);
+    h->ncomp = h->desc->nb_components;
 
     switch (inlink->format) {
     case AV_PIX_FMT_GBRAP:
@@ -163,6 +164,41 @@ static int config_output(AVFilterLink *outlink)
 
     return 0;
 }
+
+static void gen_waveform(HistogramContext *h, AVFrame *inpicref, AVFrame *outpicref,
+                         int component, int intensity, int offset, int col_mode)
+{
+    const int plane = h->desc->comp[component].plane;
+    const int src_linesize = inpicref->linesize[plane];
+    const int dst_linesize = outpicref->linesize[plane];
+    uint8_t *src_data = inpicref->data[plane];
+    uint8_t *dst_data = outpicref->data[plane] + (col_mode ? offset * dst_linesize : offset);
+    uint8_t * const dst_line = dst_data;
+    const uint8_t max = 255 - intensity;
+    const int src_h = inpicref->height;
+    const int src_w = inpicref->width;
+    uint8_t *dst, *p;
+    int y;
+
+    for (y = 0; y < src_h; y++) {
+        const uint8_t *src_data_end = src_data + src_w;
+        dst = dst_line;
+        for (p = src_data; p < src_data_end; p++) {
+            uint8_t *target;
+            if (col_mode)
+                target = dst++ + dst_linesize * *p;
+            else
+                target = dst_data + *p;
+            if (*target <= max)
+                *target += intensity;
+            else
+                *target = 255;
+        }
+        src_data += src_linesize;
+        dst_data += dst_linesize;
+    }
+}
+
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
@@ -227,34 +263,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
         break;
     case MODE_WAVEFORM:
-        if (h->waveform_mode) {
-            for (k = 0; k < h->ncomp; k++) {
-                int offset = k * 256 * h->display_mode;
-                for (i = 0; i < inlink->w; i++) {
-                    for (j = 0; j < inlink->h; j++) {
-                        int pos = (offset +
-                                   in->data[k][j * in->linesize[k] + i]) *
-                                  out->linesize[k] + i;
-                        unsigned value = out->data[k][pos];
-                        value = FFMIN(value + h->step, 255);
-                        out->data[k][pos] = value;
-                    }
-                }
-            }
-        } else {
-            for (k = 0; k < h->ncomp; k++) {
-                int offset = k * 256 * h->display_mode;
-                for (i = 0; i < inlink->h; i++) {
-                    src = in ->data[k] + i * in ->linesize[k];
-                    dst = out->data[k] + i * out->linesize[k];
-                    for (j = 0; j < inlink->w; j++) {
-                        int pos = src[j] + offset;
-                        unsigned value = dst[pos];
-                        value = FFMIN(value + h->step, 255);
-                        dst[pos] = value;
-                    }
-                }
-            }
+        for (k = 0; k < h->ncomp; k++) {
+            int offset = k * 256 * h->display_mode;
+            gen_waveform(h, in, out, k, h->step, offset, h->waveform_mode);
         }
         break;
     case MODE_COLOR:
