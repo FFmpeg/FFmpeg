@@ -48,7 +48,7 @@ static const float qmf_48tap_half[24] = {
  * Generate common tables
  */
 
-void ff_atrac_generate_tables(void)
+av_cold void ff_atrac_generate_tables(void)
 {
     int i;
     float s;
