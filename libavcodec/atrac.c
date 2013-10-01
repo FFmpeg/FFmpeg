@@ -45,10 +45,6 @@ static const float qmf_48tap_half[24] = {
    -0.043596379,   -0.099384367,   0.13207909,    0.46424159
 };
 
-/**
- * Generate common tables
- */
-
 av_cold void ff_atrac_generate_tables(void)
 {
     int i;
@@ -67,20 +63,7 @@ av_cold void ff_atrac_generate_tables(void)
         }
 }
 
-
-/**
- * Quadrature mirror synthesis filter.
- *
- * @param inlo      lower part of spectrum
- * @param inhi      higher part of spectrum
- * @param nIn       size of spectrum buffer
- * @param pOut      out buffer
- * @param delayBuf  delayBuf buffer
- * @param temp      temp buffer
- */
-
-
-void ff_atrac_iqmf (float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp)
+void ff_atrac_iqmf(float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp)
 {
     int   i, j;
     float   *p1, *p3;
