@@ -1533,7 +1533,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 avpriv_set_pts_info(st, 64, descriptor->sample_rate.den, descriptor->sample_rate.num);
             } else {
                 av_log(mxf->fc, AV_LOG_WARNING, "invalid sample rate (%d/%d) "
-                       "found for stream #%, time base forced to 1/48000\n",
+                       "found for stream #%d, time base forced to 1/48000\n",
                        descriptor->sample_rate.num, descriptor->sample_rate.den,
                        st->index);
                 avpriv_set_pts_info(st, 64, 1, 48000);
