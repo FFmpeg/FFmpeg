@@ -400,3 +400,4 @@ TOOLS     = aviocat                                                     \
             probetest                                                   \
 
 $(SUBDIR)output-example$(EXESUF): ELIBS = $(patsubst %,$(LD_LIB),swscale avutil)
+$(SUBDIR)output-example$(EXESUF): $(call PATH_LIBNAME,swscale)
