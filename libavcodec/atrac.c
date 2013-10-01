@@ -63,7 +63,8 @@ av_cold void ff_atrac_generate_tables(void)
         }
 }
 
-void ff_atrac_iqmf(float *inlo, float *inhi, unsigned int nIn, float *pOut, float *delayBuf, float *temp)
+void ff_atrac_iqmf(float *inlo, float *inhi, unsigned int nIn, float *pOut,
+                   float *delayBuf, float *temp)
 {
     int   i, j;
     float   *p1, *p3;
