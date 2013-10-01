@@ -87,6 +87,18 @@ static const enum AVPixelFormat levels_pix_fmts[] = {
     AV_PIX_FMT_GRAY8, AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_NONE
 };
 
+static const enum AVPixelFormat waveform_pix_fmts[] = {
+     AV_PIX_FMT_GBRP,     AV_PIX_FMT_GBRAP,
+     AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV420P,
+     AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUV440P,
+     AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUV410P,
+     AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUVJ420P,
+     AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
+     AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+     AV_PIX_FMT_GRAY8,
+     AV_PIX_FMT_NONE
+};
+
 static int query_formats(AVFilterContext *ctx)
 {
     HistogramContext *h = ctx->priv;
@@ -94,6 +106,8 @@ static int query_formats(AVFilterContext *ctx)
 
     switch (h->mode) {
     case MODE_WAVEFORM:
+        pix_fmts = waveform_pix_fmts;
+        break;
     case MODE_LEVELS:
         pix_fmts = levels_pix_fmts;
         break;
@@ -175,8 +189,11 @@ static void gen_waveform(HistogramContext *h, AVFrame *inpicref, AVFrame *outpic
     uint8_t *dst_data = outpicref->data[plane] + (col_mode ? offset * dst_linesize : offset);
     uint8_t * const dst_line = dst_data;
     const uint8_t max = 255 - intensity;
-    const int src_h = inpicref->height;
-    const int src_w = inpicref->width;
+    const int is_chroma = (component == 1 || component == 2);
+    const int shift_w = (is_chroma ? h->desc->log2_chroma_w : 0);
+    const int shift_h = (is_chroma ? h->desc->log2_chroma_h : 0);
+    const int src_h = FF_CEIL_RSHIFT(inpicref->height, shift_h);
+    const int src_w = FF_CEIL_RSHIFT(inpicref->width, shift_w);
     uint8_t *dst, *p;
     int y;
 
@@ -186,9 +203,9 @@ static void gen_waveform(HistogramContext *h, AVFrame *inpicref, AVFrame *outpic
         for (p = src_data; p < src_data_end; p++) {
             uint8_t *target;
             if (col_mode)
-                target = dst++ + dst_linesize * *p;
+                target = dst++ + dst_linesize * (*p >> shift_h);
             else
-                target = dst_data + *p;
+                target = dst_data + (*p >> shift_w);
             if (*target <= max)
                 *target += intensity;
             else
@@ -218,9 +235,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     out->pts = in->pts;
 
-    for (k = 0; k < h->ncomp; k++)
-        for (i = 0; i < outlink->h; i++)
-            memset(out->data[k] + i * out->linesize[k], h->bg_color[k], outlink->w);
+    for (k = 0; k < h->ncomp; k++) {
+        int is_chroma = (k == 1 || k == 2);
+        int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->desc->log2_chroma_h : 0));
+        int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->desc->log2_chroma_w : 0));
+        for (i = 0; i < dst_h ; i++)
+            memset(out->data[h->desc->comp[k].plane] +
+                   i * out->linesize[h->desc->comp[k].plane],
+                   h->bg_color[k], dst_w);
+    }
 
     switch (h->mode) {
     case MODE_LEVELS:

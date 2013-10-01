@@ -57,7 +57,7 @@ FATE_FILTER_VSYNTH-$(CONFIG_HISTOGRAM_FILTER) += fate-filter-histogram-levels
 fate-filter-histogram-levels: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogram -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_HISTOGRAM_FILTER) += fate-filter-histogram-waveform
-fate-filter-histogram-waveform: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf histogram=mode=waveform -flags +bitexact -sws_flags +accurate_rnd+bitexact
+fate-filter-histogram-waveform: CMD = framecrc -c:v pgmyuv -i $(SRC) -vf format=yuv444p,histogram=mode=waveform -flags +bitexact -sws_flags +accurate_rnd+bitexact
 
 FATE_FILTER_VSYNTH-$(CONFIG_OVERLAY_FILTER) += fate-filter-overlay
 fate-filter-overlay: tests/data/filtergraphs/overlay
