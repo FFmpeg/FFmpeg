@@ -178,6 +178,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     unsigned int channel_mask;
     int i, log2_max_num_subframes;
 
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
+
     s->avctx = avctx;
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
