@@ -1,6 +1,7 @@
 /*
- * ATRAC common functions
- * Copyright (c) 2006-2008 Maxim Poliakovski
+ * Common functions for the ATRAC family of decoders
+ *
+ * Copyright (c) 2006-2013 Maxim Poliakovski
  * Copyright (c) 2006-2008 Benjamin Larsson
  *
  * This file is part of FFmpeg.
