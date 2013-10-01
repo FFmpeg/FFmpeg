@@ -4698,7 +4698,7 @@ It accepts the following values:
 @item levels
 standard histogram that display color components distribution in an image.
 Displays color graph for each color component. Shows distribution
-of the Y, U, V, A or G, B, R components, depending on input format,
+of the Y, U, V, A or R, G, B components, depending on input format,
 in current frame. Bellow each graph is color component scale meter.
 
 @item color

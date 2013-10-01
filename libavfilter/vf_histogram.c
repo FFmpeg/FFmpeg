@@ -248,12 +248,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     switch (h->mode) {
     case MODE_LEVELS:
         for (k = 0; k < h->ncomp; k++) {
+            const int p = h->desc->comp[k].plane;
             int start = k * (h->level_height + h->scale_height) * h->display_mode;
             double max_hval_log;
             unsigned max_hval = 0;
 
             for (i = 0; i < in->height; i++) {
-                src = in->data[k] + i * in->linesize[k];
+                src = in->data[p] + i * in->linesize[p];
                 for (j = 0; j < in->width; j++)
                     h->histogram[src[j]]++;
             }
@@ -275,11 +276,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                         for (l = 0; l < h->ncomp; l++)
                             out->data[l][(j + start) * out->linesize[l] + i] = h->fg_color[l];
                     } else {
-                        out->data[k][(j + start) * out->linesize[k] + i] = 255;
+                        out->data[p][(j + start) * out->linesize[p] + i] = 255;
                     }
                 }
                 for (j = h->level_height + h->scale_height - 1; j >= h->level_height; j--)
-                    out->data[k][(j + start) * out->linesize[k] + i] = i;
+                    out->data[p][(j + start) * out->linesize[p] + i] = i;
             }
 
             memset(h->histogram, 0, 256 * sizeof(unsigned));
