@@ -4201,7 +4201,7 @@ enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lO
 enabled opencl            && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
                                check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
                                die "ERROR: opencl not found"; } &&
-                             { enabled_any w32threads os2threads &&
+                             { ! enabled_any w32threads os2threads ||
                                die "opencl currently needs --enable-pthreads or --disable-w32threads"; } &&
                              { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
                                check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
