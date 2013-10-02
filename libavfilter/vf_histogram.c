@@ -183,15 +183,15 @@ static void gen_waveform(HistogramContext *h, AVFrame *inpicref, AVFrame *outpic
                          int component, int intensity, int offset, int col_mode)
 {
     const int plane = h->desc->comp[component].plane;
-    const int src_linesize = inpicref->linesize[plane];
-    const int dst_linesize = outpicref->linesize[plane];
-    uint8_t *src_data = inpicref->data[plane];
-    uint8_t *dst_data = outpicref->data[plane] + (col_mode ? offset * dst_linesize : offset);
-    uint8_t * const dst_line = dst_data;
-    const uint8_t max = 255 - intensity;
     const int is_chroma = (component == 1 || component == 2);
     const int shift_w = (is_chroma ? h->desc->log2_chroma_w : 0);
     const int shift_h = (is_chroma ? h->desc->log2_chroma_h : 0);
+    const int src_linesize = inpicref->linesize[plane];
+    const int dst_linesize = outpicref->linesize[plane];
+    uint8_t *src_data = inpicref->data[plane];
+    uint8_t *dst_data = outpicref->data[plane] + (col_mode ? (offset >> shift_h) * dst_linesize : offset >> shift_w);
+    uint8_t * const dst_line = dst_data;
+    const uint8_t max = 255 - intensity;
     const int src_h = FF_CEIL_RSHIFT(inpicref->height, shift_h);
     const int src_w = FF_CEIL_RSHIFT(inpicref->width, shift_w);
     uint8_t *dst, *p;
