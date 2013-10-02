@@ -25,6 +25,95 @@ enabled encoders.
 A description of some of the currently available audio encoders
 follows.
 
+@anchor{aacenc}
+@section aac
+
+Advanced Audio Coding (AAC) encoder.
+
+This encoder is an experimental FFmpeg-native AAC encoder. Currently only the
+low complexity (AAC-LC) profile is supported. To use this encoder, you must set
+@option{strict} option to @samp{experimental} or lower.
+
+As this encoder is experimental, unexpected behavior may exist from time to
+time. For a more stable AAC encoder, see @ref{libvo-aacenc}. However, be warned
+that it has a worse quality reported by some users.
+
+@c Comment this out until somebody writes the respective documentation.
+@c See also @ref{libfaac}, @ref{libaacplus}, and @ref{libfdk-aac-enc}.
+
+@subsection Options
+
+@table @option
+@item b
+Set bit rate in bits/s. Setting this automatically activates constant bit rate
+(CBR) mode.
+
+@item q
+Set quality for variable bit rate (VBR) mode. This option is valid only using
+the @command{ffmpeg} command-line tool. For library interface users, use
+@option{global_quality}.
+
+@item stereo_mode
+Set stereo encoding mode. Possible values:
+
+@table @samp
+@item auto
+Automatically selected by the encoder.
+
+@item ms_off
+Disable middle/side encoding. This is the default.
+
+@item ms_force
+Force middle/side encoding.
+@end table
+
+@item aac_coder
+Set AAC encoder coding method. Possible values:
+
+@table @samp
+@item 0
+FAAC-inspired method.
+
+This method is a simplified reimplementation of the method used in FAAC, which
+sets thresholds proportional to the band energies, and then decreases all the
+thresholds with quantizer steps to find the appropriate quantization with
+distortion below threshold band by band.
+
+The quality of this method is comparable to the two loop searching method
+descibed below, but somewhat a little better and slower.
+
+@item 1
+Average noise to mask ratio (ANMR) trellis-based solution.
+
+This has a theoretic best quality out of all the coding methods, but at the
+cost of the slowest speed.
+
+@item 2
+Two loop searching (TLS) method.
+
+This method first sets quantizers depending on band thresholds and then tries
+to find an optimal combination by adding or subtracting a specific value from
+all quantizers and adjusting some individual quantizer a little.
+
+This method produces similar quality with the FAAC method and is the default.
+
+@item 3
+Constant quantizer method.
+
+This method sets a constant quantizer for all bands. This is the fastest of all
+the methods, yet produces the worst quality.
+
+@end table
+
+@end table
+
+@subsection Tips and Tricks
+
+According to some reports
+(e.g. @url{http://d.hatena.ne.jp/kamedo2/20120729/1343545890}), setting the
+@option{cutoff} option to 15000 Hz greatly improves the quality of the output
+quality. As a result, we encourage you to do the same.
+
 @section ac3 and ac3_fixed
 
 AC-3 audio encoders.
@@ -420,26 +509,32 @@ Requires the presence of the libmp3lame headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libmp3lame}.
 
-@subsection Option Mapping
+@subsection Options
 
-The following options are supported by the libmp3lame wrapper,
-the LAME-equivalent options follow the FFmpeg ones.
+The following options are supported by the libmp3lame wrapper. The
+@command{lame}-equivalent of the options are listed in parentheses.
 
-@multitable @columnfractions .2 .2
-@item FFmpeg            @tab LAME
-@item b                 @tab b
-FFmpeg @code{b} option is expressed in bits/s, lame @code{bitrate}
-in kilobits/s.
-@item q                 @tab V
-Quality setting for VBR.
-@item compression_level @tab q
-Algorithm quality. Valid options are integers from 0-9.
-@item reservoir         @tab N.A.
-Enable use of bit reservoir. LAME has this enabled by default.
-@item joint_stereo      @tab -m j
-Enables the the encoder to use (on a frame by frame basis) either L/R
-stereo or mid/side stereo.
-@end multitable
+@table @option
+@item b (@emph{-b})
+Set bitrate expressed in bits/s for CBR. LAME @code{bitrate} is
+expressed in kilobits/s.
+
+@item q (@emph{-V})
+Set constant quality setting for VBR. This option is valid only
+using the @command{ffmpeg} command-line tool. For library interface
+users, use @option{global_quality}.
+
+@item compression_level (@emph{-q})
+Set algorithm quality. Valid arguments are integers in the 0-9 range,
+with 0 meaning highest quality but slowest, and 9 meaning fastest
+while producing the worst quality.
+
+@item reservoir
+Enable use of bit reservoir when set to 1. Default value is 1. LAME
+has this enabled by default, but can be overriden by use
+@option{--nores} option.
+
+@end table
 
 @section libopencore-amrnb
 
@@ -486,24 +581,26 @@ Requires the presence of the libtwolame headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libtwolame}.
 
-@subsection Options Mapping
+@subsection Options
 
 The following options are supported by the libtwolame wrapper. The
-TwoLAME-equivalent options follow the FFmpeg ones and are in
+@command{twolame}-equivalent options follow the FFmpeg ones and are in
 parentheses.
 
 @table @option
-@item b
-(b) Set bitrate in bits/s. Note that FFmpeg @code{b} option is
-expressed in bits/s, twolame @code{b} in kilobits/s. The default
-value is 128k.
+@item b (@emph{-b})
+Set bitrate expressed in bits/s for CBR. @command{twolame} @option{b}
+option is expressed in kilobits/s. Default value is 128k.
 
-@item q
-(V) Set quality for experimental VBR support. Maximum value range is
-from -50 to 50, useful range is from -10 to 10.
+@item q (@emph{-V})
+Set quality for experimental VBR support. Maximum value range is
+from -50 to 50, useful range is from -10 to 10. The higher the
+value, the better the quality. This option is valid only using the
+@command{ffmpeg} command-line tool. For library interface users,
+use @option{global_quality}.
 
-@item mode
-(mode) Set MPEG mode. Possible values:
+@item mode (@emph{--mode})
+Set the mode of the resulting audio. Possible values:
 
 @table @samp
 @item auto
@@ -518,29 +615,30 @@ Dual channel
 Mono
 @end table
 
-@item psymodel
-(psyc-mode) Set psychoacoustic model to use in encoding. The argument
-must be an integer between -1 and 4, inclusive. The higher the value,
-the better the quality. The default value is 3.
+@item psymodel (@emph{--psyc-mode})
+Set psychoacoustic model to use in encoding. The argument must be
+an integer between -1 and 4, inclusive. The higher the value, the
+better the quality. The default value is 3.
 
-@item energy_levels
-(energy) Enable energy levels extensions when set to 1. The default
-value is 0 (disabled).
+@item energy_levels (@emph{--energy})
+Enable energy levels extensions when set to 1. The default value is
+0 (disabled).
 
-@item error_protection
-(protect) Enable CRC error protection when set to 1. The default value
-is 0 (disabled).
+@item error_protection (@emph{--protect})
+Enable CRC error protection when set to 1. The default value is 0
+(disabled).
 
-@item copyright
-(copyright) Set MPEG audio copyright flag when set to 1. The default
-value is 0 (disabled).
+@item copyright (@emph{--copyright})
+Set MPEG audio copyright flag when set to 1. The default value is 0
+(disabled).
 
-@item original
-(original) Set MPEG audio original flag when set to 1. The default
-value is 0 (disabled).
+@item original (@emph{--original})
+Set MPEG audio original flag when set to 1. The default value is 0
+(disabled).
 
 @end table
 
+@anchor{libvo-aacenc}
 @section libvo-aacenc
 
 VisualOn AAC encoder
@@ -549,16 +647,19 @@ Requires the presence of the libvo-aacenc headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libvo-aacenc --enable-version3}.
 
+This encoder is considered to be worse than the
+@ref{aacenc,,native experimental FFmpeg AAC encoder}, according to
+multiple sources.
+
 @subsection Options
 
 The VisualOn AAC encoder only support encoding AAC-LC and up to 2
-channels. It is also CBR-only. It is considered to be worse than the
-native experimental FFmpeg AAC encoder.
+channels. It is also CBR-only.
 
 @table @option
 
 @item b
-Bitrate.
+Set bit rate in bits/s.
 
 @end table
 
