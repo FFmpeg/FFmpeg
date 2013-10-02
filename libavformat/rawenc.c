@@ -214,6 +214,18 @@ AVOutputFormat ff_h264_muxer = {
 };
 #endif
 
+#if CONFIG_HEVC_MUXER
+AVOutputFormat ff_hevc_muxer = {
+    .name              = "hevc",
+    .long_name         = NULL_IF_CONFIG_SMALL("raw HEVC video"),
+    .extensions        = "hevc",
+    .audio_codec       = AV_CODEC_ID_NONE,
+    .video_codec       = AV_CODEC_ID_HEVC,
+    .write_packet      = ff_raw_write_packet,
+    .flags             = AVFMT_NOTIMESTAMPS,
+};
+#endif
+
 #if CONFIG_M4V_MUXER
 AVOutputFormat ff_m4v_muxer = {
     .name              = "m4v",
