@@ -122,6 +122,20 @@ x264 is under the GNU Public License Version 2 or later
 details), you must upgrade FFmpeg's license to GPL in order to use it.
 @end float
 
+@section x265
+
+FFmpeg can make use of the x265 library for HEVC encoding.
+
+Go to @url{http://x265.org/developers.html} and follow the instructions
+for installing the library. Then pass @code{--enable-libx265} to configure
+to enable it.
+
+@float note
+x265 is under the GNU Public License Version 2 or later
+(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
+details), you must upgrade FFmpeg's license to GPL in order to use it.
+@end float
+
 @section libilbc
 
 iLBC is a narrowband speech codec that has been made freely available
@@ -342,7 +356,7 @@ library:
 @item raw H.261                 @tab X @tab X
 @item raw H.263                 @tab X @tab X
 @item raw H.264                 @tab X @tab X
-@item raw HEVC                  @tab   @tab X
+@item raw HEVC                  @tab X @tab X
 @item raw Ingenient MJPEG       @tab   @tab X
 @item raw MJPEG                 @tab X @tab X
 @item raw MLP                   @tab   @tab X
@@ -612,7 +626,8 @@ following image formats are supported:
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
     @tab encoding supported through external library libx264
-@item HEVC                   @tab     @tab  X
+@item HEVC                   @tab  X  @tab  X
+    @tab encoding supported through the external library libx265
 @item HNM version 4          @tab     @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item HuffYUV FFmpeg variant @tab  X  @tab  X
