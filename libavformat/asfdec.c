@@ -754,7 +754,9 @@ static int asf_read_header(AVFormatContext *s)
             if (ret < 0)
                 return ret;
         } else if (!ff_guidcmp(&g, &ff_asf_stream_header)) {
-            asf_read_stream_properties(s, gsize);
+            int ret = asf_read_stream_properties(s, gsize);
+            if (ret < 0)
+                return ret;
         } else if (!ff_guidcmp(&g, &ff_asf_comment_header)) {
             asf_read_content_desc(s, gsize);
         } else if (!ff_guidcmp(&g, &ff_asf_language_guid)) {
