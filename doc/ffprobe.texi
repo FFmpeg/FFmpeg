@@ -337,6 +337,39 @@ A writer may accept one or more arguments, which specify the options
 to adopt. The options are specified as a list of @var{key}=@var{value}
 pairs, separated by ":".
 
+All writers support the following options:
+
+@table @option
+@item string_validation, sv
+Set string validation mode.
+
+The following values are accepted.
+@table @samp
+@item fail
+The writer will fail immediately in case an invalid string (UTF-8)
+sequence or code point is found in the input. This is especially
+useful to validate input metadata.
+
+@item ignore
+Any validation error will be ignored. This will result in possibly
+broken output, especially with the json or xml writer.
+
+@item replace
+The writer will substitute invalid UTF-8 sequences or code points with
+the string specified with the @option{string_validation_replacement}.
+@end table
+
+Default value is @samp{replace}.
+
+@item string_validation_replacement, svr
+Set replacement string to use in case @option{string_validation} is
+set to @samp{replace}.
+
+In case the option is not specified, the writer will assume the empty
+string, that is it will remove the invalid sequences from the input
+strings.
+@end table
+
 A description of the currently available writers follows.
 
 @section default

@@ -258,6 +258,13 @@ typedef struct WriterContext WriterContext;
 #define WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS 1
 #define WRITER_FLAG_PUT_PACKETS_AND_FRAMES_IN_SAME_CHAPTER 2
 
+typedef enum {
+    WRITER_STRING_VALIDATION_FAIL,
+    WRITER_STRING_VALIDATION_REPLACE,
+    WRITER_STRING_VALIDATION_IGNORE,
+    WRITER_STRING_VALIDATION_NB,
+} StringValidation;
+
 typedef struct Writer {
     const AVClass *priv_class;      ///< private class of the writer, if any
     int priv_size;                  ///< private size for the writer context
@@ -298,6 +305,10 @@ struct WriterContext {
     unsigned int nb_section_packet; ///< number of the packet section in case we are in "packets_and_frames" section
     unsigned int nb_section_frame;  ///< number of the frame  section in case we are in "packets_and_frames" section
     unsigned int nb_section_packet_frame; ///< nb_section_packet or nb_section_frame according if is_packets_and_frames
+
+    StringValidation string_validation;
+    char *string_validation_replacement;
+    unsigned int string_validation_utf8_flags;
 };
 
 static const char *writer_get_name(void *p)
@@ -307,6 +318,19 @@ static const char *writer_get_name(void *p)
 }
 
 #define OFFSET(x) offsetof(WriterContext, x)
+
+static const AVOption writer_options[] = {
+    { "string_validation", "set string validation mode",
+      OFFSET(string_validation), AV_OPT_TYPE_INT, {.i64=WRITER_STRING_VALIDATION_REPLACE}, 0, WRITER_STRING_VALIDATION_NB-1, .unit = "sv" },
+    { "sv", "set string validation mode",
+      OFFSET(string_validation), AV_OPT_TYPE_INT, {.i64=WRITER_STRING_VALIDATION_REPLACE}, 0, WRITER_STRING_VALIDATION_NB-1, .unit = "sv" },
+    { "ignore",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = WRITER_STRING_VALIDATION_IGNORE},  .unit = "sv" },
+    { "replace", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = WRITER_STRING_VALIDATION_REPLACE}, .unit = "sv" },
+    { "fail",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = WRITER_STRING_VALIDATION_FAIL},    .unit = "sv" },
+    { "string_validation_replacement", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, {.str=""}},
+    { "svr", "set string validation replacement string", OFFSET(string_validation_replacement), AV_OPT_TYPE_STRING, {.str=""}},
+    { NULL },
+};
 
 static void *writer_child_next(void *obj, void *prev)
 {
@@ -321,6 +345,7 @@ static const AVClass writer_class = {
     writer_get_name,
     NULL,
     LIBAVUTIL_VERSION_INT,
+    .option = writer_options,
     .child_next = writer_child_next,
 };
 
@@ -340,6 +365,15 @@ static void writer_close(WriterContext **wctx)
     av_freep(&((*wctx)->priv));
     av_freep(wctx);
 }
+
+static void bprint_bytes(AVBPrint *bp, const uint8_t *ubuf, size_t ubuf_size)
+{
+    int i;
+    av_bprintf(bp, "0X");
+    for (i = 0; i < ubuf_size; i++)
+        av_bprintf(bp, "%02X", ubuf[i]);
+}
+
 
 static int writer_open(WriterContext **wctx, const Writer *writer, const char *args,
                        const struct section *sections, int nb_sections)
@@ -391,6 +425,26 @@ static int writer_open(WriterContext **wctx, const Writer *writer, const char *a
         }
 
         av_dict_free(&opts);
+    }
+
+    /* validate replace string */
+    {
+        const uint8_t *p = (*wctx)->string_validation_replacement;
+        const uint8_t *endp = p + strlen(p);
+        while (*p) {
+            const uint8_t *p0 = p;
+            int32_t code;
+            ret = av_utf8_decode(&code, &p, endp, (*wctx)->string_validation_utf8_flags);
+            if (ret < 0) {
+                AVBPrint bp;
+                av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+                bprint_bytes(&bp, p0, p-p0),
+                    av_log(wctx, AV_LOG_ERROR,
+                           "Invalid UTF8 sequence %s found in string validation replace '%s'\n",
+                           bp.str, (*wctx)->string_validation_replacement);
+                return ret;
+            }
+        }
     }
 
     for (i = 0; i < SECTION_MAX_NB_LEVELS; i++)
@@ -460,17 +514,94 @@ static inline void writer_print_integer(WriterContext *wctx,
     }
 }
 
+static inline int validate_string(WriterContext *wctx, char **dstp, const char *src)
+{
+    const uint8_t *p, *endp;
+    AVBPrint dstbuf;
+    int invalid_chars_nb = 0, ret = 0;
+
+    av_bprint_init(&dstbuf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    endp = src + strlen(src);
+    for (p = (uint8_t *)src; *p;) {
+        uint32_t code;
+        int invalid = 0;
+        const uint8_t *p0 = p;
+
+        if (av_utf8_decode(&code, &p, endp, wctx->string_validation_utf8_flags) < 0) {
+            AVBPrint bp;
+            av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+            bprint_bytes(&bp, p0, p-p0);
+            av_log(wctx, AV_LOG_DEBUG,
+                   "Invalid UTF-8 sequence %s found in string '%s'\n", bp.str, src);
+            invalid = 1;
+        }
+
+        if (invalid) {
+            invalid_chars_nb++;
+
+            switch (wctx->string_validation) {
+            case WRITER_STRING_VALIDATION_FAIL:
+                av_log(wctx, AV_LOG_ERROR,
+                       "Invalid UTF-8 sequence found in string '%s'\n", src);
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+                break;
+
+            case WRITER_STRING_VALIDATION_REPLACE:
+                av_bprintf(&dstbuf, "%s", wctx->string_validation_replacement);
+                break;
+            }
+        }
+
+        if (!invalid || wctx->string_validation == WRITER_STRING_VALIDATION_IGNORE)
+            av_bprint_append_data(&dstbuf, p0, p-p0);
+    }
+
+    if (invalid_chars_nb && wctx->string_validation == WRITER_STRING_VALIDATION_REPLACE) {
+        av_log(wctx, AV_LOG_WARNING,
+               "%d invalid UTF-8 sequence(s) found in string '%s', replaced with '%s'\n",
+               invalid_chars_nb, src, wctx->string_validation_replacement);
+    }
+
+end:
+    av_bprint_finalize(&dstbuf, dstp);
+    return ret;
+}
+
+#define PRINT_STRING_OPT      1
+#define PRINT_STRING_VALIDATE 2
+
 static inline int writer_print_string(WriterContext *wctx,
-                                      const char *key, const char *val, int opt)
+                                      const char *key, const char *val, int flags)
 {
     const struct section *section = wctx->section[wctx->level];
     int ret = 0;
 
-    if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
+    if ((flags & PRINT_STRING_OPT)
+        && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
         return 0;
 
     if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
-        wctx->writer->print_string(wctx, key, val);
+        if (flags & PRINT_STRING_VALIDATE) {
+            char *key1 = NULL, *val1 = NULL;
+            ret = validate_string(wctx, &key1, key);
+            if (ret < 0) goto end;
+            ret = validate_string(wctx, &val1, val);
+            if (ret < 0) goto end;
+            wctx->writer->print_string(wctx, key1, val1);
+        end:
+            if (ret < 0) {
+                av_log(wctx, AV_LOG_ERROR,
+                       "Invalid key=value string combination %s=%s in section %s\n",
+                       key, val, section->unique_name);
+            }
+            av_free(key1);
+            av_free(val1);
+        } else {
+            wctx->writer->print_string(wctx, key, val);
+        }
+
         wctx->nb_item[wctx->level]++;
     }
 
@@ -492,7 +623,7 @@ static void writer_print_time(WriterContext *wctx, const char *key,
     char buf[128];
 
     if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
-        writer_print_string(wctx, key, "N/A", 1);
+        writer_print_string(wctx, key, "N/A", PRINT_STRING_OPT);
     } else {
         double d = ts * av_q2d(*time_base);
         struct unit_value uv;
@@ -506,7 +637,7 @@ static void writer_print_time(WriterContext *wctx, const char *key,
 static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts, int is_duration)
 {
     if ((!is_duration && ts == AV_NOPTS_VALUE) || (is_duration && ts == 0)) {
-        writer_print_string(wctx, key, "N/A", 1);
+        writer_print_string(wctx, key, "N/A", PRINT_STRING_OPT);
     } else {
         writer_print_integer(wctx, key, ts);
     }
@@ -1476,7 +1607,8 @@ static void writer_register_all(void)
 #define print_int(k, v)         writer_print_integer(w, k, v)
 #define print_q(k, v, s)        writer_print_rational(w, k, v, s)
 #define print_str(k, v)         writer_print_string(w, k, v, 0)
-#define print_str_opt(k, v)     writer_print_string(w, k, v, 1)
+#define print_str_opt(k, v)     writer_print_string(w, k, v, PRINT_STRING_OPT)
+#define print_str_validate(k, v) writer_print_string(w, k, v, PRINT_STRING_VALIDATE)
 #define print_time(k, v, tb)    writer_print_time(w, k, v, tb, 0)
 #define print_ts(k, v)          writer_print_ts(w, k, v, 0)
 #define print_duration_time(k, v, tb) writer_print_time(w, k, v, tb, 1)
@@ -1491,21 +1623,20 @@ static void writer_register_all(void)
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 
-static inline int show_tags(WriterContext *wctx, AVDictionary *tags, int section_id)
+static inline int show_tags(WriterContext *w, AVDictionary *tags, int section_id)
 {
     AVDictionaryEntry *tag = NULL;
     int ret = 0;
 
     if (!tags)
         return 0;
-    writer_print_section_header(wctx, section_id);
+    writer_print_section_header(w, section_id);
 
     while ((tag = av_dict_get(tags, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        ret = writer_print_string(wctx, tag->key, tag->value, 0);
-        if (ret < 0)
+        if ((ret = print_str_validate(tag->key, tag->value)) < 0)
             break;
     }
-    writer_print_section_footer(wctx);
+    writer_print_section_footer(w);
 
     return ret;
 }
@@ -2054,7 +2185,7 @@ static int show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     int ret = 0;
 
     writer_print_section_header(w, SECTION_ID_FORMAT);
-    print_str("filename",         fmt_ctx->filename);
+    print_str_validate("filename", fmt_ctx->filename);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_int("nb_programs",      fmt_ctx->nb_programs);
     print_str("format_name",      fmt_ctx->iformat->name);
@@ -2755,6 +2886,9 @@ int main(int argc, char **argv)
 
     if ((ret = writer_open(&wctx, w, w_args,
                            sections, FF_ARRAY_ELEMS(sections))) >= 0) {
+        if (w == &xml_writer)
+            wctx->string_validation_utf8_flags |= AV_UTF8_FLAG_EXCLUDE_XML_INVALID_CONTROL_CODES;
+
         writer_print_section_header(wctx, SECTION_ID_ROOT);
 
         if (do_show_program_version)

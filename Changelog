@@ -7,6 +7,7 @@ version <next>
 - Live HDS muxer
 - setsar/setdar filters now support variables in ratio expressions
 - elbg filter
+- string validation in ffprobe
 
 
 version 2.1:
