@@ -2636,7 +2636,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
     sc = st->priv_data;
-    if (sc->pseudo_stream_id+1 != frag->stsd_id)
+    if (sc->pseudo_stream_id+1 != frag->stsd_id && sc->pseudo_stream_id != -1)
         return 0;
     avio_r8(pb); /* version */
     flags = avio_rb24(pb);
