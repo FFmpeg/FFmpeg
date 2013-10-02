@@ -295,6 +295,11 @@ static av_always_inline av_const int av_popcount64_c(uint64_t x)
  *                 input, this could be *ptr++.
  * @param ERROR    Expression to be evaluated on invalid input,
  *                 typically a goto statement.
+ *
+ * @warning ERROR should not contain a loop control statement which
+ * could interact with the internal while loop, and should force an
+ * exit from the macro code (e.g. through a goto or a return) in order
+ * to prevent undefined results.
  */
 #define GET_UTF8(val, GET_BYTE, ERROR)\
     val= GET_BYTE;\
