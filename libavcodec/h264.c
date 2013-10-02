@@ -3473,7 +3473,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
         h->avctx->pix_fmt = ret;
 
         av_log(h->avctx, AV_LOG_INFO, "Reinit context to %dx%d, "
-               "pix_fmt: %d\n", h->width, h->height, h->avctx->pix_fmt);
+               "pix_fmt: %s\n", h->width, h->height, av_get_pix_fmt_name(h->avctx->pix_fmt));
 
         if ((ret = h264_slice_header_init(h, 1)) < 0) {
             av_log(h->avctx, AV_LOG_ERROR,
