@@ -204,6 +204,7 @@ External library support:
   --enable-libwavpack      enable wavpack encoding via libwavpack [no]
   --enable-libwebp         enable WebP encoding via libwebp [no]
   --enable-libx264         enable H.264 encoding via x264 [no]
+  --enable-libx265         enable HEVC encoding via x265 [no]
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
@@ -1128,6 +1129,7 @@ EXTERNAL_LIBRARY_LIST="
     libwavpack
     libwebp
     libx264
+    libx265
     libxavs
     libxvid
     openssl
@@ -1885,6 +1887,7 @@ libvpx_vp9_encoder_deps="libvpx"
 libwavpack_encoder_deps="libwavpack"
 libwebp_encoder_deps="libwebp"
 libx264_encoder_deps="libx264"
+libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 
@@ -3530,6 +3533,7 @@ die_license_disabled() {
 
 die_license_disabled gpl libcdio
 die_license_disabled gpl libx264
+die_license_disabled gpl libx265
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
@@ -3954,6 +3958,9 @@ enabled libwebp           && require_pkg_config libwebp webp/encode.h WebPGetEnc
 enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &&
                              { check_cpp_condition x264.h "X264_BUILD >= 118" ||
                                die "ERROR: libx264 version must be >= 0.118."; }
+enabled libx265           && require_pkg_config x265 x265.h x265_encoder_encode &&
+                             { check_cpp_condition x265.h "X265_BUILD >= 5" ||
+                               die "ERROR: libx265 version must be >= 5."; }
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled openssl           && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||

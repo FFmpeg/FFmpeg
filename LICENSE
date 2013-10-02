@@ -46,7 +46,7 @@ affect the licensing of binaries resulting from the combination.
 compatible libraries
 --------------------
 
-The libcdio, libx264, libxavs and libxvid libraries are under GPL. When
+The libcdio, libx264, libx265, libxavs and libxvid libraries are under GPL. When
 combining them with Libav, Libav needs to be licensed as GPL as well by
 passing --enable-gpl to configure.
 
