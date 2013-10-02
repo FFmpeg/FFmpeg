@@ -79,9 +79,9 @@ AVFILTER_DEFINE_CLASS(afade);
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    AudioFadeContext *afade = ctx->priv;
+    AudioFadeContext *s = ctx->priv;
 
-    if (INT64_MAX - afade->nb_samples < afade->start_sample)
+    if (INT64_MAX - s->nb_samples < s->start_sample)
         return AVERROR(EINVAL);
 
     return 0;
@@ -202,38 +202,38 @@ FADE(s32, int32_t)
 
 static int config_input(AVFilterLink *inlink)
 {
-    AVFilterContext *ctx    = inlink->dst;
-    AudioFadeContext *afade = ctx->priv;
+    AVFilterContext *ctx = inlink->dst;
+    AudioFadeContext *s  = ctx->priv;
 
     switch (inlink->format) {
-    case AV_SAMPLE_FMT_DBL:  afade->fade_samples = fade_samples_dbl;  break;
-    case AV_SAMPLE_FMT_DBLP: afade->fade_samples = fade_samples_dblp; break;
-    case AV_SAMPLE_FMT_FLT:  afade->fade_samples = fade_samples_flt;  break;
-    case AV_SAMPLE_FMT_FLTP: afade->fade_samples = fade_samples_fltp; break;
-    case AV_SAMPLE_FMT_S16:  afade->fade_samples = fade_samples_s16;  break;
-    case AV_SAMPLE_FMT_S16P: afade->fade_samples = fade_samples_s16p; break;
-    case AV_SAMPLE_FMT_S32:  afade->fade_samples = fade_samples_s32;  break;
-    case AV_SAMPLE_FMT_S32P: afade->fade_samples = fade_samples_s32p; break;
+    case AV_SAMPLE_FMT_DBL:  s->fade_samples = fade_samples_dbl;  break;
+    case AV_SAMPLE_FMT_DBLP: s->fade_samples = fade_samples_dblp; break;
+    case AV_SAMPLE_FMT_FLT:  s->fade_samples = fade_samples_flt;  break;
+    case AV_SAMPLE_FMT_FLTP: s->fade_samples = fade_samples_fltp; break;
+    case AV_SAMPLE_FMT_S16:  s->fade_samples = fade_samples_s16;  break;
+    case AV_SAMPLE_FMT_S16P: s->fade_samples = fade_samples_s16p; break;
+    case AV_SAMPLE_FMT_S32:  s->fade_samples = fade_samples_s32;  break;
+    case AV_SAMPLE_FMT_S32P: s->fade_samples = fade_samples_s32p; break;
     }
 
-    if (afade->duration)
-        afade->nb_samples = av_rescale(afade->duration, inlink->sample_rate, AV_TIME_BASE);
-    if (afade->start_time)
-        afade->start_sample = av_rescale(afade->start_time, inlink->sample_rate, AV_TIME_BASE);
+    if (s->duration)
+        s->nb_samples = av_rescale(s->duration, inlink->sample_rate, AV_TIME_BASE);
+    if (s->start_time)
+        s->start_sample = av_rescale(s->start_time, inlink->sample_rate, AV_TIME_BASE);
 
     return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
-    AudioFadeContext *afade = inlink->dst->priv;
+    AudioFadeContext *s     = inlink->dst->priv;
     AVFilterLink *outlink   = inlink->dst->outputs[0];
     int nb_samples          = buf->nb_samples;
     AVFrame *out_buf;
     int64_t cur_sample = av_rescale_q(buf->pts, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
-    if ((!afade->type && (afade->start_sample + afade->nb_samples < cur_sample)) ||
-        ( afade->type && (cur_sample + afade->nb_samples < afade->start_sample)))
+    if ((!s->type && (s->start_sample + s->nb_samples < cur_sample)) ||
+        ( s->type && (cur_sample + s->nb_samples < s->start_sample)))
         return ff_filter_frame(outlink, buf);
 
     if (av_frame_is_writable(buf)) {
@@ -245,22 +245,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         av_frame_copy_props(out_buf, buf);
     }
 
-    if ((!afade->type && (cur_sample + nb_samples < afade->start_sample)) ||
-        ( afade->type && (afade->start_sample + afade->nb_samples < cur_sample))) {
+    if ((!s->type && (cur_sample + nb_samples < s->start_sample)) ||
+        ( s->type && (s->start_sample + s->nb_samples < cur_sample))) {
         av_samples_set_silence(out_buf->extended_data, 0, nb_samples,
                                av_frame_get_channels(out_buf), out_buf->format);
     } else {
         int64_t start;
 
-        if (!afade->type)
-            start = cur_sample - afade->start_sample;
+        if (!s->type)
+            start = cur_sample - s->start_sample;
         else
-            start = afade->start_sample + afade->nb_samples - cur_sample;
+            start = s->start_sample + s->nb_samples - cur_sample;
 
-        afade->fade_samples(out_buf->extended_data, buf->extended_data,
-                            nb_samples, av_frame_get_channels(buf),
-                            afade->type ? -1 : 1, start,
-                            afade->nb_samples, afade->curve);
+        s->fade_samples(out_buf->extended_data, buf->extended_data,
+                        nb_samples, av_frame_get_channels(buf),
+                        s->type ? -1 : 1, start,
+                        s->nb_samples, s->curve);
     }
 
     if (buf != out_buf)
