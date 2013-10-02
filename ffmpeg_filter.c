@@ -92,6 +92,11 @@ void choose_sample_fmt(AVStream *st, AVCodec *codec)
 
 static char *choose_pix_fmts(OutputStream *ost)
 {
+    AVDictionaryEntry *strict_dict = av_dict_get(ost->opts, "strict", NULL, 0);
+    if (strict_dict)
+        // used by choose_pixel_fmt() and below
+        av_opt_set(ost->st->codec, "strict", strict_dict->value, 0);
+
      if (ost->keep_pix_fmt) {
         if (ost->filter)
             avfilter_graph_set_auto_convert(ost->filter->graph->graph,
