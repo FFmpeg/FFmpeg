@@ -157,6 +157,7 @@ TESTPROGS = adler32                                                     \
             sha                                                         \
             sha512                                                      \
             tree                                                        \
+            utf8                                                        \
             xtea                                                        \
 
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
