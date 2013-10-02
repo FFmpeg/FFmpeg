@@ -4751,6 +4751,12 @@ Default value is @code{10}. Allowed range is [1, 255].
 Set mode for @code{waveform}. Can be either @code{row}, or @code{column}.
 Default is @code{row}.
 
+@item waveform_mirror
+Set mirroring mode for @code{waveform}. @code{0} means unmirrored, @code{1}
+means mirrored. In mirrored mode, higher values will be represented on the left
+side for @code{row} mode and at the top for @code{column} mode. Default is
+@code{0} (unmirrored).
+
 @item display_mode
 Set display mode for @code{waveform} and @code{levels}.
 It accepts the following values:
