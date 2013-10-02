@@ -71,6 +71,9 @@ void avcodec_get_chroma_sub_sample(enum AVPixelFormat pix_fmt, int *h_shift, int
 }
 
 static int get_color_type(const AVPixFmtDescriptor *desc) {
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL)
+        return FF_COLOR_RGB;
+
     if(desc->nb_components == 1 || desc->nb_components == 2)
         return FF_COLOR_GRAY;
 
