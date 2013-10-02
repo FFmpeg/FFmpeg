@@ -428,18 +428,21 @@ static inline void writer_print_integer(WriterContext *wctx,
     }
 }
 
-static inline void writer_print_string(WriterContext *wctx,
-                                       const char *key, const char *val, int opt)
+static inline int writer_print_string(WriterContext *wctx,
+                                      const char *key, const char *val, int opt)
 {
     const struct section *section = wctx->section[wctx->level];
+    int ret = 0;
 
     if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
-        return;
+        return 0;
 
     if (section->show_all_entries || av_dict_get(section->entries_to_show, key, NULL, 0)) {
         wctx->writer->print_string(wctx, key, val);
         wctx->nb_item[wctx->level]++;
     }
+
+    return ret;
 }
 
 static inline void writer_print_rational(WriterContext *wctx,
@@ -1455,16 +1458,23 @@ static void writer_register_all(void)
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 
-static inline void show_tags(WriterContext *wctx, AVDictionary *tags, int section_id)
+static inline int show_tags(WriterContext *wctx, AVDictionary *tags, int section_id)
 {
     AVDictionaryEntry *tag = NULL;
+    int ret = 0;
 
     if (!tags)
-        return;
+        return 0;
     writer_print_section_header(wctx, section_id);
-    while ((tag = av_dict_get(tags, "", tag, AV_DICT_IGNORE_SUFFIX)))
-        writer_print_string(wctx, tag->key, tag->value, 0);
+
+    while ((tag = av_dict_get(tags, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        ret = writer_print_string(wctx, tag->key, tag->value, 0);
+        if (ret < 0)
+            break;
+    }
     writer_print_section_footer(wctx);
+
+    return ret;
 }
 
 static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pkt, int packet_idx)
@@ -1723,7 +1733,7 @@ end:
     return ret;
 }
 
-static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
+static int read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     int i, ret = 0;
     int64_t cur_ts = fmt_ctx->start_time;
@@ -1738,9 +1748,11 @@ static void read_packets(WriterContext *w, AVFormatContext *fmt_ctx)
                 break;
         }
     }
+
+    return ret;
 }
 
-static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_idx, int in_program)
+static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_idx, int in_program)
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
@@ -1749,6 +1761,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     const char *s;
     AVRational sar, dar;
     AVBPrint pbuf;
+    int ret = 0;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -1903,26 +1916,34 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     writer_print_section_footer(w);
     }
 
-    show_tags(w, stream->metadata, in_program ? SECTION_ID_PROGRAM_STREAM_TAGS : SECTION_ID_STREAM_TAGS);
+    ret = show_tags(w, stream->metadata, in_program ? SECTION_ID_PROGRAM_STREAM_TAGS : SECTION_ID_STREAM_TAGS);
 
     writer_print_section_footer(w);
     av_bprint_finalize(&pbuf, NULL);
     fflush(stdout);
+
+    return ret;
 }
 
-static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
 {
-    int i;
+    int i, ret = 0;
+
     writer_print_section_header(w, SECTION_ID_STREAMS);
     for (i = 0; i < fmt_ctx->nb_streams; i++)
-        if (selected_streams[i])
-            show_stream(w, fmt_ctx, i, 0);
+        if (selected_streams[i]) {
+            ret = show_stream(w, fmt_ctx, i, 0);
+            if (ret < 0)
+                break;
+        }
     writer_print_section_footer(w);
+
+    return ret;
 }
 
-static void show_program(WriterContext *w, AVFormatContext *fmt_ctx, AVProgram *program)
+static int show_program(WriterContext *w, AVFormatContext *fmt_ctx, AVProgram *program)
 {
-    int i;
+    int i, ret = 0;
 
     writer_print_section_header(w, SECTION_ID_PROGRAM);
     print_int("program_id", program->id);
@@ -1934,35 +1955,45 @@ static void show_program(WriterContext *w, AVFormatContext *fmt_ctx, AVProgram *
     print_time("start_time", program->start_time, &AV_TIME_BASE_Q);
     print_ts("end_pts", program->end_time);
     print_time("end_time", program->end_time, &AV_TIME_BASE_Q);
-    show_tags(w, program->metadata, SECTION_ID_PROGRAM_TAGS);
+    ret = show_tags(w, program->metadata, SECTION_ID_PROGRAM_TAGS);
+    if (ret < 0)
+        goto end;
 
     writer_print_section_header(w, SECTION_ID_PROGRAM_STREAMS);
     for (i = 0; i < program->nb_stream_indexes; i++) {
-        if (selected_streams[program->stream_index[i]])
-            show_stream(w, fmt_ctx, program->stream_index[i], 1);
+        if (selected_streams[program->stream_index[i]]) {
+            ret = show_stream(w, fmt_ctx, program->stream_index[i], 1);
+            if (ret < 0)
+                break;
+        }
     }
     writer_print_section_footer(w);
 
+end:
     writer_print_section_footer(w);
+    return ret;
 }
 
-static void show_programs(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_programs(WriterContext *w, AVFormatContext *fmt_ctx)
 {
-    int i;
+    int i, ret = 0;
 
     writer_print_section_header(w, SECTION_ID_PROGRAMS);
     for (i = 0; i < fmt_ctx->nb_programs; i++) {
         AVProgram *program = fmt_ctx->programs[i];
         if (!program)
             continue;
-        show_program(w, fmt_ctx, program);
+        ret = show_program(w, fmt_ctx, program);
+        if (ret < 0)
+            break;
     }
     writer_print_section_footer(w);
+    return ret;
 }
 
-static void show_chapters(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_chapters(WriterContext *w, AVFormatContext *fmt_ctx)
 {
-    int i;
+    int i, ret = 0;
 
     writer_print_section_header(w, SECTION_ID_CHAPTERS);
     for (i = 0; i < fmt_ctx->nb_chapters; i++) {
@@ -1975,16 +2006,19 @@ static void show_chapters(WriterContext *w, AVFormatContext *fmt_ctx)
         print_time("start_time", chapter->start, &chapter->time_base);
         print_int("end", chapter->end);
         print_time("end_time", chapter->end, &chapter->time_base);
-        show_tags(w, chapter->metadata, SECTION_ID_CHAPTER_TAGS);
+        ret = show_tags(w, chapter->metadata, SECTION_ID_CHAPTER_TAGS);
         writer_print_section_footer(w);
     }
     writer_print_section_footer(w);
+
+    return ret;
 }
 
-static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
+static int show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
     int64_t size = fmt_ctx->pb ? avio_size(fmt_ctx->pb) : -1;
+    int ret = 0;
 
     writer_print_section_header(w, SECTION_ID_FORMAT);
     print_str("filename",         fmt_ctx->filename);
@@ -2002,10 +2036,11 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     if (fmt_ctx->bit_rate > 0) print_val    ("bit_rate", fmt_ctx->bit_rate, unit_bit_per_second_str);
     else                       print_str_opt("bit_rate", "N/A");
     print_int("probe_score", av_format_get_probe_score(fmt_ctx));
-    show_tags(w, fmt_ctx->metadata, SECTION_ID_FORMAT_TAGS);
+    ret = show_tags(w, fmt_ctx->metadata, SECTION_ID_FORMAT_TAGS);
 
     writer_print_section_footer(w);
     fflush(stdout);
+    return ret;
 }
 
 static void show_error(WriterContext *w, int err)
@@ -2111,6 +2146,8 @@ static int probe_file(WriterContext *wctx, const char *filename)
     if (ret < 0)
         return ret;
 
+#define CHECK_END if (ret < 0) goto end
+
     nb_streams_frames  = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_frames));
     nb_streams_packets = av_calloc(fmt_ctx->nb_streams, sizeof(*nb_streams_packets));
     selected_streams   = av_calloc(fmt_ctx->nb_streams, sizeof(*selected_streams));
@@ -2120,8 +2157,7 @@ static int probe_file(WriterContext *wctx, const char *filename)
             ret = avformat_match_stream_specifier(fmt_ctx,
                                                   fmt_ctx->streams[i],
                                                   stream_specifier);
-            if (ret < 0)
-                goto end;
+            CHECK_END;
             else
                 selected_streams[i] = ret;
             ret = 0;
@@ -2140,18 +2176,28 @@ static int probe_file(WriterContext *wctx, const char *filename)
             section_id = SECTION_ID_FRAMES;
         if (do_show_frames || do_show_packets)
             writer_print_section_header(wctx, section_id);
-        read_packets(wctx, fmt_ctx);
+        ret = read_packets(wctx, fmt_ctx);
         if (do_show_frames || do_show_packets)
             writer_print_section_footer(wctx);
+        CHECK_END;
     }
-    if (do_show_programs)
-        show_programs(wctx, fmt_ctx);
-    if (do_show_streams)
-        show_streams(wctx, fmt_ctx);
-    if (do_show_chapters)
-        show_chapters(wctx, fmt_ctx);
-    if (do_show_format)
-        show_format(wctx, fmt_ctx);
+    if (do_show_programs) {
+        ret = show_programs(wctx, fmt_ctx);
+        CHECK_END;
+    }
+
+    if (do_show_streams) {
+        ret = show_streams(wctx, fmt_ctx);
+        CHECK_END;
+    }
+    if (do_show_chapters) {
+        ret = show_chapters(wctx, fmt_ctx);
+        CHECK_END;
+    }
+    if (do_show_format) {
+        ret = show_format(wctx, fmt_ctx);
+        CHECK_END;
+    }
 
 end:
     close_input_file(&fmt_ctx);
