@@ -55,14 +55,14 @@
 #define SAMPLES_PER_FRAME 1024
 #define MDCT_SIZE          512
 
-typedef struct GainInfo {
+typedef struct AtracGainInfo {
     int num_gain_data;
     int lev_code[8];
     int loc_code[8];
-} GainInfo;
+} AtracGainInfo;
 
 typedef struct GainBlock {
-    GainInfo g_block[4];
+    AtracGainInfo g_block[4];
 } GainBlock;
 
 typedef struct TonalComponent {
@@ -421,7 +421,7 @@ static int decode_gain_control(GetBitContext *gb, GainBlock *block,
     int i, cf, num_data;
     int *level, *loc;
 
-    GainInfo *gain = block->g_block;
+    AtracGainInfo *gain = block->g_block;
 
     for (i = 0; i <= num_bands; i++) {
         num_data              = get_bits(gb, 3);
@@ -454,8 +454,8 @@ static int decode_gain_control(GetBitContext *gb, GainBlock *block,
  * @param gain2   next band gain info
  */
 static void gain_compensate_and_overlap(float *input, float *prev,
-                                        float *output, GainInfo *gain1,
-                                        GainInfo *gain2)
+                                        float *output, AtracGainInfo *gain1,
+                                        AtracGainInfo *gain2)
 {
     float g1, g2, gain_inc;
     int i, j, num_data, start_loc, end_loc;
