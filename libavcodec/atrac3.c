@@ -56,7 +56,7 @@
 #define MDCT_SIZE          512
 
 typedef struct AtracGainInfo {
-    int num_gain_data;
+    int num_points;
     int lev_code[8];
     int loc_code[8];
 } AtracGainInfo;
@@ -425,11 +425,11 @@ static int decode_gain_control(GetBitContext *gb, GainBlock *block,
 
     for (i = 0; i <= num_bands; i++) {
         num_data              = get_bits(gb, 3);
-        gain[i].num_gain_data = num_data;
+        gain[i].num_points    = num_data;
         level                 = gain[i].lev_code;
         loc                   = gain[i].loc_code;
 
-        for (cf = 0; cf < gain[i].num_gain_data; cf++) {
+        for (cf = 0; cf < gain[i].num_points; cf++) {
             level[cf] = get_bits(gb, 4);
             loc  [cf] = get_bits(gb, 5);
             if (cf && loc[cf] <= loc[cf - 1])
@@ -439,7 +439,7 @@ static int decode_gain_control(GetBitContext *gb, GainBlock *block,
 
     /* Clear the unused blocks. */
     for (; i < 4 ; i++)
-        gain[i].num_gain_data = 0;
+        gain[i].num_points = 0;
 
     return 0;
 }
@@ -461,16 +461,16 @@ static void gain_compensate_and_overlap(float *input, float *prev,
     int i, j, num_data, start_loc, end_loc;
 
 
-    if (gain2->num_gain_data == 0)
+    if (gain2->num_points == 0)
         g1 = 1.0;
     else
         g1 = gain_tab1[gain2->lev_code[0]];
 
-    if (gain1->num_gain_data == 0) {
+    if (gain1->num_points == 0) {
         for (i = 0; i < 256; i++)
             output[i] = input[i] * g1 + prev[i];
     } else {
-        num_data = gain1->num_gain_data;
+        num_data = gain1->num_points;
         gain1->loc_code[num_data] = 32;
         gain1->lev_code[num_data] = 4;
 
