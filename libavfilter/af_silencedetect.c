@@ -62,17 +62,16 @@ static char *get_metadata_val(AVFrame *insamples, const char *key)
 static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     int i;
-    SilenceDetectContext *silence = inlink->dst->priv;
+    SilenceDetectContext *s         = inlink->dst->priv;
     const int nb_channels           = inlink->channels;
     const int srate                 = inlink->sample_rate;
     const int nb_samples            = insamples->nb_samples     * nb_channels;
-    const int64_t nb_samples_notify = srate * silence->duration * nb_channels;
+    const int64_t nb_samples_notify = srate * s->duration * nb_channels;
 
     // scale number of null samples to the new sample rate
-    if (silence->last_sample_rate && silence->last_sample_rate != srate)
-        silence->nb_null_samples =
-            srate * silence->nb_null_samples / silence->last_sample_rate;
-    silence->last_sample_rate = srate;
+    if (s->last_sample_rate && s->last_sample_rate != srate)
+        s->nb_null_samples = srate * s->nb_null_samples / s->last_sample_rate;
+    s->last_sample_rate = srate;
 
     // TODO: support more sample formats
     // TODO: document metadata
@@ -80,29 +79,29 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         double *p = (double *)insamples->data[0];
 
         for (i = 0; i < nb_samples; i++, p++) {
-            if (*p < silence->noise && *p > -silence->noise) {
-                if (!silence->start) {
-                    silence->nb_null_samples++;
-                    if (silence->nb_null_samples >= nb_samples_notify) {
-                        silence->start = insamples->pts - (int64_t)(silence->duration / av_q2d(inlink->time_base) + .5);
+            if (*p < s->noise && *p > -s->noise) {
+                if (!s->start) {
+                    s->nb_null_samples++;
+                    if (s->nb_null_samples >= nb_samples_notify) {
+                        s->start = insamples->pts - (int64_t)(s->duration / av_q2d(inlink->time_base) + .5);
                         av_dict_set(&insamples->metadata, "lavfi.silence_start",
-                                    av_ts2timestr(silence->start, &inlink->time_base), 0);
-                        av_log(silence, AV_LOG_INFO, "silence_start: %s\n",
+                                    av_ts2timestr(s->start, &inlink->time_base), 0);
+                        av_log(s, AV_LOG_INFO, "silence_start: %s\n",
                                get_metadata_val(insamples, "lavfi.silence_start"));
                     }
                 }
             } else {
-                if (silence->start) {
+                if (s->start) {
                     av_dict_set(&insamples->metadata, "lavfi.silence_end",
                                 av_ts2timestr(insamples->pts, &inlink->time_base), 0);
                     av_dict_set(&insamples->metadata, "lavfi.silence_duration",
-                                av_ts2timestr(insamples->pts - silence->start, &inlink->time_base), 0);
-                    av_log(silence, AV_LOG_INFO,
+                                av_ts2timestr(insamples->pts - s->start, &inlink->time_base), 0);
+                    av_log(s, AV_LOG_INFO,
                            "silence_end: %s | silence_duration: %s\n",
                            get_metadata_val(insamples, "lavfi.silence_end"),
                            get_metadata_val(insamples, "lavfi.silence_duration"));
                 }
-                silence->nb_null_samples = silence->start = 0;
+                s->nb_null_samples = s->start = 0;
             }
         }
     }
