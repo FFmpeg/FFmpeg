@@ -1045,6 +1045,11 @@ MAKE_ACCESSORS(AVCodecContext, codec, AVRational, pkt_timebase)
 MAKE_ACCESSORS(AVCodecContext, codec, const AVCodecDescriptor *, codec_descriptor)
 MAKE_ACCESSORS(AVCodecContext, codec, int, lowres)
 
+int av_codec_get_max_lowres(const AVCodec *codec)
+{
+    return codec->max_lowres;
+}
+
 static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
 {
     memset(sub, 0, sizeof(*sub));
