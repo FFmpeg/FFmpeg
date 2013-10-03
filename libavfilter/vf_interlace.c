@@ -180,6 +180,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
     if (!s->cur || !s->next)
         return 0;
 
+    if (s->cur->interlaced_frame) {
+        av_log(ctx, AV_LOG_WARNING,
+               "video is already interlaced, adjusting framerate only\n");
+        out = av_frame_clone(s->cur);
+        out->pts /= 2;  // adjust pts to new framerate
+        ret = ff_filter_frame(outlink, out);
+        return ret;
+    }
+
     tff = (s->scan == MODE_TFF);
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out)
