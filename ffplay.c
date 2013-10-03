@@ -2471,6 +2471,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     int sample_rate, nb_channels;
     int64_t channel_layout;
     int ret;
+    int stream_lowres = lowres;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
@@ -2495,15 +2496,15 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     avctx->codec_id = codec->id;
     avctx->workaround_bugs   = workaround_bugs;
-    avctx->lowres            = lowres;
-    if(avctx->lowres > av_codec_get_max_lowres(codec)){
+    if(stream_lowres > av_codec_get_max_lowres(codec)){
         av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
                 av_codec_get_max_lowres(codec));
-        avctx->lowres= av_codec_get_max_lowres(codec);
+        stream_lowres = av_codec_get_max_lowres(codec);
     }
+    av_codec_set_lowres(avctx, stream_lowres);
     avctx->error_concealment = error_concealment;
 
-    if(avctx->lowres) avctx->flags |= CODEC_FLAG_EMU_EDGE;
+    if(stream_lowres) avctx->flags |= CODEC_FLAG_EMU_EDGE;
     if (fast)   avctx->flags2 |= CODEC_FLAG2_FAST;
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
@@ -2511,8 +2512,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
     if (!av_dict_get(opts, "threads", NULL, 0))
         av_dict_set(&opts, "threads", "auto", 0);
-    if (avctx->lowres)
-        av_dict_set(&opts, "lowres", av_asprintf("%d", avctx->lowres), AV_DICT_DONT_STRDUP_VAL);
+    if (stream_lowres)
+        av_dict_set(&opts, "lowres", av_asprintf("%d", stream_lowres), AV_DICT_DONT_STRDUP_VAL);
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO || avctx->codec_type == AVMEDIA_TYPE_AUDIO)
         av_dict_set(&opts, "refcounted_frames", "1", 0);
     if (avcodec_open2(avctx, codec, &opts) < 0)
