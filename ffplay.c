@@ -2496,10 +2496,10 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->codec_id = codec->id;
     avctx->workaround_bugs   = workaround_bugs;
     avctx->lowres            = lowres;
-    if(avctx->lowres > codec->max_lowres){
+    if(avctx->lowres > av_codec_get_max_lowres(codec)){
         av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
-                codec->max_lowres);
-        avctx->lowres= codec->max_lowres;
+                av_codec_get_max_lowres(codec));
+        avctx->lowres= av_codec_get_max_lowres(codec);
     }
     avctx->error_concealment = error_concealment;
 
