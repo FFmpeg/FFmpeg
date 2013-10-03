@@ -42,7 +42,7 @@ version 10:
 - F4V muxer
 - HNM version 4 demuxer and video decoder
 - HEVC decoder
-- raw HEVC, HEVC in MOV/MP4 demuxing
+- raw HEVC, HEVC in MOV/MP4, HEVC in Matroska demuxing
 
 
 version 9:
