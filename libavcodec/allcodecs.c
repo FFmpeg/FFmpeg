@@ -285,6 +285,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER(VP6A,              vp6a);
     REGISTER_DECODER(VP6F,              vp6f);
     REGISTER_DECODER(VP8,               vp8);
+    REGISTER_DECODER(VP9,               vp9);
     REGISTER_DECODER(VQA,               vqa);
     REGISTER_DECODER(WEBP,              webp);
     REGISTER_ENCDEC (WMV1,              wmv1);
