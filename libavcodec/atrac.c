@@ -45,7 +45,7 @@ static const float qmf_48tap_half[24] = {
    -0.043596379,   -0.099384367,   0.13207909,    0.46424159
 };
 
-void ff_atrac_generate_tables(void)
+av_cold void ff_atrac_generate_tables(void)
 {
     int i;
     float s;
