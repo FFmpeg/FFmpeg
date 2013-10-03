@@ -212,6 +212,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
 
 AVCodec ff_wmv2_encoder = {
     .name           = "wmv2",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
@@ -219,5 +220,4 @@ AVCodec ff_wmv2_encoder = {
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
 };

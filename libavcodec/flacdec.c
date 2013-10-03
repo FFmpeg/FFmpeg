@@ -557,6 +557,7 @@ static av_cold int flac_decode_close(AVCodecContext *avctx)
 
 AVCodec ff_flac_decoder = {
     .name           = "flac",
+    .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACContext),
@@ -564,7 +565,6 @@ AVCodec ff_flac_decoder = {
     .close          = flac_decode_close,
     .decode         = flac_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                       AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_S32,

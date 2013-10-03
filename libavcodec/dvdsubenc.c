@@ -217,8 +217,8 @@ static int dvdsub_encode(AVCodecContext *avctx,
 
 AVCodec ff_dvdsub_encoder = {
     .name           = "dvdsub",
+    .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_DVD_SUBTITLE,
     .encode_sub     = dvdsub_encode,
-    .long_name      = NULL_IF_CONFIG_SMALL("DVD subtitles"),
 };

@@ -76,6 +76,7 @@ static av_cold int xbm_encode_close(AVCodecContext *avctx)
 
 AVCodec ff_xbm_encoder = {
     .name         = "xbm",
+    .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XBM,
     .init         = xbm_encode_init,
@@ -83,5 +84,4 @@ AVCodec ff_xbm_encoder = {
     .close        = xbm_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_MONOWHITE,
                                                  AV_PIX_FMT_NONE },
-    .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
 };

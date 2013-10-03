@@ -1076,6 +1076,7 @@ static const AVCodecDefault ffv1_defaults[] = {
 
 AVCodec ff_ffv1_encoder = {
     .name           = "ffv1",
+    .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FFV1,
     .priv_data_size = sizeof(FFV1Context),
@@ -1096,7 +1097,6 @@ AVCodec ff_ffv1_encoder = {
         AV_PIX_FMT_NONE
 
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
     .defaults       = ffv1_defaults,
     .priv_class     = &class,
 };

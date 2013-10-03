@@ -444,6 +444,7 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, int16_t block[6][64])
 
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
+    .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(MpegEncContext),
@@ -453,5 +454,4 @@ AVCodec ff_mjpeg_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };

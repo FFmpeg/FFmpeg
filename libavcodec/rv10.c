@@ -735,6 +735,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_rv10_decoder = {
     .name           = "rv10",
+    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RV10,
     .priv_data_size = sizeof(RVDecContext),
@@ -742,12 +743,12 @@ AVCodec ff_rv10_decoder = {
     .close          = rv10_decode_end,
     .decode         = rv10_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
     .pix_fmts       = ff_pixfmt_list_420,
 };
 
 AVCodec ff_rv20_decoder = {
     .name           = "rv20",
+    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RV20,
     .priv_data_size = sizeof(RVDecContext),
@@ -756,6 +757,5 @@ AVCodec ff_rv20_decoder = {
     .decode         = rv10_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 2.0"),
     .pix_fmts       = ff_pixfmt_list_420,
 };

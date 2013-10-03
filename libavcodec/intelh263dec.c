@@ -126,6 +126,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
 
 AVCodec ff_h263i_decoder = {
     .name           = "h263i",
+    .long_name      = NULL_IF_CONFIG_SMALL("Intel H.263"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H263I,
     .priv_data_size = sizeof(MpegEncContext),
@@ -133,6 +134,5 @@ AVCodec ff_h263i_decoder = {
     .close          = ff_h263_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Intel H.263"),
     .pix_fmts       = ff_pixfmt_list_420,
 };

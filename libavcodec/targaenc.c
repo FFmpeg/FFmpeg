@@ -166,6 +166,7 @@ static av_cold int targa_encode_init(AVCodecContext *avctx)
 
 AVCodec ff_targa_encoder = {
     .name           = "targa",
+    .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TARGA,
     .priv_data_size = sizeof(TargaContext),
@@ -175,5 +176,4 @@ AVCodec ff_targa_encoder = {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     },
-    .long_name= NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

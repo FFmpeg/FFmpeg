@@ -104,13 +104,13 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 AVCodec ff_comfortnoise_encoder = {
     .name           = "comfortnoise",
+    .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_COMFORT_NOISE,
     .priv_data_size = sizeof(CNGContext),
     .init           = cng_encode_init,
     .encode2        = cng_encode_frame,
     .close          = cng_encode_close,
-    .long_name      = NULL_IF_CONFIG_SMALL("RFC 3389 comfort noise generator"),
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
 };

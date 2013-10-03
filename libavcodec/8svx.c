@@ -198,6 +198,7 @@ static av_cold int eightsvx_decode_close(AVCodecContext *avctx)
 
 AVCodec ff_eightsvx_fib_decoder = {
   .name           = "8svx_fib",
+  .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
   .type           = AVMEDIA_TYPE_AUDIO,
   .id             = AV_CODEC_ID_8SVX_FIB,
   .priv_data_size = sizeof (EightSvxContext),
@@ -205,13 +206,13 @@ AVCodec ff_eightsvx_fib_decoder = {
   .close          = eightsvx_decode_close,
   .decode         = eightsvx_decode_frame,
   .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
-  .long_name      = NULL_IF_CONFIG_SMALL("8SVX fibonacci"),
   .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
 };
 
 AVCodec ff_eightsvx_exp_decoder = {
   .name           = "8svx_exp",
+  .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
   .type           = AVMEDIA_TYPE_AUDIO,
   .id             = AV_CODEC_ID_8SVX_EXP,
   .priv_data_size = sizeof (EightSvxContext),
@@ -219,13 +220,13 @@ AVCodec ff_eightsvx_exp_decoder = {
   .close          = eightsvx_decode_close,
   .decode         = eightsvx_decode_frame,
   .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
-  .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
   .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                     AV_SAMPLE_FMT_NONE },
 };
 
 AVCodec ff_pcm_s8_planar_decoder = {
     .name           = "pcm_s8_planar",
+    .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_PCM_S8_PLANAR,
     .priv_data_size = sizeof(EightSvxContext),
@@ -233,7 +234,6 @@ AVCodec ff_pcm_s8_planar_decoder = {
     .close          = eightsvx_decode_close,
     .decode         = eightsvx_decode_frame,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_NONE },
 };

@@ -435,6 +435,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec ff_ansi_decoder = {
     .name           = "ansi",
+    .long_name      = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ANSI,
     .priv_data_size = sizeof(AnsiContext),
@@ -442,5 +443,4 @@ AVCodec ff_ansi_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ASCII/ANSI art"),
 };

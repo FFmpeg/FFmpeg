@@ -222,6 +222,7 @@ static av_cold int xwd_encode_close(AVCodecContext *avctx)
 
 AVCodec ff_xwd_encoder = {
     .name         = "xwd",
+    .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XWD,
     .init         = xwd_encode_init,
@@ -248,5 +249,4 @@ AVCodec ff_xwd_encoder = {
                                                  AV_PIX_FMT_PAL8,
                                                  AV_PIX_FMT_MONOWHITE,
                                                  AV_PIX_FMT_NONE },
-    .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
 };

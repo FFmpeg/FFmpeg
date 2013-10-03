@@ -283,6 +283,7 @@ static av_cold int rpza_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_rpza_decoder = {
     .name           = "rpza",
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RPZA,
     .priv_data_size = sizeof(RpzaContext),
@@ -290,5 +291,4 @@ AVCodec ff_rpza_decoder = {
     .close          = rpza_decode_end,
     .decode         = rpza_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime video (RPZA)"),
 };

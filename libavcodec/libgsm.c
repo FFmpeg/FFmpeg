@@ -114,6 +114,7 @@ static int libgsm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 AVCodec ff_libgsm_encoder = {
     .name           = "libgsm",
+    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM,
     .init           = libgsm_encode_init,
@@ -121,11 +122,11 @@ AVCodec ff_libgsm_encoder = {
     .close          = libgsm_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM"),
 };
 
 AVCodec ff_libgsm_ms_encoder = {
     .name           = "libgsm_ms",
+    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM_MS,
     .init           = libgsm_encode_init,
@@ -133,7 +134,6 @@ AVCodec ff_libgsm_ms_encoder = {
     .close          = libgsm_encode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
 };
 
 typedef struct LibGSMDecodeContext {
@@ -221,6 +221,7 @@ static void libgsm_flush(AVCodecContext *avctx) {
 
 AVCodec ff_libgsm_decoder = {
     .name           = "libgsm",
+    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM,
     .priv_data_size = sizeof(LibGSMDecodeContext),
@@ -229,11 +230,11 @@ AVCodec ff_libgsm_decoder = {
     .decode         = libgsm_decode_frame,
     .flush          = libgsm_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM"),
 };
 
 AVCodec ff_libgsm_ms_decoder = {
     .name           = "libgsm_ms",
+    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM_MS,
     .priv_data_size = sizeof(LibGSMDecodeContext),
@@ -242,5 +243,4 @@ AVCodec ff_libgsm_ms_decoder = {
     .decode         = libgsm_decode_frame,
     .flush          = libgsm_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
 };

@@ -1020,6 +1020,7 @@ static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
 
 AVCodec ff_dnxhd_encoder = {
     .name           = "dnxhd",
+    .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DNXHD,
     .priv_data_size = sizeof(DNXHDEncContext),
@@ -1030,6 +1031,5 @@ AVCodec ff_dnxhd_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV422P,
                                                   AV_PIX_FMT_YUV422P10,
                                                   AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),
     .priv_class     = &class,
 };

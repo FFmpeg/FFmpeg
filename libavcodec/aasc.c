@@ -111,6 +111,7 @@ static av_cold int aasc_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_aasc_decoder = {
     .name           = "aasc",
+    .long_name      = NULL_IF_CONFIG_SMALL("Autodesk RLE"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AASC,
     .priv_data_size = sizeof(AascContext),
@@ -118,5 +119,4 @@ AVCodec ff_aasc_decoder = {
     .close          = aasc_decode_end,
     .decode         = aasc_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Autodesk RLE"),
 };

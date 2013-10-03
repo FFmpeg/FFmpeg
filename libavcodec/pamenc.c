@@ -116,6 +116,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_pam_encoder = {
     .name           = "pam",
+    .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PAM,
     .priv_data_size = sizeof(PNMContext),
@@ -125,5 +126,4 @@ AVCodec ff_pam_encoder = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB32, AV_PIX_FMT_GRAY8, AV_PIX_FMT_MONOWHITE,
         AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };

@@ -103,6 +103,7 @@ static void gsm_flush(AVCodecContext *avctx)
 
 AVCodec ff_gsm_decoder = {
     .name           = "gsm",
+    .long_name      = NULL_IF_CONFIG_SMALL("GSM"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM,
     .priv_data_size = sizeof(GSMContext),
@@ -110,11 +111,11 @@ AVCodec ff_gsm_decoder = {
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("GSM"),
 };
 
 AVCodec ff_gsm_ms_decoder = {
     .name           = "gsm_ms",
+    .long_name      = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_GSM_MS,
     .priv_data_size = sizeof(GSMContext),
@@ -122,5 +123,4 @@ AVCodec ff_gsm_ms_decoder = {
     .decode         = gsm_decode_frame,
     .flush          = gsm_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
 };

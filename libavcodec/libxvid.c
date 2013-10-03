@@ -750,6 +750,7 @@ static av_cold int xvid_encode_close(AVCodecContext *avctx) {
 
 AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
+    .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(struct xvid_context),
@@ -757,5 +758,4 @@ AVCodec ff_libxvid_encoder = {
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };
