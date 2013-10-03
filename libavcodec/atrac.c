@@ -88,7 +88,8 @@ void ff_atrac_gain_compensation(AtracGCContext *gctx, float *in, float *prev,
     float lev, gc_scale, gain_inc;
     int i, pos, lastpos;
 
-    gc_scale = gc_next->num_points ? gctx->gain_tab1[gc_next->levcode[0]] : 1.0f;
+    gc_scale = gc_next->num_points ? gctx->gain_tab1[gc_next->lev_code[0]]
+                                   : 1.0f;
 
     if (!gc_now->num_points) {
         for (pos = 0; pos < num_samples; pos++)
@@ -97,13 +98,12 @@ void ff_atrac_gain_compensation(AtracGCContext *gctx, float *in, float *prev,
         pos = 0;
 
         for (i = 0; i < gc_now->num_points; i++) {
-            lastpos = gc_now->loccode[i] << gctx->loc_scale;
+            lastpos = gc_now->loc_code[i] << gctx->loc_scale;
 
-            lev = gctx->gain_tab1[gc_now->levcode[i]];
-            gain_inc = gctx->gain_tab2[(i + 1 < gc_now->num_points
-                                       ? gc_now->levcode[i + 1]
-                                       : gctx->id2exp_offset)
-                                       - gc_now->levcode[i] + 15];
+            lev = gctx->gain_tab1[gc_now->lev_code[i]];
+            gain_inc = gctx->gain_tab2[(i + 1 < gc_now->num_points ? gc_now->lev_code[i + 1]
+                                                                   : gctx->id2exp_offset) -
+                                       gc_now->lev_code[i] + 15];
 
             /* apply constant gain level and overlap */
             for (; pos < lastpos; pos++)

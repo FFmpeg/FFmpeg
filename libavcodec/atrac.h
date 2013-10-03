@@ -33,20 +33,20 @@
  *  Gain control parameters for one subband.
  */
 typedef struct AtracGainInfo {
-    int   num_points; ///< number of gain control points
-    int   levcode[7]; ///< level at corresponding control point
-    int   loccode[7]; ///< location of gain control points
+    int   num_points;   ///< number of gain control points
+    int   lev_code[7];  ///< level at corresponding control point
+    int   loc_code[7];  ///< location of gain control points
 } AtracGainInfo;
 
 /**
  *  Gain compensation context structure.
  */
 typedef struct AtracGCContext {
-    float   gain_tab1[16]; ///< gain compensation level table
-    float   gain_tab2[31]; ///< gain compensation interpolation table
-    int     id2exp_offset; ///< offset for converting level index into level exponent
-    int     loc_scale;     ///< scale of location code = 2^loc_scale samples
-    int     loc_size;      ///< size of location code in samples
+    float   gain_tab1[16];  ///< gain compensation level table
+    float   gain_tab2[31];  ///< gain compensation interpolation table
+    int     id2exp_offset;  ///< offset for converting level index into level exponent
+    int     loc_scale;      ///< scale of location code = 2^loc_scale samples
+    int     loc_size;       ///< size of location code in samples
 } AtracGCContext;
 
 extern float ff_atrac_sf_table[64];
