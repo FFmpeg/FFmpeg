@@ -66,9 +66,9 @@ typedef struct VideoDSPContext {
     /**
      * Prefetch memory into cache (if supported by hardware).
      *
-     * @buf pointer to buffer to prefetch memory from
-     * @stride distance between two lines of buf (in bytes)
-     * @h number of lines to prefetch
+     * @param buf    pointer to buffer to prefetch memory from
+     * @param stride distance between two lines of buf (in bytes)
+     * @param h      number of lines to prefetch
      */
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;
