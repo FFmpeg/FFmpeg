@@ -1,5 +1,5 @@
 /*
- * Common functions for the ATRAC family of decoders
+ * common functions for the ATRAC family of decoders
  *
  * Copyright (c) 2006-2013 Maxim Poliakovski
  * Copyright (c) 2006-2008 Benjamin Larsson
