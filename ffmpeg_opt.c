@@ -592,7 +592,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_VIDEO:
             if(!ist->dec)
                 ist->dec = avcodec_find_decoder(dec->codec_id);
-            if (dec->lowres) {
+            if (av_codec_get_lowres(dec)) {
                 dec->flags |= CODEC_FLAG_EMU_EDGE;
             }
 
