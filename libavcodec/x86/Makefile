@@ -8,6 +8,7 @@ OBJS-$(CONFIG_DCT)                     += x86/dct_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc.o
 OBJS-$(CONFIG_DSPUTIL)                 += x86/dsputil_init.o
 OBJS-$(CONFIG_ENCODERS)                += x86/dsputilenc_mmx.o          \
+                                          x86/fdct.o                    \
                                           x86/motion_est.o
 OBJS-$(CONFIG_FFT)                     += x86/fft_init.o
 OBJS-$(CONFIG_H264CHROMA)              += x86/h264chroma_init.o
@@ -39,7 +40,6 @@ OBJS-$(CONFIG_WEBP_DECODER)            += x86/vp8dsp_init.o
 OBJS-$(CONFIG_XMM_CLOBBER_TEST)        += x86/w64xmmtest.o
 
 MMX-OBJS-$(CONFIG_DSPUTIL)             += x86/dsputil_mmx.o             \
-                                          x86/fdct.o                    \
                                           x86/fpel_mmx.o                \
                                           x86/idct_mmx_xvid.o           \
                                           x86/idct_sse2_xvid.o          \
