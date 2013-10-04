@@ -210,6 +210,7 @@ static int xwd_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_xwd_encoder = {
     .name         = "xwd",
+    .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XWD,
     .encode2      = xwd_encode_frame,
@@ -235,5 +236,4 @@ AVCodec ff_xwd_encoder = {
                                                  AV_PIX_FMT_GRAY8,
                                                  AV_PIX_FMT_MONOWHITE,
                                                  AV_PIX_FMT_NONE },
-    .long_name    = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
 };

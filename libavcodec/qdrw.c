@@ -142,10 +142,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 AVCodec ff_qdraw_decoder = {
     .name           = "qdraw",
+    .long_name      = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_QDRAW,
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple QuickDraw"),
 };

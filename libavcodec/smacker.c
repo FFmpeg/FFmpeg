@@ -807,6 +807,7 @@ error:
 
 AVCodec ff_smacker_decoder = {
     .name           = "smackvid",
+    .long_name      = NULL_IF_CONFIG_SMALL("Smacker video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SMACKVIDEO,
     .priv_data_size = sizeof(SmackVContext),
@@ -814,15 +815,14 @@ AVCodec ff_smacker_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Smacker video"),
 };
 
 AVCodec ff_smackaud_decoder = {
     .name           = "smackaud",
+    .long_name      = NULL_IF_CONFIG_SMALL("Smacker audio"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_SMACKAUDIO,
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Smacker audio"),
 };

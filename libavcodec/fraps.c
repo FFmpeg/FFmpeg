@@ -313,6 +313,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_fraps_decoder = {
     .name           = "fraps",
+    .long_name      = NULL_IF_CONFIG_SMALL("Fraps"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FRAPS,
     .priv_data_size = sizeof(FrapsContext),
@@ -320,5 +321,4 @@ AVCodec ff_fraps_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("Fraps"),
 };

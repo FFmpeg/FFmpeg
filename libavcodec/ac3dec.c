@@ -1453,6 +1453,7 @@ static const AVClass ac3_decoder_class = {
 
 AVCodec ff_ac3_decoder = {
     .name           = "ac3",
+    .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_AC3,
     .priv_data_size = sizeof (AC3DecodeContext),
@@ -1460,7 +1461,6 @@ AVCodec ff_ac3_decoder = {
     .close          = ac3_decode_end,
     .decode         = ac3_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class     = &ac3_decoder_class,
@@ -1476,6 +1476,7 @@ static const AVClass eac3_decoder_class = {
 
 AVCodec ff_eac3_decoder = {
     .name           = "eac3",
+    .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_EAC3,
     .priv_data_size = sizeof (AC3DecodeContext),
@@ -1483,7 +1484,6 @@ AVCodec ff_eac3_decoder = {
     .close          = ac3_decode_end,
     .decode         = ac3_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .priv_class     = &eac3_decoder_class,

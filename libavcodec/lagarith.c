@@ -733,6 +733,7 @@ static av_cold int lag_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_lagarith_decoder = {
     .name           = "lagarith",
+    .long_name      = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_LAGARITH,
     .priv_data_size = sizeof(LagarithContext),
@@ -740,5 +741,4 @@ AVCodec ff_lagarith_decoder = {
     .close          = lag_decode_end,
     .decode         = lag_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
 };

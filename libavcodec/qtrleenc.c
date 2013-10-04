@@ -389,6 +389,7 @@ static av_cold int qtrle_encode_end(AVCodecContext *avctx)
 
 AVCodec ff_qtrle_encoder = {
     .name           = "qtrle",
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_QTRLE,
     .priv_data_size = sizeof(QtrleEncContext),
@@ -398,5 +399,4 @@ AVCodec ff_qtrle_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB555BE, AV_PIX_FMT_ARGB, AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime Animation (RLE) video"),
 };

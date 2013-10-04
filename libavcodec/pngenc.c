@@ -489,6 +489,7 @@ static const AVClass pngenc_class = {
 
 AVCodec ff_png_encoder = {
     .name           = "png",
+    .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PNG,
     .priv_data_size = sizeof(PNGEncContext),
@@ -503,6 +504,5 @@ AVCodec ff_png_encoder = {
         AV_PIX_FMT_GRAY16BE,
         AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("PNG (Portable Network Graphics) image"),
     .priv_class     = &pngenc_class,
 };

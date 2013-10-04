@@ -661,6 +661,7 @@ static av_cold int shorten_decode_close(AVCodecContext *avctx)
 
 AVCodec ff_shorten_decoder = {
     .name           = "shorten",
+    .long_name      = NULL_IF_CONFIG_SMALL("Shorten"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_SHORTEN,
     .priv_data_size = sizeof(ShortenContext),
@@ -668,7 +669,6 @@ AVCodec ff_shorten_decoder = {
     .close          = shorten_decode_close,
     .decode         = shorten_decode_frame,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Shorten"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_U8P,
                                                       AV_SAMPLE_FMT_NONE },

@@ -153,9 +153,9 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_s302m_decoder = {
     .name           = "s302m",
+    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_S302M,
     .decode         = s302m_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
 };

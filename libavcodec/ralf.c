@@ -522,6 +522,7 @@ static void decode_flush(AVCodecContext *avctx)
 
 AVCodec ff_ralf_decoder = {
     .name           = "ralf",
+    .long_name      = NULL_IF_CONFIG_SMALL("RealAudio Lossless"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_RALF,
     .priv_data_size = sizeof(RALFContext),
@@ -530,7 +531,6 @@ AVCodec ff_ralf_decoder = {
     .decode         = decode_frame,
     .flush          = decode_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("RealAudio Lossless"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

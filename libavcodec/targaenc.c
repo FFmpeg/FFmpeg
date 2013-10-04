@@ -172,6 +172,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_targa_encoder = {
     .name           = "targa",
+    .long_name      = NULL_IF_CONFIG_SMALL("Truevision Targa image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_TARGA,
     .encode2        = targa_encode_frame,
@@ -179,5 +180,4 @@ AVCodec ff_targa_encoder = {
         AV_PIX_FMT_BGR24, AV_PIX_FMT_BGRA, AV_PIX_FMT_RGB555LE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_PAL8,
         AV_PIX_FMT_NONE
     },
-    .long_name= NULL_IF_CONFIG_SMALL("Truevision Targa image"),
 };

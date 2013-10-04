@@ -663,6 +663,7 @@ static av_cold int h261_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_h261_decoder = {
     .name           = "h261",
+    .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H261,
     .priv_data_size = sizeof(H261Context),
@@ -671,5 +672,4 @@ AVCodec ff_h261_decoder = {
     .decode         = h261_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .max_lowres     = 3,
-    .long_name      = NULL_IF_CONFIG_SMALL("H.261"),
 };

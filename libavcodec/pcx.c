@@ -236,9 +236,9 @@ end:
 
 AVCodec ff_pcx_decoder = {
     .name         = "pcx",
+    .long_name    = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_PCX,
     .decode       = pcx_decode_frame,
     .capabilities = CODEC_CAP_DR1,
-    .long_name    = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
 };

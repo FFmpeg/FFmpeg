@@ -442,6 +442,7 @@ static av_cold int xan_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_xan_wc4_decoder = {
     .name           = "xan_wc4",
+    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_XAN_WC4,
     .priv_data_size = sizeof(XanContext),
@@ -449,5 +450,4 @@ AVCodec ff_xan_wc4_decoder = {
     .close          = xan_decode_end,
     .decode         = xan_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander IV / Xxan"),
 };

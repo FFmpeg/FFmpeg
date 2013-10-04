@@ -181,6 +181,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 AVCodec ff_zlib_encoder = {
     .name           = "zlib",
+    .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ZLIB,
     .priv_data_size = sizeof(LclEncContext),
@@ -188,5 +189,4 @@ AVCodec ff_zlib_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_BGR24, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("LCL (LossLess Codec Library) ZLIB"),
 };

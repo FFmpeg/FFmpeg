@@ -1066,6 +1066,7 @@ static av_cold void flush(AVCodecContext *avctx)
 #if CONFIG_IMC_DECODER
 AVCodec ff_imc_decoder = {
     .name           = "imc",
+    .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_IMC,
     .priv_data_size = sizeof(IMCContext),
@@ -1074,7 +1075,6 @@ AVCodec ff_imc_decoder = {
     .decode         = imc_decode_frame,
     .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("IMC (Intel Music Coder)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -1082,6 +1082,7 @@ AVCodec ff_imc_decoder = {
 #if CONFIG_IAC_DECODER
 AVCodec ff_iac_decoder = {
     .name           = "iac",
+    .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_IAC,
     .priv_data_size = sizeof(IMCContext),
@@ -1090,7 +1091,6 @@ AVCodec ff_iac_decoder = {
     .decode         = imc_decode_frame,
     .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("IAC (Indeo Audio Coder)"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

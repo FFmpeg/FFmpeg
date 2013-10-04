@@ -234,10 +234,10 @@ static int decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_sgi_decoder = {
     .name           = "sgi",
+    .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGI,
     .priv_data_size = sizeof(SgiState),
     .decode         = decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("SGI image"),
     .capabilities   = CODEC_CAP_DR1,
 };

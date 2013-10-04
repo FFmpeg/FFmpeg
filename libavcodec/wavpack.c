@@ -1080,6 +1080,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_wavpack_decoder = {
     .name           = "wavpack",
+    .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_WAVPACK,
     .priv_data_size = sizeof(WavpackContext),
@@ -1089,5 +1090,4 @@ AVCodec ff_wavpack_decoder = {
     .flush          = wavpack_decode_flush,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("WavPack"),
 };

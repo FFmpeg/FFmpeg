@@ -205,6 +205,7 @@ static const AVCodecDefault sunrast_defaults[] = {
 
 AVCodec ff_sunrast_encoder = {
     .name           = "sunrast",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SUNRAST,
     .priv_data_size = sizeof(SUNRASTContext),
@@ -216,5 +217,4 @@ AVCodec ff_sunrast_encoder = {
                                                   AV_PIX_FMT_GRAY8,
                                                   AV_PIX_FMT_MONOWHITE,
                                                   AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Sun Rasterfile image"),
 };

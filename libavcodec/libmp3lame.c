@@ -286,6 +286,7 @@ static const int libmp3lame_sample_rates[] = {
 
 AVCodec ff_libmp3lame_encoder = {
     .name                  = "libmp3lame",
+    .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_MP3,
     .priv_data_size        = sizeof(LAMEContext),
@@ -301,7 +302,6 @@ AVCodec ff_libmp3lame_encoder = {
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
-    .long_name             = NULL_IF_CONFIG_SMALL("libmp3lame MP3 (MPEG audio layer 3)"),
     .priv_class            = &libmp3lame_class,
     .defaults              = libmp3lame_defaults,
 };

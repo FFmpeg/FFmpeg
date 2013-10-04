@@ -636,6 +636,7 @@ static const AVClass openjpeg_class = {
 
 AVCodec ff_libopenjpeg_encoder = {
     .name           = "libopenjpeg",
+    .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(LibOpenJPEGContext),
@@ -662,6 +663,5 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_XYZ12,
         AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG JPEG 2000"),
     .priv_class     = &openjpeg_class,
 };

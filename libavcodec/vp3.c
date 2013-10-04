@@ -2462,6 +2462,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_theora_decoder = {
     .name                  = "theora",
+    .long_name             = NULL_IF_CONFIG_SMALL("Theora"),
     .type                  = AVMEDIA_TYPE_VIDEO,
     .id                    = AV_CODEC_ID_THEORA,
     .priv_data_size        = sizeof(Vp3DecodeContext),
@@ -2471,7 +2472,6 @@ AVCodec ff_theora_decoder = {
     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND |
                              CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .long_name             = NULL_IF_CONFIG_SMALL("Theora"),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp3_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context)
 };
@@ -2479,6 +2479,7 @@ AVCodec ff_theora_decoder = {
 
 AVCodec ff_vp3_decoder = {
     .name                  = "vp3",
+    .long_name             = NULL_IF_CONFIG_SMALL("On2 VP3"),
     .type                  = AVMEDIA_TYPE_VIDEO,
     .id                    = AV_CODEC_ID_VP3,
     .priv_data_size        = sizeof(Vp3DecodeContext),
@@ -2488,7 +2489,6 @@ AVCodec ff_vp3_decoder = {
     .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND |
                              CODEC_CAP_FRAME_THREADS,
     .flush                 = vp3_decode_flush,
-    .long_name             = NULL_IF_CONFIG_SMALL("On2 VP3"),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(vp3_init_thread_copy),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context),
 };

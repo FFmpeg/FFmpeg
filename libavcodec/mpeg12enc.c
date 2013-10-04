@@ -1062,6 +1062,7 @@ mpeg12_class(2)
 
 AVCodec ff_mpeg1video_encoder = {
     .name                 = "mpeg1video",
+    .long_name            = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG1VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
@@ -1072,12 +1073,12 @@ AVCodec ff_mpeg1video_encoder = {
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_NONE },
     .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
-    .long_name            = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .priv_class           = &mpeg1_class,
 };
 
 AVCodec ff_mpeg2video_encoder = {
     .name                 = "mpeg2video",
+    .long_name            = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
     .type                 = AVMEDIA_TYPE_VIDEO,
     .id                   = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size       = sizeof(MpegEncContext),
@@ -1089,6 +1090,5 @@ AVCodec ff_mpeg2video_encoder = {
                                                            AV_PIX_FMT_YUV422P,
                                                            AV_PIX_FMT_NONE },
     .capabilities         = CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
-    .long_name            = NULL_IF_CONFIG_SMALL("MPEG-2 video"),
     .priv_class           = &mpeg2_class,
 };

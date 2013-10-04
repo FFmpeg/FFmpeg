@@ -183,6 +183,7 @@ static void libopus_flush(AVCodecContext *avc)
 
 AVCodec ff_libopus_decoder = {
     .name           = "libopus",
+    .long_name      = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_OPUS,
     .priv_data_size = sizeof(struct libopus_context),
@@ -191,7 +192,6 @@ AVCodec ff_libopus_decoder = {
     .decode         = libopus_decode,
     .flush          = libopus_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },

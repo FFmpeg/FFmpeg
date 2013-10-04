@@ -481,6 +481,7 @@ static av_cold int cllc_decode_init(AVCodecContext *avctx)
 
 AVCodec ff_cllc_decoder = {
     .name           = "cllc",
+    .long_name      = NULL_IF_CONFIG_SMALL("Canopus Lossless Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_CLLC,
     .priv_data_size = sizeof(CLLCContext),
@@ -488,5 +489,4 @@ AVCodec ff_cllc_decoder = {
     .decode         = cllc_decode_frame,
     .close          = cllc_decode_close,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Canopus Lossless Codec"),
 };

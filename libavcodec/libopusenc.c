@@ -428,6 +428,7 @@ static const int libopus_sample_rates[] = {
 
 AVCodec ff_libopus_encoder = {
     .name            = "libopus",
+    .long_name       = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_OPUS,
     .priv_data_size  = sizeof(LibopusEncContext),
@@ -440,7 +441,6 @@ AVCodec ff_libopus_encoder = {
                                                       AV_SAMPLE_FMT_NONE },
     .channel_layouts = ff_vorbis_channel_layouts,
     .supported_samplerates = libopus_sample_rates,
-    .long_name       = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .priv_class      = &libopus_class,
     .defaults        = libopus_defaults,
 };

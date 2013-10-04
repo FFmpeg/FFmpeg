@@ -418,6 +418,7 @@ err:
 
 AVCodec ff_ulti_decoder = {
     .name           = "ultimotion",
+    .long_name      = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ULTI,
     .priv_data_size = sizeof(UltimotionDecodeContext),
@@ -425,5 +426,4 @@ AVCodec ff_ulti_decoder = {
     .close          = ulti_decode_end,
     .decode         = ulti_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("IBM UltiMotion"),
 };
