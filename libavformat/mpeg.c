@@ -849,8 +849,11 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
         int pkt_size;
 
         ret = mpegps_read_pes_header(vobsub->sub_ctx, NULL, &startcode, &pts, &dts);
-        if (ret < 0)
+        if (ret < 0) {
+            if (pkt->size) // raise packet even if incomplete
+                break;
             FAIL(ret);
+        }
         to_read = ret & 0xffff;
         new_pos = avio_tell(pb);
         pkt_size = ret + (new_pos - old_pos);
