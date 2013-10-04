@@ -20,11 +20,12 @@
 
 #include <pulse/simple.h>
 #include <pulse/error.h>
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/log.h"
-#include "libavformat/avformat.h"
-#include "libavformat/internal.h"
+#include "pulse_audio_common.h"
 
 typedef struct PulseData {
     AVClass *class;
@@ -35,24 +36,6 @@ typedef struct PulseData {
     pa_simple *pa;
     unsigned int stream_index;
 } PulseData;
-
-static pa_sample_format_t codec_id_to_pulse_format(enum AVCodecID codec_id)
-{
-    switch (codec_id) {
-    case AV_CODEC_ID_PCM_U8:    return PA_SAMPLE_U8;
-    case AV_CODEC_ID_PCM_ALAW:  return PA_SAMPLE_ALAW;
-    case AV_CODEC_ID_PCM_MULAW: return PA_SAMPLE_ULAW;
-    case AV_CODEC_ID_PCM_S16LE: return PA_SAMPLE_S16LE;
-    case AV_CODEC_ID_PCM_S16BE: return PA_SAMPLE_S16BE;
-    case AV_CODEC_ID_PCM_F32LE: return PA_SAMPLE_FLOAT32LE;
-    case AV_CODEC_ID_PCM_F32BE: return PA_SAMPLE_FLOAT32BE;
-    case AV_CODEC_ID_PCM_S32LE: return PA_SAMPLE_S32LE;
-    case AV_CODEC_ID_PCM_S32BE: return PA_SAMPLE_S32BE;
-    case AV_CODEC_ID_PCM_S24LE: return PA_SAMPLE_S24LE;
-    case AV_CODEC_ID_PCM_S24BE: return PA_SAMPLE_S24BE;
-    default:                    return PA_SAMPLE_INVALID;
-    }
-}
 
 static av_cold int pulse_write_header(AVFormatContext *h)
 {
