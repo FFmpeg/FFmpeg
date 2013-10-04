@@ -2074,11 +2074,11 @@ static int update_offset(RTMPContext *rt, int size)
     if (rt->flv_off < rt->flv_size) {
         // There is old unread data in the buffer, thus append at the end
         old_flv_size  = rt->flv_size;
-        rt->flv_size += size + 15;
+        rt->flv_size += size;
     } else {
         // All data has been read, write the new data at the start of the buffer
         old_flv_size = 0;
-        rt->flv_size = size + 15;
+        rt->flv_size = size;
         rt->flv_off  = 0;
     }
 
@@ -2093,7 +2093,7 @@ static int append_flv_data(RTMPContext *rt, RTMPPacket *pkt, int skip)
     const int size      = pkt->size - skip;
     uint32_t ts         = pkt->timestamp;
 
-    old_flv_size = update_offset(rt, size);
+    old_flv_size = update_offset(rt, size + 15);
 
     if ((ret = av_reallocp(&rt->flv_data, rt->flv_size)) < 0) {
         rt->flv_size = rt->flv_off = 0;
@@ -2226,7 +2226,6 @@ static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
         next += size + 3 + 4;
         p    += size + 3 + 4;
     }
-    memcpy(p, next, RTMP_HEADER);
 
     return 0;
 }
