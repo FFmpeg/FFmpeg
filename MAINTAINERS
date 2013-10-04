@@ -290,6 +290,7 @@ libavdevice
   dshow.c                               Roger Pack
   iec61883.c                            Georg Lippitsch
   libdc1394.c                           Roman Shaposhnik
+  pulse_audio_enc.c                     Lukasz Marek
   v4l2.c                                Luca Abeni
   vfwcap.c                              Ramiro Polla
 
