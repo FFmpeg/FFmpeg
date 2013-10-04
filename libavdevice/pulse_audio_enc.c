@@ -1,0 +1,171 @@
+/*
+ * Copyright (c) 2013 Lukasz Marek <lukasz.m.luki@gmail.com>
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#include <pulse/simple.h>
+#include <pulse/error.h>
+#include "libavutil/opt.h"
+#include "libavutil/time.h"
+#include "libavutil/log.h"
+#include "libavformat/avformat.h"
+#include "libavformat/internal.h"
+
+typedef struct PulseData {
+    AVClass *class;
+    const char *server;
+    const char *name;
+    const char *stream_name;
+    const char *device;
+    pa_simple *pa;
+    unsigned int stream_index;
+} PulseData;
+
+static pa_sample_format_t codec_id_to_pulse_format(enum AVCodecID codec_id)
+{
+    switch (codec_id) {
+    case AV_CODEC_ID_PCM_U8:    return PA_SAMPLE_U8;
+    case AV_CODEC_ID_PCM_ALAW:  return PA_SAMPLE_ALAW;
+    case AV_CODEC_ID_PCM_MULAW: return PA_SAMPLE_ULAW;
+    case AV_CODEC_ID_PCM_S16LE: return PA_SAMPLE_S16LE;
+    case AV_CODEC_ID_PCM_S16BE: return PA_SAMPLE_S16BE;
+    case AV_CODEC_ID_PCM_F32LE: return PA_SAMPLE_FLOAT32LE;
+    case AV_CODEC_ID_PCM_F32BE: return PA_SAMPLE_FLOAT32BE;
+    case AV_CODEC_ID_PCM_S32LE: return PA_SAMPLE_S32LE;
+    case AV_CODEC_ID_PCM_S32BE: return PA_SAMPLE_S32BE;
+    case AV_CODEC_ID_PCM_S24LE: return PA_SAMPLE_S24LE;
+    case AV_CODEC_ID_PCM_S24BE: return PA_SAMPLE_S24BE;
+    default:                    return PA_SAMPLE_INVALID;
+    }
+}
+
+static av_cold int pulse_write_header(AVFormatContext *h)
+{
+    PulseData *s = h->priv_data;
+    AVStream *st = NULL;
+    int ret;
+    pa_sample_spec ss;
+    pa_buffer_attr attr = { -1, -1, -1, -1, -1 };
+    const char *stream_name = s->stream_name;
+
+    for (unsigned i = 0; i < h->nb_streams; i++) {
+        if (h->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            st = h->streams[i];
+            s->stream_index = i;
+            break;
+        }
+    }
+
+    if (!st) {
+        av_log(s, AV_LOG_ERROR, "No audio stream found.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (!stream_name)
+        stream_name = h->filename;
+
+    ss.format = codec_id_to_pulse_format(st->codec->codec_id);
+    ss.rate = st->codec->sample_rate;
+    ss.channels = st->codec->channels;
+
+    s->pa = pa_simple_new(s->server,                 // Server
+                          s->name,                   // Application name
+                          PA_STREAM_PLAYBACK,
+                          s->device,                 // Device
+                          stream_name,               // Description of a stream
+                          &ss,                       // Sample format
+                          NULL,                      // Use default channel map
+                          &attr,                     // Buffering attributes
+                          &ret);                     // Result
+
+    if (!s->pa) {
+        av_log(s, AV_LOG_ERROR, "pa_simple_new failed: %s\n", pa_strerror(ret));
+        return AVERROR(EIO);
+    }
+
+    avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+
+    return 0;
+}
+
+static av_cold int pulse_write_trailer(AVFormatContext *h)
+{
+    PulseData *s = h->priv_data;
+    pa_simple_flush(s->pa, NULL);
+    pa_simple_free(s->pa);
+    s->pa = NULL;
+    return 0;
+}
+
+static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
+{
+    PulseData *s = h->priv_data;
+    int size     = pkt->size;
+    uint8_t *buf = pkt->data;
+    int error;
+
+    if (s->stream_index != pkt->stream_index)
+        return 0;
+
+    if ((error = pa_simple_write(s->pa, buf, size, &error))) {
+        av_log(s, AV_LOG_ERROR, "pa_simple_write failed: %s\n", pa_strerror(error));
+        return AVERROR(EIO);
+    }
+
+    return 0;
+}
+
+static void pulse_get_output_timestamp(AVFormatContext *h, int stream, int64_t *dts, int64_t *wall)
+{
+    PulseData *s = h->priv_data;
+    pa_usec_t latency = pa_simple_get_latency(s->pa, NULL);
+    *wall = av_gettime();
+    *dts = h->streams[0]->cur_dts - latency;
+}
+
+#define OFFSET(a) offsetof(PulseData, a)
+#define E AV_OPT_FLAG_ENCODING_PARAM
+
+static const AVOption options[] = {
+    { "server",        "set PulseAudio server",  OFFSET(server),      AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "name",          "set application name",   OFFSET(name),        AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, E },
+    { "stream_name",   "set stream description", OFFSET(stream_name), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { "device",        "set device name",        OFFSET(device),      AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
+    { NULL }
+};
+
+static const AVClass pulse_muxer_class = {
+    .class_name     = "Pulse muxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
+AVOutputFormat ff_pulse_muxer = {
+    .name           = "pulse",
+    .long_name      = NULL_IF_CONFIG_SMALL("Pulse audio output"),
+    .priv_data_size = sizeof(PulseData),
+    .audio_codec    = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .video_codec    = AV_CODEC_ID_NONE,
+    .write_header   = pulse_write_header,
+    .write_packet   = pulse_write_packet,
+    .write_trailer  = pulse_write_trailer,
+    .get_output_timestamp = pulse_get_output_timestamp,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &pulse_muxer_class,
+};

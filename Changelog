@@ -39,6 +39,7 @@ version <next>
 - native VP9 decoder
 - dpx parser
 - max_error_rate parameter in ffmpeg
+- PulseAudio output device
 
 
 version 2.0:

@@ -108,6 +108,41 @@ ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_dither colors -
 
 OSS (Open Sound System) output device.
 
+@section pulse
+
+PulseAudio output device.
+
+To enable this output device you need to configure FFmpeg with @code{--enable-libpulse}.
+
+More information about PulseAudio can be found on @url{http://www.pulseaudio.org}
+
+@subsection Options
+@table @option
+
+@item server
+Connect to a specific PulseAudio server, specified by an IP address.
+Default server is used when not provided.
+
+@item name
+Specify the application name PulseAudio will use when showing active clients,
+by default it is the @code{LIBAVFORMAT_IDENT} string.
+
+@item stream_name
+Specify the stream name PulseAudio will use when showing active streams,
+by default it is set to the specified output name.
+
+@item device
+Specify the device to use. Default device is used when not provided.
+List of output devices can be obtained with command @command{pactl list sinks}.
+
+@end table
+
+@subsection Examples
+Play a file on default device on default server:
+@example
+ffmpeg  -i INPUT -f pulse "stream name"
+@end example
+
 @section sdl
 
 SDL (Simple DirectMedia Layer) output device.
