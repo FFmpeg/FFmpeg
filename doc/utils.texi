@@ -198,6 +198,18 @@ The following abbreviations are recognized:
 3996x2160
 @item 4kscope
 4096x1716
+@item nhd
+640x360
+@item hqvga
+240x160
+@item wqvga
+400x240
+@item fwqvga
+432x240
+@item hvga
+480x320
+@item qhd
+960x540
 @end table
 
 @anchor{video rate syntax}

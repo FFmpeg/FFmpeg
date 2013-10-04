@@ -115,6 +115,12 @@ static const VideoSizeAbbr video_size_abbrs[] = {
     { "4k",       4096,2160 }, /* Digital Cinema System Specification */
     { "4kflat",   3996,2160 },
     { "4kscope",  4096,1716 },
+    { "nhd",       640,360  },
+    { "hqvga",     240,160  },
+    { "wqvga",     400,240  },
+    { "fwqvga",    432,240  },
+    { "hvga",      480,320  },
+    { "qhd",       960,540  },
 };
 
 static const VideoRateAbbr video_rate_abbrs[]= {
