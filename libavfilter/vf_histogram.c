@@ -247,9 +247,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->pts = in->pts;
 
     for (k = 0; k < h->ncomp; k++) {
-        int is_chroma = (k == 1 || k == 2);
-        int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->desc->log2_chroma_h : 0));
-        int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->desc->log2_chroma_w : 0));
+        const int is_chroma = (k == 1 || k == 2);
+        const int dst_h = FF_CEIL_RSHIFT(outlink->h, (is_chroma ? h->desc->log2_chroma_h : 0));
+        const int dst_w = FF_CEIL_RSHIFT(outlink->w, (is_chroma ? h->desc->log2_chroma_w : 0));
         for (i = 0; i < dst_h ; i++)
             memset(out->data[h->desc->comp[k].plane] +
                    i * out->linesize[h->desc->comp[k].plane],
@@ -260,7 +260,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     case MODE_LEVELS:
         for (k = 0; k < h->ncomp; k++) {
             const int p = h->desc->comp[k].plane;
-            int start = k * (h->level_height + h->scale_height) * h->display_mode;
+            const int start = k * (h->level_height + h->scale_height) * h->display_mode;
             double max_hval_log;
             unsigned max_hval = 0;
 
@@ -299,16 +299,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         break;
     case MODE_WAVEFORM:
         for (k = 0; k < h->ncomp; k++) {
-            int offset = k * 256 * h->display_mode;
+            const int offset = k * 256 * h->display_mode;
             gen_waveform(h, in, out, k, h->step, offset, h->waveform_mode);
         }
         break;
     case MODE_COLOR:
         for (i = 0; i < inlink->h; i++) {
-            int iw1 = i * in->linesize[1];
-            int iw2 = i * in->linesize[2];
+            const int iw1 = i * in->linesize[1];
+            const int iw2 = i * in->linesize[2];
             for (j = 0; j < inlink->w; j++) {
-                int pos = in->data[1][iw1 + j] * out->linesize[0] + in->data[2][iw2 + j];
+                const int pos = in->data[1][iw1 + j] * out->linesize[0] + in->data[2][iw2 + j];
                 if (out->data[0][pos] < 255)
                     out->data[0][pos]++;
             }
@@ -325,12 +325,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         break;
     case MODE_COLOR2:
         for (i = 0; i < inlink->h; i++) {
-            int iw1 = i * in->linesize[1];
-            int iw2 = i * in->linesize[2];
+            const int iw1 = i * in->linesize[1];
+            const int iw2 = i * in->linesize[2];
             for (j = 0; j < inlink->w; j++) {
-                int u = in->data[1][iw1 + j];
-                int v = in->data[2][iw2 + j];
-                int pos = u * out->linesize[0] + v;
+                const int u = in->data[1][iw1 + j];
+                const int v = in->data[2][iw2 + j];
+                const int pos = u * out->linesize[0] + v;
                 if (!out->data[0][pos])
                     out->data[0][pos] = FFABS(128 - u) + FFABS(128 - v);
                 out->data[1][pos] = u;
