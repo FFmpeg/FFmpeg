@@ -78,6 +78,7 @@ static int decode_frame(AVCodecContext *avctx,
     int magic_num, endian;
     int x, y, i, ret;
     int w, h, bits_per_color, descriptor, elements, packing, total_size;
+    int encoding;
 
     unsigned int rgbBuffer = 0;
     int n_datum = 0;
@@ -126,8 +127,15 @@ static int decode_frame(AVCodecContext *avctx,
     bits_per_color = buf[0];
     buf++;
     packing = read16(&buf, endian);
+    encoding = read16(&buf, endian);
 
-    buf += 822;
+    if (encoding) {
+        avpriv_report_missing_feature(avctx,
+                                      "Unsupported encoding %d\n", encoding);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    buf += 820;
     avctx->sample_aspect_ratio.num = read32(&buf, endian);
     avctx->sample_aspect_ratio.den = read32(&buf, endian);
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0)
