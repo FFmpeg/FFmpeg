@@ -164,16 +164,26 @@ static int gif_read_ext(AVFormatContext *s)
         if ((ret = avio_skip(pb, sb_size - 3)) < 0 )
             return ret;
     } else if (ext_label == GIF_APP_EXT_LABEL) {
-        uint8_t netscape_ext[sizeof(NETSCAPE_EXT_STR)-1 + 2];
+        uint8_t data[256];
 
-        if ((sb_size = avio_r8(pb)) != strlen(NETSCAPE_EXT_STR))
-            return 0;
-        ret = avio_read(pb, netscape_ext, sizeof(netscape_ext));
-        if (ret < sizeof(netscape_ext))
+        sb_size = avio_r8(pb);
+        ret = avio_read(pb, data, sb_size);
+        if (ret < 0 || !sb_size)
             return ret;
-        gdc->total_iter = avio_rl16(pb);
-        if (gdc->total_iter == 0)
-            gdc->total_iter = -1;
+
+        if (sb_size == strlen(NETSCAPE_EXT_STR)) {
+            sb_size = avio_r8(pb);
+            ret = avio_read(pb, data, sb_size);
+            if (ret < 0 || !sb_size)
+                return ret;
+
+            if (sb_size == 3 && data[0] == 1) {
+                gdc->total_iter = AV_RL16(data+1);
+
+                if (gdc->total_iter == 0)
+                    gdc->total_iter = -1;
+            }
+        }
     }
 
     if ((ret = gif_skip_subblocks(pb)) < 0)
