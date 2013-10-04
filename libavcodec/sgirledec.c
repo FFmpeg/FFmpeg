@@ -140,6 +140,7 @@ static av_cold int sgirle_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_sgirle_decoder = {
     .name           = "sgirle",
+    .long_name      = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGIRLE,
     .priv_data_size = sizeof(SGIRLEContext),
@@ -147,5 +148,4 @@ AVCodec ff_sgirle_decoder = {
     .close          = sgirle_decode_end,
     .decode         = sgirle_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
 };

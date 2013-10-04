@@ -457,6 +457,7 @@ static const AVClass teletext_class = {
 
 AVCodec ff_libzvbi_teletext_decoder = {
     .name      = "libzvbi_teletextdec",
+    .long_name = NULL_IF_CONFIG_SMALL("Libzvbi DVB teletext decoder"),
     .type      = AVMEDIA_TYPE_SUBTITLE,
     .id        = CODEC_ID_DVB_TELETEXT,
     .priv_data_size = sizeof(TeletextContext),
@@ -464,6 +465,5 @@ AVCodec ff_libzvbi_teletext_decoder = {
     .close     = teletext_close_decoder,
     .decode    = teletext_decode_frame,
     .flush     = teletext_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("Libzvbi DVB teletext decoder"),
     .priv_class= &teletext_class,
 };

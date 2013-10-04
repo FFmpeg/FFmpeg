@@ -760,6 +760,7 @@ AVCodec ff_libx264_encoder = {
 
 AVCodec ff_libx264rgb_encoder = {
     .name           = "libx264rgb",
+    .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(X264Context),
@@ -767,7 +768,6 @@ AVCodec ff_libx264rgb_encoder = {
     .encode2        = X264_frame,
     .close          = X264_close,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB"),
     .priv_class     = &rgbclass,
     .defaults       = x264_defaults,
     .pix_fmts       = pix_fmts_8bit_rgb,

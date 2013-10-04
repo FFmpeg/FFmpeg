@@ -177,6 +177,7 @@ static const AVClass libtwolame_class = {
 
 AVCodec ff_libtwolame_encoder = {
     .name                  = "libtwolame",
+    .long_name             = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_MP2,
     .priv_data_size        = sizeof(TWOLAMEContext),
@@ -193,6 +194,5 @@ AVCodec ff_libtwolame_encoder = {
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
     .supported_samplerates = (const int[]){ 16000, 22050, 24000, 32000, 44100, 48000, 0 },
-    .long_name             = NULL_IF_CONFIG_SMALL("libtwolame MP2 (MPEG audio layer 2)"),
     .priv_class            = &libtwolame_class,
 };

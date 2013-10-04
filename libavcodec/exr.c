@@ -804,11 +804,11 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_exr_decoder = {
     .name               = "exr",
+    .long_name          = NULL_IF_CONFIG_SMALL("OpenEXR image"),
     .type               = AVMEDIA_TYPE_VIDEO,
     .id                 = AV_CODEC_ID_EXR,
     .priv_data_size     = sizeof(EXRContext),
     .close              = decode_end,
     .decode             = decode_frame,
     .capabilities       = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
-    .long_name          = NULL_IF_CONFIG_SMALL("OpenEXR image"),
 };

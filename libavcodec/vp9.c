@@ -3564,6 +3564,7 @@ static av_cold int vp9_decode_free(AVCodecContext *ctx)
 
 AVCodec ff_vp9_decoder = {
   .name                  = "vp9",
+  .long_name             = NULL_IF_CONFIG_SMALL("Google VP9"),
   .type                  = AVMEDIA_TYPE_VIDEO,
   .id                    = AV_CODEC_ID_VP9,
   .priv_data_size        = sizeof(VP9Context),
@@ -3572,5 +3573,4 @@ AVCodec ff_vp9_decoder = {
   .decode                = vp9_decode_packet,
   .capabilities          = CODEC_CAP_DR1,
   .flush                 = vp9_decode_flush,
-  .long_name             = NULL_IF_CONFIG_SMALL("Google VP9"),
 };

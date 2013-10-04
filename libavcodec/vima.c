@@ -230,10 +230,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_vima_decoder = {
     .name           = "vima",
+    .long_name      = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_VIMA,
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("LucasArts VIMA audio"),
 };

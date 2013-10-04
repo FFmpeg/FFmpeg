@@ -2579,6 +2579,7 @@ AVCodec ff_mpeg2video_decoder = {
 //legacy decoder
 AVCodec ff_mpegvideo_decoder = {
     .name           = "mpegvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(Mpeg1Context),
@@ -2588,7 +2589,6 @@ AVCodec ff_mpegvideo_decoder = {
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .flush          = flush,
     .max_lowres     = 3,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
 };
 
 #if CONFIG_MPEG_XVMC_DECODER
@@ -2628,6 +2628,7 @@ AVCodec ff_mpeg_xvmc_decoder = {
 #if CONFIG_MPEG_VDPAU_DECODER
 AVCodec ff_mpeg_vdpau_decoder = {
     .name           = "mpegvideo_vdpau",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(Mpeg1Context),
@@ -2637,13 +2638,13 @@ AVCodec ff_mpeg_vdpau_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
                       CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
     .flush          = flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1/2 video (VDPAU acceleration)"),
 };
 #endif
 
 #if CONFIG_MPEG1_VDPAU_DECODER
 AVCodec ff_mpeg1_vdpau_decoder = {
     .name           = "mpeg1video_vdpau",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG1VIDEO,
     .priv_data_size = sizeof(Mpeg1Context),
@@ -2653,6 +2654,5 @@ AVCodec ff_mpeg1_vdpau_decoder = {
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED |
                       CODEC_CAP_HWACCEL_VDPAU | CODEC_CAP_DELAY,
     .flush          = flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video (VDPAU acceleration)"),
 };
 #endif

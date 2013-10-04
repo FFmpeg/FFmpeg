@@ -124,6 +124,7 @@ static const AVProfile profiles[] = {
 
 AVCodec ff_libaacplus_encoder = {
     .name           = "libaacplus",
+    .long_name      = NULL_IF_CONFIG_SMALL("libaacplus AAC+ (Advanced Audio Codec with SBR+PS)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_AAC,
     .priv_data_size = sizeof(aacPlusAudioContext),
@@ -133,7 +134,6 @@ AVCodec ff_libaacplus_encoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libaacplus AAC+ (Advanced Audio Codec with SBR+PS)"),
     .profiles       = profiles,
     .channel_layouts = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                             AV_CH_LAYOUT_STEREO,

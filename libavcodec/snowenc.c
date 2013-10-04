@@ -1878,6 +1878,7 @@ static const AVClass snowenc_class = {
 
 AVCodec ff_snow_encoder = {
     .name           = "snow",
+    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
@@ -1889,7 +1890,6 @@ AVCodec ff_snow_encoder = {
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
     .priv_class     = &snowenc_class,
 };
 

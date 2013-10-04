@@ -119,14 +119,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_avrn_decoder = {
     .name           = "avrn",
+    .long_name      = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AVRN,
     .priv_data_size = sizeof(AVRnContext),
     .init           = init,
     .close          = end,
     .decode         = decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("Avid AVI Codec"),
     .capabilities   = CODEC_CAP_DR1,
     .max_lowres     = 3,
 };
-

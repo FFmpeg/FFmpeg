@@ -88,36 +88,36 @@ static av_cold int encode_close(AVCodecContext *avctx)
 #if CONFIG_R210_ENCODER
 AVCodec ff_r210_encoder = {
     .name           = "r210",
+    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_R210,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Uncompressed RGB 10-bit"),
 };
 #endif
 #if CONFIG_R10K_ENCODER
 AVCodec ff_r10k_encoder = {
     .name           = "r10k",
+    .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_R10K,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("AJA Kona 10-bit RGB Codec"),
 };
 #endif
 #if CONFIG_AVRP_ENCODER
 AVCodec ff_avrp_encoder = {
     .name           = "avrp",
+    .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AVRP,
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
 };
 #endif

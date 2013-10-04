@@ -211,9 +211,9 @@ static int brpix_decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_brender_pix_decoder = {
     .name           = "brender_pix",
+    .long_name      = NULL_IF_CONFIG_SMALL("BRender PIX image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_BRENDER_PIX,
     .decode         = brpix_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("BRender PIX image"),
 };

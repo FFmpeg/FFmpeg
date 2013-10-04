@@ -6278,6 +6278,7 @@ AVCodec ff_wmv3_decoder = {
 #if CONFIG_WMV3_VDPAU_DECODER
 AVCodec ff_wmv3_vdpau_decoder = {
     .name           = "wmv3_vdpau",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
     .priv_data_size = sizeof(VC1Context),
@@ -6285,7 +6286,6 @@ AVCodec ff_wmv3_vdpau_decoder = {
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 9 VDPAU"),
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_WMV3, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };
@@ -6294,6 +6294,7 @@ AVCodec ff_wmv3_vdpau_decoder = {
 #if CONFIG_VC1_VDPAU_DECODER
 AVCodec ff_vc1_vdpau_decoder = {
     .name           = "vc1_vdpau",
+    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,
     .priv_data_size = sizeof(VC1Context),
@@ -6301,7 +6302,6 @@ AVCodec ff_vc1_vdpau_decoder = {
     .close          = ff_vc1_decode_end,
     .decode         = vc1_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
-    .long_name      = NULL_IF_CONFIG_SMALL("SMPTE VC-1 VDPAU"),
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_VDPAU_VC1, AV_PIX_FMT_NONE },
     .profiles       = NULL_IF_CONFIG_SMALL(profiles)
 };

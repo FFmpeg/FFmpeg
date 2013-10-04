@@ -1927,6 +1927,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
 AVCodec ff_dirac_decoder = {
     .name           = "dirac",
+    .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(DiracContext),
@@ -1935,5 +1936,4 @@ AVCodec ff_dirac_decoder = {
     .decode         = dirac_decode_frame,
     .capabilities   = CODEC_CAP_DELAY,
     .flush          = dirac_decode_flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
 };

@@ -81,11 +81,11 @@ static av_cold int yuv4_encode_close(AVCodecContext *avctx)
 
 AVCodec ff_yuv4_encoder = {
     .name         = "yuv4",
+    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:2:0"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_YUV4,
     .init         = yuv4_encode_init,
     .encode2      = yuv4_encode_frame,
     .close        = yuv4_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed 4:2:0"),
 };

@@ -5204,6 +5204,7 @@ AVCodec ff_h264_decoder = {
 #if CONFIG_H264_VDPAU_DECODER
 AVCodec ff_h264_vdpau_decoder = {
     .name           = "h264_vdpau",
+    .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
     .priv_data_size = sizeof(H264Context),
@@ -5212,7 +5213,6 @@ AVCodec ff_h264_vdpau_decoder = {
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .flush          = flush_dpb,
-    .long_name      = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_VDPAU_H264,
                                                      AV_PIX_FMT_NONE},
     .profiles       = NULL_IF_CONFIG_SMALL(profiles),

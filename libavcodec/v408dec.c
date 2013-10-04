@@ -82,22 +82,22 @@ static int v408_decode_frame(AVCodecContext *avctx, void *data,
 #if CONFIG_AYUV_DECODER
 AVCodec ff_ayuv_decoder = {
     .name         = "ayuv",
+    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_AYUV,
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
     .capabilities = CODEC_CAP_DR1,
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed MS 4:4:4:4"),
 };
 #endif
 #if CONFIG_V408_DECODER
 AVCodec ff_v408_decoder = {
     .name         = "v408",
+    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_V408,
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
     .capabilities = CODEC_CAP_DR1,
-    .long_name    = NULL_IF_CONFIG_SMALL("Uncompressed packed QT 4:4:4:4"),
 };
 #endif

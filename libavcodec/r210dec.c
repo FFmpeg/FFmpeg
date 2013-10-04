@@ -112,11 +112,11 @@ AVCodec ff_r10k_decoder = {
 #if CONFIG_AVRP_DECODER
 AVCodec ff_avrp_decoder = {
     .name           = "avrp",
+    .long_name      = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AVRP,
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Avid 1:1 10-bit RGB Packer"),
 };
 #endif
