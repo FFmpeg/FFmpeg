@@ -2218,6 +2218,8 @@ static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
             pts = cts;
         ts += cts - pts;
         pts = cts;
+        if (size + 3 + 4 > pkt->data + pkt->size - next)
+            break;
         bytestream_put_byte(&p, type);
         bytestream_put_be24(&p, size);
         bytestream_put_be24(&p, ts);
