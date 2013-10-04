@@ -138,6 +138,9 @@
 #ifndef FF_API_VDPAU
 #define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 53)
 #endif
+#ifndef FF_API_GET_CHANNEL_LAYOUT_COMPAT
+#define FF_API_GET_CHANNEL_LAYOUT_COMPAT (LIBAVUTIL_VERSION_MAJOR < 53)
+#endif
 
 /**
  * @}
