@@ -151,7 +151,8 @@ static int set_params(AVFilterContext *ctx, const char *params)
         if (*params) {
             if (!(param = av_get_token(&params, "|")))
                 return AVERROR(ENOMEM);
-            params++;               /* skip ':' */
+            if (*params)
+                params++;               /* skip ':' */
             ret = set_param(ctx, info, i, param);
             av_free(param);
             if (ret < 0)
