@@ -15,6 +15,11 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+libavutil 52.47.100
+2013-10-17 - xxxxxxx - lavu 52.47.100 - opt.h
+  Add AV_OPT_TYPE_CHANNEL_LAYOUT and channel layout option handlers
+  av_opt_get_channel_layout() and av_opt_set_channel_layout().
+
 2013-10-xx - xxxxxxx -libswscale 2.5.101 - options.c
   Change default scaler to bicubic
 

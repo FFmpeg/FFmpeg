@@ -233,6 +233,7 @@ enum AVOptionType{
     AV_OPT_TYPE_VIDEO_RATE = MKBETAG('V','R','A','T'), ///< offset must point to AVRational
     AV_OPT_TYPE_DURATION   = MKBETAG('D','U','R',' '),
     AV_OPT_TYPE_COLOR      = MKBETAG('C','O','L','R'),
+    AV_OPT_TYPE_CHANNEL_LAYOUT = MKBETAG('C','H','L','A'),
 #if FF_API_OLD_AVOPTIONS
     FF_OPT_TYPE_FLAGS = 0,
     FF_OPT_TYPE_INT,
@@ -657,6 +658,7 @@ int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_
 int av_opt_set_pixel_fmt (void *obj, const char *name, enum AVPixelFormat fmt, int search_flags);
 int av_opt_set_sample_fmt(void *obj, const char *name, enum AVSampleFormat fmt, int search_flags);
 int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int search_flags);
+int av_opt_set_channel_layout(void *obj, const char *name, int64_t ch_layout, int search_flags);
 
 /**
  * Set a binary option to an integer list.
@@ -700,6 +702,7 @@ int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_
 int av_opt_get_pixel_fmt (void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt);
 int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt);
 int av_opt_get_video_rate(void *obj, const char *name, int search_flags, AVRational *out_val);
+int av_opt_get_channel_layout(void *obj, const char *name, int search_flags, int64_t *ch_layout);
 /**
  * @}
  */
