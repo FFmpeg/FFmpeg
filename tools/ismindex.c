@@ -49,7 +49,7 @@ static int usage(const char *argv0, int ret)
 struct MoofOffset {
     int64_t time;
     int64_t offset;
-    int duration;
+    int64_t duration;
 };
 
 struct Track {
@@ -425,7 +425,7 @@ static void print_track_chunks(FILE *out, struct Tracks *tracks, int main,
                 fprintf(stderr, "Mismatched duration of %s chunk %d in %s and %s\n",
                         type, i, track->name, tracks->tracks[j]->name);
         }
-        fprintf(out, "\t\t<c n=\"%d\" d=\"%d\" />\n",
+        fprintf(out, "\t\t<c n=\"%d\" d=\"%"PRId64"\" />\n",
                 i, track->offsets[i].duration);
     }
 }
