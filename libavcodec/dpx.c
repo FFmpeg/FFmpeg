@@ -125,9 +125,9 @@ static int decode_frame(AVCodecContext *avctx,
     avctx->bits_per_raw_sample =
     bits_per_color = buf[0];
     buf++;
-    packing = *((uint16_t*)buf);
+    packing = read16(&buf, endian);
 
-    buf += 824;
+    buf += 822;
     avctx->sample_aspect_ratio.num = read32(&buf, endian);
     avctx->sample_aspect_ratio.den = read32(&buf, endian);
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0)
