@@ -687,7 +687,7 @@ int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int searc
  * @param[in] search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
  * is passed here, then the option may be found in a child of obj.
  * @param[out] out_val value of the option will be written here
- * @return 0 on success, a negative error code otherwise
+ * @return >=0 on success, a negative error code otherwise
  */
 /**
  * @note the returned string will av_malloc()ed and must be av_free()ed by the caller
