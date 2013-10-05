@@ -298,8 +298,6 @@ static int handle_file(struct Tracks *tracks, const char *file, int split)
         fprintf(stderr, "No streams found in %s\n", file);
         goto fail;
     }
-    if (!tracks->duration)
-        tracks->duration = ctx->duration;
 
     for (i = 0; i < ctx->nb_streams; i++) {
         struct Track **temp;
@@ -337,6 +335,10 @@ static int handle_file(struct Tracks *tracks, const char *file, int split)
             av_freep(&tracks->tracks[tracks->nb_tracks]);
             continue;
         }
+
+        tracks->duration = FFMAX(tracks->duration,
+                                 av_rescale_rnd(track->duration, AV_TIME_BASE,
+                                                track->timescale, AV_ROUND_UP));
 
         if (track->is_audio) {
             if (tracks->audio_track < 0)
