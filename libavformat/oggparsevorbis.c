@@ -78,12 +78,12 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
 
     /* must have vendor_length and user_comment_list_length */
     if (size < 8)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     s = bytestream_get_le32(&p);
 
     if (end - p - 4 < s || s < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     p += s;
 
@@ -218,21 +218,21 @@ static int vorbis_header(AVFormatContext *s, int idx)
     if (!os->private) {
         os->private = av_mallocz(sizeof(struct oggvorbis_private));
         if (!os->private)
-            return 0;
+            return AVERROR(ENOMEM);
     }
 
     if (!(pkt_type & 1))
         return 0;
 
     if (os->psize < 1 || pkt_type > 5)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     priv = os->private;
 
     if (priv->packet[pkt_type >> 1])
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (pkt_type > 1 && !priv->packet[0] || pkt_type > 3 && !priv->packet[1])
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     priv->len[pkt_type >> 1]    = os->psize;
     priv->packet[pkt_type >> 1] = av_mallocz(os->psize);
@@ -243,10 +243,10 @@ static int vorbis_header(AVFormatContext *s, int idx)
         int srate;
 
         if (os->psize != 30)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (bytestream_get_le32(&p) != 0) /* vorbis_version */
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         st->codec->channels = bytestream_get_byte(&p);
         srate               = bytestream_get_le32(&p);
@@ -259,12 +259,12 @@ static int vorbis_header(AVFormatContext *s, int idx)
         bs1       = blocksize >> 4;
 
         if (bs0 > bs1)
-            return -1;
+            return AVERROR_INVALIDDATA;
         if (bs0 < 6 || bs1 > 13)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (bytestream_get_byte(&p) != 1) /* framing_flag */
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id   = AV_CODEC_ID_VORBIS;
