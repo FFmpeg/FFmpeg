@@ -326,8 +326,7 @@ static int handle_file(struct Tracks *tracks, const char *file, int split)
         track->bitrate   = st->codec->bit_rate;
         track->track_id  = st->id;
         track->timescale = st->time_base.den;
-        track->duration  = av_rescale_rnd(ctx->duration, track->timescale,
-                                          AV_TIME_BASE, AV_ROUND_UP);
+        track->duration  = st->duration;
         track->is_audio  = st->codec->codec_type == AVMEDIA_TYPE_AUDIO;
         track->is_video  = st->codec->codec_type == AVMEDIA_TYPE_VIDEO;
 
