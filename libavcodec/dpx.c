@@ -149,53 +149,53 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
 
     switch (descriptor) {
-        case 51: // RGBA
-            elements = 4;
-            break;
-        case 50: // RGB
-            elements = 3;
-            break;
-        default:
-            avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
-            return AVERROR_PATCHWELCOME;
+    case 51: // RGBA
+        elements = 4;
+        break;
+    case 50: // RGB
+        elements = 3;
+        break;
+    default:
+        avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
+        return AVERROR_PATCHWELCOME;
     }
 
     switch (bits_per_color) {
-        case 8:
-            if (elements == 4) {
-                avctx->pix_fmt = AV_PIX_FMT_RGBA;
-            } else {
-                avctx->pix_fmt = AV_PIX_FMT_RGB24;
-            }
-            total_size = avctx->width * avctx->height * elements;
-            break;
-        case 10:
-            if (!packing) {
-                av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
-                return -1;
-            }
-            avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-            total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
-            break;
-        case 12:
-            if (!packing) {
-                av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
-                return -1;
-            }
-            avctx->pix_fmt = AV_PIX_FMT_GBRP12;
-            total_size = 2 * avctx->width * avctx->height * elements;
-            break;
-        case 16:
-            if (endian) {
-                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGB48BE;
-            } else {
-                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
-            }
-            total_size = 2 * avctx->width * avctx->height * elements;
-            break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
-            return AVERROR_INVALIDDATA;
+    case 8:
+        if (elements == 4) {
+            avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        } else {
+            avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        }
+        total_size = avctx->width * avctx->height * elements;
+        break;
+    case 10:
+        if (!packing) {
+            av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
+            return -1;
+        }
+        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
+        break;
+    case 12:
+        if (!packing) {
+            av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
+            return -1;
+        }
+        avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        total_size = 2 * avctx->width * avctx->height * elements;
+        break;
+    case 16:
+        if (endian) {
+            avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGB48BE;
+        } else {
+            avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
+        }
+        total_size = 2 * avctx->width * avctx->height * elements;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
+        return AVERROR_INVALIDDATA;
     }
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
