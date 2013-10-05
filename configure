@@ -4965,7 +4965,7 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
+Libs: -L\${libdir} -Wl,-rpath,\${libdir} -l${shortname} $(enabled shared || echo $libs)
 Cflags: -I\${includedir}
 EOF
 }
