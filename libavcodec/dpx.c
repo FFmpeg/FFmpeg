@@ -130,13 +130,11 @@ static int decode_frame(AVCodecContext *avctx,
     encoding = read16(&buf, endian);
 
     if (packing > 1) {
-        avpriv_report_missing_feature(avctx,
-                                      "Unsupported packing %d\n", packing);
+        avpriv_report_missing_feature(avctx, "Packing %d", packing);
         return AVERROR_PATCHWELCOME;
     }
     if (encoding) {
-        avpriv_report_missing_feature(avctx,
-                                      "Unsupported encoding %d\n", encoding);
+        avpriv_report_missing_feature(avctx, "Encoding %d", encoding);
         return AVERROR_PATCHWELCOME;
     }
 
