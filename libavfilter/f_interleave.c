@@ -50,14 +50,14 @@ static const AVOption filt_name##_options[] = {                     \
 
 inline static int push_frame(AVFilterContext *ctx)
 {
-    InterleaveContext *interleave = ctx->priv;
+    InterleaveContext *s = ctx->priv;
     AVFrame *frame;
     int i, queue_idx = -1;
     int64_t pts_min = INT64_MAX;
 
     /* look for oldest frame */
     for (i = 0; i < ctx->nb_inputs; i++) {
-        struct FFBufQueue *q = &interleave->queues[i];
+        struct FFBufQueue *q = &s->queues[i];
 
         if (!q->available && !ctx->inputs[i]->closed)
             return 0;
@@ -74,7 +74,7 @@ inline static int push_frame(AVFilterContext *ctx)
     if (queue_idx < 0)
         return AVERROR_EOF;
 
-    frame = ff_bufqueue_get(&interleave->queues[queue_idx]);
+    frame = ff_bufqueue_get(&s->queues[queue_idx]);
     av_log(ctx, AV_LOG_DEBUG, "queue:%d -> frame time:%f\n",
            queue_idx, frame->pts * av_q2d(AV_TIME_BASE_Q));
     return ff_filter_frame(ctx->outputs[0], frame);
@@ -83,7 +83,7 @@ inline static int push_frame(AVFilterContext *ctx)
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
-    InterleaveContext *interleave = ctx->priv;
+    InterleaveContext *s = ctx->priv;
     unsigned in_no = FF_INLINK_IDX(inlink);
 
     if (frame->pts == AV_NOPTS_VALUE) {
@@ -96,23 +96,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     /* queue frame */
     frame->pts = av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q);
     av_log(ctx, AV_LOG_DEBUG, "frame pts:%f -> queue idx:%d available:%d\n",
-           frame->pts * av_q2d(AV_TIME_BASE_Q), in_no, interleave->queues[in_no].available);
-    ff_bufqueue_add(ctx, &interleave->queues[in_no], frame);
+           frame->pts * av_q2d(AV_TIME_BASE_Q), in_no, s->queues[in_no].available);
+    ff_bufqueue_add(ctx, &s->queues[in_no], frame);
 
     return push_frame(ctx);
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    InterleaveContext *interleave = ctx->priv;
+    InterleaveContext *s = ctx->priv;
     const AVFilterPad *outpad = &ctx->filter->outputs[0];
     int i;
 
-    interleave->queues = av_calloc(interleave->nb_inputs, sizeof(interleave->queues[0]));
-    if (!interleave->queues)
+    s->queues = av_calloc(s->nb_inputs, sizeof(s->queues[0]));
+    if (!s->queues)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < interleave->nb_inputs; i++) {
+    for (i = 0; i < s->nb_inputs; i++) {
         AVFilterPad inpad = { 0 };
 
         inpad.name = av_asprintf("input%d", i);
@@ -137,12 +137,12 @@ static av_cold int init(AVFilterContext *ctx)
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    InterleaveContext *interleave = ctx->priv;
+    InterleaveContext *s = ctx->priv;
     int i;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        ff_bufqueue_discard_all(&interleave->queues[i]);
-        av_freep(&interleave->queues[i]);
+        ff_bufqueue_discard_all(&s->queues[i]);
+        av_freep(&s->queues[i]);
         av_freep(&ctx->input_pads[i].name);
     }
 }
@@ -188,11 +188,11 @@ static int config_output(AVFilterLink *outlink)
 static int request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
-    InterleaveContext *interleave = ctx->priv;
+    InterleaveContext *s = ctx->priv;
     int i, ret;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (!interleave->queues[i].available && !ctx->inputs[i]->closed) {
+        if (!s->queues[i].available && !ctx->inputs[i]->closed) {
             ret = ff_request_frame(ctx->inputs[i]);
             if (ret != AVERROR_EOF)
                 return ret;
