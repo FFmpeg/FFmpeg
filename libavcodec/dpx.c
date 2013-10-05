@@ -158,8 +158,8 @@ static int decode_frame(AVCodecContext *avctx,
             elements = 3;
             break;
         default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported descriptor %d\n", descriptor);
-            return AVERROR_INVALIDDATA;
+            avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
+            return AVERROR_PATCHWELCOME;
     }
 
     switch (bits_per_color) {
