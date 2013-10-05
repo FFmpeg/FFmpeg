@@ -1847,7 +1847,8 @@ static int matroska_read_header(AVFormatContext *s)
                 av_reduce(&st->avg_frame_rate.num, &st->avg_frame_rate.den,
                           1000000000, track->default_duration, 30000);
 #if FF_API_R_FRAME_RATE
-                st->r_frame_rate = st->avg_frame_rate;
+                if (st->avg_frame_rate.num < st->avg_frame_rate.den * 1000L)
+                    st->r_frame_rate = st->avg_frame_rate;
 #endif
             }
 
