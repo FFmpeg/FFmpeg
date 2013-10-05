@@ -172,15 +172,17 @@ struct oggvorbis_private {
     int final_duration;
 };
 
-static unsigned int fixup_vorbis_headers(AVFormatContext *as,
-                                         struct oggvorbis_private *priv,
-                                         uint8_t **buf)
+static int fixup_vorbis_headers(AVFormatContext *as,
+                                struct oggvorbis_private *priv,
+                                uint8_t **buf)
 {
     int i, offset, len, err;
     unsigned char *ptr;
 
     len = priv->len[0] + priv->len[1] + priv->len[2];
     ptr = *buf = av_mallocz(len + len / 255 + 64);
+    if (!ptr)
+        return AVERROR(ENOMEM);
 
     ptr[0]  = 2;
     offset  = 1;
@@ -236,6 +238,8 @@ static int vorbis_header(AVFormatContext *s, int idx)
 
     priv->len[pkt_type >> 1]    = os->psize;
     priv->packet[pkt_type >> 1] = av_mallocz(os->psize);
+    if (!priv->packet[pkt_type >> 1])
+        return AVERROR(ENOMEM);
     memcpy(priv->packet[pkt_type >> 1], os->buf + os->pstart, os->psize);
     if (os->buf[os->pstart] == 1) {
         const uint8_t *p = os->buf + os->pstart + 7; /* skip "\001vorbis" tag */
