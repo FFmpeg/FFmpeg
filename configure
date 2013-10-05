@@ -260,6 +260,7 @@ Advanced options (experts only):
   --target-exec=CMD        command to run executables on target
   --target-path=DIR        path to view of build directory on target
   --target-samples=DIR     path to samples directory on target
+  --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
@@ -1653,6 +1654,7 @@ CMDLINE_SET="
     target_os
     target_path
     target_samples
+    tempprefix
     toolchain
     valgrind
     yasmexe
@@ -2650,7 +2652,11 @@ HOSTEXESUF=$(exesuf $host_os)
 : ${TMPDIR:=$TMP}
 : ${TMPDIR:=/tmp}
 
-if ! check_cmd mktemp -u XXXXXX; then
+if [ -n "$tempprefix" ] ; then
+    mktemp(){
+        echo $tempprefix.${HOSTNAME}.${UID}
+    }
+elif ! check_cmd mktemp -u XXXXXX; then
     # simple replacement for missing mktemp
     # NOT SAFE FOR GENERAL USE
     mktemp(){
