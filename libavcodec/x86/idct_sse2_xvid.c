@@ -43,7 +43,7 @@
 #include "idct_xvid.h"
 #include "dsputil_x86.h"
 
-#if HAVE_INLINE_ASM
+#if HAVE_SSE2_INLINE
 
 /**
  * @file
@@ -404,4 +404,4 @@ void ff_idct_xvid_sse2_add(uint8_t *dest, int line_size, short *block)
     ff_add_pixels_clamped_mmx(block, dest, line_size);
 }
 
-#endif /* HAVE_INLINE_ASM */
+#endif /* HAVE_SSE2_INLINE */
