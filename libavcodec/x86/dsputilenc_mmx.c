@@ -947,6 +947,7 @@ hadamard_func(ssse3)
 av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 {
     int cpu_flags = av_get_cpu_flags();
+    const int dct_algo = avctx->dct_algo;
 
 #if HAVE_YASM
     int bit_depth = avctx->bits_per_raw_sample;
@@ -966,18 +967,9 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
 
 #if HAVE_INLINE_ASM
     if (INLINE_MMX(cpu_flags)) {
-        const int dct_algo = avctx->dct_algo;
         if (avctx->bits_per_raw_sample <= 8 &&
-            (dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)) {
-            if (cpu_flags & AV_CPU_FLAG_SSE2) {
-                c->fdct = ff_fdct_sse2;
-            } else if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
-                c->fdct = ff_fdct_mmxext;
-            }else{
-                c->fdct = ff_fdct_mmx;
-            }
-        }
-
+            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
+            c->fdct = ff_fdct_mmx;
 
         c->diff_bytes= diff_bytes_mmx;
         c->sum_abs_dctelem= sum_abs_dctelem_mmx;
@@ -1001,6 +993,10 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
     }
 
     if (INLINE_MMXEXT(cpu_flags)) {
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
+            c->fdct = ff_fdct_mmxext;
+
         c->sum_abs_dctelem = sum_abs_dctelem_mmxext;
         c->vsad[4]         = vsad_intra16_mmxext;
 
@@ -1012,6 +1008,10 @@ av_cold void ff_dsputilenc_init_mmx(DSPContext *c, AVCodecContext *avctx)
     }
 
     if (INLINE_SSE2(cpu_flags)) {
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (dct_algo == FF_DCT_AUTO || dct_algo == FF_DCT_MMX))
+            c->fdct = ff_fdct_sse2;
+
         c->sum_abs_dctelem= sum_abs_dctelem_sse2;
     }
 
