@@ -125,8 +125,19 @@ typedef struct AVClass {
     int (*query_ranges)(struct AVOptionRanges **, void *obj, const char *key, int flags);
 } AVClass;
 
-/* av_log API */
+/**
+ * @addtogroup lavu_log
+ *
+ * @{
+ *
+ * @defgroup lavu_log_constants Logging Constants
+ *
+ * @{
+ */
 
+/**
+ * Print no output.
+ */
 #define AV_LOG_QUIET    -8
 
 /**
@@ -153,7 +164,14 @@ typedef struct AVClass {
  */
 #define AV_LOG_WARNING  24
 
+/**
+ * Standard information.
+ */
 #define AV_LOG_INFO     32
+
+/**
+ * Detailed information.
+ */
 #define AV_LOG_VERBOSE  40
 
 /**
@@ -164,26 +182,92 @@ typedef struct AVClass {
 #define AV_LOG_MAX_OFFSET (AV_LOG_DEBUG - AV_LOG_QUIET)
 
 /**
+ * @}
+ */
+
+/**
  * Send the specified message to the log if the level is less than or equal
  * to the current av_log_level. By default, all logging messages are sent to
- * stderr. This behavior can be altered by setting a different av_vlog callback
+ * stderr. This behavior can be altered by setting a different logging callback
  * function.
+ * @see av_log_set_callback
  *
  * @param avcl A pointer to an arbitrary struct of which the first field is a
- * pointer to an AVClass struct.
- * @param level The importance level of the message, lower values signifying
- * higher importance.
+ *        pointer to an AVClass struct.
+ * @param level The importance level of the message expressed using a @ref
+ *        lavu_log_constants "Logging Constant".
  * @param fmt The format string (printf-compatible) that specifies how
- * subsequent arguments are converted to output.
- * @see av_vlog
+ *        subsequent arguments are converted to output.
  */
 void av_log(void *avcl, int level, const char *fmt, ...) av_printf_format(3, 4);
 
-void av_vlog(void *avcl, int level, const char *fmt, va_list);
+
+/**
+ * Send the specified message to the log if the level is less than or equal
+ * to the current av_log_level. By default, all logging messages are sent to
+ * stderr. This behavior can be altered by setting a different logging callback
+ * function.
+ * @see av_log_set_callback
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ *        pointer to an AVClass struct.
+ * @param level The importance level of the message expressed using a @ref
+ *        lavu_log_constants "Logging Constant".
+ * @param fmt The format string (printf-compatible) that specifies how
+ *        subsequent arguments are converted to output.
+ * @param vl The arguments referenced by the format string.
+ */
+void av_vlog(void *avcl, int level, const char *fmt, va_list vl);
+
+/**
+ * Get the current log level
+ *
+ * @see lavu_log_constants
+ *
+ * @return Current log level
+ */
 int av_log_get_level(void);
-void av_log_set_level(int);
-void av_log_set_callback(void (*)(void*, int, const char*, va_list));
+
+/**
+ * Set the log level
+ *
+ * @see lavu_log_constants
+ *
+ * @param level Logging level
+ */
+void av_log_set_level(int level);
+
+/**
+ * Set the logging callback
+ *
+ * @see av_log_default_callback
+ *
+ * @param callback A logging function with a compatible signature.
+ */
+void av_log_set_callback(void (*callback)(void*, int, const char*, va_list));
+
+/**
+ * Default logging callback
+ *
+ * It prints the message to stderr, optionally colorizing it.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ *        pointer to an AVClass struct.
+ * @param level The importance level of the message expressed using a @ref
+ *        lavu_log_constants "Logging Constant".
+ * @param fmt The format string (printf-compatible) that specifies how
+ *        subsequent arguments are converted to output.
+ * @param ap The arguments referenced by the format string.
+ */
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
+
+/**
+ * Return the context name
+ *
+ * @param  ctx The AVClass context
+ *
+ * @return The AVClass class_name
+ */
 const char* av_default_item_name(void* ctx);
 AVClassCategory av_default_get_category(void *ptr);
 
@@ -218,5 +302,9 @@ void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
  */
 #define AV_LOG_SKIP_REPEATED 1
 void av_log_set_flags(int arg);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_LOG_H */
