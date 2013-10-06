@@ -85,6 +85,11 @@ static int wma_decode_init(AVCodecContext * avctx)
     int i, flags2;
     uint8_t *extradata;
 
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
+
     s->avctx = avctx;
 
     /* extract flag infos */

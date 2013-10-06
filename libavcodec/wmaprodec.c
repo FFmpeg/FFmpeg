@@ -277,6 +277,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
+
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
@@ -1502,8 +1507,11 @@ static int decode_packet(AVCodecContext *avctx,
         s->packet_done = 0;
 
         /** sanity check for the buffer length */
-        if (buf_size < avctx->block_align)
-            return 0;
+        if (buf_size < avctx->block_align) {
+            av_log(avctx, AV_LOG_ERROR, "Input packet too small (%d < %d)\n",
+                   buf_size, avctx->block_align);
+            return AVERROR_INVALIDDATA;
+        }
 
         s->next_packet_start = buf_size - avctx->block_align;
         buf_size = avctx->block_align;

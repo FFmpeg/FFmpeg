@@ -1914,7 +1914,7 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
 
 static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
     long i;
-    for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
+    for(i=0; i<=w-(int)sizeof(long); i+=sizeof(long)){
         long a = *(long*)(src+i);
         long b = *(long*)(dst+i);
         *(long*)(dst+i) = ((a&pb_7f) + (b&pb_7f)) ^ ((a^b)&pb_80);
@@ -1939,7 +1939,7 @@ static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
         }
     }else
 #endif
-    for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
+    for(i=0; i<=w-(int)sizeof(long); i+=sizeof(long)){
         long a = *(long*)(src1+i);
         long b = *(long*)(src2+i);
         *(long*)(dst+i) = ((a|pb_80) - (b&pb_7f)) ^ ((a^b^pb_80)&pb_80);
@@ -2836,7 +2836,7 @@ int ff_check_alignment(void){
 
 av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
-    int i;
+    int i, j;
 
     ff_check_alignment();
 
@@ -3222,11 +3222,15 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if (ARCH_SH4)        dsputil_init_sh4   (c, avctx);
     if (ARCH_BFIN)       dsputil_init_bfin  (c, avctx);
 
-    for(i=0; i<64; i++){
-        if(!c->put_2tap_qpel_pixels_tab[0][i])
-            c->put_2tap_qpel_pixels_tab[0][i]= c->put_h264_qpel_pixels_tab[0][i];
-        if(!c->avg_2tap_qpel_pixels_tab[0][i])
-            c->avg_2tap_qpel_pixels_tab[0][i]= c->avg_h264_qpel_pixels_tab[0][i];
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 16; j++) {
+            if(!c->put_2tap_qpel_pixels_tab[i][j])
+                c->put_2tap_qpel_pixels_tab[i][j] =
+                    c->put_h264_qpel_pixels_tab[i][j];
+            if(!c->avg_2tap_qpel_pixels_tab[i][j])
+                c->avg_2tap_qpel_pixels_tab[i][j] =
+                    c->avg_h264_qpel_pixels_tab[i][j];
+        }
     }
 
     c->put_rv30_tpel_pixels_tab[0][0] = c->put_h264_qpel_pixels_tab[0][0];

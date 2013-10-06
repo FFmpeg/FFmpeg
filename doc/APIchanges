@@ -66,16 +66,16 @@ API changes, most recent first:
 2011-06-10 - c381960 - lavfi 2.15.0 - avfilter_get_audio_buffer_ref_from_arrays
   Add avfilter_get_audio_buffer_ref_from_arrays() to avfilter.h.
 
-2011-06-09 - d9f80ea - lavu 51.8.0 - AVMetadata
+2011-06-09 - f9ecb84 / d9f80ea - lavu 51.8.0 - AVMetadata
   Move AVMetadata from lavf to lavu and rename it to
   AVDictionary -- new installed header dict.h.
   All av_metadata_* functions renamed to av_dict_*.
 
-2011-06-07 - a6703fa - lavu 51.8.0 - av_get_bytes_per_sample()
+2011-06-07 - d552f61 / a6703fa - lavu 51.8.0 - av_get_bytes_per_sample()
   Add av_get_bytes_per_sample() in libavutil/samplefmt.h.
   Deprecate av_get_bits_per_sample_fmt().
 
-2011-06-xx - b39b062 - lavu 51.8.0 - opt.h
+2011-06-xx - f956924 / b39b062 - lavu 51.8.0 - opt.h
   Add av_opt_free convenience function.
 
 2011-06-06 - 95a0242 - lavfi 2.14.0 - AVFilterBufferRefAudioProps
@@ -105,7 +105,7 @@ API changes, most recent first:
   Add av_get_pix_fmt_name() in libavutil/pixdesc.h, and deprecate
   avcodec_get_pix_fmt_name() in libavcodec/avcodec.h in its favor.
 
-2011-05-25 - 30315a8 - lavf 53.3.0 - avformat.h
+2011-05-25 - 39e4206 / 30315a8 - lavf 53.3.0 - avformat.h
   Add fps_probe_size to AVFormatContext.
 
 2011-05-22 - 5ecdfd0 - lavf 53.2.0 - avformat.h
@@ -121,10 +121,10 @@ API changes, most recent first:
 2011-05-14 - 9fdf772 - lavfi 2.6.0 - avcodec.h
   Add avfilter_get_video_buffer_ref_from_frame() to libavfilter/avcodec.h.
 
-2011-05-18 - 64150ff - lavc 53.7.0 - AVCodecContext.request_sample_fmt
+2011-05-18 - 75a37b5 / 64150ff - lavc 53.7.0 - AVCodecContext.request_sample_fmt
   Add request_sample_fmt field to AVCodecContext.
 
-2011-05-10 - 188dea1 - lavc 53.6.0 - avcodec.h
+2011-05-10 - 59eb12f / 188dea1 - lavc 53.6.0 - avcodec.h
   Deprecate AVLPCType and the following fields in
   AVCodecContext: lpc_coeff_precision, prediction_order_method,
   min_partition_order, max_partition_order, lpc_type, lpc_passes.
@@ -154,81 +154,81 @@ API changes, most recent first:
   Add av_dynarray_add function for adding
   an element to a dynamic array.
 
-2011-04-26 - bebe72f - lavu 51.1.0 - avutil.h
+2011-04-26 - d7e5aeb / bebe72f - lavu 51.1.0 - avutil.h
   Add AVPictureType enum and av_get_picture_type_char(), deprecate
   FF_*_TYPE defines and av_get_pict_type_char() defined in
   libavcodec/avcodec.h.
 
-2011-04-26 - 10d3940 - lavfi 2.3.0 - avfilter.h
+2011-04-26 - d7e5aeb / 10d3940 - lavfi 2.3.0 - avfilter.h
   Add pict_type and key_frame fields to AVFilterBufferRefVideo.
 
-2011-04-26 - 7a11c82 - lavfi 2.2.0 - vsrc_buffer
+2011-04-26 - d7e5aeb / 7a11c82 - lavfi 2.2.0 - vsrc_buffer
   Add sample_aspect_ratio fields to vsrc_buffer arguments
 
-2011-04-21 - 94f7451 - lavc 53.1.0 - avcodec.h
+2011-04-21 - 8772156 / 94f7451 - lavc 53.1.0 - avcodec.h
   Add CODEC_CAP_SLICE_THREADS for codecs supporting sliced threading.
 
 2011-04-15 - lavc 52.120.0 - avcodec.h
   AVPacket structure got additional members for passing side information:
-    4de339e introduce side information for AVPacket
-    2d8591c make containers pass palette change in AVPacket
+    c407984 / 4de339e introduce side information for AVPacket
+    c407984 / 2d8591c make containers pass palette change in AVPacket
 
 2011-04-12 - lavf 52.107.0 - avio.h
   Avio cleanup, part II - deprecate the entire URLContext API:
-    175389c add avio_check as a replacement for url_exist
-    ff1ec0c add avio_pause and avio_seek_time as replacements
+    c55780d / 175389c add avio_check as a replacement for url_exist
+    9891004 / ff1ec0c add avio_pause and avio_seek_time as replacements
             for _av_url_read_fseek/fpause
-    cdc6a87 deprecate av_protocol_next(), avio_enum_protocols
+    d4d0932 / cdc6a87 deprecate av_protocol_next(), avio_enum_protocols
             should be used instead.
-    80c6e23 rename url_set_interrupt_cb->avio_set_interrupt_cb.
-    f87b1b3 rename open flags: URL_* -> AVIO_*
-    f8270bb add avio_enum_protocols.
-    5593f03 deprecate URLProtocol.
-    c486dad deprecate URLContext.
-    026e175 deprecate the typedef for URLInterruptCB
-    8e76a19 deprecate av_register_protocol2.
-    b840484 deprecate URL_PROTOCOL_FLAG_NESTED_SCHEME
-    1305d93 deprecate av_url_read_seek
-    fa104e1 deprecate av_url_read_pause
-    727c7aa deprecate url_get_filename().
-    5958df3 deprecate url_max_packet_size().
-    1869ea0 deprecate url_get_file_handle().
-    32a97d4 deprecate url_filesize().
-    e52a914 deprecate url_close().
-    58a48c6 deprecate url_seek().
-    925e908 deprecate url_write().
-    dce3756 deprecate url_read_complete().
-    bc371ac deprecate url_read().
-    0589da0 deprecate url_open().
-    62eaaea deprecate url_connect.
-    5652bb9 deprecate url_alloc.
-    333e894 deprecate url_open_protocol
-    e230705 deprecate url_poll and URLPollEntry
+    c88caa5 / 80c6e23 rename url_set_interrupt_cb->avio_set_interrupt_cb.
+    c88caa5 / f87b1b3 rename open flags: URL_* -> AVIO_*
+    d4d0932 / f8270bb add avio_enum_protocols.
+    d4d0932 / 5593f03 deprecate URLProtocol.
+    d4d0932 / c486dad deprecate URLContext.
+    d4d0932 / 026e175 deprecate the typedef for URLInterruptCB
+    c88caa5 / 8e76a19 deprecate av_register_protocol2.
+    11d7841 / b840484 deprecate URL_PROTOCOL_FLAG_NESTED_SCHEME
+    11d7841 / 1305d93 deprecate av_url_read_seek
+    11d7841 / fa104e1 deprecate av_url_read_pause
+    434f248 / 727c7aa deprecate url_get_filename().
+    434f248 / 5958df3 deprecate url_max_packet_size().
+    434f248 / 1869ea0 deprecate url_get_file_handle().
+    434f248 / 32a97d4 deprecate url_filesize().
+    434f248 / e52a914 deprecate url_close().
+    434f248 / 58a48c6 deprecate url_seek().
+    434f248 / 925e908 deprecate url_write().
+    434f248 / dce3756 deprecate url_read_complete().
+    434f248 / bc371ac deprecate url_read().
+    434f248 / 0589da0 deprecate url_open().
+    434f248 / 62eaaea deprecate url_connect.
+    434f248 / 5652bb9 deprecate url_alloc.
+    434f248 / 333e894 deprecate url_open_protocol
+    434f248 / e230705 deprecate url_poll and URLPollEntry
 
 2011-04-08 - lavf 52.106.0 - avformat.h
   Minor avformat.h cleanup:
-    a9bf9d8 deprecate av_guess_image2_codec
-    c3675df rename avf_sdp_create->av_sdp_create
+    d4d0932 / a9bf9d8 deprecate av_guess_image2_codec
+    d4d0932 / c3675df rename avf_sdp_create->av_sdp_create
 
 2011-04-03 - lavf 52.105.0 - avio.h
   Large-scale renaming/deprecating of AVIOContext-related functions:
-    724f6a0 deprecate url_fdopen
-    403ee83 deprecate url_open_dyn_packet_buf
-    6dc7d80 rename url_close_dyn_buf       -> avio_close_dyn_buf
-    b92c545 rename url_open_dyn_buf        -> avio_open_dyn_buf
-    8978fed introduce an AVIOContext.seekable field as a replacement for
+    2cae980 / 724f6a0 deprecate url_fdopen
+    2cae980 / 403ee83 deprecate url_open_dyn_packet_buf
+    2cae980 / 6dc7d80 rename url_close_dyn_buf       -> avio_close_dyn_buf
+    2cae980 / b92c545 rename url_open_dyn_buf        -> avio_open_dyn_buf
+    2cae980 / 8978fed introduce an AVIOContext.seekable field as a replacement for
             AVIOContext.is_streamed and url_is_streamed()
-    b64030f deprecate get_checksum()
-    4c4427a deprecate init_checksum()
-    4ec153b deprecate udp_set_remote_url/get_local_port
-    933e90a deprecate av_url_read_fseek/fpause
-    8d9769a deprecate url_fileno
-    b7f2fdd rename put_flush_packet -> avio_flush
-    35f1023 deprecate url_close_buf
-    83fddae deprecate url_open_buf
-    d9d86e0 rename url_fprintf -> avio_printf
-    59f65d9 deprecate url_setbufsize
-    3e68b3b deprecate url_ferror
+    1caa412 / b64030f deprecate get_checksum()
+    1caa412 / 4c4427a deprecate init_checksum()
+    2fd41c9 / 4ec153b deprecate udp_set_remote_url/get_local_port
+    4fa0e24 / 933e90a deprecate av_url_read_fseek/fpause
+    4fa0e24 / 8d9769a deprecate url_fileno
+    0fecf26 / b7f2fdd rename put_flush_packet -> avio_flush
+    0fecf26 / 35f1023 deprecate url_close_buf
+    0fecf26 / 83fddae deprecate url_open_buf
+    0fecf26 / d9d86e0 rename url_fprintf -> avio_printf
+    0fecf26 / 59f65d9 deprecate url_setbufsize
+    6947b0c / 3e68b3b deprecate url_ferror
     66e5b1d deprecate url_feof
     e8bb2e2 deprecate url_fget_max_packet_size
     76aa876 rename url_fsize -> avio_size
@@ -250,7 +250,7 @@ API changes, most recent first:
     b3db9ce deprecate get_partial_buffer
     8d9ac96 rename av_alloc_put_byte -> avio_alloc_context
 
-2011-03-25 - 34b47d7 - lavc 52.115.0 - AVCodecContext.audio_service_type
+2011-03-25 - 27ef7b1 / 34b47d7 - lavc 52.115.0 - AVCodecContext.audio_service_type
   Add audio_service_type field to AVCodecContext.
 
 2011-03-17 - e309fdc - lavu 50.40.0 - pixfmt.h
@@ -288,11 +288,11 @@ API changes, most recent first:
 2011-02-10 - 12c14cd - lavf 52.99.0 - AVStream.disposition
   Add AV_DISPOSITION_HEARING_IMPAIRED and AV_DISPOSITION_VISUAL_IMPAIRED.
 
-2011-02-09 - 5592734 - lavc 52.112.0 - avcodec_thread_init()
+2011-02-09 - c0b102c - lavc 52.112.0 - avcodec_thread_init()
   Deprecate avcodec_thread_init()/avcodec_thread_free() use; instead
   set thread_count before calling avcodec_open.
 
-2011-02-09 - 778b08a - lavc 52.111.0 - threading API
+2011-02-09 - 37b00b4 - lavc 52.111.0 - threading API
   Add CODEC_CAP_FRAME_THREADS with new restrictions on get_buffer()/
   release_buffer()/draw_horiz_band() callbacks for appropriate codecs.
   Add thread_type and active_thread_type fields to AVCodecContext.

@@ -82,7 +82,7 @@ Follows a BNF description for the filtergraph syntax:
 @var{LINKLABEL}        ::= "[" @var{NAME} "]"
 @var{LINKLABELS}       ::= @var{LINKLABEL} [@var{LINKLABELS}]
 @var{FILTER_ARGUMENTS} ::= sequence of chars (eventually quoted)
-@var{FILTER}           ::= [@var{LINKNAMES}] @var{NAME} ["=" @var{ARGUMENTS}] [@var{LINKNAMES}]
+@var{FILTER}           ::= [@var{LINKLABELS}] @var{NAME} ["=" @var{FILTER_ARGUMENTS}] [@var{LINKLABELS}]
 @var{FILTERCHAIN}      ::= @var{FILTER} [,@var{FILTERCHAIN}]
 @var{FILTERGRAPH}      ::= @var{FILTERCHAIN} [;@var{FILTERGRAPH}]
 @end example
