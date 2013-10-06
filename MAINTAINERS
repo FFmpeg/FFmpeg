@@ -44,13 +44,20 @@ Miscellaneous Areas
 ===================
 
 documentation                           Mike Melanson
-website                                 Robert Swain, Lou Logan
 build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
 project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger, Alexander Strasser
-mailinglists                            Michael Niedermayer, Baptiste Coudurier, Lou Logan
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
+
+
+Communication
+=============
+
+website                                 Robert Swain, Lou Logan
+mailinglists                            Michael Niedermayer, Baptiste Coudurier, Lou Logan
+Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
+Twitter                                 Lou Logan
 
 
 libavutil
