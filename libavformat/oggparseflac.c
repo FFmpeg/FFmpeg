@@ -78,11 +78,32 @@ flac_header (AVFormatContext * s, int idx)
 static int
 old_flac_header (AVFormatContext * s, int idx)
 {
+    struct ogg *ogg = s->priv_data;
     AVStream *st = s->streams[idx];
+    struct ogg_stream *os = ogg->streams + idx;
+    AVCodecParserContext *parser = av_parser_init(AV_CODEC_ID_FLAC);
+    int size;
+    uint8_t *data;
+
+    if (!parser)
+        return -1;
+
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = AV_CODEC_ID_FLAC;
 
-    return 0;
+    parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
+    av_parser_parse2(parser, st->codec,
+                     &data, &size, os->buf + os->pstart, os->psize,
+                     AV_NOPTS_VALUE, AV_NOPTS_VALUE, -1);
+
+    av_parser_close(parser);
+
+    if (st->codec->sample_rate) {
+        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        return 0;
+    }
+
+    return 1;
 }
 
 const struct ogg_codec ff_flac_codec = {
