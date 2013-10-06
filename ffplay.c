@@ -2904,6 +2904,7 @@ static int read_thread(void *arg)
                 if ((ret = av_copy_packet(&copy, &is->video_st->attached_pic)) < 0)
                     goto fail;
                 packet_queue_put(&is->videoq, &copy);
+                packet_queue_put_nullpacket(&is->videoq, is->video_stream);
             }
             is->queue_attachments_req = 0;
         }
