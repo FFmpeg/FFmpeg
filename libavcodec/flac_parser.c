@@ -512,8 +512,11 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         FLACFrameInfo fi;
-        if (frame_header_is_valid(avctx, buf, &fi))
+        if (frame_header_is_valid(avctx, buf, &fi)) {
             s->duration = fi.blocksize;
+            if (!avctx->sample_rate)
+                avctx->sample_rate = fi.samplerate;
+        }
         *poutbuf      = buf;
         *poutbuf_size = buf_size;
         return buf_size;
