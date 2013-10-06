@@ -140,7 +140,7 @@ static av_cold int init_dict(AVFilterContext *ctx, AVDictionary **opts)
     av_log(ctx, AV_LOG_VERBOSE, "w:%s h:%s flags:'%s' interl:%d\n",
            scale->w_expr, scale->h_expr, (char *)av_x_if_null(scale->flags_str, ""), scale->interlaced);
 
-    scale->flags = SWS_BICUBIC;
+    scale->flags = 0;
 
     if (scale->flags_str) {
         const AVClass *class = sws_get_class();
