@@ -3194,6 +3194,11 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_v:
                 stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
                 break;
+            case SDLK_c:
+                stream_cycle_channel(cur_stream, AVMEDIA_TYPE_VIDEO);
+                stream_cycle_channel(cur_stream, AVMEDIA_TYPE_AUDIO);
+                stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
+                break;
             case SDLK_t:
                 stream_cycle_channel(cur_stream, AVMEDIA_TYPE_SUBTITLE);
                 break;
@@ -3498,6 +3503,7 @@ void show_help_default(const char *opt, const char *arg)
            "a                   cycle audio channel\n"
            "v                   cycle video channel\n"
            "t                   cycle subtitle channel\n"
+           "c                   cycle program\n"
            "w                   show audio waves\n"
            "s                   activate frame-step mode\n"
            "left/right          seek backward/forward 10 seconds\n"
