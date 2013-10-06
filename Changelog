@@ -37,6 +37,7 @@ version <next>
   the skip_alpha flag.
 - ladspa wrapper filter
 - native VP9 decoder
+- dpx parser
 
 
 version 2.0:
