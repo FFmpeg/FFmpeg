@@ -252,44 +252,6 @@ void ff_add_bytes_mmx(uint8_t *dst, uint8_t *src, int w)
         dst[i + 0] += src[i + 0];
 }
 
-#if HAVE_7REGS
-void ff_add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top,
-                                        const uint8_t *diff, int w,
-                                        int *left, int *left_top)
-{
-    x86_reg w2 = -w;
-    x86_reg x;
-    int l  = *left     & 0xff;
-    int tl = *left_top & 0xff;
-    int t;
-    __asm__ volatile (
-        "mov          %7, %3            \n"
-        "1:                             \n"
-        "movzbl (%3, %4), %2            \n"
-        "mov          %2, %k3           \n"
-        "sub         %b1, %b3           \n"
-        "add         %b0, %b3           \n"
-        "mov          %2, %1            \n"
-        "cmp          %0, %2            \n"
-        "cmovg        %0, %2            \n"
-        "cmovg        %1, %0            \n"
-        "cmp         %k3, %0            \n"
-        "cmovg       %k3, %0            \n"
-        "mov          %7, %3            \n"
-        "cmp          %2, %0            \n"
-        "cmovl        %2, %0            \n"
-        "add    (%6, %4), %b0           \n"
-        "mov         %b0, (%5, %4)      \n"
-        "inc          %4                \n"
-        "jl           1b                \n"
-        : "+&q"(l), "+&q"(tl), "=&r"(t), "=&q"(x), "+&r"(w2)
-        : "r"(dst + w), "r"(diff + w), "rm"(top + w)
-    );
-    *left     = l;
-    *left_top = tl;
-}
-#endif
-
 /* Draw the edges of width 'w' of an image of size width, height
  * this MMX version can only handle w == 8 || w == 16. */
 void ff_draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
