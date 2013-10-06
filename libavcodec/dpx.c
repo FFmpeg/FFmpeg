@@ -270,7 +270,7 @@ static int decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_dpx_decoder = {
     .name           = "dpx",
-    .long_name      = NULL_IF_CONFIG_SMALL("DPX image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DPX,
     .decode         = decode_frame,

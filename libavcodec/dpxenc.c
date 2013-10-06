@@ -235,7 +235,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_dpx_encoder = {
     .name           = "dpx",
-    .long_name      = NULL_IF_CONFIG_SMALL("DPX image"),
+    .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DPX,
     .priv_data_size = sizeof(DPXContext),
