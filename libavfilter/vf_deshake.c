@@ -197,7 +197,7 @@ static void find_block_motion(DeshakeContext *deshake, uint8_t *src1,
 static int block_contrast(uint8_t *src, int x, int y, int stride, int blocksize)
 {
     int highest = 0;
-    int lowest = 0;
+    int lowest = 255;
     int i, j, pos;
 
     for (i = 0; i <= blocksize * 2; i++) {
