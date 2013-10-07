@@ -884,6 +884,19 @@ static int mov_get_dv_codec_tag(AVFormatContext *s, MOVTrack *track)
     return tag;
 }
 
+static AVRational find_fps(AVFormatContext *s, AVStream *st)
+{
+    AVRational rate = {st->codec->time_base.den, st->codec->time_base.num};
+    /* if the codec time base makes no sense, try to fallback on stream frame rate */
+    if (av_timecode_check_frame_rate(rate) < 0) {
+        av_log(s, AV_LOG_DEBUG, "timecode: tbc=%d/%d invalid, fallback on %d/%d\n",
+               rate.num, rate.den, st->avg_frame_rate.num, st->avg_frame_rate.den);
+        rate = st->avg_frame_rate;
+    }
+
+    return rate;
+}
+
 static const struct {
     enum AVPixelFormat pix_fmt;
     uint32_t tag;
@@ -3490,14 +3503,7 @@ static int mov_create_timecode_track(AVFormatContext *s, int index, int src_inde
     AVStream *src_st    = s->streams[src_index];
     AVTimecode tc;
     AVPacket pkt    = {.stream_index = index, .flags = AV_PKT_FLAG_KEY, .size = 4};
-    AVRational rate = {src_st->codec->time_base.den, src_st->codec->time_base.num};
-
-    /* if the codec time base makes no sense, try to fallback on stream frame rate */
-    if (av_timecode_check_frame_rate(rate) < 0) {
-        av_log(s, AV_LOG_DEBUG, "timecode: tbc=%d/%d invalid, fallback on %d/%d\n",
-               rate.num, rate.den, src_st->avg_frame_rate.num, src_st->avg_frame_rate.den);
-        rate = src_st->avg_frame_rate;
-    }
+    AVRational rate = find_fps(s, src_st);
 
     /* compute the frame number */
     ret = av_timecode_init_from_string(&tc, rate, tcstr, s);
