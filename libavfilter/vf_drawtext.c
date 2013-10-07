@@ -854,7 +854,7 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     int x = 0, y = 0, i = 0, ret;
     int max_text_line_w = 0, len;
     int box_w, box_h;
-    char *text = s->text;
+    char *text;
     uint8_t *p;
     int y_min = 32000, y_max = -32000;
     int x_min = 32000, x_max = -32000;
