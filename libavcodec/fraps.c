@@ -145,6 +145,11 @@ static int decode_frame(AVCodecContext *avctx,
     enum AVPixelFormat pix_fmt;
     int ret;
 
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too short\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     header = AV_RL32(buf);
     version = header & 0xff;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
@@ -216,7 +221,7 @@ static int decode_frame(AVCodecContext *avctx,
         return ret;
     }
 
-    switch(version) {
+    switch (version) {
     case 0:
     default:
         /* Fraps v0 is a reordered YUV420 */
@@ -226,13 +231,13 @@ static int decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        buf32=(const uint32_t*)buf;
-        for(y=0; y<avctx->height/2; y++){
-            luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
-            luma2=(uint32_t*)&f->data[0][ (y*2+1)*f->linesize[0] ];
-            cr=(uint32_t*)&f->data[1][ y*f->linesize[1] ];
-            cb=(uint32_t*)&f->data[2][ y*f->linesize[2] ];
-            for(x=0; x<avctx->width; x+=8){
+        buf32 = (const uint32_t*)buf;
+        for (y = 0; y < avctx->height / 2; y++) {
+            luma1 = (uint32_t*)&f->data[0][  y * 2      * f->linesize[0] ];
+            luma2 = (uint32_t*)&f->data[0][ (y * 2 + 1) * f->linesize[0] ];
+            cr    = (uint32_t*)&f->data[1][  y          * f->linesize[1] ];
+            cb    = (uint32_t*)&f->data[2][  y          * f->linesize[2] ];
+            for(x=0; x<avctx->width; x+=8) {
                 *luma1++ = *buf32++;
                 *luma1++ = *buf32++;
                 *luma2++ = *buf32++;
@@ -245,10 +250,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     case 1:
         /* Fraps v1 is an upside-down BGR24 */
-            for(y=0; y<avctx->height; y++)
-                memcpy(&f->data[0][ (avctx->height - y -1) * f->linesize[0]],
-                       &buf[y*avctx->width*3],
-                       3*avctx->width);
+            for (y = 0; y < avctx->height; y++)
+                memcpy(&f->data[0][ (avctx->height - y - 1) * f->linesize[0]],
+                       &buf[y * avctx->width * 3],
+                       3 * avctx->width);
         break;
 
     case 2:
