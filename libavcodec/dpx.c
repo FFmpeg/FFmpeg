@@ -193,8 +193,12 @@ static int decode_frame(AVCodecContext *avctx,
         }
         total_size = 2 * avctx->width * avctx->height * elements;
         break;
+    case 1:
+    case 32:
+    case 64:
+        avpriv_report_missing_feature(avctx, "Depth %d", bits_per_color);
+        return AVERROR_PATCHWELCOME;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
         return AVERROR_INVALIDDATA;
     }
 
