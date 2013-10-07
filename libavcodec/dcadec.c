@@ -738,10 +738,10 @@ static int dca_parse_frame_header(DCAContext *s)
     s->lfe               = get_bits(&s->gb, 2);
     s->predictor_history = get_bits(&s->gb, 1);
 
-    if (s->lfe == 3) {
+    if (s->lfe > 2) {
         s->lfe = 0;
-        av_log_ask_for_sample(s->avctx, "LFE is 3\n");
-        return AVERROR_PATCHWELCOME;
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid LFE value: %d\n", s->lfe);
+        return AVERROR_INVALIDDATA;
     }
 
     /* TODO: check CRC */

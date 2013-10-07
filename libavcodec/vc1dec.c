@@ -5141,8 +5141,19 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
 
     if (!v->mv_type_mb_plane || !v->direct_mb_plane || !v->acpred_plane || !v->over_flags_plane ||
         !v->block || !v->cbp_base || !v->ttblk_base || !v->is_intra_base || !v->luma_mv_base ||
-        !v->mb_type_base)
-            return -1;
+        !v->mb_type_base) {
+        av_freep(&v->mv_type_mb_plane);
+        av_freep(&v->direct_mb_plane);
+        av_freep(&v->acpred_plane);
+        av_freep(&v->over_flags_plane);
+        av_freep(&v->block);
+        av_freep(&v->cbp_base);
+        av_freep(&v->ttblk_base);
+        av_freep(&v->is_intra_base);
+        av_freep(&v->luma_mv_base);
+        av_freep(&v->mb_type_base);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -5514,8 +5525,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (!s->context_initialized) {
-        if (ff_msmpeg4_decode_init(avctx) < 0 || ff_vc1_decode_init_alloc_tables(v) < 0)
+        if (ff_msmpeg4_decode_init(avctx) < 0)
             goto err;
+        if (ff_vc1_decode_init_alloc_tables(v) < 0) {
+            ff_MPV_common_end(s);
+            goto err;
+        }
 
         s->low_delay = !avctx->has_b_frames || v->res_sprite;
 
