@@ -141,7 +141,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (pixformat != XWD_Z_PIXMAP) {
-        av_log(avctx, AV_LOG_ERROR, "pixmap format %d unsupported\n", pixformat);
+        avpriv_report_missing_feature(avctx, "Pixmap format %d", pixformat);
         return AVERROR_PATCHWELCOME;
     }
 
