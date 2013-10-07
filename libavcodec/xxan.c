@@ -49,6 +49,10 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid frame height: %d.\n", avctx->height);
         return AVERROR(EINVAL);
     }
+    if (avctx->width & 1) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid frame width: %d.\n", avctx->width);
+        return AVERROR(EINVAL);
+    }
 
     s->buffer_size = avctx->width * avctx->height;
     s->y_buffer = av_malloc(s->buffer_size);
