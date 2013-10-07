@@ -241,7 +241,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     PhaseContext *s = ctx->priv;
-    enum PhaseMode mode = s->mode;
+    enum PhaseMode mode;
     int plane, top, y;
     AVFrame *out;
 
