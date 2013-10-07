@@ -162,11 +162,6 @@ static int decode_frame(AVCodecContext *avctx,
 
     switch (bits_per_color) {
     case 8:
-        if (elements == 4) {
-            avctx->pix_fmt = AV_PIX_FMT_RGBA;
-        } else {
-            avctx->pix_fmt = AV_PIX_FMT_RGB24;
-        }
         total_size = avctx->width * avctx->height * elements;
         break;
     case 10:
@@ -174,7 +169,6 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
             return -1;
         }
-        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
         total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
         break;
     case 12:
@@ -182,15 +176,9 @@ static int decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
             return -1;
         }
-        avctx->pix_fmt = AV_PIX_FMT_GBRP12;
         total_size = 2 * avctx->width * avctx->height * elements;
         break;
     case 16:
-        if (endian) {
-            avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGB48BE;
-        } else {
-            avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
-        }
         total_size = 2 * avctx->width * avctx->height * elements;
         break;
     case 1:
@@ -200,6 +188,44 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     default:
         return AVERROR_INVALIDDATA;
+    }
+
+    switch (1000 * descriptor + 10 * bits_per_color + endian) {
+    case 50081:
+    case 50080:
+        avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        break;
+    case 51081:
+    case 51080:
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        break;
+    case 50100:
+    case 51100:
+    case 50101:
+    case 51101:
+        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        break;
+    case 50120:
+    case 51120:
+    case 50121:
+    case 51121:
+        avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        break;
+    case 50161:
+        avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
+        break;
+    case 50160:
+        avctx->pix_fmt = AV_PIX_FMT_RGB48LE;
+        break;
+    case 51161:
+        avctx->pix_fmt = AV_PIX_FMT_RGBA64BE;
+        break;
+    case 51160:
+        avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported format\n");
+        return AVERROR_PATCHWELCOME;
     }
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
