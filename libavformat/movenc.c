@@ -1076,6 +1076,32 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
     return 16;
 }
 
+static void find_compressor(char * compressor_name, int len, MOVTrack *track)
+{
+    int xdcam_res =  (track->enc->width == 1280 && track->enc->height == 720)
+                  || (track->enc->width == 1440 && track->enc->height == 1080)
+                  || (track->enc->width == 1920 && track->enc->height == 1080);
+
+    if (track->mode == MODE_MOV && track->enc->codec && track->enc->codec->name) {
+        av_strlcpy(compressor_name, track->enc->codec->name, 32);
+    } else if (track->enc->codec_id == AV_CODEC_ID_MPEG2VIDEO && xdcam_res) {
+        int interlaced = track->enc->field_order > AV_FIELD_PROGRESSIVE;
+        AVStream *st = track->st;
+        int rate = av_q2d(find_fps(NULL, st));
+        av_strlcatf(compressor_name, len, "XDCAM");
+        if (track->enc->pix_fmt == AV_PIX_FMT_YUV422P) {
+            av_strlcatf(compressor_name, len, " HD422");
+        } else if(track->enc->width == 1440) {
+            av_strlcatf(compressor_name, len, " HD");
+        } else
+            av_strlcatf(compressor_name, len, " EX");
+
+        av_strlcatf(compressor_name, len, " %d%c", track->enc->height, interlaced ? 'i' : 'p');
+
+        av_strlcatf(compressor_name, len, "%d", rate * (interlaced + 1));
+    }
+}
+
 static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -1111,8 +1137,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb16(pb, 1); /* Frame count (= 1) */
 
     /* FIXME not sure, ISO 14496-1 draft where it shall be set to 0 */
-    if (track->mode == MODE_MOV && track->enc->codec && track->enc->codec->name)
-        av_strlcpy(compressor_name, track->enc->codec->name, 32);
+    find_compressor(compressor_name, 32, track);
     avio_w8(pb, strlen(compressor_name));
     avio_write(pb, compressor_name, 31);
 
