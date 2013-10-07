@@ -149,6 +149,9 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
 
     switch (descriptor) {
+    case 6:  // Y
+        elements = 1;
+        break;
     case 51: // RGBA
         elements = 4;
         break;
@@ -191,6 +194,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     switch (1000 * descriptor + 10 * bits_per_color + endian) {
+    case 6081:
+    case 6080:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        break;
     case 50081:
     case 50080:
         avctx->pix_fmt = AV_PIX_FMT_RGB24;
@@ -210,6 +217,12 @@ static int decode_frame(AVCodecContext *avctx,
     case 50121:
     case 51121:
         avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        break;
+    case 6161:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
+        break;
+    case 6160:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
         break;
     case 50161:
         avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
