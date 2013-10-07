@@ -189,18 +189,15 @@ static av_cold int join_init(AVFilterContext *ctx)
     if (!(s->channel_layout = av_get_channel_layout(s->channel_layout_str))) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout '%s'.\n",
                s->channel_layout_str);
-        ret = AVERROR(EINVAL);
-        goto fail;
+        return AVERROR(EINVAL);
     }
 
     s->nb_channels  = av_get_channel_layout_nb_channels(s->channel_layout);
     s->channels     = av_mallocz(sizeof(*s->channels) * s->nb_channels);
     s->buffers      = av_mallocz(sizeof(*s->buffers)  * s->nb_channels);
     s->input_frames = av_mallocz(sizeof(*s->input_frames) * s->inputs);
-    if (!s->channels || !s->buffers|| !s->input_frames) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
+    if (!s->channels || !s->buffers|| !s->input_frames)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < s->nb_channels; i++) {
         s->channels[i].out_channel = av_channel_layout_extract_channel(s->channel_layout, i);
@@ -208,7 +205,7 @@ static av_cold int join_init(AVFilterContext *ctx)
     }
 
     if ((ret = parse_maps(ctx)) < 0)
-        goto fail;
+        return ret;
 
     for (i = 0; i < s->inputs; i++) {
         char name[32];
@@ -224,9 +221,7 @@ static av_cold int join_init(AVFilterContext *ctx)
         ff_insert_inpad(ctx, i, &pad);
     }
 
-fail:
-    av_opt_free(s);
-    return ret;
+    return 0;
 }
 
 static av_cold void join_uninit(AVFilterContext *ctx)
