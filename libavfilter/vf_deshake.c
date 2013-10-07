@@ -202,7 +202,7 @@ static int block_contrast(uint8_t *src, int x, int y, int stride, int blocksize)
 
     for (i = 0; i <= blocksize * 2; i++) {
         // We use a width of 16 here to match the libavcodec sad functions
-        for (j = 0; i <= 15; i++) {
+        for (j = 0; j <= 15; j++) {
             pos = (y - i) * stride + (x - j);
             if (src[pos] < lowest)
                 lowest = src[pos];
