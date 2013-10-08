@@ -3368,11 +3368,20 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
  * Decode the audio frame of size avpkt->size from avpkt->data into frame.
  *
  * Some decoders may support multiple frames in a single AVPacket. Such
- * decoders would then just decode the first frame. In this case,
- * avcodec_decode_audio4 has to be called again with an AVPacket containing
- * the remaining data in order to decode the second frame, etc...
- * Even if no frames are returned, the packet needs to be fed to the decoder
- * with remaining data until it is completely consumed or an error occurs.
+ * decoders would then just decode the first frame and the return value would be
+ * less than the packet size. In this case, avcodec_decode_audio4 has to be
+ * called again with an AVPacket containing the remaining data in order to
+ * decode the second frame, etc...  Even if no frames are returned, the packet
+ * needs to be fed to the decoder with remaining data until it is completely
+ * consumed or an error occurs.
+ *
+ * Some decoders (those marked with CODEC_CAP_DELAY) have a delay between input
+ * and output. This means that for some packets they will not immediately
+ * produce decoded output and need to be flushed at the end of decoding to get
+ * all the decoded data. Flushing is done by calling this function with packets
+ * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
+ * returning samples. It is safe to flush even those decoders that are not
+ * marked with CODEC_CAP_DELAY, then no samples will be returned.
  *
  * @warning The input buffer, avpkt->data must be FF_INPUT_BUFFER_PADDING_SIZE
  *          larger than the actual read bytes because some optimized bitstream
@@ -3392,7 +3401,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
  *                   next call to this function or until closing or flushing the
  *                   decoder. The caller may not write to it.
  * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
- *                           non-zero.
+ *                           non-zero. Note that this field being set to zero
+ *                           does not mean that an error has occurred. For
+ *                           decoders with CODEC_CAP_DELAY set, no given decode
+ *                           call is guaranteed to produce a frame.
  * @param[in]  avpkt The input AVPacket containing the input buffer.
  *                   At least avpkt->data and avpkt->size should be set. Some
  *                   decoders might also require additional fields to be set.
