@@ -2263,7 +2263,7 @@ postproc_deps="avutil gpl"
 swscale_deps="avutil"
 
 # programs
-ffmpeg_deps="avcodec avfilter avformat swscale swresample"
+ffmpeg_deps="avcodec avfilter avformat swresample"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                setpts_filter trim_filter"
