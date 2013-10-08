@@ -455,7 +455,7 @@ DECLARE_REG 14, R15, 120
     %assign %%i xmm_regs_used
     %rep (xmm_regs_used-6)
         %assign %%i %%i-1
-        movdqa [rsp + (%%i-6)*16 + stack_size + (~stack_offset&8)], xmm %+ %%i
+        movaps [rsp + (%%i-6)*16 + stack_size + (~stack_offset&8)], xmm %+ %%i
     %endrep
 %endmacro
 
@@ -473,7 +473,7 @@ DECLARE_REG 14, R15, 120
         %assign %%i xmm_regs_used
         %rep (xmm_regs_used-6)
             %assign %%i %%i-1
-            movdqa xmm %+ %%i, [%1 + (%%i-6)*16+stack_size+(~stack_offset&8)]
+            movaps xmm %+ %%i, [%1 + (%%i-6)*16+stack_size+(~stack_offset&8)]
         %endrep
         %if stack_size_padded == 0
             add %1, (xmm_regs_used-6)*16+16
