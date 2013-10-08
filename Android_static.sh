@@ -95,12 +95,10 @@ FFMPEG_FLAGS_COMMON="--target-os=linux \
   --disable-symver \
   --disable-programs \
   --disable-doc \
+  --disable-debug \
   --disable-avdevice \
-  --disable-demuxers \
-  --disable-decoders \
   --disable-devices \
   --disable-parser=dca \
-  --disable-debug \
   --enable-network \
   --enable-libx264 \
   --enable-libfdk_aac \
