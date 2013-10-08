@@ -36,7 +36,7 @@
 %define pointer resd
 %endif
 
-SECTION_RODATA
+SECTION_RODATA 32
 
 struc FFTContext
     .nbits:    resd 1
@@ -57,7 +57,6 @@ endstruc
 %define M_COS_PI_1_8 0.923879532511287
 %define M_COS_PI_3_8 0.38268343236509
 
-align 32
 ps_cos16_1: dd 1.0, M_COS_PI_1_8, M_SQRT1_2, M_COS_PI_3_8, 1.0, M_COS_PI_1_8, M_SQRT1_2, M_COS_PI_3_8
 ps_cos16_2: dd 0, M_COS_PI_3_8, M_SQRT1_2, M_COS_PI_1_8, 0, -M_COS_PI_3_8, -M_SQRT1_2, -M_COS_PI_1_8
 

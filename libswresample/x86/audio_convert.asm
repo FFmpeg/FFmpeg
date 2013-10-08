@@ -20,8 +20,7 @@
 
 %include "libavutil/x86/x86util.asm"
 
-SECTION_RODATA
-align 32
+SECTION_RODATA 32
 flt2pm31: times 8 dd 4.6566129e-10
 flt2p31 : times 8 dd 2147483648.0
 flt2p15 : times 8 dd 32768.0
