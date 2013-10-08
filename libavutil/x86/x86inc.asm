@@ -154,8 +154,7 @@ CPUNOP amdnop
 ; Pops anything that was pushed by PROLOGUE, and returns.
 
 ; REP_RET:
-; Same, but if it doesn't pop anything it becomes a 2-byte ret, for athlons
-; which are slow when a normal ret follows a branch.
+; Use this instead of RET if it's a branch target.
 
 ; registers:
 ; rN and rNq are the native-size register holding function argument N
@@ -503,7 +502,7 @@ DECLARE_REG 14, R15, 120
 %if mmsize == 32
     vzeroupper
 %endif
-    ret
+    AUTO_REP_RET
 %endmacro
 
 %elif ARCH_X86_64 ; *nix x64 ;=============================================
@@ -550,7 +549,7 @@ DECLARE_REG 14, R15, 72
 %if mmsize == 32
     vzeroupper
 %endif
-    ret
+    AUTO_REP_RET
 %endmacro
 
 %else ; X86_32 ;==============================================================
@@ -606,7 +605,7 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %if mmsize == 32
     vzeroupper
 %endif
-    ret
+    AUTO_REP_RET
 %endmacro
 
 %endif ;======================================================================
@@ -620,6 +619,10 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
 %endmacro
 %endif
 
+; On AMD cpus <=K10, an ordinary ret is slow if it immediately follows either
+; a branch or a branch target. So switch to a 2-byte form of ret in that case.
+; We can automatically detect "follows a branch", but not a branch target.
+; (SSSE3 is a sufficient condition to know that your cpu doesn't have this problem.)
 %macro REP_RET 0
     %if has_epilogue
         RET
@@ -627,6 +630,29 @@ DECLARE_ARG 7, 8, 9, 10, 11, 12, 13, 14
         rep ret
     %endif
 %endmacro
+
+%define last_branch_adr $$
+%macro AUTO_REP_RET 0
+    %ifndef cpuflags
+        times ((last_branch_adr-$)>>31)+1 rep ; times 1 iff $ != last_branch_adr.
+    %elif notcpuflag(ssse3)
+        times ((last_branch_adr-$)>>31)+1 rep
+    %endif
+    ret
+%endmacro
+
+%macro BRANCH_INSTR 0-*
+    %rep %0
+        %macro %1 1-2 %1
+            %2 %1
+            %%branch_instr:
+            %xdefine last_branch_adr %%branch_instr
+        %endmacro
+        %rotate 1
+    %endrep
+%endmacro
+
+BRANCH_INSTR jz, je, jnz, jne, jl, jle, jnl, jnle, jg, jge, jng, jnge, ja, jae, jna, jnae, jb, jbe, jnb, jnbe, jc, jnc, js, jns, jo, jno, jp, jnp
 
 %macro TAIL_CALL 2 ; callee, is_nonadjacent
     %if has_epilogue
