@@ -327,6 +327,14 @@ static AVLFG random_state;
 
 static FILE *logfile = NULL;
 
+static void htmlstrip(char *s) {
+    while (s && *s) {
+        s += strspn(s, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ,. ");
+        if (*s)
+            *s++ = '?';
+    }
+}
+
 static int64_t ffm_read_write_index(int fd)
 {
     uint8_t buf[8];
@@ -1886,6 +1894,7 @@ static int http_parse_request(HTTPContext *c)
  send_error:
     c->http_error = 404;
     q = c->buffer;
+    htmlstrip(msg);
     snprintf(q, c->buffer_size,
                   "HTTP/1.0 404 Not Found\r\n"
                   "Content-type: text/html\r\n"
