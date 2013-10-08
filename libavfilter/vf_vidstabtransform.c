@@ -39,6 +39,7 @@ typedef struct {
     VSTransformations trans;    // transformations
     char *input;                // name of transform file
     int tripod;
+    int debug;
 } TransformContext;
 
 #define OFFSET(x) offsetof(TransformContext, x)
@@ -49,7 +50,15 @@ static const AVOption vidstabtransform_options[] = {
     {"input",     "path to the file storing the transforms",                        OFFSET(input),
                    AV_OPT_TYPE_STRING, {.str = DEFAULT_INPUT_NAME}, .flags = FLAGS },
     {"smoothing", "number of frames*2 + 1 used for lowpass filtering",              OFFSETC(smoothing),
-                   AV_OPT_TYPE_INT,    {.i64 = 10},       1, 1000, FLAGS},
+                   AV_OPT_TYPE_INT,    {.i64 = 15},       0, 1000, FLAGS},
+    {"optalgo",   "camera path optimization algo",                                  OFFSETC(camPathAlgo),
+                   AV_OPT_TYPE_INT,    {.i64 = VSOptimalL1}, VSOptimalL1, VSAvg, FLAGS, "optalgo"},
+    {  "opt",     "global optimization",                                            0, // from version 1.0 on
+                   AV_OPT_TYPE_CONST,  {.i64 = VSOptimalL1 }, 0, 0, FLAGS, "optalgo"},
+    {  "gauss",   "gaussian kernel",                                                0,
+                   AV_OPT_TYPE_CONST,  {.i64 = VSGaussian }, 0, 0, FLAGS,  "optalgo"},
+    {  "avg",     "simple averaging on motion",                                     0,
+                   AV_OPT_TYPE_CONST,  {.i64 = VSAvg },      0, 0, FLAGS,  "optalgo"},
     {"maxshift",  "maximal number of pixels to translate image",                    OFFSETC(maxShift),
                    AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 500,  FLAGS},
     {"maxangle",  "maximal angle in rad to rotate image",                           OFFSETC(maxAngle),
@@ -66,8 +75,10 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,    FLAGS},
     {"zoom",      "percentage to zoom >0: zoom in, <0 zoom out",                    OFFSETC(zoom),
                    AV_OPT_TYPE_DOUBLE, {.dbl = 0},     -100, 100,  FLAGS},
-    {"optzoom",   "0: nothing, 1: determine optimal zoom (added to 'zoom')",        OFFSETC(optZoom),
+    {"optzoom",   "0: nothing, 1: optimal static zoom, 2: optimal dynamic zoom",    OFFSETC(optZoom),
                    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 2,    FLAGS},
+    {"zoomspeed", "for adative zoom: percent to zoom maximally each frame",         OFFSETC(zoomSpeed),
+                   AV_OPT_TYPE_DOUBLE, {.dbl = 0.25},     0, 5,    FLAGS},
     {"interpol",  "type of interpolation",                                          OFFSETC(interpolType),
                    AV_OPT_TYPE_INT,    {.i64 = 2},        0, 3,    FLAGS, "interpol"},
     {  "no",      "no interpolation",                                               0,
@@ -79,6 +90,8 @@ static const AVOption vidstabtransform_options[] = {
     {  "bicubic", "bi-cubic",                                                       0,
                    AV_OPT_TYPE_CONST,  {.i64 = VS_BiCubic },0, 0,  FLAGS, "interpol"},
     {"tripod",    "if 1: virtual tripod mode (equiv. to relative=0:smoothing=0)",   OFFSET(tripod),
+                   AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
+    {"debug",     "if 1: more output printed and global motions are stored to file",OFFSET(debug),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
     {NULL}
 };
@@ -153,12 +166,15 @@ static int config_input(AVFilterLink *inlink)
 
     // set values that are not initializes by the options
     tc->conf.modName = "vidstabtransform";
-    tc->conf.verbose =1;
+    tc->conf.verbose = 1 + tc->debug;
     if (tc->tripod) {
-        av_log(ctx, AV_LOG_INFO, "Virtual tripod mode: relative=0, smoothing=0");
+        av_log(ctx, AV_LOG_INFO, "Virtual tripod mode: relative=0, smoothing=0\n");
         tc->conf.relative  = 0;
         tc->conf.smoothing = 0;
     }
+    tc->conf.simpleMotionCalculation = 0;
+    tc->conf.storeTransforms         = tc->debug;
+    tc->conf.smoothZoom              = 0;
 
     if (vsTransformDataInit(td, &tc->conf, &fi_src, &fi_dest) != VS_OK) {
         av_log(ctx, AV_LOG_ERROR, "initialization of vid.stab transform failed, please report a BUG\n");
@@ -169,13 +185,19 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "Video transformation/stabilization settings (pass 2/2):\n");
     av_log(ctx, AV_LOG_INFO, "    input     = %s\n", tc->input);
     av_log(ctx, AV_LOG_INFO, "    smoothing = %d\n", tc->conf.smoothing);
+    av_log(ctx, AV_LOG_INFO, "    optalgo   = %s\n",
+           tc->conf.camPathAlgo == VSOptimalL1 ? "opt" :
+           (tc->conf.camPathAlgo == VSGaussian ? "gauss" : "avg" ));
     av_log(ctx, AV_LOG_INFO, "    maxshift  = %d\n", tc->conf.maxShift);
     av_log(ctx, AV_LOG_INFO, "    maxangle  = %f\n", tc->conf.maxAngle);
     av_log(ctx, AV_LOG_INFO, "    crop      = %s\n", tc->conf.crop ? "Black" : "Keep");
     av_log(ctx, AV_LOG_INFO, "    relative  = %s\n", tc->conf.relative ? "True": "False");
     av_log(ctx, AV_LOG_INFO, "    invert    = %s\n", tc->conf.invert ? "True" : "False");
     av_log(ctx, AV_LOG_INFO, "    zoom      = %f\n", tc->conf.zoom);
-    av_log(ctx, AV_LOG_INFO, "    optzoom   = %s\n", tc->conf.optZoom ? "On" : "Off");
+    av_log(ctx, AV_LOG_INFO, "    optzoom   = %s\n",
+           tc->conf.optZoom == 1 ? "Static (1)" : (tc->conf.optZoom == 2 ? "Dynamic (2)" : "Off (0)" ));
+    if (tc->conf.optZoom == 2)
+        av_log(ctx, AV_LOG_INFO, "    zoomspeed = %g\n", tc->conf.zoomSpeed );
     av_log(ctx, AV_LOG_INFO, "    interpol  = %s\n", getInterpolationTypeName(tc->conf.interpolType));
 
     f = fopen(tc->input, "r");
@@ -186,7 +208,7 @@ static int config_input(AVFilterLink *inlink)
         VSManyLocalMotions mlms;
         if (vsReadLocalMotionsFile(f, &mlms) == VS_OK) {
             // calculate the actual transforms from the local motions
-            if (vsLocalmotions2TransformsSimple(td, &mlms, &tc->trans) != VS_OK) {
+            if (vsLocalmotions2Transforms(td, &mlms, &tc->trans) != VS_OK) {
                 av_log(ctx, AV_LOG_ERROR, "calculating transformations failed\n");
                 return AVERROR(EINVAL);
             }

@@ -49,7 +49,7 @@ static const AVOption vidstabdetect_options[] = {
     {"result",      "path to the file used to write the transforms",                 OFFSET(result),             AV_OPT_TYPE_STRING, {.str = DEFAULT_RESULT_NAME}, .flags = FLAGS},
     {"shakiness",   "how shaky is the video and how quick is the camera?"
                     " 1: little (fast) 10: very strong/quick (slow)",                OFFSETC(shakiness),         AV_OPT_TYPE_INT,    {.i64 = 5},      1,  10, FLAGS},
-    {"accuracy",    "(>=shakiness) 1: low 15: high (slow)",                          OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 9},      1,  15, FLAGS},
+    {"accuracy",    "(>=shakiness) 1: low 15: high (slow)",                          OFFSETC(accuracy),          AV_OPT_TYPE_INT,    {.i64 = 15},     1,  15, FLAGS},
     {"stepsize",    "region around minimum is scanned with 1 pixel resolution",      OFFSETC(stepSize),          AV_OPT_TYPE_INT,    {.i64 = 6},      1,  32, FLAGS},
     {"mincontrast", "below this contrast a field is discarded (0-1)",                OFFSETC(contrastThreshold), AV_OPT_TYPE_DOUBLE, {.dbl = 0.25}, 0.0, 1.0, FLAGS},
     {"show",        "0: draw nothing; 1,2: show fields and transforms",              OFFSETC(show),              AV_OPT_TYPE_INT,    {.i64 = 0},      0,   2, FLAGS},
@@ -135,6 +135,7 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "      accuracy = %d\n", sd->conf.accuracy);
     av_log(ctx, AV_LOG_INFO, "      stepsize = %d\n", sd->conf.stepSize);
     av_log(ctx, AV_LOG_INFO, "   mincontrast = %f\n", sd->conf.contrastThreshold);
+    av_log(ctx, AV_LOG_INFO, "        tripod = %d\n", sd->conf.virtualTripod);
     av_log(ctx, AV_LOG_INFO, "          show = %d\n", sd->conf.show);
     av_log(ctx, AV_LOG_INFO, "        result = %s\n", sd->result);
 

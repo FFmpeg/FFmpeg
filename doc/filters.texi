@@ -8064,7 +8064,7 @@ value of 10 means strong shakiness. Default value is 5.
 @item accuracy
 Set the accuracy of the detection process. It must be a value in the
 range 1-15. A value of 1 means low accuracy, a value of 15 means high
-accuracy. Default value is 9.
+accuracy. Default value is 15.
 
 @item stepsize
 Set stepsize of the search process. The region around minimum is
@@ -8144,11 +8144,21 @@ This filter accepts the following options:
 path to the file used to read the transforms (default: @file{transforms.trf})
 
 @item smoothing
-number of frames (value*2 + 1) used for lowpass filtering the camera movements
+Set the number of frames (value*2 + 1) used for lowpass filtering the camera movements
 (default: 10). For example a number of 10 means that 21 frames are used
 (10 in the past and 10 in the future) to smoothen the motion in the
 video. A larger values leads to a smoother video, but limits the
 acceleration of the camera (pan/tilt movements).
+0 is a special case where a static camera is simulated.
+
+@item optalgo
+Set the camera path optimization algorithm:
+@table @samp
+@item gauss
+gaussian kernel low-pass filter on camera motion (default)
+@item avg
+averaging on transformations
+@end table
 
 @item maxshift
 maximal number of pixels to translate frames (default: -1 no limit)
@@ -8186,7 +8196,7 @@ relative to previous frame (default)
 @end table
 
 @item zoom
-percentage to zoom (default: 0)
+Set percentage to zoom (default: 0)
 @table @samp
 @item >0
 zoom in
@@ -8195,17 +8205,20 @@ zoom out
 @end table
 
 @item optzoom
-set optimal zooming to avoid borders
+Set optimal zooming to avoid borders
 @table @samp
 @item 0
 disabled
 @item 1
 optimal static zoom value is determined (only very strong movements will lead to visible borders) (default)
 @item 2
-optimal adaptive zoom value is determined (no borders will be visible)
+optimal adaptive zoom value is determined (no borders will be visible), see @option{zoomspeed}
 @end table
 Note that the value given at zoom is added to the one calculated
 here.
+
+@item zoomspeed
+Set percent to zoom maximally each frame (for @option{optzoom=2}). Range is from 0 to 5, default value is 0.2
 
 @item interpol
 type of interpolation
@@ -8231,6 +8244,15 @@ camera stays stationary. Use also @code{tripod} option of
 off (default)
 @item 1
 virtual tripod mode: equivalent to @code{relative=0:smoothing=0}
+@end table
+
+@item debug
+Increase log verbosity of set to 1. Also the detected global motions are written to the temporary file @file{global_motions.trf}.
+@table @samp
+@item 0
+disabled (default)
+@item 1
+enabled
 @end table
 
 @end table
