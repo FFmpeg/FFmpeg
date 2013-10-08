@@ -811,7 +811,11 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
     %endif
 %endmacro
 
-; merge mmx and sse*
+; Merge mmx and sse*
+; m# is a simd regsiter of the currently selected size
+; xm# is the corresponding xmmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
+; ym# is the corresponding ymmreg (if selcted xmm or ymm size), or mmreg (if selected mmx)
+; (All 3 remain in sync through SWAP.)
 
 %macro CAT_XDEFINE 3
     %xdefine %1%2 %3
@@ -895,6 +899,26 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
 %endmacro
 
 INIT_XMM
+
+%macro DECLARE_MMCAST 1
+    %define  mmmm%1   mm%1
+    %define  mmxmm%1  mm%1
+    %define  mmymm%1  mm%1
+    %define xmmmm%1   mm%1
+    %define xmmxmm%1 xmm%1
+    %define xmmymm%1 xmm%1
+    %define ymmmm%1   mm%1
+    %define ymmxmm%1 ymm%1
+    %define ymmymm%1 ymm%1
+    %define xm%1 xmm %+ m%1
+    %define ym%1 ymm %+ m%1
+%endmacro
+
+%assign i 0
+%rep 16
+    DECLARE_MMCAST i
+%assign i i+1
+%endrep
 
 ; I often want to use macros that permute their arguments. e.g. there's no
 ; efficient way to implement butterfly or transpose or dct without swapping some
