@@ -1043,6 +1043,7 @@ COMPONENT_LIST="
 
 EXAMPLE_LIST="
     output_example
+    transcode_aac_example
 "
 
 EXTERNAL_LIBRARY_LIST="
@@ -1952,6 +1953,7 @@ yadif_filter_deps="gpl"
 
 # examples
 output_example_deps="avcodec avformat avutil swscale"
+transcode_aac_example_deps="avcodec avformat avresample"
 
 # libraries
 avcodec_deps="avutil"

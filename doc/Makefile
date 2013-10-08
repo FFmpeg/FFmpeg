@@ -16,7 +16,8 @@ DOCS-$(CONFIG_TEXI2HTML)                        += $(HTMLPAGES)
 DOCS = $(DOCS-yes)
 
 DOC_EXAMPLES-$(CONFIG_OUTPUT_EXAMPLE)           += output
-ALL_DOC_EXAMPLES = output
+DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)    += transcode_aac
+ALL_DOC_EXAMPLES = output transcode_aac
 
 DOC_EXAMPLES     := $(DOC_EXAMPLES-yes:%=doc/examples/%$(EXESUF))
 ALL_DOC_EXAMPLES := $(ALL_DOC_EXAMPLES:%=doc/examples/%$(EXESUF))
