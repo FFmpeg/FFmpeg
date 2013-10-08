@@ -87,7 +87,7 @@ SECTION .text
 
 %macro filter_h_fn 1
 %assign %%px mmsize/2
-cglobal %1_8tap_1d_h_%%px, 6, 6, 11, dst, dstride, src, sstride, h, filtery
+cglobal %1_8tap_1d_h_ %+ %%px, 6, 6, 11, dst, dstride, src, sstride, h, filtery
     mova        m6, [pw_256]
     mova        m7, [filteryq+ 0]
 %if ARCH_X86_64 && mmsize > 8
@@ -148,9 +148,9 @@ filter_h_fn avg
 %macro filter_v_fn 1
 %assign %%px mmsize/2
 %if ARCH_X86_64
-cglobal %1_8tap_1d_v_%%px, 6, 8, 11, dst, dstride, src, sstride, h, filtery, src4, sstride3
+cglobal %1_8tap_1d_v_ %+ %%px, 6, 8, 11, dst, dstride, src, sstride, h, filtery, src4, sstride3
 %else
-cglobal %1_8tap_1d_v_%%px, 4, 7, 11, dst, dstride, src, sstride, filtery, src4, sstride3
+cglobal %1_8tap_1d_v_ %+ %%px, 4, 7, 11, dst, dstride, src, sstride, filtery, src4, sstride3
     mov   filteryq, r5mp
 %define hd r4mp
 %endif
