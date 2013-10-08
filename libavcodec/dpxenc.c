@@ -43,6 +43,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->planar             = !!(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
 
     switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_ABGR:
+        s->descriptor = 52;
+        break;
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_GRAY8:
@@ -248,7 +251,7 @@ AVCodec ff_dpx_encoder = {
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_GRAY8,
-        AV_PIX_FMT_RGB24,    AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_RGB24,    AV_PIX_FMT_RGBA, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_GRAY16BE,
         AV_PIX_FMT_RGB48LE,  AV_PIX_FMT_RGB48BE,
         AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_RGBA64BE,

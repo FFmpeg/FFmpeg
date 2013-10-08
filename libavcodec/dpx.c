@@ -152,6 +152,7 @@ static int decode_frame(AVCodecContext *avctx,
     case 6:  // Y
         elements = 1;
         break;
+    case 52: // ABGR
     case 51: // RGBA
         elements = 4;
         break;
@@ -201,6 +202,10 @@ static int decode_frame(AVCodecContext *avctx,
     case 50081:
     case 50080:
         avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        break;
+    case 52081:
+    case 52080:
+        avctx->pix_fmt = AV_PIX_FMT_ABGR;
         break;
     case 51081:
     case 51080:
