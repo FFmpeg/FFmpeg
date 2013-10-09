@@ -715,6 +715,13 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             }
             cblk->length   += cblk->lengthinc;
             cblk->lengthinc = 0;
+
+            if (cblk->length > sizeof(cblk->data)) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Block length %d > data size %zd\n",
+                       cblk->length, sizeof(cblk->data));
+                return AVERROR_INVALIDDATA;
+            }
         }
     }
     return 0;
