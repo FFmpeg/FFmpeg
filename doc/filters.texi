@@ -7822,29 +7822,27 @@ fill the border black
 @item invert
 @table @samp
 @item 0
- keep transforms normal (default)
+keep transforms normal (default)
 @item 1
- invert transforms
+invert transforms
 @end table
-
 
 @item relative
 consider transforms as
 @table @samp
 @item 0
- absolute
+absolute
 @item 1
- relative to previous frame (default)
+relative to previous frame (default)
 @end table
-
 
 @item zoom
 percentage to zoom (default: 0)
 @table @samp
 @item >0
-  zoom in
+zoom in
 @item <0
-  zoom out
+zoom out
 @end table
 
 @item optzoom
