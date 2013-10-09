@@ -517,9 +517,9 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     av_frame_free(&c->frame);
 
-    av_free(c->curbits);
-    av_free(c->curmask);
-    av_free(c->screendta);
+    av_freep(&c->curbits);
+    av_freep(&c->curmask);
+    av_freep(&c->screendta);
     return 0;
 }
 
