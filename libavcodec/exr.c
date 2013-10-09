@@ -501,13 +501,13 @@ static int decode_frame(AVCodecContext *avctx,
 
     version = bytestream_get_byte(&buf);
     if (version != 2) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported version %d\n", version);
+        avpriv_report_missing_feature(avctx, "Version %d", version);
         return AVERROR_PATCHWELCOME;
     }
 
     flags = bytestream_get_le24(&buf);
     if (flags & 0x2) {
-        av_log(avctx, AV_LOG_ERROR, "Tile based images are not supported\n");
+        avpriv_report_missing_feature(avctx, "Tile support");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -556,7 +556,7 @@ static int decode_frame(AVCodecContext *avctx,
                 xsub = bytestream_get_le32(&buf);
                 ysub = bytestream_get_le32(&buf);
                 if (xsub != 1 || ysub != 1) {
-                    av_log(avctx, AV_LOG_ERROR, "Unsupported subsampling %dx%d\n", xsub, ysub);
+                    avpriv_report_missing_feature(avctx, "Subsampling %dx%d", xsub, ysub);
                     return AVERROR_PATCHWELCOME;
                 }
 
@@ -715,7 +715,7 @@ static int decode_frame(AVCodecContext *avctx,
         s->scan_lines_per_block = 16;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Compression type %d is not supported\n", s->compr);
+        avpriv_report_missing_feature(avctx, "Compression %d", s->compr);
         return AVERROR_PATCHWELCOME;
     }
 
