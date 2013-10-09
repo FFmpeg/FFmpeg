@@ -31,6 +31,7 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
 
 enum EncTypes {
     MAGIC_WMVd = 0x574D5664,
@@ -62,6 +63,7 @@ typedef struct VmncContext {
     int bigendian;
     uint8_t pal[768];
     int width, height;
+    GetByteContext gb;
 
     /* cursor data */
     int cur_w, cur_h;
@@ -72,26 +74,25 @@ typedef struct VmncContext {
 } VmncContext;
 
 /* read pixel value from stream */
-static av_always_inline int vmnc_get_pixel(const uint8_t *buf, int bpp, int be)
+static av_always_inline int vmnc_get_pixel(GetByteContext *gb, int bpp, int be)
 {
     switch (bpp * 2 + be) {
     case 2:
     case 3:
-        return *buf;
+        return bytestream2_get_byte(gb);
     case 4:
-        return AV_RL16(buf);
+        return bytestream2_get_le16(gb);
     case 5:
-        return AV_RB16(buf);
+        return bytestream2_get_be16(gb);
     case 8:
-        return AV_RL32(buf);
+        return bytestream2_get_le32(gb);
     case 9:
-        return AV_RB32(buf);
-    default:
-        return 0;
+        return bytestream2_get_be32(gb);
+    default: return 0;
     }
 }
 
-static void load_cursor(VmncContext *c, const uint8_t *src)
+static void load_cursor(VmncContext *c)
 {
     int i, j, p;
     const int bpp   = c->bpp2;
@@ -101,8 +102,7 @@ static void load_cursor(VmncContext *c, const uint8_t *src)
 
     for (j = 0; j < c->cur_h; j++) {
         for (i = 0; i < c->cur_w; i++) {
-            p = vmnc_get_pixel(src, bpp, c->bigendian);
-            src += bpp;
+            p = vmnc_get_pixel(&c->gb, bpp, c->bigendian);
             if (bpp == 1)
                 *dst8++ = p;
             if (bpp == 2)
@@ -116,8 +116,7 @@ static void load_cursor(VmncContext *c, const uint8_t *src)
     dst32 = (uint32_t*)c->curmask;
     for (j = 0; j < c->cur_h; j++) {
         for (i = 0; i < c->cur_w; i++) {
-            p = vmnc_get_pixel(src, bpp, c->bigendian);
-            src += bpp;
+            p = vmnc_get_pixel(&c->gb, bpp, c->bigendian);
             if (bpp == 1)
                 *dst8++ = p;
             if (bpp == 2)
@@ -219,14 +218,13 @@ static av_always_inline void paint_rect(uint8_t *dst, int dx, int dy,
 }
 
 static av_always_inline void paint_raw(uint8_t *dst, int w, int h,
-                                       const uint8_t *src, int bpp,
+                                       GetByteContext *gb, int bpp,
                                        int be, int stride)
 {
     int i, j, p;
     for (j = 0; j < h; j++) {
         for (i = 0; i < w; i++) {
-            p = vmnc_get_pixel(src, bpp, be);
-            src += bpp;
+            p = vmnc_get_pixel(gb, bpp, be);
             switch (bpp) {
             case 1:
                 dst[i] = p;
@@ -243,15 +241,14 @@ static av_always_inline void paint_raw(uint8_t *dst, int w, int h,
     }
 }
 
-static int decode_hextile(VmncContext *c, uint8_t *dst, const uint8_t *src,
-                          int ssize, int w, int h, int stride)
+static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
+                          int w, int h, int stride)
 {
     int i, j, k;
     int bg = 0, fg = 0, rects, color, flags, xy, wh;
     const int bpp = c->bpp2;
     uint8_t *dst2;
     int bw = 16, bh = 16;
-    const uint8_t *ssrc = src;
 
     for (j = 0; j < h; j += 16) {
         dst2 = dst;
@@ -259,55 +256,48 @@ static int decode_hextile(VmncContext *c, uint8_t *dst, const uint8_t *src,
         if (j + 16 > h)
             bh = h - j;
         for (i = 0; i < w; i += 16, dst2 += 16 * bpp) {
-            if (src - ssrc >= ssize) {
+            if (bytestream2_get_bytes_left(gb) <= 0) {
                 av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
                 return -1;
             }
             if (i + 16 > w)
                 bw = w - i;
-            flags = *src++;
+            flags = bytestream2_get_byte(gb);
             if (flags & HT_RAW) {
-                if (src - ssrc > ssize - bw * bh * bpp) {
+                if (bytestream2_get_bytes_left(gb) < bw * bh * bpp) {
                     av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
                     return -1;
                 }
-                paint_raw(dst2, bw, bh, src, bpp, c->bigendian, stride);
-                src += bw * bh * bpp;
+                paint_raw(dst2, bw, bh, gb, bpp, c->bigendian, stride);
             } else {
-                if (flags & HT_BKG) {
-                    bg = vmnc_get_pixel(src, bpp, c->bigendian);
-                    src += bpp;
-                }
-                if (flags & HT_FG) {
-                    fg = vmnc_get_pixel(src, bpp, c->bigendian);
-                    src += bpp;
-                }
+                if (flags & HT_BKG)
+                    bg = vmnc_get_pixel(gb, bpp, c->bigendian);
+                if (flags & HT_FG)
+                    fg = vmnc_get_pixel(gb, bpp, c->bigendian);
                 rects = 0;
                 if (flags & HT_SUB)
-                    rects = *src++;
+                    rects = bytestream2_get_byte(gb);
                 color = !!(flags & HT_CLR);
 
                 paint_rect(dst2, 0, 0, bw, bh, bg, bpp, stride);
 
-                if (src - ssrc > ssize - rects * (color * bpp + 2)) {
+                if (bytestream2_get_bytes_left(gb) < rects * (color * bpp + 2)) {
                     av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
                     return -1;
                 }
                 for (k = 0; k < rects; k++) {
-                    if (color) {
-                        fg = vmnc_get_pixel(src, bpp, c->bigendian);
-                        src += bpp;
-                    }
-                    xy = *src++;
-                    wh = *src++;
-                    paint_rect(dst2, xy >> 4, xy & 0xF, (wh >> 4) + 1,
-                               (wh & 0xF) + 1, fg, bpp, stride);
+                    if (color)
+                        fg = vmnc_get_pixel(gb, bpp, c->bigendian);
+                    xy = bytestream2_get_byte(gb);
+                    wh = bytestream2_get_byte(gb);
+                    paint_rect(dst2, xy >> 4, xy & 0xF,
+                               (wh>>4)+1, (wh & 0xF)+1, fg, bpp, stride);
                 }
             }
         }
         dst += stride * 16;
     }
-    return src - ssrc;
+    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -316,8 +306,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     VmncContext * const c = avctx->priv_data;
+    GetByteContext *gb = &c->gb;
     uint8_t *outptr;
-    const uint8_t *src = buf;
     int dx, dy, w, h, depth, enc, chunks, res, size_left;
 
     c->pic.reference = 1;
@@ -326,6 +316,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
+
+    bytestream2_init(gb, buf, buf_size);
 
     c->pic.key_frame = 0;
     c->pic.pict_type = AV_PICTURE_TYPE_P;
@@ -358,22 +350,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             }
         }
     }
-    src += 2;
-    chunks = AV_RB16(src);
-    src += 2;
+    bytestream2_skip(gb, 2);
+    chunks = bytestream2_get_be16(gb);
     while (chunks--) {
-        dx  = AV_RB16(src);
-        src += 2;
-        dy  = AV_RB16(src);
-        src += 2;
-        w   = AV_RB16(src);
-        src += 2;
-        h   = AV_RB16(src);
-        src += 2;
-        enc = AV_RB32(src);
-        src += 4;
+        dx  = bytestream2_get_be16(gb);
+        dy  = bytestream2_get_be16(gb);
+        w   = bytestream2_get_be16(gb);
+        h   = bytestream2_get_be16(gb);
+        enc = bytestream2_get_be32(gb);
         outptr = c->pic.data[0] + dx * c->bpp2 + dy * c->pic.linesize[0];
-        size_left = buf_size - (src - buf);
+        size_left = bytestream2_get_bytes_left(gb);
         switch (enc) {
         case MAGIC_WMVd: // cursor
             if (size_left < 2 + w * h * c->bpp2 * 2) {
@@ -382,7 +368,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                        2 + w * h * c->bpp2 * 2, size_left);
                 return -1;
             }
-            src += 2;
+            bytestream2_skip(gb, 2);
             c->cur_w  = w;
             c->cur_h  = h;
             c->cur_hx = dx;
@@ -397,44 +383,43 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             c->curbits   = av_realloc(c->curbits,   c->cur_w * c->cur_h * c->bpp2);
             c->curmask   = av_realloc(c->curmask,   c->cur_w * c->cur_h * c->bpp2);
             c->screendta = av_realloc(c->screendta, c->cur_w * c->cur_h * c->bpp2);
-            load_cursor(c, src);
-            src += w * h * c->bpp2 * 2;
+            load_cursor(c);
             break;
         case MAGIC_WMVe: // unknown
-            src += 2;
+            bytestream2_skip(gb, 2);
             break;
         case MAGIC_WMVf: // update cursor position
             c->cur_x = dx - c->cur_hx;
             c->cur_y = dy - c->cur_hy;
             break;
         case MAGIC_WMVg: // unknown
-            src += 10;
+            bytestream2_skip(gb, 10);
             break;
         case MAGIC_WMVh: // unknown
-            src += 4;
+            bytestream2_skip(gb, 4);
             break;
         case MAGIC_WMVi: // ServerInitialization struct
             c->pic.key_frame = 1;
             c->pic.pict_type = AV_PICTURE_TYPE_I;
-            depth = *src++;
+            depth = bytestream2_get_byte(gb);
             if (depth != c->bpp) {
                 av_log(avctx, AV_LOG_INFO,
                        "Depth mismatch. Container %i bpp, "
                        "Frame data: %i bpp\n",
                        c->bpp, depth);
             }
-            src++;
-            c->bigendian = *src++;
+            bytestream2_skip(gb, 1);
+            c->bigendian = bytestream2_get_byte(gb);
             if (c->bigendian & (~1)) {
                 av_log(avctx, AV_LOG_INFO,
                        "Invalid header: bigendian flag = %i\n", c->bigendian);
                 return -1;
             }
-            // skip the rest of pixel format data
-            src += 13;
+            //skip the rest of pixel format data
+            bytestream2_skip(gb, 13);
             break;
         case MAGIC_WMVj: // unknown
-            src += 2;
+            bytestream2_skip(gb, 2);
             break;
         case 0x00000000: // raw rectangle data
             if ((dx + w > c->width) || (dy + h > c->height)) {
@@ -449,9 +434,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                        w * h * c->bpp2, size_left);
                 return -1;
             }
-            paint_raw(outptr, w, h, src, c->bpp2, c->bigendian,
+            paint_raw(outptr, w, h, gb, c->bpp2, c->bigendian,
                       c->pic.linesize[0]);
-            src += w * h * c->bpp2;
             break;
         case 0x00000005: // HexTile encoded rectangle
             if ((dx + w > c->width) || (dy + h > c->height)) {
@@ -460,11 +444,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                        w, h, dx, dy, c->width, c->height);
                 return -1;
             }
-            res = decode_hextile(c, outptr, src, size_left, w, h,
-                                 c->pic.linesize[0]);
+            res = decode_hextile(c, outptr, gb, w, h, c->pic.linesize[0]);
             if (res < 0)
                 return -1;
-            src += res;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported block type 0x%08X\n", enc);
