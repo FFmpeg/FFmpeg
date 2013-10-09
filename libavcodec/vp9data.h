@@ -22,6 +22,8 @@
 #ifndef AVCODEC_VP9DATA_H
 #define AVCODEC_VP9DATA_H
 
+#include <stdint.h>
+
 #include "vp9.h"
 
 enum BlockPartition {

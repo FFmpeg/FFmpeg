@@ -24,6 +24,7 @@
 #ifndef AVCODEC_VP9DSP_H
 #define AVCODEC_VP9DSP_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "vp9.h"
