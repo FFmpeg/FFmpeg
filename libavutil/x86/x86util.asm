@@ -665,3 +665,14 @@
     psrad        %1, 16
 %endif
 %endmacro
+
+; Wrapper for non-FMA version of fmaddps
+%macro FMULADD_PS 5
+    %ifidn %1, %4
+        mulps   %5, %2, %3
+        addps   %1, %4, %5
+    %else
+        mulps   %1, %2, %3
+        addps   %1, %4
+    %endif
+%endmacro
