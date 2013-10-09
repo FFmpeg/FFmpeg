@@ -1208,6 +1208,16 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
             flags |= SWS_FULL_CHR_H_INT;
             c->flags = flags;
         }
+
+        if (   c->chrSrcHSubSample == 0
+            && c->chrSrcVSubSample == 0
+            && c->dither != SWS_DITHER_BAYER //SWS_FULL_CHR_H_INT is currently not supported with SWS_DITHER_BAYER
+            && !(c->flags & SWS_FAST_BILINEAR)
+        ) {
+            av_log(c, AV_LOG_DEBUG, "Forcing full internal H chroma due to input having non subsampled chroma\n");
+            flags |= SWS_FULL_CHR_H_INT;
+            c->flags = flags;
+        }
     }
 
     if (c->dither == SWS_DITHER_AUTO) {
