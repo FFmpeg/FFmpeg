@@ -68,6 +68,7 @@ typedef struct {
     uint8_t *inflate_buffer;
 #endif
     AVDictionary *chained_options;
+    int send_expect_100;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -81,6 +82,7 @@ static const AVOption options[] = {
 {"auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, {.i64 = HTTP_AUTH_NONE}, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D|E, "auth_type" },
 {"none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_NONE}, 0, 0, D|E, "auth_type" },
 {"basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_BASIC}, 0, 0, D|E, "auth_type" },
+{"send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E, "auth_type" },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -435,6 +437,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     int64_t off = s->off;
     int len = 0;
     const char *method;
+    int send_expect_100 = 0;
 
 
     /* send http header */
@@ -452,6 +455,16 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                                            method);
     proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
                                                 local_path, method);
+    if (post && !s->post_data) {
+        send_expect_100 = s->send_expect_100;
+        /* The user has supplied authentication but we don't know the auth type,
+         * send Expect: 100-continue to get the 401 response including the
+         * WWW-Authenticate header, or an 100 continue if no auth actually
+         * is needed. */
+        if (auth && s->auth_state.auth_type == HTTP_AUTH_NONE &&
+            s->http_code != 401)
+            send_expect_100 = 1;
+    }
 
     /* set default headers if needed */
     if (!has_header(s->headers, "\r\nUser-Agent: "))
@@ -463,6 +476,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     if (!has_header(s->headers, "\r\nRange: ") && !post)
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-\r\n", s->off);
+    if (send_expect_100 && !has_header(s->headers, "\r\nExpect: "))
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "Expect: 100-continue\r\n");
 
     if (!has_header(s->headers, "\r\nConnection: ")) {
         if (s->multiple_requests) {
@@ -517,7 +533,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
     s->willclose = 0;
     s->end_chunked_post = 0;
     s->end_header = 0;
-    if (post && !s->post_data) {
+    if (post && !s->post_data && !send_expect_100) {
         /* Pretend that it did work. We didn't read any header yet, since
          * we've still to send the POST data, but the code calling this
          * function will check http_code after we return. */
