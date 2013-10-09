@@ -6,7 +6,7 @@
 ;* Authors: Loren Merritt <lorenm@u.washington.edu>
 ;*          Anton Mitrofanov <BugMaster@narod.ru>
 ;*          Jason Garrett-Glaser <darkshikari@gmail.com>
-;*          Henrik Gramner <hengar-6@student.ltu.se>
+;*          Henrik Gramner <henrik@gramner.com>
 ;*
 ;* Permission to use, copy, modify, and/or distribute this software for any
 ;* purpose with or without fee is hereby granted, provided that the above
@@ -62,42 +62,17 @@
     %define mangle(x) x
 %endif
 
-; Name of the .rodata section.
+; aout does not support align=
+; NOTE: This section is out of sync with x264, in order to
+; keep supporting OS/2.
 %macro SECTION_RODATA 0-1 16
-    ; Kludge: Something on OS X fails to align .rodata even given an align
-    ; attribute, so use a different read-only section. This has been fixed in
-    ; yasm 0.8.0 and nasm 2.6.
-    %ifdef __YASM_VERSION_ID__
-        %if __YASM_VERSION_ID__ < 00080000h
-            %define NEED_MACHO_RODATA_KLUDGE
-        %endif
-    %elifdef __NASM_VERSION_ID__
-        %if __NASM_VERSION_ID__ < 02060000h
-            %define NEED_MACHO_RODATA_KLUDGE
-        %endif
-    %endif
-
     %ifidn __OUTPUT_FORMAT__,aout
         section .text
     %else
-        %ifndef NEED_MACHO_RODATA_KLUDGE
-            SECTION .rodata align=%1
-        %else
-            %ifidn __OUTPUT_FORMAT__,macho64
-                SECTION .text align=%1
-            %elifidn __OUTPUT_FORMAT__,macho
-                SECTION .text align=%1
-                fakegot:
-            %else
-                SECTION .rodata align=%1
-            %endif
-        %endif
+        SECTION .rodata align=%1
     %endif
-
-    %undef NEED_MACHO_RODATA_KLUDGE
 %endmacro
 
-; aout does not support align=
 %macro SECTION_TEXT 0-1 16
     %ifidn __OUTPUT_FORMAT__,aout
         SECTION .text
