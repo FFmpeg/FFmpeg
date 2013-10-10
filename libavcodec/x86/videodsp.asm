@@ -100,7 +100,7 @@ cglobal emu_edge_hvar, 5, 6, 1, dst, dst_stride, start_x, n_words, h, w
     ; FIXME also write a ssse3 version using pshufb
     movzx            wd, byte [dstq+start_xq]   ;   w = read(1)
     imul             wd, 0x01010101             ;   w *= 0x01010101
-    movd             m0, wd
+    movd             m0, wd                     ;   FIXME this is sse2, not sse
     mov              wq, n_wordsq               ;   initialize w
 %if cpuflag(sse)
     shufps           m0, m0, q0000              ;   splat
@@ -137,42 +137,49 @@ hvar_fn
 ;         - if (%2 & 3)  fills 1, 2 or 4 bytes in eax
 ; writing data out is in the same way
 %macro READ_NUM_BYTES 2
-%assign %%off 0 ; offset in source buffer
-%assign %%idx 0 ; mmx/xmm register index
+%assign %%off 0     ; offset in source buffer
+%assign %%mmx_idx 0 ; mmx register index
+%assign %%xmm_idx 0 ; xmm register index
 
 %rep %2/mmsize
-    movu     m %+ %%idx, [srcq+%%off]
+%if mmsize == 16
+    movu   xmm %+ %%xmm_idx, [srcq+%%off]
+%assign %%xmm_idx %%xmm_idx+1
+%else ; mmx
+    movu    mm %+ %%mmx_idx, [srcq+%%off]
+%assign %%mmx_idx %%mmx_idx+1
+%endif
 %assign %%off %%off+mmsize
-%assign %%idx %%idx+1
 %endrep ; %2/mmsize
 
 %if mmsize == 16
 %if (%2-%%off) >= 8
 %if %2 > 16 && (%2-%%off) > 8
-    movu     m %+ %%idx, [srcq+%2-16]
+    movu   xmm %+ %%xmm_idx, [srcq+%2-16]
+%assign %%xmm_idx %%xmm_idx+1
 %assign %%off %2
 %else
-    movq     m %+ %%idx, [srcq+%%off]
+    movq    mm %+ %%mmx_idx, [srcq+%%off]
+%assign %%mmx_idx %%mmx_idx+1
 %assign %%off %%off+8
 %endif
-%assign %%idx %%idx+1
 %endif ; (%2-%%off) >= 8
 %endif
 
 %if (%2-%%off) >= 4
 %if %2 > 8 && (%2-%%off) > 4
-    movq     m %+ %%idx, [srcq+%2-8]
+    movq    mm %+ %%mmx_idx, [srcq+%2-8]
 %assign %%off %2
 %else
-    movd     m %+ %%idx, [srcq+%%off]
+    movd    mm %+ %%mmx_idx, [srcq+%%off]
 %assign %%off %%off+4
 %endif
-%assign %%idx %%idx+1
+%assign %%mmx_idx %%mmx_idx+1
 %endif ; (%2-%%off) >= 4
 
 %if (%2-%%off) >= 1
 %if %2 >= 4
-    movd     m %+ %%idx, [srcq+%2-4]
+    movd mm %+ %%mmx_idx, [srcq+%2-4]
 %elif (%2-%%off) == 1
     mov            valb, [srcq+%2-1]
 %elif (%2-%%off) == 2
@@ -180,48 +187,55 @@ hvar_fn
 %elifidn %1, body
     mov            vald, [srcq+%2-3]
 %else
-    movd     m %+ %%idx, [srcq+%2-3]
+    movd mm %+ %%mmx_idx, [srcq+%2-3]
 %endif
 %endif ; (%2-%%off) >= 1
 %endmacro ; READ_NUM_BYTES
 
 %macro WRITE_NUM_BYTES 2
-%assign %%off 0 ; offset in destination buffer
-%assign %%idx 0 ; mmx/xmm register index
+%assign %%off 0     ; offset in destination buffer
+%assign %%mmx_idx 0 ; mmx register index
+%assign %%xmm_idx 0 ; xmm register index
 
 %rep %2/mmsize
-    movu   [dstq+%%off], m %+ %%idx
+%if mmsize == 16
+    movu   [dstq+%%off], xmm %+ %%xmm_idx
+%assign %%xmm_idx %%xmm_idx+1
+%else ; mmx
+    movu   [dstq+%%off], mm %+ %%mmx_idx
+%assign %%mmx_idx %%mmx_idx+1
+%endif
 %assign %%off %%off+mmsize
-%assign %%idx %%idx+1
 %endrep ; %2/mmsize
 
 %if mmsize == 16
 %if (%2-%%off) >= 8
 %if %2 > 16 && (%2-%%off) > 8
-    movu   [dstq+%2-16], m %+ %%idx
+    movu   [dstq+%2-16], xmm %+ %%xmm_idx
+%assign %%xmm_idx %%xmm_idx+1
 %assign %%off %2
 %else
-    movq   [dstq+%%off], m %+ %%idx
+    movq   [dstq+%%off], mm %+ %%mmx_idx
+%assign %%mmx_idx %%mmx_idx+1
 %assign %%off %%off+8
 %endif
-%assign %%idx %%idx+1
 %endif ; (%2-%%off) >= 8
 %endif
 
 %if (%2-%%off) >= 4
 %if %2 > 8 && (%2-%%off) > 4
-    movq    [dstq+%2-8], m %+ %%idx
+    movq    [dstq+%2-8], mm %+ %%mmx_idx
 %assign %%off %2
 %else
-    movd   [dstq+%%off], m %+ %%idx
+    movd   [dstq+%%off], mm %+ %%mmx_idx
 %assign %%off %%off+4
 %endif
-%assign %%idx %%idx+1
+%assign %%mmx_idx %%mmx_idx+1
 %endif ; (%2-%%off) >= 4
 
 %if (%2-%%off) >= 1
 %if %2 >= 4
-    movd    [dstq+%2-4], m %+ %%idx
+    movd    [dstq+%2-4], mm %+ %%mmx_idx
 %elif (%2-%%off) == 1
     mov     [dstq+%2-1], valb
 %elif (%2-%%off) == 2
@@ -231,7 +245,7 @@ hvar_fn
     shr            vald, 16
     mov     [dstq+%2-1], valb
 %else
-    movd           vald, m %+ %%idx
+    movd           vald, mm %+ %%mmx_idx
     mov     [dstq+%2-3], valw
     shr            vald, 16
     mov     [dstq+%2-1], valb
