@@ -301,6 +301,14 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
     return 0;
 }
 
+static void reset_buffers(VmncContext *c)
+{
+    av_freep(&c->curbits);
+    av_freep(&c->curmask);
+    av_freep(&c->screendta);
+    c->cur_w = c->cur_h = 0;
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
@@ -386,11 +394,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                        c->cur_hx, c->cur_hy, c->cur_w, c->cur_h);
                 c->cur_hx = c->cur_hy = 0;
             }
-            c->curbits   = av_realloc_f(c->curbits,   c->cur_w * c->cur_h, c->bpp2);
-            c->curmask   = av_realloc_f(c->curmask,   c->cur_w * c->cur_h, c->bpp2);
-            c->screendta = av_realloc_f(c->screendta, c->cur_w * c->cur_h, c->bpp2);
-            if (!c->curbits || !c->curmask || !c->screendta)
-                return AVERROR(ENOMEM);
+            if (c->cur_w * c->cur_h >= INT_MAX / c->bpp2) {
+                reset_buffers(c);
+                return AVERROR(EINVAL);
+            } else {
+                int screen_size = c->cur_w * c->cur_h * c->bpp2;
+                if ((ret = av_reallocp(&c->curbits, screen_size)) < 0 ||
+                    (ret = av_reallocp(&c->curmask, screen_size)) < 0 ||
+                    (ret = av_reallocp(&c->screendta, screen_size)) < 0) {
+                    reset_buffers(c);
+                    return ret;
+                }
+            }
             load_cursor(c);
             break;
         case MAGIC_WMVe: // unknown
