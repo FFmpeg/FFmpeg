@@ -459,8 +459,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *data = NULL;
     int flags = -1, flags_size, ret;
 
-    if (enc->codec_id == AV_CODEC_ID_VP6F ||
-        enc->codec_id == AV_CODEC_ID_VP6A || enc->codec_id == AV_CODEC_ID_AAC)
+    if (enc->codec_id == AV_CODEC_ID_VP6F || enc->codec_id == AV_CODEC_ID_VP6A ||
+        enc->codec_id == AV_CODEC_ID_AAC)
         flags_size = 2;
     else if (enc->codec_id == AV_CODEC_ID_H264 || enc->codec_id == AV_CODEC_ID_MPEG4)
         flags_size = 5;
