@@ -392,12 +392,16 @@ static inline void decode_ac_coeffs(GetBitContext *gb, DCTELEM *out,
             return;
 
         run = decode_vlc_codeword(gb, ff_prores_ac_codebook[run_cb_index]);
+        if (run < 0)
+            return AVERROR_INVALIDDATA;
 
         bits_left = get_bits_left(gb);
         if (bits_left <= 0 || (bits_left <= 8 && !show_bits(gb, bits_left)))
             return;
 
         level = decode_vlc_codeword(gb, ff_prores_ac_codebook[lev_cb_index]) + 1;
+        if (level < 0)
+            return AVERROR_INVALIDDATA;
 
         pos += run + 1;
         if (pos >= max_coeffs)
