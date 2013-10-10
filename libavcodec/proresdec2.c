@@ -310,8 +310,8 @@ static av_always_inline void decode_dc_coeffs(GetBitContext *gb, int16_t *out,
 static const uint8_t run_to_cb[16] = { 0x06, 0x06, 0x05, 0x05, 0x04, 0x29, 0x29, 0x29, 0x29, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x4C };
 static const uint8_t lev_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28, 0x28, 0x28, 0x28, 0x4C };
 
-static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitContext *gb,
-                                              int16_t *out, int blocks_per_slice)
+static av_always_inline int decode_ac_coeffs(AVCodecContext *avctx, GetBitContext *gb,
+                                             int16_t *out, int blocks_per_slice)
 {
     ProresContext *ctx = avctx->priv_data;
     int block_mask, sign;
@@ -336,7 +336,7 @@ static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitConte
         pos += run + 1;
         if (pos >= max_coeffs) {
             av_log(avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", pos, max_coeffs);
-            return;
+            return AVERROR_INVALIDDATA;
         }
 
         DECODE_CODEWORD(level, lev_to_cb[FFMIN(level, 9)]);
@@ -350,18 +350,20 @@ static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitConte
     }
 
     CLOSE_READER(re, gb);
+    return 0;
 }
 
-static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
-                              uint16_t *dst, int dst_stride,
-                              const uint8_t *buf, unsigned buf_size,
-                              const int16_t *qmat)
+static int decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
+                             uint16_t *dst, int dst_stride,
+                             const uint8_t *buf, unsigned buf_size,
+                             const int16_t *qmat)
 {
     ProresContext *ctx = avctx->priv_data;
     LOCAL_ALIGNED_16(int16_t, blocks, [8*4*64]);
     int16_t *block;
     GetBitContext gb;
     int i, blocks_per_slice = slice->mb_count<<2;
+    int ret;
 
     for (i = 0; i < blocks_per_slice; i++)
         ctx->dsp.clear_block(blocks+(i<<6));
@@ -369,7 +371,8 @@ static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
     init_get_bits(&gb, buf, buf_size << 3);
 
     decode_dc_coeffs(&gb, blocks, blocks_per_slice);
-    decode_ac_coeffs(avctx, &gb, blocks, blocks_per_slice);
+    if ((ret = decode_ac_coeffs(avctx, &gb, blocks, blocks_per_slice)) < 0)
+        return ret;
 
     block = blocks;
     for (i = 0; i < slice->mb_count; i++) {
@@ -380,18 +383,20 @@ static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
         block += 4*64;
         dst += 16;
     }
+    return 0;
 }
 
-static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
-                                uint16_t *dst, int dst_stride,
-                                const uint8_t *buf, unsigned buf_size,
-                                const int16_t *qmat, int log2_blocks_per_mb)
+static int decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
+                               uint16_t *dst, int dst_stride,
+                               const uint8_t *buf, unsigned buf_size,
+                               const int16_t *qmat, int log2_blocks_per_mb)
 {
     ProresContext *ctx = avctx->priv_data;
     LOCAL_ALIGNED_16(int16_t, blocks, [8*4*64]);
     int16_t *block;
     GetBitContext gb;
     int i, j, blocks_per_slice = slice->mb_count << log2_blocks_per_mb;
+    int ret;
 
     for (i = 0; i < blocks_per_slice; i++)
         ctx->dsp.clear_block(blocks+(i<<6));
@@ -399,7 +404,8 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     init_get_bits(&gb, buf, buf_size << 3);
 
     decode_dc_coeffs(&gb, blocks, blocks_per_slice);
-    decode_ac_coeffs(avctx, &gb, blocks, blocks_per_slice);
+    if ((ret = decode_ac_coeffs(avctx, &gb, blocks, blocks_per_slice)) < 0)
+        return ret;
 
     block = blocks;
     for (i = 0; i < slice->mb_count; i++) {
@@ -410,6 +416,7 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
             dst += 8;
         }
     }
+    return 0;
 }
 
 static void unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
@@ -502,6 +509,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     int16_t qmat_luma_scaled[64];
     int16_t qmat_chroma_scaled[64];
     int mb_x_shift;
+    int ret;
 
     slice->ret = -1;
     //av_log(avctx, AV_LOG_INFO, "slice %d mb width %d mb x %d y %d\n",
@@ -559,16 +567,23 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         dest_a += pic->linesize[3];
     }
 
-    decode_slice_luma(avctx, slice, (uint16_t*)dest_y, luma_stride,
-                      buf, y_data_size, qmat_luma_scaled);
+    ret = decode_slice_luma(avctx, slice, (uint16_t*)dest_y, luma_stride,
+                            buf, y_data_size, qmat_luma_scaled);
+    if (ret < 0)
+        return ret;
 
     if (!(avctx->flags & CODEC_FLAG_GRAY)) {
-        decode_slice_chroma(avctx, slice, (uint16_t*)dest_u, chroma_stride,
-                            buf + y_data_size, u_data_size,
-                            qmat_chroma_scaled, log2_chroma_blocks_per_mb);
-        decode_slice_chroma(avctx, slice, (uint16_t*)dest_v, chroma_stride,
-                            buf + y_data_size + u_data_size, v_data_size,
-                            qmat_chroma_scaled, log2_chroma_blocks_per_mb);
+        ret = decode_slice_chroma(avctx, slice, (uint16_t*)dest_u, chroma_stride,
+                                  buf + y_data_size, u_data_size,
+                                  qmat_chroma_scaled, log2_chroma_blocks_per_mb);
+        if (ret < 0)
+            return ret;
+
+        ret = decode_slice_chroma(avctx, slice, (uint16_t*)dest_v, chroma_stride,
+                                  buf + y_data_size + u_data_size, v_data_size,
+                                  qmat_chroma_scaled, log2_chroma_blocks_per_mb);
+        if (ret < 0)
+            return ret;
     }
     /* decode alpha plane if available */
     if (ctx->alpha_info && pic->data[3] && a_data_size)
