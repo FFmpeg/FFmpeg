@@ -1,5 +1,4 @@
-Entries are sorted chronologically from oldest to youngest within each release,
-releases are sorted from youngest to oldest.
+Releases are sorted from youngest to oldest.
 
 version 9.10:
 - alac: Do bounds checking of lpc_order read from the bitstream
