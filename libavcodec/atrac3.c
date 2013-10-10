@@ -171,7 +171,7 @@ static int decode_bytes(const uint8_t *input, uint8_t *out, int bytes)
     return off;
 }
 
-static av_cold void init_atrac3_window(void)
+static av_cold void init_imdct_window(void)
 {
     int i, j;
 
@@ -776,7 +776,7 @@ static av_cold void atrac3_init_static_data(void)
 {
     int i;
 
-    init_atrac3_window();
+    init_imdct_window();
     ff_atrac_generate_tables();
 
     /* Initialize the VLC tables. */
