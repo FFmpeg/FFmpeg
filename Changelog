@@ -15,6 +15,7 @@ version <next>
 - aeval filter
 - stereoscopic 3d metadata handling
 - WebP encoding via libwebp
+- ATRAC3+ decoder
 
 
 version 2.1:

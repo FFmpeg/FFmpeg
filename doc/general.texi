@@ -833,6 +833,7 @@ following image formats are supported:
     @tab QuickTime fourcc 'alac'
 @item ATRAC1                 @tab     @tab  X
 @item ATRAC3                 @tab     @tab  X
+@item ATRAC3+                @tab     @tab  X
 @item Bink Audio             @tab     @tab  X
     @tab Used in Bink and Smacker files in many games.
 @item CELT                   @tab     @tab  E

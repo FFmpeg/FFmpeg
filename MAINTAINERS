@@ -139,6 +139,7 @@ Codecs:
   ass*                                  Aurelien Jacobs
   asv*                                  Michael Niedermayer
   atrac3*                               Benjamin Larsson
+  atrac3plus*                           Maxim Poliakovski
   bgmc.c, bgmc.h                        Thilo Borgmann
   bink.c                                Kostya Shishkov
   binkaudio.c                           Peter Ross
