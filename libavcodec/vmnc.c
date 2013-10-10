@@ -259,7 +259,7 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
         for (i = 0; i < w; i += 16, dst2 += 16 * bpp) {
             if (bytestream2_get_bytes_left(gb) <= 0) {
                 av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if (i + 16 > w)
                 bw = w - i;
@@ -267,7 +267,7 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
             if (flags & HT_RAW) {
                 if (bytestream2_get_bytes_left(gb) < bw * bh * bpp) {
                     av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 paint_raw(dst2, bw, bh, gb, bpp, c->bigendian, stride);
             } else {
@@ -284,7 +284,7 @@ static int decode_hextile(VmncContext *c, uint8_t* dst, GetByteContext *gb,
 
                 if (bytestream2_get_bytes_left(gb) < rects * (color * bpp + 2)) {
                     av_log(c->avctx, AV_LOG_ERROR, "Premature end of data!\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 for (k = 0; k < rects; k++) {
                     if (color)
@@ -380,7 +380,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR,
                        "Premature end of data! (need %i got %i)\n",
                        2 + w * h * c->bpp2 * 2, size_left);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             bytestream2_skip(gb, 2);
             c->cur_w  = w;
@@ -436,7 +436,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             if (c->bigendian & (~1)) {
                 av_log(avctx, AV_LOG_INFO,
                        "Invalid header: bigendian flag = %i\n", c->bigendian);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             //skip the rest of pixel format data
             bytestream2_skip(gb, 13);
@@ -449,13 +449,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR,
                        "Incorrect frame size: %ix%i+%ix%i of %ix%i\n",
                        w, h, dx, dy, c->width, c->height);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if (size_left < w * h * c->bpp2) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Premature end of data! (need %i got %i)\n",
                        w * h * c->bpp2, size_left);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             paint_raw(outptr, w, h, gb, c->bpp2, c->bigendian,
                       frame->linesize[0]);
@@ -465,11 +465,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 av_log(avctx, AV_LOG_ERROR,
                        "Incorrect frame size: %ix%i+%ix%i of %ix%i\n",
                        w, h, dx, dy, c->width, c->height);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             res = decode_hextile(c, outptr, gb, w, h, frame->linesize[0]);
             if (res < 0)
-                return -1;
+                return res;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unsupported block type 0x%08X\n", enc);
