@@ -523,7 +523,7 @@ static int decode_frame(AVCodecContext *avctx,
             channel_list_end = buf + variable_buffer_data_size;
             while (channel_list_end - buf >= 19) {
                 EXRChannel *channel;
-                int current_pixel_type = -1;
+                enum ExrPixelType current_pixel_type;
                 int channel_index = -1;
                 int xsub, ysub;
 
