@@ -83,10 +83,20 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
         if (!s->macroblocks || /* first frame */
             16*cols != s->avctx->coded_width ||
             16*rows != s->avctx->coded_height) {
-            avcodec_set_dimensions(s->avctx, 16*cols, 16*rows);
-            if (s->avctx->extradata_size == 1) {
-                s->avctx->width  -= s->avctx->extradata[0] >> 4;
-                s->avctx->height -= s->avctx->extradata[0] & 0x0F;
+            if (s->avctx->extradata_size == 0 &&
+                FFALIGN(s->avctx->width,  16) == 16 * cols &&
+                FFALIGN(s->avctx->height, 16) == 16 * rows) {
+                // We assume this is properly signalled container cropping,
+                // in an F4V file. Just set the coded_width/height, don't
+                // touch the cropped ones.
+                s->avctx->coded_width  = 16 * cols;
+                s->avctx->coded_height = 16 * rows;
+            } else {
+                avcodec_set_dimensions(s->avctx, 16 * cols, 16 * rows);
+                if (s->avctx->extradata_size == 1) {
+                    s->avctx->width  -= s->avctx->extradata[0] >> 4;
+                    s->avctx->height -= s->avctx->extradata[0] & 0x0F;
+                }
             }
             res = VP56_SIZE_CHANGE;
         }
