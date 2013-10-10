@@ -39,7 +39,6 @@ typedef struct W3FDIFContext {
     int field;            ///< which field are we on, 0 or 1
     int eof;
     int nb_planes;
-    double ts_unit;
     AVFrame *prev, *cur, *next;  ///< previous, current, next frames
     int32_t *work_line;   ///< line we are calculating
 } W3FDIFContext;
@@ -103,14 +102,12 @@ static int config_input(AVFilterLink *inlink)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterLink *inlink = outlink->src->inputs[0];
-    W3FDIFContext *s = outlink->src->priv;
 
     outlink->time_base.num = inlink->time_base.num;
     outlink->time_base.den = inlink->time_base.den * 2;
     outlink->frame_rate.num = inlink->frame_rate.num * 2;
     outlink->frame_rate.den = inlink->frame_rate.den;
     outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
-    s->ts_unit = av_q2d(av_inv_q(av_mul_q(outlink->frame_rate, outlink->time_base)));
 
     return 0;
 }
@@ -252,7 +249,7 @@ static void deinterlace_plane(AVFilterContext *ctx, AVFrame *out,
     }
 }
 
-static int filter(AVFilterContext *ctx)
+static int filter(AVFilterContext *ctx, int is_second)
 {
     W3FDIFContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -264,7 +261,20 @@ static int filter(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     av_frame_copy_props(out, s->cur);
     out->interlaced_frame = 0;
-    out->pts = outlink->frame_count * s->ts_unit;
+
+    if (!is_second) {
+        if (out->pts != AV_NOPTS_VALUE)
+            out->pts *= 2;
+    } else {
+        int64_t cur_pts  = s->cur->pts;
+        int64_t next_pts = s->next->pts;
+
+        if (next_pts != AV_NOPTS_VALUE && cur_pts != AV_NOPTS_VALUE) {
+            out->pts = cur_pts + next_pts;
+        } else {
+            out->pts = AV_NOPTS_VALUE;
+        }
+    }
 
     adj = s->field ? s->next : s->prev;
     for (plane = 0; plane < s->nb_planes; plane++)
@@ -298,18 +308,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             return AVERROR(ENOMEM);
 
         av_frame_free(&s->prev);
-        out->pts = ctx->outputs[0]->frame_count * s->ts_unit;
+        if (out->pts != AV_NOPTS_VALUE)
+            out->pts *= 2;
         return ff_filter_frame(ctx->outputs[0], out);
     }
 
     if (!s->prev)
         return 0;
 
-    ret = filter(ctx);
+    ret = filter(ctx, 0);
     if (ret < 0)
         return ret;
 
-    return filter(ctx);
+    return filter(ctx, 1);
 }
 
 static int request_frame(AVFilterLink *outlink)
@@ -329,6 +340,7 @@ static int request_frame(AVFilterLink *outlink)
             AVFrame *next = av_frame_clone(s->next);
             if (!next)
                 return AVERROR(ENOMEM);
+            next->pts = s->next->pts * 2 - s->cur->pts;
             filter_frame(ctx->inputs[0], next);
             s->eof = 1;
         } else if (ret < 0) {
