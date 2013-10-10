@@ -1065,6 +1065,22 @@ Set sample format audio decoders should prefer. Default value is
 
 @item sub_charenc @var{encoding} (@emph{decoding,subtitles})
 Set the input subtitles character encoding.
+
+@item field_order  @var{field_order} (@emph{video})
+Set/override the field order of the video.
+Possible values:
+@table @samp
+@item progressive
+Progressive video
+@item tt
+Interlaced video, top field coded and displayed first
+@item bb
+Interlaced video, bottom field coded and displayed first
+@item tb
+Interlaced video, top coded first, bottom displayed first
+@item bt
+Interlaced video, bottom coded first, top displayed first
+@end table
 @end table
 
 @c man end CODEC OPTIONS
