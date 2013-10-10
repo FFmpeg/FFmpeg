@@ -115,9 +115,6 @@ typedef struct ATRAC3Context {
 static DECLARE_ALIGNED(32, float, mdct_window)[MDCT_SIZE];
 static VLC_TYPE atrac3_vlc_table[4096][2];
 static VLC   spectral_coeff_tab[7];
-static float gain_tab1[16];
-static float gain_tab2[31];
-
 
 /**
  * Regular 512 points IMDCT without overlapping, with the exception of the
@@ -791,13 +788,6 @@ static av_cold void atrac3_init_static_data(void)
                  huff_bits[i],  1, 1,
                  huff_codes[i], 1, 1, INIT_VLC_USE_NEW_STATIC);
     }
-
-    /* Generate gain tables */
-    for (i = 0; i < 16; i++)
-        gain_tab1[i] = exp2f (4 - i);
-
-    for (i = -15; i < 16; i++)
-        gain_tab2[i + 15] = exp2f (i * -0.125);
 }
 
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
