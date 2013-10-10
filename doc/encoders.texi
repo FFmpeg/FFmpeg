@@ -107,13 +107,6 @@ the methods, yet produces the worst quality.
 
 @end table
 
-@subsection Tips and Tricks
-
-According to some reports
-(e.g. @url{http://d.hatena.ne.jp/kamedo2/20120729/1343545890}), setting the
-@option{cutoff} option to 15000 Hz greatly improves the quality of the output
-quality. As a result, we encourage you to do the same.
-
 @section ac3 and ac3_fixed
 
 AC-3 audio encoders.
