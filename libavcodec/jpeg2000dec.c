@@ -791,8 +791,12 @@ static int jpeg2000_decode_packet(Jpeg2000DecoderContext *s,
             Jpeg2000Cblk *cblk = prec->cblk + cblkno;
             if (   bytestream2_get_bytes_left(&s->g) < cblk->lengthinc
                 || sizeof(cblk->data) < cblk->length + cblk->lengthinc + 2
-            )
+            ) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Block length %d or lengthinc %d is too large\n",
+                       cblk->length, cblk->lengthinc);
                 return AVERROR_INVALIDDATA;
+            }
 
             bytestream2_get_bufferu(&s->g, cblk->data + cblk->length, cblk->lengthinc);
             cblk->length   += cblk->lengthinc;
