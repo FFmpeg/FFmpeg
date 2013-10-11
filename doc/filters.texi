@@ -6605,10 +6605,10 @@ are flagged as interlaced or not.
 Default value is @samp{0}.
 
 @item flags
-Set libswscale scaling flags. If not explictly specified the filter
-applies a bicubic scaling algorithm.
-See @ref{sws_flags,,the ffmpeg-scaler manual,ffmpeg-scaler} for
-the complete list of values.
+Set libswscale scaling flags. See
+@ref{sws_flags,,the ffmpeg-scaler manual,ffmpeg-scaler} for the
+complete list of values. If not explictly specified the filter applies
+the default flags.
 
 @item size, s
 Set the video size, the value must be a valid abbreviation or in the
