@@ -299,7 +299,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     } else {
         /* fixed LPC coeffs */
         pred_order = command;
-        if (pred_order > FF_ARRAY_ELEMS(fixed_coeffs)) {
+        if (pred_order >= FF_ARRAY_ELEMS(fixed_coeffs)) {
             av_log(s->avctx, AV_LOG_ERROR, "invalid pred_order %d\n",
                    pred_order);
             return AVERROR_INVALIDDATA;
