@@ -172,6 +172,7 @@ typedef struct Picture{
 
     int reference;
     int shared;
+    int recovered;              ///< Picture at IDR or recovery point + recovery count
 } Picture;
 
 /**

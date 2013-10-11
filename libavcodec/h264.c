@@ -336,6 +336,7 @@ static int ref_picture(H264Context *h, Picture *dst, Picture *src)
     dst->field_picture = src->field_picture;
     dst->needs_realloc = src->needs_realloc;
     dst->reference     = src->reference;
+    dst->recovered     = src->recovered;
 
     return 0;
 fail:
@@ -1560,6 +1561,8 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     h->prev_poc_msb = 1 << 16;
     h->x264_build   = -1;
     ff_h264_reset_sei(h);
+    h->recovery_frame = -1;
+    h->frame_recovered = 0;
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         if (avctx->ticks_per_frame == 1)
             h->avctx->time_base.den *= 2;
@@ -1839,6 +1842,9 @@ static int decode_update_thread_context(AVCodecContext *dst,
     h->prev_frame_num        = h->frame_num;
     h->outputed_poc          = h->next_outputed_poc;
 
+    h->recovery_frame        = h1->recovery_frame;
+    h->frame_recovered       = h1->frame_recovered;
+
     return err;
 }
 
@@ -1868,6 +1874,7 @@ static int h264_frame_start(H264Context *h)
      */
     pic->f.key_frame = 0;
     pic->mmco_reset  = 0;
+    pic->recovered   = 0;
 
     if ((ret = alloc_picture(h, pic)) < 0)
         return ret;
@@ -2137,6 +2144,15 @@ static void decode_postinit(H264Context *h, int setup_finished)
         h->mmco_reset = 0;
     } else {
         av_log(h->avctx, AV_LOG_DEBUG, "no picture\n");
+    }
+
+    if (h->next_output_pic) {
+        if (h->next_output_pic->recovered) {
+            // We have reached an recovery point and all frames after it in
+            // display order are "recovered".
+            h->frame_recovered |= FRAME_RECOVERED_SEI;
+        }
+        h->next_output_pic->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_SEI);
     }
 
     if (setup_finished && !h->avctx->hwaccel)
@@ -2720,6 +2736,8 @@ static void flush_change(H264Context *h)
     memset(h->default_ref_list[0], 0, sizeof(h->default_ref_list[0]));
     memset(h->default_ref_list[1], 0, sizeof(h->default_ref_list[1]));
     ff_h264_reset_sei(h);
+    h->recovery_frame = -1;
+    h->frame_recovered = 0;
 }
 
 /* forget old pics after a seek */
@@ -4609,9 +4627,25 @@ again:
                 if ((err = decode_slice_header(hx, h)))
                     break;
 
+                if (h->sei_recovery_frame_cnt >= 0 && h->recovery_frame < 0) {
+                    h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) &
+                                        ((1 << h->sps.log2_max_frame_num) - 1);
+                }
+
                 h->cur_pic_ptr->f.key_frame |=
                     (hx->nal_unit_type == NAL_IDR_SLICE) ||
                     (h->sei_recovery_frame_cnt >= 0);
+
+                if (hx->nal_unit_type == NAL_IDR_SLICE ||
+                    h->recovery_frame == h->frame_num) {
+                    h->recovery_frame         = -1;
+                    h->cur_pic_ptr->recovered = 1;
+                }
+                // If we have an IDR, all frames after it in decoded order are
+                // "recovered".
+                if (hx->nal_unit_type == NAL_IDR_SLICE)
+                    h->frame_recovered |= FRAME_RECOVERED_IDR;
+                h->cur_pic_ptr->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_IDR);
 
                 if (h->current_slice == 1) {
                     if (!(avctx->flags2 & CODEC_FLAG2_CHUNKS))
@@ -4842,10 +4876,12 @@ out:
 
         field_end(h, 0);
 
-        if (!h->next_output_pic) {
-            /* Wait for second field. */
-            *got_frame = 0;
-        } else {
+        *got_frame = 0;
+        if (h->next_output_pic && ((avctx->flags & CODEC_FLAG_OUTPUT_CORRUPT) ||
+                                   h->next_output_pic->recovered)) {
+            if (!h->next_output_pic->recovered)
+                h->next_output_pic->f.flags |= AV_FRAME_FLAG_CORRUPT;
+
             ret = output_frame(h, pict, &h->next_output_pic->f);
             if (ret < 0)
                 return ret;

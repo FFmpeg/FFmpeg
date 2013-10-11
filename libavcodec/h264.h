@@ -611,6 +611,27 @@ typedef struct H264Context {
      */
     int sei_recovery_frame_cnt;
 
+    /**
+     * recovery_frame is the frame_num at which the next frame should
+     * be fully constructed.
+     *
+     * Set to -1 when not expecting a recovery point.
+     */
+    int recovery_frame;
+
+/**
+ * We have seen an IDR, so all the following frames in coded order are correctly
+ * decodable.
+ */
+#define FRAME_RECOVERED_IDR  (1 << 0)
+/**
+ * Sufficient number of frames have been decoded since a SEI recovery point,
+ * so all the following frames in presentation order are correct.
+ */
+#define FRAME_RECOVERED_SEI  (1 << 1)
+
+    int frame_recovered;    ///< Initial frame has been completely recovered
+
     int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
 
