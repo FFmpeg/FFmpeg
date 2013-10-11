@@ -653,10 +653,6 @@ typedef struct TransformUnit {
     int cur_intra_pred_mode;
 } TransformUnit;
 
-typedef struct ResidualCoding {
-    uint8_t significant_coeff_group_flag[8][8];
-} ResidualCoding;
-
 typedef struct SAOParams {
     uint8_t type_idx[3]; ///< sao_type_idx
 
@@ -726,16 +722,10 @@ typedef struct HEVCNAL {
 
 typedef struct HEVCLocalContext {
     uint8_t cabac_state[HEVC_CONTEXTS];
-    int ctx_set;
-    int greater1_ctx;
-    int last_coeff_abs_level_greater1_flag;
-    int c_rice_param;
-    int last_coeff_abs_level_remaining;
     GetBitContext gb;
     CABACContext cc;
     TransformTree tt;
     TransformUnit tu;
-    ResidualCoding rc;
     uint8_t first_qp_group;
     int8_t qp_y;
     int8_t curr_qp_y;
@@ -935,17 +925,12 @@ int ff_hevc_last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
                                                    int log2_size);
 int ff_hevc_last_significant_coeff_suffix_decode(HEVCContext *s,
                                                  int last_significant_coeff_prefix);
-int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int x_cg,
-                                                int y_cg, int log2_trafo_size);
+int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg);
 int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx);
-int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx,
-                                                 int i, int n,
-                                                 int first_greater1_coeff_idx,
-                                                 int first_subset);
-int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx,
-                                                 int i, int n);
-int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int n, int base_level);
+                                          int log2_trafo_size, int scan_idx, int prev_sig);
+int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int ctx_set);
+int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc);
+int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int base_level, int rc_rice_param);
 int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
 /**

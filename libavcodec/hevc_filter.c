@@ -182,7 +182,7 @@ static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height, int stri
 
 #define CTB(tab, x, y) ((tab)[(y) * s->sps->ctb_width + (x)])
 
-static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_idx_max)
+static void sao_filter_CTB(HEVCContext *s, int x, int y)
 {
     //  TODO: This should be easily parallelizable
     //  TODO: skip CBs when (cu_transquant_bypass_flag || (pcm_loop_filter_disable_flag && pcm_flag))
@@ -283,8 +283,8 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y, int c_idx_min, int c_id
                  (edges[2] ? width  + (x_shift >> chroma) : width)  << s->sps->pixel_shift,
                  (edges[3] ? height + (y_shift >> chroma) : height), stride);
 
-        for (class_index = 0; class_index < class && c_idx >= c_idx_min &&
-                              c_idx < c_idx_max; class_index++) {
+        for (class_index = 0; class_index < class; class_index++) {
+
             switch (sao[class_index]->type_idx[c_idx]) {
             case SAO_BAND:
                 s->hevcdsp.sao_band_filter[classes[class_index]](dst, src, stride, sao[class_index], edges, width, height, c_idx);
@@ -334,11 +334,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int pcmf        = (s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) ||
                       s->pps->transquant_bypass_enable_flag;
 
-    if (s->deblock[ctb].disable)
-        return;
-
-    if (x0) {
-        left_tc_offset   = s->deblock[ctb-1].tc_offset;
+    if(x0) {
+        left_tc_offset = s->deblock[ctb-1].tc_offset;
         left_beta_offset = s->deblock[ctb-1].beta_offset;
     }
 
@@ -649,7 +646,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
     }
 
     // bs for TU internal vertical PU boundaries
-    if (log2_trafo_size > s->sps->log2_min_pu_size && !is_intra)
+    if (log2_trafo_size > log2_min_pu_size && !is_intra)
         for (j = 0; j < (1 << log2_trafo_size); j += 4) {
             int y_pu = (y0 + j) >> log2_min_pu_size;
             int y_tu = (y0 + j) >> log2_min_tu_size;
@@ -665,7 +662,6 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 uint8_t curr_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xq_tu];
                 RefPicList* left_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 + i - 1, y0 + j);
 
-
                 bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, left_refPicList, 0);
                 if (s->sh.disable_deblocking_filter_flag == 1)
                     bs = 0;
@@ -680,11 +676,9 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
 
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y)
 {
-    int c_idx_min = s->sh.slice_sample_adaptive_offset_flag[0] != 0 ? 0 : 1;
-    int c_idx_max = s->sh.slice_sample_adaptive_offset_flag[1] != 0 ? 3 : 1;
     deblocking_filter_CTB(s, x, y);
     if (s->sps->sao_enabled)
-        sao_filter_CTB(s, x, y, c_idx_min, c_idx_max);
+        sao_filter_CTB(s, x, y);
 }
 
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
