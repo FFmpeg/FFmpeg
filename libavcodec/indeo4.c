@@ -371,13 +371,17 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
             band->scan = scan_index_to_tab[scan_indx];
 
             band->quant_mat = get_bits(&ctx->gb, 5);
-            if (band->quant_mat == 31) {
-                av_log(avctx, AV_LOG_ERROR, "Custom quant matrix encountered!\n");
-                return AVERROR_INVALIDDATA;
-            }
             if (band->quant_mat >= FF_ARRAY_ELEMS(quant_index_to_tab)) {
                 av_log_ask_for_sample(avctx, "Quantization matrix %d",
                                       band->quant_mat);
+
+                if (band->quant_mat == 31)
+                    av_log(avctx, AV_LOG_ERROR,
+                           "Custom quant matrix encountered!\n");
+                else
+                    av_log_ask_for_sample(avctx, "Quantization matrix %d",
+                                          band->quant_mat);
+                band->quant_mat = -1;
                 return AVERROR_INVALIDDATA;
             }
         } else {
@@ -385,6 +389,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 av_log(avctx, AV_LOG_ERROR,
                        "The band block size does not match the configuration "
                        "inherited\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if (band->quant_mat < 0) {
+                av_log(avctx, AV_LOG_ERROR, "Invalid quant_mat inherited\n");
                 return AVERROR_INVALIDDATA;
             }
         }
