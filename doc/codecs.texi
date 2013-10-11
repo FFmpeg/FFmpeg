@@ -1081,6 +1081,9 @@ Interlaced video, top coded first, bottom displayed first
 @item bt
 Interlaced video, bottom coded first, top displayed first
 @end table
+
+@item skip_alpha @var{integer} (@emph{decoding,video})
+causes alpha plane not to be decoded, like "gray" which skips chroma.
 @end table
 
 @c man end CODEC OPTIONS
