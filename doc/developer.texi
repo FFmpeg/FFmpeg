@@ -253,6 +253,8 @@ a gift-style license, the
 @uref{http://www.gnu.org/licenses/gpl-2.0.html, GPL 2} including
 an "or any later version" clause is also acceptable, but LGPL is
 preferred.
+If you add a new file, give it a proper license header. Do not copy and
+paste it from a random place, use an existing file as template.
 
 @item
 You must not commit code which breaks FFmpeg! (Meaning unfinished but
@@ -384,9 +386,6 @@ If it is a bug, the bug has to be fixed. If it is not, the code should
 be changed to not generate a warning unless that causes a slowdown
 or obfuscates the code.
 
-@item
-If you add a new file, give it a proper license header. Do not copy and
-paste it from a random place, use an existing file as template.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
