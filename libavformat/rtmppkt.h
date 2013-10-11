@@ -114,10 +114,12 @@ void ff_rtmp_packet_destroy(RTMPPacket *pkt);
  * @param chunk_size current chunk size
  * @param prev_pkt   previously read packet headers for all channels
  *                   (may be needed for restoring incomplete packet header)
+ * @param nb_prev_pkt number of allocated elements in prev_pkt
  * @return number of bytes read on success, negative value otherwise
  */
 int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
-                        int chunk_size, RTMPPacket *prev_pkt);
+                        int chunk_size, RTMPPacket **prev_pkt,
+                        int *nb_prev_pkt);
 /**
  * Read internal RTMP packet sent by the server.
  *
@@ -126,11 +128,13 @@ int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
  * @param chunk_size current chunk size
  * @param prev_pkt   previously read packet headers for all channels
  *                   (may be needed for restoring incomplete packet header)
+ * @param nb_prev_pkt number of allocated elements in prev_pkt
  * @param c          the first byte already read
  * @return number of bytes read on success, negative value otherwise
  */
 int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
-                                 RTMPPacket *prev_pkt, uint8_t c);
+                                 RTMPPacket **prev_pkt, int *nb_prev_pkt,
+                                 uint8_t c);
 
 /**
  * Send RTMP packet to the server.
@@ -140,10 +144,12 @@ int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
  * @param chunk_size current chunk size
  * @param prev_pkt   previously sent packet headers for all channels
  *                   (may be used for packet header compressing)
+ * @param nb_prev_pkt number of allocated elements in prev_pkt
  * @return number of bytes written on success, negative value otherwise
  */
 int ff_rtmp_packet_write(URLContext *h, RTMPPacket *p,
-                         int chunk_size, RTMPPacket *prev_pkt);
+                         int chunk_size, RTMPPacket **prev_pkt,
+                         int *nb_prev_pkt);
 
 /**
  * Print information and contents of RTMP packet.
@@ -152,6 +158,16 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *p,
  * @param p          packet to dump
  */
 void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p);
+
+/**
+ * Enlarge the prev_pkt array to fit the given channel
+ *
+ * @param prev_pkt    array with previously sent packet headers
+ * @param nb_prev_pkt number of allocated elements in prev_pkt
+ * @param channel     the channel number that needs to be allocated
+ */
+int ff_rtmp_check_alloc_array(RTMPPacket **prev_pkt, int *nb_prev_pkt,
+                              int channel);
 
 /**
  * @name Functions used to work with the AMF format (which is also used in .flv)

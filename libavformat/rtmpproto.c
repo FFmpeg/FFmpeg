@@ -77,7 +77,8 @@ typedef struct TrackedMethod {
 typedef struct RTMPContext {
     const AVClass *class;
     URLContext*   stream;                     ///< TCP stream used in interactions with RTMP server
-    RTMPPacket    prev_pkt[2][RTMP_CHANNELS]; ///< packet history used when reading and sending packets ([0] for reading, [1] for writing)
+    RTMPPacket    *prev_pkt[2];               ///< packet history used when reading and sending packets ([0] for reading, [1] for writing)
+    int           nb_prev_pkt[2];             ///< number of elements in prev_pkt
     int           in_chunk_size;              ///< size of the chunks incoming RTMP packets are divided into
     int           out_chunk_size;             ///< size of the chunks outgoing RTMP packets are divided into
     int           is_input;                   ///< input/output flag
@@ -238,7 +239,7 @@ static int rtmp_send_packet(RTMPContext *rt, RTMPPacket *pkt, int track)
     }
 
     ret = ff_rtmp_packet_write(rt->stream, pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
 fail:
     ff_rtmp_packet_destroy(pkt);
     return ret;
@@ -408,7 +409,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     GetByteContext gbc;
 
     if ((ret = ff_rtmp_packet_read(rt->stream, &pkt, rt->in_chunk_size,
-                                   rt->prev_pkt[0])) < 0)
+                                   &rt->prev_pkt[0], &rt->nb_prev_pkt[0])) < 0)
         return ret;
     cp = pkt.data;
     bytestream2_init(&gbc, cp, pkt.size);
@@ -444,7 +445,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     bytestream_put_be32(&p, rt->server_bw);
     pkt.size = p - pkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
     if (ret < 0)
         return ret;
@@ -457,7 +458,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     bytestream_put_byte(&p, 2); // dynamic
     pkt.size = p - pkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
     if (ret < 0)
         return ret;
@@ -471,7 +472,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     bytestream_put_be16(&p, 0); // 0 -> Stream Begin
     bytestream_put_be32(&p, 0);
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
     if (ret < 0)
         return ret;
@@ -484,7 +485,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     p = pkt.data;
     bytestream_put_be32(&p, rt->out_chunk_size);
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
     if (ret < 0)
         return ret;
@@ -519,7 +520,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
 
     pkt.size = p - pkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
     if (ret < 0)
         return ret;
@@ -534,7 +535,7 @@ static int read_connect(URLContext *s, RTMPContext *rt)
     ff_amf_write_number(&p, 8192);
     pkt.size = p - pkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &pkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&pkt);
 
     return ret;
@@ -1455,7 +1456,7 @@ static int handle_chunk_size(URLContext *s, RTMPPacket *pkt)
         /* Send the same chunk size change packet back to the server,
          * setting the outgoing chunk size to the same as the incoming one. */
         if ((ret = ff_rtmp_packet_write(rt->stream, pkt, rt->out_chunk_size,
-                                        rt->prev_pkt[1])) < 0)
+                                        &rt->prev_pkt[1], &rt->nb_prev_pkt[1])) < 0)
             return ret;
         rt->out_chunk_size = AV_RB32(pkt->data);
     }
@@ -1784,7 +1785,7 @@ static int write_begin(URLContext *s)
     bytestream2_put_be32(&pbc, rt->nb_streamid);
 
     ret = ff_rtmp_packet_write(rt->stream, &spkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
 
     ff_rtmp_packet_destroy(&spkt);
 
@@ -1831,7 +1832,7 @@ static int write_status(URLContext *s, RTMPPacket *pkt,
 
     spkt.size = pp - spkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &spkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&spkt);
 
     return ret;
@@ -1932,7 +1933,7 @@ static int send_invoke_response(URLContext *s, RTMPPacket *pkt)
     }
     spkt.size = pp - spkt.data;
     ret = ff_rtmp_packet_write(rt->stream, &spkt, rt->out_chunk_size,
-                               rt->prev_pkt[1]);
+                               &rt->prev_pkt[1], &rt->nb_prev_pkt[1]);
     ff_rtmp_packet_destroy(&spkt);
     return ret;
 }
@@ -2262,7 +2263,8 @@ static int get_packet(URLContext *s, int for_header)
     for (;;) {
         RTMPPacket rpkt = { 0 };
         if ((ret = ff_rtmp_packet_read(rt->stream, &rpkt,
-                                       rt->in_chunk_size, rt->prev_pkt[0])) <= 0) {
+                                       rt->in_chunk_size, &rt->prev_pkt[0],
+                                       &rt->nb_prev_pkt[0])) <= 0) {
             if (ret == 0) {
                 return AVERROR(EAGAIN);
             } else {
@@ -2343,9 +2345,11 @@ static int rtmp_close(URLContext *h)
     }
     if (rt->state > STATE_HANDSHAKED)
         ret = gen_delete_stream(h, rt);
-    for (i = 0; i < 2; i++)
-        for (j = 0; j < RTMP_CHANNELS; j++)
+    for (i = 0; i < 2; i++) {
+        for (j = 0; j < rt->nb_prev_pkt[i]; j++)
             ff_rtmp_packet_destroy(&rt->prev_pkt[i][j]);
+        av_freep(&rt->prev_pkt[i]);
+    }
 
     free_tracked_methods(rt);
     av_freep(&rt->flv_data);
@@ -2562,11 +2566,14 @@ reconnect:
         goto fail;
 
     if (rt->do_reconnect) {
+        int i;
         ffurl_close(rt->stream);
         rt->stream       = NULL;
         rt->do_reconnect = 0;
         rt->nb_invokes   = 0;
-        memset(rt->prev_pkt, 0, sizeof(rt->prev_pkt));
+        for (i = 0; i < 2; i++)
+            memset(rt->prev_pkt[i], 0,
+                   sizeof(**rt->prev_pkt) * rt->nb_prev_pkt[i]);
         free_tracked_methods(rt);
         goto reconnect;
     }
@@ -2687,6 +2694,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
                 pkttype == RTMP_PT_NOTIFY) {
                 if (pkttype == RTMP_PT_NOTIFY)
                     pktsize += 16;
+                if ((ret = ff_rtmp_check_alloc_array(&rt->prev_pkt[1],
+                                                     &rt->nb_prev_pkt[1],
+                                                     channel)) < 0)
+                    return ret;
                 rt->prev_pkt[1][channel].channel_id = 0;
             }
 
@@ -2747,7 +2758,8 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 
         if ((ret = ff_rtmp_packet_read_internal(rt->stream, &rpkt,
                                                 rt->in_chunk_size,
-                                                rt->prev_pkt[0], c)) <= 0)
+                                                &rt->prev_pkt[0],
+                                                &rt->nb_prev_pkt[0], c)) <= 0)
              return ret;
 
         if ((ret = rtmp_parse_result(s, rt, &rpkt)) < 0)
