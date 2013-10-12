@@ -623,9 +623,9 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     if (sps->chroma_format_idc == 1) {
         switch (sps->bit_depth) {
-        case 8:  sps->pix_fmt = PIX_FMT_YUV420P;   break;
-        case 9:  sps->pix_fmt = PIX_FMT_YUV420P9;  break;
-        case 10: sps->pix_fmt = PIX_FMT_YUV420P10; break;
+        case 8:  sps->pix_fmt = AV_PIX_FMT_YUV420P;   break;
+        case 9:  sps->pix_fmt = AV_PIX_FMT_YUV420P9;  break;
+        case 10: sps->pix_fmt = AV_PIX_FMT_YUV420P10; break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n",
                    sps->bit_depth);
