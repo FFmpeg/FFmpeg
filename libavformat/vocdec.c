@@ -75,7 +75,7 @@ ff_voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
     while (!voc->remaining_size) {
         type = avio_r8(pb);
         if (type == VOC_TYPE_EOF)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         voc->remaining_size = avio_rl24(pb);
         if (!voc->remaining_size) {
             if (!s->pb->seekable)
