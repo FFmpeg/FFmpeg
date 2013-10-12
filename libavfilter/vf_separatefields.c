@@ -24,7 +24,7 @@
 
 typedef struct {
     int nb_planes;
-    double ts_unit;
+    AVFrame *second;
 } SeparateFieldsContext;
 
 static int config_props_output(AVFilterLink *outlink)
@@ -46,9 +46,19 @@ static int config_props_output(AVFilterLink *outlink)
     outlink->frame_rate.den = inlink->frame_rate.den;
     outlink->w = inlink->w;
     outlink->h = inlink->h / 2;
-    sf->ts_unit = av_q2d(av_inv_q(av_mul_q(outlink->frame_rate, outlink->time_base)));
 
     return 0;
+}
+
+static void extract_field(AVFrame *frame, int nb_planes, int type)
+{
+    int i;
+
+    for (i = 0; i < nb_planes; i++) {
+        if (type)
+            frame->data[i] = frame->data[i] + frame->linesize[i];
+        frame->linesize[i] *= 2;
+    }
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
@@ -56,34 +66,56 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     AVFilterContext *ctx = inlink->dst;
     SeparateFieldsContext *sf = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *second;
-    int i, ret;
+    int ret;
 
     inpicref->height = outlink->h;
     inpicref->interlaced_frame = 0;
 
-    second = av_frame_clone(inpicref);
-    if (!second)
-        return AVERROR(ENOMEM);
+    if (!sf->second) {
+        goto clone;
+    } else {
+        AVFrame *second = sf->second;
 
-    for (i = 0; i < sf->nb_planes; i++) {
-        if (!inpicref->top_field_first)
-            inpicref->data[i] = inpicref->data[i] + inpicref->linesize[i];
+        extract_field(second, sf->nb_planes, second->top_field_first);
+
+        if (second->pts != AV_NOPTS_VALUE &&
+            inpicref->pts != AV_NOPTS_VALUE)
+            second->pts += inpicref->pts;
         else
-            second->data[i] = second->data[i] + second->linesize[i];
-        inpicref->linesize[i] *= 2;
-        second->linesize[i]   *= 2;
+            second->pts = AV_NOPTS_VALUE;
+
+        ret = ff_filter_frame(outlink, second);
+        if (ret < 0)
+            return ret;
+clone:
+        sf->second = av_frame_clone(inpicref);
+        if (!sf->second)
+            return AVERROR(ENOMEM);
     }
 
-    inpicref->pts = outlink->frame_count * sf->ts_unit;
-    ret = ff_filter_frame(outlink, inpicref);
-    if (ret < 0) {
-        av_frame_free(&second);
-        return ret;
+    extract_field(inpicref, sf->nb_planes, !inpicref->top_field_first);
+
+    if (inpicref->pts != AV_NOPTS_VALUE)
+        inpicref->pts *= 2;
+
+    return ff_filter_frame(outlink, inpicref);
+}
+
+static int request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    SeparateFieldsContext *sf = ctx->priv;
+    int ret;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+    if (ret == AVERROR_EOF && sf->second) {
+        sf->second->pts *= 2;
+        extract_field(sf->second, sf->nb_planes, sf->second->top_field_first);
+        ret = ff_filter_frame(outlink, sf->second);
+        sf->second = 0;
     }
 
-    second->pts = outlink->frame_count * sf->ts_unit;
-    return ff_filter_frame(outlink, second);
+    return ret;
 }
 
 static const AVFilterPad separatefields_inputs[] = {
@@ -97,9 +129,10 @@ static const AVFilterPad separatefields_inputs[] = {
 
 static const AVFilterPad separatefields_outputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_props_output,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_props_output,
+        .request_frame = request_frame,
     },
     { NULL }
 };
