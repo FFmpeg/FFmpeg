@@ -118,7 +118,7 @@ static void pulse_get_output_timestamp(AVFormatContext *h, int stream, int64_t *
     PulseData *s = h->priv_data;
     pa_usec_t latency = pa_simple_get_latency(s->pa, NULL);
     *wall = av_gettime();
-    *dts = h->streams[0]->cur_dts - latency;
+    *dts = h->streams[s->stream_index]->cur_dts - latency;
 }
 
 #define OFFSET(a) offsetof(PulseData, a)
