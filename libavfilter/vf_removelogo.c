@@ -154,7 +154,7 @@ static void convert_mask_to_strength_mask(uint8_t *data, int linesize,
     while (1) {
         /* If this doesn't get set by the end of this pass, then we're done. */
         int has_anything_changed = 0;
-        uint8_t *current_pixel0 = data, *current_pixel;
+        uint8_t *current_pixel0 = data + 1 + linesize, *current_pixel;
         current_pass++;
 
         for (y = 1; y < h-1; y++) {
