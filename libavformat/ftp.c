@@ -486,14 +486,13 @@ static int ftp_abort(URLContext *h)
         }
     } else {
         ftp_close_data_connection(s);
-    }
-
-    if (ftp_status(s, NULL, abor_codes) < 225) {
-        /* wu-ftpd also closes control connection after data connection closing */
-        ffurl_closep(&s->conn_control);
-        if ((err = ftp_connect_control_connection(h)) < 0) {
-            av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
-            return err;
+        if (ftp_status(s, NULL, abor_codes) < 225) {
+            /* wu-ftpd also closes control connection after data connection closing */
+            ffurl_closep(&s->conn_control);
+            if ((err = ftp_connect_control_connection(h)) < 0) {
+                av_log(h, AV_LOG_ERROR, "Reconnect failed.\n");
+                return err;
+            }
         }
     }
 
