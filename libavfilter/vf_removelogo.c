@@ -174,8 +174,8 @@ static void convert_mask_to_strength_mask(uint8_t *data, int linesize,
                 if ( *current_pixel      >= current_pass &&
                     *(current_pixel + 1) >= current_pass &&
                     *(current_pixel - 1) >= current_pass &&
-                    *(current_pixel + w) >= current_pass &&
-                    *(current_pixel - w) >= current_pass) {
+                    *(current_pixel + linesize) >= current_pass &&
+                    *(current_pixel - linesize) >= current_pass) {
                     /* Increment the value since it still has not been
                      * eroded, as evidenced by the if statement that
                      * just evaluated to true. */
