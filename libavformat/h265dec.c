@@ -57,4 +57,4 @@ static int h265_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h265 , "raw H.265 video", h265_probe, "h265,265,hevc", AV_CODEC_ID_H265)
+FF_DEF_RAWVIDEO_DEMUXER(h265 , "raw H.265 video", h265_probe, "h265,265,hevc", AV_CODEC_ID_HEVC)
