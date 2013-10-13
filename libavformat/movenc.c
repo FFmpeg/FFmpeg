@@ -3507,10 +3507,8 @@ static int mov_create_chapter_track(AVFormatContext *s, int tracknum)
 #if 0
     // These properties are required to make QT recognize the chapter track
     uint8_t chapter_properties[43] = { 0, 0, 0, 0, 0, 0, 0, 1, };
-    track->enc->extradata = av_malloc(sizeof(chapter_properties));
-    if (track->enc->extradata == NULL)
+    if (ff_alloc_extradata(track->enc, sizeof(chapter_properties)))
         return AVERROR(ENOMEM);
-    track->enc->extradata_size = sizeof(chapter_properties);
     memcpy(track->enc->extradata, chapter_properties, sizeof(chapter_properties));
 #else
     if (avio_open_dyn_buf(&pb) >= 0) {
