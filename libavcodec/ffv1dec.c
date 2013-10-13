@@ -669,6 +669,7 @@ static int read_header(FFV1Context *f)
             return AVERROR(ENOSYS);
         }
         switch (f->avctx->bits_per_raw_sample) {
+        case 0:
         case 8:
             f->avctx->pix_fmt = AV_PIX_FMT_RGB32;
             break;
