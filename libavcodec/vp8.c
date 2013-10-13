@@ -1179,7 +1179,7 @@ static av_always_inline
 void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
                  ThreadFrame *ref, const VP56mv *mv,
                  int x_off, int y_off, int block_w, int block_h,
-                 int width, int height, int linesize,
+                 int width, int height, ptrdiff_t linesize,
                  vp8_mc_func mc_func[3][3])
 {
     uint8_t *src = ref->f->data[0];
@@ -1229,7 +1229,7 @@ void vp8_mc_luma(VP8Context *s, VP8ThreadData *td, uint8_t *dst,
 static av_always_inline
 void vp8_mc_chroma(VP8Context *s, VP8ThreadData *td, uint8_t *dst1, uint8_t *dst2,
                    ThreadFrame *ref, const VP56mv *mv, int x_off, int y_off,
-                   int block_w, int block_h, int width, int height, int linesize,
+                   int block_w, int block_h, int width, int height, ptrdiff_t linesize,
                    vp8_mc_func mc_func[3][3])
 {
     uint8_t *src1 = ref->f->data[1], *src2 = ref->f->data[2];

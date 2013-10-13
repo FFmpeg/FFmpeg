@@ -94,7 +94,8 @@ void ff_mspel_motion(MpegEncContext *s,
 {
     Wmv2Context * const w= (Wmv2Context*)s;
     uint8_t *ptr;
-    int dxy, offset, mx, my, src_x, src_y, v_edge_pos, linesize, uvlinesize;
+    int dxy, offset, mx, my, src_x, src_y, v_edge_pos;
+    ptrdiff_t linesize, uvlinesize;
     int emu=0;
 
     dxy = ((motion_y & 1) << 1) | (motion_x & 1);

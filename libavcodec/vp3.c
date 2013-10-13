@@ -1288,7 +1288,7 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
     int width           = s->fragment_width[!!plane];
     int height          = s->fragment_height[!!plane];
     int fragment        = s->fragment_start        [plane] + ystart * width;
-    int stride          = s->current_frame.f->linesize[plane];
+    ptrdiff_t stride    = s->current_frame.f->linesize[plane];
     uint8_t *plane_data = s->current_frame.f->data    [plane];
     if (!s->flipped_image) stride = -stride;
     plane_data += s->data_offset[plane] + 8*ystart*stride;
@@ -1470,7 +1470,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         uint8_t *output_plane = s->current_frame.f->data    [plane] + s->data_offset[plane];
         uint8_t *  last_plane = s->   last_frame.f->data    [plane] + s->data_offset[plane];
         uint8_t *golden_plane = s-> golden_frame.f->data    [plane] + s->data_offset[plane];
-        int stride            = s->current_frame.f->linesize[plane];
+        ptrdiff_t stride      = s->current_frame.f->linesize[plane];
         int plane_width       = s->width  >> (plane && s->chroma_x_shift);
         int plane_height      = s->height >> (plane && s->chroma_y_shift);
         int8_t (*motion_val)[2] = s->motion_val[!!plane];
