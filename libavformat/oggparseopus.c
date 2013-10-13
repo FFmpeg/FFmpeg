@@ -140,4 +140,5 @@ const struct ogg_codec ff_opus_codec = {
     .magicsize        = 8,
     .header           = opus_header,
     .packet           = opus_packet,
+    .nb_header        = 1,
 };
