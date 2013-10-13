@@ -361,4 +361,13 @@ AVRational ff_choose_timebase(AVFormatContext *s, AVStream *st, int min_precissi
  */
 void ff_generate_avci_extradata(AVStream *st);
 
+/**
+ * Allocate extradata with additional FF_INPUT_BUFFER_PADDING_SIZE at end
+ * which is always set to 0.
+ *
+ * @param size size of extradata
+ * @return 0 if OK, AVERROR_xxx on error
+ */
+int ff_alloc_extradata(AVCodecContext *avctx, int size);
+
 #endif /* AVFORMAT_INTERNAL_H */
