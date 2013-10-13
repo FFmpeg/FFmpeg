@@ -174,13 +174,16 @@ Toggle full screen.
 Pause.
 
 @item a
-Cycle audio channel.
+Cycle audio channel in the curret program.
 
 @item v
 Cycle video channel.
 
 @item t
-Cycle subtitle channel.
+Cycle subtitle channel in the current program.
+
+@item c
+Cycle program.
 
 @item w
 Show audio waves.
