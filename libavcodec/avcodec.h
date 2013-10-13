@@ -3792,9 +3792,6 @@ attribute_deprecated int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *s
  *          larger than the actual read bytes because some optimized bitstream
  *          readers read 32 or 64 bits at once and could read over the end.
  *
- * @note You might have to align the input buffer. The alignment requirements
- *       depend on the CPU and the decoder.
- *
  * @param      avctx the codec context
  * @param[out] frame The AVFrame in which to store decoded audio samples.
  *                   The decoder will allocate a buffer for the decoded frame by
@@ -3831,13 +3828,6 @@ int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
  *
  * @warning The end of the input buffer buf should be set to 0 to ensure that
  * no overreading happens for damaged MPEG streams.
- *
- * @note You might have to align the input buffer avpkt->data.
- * The alignment requirements depend on the CPU: on some CPUs it isn't
- * necessary at all, on others it won't work at all if not aligned and on others
- * it will work but it will have an impact on performance.
- *
- * In practice, avpkt->data should have 4 byte alignment at minimum.
  *
  * @note Codecs which have the CODEC_CAP_DELAY capability set have a delay
  * between input and output, these need to be fed with avpkt->data=NULL,
