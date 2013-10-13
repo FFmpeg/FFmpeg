@@ -98,6 +98,9 @@ static const AVOption options[] = {
 {"icy", "request ICY metadata", OFFSET(icy), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, D },
 {"icy_metadata_headers", "return ICY metadata headers", OFFSET(icy_metadata_headers), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
 {"icy_metadata_packet", "return current ICY metadata packet", OFFSET(icy_metadata_packet), AV_OPT_TYPE_STRING, {0}, 0, 0, 0 },
+{"auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, {.i64 = HTTP_AUTH_NONE}, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D|E, "auth_type" },
+{"none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_NONE}, 0, 0, D|E, "auth_type" },
+{"basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, {.i64 = HTTP_AUTH_BASIC}, 0, 0, D|E, "auth_type" },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
