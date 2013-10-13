@@ -145,11 +145,9 @@ static int smush_read_header(AVFormatContext *ctx)
     avpriv_set_pts_info(vst, 64, 66667, 1000000);
 
     if (!smush->version) {
-        vst->codec->extradata = av_malloc(1024 + 2 + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!vst->codec->extradata)
+        if (ff_alloc_extradata(vst->codec, 1024 + 2))
             return AVERROR(ENOMEM);
 
-        vst->codec->extradata_size = 1024 + 2;
         AV_WL16(vst->codec->extradata, subversion);
         for (i = 0; i < 256; i++)
             AV_WL32(vst->codec->extradata + 2 + i * 4, palette[i]);

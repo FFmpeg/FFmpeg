@@ -52,9 +52,7 @@ static int read_header(AVFormatContext *s)
     if (!vst)
         return AVERROR(ENOMEM);
 
-    vst->codec->extradata_size = 2;
-    vst->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!vst->codec->extradata)
+    if (ff_alloc_extradata(vst->codec, 2))
         return AVERROR(ENOMEM);
 
     version                  = avio_r8(pb);

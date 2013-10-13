@@ -136,9 +136,7 @@ static int bintext_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codec->codec_id    = AV_CODEC_ID_BINTEXT;
 
-    st->codec->extradata_size = 2;
-    st->codec->extradata = av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, 2))
         return AVERROR(ENOMEM);
     st->codec->extradata[0] = 16;
     st->codec->extradata[1] = 0;
@@ -194,8 +192,7 @@ static int xbin_read_header(AVFormatContext *s)
         st->codec->extradata_size += fontheight * (flags & 0x10 ? 512 : 256);
     st->codec->codec_id    = flags & 4 ? AV_CODEC_ID_XBIN : AV_CODEC_ID_BINTEXT;
 
-    st->codec->extradata = av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, st->codec->extradata_size))
         return AVERROR(ENOMEM);
     st->codec->extradata[0] = fontheight;
     st->codec->extradata[1] = flags;
@@ -227,9 +224,7 @@ static int adf_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codec->codec_id    = AV_CODEC_ID_BINTEXT;
 
-    st->codec->extradata_size = 2 + 48 + 4096;
-    st->codec->extradata = av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, 2 + 48 + 4096))
         return AVERROR(ENOMEM);
     st->codec->extradata[0] = 16;
     st->codec->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
@@ -284,9 +279,7 @@ static int idf_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codec->codec_id    = AV_CODEC_ID_IDF;
 
-    st->codec->extradata_size = 2 + 48 + 4096;
-    st->codec->extradata = av_malloc(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, 2 + 48 + 4096))
         return AVERROR(ENOMEM);
     st->codec->extradata[0] = 16;
     st->codec->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;

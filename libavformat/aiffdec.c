@@ -276,10 +276,8 @@ static int aiff_read_header(AVFormatContext *s)
         case MKTAG('w', 'a', 'v', 'e'):
             if ((uint64_t)size > (1<<30))
                 return -1;
-            st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
+            if (ff_alloc_extradata(st->codec, size))
                 return AVERROR(ENOMEM);
-            st->codec->extradata_size = size;
             avio_read(pb, st->codec->extradata, size);
             if (st->codec->codec_id == AV_CODEC_ID_QDM2 && size>=12*4 && !st->codec->block_align) {
                 st->codec->block_align = AV_RB32(st->codec->extradata+11*4);

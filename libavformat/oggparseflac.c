@@ -62,10 +62,8 @@ flac_header (AVFormatContext * s, int idx)
         st->codec->codec_id = AV_CODEC_ID_FLAC;
         st->need_parsing = AVSTREAM_PARSE_HEADERS;
 
-        st->codec->extradata =
-            av_malloc(FLAC_STREAMINFO_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
-        memcpy(st->codec->extradata, streaminfo_start, FLAC_STREAMINFO_SIZE);
-        st->codec->extradata_size = FLAC_STREAMINFO_SIZE;
+        ff_alloc_extradata(st->codec, FLAC_STREAMINFO_SIZE);
+        memcpy(st->codec->extradata, streaminfo_start, st->codec->extradata_size);
 
         avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     } else if (mdt == FLAC_METADATA_TYPE_VORBIS_COMMENT) {

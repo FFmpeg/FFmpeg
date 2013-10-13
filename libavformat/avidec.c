@@ -648,12 +648,8 @@ static int avi_read_header(AVFormatContext *s)
                             st->codec->extradata_size = esize - 10 * 4;
                         } else
                             st->codec->extradata_size =  size - 10 * 4;
-                        st->codec->extradata      = av_malloc(st->codec->extradata_size +
-                                                              FF_INPUT_BUFFER_PADDING_SIZE);
-                        if (!st->codec->extradata) {
-                            st->codec->extradata_size = 0;
+                        if (ff_alloc_extradata(st->codec, st->codec->extradata_size))
                             return AVERROR(ENOMEM);
-                        }
                         avio_read(pb,
                                   st->codec->extradata,
                                   st->codec->extradata_size);
@@ -781,12 +777,8 @@ static int avi_read_header(AVFormatContext *s)
                 st = s->streams[stream_index];
 
                 if (size<(1<<30)) {
-                    st->codec->extradata_size= size;
-                    st->codec->extradata= av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                    if (!st->codec->extradata) {
-                        st->codec->extradata_size= 0;
+                    if (ff_alloc_extradata(st->codec, size))
                         return AVERROR(ENOMEM);
-                    }
                     avio_read(pb, st->codec->extradata, st->codec->extradata_size);
                 }
 

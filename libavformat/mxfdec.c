@@ -1599,10 +1599,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
         }
         if (descriptor->extradata) {
-            st->codec->extradata = av_mallocz(descriptor->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (st->codec->extradata) {
+            if (!ff_alloc_extradata(st->codec, descriptor->extradata_size)) {
                 memcpy(st->codec->extradata, descriptor->extradata, descriptor->extradata_size);
-                st->codec->extradata_size = descriptor->extradata_size;
             }
         } else if(st->codec->codec_id == AV_CODEC_ID_H264) {
             ff_generate_avci_extradata(st);

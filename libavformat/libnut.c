@@ -232,8 +232,7 @@ static int nut_read_header(AVFormatContext * avf) {
 
         st->codec->extradata_size = s[i].codec_specific_len;
         if (st->codec->extradata_size) {
-            st->codec->extradata = av_mallocz(st->codec->extradata_size);
-            if(!st->codec->extradata){
+            if(ff_alloc_extradata(st->codec, st->codec->extradata_size)){
                 nut_demuxer_uninit(nut);
                 priv->nut = NULL;
                 return AVERROR(ENOMEM);

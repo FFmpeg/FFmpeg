@@ -113,9 +113,7 @@ static int redspark_read_header(AVFormatContext *s)
         goto fail;
     }
 
-    codec->extradata_size = 32 * codec->channels;
-    codec->extradata = av_malloc(codec->extradata_size);
-    if (!codec->extradata) {
+    if (ff_alloc_extradata(codec, 32 * codec->channels)) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }

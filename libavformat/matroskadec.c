@@ -1819,11 +1819,8 @@ static int matroska_read_header(AVFormatContext *s)
                 st->codec->extradata = extradata;
                 st->codec->extradata_size = extradata_size;
             } else if(track->codec_priv.data && track->codec_priv.size > 0){
-                st->codec->extradata = av_mallocz(track->codec_priv.size +
-                                                  FF_INPUT_BUFFER_PADDING_SIZE);
-                if(st->codec->extradata == NULL)
+                if (ff_alloc_extradata(st->codec, track->codec_priv.size))
                     return AVERROR(ENOMEM);
-                st->codec->extradata_size = track->codec_priv.size;
                 memcpy(st->codec->extradata,
                        track->codec_priv.data + extradata_offset,
                        track->codec_priv.size);
@@ -1916,10 +1913,8 @@ static int matroska_read_header(AVFormatContext *s)
             av_dict_set(&st->metadata, "mimetype", attachements[j].mime, 0);
             st->codec->codec_id = AV_CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
-            st->codec->extradata  = av_malloc(attachements[j].bin.size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if(st->codec->extradata == NULL)
+            if (ff_alloc_extradata(st->codec, attachements[j].bin.size))
                 break;
-            st->codec->extradata_size = attachements[j].bin.size;
             memcpy(st->codec->extradata, attachements[j].bin.data, attachements[j].bin.size);
 
             for (i=0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++) {

@@ -220,9 +220,8 @@ static int vqf_read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, size, st->codec->sample_rate);
 
     /* put first 12 bytes of COMM chunk in extradata */
-    if (!(st->codec->extradata = av_malloc(12 + FF_INPUT_BUFFER_PADDING_SIZE)))
+    if (ff_alloc_extradata(st->codec, 12))
         return AVERROR(ENOMEM);
-    st->codec->extradata_size = 12;
     memcpy(st->codec->extradata, comm_chunk, 12);
 
     ff_metadata_conv_ctx(s, NULL, vqf_metadata_conv);

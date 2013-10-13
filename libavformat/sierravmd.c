@@ -127,10 +127,8 @@ static int vmd_read_header(AVFormatContext *s)
             vst->codec->width >>= 1;
             vst->codec->height >>= 1;
         }
-        vst->codec->extradata = av_mallocz(VMD_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!vst->codec->extradata)
+        if (ff_alloc_extradata(vst->codec, VMD_HEADER_SIZE))
             return AVERROR(ENOMEM);
-        vst->codec->extradata_size = VMD_HEADER_SIZE;
         memcpy(vst->codec->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
     }
 

@@ -29,6 +29,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/avcodec.h"
+#include "internal.h"
 #include "rtp.h"
 #include "rtpdec.h"
 #include "rtpdec_formats.h"
@@ -104,9 +105,7 @@ static int qdm2_parse_config(PayloadContext *qdm, AVStream *st,
                 if (item_len < 30)
                     return AVERROR_INVALIDDATA;
                 av_freep(&st->codec->extradata);
-                st->codec->extradata_size = 26 + item_len;
-                if (!(st->codec->extradata = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE))) {
-                    st->codec->extradata_size = 0;
+                if (ff_alloc_extradata(st->codec, 26 + item_len)) {
                     return AVERROR(ENOMEM);
                 }
                 AV_WB32(st->codec->extradata, 12);

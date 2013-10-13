@@ -217,10 +217,7 @@ static int smacker_read_header(AVFormatContext *s)
 
 
     /* load trees to extradata, they will be unpacked by decoder */
-    st->codec->extradata = av_mallocz(smk->treesize + 16 +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
-    st->codec->extradata_size = smk->treesize + 16;
-    if(!st->codec->extradata){
+    if(ff_alloc_extradata(st->codec, smk->treesize + 16)){
         av_log(s, AV_LOG_ERROR, "Cannot allocate %i bytes of extradata\n", smk->treesize + 16);
         av_freep(&smk->frm_size);
         av_freep(&smk->frm_flags);

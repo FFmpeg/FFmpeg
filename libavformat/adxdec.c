@@ -78,8 +78,7 @@ static int adx_read_header(AVFormatContext *s)
     c->header_size = avio_rb16(s->pb) + 4;
     avio_seek(s->pb, -4, SEEK_CUR);
 
-    avctx->extradata = av_mallocz(c->header_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!avctx->extradata)
+    if (ff_alloc_extradata(avctx, c->header_size))
         return AVERROR(ENOMEM);
     if (avio_read(s->pb, avctx->extradata, c->header_size) < c->header_size) {
         av_freep(&avctx->extradata);

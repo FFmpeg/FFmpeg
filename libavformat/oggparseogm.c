@@ -99,9 +99,8 @@ ogm_header(AVFormatContext *s, int idx)
             if (size > 52) {
                 av_assert0(FF_INPUT_BUFFER_PADDING_SIZE <= 52);
                 size -= 52;
-                st->codec->extradata_size = size;
-                st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-                bytestream2_get_buffer(&p, st->codec->extradata, size);
+                ff_alloc_extradata(st->codec, size);
+                bytestream2_get_buffer(&p, st->codec->extradata, st->codec->extradata_size);
             }
         }
     } else if (bytestream2_peek_byte(&p) == 3) {

@@ -415,9 +415,7 @@ static int decode_stream_header(NUTContext *nut)
 
     GET_V(st->codec->extradata_size, tmp < (1 << 30));
     if (st->codec->extradata_size) {
-        st->codec->extradata = av_mallocz(st->codec->extradata_size +
-                                          FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!st->codec->extradata)
+        if (ff_alloc_extradata(st->codec, st->codec->extradata_size))
             return AVERROR(ENOMEM);
         avio_read(bc, st->codec->extradata, st->codec->extradata_size);
     }

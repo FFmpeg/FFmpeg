@@ -353,10 +353,7 @@ static int wav_read_header(AVFormatContext *s)
             vst->codec->codec_id = AV_CODEC_ID_SMVJPEG;
             vst->codec->width  = avio_rl24(pb);
             vst->codec->height = avio_rl24(pb);
-            vst->codec->extradata_size = 4;
-            vst->codec->extradata = av_malloc(vst->codec->extradata_size +
-                                              FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!vst->codec->extradata) {
+            if (ff_alloc_extradata(vst->codec, 4)) {
                 av_log(s, AV_LOG_ERROR, "Could not allocate extradata.\n");
                 return AVERROR(ENOMEM);
             }
