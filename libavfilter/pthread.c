@@ -75,7 +75,8 @@ static void* attribute_align_arg worker(void *v)
             if (c->current_job == nb_threads + c->nb_jobs)
                 pthread_cond_signal(&c->last_job_cond);
 
-            pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
+            if (!c->done)
+                pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
             our_job = self_id;
 
             if (c->done) {
