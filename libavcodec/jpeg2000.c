@@ -215,12 +215,12 @@ int ff_jpeg2000_init_component(Jpeg2000Component *comp,
 
     if (codsty->transform == FF_DWT97) {
         comp->i_data = NULL;
-        comp->f_data = av_malloc_array(csize, sizeof(*comp->f_data));
+        comp->f_data = av_mallocz_array(csize, sizeof(*comp->f_data));
         if (!comp->f_data)
             return AVERROR(ENOMEM);
     } else {
         comp->f_data = NULL;
-        comp->i_data = av_malloc_array(csize, sizeof(*comp->i_data));
+        comp->i_data = av_mallocz_array(csize, sizeof(*comp->i_data));
         if (!comp->i_data)
             return AVERROR(ENOMEM);
     }
