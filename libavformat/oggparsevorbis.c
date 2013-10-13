@@ -53,7 +53,7 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
                            ms + 1000 * (s + 60 * (m + 60 * h)),
                            AV_NOPTS_VALUE, NULL);
         av_free(val);
-    } else if (!strcmp(key + (keylen - 4), "NAME")) {
+    } else if (!strcmp(key + keylen - 4, "NAME")) {
         for (i = 0; i < as->nb_chapters; i++)
             if (as->chapters[i]->id == cnum) {
                 chapter = as->chapters[i];
