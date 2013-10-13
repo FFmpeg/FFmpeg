@@ -698,12 +698,12 @@ properties of your X11 display (e.g. grep for "name" or "dimensions").
 
 For example to grab from @file{:0.0} using @command{ffmpeg}:
 @example
-ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
+ffmpeg -f x11grab -framerate 25 -video_size cif -i :0.0 out.mpg
 @end example
 
 Grab at position @code{10,20}:
 @example
-ffmpeg -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
+ffmpeg -f x11grab -framerate 25 -video_size cif -i :0.0+10,20 out.mpg
 @end example
 
 @subsection Options
@@ -724,12 +724,12 @@ zero) to the edge of region.
 
 For example:
 @example
-ffmpeg -f x11grab -follow_mouse centered -r 25 -s cif -i :0.0 out.mpg
+ffmpeg -f x11grab -follow_mouse centered -framerate 25 -video_size cif -i :0.0 out.mpg
 @end example
 
 To follow only when the mouse pointer reaches within 100 pixels to edge:
 @example
-ffmpeg -f x11grab -follow_mouse 100 -r 25 -s cif -i :0.0 out.mpg
+ffmpeg -f x11grab -follow_mouse 100 -framerate 25 -video_size cif -i :0.0 out.mpg
 @end example
 
 @item framerate
@@ -745,12 +745,12 @@ know what is being grabbed if only a portion of the screen is grabbed.
 
 For example:
 @example
-ffmpeg -f x11grab -show_region 1 -r 25 -s cif -i :0.0+10,20 out.mpg
+ffmpeg -f x11grab -show_region 1 -framerate 25 -video_size cif -i :0.0+10,20 out.mpg
 @end example
 
 With @var{follow_mouse}:
 @example
-ffmpeg -f x11grab -follow_mouse centered -show_region 1 -r 25 -s cif -i :0.0 out.mpg
+ffmpeg -f x11grab -follow_mouse centered -show_region 1 -framerate 25 -video_size cif -i :0.0 out.mpg
 @end example
 
 @item video_size

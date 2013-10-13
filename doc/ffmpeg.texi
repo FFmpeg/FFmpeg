@@ -1215,14 +1215,14 @@ standard mixer.
 Grab the X11 display with ffmpeg via
 
 @example
-ffmpeg -f x11grab -s cif -r 25 -i :0.0 /tmp/out.mpg
+ffmpeg -f x11grab -video_size cif -framerate 25 -i :0.0 /tmp/out.mpg
 @end example
 
 0.0 is display.screen number of your X11 server, same as
 the DISPLAY environment variable.
 
 @example
-ffmpeg -f x11grab -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
+ffmpeg -f x11grab -video_size cif -framerate 25 -i :0.0+10,20 /tmp/out.mpg
 @end example
 
 0.0 is display.screen number of your X11 server, same as the DISPLAY environment
