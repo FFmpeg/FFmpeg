@@ -132,6 +132,12 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
             memcpy(ct, v, vl);
             ct[vl] = 0;
 
+            /* The format in which the pictures are stored is the FLAC format.
+             * Xiph says: "The binary FLAC picture structure is base64 encoded
+             * and placed within a VorbisComment with the tag name
+             * 'METADATA_BLOCK_PICTURE'. This is the preferred and
+             * recommended way of embedding cover art within VorbisComments."
+             */
             if (!strcmp(tt, "METADATA_BLOCK_PICTURE")) {
                 int ret;
                 char *pict = av_malloc(vl);
@@ -144,9 +150,9 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                 }
                 if ((ret = av_base64_decode(pict, ct, vl)) > 0)
                     ret = ff_flac_parse_picture(as, pict, ret);
-                av_freep(&pict);
                 av_freep(&tt);
                 av_freep(&ct);
+                av_freep(&pict);
                 if (ret < 0) {
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
                     continue;
