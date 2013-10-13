@@ -193,9 +193,9 @@ struct oggvorbis_private {
     int final_duration;
 };
 
-static unsigned int fixup_vorbis_headers(AVFormatContext *as,
-                                         struct oggvorbis_private *priv,
-                                         uint8_t **buf)
+static int fixup_vorbis_headers(AVFormatContext *as,
+                                struct oggvorbis_private *priv,
+                                uint8_t **buf)
 {
     int i, offset, len, err;
     int buf_len;
@@ -204,8 +204,8 @@ static unsigned int fixup_vorbis_headers(AVFormatContext *as,
     len = priv->len[0] + priv->len[1] + priv->len[2];
     buf_len = len + len / 255 + 64;
     ptr = *buf = av_realloc(NULL, buf_len);
-    if (!*buf)
-        return 0;
+    if (!ptr)
+        return AVERROR(ENOMEM);
     memset(*buf, '\0', buf_len);
 
     ptr[0]  = 2;
