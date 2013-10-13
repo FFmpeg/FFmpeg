@@ -41,7 +41,6 @@ static int opus_header(AVFormatContext *avf, int idx)
     AVStream *st                 = avf->streams[idx];
     struct oggopus_private *priv = os->private;
     uint8_t *packet              = os->buf + os->pstart;
-    uint8_t *extradata;
 
     if (!priv) {
         priv = os->private = av_mallocz(sizeof(*priv));
@@ -60,13 +59,10 @@ static int opus_header(AVFormatContext *avf, int idx)
         /*gain                = AV_RL16(packet + 16);*/
         /*channel_map         = AV_RL8 (packet + 18);*/
 
-        extradata = av_malloc(os->psize + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!extradata)
+        if (ff_alloc_extradata(st->codec, os->psize))
             return AVERROR(ENOMEM);
 
-        memcpy(extradata, packet, os->psize);
-        st->codec->extradata      = extradata;
-        st->codec->extradata_size = os->psize;
+        memcpy(st->codec->extradata, packet, os->psize);
 
         st->codec->sample_rate = 48000;
         avpriv_set_pts_info(st, 64, 1, 48000);
