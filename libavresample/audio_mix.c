@@ -201,23 +201,23 @@ static void mix_1_to_2_fltp_flt_c(float **samples, float **matrix, int len,
 
     while (len > 4) {
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         len -= 4;
     }
     while (len > 0) {
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         len--;
     }
 }
