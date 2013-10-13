@@ -120,9 +120,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
             if (!tt || !ct) {
                 av_freep(&tt);
                 av_freep(&ct);
-                av_log(as, AV_LOG_WARNING,
-                       "out-of-memory error. skipping VorbisComment tag.\n");
-                continue;
+                return AVERROR(ENOMEM);
             }
 
             for (j = 0; j < tl; j++)
