@@ -32,7 +32,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/vorbis_parser.h"
 #include "avformat.h"
-#include "flacdec.h"
+#include "flac_picture.h"
 #include "internal.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"

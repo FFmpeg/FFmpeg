@@ -1,5 +1,5 @@
 /*
- * Raw FLAC demuxer
+ * Raw FLAC picture parser
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -21,14 +21,14 @@
 
 #include "libavutil/avassert.h"
 #include "avformat.h"
-#include "flacdec.h"
+#include "flac_picture.h"
 #include "id3v2.h"
 #include "internal.h"
 
 int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 {
     const CodecMime *mime = ff_id3v2_mime_tags;
-    enum  AVCodecID      id = AV_CODEC_ID_NONE;
+    enum AVCodecID id = AV_CODEC_ID_NONE;
     AVBufferRef *data = NULL;
     uint8_t mimetype[64], *desc = NULL;
     AVIOContext *pb = NULL;
@@ -41,7 +41,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         return AVERROR(ENOMEM);
 
     /* read the picture type */
-    type      = avio_rb32(pb);
+    type = avio_rb32(pb);
     if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types) || type < 0) {
         av_log(s, AV_LOG_ERROR, "Invalid picture type: %d.\n", type);
         if (s->error_recognition & AV_EF_EXPLODE) {
@@ -51,7 +51,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     }
 
     /* picture mimetype */
-    len  = avio_rb32(pb);
+    len = avio_rb32(pb);
     if (len <= 0 ||
         avio_read(pb, mimetype, FFMIN(len, sizeof(mimetype) - 1)) != len) {
         av_log(s, AV_LOG_ERROR, "Could not read mimetype from an attached "
@@ -136,7 +136,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     st->codec->height     = height;
     av_dict_set(&st->metadata, "comment", ff_id3v2_picture_types[type], 0);
     if (desc)
-        av_dict_set(&st->metadata, "title",   desc, AV_DICT_DONT_STRDUP_VAL);
+        av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL);
 
     av_freep(&pb);
 
@@ -146,5 +146,6 @@ fail:
     av_buffer_unref(&data);
     av_freep(&desc);
     av_freep(&pb);
+
     return ret;
 }

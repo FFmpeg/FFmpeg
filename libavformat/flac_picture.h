@@ -1,5 +1,5 @@
 /*
- * Raw FLAC demuxer
+ * Raw FLAC picture parser
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_FLACDEC_H
-#define AVFORMAT_FLACDEC_H
+#ifndef AVFORMAT_FLAC_PICTURE_H
+#define AVFORMAT_FLAC_PICTURE_H
 
 #include "avformat.h"
 
@@ -28,4 +28,4 @@
 
 int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size);
 
-#endif /* AVFORMAT_FLACDEC_H */
+#endif /* AVFORMAT_FLAC_PICTURE_H */
