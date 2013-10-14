@@ -283,17 +283,301 @@ The undefined value can be expressed using the "0:0" string.
 @anchor{color syntax}
 @section Color
 
-It can be the name of a color (case insensitive match) or a
-[0x|#]RRGGBB[AA] sequence, possibly followed by "@@" and a string
+It can be the name of a color as defined below (case insensitive match) or a
+@code{[0x|#]RRGGBB[AA]} sequence, possibly followed by @samp{@@} and a string
 representing the alpha component.
 
 The alpha component may be a string composed by "0x" followed by an
 hexadecimal number or a decimal number between 0.0 and 1.0, which
-represents the opacity value (0x00/0.0 means completely transparent,
-0xff/1.0 completely opaque).
-If the alpha component is not specified then 0xff is assumed.
+represents the opacity value (@samp{0x00} or @samp{0.0} means completely
+transparent, @samp{0xff} or @samp{1.0} completely opaque). If the alpha
+component is not specified then @samp{0xff} is assumed.
 
-The string "random" will result in a random color.
+The string @samp{random} will result in a random color.
+
+The following names of colors are recognized:
+@table @samp
+@item AliceBlue
+0xF0F8FF
+@item AntiqueWhite
+0xFAEBD7
+@item Aqua
+0x00FFFF
+@item Aquamarine
+0x7FFFD4
+@item Azure
+0xF0FFFF
+@item Beige
+0xF5F5DC
+@item Bisque
+0xFFE4C4
+@item Black
+0x000000
+@item BlanchedAlmond
+0xFFEBCD
+@item Blue
+0x0000FF
+@item BlueViolet
+0x8A2BE2
+@item Brown
+0xA52A2A
+@item BurlyWood
+0xDEB887
+@item CadetBlue
+0x5F9EA0
+@item Chartreuse
+0x7FFF00
+@item Chocolate
+0xD2691E
+@item Coral
+0xFF7F50
+@item CornflowerBlue
+0x6495ED
+@item Cornsilk
+0xFFF8DC
+@item Crimson
+0xDC143C
+@item Cyan
+0x00FFFF
+@item DarkBlue
+0x00008B
+@item DarkCyan
+0x008B8B
+@item DarkGoldenRod
+0xB8860B
+@item DarkGray
+0xA9A9A9
+@item DarkGreen
+0x006400
+@item DarkKhaki
+0xBDB76B
+@item DarkMagenta
+0x8B008B
+@item DarkOliveGreen
+0x556B2F
+@item Darkorange
+0xFF8C00
+@item DarkOrchid
+0x9932CC
+@item DarkRed
+0x8B0000
+@item DarkSalmon
+0xE9967A
+@item DarkSeaGreen
+0x8FBC8F
+@item DarkSlateBlue
+0x483D8B
+@item DarkSlateGray
+0x2F4F4F
+@item DarkTurquoise
+0x00CED1
+@item DarkViolet
+0x9400D3
+@item DeepPink
+0xFF1493
+@item DeepSkyBlue
+0x00BFFF
+@item DimGray
+0x696969
+@item DodgerBlue
+0x1E90FF
+@item FireBrick
+0xB22222
+@item FloralWhite
+0xFFFAF0
+@item ForestGreen
+0x228B22
+@item Fuchsia
+0xFF00FF
+@item Gainsboro
+0xDCDCDC
+@item GhostWhite
+0xF8F8FF
+@item Gold
+0xFFD700
+@item GoldenRod
+0xDAA520
+@item Gray
+0x808080
+@item Green
+0x008000
+@item GreenYellow
+0xADFF2F
+@item HoneyDew
+0xF0FFF0
+@item HotPink
+0xFF69B4
+@item IndianRed
+0xCD5C5C
+@item Indigo
+0x4B0082
+@item Ivory
+0xFFFFF0
+@item Khaki
+0xF0E68C
+@item Lavender
+0xE6E6FA
+@item LavenderBlush
+0xFFF0F5
+@item LawnGreen
+0x7CFC00
+@item LemonChiffon
+0xFFFACD
+@item LightBlue
+0xADD8E6
+@item LightCoral
+0xF08080
+@item LightCyan
+0xE0FFFF
+@item LightGoldenRodYellow
+0xFAFAD2
+@item LightGreen
+0x90EE90
+@item LightGrey
+0xD3D3D3
+@item LightPink
+0xFFB6C1
+@item LightSalmon
+0xFFA07A
+@item LightSeaGreen
+0x20B2AA
+@item LightSkyBlue
+0x87CEFA
+@item LightSlateGray
+0x778899
+@item LightSteelBlue
+0xB0C4DE
+@item LightYellow
+0xFFFFE0
+@item Lime
+0x00FF00
+@item LimeGreen
+0x32CD32
+@item Linen
+0xFAF0E6
+@item Magenta
+0xFF00FF
+@item Maroon
+0x800000
+@item MediumAquaMarine
+0x66CDAA
+@item MediumBlue
+0x0000CD
+@item MediumOrchid
+0xBA55D3
+@item MediumPurple
+0x9370D8
+@item MediumSeaGreen
+0x3CB371
+@item MediumSlateBlue
+0x7B68EE
+@item MediumSpringGreen
+0x00FA9A
+@item MediumTurquoise
+0x48D1CC
+@item MediumVioletRed
+0xC71585
+@item MidnightBlue
+0x191970
+@item MintCream
+0xF5FFFA
+@item MistyRose
+0xFFE4E1
+@item Moccasin
+0xFFE4B5
+@item NavajoWhite
+0xFFDEAD
+@item Navy
+0x000080
+@item OldLace
+0xFDF5E6
+@item Olive
+0x808000
+@item OliveDrab
+0x6B8E23
+@item Orange
+0xFFA500
+@item OrangeRed
+0xFF4500
+@item Orchid
+0xDA70D6
+@item PaleGoldenRod
+0xEEE8AA
+@item PaleGreen
+0x98FB98
+@item PaleTurquoise
+0xAFEEEE
+@item PaleVioletRed
+0xD87093
+@item PapayaWhip
+0xFFEFD5
+@item PeachPuff
+0xFFDAB9
+@item Peru
+0xCD853F
+@item Pink
+0xFFC0CB
+@item Plum
+0xDDA0DD
+@item PowderBlue
+0xB0E0E6
+@item Purple
+0x800080
+@item Red
+0xFF0000
+@item RosyBrown
+0xBC8F8F
+@item RoyalBlue
+0x4169E1
+@item SaddleBrown
+0x8B4513
+@item Salmon
+0xFA8072
+@item SandyBrown
+0xF4A460
+@item SeaGreen
+0x2E8B57
+@item SeaShell
+0xFFF5EE
+@item Sienna
+0xA0522D
+@item Silver
+0xC0C0C0
+@item SkyBlue
+0x87CEEB
+@item SlateBlue
+0x6A5ACD
+@item SlateGray
+0x708090
+@item Snow
+0xFFFAFA
+@item SpringGreen
+0x00FF7F
+@item SteelBlue
+0x4682B4
+@item Tan
+0xD2B48C
+@item Teal
+0x008080
+@item Thistle
+0xD8BFD8
+@item Tomato
+0xFF6347
+@item Turquoise
+0x40E0D0
+@item Violet
+0xEE82EE
+@item Wheat
+0xF5DEB3
+@item White
+0xFFFFFF
+@item WhiteSmoke
+0xF5F5F5
+@item Yellow
+0xFFFF00
+@item YellowGreen
+0x9ACD32
+@end table
 
 @c man end SYNTAX
 
