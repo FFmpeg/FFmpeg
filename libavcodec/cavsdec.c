@@ -535,7 +535,7 @@ static inline int dequant(AVSContext *h, int16_t *level_buf, uint8_t *run_buf,
             av_log(h->avctx, AV_LOG_ERROR,
                    "position out of block bounds at pic %d MB(%d,%d)\n",
                    h->cur.poc, h->mbx, h->mby);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         dst[scantab[pos]] = (level_buf[coeff_num] * mul + round) >> shift;
     }
@@ -555,7 +555,7 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  const struct dec_2dvlc *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, int stride)
 {
-    int i, esc_code, level, mask;
+    int i, esc_code, level, mask, ret;
     unsigned int level_code, run;
     int16_t level_buf[65];
     uint8_t run_buf[65];
@@ -583,9 +583,9 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         level_buf[i] = level;
         run_buf[i]   = run;
     }
-    if (dequant(h, level_buf, run_buf, block, dequant_mul[qp],
-                dequant_shift[qp], i))
-        return -1;
+    if ((ret = dequant(h, level_buf, run_buf, block, dequant_mul[qp],
+                      dequant_shift[qp], i)) < 0)
+        return ret;
     h->cdsp.cavs_idct8_add(dst, block, stride);
     h->dsp.clear_block(block);
     return 0;
@@ -610,7 +610,7 @@ static inline int decode_residual_inter(AVSContext *h)
     int cbp = get_ue_golomb(&h->gb);
     if (cbp > 63U) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal inter cbp\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     h->cbp = cbp_tab[cbp][1];
 
@@ -672,7 +672,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
     pred_mode_uv = get_ue_golomb(gb);
     if (pred_mode_uv > 6) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal intra chroma pred mode\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     ff_cavs_modify_mb_i(h, &pred_mode_uv);
 
@@ -681,7 +681,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code)
         cbp_code = get_ue_golomb(gb);
     if (cbp_code > 63U) {
         av_log(h->avctx, AV_LOG_ERROR, "illegal intra cbp\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     h->cbp = cbp_tab[cbp_code][0];
     if (h->cbp && !h->qp_fixed)
@@ -960,12 +960,12 @@ static int decode_pic(AVSContext *h)
         h->cur.f->pict_type = get_bits(&h->gb, 2) + AV_PICTURE_TYPE_I;
         if (h->cur.f->pict_type > AV_PICTURE_TYPE_B) {
             av_log(h->avctx, AV_LOG_ERROR, "illegal picture type\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         /* make sure we have the reference frames we need */
         if (!h->DPB[0].f->data[0] ||
            (!h->DPB[1].f->data[0] && h->cur.f->pict_type == AV_PICTURE_TYPE_B))
-            return -1;
+            return AVERROR_INVALIDDATA;
     } else {
         h->cur.f->pict_type = AV_PICTURE_TYPE_I;
         if (get_bits1(&h->gb))
