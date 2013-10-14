@@ -693,12 +693,7 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
                 c->idct                  = ff_simple_idct_mmx;
                 c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
             } else if (idct_algo == FF_IDCT_XVIDMMX) {
-                if (X86_SSE2(cpu_flags)) {
-                    c->idct_put              = ff_idct_xvid_sse2_put;
-                    c->idct_add              = ff_idct_xvid_sse2_add;
-                    c->idct                  = ff_idct_xvid_sse2;
-                    c->idct_permutation_type = FF_SSE2_IDCT_PERM;
-                } else if (X86_MMXEXT(cpu_flags)) {
+                if (X86_MMXEXT(cpu_flags)) {
                     c->idct_put              = ff_idct_xvid_mmxext_put;
                     c->idct_add              = ff_idct_xvid_mmxext_add;
                     c->idct                  = ff_idct_xvid_mmxext;
