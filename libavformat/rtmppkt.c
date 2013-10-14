@@ -129,20 +129,42 @@ int ff_amf_read_null(GetByteContext *bc)
     return 0;
 }
 
+int ff_rtmp_check_alloc_array(RTMPPacket **prev_pkt, int *nb_prev_pkt,
+                              int channel)
+{
+    int nb_alloc;
+    RTMPPacket *ptr;
+    if (channel < *nb_prev_pkt)
+        return 0;
+
+    nb_alloc = channel + 16;
+    // This can't use the av_reallocp family of functions, since we
+    // would need to free each element in the array before the array
+    // itself is freed.
+    ptr = av_realloc_array(*prev_pkt, nb_alloc, sizeof(**prev_pkt));
+    if (!ptr)
+        return AVERROR(ENOMEM);
+    memset(ptr + *nb_prev_pkt, 0, (nb_alloc - *nb_prev_pkt) * sizeof(*ptr));
+    *prev_pkt = ptr;
+    *nb_prev_pkt = nb_alloc;
+    return 0;
+}
+
 int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
-                        int chunk_size, RTMPPacket *prev_pkt)
+                        int chunk_size, RTMPPacket **prev_pkt, int *nb_prev_pkt)
 {
     uint8_t hdr;
 
     if (ffurl_read(h, &hdr, 1) != 1)
         return AVERROR(EIO);
 
-    return ff_rtmp_packet_read_internal(h, p, chunk_size, prev_pkt, hdr);
+    return ff_rtmp_packet_read_internal(h, p, chunk_size, prev_pkt,
+                                        nb_prev_pkt, hdr);
 }
 
 static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
-                                      int chunk_size, RTMPPacket *prev_pkt,
-                                      uint8_t hdr)
+                                      int chunk_size, RTMPPacket **prev_pkt_ptr,
+                                      int *nb_prev_pkt, uint8_t hdr)
 {
 
     uint8_t buf[16];
@@ -151,6 +173,7 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
     enum RTMPPacketType type;
     int written = 0;
     int ret, toread;
+    RTMPPacket *prev_pkt;
 
     written++;
     channel_id = hdr & 0x3F;
@@ -162,6 +185,10 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
         written += channel_id + 1;
         channel_id = AV_RL16(buf) + 64;
     }
+    if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
+                                         channel_id)) < 0)
+        return ret;
+    prev_pkt = *prev_pkt_ptr;
     size  = prev_pkt[channel_id].size;
     type  = prev_pkt[channel_id].type;
     extra = prev_pkt[channel_id].extra;
@@ -252,10 +279,12 @@ static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
 }
 
 int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
-                                 RTMPPacket *prev_pkt, uint8_t hdr)
+                                 RTMPPacket **prev_pkt, int *nb_prev_pkt,
+                                 uint8_t hdr)
 {
     while (1) {
-        int ret = rtmp_packet_read_one_chunk(h, p, chunk_size, prev_pkt, hdr);
+        int ret = rtmp_packet_read_one_chunk(h, p, chunk_size, prev_pkt,
+                                             nb_prev_pkt, hdr);
         if (ret > 0 || ret != AVERROR(EAGAIN))
             return ret;
 
@@ -265,13 +294,20 @@ int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
 }
 
 int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
-                         int chunk_size, RTMPPacket *prev_pkt)
+                         int chunk_size, RTMPPacket **prev_pkt_ptr,
+                         int *nb_prev_pkt)
 {
     uint8_t pkt_hdr[16], *p = pkt_hdr;
     int mode = RTMP_PS_TWELVEBYTES;
     int off = 0;
     int written = 0;
     int ret;
+    RTMPPacket *prev_pkt;
+
+    if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
+                                         pkt->channel_id)) < 0)
+        return ret;
+    prev_pkt = *prev_pkt_ptr;
 
     pkt->ts_delta = pkt->timestamp - prev_pkt[pkt->channel_id].timestamp;
 
