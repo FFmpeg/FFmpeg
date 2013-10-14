@@ -788,10 +788,6 @@ avconv -i file.mov -an -vn -bsf:s mov2textsub -c:s copy -f rawvideo sub.txt
 @item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{output,per-stream})
 Force a tag/fourcc for matching streams.
 
-@item -cpuflags mask (@emph{global})
-Set a mask that's applied to autodetected CPU flags.  This option is intended
-for testing. Do not use it unless you know what you're doing.
-
 @item -filter_complex @var{filtergraph} (@emph{global})
 Define a complex filter graph, i.e. one with arbitrary number of inputs and/or
 outputs. For simple graphs -- those with one input and one output of the same

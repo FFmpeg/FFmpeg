@@ -43,6 +43,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/dict.h"
 #include "libavutil/opt.h"
+#include "libavutil/cpu.h"
 #include "cmdutils.h"
 #include "version.h"
 #if CONFIG_NETWORK
@@ -691,6 +692,17 @@ do {                                                                           \
 
     av_log(NULL, AV_LOG_DEBUG, "Finished splitting the commandline.\n");
 
+    return 0;
+}
+
+int opt_cpuflags(void *optctx, const char *opt, const char *arg)
+{
+    int flags = av_parse_cpu_flags(arg);
+
+    if (flags < 0)
+        return flags;
+
+    av_set_cpu_flags_mask(flags);
     return 0;
 }
 

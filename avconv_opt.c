@@ -1876,17 +1876,6 @@ static int opt_vsync(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-int opt_cpuflags(void *optctx, const char *opt, const char *arg)
-{
-    int flags = av_parse_cpu_flags(arg);
-
-    if (flags < 0)
-        return flags;
-
-    av_set_cpu_flags_mask(flags);
-    return 0;
-}
-
 static int opt_channel_layout(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -2231,8 +2220,6 @@ const OptionDef options[] = {
     { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC |
                          OPT_EXPERT | OPT_INPUT,                     { .off = OFFSET(dump_attachment) },
         "extract an attachment into a file", "filename" },
-    { "cpuflags",       HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_cpuflags },
-        "set CPU flags mask", "mask" },
 
     /* video options */
     { "vframes",      OPT_VIDEO | HAS_ARG  | OPT_PERFILE | OPT_OUTPUT,           { .func_arg = opt_video_frames },

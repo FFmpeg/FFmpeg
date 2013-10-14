@@ -72,6 +72,11 @@ void uninit_opts(void);
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
 
 /**
+ * Override the cpuflags mask.
+ */
+int opt_cpuflags(void *optctx, const char *opt, const char *arg);
+
+/**
  * Fallback for options that are not explicitly handled, these will be
  * parsed through AVOptions.
  */

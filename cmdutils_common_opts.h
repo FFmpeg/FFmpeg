@@ -15,3 +15,4 @@
     { "sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts }, "show available audio sample formats" },
     { "loglevel"   , HAS_ARG,  {.func_arg = opt_loglevel},      "set libav* logging level", "loglevel" },
     { "v",           HAS_ARG,  {.func_arg = opt_loglevel},      "set libav* logging level", "loglevel" },
+    { "cpuflags",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },  "set CPU flags mask", "mask" },

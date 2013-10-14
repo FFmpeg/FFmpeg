@@ -143,6 +143,10 @@ the environment variable @env{AV_LOG_FORCE_COLOR}.
 The use of the environment variable @env{NO_COLOR} is deprecated and
 will be dropped in a following Libav version.
 
+@item -cpuflags mask (@emph{global})
+Set a mask that's applied to autodetected CPU flags. This option is intended
+for testing. Do not use it unless you know what you're doing.
+
 @end table
 
 @section AVOptions
