@@ -19,6 +19,13 @@ elif [ $OS == 'Darwin' ]; then
 fi
 
 
+#SSL=$SSL
+if [ -z "$SSL" ]; then
+  echo "No define SSL before starting"
+  echo "Please download from git@github.com:yixia/openssl-android.git ";
+  exit 1
+fi
+
 platform="$1"
 version_type="$2"
 
@@ -39,7 +46,6 @@ function x86_toolchain()
 
 SOURCE=`pwd`
 DEST=$SOURCE/build/android
-SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
@@ -51,7 +57,7 @@ if [ "$platform" = "x86" ];then
 else
 	echo "Build Android arm ffmpeg\n"
 	arm_toolchain
-	TARGET="neon armv7 vfp armv6"
+	TARGET="neon neon armv7 vfp armv6"
 fi
 export PATH=$TOOLCHAIN/bin:$PATH
 export CC="$CCACHE ${CROSS_PREFIX}gcc"
