@@ -3191,8 +3191,8 @@ The expressions which specify the width and height of the box, if 0 they are int
 the input width and height. Default to 0.
 
 @item color, c
-Specify the color of the box to write, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence. If the special
+Specify the color of the box to write. For the general syntax of this option,
+check the "Color" section in the ffmpeg-utils manual. If the special
 value @code{invert} is used, the box edge color is the same as the
 video with inverted luma.
 
@@ -3288,12 +3288,10 @@ input width and height, respectively, minus @code{thickness}, so image gets
 framed. Default to 0.
 
 @item color, c
-Specify the color of the grid, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence. If the special
+Specify the color of the grid. For the general syntax of this option,
+check the "Color" section in the ffmpeg-utils manual. If the special
 value @code{invert} is used, the grid color is the same as the
 video with inverted luma.
-Note that you can append opacity value (in range of 0.0 - 1.0)
-to color name after @@ sign.
 
 @item thickness, t
 The expression which sets the thickness of the grid line. Default value is @code{1}.
@@ -3373,9 +3371,9 @@ Value should be either 1 (enable) or 0 (disable).
 The default value of @var{box} is 0.
 
 @item boxcolor
-The color to be used for drawing box around text.
-Either a string (e.g. "yellow") or in 0xRRGGBB[AA] format
-(e.g. "0xff00ff"), possibly followed by an alpha specifier.
+The color to be used for drawing box around text. For the syntax of this
+option, check the "Color" section in the ffmpeg-utils manual.
+
 The default value of @var{boxcolor} is "white".
 
 @item expansion
@@ -3388,9 +3386,9 @@ below for details.
 If true, check and fix text coords to avoid clipping.
 
 @item fontcolor
-The color to be used for drawing fonts.
-Either a string (e.g. "red") or in 0xRRGGBB[AA] format
-(e.g. "0xff000033"), possibly followed by an alpha specifier.
+The color to be used for drawing fonts. For the syntax of this option, check
+the "Color" section in the ffmpeg-utils manual.
+
 The default value of @var{fontcolor} is "black".
 
 @item fontfile
@@ -3430,9 +3428,9 @@ For more information consult the documentation for the FT_LOAD_*
 libfreetype flags.
 
 @item shadowcolor
-The color to be used for drawing a shadow behind the drawn text.  It
-can be a color name (e.g. "yellow") or a string in the 0xRRGGBB[AA]
-form (e.g. "0xff00ff"), possibly followed by an alpha specifier.
+The color to be used for drawing a shadow behind the drawn text. For the
+syntax of this option, check the "Color" section in the ffmpeg-utils manual.
+
 The default value of @var{shadowcolor} is "black".
 
 @item shadowx
@@ -4357,9 +4355,9 @@ A '|'-separated list of parameters to pass to the frei0r effect.
 
 A frei0r effect parameter can be a boolean (whose values are specified
 with "y" and "n"), a double, a color (specified by the syntax
-@var{R}/@var{G}/@var{B}, @var{R}, @var{G}, and @var{B} being float
-numbers from 0.0 to 1.0) or by an @code{av_parse_color()} color
-description), a position (specified by the syntax @var{X}/@var{Y},
+@var{R}/@var{G}/@var{B}, (@var{R}, @var{G}, and @var{B} being float
+numbers from 0.0 to 1.0) or by a color description specified in the "Color"
+section in the ffmpeg-utils manual), a position (specified by the syntax @var{X}/@var{Y},
 @var{X} and @var{Y} being float numbers) and a string.
 
 The number and kind of parameters depend on the loaded effect. If an
@@ -5840,8 +5838,8 @@ expression, and vice versa.
 The default value of @var{x} and @var{y} is 0.
 
 @item color
-Specify the color of the padded area, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence.
+Specify the color of the padded area. For the syntax of this option,
+check the "Color" section in the ffmpeg-utils manual.
 
 The default value of @var{color} is "black".
 @end table
@@ -6421,9 +6419,11 @@ it. Default value is 1.
 
 @item fillcolor, c
 Set the color used to fill the output area not covered by the rotated
-image. If the special value "none" is selected then no background is
-printed (useful for example if the background is never shown). Default
-value is "black".
+image. For the generalsyntax of this option, check the "Color" section in the
+ffmpeg-utils manual. If the special value "none" is selected then no
+background is printed (useful for example if the background is never shown).
+
+Default value is "black".
 @end table
 
 The expressions for the angle and the output size can contain the
@@ -6611,8 +6611,8 @@ complete list of values. If not explictly specified the filter applies
 the default flags.
 
 @item size, s
-Set the video size, the value must be a valid abbreviation or in the
-form @var{width}x@var{height}.
+Set the video size. For the syntax of this option, check the "Video size"
+section in the ffmpeg-utils manual.
 
 @item in_color_matrix
 @item out_color_matrix
@@ -6978,8 +6978,8 @@ sample aspect ratio of the input frame, expressed in the form
 @var{num}/@var{den}
 
 @item s
-size of the input frame, expressed in the form
-@var{width}x@var{height}
+size of the input frame. For the syntax of this option, check the "Video size"
+section in the ffmpeg-utils manual.
 
 @item i
 interlaced mode ("P" for "progressive", "T" for top field first, "B"
@@ -7247,8 +7247,10 @@ Set the filename of the subtitle file to read. It must be specified.
 
 @item original_size
 Specify the size of the original video, the video for which the ASS file
-was composed. Due to a misdesign in ASS aspect ratio arithmetic, this is
-necessary to correctly scale the fonts if the aspect ratio has been changed.
+was composed. For the syntax of this option, check the "Video size" section in
+the ffmpeg-utils manual. Due to a misdesign in ASS aspect ratio arithmetic,
+this is necessary to correctly scale the fonts if the aspect ratio has been
+changed.
 
 @item charenc
 Set subtitles input character encoding. @code{subtitles} filter only. Only
@@ -7358,8 +7360,8 @@ The filter accepts the following options:
 @table @option
 
 @item layout
-Set the grid size (i.e. the number of lines and columns) in the form
-"@var{w}x@var{h}".
+Set the grid size (i.e. the number of lines and columns). For the syntax of
+this option, check the "Video size" section in the ffmpeg-utils manual.
 
 @item nb_frames
 Set the maximum number of frames to render in the given area. It must be less
@@ -7375,9 +7377,9 @@ more advanced padding options (such as having different values for the edges),
 refer to the pad video filter.
 
 @item color
-Specify the color of the unused area, it can be the name of a color
-(case insensitive match) or a 0xRRGGBB[AA] sequence.
-The default value of @var{color} is "black".
+Specify the color of the unused areaFor the syntax of this option, check the
+"Color" section in the ffmpeg-utils manual. The default value of @var{color}
+is "black".
 @end table
 
 @subsection Examples
@@ -8145,7 +8147,9 @@ This source accepts the following options:
 @table @option
 
 @item video_size
-Specify the size (width and height) of the buffered video frames.
+Specify the size (width and height) of the buffered video frames. For the
+syntax of this option, check the "Video size" section in the ffmpeg-utils
+manual.
 
 @item width
 Input video width.
@@ -8245,7 +8249,8 @@ Set the cellular automaton rule, it is a number ranging from 0 to 255.
 Default value is 110.
 
 @item size, s
-Set the size of the output video.
+Set the size of the output video. For the syntax of this option, check
+the "Video size" section in the ffmpeg-utils manual.
 
 If @option{filename} or @option{pattern} is specified, the size is set
 by default to the width of the specified initial state row, and the
@@ -8363,7 +8368,8 @@ Set frame rate, expressed as number of frames per second. Default
 value is "25".
 
 @item size, s
-Set frame size. Default value is "640x480".
+Set frame size. For the syntax of this option, check the "Video
+size" section in the ffmpeg-utils manual. Default value is "640x480".
 
 @item start_scale
 Set the initial scale value. Default value is 3.0.
@@ -8445,8 +8451,8 @@ This source accepts the following options:
 @table @option
 
 @item size
-The size of the video to generate, may be a string of the form
-@var{width}x@var{height} or a frame size abbreviation.
+The size of the video to generate. For the syntax of this option, check the
+"Video size" section in the ffmpeg-utils manual.
 
 @item framerate
 Framerate of the generated video, may be a string of the form
@@ -8534,7 +8540,8 @@ cells, and will born a new cell if there are three alive cells around
 a dead cell.
 
 @item size, s
-Set the size of the output video.
+Set the size of the output video. For the syntax of this option, check the
+"Video size" section in the ffmpeg-utils manual.
 
 If @option{filename} is specified, the size is set by default to the
 same size of the input file. If @option{size} is set, it must contain
@@ -8562,6 +8569,9 @@ used to represent a dead cell.
 
 @item mold_color
 Set mold color, for definitely dead and moldy cells.
+
+For the syntax of these 3 color options, check the "Color" section in the
+ffmpeg-utils manual.
 @end table
 
 @subsection Examples
@@ -8631,9 +8641,8 @@ The sources accept the following options:
 
 @item color, c
 Specify the color of the source, only available in the @code{color}
-source. It can be the name of a color (case insensitive match) or a
-0xRRGGBB[AA] sequence, possibly followed by an alpha specifier. The
-default value is "black".
+source. For the syntax of this option, check the "Color" section in the
+ffmpeg-utils manual.
 
 @item level
 Specify the level of the Hald CLUT, only available in the @code{haldclutsrc}
@@ -8642,9 +8651,9 @@ pixels to be used as identity matrix for 3D lookup tables. Each component is
 coded on a @code{1/(N*N)} scale.
 
 @item size, s
-Specify the size of the sourced video, it may be a string of the form
-@var{width}x@var{height}, or the name of a size abbreviation. The
-default value is "320x240".
+Specify the size of the sourced video. For the syntax of this option, check the
+"Video size" section in the ffmpeg-utils manual. The default value is
+"320x240".
 
 This option is not available with the @code{haldclutsrc} filter.
 
@@ -8773,7 +8782,8 @@ Same as above but not rotated.
 Default value is @samp{lissajous}.
 
 @item size, s
-Set the video size for the output. Default value is @code{400x400}.
+Set the video size for the output. For the syntax of this option, check the "Video size"
+section in the ffmpeg-utils manual. Default value is @code{400x400}.
 
 @item rate, r
 Set the output frame rate. Default value is @code{25}.
@@ -8912,8 +8922,9 @@ option is set or no. The video stream will be the first output stream if
 activated. Default is @code{0}.
 
 @item size
-Set the video size. This option is for video only. Default and minimum
-resolution is @code{640x480}.
+Set the video size. This option is for video only. For the syntax of this
+option, check the "Video size" section in the ffmpeg-utils manual. Default
+and minimum resolution is @code{640x480}.
 
 @item meter
 Set the EBU scale meter. Default is @code{9}. Common values are @code{9} and
@@ -9555,7 +9566,9 @@ The filter accepts the following options:
 
 @table @option
 @item size, s
-Specify the video size for the output. Default value is @code{640x512}.
+Specify the video size for the output. For the syntax of this option, check
+the "Video size" section in the ffmpeg-utils manual. Default value is
+@code{640x512}.
 
 @item slide
 Specify if the spectrum should slide along the window. Default value is
@@ -9639,7 +9652,9 @@ The filter accepts the following options:
 
 @table @option
 @item size, s
-Specify the video size for the output. Default value is "600x240".
+Specify the video size for the output. For the syntax of this option, check
+the "Video size" section in the ffmpeg-utils manual. Default value
+is "600x240".
 
 @item mode
 Set display mode.
