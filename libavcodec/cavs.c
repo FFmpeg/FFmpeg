@@ -33,28 +33,28 @@
 #include "cavs.h"
 
 static const uint8_t alpha_tab[64] = {
-   0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  2,  2,  2,  3,  3,
-   4,  4,  5,  5,  6,  7,  8,  9, 10, 11, 12, 13, 15, 16, 18, 20,
-  22, 24, 26, 28, 30, 33, 33, 35, 35, 36, 37, 37, 39, 39, 42, 44,
-  46, 48, 50, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64
+     0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  2,  2,  2,  3,  3,
+     4,  4,  5,  5,  6,  7,  8,  9, 10, 11, 12, 13, 15, 16, 18, 20,
+    22, 24, 26, 28, 30, 33, 33, 35, 35, 36, 37, 37, 39, 39, 42, 44,
+    46, 48, 50, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64
 };
 
 static const uint8_t beta_tab[64] = {
-   0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,
-   2,  2,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,  5,  6,  6,
-   6,  7,  7,  7,  8,  8,  8,  9,  9, 10, 10, 11, 11, 12, 13, 14,
-  15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27
+     0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,
+     2,  2,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,  5,  6,  6,
+     6,  7,  7,  7,  8,  8,  8,  9,  9, 10, 10, 11, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 23, 24, 24, 25, 25, 26, 27
 };
 
 static const uint8_t tc_tab[64] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
-  2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4,
-  5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+    2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4,
+    5, 5, 5, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 9, 9, 9
 };
 
 /** mark block as unavailable, i.e. out of picture
-    or not yet decoded */
+ *  or not yet decoded */
 static const cavs_vector un_mv = { 0, 0, 1, NOT_AVAIL };
 
 static const int8_t left_modifier_l[8] = {  0, -1,  6, -1, -1, 7, 6, 7 };
@@ -126,7 +126,7 @@ void ff_cavs_filter(AVSContext *h, enum cavs_mb mb_type)
         /* determine bs */
         if (mb_type == I_8X8)
             memset(bs, 2, 8);
-        else{
+        else {
             memset(bs, 0, 8);
             if (ff_cavs_partition_flags[mb_type] & SPLITV) {
                 bs[2] = get_bs(&h->mv[MV_FWD_X0], &h->mv[MV_FWD_X1], mb_type > P_8X8);
@@ -229,31 +229,30 @@ void ff_cavs_load_intra_pred_luma(AVSContext *h, uint8_t *top,
 void ff_cavs_load_intra_pred_chroma(AVSContext *h)
 {
     /* extend borders by one pixel */
-    h->left_border_u[9] = h->left_border_u[8];
-    h->left_border_v[9] = h->left_border_v[8];
+    h->left_border_u[9]              = h->left_border_u[8];
+    h->left_border_v[9]              = h->left_border_v[8];
     h->top_border_u[h->mbx * 10 + 9] = h->top_border_u[h->mbx * 10 + 8];
     h->top_border_v[h->mbx * 10 + 9] = h->top_border_v[h->mbx * 10 + 8];
     if (h->mbx && h->mby) {
         h->top_border_u[h->mbx * 10] = h->left_border_u[0] = h->topleft_border_u;
         h->top_border_v[h->mbx * 10] = h->left_border_v[0] = h->topleft_border_v;
     } else {
-        h->left_border_u[0] = h->left_border_u[1];
-        h->left_border_v[0] = h->left_border_v[1];
+        h->left_border_u[0]          = h->left_border_u[1];
+        h->left_border_v[0]          = h->left_border_v[1];
         h->top_border_u[h->mbx * 10] = h->top_border_u[h->mbx * 10 + 1];
         h->top_border_v[h->mbx * 10] = h->top_border_v[h->mbx * 10 + 1];
     }
 }
 
-static void intra_pred_vert(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_vert(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int y;
     uint64_t a = AV_RN64(&top[1]);
-    for (y = 0; y < 8; y++) {
+    for (y = 0; y < 8; y++)
         *((uint64_t *)(d + y * stride)) = a;
-    }
 }
 
-static void intra_pred_horiz(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_horiz(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int y;
     uint64_t a;
@@ -263,7 +262,7 @@ static void intra_pred_horiz(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
     }
 }
 
-static void intra_pred_dc_128(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_dc_128(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int y;
     uint64_t a = 0x8080808080808080ULL;
@@ -271,7 +270,7 @@ static void intra_pred_dc_128(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
         *((uint64_t *)(d + y * stride)) = a;
 }
 
-static void intra_pred_plane(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_plane(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int x, y, ia;
     int ih = 0;
@@ -279,7 +278,7 @@ static void intra_pred_plane(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
     const uint8_t *cm = ff_cropTbl + MAX_NEG_CROP;
 
     for (x = 0; x < 4; x++) {
-        ih += (x + 1) * (top [5 + x] - top [3 - x]);
+        ih += (x + 1) *  (top[5 + x] -  top[3 - x]);
         iv += (x + 1) * (left[5 + x] - left[3 - x]);
     }
     ia = (top[8] + left[8]) << 4;
@@ -290,10 +289,10 @@ static void intra_pred_plane(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
             d[y * stride + x] = cm[(ia + (x - 3) * ih + (y - 3) * iv + 16) >> 5];
 }
 
-#define LOWPASS(ARRAY,INDEX)                                            \
+#define LOWPASS(ARRAY, INDEX)                                           \
     ((ARRAY[(INDEX) - 1] + 2 * ARRAY[(INDEX)] + ARRAY[(INDEX) + 1] + 2) >> 2)
 
-static void intra_pred_lp(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_lp(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -301,7 +300,7 @@ static void intra_pred_lp(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
             d[y * stride + x] = (LOWPASS(top, x + 1) + LOWPASS(left, y + 1)) >> 1;
 }
 
-static void intra_pred_down_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_down_left(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -309,7 +308,7 @@ static void intra_pred_down_left(uint8_t *d,uint8_t *top,uint8_t *left,int strid
             d[y * stride + x] = (LOWPASS(top, x + y + 2) + LOWPASS(left, x + y + 2)) >> 1;
 }
 
-static void intra_pred_down_right(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_down_right(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -322,7 +321,7 @@ static void intra_pred_down_right(uint8_t *d,uint8_t *top,uint8_t *left,int stri
                 d[y * stride + x] = LOWPASS(left, y - x);
 }
 
-static void intra_pred_lp_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_lp_left(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -330,7 +329,7 @@ static void intra_pred_lp_left(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
             d[y * stride + x] = LOWPASS(left, y + 1);
 }
 
-static void intra_pred_lp_top(uint8_t *d,uint8_t *top,uint8_t *left,int stride)
+static void intra_pred_lp_top(uint8_t *d, uint8_t *top, uint8_t *left, int stride)
 {
     int x, y;
     for (y = 0; y < 8; y++)
@@ -352,8 +351,8 @@ static inline void modify_pred(const int8_t *mod_table, int *mode)
 void ff_cavs_modify_mb_i(AVSContext *h, int *pred_mode_uv)
 {
     /* save pred modes before they get modified */
-    h->pred_mode_Y[3] =  h->pred_mode_Y[5];
-    h->pred_mode_Y[6] =  h->pred_mode_Y[8];
+    h->pred_mode_Y[3]             = h->pred_mode_Y[5];
+    h->pred_mode_Y[6]             = h->pred_mode_Y[8];
     h->top_pred_Y[h->mbx * 2 + 0] = h->pred_mode_Y[7];
     h->top_pred_Y[h->mbx * 2 + 1] = h->pred_mode_Y[8];
 
@@ -383,8 +382,8 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
                                qpel_mc_func *qpix_op,
                                h264_chroma_mc_func chroma_op, cavs_vector *mv)
 {
-    const int mx         = mv->x + src_x_offset*8;
-    const int my         = mv->y + src_y_offset*8;
+    const int mx         = mv->x + src_x_offset * 8;
+    const int my         = mv->y + src_y_offset * 8;
     const int luma_xy    = (mx & 3) + ((my & 3) << 2);
     uint8_t *src_y       = pic->data[0] + (mx >> 2) + (my >> 2) * h->l_stride;
     uint8_t *src_cb      = pic->data[1] + (mx >> 3) + (my >> 3) * h->c_stride;
@@ -414,7 +413,7 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
                                  full_mx - 2, full_my - 2,
                                  pic_width, pic_height);
         src_y = h->edge_emu_buffer + 2 + 2 * h->l_stride;
-        emu = 1;
+        emu   = 1;
     }
 
     // FIXME try variable height perhaps?
@@ -455,9 +454,9 @@ static inline void mc_part_std(AVSContext *h, int chroma_height, int delta,
     qpel_mc_func *qpix_op =  qpix_put;
     h264_chroma_mc_func chroma_op = chroma_put;
 
-    dest_y  += 2 * x_offset + 2 * y_offset*h->l_stride;
-    dest_cb +=     x_offset +     y_offset*h->c_stride;
-    dest_cr +=     x_offset +     y_offset*h->c_stride;
+    dest_y   += x_offset * 2 + y_offset * h->l_stride * 2;
+    dest_cb  += x_offset     + y_offset * h->c_stride;
+    dest_cr  += x_offset     + y_offset * h->c_stride;
     x_offset += 8 * h->mbx;
     y_offset += 8 * h->mby;
 
@@ -475,7 +474,7 @@ static inline void mc_part_std(AVSContext *h, int chroma_height, int delta,
         AVFrame *ref = h->DPB[0].f;
         mc_dir_part(h, ref, chroma_height, delta, 1,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
-                    qpix_op, chroma_op, mv+MV_BWD_OFFS);
+                    qpix_op, chroma_op, mv + MV_BWD_OFFS);
     }
 }
 
@@ -545,9 +544,9 @@ static inline void mv_pred_median(AVSContext *h,
     scale_mv(h, &bx, &by, mvB, mvP->dist);
     scale_mv(h, &cx, &cy, mvC, mvP->dist);
     /* find the geometrical median of the three candidates */
-    len_ab = abs(ax - bx) + abs(ay - by);
-    len_bc = abs(bx - cx) + abs(by - cy);
-    len_ca = abs(cx - ax) + abs(cy - ay);
+    len_ab  = abs(ax - bx) + abs(ay - by);
+    len_bc  = abs(bx - cx) + abs(by - cy);
+    len_ca  = abs(cx - ax) + abs(cy - ay);
     len_mid = mid_pred(len_ab, len_bc, len_ca);
     if (len_mid == len_ab) {
         mvP->x = cx;
@@ -573,7 +572,7 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
     mvP->ref  = ref;
     mvP->dist = h->dist[mvP->ref];
     if (mvC->ref == NOT_AVAIL)
-        mvC = &h->mv[nP-5]; // set to top-left (mvD)
+        mvC = &h->mv[nP - 5];  // set to top-left (mvD)
     if (mode == MV_PRED_PSKIP &&
         (mvA->ref == NOT_AVAIL ||
          mvB->ref == NOT_AVAIL ||
@@ -604,7 +603,7 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
         mvP->x += get_se_golomb(&h->gb);
         mvP->y += get_se_golomb(&h->gb);
     }
-    set_mvs(mvP,size);
+    set_mvs(mvP, size);
 }
 
 /*****************************************************************************
