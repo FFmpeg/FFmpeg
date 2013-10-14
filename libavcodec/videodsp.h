@@ -36,8 +36,10 @@ typedef struct VideoDSPContext {
      *
      * @param buf destination buffer
      * @param src source buffer
-     * @param linesize number of bytes between 2 vertically adjacent samples
-     *                 in both the source and destination buffers
+     * @param buf_linesize number of bytes between 2 vertically adjacent
+     *                     samples in the destination buffer
+     * @param src_linesize number of bytes between 2 vertically adjacent
+     *                     samples in both the source buffer
      * @param block_w width of block
      * @param block_h height of block
      * @param src_x x coordinate of the top left sample of the block in the
@@ -48,7 +50,9 @@ typedef struct VideoDSPContext {
      * @param h height of the source buffer
      */
     void (*emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
-                             ptrdiff_t linesize, int block_w, int block_h,
+                             ptrdiff_t buf_linesize,
+                             ptrdiff_t src_linesize,
+                             int block_w, int block_h,
                              int src_x, int src_y, int w, int h);
 
     /**

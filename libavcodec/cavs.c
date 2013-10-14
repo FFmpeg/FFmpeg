@@ -408,7 +408,8 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
         full_mx + 16 /* FIXME */ > pic_width + extra_width ||
         full_my + 16 /* FIXME */ > pic_height + extra_height) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer,
-                                 src_y - 2 - 2 * h->l_stride, h->l_stride,
+                                 src_y - 2 - 2 * h->l_stride,
+                                 h->l_stride, h->l_stride,
                                  16 + 5, 16 + 5 /* FIXME */,
                                  full_mx - 2, full_my - 2,
                                  pic_width, pic_height);
@@ -421,7 +422,7 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
 
     if (emu) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cb,
-                                 h->c_stride,
+                                 h->c_stride, h->c_stride,
                                  9, 9 /* FIXME */,
                                  mx >> 3, my >> 3,
                                  pic_width >> 1, pic_height >> 1);
@@ -431,7 +432,7 @@ static inline void mc_dir_part(AVSContext *h, AVFrame *pic, int chroma_height,
 
     if (emu) {
         h->vdsp.emulated_edge_mc(h->edge_emu_buffer, src_cr,
-                                 h->c_stride,
+                                 h->c_stride, h->c_stride,
                                  9, 9 /* FIXME */,
                                  mx >> 3, my >> 3,
                                  pic_width >> 1, pic_height >> 1);
