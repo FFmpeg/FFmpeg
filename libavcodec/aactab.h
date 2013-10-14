@@ -47,6 +47,7 @@
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_long_1024)[1024];
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_long_512 )[512];
 DECLARE_ALIGNED(32, extern float,  ff_aac_kbd_short_128)[128];
+const DECLARE_ALIGNED(32, extern float, ff_aac_eld_window)[1920];
 // @}
 
 /* @name number of scalefactor window bands for long and short transform windows respectively
