@@ -428,7 +428,7 @@ cglobal mix_%1_to_%2_%3_flt, 3,in_channels+2,needed_mmregs+matrix_elements_mm, n
     %if stereo || mx_stack_0_0
     mulps          m0, m0, mx_0_0
     %else
-    mulps          m0, [src0q+lenq], mx_0_0
+    mulps          m0, mx_0_0, [src0q+lenq]
     %endif
 %assign %%i 1
 %rep (in_channels - 1)
