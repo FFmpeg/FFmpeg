@@ -609,7 +609,7 @@ static inline int decode_residual_inter(AVSContext *h)
     /* get coded block pattern */
     int cbp = get_ue_golomb(&h->gb);
     if (cbp > 63U) {
-        av_log(h->avctx, AV_LOG_ERROR, "illegal inter cbp\n");
+        av_log(h->avctx, AV_LOG_ERROR, "illegal inter cbp %d\n", cbp);
         return AVERROR_INVALIDDATA;
     }
     h->cbp = cbp_tab[cbp][1];
