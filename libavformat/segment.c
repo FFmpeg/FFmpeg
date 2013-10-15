@@ -320,6 +320,10 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
         avio_flush(seg->list_pb);
     }
 
+    av_log(s, AV_LOG_VERBOSE, 
+           "segment %d: '%s' ended\n", 
+           seg->segment_count, seg->avf->filename);
+
 end:
     avio_close(oc->pb);
 
