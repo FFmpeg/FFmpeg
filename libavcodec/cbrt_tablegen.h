@@ -42,7 +42,7 @@ static void cbrt_tableinit(void)
                 float f;
                 uint32_t i;
             } f;
-            f.f = powf(i, 1.0 / 3.0) * i;
+            f.f = pow(i, 1.0 / 3.0) * i;
             cbrt_tab[i] = f.i;
         }
     }
