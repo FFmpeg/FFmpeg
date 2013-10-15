@@ -779,6 +779,10 @@ muxers/codecs. It is set to @code{0} by default.
 @item initial_offset @var{offset}
 Specify timestamp offset to apply to the output packet timestamps. The
 argument must be a time duration specification, and defaults to 0.
+
+@item print_segments @var{1|0}
+Print segment filenames to AV_INFO_LOG when it is complete and written
+to disk. 
 @end table
 
 @subsection Examples

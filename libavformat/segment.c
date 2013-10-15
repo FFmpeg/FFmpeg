@@ -91,6 +91,7 @@ typedef struct {
     int  write_header_trailer; /**< Set by a private option. */
 
     int reset_timestamps;  ///< reset timestamps at the begin of each segment
+    int print_segments;  ///< print segments as they are written to disk
     int64_t initial_offset;    ///< initial timestamps offset, expressed in microseconds
     char *reference_stream_specifier; ///< reference stream specifier
     int   reference_stream_index;
@@ -100,6 +101,7 @@ typedef struct {
     SegmentListEntry *segment_list_entries_end;
 
     int is_first_pkt;      ///< tells if it is the first packet in the segment
+    int is_last_pkt;       ///< tells if it is the last packet in the segment
 } SegmentContext;
 
 static void print_csv_escaped_str(AVIOContext *ctx, const char *str)
@@ -319,6 +321,8 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
         }
         avio_flush(seg->list_pb);
     }
+
+    seg->is_last_pkt = 1;
 
 end:
     avio_close(oc->pb);
@@ -706,6 +710,11 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     ret = ff_write_chained(oc, pkt->stream_index, pkt, s);
 
+    if (seg->is_last_pkt && seg->print_segments) {
+        av_log(s, AV_LOG_INFO, "segment:'%s' written to disk\n", seg->avf->filename);
+        seg->is_last_pkt = 0;
+    }
+
 fail:
     if (pkt->stream_index == seg->reference_stream_index)
         seg->frame_count++;
@@ -786,6 +795,7 @@ static const AVOption options[] = {
     { "write_header_trailer", "write a header to the first segment and a trailer to the last one", OFFSET(write_header_trailer), AV_OPT_TYPE_INT, {.i64 = 1}, 0, 1, E },
     { "reset_timestamps", "reset timestamps at the begin of each segment", OFFSET(reset_timestamps), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
     { "initial_offset", "set initial timestamp offset", OFFSET(initial_offset), AV_OPT_TYPE_DURATION, {.i64 = 0}, -INT64_MAX, INT64_MAX, E },
+    { "print_segments", "print segment filenames as they are written", OFFSET(print_segments), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, E },
     { NULL },
 };
 
