@@ -568,6 +568,16 @@ static av_cold void dsputil_init_mmx(DSPContext *c, AVCodecContext *avctx,
 static av_cold void dsputil_init_mmxext(DSPContext *c, AVCodecContext *avctx,
                                         int cpu_flags)
 {
+#if HAVE_MMXEXT_INLINE
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
+
+    if (!high_bit_depth && avctx->idct_algo == FF_IDCT_XVIDMMX && avctx->lowres == 0) {
+        c->idct_put = ff_idct_xvid_mmxext_put;
+        c->idct_add = ff_idct_xvid_mmxext_add;
+        c->idct     = ff_idct_xvid_mmxext;
+    }
+#endif /* HAVE_MMXEXT_INLINE */
+
 #if HAVE_MMXEXT_EXTERNAL
     SET_QPEL_FUNCS(avg_qpel,        0, 16, mmxext, );
     SET_QPEL_FUNCS(avg_qpel,        1,  8, mmxext, );
@@ -693,15 +703,9 @@ av_cold void ff_dsputil_init_x86(DSPContext *c, AVCodecContext *avctx)
                 c->idct                  = ff_simple_idct_mmx;
                 c->idct_permutation_type = FF_SIMPLE_IDCT_PERM;
             } else if (idct_algo == FF_IDCT_XVIDMMX) {
-                if (X86_MMXEXT(cpu_flags)) {
-                    c->idct_put              = ff_idct_xvid_mmxext_put;
-                    c->idct_add              = ff_idct_xvid_mmxext_add;
-                    c->idct                  = ff_idct_xvid_mmxext;
-                } else {
-                    c->idct_put              = ff_idct_xvid_mmx_put;
-                    c->idct_add              = ff_idct_xvid_mmx_add;
-                    c->idct                  = ff_idct_xvid_mmx;
-                }
+                c->idct_put              = ff_idct_xvid_mmx_put;
+                c->idct_add              = ff_idct_xvid_mmx_add;
+                c->idct                  = ff_idct_xvid_mmx;
             }
         }
 #endif /* HAVE_INLINE_ASM */
