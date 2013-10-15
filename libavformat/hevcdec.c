@@ -22,7 +22,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int h265_probe(AVProbeData *p)
+static int hevc_probe(AVProbeData *p)
 {
     uint32_t code= -1;
     int vps=0, sps=0, pps=0, idr=0;
@@ -57,4 +57,4 @@ static int h265_probe(AVProbeData *p)
     return 0;
 }
 
-FF_DEF_RAWVIDEO_DEMUXER(h265 , "raw H.265 video", h265_probe, "h265,265,hevc", AV_CODEC_ID_HEVC)
+FF_DEF_RAWVIDEO_DEMUXER(hevc , "raw HEVC video", hevc_probe, "h265,265,hevc", AV_CODEC_ID_HEVC)
