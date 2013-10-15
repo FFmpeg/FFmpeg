@@ -663,12 +663,10 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
          (pkt->pts != AV_NOPTS_VALUE &&
           av_compare_ts(pkt->pts, st->time_base,
                         end_pts-seg->time_delta, AV_TIME_BASE_Q) >= 0))) {
-        ret = segment_end(s, seg->individual_header_trailer, 0);
+        if ((ret = segment_end(s, seg->individual_header_trailer, 0)) < 0)
+            goto fail;
 
-        if (!ret)
-            ret = segment_start(s, seg->individual_header_trailer);
-
-        if (ret)
+        if ((ret = segment_start(s, seg->individual_header_trailer)) < 0)
             goto fail;
 
         oc = seg->avf;
