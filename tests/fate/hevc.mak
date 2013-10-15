@@ -115,7 +115,6 @@ FATE_HEVC_FRAMECRC =            \
     AMP_F_Hisilicon_3           \
     AMVP_A_MTK_4                \
     AMVP_B_MTK_4                \
-    DBLK_A_MAIN10_VIXS_2        \
     DBLK_A_SONY_3               \
     DBLK_B_SONY_3               \
     DBLK_C_SONY_3               \
@@ -154,6 +153,9 @@ fate-hevc-conformance-$(1): CMD = framecrc -strict -2 -vsync drop -i $(TARGET_SA
 endef
 
 $(foreach N,$(FATE_HEVC_FRAMECRC),$(eval $(call FATE_HEVC_FRAMECRC_TEST,$(N))))
+
+FATE_HEVC += fate-hevc-conformance-DBLK_A_MAIN10_VIXS_2
+fate-hevc-conformance-DBLK_A_MAIN10_VIXS_2: CMD = framecrc -strict -2 -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/DBLK_A_MAIN10_VIXS_2.bit -pix_fmt yuv420p10le
 
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 
