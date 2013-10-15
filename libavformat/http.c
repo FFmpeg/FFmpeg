@@ -609,7 +609,8 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
          * send Expect: 100-continue to get the 401 response including the
          * WWW-Authenticate header, or an 100 continue if no auth actually
          * is needed. */
-        if (*auth && s->auth_state.auth_type == HTTP_AUTH_NONE &&
+        if (auth && *auth &&
+            s->auth_state.auth_type == HTTP_AUTH_NONE &&
             s->http_code != 401)
             send_expect_100 = 1;
     }
