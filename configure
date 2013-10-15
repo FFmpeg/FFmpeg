@@ -4560,6 +4560,7 @@ elif enabled_any msvc icl; then
             add_cflags -Qansi-alias
         # icl will pass the inline asm tests but inline asm is currently
         # not supported (build will fail)
+        disabled inline_asm || warn "inline asm disabled due to issues with it in ICL"
         disable inline_asm
     fi
 fi
