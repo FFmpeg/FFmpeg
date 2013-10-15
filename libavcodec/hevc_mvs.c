@@ -854,9 +854,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     xA0_pu = xA0 >> s->sps->log2_min_pu_size;
     yA0_pu = yA0 >> s->sps->log2_min_pu_size;
 
-    is_available_a0 = AVAILABLE(cand_bottom_left, A0);
-    if (is_available_a0)
-        is_available_a0 = PRED_BLOCK_AVAILABLE(A0);
+    is_available_a0 = PRED_BLOCK_AVAILABLE(A0) && AVAILABLE(cand_bottom_left, A0);
 
     //left spatial merge candidate
     xA1 = x0 - 1;
@@ -900,9 +898,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     xB0_pu = xB0 >> s->sps->log2_min_pu_size;
     yB0_pu = yB0 >> s->sps->log2_min_pu_size;
 
-    is_available_b0 = AVAILABLE(cand_up_right, B0);
-    if (is_available_b0)
-        is_available_b0 = PRED_BLOCK_AVAILABLE(B0);
+    is_available_b0 = PRED_BLOCK_AVAILABLE(B0) && AVAILABLE(cand_up_right, B0);
 
     if (is_available_b0) {
         availableFlagLXB0 = MP_MX(B0, pred_flag_index_l0, mxB);

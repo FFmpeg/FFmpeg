@@ -35,7 +35,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 #define MVF_PU(x, y) \
     MVF(PU(x0 + ((x) << hshift)), PU(y0 + ((y) << vshift)))
 #define IS_INTRA(x, y) \
-    (MVF_PU(x, y).is_intra || !s->pps->constrained_intra_pred_flag)
+    MVF_PU(x, y).is_intra
 #define MIN_TB_ADDR_ZS(x, y) \
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
 #define EXTEND_LEFT(ptr, start, length) \
@@ -58,10 +58,13 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         for (i = (start); i > (start) - (length); i--) \
             if (!IS_INTRA(-1, i - 1)) \
                 ptr[i - 1] = ptr[i]
+#define EXTEND_UP_CIP_0(ptr, start, length) \
+        for (i = (start); i > (start) - (length); i--) \
+            ptr[i - 1] = ptr[i]
 #define EXTEND_DOWN_CIP(ptr, start, length) \
         for (i = (start); i < (start) + (length); i++) \
             if (!IS_INTRA(-1, i)) \
-            ptr[i] = ptr[i - 1]
+                ptr[i] = ptr[i - 1]
     HEVCLocalContext *lc = &s->HEVClc;
     int i;
     int hshift = s->sps->hshift[c_idx];
@@ -150,31 +153,31 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     }
     if (cand_bottom_left) {
         for (i = size + bottom_left_size; i < (size << 1); i++)
-            if (IS_INTRA(-1, size + bottom_left_size - 1))
+            if (IS_INTRA(-1, size + bottom_left_size - 1) || !s->pps->constrained_intra_pred_flag)
                 left[i] = POS(-1, size + bottom_left_size - 1);
         for (i = size + bottom_left_size - 1; i >= size; i--)
-            if (IS_INTRA(-1, i))
+            if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
                 left[i] = POS(-1, i);
     }
     if (cand_left)
         for (i = size - 1; i >= 0; i--)
-            if (IS_INTRA(-1, i))
+            if (IS_INTRA(-1, i) || !s->pps->constrained_intra_pred_flag)
                 left[i] = POS(-1, i);
     if (cand_up_left)
-        if (IS_INTRA(-1, -1)) {
+        if (IS_INTRA(-1, -1) || !s->pps->constrained_intra_pred_flag) {
             left[-1] = POS(-1, -1);
             top[-1]  = left[-1];
         }
     if (cand_up)
         for (i = size - 1; i >= 0; i--)
-            if (IS_INTRA(i, -1))
+            if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
                 top[i] = POS(i, -1);
     if (cand_up_right) {
         for (i = size + top_right_size; i < (size << 1); i++)
-            if (IS_INTRA(size + top_right_size - 1, -1))
+            if (IS_INTRA(size + top_right_size - 1, -1) || !s->pps->constrained_intra_pred_flag)
                 top[i] = POS(size + top_right_size - 1, -1);
         for (i = size + top_right_size - 1; i >= size; i--)
-            if (IS_INTRA(i, -1))
+            if (IS_INTRA(i, -1) || !s->pps->constrained_intra_pred_flag)
                 top[i] = POS(i, -1);
     }
 
@@ -185,6 +188,14 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             int size_max_y = y0 + ((2 * size) << vshift) < s->sps->height ?
                                     2 * size : (s->sps->height - y0) >> vshift;
             int j = size + (cand_bottom_left? bottom_left_size: 0) -1;
+            if (!cand_up_right) {
+                size_max_x = x0 + ((size) << hshift) < s->sps->width ?
+                                                    size : (s->sps->width - x0) >> hshift;
+            }
+            if (!cand_bottom_left) {
+                size_max_y = y0 + (( size) << vshift) < s->sps->height ?
+                                                     size : (s->sps->height - y0) >> vshift;
+            }
             if (cand_bottom_left || cand_left || cand_up_left) {
                 while (j>-1 && !IS_INTRA(-1, j)) j--;
                 if (!IS_INTRA(-1, j)) {
@@ -213,7 +224,9 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
             }
             if (x0 != 0 && y0 != 0) {
                 EXTEND_UP_CIP(left, size_max_y - 1, size_max_y);
-            } else {
+            } else if( x0 == 0) {
+                EXTEND_UP_CIP_0(left, size_max_y - 1, size_max_y);
+            } else{
                 EXTEND_UP_CIP(left, size_max_y - 1, size_max_y-1);
             }
             top[-1] = left[-1];
