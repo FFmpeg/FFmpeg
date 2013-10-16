@@ -284,7 +284,7 @@ The undefined value can be expressed using the "0:0" string.
 @section Color
 
 It can be the name of a color as defined below (case insensitive match) or a
-@code{[0x|#]RRGGBB[AA]} sequence, possibly followed by @samp{@@} and a string
+@code{[0x|#]RRGGBB[AA]} sequence, possibly followed by @@ and a string
 representing the alpha component.
 
 The alpha component may be a string composed by "0x" followed by an
