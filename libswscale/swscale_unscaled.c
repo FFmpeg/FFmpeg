@@ -479,10 +479,10 @@ static int planarRgb16ToRgb16Wrapper(SwsContext *c, const uint8_t *src[],
                                      int srcStride[], int srcSliceY, int srcSliceH,
                                      uint8_t *dst[], int dstStride[])
 {
-    const uint16_t *src102[] = { (uint16_t *)src[1], (uint16_t *)src[0], (uint16_t *)src[2] };
-    const uint16_t *src201[] = { (uint16_t *)src[2], (uint16_t *)src[0], (uint16_t *)src[1] };
-    int stride102[] = { srcStride[1], srcStride[0], srcStride[2] };
-    int stride201[] = { srcStride[2], srcStride[0], srcStride[1] };
+    const uint16_t *src102[] = { (uint16_t *)src[1], (uint16_t *)src[0], (uint16_t *)src[2], (uint16_t *)src[3] };
+    const uint16_t *src201[] = { (uint16_t *)src[2], (uint16_t *)src[0], (uint16_t *)src[1], (uint16_t *)src[3] };
+    int stride102[] = { srcStride[1], srcStride[0], srcStride[2], srcStride[3] };
+    int stride201[] = { srcStride[2], srcStride[0], srcStride[1], srcStride[3] };
     const AVPixFmtDescriptor *src_format = av_pix_fmt_desc_get(c->srcFormat);
     const AVPixFmtDescriptor *dst_format = av_pix_fmt_desc_get(c->dstFormat);
     int bits_per_sample = src_format->comp[0].depth_minus1 + 1;
