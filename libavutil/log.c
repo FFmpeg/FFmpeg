@@ -268,8 +268,9 @@ void av_log(void* avcl, int level, const char *fmt, ...)
 
 void av_vlog(void* avcl, int level, const char *fmt, va_list vl)
 {
-    if(av_log_callback)
-        av_log_callback(avcl, level, fmt, vl);
+    void (*log_callback)(void*, int, const char*, va_list) = av_log_callback;
+    if (log_callback)
+        log_callback(avcl, level, fmt, vl);
 }
 
 int av_log_get_level(void)
