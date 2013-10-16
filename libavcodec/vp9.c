@@ -1909,7 +1909,7 @@ static int decode_coeffs(AVCodecContext *ctx)
     const int16_t (*uvnb)[2] = vp9_scans_nb[b->uvtx][DCT_DCT];
     uint8_t *a = &s->above_y_nnz_ctx[col * 2];
     uint8_t *l = &s->left_y_nnz_ctx[(row & 7) << 1];
-    static const int16_t band_counts[4][6] = {
+    static const int16_t band_counts[4][8] = {
         { 1, 2, 3, 4,  3,   16 - 13 },
         { 1, 2, 3, 4, 11,   64 - 21 },
         { 1, 2, 3, 4, 11,  256 - 21 },
