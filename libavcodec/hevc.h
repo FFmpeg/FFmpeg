@@ -413,6 +413,7 @@ typedef struct HEVCSPS {
 
     struct {
         uint8_t bit_depth;
+        uint8_t bit_depth_chroma;
         unsigned int log2_min_pcm_cb_size;
         unsigned int log2_max_pcm_cb_size;
         uint8_t loop_filter_disable_flag;
