@@ -1294,7 +1294,7 @@ static void apply_loop_filter(Vp3DecodeContext *s, int plane, int ystart, int ye
     int width           = s->fragment_width[!!plane];
     int height          = s->fragment_height[!!plane];
     int fragment        = s->fragment_start        [plane] + ystart * width;
-    int stride          = s->current_frame.f->linesize[plane];
+    ptrdiff_t stride    = s->current_frame.f->linesize[plane];
     uint8_t *plane_data = s->current_frame.f->data    [plane];
     if (!s->flipped_image) stride = -stride;
     plane_data += s->data_offset[plane] + 8*ystart*stride;

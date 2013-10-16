@@ -379,7 +379,7 @@ typedef struct H264Context {
     uint32_t *mb2br_xy;
     int b_stride;       // FIXME use s->b4_stride
 
-    ptrdiff_t mb_linesize;    ///< may be equal to s->linesize or s->linesize * 2, for mbaff
+    ptrdiff_t mb_linesize;  ///< may be equal to s->linesize or s->linesize * 2, for mbaff
     ptrdiff_t mb_uvlinesize;
 
     unsigned current_sps_id; ///< id of the current SPS

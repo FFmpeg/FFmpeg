@@ -303,7 +303,7 @@ static void vp56_add_predictors_dc(VP56Context *s, VP56Frame ref_frame)
 }
 
 static void vp56_deblock_filter(VP56Context *s, uint8_t *yuv,
-                                int stride, int dx, int dy)
+                                ptrdiff_t stride, int dx, int dy)
 {
     int t = ff_vp56_filter_threshold[s->quantizer];
     if (dx)  s->vp56dsp.edge_filter_hor(yuv +         10-dx , stride, t);
@@ -584,7 +584,8 @@ static int ff_vp56_decode_mbs(AVCodecContext *avctx, void *data,
     VP56Context *s = is_alpha ? s0->alpha_context : s0;
     AVFrame *const p = s->frames[VP56_FRAME_CURRENT];
     int mb_row, mb_col, mb_row_flip, mb_offset = 0;
-    int block, y, uv, stride_y, stride_uv;
+    int block, y, uv;
+    ptrdiff_t stride_y, stride_uv;
     int res;
 
     if (p->key_frame) {

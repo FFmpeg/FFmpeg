@@ -984,8 +984,8 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         if (pic_arg->linesize[2] != s->uvlinesize)
             direct = 0;
 
-        av_dlog(s->avctx, "%d %d %d %d\n", pic_arg->linesize[0],
-                pic_arg->linesize[1], (int) s->linesize, (int) s->uvlinesize);
+        av_dlog(s->avctx, "%d %d %td %td\n", pic_arg->linesize[0],
+                pic_arg->linesize[1], s->linesize, s->uvlinesize);
 
         if (direct) {
             i = ff_find_unused_picture(s, 1);

@@ -38,9 +38,8 @@ static void gmc1_motion(MpegEncContext *s,
                         uint8_t **ref_picture)
 {
     uint8_t *ptr;
-    int src_x, src_y;
+    int src_x, src_y, motion_x, motion_y;
     ptrdiff_t offset, linesize, uvlinesize;
-    int motion_x, motion_y;
     int emu=0;
 
     motion_x= s->sprite_offset[0][0];
@@ -564,9 +563,9 @@ static void chroma_4mv_motion(MpegEncContext *s,
                               op_pixels_func *pix_op,
                               int mx, int my)
 {
-    int dxy, emu=0, src_x, src_y;
-    ptrdiff_t offset;
     uint8_t *ptr;
+    int src_x, src_y, dxy, emu = 0;
+    ptrdiff_t offset;
 
     /* In case of 8X8, we construct a single chroma motion vector
        with a special rounding */
