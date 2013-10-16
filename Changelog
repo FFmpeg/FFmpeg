@@ -42,6 +42,7 @@ version <next>
 - PulseAudio output device
 - ReplayGain scanner
 - Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
+- Linux framebuffer output device
 
 
 version 2.0:
