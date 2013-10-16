@@ -10,6 +10,10 @@ FATE_COVER_ART-$(CONFIG_MOV_DEMUXER) += fate-cover-art-m4a
 fate-cover-art-m4a: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/Owner-iTunes_9.0.3.15.m4a -an -c:v copy -f rawvideo
 fate-cover-art-m4a: REF = 08ba70a3b594ff6345a93965e96a9d3e
 
+FATE_COVER_ART-$(CONFIG_OGG_DEMUXER) += fate-cover-art-ogg
+fate-cover-art-ogg: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/ogg_vorbiscomment_cover.opus -map 0:v -c:v copy -f rawvideo
+fate-cover-art-ogg: REF = 7f117e073620eabb4ed02680cf70af41
+
 FATE_COVER_ART-$(CONFIG_ASF_DEMUXER) += fate-cover-art-wma
 fate-cover-art-wma: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/Californication_cover.wma -an -c:v copy -f rawvideo
 fate-cover-art-wma: REF = 0808bd0e1b61542a16e1906812dd924b
@@ -25,10 +29,6 @@ fate-cover-art-wma-metadatalib: REF = 32e8bd4fad546f63d881a0256f083aea
 FATE_COVER_ART-$(CONFIG_WV_DEMUXER) += fate-cover-art-wv
 fate-cover-art-wv: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/luckynight_cover.wv -an -c:v copy -f rawvideo
 fate-cover-art-wv: REF = 45333c983c45af54449dff10af144317
-
-FATE_COVER_ART-$(CONFIG_OGG_DEMUXER) += fate-cover-art-ogg
-fate-cover-art-ogg: CMD = md5 -i $(TARGET_SAMPLES)/cover_art/ogg_vorbiscomment_cover.opus -map 0:v -c:v copy -f rawvideo
-fate-cover-art-ogg: REF = 7f117e073620eabb4ed02680cf70af41
 
 FCA_TEMP-$(call ALLYES, RAWVIDEO_MUXER FILE_PROTOCOL) = $(FATE_COVER_ART-yes)
 FATE_COVER_ART = $(FCA_TEMP-yes)
