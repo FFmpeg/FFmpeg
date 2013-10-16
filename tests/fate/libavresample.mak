@@ -1,7 +1,7 @@
 CROSS_TEST = $(foreach I,$(1),                                        \
                  $(foreach J,$(1),                                    \
                      $(if $(filter-out $(I),$(J)),                    \
-                         $(eval $(call $(2),$(I),$(J),$(3),$(4))),    \
+                         $(eval $(call $(2),$(I),$(J),$(3),$(4),$(5))),    \
                      )))
 
 MIX_CHANNELS = 1 2 3 4 5 6 7 8
@@ -29,13 +29,15 @@ FATE_LAVR_RESAMPLE += fate-lavr-resample-$(3)-$(1)-$(2)
 fate-lavr-resample-$(3)-$(1)-$(2): tests/data/asynth-$(1)-1.wav
 fate-lavr-resample-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -ar $(2) -internal_sample_fmt $(3) -f $(4) -af atrim=end_sample=10240 -
 fate-lavr-resample-$(3)-$(1)-$(2): CMP = oneoff
+fate-lavr-resample-$(3)-$(1)-$(2): CMP_UNIT = $(5)
+fate-lavr-resample-$(3)-$(1)-$(2): FUZZ = 4
 fate-lavr-resample-$(3)-$(1)-$(2): REF = $(SAMPLES)/lavr/lavr-resample-$(3)-$(1)-$(2)
 endef
 
-$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,s16p,s16le)
-$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,s32p,s32le)
-$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,fltp,f32le)
-$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,dblp,f64le)
+$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,s16p,s16le,s16)
+$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,s32p,s32le,s16)
+$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,fltp,f32le,f32)
+$(call CROSS_TEST,$(SAMPLERATES),RESAMPLE,dblp,f64le,f64)
 
 FATE_LAVR_RESAMPLE-$(call FILTERDEMDECENCMUX, RESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_LAVR_RESAMPLE)
 fate-lavr-resample: $(FATE_LAVR_RESAMPLE-yes)
