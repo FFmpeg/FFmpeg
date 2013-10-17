@@ -23,6 +23,9 @@
 #ifndef AVCODEC_HEVCPRED_H
 #define AVCODEC_HEVCPRED_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 struct HEVCContext;
 
 typedef struct HEVCPredContext {
