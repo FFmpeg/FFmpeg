@@ -56,9 +56,64 @@
 # include <iconv.h>
 #endif
 
+#if HAVE_PTHREADS
+#include <pthread.h>
+#elif HAVE_W32THREADS
+#include "compat/w32pthreads.h"
+#elif HAVE_OS2THREADS
+#include "compat/os2threads.h"
+#endif
+
+#if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
+static int default_lockmgr_cb(void **arg, enum AVLockOp op)
+{
+    void * volatile * mutex = arg;
+    int err;
+
+    switch (op) {
+    case AV_LOCK_CREATE:
+        return 0;
+    case AV_LOCK_OBTAIN:
+        if (!*mutex) {
+            pthread_mutex_t *tmp = av_malloc(sizeof(pthread_mutex_t));
+            if (!tmp)
+                return AVERROR(ENOMEM);
+            if ((err = pthread_mutex_init(tmp, NULL))) {
+                av_free(tmp);
+                return AVERROR(err);
+            }
+            if (avpriv_atomic_ptr_cas(mutex, NULL, tmp)) {
+                pthread_mutex_destroy(tmp);
+                av_free(tmp);
+            }
+        }
+
+        if ((err = pthread_mutex_lock(*mutex)))
+            return AVERROR(err);
+
+        return 0;
+    case AV_LOCK_RELEASE:
+        if ((err = pthread_mutex_unlock(*mutex)))
+            return AVERROR(err);
+
+        return 0;
+    case AV_LOCK_DESTROY:
+        if (*mutex)
+            pthread_mutex_destroy(*mutex);
+        av_free(*mutex);
+        avpriv_atomic_ptr_cas(mutex, *mutex, NULL);
+        return 0;
+    }
+    return 1;
+}
+static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = default_lockmgr_cb;
+#else
+static int (*lockmgr_cb)(void **mutex, enum AVLockOp op) = NULL;
+#endif
+
+
 volatile int ff_avcodec_locked;
 static int volatile entangled_thread_counter = 0;
-static int (*lockmgr_cb)(void **mutex, enum AVLockOp op);
 static void *codec_mutex;
 static void *avformat_mutex;
 
