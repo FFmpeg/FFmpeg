@@ -46,8 +46,12 @@ static int hevc_probe(AVProbeData *p)
             case NAL_VPS:        vps++;  break;
             case NAL_SPS:        sps++;  break;
             case NAL_PPS:        pps++;  break;
-            case 19:
-            case 20: irap++; break;
+            case NAL_BLA_N_LP:
+            case NAL_BLA_W_LP:
+            case NAL_BLA_W_RADL:
+            case NAL_CRA_NUT:
+            case NAL_IDR_N_LP:
+            case NAL_IDR_W_RADL: irap++; break;
             }
         }
     }
