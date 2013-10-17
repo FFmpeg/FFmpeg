@@ -128,6 +128,9 @@ Show available sample formats.
 @item -layouts
 Show channel names and standard channel layouts.
 
+@item -colors
+Show recognized color names.
+
 @item -loglevel [repeat+]@var{loglevel} | -v [repeat+]@var{loglevel}
 Set the logging level used by the library.
 Adding "repeat+" indicates that repeated log output should not be compressed
