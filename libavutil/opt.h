@@ -690,7 +690,7 @@ int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int searc
  * @return >=0 on success, a negative error code otherwise
  */
 /**
- * @note the returned string will av_malloc()ed and must be av_free()ed by the caller
+ * @note the returned string will be av_malloc()ed and must be av_free()ed by the caller
  */
 int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   **out_val);
 int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
