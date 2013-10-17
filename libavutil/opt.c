@@ -1559,7 +1559,7 @@ int main(void)
                 av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
             printf("\n");
         }
-        av_freep(&test_ctx.string);
+        av_opt_free(&test_ctx);
     }
 
     printf("\nTesting av_opt_set_from_string()\n");
@@ -1580,7 +1580,6 @@ int main(void)
 
         test_ctx.class = &test_class;
         av_opt_set_defaults(&test_ctx);
-        test_ctx.string = av_strdup("default");
 
         av_log_set_level(AV_LOG_DEBUG);
 
@@ -1590,7 +1589,7 @@ int main(void)
                 av_log(&test_ctx, AV_LOG_ERROR, "Error setting options string: '%s'\n", options[i]);
             printf("\n");
         }
-        av_freep(&test_ctx.string);
+        av_opt_free(&test_ctx);
     }
 
     return 0;
