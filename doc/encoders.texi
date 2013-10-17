@@ -771,6 +771,58 @@ respectively. The default is 0 (cutoff disabled).
 
 @end table
 
+@section libvorbis
+
+libvorbis encoder wrapper.
+
+Requires the presence of the libvorbisenc headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libvorbis}.
+
+@subsection Options
+
+The following options are supported by the libvorbis wrapper. The
+@command{oggenc}-equivalent of the options are listed in parentheses.
+
+To get a more accurate and extensive documentation of the libvorbis
+options, consult the libvorbisenc's and @command{oggenc}'s documentations.
+See @url{http://xiph.org/vorbis/},
+@url{http://wiki.xiph.org/Vorbis-tools}, and oggenc(1).
+
+@table @option
+@item b (@emph{-b})
+Set bitrate expressed in bits/s for ABR. @command{oggenc} @option{-b} is
+expressed in kilobits/s.
+
+@item q (@emph{-q})
+Set constant quality setting for VBR. The value should be a float
+number in the range of -1.0 to 10.0. The higher the value, the better
+the quality. The default value is @samp{3.0}.
+
+This option is valid only using the @command{ffmpeg} command-line tool.
+For library interface users, use @option{global_quality}.
+
+@item cutoff (@emph{--advanced-encode-option lowpass_frequency=N})
+Set cutoff bandwidth in Hz, a value of 0 disables cutoff. @command{oggenc}'s
+related option is expressed in kHz. The default value is @samp{0} (cutoff
+disabled).
+
+@item minrate (@emph{-m})
+Set minimum bitrate expressed in bits/s. @command{oggenc} @option{-m} is
+expressed in kilobits/s.
+
+@item maxrate (@emph{-M})
+Set maximum bitrate expressed in bits/s. @command{oggenc} @option{-M} is
+expressed in kilobits/s. This only has effect on ABR mode.
+
+@item iblock (@emph{--advanced-encode-option impulse_noisetune=N})
+Set noise floor bias for impulse blocks. The value is a float number from
+-15.0 to 0.0. A negative bias instructs the encoder to pay special attention
+to the crispness of transients in the encoded audio. The tradeoff for better
+transient response is a higher bitrate.
+
+@end table
+
 @section libwavpack
 
 A wrapper providing WavPack encoding through libwavpack.
