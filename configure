@@ -424,7 +424,7 @@ sh_quote(){
 }
 
 cleanws(){
-    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//'
+    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//;s/\r//g'
 }
 
 filter(){
