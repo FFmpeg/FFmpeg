@@ -98,14 +98,20 @@ static av_cold int pulse_write_trailer(AVFormatContext *h)
 static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
 {
     PulseData *s = h->priv_data;
-    int size     = pkt->size;
-    uint8_t *buf = pkt->data;
     int error;
+
+    if (!pkt) {
+        if (pa_simple_flush(s->pa, &error) < 0) {
+            av_log(s, AV_LOG_ERROR, "pa_simple_flush failed: %s\n", pa_strerror(error));
+            return AVERROR(EIO);
+        }
+        return 0;
+    }
 
     if (s->stream_index != pkt->stream_index)
         return 0;
 
-    if (pa_simple_write(s->pa, buf, size, &error) < 0) {
+    if (pa_simple_write(s->pa, pkt->data, pkt->size, &error) < 0) {
         av_log(s, AV_LOG_ERROR, "pa_simple_write failed: %s\n", pa_strerror(error));
         return AVERROR(EIO);
     }
@@ -149,6 +155,6 @@ AVOutputFormat ff_pulse_muxer = {
     .write_packet   = pulse_write_packet,
     .write_trailer  = pulse_write_trailer,
     .get_output_timestamp = pulse_get_output_timestamp,
-    .flags          = AVFMT_NOFILE,
+    .flags          = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
     .priv_class     = &pulse_muxer_class,
 };
