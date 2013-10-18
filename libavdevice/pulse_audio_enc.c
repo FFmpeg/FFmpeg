@@ -105,7 +105,7 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
     if (s->stream_index != pkt->stream_index)
         return 0;
 
-    if ((error = pa_simple_write(s->pa, buf, size, &error))) {
+    if (pa_simple_write(s->pa, buf, size, &error) < 0) {
         av_log(s, AV_LOG_ERROR, "pa_simple_write failed: %s\n", pa_strerror(error));
         return AVERROR(EIO);
     }
