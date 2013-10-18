@@ -113,21 +113,21 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
         ret = AVERROR(errno);
         av_log(avctx, AV_LOG_ERROR,
                "Could not open framebuffer device '%s': %s\n",
-               avctx->filename, strerror(ret));
+               avctx->filename, av_err2str(ret));
         return ret;
     }
 
     if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0) {
         ret = AVERROR(errno);
         av_log(avctx, AV_LOG_ERROR,
-               "FBIOGET_VSCREENINFO: %s\n", strerror(errno));
+               "FBIOGET_VSCREENINFO: %s\n", av_err2str(ret));
         goto fail;
     }
 
     if (ioctl(fbdev->fd, FBIOGET_FSCREENINFO, &fbdev->fixinfo) < 0) {
         ret = AVERROR(errno);
         av_log(avctx, AV_LOG_ERROR,
-               "FBIOGET_FSCREENINFO: %s\n", strerror(errno));
+               "FBIOGET_FSCREENINFO: %s\n", av_err2str(ret));
         goto fail;
     }
 
@@ -148,7 +148,7 @@ static av_cold int fbdev_read_header(AVFormatContext *avctx)
     fbdev->data = mmap(NULL, fbdev->fixinfo.smem_len, PROT_READ, MAP_SHARED, fbdev->fd, 0);
     if (fbdev->data == MAP_FAILED) {
         ret = AVERROR(errno);
-        av_log(avctx, AV_LOG_ERROR, "Error in mmap(): %s\n", strerror(errno));
+        av_log(avctx, AV_LOG_ERROR, "Error in mmap(): %s\n", av_err2str(ret));
         goto fail;
     }
 
@@ -209,7 +209,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     /* refresh fbdev->varinfo, visible data position may change at each call */
     if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0)
         av_log(avctx, AV_LOG_WARNING,
-               "Error refreshing variable info: %s\n", strerror(errno));
+               "Error refreshing variable info: %s\n", av_err2str(ret));
 
     pkt->pts = curtime;
 
