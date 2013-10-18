@@ -61,6 +61,7 @@ typedef struct ThreadContext {
     pthread_cond_t last_job_cond;
     pthread_cond_t current_job_cond;
     pthread_mutex_t current_job_lock;
+    unsigned current_execute;
     int current_job;
     int done;
 } ThreadContext;
@@ -141,6 +142,7 @@ static void* attribute_align_arg worker(void *v)
 {
     AVCodecContext *avctx = v;
     ThreadContext *c = avctx->thread_opaque;
+    unsigned last_execute = 0;
     int our_job = c->job_count;
     int thread_count = avctx->thread_count;
     int self_id;
@@ -152,8 +154,9 @@ static void* attribute_align_arg worker(void *v)
             if (c->current_job == thread_count + c->job_count)
                 pthread_cond_signal(&c->last_job_cond);
 
-            if (!c->done)
+            while (last_execute == c->current_execute && !c->done)
                 pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
+            last_execute = c->current_execute;
             our_job = self_id;
 
             if (c->done) {
@@ -173,7 +176,8 @@ static void* attribute_align_arg worker(void *v)
 
 static av_always_inline void avcodec_thread_park_workers(ThreadContext *c, int thread_count)
 {
-    pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
+    while (c->current_job != thread_count + c->job_count)
+        pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
     pthread_mutex_unlock(&c->current_job_lock);
 }
 
@@ -222,6 +226,7 @@ static int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void
         c->rets = &dummy_ret;
         c->rets_count = 1;
     }
+    c->current_execute++;
     pthread_cond_broadcast(&c->current_job_cond);
 
     avcodec_thread_park_workers(c, avctx->thread_count);
