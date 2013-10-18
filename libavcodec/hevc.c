@@ -917,30 +917,6 @@ static int hls_pcm_sample(HEVCContext *s, int x0, int y0, int log2_cb_size)
     return 0;
 }
 
-static void hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
-{
-    HEVCLocalContext *lc = &s->HEVClc;
-    int x = ff_hevc_abs_mvd_greater0_flag_decode(s);
-    int y = ff_hevc_abs_mvd_greater0_flag_decode(s);
-
-    if (x)
-        x += ff_hevc_abs_mvd_greater1_flag_decode(s);
-    if (y)
-        y += ff_hevc_abs_mvd_greater1_flag_decode(s);
-
-    switch (x) {
-    case 2: lc->pu.mvd.x = ff_hevc_mvd_decode(s);           break;
-    case 1: lc->pu.mvd.x = ff_hevc_mvd_sign_flag_decode(s); break;
-    case 0: lc->pu.mvd.x = 0;                               break;
-    }
-
-    switch (y) {
-    case 2: lc->pu.mvd.y = ff_hevc_mvd_decode(s);           break;
-    case 1: lc->pu.mvd.y = ff_hevc_mvd_sign_flag_decode(s); break;
-    case 0: lc->pu.mvd.y = 0;                               break;
-    }
-}
-
 /**
  * 8.5.3.2.2.1 Luma sample interpolation process
  *
@@ -1128,7 +1104,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                     current_mv.ref_idx[0] = ref_idx[0];
                 }
                 current_mv.pred_flag[0] = 1;
-                hls_mvd_coding(s, x0, y0, 0);
+                ff_hevc_hls_mvd_coding(s, x0, y0, 0);
                 mvp_flag[0] = ff_hevc_mvp_lx_flag_decode(s);
                 ff_hevc_luma_mv_mvp_mode(s, x0, y0, nPbW, nPbH, log2_cb_size,
                                          partIdx, merge_idx, &current_mv, mvp_flag[0], 0);
@@ -1146,7 +1122,7 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0, int nPbW, int nP
                     lc->pu.mvd.x = 0;
                     lc->pu.mvd.y = 0;
                 } else {
-                    hls_mvd_coding(s, x0, y0, 1);
+                    ff_hevc_hls_mvd_coding(s, x0, y0, 1);
                 }
 
                 current_mv.pred_flag[1] = 1;
