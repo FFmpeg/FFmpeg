@@ -191,7 +191,7 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
         acodec->codec_id    = AV_CODEC_ID_PCM_ALAW;
         break;
     default:
-        av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n",
+        avpriv_request_sample(s, "Audio codec (%x)",
                flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
         acodec->codec_tag = flv_codecid >> FLV_AUDIO_CODECID_OFFSET;
     }
@@ -261,7 +261,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream,
         vcodec->codec_id = AV_CODEC_ID_MPEG4;
         return 3;
     default:
-        av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
+        avpriv_request_sample(s, "Video codec (%x)", flv_codecid);
         vcodec->codec_tag = flv_codecid;
     }
 
