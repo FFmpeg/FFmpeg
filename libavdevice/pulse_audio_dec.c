@@ -144,13 +144,13 @@ static av_cold int pulse_close(AVFormatContext *s)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "server",        "pulse server name",                              OFFSET(server),        AV_OPT_TYPE_STRING, {.str = NULL},     0, 0, D },
-    { "name",          "application name",                               OFFSET(name),          AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, D },
-    { "stream_name",   "stream description",                             OFFSET(stream_name),   AV_OPT_TYPE_STRING, {.str = "record"}, 0, 0, D },
-    { "sample_rate",   "sample rate in Hz",                              OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.i64 = 48000},    1, INT_MAX, D },
-    { "channels",      "number of audio channels",                       OFFSET(channels),      AV_OPT_TYPE_INT,    {.i64 = 2},        1, INT_MAX, D },
-    { "frame_size",    "number of bytes per frame",                      OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.i64 = 1024},     1, INT_MAX, D },
-    { "fragment_size", "buffering size, affects latency and cpu usage",  OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.i64 = -1},      -1, INT_MAX, D },
+    { "server",        "set PulseAudio server",                             OFFSET(server),        AV_OPT_TYPE_STRING, {.str = NULL},     0, 0, D },
+    { "name",          "set application name",                              OFFSET(name),          AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, D },
+    { "stream_name",   "set stream description",                            OFFSET(stream_name),   AV_OPT_TYPE_STRING, {.str = "record"}, 0, 0, D },
+    { "sample_rate",   "set sample rate in Hz",                             OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.i64 = 48000},    1, INT_MAX, D },
+    { "channels",      "set number of audio channels",                      OFFSET(channels),      AV_OPT_TYPE_INT,    {.i64 = 2},        1, INT_MAX, D },
+    { "frame_size",    "set number of bytes per frame",                     OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.i64 = 1024},     1, INT_MAX, D },
+    { "fragment_size", "set buffering size, affects latency and cpu usage", OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.i64 = -1},      -1, INT_MAX, D },
     { NULL },
 };
 

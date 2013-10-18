@@ -495,10 +495,13 @@ string "default"
 To list the PulseAudio source devices and their properties you can invoke
 the command @command{pactl list sources}.
 
+More information about PulseAudio can be found on @url{http://www.pulseaudio.org}.
+
 @subsection Options
 @table @option
 @item server
-Connect to a specific server. Default server is used when not provided.
+Connect to a specific PulseAudio server, specified by an IP address.
+Default server is used when not provided.
 
 @item name
 Specify the application name PulseAudio will use when showing active clients,
