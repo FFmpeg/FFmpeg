@@ -141,6 +141,8 @@ static unsigned int get_aiff_header(AVFormatContext *s, int size,
         case AV_CODEC_ID_MACE3:
             codec->block_align = 2*codec->channels;
             break;
+        case AV_CODEC_ID_ADPCM_G726LE:
+            codec->bits_per_coded_sample = 5;
         case AV_CODEC_ID_ADPCM_G722:
         case AV_CODEC_ID_MACE6:
             codec->block_align = 1*codec->channels;
