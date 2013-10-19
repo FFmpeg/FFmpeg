@@ -28,6 +28,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavformat/avformat.h"
+#include "fbdev_common.h"
 
 typedef struct {
     AVClass *class;                   ///< class for private options
@@ -39,39 +40,6 @@ typedef struct {
     int index;                        ///< index of a video stream
     uint8_t *data;                    ///< framebuffer data
 } FBDevContext;
-
-struct rgb_pixfmt_map_entry {
-    int bits_per_pixel;
-    int red_offset, green_offset, blue_offset, alpha_offset;
-    enum AVPixelFormat pixfmt;
-};
-
-static const struct rgb_pixfmt_map_entry rgb_pixfmt_map[] = {
-    // bpp, red_offset,  green_offset, blue_offset, alpha_offset, pixfmt
-    {  32,       0,           8,          16,           24,   AV_PIX_FMT_RGBA  },
-    {  32,      16,           8,           0,           24,   AV_PIX_FMT_BGRA  },
-    {  32,       8,          16,          24,            0,   AV_PIX_FMT_ARGB  },
-    {  32,       3,           2,           8,            0,   AV_PIX_FMT_ABGR  },
-    {  24,       0,           8,          16,            0,   AV_PIX_FMT_RGB24 },
-    {  24,      16,           8,           0,            0,   AV_PIX_FMT_BGR24 },
-    {  16,      11,           5,           0,           16,   AV_PIX_FMT_RGB565 },
-};
-
-static enum AVPixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varinfo)
-{
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(rgb_pixfmt_map); i++) {
-        const struct rgb_pixfmt_map_entry *entry = &rgb_pixfmt_map[i];
-        if (entry->bits_per_pixel == varinfo->bits_per_pixel &&
-            entry->red_offset     == varinfo->red.offset     &&
-            entry->green_offset   == varinfo->green.offset   &&
-            entry->blue_offset    == varinfo->blue.offset)
-            return entry->pixfmt;
-    }
-
-    return AV_PIX_FMT_NONE;
-}
 
 static av_cold int fbdev_write_header(AVFormatContext *h)
 {
@@ -116,7 +84,7 @@ static av_cold int fbdev_write_header(AVFormatContext *h)
         goto fail;
     }
 
-    pix_fmt = get_pixfmt_from_fb_varinfo(&fbdev->varinfo);
+    pix_fmt = ff_get_pixfmt_from_fb_varinfo(&fbdev->varinfo);
     if (pix_fmt == AV_PIX_FMT_NONE) {
         ret = AVERROR(EINVAL);
         av_log(h, AV_LOG_ERROR, "Framebuffer pixel format not supported.\n");
@@ -157,7 +125,7 @@ static int fbdev_write_packet(AVFormatContext *h, AVPacket *pkt)
         av_log(h, AV_LOG_WARNING,
                "Error refreshing variable info: %s\n", av_err2str(AVERROR(errno)));
 
-    fb_pix_fmt = get_pixfmt_from_fb_varinfo(&fbdev->varinfo);
+    fb_pix_fmt = ff_get_pixfmt_from_fb_varinfo(&fbdev->varinfo);
 
     if (fb_pix_fmt != video_pix_fmt) {
         av_log(h, AV_LOG_ERROR, "Pixel format %s is not supported, use %s\n",
