@@ -1647,10 +1647,17 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
     if (!side_metadata)
         goto end;
     end = side_metadata + size;
+    if (size && end[-1])
+        return AVERROR_INVALIDDATA;
     while (side_metadata < end) {
         const uint8_t *key = side_metadata;
         const uint8_t *val = side_metadata + strlen(key) + 1;
-        int ret = av_dict_set(ff_frame_get_metadatap(frame), key, val, 0);
+        int ret;
+
+        if (val >= end)
+            return AVERROR_INVALIDDATA;
+
+        ret = av_dict_set(ff_frame_get_metadatap(frame), key, val, 0);
         if (ret < 0)
             break;
         side_metadata = val + strlen(val) + 1;
