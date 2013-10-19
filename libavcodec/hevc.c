@@ -2700,7 +2700,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             goto fail;
         hls_nal_unit(s);
 
-        if (s->nal_unit_type == NAL_EOS_NUT || s->nal_unit_type == NAL_EOS_NUT)
+        if (s->nal_unit_type == NAL_EOS_NUT || s->nal_unit_type == NAL_EOB_NUT)
             s->eos = 1;
 
         buf    += consumed;
