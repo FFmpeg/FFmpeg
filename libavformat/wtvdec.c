@@ -46,8 +46,6 @@
  *
  */
 
-#define SHIFT_SECTOR_BITS(a) ((int64_t)(a) << WTV_SECTOR_BITS)
-
 typedef struct {
     AVIOContext *pb_filesystem;  /**< file system (AVFormatContext->pb) */
 
@@ -62,7 +60,7 @@ typedef struct {
 
 static int64_t seek_by_sector(AVIOContext *pb, int64_t sector, int64_t offset)
 {
-    return avio_seek(pb, SHIFT_SECTOR_BITS(sector) + offset, SEEK_SET);
+    return avio_seek(pb, (sector << WTV_SECTOR_BITS) + offset, SEEK_SET);
 }
 
 /**
@@ -183,7 +181,7 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         int nb_sectors1 = read_ints(s->pb, sectors1, WTV_SECTOR_SIZE / 4);
         int i;
 
-        wf->sectors = av_malloc(SHIFT_SECTOR_BITS(nb_sectors1));
+        wf->sectors = av_malloc_array(nb_sectors1, 1 << WTV_SECTOR_BITS);
         if (!wf->sectors) {
             av_free(wf);
             return NULL;
