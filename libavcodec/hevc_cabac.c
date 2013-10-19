@@ -1404,15 +1404,15 @@ void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size)
         y += abs_mvd_greater1_flag_decode(s);
 
     switch (x) {
-        case 2: lc->pu.mvd.x = mvd_decode(s);           break;
-        case 1: lc->pu.mvd.x = mvd_sign_flag_decode(s); break;
-        case 0: lc->pu.mvd.x = 0;                       break;
+    case 2: lc->pu.mvd.x = mvd_decode(s);           break;
+    case 1: lc->pu.mvd.x = mvd_sign_flag_decode(s); break;
+    case 0: lc->pu.mvd.x = 0;                       break;
     }
 
     switch (y) {
-        case 2: lc->pu.mvd.y = mvd_decode(s);           break;
-        case 1: lc->pu.mvd.y = mvd_sign_flag_decode(s); break;
-        case 0: lc->pu.mvd.y = 0;                       break;
+    case 2: lc->pu.mvd.y = mvd_decode(s);           break;
+    case 1: lc->pu.mvd.y = mvd_sign_flag_decode(s); break;
+    case 0: lc->pu.mvd.y = 0;                       break;
     }
 }
 
