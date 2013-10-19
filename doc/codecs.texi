@@ -1076,7 +1076,9 @@ Interlaced video, bottom coded first, top displayed first
 @end table
 
 @item skip_alpha @var{integer} (@emph{decoding,video})
-causes alpha plane not to be decoded, like "gray" which skips chroma.
+Set to 1 to disable processing alpha (transparency). This works like the
+@samp{gray} flag in the @option{flags} option which skips chroma information
+instead of alpha. Default is 0.
 @end table
 
 @c man end CODEC OPTIONS
