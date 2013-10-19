@@ -622,9 +622,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         else {
             switch (type) {
             case TIFF_BYTE:
-                s->bpp = (off & 0xFF) + ((off >> 8) & 0xFF) +
-                         ((off >> 16) & 0xFF) + ((off >> 24) & 0xFF);
-                break;
             case TIFF_SHORT:
             case TIFF_LONG:
                 s->bpp = 0;
