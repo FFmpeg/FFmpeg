@@ -2196,11 +2196,13 @@ static void print_md5(void *log_ctx, int level,  uint8_t md5[16])
 static int verify_md5(HEVCContext *s, AVFrame *frame)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    int pixel_shift = desc->comp[0].depth_minus1 > 7;
+    int pixel_shift;
     int i, j;
 
     if (!desc)
         return AVERROR(EINVAL);
+
+    pixel_shift = desc->comp[0].depth_minus1 > 7;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Verifying checksum for frame with POC %d: ",
            s->poc);
