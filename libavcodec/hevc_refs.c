@@ -184,8 +184,8 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
                 return ret;
 
             for (j = 0; j < 3; j++) {
-                int hshift = (i > 0) ? desc->log2_chroma_w : 0;
-                int vshift = (i > 0) ? desc->log2_chroma_h : 0;
+                int hshift = (j > 0) ? desc->log2_chroma_w : 0;
+                int vshift = (j > 0) ? desc->log2_chroma_h : 0;
                 int off = ((frame->window.left_offset >> hshift) << pixel_shift) +
                           (frame->window.top_offset   >> vshift) * dst->linesize[j];
                 dst->data[j] += off;
