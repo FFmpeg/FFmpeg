@@ -1715,7 +1715,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
                     !isnan(ptsdiff) && ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
                     clockdiff + ptsdiff - is->frame_last_filter_delay < 0 &&
                     is->videoq.nb_packets) {
-                    is->frame_last_dropped_pos = pkt->pos;
+                    is->frame_last_dropped_pos = av_frame_get_pkt_pos(frame);
                     is->frame_last_dropped_pts = dpts;
                     is->frame_last_dropped_serial = *serial;
                     is->frame_drops_early++;
@@ -1983,7 +1983,7 @@ static int video_thread(void *arg)
         }
 #else
         pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(is->video_st->time_base);
-        ret = queue_picture(is, frame, pts, pkt.pos, serial);
+        ret = queue_picture(is, frame, pts, av_frame_get_pkt_pos(frame), serial);
         av_frame_unref(frame);
 #endif
 
