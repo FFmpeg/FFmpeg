@@ -1340,13 +1340,13 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                     int last_coeff_abs_level_remaining = coeff_abs_level_remaining_decode(s, trans_coeff_level, c_rice_param);
 
                     trans_coeff_level += last_coeff_abs_level_remaining;
-                    if ((trans_coeff_level) > (3 * (1 << c_rice_param)))
+                    if (trans_coeff_level > (3 << c_rice_param))
                         c_rice_param = FFMIN(c_rice_param + 1, 4);
 
                 }
                 if (s->pps->sign_data_hiding_flag && sign_hidden) {
                     sum_abs += trans_coeff_level;
-                    if (n == first_nz_pos_in_cg && ((sum_abs&1) == 1))
+                    if (n == first_nz_pos_in_cg && (sum_abs&1))
                         trans_coeff_level = -trans_coeff_level;
                 }
                 if (coeff_sign_flag >> 15)
