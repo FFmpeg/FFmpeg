@@ -562,7 +562,7 @@ static int huf_uncompress(GetByteContext *gb,
 
 fail:
     for (i = 0; i < HUF_DECSIZE; i++) {
-        if (hdec[i].p)
+        if (hdec)
             av_freep(&hdec[i].p);
     }
 
