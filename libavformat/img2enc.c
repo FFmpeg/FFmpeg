@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -37,6 +38,7 @@ typedef struct {
     char path[1024];
     int update;
     int use_strftime;
+    const char *muxer;
 } VideoMuxData;
 
 static int write_header(AVFormatContext *s)
@@ -44,7 +46,6 @@ static int write_header(AVFormatContext *s)
     VideoMuxData *img = s->priv_data;
     AVStream *st = s->streams[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(st->codec->pix_fmt);
-    const char *str;
 
     av_strlcpy(img->path, s->filename, sizeof(img->path));
 
@@ -54,14 +55,18 @@ static int write_header(AVFormatContext *s)
     else
         img->is_pipe = 1;
 
-    str = strrchr(img->path, '.');
+    if (st->codec->codec_id == AV_CODEC_ID_GIF) {
+        img->muxer = "gif";
+    } else if (st->codec->codec_id == AV_CODEC_ID_RAWVIDEO) {
+        const char *str = strrchr(img->path, '.');
+        /* TODO: reindent */
     img->split_planes =     str
                          && !av_strcasecmp(str + 1, "y")
                          && s->nb_streams == 1
-                         && st->codec->codec_id == AV_CODEC_ID_RAWVIDEO
                          && desc
                          &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
                          && desc->nb_components >= 3;
+    }
     return 0;
 }
 
@@ -124,6 +129,37 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             avio_write(pb[3], pkt->data + ysize + 2*usize, ysize);
             avio_close(pb[3]);
         }
+    } else if (img->muxer) {
+        int ret;
+        AVStream *st;
+        AVPacket pkt2 = {0};
+        AVFormatContext *fmt = NULL;
+
+        av_assert0(!img->split_planes);
+
+        ret = avformat_alloc_output_context2(&fmt, NULL, img->muxer, s->filename);
+        if (ret < 0)
+            return ret;
+        st = avformat_new_stream(fmt, NULL);
+        if (!st) {
+            avformat_free_context(fmt);
+            return AVERROR(ENOMEM);
+        }
+        st->id = pkt->stream_index;
+
+        fmt->pb = pb[0];
+        if ((ret = av_copy_packet(&pkt2, pkt))                            < 0 ||
+            (ret = av_dup_packet(&pkt2))                                  < 0 ||
+            (ret = avcodec_copy_context(st->codec, s->streams[0]->codec)) < 0 ||
+            (ret = avformat_write_header(fmt, NULL))                      < 0 ||
+            (ret = av_interleaved_write_frame(fmt, &pkt2))                < 0 ||
+            (ret = av_write_trailer(fmt))                                 < 0) {
+            av_free_packet(&pkt2);
+            avformat_free_context(fmt);
+            return ret;
+        }
+        av_free_packet(&pkt2);
+        avformat_free_context(fmt);
     } else {
         avio_write(pb[0], pkt->data, pkt->size);
     }
