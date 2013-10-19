@@ -194,7 +194,7 @@ static int gif_write_trailer(AVFormatContext *s)
 static const AVOption options[] = {
     { "loop", "Number of times to loop the output: -1 - no loop, 0 - infinite loop", OFFSET(loop),
       AV_OPT_TYPE_INT, { .i64 = 0 }, -1, 65535, ENC },
-    { "final_delay", "Force delay (in ms) after the last frame", OFFSET(last_delay),
+    { "final_delay", "Force delay (in centiseconds) after the last frame", OFFSET(last_delay),
       AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 65535, ENC },
     { NULL },
 };
