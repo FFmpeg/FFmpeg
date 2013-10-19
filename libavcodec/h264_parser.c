@@ -249,7 +249,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         case NAL_SLICE:
         case NAL_IDR_SLICE:
             // Do not walk the whole buffer just to decode slice header
-            if (state & 0x1f == NAL_IDR_SLICE || (state >> 5) & 0x3 == 0) {
+            if ((state & 0x1f) == NAL_IDR_SLICE || ((state >> 5) & 0x3) == 0) {
                 /* IDR or disposable slice
                  * No need to decode many bytes because MMCOs shall not be present. */
                 if (src_length > 60)
