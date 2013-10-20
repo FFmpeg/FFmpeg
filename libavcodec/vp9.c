@@ -1169,6 +1169,7 @@ static void decode_mode(AVCodecContext *ctx)
         for (y = 0; y < h4; y++)
             for (x = 0; x < w4; x++)
                 pred = FFMIN(pred, s->segmentation_map[(y + row) * 8 * s->sb_cols + x + col]);
+        av_assert1(pred < 8);
         b->seg_id = pred;
 
         memset(&s->above_segpred_ctx[col], 1, w4);
@@ -3312,6 +3313,7 @@ static int vp9_decode_frame(AVCodecContext *ctx, void *out_pic,
     for (i = 0; i < 10; i++)
         if (!s->fb[i]->data[0])
             break;
+    av_assert0(i < 10);
     s->f = s->fb[i];
     if ((res = ff_get_buffer(ctx, s->f,
                              s->refreshrefmask ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
