@@ -333,8 +333,9 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
                   connect, include_sources, exclude_sources);
     if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
         goto fail;
+    local_rtp_port = ff_udp_get_local_port(s->rtp_hd);
     if (local_rtp_port>=0 && local_rtcp_port<0)
-        local_rtcp_port = ff_udp_get_local_port(s->rtp_hd) + 1;
+        local_rtcp_port = local_rtp_port + 1;
 
     build_udp_url(buf, sizeof(buf),
                   hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
