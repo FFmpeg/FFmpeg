@@ -772,9 +772,9 @@ static void vert_left_##size##x##size##_c(uint8_t *dst, ptrdiff_t stride, \
     vo[size - 2] = (top[size - 2] + top[size - 1] * 3 + 2) >> 2; \
 \
     for (j = 0; j < size / 2; j++) { \
-        memcpy(dst +  j*2      * stride, ve + j, size - j); \
+        memcpy(dst +  j*2      * stride, ve + j, size - j - 1); \
         memset(dst +  j*2      * stride + size - j - 1, top[size - 1], j + 1); \
-        memcpy(dst + (j*2 + 1) * stride, vo + j, size - j); \
+        memcpy(dst + (j*2 + 1) * stride, vo + j, size - j - 1); \
         memset(dst + (j*2 + 1) * stride + size - j - 1, top[size - 1], j + 1); \
     } \
 }
