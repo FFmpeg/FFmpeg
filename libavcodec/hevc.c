@@ -2325,14 +2325,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
             }
         } else {
-            if (buf[2] == 0) {
-                length--;
-                buf++;
-                continue;
-            }
-            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
+            /* search start code */
+            while (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
+                ++buf;
+                --length;
+                if (length < 4) {
+                    av_log(s->avctx, AV_LOG_ERROR, "No start code is found.\n");
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
             }
 
             buf    += 3;
