@@ -1504,8 +1504,10 @@ return_packet:
     st = s->streams[pkt->stream_index];
     if (st->skip_samples) {
         uint8_t *p = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
-        AV_WL32(p, st->skip_samples);
-        av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d\n", st->skip_samples);
+        if (p) {
+            AV_WL32(p, st->skip_samples);
+            av_log(s, AV_LOG_DEBUG, "demuxer injecting skip %d\n", st->skip_samples);
+        }
         st->skip_samples = 0;
     }
 
