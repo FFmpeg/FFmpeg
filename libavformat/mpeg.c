@@ -916,6 +916,8 @@ static int vobsub_read_seek(AVFormatContext *s, int stream_index,
         return ret;
     }
 
+    if (stream_index == -1) // only 1 stream
+        stream_index = 0;
     return ff_subtitles_queue_seek(&vobsub->q[stream_index], s, stream_index,
                                    min_ts, ts, max_ts, flags);
 }
