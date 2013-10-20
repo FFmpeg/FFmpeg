@@ -184,7 +184,7 @@ static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
  *
  * @param avctx the AVCodecContext where to extract extra context to
  * @param avpkt the AVPacket to extract extra context from or NULL to use avctx
- * @return 0 in case of success, a negative error code otherwise
+ * @return >= 0 in case of success, a negative error code otherwise
  */
 static int extract_header(AVCodecContext *const avctx,
                           const AVPacket *const avpkt) {

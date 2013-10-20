@@ -681,7 +681,7 @@ static void decode_decorrelation_matrix(WMAProDecodeCtx *s,
 /**
  *@brief Decode channel transformation parameters
  *@param s codec context
- *@return 0 in case of success, < 0 in case of bitstream errors
+ *@return >= 0 in case of success, < 0 in case of bitstream errors
  */
 static int decode_channel_transform(WMAProDecodeCtx* s)
 {

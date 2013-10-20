@@ -72,7 +72,7 @@ AVFilterBufferRef *avfilter_get_buffer_ref_from_frame(enum AVMediaType type,
  *
  * @param frame an already allocated AVFrame
  * @param samplesref an audio buffer reference
- * @return 0 in case of success, a negative AVERROR code in case of
+ * @return >= 0 in case of success, a negative AVERROR code in case of
  * failure
  * @deprecated Use avfilter_copy_buf_props() instead.
  */
@@ -85,7 +85,7 @@ int avfilter_fill_frame_from_audio_buffer_ref(AVFrame *frame,
  *
  * @param frame an already allocated AVFrame
  * @param picref a video buffer reference
- * @return 0 in case of success, a negative AVERROR code in case of
+ * @return >= 0 in case of success, a negative AVERROR code in case of
  * failure
  * @deprecated Use avfilter_copy_buf_props() instead.
  */
@@ -98,7 +98,7 @@ int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
  *
  * @param frame an already allocated AVFrame
  * @param ref a video or audio buffer reference
- * @return 0 in case of success, a negative AVERROR code in case of
+ * @return >= 0 in case of success, a negative AVERROR code in case of
  * failure
  * @deprecated Use avfilter_copy_buf_props() instead.
  */

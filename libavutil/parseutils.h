@@ -127,7 +127,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * @endcode
  * @param duration flag which tells how to interpret timestr, if not
  * zero timestr is interpreted as a duration, otherwise as a date
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code otherwise
  */
 int av_parse_time(int64_t *timeval, const char *timestr, int duration);

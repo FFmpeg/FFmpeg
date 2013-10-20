@@ -89,7 +89,7 @@ static char *parse_link_name(const char **buf, void *log_ctx)
  * @param filt_name the name of the filter to create
  * @param args the arguments provided to the filter during its initialization
  * @param log_ctx the log context to use
- * @return 0 in case of success, a negative AVERROR code otherwise
+ * @return >= 0 in case of success, a negative AVERROR code otherwise
  */
 static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int index,
                          const char *filt_name, const char *args, void *log_ctx)
@@ -152,7 +152,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
  * @param index an index which is assigned to the created filter
  * instance, and which is supposed to be unique for each filter
  * instance added to the filtergraph
- * @return 0 in case of success, a negative AVERROR code otherwise
+ * @return >= 0 in case of success, a negative AVERROR code otherwise
  */
 static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGraph *graph,
                         int index, void *log_ctx)

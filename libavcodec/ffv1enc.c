@@ -1069,7 +1069,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                       + avctx->width*avctx->height*35LL*4;
 
     if (f->version > 3)
-        maxsize = FF_MIN_BUFFER_SIZE + avctx->width*avctx->height*3*4;
+        maxsize = FF_MIN_BUFFER_SIZE + avctx->width*avctx->height*3LL*4;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, maxsize)) < 0)
         return ret;

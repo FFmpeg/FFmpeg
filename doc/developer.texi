@@ -386,6 +386,12 @@ If it is a bug, the bug has to be fixed. If it is not, the code should
 be changed to not generate a warning unless that causes a slowdown
 or obfuscates the code.
 
+@item
+Make sure that no parts of the codebase that you maintain are missing from the
+@file{MAINTAINERS} file. If something that you want to maintain is missing add it with
+your name after it.
+If at some point you no longer want to maintain some code, then please help
+finding a new maintainer and also don't forget updating the @file{MAINTAINERS} file.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.

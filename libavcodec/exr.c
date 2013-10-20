@@ -562,8 +562,8 @@ static int huf_uncompress(GetByteContext *gb,
 
 fail:
     for (i = 0; i < HUF_DECSIZE; i++) {
-        if (hdec[i].p)
-            av_free(hdec[i].p);
+        if (hdec)
+            av_freep(&hdec[i].p);
     }
 
     av_free(freq);
@@ -1256,10 +1256,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     for (i = 0; i < s->thread_data_size / sizeof(EXRThreadData); i++) {
         EXRThreadData *td = &s->thread_data[i];
-        av_free(td->uncompressed_data);
-        av_free(td->tmp);
-        av_free(td->bitmap);
-        av_free(td->lut);
+        av_freep(&td->uncompressed_data);
+        av_freep(&td->tmp);
+        av_freep(&td->bitmap);
+        av_freep(&td->lut);
     }
 
     av_freep(&s->thread_data);

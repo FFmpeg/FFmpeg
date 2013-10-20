@@ -2482,7 +2482,7 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
                                 uint8_t *out, int out_size)
 {
     int block_size, start, end, data_size, tcount, temp, m = 0;
-    int i, j, ret, got_extra = 0, nb_samples = s->block_samples;
+    int i, j, ret = 0, got_extra = 0, nb_samples = s->block_samples;
     uint32_t crc = 0xffffffffu;
     struct Decorr *dpp;
     PutByteContext pb;

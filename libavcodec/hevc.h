@@ -912,27 +912,10 @@ int ff_hevc_inter_pred_idc_decode(HEVCContext *s, int nPbW, int nPbH);
 int ff_hevc_ref_idx_lx_decode(HEVCContext *s, int num_ref_idx_lx);
 int ff_hevc_mvp_lx_flag_decode(HEVCContext *s);
 int ff_hevc_no_residual_syntax_flag_decode(HEVCContext *s);
-int ff_hevc_abs_mvd_greater0_flag_decode(HEVCContext *s);
-int ff_hevc_abs_mvd_greater1_flag_decode(HEVCContext *s);
-int ff_hevc_mvd_decode(HEVCContext *s);
-int ff_hevc_mvd_sign_flag_decode(HEVCContext *s);
 int ff_hevc_split_transform_flag_decode(HEVCContext *s, int log2_trafo_size);
 int ff_hevc_cbf_cb_cr_decode(HEVCContext *s, int trafo_depth);
 int ff_hevc_cbf_luma_decode(HEVCContext *s, int trafo_depth);
 int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx);
-int ff_hevc_last_significant_coeff_x_prefix_decode(HEVCContext *s, int c_idx,
-                                                   int log2_size);
-int ff_hevc_last_significant_coeff_y_prefix_decode(HEVCContext *s, int c_idx,
-                                                   int log2_size);
-int ff_hevc_last_significant_coeff_suffix_decode(HEVCContext *s,
-                                                 int last_significant_coeff_prefix);
-int ff_hevc_significant_coeff_group_flag_decode(HEVCContext *s, int c_idx, int ctx_cg);
-int ff_hevc_significant_coeff_flag_decode(HEVCContext *s, int c_idx, int x_c, int y_c,
-                                          int log2_trafo_size, int scan_idx, int prev_sig);
-int ff_hevc_coeff_abs_level_greater1_flag_decode(HEVCContext *s, int c_idx, int ctx_set);
-int ff_hevc_coeff_abs_level_greater2_flag_decode(HEVCContext *s, int c_idx, int inc);
-int ff_hevc_coeff_abs_level_remaining(HEVCContext *s, int base_level, int rc_rice_param);
-int ff_hevc_coeff_sign_flag(HEVCContext *s, uint8_t nb);
 
 /**
  * Get the number of candidate references for the current frame.
@@ -959,6 +942,11 @@ int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
+                                 int log2_trafo_size, enum ScanType scan_idx,
+                                 int c_idx);
+
+void ff_hevc_hls_mvd_coding(HEVCContext *s, int x0, int y0, int log2_cb_size);
 
 void ff_hevc_pps_free(HEVCPPS **ppps);
 
