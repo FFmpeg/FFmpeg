@@ -249,7 +249,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
 
 int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
 {
-    int ret;
+    int ret = 0;
     void *dst, *target_obj;
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     if (!o || !target_obj)
