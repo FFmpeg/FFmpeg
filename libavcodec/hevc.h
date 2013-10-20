@@ -706,9 +706,9 @@ typedef struct HEVCFrame {
 } HEVCFrame;
 
 typedef struct FilterData {
-        int x;
-        int y;
-        int size;
+    int x;
+    int y;
+    int size;
     int slice_or_tiles_left_boundary;
     int slice_or_tiles_up_boundary;
 } FilterData;

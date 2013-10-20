@@ -1472,7 +1472,6 @@ static int hls_coding_unit(HEVCContext *s, int x0, int y0, int log2_cb_size)
     } else
         lc->cu.cu_transquant_bypass_flag = 0;
 
-
     if (s->sh.slice_type != I_SLICE) {
         uint8_t skip_flag = ff_hevc_skip_flag_decode(s, x0, y0, x_cb, y_cb);
 
@@ -2262,8 +2261,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, void *data, int *got_output,
 {
     int ret;
     HEVCContext *s = avctx->priv_data;
-
-    //av_log(avctx, AV_LOG_WARNING, "decode size %d\n", avpkt->size);
 
     if (!avpkt->size) {
         ret = ff_hevc_output_frame(s, data, 1);
