@@ -58,6 +58,8 @@ enum TwinVQFrameType {
 #define TWINVQ_SUBBLOCKS_MAX     16
 #define TWINVQ_BARK_N_COEF_MAX   4
 
+#define TWINVQ_MAX_FRAMES_PER_PACKET 2
+
 /**
  * Parameters and tables that are different for each frame type
  */
@@ -162,7 +164,8 @@ typedef struct TwinVQContext {
     // scratch buffers
     float *tmp_buf;
 
-    TwinVQFrameData bits;
+    int frame_size, frames_per_packet, cur_frame;
+    TwinVQFrameData bits[TWINVQ_MAX_FRAMES_PER_PACKET];
 
     enum TwinVQCodec codec;
 

@@ -163,7 +163,7 @@ static void read_cb_data(TwinVQContext *tctx, GetBitContext *gb,
 static int metasound_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
                                     const uint8_t *buf, int buf_size)
 {
-    TwinVQFrameData     *bits = &tctx->bits;
+    TwinVQFrameData     *bits;
     const TwinVQModeTab *mtab = tctx->mtab;
     int channels              = tctx->avctx->channels;
     int sub;
@@ -172,58 +172,67 @@ static int metasound_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
 
     init_get_bits(&gb, buf, buf_size * 8);
 
-    bits->window_type = get_bits(&gb, TWINVQ_WINDOW_TYPE_BITS);
+    for (tctx->cur_frame = 0; tctx->cur_frame < tctx->frames_per_packet;
+         tctx->cur_frame++) {
+        bits = tctx->bits + tctx->cur_frame;
 
-    if (bits->window_type > 8) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid window type, broken sample?\n");
-        return AVERROR_INVALIDDATA;
-    }
+        bits->window_type = get_bits(&gb, TWINVQ_WINDOW_TYPE_BITS);
 
-    bits->ftype = ff_twinvq_wtype_to_ftype_table[tctx->bits.window_type];
+        if (bits->window_type > 8) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid window type, broken sample?\n");
+            return AVERROR_INVALIDDATA;
+        }
 
-    sub = mtab->fmode[bits->ftype].sub;
+        bits->ftype = ff_twinvq_wtype_to_ftype_table[tctx->bits[tctx->cur_frame].window_type];
 
-    if (bits->ftype != TWINVQ_FT_SHORT)
-        get_bits(&gb, 2);
+        sub = mtab->fmode[bits->ftype].sub;
 
-    read_cb_data(tctx, &gb, bits->main_coeffs, bits->ftype);
+        if (bits->ftype != TWINVQ_FT_SHORT)
+            get_bits(&gb, 2);
 
-    for (i = 0; i < channels; i++)
-        for (j = 0; j < sub; j++)
-            for (k = 0; k < mtab->fmode[bits->ftype].bark_n_coef; k++)
-                bits->bark1[i][j][k] =
-                    get_bits(&gb, mtab->fmode[bits->ftype].bark_n_bit);
+        read_cb_data(tctx, &gb, bits->main_coeffs, bits->ftype);
 
-    for (i = 0; i < channels; i++)
-        for (j = 0; j < sub; j++)
-            bits->bark_use_hist[i][j] = get_bits1(&gb);
-
-    if (bits->ftype == TWINVQ_FT_LONG) {
         for (i = 0; i < channels; i++)
-            bits->gain_bits[i] = get_bits(&gb, TWINVQ_GAIN_BITS);
-    } else {
-        for (i = 0; i < channels; i++) {
-            bits->gain_bits[i] = get_bits(&gb, TWINVQ_GAIN_BITS);
             for (j = 0; j < sub; j++)
-                bits->sub_gain_bits[i * sub + j] =
-                    get_bits(&gb, TWINVQ_SUB_GAIN_BITS);
+                for (k = 0; k < mtab->fmode[bits->ftype].bark_n_coef; k++)
+                    bits->bark1[i][j][k] =
+                        get_bits(&gb, mtab->fmode[bits->ftype].bark_n_bit);
+
+        for (i = 0; i < channels; i++)
+            for (j = 0; j < sub; j++)
+                bits->bark_use_hist[i][j] = get_bits1(&gb);
+
+        if (bits->ftype == TWINVQ_FT_LONG) {
+            for (i = 0; i < channels; i++)
+                bits->gain_bits[i] = get_bits(&gb, TWINVQ_GAIN_BITS);
+        } else {
+            for (i = 0; i < channels; i++) {
+                bits->gain_bits[i] = get_bits(&gb, TWINVQ_GAIN_BITS);
+                for (j = 0; j < sub; j++)
+                    bits->sub_gain_bits[i * sub + j] =
+                        get_bits(&gb, TWINVQ_SUB_GAIN_BITS);
+            }
         }
-    }
 
-    for (i = 0; i < channels; i++) {
-        bits->lpc_hist_idx[i] = get_bits(&gb, mtab->lsp_bit0);
-        bits->lpc_idx1[i]     = get_bits(&gb, mtab->lsp_bit1);
-
-        for (j = 0; j < mtab->lsp_split; j++)
-            bits->lpc_idx2[i][j] = get_bits(&gb, mtab->lsp_bit2);
-    }
-
-    if (bits->ftype == TWINVQ_FT_LONG) {
-        read_cb_data(tctx, &gb, bits->ppc_coeffs, 3);
         for (i = 0; i < channels; i++) {
-            bits->p_coef[i] = get_bits(&gb, mtab->ppc_period_bit);
-            bits->g_coef[i] = get_bits(&gb, mtab->pgain_bit);
+            bits->lpc_hist_idx[i] = get_bits(&gb, mtab->lsp_bit0);
+            bits->lpc_idx1[i]     = get_bits(&gb, mtab->lsp_bit1);
+
+            for (j = 0; j < mtab->lsp_split; j++)
+                bits->lpc_idx2[i][j] = get_bits(&gb, mtab->lsp_bit2);
         }
+
+        if (bits->ftype == TWINVQ_FT_LONG) {
+            read_cb_data(tctx, &gb, bits->ppc_coeffs, 3);
+            for (i = 0; i < channels; i++) {
+                bits->p_coef[i] = get_bits(&gb, mtab->ppc_period_bit);
+                bits->g_coef[i] = get_bits(&gb, mtab->pgain_bit);
+            }
+        }
+
+        // subframes are aligned to nibbles
+        if (get_bits_count(&gb) & 3)
+            skip_bits(&gb, 4 - (get_bits_count(&gb) & 3));
     }
 
     return 0;
@@ -316,6 +325,12 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
     case (2 << 16) + (16 << 8) + 16:
         tctx->mtab = &ff_metasound_mode1616s;
         break;
+    case (1 << 16) + (22 << 8) + 24:
+        tctx->mtab = &ff_metasound_mode2224;
+        break;
+    case (2 << 16) + (22 << 8) + 24:
+        tctx->mtab = &ff_metasound_mode2224s;
+        break;
     case (1 << 16) + (44 << 8) + 32:
         tctx->mtab = &ff_metasound_mode4432;
         break;
@@ -341,13 +356,12 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    avctx->block_align = (avctx->bit_rate * tctx->mtab->size
-                                          / avctx->sample_rate + 7) / 8;
-
     tctx->codec          = TWINVQ_CODEC_METASOUND;
     tctx->read_bitstream = metasound_read_bitstream;
     tctx->dec_bark_env   = dec_bark_env;
     tctx->decode_ppc     = decode_ppc;
+    tctx->frame_size     = avctx->bit_rate * tctx->mtab->size
+                                           / avctx->sample_rate;
 
     return ff_twinvq_decode_init(avctx);
 }
