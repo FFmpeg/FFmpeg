@@ -669,7 +669,6 @@ typedef struct SAOParams {
 } SAOParams;
 
 typedef struct DBParams {
-    uint8_t disable;
     int beta_offset;
     int tc_offset;
 } DBParams;
