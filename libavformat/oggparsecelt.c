@@ -46,7 +46,9 @@ static int celt_header(AVFormatContext *s, int idx)
         uint32_t overlap, extra_headers;
 
         priv = av_malloc(sizeof(struct oggcelt_private));
-        if (!priv || ff_alloc_extradata(st->codec, 2 * sizeof(uint32_t)))
+        if (!priv)
+            return AVERROR(ENOMEM);
+        if (ff_alloc_extradata(st->codec, 2 * sizeof(uint32_t)) < 0)
             return AVERROR(ENOMEM);
         version          = AV_RL32(p + 28);
         /* unused header size field skipped */
