@@ -209,7 +209,12 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
                 j = 0;
                 while (j < size_max_x && !IS_INTRA(j, -1)) j++;
                 if (j > 0)
-                    EXTEND_LEFT_CIP(top, j, j+1);
+                    if (x0 > 0) {
+                        EXTEND_LEFT_CIP(top, j, j+1);
+                    } else {
+                        EXTEND_LEFT_CIP(top, j, j);
+                        top[-1] = top[0];
+                    }
                 left[-1] = top[-1];
                 j = 0;
             }

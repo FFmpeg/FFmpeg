@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
+#include "libavutil/avassert.h"
 
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
@@ -110,6 +111,7 @@ static int au_read_header(AVFormatContext *s)
             bps = 2;
         } else {
             const uint8_t bpcss[] = {4, 0, 3, 5};
+            av_assert0(id >= 23 && id < 23 + 4);
             bps = bpcss[id - 23];
         }
     } else if (!bps) {
