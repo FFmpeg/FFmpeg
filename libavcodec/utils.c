@@ -3269,6 +3269,23 @@ int ff_thread_can_start_frame(AVCodecContext *avctx)
     return 1;
 }
 
+int ff_alloc_entries(AVCodecContext *avctx, int count)
+{
+    return 0;
+}
+
+void ff_reset_entries(AVCodecContext *avctx)
+{
+}
+
+void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int shift)
+{
+}
+
+void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n)
+{
+}
+
 #endif
 
 enum AVMediaType avcodec_get_type(enum AVCodecID codec_id)
