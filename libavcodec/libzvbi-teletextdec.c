@@ -48,7 +48,6 @@ typedef struct TeletextContext
     char           *pgno;
     int             x_offset;
     int             y_offset;
-    char           *format;
     int             format_id; /* 0 = bitmap, 1 = text */
     int             chop_top;
     int             sub_duration; /* in msec */
@@ -437,14 +436,6 @@ static int teletext_init_decoder(AVCodecContext *avctx)
     ctx->dx = NULL;
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
-    if (!strcmp(ctx->format, "bitmap")) {
-        ctx->format_id = 0;
-    } else if (!strcmp(ctx->format, "text")) {
-        ctx->format_id = 1;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "unkown format %s\n", ctx->format);
-        return AVERROR_OPTION_NOT_FOUND;
-    }
 
 #ifdef DEBUG
     {
@@ -485,7 +476,9 @@ static void teletext_flush(AVCodecContext *avctx)
 static const AVOption options[] = {
     {"txt_page",        "list of teletext page numbers to decode, * is all", OFFSET(pgno),           AV_OPT_TYPE_STRING, {.str = "*"},      0, 0,        SD},
     {"txt_chop_top",    "discards the top teletext line",                    OFFSET(chop_top),       AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
-    {"txt_format",      "format of the subtitles (bitmap or text)",          OFFSET(format),         AV_OPT_TYPE_STRING, {.str = "bitmap"}, 0, 0,        SD},
+    {"txt_format",      "format of the subtitles (bitmap or text)",          OFFSET(format_id),      AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD,  "txt_format"},
+    {"bitmap",          NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 0},        0, 0,        SD,  "txt_format"},
+    {"text",            NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 1},        0, 0,        SD,  "txt_format"},
     {"txt_left",        "x offset of generated bitmaps",                     OFFSET(x_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_top",         "y offset of generated bitmaps",                     OFFSET(y_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_chop_spaces", "chops leading and trailing spaces from text",       OFFSET(chop_spaces),    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
