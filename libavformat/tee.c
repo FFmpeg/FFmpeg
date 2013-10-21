@@ -102,10 +102,10 @@ fail:
 static int parse_bsfs(void *log_ctx, const char *bsfs_spec,
                       AVBitStreamFilterContext **bsfs)
 {
-    char *bsf_name, *buf, *saveptr;
+    char *bsf_name, *buf, *dup, *saveptr;
     int ret = 0;
 
-    if (!(buf = av_strdup(bsfs_spec)))
+    if (!(dup = buf = av_strdup(bsfs_spec)))
         return AVERROR(ENOMEM);
 
     while (bsf_name = av_strtok(buf, ",", &saveptr)) {
@@ -128,7 +128,7 @@ static int parse_bsfs(void *log_ctx, const char *bsfs_spec,
     }
 
 end:
-    av_free(buf);
+    av_free(dup);
     return ret;
 }
 
