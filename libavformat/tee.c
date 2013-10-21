@@ -280,6 +280,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 
 end:
     av_free(format);
+    av_free(select);
     av_dict_free(&options);
     return ret;
 }
