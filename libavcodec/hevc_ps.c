@@ -72,7 +72,7 @@ static const AVRational vui_sar[] = {
 int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
                                   const HEVCSPS *sps, int is_slice_header)
 {
-    HEVCLocalContext *lc = &s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     uint8_t rps_predict = 0;
     int delta_poc;
     int k0 = 0;
@@ -253,7 +253,7 @@ static void decode_hrd(HEVCContext *s)
 int ff_hevc_decode_nal_vps(HEVCContext *s)
 {
     int i,j;
-    GetBitContext *gb = &s->HEVClc.gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     int vps_id = 0;
     VPS *vps;
 
@@ -289,7 +289,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    if (decode_profile_tier_level(&s->HEVClc, &vps->ptl, vps->vps_max_sub_layers) < 0) {
+    if (decode_profile_tier_level(s->HEVClc, &vps->ptl, vps->vps_max_sub_layers) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error decoding profile tier level.\n");
         goto err;
     }
@@ -347,7 +347,7 @@ err:
 static void decode_vui(HEVCContext *s, HEVCSPS *sps)
 {
     VUI *vui = &sps->vui;
-    GetBitContext *gb = &s->HEVClc.gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     int sar_present;
 
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding VUI\n");
@@ -469,7 +469,7 @@ static void set_default_scaling_list_data(ScalingList *sl)
 
 static int scaling_list_data(HEVCContext *s, ScalingList *sl)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     uint8_t scaling_list_pred_mode_flag[4][6];
     int32_t scaling_list_dc_coef[2][6];
 
@@ -525,7 +525,7 @@ static int scaling_list_data(HEVCContext *s, ScalingList *sl)
 int ff_hevc_decode_nal_sps(HEVCContext *s)
 {
     const AVPixFmtDescriptor *desc;
-    GetBitContext *gb = &s->HEVClc.gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     int ret    = 0;
     int sps_id = 0;
     int log2_diff_max_min_transform_block_size;
@@ -559,7 +559,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     skip_bits1(gb); // temporal_id_nesting_flag
-    if (decode_profile_tier_level(&s->HEVClc, &sps->ptl, sps->max_sub_layers) < 0) {
+    if (decode_profile_tier_level(s->HEVClc, &sps->ptl, sps->max_sub_layers) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level\n");
         ret = AVERROR_INVALIDDATA;
         goto err;
@@ -888,7 +888,7 @@ static void hevc_pps_free(void *opaque, uint8_t *data)
 
 int ff_hevc_decode_nal_pps(HEVCContext *s)
 {
-    GetBitContext *gb = &s->HEVClc.gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     HEVCSPS      *sps = NULL;
     int pic_area_in_ctbs, pic_area_in_min_cbs, pic_area_in_min_tbs;
     int log2_diff_ctb_min_tb_size;

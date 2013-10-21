@@ -65,7 +65,7 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
         for (i = (start); i < (start) + (length); i++) \
             if (!IS_INTRA(-1, i)) \
                 ptr[i] = ptr[i - 1]
-    HEVCLocalContext *lc = &s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     int i;
     int hshift = s->sps->hshift[c_idx];
     int vshift = s->sps->vshift[c_idx];
