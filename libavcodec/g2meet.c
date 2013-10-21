@@ -35,7 +35,7 @@
 #include "mjpeg.h"
 
 enum ChunkType {
-    FRAME_INFO = 0xC8,
+    DISPLAY_INFO = 0xC8,
     TILE_DATA,
     CURSOR_POS,
     CURSOR_SHAPE,
@@ -679,10 +679,10 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             break;
         }
         switch (chunk_type) {
-        case FRAME_INFO:
+        case DISPLAY_INFO:
             c->got_header = 0;
             if (chunk_size < 21) {
-                av_log(avctx, AV_LOG_ERROR, "Invalid frame info size %d\n",
+                av_log(avctx, AV_LOG_ERROR, "Invalid display info size %d\n",
                        chunk_size);
                 break;
             }
@@ -729,7 +729,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         case TILE_DATA:
             if (!c->tiles_x || !c->tiles_y) {
                 av_log(avctx, AV_LOG_WARNING,
-                       "No frame header - skipping tile\n");
+                       "No display info - skipping tile\n");
                 bytestream2_skip(&bc, bytestream2_get_bytes_left(&bc));
                 break;
             }
