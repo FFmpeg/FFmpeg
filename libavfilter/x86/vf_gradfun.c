@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 Loren Merritt <lorenm@u.washignton.edu>
+ * Copyright (C) 2009 Loren Merritt <lorenm@u.washington.edu>
  *
  * This file is part of Libav.
  *
