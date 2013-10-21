@@ -176,9 +176,9 @@ void avfilter_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
     (*links)[idx] = NULL;
 
     (*count)++;
-    for (i = idx+1; i < *count; i++)
-        if (*links[i])
-            (*(unsigned *)((uint8_t *) *links[i] + padidx_off))++;
+    for (i = idx + 1; i < *count; i++)
+        if ((*links)[i])
+            (*(unsigned *)((uint8_t *) (*links)[i] + padidx_off))++;
 }
 
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
