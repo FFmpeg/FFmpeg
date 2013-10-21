@@ -303,6 +303,7 @@ static void close_slaves(AVFormatContext *avf)
             }
         }
         av_freep(&tee->slaves[i].stream_map);
+        av_freep(&tee->slaves[i].bsfs);
 
         avio_close(avf2->pb);
         avf2->pb = NULL;
