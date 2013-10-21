@@ -2460,8 +2460,11 @@ static int parse_read_intervals(const char *intervals_spec)
 
     /* parse intervals */
     p = spec;
-    for (i = 0; i < n; i++) {
-        char *next = strchr(p, ',');
+    for (i = 0; p; i++) {
+        char *next;
+
+        av_assert0(i < read_intervals_nb);
+        next = strchr(p, ',');
         if (next)
             *next++ = 0;
 
@@ -2475,7 +2478,6 @@ static int parse_read_intervals(const char *intervals_spec)
         av_log(NULL, AV_LOG_VERBOSE, "Parsed log interval ");
         log_read_interval(&read_intervals[i], NULL, AV_LOG_VERBOSE);
         p = next;
-        av_assert0(i <= read_intervals_nb);
     }
     av_assert0(i == read_intervals_nb);
 
