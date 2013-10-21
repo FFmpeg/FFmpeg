@@ -110,8 +110,8 @@ void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
 
     (*count)++;
     for (i = idx + 1; i < *count; i++)
-        if (*links[i])
-            (*(unsigned *)((uint8_t *) *links[i] + padidx_off))++;
+        if ((*links)[i])
+            (*(unsigned *)((uint8_t *) (*links)[i] + padidx_off))++;
 }
 
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
