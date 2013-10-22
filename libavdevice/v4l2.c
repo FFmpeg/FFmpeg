@@ -455,6 +455,8 @@ static int init_convert_timestamp(AVFormatContext *ctx, int64_t ts)
         av_log(ctx, AV_LOG_INFO, "Detected monotonic timestamps, converting\n");
         /* microseconds instead of seconds, MHz instead of Hz */
         s->timefilter = ff_timefilter_new(1, period, 1.0E-6);
+        if (!s->timefilter)
+            return AVERROR(ENOMEM);
         s->ts_mode = V4L_TS_CONVERT_READY;
         return 0;
     }
