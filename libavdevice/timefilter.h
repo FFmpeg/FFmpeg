@@ -56,6 +56,8 @@ typedef struct TimeFilter TimeFilter;
  * @param clock_period period of the hardware clock in seconds
  *        (for example 1.0/44100)
  *
+ * @return a pointer to a TimeFilter struct, or NULL on error
+ *
  * For more details about these parameters and background concepts please see:
  * http://www.kokkinizita.net/papers/usingdll.pdf
  */
