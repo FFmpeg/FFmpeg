@@ -135,6 +135,10 @@ static int url_alloc_for_protocol(URLContext **puc, struct URLProtocol *up,
     uc->max_packet_size = 0; /* default: stream file */
     if (up->priv_data_size) {
         uc->priv_data = av_mallocz(up->priv_data_size);
+        if (!uc->priv_data) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
         if (up->priv_data_class) {
             *(const AVClass **)uc->priv_data = up->priv_data_class;
             av_opt_set_defaults(uc->priv_data);
@@ -147,6 +151,9 @@ static int url_alloc_for_protocol(URLContext **puc, struct URLProtocol *up,
     return 0;
 fail:
     *puc = NULL;
+    if (uc)
+        av_freep(&uc->priv_data);
+    av_freep(&uc);
 #if CONFIG_NETWORK
     if (up->flags & URL_PROTOCOL_FLAG_NETWORK)
         ff_network_close();
