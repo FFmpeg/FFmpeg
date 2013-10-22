@@ -225,7 +225,7 @@ int main(int argc, char **argv)
         if (check(root) > 999) {
             av_log(NULL, AV_LOG_ERROR, "FATAL error %d\n", i);
             print(root, 0);
-            return -1;
+            return 1;
         }
         av_log(NULL, AV_LOG_DEBUG, "inserting %4d\n", (int)j);
 
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
             node = av_tree_node_alloc();
         if (!node) {
             av_log(NULL, AV_LOG_ERROR, "Memory allocation failure.\n");
-            return AVERROR(ENOMEM);
+            return 1;
         }
         av_tree_insert(&root, (void *)(j + 1), cmp, &node);
 
