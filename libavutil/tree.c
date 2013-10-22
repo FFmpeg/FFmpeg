@@ -230,14 +230,14 @@ int main(void)
         if (check(root) > 999) {
             av_log(NULL, AV_LOG_ERROR, "FATAL error %d\n", i);
             print(root, 0);
-            return -1;
+            return 1;
         }
 
         if (!node)
             node = av_tree_node_alloc();
         if (!node) {
             av_log(NULL, AV_LOG_ERROR, "Memory allocation failure.\n");
-            return AVERROR(ENOMEM);
+            return 1;
         }
         av_tree_insert(&root, jj, cmp, &node);
 
