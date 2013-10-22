@@ -101,8 +101,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     uint8_t *data;
 
     if (!frame->interlaced_frame ||
-        frame->top_field_first == s->dst_tff)
+        frame->top_field_first == s->dst_tff) {
+        av_log(ctx, AV_LOG_VERBOSE,
+               "Skipping %s.\n",
+               frame->interlaced_frame ?
+               "frame with same field order" : "progressive frame");
         return ff_filter_frame(outlink, frame);
+    }
 
     av_dlog(ctx,
             "picture will move %s one line\n",
