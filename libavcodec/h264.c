@@ -1605,19 +1605,24 @@ static void copy_picture_range(Picture **to, Picture **from, int count,
     }
 }
 
-static void copy_parameter_set(void **to, void **from, int count, int size)
+static int copy_parameter_set(void **to, void **from, int count, int size)
 {
     int i;
 
     for (i = 0; i < count; i++) {
-        if (to[i] && !from[i])
+        if (to[i] && !from[i]) {
             av_freep(&to[i]);
-        else if (from[i] && !to[i])
+        } else if (from[i] && !to[i]) {
             to[i] = av_malloc(size);
+            if (!to[i])
+                return AVERROR(ENOMEM);
+        }
 
         if (from[i])
             memcpy(to[i], from[i], size);
     }
+
+    return 0;
 }
 
 static int decode_init_thread_copy(AVCodecContext *avctx)
@@ -1781,11 +1786,15 @@ static int decode_update_thread_context(AVCodecContext *dst,
     h->is_avc = h1->is_avc;
 
     // SPS/PPS
-    copy_parameter_set((void **)h->sps_buffers, (void **)h1->sps_buffers,
-                       MAX_SPS_COUNT, sizeof(SPS));
+    if ((ret = copy_parameter_set((void **)h->sps_buffers,
+                                  (void **)h1->sps_buffers,
+                                  MAX_SPS_COUNT, sizeof(SPS))) < 0)
+        return ret;
     h->sps = h1->sps;
-    copy_parameter_set((void **)h->pps_buffers, (void **)h1->pps_buffers,
-                       MAX_PPS_COUNT, sizeof(PPS));
+    if ((ret = copy_parameter_set((void **)h->pps_buffers,
+                                  (void **)h1->pps_buffers,
+                                  MAX_PPS_COUNT, sizeof(PPS))) < 0)
+        return ret;
     h->pps = h1->pps;
 
     // Dequantization matrices
@@ -3154,6 +3163,8 @@ static int h264_slice_header_init(H264Context *h, int reinit)
         for (i = 1; i < h->slice_context_count; i++) {
             H264Context *c;
             c                    = h->thread_context[i] = av_mallocz(sizeof(H264Context));
+            if (!c)
+                return AVERROR(ENOMEM);
             c->avctx             = h->avctx;
             c->dsp               = h->dsp;
             c->vdsp              = h->vdsp;
