@@ -1521,8 +1521,12 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->last_picture_ptr->owner2 = s;
     }
 
-    assert(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
-                                                 s->last_picture_ptr->f.data[0]));
+    if (s->pict_type != AV_PICTURE_TYPE_I &&
+        !(s->last_picture_ptr && s->last_picture_ptr->f.data[0])) {
+        av_log(s, AV_LOG_ERROR,
+               "Non-reference picture received and no reference available\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (s->picture_structure!= PICT_FRAME && s->out_format != FMT_H264) {
         int i;
