@@ -392,6 +392,19 @@ static int can_merge_formats(AVFilterFormats *a_arg,
         return 1;
     a = clone_filter_formats(a_arg);
     b = clone_filter_formats(b_arg);
+
+    if (!a || !b) {
+        if (a)
+            av_freep(&a->formats);
+        if (b)
+            av_freep(&b->formats);
+
+        av_freep(&a);
+        av_freep(&b);
+
+        return 0;
+    }
+
     if (is_sample_rate) {
         ret = ff_merge_samplerates(a, b);
     } else {
