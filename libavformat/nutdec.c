@@ -532,6 +532,7 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
     AVFormatContext *s = nut->avf;
     AVIOContext *bc    = s->pb;
     int64_t end, tmp;
+    int ret;
 
     nut->last_syncpoint_pos = avio_tell(bc) - 8;
 
@@ -553,7 +554,9 @@ static int decode_syncpoint(NUTContext *nut, int64_t *ts, int64_t *back_ptr)
 
     *ts = tmp / s->nb_streams *
           av_q2d(nut->time_base[tmp % s->nb_streams]) * AV_TIME_BASE;
-    ff_nut_add_sp(nut, nut->last_syncpoint_pos, *back_ptr, *ts);
+
+    if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, *back_ptr, *ts)) < 0)
+        return ret;
 
     return 0;
 }

@@ -185,10 +185,16 @@ int ff_nut_sp_pts_cmp(const Syncpoint *a, const Syncpoint *b)
     return ((a->ts - b->ts) >> 32) - ((b->ts - a->ts) >> 32);
 }
 
-void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts)
+int ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts)
 {
     Syncpoint *sp           = av_mallocz(sizeof(Syncpoint));
     struct AVTreeNode *node = av_tree_node_alloc();
+
+    if (!sp || !node) {
+        av_freep(&sp);
+        av_freep(&node);
+        return AVERROR(ENOMEM);
+    }
 
     sp->pos      = pos;
     sp->back_ptr = back_ptr;
@@ -198,6 +204,8 @@ void ff_nut_add_sp(NUTContext *nut, int64_t pos, int64_t back_ptr, int64_t ts)
         av_free(sp);
         av_free(node);
     }
+
+    return 0;
 }
 
 static int enu_free(void *opaque, void *elem)
