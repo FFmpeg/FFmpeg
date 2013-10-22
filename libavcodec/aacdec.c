@@ -754,9 +754,9 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         case AOT_ER_AAC_LD:
             res_flags = get_bits(gb, 3);
             if (res_flags) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "AAC data resilience not supported (flags %x)\n",
-                       res_flags);
+                avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+                                              "AAC data resilience (flags %x)",
+                                              res_flags);
                 return AVERROR_PATCHWELCOME;
             }
             break;
@@ -770,9 +770,8 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     case AOT_ER_AAC_LD:
         ep_config = get_bits(gb, 2);
         if (ep_config) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "epConfig %d is not supported.\n",
-                   ep_config);
+            avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+                                          "epConfig %d", ep_config);
             return AVERROR_PATCHWELCOME;
         }
     }
@@ -838,10 +837,10 @@ static int decode_audio_specific_config(AACContext *ac,
             return ret;
         break;
     default:
-        av_log(avctx, AV_LOG_ERROR,
-               "Audio object type %s%d is not supported.\n",
-               m4ac->sbr == 1 ? "SBR+" : "",
-               m4ac->object_type);
+        avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+                                      "Audio object type %s%d",
+                                      m4ac->sbr == 1 ? "SBR+" : "",
+                                      m4ac->object_type);
         return AVERROR(ENOSYS);
     }
 
