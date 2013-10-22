@@ -156,7 +156,10 @@ int main(void)
     for (i = 0; i < FF_ARRAY_ELEMS(tests); i++)
         error_count += test_encode_decode(tests[i].data, strlen(tests[i].data), tests[i].encoded_ref);
 
-    return error_count;
+    if (error_count)
+        printf("Error Count: %d.\n", error_count);
+
+    return !!error_count;
 }
 
 #endif
