@@ -2277,7 +2277,7 @@ static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                             s->skipped_bytes_pos_size,
                             sizeof(*s->skipped_bytes_pos));
                     if (!s->skipped_bytes_pos)
-                        return NULL;
+                        return AVERROR(ENOMEM);
                 }
                 s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
                 continue;
