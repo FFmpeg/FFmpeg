@@ -77,14 +77,11 @@ static void insert_ts(AVBPrint *buf, int ts)
     }
 }
 
-int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
-                    int ts_start, int duration, int raw)
+int ff_ass_bprint_dialog(AVBPrint *buf, const char *dialog,
+                         int ts_start, int duration, int raw)
 {
-    AVBPrint buf;
-    int ret, dlen;
-    AVSubtitleRect **rects;
+    int dlen;
 
-    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
     if (!raw || raw == 2) {
         long int layer = 0;
 
@@ -101,19 +98,33 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
                 return AVERROR_INVALIDDATA;
             dialog++;
         }
-        av_bprintf(&buf, "Dialogue: %ld,", layer);
-        insert_ts(&buf, ts_start);
-        insert_ts(&buf, duration == -1 ? -1 : ts_start + duration);
+        av_bprintf(buf, "Dialogue: %ld,", layer);
+        insert_ts(buf, ts_start);
+        insert_ts(buf, duration == -1 ? -1 : ts_start + duration);
         if (raw != 2)
-            av_bprintf(&buf, "Default,");
+            av_bprintf(buf, "Default,");
     }
 
     dlen = strcspn(dialog, "\n");
     dlen += dialog[dlen] == '\n';
 
-    av_bprintf(&buf, "%.*s", dlen, dialog);
+    av_bprintf(buf, "%.*s", dlen, dialog);
     if (raw == 2)
-        av_bprintf(&buf, "\r\n");
+        av_bprintf(buf, "\r\n");
+
+    return dlen;
+}
+
+int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
+                    int ts_start, int duration, int raw)
+{
+    AVBPrint buf;
+    int ret, dlen;
+    AVSubtitleRect **rects;
+
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+    if ((dlen = ff_ass_bprint_dialog(&buf, dialog, ts_start, duration, raw)) < 0)
+        return dlen;
     if (!av_bprint_is_complete(&buf))
         return AVERROR(ENOMEM);
 
