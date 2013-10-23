@@ -3894,6 +3894,14 @@ int avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
  * and reusing a get_buffer written for video codecs would probably perform badly
  * due to a potentially very different allocation pattern.
  *
+ * Some decoders (those marked with CODEC_CAP_DELAY) have a delay between input
+ * and output. This means that for some packets they will not immediately
+ * produce decoded output and need to be flushed at the end of decoding to get
+ * all the decoded data. Flushing is done by calling this function with packets
+ * with avpkt->data set to NULL and avpkt->size set to 0 until it stops
+ * returning subtitles. It is safe to flush even those decoders that are not
+ * marked with CODEC_CAP_DELAY, then no subtitles will be returned.
+ *
  * @param avctx the codec context
  * @param[out] sub The AVSubtitle in which the decoded subtitle will be stored, must be
                    freed with avsubtitle_free if *got_sub_ptr is set.

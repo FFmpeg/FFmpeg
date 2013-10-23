@@ -2322,7 +2322,7 @@ static int recode_subtitle(AVCodecContext *avctx,
     AVPacket tmp;
 #endif
 
-    if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_PRE_DECODER)
+    if (avctx->sub_charenc_mode != FF_SUB_CHARENC_MODE_PRE_DECODER || inpkt->size == 0)
         return 0;
 
 #if CONFIG_ICONV
@@ -2407,7 +2407,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     *got_sub_ptr = 0;
     avcodec_get_subtitle_defaults(sub);
 
-    if (avpkt->size) {
+    if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size) {
         AVPacket pkt_recoded;
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
