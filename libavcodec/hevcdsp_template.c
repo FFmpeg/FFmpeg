@@ -109,7 +109,6 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stri
 {
     pixel *dst = (pixel*)_dst;
     ptrdiff_t stride = _stride / sizeof(pixel);
-    int size = 4;
     int shift = 13 - BIT_DEPTH;
 #if BIT_DEPTH <= 13
     int offset = 1 << (shift - 1);
@@ -117,39 +116,12 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t _stri
     int offset = 0;
 #endif
     int x, y;
-    switch (size){
-        case 32:
-            for (y = 0; y < 32*32; y+=32) {
-                for (x = 0; x < 32; x++) {
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
-                }
-                dst += stride;
-            }
-            break;
-        case 16:
-            for (y = 0; y < 16*16; y+=16) {
-                for (x = 0; x < 16; x++) {
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
-                }
-                dst += stride;
-            }
-            break;
-        case 8:
-            for (y = 0; y < 8*8; y+=8) {
-                for (x = 0; x < 8; x++) {
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
-                }
-                dst += stride;
-            }
-            break;
-        case 4:
-            for (y = 0; y < 4*4; y+=4) {
-                for (x = 0; x < 4; x++) {
-                    dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
-                }
-                dst += stride;
-            }
-            break;
+
+    for (y = 0; y < 4*4; y+=4) {
+        for (x = 0; x < 4; x++) {
+            dst[x] = av_clip_pixel(dst[x] + ((coeffs[y + x] + offset) >> shift));
+        }
+        dst += stride;
     }
 }
 

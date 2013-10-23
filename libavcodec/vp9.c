@@ -3495,14 +3495,14 @@ static int vp9_decode_packet(AVCodecContext *avctx, void *out_pic,
                 case_n(3, AV_RL24(idx));
                 case_n(4, AV_RL32(idx));
             }
-            return size;
+            return avpkt->size;
         }
     }
     // if we get here, there was no valid superframe index, i.e. this is just
     // one whole single frame - decode it as such from the complete input buf
     if ((res = vp9_decode_frame(avctx, out_pic, got_frame, data, size)) < 0)
         return res;
-    return size;
+    return avpkt->size;
 }
 
 static void vp9_decode_flush(AVCodecContext *ctx)

@@ -40,6 +40,8 @@ version <next>
 - dpx parser
 - max_error_rate parameter in ffmpeg
 - PulseAudio output device
+- ReplayGain scanner
+- Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
 
 
 version 2.0:

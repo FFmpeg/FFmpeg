@@ -225,7 +225,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 {
     SliceHeader *sh = &s->sh;
 
-        uint8_t nb_list = sh->slice_type == B_SLICE ? 2 : 1;
+    uint8_t nb_list = sh->slice_type == B_SLICE ? 2 : 1;
     uint8_t list_idx;
     int i, j, ret;
 
@@ -351,7 +351,8 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     frame->sequence = s->seq_decode;
     frame->flags    = 0;
 
-    ff_thread_report_progress(&frame->tf, INT_MAX, 0);
+    if (s->threads_type == FF_THREAD_FRAME)
+        ff_thread_report_progress(&frame->tf, INT_MAX, 0);
 
     return frame;
 }

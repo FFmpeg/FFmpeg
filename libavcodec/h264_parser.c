@@ -215,11 +215,8 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     s->key_frame         = 0;
     s->picture_structure = AV_PICTURE_STRUCTURE_UNKNOWN;
 
-    h->avctx                        = avctx;
-    h->sei_recovery_frame_cnt       = -1;
-    h->sei_dpb_output_delay         = 0;
-    h->sei_cpb_removal_delay        = -1;
-    h->sei_buffering_period_present = 0;
+    h->avctx = avctx;
+    ff_h264_reset_sei(h);
     h->sei_fpa.frame_packing_arrangement_cancel_flag = -1;
 
     if (!buf_size)

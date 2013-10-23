@@ -18,7 +18,7 @@
     { "v",           HAS_ARG,  {.func_arg = opt_loglevel},      "set logging level", "loglevel" },
     { "report"     , 0,        {(void*)opt_report}, "generate a report" },
     { "max_alloc"  , HAS_ARG,  {.func_arg = opt_max_alloc},     "set maximum size of a single allocated block", "bytes" },
-    { "cpuflags"   , HAS_ARG | OPT_EXPERT, {.func_arg = opt_cpuflags}, "force specific cpu flags", "flags" },
+    { "cpuflags"   , HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags }, "force specific cpu flags", "flags" },
 #if CONFIG_OPENCL
     { "opencl_options", HAS_ARG, {.func_arg = opt_opencl},      "set OpenCL environment options" },
 #endif

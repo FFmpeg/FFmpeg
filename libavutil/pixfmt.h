@@ -59,8 +59,8 @@
  * allocating the picture.
  *
  * @note
- * Make sure that all newly added big-endian formats have pix_fmt & 1 == 1
- * and that all newly added little-endian formats have pix_fmt & 1 == 0.
+ * Make sure that all newly added big-endian formats have (pix_fmt & 1) == 1
+ * and that all newly added little-endian formats have (pix_fmt & 1) == 0.
  * This allows simpler detection of big vs little-endian.
  */
 enum AVPixelFormat {

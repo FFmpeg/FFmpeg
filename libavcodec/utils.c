@@ -2338,6 +2338,12 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 {
     int i, ret = 0;
 
+    if (!avpkt->data && avpkt->size) {
+        av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
+        return AVERROR(EINVAL);
+    }
+    if (!avctx->codec)
+        return AVERROR(EINVAL);
     if (avctx->codec->type != AVMEDIA_TYPE_SUBTITLE) {
         av_log(avctx, AV_LOG_ERROR, "Invalid media type for subtitles\n");
         return AVERROR(EINVAL);
@@ -3261,6 +3267,23 @@ void ff_thread_await_progress(ThreadFrame *f, int progress, int field)
 int ff_thread_can_start_frame(AVCodecContext *avctx)
 {
     return 1;
+}
+
+int ff_alloc_entries(AVCodecContext *avctx, int count)
+{
+    return 0;
+}
+
+void ff_reset_entries(AVCodecContext *avctx)
+{
+}
+
+void ff_thread_await_progress2(AVCodecContext *avctx, int field, int thread, int shift)
+{
+}
+
+void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n)
+{
 }
 
 #endif

@@ -320,7 +320,7 @@ typedef struct AVOptionRanges {
 /**
  * Look for an option in obj. Look only for the options which
  * have the flags set as specified in mask and flags (that is,
- * for which it is the case that opt->flags & mask == flags).
+ * for which it is the case that (opt->flags & mask) == flags).
  *
  * @param[in] obj a pointer to a struct whose first element is a
  * pointer to an AVClass

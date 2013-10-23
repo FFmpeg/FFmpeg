@@ -159,6 +159,6 @@ fate-hevc-conformance-DBLK_A_MAIN10_VIXS_2: CMD = framecrc -strict -2 -vsync dro
 
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 
-#FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
+FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 
 fate-hevc: $(FATE_HEVC-yes)

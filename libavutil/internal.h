@@ -64,7 +64,7 @@
 #endif
 
 #if HAVE_PRAGMA_DEPRECATED
-#    if defined(__ICL)
+#    if defined(__ICL) || defined (__INTEL_COMPILER)
 #        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:1478))
 #        define FF_ENABLE_DEPRECATION_WARNINGS  __pragma(warning(pop))
 #    elif defined(_MSC_VER)

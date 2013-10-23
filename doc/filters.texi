@@ -1636,6 +1636,12 @@ front left and right:
 pan="stereo: c0=FR : c1=FR"
 @end example
 
+@section replaygain
+
+ReplayGain scanner filter. This filter takes an audio stream as an input and
+outputs it unchanged.
+At end of filtering it displays @code{track_gain} and @code{track_peak}.
+
 @section resample
 
 Convert the audio sample format, sample rate and channel layout. This filter is

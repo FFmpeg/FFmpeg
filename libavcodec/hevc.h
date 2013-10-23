@@ -39,6 +39,9 @@
 #define MAX_DPB_SIZE 16 // A.4.1
 #define MAX_REFS 16
 
+#define MAX_NB_THREADS 16
+#define SHIFT_CTB_WPP 2
+
 /**
  * 7.4.2.1
  */
@@ -563,6 +566,9 @@ typedef struct SliceHeader {
 
     uint8_t slice_loop_filter_across_slices_enabled_flag;
 
+    int *entry_point_offset;
+    int * offset;
+    int * size;
     int num_entry_point_offsets;
 
     uint8_t luma_log2_weight_denom;
@@ -669,7 +675,6 @@ typedef struct SAOParams {
 } SAOParams;
 
 typedef struct DBParams {
-    uint8_t disable;
     int beta_offset;
     int tc_offset;
 } DBParams;
@@ -706,14 +711,6 @@ typedef struct HEVCFrame {
     AVBufferRef *rpl_buf;
 } HEVCFrame;
 
-typedef struct FilterData {
-        int x;
-        int y;
-        int size;
-    int slice_or_tiles_left_boundary;
-    int slice_or_tiles_up_boundary;
-} FilterData;
-
 typedef struct HEVCNAL {
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
@@ -746,21 +743,24 @@ typedef struct HEVCLocalContext {
     PredictionUnit pu;
     NeighbourAvailable na;
     DECLARE_ALIGNED(16, int16_t, mc_buffer[(MAX_PB_SIZE + 7) * MAX_PB_SIZE]);
-    FilterData *save_boundary_strengths;
-    int nb_saved;
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext      *avctx;
 
-    HEVCLocalContext     HEVClc;
+    struct HEVCContext  *sList[MAX_NB_THREADS];
 
-    int                 disable_au;
+    HEVCLocalContext    *HEVClcList[MAX_NB_THREADS];
+    HEVCLocalContext    *HEVClc;
+
+    uint8_t             threads_type;
+    uint8_t             threads_number;
+
     int                 width;
     int                 height;
 
-    uint8_t cabac_state[HEVC_CONTEXTS];
+    uint8_t *cabac_state;
 
     AVFrame *frame;
     AVFrame *sao_frame;
@@ -827,6 +827,18 @@ typedef struct HEVCContext {
      */
     uint16_t seq_decode;
     uint16_t seq_output;
+
+    int enable_parallel_tiles;
+    int wpp_err;
+    int skipped_bytes;
+    int *skipped_bytes_pos;
+    int skipped_bytes_pos_size;
+
+    int *skipped_bytes_nal;
+    int **skipped_bytes_pos_nal;
+    int *skipped_bytes_pos_size_nal;
+
+    uint8_t *data;
 
     HEVCNAL *nals;
     int nb_nals;

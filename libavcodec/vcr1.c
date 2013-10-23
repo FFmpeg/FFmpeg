@@ -55,8 +55,8 @@ static int vcr1_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *bytestream_end = bytestream + avpkt->size;
     int i, x, y, ret;
 
-    if(avpkt->size < 16 + avctx->height + avctx->width*avctx->height*5/8){
-        av_log(avctx, AV_LOG_ERROR, "Insufficient input data.\n");
+    if(avpkt->size < 32 + avctx->height + avctx->width*avctx->height*5/8){
+        av_log(avctx, AV_LOG_ERROR, "Insufficient input data. %d < %d\n", avpkt->size ,  32 + avctx->height + avctx->width*avctx->height*5/8);
         return AVERROR(EINVAL);
     }
 

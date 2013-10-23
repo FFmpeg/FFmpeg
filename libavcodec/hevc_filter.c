@@ -73,7 +73,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
 
 static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, int log2_cb_size)
 {
-    HEVCLocalContext *lc     = &s->HEVClc;
+    HEVCLocalContext *lc     = s->HEVClc;
     int ctb_size_mask        = (1 << s->sps->log2_ctb_size) - 1;
     int MinCuQpDeltaSizeMask = (1 << (s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
     int xQgBase              = xBase - ( xBase & MinCuQpDeltaSizeMask );
@@ -153,11 +153,11 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int l
 {
     int qp_y = get_qPy_pred(s, xC, yC, xBase, yBase, log2_cb_size);
 
-    if (s->HEVClc.tu.cu_qp_delta != 0) {
+    if (s->HEVClc->tu.cu_qp_delta != 0) {
         int off = s->sps->qp_bd_offset;
-        s->HEVClc.qp_y = ((qp_y + s->HEVClc.tu.cu_qp_delta + 52 + 2 * off) % (52 + off)) - off;
+        s->HEVClc->qp_y = ((qp_y + s->HEVClc->tu.cu_qp_delta + 52 + 2 * off) % (52 + off)) - off;
     } else
-        s->HEVClc.qp_y = qp_y;
+        s->HEVClc->qp_y = qp_y;
 }
 
 static int get_qPy(HEVCContext *s, int xC, int yC)
@@ -334,8 +334,8 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     int pcmf        = (s->sps->pcm_enabled_flag && s->sps->pcm.loop_filter_disable_flag) ||
                       s->pps->transquant_bypass_enable_flag;
 
-    if(x0) {
-        left_tc_offset = s->deblock[ctb-1].tc_offset;
+    if (x0) {
+        left_tc_offset   = s->deblock[ctb-1].tc_offset;
         left_beta_offset = s->deblock[ctb-1].beta_offset;
     }
 

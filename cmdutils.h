@@ -82,6 +82,11 @@ void uninit_opts(void);
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
 
 /**
+ * Override the cpuflags.
+ */
+int opt_cpuflags(void *optctx, const char *opt, const char *arg);
+
+/**
  * Fallback for options that are not explicitly handled, these will be
  * parsed through AVOptions.
  */
@@ -95,8 +100,6 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg);
 int opt_report(const char *opt);
 
 int opt_max_alloc(void *optctx, const char *opt, const char *arg);
-
-int opt_cpuflags(void *optctx, const char *opt, const char *arg);
 
 int opt_codec_debug(void *optctx, const char *opt, const char *arg);
 

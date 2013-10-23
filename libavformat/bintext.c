@@ -65,7 +65,7 @@ static AVStream * init_stream(AVFormatContext *s)
     avpriv_set_pts_info(st, 60, bin->framerate.den, bin->framerate.num);
 
     /* simulate tty display speed */
-    bin->chars_per_frame = FFMAX(av_q2d(st->time_base) * bin->chars_per_frame, 1);
+    bin->chars_per_frame = av_clip(av_q2d(st->time_base) * bin->chars_per_frame, 1, INT_MAX);
 
     return st;
 }
