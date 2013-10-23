@@ -2108,7 +2108,7 @@ static int transcode_init(void)
         FilterGraph *fg = filtergraphs[i];
         for (j = 0; j < fg->nb_outputs; j++) {
             OutputFilter *ofilter = fg->outputs[j];
-            if (ofilter->ost->source_index >= 0)
+            if (!ofilter->ost || ofilter->ost->source_index >= 0)
                 continue;
             if (fg->nb_inputs != 1)
                 continue;
