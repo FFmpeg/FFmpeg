@@ -123,21 +123,28 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
     AVSubtitleRect **rects;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    if ((dlen = ff_ass_bprint_dialog(&buf, dialog, ts_start, duration, raw)) < 0)
-        return dlen;
+    if ((ret = ff_ass_bprint_dialog(&buf, dialog, ts_start, duration, raw)) < 0)
+        goto err;
+    dlen = ret;
     if (!av_bprint_is_complete(&buf))
-        return AVERROR(ENOMEM);
+        goto errnomem;
 
     rects = av_realloc(sub->rects, (sub->num_rects+1) * sizeof(*sub->rects));
     if (!rects)
-        return AVERROR(ENOMEM);
+        goto errnomem;
     sub->rects = rects;
     sub->end_display_time = FFMAX(sub->end_display_time, 10 * duration);
     rects[sub->num_rects]       = av_mallocz(sizeof(*rects[0]));
     rects[sub->num_rects]->type = SUBTITLE_ASS;
     ret = av_bprint_finalize(&buf, &rects[sub->num_rects]->ass);
     if (ret < 0)
-        return ret;
+        goto err;
     sub->num_rects++;
     return dlen;
+
+errnomem:
+    ret = AVERROR(ENOMEM);
+err:
+    av_bprint_finalize(&buf, NULL);
+    return ret;
 }
