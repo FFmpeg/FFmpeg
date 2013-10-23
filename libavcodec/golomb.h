@@ -53,7 +53,6 @@ extern const uint8_t ff_interleaved_dirac_golomb_vlc_code[256];
 static inline int get_ue_golomb(GetBitContext *gb)
 {
     unsigned int buf;
-    int log;
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
@@ -66,7 +65,7 @@ static inline int get_ue_golomb(GetBitContext *gb)
 
         return ff_ue_golomb_vlc_code[buf];
     } else {
-        log = 2 * av_log2(buf) - 31;
+        int log = 2 * av_log2(buf) - 31;
         buf >>= log;
         buf--;
         LAST_SKIP_BITS(re, gb, 32 - log);
@@ -180,7 +179,6 @@ static inline int get_te_golomb(GetBitContext *gb, int range)
 static inline int get_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
-    int log;
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
@@ -193,7 +191,7 @@ static inline int get_se_golomb(GetBitContext *gb)
 
         return ff_se_golomb_vlc_code[buf];
     } else {
-        log = 2 * av_log2(buf) - 31;
+        int log = 2 * av_log2(buf) - 31;
         buf >>= log;
 
         LAST_SKIP_BITS(re, gb, 32 - log);
@@ -211,7 +209,6 @@ static inline int get_se_golomb(GetBitContext *gb)
 static inline int svq3_get_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
-    int log;
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
@@ -224,6 +221,7 @@ static inline int svq3_get_se_golomb(GetBitContext *gb)
 
         return ff_interleaved_se_golomb_vlc_code[buf];
     } else {
+        int log;
         LAST_SKIP_BITS(re, gb, 8);
         UPDATE_CACHE(re, gb);
         buf |= 1 | (GET_CACHE(re, gb) >> 8);
@@ -243,12 +241,10 @@ static inline int svq3_get_se_golomb(GetBitContext *gb)
 
 static inline int dirac_get_se_golomb(GetBitContext *gb)
 {
-    uint32_t buf;
-    uint32_t ret;
-
-    ret = svq3_get_ue_golomb(gb);
+    uint32_t ret = svq3_get_ue_golomb(gb);
 
     if (ret) {
+        uint32_t buf;
         OPEN_READER(re, gb);
         UPDATE_CACHE(re, gb);
         buf = SHOW_SBITS(re, gb, 1);
@@ -459,8 +455,6 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
  */
 static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
-    int e;
-
     assert(i >= 0);
 
 #if 0
@@ -472,7 +466,7 @@ static inline void set_ue_golomb(PutBitContext *pb, int i)
     if (i < 256)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);
     else {
-        e = av_log2(i + 1);
+        int e = av_log2(i + 1);
         put_bits(pb, 2 * e + 1, i + 1);
     }
 }
