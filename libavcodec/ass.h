@@ -113,4 +113,16 @@ int ff_ass_add_rect(AVSubtitle *sub, const char *dialog,
 int ff_ass_bprint_dialog(AVBPrint *buf, const char *dialog,
                          int ts_start, int duration, int raw);
 
+/**
+ * Escape a text subtitle using ASS syntax into an AVBPrint buffer.
+ * Newline characters will be escaped to \N.
+ *
+ * @param buf pointer to an initialized AVBPrint buffer
+ * @param p source text
+ * @param size size of the source text
+ * @param linebreaks additional newline chars, which will be escaped to \N
+ * @param keep_ass_markup braces and backslash will not be escaped if set
+ */
+void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,
+                             const char *linebreaks, int keep_ass_markup);
 #endif /* AVCODEC_ASS_H */
