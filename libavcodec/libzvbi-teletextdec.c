@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "libavutil/opt.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 
 #include <libzvbi.h>
@@ -95,9 +96,8 @@ subtitle_rect_free(AVSubtitleRect **sub_rect)
 static int
 gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
 {
-    char *text;
     const char *in;
-    char *out;
+    AVBPrint buf;
     char *vbi_text = av_malloc(TEXT_MAXSZ);
     int sz;
 
@@ -115,11 +115,8 @@ gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int
     }
     vbi_text[sz] = '\0';
     in  = vbi_text;
-    out = text = av_malloc(TEXT_MAXSZ);
-    if (!text) {
-        av_free(vbi_text);
-        return AVERROR(ENOMEM);
-    }
+    av_bprint_init(&buf, 0, TEXT_MAXSZ);
+
     if (ctx->chop_spaces) {
         for (;;) {
             int nl, sz;
@@ -134,25 +131,29 @@ gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int
                 break;
             // skip trailing spaces
             sz = chop_spaces_utf8(in, nl);
-            memcpy(out, in, sz);
-            out += sz;
-            *out++ = '\n';
+            av_bprint_append_data(&buf, in, sz);
+            av_bprintf(&buf, "\n");
             in += nl;
         }
     } else {
-        strcpy(text, vbi_text);
-        out += sz;
-        *out++ = '\n';
+        av_bprintf(&buf, "%s\n", vbi_text);
     }
     av_free(vbi_text);
-    *out = '\0';
-    if (out > text) {
+
+    if (!av_bprint_is_complete(&buf)) {
+        av_bprint_finalize(&buf, NULL);
+        return AVERROR(ENOMEM);
+    }
+
+    if (buf.len) {
+        int ret;
         sub_rect->type = SUBTITLE_TEXT;
-        sub_rect->text = text;
-        av_log(ctx, AV_LOG_DEBUG, "subtext:%s:txetbus\n", text);
+        if ((ret = av_bprint_finalize(&buf, &sub_rect->text)) < 0)
+            return ret;
+        av_log(ctx, AV_LOG_DEBUG, "subtext:%s:txetbus\n", sub_rect->text);
     } else {
         sub_rect->type = SUBTITLE_NONE;
-        av_free(text);
+        av_bprint_finalize(&buf, NULL);
     }
     return 0;
 }
