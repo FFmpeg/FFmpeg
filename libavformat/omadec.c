@@ -263,7 +263,7 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
                 !nprobe(s, gdata, geob->datasize, oc->n_val))
                 break;
         }
-        if (i >= sizeof(leaf_table)) {
+        if (i >= FF_ARRAY_ELEMS(leaf_table)) {
             av_log(s, AV_LOG_ERROR, "Invalid key\n");
             return AVERROR_INVALIDDATA;
         }
