@@ -35,6 +35,7 @@ typedef struct PulseData {
     const char *device;
     pa_simple *pa;
     unsigned int stream_index;
+    int64_t timestamp;
 } PulseData;
 
 static av_cold int pulse_write_header(AVFormatContext *h)
@@ -116,6 +117,19 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
     if (s->stream_index != pkt->stream_index)
         return 0;
 
+    if (pkt->dts != AV_NOPTS_VALUE)
+        s->timestamp = pkt->dts;
+
+    if (pkt->duration) {
+        s->timestamp += pkt->duration;;
+    } else {
+        AVStream *st = h->streams[s->stream_index];
+        AVCodecContext *codec_ctx = st->codec;
+        AVRational r = { 1, codec_ctx->sample_rate };
+        int64_t samples = pkt->size / (av_get_bytes_per_sample(codec_ctx->sample_fmt) * codec_ctx->channels);
+        s->timestamp += av_rescale_q(samples, r, st->time_base);
+    }
+
     if (pa_simple_write(s->pa, pkt->data, pkt->size, &error) < 0) {
         av_log(s, AV_LOG_ERROR, "pa_simple_write failed: %s\n", pa_strerror(error));
         return AVERROR(EIO);
@@ -129,7 +143,7 @@ static void pulse_get_output_timestamp(AVFormatContext *h, int stream, int64_t *
     PulseData *s = h->priv_data;
     pa_usec_t latency = pa_simple_get_latency(s->pa, NULL);
     *wall = av_gettime();
-    *dts = h->streams[s->stream_index]->cur_dts - latency;
+    *dts = s->timestamp - latency;
 }
 
 #define OFFSET(a) offsetof(PulseData, a)
