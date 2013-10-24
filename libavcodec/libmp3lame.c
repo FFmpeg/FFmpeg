@@ -110,11 +110,11 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         lame_set_quality(s->gfp, avctx->compression_level);
 
     /* rate control */
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & CODEC_FLAG_QSCALE) { // VBR
         lame_set_VBR(s->gfp, vbr_default);
         lame_set_VBR_quality(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
     } else {
-        if (avctx->bit_rate)
+        if (avctx->bit_rate)                // CBR
             lame_set_brate(s->gfp, avctx->bit_rate / 1000);
     }
 
