@@ -2920,7 +2920,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             assert(s0->current_picture_ptr->f.reference != DELAYED_PIC_REF);
 
             /* Mark old field/frame as completed */
-            if (!last_pic_droppable && s0->current_picture_ptr->owner2 == s0) {
+            if (s0->current_picture_ptr->owner2 == s0) {
                 ff_thread_report_progress(&s0->current_picture_ptr->f, INT_MAX,
                                           last_pic_structure == PICT_BOTTOM_FIELD);
             }
@@ -2929,7 +2929,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
             if (!FIELD_PICTURE || s->picture_structure == last_pic_structure) {
                 /* Previous field is unmatched. Don't display it, but let it
                  * remain for reference if marked as such. */
-                if (!last_pic_droppable && last_pic_structure != PICT_FRAME) {
+                if (last_pic_structure != PICT_FRAME) {
                     ff_thread_report_progress(&s0->current_picture_ptr->f, INT_MAX,
                                               last_pic_structure == PICT_TOP_FIELD);
                 }
@@ -2939,7 +2939,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
                      * different frame_nums. Consider this field first in
                      * pair. Throw away previous field except for reference
                      * purposes. */
-                    if (!last_pic_droppable && last_pic_structure != PICT_FRAME) {
+                    if (last_pic_structure != PICT_FRAME) {
                         ff_thread_report_progress(&s0->current_picture_ptr->f, INT_MAX,
                                                   last_pic_structure == PICT_TOP_FIELD);
                     }
