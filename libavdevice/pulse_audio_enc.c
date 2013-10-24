@@ -59,8 +59,12 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         return AVERROR(EINVAL);
     }
 
-    if (!stream_name)
-        stream_name = h->filename;
+    if (!stream_name) {
+        if (h->filename)
+            stream_name = h->filename;
+        else
+            stream_name = "Playback";
+    }
 
     ss.format = codec_id_to_pulse_format(st->codec->codec_id);
     ss.rate = st->codec->sample_rate;
