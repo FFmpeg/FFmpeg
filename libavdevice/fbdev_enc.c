@@ -47,8 +47,9 @@ static av_cold int fbdev_write_header(AVFormatContext *h)
     enum AVPixelFormat pix_fmt;
     AVStream *st = NULL;
     int ret, flags = O_RDWR;
+    int i;
 
-    for (int i = 0; i < h->nb_streams; i++) {
+    for (i = 0; i < h->nb_streams; i++) {
         if (h->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (!st) {
                 fbdev->index = i;
@@ -117,6 +118,7 @@ static int fbdev_write_packet(AVFormatContext *h, AVPacket *pkt)
     int video_height = codec_ctx->height;
     int bytes_per_pixel = ((codec_ctx->bits_per_coded_sample + 7) >> 3);
     int src_line_size = video_width * bytes_per_pixel;
+    int i;
 
     if (fbdev->index != pkt->stream_index)
         return 0;
@@ -175,7 +177,7 @@ static int fbdev_write_packet(AVFormatContext *h, AVPacket *pkt)
         }
     }
 
-    for (int i = 0; i < disp_height; i++) {
+    for (i = 0; i < disp_height; i++) {
         memcpy(pout, pin, bytes_to_copy);
         pout += fbdev->fixinfo.line_length;
         pin  += src_line_size;
