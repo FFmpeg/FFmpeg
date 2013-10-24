@@ -788,7 +788,7 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
         rm->current_stream= st->id;
         ret = rm_assemble_video_frame(s, pb, rm, ast, pkt, len, seq, &timestamp);
         if(ret)
-            return ret; //got partial frame or error
+            return ret < 0 ? ret : -1; //got partial frame or error
     } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         if ((ast->deint_id == DEINT_ID_GENR) ||
             (ast->deint_id == DEINT_ID_INT4) ||
