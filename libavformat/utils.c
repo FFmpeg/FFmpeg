@@ -1627,6 +1627,9 @@ int ff_add_index_entry(AVIndexEntry **index_entries,
     if(timestamp == AV_NOPTS_VALUE)
         return AVERROR(EINVAL);
 
+    if (size < 0 || size > 0x3FFFFFFF)
+        return AVERROR(EINVAL);
+
     if (is_relative(timestamp)) //FIXME this maintains previous behavior but we should shift by the correct offset once known
         timestamp -= RELATIVE_TS_BASE;
 
