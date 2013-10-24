@@ -120,8 +120,8 @@ uninstall-html:
 	$(RM) -r "$(DOCDIR)"
 
 uninstall-man:
-	$(RM) $(addprefix "$(MANDIR)/man1/",$(MANPAGES1))
-	$(RM) $(addprefix "$(MANDIR)/man3/",$(MANPAGES3))
+	$(RM) $(addprefix "$(MANDIR)/man1/",$(PROGS-yes:%=%.1) $(PROGS-yes:%=%-all.1) $(COMPONENTS-yes:%=%.1))
+	$(RM) $(addprefix "$(MANDIR)/man3/",$(LIBRARIES-yes:%=%.3))
 
 clean:: docclean
 
