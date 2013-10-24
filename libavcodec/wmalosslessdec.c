@@ -1182,6 +1182,8 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
 
+        if (!buf_size)
+            return 0;
         /* sanity check for the buffer length */
         if (buf_size < avctx->block_align) {
             av_log(avctx, AV_LOG_ERROR, "buf size %d invalid\n", buf_size);
