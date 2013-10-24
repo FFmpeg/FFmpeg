@@ -446,23 +446,16 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int oma_read_probe(AVProbeData *p)
 {
-    const uint8_t *buf;
+    const uint8_t *buf = p->buf;
     unsigned tag_len = 0;
 
-    buf = p->buf;
-
-    if (p->buf_size < ID3v2_HEADER_SIZE ||
-        !ff_id3v2_match(buf, ID3v2_EA3_MAGIC) ||
-        buf[3] != 3 || // version must be 3
-        buf[4]) // flags byte zero
-        return 0;
-
-    tag_len = ff_id3v2_tag_len(buf);
+    if (p->buf_size >= ID3v2_HEADER_SIZE && ff_id3v2_match(buf, ID3v2_EA3_MAGIC))
+        tag_len = ff_id3v2_tag_len(buf);
 
     /* This check cannot overflow as tag_len has at most 28 bits */
     if (p->buf_size < tag_len + 5)
         /* EA3 header comes late, might be outside of the probe buffer */
-        return AVPROBE_SCORE_EXTENSION;
+        return tag_len ? AVPROBE_SCORE_EXTENSION : 0;
 
     buf += tag_len;
 
