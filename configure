@@ -4580,6 +4580,8 @@ enable frame_thread_encoder
 enabled_any $THREADS_LIST      && enable threads
 enabled_any $ATOMICS_LIST      && enable atomics_native
 
+enabled threads && ! enabled pthreads && ! enabled atomics_native && die "non pthread threading without atomics not supported, try adding --enable-pthreads or --cpu=i486 or higher if you are on x86"
+
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
 check_deps $CONFIG_LIST       \
