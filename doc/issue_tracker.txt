@@ -103,13 +103,13 @@ This state implicates that the bug either has been reproduced or that
 reproduction is not needed as the bug is already understood.
 
 
-Type/Status/Substatus:
+Type/Status:
 ----------
-*/new/new
+*/new
     Initial state of new bugs, patches and feature requests submitted by
     users.
 
-*/open/open
+*/open
     Issues which have been briefly looked at and which did not look outright
     invalid.
     This implicates that no real more detailed state applies yet. Conversely,
@@ -170,11 +170,8 @@ feature_request/closed/wont_implement
     Feature requests which will not be implemented. The reasons here could
     be legal, philosophical or others.
 
-Note, please do not use type-status-substatus combinations other than the
-above without asking on ffmpeg-dev first!
-
 Note2, if you provide the requested info do not forget to remove the
-needs_more_info substatus.
+needs_more_info resolution.
 
 Component:
 ----------
