@@ -1398,7 +1398,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
                 memcpy(s->outptr[channel_map[ch]], output[ch], 1024);
         for (ch = 0; ch < s->out_channels; ch++)
             output[ch] = s->outptr[channel_map[ch]];
-        for (ch = 0; ch < s->channels; ch++)
+        for (ch = 0; ch < s->out_channels; ch++)
             s->outptr[ch] += AC3_BLOCK_SIZE;
     }
 
