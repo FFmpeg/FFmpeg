@@ -116,7 +116,7 @@ static av_cold int init(AVFilterContext *ctx)
     if (!args)
         return AVERROR(ENOMEM);
     arg = av_strtok(args, "|", &tokenizer);
-    ret = ff_parse_channel_layout(&pan->out_channel_layout, arg, ctx);
+    ret = ff_parse_channel_layout(&pan->out_channel_layout, NULL, arg, ctx);
     if (ret < 0)
         goto fail;
     pan->nb_output_channels = av_get_channel_layout_nb_channels(pan->out_channel_layout);
