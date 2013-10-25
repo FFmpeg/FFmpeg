@@ -2160,6 +2160,15 @@ static int transcode_init(void)
             ost->st->disposition          = ist->st->disposition;
             codec->bits_per_raw_sample    = icodec->bits_per_raw_sample;
             codec->chroma_sample_location = icodec->chroma_sample_location;
+        } else {
+            for (j=0; j<oc->nb_streams; j++) {
+                AVStream *st = oc->streams[j];
+                if (st != ost->st && st->codec->codec_type == codec->codec_type)
+                    break;
+            }
+            if (j == oc->nb_streams)
+                if (codec->codec_type == AVMEDIA_TYPE_AUDIO || codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                    ost->st->disposition = AV_DISPOSITION_DEFAULT;
         }
 
         if (ost->stream_copy) {
