@@ -681,7 +681,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         pic_num = avio_r8(pb); len--;
     }
     if(len<0) {
-        av_log(s, AV_LOG_ERROR, "Insuffient data\n");
+        av_log(s, AV_LOG_ERROR, "Insufficient data\n");
         return -1;
     }
     rm->remaining_len = len;
@@ -691,7 +691,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
             *timestamp = pos;
         }
         if(rm->remaining_len < len) {
-            av_log(s, AV_LOG_ERROR, "Insuffient remaining len\n");
+            av_log(s, AV_LOG_ERROR, "Insufficient remaining len\n");
             return -1;
         }
         rm->remaining_len -= len;
