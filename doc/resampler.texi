@@ -42,10 +42,11 @@ Set the internal sample format. Default value is @code{none}.
 This will automatically be chosen when it is not explicitly set.
 
 @item icl, in_channel_layout
-Set the input channel layout.
-
 @item ocl, out_channel_layout
-Set the output channel layout.
+Set the input/output channel layout.
+
+See @ref{channel layout syntax,,the Channel Layout section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the required syntax.
 
 @item clev, center_mix_level
 Set the center mix level. It is a value expressed in deciBel, and must be

@@ -541,6 +541,8 @@ A '|'-separated list of requested sample rates.
 @item channel_layouts
 A '|'-separated list of requested channel layouts.
 
+See @ref{channel layout syntax,,the Channel Layout section in the ffmpeg-utils(1) manual,ffmpeg-utils}
+for the required syntax.
 @end table
 
 If a parameter is omitted, all values are allowed.
