@@ -60,6 +60,7 @@ typedef struct TeletextContext
     TeletextPage    *pages;
     int             nb_pages;
     int64_t         pts;
+    int             handler_ret;
 
     vbi_decoder *   vbi;
     vbi_dvb_demux * dx;
@@ -307,6 +308,8 @@ handler(vbi_event *ev, void *user_data)
 
     if (strcmp(ctx->pgno, "*") && !strstr(ctx->pgno, pgno_str))
         return;
+    if (ctx->handler_ret < 0)
+        return;
 
     /* Fetch the page.  */
     res = vbi_fetch_vt_page(ctx->vbi, &page,
@@ -345,17 +348,22 @@ handler(vbi_event *ev, void *user_data)
                 res = (ctx->format_id == 0) ?
                     gen_sub_bitmap(ctx, cur_page->sub_rect, &page, chop_top) :
                     gen_sub_text  (ctx, cur_page->sub_rect, &page, chop_top);
-                if (res)
+                if (res < 0) {
                     av_freep(&cur_page->sub_rect);
-                else
+                    ctx->handler_ret = res;
+                } else {
                     ctx->pages[ctx->nb_pages++] = *cur_page;
+                }
+            } else {
+                ctx->handler_ret = AVERROR(ENOMEM);
             }
         } else {
-            av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory to to buffer pages\n");
+            ctx->handler_ret = AVERROR(ENOMEM);
         }
     } else {
         //TODO: If multiple packets contain more than one page, pages may got queued up, and this may happen...
         av_log(ctx, AV_LOG_ERROR, "Buffered too many pages, dropping page %s.\n", pgno_str);
+        ctx->handler_ret = AVERROR(ENOSYS);
     }
 
     vbi_unref_page(&page);
@@ -403,6 +411,8 @@ teletext_decode_frame(AVCodecContext *avctx,
          * (see mpegts demuxer) are not accurate enough to pass that test. */
         vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, NULL, &pesheader_buf, &pesheader_size);
 
+        ctx->handler_ret = pkt->size;
+
         while (left > 0) {
             int64_t pts = 0;
             unsigned int lines = vbi_dvb_demux_cor(ctx->dx, ctx->sliced, 64, &pts, &buf, &left);
@@ -423,8 +433,11 @@ teletext_decode_frame(AVCodecContext *avctx,
             }
         }
         ctx->pts = AV_NOPTS_VALUE;
-        ret = pkt->size;
+        ret = ctx->handler_ret;
     }
+
+    if (ret < 0)
+        return ret;
 
     // is there a subtitle to pass?
     if (ctx->nb_pages) {
