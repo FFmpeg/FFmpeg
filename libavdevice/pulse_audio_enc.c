@@ -42,11 +42,12 @@ static av_cold int pulse_write_header(AVFormatContext *h)
     PulseData *s = h->priv_data;
     AVStream *st = NULL;
     int ret;
+    unsigned int i;
     pa_sample_spec ss;
     pa_buffer_attr attr = { -1, -1, -1, -1, -1 };
     const char *stream_name = s->stream_name;
 
-    for (unsigned i = 0; i < h->nb_streams; i++) {
+    for (i = 0; i < h->nb_streams; i++) {
         if (h->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             st = h->streams[i];
             s->stream_index = i;
