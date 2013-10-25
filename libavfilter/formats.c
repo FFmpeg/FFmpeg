@@ -615,10 +615,21 @@ int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx)
     return 0;
 }
 
-int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx)
+int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
+                            void *log_ctx)
 {
     char *tail;
-    int64_t chlayout = av_get_channel_layout(arg);
+    int64_t chlayout, count;
+
+    if (nret) {
+        count = strtol(arg, &tail, 10);
+        if (*tail == 'c' && !tail[1] && count > 0 && count < 63) {
+            *nret = count;
+            *ret = 0;
+            return 0;
+        }
+    }
+    chlayout = av_get_channel_layout(arg);
     if (chlayout == 0) {
         chlayout = strtol(arg, &tail, 10);
         if (*tail || chlayout == 0) {
@@ -627,6 +638,8 @@ int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx)
         }
     }
     *ret = chlayout;
+    if (nret)
+        *nret = av_get_channel_layout_nb_channels(chlayout);
     return 0;
 }
 

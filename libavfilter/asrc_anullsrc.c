@@ -68,7 +68,7 @@ static av_cold int init(AVFilterContext *ctx)
                                      null->sample_rate_str, ctx)) < 0)
         return ret;
 
-    if ((ret = ff_parse_channel_layout(&null->channel_layout,
+    if ((ret = ff_parse_channel_layout(&null->channel_layout, NULL,
                                         null->channel_layout_str, ctx)) < 0)
         return ret;
 
