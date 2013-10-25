@@ -327,6 +327,7 @@ typedef struct InputFile {
 
 #if HAVE_PTHREADS
     pthread_t thread;           /* thread reading from this file */
+    int non_blocking;           /* reading packets from the thread should not block */
     int finished;               /* the thread has exited */
     int joined;                 /* the thread has been joined */
     pthread_mutex_t fifo_lock;  /* lock for access to fifo */
