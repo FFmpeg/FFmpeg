@@ -91,7 +91,7 @@ void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
  */
 av_alloc_size(1, 2) static inline void *av_malloc_array(size_t nmemb, size_t size)
 {
-    if (size <= 0 || nmemb >= INT_MAX / size)
+    if (!size || nmemb >= INT_MAX / size)
         return NULL;
     return av_malloc(nmemb * size);
 }
@@ -204,7 +204,7 @@ void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
  */
 av_alloc_size(1, 2) static inline void *av_mallocz_array(size_t nmemb, size_t size)
 {
-    if (size <= 0 || nmemb >= INT_MAX / size)
+    if (!size || nmemb >= INT_MAX / size)
         return NULL;
     return av_mallocz(nmemb * size);
 }
