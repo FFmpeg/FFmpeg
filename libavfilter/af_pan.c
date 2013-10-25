@@ -46,7 +46,6 @@ typedef struct PanContext {
     double gain[MAX_CHANNELS][MAX_CHANNELS];
     int64_t need_renorm;
     int need_renumber;
-    int nb_input_channels;
     int nb_output_channels;
 
     int pure_gains;
@@ -239,7 +238,7 @@ static int query_formats(AVFilterContext *ctx)
     ff_set_common_samplerates(ctx, formats);
 
     // inlink supports any channel layout
-    layouts = ff_all_channel_layouts();
+    layouts = ff_all_channel_counts();
     ff_channel_layouts_ref(layouts, &inlink->out_channel_layouts);
 
     // outlink supports only requested output channel layout
@@ -259,7 +258,6 @@ static int config_props(AVFilterLink *link)
     int i, j, k, r;
     double t;
 
-    pan->nb_input_channels = av_get_channel_layout_nb_channels(link->channel_layout);
     if (pan->need_renumber) {
         // input channels were given by their name: renumber them
         for (i = j = 0; i < MAX_CHANNELS; i++) {
@@ -273,7 +271,7 @@ static int config_props(AVFilterLink *link)
 
     // sanity check; can't be done in query_formats since the inlink
     // channel layout is unknown at that time
-    if (pan->nb_input_channels > SWR_CH_MAX ||
+    if (link->channels > SWR_CH_MAX ||
         pan->nb_output_channels > SWR_CH_MAX) {
         av_log(ctx, AV_LOG_ERROR,
                "libswresample support a maximum of %d channels. "
@@ -288,6 +286,8 @@ static int config_props(AVFilterLink *link)
                                   0, ctx);
     if (!pan->swr)
         return AVERROR(ENOMEM);
+    if (!link->channel_layout)
+        av_opt_set_int(pan->swr, "ich", link->channels, 0);
     if (!pan->out_channel_layout)
         av_opt_set_int(pan->swr, "och", pan->nb_output_channels, 0);
 
@@ -297,7 +297,7 @@ static int config_props(AVFilterLink *link)
         // get channel map from the pure gains
         for (i = 0; i < pan->nb_output_channels; i++) {
             int ch_id = -1;
-            for (j = 0; j < pan->nb_input_channels; j++) {
+            for (j = 0; j < link->channels; j++) {
                 if (pan->gain[i][j]) {
                     ch_id = j;
                     break;
@@ -315,7 +315,7 @@ static int config_props(AVFilterLink *link)
             if (!((pan->need_renorm >> i) & 1))
                 continue;
             t = 0;
-            for (j = 0; j < pan->nb_input_channels; j++)
+            for (j = 0; j < link->channels; j++)
                 t += pan->gain[i][j];
             if (t > -1E-5 && t < 1E-5) {
                 // t is almost 0 but not exactly, this is probably a mistake
@@ -324,7 +324,7 @@ static int config_props(AVFilterLink *link)
                            "Degenerate coefficients while renormalizing\n");
                 continue;
             }
-            for (j = 0; j < pan->nb_input_channels; j++)
+            for (j = 0; j < link->channels; j++)
                 pan->gain[i][j] /= t;
         }
         av_opt_set_int(pan->swr, "icl", link->channel_layout, 0);
@@ -339,7 +339,7 @@ static int config_props(AVFilterLink *link)
     // summary
     for (i = 0; i < pan->nb_output_channels; i++) {
         cur = buf;
-        for (j = 0; j < pan->nb_input_channels; j++) {
+        for (j = 0; j < link->channels; j++) {
             r = snprintf(cur, buf + sizeof(buf) - cur, "%s%.3g i%d",
                          j ? " + " : "", pan->gain[i][j], j);
             cur += FFMIN(buf + sizeof(buf) - cur, r);
