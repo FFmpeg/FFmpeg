@@ -116,10 +116,10 @@ static av_cold int init(AVFilterContext *ctx)
     if (!args)
         return AVERROR(ENOMEM);
     arg = av_strtok(args, "|", &tokenizer);
-    ret = ff_parse_channel_layout(&pan->out_channel_layout, NULL, arg, ctx);
+    ret = ff_parse_channel_layout(&pan->out_channel_layout,
+                                  &pan->nb_output_channels, arg, ctx);
     if (ret < 0)
         goto fail;
-    pan->nb_output_channels = av_get_channel_layout_nb_channels(pan->out_channel_layout);
 
     /* parse channel specifications */
     while ((arg = arg0 = av_strtok(NULL, "|", &tokenizer))) {
@@ -244,7 +244,9 @@ static int query_formats(AVFilterContext *ctx)
 
     // outlink supports only requested output channel layout
     layouts = NULL;
-    ff_add_channel_layout(&layouts, pan->out_channel_layout);
+    ff_add_channel_layout(&layouts,
+                          pan->out_channel_layout ? pan->out_channel_layout :
+                          FF_COUNT2LAYOUT(pan->nb_output_channels));
     ff_channel_layouts_ref(layouts, &outlink->in_channel_layouts);
     return 0;
 }
@@ -286,6 +288,8 @@ static int config_props(AVFilterLink *link)
                                   0, ctx);
     if (!pan->swr)
         return AVERROR(ENOMEM);
+    if (!pan->out_channel_layout)
+        av_opt_set_int(pan->swr, "och", pan->nb_output_channels, 0);
 
     // gains are pure, init the channel mapping
     if (pan->pure_gains) {
