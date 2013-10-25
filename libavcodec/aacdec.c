@@ -755,7 +755,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
         case AOT_ER_AAC_LD:
             res_flags = get_bits(gb, 3);
             if (res_flags) {
-                avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+                avpriv_report_missing_feature(avctx,
                                               "AAC data resilience (flags %x)",
                                               res_flags);
                 return AVERROR_PATCHWELCOME;
@@ -771,7 +771,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     case AOT_ER_AAC_LD:
         ep_config = get_bits(gb, 2);
         if (ep_config) {
-            avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+            avpriv_report_missing_feature(avctx,
                                           "epConfig %d", ep_config);
             return AVERROR_PATCHWELCOME;
         }
@@ -799,14 +799,14 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
 
     res_flags = get_bits(gb, 3);
     if (res_flags) {
-        avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+        avpriv_report_missing_feature(avctx,
                                       "AAC data resilience (flags %x)",
                                       res_flags);
         return AVERROR_PATCHWELCOME;
     }
 
     if (get_bits1(gb)) { // ldSbrPresentFlag
-        avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+        avpriv_report_missing_feature(avctx,
                                       "Low Delay SBR");
         return AVERROR_PATCHWELCOME;
     }
@@ -833,7 +833,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
 
     ep_config = get_bits(gb, 2);
     if (ep_config) {
-        avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+        avpriv_report_missing_feature(avctx,
                                       "epConfig %d", ep_config);
         return AVERROR_PATCHWELCOME;
     }
@@ -904,7 +904,7 @@ static int decode_audio_specific_config(AACContext *ac,
             return ret;
         break;
     default:
-        avpriv_report_missing_feature(avctx, AV_LOG_ERROR,
+        avpriv_report_missing_feature(avctx,
                                       "Audio object type %s%d",
                                       m4ac->sbr == 1 ? "SBR+" : "",
                                       m4ac->object_type);
