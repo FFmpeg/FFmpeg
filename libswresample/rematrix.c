@@ -433,8 +433,8 @@ int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mus
         off = len1 * out->bps;
     }
 
-    av_assert0(out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
-    av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout));
+    av_assert0(!s->out_ch_layout || out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
+    av_assert0(!s-> in_ch_layout || in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout));
 
     for(out_i=0; out_i<out->ch_count; out_i++){
         switch(s->matrix_ch[out_i][0]){
