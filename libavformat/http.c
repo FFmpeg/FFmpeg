@@ -432,14 +432,8 @@ static int process_line(URLContext *h, char *line, int line_count,
                 av_log(h, AV_LOG_WARNING, "Compressed (%s) content, need zlib with gzip support\n", p);
                 return AVERROR(ENOSYS);
 #endif
-            } else if (!av_strncasecmp(p, "identity", 8)) {
-                // The normal, no-encoding case (although servers shouldn't include
-                // the header at all if this is the case).
-            } else {
-                av_log(h, AV_LOG_WARNING, "Unknown content coding: %s\n", p);
-                return AVERROR(ENOSYS);
             }
-        }
+				}
     }
     return 1;
 }
