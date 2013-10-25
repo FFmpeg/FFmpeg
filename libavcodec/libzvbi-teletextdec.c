@@ -440,6 +440,8 @@ teletext_decode_frame(AVCodecContext *avctx,
             if (sub->rects) {
                 sub->num_rects = 1;
                 sub->rects[0] = ctx->pages->sub_rect;
+            } else {
+                ret = AVERROR(ENOMEM);
             }
         } else {
             av_log(avctx, AV_LOG_DEBUG, "sending empty sub\n");
@@ -452,7 +454,8 @@ teletext_decode_frame(AVCodecContext *avctx,
             ctx->pages[i] = ctx->pages[i + 1];
         ctx->nb_pages--;
 
-        *data_size = 1;
+        if (ret >= 0)
+            *data_size = 1;
     } else
         *data_size = 0;
 
