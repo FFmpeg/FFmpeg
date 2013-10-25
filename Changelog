@@ -43,6 +43,7 @@ version <next>
 - ReplayGain scanner
 - Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
 - Linux framebuffer output device
+- HEVC decoder, raw HEVC demuxer, HEVC demuxing in TS, Matroska and MP4
 
 
 version 2.0:
