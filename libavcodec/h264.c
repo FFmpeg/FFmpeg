@@ -2772,6 +2772,7 @@ static void flush_change(H264Context *h)
     h->sync= 0;
     h->list_count = 0;
     h->current_slice = 0;
+    h->mmco_reset = 1;
 }
 
 /* forget old pics after a seek */
