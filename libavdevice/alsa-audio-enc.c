@@ -80,6 +80,10 @@ static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
     uint8_t *buf = pkt->data;
 
     size /= s->frame_size;
+    if (pkt->dts != AV_NOPTS_VALUE)
+        s->timestamp = pkt->dts;
+    s->timestamp += pkt->duration ? pkt->duration : size;
+
     if (s->reorder_func) {
         if (size > s->reorder_buf_size)
             if (ff_alsa_extend_reorder_buf(s, size))
@@ -112,7 +116,7 @@ audio_get_output_timestamp(AVFormatContext *s1, int stream,
     snd_pcm_sframes_t delay = 0;
     *wall = av_gettime();
     snd_pcm_delay(s->h, &delay);
-    *dts = s1->streams[0]->cur_dts - delay;
+    *dts = s->timestamp - delay;
 }
 
 AVOutputFormat ff_alsa_muxer = {
