@@ -312,7 +312,7 @@ static int twinvq_read_bitstream(AVCodecContext *avctx, TwinVQContext *tctx,
         }
     }
 
-    return 0;
+    return (get_bits_count(&gb) + 7) / 8;
 }
 
 static av_cold int twinvq_decode_init(AVCodecContext *avctx)
