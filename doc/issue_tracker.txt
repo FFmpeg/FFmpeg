@@ -130,7 +130,7 @@ Type/Status:
 bug/closed/fixed
     Bugs which have to the best of our knowledge been fixed.
 
-bug/closed/wont_fix
+bug/closed/wontfix
     Bugs which we will not fix. Possible reasons include legality, high
     complexity for the sake of supporting obscure corner cases, speed loss
     for similarly esoteric purposes, et cetera.
@@ -144,10 +144,10 @@ bug/closed/works_for_me
     reproduction failed - that is the code seems to work correctly to the
     best of our knowledge.
 
-feature_request/closed/implemented
+feature_request/closed/fixed
     Feature requests which have been implemented.
 
-feature_request/closed/wont_implement
+feature_request/closed/wontfix
     Feature requests which will not be implemented. The reasons here could
     be legal, philosophical or others.
 
