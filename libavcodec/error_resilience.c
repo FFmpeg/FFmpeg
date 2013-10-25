@@ -726,7 +726,7 @@ static int is_intra_more_likely(ERContext *s)
 
 void ff_er_frame_start(ERContext *s)
 {
-    if (!s->avctx->err_recognition)
+    if (!s->avctx->error_concealment)
         return;
 
     memset(s->error_status_table, ER_MB_ERROR | VP_START | ER_MB_END,
@@ -760,7 +760,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
         return;
     }
 
-    if (!s->avctx->err_recognition)
+    if (!s->avctx->error_concealment)
         return;
 
     mask &= ~VP_START;
@@ -822,7 +822,7 @@ void ff_er_frame_end(ERContext *s)
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
-    if (!s->avctx->err_recognition || s->error_count == 0              ||
+    if (!s->avctx->error_concealment || s->error_count == 0            ||
         s->avctx->hwaccel                                              ||
         !s->cur_pic || s->cur_pic->field_picture                               ||
         s->error_count == 3 * s->mb_width *
