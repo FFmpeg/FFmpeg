@@ -512,7 +512,7 @@ int ff_twinvq_decode_frame(AVCodecContext *avctx, void *data,
 
     *got_frame_ptr = 1;
 
-    return avctx->block_align;
+    return ret;
 }
 
 /**
