@@ -2125,6 +2125,7 @@ dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid"
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
+fbdev_outdev_deps="linux_fb_h"
 iec61883_indev_deps="libiec61883"
 jack_indev_deps="jack_jack_h sem_timedwait"
 lavfi_indev_deps="avfilter"
@@ -4578,6 +4579,8 @@ esac
 enable frame_thread_encoder
 enabled_any $THREADS_LIST      && enable threads
 enabled_any $ATOMICS_LIST      && enable atomics_native
+
+enabled threads && ! enabled pthreads && ! enabled atomics_native && die "non pthread threading without atomics not supported, try adding --enable-pthreads or --cpu=i486 or higher if you are on x86"
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 

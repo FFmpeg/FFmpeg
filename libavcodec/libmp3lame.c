@@ -115,11 +115,11 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         lame_set_quality(s->gfp, avctx->compression_level);
 
     /* rate control */
-    if (avctx->flags & CODEC_FLAG_QSCALE) {
+    if (avctx->flags & CODEC_FLAG_QSCALE) { // VBR
         lame_set_VBR(s->gfp, vbr_default);
         lame_set_VBR_quality(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
     } else {
-        if (avctx->bit_rate)
+        if (avctx->bit_rate)                // CBR
             lame_set_brate(s->gfp, avctx->bit_rate / 1000);
     }
 
@@ -263,8 +263,8 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #define OFFSET(x) offsetof(LAMEContext, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "reservoir", "Use bit reservoir.", OFFSET(reservoir), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
-    { "joint_stereo", "Use joint stereo.", OFFSET(joint_stereo), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
+    { "reservoir",    "use bit reservoir", OFFSET(reservoir),    AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
+    { "joint_stereo", "use joint stereo",  OFFSET(joint_stereo), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
     { NULL },
 };
 

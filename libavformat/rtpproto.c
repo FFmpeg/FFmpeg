@@ -281,7 +281,11 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     char buf[1024];
     char path[1024];
     const char *p;
+<<<<<<< HEAD
 	int i, max_retry_count = 3;
+=======
+    int i, max_retry_count = 3;
+>>>>>>> upstream/master
 
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
@@ -329,35 +333,35 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         }
     }
 
-	for (i = 0;i < max_retry_count;i++) {
-    	build_udp_url(buf, sizeof(buf),
-    	              hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
-    	              connect, include_sources, exclude_sources);
-    	if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
-    	    goto fail;
-    	local_rtp_port = ff_udp_get_local_port(s->rtp_hd);
-		if(local_rtp_port == 65535) {
-			local_rtp_port = -1;
-			continue;
-		}
-    	if (local_rtcp_port<0) {
-    	    local_rtcp_port = local_rtp_port + 1;
-    		build_udp_url(buf, sizeof(buf),
-    		              hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
-    		              connect, include_sources, exclude_sources);
-    		if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0) {
-				local_rtp_port = local_rtcp_port = -1;
-				continue;
-			}
-			break;
-		}
-    	build_udp_url(buf, sizeof(buf),
-    				  hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
-    				  connect, include_sources, exclude_sources);
-    	if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0) 
-			goto fail;
-		break;
-	}
+    for (i = 0;i < max_retry_count;i++) {
+        build_udp_url(buf, sizeof(buf),
+                      hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
+                      connect, include_sources, exclude_sources);
+        if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
+            goto fail;
+        local_rtp_port = ff_udp_get_local_port(s->rtp_hd);
+        if(local_rtp_port == 65535) {
+            local_rtp_port = -1;
+            continue;
+        }
+        if (local_rtcp_port<0) {
+            local_rtcp_port = local_rtp_port + 1;
+            build_udp_url(buf, sizeof(buf),
+                          hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
+                          connect, include_sources, exclude_sources);
+            if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0) {
+                local_rtp_port = local_rtcp_port = -1;
+                continue;
+            }
+            break;
+        }
+        build_udp_url(buf, sizeof(buf),
+                      hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
+                      connect, include_sources, exclude_sources);
+        if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
+            goto fail;
+        break;
+    }
 
     /* just to ease handle access. XXX: need to suppress direct handle
        access */

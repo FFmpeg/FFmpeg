@@ -1,5 +1,7 @@
 /*
- * Common functions for the frame{crc,md5} muxers
+ * Copyright (c) 2011 Stefano Sabatini
+ * Copyright (c) 2009 Giliard B. de Freitas <giliarde@gmail.com>
+ * Copyright (C) 2002 Gunnar Monell <gmo@linux.nu>
  *
  * This file is part of FFmpeg.
  *
@@ -18,19 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "internal.h"
+#ifndef AVDEVICE_FBDEV_COMMON_H
+#define AVDEVICE_FBDEV_COMMON_H
 
-int ff_framehash_write_header(AVFormatContext *s)
-{
-    int i;
+#include <features.h>
+#include <linux/fb.h>
+#include "libavutil/pixfmt.h"
 
-    if (s->nb_streams && !(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT))
-        avio_printf(s->pb, "#software: %s\n", LIBAVFORMAT_IDENT);
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
-        avio_printf(s->pb, "#tb %d: %d/%d\n", i, st->time_base.num, st->time_base.den);
-        avio_flush(s->pb);
-    }
-    return 0;
-}
+enum AVPixelFormat ff_get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *varinfo);
+
+#endif /* AVDEVICE_FBDEV_COMMON_H */

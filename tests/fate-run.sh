@@ -90,11 +90,11 @@ ffmpeg(){
 }
 
 framecrc(){
-    ffmpeg "$@" -f framecrc -
+    ffmpeg "$@" -flags +bitexact -f framecrc -
 }
 
 framemd5(){
-    ffmpeg "$@" -f framemd5 -
+    ffmpeg "$@" -flags +bitexact -f framemd5 -
 }
 
 crc(){

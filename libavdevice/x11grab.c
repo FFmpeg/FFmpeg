@@ -77,6 +77,8 @@ struct x11grab {
     int  follow_mouse;       /**< Set by a private option. */
     int  show_region;        /**< set by a private option. */
     AVRational framerate;         /**< Set by a private option. */
+    int palette_changed;
+    uint32_t palette[256];
 
     Cursor c;
     Window region_win;       /**< This is used by show_region option. */
@@ -167,6 +169,9 @@ x11grab_read_header(AVFormatContext *s1)
     int use_shm;
     char *dpyname, *offset;
     int ret = 0;
+    Colormap color_map;
+    XColor color[256];
+    int i;
 
     dpyname = av_strdup(s1->filename);
     if (!dpyname)
@@ -258,6 +263,15 @@ x11grab_read_header(AVFormatContext *s1)
     case 8:
         av_log (s1, AV_LOG_DEBUG, "8 bit palette\n");
         input_pixfmt = AV_PIX_FMT_PAL8;
+        color_map = DefaultColormap(dpy, screen);
+        for (i = 0; i < 256; ++i)
+            color[i].pixel = i;
+        XQueryColors(dpy, color_map, color, 256);
+        for (i = 0; i < 256; ++i)
+            x11grab->palette[i] = (color[i].red   & 0xFF00) << 8 |
+                                  (color[i].green & 0xFF00)      |
+                                  (color[i].blue  & 0xFF00) >> 8;
+        x11grab->palette_changed = 1;
         break;
     case 16:
         if (       image->red_mask   == 0xf800 &&
@@ -489,6 +503,16 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     pkt->data = image->data;
     pkt->size = s->frame_size;
     pkt->pts = curtime;
+    if (s->palette_changed) {
+        uint8_t *pal = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE,
+                                               AVPALETTE_SIZE);
+        if (!pal) {
+            av_log(s, AV_LOG_ERROR, "Cannot append palette to packet\n");
+        } else {
+            memcpy(pal, s->palette, AVPALETTE_SIZE);
+            s->palette_changed = 0;
+        }
+    }
 
     screen = DefaultScreen(dpy);
     root = RootWindow(dpy, screen);

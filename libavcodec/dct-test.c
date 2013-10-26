@@ -580,5 +580,8 @@ int main(int argc, char **argv)
             }
     }
 
-    return err;
+    if (err)
+        printf("Error: %d.\n", err);
+
+    return !!err;
 }

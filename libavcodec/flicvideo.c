@@ -134,7 +134,7 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         case 15 : avctx->pix_fmt = AV_PIX_FMT_RGB555; break;
         case 16 : avctx->pix_fmt = AV_PIX_FMT_RGB565; break;
         case 24 : avctx->pix_fmt = AV_PIX_FMT_BGR24; /* Supposedly BGR, but havent any files to test with */
-                  av_log(avctx, AV_LOG_ERROR, "24Bpp FLC/FLX is unsupported due to no test files.\n");
+                  avpriv_request_sample(avctx, "24Bpp FLC/FLX");
                   return AVERROR_PATCHWELCOME;
         default :
                   av_log(avctx, AV_LOG_ERROR, "Unknown FLC/FLX depth of %d Bpp is unsupported.\n",depth);

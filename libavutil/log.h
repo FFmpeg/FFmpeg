@@ -240,6 +240,9 @@ void av_log_set_level(int level);
 /**
  * Set the logging callback
  *
+ * @note The callback must be thread safe, even if the application does not use
+ *       threads itself as some codecs are multithreaded.
+ *
  * @see av_log_default_callback
  *
  * @param callback A logging function with a compatible signature.

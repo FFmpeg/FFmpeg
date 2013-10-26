@@ -40,6 +40,11 @@
 #include "internal.h"
 #include "log.h"
 
+#if HAVE_PTHREADS
+#include <pthread.h>
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 #define LINE_SZ 1024
 
 static int av_log_level = AV_LOG_INFO;
@@ -221,6 +226,10 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 
     if (level > av_log_level)
         return;
+#if HAVE_PTHREADS
+    pthread_mutex_lock(&mutex);
+#endif
+
     format_line(ptr, level, fmt, vl, part, &print_prefix, type);
     snprintf(line, sizeof(line), "%s%s%s", part[0].str, part[1].str, part[2].str);
 
@@ -234,8 +243,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
         count++;
         if (is_atty == 1)
             fprintf(stderr, "    Last message repeated %d times\r", count);
-        av_bprint_finalize(part+2, NULL);
-        return;
+        goto end;
     }
     if (count > 0) {
         fprintf(stderr, "    Last message repeated %d times\n", count);
@@ -248,7 +256,11 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     colored_fputs(type[1], part[1].str);
     sanitize(part[2].str);
     colored_fputs(av_clip(level >> 3, 0, 6), part[2].str);
+end:
     av_bprint_finalize(part+2, NULL);
+#if HAVE_PTHREADS
+    pthread_mutex_unlock(&mutex);
+#endif
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) =

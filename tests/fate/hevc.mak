@@ -98,7 +98,7 @@ FATE_HEVC_SEI =                 \
 
 define FATE_HEVC_SEI_TEST
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = ffmpeg -strict -2 -err_detect +explode -xerror -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -f null -
+fate-hevc-conformance-$(1): CMD = ffmpeg -err_detect +explode -xerror -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit -f null -
 fate-hevc-conformance-$(1): CMP = null
 fate-hevc-conformance-$(1): REF = /dev/null
 endef
@@ -149,13 +149,13 @@ FATE_HEVC_FRAMECRC =            \
 
 define FATE_HEVC_FRAMECRC_TEST
 FATE_HEVC += fate-hevc-conformance-$(1)
-fate-hevc-conformance-$(1): CMD = framecrc -strict -2 -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
+fate-hevc-conformance-$(1): CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/$(1).bit
 endef
 
 $(foreach N,$(FATE_HEVC_FRAMECRC),$(eval $(call FATE_HEVC_FRAMECRC_TEST,$(N))))
 
 FATE_HEVC += fate-hevc-conformance-DBLK_A_MAIN10_VIXS_2
-fate-hevc-conformance-DBLK_A_MAIN10_VIXS_2: CMD = framecrc -strict -2 -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/DBLK_A_MAIN10_VIXS_2.bit -pix_fmt yuv420p10le
+fate-hevc-conformance-DBLK_A_MAIN10_VIXS_2: CMD = framecrc -vsync drop -i $(TARGET_SAMPLES)/hevc-conformance/DBLK_A_MAIN10_VIXS_2.bit -pix_fmt yuv420p10le
 
 FATE_HEVC-$(call DEMDEC, HEVC, HEVC) += $(FATE_HEVC)
 

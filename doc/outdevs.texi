@@ -104,6 +104,35 @@ ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_dither colors -
 @end example
 @end itemize
 
+@section fbdev
+
+Linux framebuffer output device.
+
+The Linux framebuffer is a graphic hardware-independent abstraction
+layer to show graphics on a computer monitor, typically on the
+console. It is accessed through a file device node, usually
+@file{/dev/fb0}.
+
+For more detailed information read the file
+@file{Documentation/fb/framebuffer.txt} included in the Linux source tree.
+
+@subsection Options
+@table @option
+
+@item xoffset
+@item yoffset
+Set x/y coordinate of top left corner. Default is 0.
+@end table
+
+@subsection Examples
+Play a file on framebuffer device @file{/dev/fb0}.
+Required pixel format depends on current framebuffer settings.
+@example
+ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+@end example
+
+See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+
 @section oss
 
 OSS (Open Sound System) output device.

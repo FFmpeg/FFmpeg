@@ -680,16 +680,20 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         pos  = get_num(pb, &len);
         pic_num = avio_r8(pb); len--;
     }
-    if(len<0)
+    if(len<0) {
+        av_log(s, AV_LOG_ERROR, "Insufficient data\n");
         return -1;
+    }
     rm->remaining_len = len;
     if(type&1){     // frame, not slice
         if(type == 3){  // frame as a part of packet
             len= len2;
             *timestamp = pos;
         }
-        if(rm->remaining_len < len)
+        if(rm->remaining_len < len) {
+            av_log(s, AV_LOG_ERROR, "Insufficient remaining len\n");
             return -1;
+        }
         rm->remaining_len -= len;
         if(av_new_packet(pkt, len + 9) < 0)
             return AVERROR(EIO);
@@ -698,6 +702,7 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
         AV_WL32(pkt->data + 5, 0);
         if ((ret = avio_read(pb, pkt->data + 9, len)) != len) {
             av_free_packet(pkt);
+            av_log(s, AV_LOG_ERROR, "Failed to read %d bytes\n", len);
             return ret < 0 ? ret : AVERROR(EIO);
         }
         return 0;
@@ -724,14 +729,18 @@ static int rm_assemble_video_frame(AVFormatContext *s, AVIOContext *pb,
     if(type == 2)
         len = FFMIN(len, pos);
 
-    if(++vst->cur_slice > vst->slices)
+    if(++vst->cur_slice > vst->slices) {
+        av_log(s, AV_LOG_ERROR, "cur slice %d, too large\n", vst->cur_slice);
         return 1;
+    }
     if(!vst->pkt.data)
         return AVERROR(ENOMEM);
     AV_WL32(vst->pkt.data - 7 + 8*vst->cur_slice, 1);
     AV_WL32(vst->pkt.data - 3 + 8*vst->cur_slice, vst->videobufpos - 8*vst->slices - 1);
-    if(vst->videobufpos + len > vst->videobufsize)
+    if(vst->videobufpos + len > vst->videobufsize) {
+        av_log(s, AV_LOG_ERROR, "outside videobufsize\n");
         return 1;
+    }
     if (avio_read(pb, vst->pkt.data + vst->videobufpos, len) != len)
         return AVERROR(EIO);
     vst->videobufpos += len;
@@ -788,7 +797,7 @@ ff_rm_parse_packet (AVFormatContext *s, AVIOContext *pb,
         rm->current_stream= st->id;
         ret = rm_assemble_video_frame(s, pb, rm, ast, pkt, len, seq, &timestamp);
         if(ret)
-            return ret; //got partial frame or error
+            return ret < 0 ? ret : -1; //got partial frame or error
     } else if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
         if ((ast->deint_id == DEINT_ID_GENR) ||
             (ast->deint_id == DEINT_ID_INT4) ||
