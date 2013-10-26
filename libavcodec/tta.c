@@ -275,7 +275,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             avctx->extradata_size - 26 < total_frames * 4)
             av_log(avctx, AV_LOG_WARNING, "Seek table missing or too small\n");
         else if (avctx->err_recognition & AV_EF_CRCCHECK) {
-            if (tta_check_crc(s, avctx->extradata + 22, total_frames * 4))
+            int ret = tta_check_crc(s, avctx->extradata + 22, total_frames * 4);
+            if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
         }
         skip_bits_long(&s->gb, 32 * total_frames);
@@ -316,7 +317,8 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     int32_t *p;
 
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
-        if (buf_size < 4 || tta_check_crc(s, buf, buf_size - 4))
+        if (buf_size < 4 ||
+            (tta_check_crc(s, buf, buf_size - 4) && avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
     }
 

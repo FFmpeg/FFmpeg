@@ -2332,6 +2332,13 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int err_recognition;
+
+/**
+ * Verify checksums embedded in the bitstream (could be of either encoded or
+ * decoded data, depending on the codec) and print an error message on mismatch.
+ * If AV_EF_EXPLODE is also set, a mismatching checksum will result in the
+ * decoder returning an error.
+ */
 #define AV_EF_CRCCHECK  (1<<0)
 #define AV_EF_BITSTREAM (1<<1)
 #define AV_EF_BUFFER    (1<<2)

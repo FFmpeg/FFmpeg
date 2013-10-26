@@ -699,9 +699,11 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
     } while (!last && count < s->samples);
 
     wv_reset_saved_context(s);
-    if ((s->avctx->err_recognition & AV_EF_CRCCHECK) &&
-        wv_check_crc(s, crc, crc_extra_bits))
-        return AVERROR_INVALIDDATA;
+    if (s->avctx->err_recognition & AV_EF_CRCCHECK) {
+        int ret = wv_check_crc(s, crc, crc_extra_bits);
+        if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE)
+            return ret;
+    }
 
     return 0;
 }

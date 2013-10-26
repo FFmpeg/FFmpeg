@@ -1330,6 +1330,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
             if (av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2],
                        s->frame_size - 2)) {
                 av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");
+                if (avctx->err_recognition & AV_EF_EXPLODE)
+                    return AVERROR_INVALIDDATA;
                 err = AAC_AC3_PARSE_ERROR_CRC;
             }
         }
