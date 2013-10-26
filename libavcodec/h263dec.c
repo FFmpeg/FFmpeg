@@ -405,11 +405,14 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (s->bitstream_buffer_size && (s->divx_packed || buf_size < 20)) // divx 5.01+/xvid frame reorder
-        init_get_bits(&s->gb, s->bitstream_buffer,
-                      s->bitstream_buffer_size * 8);
+        ret = init_get_bits8(&s->gb, s->bitstream_buffer,
+                             s->bitstream_buffer_size);
     else
-        init_get_bits(&s->gb, buf, buf_size * 8);
+        ret = init_get_bits8(&s->gb, buf, buf_size);
     s->bitstream_buffer_size = 0;
+
+    if (ret < 0)
+        return ret;
 
     if (!s->context_initialized)
         // we need the idct permutaton for reading a custom matrix
@@ -434,9 +437,11 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         if (s->avctx->extradata_size && s->picture_number == 0) {
             GetBitContext gb;
 
-            init_get_bits(&gb, s->avctx->extradata,
-                          s->avctx->extradata_size * 8);
-            ret = ff_mpeg4_decode_picture_header(s, &gb);
+            ret = init_get_bits8(&gb, s->avctx->extradata,
+                                 s->avctx->extradata_size);
+            if (ret < 0)
+                return ret;
+            ff_mpeg4_decode_picture_header(s, &gb);
         }
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {
