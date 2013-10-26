@@ -41,6 +41,7 @@
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
+    int ret;
 
     s->avctx           = avctx;
     s->out_format      = FMT_H263;
@@ -102,7 +103,9 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         s->h263_flv = 1;
         break;
     default:
-        return -1;
+        av_log(avctx, AV_LOG_ERROR, "Unsupported codec %d\n",
+               avctx->codec->id);
+        return AVERROR(ENOSYS);
     }
     s->codec_id    = avctx->codec->id;
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
@@ -110,8 +113,8 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != AV_CODEC_ID_H263 &&
         avctx->codec->id != AV_CODEC_ID_MPEG4)
-        if (ff_MPV_common_init(s) < 0)
-            return -1;
+        if ((ret = ff_MPV_common_init(s)) < 0)
+            return ret;
 
     ff_h263_decode_init_vlc();
 
@@ -160,6 +163,7 @@ static int decode_slice(MpegEncContext *s)
     const int part_mask = s->partitioned_frame
                           ? (ER_AC_END | ER_AC_ERROR) : 0x7F;
     const int mb_size = 16;
+    int ret;
 
     s->last_resync_gb   = s->gb;
     s->first_slice_line = 1;
@@ -180,8 +184,8 @@ static int decode_slice(MpegEncContext *s)
         const int qscale = s->qscale;
 
         if (CONFIG_MPEG4_DECODER && s->codec_id == AV_CODEC_ID_MPEG4)
-            if (ff_mpeg4_decode_partitions(s) < 0)
-                return -1;
+            if ((ret = ff_mpeg4_decode_partitions(s)) < 0)
+                return ret;
 
         /* restore variables which were modified */
         s->first_slice_line = 1;
@@ -253,13 +257,13 @@ static int decode_slice(MpegEncContext *s)
                     ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                                     s->mb_x + 1, s->mb_y,
                                     ER_MB_END & part_mask);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 av_log(s->avctx, AV_LOG_ERROR, "Error at MB: %d\n", xy);
                 ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                                 s->mb_x, s->mb_y, ER_MB_ERROR & part_mask);
 
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             ff_MPV_decode_mb(s, s->block);
@@ -353,7 +357,7 @@ static int decode_slice(MpegEncContext *s)
     ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y,
                     ER_MB_END & part_mask);
 
-    return -1;
+    return AVERROR_INVALIDDATA;
 }
 
 int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -392,7 +396,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         } else {
             av_log(s->avctx, AV_LOG_ERROR,
                    "this codec does not support truncated bitstreams\n");
-            return -1;
+            return AVERROR(ENOSYS);
         }
 
         if (ff_combine_frame(&s->parse_context, next, (const uint8_t **)&buf,
@@ -408,8 +412,9 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     s->bitstream_buffer_size = 0;
 
     if (!s->context_initialized)
-        if (ff_MPV_common_init(s) < 0) // we need the idct permutaton for reading a custom matrix
-            return -1;
+        // we need the idct permutaton for reading a custom matrix
+        if ((ret = ff_MPV_common_init(s)) < 0)
+            return ret;
 
     /* We need to set current_picture_ptr before reading the header,
      * otherwise we cannot store anyting in there */
@@ -448,7 +453,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     /* skip if the header was thrashed */
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "header damaged\n");
-        return -1;
+        return ret;
     }
 
     avctx->has_b_frames = !s->low_delay;
@@ -631,16 +636,18 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         s->me.qpel_avg = s->dsp.avg_qpel_pixels_tab;
     }
 
-    if (ff_MPV_frame_start(s, avctx) < 0)
-        return -1;
+    if ((ret = ff_MPV_frame_start(s, avctx)) < 0)
+        return ret;
 
     if (!s->divx_packed && !avctx->hwaccel)
         ff_thread_finish_setup(avctx);
 
-    if (avctx->hwaccel)
-        if (avctx->hwaccel->start_frame(avctx, s->gb.buffer,
-                                        s->gb.buffer_end - s->gb.buffer) < 0)
-            return -1;
+    if (avctx->hwaccel) {
+        ret = avctx->hwaccel->start_frame(avctx, s->gb.buffer,
+                                          s->gb.buffer_end - s->gb.buffer);
+        if (ret < 0 )
+            return ret;
+    }
 
     ff_mpeg_er_frame_start(s);
 
@@ -725,9 +732,11 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 intrax8_decoded:
     ff_er_frame_end(&s->er);
 
-    if (avctx->hwaccel)
-        if (avctx->hwaccel->end_frame(avctx) < 0)
-            return -1;
+    if (avctx->hwaccel) {
+        ret = avctx->hwaccel->end_frame(avctx);
+        if (ret < 0)
+            return ret;
+    }
 
     ff_MPV_frame_end(s);
 
