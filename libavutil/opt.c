@@ -61,7 +61,8 @@ static int read_number(const AVOption *o, void *dst, double *num, int *den, int6
 
 static int write_number(void *obj, const AVOption *o, void *dst, double num, int den, int64_t intnum)
 {
-    if (o->max*den < num*intnum || o->min*den > num*intnum) {
+    if (o->type != AV_OPT_TYPE_FLAGS &&
+        (o->max * den < num * intnum || o->min * den > num * intnum)) {
         av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range\n",
                num*intnum/den, o->name);
         return AVERROR(ERANGE);
