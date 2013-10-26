@@ -381,7 +381,7 @@ VERTICAL_EXTEND 16, 22
 %endif
 
 %if %1-%%off >= 4
-%if %1 > 8 %% %1-%%off > 4
+%if %1 > 8 && %1-%%off > 4
     movq      [%2+%1-8], m0
 %assign %%off %1
 %elif %1 >= 8 && %1-%%off >= 4
