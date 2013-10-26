@@ -171,7 +171,7 @@ int av_frame_get_buffer(AVFrame *frame, int align)
     return AVERROR(EINVAL);
 }
 
-int av_frame_ref(AVFrame *dst, AVFrame *src)
+int av_frame_ref(AVFrame *dst, const AVFrame *src)
 {
     int i, ret = 0;
 
@@ -257,7 +257,7 @@ fail:
     return ret;
 }
 
-AVFrame *av_frame_clone(AVFrame *src)
+AVFrame *av_frame_clone(const AVFrame *src)
 {
     AVFrame *ret = av_frame_alloc();
 

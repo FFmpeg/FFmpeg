@@ -384,7 +384,7 @@ void av_frame_free(AVFrame **frame);
  *
  * @return 0 on success, a negative AVERROR on error
  */
-int av_frame_ref(AVFrame *dst, AVFrame *src);
+int av_frame_ref(AVFrame *dst, const AVFrame *src);
 
 /**
  * Create a new frame that references the same data as src.
@@ -393,7 +393,7 @@ int av_frame_ref(AVFrame *dst, AVFrame *src);
  *
  * @return newly created AVFrame on success, NULL on error.
  */
-AVFrame *av_frame_clone(AVFrame *src);
+AVFrame *av_frame_clone(const AVFrame *src);
 
 /**
  * Unreference all the buffers referenced by frame and reset the frame fields.
