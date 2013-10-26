@@ -437,7 +437,6 @@ static int process_line(URLContext *h, char *line, int line_count,
                 // the header at all if this is the case).
             } else {
                 av_log(h, AV_LOG_WARNING, "Unknown content coding: %s\n", p);
-                return AVERROR(ENOSYS);
             }
         }
     }
