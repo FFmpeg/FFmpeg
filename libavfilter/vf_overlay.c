@@ -346,8 +346,8 @@ static void blend_image(AVFilterContext *ctx,
     const int dst_w = dst->width;
     const int dst_h = dst->height;
 
-    if (x >= dst_w || x+dst_w  < 0 ||
-        y >= dst_h || y+dst_h < 0)
+    if (x >= dst_w || x+src_w < 0 ||
+        y >= dst_h || y+src_h < 0)
         return; /* no intersection */
 
     if (s->main_is_packed_rgb) {
