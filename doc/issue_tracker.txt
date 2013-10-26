@@ -28,6 +28,9 @@ http(s)://trac.ffmpeg.org
 
 Type:
 -----
+art
+    Artwork such as photos, music, banners, and logos.
+
 bug / defect
     An error, flaw, mistake, failure, or fault in FFmpeg or libav* that
     prevents it from behaving as intended.
@@ -41,6 +44,9 @@ feature request / enhancement
 license violation
     ticket to keep track of (L)GPL violations of ffmpeg by others
 
+sponsoring request
+    Developer requests for hardware, software, specifications, money,
+    refunds, etc.
 
 Priority:
 ---------

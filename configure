@@ -315,6 +315,7 @@ Optimization options (experts only):
   --disable-sse42          disable SSE4.2 optimizations
   --disable-avx            disable AVX optimizations
   --disable-fma4           disable FMA4 optimizations
+  --disable-avx2           disable AVX2 optimizations
   --disable-armv5te        disable armv5te optimizations
   --disable-armv6          disable armv6 optimizations
   --disable-armv6t2        disable armv6t2 optimizations
@@ -1344,6 +1345,7 @@ ARCH_EXT_LIST_X86='
     amd3dnow
     amd3dnowext
     avx
+    avx2
     fma4
     i686
     mmx
@@ -1705,6 +1707,7 @@ sse4_deps="ssse3"
 sse42_deps="sse4"
 avx_deps="sse42"
 fma4_deps="avx"
+avx2_deps="avx"
 
 mmx_external_deps="yasm"
 mmx_inline_deps="inline_asm"
@@ -4962,7 +4965,7 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
+Libs: -L\${libdir} -Wl,-rpath,\${libdir} -l${shortname} $(enabled shared || echo $libs)
 Cflags: -I\${includedir}
 EOF
 }

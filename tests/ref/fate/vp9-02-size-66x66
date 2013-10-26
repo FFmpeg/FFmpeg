@@ -1,4 +1,8 @@
+#format: frame checksums
+#version: 1
+#hash: MD5
 #tb 0: 1001/30000
+#stream#, dts,        pts, duration,     size, hash
 0,          0,          0,        1,     6534, 69f9028d52f95d2e7f986c57b19fc018
 0,          1,          1,        1,     6534, 068e611f62b3f6222f6b1699748c8fbf
 0,          2,          2,        1,     6534, 3d3fec78ff2274241a7958f17a773a19
