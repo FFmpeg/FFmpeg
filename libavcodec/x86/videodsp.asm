@@ -344,10 +344,6 @@ VERTICAL_EXTEND 16, 22
 ; obviously not the same on both sides.
 
 %macro READ_V_PIXEL 2
-%if %1 == 2
-    movzx          valw, byte %2
-    imul           valw, 0x0101
-%else
     movzx          vald, byte %2
     imul           vald, 0x01010101
 %if %1 >= 8
@@ -356,13 +352,15 @@ VERTICAL_EXTEND 16, 22
     pshufd           m0, m0, q0000
 %else
     punpckldq        m0, m0
-%endif
-%endif ; %1 >= 8
-%endif
+%endif ; mmsize == 16
+%endif ; %1 > 16
 %endmacro ; READ_V_PIXEL
 
 %macro WRITE_V_PIXEL 2
 %assign %%off 0
+
+%if %1 >= 8
+
 %rep %1/mmsize
     movu     [%2+%%off], m0
 %assign %%off %%off+mmsize
@@ -378,27 +376,29 @@ VERTICAL_EXTEND 16, 22
 %assign %%off %%off+8
 %endif
 %endif ; %1-%%off >= 8
-%endif
+%endif ; mmsize == 16
 
 %if %1-%%off >= 4
 %if %1 > 8 && %1-%%off > 4
     movq      [%2+%1-8], m0
 %assign %%off %1
-%elif %1 >= 8 && %1-%%off >= 4
-    movd     [%2+%%off], m0
-%assign %%off %%off+4
 %else
-    mov      [%2+%%off], vald
+    movd     [%2+%%off], m0
 %assign %%off %%off+4
 %endif
 %endif ; %1-%%off >= 4
 
-%if %1-%%off >= 2
-%if %1 >= 8
-    movd      [%2+%1-4], m0
-%else
+%else ; %1 < 8
+
+%rep %1/4
+    mov      [%2+%%off], vald
+%assign %%off %%off+4
+%endrep ; %1/4
+
+%endif ; %1 >=/< 8
+
+%if %1-%%off == 2
     mov      [%2+%%off], valw
-%endif
 %endif ; (%1-%%off)/2
 %endmacro ; WRITE_V_PIXEL
 
