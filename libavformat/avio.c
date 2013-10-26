@@ -187,6 +187,14 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     return err;
 }
 
+/* Update udp client port */
+int ff_update_client_port(URLContext *h) {
+	int err = -1;
+	if(h && h->prot && h->prot->update_client_port)
+		err = h->prot->update_client_port(h);
+	return err;
+}
+
 int ffurl_connect(URLContext* uc, AVDictionary **options)
 {
     int err =

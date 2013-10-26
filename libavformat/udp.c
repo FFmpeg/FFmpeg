@@ -854,6 +854,28 @@ static int udp_close(URLContext *h)
     return 0;
 }
 
+static int udp_update_remote_port(URLContext *h) {
+	UDPContext *s = h->priv_data;
+	int ret;
+	struct sockaddr_storage from_addr;
+	int from_len;
+	uint8_t buf[64];
+	int size = 64;
+	struct sockaddr_in *addr = NULL;
+	if(!(h->flags & AVIO_FLAG_NONBLOCK)) {
+			ret = ff_network_wait_fd(s->udp_fd, 0);
+			if (ret < 0)
+					return ret;
+	}
+	from_len = sizeof(from_addr);
+	ret = recvfrom(s->udp_fd, buf, size, 0,
+					(struct sockaddr *)&from_addr, &from_len);
+	addr = (struct sockaddr_storage *)&(s->dest_addr);
+	addr->sin_port = ((struct sockaddr_in *)&from_addr)->sin_port;
+	s->dest_addr_len = sizeof(s->dest_addr);
+	return 0;
+}
+
 URLProtocol ff_udp_protocol = {
     .name                = "udp",
     .url_open            = udp_open,
@@ -864,4 +886,5 @@ URLProtocol ff_udp_protocol = {
     .priv_data_size      = sizeof(UDPContext),
     .priv_data_class     = &udp_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
+	.update_client_port  = udp_update_remote_port,
 };
