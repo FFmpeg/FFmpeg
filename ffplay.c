@@ -785,6 +785,14 @@ static void blend_subrect(AVPicture *dst, const AVSubtitleRect *rect, int imgw, 
     }
 }
 
+static void free_picture(VideoPicture *vp)
+{
+     if (vp->bmp) {
+         SDL_FreeYUVOverlay(vp->bmp);
+         vp->bmp = NULL;
+     }
+}
+
 static void free_subpicture(SubPicture *sp)
 {
     avsubtitle_free(&sp->sub);
@@ -1013,7 +1021,6 @@ static void video_audio_display(VideoState *s)
 
 static void stream_close(VideoState *is)
 {
-    VideoPicture *vp;
     int i;
     /* XXX: use a special url_shutdown call to abort parse cleanly */
     is->abort_request = 1;
@@ -1023,13 +1030,8 @@ static void stream_close(VideoState *is)
     packet_queue_destroy(&is->subtitleq);
 
     /* free all pictures */
-    for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
-        vp = &is->pictq[i];
-        if (vp->bmp) {
-            SDL_FreeYUVOverlay(vp->bmp);
-            vp->bmp = NULL;
-        }
-    }
+    for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++)
+        free_picture(&is->pictq[i]);
     for (i = 0; i < SUBPICTURE_QUEUE_SIZE; i++)
         free_subpicture(&is->subpq[i]);
     SDL_DestroyMutex(is->pictq_mutex);
@@ -1505,8 +1507,7 @@ static void alloc_picture(VideoState *is)
 
     vp = &is->pictq[is->pictq_windex];
 
-    if (vp->bmp)
-        SDL_FreeYUVOverlay(vp->bmp);
+    free_picture(vp);
 
     video_open(is, 0, vp);
 
@@ -1714,7 +1715,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, AVPacket *pkt, int *s
                     !isnan(ptsdiff) && ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
                     clockdiff + ptsdiff - is->frame_last_filter_delay < 0 &&
                     is->videoq.nb_packets) {
-                    is->frame_last_dropped_pos = pkt->pos;
+                    is->frame_last_dropped_pos = av_frame_get_pkt_pos(frame);
                     is->frame_last_dropped_pts = dpts;
                     is->frame_last_dropped_serial = *serial;
                     is->frame_drops_early++;
@@ -1832,12 +1833,20 @@ static int configure_audio_filters(VideoState *is, const char *afilters, int for
     int64_t channel_layouts[2] = { 0, -1 };
     int channels[2] = { 0, -1 };
     AVFilterContext *filt_asrc = NULL, *filt_asink = NULL;
+    char aresample_swr_opts[512] = "";
+    AVDictionaryEntry *e = NULL;
     char asrc_args[256];
     int ret;
 
     avfilter_graph_free(&is->agraph);
     if (!(is->agraph = avfilter_graph_alloc()))
         return AVERROR(ENOMEM);
+
+    while ((e = av_dict_get(swr_opts, "", e, AV_DICT_IGNORE_SUFFIX)))
+        av_strlcatf(aresample_swr_opts, sizeof(aresample_swr_opts), "%s=%s:", e->key, e->value);
+    if (strlen(aresample_swr_opts))
+        aresample_swr_opts[strlen(aresample_swr_opts)-1] = '\0';
+    av_opt_set(is->agraph, "aresample_swr_opts", aresample_swr_opts, 0);
 
     ret = snprintf(asrc_args, sizeof(asrc_args),
                    "sample_rate=%d:sample_fmt=%s:channels=%d:time_base=%d/%d",
@@ -1982,7 +1991,7 @@ static int video_thread(void *arg)
         }
 #else
         pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(is->video_st->time_base);
-        ret = queue_picture(is, frame, pts, pkt.pos, serial);
+        ret = queue_picture(is, frame, pts, av_frame_get_pkt_pos(frame), serial);
         av_frame_unref(frame);
 #endif
 
@@ -3500,9 +3509,9 @@ void show_help_default(const char *opt, const char *arg)
            "q, ESC              quit\n"
            "f                   toggle full screen\n"
            "p, SPC              pause\n"
-           "a                   cycle audio channel\n"
+           "a                   cycle audio channel in the current program\n"
            "v                   cycle video channel\n"
-           "t                   cycle subtitle channel\n"
+           "t                   cycle subtitle channel in the current program\n"
            "c                   cycle program\n"
            "w                   show audio waves\n"
            "s                   activate frame-step mode\n"
