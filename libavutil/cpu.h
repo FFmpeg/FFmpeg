@@ -52,7 +52,6 @@
 // #endif
 #define AV_CPU_FLAG_AVX2         0x8000 ///< AVX2 functions: requires OS support even if YMM registers aren't used
 
-
 #define AV_CPU_FLAG_ALTIVEC      0x0001 ///< standard
 
 #define AV_CPU_FLAG_ARMV5TE      (1 << 0)

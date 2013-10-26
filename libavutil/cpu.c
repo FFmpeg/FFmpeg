@@ -269,7 +269,7 @@ static const struct {
     { AV_CPU_FLAG_3DNOW,     "3dnow"      },
     { AV_CPU_FLAG_3DNOWEXT,  "3dnowext"   },
     { AV_CPU_FLAG_CMOV,      "cmov"       },
-    { AV_CPU_FLAG_AVX2,       "avx2"       },
+    { AV_CPU_FLAG_AVX2,      "avx2"       },
 #endif
     { 0 }
 };
