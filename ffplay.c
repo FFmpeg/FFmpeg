@@ -1911,6 +1911,7 @@ static int video_thread(void *arg)
     double pts;
     int ret;
     int serial = 0;
+    AVRational tb = is->video_st->time_base;
 
 #if CONFIG_AVFILTER
     AVFilterGraph *graph = avfilter_graph_alloc();
@@ -1984,15 +1985,13 @@ static int video_thread(void *arg)
             is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
             if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
                 is->frame_last_filter_delay = 0;
-
-            pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(filt_out->inputs[0]->time_base);
+            tb = filt_out->inputs[0]->time_base;
+#endif
+            pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
             ret = queue_picture(is, frame, pts, av_frame_get_pkt_pos(frame), serial);
             av_frame_unref(frame);
+#if CONFIG_AVFILTER
         }
-#else
-        pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(is->video_st->time_base);
-        ret = queue_picture(is, frame, pts, av_frame_get_pkt_pos(frame), serial);
-        av_frame_unref(frame);
 #endif
 
         if (ret < 0)
