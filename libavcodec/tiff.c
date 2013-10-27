@@ -597,9 +597,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             value = UINT_MAX;
         }
     } else {
-        if (type_sizes[type] * count > 4) {
-            off   = bytestream2_tell(&s->gb);
-        }
+        off   = bytestream2_tell(&s->gb);
     }
 
     switch (tag) {
