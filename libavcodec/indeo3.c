@@ -944,7 +944,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         free_frame_buffers(ctx);
         if ((res = allocate_frame_buffers(ctx, avctx)) < 0)
              return res;
-        avcodec_set_dimensions(avctx, width, height);
+        ff_set_dimensions(avctx, width, height);
     }
 
     y_offset = bytestream2_get_le32(&gb);
