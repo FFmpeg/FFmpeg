@@ -1142,7 +1142,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame, *f;
-    void *buffer_to_free = NULL;
     int i, ret = 0, err = 0, resample_changed;
 
     if (!ist->decoded_frame && !(ist->decoded_frame = av_frame_alloc()))
@@ -1210,7 +1209,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     av_frame_unref(ist->filter_frame);
     av_frame_unref(decoded_frame);
-    av_free(buffer_to_free);
     return err < 0 ? err : ret;
 }
 
