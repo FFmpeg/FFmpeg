@@ -250,10 +250,9 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 16;
 
     if (avctx->width != width || avctx->height != height) {
-        if (av_image_check_size(width, height, 0, avctx) < 0)
-            return -1;
-        avcodec_set_dimensions(avctx, width, height);
         av_frame_unref(&s->last_frame);
+        if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
+            return ret;
     }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0) {
