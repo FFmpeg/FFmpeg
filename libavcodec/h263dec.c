@@ -600,7 +600,9 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         /* H.263 could change picture size any time */
         s->context_reinit = 0;
 
-        avcodec_set_dimensions(avctx, s->width, s->height);
+        ret = ff_set_dimensions(avctx, s->width, s->height);
+        if (ret < 0)
+            return ret;
 
         if ((ret = ff_MPV_common_frame_size_change(s)))
             return ret;
