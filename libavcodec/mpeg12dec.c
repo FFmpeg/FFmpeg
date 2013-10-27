@@ -1141,6 +1141,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     uint8_t old_permutation[64];
+    int ret;
 
     if ((s1->mpeg_enc_ctx_allocated == 0) ||
         avctx->coded_width  != s->width   ||
@@ -1162,7 +1163,10 @@ static int mpeg_decode_postinit(AVCodecContext *avctx)
         if ((s->width == 0) || (s->height == 0))
             return -2;
 
-        avcodec_set_dimensions(avctx, s->width, s->height);
+        ret = ff_set_dimensions(avctx, s->width, s->height);
+        if (ret < 0)
+            return ret;
+
         avctx->bit_rate          = s->bit_rate;
         s1->save_aspect_info     = s->aspect_ratio_info;
         s1->save_width           = s->width;
