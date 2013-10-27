@@ -2088,10 +2088,12 @@ typedef struct AVCodecContext {
      */
     attribute_deprecated
     float rc_qsquish;
-#endif
 
+    attribute_deprecated
     float rc_qmod_amp;
+    attribute_deprecated
     int rc_qmod_freq;
+#endif
 
     /**
      * decoder bitstream buffer size

@@ -28,6 +28,8 @@
 #ifndef AVCODEC_MPEGVIDEO_H
 #define AVCODEC_MPEGVIDEO_H
 
+#include <float.h>
+
 #include "avcodec.h"
 #include "blockdsp.h"
 #include "error_resilience.h"
@@ -633,6 +635,8 @@ typedef struct MpegEncContext {
      * 0-> clipping, 1-> use a nice continuous function to limit qscale wthin qmin/qmax.
      */
     float rc_qsquish;
+    float rc_qmod_amp;
+    int   rc_qmod_freq;
 
     /* temp buffers for rate control */
     float *cplx_tab, *bits_tab;
@@ -680,7 +684,9 @@ typedef struct MpegEncContext {
 { "error_rate", "Simulate errors in the bitstream to test error concealment.",                                                                                                  \
                                                                     FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
 {"qsquish", "how to keep quantizer between qmin and qmax (0 = clip, 1 = use differentiable function)",                                                                          \
-                                                                    FF_MPV_OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, 99, FF_MPV_OPT_FLAGS},
+                                                                    FF_MPV_OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, 99, FF_MPV_OPT_FLAGS},                        \
+{"rc_qmod_amp", "experimental quantizer modulation",                FF_MPV_OFFSET(rc_qmod_amp), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},           \
+{"rc_qmod_freq", "experimental quantizer modulation",               FF_MPV_OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS},
 
 extern const AVOption ff_mpv_generic_options[];
 

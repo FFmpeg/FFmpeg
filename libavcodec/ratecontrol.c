@@ -500,10 +500,10 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
     get_qminmax(&qmin, &qmax, s, pict_type);
 
     /* modulation */
-    if (s->avctx->rc_qmod_freq &&
-        frame_num % s->avctx->rc_qmod_freq == 0 &&
+    if (s->rc_qmod_freq &&
+        frame_num % s->rc_qmod_freq == 0 &&
         pict_type == AV_PICTURE_TYPE_P)
-        q *= s->avctx->rc_qmod_amp;
+        q *= s->rc_qmod_amp;
 
     /* buffer overflow/underflow protection */
     if (buffer_size) {
