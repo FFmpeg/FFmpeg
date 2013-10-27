@@ -78,8 +78,6 @@ Show the stream duration, the codec parameters, the current position in
 the stream and the audio/video synchronisation drift.
 @item -bug
 Work around bugs.
-@item -vismv
-Visualize motion vectors.
 @item -fast
 Non-spec-compliant optimizations.
 @item -genpts

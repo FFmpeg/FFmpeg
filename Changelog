@@ -43,6 +43,7 @@ version 10:
 - HNM version 4 demuxer and video decoder
 - HEVC decoder
 - raw HEVC, HEVC in MOV/MP4, HEVC in Matroska, HEVC in MPEG-TS demuxing
+- remove avplay -vismv option, which has not worked for a long time
 
 
 version 9:
