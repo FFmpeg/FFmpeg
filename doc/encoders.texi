@@ -494,6 +494,7 @@ Selected by Encoder (default)
 
 @end table
 
+@anchor{libmp3lame}
 @section libmp3lame
 
 LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper.
@@ -501,6 +502,8 @@ LAME (Lame Ain't an MP3 Encoder) MP3 encoder wrapper.
 Requires the presence of the libmp3lame headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libmp3lame}.
+
+@xref{libshine} for a fixed-point MP3 encoder, although with a lower quality.
 
 @subsection Options
 
@@ -567,6 +570,42 @@ otherwise libavcodec will round to the nearest valid bitrate.
 @item dtx
 Allow discontinuous transmission (generate comfort noise) when set to 1. The
 default value is 0 (disabled).
+
+@end table
+
+@anchor{libshine}
+@section libshine
+
+Shine Fixed-Point MP3 encoder wrapper.
+
+Shine is a fixed-point MP3 encoder. It has a far better performance on
+platforms without an FPU, e.g. armel CPUs, and some phones and tablets.
+However, as it is more targeted on performance than quality, it is not on par
+with LAME and other production-grade encoders quality-wise. Also, according to
+the project's homepage, this encoder may not be free of bugs as the code was
+written a long time ago and the project was dead for at least 5 years.
+
+This encoder only supports stereo and mono input. This is also CBR-only.
+
+The original project (last updated in early 2007) is at
+@url{http://sourceforge.net/projects/libshine-fxp/}. We only support the
+updated fork by the Savonet/Liquidsoap project at @url{https://github.com/savonet/shine}.
+
+Requires the presence of the libshine headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libshine}.
+
+See also @ref{libmp3lame}.
+
+@subsection Options
+
+The following options are supported by the libshine wrapper. The
+@command{shineenc}-equivalent of the options are listed in parentheses.
+
+@table @option
+@item b (@emph{-b})
+Set bitrate expressed in bits/s for CBR. @command{shineenc} @option{-b} option
+is expressed in kilobits/s.
 
 @end table
 
