@@ -90,9 +90,9 @@ static int vp8_decode(AVCodecContext *avctx,
         if ((int) img->d_w != avctx->width || (int) img->d_h != avctx->height) {
             av_log(avctx, AV_LOG_INFO, "dimension change! %dx%d -> %dx%d\n",
                    avctx->width, avctx->height, img->d_w, img->d_h);
-            if (av_image_check_size(img->d_w, img->d_h, 0, avctx))
-                return AVERROR_INVALIDDATA;
-            avcodec_set_dimensions(avctx, img->d_w, img->d_h);
+            ret = ff_set_dimensions(avctx, img->d_w, img->d_h);
+            if (ret < 0)
+                return ret;
         }
         if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
             return ret;
