@@ -245,9 +245,77 @@ static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl, int max_num
     return 0;
 }
 
-static void decode_hrd(HEVCContext *s)
+static void decode_sublayer_hrd(HEVCContext *s, int nb_cpb, int subpic_params_present)
 {
-    av_log(s->avctx, AV_LOG_ERROR, "HRD parsing not yet implemented\n");
+    GetBitContext *gb = &s->HEVClc->gb;
+    int i;
+
+    for (i = 0; i < nb_cpb; i++) {
+        get_ue_golomb_long(gb); // bit_rate_value_minus1
+        get_ue_golomb_long(gb); // cpb_size_value_minus1
+
+        if (subpic_params_present) {
+            get_ue_golomb_long(gb); // cpb_size_du_value_minus1
+            get_ue_golomb_long(gb); // bit_rate_du_value_minus1
+        }
+        skip_bits1(gb); // cbr_flag
+    }
+}
+
+static void decode_hrd(HEVCContext *s, int common_inf_present, int max_sublayers)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+    int nal_params_present = 0, vcl_params_present = 0;
+    int subpic_params_present = 0;
+    int i;
+
+    if (common_inf_present) {
+        nal_params_present = get_bits1(gb);
+        vcl_params_present = get_bits1(gb);
+
+        if (nal_params_present || vcl_params_present) {
+            subpic_params_present = get_bits1(gb);
+
+            if (subpic_params_present) {
+                skip_bits(gb, 8); // tick_divisor_minus2
+                skip_bits(gb, 5); // du_cpb_removal_delay_increment_length_minus1
+                skip_bits(gb, 1); // sub_pic_cpb_params_in_pic_timing_sei_flag
+                skip_bits(gb, 5); // dpb_output_delay_du_length_minus1
+            }
+
+            skip_bits(gb, 4); // bit_rate_scale
+            skip_bits(gb, 4); // cpb_size_scale
+
+            if (subpic_params_present)
+                skip_bits(gb, 4); // cpb_size_du_scale
+
+            skip_bits(gb, 5); // initial_cpb_removal_delay_length_minus1
+            skip_bits(gb, 5); // au_cpb_removal_delay_length_minus1
+            skip_bits(gb, 5); // dpb_output_delay_length_minus1
+        }
+    }
+
+    for (i = 0; i < max_sublayers; i++) {
+        int low_delay = 0;
+        int nb_cpb = 1;
+        int fixed_rate = get_bits1(gb);
+
+        if (!fixed_rate)
+            fixed_rate = get_bits1(gb);
+
+        if (fixed_rate)
+            get_ue_golomb_long(gb); // elemental_duration_in_tc_minus1
+        else
+            low_delay = get_bits1(gb);
+
+        if (!low_delay)
+            nb_cpb = get_ue_golomb_long(gb) + 1;
+
+        if (nal_params_present)
+            decode_sublayer_hrd(s, nb_cpb, subpic_params_present);
+        if (vcl_params_present)
+            decode_sublayer_hrd(s, nb_cpb, subpic_params_present);
+    }
 }
 
 int ff_hevc_decode_nal_vps(HEVCContext *s)
@@ -327,10 +395,13 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         if (vps->vps_poc_proportional_to_timing_flag)
             vps->vps_num_ticks_poc_diff_one = get_ue_golomb_long(gb) + 1;
         vps->vps_num_hrd_parameters = get_ue_golomb_long(gb);
-        if (vps->vps_num_hrd_parameters != 0) {
-            avpriv_report_missing_feature(s->avctx, "support for vps_num_hrd_parameters != 0");
-            av_free(vps);
-            return AVERROR_PATCHWELCOME;
+        for (i = 0; i < vps->vps_num_hrd_parameters; i++) {
+            int common_inf_present = 1;
+
+            get_ue_golomb_long(gb); // hrd_layer_set_idx
+            if (i)
+                common_inf_present = get_bits1(gb);
+            decode_hrd(s, common_inf_present, vps->vps_max_sub_layers);
         }
     }
     get_bits1(gb); /* vps_extension_flag */
@@ -425,7 +496,7 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
             vui->vui_num_ticks_poc_diff_one_minus1 = get_ue_golomb_long(gb);
         vui->vui_hrd_parameters_present_flag = get_bits1(gb);
         if (vui->vui_hrd_parameters_present_flag)
-            decode_hrd(s);
+            decode_hrd(s, 1, sps->max_sub_layers);
     }
 
     vui->bitstream_restriction_flag = get_bits1(gb);
@@ -755,7 +826,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->sps_temporal_mvp_enabled_flag          = get_bits1(gb);
     sps->sps_strong_intra_smoothing_enable_flag = get_bits1(gb);
-    sps->vui.sar = vui_sar[0];
+    sps->vui.sar = (AVRational){0, 1};
     vui_present = get_bits1(gb);
     if (vui_present)
         decode_vui(s, sps);
