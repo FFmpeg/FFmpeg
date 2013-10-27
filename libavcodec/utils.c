@@ -152,12 +152,23 @@ unsigned avcodec_get_edge_width(void)
     return EDGE_WIDTH;
 }
 
+#if FF_API_SET_DIMENSIONS
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height)
 {
-    s->coded_width  = width;
-    s->coded_height = height;
-    s->width        = width;
-    s->height       = height;
+    ff_set_dimensions(s, width, height);
+}
+#endif
+
+int ff_set_dimensions(AVCodecContext *s, int width, int height)
+{
+    int ret = av_image_check_size(width, height, 0, s);
+
+    if (ret < 0)
+        width = height = 0;
+    s->width  = s->coded_width  = width;
+    s->height = s->coded_height = height;
+
+    return ret;
 }
 
 #if HAVE_NEON || ARCH_PPC || HAVE_MMX

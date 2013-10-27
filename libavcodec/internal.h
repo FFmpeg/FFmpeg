@@ -166,4 +166,10 @@ const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
                                       const uint8_t *end,
                                       uint32_t *restrict state);
 
+/**
+ * Check that the provided frame dimensions are valid and set them on the codec
+ * context.
+ */
+int ff_set_dimensions(AVCodecContext *s, int width, int height);
+
 #endif /* AVCODEC_INTERNAL_H */
