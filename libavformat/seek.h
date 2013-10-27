@@ -33,7 +33,6 @@ typedef struct AVParserStreamState {
     AVCodecParserContext   *parser;
     int64_t                 last_IP_pts;
     int64_t                 cur_dts;
-    int64_t                 reference_dts;
     int                     probe_packets;
 } AVParserStreamState;
 
