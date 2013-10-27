@@ -594,7 +594,7 @@ ffplay "rtmp://myserver/live/mystream live=1"
 
 @section rtp
 
-Real-Time Protocol.
+Real-time Transport Protocol.
 
 The required syntax for an RTP URL is:
 rtp://@var{hostname}[:@var{port}][?@var{option}=@var{val}...]
@@ -606,7 +606,7 @@ The following URL options are supported:
 @table @option
 
 @item ttl=@var{n}
-Set the TTL (Time-To-Leave) value (for multicast only).
+Set the TTL (Time-To-Live) value (for multicast only).
 
 @item rtcpport=@var{n}
 Set the remote RTCP port to @var{n}.
@@ -634,8 +634,11 @@ List disallowed (blocked) source IP addresses.
 Send packets to the source address of the latest received packet (if
 set to 1) or to a default remote address (if set to 0).
 
-@item localport=@var{n} (DEPRECATED)
-Set the local port to @var{n}.
+@item localport=@var{n}
+Set the local RTP port to @var{n}.
+
+This is a deprecated option. Instead, @option{localrtpport} should be
+used.
 
 @end table
 
@@ -644,11 +647,11 @@ Important notes:
 @enumerate
 
 @item
-if @option{rtcpport} is not set the RTCP port will be set to the RTP
+If @option{rtcpport} is not set the RTCP port will be set to the RTP
 port value plus 1.
 
 @item
-If @option{localport} (the local RTP port) is not set any available
+If @option{localrtpport} (the local RTP port) is not set any available
 port will be used for the local RTP and RTCP ports.
 
 @item
