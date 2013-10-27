@@ -470,7 +470,7 @@ static int vp56_size_changed(AVCodecContext *avctx)
     s->mb_height = (avctx->coded_height+15) / 16;
 
     if (s->mb_width > 1000 || s->mb_height > 1000) {
-        avcodec_set_dimensions(avctx, 0, 0);
+        ff_set_dimensions(avctx, 0, 0);
         av_log(avctx, AV_LOG_ERROR, "picture too big\n");
         return -1;
     }
@@ -528,7 +528,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             for (i = 0; i < 4; i++)
                 av_frame_unref(s->frames[i]);
             if (is_alpha) {
-                avcodec_set_dimensions(avctx, 0, 0);
+                ff_set_dimensions(avctx, 0, 0);
                 return -1;
             }
         }
