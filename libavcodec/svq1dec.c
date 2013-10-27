@@ -638,7 +638,10 @@ static int svq1_decode_frame(AVCodecContext *avctx, void *data,
         av_dlog(avctx, "Error in svq1_decode_frame_header %i\n", result);
         return result;
     }
-    avcodec_set_dimensions(avctx, s->width, s->height);
+
+    result = ff_set_dimensions(avctx, s->width, s->height);
+    if (result < 0)
+        return result;
 
     if ((avctx->skip_frame >= AVDISCARD_NONREF && s->nonref) ||
         (avctx->skip_frame >= AVDISCARD_NONKEY &&
