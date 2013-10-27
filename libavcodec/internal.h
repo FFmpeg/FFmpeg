@@ -86,6 +86,8 @@ typedef struct AVCodecInternal {
     AVFrame to_free;
 
     FramePool *pool;
+
+    void *thread_ctx;
 } AVCodecInternal;
 
 struct AVCodecDefault {

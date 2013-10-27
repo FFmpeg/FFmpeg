@@ -1567,7 +1567,7 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     if (avcodec_is_open(avctx)) {
         FramePool *pool = avctx->internal->pool;
         int i;
-        if (HAVE_THREADS && avctx->thread_opaque)
+        if (HAVE_THREADS && avctx->internal->thread_ctx)
             ff_thread_free(avctx);
         if (avctx->codec && avctx->codec->close)
             avctx->codec->close(avctx);
