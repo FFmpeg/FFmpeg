@@ -438,7 +438,8 @@ int attribute_align_arg avresample_convert(AVAudioResampleContext *avr,
             resample_out = &output_buffer;
         else
             resample_out = avr->resample_out_buffer;
-        av_dlog(avr, "[resample] %s to %s\n", current_buffer->name,
+        av_dlog(avr, "[resample] %s to %s\n",
+                current_buffer ? current_buffer->name : "null",
                 resample_out->name);
         ret = ff_audio_resample(avr->resample, resample_out,
                                 current_buffer);
