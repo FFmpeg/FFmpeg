@@ -2251,7 +2251,9 @@ typedef struct AVCodecContext {
      */
     int workaround_bugs;
 #define FF_BUG_AUTODETECT       1  ///< autodetection
+#if FF_API_OLD_MSMPEG4
 #define FF_BUG_OLD_MSMPEG4      2
+#endif
 #define FF_BUG_XVID_ILACE       4
 #define FF_BUG_UMP4             8
 #define FF_BUG_NO_PADDING       16
