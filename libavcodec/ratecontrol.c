@@ -602,7 +602,7 @@ static void adaptive_quantization(MpegEncContext *s, double q)
     const float temp_cplx_masking    = s->avctx->temporal_cplx_masking;
     const float spatial_cplx_masking = s->avctx->spatial_cplx_masking;
     const float p_masking            = s->avctx->p_masking;
-    const float border_masking       = s->avctx->border_masking;
+    const float border_masking       = s->border_masking;
     float bits_sum                   = 0.0;
     float cplx_sum                   = 0.0;
     float *cplx_tab                  = s->cplx_tab;

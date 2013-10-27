@@ -1643,13 +1643,13 @@ typedef struct AVCodecContext {
      */
     int skip_bottom;
 
+#if FF_API_MPV_OPT
     /**
-     * Border processing masking, raises the quantizer for mbs on the borders
-     * of the picture.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     float border_masking;
+#endif
 
     /**
      * minimum MB lagrange multipler
