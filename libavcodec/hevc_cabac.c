@@ -656,15 +656,15 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s)
 
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
 {
-    int min_cb_width = s->sps->width >> s->sps->log2_min_cb_size;
+    int min_cb_width = s->sps->min_cb_width;
     int inc = 0;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
     if (s->HEVClc->ctb_left_flag || x0b)
-        inc = SAMPLE_CTB(s->skip_flag, x_cb-1, y_cb);
+        inc = !!SAMPLE_CTB(s->skip_flag, x_cb-1, y_cb);
     if (s->HEVClc->ctb_up_flag || y0b)
-        inc += SAMPLE_CTB(s->skip_flag, x_cb, y_cb-1);
+        inc += !!SAMPLE_CTB(s->skip_flag, x_cb, y_cb-1);
 
     return GET_CABAC(elem_offset[SKIP_FLAG] + inc);
 }
