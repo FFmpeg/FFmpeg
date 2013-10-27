@@ -503,7 +503,8 @@ Requires the presence of the libmp3lame headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libmp3lame}.
 
-@xref{libshine} for a fixed-point MP3 encoder, although with a lower quality.
+See @ref{libshine} for a fixed-point MP3 encoder, although with a
+lower quality.
 
 @subsection Options
 
