@@ -476,7 +476,6 @@ static int h261_decode_picture_header(H261Context *h)
     s->picture_number = (s->picture_number & ~31) + i;
 
     s->avctx->time_base      = (AVRational) { 1001, 30000 };
-    s->current_picture.f.pts = s->picture_number;
 
     /* PTYPE starts here */
     skip_bits1(&s->gb); /* split screen off */
