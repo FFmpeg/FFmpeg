@@ -2474,14 +2474,14 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int err_recognition;
-#define AV_EF_CRCCHECK  (1<<0)
-#define AV_EF_BITSTREAM (1<<1)
-#define AV_EF_BUFFER    (1<<2)
-#define AV_EF_EXPLODE   (1<<3)
+#define AV_EF_CRCCHECK  (1<<0)          ///< verify embedded CRCs
+#define AV_EF_BITSTREAM (1<<1)          ///< detect bitstream specification deviations
+#define AV_EF_BUFFER    (1<<2)          ///< detect improper bitstream length
+#define AV_EF_EXPLODE   (1<<3)          ///< abort decoding on minor error detection
 
-#define AV_EF_CAREFUL    (1<<16)
-#define AV_EF_COMPLIANT  (1<<17)
-#define AV_EF_AGGRESSIVE (1<<18)
+#define AV_EF_CAREFUL    (1<<16)        ///< consider things that violate the spec, are fast to calculate and have not been seen in the wild as errors
+#define AV_EF_COMPLIANT  (1<<17)        ///< consider all spec non compliancies as errors
+#define AV_EF_AGGRESSIVE (1<<18)        ///< consider things that a sane encoder should not do as an error
 
 
     /**
