@@ -299,8 +299,8 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
     // Filtering process
     if (c_idx == 0 && mode != INTRA_DC && size != 4) {
         int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
-        int min_dist_vert_hor           = FFMIN(FFABS((int)mode - 26),
-                                                FFABS((int)mode - 10));
+        int min_dist_vert_hor           = FFMIN(FFABS((int)(mode - 26U)),
+                                                FFABS((int)(mode - 10U)));
         if (min_dist_vert_hor > intra_hor_ver_dist_thresh[log2_size - 3]) {
             int threshold = 1 << (BIT_DEPTH - 5);
             if (s->sps->sps_strong_intra_smoothing_enable_flag &&
