@@ -2324,15 +2324,16 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_BUFFERS     0x00008000
 #define FF_DEBUG_THREADS     0x00010000
 
+#if FF_API_DEBUG_MV
     /**
-     * debug
-     * - encoding: Set by user.
-     * - decoding: Set by user.
+     * @deprecated this option does not have any effect
      */
+    attribute_deprecated
     int debug_mv;
 #define FF_DEBUG_VIS_MV_P_FOR  0x00000001 //visualize forward predicted MVs of P frames
 #define FF_DEBUG_VIS_MV_B_FOR  0x00000002 //visualize forward predicted MVs of B frames
 #define FF_DEBUG_VIS_MV_B_BACK 0x00000004 //visualize backward predicted MVs of B frames
+#endif
 
     /**
      * Error recognition; may misdetect some more or less valid parts as errors.

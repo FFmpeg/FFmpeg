@@ -423,7 +423,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     dst->opaque   = src->opaque;
     dst->debug    = src->debug;
-    dst->debug_mv = src->debug_mv;
 
     dst->slice_flags = src->slice_flags;
     dst->flags2      = src->flags2;
