@@ -27,6 +27,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bytestream.h"
+#include "internal.h"
+
 #include "libavutil/colorspace.h"
 #include "libavutil/imgutils.h"
 
@@ -272,13 +274,13 @@ static void parse_palette_segment(AVCodecContext *avctx,
  * @todo TODO: Implement cropping
  * @todo TODO: Implement forcing of subtitles
  */
-static void parse_presentation_segment(AVCodecContext *avctx,
-                                       const uint8_t *buf, int buf_size,
-                                       int64_t pts)
+static int parse_presentation_segment(AVCodecContext *avctx,
+                                      const uint8_t *buf, int buf_size,
+                                      int64_t pts)
 {
     PGSSubContext *ctx = avctx->priv_data;
 
-    int x, y;
+    int x, y, ret;
 
     int w = bytestream_get_be16(&buf);
     int h = bytestream_get_be16(&buf);
@@ -287,8 +289,9 @@ static void parse_presentation_segment(AVCodecContext *avctx,
 
     av_dlog(avctx, "Video Dimensions %dx%d\n",
             w, h);
-    if (av_image_check_size(w, h, 0, avctx) >= 0)
-        avcodec_set_dimensions(avctx, w, h);
+    ret = ff_set_dimensions(avctx, w, h);
+    if (ret < 0)
+        return ret;
 
     /* Skip 1 bytes of unknown, frame rate? */
     buf++;
@@ -306,7 +309,7 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     ctx->presentation.object_number = bytestream_get_byte(&buf);
     ctx->presentation.composition_flag = 0;
     if (!ctx->presentation.object_number)
-        return;
+        return 0;
 
     /*
      * Skip 3 bytes of unknown:
@@ -332,6 +335,8 @@ static void parse_presentation_segment(AVCodecContext *avctx,
     /* Fill in dimensions */
     ctx->presentation.x = x;
     ctx->presentation.y = y;
+
+    return 0;
 }
 
 /**
@@ -413,7 +418,7 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
     const uint8_t *buf_end;
     uint8_t       segment_type;
     int           segment_length;
-    int i;
+    int i, ret;
 
     av_dlog(avctx, "PGS sub packet:\n");
 
@@ -452,7 +457,9 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size,
             parse_picture_segment(avctx, buf, segment_length);
             break;
         case PRESENTATION_SEGMENT:
-            parse_presentation_segment(avctx, buf, segment_length, avpkt->pts);
+            ret = parse_presentation_segment(avctx, buf, segment_length, avpkt->pts);
+            if (ret < 0)
+                return ret;
             break;
         case WINDOW_SEGMENT:
             /*
