@@ -2192,8 +2192,8 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 
 /* FIXME: This is adapted from ff_h264_decode_nal, avoiding duplication
    between these functions would be nice. */
-static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
-                        HEVCNAL *nal)
+int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
+                         HEVCNAL *nal)
 {
     int i, si, di;
     uint8_t *dst;
@@ -2279,7 +2279,8 @@ static int extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
                     if (!s->skipped_bytes_pos)
                         return AVERROR(ENOMEM);
                 }
-                s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
+                if (s->skipped_bytes_pos)
+                    s->skipped_bytes_pos[s->skipped_bytes-1] = di - 1;
                 continue;
             } else // next start code
                 goto nsc;
@@ -2325,14 +2326,15 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 goto fail;
             }
         } else {
-            if (buf[2] == 0) {
-                length--;
-                buf++;
-                continue;
-            }
-            if (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
+            /* search start code */
+            while (buf[0] != 0 || buf[1] != 0 || buf[2] != 1) {
+                ++buf;
+                --length;
+                if (length < 4) {
+                    av_log(s->avctx, AV_LOG_ERROR, "No start code is found.\n");
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
             }
 
             buf    += 3;
@@ -2362,7 +2364,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         s->skipped_bytes_pos = s->skipped_bytes_pos_nal[s->nb_nals];
         nal = &s->nals[s->nb_nals];
 
-        consumed = extract_rbsp(s, buf, extract_length, nal);
+        consumed = ff_hevc_extract_rbsp(s, buf, extract_length, nal);
 
         s->skipped_bytes_nal[s->nb_nals] = s->skipped_bytes;
         s->skipped_bytes_pos_size_nal[s->nb_nals] = s->skipped_bytes_pos_size;
