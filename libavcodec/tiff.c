@@ -582,11 +582,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         switch (type) {
         case TIFF_BYTE:
         case TIFF_SHORT:
-            value = ff_tget(&s->gb, type, s->le);
-            break;
         case TIFF_LONG:
-            off   = ff_tget_long(&s->gb, s->le);
-            value = off;
+            value = ff_tget(&s->gb, type, s->le);
             break;
         case TIFF_STRING:
             if (count <= 4) {
