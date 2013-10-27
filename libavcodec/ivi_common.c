@@ -1015,7 +1015,10 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_ERROR, "Buffer contains IP frames!\n");
     }
 
-    avcodec_set_dimensions(avctx, ctx->planes[0].width, ctx->planes[0].height);
+    result = ff_set_dimensions(avctx, ctx->planes[0].width, ctx->planes[0].height);
+    if (result < 0)
+        return result;
+
     if ((result = ff_get_buffer(avctx, frame, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return result;
