@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version <next>
 
+
+version 2.1:
+
 - aecho filter
 - perspective filter ported from libmpcodecs
 - ffprobe -show_programs option
