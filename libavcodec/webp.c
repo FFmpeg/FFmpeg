@@ -1085,10 +1085,10 @@ static int vp8_lossless_decode_frame(AVCodecContext *avctx, AVFrame *p,
                    s->width, w);
         }
         s->height = h;
-        ret = av_image_check_size(s->width, s->height, 0, avctx);
+
+        ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
-        avcodec_set_dimensions(avctx, s->width, s->height);
 
         s->has_alpha = get_bits1(&s->gb);
 
