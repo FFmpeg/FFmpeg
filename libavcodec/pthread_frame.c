@@ -608,7 +608,6 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         }
 
         *copy = *src;
-        copy->pkt = &p->avpkt;
 
         copy->internal = av_malloc(sizeof(AVCodecInternal));
         if (!copy->internal) {
@@ -617,6 +616,7 @@ int ff_frame_thread_init(AVCodecContext *avctx)
         }
         *copy->internal = *src->internal;
         copy->internal->thread_ctx = p;
+        copy->internal->pkt = &p->avpkt;
 
         if (!i) {
             src = copy;

@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "raw.h"
 #include "libavutil/buffer.h"
 #include "libavutil/common.h"
@@ -150,7 +151,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
     frame->reordered_opaque = avctx->reordered_opaque;
-    frame->pkt_pts          = avctx->pkt->pts;
+    frame->pkt_pts          = avctx->internal->pkt->pts;
 
     if (buf_size < context->frame_size - (avctx->pix_fmt == AV_PIX_FMT_PAL8 ?
                                           AVPALETTE_SIZE : 0))

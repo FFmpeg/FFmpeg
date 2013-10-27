@@ -88,6 +88,12 @@ typedef struct AVCodecInternal {
     FramePool *pool;
 
     void *thread_ctx;
+
+    /**
+     * Current packet as passed into the decoder, to avoid having to pass the
+     * packet into every function.
+     */
+    AVPacket *pkt;
 } AVCodecInternal;
 
 struct AVCodecDefault {

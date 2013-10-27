@@ -613,7 +613,7 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     default: return AVERROR(EINVAL);
     }
 
-    frame->pkt_pts = avctx->pkt ? avctx->pkt->pts : AV_NOPTS_VALUE;
+    frame->pkt_pts = avctx->internal->pkt ? avctx->internal->pkt->pts : AV_NOPTS_VALUE;
     frame->reordered_opaque = avctx->reordered_opaque;
 
 #if FF_API_GET_BUFFER
@@ -1402,7 +1402,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     if ((avctx->coded_width || avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return -1;
 
-    avctx->pkt = avpkt;
+    avctx->internal->pkt = avpkt;
     ret = apply_param_change(avctx, avpkt);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
@@ -1467,7 +1467,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
 
     *got_frame_ptr = 0;
 
-    avctx->pkt = avpkt;
+    avctx->internal->pkt = avpkt;
 
     if (!avpkt->data && avpkt->size) {
         av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
@@ -1522,7 +1522,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 {
     int ret;
 
-    avctx->pkt = avpkt;
+    avctx->internal->pkt = avpkt;
     *got_sub_ptr = 0;
     ret = avctx->codec->decode(avctx, sub, got_sub_ptr, avpkt);
     if (*got_sub_ptr)
