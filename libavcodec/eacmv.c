@@ -129,19 +129,21 @@ static void cmv_decode_inter(CmvContext *s, AVFrame *frame, const uint8_t *buf,
     }
 }
 
-static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t *buf_end)
+static int cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t *buf_end)
 {
-    int pal_start, pal_count, i;
+    int pal_start, pal_count, i, ret;
 
     if(buf_end - buf < 16) {
         av_log(s->avctx, AV_LOG_WARNING, "truncated header\n");
-        return;
+        return AVERROR_INVALIDDATA;
     }
 
     s->width  = AV_RL16(&buf[4]);
     s->height = AV_RL16(&buf[6]);
-    if (s->avctx->width!=s->width || s->avctx->height!=s->height)
-        avcodec_set_dimensions(s->avctx, s->width, s->height);
+
+    ret = ff_set_dimensions(s->avctx, s->width, s->height);
+    if (ret < 0)
+        return ret;
 
     s->avctx->time_base.num = 1;
     s->avctx->time_base.den = AV_RL16(&buf[10]);
@@ -154,6 +156,8 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
         s->palette[i] = AV_RB24(buf);
         buf += 3;
     }
+
+    return 0;
 }
 
 #define EA_PREAMBLE_SIZE 8
@@ -174,7 +178,9 @@ static int cmv_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
 
     if (AV_RL32(buf)==MVIh_TAG||AV_RB32(buf)==MVIh_TAG) {
-        cmv_process_header(s, buf+EA_PREAMBLE_SIZE, buf_end);
+        ret = cmv_process_header(s, buf+EA_PREAMBLE_SIZE, buf_end);
+        if (ret < 0)
+            return ret;
         return buf_size;
     }
 
