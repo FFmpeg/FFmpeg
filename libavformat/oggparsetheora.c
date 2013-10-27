@@ -68,7 +68,7 @@ static int theora_header(AVFormatContext *s, int idx)
         if (thp->version < 0x030100) {
             av_log(s, AV_LOG_ERROR,
                    "Too old or unsupported Theora (%x)\n", thp->version);
-            return -1;
+            return AVERROR(ENOSYS);
         }
 
         width  = get_bits(&gb, 16) << 4;
@@ -117,10 +117,10 @@ static int theora_header(AVFormatContext *s, int idx)
         ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7, os->psize - 7);
     case 0x82:
         if (!thp->version)
-            return -1;
+            return AVERROR_INVALIDDATA;
         break;
     default:
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if ((err = av_reallocp(&st->codec->extradata,
