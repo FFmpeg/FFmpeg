@@ -114,16 +114,15 @@ static void vp8_decode_flush(AVCodecContext *avctx)
 static int update_dimensions(VP8Context *s, int width, int height)
 {
     AVCodecContext *avctx = s->avctx;
-    int i;
+    int i, ret;
 
     if (width  != s->avctx->width ||
         height != s->avctx->height) {
-        if (av_image_check_size(width, height, 0, s->avctx))
-            return AVERROR_INVALIDDATA;
-
         vp8_decode_flush_impl(s->avctx, 1);
 
-        avcodec_set_dimensions(s->avctx, width, height);
+        ret = ff_set_dimensions(s->avctx, width, height);
+        if (ret < 0)
+            return ret;
     }
 
     s->mb_width  = (s->avctx->coded_width +15) / 16;
