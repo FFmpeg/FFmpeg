@@ -296,9 +296,9 @@ static int init_image(TiffContext *s, AVFrame *frame)
         return AVERROR_INVALIDDATA;
     }
     if (s->width != s->avctx->width || s->height != s->avctx->height) {
-        if ((ret = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
+        ret = ff_set_dimensions(s->avctx, s->width, s->height);
+        if (ret < 0)
             return ret;
-        avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
     if ((ret = ff_get_buffer(s->avctx, frame, 0)) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
