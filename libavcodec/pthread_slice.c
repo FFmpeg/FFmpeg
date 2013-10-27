@@ -42,7 +42,7 @@
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
 
-typedef struct ThreadContext {
+typedef struct SliceThreadContext {
     pthread_t *workers;
     action_func *func;
     action_func2 *func2;
@@ -58,12 +58,12 @@ typedef struct ThreadContext {
     unsigned current_execute;
     int current_job;
     int done;
-} ThreadContext;
+} SliceThreadContext;
 
 static void* attribute_align_arg worker(void *v)
 {
     AVCodecContext *avctx = v;
-    ThreadContext *c = avctx->thread_opaque;
+    SliceThreadContext *c = avctx->thread_opaque;
     unsigned last_execute = 0;
     int our_job = c->job_count;
     int thread_count = avctx->thread_count;
@@ -98,7 +98,7 @@ static void* attribute_align_arg worker(void *v)
 
 void ff_slice_thread_free(AVCodecContext *avctx)
 {
-    ThreadContext *c = avctx->thread_opaque;
+    SliceThreadContext *c = avctx->thread_opaque;
     int i;
 
     pthread_mutex_lock(&c->current_job_lock);
@@ -116,7 +116,7 @@ void ff_slice_thread_free(AVCodecContext *avctx)
     av_freep(&avctx->thread_opaque);
 }
 
-static av_always_inline void thread_park_workers(ThreadContext *c, int thread_count)
+static av_always_inline void thread_park_workers(SliceThreadContext *c, int thread_count)
 {
     while (c->current_job != thread_count + c->job_count)
         pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
@@ -125,7 +125,7 @@ static av_always_inline void thread_park_workers(ThreadContext *c, int thread_co
 
 static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
 {
-    ThreadContext *c= avctx->thread_opaque;
+    SliceThreadContext *c = avctx->thread_opaque;
     int dummy_ret;
 
     if (!(avctx->active_thread_type&FF_THREAD_SLICE) || avctx->thread_count <= 1)
@@ -158,7 +158,7 @@ static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, i
 
 static int thread_execute2(AVCodecContext *avctx, action_func2* func2, void *arg, int *ret, int job_count)
 {
-    ThreadContext *c= avctx->thread_opaque;
+    SliceThreadContext *c = avctx->thread_opaque;
     c->func2 = func2;
     return thread_execute(avctx, NULL, arg, ret, job_count, 0);
 }
@@ -166,7 +166,7 @@ static int thread_execute2(AVCodecContext *avctx, action_func2* func2, void *arg
 int ff_slice_thread_init(AVCodecContext *avctx)
 {
     int i;
-    ThreadContext *c;
+    SliceThreadContext *c;
     int thread_count = avctx->thread_count;
 
 #if HAVE_W32THREADS
@@ -188,7 +188,7 @@ int ff_slice_thread_init(AVCodecContext *avctx)
         return 0;
     }
 
-    c = av_mallocz(sizeof(ThreadContext));
+    c = av_mallocz(sizeof(SliceThreadContext));
     if (!c)
         return -1;
 
