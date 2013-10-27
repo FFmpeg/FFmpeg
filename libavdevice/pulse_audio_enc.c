@@ -109,7 +109,7 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
         s->timestamp = pkt->dts;
 
     if (pkt->duration) {
-        s->timestamp += pkt->duration;;
+        s->timestamp += pkt->duration;
     } else {
         AVStream *st = h->streams[0];
         AVCodecContext *codec_ctx = st->codec;
