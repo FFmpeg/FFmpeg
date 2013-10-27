@@ -553,7 +553,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce,
     av_dlog(s, "q:%f max:%f min:%f size:%f index:%f agr:%f\n",
             q, max_rate, min_rate, buffer_size, rcc->buffer_index,
             s->avctx->rc_buffer_aggressivity);
-    if (s->avctx->rc_qsquish == 0.0 || qmin == qmax) {
+    if (s->rc_qsquish == 0.0 || qmin == qmax) {
         if (q < qmin)
             q = qmin;
         else if (q > qmax)

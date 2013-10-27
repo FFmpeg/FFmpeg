@@ -628,6 +628,12 @@ typedef struct MpegEncContext {
     int mpv_flags;      ///< flags set by private options
     int quantizer_noise_shaping;
 
+    /**
+     * ratecontrol qmin qmax limiting method
+     * 0-> clipping, 1-> use a nice continuous function to limit qscale wthin qmin/qmax.
+     */
+    float rc_qsquish;
+
     /* temp buffers for rate control */
     float *cplx_tab, *bits_tab;
 
@@ -672,7 +678,9 @@ typedef struct MpegEncContext {
                                                                       FF_MPV_OFFSET(chroma_elim_threshold), AV_OPT_TYPE_INT, { .i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },\
 { "quantizer_noise_shaping", NULL,                                  FF_MPV_OFFSET(quantizer_noise_shaping), AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
 { "error_rate", "Simulate errors in the bitstream to test error concealment.",                                                                                                  \
-                                                                    FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },
+                                                                    FF_MPV_OFFSET(error_rate),              AV_OPT_TYPE_INT, { .i64 = 0 },       0, INT_MAX, FF_MPV_OPT_FLAGS },\
+{"qsquish", "how to keep quantizer between qmin and qmax (0 = clip, 1 = use differentiable function)",                                                                          \
+                                                                    FF_MPV_OFFSET(rc_qsquish), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, 99, FF_MPV_OPT_FLAGS},
 
 extern const AVOption ff_mpv_generic_options[];
 

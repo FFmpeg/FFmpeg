@@ -2082,13 +2082,13 @@ typedef struct AVCodecContext {
      */
     int max_qdiff;
 
+#if FF_API_MPV_OPT
     /**
-     * ratecontrol qmin qmax limiting method
-     * 0-> clipping, 1-> use a nice continuous function to limit qscale wthin qmin/qmax.
-     * - encoding: Set by user.
-     * - decoding: unused
+     * @deprecated use encoder private options instead
      */
+    attribute_deprecated
     float rc_qsquish;
+#endif
 
     float rc_qmod_amp;
     int rc_qmod_freq;
