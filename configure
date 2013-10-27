@@ -249,6 +249,7 @@ External library support:
   --enable-opencl          enable OpenCL code
   --enable-openssl         enable openssl [no]
   --enable-x11grab         enable X11 grabbing [no]
+  --enable-isight          enable iSight camera support [no]
   --disable-zlib           disable zlib [autodetect]
 
 Advanced options (experts only):
@@ -2129,6 +2130,8 @@ dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 fbdev_outdev_deps="linux_fb_h"
+isight_indev_extralibs="-framework QTKit -framework Foundation -framework QuartzCore"
+isight_indev_select="isight"
 iec61883_indev_deps="libiec61883"
 jack_indev_deps="jack_jack_h sem_timedwait"
 lavfi_indev_deps="avfilter"
