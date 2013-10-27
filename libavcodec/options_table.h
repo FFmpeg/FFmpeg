@@ -310,8 +310,10 @@ static const AVOption avcodec_options[] = {
 {"rd", "use best rate distortion", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MB_DECISION_RD }, INT_MIN, INT_MAX, V|E, "mbd"},
 {"stream_codec_tag", NULL, OFFSET(stream_codec_tag), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
 {"sc_threshold", "scene change threshold", OFFSET(scenechange_threshold), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
-{"lmin", "minimum Lagrange factor (VBR)", OFFSET(lmin), AV_OPT_TYPE_INT, {.i64 =  2*FF_QP2LAMBDA }, 0, INT_MAX, V|E},
-{"lmax", "maximum Lagrange factor (VBR)", OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 = 31*FF_QP2LAMBDA }, 0, INT_MAX, V|E},
+#if FF_API_MPV_OPT
+{"lmin", "deprecated, use encoder private options instead", OFFSET(lmin), AV_OPT_TYPE_INT, {.i64 =  0 }, 0, INT_MAX, V|E},
+{"lmax", "deprecated, use encoder private options instead", OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 =  0 }, 0, INT_MAX, V|E},
+#endif
 {"nr", "noise reduction", OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", OFFSET(rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.i64 = DEFAULT}, 0, UINT_MAX, V|A|E|D, "flags2"},
