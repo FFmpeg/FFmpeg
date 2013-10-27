@@ -37,7 +37,6 @@ typedef struct {
     struct fb_var_screeninfo varinfo; ///< framebuffer variable info
     struct fb_fix_screeninfo fixinfo; ///< framebuffer fixed info
     int fd;                           ///< framebuffer device file descriptor
-    int index;                        ///< index of a video stream
     uint8_t *data;                    ///< framebuffer data
 } FBDevContext;
 
@@ -49,21 +48,11 @@ static av_cold int fbdev_write_header(AVFormatContext *h)
     int ret, flags = O_RDWR;
     int i;
 
-    for (i = 0; i < h->nb_streams; i++) {
-        if (h->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if (!st) {
-                fbdev->index = i;
-                st = h->streams[i];
-            } else {
-                av_log(h, AV_LOG_WARNING, "More than one video stream found. First one is used.\n");
-                break;
-            }
-        }
-    }
-    if (!st) {
-        av_log(h, AV_LOG_ERROR, "No video stream found.\n");
+    if (h->nb_streams != 1 || h->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+        av_log(fbdev, AV_LOG_ERROR, "Only a single video stream is supported.\n");
         return AVERROR(EINVAL);
     }
+    st = h->streams[0];
 
     if ((fbdev->fd = avpriv_open(h->filename, flags)) == -1) {
         ret = AVERROR(errno);
@@ -112,16 +101,13 @@ static int fbdev_write_packet(AVFormatContext *h, AVPacket *pkt)
     enum AVPixelFormat fb_pix_fmt;
     int disp_height;
     int bytes_to_copy;
-    AVCodecContext *codec_ctx = h->streams[fbdev->index]->codec;
+    AVCodecContext *codec_ctx = h->streams[0]->codec;
     enum AVPixelFormat video_pix_fmt = codec_ctx->pix_fmt;
     int video_width = codec_ctx->width;
     int video_height = codec_ctx->height;
     int bytes_per_pixel = ((codec_ctx->bits_per_coded_sample + 7) >> 3);
     int src_line_size = video_width * bytes_per_pixel;
     int i;
-
-    if (fbdev->index != pkt->stream_index)
-        return 0;
 
     if (ioctl(fbdev->fd, FBIOGET_VSCREENINFO, &fbdev->varinfo) < 0)
         av_log(h, AV_LOG_WARNING,
