@@ -33,6 +33,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "thread.h"
 
 #define JP2_SIG_TYPE    0x6A502020
@@ -315,13 +316,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         height = (height + (1 << ctx->lowres) - 1) >> ctx->lowres;
     }
 
-    if ((ret = av_image_check_size(width, height, 0, avctx)) < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "%dx%d dimension invalid.\n", width, height);
+    ret = ff_set_dimensions(avctx, width, height);
+    if (ret < 0)
         goto done;
-    }
-
-    avcodec_set_dimensions(avctx, width, height);
 
     if (avctx->pix_fmt != AV_PIX_FMT_NONE)
         if (!libopenjpeg_matches_pix_fmt(image, avctx->pix_fmt))
