@@ -2132,14 +2132,16 @@ typedef struct AVCodecContext {
      */
     int rc_min_rate;
 
+#if FF_API_MPV_OPT
+    /**
+     * @deprecated use encoder private options instead
+     */
+    attribute_deprecated
     float rc_buffer_aggressivity;
 
-    /**
-     * initial complexity for pass1 ratecontrol
-     * - encoding: Set by user.
-     * - decoding: unused
-     */
+    attribute_deprecated
     float rc_initial_cplx;
+#endif
 
     /**
      * Ratecontrol attempt to use, at maximum, <value> of what can be used without an underflow.

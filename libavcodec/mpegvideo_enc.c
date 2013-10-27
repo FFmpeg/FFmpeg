@@ -830,6 +830,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->rc_qmod_amp = avctx->rc_qmod_amp;
     if (avctx->rc_qmod_freq)
         s->rc_qmod_freq = avctx->rc_qmod_freq;
+    if (avctx->rc_buffer_aggressivity != 1.0)
+        s->rc_buffer_aggressivity = avctx->rc_buffer_aggressivity;
+    if (avctx->rc_initial_cplx != 0.0)
+        s->rc_initial_cplx = avctx->rc_initial_cplx;
 
     if (avctx->rc_eq) {
         av_freep(&s->rc_eq);

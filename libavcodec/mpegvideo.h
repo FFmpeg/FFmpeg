@@ -637,6 +637,8 @@ typedef struct MpegEncContext {
     float rc_qsquish;
     float rc_qmod_amp;
     int   rc_qmod_freq;
+    float rc_initial_cplx;
+    float rc_buffer_aggressivity;
 
     char *rc_eq;
 
@@ -693,7 +695,9 @@ typedef struct MpegEncContext {
           "defined in the section 'Expression Evaluation', the following functions are available: "                                                                             \
           "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "                                                                           \
           "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",                                                                         \
-                                                                    FF_MPV_OFFSET(rc_eq), AV_OPT_TYPE_STRING,                           .flags = FF_MPV_OPT_FLAGS },
+                                                                    FF_MPV_OFFSET(rc_eq), AV_OPT_TYPE_STRING,                           .flags = FF_MPV_OPT_FLAGS },            \
+{"rc_init_cplx", "initial complexity for 1-pass encoding",          FF_MPV_OFFSET(rc_initial_cplx), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS},       \
+{"rc_buf_aggressivity", "currently useless",                        FF_MPV_OFFSET(rc_buffer_aggressivity), AV_OPT_TYPE_FLOAT, {.dbl = 1.0 }, -FLT_MAX, FLT_MAX, FF_MPV_OPT_FLAGS}, \
 
 extern const AVOption ff_mpv_generic_options[];
 
