@@ -578,6 +578,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         goto end;
     }
 
+    off = bytestream2_tell(&s->gb);
     if (count == 1) {
         switch (type) {
         case TIFF_BYTE:
@@ -590,11 +591,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
                 break;
             }
         default:
-            off   = bytestream2_tell(&s->gb);
             value = UINT_MAX;
         }
-    } else {
-        off   = bytestream2_tell(&s->gb);
     }
 
     switch (tag) {
