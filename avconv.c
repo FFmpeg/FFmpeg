@@ -1745,9 +1745,6 @@ static int transcode_init(void)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              "It takes bits/s as argument, not kbits/s\n");
             extra_size += ost->st->codec->extradata_size;
-
-            if (ost->st->codec->me_threshold)
-                input_streams[ost->source_index]->st->codec->debug |= FF_DEBUG_MV;
         } else {
             av_opt_set_dict(ost->st->codec, &ost->opts);
         }
