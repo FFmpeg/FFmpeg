@@ -1815,8 +1815,7 @@ static inline void vc1_pred_mv_intfr(VC1Context *v, int n, int dmv_x, int dmv_y,
             } else if (total_valid) {
                 if      (a_valid) { px = A[0]; py = A[1]; }
                 else if (b_valid) { px = B[0]; py = B[1]; }
-                else if (c_valid) { px = C[0]; py = C[1]; }
-                else av_assert2(0);
+                else              { px = C[0]; py = C[1]; }
             }
         }
     } else {
