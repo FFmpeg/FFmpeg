@@ -1066,13 +1066,12 @@ static void chroma_mc(HEVCContext *s, int16_t *dst1, int16_t *dst2, ptrdiff_t ds
 }
 
 static void hevc_await_progress(HEVCContext *s, HEVCFrame *ref,
-                                const Mv *mv, int y0)
+                                const Mv *mv, int y0, int height)
 {
-    int y = (mv->y >> 2) + y0;
+    int y = (mv->y >> 2) + y0 + height + 9;
 
-    //ff_thread_await_progress(&ref->tf, FFMIN(s->height, y), 0);
     if (s->threads_type == FF_THREAD_FRAME )
-        ff_thread_await_progress(&ref->tf, INT_MAX, 0);
+        ff_thread_await_progress(&ref->tf, y, 0);
 }
 
 static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
@@ -1190,13 +1189,13 @@ static void hls_prediction_unit(HEVCContext *s, int x0, int y0,
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
         if (!ref0)
             return;
-        hevc_await_progress(s, ref0, &current_mv.mv[0], y0);
+        hevc_await_progress(s, ref0, &current_mv.mv[0], y0, nPbH);
     }
     if (current_mv.pred_flag[1]) {
         ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
         if (!ref1)
             return;
-        hevc_await_progress(s, ref1, &current_mv.mv[1], y0);
+        hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
     }
 
     if (current_mv.pred_flag[0] && !current_mv.pred_flag[1]) {

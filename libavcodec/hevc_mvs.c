@@ -268,7 +268,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     y = y0 + nPbH;
 
     if (s->threads_type == FF_THREAD_FRAME )
-        ff_thread_await_progress(&ref->tf, INT_MAX, 0);
+        ff_thread_await_progress(&ref->tf, y, 0);
     if (tab_mvf &&
         (y0 >> s->sps->log2_ctb_size) == (y >> s->sps->log2_ctb_size) &&
         y < s->sps->height &&

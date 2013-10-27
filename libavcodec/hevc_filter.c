@@ -683,8 +683,11 @@ void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size)
 {
     if (y_ctb && x_ctb)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb - ctb_size);
-    if (y_ctb && x_ctb >= s->sps->width - ctb_size)
+    if (y_ctb && x_ctb >= s->sps->width - ctb_size) {
         ff_hevc_hls_filter(s, x_ctb, y_ctb - ctb_size);
+        if (s->threads_type == FF_THREAD_FRAME )
+            ff_thread_report_progress(&s->ref->tf, y_ctb - ctb_size, 0);
+    }
     if (x_ctb && y_ctb >= s->sps->height - ctb_size)
         ff_hevc_hls_filter(s, x_ctb - ctb_size, y_ctb);
 }
