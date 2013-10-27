@@ -292,9 +292,9 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return ret;
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    if ((ret = av_image_check_size(s->screen_width, s->screen_height, 0, avctx)) < 0)
+
+    if ((ret = ff_set_dimensions(avctx, s->screen_width, s->screen_height)) < 0)
         return ret;
-    avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
 
     if ((ret = ff_get_buffer(avctx, picture, 0)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
