@@ -165,7 +165,10 @@ static void draw_char(AVCodecContext *avctx, int c)
 static int execute_code(AVCodecContext * avctx, int c)
 {
     AnsiContext *s = avctx->priv_data;
-    int ret, i, width, height;
+    int ret, i;
+    int width = 0;
+    int height = 0;
+
     switch(c) {
     case 'A': //Cursor Up
         s->y = FFMAX(s->y - (s->nb_args > 0 ? s->args[0]*s->font_height : s->font_height), 0);
@@ -224,7 +227,8 @@ static int execute_code(AVCodecContext * avctx, int c)
         default:
             avpriv_request_sample(avctx, "Unsupported screen mode");
         }
-        if (width != avctx->width || height != avctx->height) {
+        if (width != 0 && height != 0 &&
+            (width != avctx->width || height != avctx->height)) {
             av_frame_unref(s->frame);
             ret = ff_set_dimensions(avctx, width, height);
             if (ret < 0)
