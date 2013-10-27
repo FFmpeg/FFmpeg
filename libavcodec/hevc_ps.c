@@ -838,28 +838,27 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         goto err;
     }
 
-    /* if an SPS with this id but different dimensions already exists, remove
-     * all PPSes that depend on it */
-#define DIFF(x) (sps->x != ((HEVCSPS*)s->sps_list[sps_id]->data)->x)
-    if (s->sps_list[sps_id] &&
-        (DIFF(width) || DIFF(height) || DIFF(chroma_format_idc) ||
-         DIFF(bit_depth) || DIFF(ctb_width) || DIFF(ctb_height))) {
-        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++) {
-            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == sps_id)
-                av_buffer_unref(&s->pps_list[i]);
-        }
-    }
-#undef DIFF
-
-    av_buffer_unref(&s->sps_list[sps_id]);
-    s->sps_list[sps_id] = sps_buf;
-
     if (s->avctx->debug & FF_DEBUG_BITSTREAM) {
         av_log(s->avctx, AV_LOG_DEBUG, "Parsed SPS: id %d; coded wxh: %dx%d; "
                "cropped wxh: %dx%d; pix_fmt: %s.\n",
                sps_id, sps->width, sps->height,
                sps->output_width, sps->output_height,
                av_get_pix_fmt_name(sps->pix_fmt));
+    }
+
+    /* check if this is a repeat of an already parsed SPS, then keep the
+     * original one.
+     * otherwise drop all PPSes that depend on it */
+    if (s->sps_list[sps_id] &&
+        !memcmp(s->sps_list[sps_id]->data, sps_buf->data, sps_buf->size)) {
+        av_buffer_unref(&sps_buf);
+    } else {
+        for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++) {
+            if (s->pps_list[i] && ((HEVCPPS*)s->pps_list[i]->data)->sps_id == sps_id)
+                av_buffer_unref(&s->pps_list[i]);
+        }
+        av_buffer_unref(&s->sps_list[sps_id]);
+        s->sps_list[sps_id] = sps_buf;
     }
 
     return 0;
