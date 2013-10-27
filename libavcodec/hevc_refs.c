@@ -149,11 +149,11 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
 
 int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
 {
-    int nb_output = 0;
-    int min_poc   = 0xFFFF;
-    int i, j, min_idx, ret;
-
     do {
+        int nb_output = 0;
+        int min_poc   = INT_MAX;
+        int i, j, min_idx, ret;
+
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
             if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
@@ -255,7 +255,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         while (rpl_tmp.nb_refs < sh->nb_refs[list_idx]) {
             for (i = 0; i < FF_ARRAY_ELEMS(cand_lists); i++) {
                 RefPicList *rps = &s->rps[cand_lists[i]];
-                for (j = 0; j < rps->nb_refs; j++) {
+                for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < MAX_REFS; j++) {
                     rpl_tmp.list[rpl_tmp.nb_refs] = rps->list[j];
                     rpl_tmp.ref[rpl_tmp.nb_refs]  = rps->ref[j];
                     rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = (i == 2);
@@ -301,16 +301,16 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
         HEVCFrame *ref = &s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
             if ((ref->poc & LtMask) == poc)
-                    return ref;
-            }
+                return ref;
+        }
     }
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
         if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
             if (ref->poc == poc || (ref->poc & LtMask) == poc)
-                    return ref;
-            }
+                return ref;
+        }
     }
 
     av_log(s->avctx, AV_LOG_ERROR,
@@ -340,8 +340,8 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
                     frame->frame->buf[i]->size);
     } else {
         for (i = 0; frame->frame->data[i]; i++)
-            for (y = 0; y < (s->height >> s->sps->vshift[i]); y++)
-                for (x = 0; x < (s->width >> s->sps->hshift[i]); x++) {
+            for (y = 0; y < (s->sps->height >> s->sps->vshift[i]); y++)
+                for (x = 0; x < (s->sps->width >> s->sps->hshift[i]); x++) {
                     AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
                             1 << (s->sps->bit_depth - 1));
                 }
@@ -387,8 +387,10 @@ int ff_hevc_frame_rps(HEVCContext *s)
     RefPicList               *rps = s->rps;
     int i, ret;
 
-    if (!short_rps)
+    if (!short_rps) {
+        rps[0].nb_refs = rps[1].nb_refs = 0;
         return 0;
+    }
 
     /* clear the reference flags on all frames except the current one */
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {

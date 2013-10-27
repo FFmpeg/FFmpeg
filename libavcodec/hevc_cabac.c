@@ -656,7 +656,7 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCContext *s)
 
 int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
 {
-    int pic_width_in_ctb = s->sps->width >> s->sps->log2_min_coding_block_size;
+    int min_cb_width = s->sps->width >> s->sps->log2_min_cb_size;
     int inc = 0;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
@@ -709,8 +709,8 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, 
     int inc = 0, depth_left = 0, depth_top = 0;
     int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int x_cb = x0 >> s->sps->log2_min_coding_block_size;
-    int y_cb = y0 >> s->sps->log2_min_coding_block_size;
+    int x_cb = x0 >> s->sps->log2_min_cb_size;
+    int y_cb = y0 >> s->sps->log2_min_cb_size;
 
     if (s->HEVClc->ctb_left_flag || x0b)
         depth_left = s->tab_ct_depth[(y_cb)*s->sps->min_cb_width + x_cb-1];
@@ -726,7 +726,7 @@ int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size)
 {
     if (GET_CABAC(elem_offset[PART_MODE])) // 1
         return PART_2Nx2N;
-    if (log2_cb_size == s->sps->log2_min_coding_block_size) {
+    if (log2_cb_size == s->sps->log2_min_cb_size) {
         if (s->HEVClc->cu.pred_mode == MODE_INTRA) // 0
             return PART_NxN;
         if (GET_CABAC(elem_offset[PART_MODE] + 1)) // 01

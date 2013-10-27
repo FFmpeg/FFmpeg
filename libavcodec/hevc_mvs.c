@@ -65,8 +65,8 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
 {
 #define MIN_TB_ADDR_ZS(x, y)                                            \
     s->pps->min_tb_addr_zs[(y) * s->sps->min_tb_width + (x)]
-    int Curr =  MIN_TB_ADDR_ZS(xCurr >> s->sps->log2_min_transform_block_size,
-                               yCurr >> s->sps->log2_min_transform_block_size);
+    int Curr =  MIN_TB_ADDR_ZS(xCurr >> s->sps->log2_min_tb_size,
+                               yCurr >> s->sps->log2_min_tb_size);
     int N;
 
     if ((xN < 0) || (yN < 0) ||
@@ -74,8 +74,8 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
         (yN >= s->sps->height))
         return 0;
 
-    N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_transform_block_size,
-                       yN >> s->sps->log2_min_transform_block_size);
+    N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_tb_size,
+                       yN >> s->sps->log2_min_tb_size);
 
     return N <= Curr;
 }
@@ -230,7 +230,7 @@ static int derive_temporal_colocated_mvs(HEVCContext *s, MvField temp_col,
 }
 
 #define TAB_MVF(x, y) \
-    tab_mvf[(y) * pic_width_in_min_pu + x]
+    tab_mvf[(y) * min_pu_width + x]
 
 #define TAB_MVF_PU(v) \
     TAB_MVF(x##v##_pu, y##v##_pu)
@@ -256,7 +256,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
     int xPCtr, yPCtr;
     int xPCtr_pu;
     int yPCtr_pu;
-    int pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
+    int min_pu_width = s->sps->width >> s->sps->log2_min_pu_size;
     int availableFlagLXCol = 0;
     int colPic;
 
@@ -342,7 +342,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     int xA1 = x0 - 1;
     int yA1 = y0 + nPbH - 1;
     int is_available_a1;
-    int pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
+    int min_pu_width = s->sps->width >> s->sps->log2_min_pu_size;
 
     int check_MER = 1;
     int check_MER_1 = 1;
@@ -734,7 +734,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
 }
 
 static av_always_inline void dist_scale(HEVCContext *s, Mv * mv,
-                                        int pic_width_in_min_pu, int x, int y,
+                                        int min_pu_width, int x, int y,
                                         int elist, int ref_idx_curr, int ref_idx)
 {
     RefPicList *refPicList = s->ref->refPicList;
@@ -750,7 +750,7 @@ static int mv_mp_mode_mx(HEVCContext *s, int x, int y, int pred_flag_index,
                          Mv *mv, int ref_idx_curr, int ref_idx)
 {
     MvField *tab_mvf = s->ref->tab_mvf;
-    int pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
+    int min_pu_width = s->sps->min_pu_width;
 
     RefPicList *refPicList = s->ref->refPicList;
 
@@ -767,7 +767,7 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
                             Mv *mv, int ref_idx_curr, int ref_idx)
 {
     MvField *tab_mvf = s->ref->tab_mvf;
-    int pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
+    int min_pu_width = s->sps->min_pu_width;
 
     RefPicList *refPicList = s->ref->refPicList;
     int currIsLongTerm = refPicList[ref_idx_curr].isLongTerm[ref_idx];
@@ -778,7 +778,7 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
     if (TAB_MVF(x, y).pred_flag[pred_flag_index] && colIsLongTerm == currIsLongTerm) {
         *mv = TAB_MVF(x, y).mv[pred_flag_index];
         if (!currIsLongTerm)
-            dist_scale(s, mv, pic_width_in_min_pu, x, y, pred_flag_index, ref_idx_curr, ref_idx);
+            dist_scale(s, mv, min_pu_width, x, y, pred_flag_index, ref_idx_curr, ref_idx);
         return 1;
     }
     return 0;
@@ -802,7 +802,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     int availableFlagLXB0 = 0;
     int availableFlagLXCol = 0;
     int numMVPCandLX = 0;
-    int pic_width_in_min_pu = s->sps->width >> s->sps->log2_min_pu_size;
+    int min_pu_width = s->sps->min_pu_width;
 
     int xA0, yA0;
     int xA0_pu, yA0_pu;

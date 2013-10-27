@@ -78,10 +78,10 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
     int MinCuQpDeltaSizeMask = (1 << (s->sps->log2_ctb_size - s->pps->diff_cu_qp_delta_depth)) - 1;
     int xQgBase              = xBase - ( xBase & MinCuQpDeltaSizeMask );
     int yQgBase              = yBase - ( yBase & MinCuQpDeltaSizeMask );
-    int pic_width            = s->sps->width  >> s->sps->log2_min_coding_block_size;
-    int pic_height           = s->sps->height >> s->sps->log2_min_coding_block_size;
-    int x_cb                 = xQgBase >> s->sps->log2_min_coding_block_size;
-    int y_cb                 = yQgBase >> s->sps->log2_min_coding_block_size;
+    int min_cb_width         = s->sps->min_cb_width;
+    int min_cb_height        = s->sps->min_cb_height;
+    int x_cb                 = xQgBase >> s->sps->log2_min_cb_size;
+    int y_cb                 = yQgBase >> s->sps->log2_min_cb_size;
     int availableA           = (xBase & ctb_size_mask) && (xQgBase & ctb_size_mask);
     int availableB           = (yBase & ctb_size_mask) && (yQgBase & ctb_size_mask);
     int qPy_pred;
@@ -115,22 +115,22 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
                     { 1, 0, 3, 2, 5, 4, 7, 6},
                     { 0, 1, 2, 3, 4, 5, 6, 7}
             };
-            int xC0b = (xC - (xC & ctb_size_mask)) >> s->sps->log2_min_coding_block_size;
-            int yC0b = (yC - (yC & ctb_size_mask)) >> s->sps->log2_min_coding_block_size;
-            int idxX = (xQgBase & ctb_size_mask)   >> s->sps->log2_min_coding_block_size;
-            int idxY = (yQgBase & ctb_size_mask)   >> s->sps->log2_min_coding_block_size;
-            int idx_mask = ctb_size_mask >> s->sps->log2_min_coding_block_size;
+            int xC0b = (xC - (xC & ctb_size_mask)) >> s->sps->log2_min_cb_size;
+            int yC0b = (yC - (yC & ctb_size_mask)) >> s->sps->log2_min_cb_size;
+            int idxX = (xQgBase & ctb_size_mask)   >> s->sps->log2_min_cb_size;
+            int idxY = (yQgBase & ctb_size_mask)   >> s->sps->log2_min_cb_size;
+            int idx_mask = ctb_size_mask >> s->sps->log2_min_cb_size;
             int x, y;
 
-            x = FFMIN(xC0b + offsetX[idxX][idxY],              pic_width  - 1);
-            y = FFMIN(yC0b + (offsetY[idxX][idxY] & idx_mask), pic_height - 1);
+            x = FFMIN(xC0b +  offsetX[idxX][idxY],             min_cb_width  - 1);
+            y = FFMIN(yC0b + (offsetY[idxX][idxY] & idx_mask), min_cb_height - 1);
 
-            if (xC0b == (lc->start_of_tiles_x >> s->sps->log2_min_coding_block_size) &&
+            if (xC0b == (lc->start_of_tiles_x >> s->sps->log2_min_cb_size) &&
                 offsetX[idxX][idxY] == -1) {
-                x = (lc->end_of_tiles_x >> s->sps->log2_min_coding_block_size) - 1;
+                x = (lc->end_of_tiles_x >> s->sps->log2_min_cb_size) - 1;
                 y = yC0b - 1;
             }
-            qPy_pred = s->qp_y_tab[y * pic_width + x];
+            qPy_pred = s->qp_y_tab[y * min_cb_width + x];
         }
     }
 
@@ -138,13 +138,13 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC, int xBase, int yBase, in
     if (availableA == 0)
         qPy_a = qPy_pred;
     else
-        qPy_a = s->qp_y_tab[(x_cb - 1) + y_cb * pic_width];
+        qPy_a = s->qp_y_tab[(x_cb - 1) + y_cb * min_cb_width];
 
     // qPy_b
     if (availableB == 0)
         qPy_b = qPy_pred;
     else
-        qPy_b = s->qp_y_tab[x_cb + (y_cb - 1) * pic_width];
+        qPy_b = s->qp_y_tab[x_cb + (y_cb - 1) * min_cb_width];
 
     return (qPy_a + qPy_b + 1) >> 1;
 }
@@ -162,11 +162,10 @@ void ff_hevc_set_qPy(HEVCContext *s, int xC, int yC, int xBase, int yBase, int l
 
 static int get_qPy(HEVCContext *s, int xC, int yC)
 {
-    int log2_min_cb_size  = s->sps->log2_min_coding_block_size;
-    int pic_width         = s->sps->width>>log2_min_cb_size;
+    int log2_min_cb_size  = s->sps->log2_min_cb_size;
     int x                 = xC >> log2_min_cb_size;
     int y                 = yC >> log2_min_cb_size;
-    return s->qp_y_tab[x + y * pic_width];
+    return s->qp_y_tab[x + y * s->sps->min_cb_width];
 }
 
 static void copy_CTB(uint8_t *dst, uint8_t *src, int width, int height, int stride)
@@ -299,15 +298,14 @@ static void sao_filter_CTB(HEVCContext *s, int x, int y)
 
 static int get_pcm(HEVCContext *s, int x, int y)
 {
-    int log2_min_pu_size     = s->sps->log2_min_pu_size;
-    int pic_width_in_min_pu  = s->sps->width  >> s->sps->log2_min_pu_size;
-    int pic_height_in_min_pu = s->sps->height >> s->sps->log2_min_pu_size;
-    int x_pu = x >> log2_min_pu_size;
-    int y_pu = y >> log2_min_pu_size;
+    int log2_min_pu_size = s->sps->log2_min_pu_size;
+    int x_pu             = x >> log2_min_pu_size;
+    int y_pu             = y >> log2_min_pu_size;
 
-    if (x < 0 || x_pu >= pic_width_in_min_pu || y < 0 || y_pu >= pic_height_in_min_pu)
+    if (x < 0 || x_pu >= s->sps->min_pu_width ||
+        y < 0 || y_pu >= s->sps->min_pu_height)
         return 2;
-    return s->is_pcm[y_pu * pic_width_in_min_pu + x_pu];
+    return s->is_pcm[y_pu * s->sps->min_pu_width + x_pu];
 }
 
 #define TC_CALC(qp, bs) tctable[av_clip((qp) + DEFAULT_INTRA_TC_OFFSET * ((bs) - 1) + ((tc_offset >> 1) << 1), 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET)]
@@ -553,12 +551,12 @@ static int boundary_strength(HEVCContext *s, MvField *curr,
 void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int log2_trafo_size,
                                            int slice_or_tiles_up_boundary, int slice_or_tiles_left_boundary)
 {
-    MvField *tab_mvf      = s->ref->tab_mvf;
-    int log2_min_pu_size  = s->sps->log2_min_pu_size;
-    int log2_min_tu_size  = s->sps->log2_min_transform_block_size;
-    int pic_width_in_min_pu = s->sps->width >> log2_min_pu_size;
-    int pic_width_in_min_tu = s->sps->width >> log2_min_tu_size;
-    int is_intra = tab_mvf[(y0 >> log2_min_pu_size) * pic_width_in_min_pu + (x0 >> log2_min_pu_size)].is_intra;
+    MvField *tab_mvf     = s->ref->tab_mvf;
+    int log2_min_pu_size = s->sps->log2_min_pu_size;
+    int log2_min_tu_size = s->sps->log2_min_tb_size;
+    int min_pu_width     = s->sps->min_pu_width;
+    int min_tu_width     = s->sps->min_tb_width;
+    int is_intra         = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width + (x0 >> log2_min_pu_size)].is_intra;
 
     int i, j;
     int bs;
@@ -572,10 +570,10 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
         for (i = 0; i < (1 << log2_trafo_size); i += 4) {
             int x_pu = (x0 + i) >> log2_min_pu_size;
             int x_tu = (x0 + i) >> log2_min_tu_size;
-            MvField *top  = &tab_mvf[yp_pu * pic_width_in_min_pu + x_pu];
-            MvField *curr = &tab_mvf[yq_pu * pic_width_in_min_pu + x_pu];
-            uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * pic_width_in_min_tu + x_tu];
-            uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
+            MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+            MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+            uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
+            uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
             RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 + i, y0 - 1);
 
             bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 1);
@@ -602,10 +600,10 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
             for (i = 0; i < (1<<log2_trafo_size); i += 4) {
                 int x_pu = (x0 + i) >> log2_min_pu_size;
                 int x_tu = (x0 + i) >> log2_min_tu_size;
-                MvField *top  = &tab_mvf[yp_pu * pic_width_in_min_pu + x_pu];
-                MvField *curr = &tab_mvf[yq_pu * pic_width_in_min_pu + x_pu];
-                uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * pic_width_in_min_tu + x_tu];
-                uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * pic_width_in_min_tu + x_tu];
+                MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
+                MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
+                uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
+                uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
                 RefPicList* top_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 + i, y0 + j - 1);
 
                 bs = boundary_strength(s, curr, curr_cbf_luma, top, top_cbf_luma, top_refPicList, 0);
@@ -626,11 +624,11 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
         for (i = 0; i < (1 << log2_trafo_size); i += 4) {
             int y_pu = (y0 + i) >> log2_min_pu_size;
             int y_tu = (y0 + i) >> log2_min_tu_size;
-            MvField *left = &tab_mvf[y_pu * pic_width_in_min_pu + xp_pu];
-            MvField *curr = &tab_mvf[y_pu * pic_width_in_min_pu + xq_pu];
+            MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
+            MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
 
-            uint8_t left_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xp_tu];
-            uint8_t curr_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xq_tu];
+            uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
+            uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
             RefPicList* left_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 - 1, y0 + i);
 
             bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, left_refPicList, 1);
@@ -656,10 +654,10 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0, int l
                 int xq_pu = (x0 + i) >> log2_min_pu_size;
                 int xp_tu = (x0 + i - 1) >> log2_min_tu_size;
                 int xq_tu = (x0 + i) >> log2_min_tu_size;
-                MvField *left = &tab_mvf[y_pu * pic_width_in_min_pu + xp_pu];
-                MvField *curr = &tab_mvf[y_pu * pic_width_in_min_pu + xq_pu];
-                uint8_t left_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xp_tu];
-                uint8_t curr_cbf_luma = s->cbf_luma[y_tu * pic_width_in_min_tu + xq_tu];
+                MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
+                MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
+                uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
+                uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
                 RefPicList* left_refPicList = ff_hevc_get_ref_list(s, s->ref, x0 + i - 1, y0 + j);
 
                 bs = boundary_strength(s, curr, curr_cbf_luma, left, left_cbf_luma, left_refPicList, 0);

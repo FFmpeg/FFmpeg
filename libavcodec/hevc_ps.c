@@ -552,7 +552,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->max_sub_layers = get_bits(gb, 3) + 1;
     if (sps->max_sub_layers > MAX_SUB_LAYERS) {
-        av_log(s->avctx, AV_LOG_ERROR, "vps_max_sub_layers out of range: %d\n",
+        av_log(s->avctx, AV_LOG_ERROR, "sps_max_sub_layers out of range: %d\n",
                sps->max_sub_layers);
         ret = AVERROR_INVALIDDATA;
         goto err;
@@ -685,14 +685,14 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         }
     }
 
-    sps->log2_min_coding_block_size             = get_ue_golomb_long(gb) + 3;
+    sps->log2_min_cb_size             = get_ue_golomb_long(gb) + 3;
     sps->log2_diff_max_min_coding_block_size    = get_ue_golomb_long(gb);
-    sps->log2_min_transform_block_size          = get_ue_golomb_long(gb) + 2;
+    sps->log2_min_tb_size                       = get_ue_golomb_long(gb) + 2;
     log2_diff_max_min_transform_block_size      = get_ue_golomb_long(gb);
-    sps->log2_max_trafo_size                    = log2_diff_max_min_transform_block_size + sps->log2_min_transform_block_size;
+    sps->log2_max_trafo_size                    = log2_diff_max_min_transform_block_size + sps->log2_min_tb_size;
 
-    if (sps->log2_min_transform_block_size >= sps->log2_min_coding_block_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid value for log2_min_transform_block_size");
+    if (sps->log2_min_tb_size >= sps->log2_min_cb_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid value for log2_min_tb_size");
         ret = AVERROR_INVALIDDATA;
         goto err;
     }
@@ -795,23 +795,25 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     // Inferred parameters
-    sps->log2_ctb_size     = sps->log2_min_coding_block_size
+    sps->log2_ctb_size     = sps->log2_min_cb_size
                              + sps->log2_diff_max_min_coding_block_size;
+    sps->log2_min_pu_size  = sps->log2_min_cb_size - 1;
 
     sps->ctb_width         = (sps->width  + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
     sps->ctb_height        = (sps->height + (1 << sps->log2_ctb_size) - 1) >> sps->log2_ctb_size;
     sps->ctb_size          = sps->ctb_width * sps->ctb_height;
 
-    sps->min_cb_width      = sps->width  >> sps->log2_min_coding_block_size;
-    sps->min_cb_height     = sps->height >> sps->log2_min_coding_block_size;
-    sps->min_tb_width      = sps->width  >> sps->log2_min_transform_block_size;
-    sps->min_tb_height     = sps->height >> sps->log2_min_transform_block_size;
-    sps->log2_min_pu_size  = sps->log2_min_coding_block_size - 1;
+    sps->min_cb_width      = sps->width  >> sps->log2_min_cb_size;
+    sps->min_cb_height     = sps->height >> sps->log2_min_cb_size;
+    sps->min_tb_width      = sps->width  >> sps->log2_min_tb_size;
+    sps->min_tb_height     = sps->height >> sps->log2_min_tb_size;
+    sps->min_pu_width      = sps->width  >> sps->log2_min_pu_size;
+    sps->min_pu_height     = sps->height >> sps->log2_min_pu_size;
 
     sps->qp_bd_offset      = 6 * (sps->bit_depth - 8);
 
-    if (sps->width  & ((1 << sps->log2_min_coding_block_size) - 1) ||
-        sps->height & ((1 << sps->log2_min_coding_block_size) - 1)) {
+    if (sps->width  & ((1 << sps->log2_min_cb_size) - 1) ||
+        sps->height & ((1 << sps->log2_min_cb_size) - 1)) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid coded frame dimensions.\n");
         goto err;
     }
@@ -820,12 +822,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "CTB size out of range: 2^%d\n", sps->log2_ctb_size);
         goto err;
     }
-    if (sps->max_transform_hierarchy_depth_inter > sps->log2_ctb_size - sps->log2_min_transform_block_size) {
+    if (sps->max_transform_hierarchy_depth_inter > sps->log2_ctb_size - sps->log2_min_tb_size) {
         av_log(s->avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_inter out of range: %d\n",
                sps->max_transform_hierarchy_depth_inter);
         goto err;
     }
-    if (sps->max_transform_hierarchy_depth_intra > sps->log2_ctb_size - sps->log2_min_transform_block_size) {
+    if (sps->max_transform_hierarchy_depth_intra > sps->log2_ctb_size - sps->log2_min_tb_size) {
         av_log(s->avctx, AV_LOG_ERROR, "max_transform_hierarchy_depth_intra out of range: %d\n",
                sps->max_transform_hierarchy_depth_intra);
         goto err;
@@ -915,7 +917,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->num_tile_columns                      = 1;
     pps->num_tile_rows                         = 1;
     pps->uniform_spacing_flag                  = 1;
-    pps->pps_disable_deblocking_filter_flag    = 0;
+    pps->disable_dbf                           = 0;
     pps->beta_offset                           = 0;
     pps->tc_offset                             = 0;
 
@@ -1042,8 +1044,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->deblocking_filter_control_present_flag = get_bits1(gb);
     if (pps->deblocking_filter_control_present_flag) {
         pps->deblocking_filter_override_enabled_flag = get_bits1(gb);
-        pps->pps_disable_deblocking_filter_flag = get_bits1(gb);
-        if (!pps->pps_disable_deblocking_filter_flag) {
+        pps->disable_dbf = get_bits1(gb);
+        if (!pps->disable_dbf) {
             pps->beta_offset = get_se_golomb(gb) * 2;
             pps->tc_offset = get_se_golomb(gb) * 2;
             if (pps->beta_offset/2 < -6 || pps->beta_offset/2 > 6) {
@@ -1206,7 +1208,7 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         }
     }
 
-    log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_transform_block_size;
+    log2_diff_ctb_min_tb_size = sps->log2_ctb_size - sps->log2_min_tb_size;
     for (y = 0; y < sps->min_tb_height; y++) {
         for (x = 0; x < sps->min_tb_width; x++) {
             int tb_x = x >> log2_diff_ctb_min_tb_size;
