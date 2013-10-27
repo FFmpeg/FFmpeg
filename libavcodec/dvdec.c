@@ -318,7 +318,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     DVVideoContext *s = avctx->priv_data;
     const uint8_t* vsc_pack;
-    int apt, is16_9;
+    int apt, is16_9, ret;
 
     s->sys = avpriv_dv_frame_profile(s->sys, buf, buf_size);
     if (!s->sys || buf_size < s->sys->frame_size || ff_dv_init_dynamic_tables(s->sys)) {
@@ -330,7 +330,11 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     s->picture.pict_type = AV_PICTURE_TYPE_I;
     avctx->pix_fmt   = s->sys->pix_fmt;
     avctx->time_base = s->sys->time_base;
-    avcodec_set_dimensions(avctx, s->sys->width, s->sys->height);
+
+    ret = ff_set_dimensions(avctx, s->sys->width, s->sys->height);
+    if (ret < 0)
+        return ret;
+
     if (ff_get_buffer(avctx, &s->picture, 0) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
