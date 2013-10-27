@@ -126,11 +126,11 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
     emms_c();
 
     res = av_expr_parse(&rcc->rc_eq_eval,
-                        s->avctx->rc_eq ? s->avctx->rc_eq : "tex^qComp",
+                        s->rc_eq ? s->rc_eq : "tex^qComp",
                         const_names, func1_names, func1,
                         NULL, NULL, 0, s->avctx);
     if (res < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\"\n", s->avctx->rc_eq);
+        av_log(s->avctx, AV_LOG_ERROR, "Error parsing rc_eq \"%s\"\n", s->rc_eq);
         return res;
     }
 
@@ -382,7 +382,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce,
 
     bits = av_expr_eval(rcc->rc_eq_eval, const_values, rce);
     if (isnan(bits)) {
-        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->avctx->rc_eq);
+        av_log(s->avctx, AV_LOG_ERROR, "Error evaluating rc_eq \"%s\"\n", s->rc_eq);
         return -1;
     }
 

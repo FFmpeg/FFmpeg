@@ -169,11 +169,9 @@ static const AVOption avcodec_options[] = {
 {"rc_qmod_freq", "deprecated, use encoder private options instead", OFFSET(rc_qmod_freq), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|E},
 #endif
 {"rc_override_count", NULL, OFFSET(rc_override_count), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
-{"rc_eq", "Set rate control equation. When computing the expression, besides the standard functions "
-          "defined in the section 'Expression Evaluation', the following functions are available: "
-          "bits2qp(bits), qp2bits(qp). Also the following constants are available: iTex pTex tex mv "
-          "fCode iCount mcVar var isI isP isB avgQP qComp avgIITex avgPITex avgPPTex avgBPTex avgTex.",
-          OFFSET(rc_eq), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, V|E},
+#if FF_API_MPV_OPT
+{"rc_eq", "deprecated, use encoder private options instead", OFFSET(rc_eq), AV_OPT_TYPE_STRING, {.str = NULL}, CHAR_MIN, CHAR_MAX, V|E},
+#endif
 {"maxrate", "Set maximum bitrate tolerance (in bits/s). Requires bufsize to be set.", OFFSET(rc_max_rate), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"minrate", "Set minimum bitrate tolerance (in bits/s). Most useful in setting up a CBR encode. It is of little use otherwise.",
             OFFSET(rc_min_rate), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
