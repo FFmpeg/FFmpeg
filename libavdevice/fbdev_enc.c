@@ -44,15 +44,12 @@ static av_cold int fbdev_write_header(AVFormatContext *h)
 {
     FBDevContext *fbdev = h->priv_data;
     enum AVPixelFormat pix_fmt;
-    AVStream *st = NULL;
     int ret, flags = O_RDWR;
-    int i;
 
     if (h->nb_streams != 1 || h->streams[0]->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
         av_log(fbdev, AV_LOG_ERROR, "Only a single video stream is supported.\n");
         return AVERROR(EINVAL);
     }
-    st = h->streams[0];
 
     if ((fbdev->fd = avpriv_open(h->filename, flags)) == -1) {
         ret = AVERROR(errno);
