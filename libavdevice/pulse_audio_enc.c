@@ -62,7 +62,7 @@ static av_cold int pulse_write_header(AVFormatContext *h)
     }
 
     if (!stream_name) {
-        if (h->filename)
+        if (h->filename[0])
             stream_name = h->filename;
         else
             stream_name = "Playback";
