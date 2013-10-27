@@ -91,7 +91,7 @@ static int pic_arrays_init(HEVCContext *s)
     int ctb_count            = s->sps->ctb_width * s->sps->ctb_height;
     int min_pu_width  = width  >> s->sps->log2_min_pu_size;
     int pic_height_in_min_pu = height >> s->sps->log2_min_pu_size;
-    int pic_size_in_min_pu   = min_pu_width * pic_height_in_min_pu;
+    int min_pu_size   = min_pu_width * pic_height_in_min_pu;
     int pic_width_in_min_tu  = width  >> s->sps->log2_min_tb_size;
     int pic_height_in_min_tu = height >> s->sps->log2_min_tb_size;
 
@@ -109,9 +109,9 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->skip_flag || !s->tab_ct_depth)
         goto fail;
 
-    s->tab_ipm  = av_malloc(pic_size_in_min_pu);
     s->cbf_luma = av_malloc(pic_width_in_min_tu * pic_height_in_min_tu);
-    s->is_pcm   = av_malloc(pic_size_in_min_pu);
+    s->tab_ipm  = av_malloc(min_pu_size);
+    s->is_pcm   = av_malloc(min_pu_size);
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
@@ -126,7 +126,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
 
-    s->tab_mvf_pool = av_buffer_pool_init(pic_size_in_min_pu * sizeof(MvField),
+    s->tab_mvf_pool = av_buffer_pool_init(min_pu_size * sizeof(MvField),
                                           av_buffer_alloc);
     s->rpl_tab_pool = av_buffer_pool_init(ctb_count * sizeof(RefPicListTab),
                                           av_buffer_allocz);
@@ -302,6 +302,11 @@ static int hls_slice_header(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
         return AVERROR_INVALIDDATA;
     }
+    if (!sh->first_slice_in_pic_flag &&
+        s->pps != (HEVCPPS*)s->pps_list[sh->pps_id]->data) {
+        av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
+        return AVERROR_INVALIDDATA;
+    }
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
 
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
@@ -376,13 +381,17 @@ static int hls_slice_header(HEVCContext *s)
         s->slice_initialized = 0;
 
         for (i = 0; i < s->pps->num_extra_slice_header_bits; i++)
-            skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
+            skip_bits(gb, 1);  // slice_reserved_undetermined_flag[]
 
         sh->slice_type = get_ue_golomb_long(gb);
         if (!(sh->slice_type == I_SLICE || sh->slice_type == P_SLICE ||
               sh->slice_type == B_SLICE)) {
             av_log(s->avctx, AV_LOG_ERROR, "Unknown slice type: %d.\n",
                    sh->slice_type);
+            return AVERROR_INVALIDDATA;
+        }
+        if (IS_IRAP(s) && sh->slice_type != I_SLICE) {
+            av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
 
