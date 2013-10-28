@@ -375,6 +375,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int buf_size       = avpkt->size;
     MpegEncContext *s  = avctx->priv_data;
     int ret;
+    int slice_ret = 0;
     AVFrame *pict = data;
 
     s->flags  = avctx->flags;
@@ -705,7 +706,7 @@ retry:
     s->mb_x = 0;
     s->mb_y = 0;
 
-    ret = decode_slice(s);
+    slice_ret = decode_slice(s);
     while (s->mb_y < s->mb_height) {
         if (s->msmpeg4_version) {
             if (s->slice_height == 0 || s->mb_x != 0 ||
@@ -723,7 +724,7 @@ retry:
             ff_mpeg4_clean_buffers(s);
 
         if (decode_slice(s) < 0)
-            ret = AVERROR_INVALIDDATA;
+            slice_ret = AVERROR_INVALIDDATA;
     }
 
     if (s->msmpeg4_version && s->msmpeg4_version < 4 &&
@@ -812,7 +813,7 @@ frame_end:
         *got_frame = 1;
     }
 
-    if (ret && (avctx->err_recognition & AV_EF_EXPLODE))
+    if (slice_ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
         return ret;
     else
         return get_consumed_bytes(s, buf_size);
