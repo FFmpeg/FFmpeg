@@ -617,15 +617,15 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
             avisynth_next_stream(s, &st, pkt, &discard);
             return avisynth_read_packet_audio(s, pkt, discard);
         }
-        return ret;
     } else {
         ret = avisynth_read_packet_audio(s, pkt, discard);
         if (ret == AVERROR_EOF && avs_has_video(avs->vi)) {
             avisynth_next_stream(s, &st, pkt, &discard);
             return avisynth_read_packet_video(s, pkt, discard);
         }
-        return ret;
     }
+
+    return ret;
 }
 
 static av_cold int avisynth_read_close(AVFormatContext *s)
