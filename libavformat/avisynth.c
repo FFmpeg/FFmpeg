@@ -39,6 +39,7 @@
   #include "compat/avisynth/avisynth_c.h"
   #include "compat/avisynth/avisynth_c_25.h"
   #define AVISYNTH_LIB "avisynth"
+  #define USING_AVISYNTH
 #else
   #include <dlfcn.h>
   #include "compat/avisynth/avxsynth_c.h"
@@ -241,7 +242,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st) {
     st->nb_frames = avs->vi->num_frames;
 
     switch (avs->vi->pixel_type) {
-#ifdef _WIN32
+#ifdef USING_AVISYNTH
     case AVS_CS_YV24:
         st->codec->pix_fmt = AV_PIX_FMT_YUV444P;
         planar = 1;
@@ -359,7 +360,7 @@ static int avisynth_open_file(AVFormatContext *s) {
     AviSynthContext *avs = (AviSynthContext *)s->priv_data;
     AVS_Value arg, val;
     int ret;
-#ifdef _WIN32
+#ifdef USING_AVISYNTH
     char filename_ansi[MAX_PATH * 4];
     wchar_t filename_wc[MAX_PATH * 4];
 #endif
@@ -367,7 +368,7 @@ static int avisynth_open_file(AVFormatContext *s) {
     if (ret = avisynth_context_create(s))
         return ret;
 
-#ifdef _WIN32
+#ifdef USING_AVISYNTH
     // Convert UTF-8 to ANSI code page
     MultiByteToWideChar(CP_UTF8, 0, s->filename, -1, filename_wc, MAX_PATH * 4);
     WideCharToMultiByte(CP_THREAD_ACP, 0, filename_wc, -1, filename_ansi, MAX_PATH * 4, NULL, NULL);
@@ -475,7 +476,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
         src_p = avs_get_read_ptr_p(frame, plane);
         pitch = avs_get_pitch_p(frame, plane);
 
-#ifdef _WIN32
+#ifdef USING_AVISYNTH
         if (avs_library->avs_get_version(avs->clip) == 3) {
             rowsize = avs_get_row_size_p_25(frame, plane);
             planeheight = avs_get_height_p_25(frame, plane);
