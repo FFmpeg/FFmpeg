@@ -1948,6 +1948,7 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
 
 static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     int time_incr, time_increment;
+    int64_t pts;
 
     s->pict_type = get_bits(gb, 2) + AV_PICTURE_TYPE_I;        /* pict type: I = 0 , P = 1 */
     if(s->pict_type==AV_PICTURE_TYPE_B && s->low_delay && s->vol_control_parameters==0 && !(s->flags & CODEC_FLAG_LOW_DELAY)){
@@ -2023,12 +2024,12 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     }
 
     if(s->avctx->time_base.num)
-        s->current_picture_ptr->f.pts = ROUNDED_DIV(s->time, s->avctx->time_base.num);
+        pts = ROUNDED_DIV(s->time, s->avctx->time_base.num);
     else
-        s->current_picture_ptr->f.pts = AV_NOPTS_VALUE;
+        pts = AV_NOPTS_VALUE;
     if(s->avctx->debug&FF_DEBUG_PTS)
         av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %"PRId64"\n",
-               s->current_picture_ptr->f.pts);
+               pts);
 
     check_marker(gb, "before vop_coded");
 
