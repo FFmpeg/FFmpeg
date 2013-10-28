@@ -48,5 +48,8 @@
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
  */
+#ifndef FF_API_REFERENCE_DTS
+#define FF_API_REFERENCE_DTS            (LIBAVFORMAT_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVFORMAT_VERSION_H */
