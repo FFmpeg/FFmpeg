@@ -54,14 +54,6 @@
   #define FreeLibrary dlclose
 #endif
 
-// AvxSynth doesn't have these colorspaces, so disable them
-#ifndef _WIN32
-#define avs_is_yv24(vi) 0
-#define avs_is_yv16(vi) 0
-#define avs_is_yv411(vi) 0
-#define avs_is_y8(vi) 0
-#endif
-
 typedef struct {
     void *library;
 #define AVSC_DECLARE_FUNC(name) name ## _func name
@@ -458,7 +450,11 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     pkt->dts      = n;
     pkt->duration = 1;
 
-    // Define the bpp values for the new AviSynth 2.6 colorspaces
+#ifdef USING_AVISYNTH
+    /* Define the bpp values for the new AviSynth 2.6 colorspaces.
+     * Since AvxSynth doesn't have these functions, special-case
+     * it in order to avoid implicit declaration errors. */
+
     if (avs_is_yv24(avs->vi))
         bits = 24;
     else if (avs_is_yv16(avs->vi))
@@ -468,6 +464,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     else if (avs_is_y8(avs->vi))
         bits = 8;
     else
+#endif
         bits = avs_bits_per_pixel(avs->vi);
 
     /* Without the cast to int64_t, calculation overflows at about 9k x 9k
