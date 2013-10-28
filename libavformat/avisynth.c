@@ -221,7 +221,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     int planar = 0; // 0: packed, 1: YUV, 2: Y8
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = CODEC_ID_RAWVIDEO;
+    st->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
     st->codec->width      = avs->vi->width;
     st->codec->height     = avs->vi->height;
 
@@ -304,19 +304,19 @@ static int avisynth_create_stream_audio(AVFormatContext *s, AVStream *st)
 
     switch (avs->vi->sample_type) {
     case AVS_SAMPLE_INT8:
-        st->codec->codec_id = CODEC_ID_PCM_U8;
+        st->codec->codec_id = AV_CODEC_ID_PCM_U8;
         break;
     case AVS_SAMPLE_INT16:
-        st->codec->codec_id = CODEC_ID_PCM_S16LE;
+        st->codec->codec_id = AV_CODEC_ID_PCM_S16LE;
         break;
     case AVS_SAMPLE_INT24:
-        st->codec->codec_id = CODEC_ID_PCM_S24LE;
+        st->codec->codec_id = AV_CODEC_ID_PCM_S24LE;
         break;
     case AVS_SAMPLE_INT32:
-        st->codec->codec_id = CODEC_ID_PCM_S32LE;
+        st->codec->codec_id = AV_CODEC_ID_PCM_S32LE;
         break;
     case AVS_SAMPLE_FLOAT:
-        st->codec->codec_id = CODEC_ID_PCM_F32LE;
+        st->codec->codec_id = AV_CODEC_ID_PCM_F32LE;
         break;
     default:
         av_log(s, AV_LOG_ERROR,
