@@ -122,24 +122,13 @@ static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
     av_dlog(avctx, "vaapi_mpeg4_decode_slice(): buffer %p, size %d\n", buffer, size);
 
-    /* video_plane_with_short_video_header() contains all GOBs
-     * in-order, and this is what VA API (Intel backend) expects: only
-     * a single slice param. So fake macroblock_number for FFmpeg so
-     * that we don't call vaapi_mpeg4_decode_slice() again
-     */
-    if (avctx->codec->id == AV_CODEC_ID_H263)
-        size = s->gb.buffer_end - buffer;
-
     /* Fill in VASliceParameterBufferMPEG4 */
     slice_param = (VASliceParameterBufferMPEG4 *)ff_vaapi_alloc_slice(avctx->hwaccel_context, buffer, size);
     if (!slice_param)
         return -1;
     slice_param->macroblock_offset      = get_bits_count(&s->gb) % 8;
-    slice_param->macroblock_number      = s->mb_y * s->mb_width + s->mb_x;
+    slice_param->macroblock_number      = 0;
     slice_param->quant_scale            = s->qscale;
-
-    if (avctx->codec->id == AV_CODEC_ID_H263)
-        s->mb_y = s->mb_height;
 
     return 0;
 }

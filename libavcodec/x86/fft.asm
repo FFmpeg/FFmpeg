@@ -36,7 +36,7 @@
 %define pointer resd
 %endif
 
-SECTION_RODATA
+SECTION_RODATA 32
 
 struc FFTContext
     .nbits:    resd 1
@@ -57,7 +57,6 @@ endstruc
 %define M_COS_PI_1_8 0.923879532511287
 %define M_COS_PI_3_8 0.38268343236509
 
-align 32
 ps_cos16_1: dd 1.0, M_COS_PI_1_8, M_SQRT1_2, M_COS_PI_3_8, 1.0, M_COS_PI_1_8, M_SQRT1_2, M_COS_PI_3_8
 ps_cos16_2: dd 0, M_COS_PI_3_8, M_SQRT1_2, M_COS_PI_1_8, 0, -M_COS_PI_3_8, -M_SQRT1_2, -M_COS_PI_1_8
 
@@ -672,13 +671,13 @@ cglobal imdct_calc, 3,5,3
     push    r1
     push    r0
 %else
-    sub     rsp, 8
+    sub     rsp, 8+32*WIN64 ; allocate win64 shadow space
 %endif
     call    r4
 %if ARCH_X86_32
     add     esp, 12
 %else
-    add     rsp, 8
+    add     rsp, 8+32*WIN64
 %endif
     POP     r1
     POP     r3

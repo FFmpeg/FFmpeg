@@ -84,9 +84,6 @@ Apply interlaced motion estimation.
 Use closed gop.
 @end table
 
-@item sub_id @var{integer}
-Deprecated, currently unused.
-
 @item me_method @var{integer} (@emph{encoding,video})
 Set motion estimation method.
 
@@ -386,10 +383,6 @@ Possible values:
 
 @item simplemmx
 
-@item libmpeg2mmx
-
-@item mmi
-
 @item arm
 
 @item altivec
@@ -405,10 +398,6 @@ Possible values:
 @item simpleneon
 
 @item simplealpha
-
-@item h264
-
-@item vp3
 
 @item ipp
 
@@ -772,26 +761,26 @@ Set noise reduction.
 Set number of bits which should be loaded into the rc buffer before
 decoding starts.
 
-@item inter_threshold @var{integer} (@emph{encoding,video})
-
 @item flags2 @var{flags} (@emph{decoding/encoding,audio,video})
 
 Possible values:
 @table @samp
 @item fast
-allow non spec compliant speedup tricks
+Allow non spec compliant speedup tricks.
 @item sgop
-Deprecated, use mpegvideo private options instead
+Deprecated, use mpegvideo private options instead.
 @item noout
-skip bitstream encoding
+Skip bitstream encoding.
+@item ignorecrop
+Ignore cropping information from sps.
 @item local_header
-place global headers at every keyframe instead of in extradata
+Place global headers at every keyframe instead of in extradata.
 @item chunks
-Frame data might be split into multiple chunks
+Frame data might be split into multiple chunks.
 @item showall
-Show all frames before the first keyframe
+Show all frames before the first keyframe.
 @item skiprd
-Deprecated, use mpegvideo private options instead
+Deprecated, use mpegvideo private options instead.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})
@@ -846,6 +835,10 @@ Possible values:
 @item aac_ld
 
 @item aac_eld
+
+@item mpeg2_aac_low
+
+@item mpeg2_aac_he
 
 @item dts
 
@@ -1065,6 +1058,27 @@ Set sample format audio decoders should prefer. Default value is
 
 @item sub_charenc @var{encoding} (@emph{decoding,subtitles})
 Set the input subtitles character encoding.
+
+@item field_order  @var{field_order} (@emph{video})
+Set/override the field order of the video.
+Possible values:
+@table @samp
+@item progressive
+Progressive video
+@item tt
+Interlaced video, top field coded and displayed first
+@item bb
+Interlaced video, bottom field coded and displayed first
+@item tb
+Interlaced video, top coded first, bottom displayed first
+@item bt
+Interlaced video, bottom coded first, top displayed first
+@end table
+
+@item skip_alpha @var{integer} (@emph{decoding,video})
+Set to 1 to disable processing alpha (transparency). This works like the
+@samp{gray} flag in the @option{flags} option which skips chroma information
+instead of alpha. Default is 0.
 @end table
 
 @c man end CODEC OPTIONS

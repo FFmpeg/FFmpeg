@@ -39,10 +39,8 @@ static int afc_read_header(AVFormatContext *s)
     st->codec->codec_id   = AV_CODEC_ID_ADPCM_AFC;
     st->codec->channels   = 2;
     st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-    st->codec->extradata_size = 1;
 
-    st->codec->extradata = av_mallocz(1 + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, 1))
         return AVERROR(ENOMEM);
     st->codec->extradata[0] = 8 * st->codec->channels;
 

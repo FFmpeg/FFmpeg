@@ -51,6 +51,7 @@ static void vc1_extract_headers(AVCodecParserContext *s, AVCodecContext *avctx,
 
     for(start = buf, end = buf + buf_size; next < end; start = next){
         int buf2_size, size;
+        int ret;
 
         next = find_next_marker(start + 4, end);
         size = next - start - 4;
@@ -66,9 +67,12 @@ static void vc1_extract_headers(AVCodecParserContext *s, AVCodecContext *avctx,
             break;
         case VC1_CODE_FRAME:
             if(vpc->v.profile < PROFILE_ADVANCED)
-                ff_vc1_parse_frame_header    (&vpc->v, &gb);
+                ret = ff_vc1_parse_frame_header    (&vpc->v, &gb);
             else
-                ff_vc1_parse_frame_header_adv(&vpc->v, &gb);
+                ret = ff_vc1_parse_frame_header_adv(&vpc->v, &gb);
+
+            if (ret < 0)
+                break;
 
             /* keep AV_PICTURE_TYPE_BI internal to VC1 */
             if (vpc->v.s.pict_type == AV_PICTURE_TYPE_BI)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Clément Bœsch
+ * Copyright (c) 2012-2013 Clément Bœsch <u pkh me>
  *
  * This file is part of FFmpeg.
  *
@@ -57,7 +57,7 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
     return sub;
 }
 
-static int cmp_pkt_sub(const void *a, const void *b)
+static int cmp_pkt_sub_ts_pos(const void *a, const void *b)
 {
     const AVPacket *s1 = a;
     const AVPacket *s2 = b;
@@ -69,11 +69,25 @@ static int cmp_pkt_sub(const void *a, const void *b)
     return s1->pts > s2->pts ? 1 : -1;
 }
 
+static int cmp_pkt_sub_pos_ts(const void *a, const void *b)
+{
+    const AVPacket *s1 = a;
+    const AVPacket *s2 = b;
+    if (s1->pos == s2->pos) {
+        if (s1->pts == s2->pts)
+            return 0;
+        return s1->pts > s2->pts ? 1 : -1;
+    }
+    return s1->pos > s2->pos ? 1 : -1;
+}
+
 void ff_subtitles_queue_finalize(FFDemuxSubtitlesQueue *q)
 {
     int i;
 
-    qsort(q->subs, q->nb_subs, sizeof(*q->subs), cmp_pkt_sub);
+    qsort(q->subs, q->nb_subs, sizeof(*q->subs),
+          q->sort == SUB_SORT_TS_POS ? cmp_pkt_sub_ts_pos
+                                     : cmp_pkt_sub_pos_ts);
     for (i = 0; i < q->nb_subs; i++)
         if (q->subs[i].duration == -1 && i < q->nb_subs - 1)
             q->subs[i].duration = q->subs[i + 1].pts - q->subs[i].pts;
@@ -85,11 +99,35 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt)
 
     if (q->current_sub_idx == q->nb_subs)
         return AVERROR_EOF;
-    av_copy_packet(pkt, sub);
+    if (av_copy_packet(pkt, sub) < 0) {
+        return AVERROR(ENOMEM);
+    }
 
     pkt->dts = pkt->pts;
     q->current_sub_idx++;
     return 0;
+}
+
+static int search_sub_ts(const FFDemuxSubtitlesQueue *q, int64_t ts)
+{
+    int s1 = 0, s2 = q->nb_subs - 1;
+
+    if (s2 < s1)
+        return AVERROR(ERANGE);
+
+    for (;;) {
+        int mid;
+
+        if (s1 == s2)
+            return s1;
+        if (s1 == s2 - 1)
+            return q->subs[s1].pts <= q->subs[s2].pts ? s1 : s2;
+        mid = (s1 + s2) / 2;
+        if (q->subs[mid].pts <= ts)
+            s1 = mid;
+        else
+            s2 = mid;
+    }
 }
 
 int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int stream_index,
@@ -102,30 +140,43 @@ int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int st
             return AVERROR(ERANGE);
         q->current_sub_idx = ts;
     } else {
-        int i, idx = -1;
-        int64_t min_ts_diff = INT64_MAX;
+        int i, idx = search_sub_ts(q, ts);
         int64_t ts_selected;
-        /* TODO: q->subs[] is sorted by pts so we could do a binary search */
-        for (i = 0; i < q->nb_subs; i++) {
-            int64_t pts = q->subs[i].pts;
-            uint64_t ts_diff = FFABS(pts - ts);
-            if (pts >= min_ts && pts <= max_ts && ts_diff < min_ts_diff) {
-                min_ts_diff = ts_diff;
-                idx = i;
-            }
-        }
+
         if (idx < 0)
-            return AVERROR(ERANGE);
-        /* look back in the latest subtitles for overlapping subtitles */
+            return idx;
+        for (i = idx; i < q->nb_subs && q->subs[i].pts < min_ts; i++)
+            if (stream_index == -1 || q->subs[i].stream_index == stream_index)
+                idx = i;
+        for (i = idx; i > 0 && q->subs[i].pts > max_ts; i--)
+            if (stream_index == -1 || q->subs[i].stream_index == stream_index)
+                idx = i;
+
         ts_selected = q->subs[idx].pts;
+        if (ts_selected < min_ts || ts_selected > max_ts)
+            return AVERROR(ERANGE);
+
+        /* look back in the latest subtitles for overlapping subtitles */
         for (i = idx - 1; i >= 0; i--) {
-            if (q->subs[i].duration <= 0)
+            int64_t pts = q->subs[i].pts;
+            if (q->subs[i].duration <= 0 ||
+                (stream_index != -1 && q->subs[i].stream_index != stream_index))
                 continue;
-            if (q->subs[i].pts > ts_selected - q->subs[i].duration)
+            if (pts >= min_ts && pts > ts_selected - q->subs[i].duration)
                 idx = i;
             else
                 break;
         }
+
+        /* If the queue is used to store multiple subtitles streams (like with
+         * VobSub) and the stream index is not specified, we need to make sure
+         * to focus on the smallest file position offset for a same timestamp;
+         * queue is ordered by pts and then filepos, so we can take the first
+         * entry for a given timestamp. */
+        if (stream_index == -1)
+            while (idx > 0 && q->subs[idx - 1].pts == q->subs[idx].pts)
+                idx--;
+
         q->current_sub_idx = idx;
     }
     return 0;
@@ -191,7 +242,7 @@ static inline int is_eol(char c)
 
 void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
 {
-    char eol_buf[5];
+    char eol_buf[5], last_was_cr = 0;
     int n = 0, i = 0, nb_eol = 0;
 
     av_bprint_clear(buf);
@@ -208,12 +259,13 @@ void ff_subtitles_read_chunk(AVIOContext *pb, AVBPrint *buf)
 
         /* line break buffering: we don't want to add the trailing \r\n */
         if (is_eol(c)) {
-            nb_eol += c == '\n';
+            nb_eol += c == '\n' || last_was_cr;
             if (nb_eol == 2)
                 break;
             eol_buf[i++] = c;
             if (i == sizeof(eol_buf) - 1)
                 break;
+            last_was_cr = c == '\r';
             continue;
         }
 

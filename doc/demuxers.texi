@@ -29,6 +29,17 @@ the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
 
+@section asf
+
+Advanced Systems Format demuxer.
+
+This demuxer is used to demux ASF files and MMS network streams.
+
+@table @option
+@item -no_resync_search @var{bool}
+Do not try to resynchronize by looking for a certain optional start code.
+@end table
+
 @anchor{concat}
 @section concat
 
@@ -101,6 +112,17 @@ If set to 0, any file name is accepted.
 The default is -1, it is equivalent to 1 if the format was automatically
 probed and 0 otherwise.
 
+@end table
+
+@section flv
+
+Adobe Flash Video Format demuxer.
+
+This demuxer is used to demux FLV files and RTMP network streams.
+
+@table @option
+@item -flv_metadata @var{bool}
+Allocate the streams according to the onMetaData array content.
 @end table
 
 @section libgme
@@ -240,20 +262,20 @@ Use @command{ffmpeg} for creating a video from the images in the file
 sequence @file{img-001.jpeg}, @file{img-002.jpeg}, ..., assuming an
 input frame rate of 10 frames per second:
 @example
-ffmpeg -i 'img-%03d.jpeg' -r 10 out.mkv
+ffmpeg -framerate 10 -i 'img-%03d.jpeg' out.mkv
 @end example
 
 @item
 As above, but start by reading from a file with index 100 in the sequence:
 @example
-ffmpeg -start_number 100 -i 'img-%03d.jpeg' -r 10 out.mkv
+ffmpeg -framerate 10 -start_number 100 -i 'img-%03d.jpeg' out.mkv
 @end example
 
 @item
 Read images matching the "*.png" glob pattern , that is all the files
 terminating with the ".png" suffix:
 @example
-ffmpeg -pattern_type glob -i "*.png" -r 10 out.mkv
+ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
 

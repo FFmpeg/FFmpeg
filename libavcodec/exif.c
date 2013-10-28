@@ -50,7 +50,7 @@ static int exif_add_metadata(AVCodecContext *avctx, int count, int type,
     case TIFF_DOUBLE   : return ff_tadd_doubles_metadata(count, name, sep, gb, le, metadata);
     case TIFF_SHORT    : return ff_tadd_shorts_metadata(count, name, sep, gb, le, metadata);
     case TIFF_BYTE     :
-    case TIFF_UNDEFINED:
+    case TIFF_UNDEFINED: return ff_tadd_bytes_metadata(count, name, sep, gb, le, metadata);
     case TIFF_STRING   : return ff_tadd_string_metadata(count, name, gb, le, metadata);
     case TIFF_SRATIONAL:
     case TIFF_RATIONAL : return ff_tadd_rational_metadata(count, name, sep, gb, le, metadata);

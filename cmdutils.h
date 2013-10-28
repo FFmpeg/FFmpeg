@@ -82,6 +82,11 @@ void uninit_opts(void);
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
 
 /**
+ * Override the cpuflags.
+ */
+int opt_cpuflags(void *optctx, const char *opt, const char *arg);
+
+/**
  * Fallback for options that are not explicitly handled, these will be
  * parsed through AVOptions.
  */
@@ -95,8 +100,6 @@ int opt_loglevel(void *optctx, const char *opt, const char *arg);
 int opt_report(const char *opt);
 
 int opt_max_alloc(void *optctx, const char *opt, const char *arg);
-
-int opt_cpuflags(void *optctx, const char *opt, const char *arg);
 
 int opt_codec_debug(void *optctx, const char *opt, const char *arg);
 
@@ -486,6 +489,12 @@ int show_layouts(void *optctx, const char *opt, const char *arg);
 int show_sample_fmts(void *optctx, const char *opt, const char *arg);
 
 /**
+ * Print a listing containing all the color names and values recognized
+ * by the program.
+ */
+void show_colors(void *optctx, const char *opt, const char *arg);
+
+/**
  * Return a positive value if a line read from standard input
  * starts with [yY], otherwise return 0.
  */
@@ -498,7 +507,7 @@ int read_yesno(void);
  * @param filename file to read from
  * @param bufptr location where pointer to buffer is returned
  * @param size   location where size of buffer is returned
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR error code in case of failure.
  */
 int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);

@@ -21,8 +21,7 @@
 %include "libavutil/x86/x86util.asm"
 
 
-SECTION_RODATA
-align 32
+SECTION_RODATA 32
 dw1: times 8  dd 1
 w1 : times 16 dw 1
 

@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2007 The Libav Project
+ * Copyright (c) 2007 The FFmpeg Project
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -24,7 +24,6 @@
 #include "libavcodec/internal.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mem.h"
-#include "url.h"
 #include "libavutil/time.h"
 
 #if HAVE_THREADS
@@ -42,7 +41,6 @@
 static int openssl_init;
 #if HAVE_THREADS
 #include <openssl/crypto.h>
-#include "libavutil/avutil.h"
 pthread_mutex_t *openssl_mutexes;
 static void openssl_lock(int mode, int type, const char *file, int line)
 {
@@ -247,8 +245,10 @@ int ff_socket(int af, int type, int proto)
     {
         fd = socket(af, type, proto);
 #if HAVE_FCNTL
-        if (fd != -1)
-            fcntl(fd, F_SETFD, FD_CLOEXEC);
+        if (fd != -1) {
+            if (fcntl(fd, F_SETFD, FD_CLOEXEC) == -1)
+                av_log(NULL, AV_LOG_DEBUG, "Failed to set close on exec\n");
+        }
 #endif
     }
     return fd;

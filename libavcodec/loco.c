@@ -135,7 +135,7 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     if(buf_size<=0)
         return -1;
 
-    init_get_bits(&rc.gb, buf, buf_size*8);
+    init_get_bits8(&rc.gb, buf, buf_size);
     rc.save  = 0;
     rc.run   = 0;
     rc.run2  = 0;
@@ -302,11 +302,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 AVCodec ff_loco_decoder = {
     .name           = "loco",
+    .long_name      = NULL_IF_CONFIG_SMALL("LOCO"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_LOCO,
     .priv_data_size = sizeof(LOCOContext),
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("LOCO"),
 };

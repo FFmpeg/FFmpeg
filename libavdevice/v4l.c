@@ -37,7 +37,6 @@
 #define _LINUX_TIME_H 1
 #include <linux/videodev.h>
 #include <time.h>
-#include "avdevice.h"
 
 typedef struct {
     AVClass *class;

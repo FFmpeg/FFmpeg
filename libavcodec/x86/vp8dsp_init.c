@@ -23,6 +23,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/vp8dsp.h"
 
 #if HAVE_YASM
@@ -318,7 +319,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 #if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (EXTERNAL_MMX(cpu_flags)) {
         c->vp8_idct_dc_add    = ff_vp8_idct_dc_add_mmx;
         c->vp8_idct_dc_add4uv = ff_vp8_idct_dc_add4uv_mmx;
 #if ARCH_X86_32
@@ -349,7 +350,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 
     /* note that 4-tap width=16 functions are missing because w=16
      * is only used for luma, and luma is always a copy or sixtap. */
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
         VP8_MC_FUNC(2, 4, mmxext);
         VP8_BILINEAR_MC_FUNC(2, 4, mmxext);
 #if ARCH_X86_32
@@ -373,14 +374,14 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 #endif
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSE) {
+    if (EXTERNAL_SSE(cpu_flags)) {
         c->vp8_idct_add                         = ff_vp8_idct_add_sse;
         c->vp8_luma_dc_wht                      = ff_vp8_luma_dc_wht_sse;
         c->put_vp8_epel_pixels_tab[0][0][0]     =
         c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_sse;
     }
 
-    if (cpu_flags & (AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_SSE2SLOW)) {
+    if (HAVE_SSE2_EXTERNAL && cpu_flags & (AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_SSE2SLOW)) {
         VP8_LUMA_MC_FUNC(0, 16, sse2);
         VP8_MC_FUNC(1, 8, sse2);
         VP8_BILINEAR_MC_FUNC(0, 16, sse2);
@@ -395,7 +396,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_v_loop_filter8uv       = ff_vp8_v_loop_filter8uv_mbedge_sse2;
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSE2) {
+    if (EXTERNAL_SSE2(cpu_flags)) {
         c->vp8_idct_dc_add4y          = ff_vp8_idct_dc_add4y_sse2;
 
         c->vp8_h_loop_filter_simple = ff_vp8_h_loop_filter_simple_sse2;
@@ -407,7 +408,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_sse2;
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSSE3) {
+    if (EXTERNAL_SSSE3(cpu_flags)) {
         VP8_LUMA_MC_FUNC(0, 16, ssse3);
         VP8_MC_FUNC(1, 8, ssse3);
         VP8_MC_FUNC(2, 4, ssse3);
@@ -429,7 +430,7 @@ av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
         c->vp8_h_loop_filter8uv       = ff_vp8_h_loop_filter8uv_mbedge_ssse3;
     }
 
-    if (cpu_flags & AV_CPU_FLAG_SSE4) {
+    if (EXTERNAL_SSE4(cpu_flags)) {
         c->vp8_idct_dc_add                  = ff_vp8_idct_dc_add_sse4;
 
         c->vp8_h_loop_filter_simple   = ff_vp8_h_loop_filter_simple_sse4;

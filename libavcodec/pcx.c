@@ -163,6 +163,13 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     } else if (nplanes == 1 && bits_per_pixel == 8) {
         int palstart = avpkt->size - 769;
 
+        if (avpkt->size < 769) {
+            av_log(avctx, AV_LOG_ERROR, "File is too short\n");
+            ret = avctx->err_recognition & AV_EF_EXPLODE ?
+                  AVERROR_INVALIDDATA : avpkt->size;
+            goto end;
+        }
+
         for (y = 0; y < h; y++, ptr += stride) {
             pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
             memcpy(ptr, scanline, w);
@@ -174,7 +181,8 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
         if (bytestream2_get_byte(&gb) != 12) {
             av_log(avctx, AV_LOG_ERROR, "expected palette after image data\n");
-            ret = AVERROR_INVALIDDATA;
+            ret = avctx->err_recognition & AV_EF_EXPLODE ?
+                  AVERROR_INVALIDDATA : avpkt->size;
             goto end;
         }
     } else if (nplanes == 1) {   /* all packed formats, max. 16 colors */
@@ -228,9 +236,9 @@ end:
 
 AVCodec ff_pcx_decoder = {
     .name         = "pcx",
+    .long_name    = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_PCX,
     .decode       = pcx_decode_frame,
     .capabilities = CODEC_CAP_DR1,
-    .long_name    = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
 };

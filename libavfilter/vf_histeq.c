@@ -58,7 +58,6 @@ typedef struct {
     float strength;
     float intensity;
     enum HisteqAntibanding antibanding;
-    char* antibanding_str;
     int in_histogram [256];        ///< input histogram
     int out_histogram[256];        ///< output histogram
     int LUT[256];                  ///< lookup table derived from histogram[]
@@ -253,18 +252,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 
 static const AVFilterPad histeq_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_input,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 static const AVFilterPad histeq_outputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
@@ -275,7 +274,6 @@ AVFilter avfilter_vf_histeq = {
     .priv_size     = sizeof(HisteqContext),
     .init          = init,
     .query_formats = query_formats,
-
     .inputs        = histeq_inputs,
     .outputs       = histeq_outputs,
     .priv_class    = &histeq_class,

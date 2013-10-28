@@ -141,7 +141,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (pixformat != XWD_Z_PIXMAP) {
-        av_log(avctx, AV_LOG_ERROR, "pixmap format %d unsupported\n", pixformat);
+        avpriv_report_missing_feature(avctx, "Pixmap format %d", pixformat);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -239,9 +239,9 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_xwd_decoder = {
     .name           = "xwd",
+    .long_name      = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_XWD,
     .decode         = xwd_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("XWD (X Window Dump) image"),
 };

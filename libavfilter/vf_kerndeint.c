@@ -310,11 +310,9 @@ AVFilter avfilter_vf_kerndeint = {
     .name          = "kerndeint",
     .description   = NULL_IF_CONFIG_SMALL("Apply kernel deinterlacing to the input."),
     .priv_size     = sizeof(KerndeintContext),
+    .priv_class    = &kerndeint_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-
     .inputs        = kerndeint_inputs,
     .outputs       = kerndeint_outputs,
-
-    .priv_class    = &kerndeint_class,
 };

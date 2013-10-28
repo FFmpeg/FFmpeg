@@ -25,6 +25,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -133,7 +134,7 @@ typedef struct Stereo3DContext {
     StereoComponent in, out;
     int width, height;
     int row_step;
-    int ana_matrix[3][6];
+    const int *ana_matrix[3];
     int nb_planes;
     int linesize[4];
     int pheight[4];
@@ -187,12 +188,16 @@ static const AVOption stereo3d_options[] = {
     { "sbs2r", "side by side half width right first", 0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_2_RL},  0, 0, FLAGS, "out" },
     { "sbsl",  "side by side left first",             0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_LR},    0, 0, FLAGS, "out" },
     { "sbsr",  "side by side right first",            0, AV_OPT_TYPE_CONST, {.i64=SIDE_BY_SIDE_RL},    0, 0, FLAGS, "out" },
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(stereo3d);
 
-static const enum AVPixelFormat anaglyph_pix_fmts[] = { AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE };
+static const enum AVPixelFormat anaglyph_pix_fmts[] = {
+    AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+    AV_PIX_FMT_NONE
+};
+
 static const enum AVPixelFormat other_pix_fmts[] = {
     AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
     AV_PIX_FMT_RGB48BE, AV_PIX_FMT_BGR48BE,
@@ -388,9 +393,15 @@ static int config_output(AVFilterLink *outlink)
     case ANAGLYPH_YB_GRAY:
     case ANAGLYPH_YB_HALF:
     case ANAGLYPH_YB_COLOR:
-    case ANAGLYPH_YB_DUBOIS:
-        memcpy(s->ana_matrix, ana_coeff[s->out.format], sizeof(s->ana_matrix));
+    case ANAGLYPH_YB_DUBOIS: {
+        uint8_t rgba_map[4];
+
+        ff_fill_rgba_map(rgba_map, outlink->format);
+        s->ana_matrix[rgba_map[0]] = &ana_coeff[s->out.format][0][0];
+        s->ana_matrix[rgba_map[1]] = &ana_coeff[s->out.format][1][0];
+        s->ana_matrix[rgba_map[2]] = &ana_coeff[s->out.format][2][0];
         break;
+    }
     case SIDE_BY_SIDE_2_LR:
         aspect.den      *= 2;
     case SIDE_BY_SIDE_LR:
@@ -461,7 +472,7 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static inline uint8_t ana_convert(const int *coeff, uint8_t *left, uint8_t *right)
+static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)
 {
     int sum;
 
@@ -577,15 +588,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     case ANAGLYPH_YB_HALF:
     case ANAGLYPH_YB_COLOR:
     case ANAGLYPH_YB_DUBOIS: {
-        int i, x, y, il, ir, o;
-        uint8_t *lsrc = ileft->data[0];
-        uint8_t *rsrc = iright->data[0];
+        int x, y, il, ir, o;
+        const uint8_t *lsrc = ileft->data[0];
+        const uint8_t *rsrc = iright->data[0];
         uint8_t *dst = out->data[0];
         int out_width = s->out.width;
-        int *ana_matrix[3];
-
-        for (i = 0; i < 3; i++)
-            ana_matrix[i] = s->ana_matrix[i];
+        const int **ana_matrix = s->ana_matrix;
 
         for (y = 0; y < s->out.height; y++) {
             o   = out->linesize[0] * y;
@@ -628,9 +636,9 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad stereo3d_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };

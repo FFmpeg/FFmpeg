@@ -198,6 +198,7 @@ static int pcx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_pcx_encoder = {
     .name           = "pcx",
+    .long_name      = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PCX,
     .encode2        = pcx_encode_frame,
@@ -208,5 +209,4 @@ AVCodec ff_pcx_encoder = {
         AV_PIX_FMT_MONOBLACK,
         AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
 };

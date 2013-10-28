@@ -3,20 +3,20 @@
  *
  * Copyright (c) 2010-2011 Maxim Poliakovski
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -140,6 +140,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         av_log(avctx, AV_LOG_ERROR, "Invalid alpha mode %d\n", ctx->alpha_info);
         return AVERROR_INVALIDDATA;
     }
+    if (avctx->skip_alpha) ctx->alpha_info = 0;
 
     switch (ctx->chroma_factor) {
     case 2:
@@ -369,10 +370,10 @@ static inline void decode_dc_coeffs(GetBitContext *gb, int16_t *out,
 /**
  * Decode AC coefficients for all blocks in a slice.
  */
-static inline void decode_ac_coeffs(GetBitContext *gb, int16_t *out,
-                                    int blocks_per_slice,
-                                    int plane_size_factor,
-                                    const uint8_t *scan)
+static inline int decode_ac_coeffs(GetBitContext *gb, int16_t *out,
+                                   int blocks_per_slice,
+                                   int plane_size_factor,
+                                   const uint8_t *scan)
 {
     int pos, block_mask, run, level, sign, run_cb_index, lev_cb_index;
     int max_coeffs, bits_left;
@@ -390,15 +391,19 @@ static inline void decode_ac_coeffs(GetBitContext *gb, int16_t *out,
 
         bits_left = get_bits_left(gb);
         if (bits_left <= 0 || (bits_left <= 8 && !show_bits(gb, bits_left)))
-            return;
+            return 0;
 
         run = decode_vlc_codeword(gb, ff_prores_ac_codebook[run_cb_index]);
+        if (run < 0)
+            return AVERROR_INVALIDDATA;
 
         bits_left = get_bits_left(gb);
         if (bits_left <= 0 || (bits_left <= 8 && !show_bits(gb, bits_left)))
-            return;
+            return AVERROR_INVALIDDATA;
 
         level = decode_vlc_codeword(gb, ff_prores_ac_codebook[lev_cb_index]) + 1;
+        if (level < 0)
+            return AVERROR_INVALIDDATA;
 
         pos += run + 1;
         if (pos >= max_coeffs)
@@ -408,22 +413,24 @@ static inline void decode_ac_coeffs(GetBitContext *gb, int16_t *out,
         out[((pos & block_mask) << 6) + scan[pos >> plane_size_factor]] =
             (level ^ sign) - sign;
     }
+
+    return 0;
 }
 
 
 /**
  * Decode a slice plane (luma or chroma).
  */
-static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
-                               const uint8_t *buf,
-                               int data_size, uint16_t *out_ptr,
-                               int linesize, int mbs_per_slice,
-                               int blocks_per_mb, int plane_size_factor,
-                               const int16_t *qmat, int is_chroma)
+static int decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
+                              const uint8_t *buf,
+                              int data_size, uint16_t *out_ptr,
+                              int linesize, int mbs_per_slice,
+                              int blocks_per_mb, int plane_size_factor,
+                              const int16_t *qmat, int is_chroma)
 {
     GetBitContext gb;
     int16_t *block_ptr;
-    int mb_num, blocks_per_slice;
+    int mb_num, blocks_per_slice, ret;
 
     blocks_per_slice = mbs_per_slice * blocks_per_mb;
 
@@ -433,8 +440,10 @@ static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
 
     decode_dc_coeffs(&gb, td->blocks, blocks_per_slice);
 
-    decode_ac_coeffs(&gb, td->blocks, blocks_per_slice,
-                     plane_size_factor, ctx->scantable.permutated);
+    ret = decode_ac_coeffs(&gb, td->blocks, blocks_per_slice,
+                           plane_size_factor, ctx->scantable.permutated);
+    if (ret < 0)
+        return ret;
 
     /* inverse quantization, inverse transform and output */
     block_ptr = td->blocks;
@@ -468,6 +477,7 @@ static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
             }
         }
     }
+    return 0;
 }
 
 
@@ -496,8 +506,9 @@ static void unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
                 dst[idx++] = alpha_val >> 6;
             else
                 dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
-            if (idx >= num_coeffs)
+            if (idx >= num_coeffs) {
                 break;
+            }
         } while (get_bits1(gb));
         val = get_bits(gb, 4);
         if (!val)
@@ -560,6 +571,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     int y_data_size, u_data_size, v_data_size, a_data_size;
     int y_linesize, u_linesize, v_linesize, a_linesize;
     int coff[4];
+    int ret;
 
     buf             = ctx->slice_data[slice_num].index;
     slice_data_size = ctx->slice_data[slice_num + 1].index - buf;
@@ -608,7 +620,7 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     coff[2]     = coff[1] + u_data_size;
     v_data_size = hdr_size > 7 ? AV_RB16(buf + 6) : slice_data_size - coff[2];
     coff[3]     = coff[2] + v_data_size;
-    a_data_size = slice_data_size - coff[3];
+    a_data_size = ctx->alpha_info ? slice_data_size - coff[3] : 0;
 
     /* if V or alpha component size is negative that means that previous
        component sizes are too large */
@@ -631,24 +643,31 @@ static int decode_slice(AVCodecContext *avctx, void *tdata)
     }
 
     /* decode luma plane */
-    decode_slice_plane(ctx, td, buf + coff[0], y_data_size,
-                       (uint16_t*) y_data, y_linesize,
-                       mbs_per_slice, 4, slice_width_factor + 2,
-                       td->qmat_luma_scaled, 0);
+    ret = decode_slice_plane(ctx, td, buf + coff[0], y_data_size,
+                             (uint16_t*) y_data, y_linesize,
+                             mbs_per_slice, 4, slice_width_factor + 2,
+                             td->qmat_luma_scaled, 0);
+
+    if (ret < 0)
+        return ret;
 
     /* decode U chroma plane */
-    decode_slice_plane(ctx, td, buf + coff[1], u_data_size,
-                       (uint16_t*) u_data, u_linesize,
-                       mbs_per_slice, ctx->num_chroma_blocks,
-                       slice_width_factor + ctx->chroma_factor - 1,
-                       td->qmat_chroma_scaled, 1);
+    ret = decode_slice_plane(ctx, td, buf + coff[1], u_data_size,
+                             (uint16_t*) u_data, u_linesize,
+                             mbs_per_slice, ctx->num_chroma_blocks,
+                             slice_width_factor + ctx->chroma_factor - 1,
+                             td->qmat_chroma_scaled, 1);
+    if (ret < 0)
+        return ret;
 
     /* decode V chroma plane */
-    decode_slice_plane(ctx, td, buf + coff[2], v_data_size,
-                       (uint16_t*) v_data, v_linesize,
-                       mbs_per_slice, ctx->num_chroma_blocks,
-                       slice_width_factor + ctx->chroma_factor - 1,
-                       td->qmat_chroma_scaled, 1);
+    ret = decode_slice_plane(ctx, td, buf + coff[2], v_data_size,
+                             (uint16_t*) v_data, v_linesize,
+                             mbs_per_slice, ctx->num_chroma_blocks,
+                             slice_width_factor + ctx->chroma_factor - 1,
+                             td->qmat_chroma_scaled, 1);
+    if (ret < 0)
+        return ret;
 
     /* decode alpha plane if available */
     if (a_data && a_data_size)
@@ -753,6 +772,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec ff_prores_lgpl_decoder = {
     .name           = "prores_lgpl",
+    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
@@ -760,5 +780,4 @@ AVCodec ff_prores_lgpl_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)")
 };

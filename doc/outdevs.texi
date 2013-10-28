@@ -104,9 +104,73 @@ ffmpeg -i INPUT -pix_fmt rgb24 -f caca -list_dither colors -
 @end example
 @end itemize
 
+@section fbdev
+
+Linux framebuffer output device.
+
+The Linux framebuffer is a graphic hardware-independent abstraction
+layer to show graphics on a computer monitor, typically on the
+console. It is accessed through a file device node, usually
+@file{/dev/fb0}.
+
+For more detailed information read the file
+@file{Documentation/fb/framebuffer.txt} included in the Linux source tree.
+
+@subsection Options
+@table @option
+
+@item xoffset
+@item yoffset
+Set x/y coordinate of top left corner. Default is 0.
+@end table
+
+@subsection Examples
+Play a file on framebuffer device @file{/dev/fb0}.
+Required pixel format depends on current framebuffer settings.
+@example
+ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+@end example
+
+See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+
 @section oss
 
 OSS (Open Sound System) output device.
+
+@section pulse
+
+PulseAudio output device.
+
+To enable this output device you need to configure FFmpeg with @code{--enable-libpulse}.
+
+More information about PulseAudio can be found on @url{http://www.pulseaudio.org}
+
+@subsection Options
+@table @option
+
+@item server
+Connect to a specific PulseAudio server, specified by an IP address.
+Default server is used when not provided.
+
+@item name
+Specify the application name PulseAudio will use when showing active clients,
+by default it is the @code{LIBAVFORMAT_IDENT} string.
+
+@item stream_name
+Specify the stream name PulseAudio will use when showing active streams,
+by default it is set to the specified output name.
+
+@item device
+Specify the device to use. Default device is used when not provided.
+List of output devices can be obtained with command @command{pactl list sinks}.
+
+@end table
+
+@subsection Examples
+Play a file on default device on default server:
+@example
+ffmpeg  -i INPUT -f pulse "stream name"
+@end example
 
 @section sdl
 
@@ -139,6 +203,10 @@ Set the SDL window size, can be a string of the form
 @var{width}x@var{height} or a video size abbreviation.
 If not specified it defaults to the size of the input video,
 downscaled according to the aspect ratio.
+
+@item window_fullscreen
+Set fullscreen mode when non-zero value is provided.
+Zero is a default.
 @end table
 
 @subsection Examples

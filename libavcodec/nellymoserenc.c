@@ -404,6 +404,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 
 AVCodec ff_nellymoser_encoder = {
     .name           = "nellymoser",
+    .long_name      = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_NELLYMOSER,
     .priv_data_size = sizeof(NellyMoserEncodeContext),
@@ -411,7 +412,6 @@ AVCodec ff_nellymoser_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .capabilities   = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY,
-    .long_name      = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLT,
                                                      AV_SAMPLE_FMT_NONE },
 };

@@ -596,6 +596,7 @@ static int utvideo_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 AVCodec ff_utvideo_encoder = {
     .name           = "utvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("Ut Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_UTVIDEO,
     .priv_data_size = sizeof(UtvideoContext),
@@ -606,5 +607,4 @@ AVCodec ff_utvideo_encoder = {
                           AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_YUV422P,
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
                       },
-    .long_name      = NULL_IF_CONFIG_SMALL("Ut Video"),
 };

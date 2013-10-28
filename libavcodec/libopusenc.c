@@ -313,6 +313,7 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
                               av_get_bytes_per_sample(avctx->sample_fmt);
     uint8_t *audio;
     int ret;
+    int discard_padding;
 
     if (frame) {
         ff_af_queue_add(&opus->afq, frame);
@@ -353,6 +354,25 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
 
     ff_af_queue_remove(&opus->afq, opus->opts.packet_size,
                        &avpkt->pts, &avpkt->duration);
+
+    discard_padding = opus->opts.packet_size - avpkt->duration;
+    // Check if subtraction resulted in an overflow
+    if ((discard_padding < opus->opts.packet_size) != (avpkt->duration > 0)) {
+        av_free_packet(avpkt);
+        av_free(avpkt);
+        return AVERROR(EINVAL);
+    }
+    if (discard_padding > 0) {
+        uint8_t* side_data = av_packet_new_side_data(avpkt,
+                                                     AV_PKT_DATA_SKIP_SAMPLES,
+                                                     10);
+        if(side_data == NULL) {
+            av_free_packet(avpkt);
+            av_free(avpkt);
+            return AVERROR(ENOMEM);
+        }
+        AV_WL32(side_data + 4, discard_padding);
+    }
 
     *got_packet_ptr = 1;
 
@@ -408,6 +428,7 @@ static const int libopus_sample_rates[] = {
 
 AVCodec ff_libopus_encoder = {
     .name            = "libopus",
+    .long_name       = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_OPUS,
     .priv_data_size  = sizeof(LibopusEncContext),
@@ -420,7 +441,6 @@ AVCodec ff_libopus_encoder = {
                                                       AV_SAMPLE_FMT_NONE },
     .channel_layouts = ff_vorbis_channel_layouts,
     .supported_samplerates = libopus_sample_rates,
-    .long_name       = NULL_IF_CONFIG_SMALL("libopus Opus"),
     .priv_class      = &libopus_class,
     .defaults        = libopus_defaults,
 };

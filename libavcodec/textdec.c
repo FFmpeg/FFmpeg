@@ -118,8 +118,8 @@ DECLARE_CLASS(text);
 
 AVCodec ff_text_decoder = {
     .name           = "text",
-    .priv_data_size = sizeof(TextContext),
     .long_name      = NULL_IF_CONFIG_SMALL("Raw text subtitle"),
+    .priv_data_size = sizeof(TextContext),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_TEXT,
     .decode         = text_decode_frame,
@@ -143,8 +143,8 @@ DECLARE_CLASS(vplayer);
 
 AVCodec ff_vplayer_decoder = {
     .name           = "vplayer",
-    .priv_data_size = sizeof(TextContext),
     .long_name      = NULL_IF_CONFIG_SMALL("VPlayer subtitle"),
+    .priv_data_size = sizeof(TextContext),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_VPLAYER,
     .decode         = text_decode_frame,
@@ -159,8 +159,8 @@ DECLARE_CLASS(pjs);
 
 AVCodec ff_pjs_decoder = {
     .name           = "pjs",
-    .priv_data_size = sizeof(TextContext),
     .long_name      = NULL_IF_CONFIG_SMALL("PJS subtitle"),
+    .priv_data_size = sizeof(TextContext),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_PJS,
     .decode         = text_decode_frame,
@@ -175,8 +175,8 @@ DECLARE_CLASS(subviewer1);
 
 AVCodec ff_subviewer1_decoder = {
     .name           = "subviewer1",
-    .priv_data_size = sizeof(TextContext),
     .long_name      = NULL_IF_CONFIG_SMALL("SubViewer1 subtitle"),
+    .priv_data_size = sizeof(TextContext),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_SUBVIEWER1,
     .decode         = text_decode_frame,

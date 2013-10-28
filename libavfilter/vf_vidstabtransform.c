@@ -65,9 +65,9 @@ static const AVOption vidstabtransform_options[] = {
     {"relative",  "consider transforms as 0: absolute, 1: relative",                OFFSETC(relative),
                    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,    FLAGS},
     {"zoom",      "percentage to zoom >0: zoom in, <0 zoom out",                    OFFSETC(zoom),
-                   AV_OPT_TYPE_DOUBLE, {.dbl = 0},        0, 100,  FLAGS},
+                   AV_OPT_TYPE_DOUBLE, {.dbl = 0},     -100, 100,  FLAGS},
     {"optzoom",   "0: nothing, 1: determine optimal zoom (added to 'zoom')",        OFFSETC(optZoom),
-                   AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,    FLAGS},
+                   AV_OPT_TYPE_INT,    {.i64 = 1},        0, 2,    FLAGS},
     {"interpol",  "type of interpolation",                                          OFFSETC(interpolType),
                    AV_OPT_TYPE_INT,    {.i64 = 2},        0, 3,    FLAGS, "interpol"},
     {  "no",      "no interpolation",                                               0,
@@ -260,18 +260,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVFilterPad avfilter_vf_vidstabtransform_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
-        .config_props     = config_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
 
 static const AVFilterPad avfilter_vf_vidstabtransform_outputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
@@ -285,7 +285,6 @@ AVFilter avfilter_vf_vidstabtransform = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
     .inputs        = avfilter_vf_vidstabtransform_inputs,
     .outputs       = avfilter_vf_vidstabtransform_outputs,
     .priv_class    = &vidstabtransform_class,

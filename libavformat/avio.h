@@ -368,7 +368,7 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  * In case of failure the pointed to value is set to NULL.
  * @param flags flags which control how the resource indicated by url
  * is to be opened
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int avio_open(AVIOContext **s, const char *url, int flags);
@@ -387,7 +387,7 @@ int avio_open(AVIOContext **s, const char *url, int flags);
  * @param options  A dictionary filled with protocol-private options. On return
  * this parameter will be destroyed and replaced with a dict containing options
  * that were not found. May be NULL.
- * @return 0 in case of success, a negative value corresponding to an
+ * @return >= 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int avio_open2(AVIOContext **s, const char *url, int flags,

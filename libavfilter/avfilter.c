@@ -36,7 +36,6 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "audio.h"
 
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame);
 
@@ -94,16 +93,25 @@ void ff_command_queue_pop(AVFilterContext *filter)
     av_free(c);
 }
 
-void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
+int ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
                    AVFilterPad **pads, AVFilterLink ***links,
                    AVFilterPad *newpad)
 {
+    AVFilterLink **newlinks;
+    AVFilterPad *newpads;
     unsigned i;
 
     idx = FFMIN(idx, *count);
 
-    *pads  = av_realloc(*pads,  sizeof(AVFilterPad)   * (*count + 1));
-    *links = av_realloc(*links, sizeof(AVFilterLink*) * (*count + 1));
+    newpads  = av_realloc_array(*pads,  *count + 1, sizeof(AVFilterPad));
+    newlinks = av_realloc_array(*links, *count + 1, sizeof(AVFilterLink*));
+    if (newpads)
+        *pads  = newpads;
+    if (newlinks)
+        *links = newlinks;
+    if (!newpads || !newlinks)
+        return AVERROR(ENOMEM);
+
     memmove(*pads  + idx + 1, *pads  + idx, sizeof(AVFilterPad)   * (*count - idx));
     memmove(*links + idx + 1, *links + idx, sizeof(AVFilterLink*) * (*count - idx));
     memcpy(*pads + idx, newpad, sizeof(AVFilterPad));
@@ -111,8 +119,10 @@ void ff_insert_pad(unsigned idx, unsigned *count, size_t padidx_off,
 
     (*count)++;
     for (i = idx + 1; i < *count; i++)
-        if (*links[i])
-            (*(unsigned *)((uint8_t *) *links[i] + padidx_off))++;
+        if ((*links)[i])
+            (*(unsigned *)((uint8_t *) (*links)[i] + padidx_off))++;
+
+    return 0;
 }
 
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
@@ -427,7 +437,15 @@ void ff_update_link_current_pts(AVFilterLink *link, int64_t pts)
 int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags)
 {
     if(!strcmp(cmd, "ping")){
+        char local_res[256] = {0};
+
+        if (!res) {
+            res = local_res;
+            res_len = sizeof(local_res);
+        }
         av_strlcatf(res, res_len, "pong from:%s %s\n", filter->filter->name, filter->name);
+        if (res == local_res)
+            av_log(filter, AV_LOG_INFO, "%s", res);
         return 0;
     }else if(!strcmp(cmd, "enable")) {
         return set_enable_expr(filter, arg);
@@ -558,7 +576,7 @@ static const AVClass avfilter_class = {
     .option           = avfilter_options,
 };
 
-static int default_execute(AVFilterContext *ctx, action_func *func, void *arg,
+static int default_execute(AVFilterContext *ctx, avfilter_action_func *func, void *arg,
                            int *ret, int nb_jobs)
 {
     int i;
@@ -1043,7 +1061,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
         dstctx->var_values[VAR_POS] = pos == -1 ? NAN : pos;
 
-        dstctx->is_disabled = !av_expr_eval(dstctx->enable, dstctx->var_values, NULL);
+        dstctx->is_disabled = fabs(av_expr_eval(dstctx->enable, dstctx->var_values, NULL)) < 0.5;
         if (dstctx->is_disabled &&
             (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
             filter_frame = default_filter_frame;
@@ -1074,8 +1092,9 @@ static int ff_filter_frame_needs_framing(AVFilterLink *link, AVFrame *frame)
                 return 0;
             }
             av_frame_copy_props(pbuf, frame);
-            pbuf->pts = frame->pts +
-                        av_rescale_q(inpos, samples_tb, link->time_base);
+            pbuf->pts = frame->pts;
+            if (pbuf->pts != AV_NOPTS_VALUE)
+                pbuf->pts += av_rescale_q(inpos, samples_tb, link->time_base);
             pbuf->nb_samples = 0;
         }
         nb_samples = FFMIN(insamples,

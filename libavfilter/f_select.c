@@ -468,24 +468,23 @@ static av_cold int aselect_init(AVFilterContext *ctx)
 
 static const AVFilterPad avfilter_af_aselect_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
-        .config_props     = config_input,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 AVFilter avfilter_af_aselect = {
-    .name      = "aselect",
+    .name        = "aselect",
     .description = NULL_IF_CONFIG_SMALL("Select audio frames to pass in output."),
-    .init      = aselect_init,
-    .uninit    = uninit,
-    .priv_size = sizeof(SelectContext),
-    .inputs    = avfilter_af_aselect_inputs,
-    .priv_class = &aselect_class,
-    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .init        = aselect_init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(SelectContext),
+    .inputs      = avfilter_af_aselect_inputs,
+    .priv_class  = &aselect_class,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 #endif /* CONFIG_ASELECT_FILTER */
 
@@ -512,26 +511,23 @@ static av_cold int select_init(AVFilterContext *ctx)
 
 static const AVFilterPad avfilter_vf_select_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .config_props     = config_input,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 AVFilter avfilter_vf_select = {
-    .name      = "select",
-    .description = NULL_IF_CONFIG_SMALL("Select video frames to pass in output."),
-    .init      = select_init,
-    .uninit    = uninit,
+    .name          = "select",
+    .description   = NULL_IF_CONFIG_SMALL("Select video frames to pass in output."),
+    .init          = select_init,
+    .uninit        = uninit,
     .query_formats = query_formats,
-
-    .priv_size = sizeof(SelectContext),
-    .priv_class = &select_class,
-
-    .inputs    = avfilter_vf_select_inputs,
-    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .priv_size     = sizeof(SelectContext),
+    .priv_class    = &select_class,
+    .inputs        = avfilter_vf_select_inputs,
+    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 #endif /* CONFIG_SELECT_FILTER */

@@ -329,6 +329,7 @@ static av_cold int mpc7_decode_close(AVCodecContext *avctx)
 
 AVCodec ff_mpc7_decoder = {
     .name           = "mpc7",
+    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV7"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MUSEPACK7,
     .priv_data_size = sizeof(MPCContext),
@@ -337,7 +338,6 @@ AVCodec ff_mpc7_decoder = {
     .decode         = mpc7_decode_frame,
     .flush          = mpc7_decode_flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV7"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

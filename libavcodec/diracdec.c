@@ -112,7 +112,7 @@ typedef struct SubBand {
 typedef struct Plane {
     int width;
     int height;
-    int stride;
+    ptrdiff_t stride;
 
     int idwt_width;
     int idwt_height;
@@ -1414,7 +1414,8 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
         y + p->yblen > p->height+EDGE_WIDTH/2 ||
         x < 0 || y < 0) {
         for (i = 0; i < nplanes; i++) {
-            ff_emulated_edge_mc(s->edge_emu_buffer[i], src[i], p->stride,
+            ff_emulated_edge_mc(s->edge_emu_buffer[i], p->stride,
+                                src[i], p->stride,
                                 p->xblen, p->yblen, x, y,
                                 p->width+EDGE_WIDTH/2, p->height+EDGE_WIDTH/2);
             src[i] = s->edge_emu_buffer[i];
@@ -1926,6 +1927,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
 AVCodec ff_dirac_decoder = {
     .name           = "dirac",
+    .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(DiracContext),
@@ -1934,5 +1936,4 @@ AVCodec ff_dirac_decoder = {
     .decode         = dirac_decode_frame,
     .capabilities   = CODEC_CAP_DELAY,
     .flush          = dirac_decode_flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
 };

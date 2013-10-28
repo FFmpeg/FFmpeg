@@ -194,12 +194,12 @@ static const AVClass smvjpegdec_class = {
 
 AVCodec ff_smvjpeg_decoder = {
     .name           = "smvjpeg",
+    .long_name      = NULL_IF_CONFIG_SMALL("SMV JPEG"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SMVJPEG,
     .priv_data_size = sizeof(SMVJpegDecodeContext),
     .init           = smvjpeg_decode_init,
     .close          = smvjpeg_decode_end,
     .decode         = smvjpeg_decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("SMV JPEG"),
     .priv_class     = &smvjpegdec_class,
 };

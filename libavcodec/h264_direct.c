@@ -32,7 +32,6 @@
 #include "rectangle.h"
 #include "thread.h"
 
-//#undef NDEBUG
 #include <assert.h>
 
 

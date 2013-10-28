@@ -619,8 +619,8 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c)
     c->rv40_loop_filter_strength[0] = rv40_h_loop_filter_strength;
     c->rv40_loop_filter_strength[1] = rv40_v_loop_filter_strength;
 
-    if (ARCH_X86)
-        ff_rv40dsp_init_x86(c);
     if (ARCH_ARM)
         ff_rv40dsp_init_arm(c);
+    if (ARCH_X86)
+        ff_rv40dsp_init_x86(c);
 }

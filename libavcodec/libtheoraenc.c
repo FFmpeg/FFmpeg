@@ -368,6 +368,7 @@ static av_cold int encode_close(AVCodecContext* avc_context)
 /** AVCodec struct exposed to libavcodec */
 AVCodec ff_libtheora_encoder = {
     .name           = "libtheora",
+    .long_name      = NULL_IF_CONFIG_SMALL("libtheora Theora"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_THEORA,
     .priv_data_size = sizeof(TheoraContext),
@@ -378,5 +379,4 @@ AVCodec ff_libtheora_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]){
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE
     },
-    .long_name      = NULL_IF_CONFIG_SMALL("libtheora Theora"),
 };

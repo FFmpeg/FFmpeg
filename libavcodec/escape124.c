@@ -49,10 +49,6 @@ typedef struct Escape124Context {
     CodeBook codebooks[3];
 } Escape124Context;
 
-static int can_safely_read(GetBitContext* gb, uint64_t bits) {
-    return get_bits_left(gb) >= bits;
-}
-
 /**
  * Initialize the decoder
  * @param avctx decoder context
@@ -90,7 +86,7 @@ static CodeBook unpack_codebook(GetBitContext* gb, unsigned depth,
     unsigned i, j;
     CodeBook cb = { 0 };
 
-    if (!can_safely_read(gb, (uint64_t)size * 34))
+    if (size >= INT_MAX / 34 || get_bits_left(gb) < size * 34)
         return cb;
 
     if (size >= INT_MAX / sizeof(MacroBlock))
@@ -121,7 +117,7 @@ static unsigned decode_skip_count(GetBitContext* gb)
     unsigned value;
     // This function reads a maximum of 23 bits,
     // which is within the padding space
-    if (!can_safely_read(gb, 1))
+    if (get_bits_left(gb) < 1)
         return -1;
     value = get_bits1(gb);
     if (!value)
@@ -222,7 +218,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
     // This call also guards the potential depth reads for the
     // codebook unpacking.
-    if (!can_safely_read(&gb, 64))
+    if (get_bits_left(&gb) < 64)
         return -1;
 
     frame_flags = get_bits_long(&gb, 32);
@@ -298,7 +294,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
             copy_superblock(sb.pixels, 8,
                             old_frame_data, old_stride);
 
-            while (can_safely_read(&gb, 1) && !get_bits1(&gb)) {
+            while (get_bits_left(&gb) >= 1 && !get_bits1(&gb)) {
                 unsigned mask;
                 mb = decode_macroblock(s, &gb, &cb_index, superblock_index);
                 mask = get_bits(&gb, 16);
@@ -310,7 +306,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
                 }
             }
 
-            if (can_safely_read(&gb, 1) && !get_bits1(&gb)) {
+            if (!get_bits1(&gb)) {
                 unsigned inv_mask = get_bits(&gb, 4);
                 for (i = 0; i < 4; i++) {
                     if (inv_mask & (1 << i)) {
@@ -322,15 +318,13 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
                 for (i = 0; i < 16; i++) {
                     if (multi_mask & mask_matrix[i]) {
-                        if (!can_safely_read(&gb, 1))
-                            break;
                         mb = decode_macroblock(s, &gb, &cb_index,
                                                superblock_index);
                         insert_mb_into_sb(&sb, mb, i);
                     }
                 }
             } else if (frame_flags & (1 << 16)) {
-                while (can_safely_read(&gb, 1) && !get_bits1(&gb)) {
+                while (get_bits_left(&gb) >= 1 && !get_bits1(&gb)) {
                     mb = decode_macroblock(s, &gb, &cb_index, superblock_index);
                     insert_mb_into_sb(&sb, mb, get_bits(&gb, 4));
                 }
@@ -368,6 +362,7 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_escape124_decoder = {
     .name           = "escape124",
+    .long_name      = NULL_IF_CONFIG_SMALL("Escape 124"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ESCAPE124,
     .priv_data_size = sizeof(Escape124Context),
@@ -375,5 +370,4 @@ AVCodec ff_escape124_decoder = {
     .close          = escape124_decode_close,
     .decode         = escape124_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Escape 124"),
 };

@@ -101,6 +101,7 @@ static av_cold int avui_encode_close(AVCodecContext *avctx)
 
 AVCodec ff_avui_encoder = {
     .name         = "avui",
+    .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_AVUI,
     .init         = avui_encode_init,
@@ -108,5 +109,4 @@ AVCodec ff_avui_encoder = {
     .close        = avui_encode_close,
     .capabilities = CODEC_CAP_EXPERIMENTAL,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_UYVY422, AV_PIX_FMT_NONE },
-    .long_name    = NULL_IF_CONFIG_SMALL("Avid Meridien Uncompressed"),
 };

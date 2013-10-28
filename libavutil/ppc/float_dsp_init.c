@@ -22,12 +22,12 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/ppc/cpu.h"
 #include "float_dsp_altivec.h"
 
 av_cold void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int bit_exact)
 {
-#if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
     fdsp->vector_fmul = ff_vector_fmul_altivec;
@@ -37,5 +37,4 @@ av_cold void ff_float_dsp_init_ppc(AVFloatDSPContext *fdsp, int bit_exact)
     if (!bit_exact) {
         fdsp->vector_fmul_window = ff_vector_fmul_window_altivec;
     }
-#endif
 }

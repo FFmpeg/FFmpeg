@@ -88,14 +88,13 @@ static int ape_tag_read_field(AVFormatContext *s)
             st->attached_pic.stream_index = st->index;
             st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
         } else {
-            st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codec->extradata)
+            if (ff_alloc_extradata(st->codec, size))
                 return AVERROR(ENOMEM);
             if (avio_read(pb, st->codec->extradata, size) != size) {
                 av_freep(&st->codec->extradata);
+                st->codec->extradata_size = 0;
                 return AVERROR(EIO);
             }
-            st->codec->extradata_size = size;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
         }
     } else {

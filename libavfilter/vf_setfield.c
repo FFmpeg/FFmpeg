@@ -69,10 +69,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 
 static const AVFilterPad setfield_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -86,10 +85,10 @@ static const AVFilterPad setfield_outputs[] = {
 };
 
 AVFilter avfilter_vf_setfield = {
-    .name      = "setfield",
+    .name        = "setfield",
     .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
-    .priv_size = sizeof(SetFieldContext),
-    .inputs    = setfield_inputs,
-    .outputs   = setfield_outputs,
-    .priv_class = &setfield_class,
+    .priv_size   = sizeof(SetFieldContext),
+    .priv_class  = &setfield_class,
+    .inputs      = setfield_inputs,
+    .outputs     = setfield_outputs,
 };

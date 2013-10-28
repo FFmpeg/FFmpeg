@@ -49,6 +49,8 @@
                            XMV_AUDIO_ADPCM51_FRONTCENTERLOW | \
                            XMV_AUDIO_ADPCM51_REARLEFTRIGHT)
 
+#define XMV_BLOCK_ALIGN_SIZE 36
+
 /** A video packet with an XMV file. */
 typedef struct XMVVideoPacket {
     int stream_index; ///< The decoder stream index for this video packet.
@@ -199,7 +201,7 @@ static int xmv_read_header(AVFormatContext *s)
         packet->bit_rate      = packet->bits_per_sample *
                                 packet->sample_rate *
                                 packet->channels;
-        packet->block_align   = 36 * packet->channels;
+        packet->block_align   = XMV_BLOCK_ALIGN_SIZE * packet->channels;
         packet->block_samples = 64;
         packet->codec_id      = ff_wav_codec_get_id(packet->compression,
                                                     packet->bits_per_sample);
@@ -215,7 +217,8 @@ static int xmv_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_WARNING, "Unsupported 5.1 ADPCM audio stream "
                                       "(0x%04X)\n", packet->flags);
 
-        if (!packet->channels || !packet->sample_rate) {
+        if (!packet->channels || !packet->sample_rate ||
+             packet->channels >= UINT16_MAX / XMV_BLOCK_ALIGN_SIZE) {
             av_log(s, AV_LOG_ERROR, "Invalid parameters for audio track %d.\n",
                    audio_track);
             ret = AVERROR_INVALIDDATA;
@@ -380,9 +383,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
                 if (vst->codec->extradata_size < 4) {
                     av_free(vst->codec->extradata);
 
-                    vst->codec->extradata =
-                        av_malloc(4 + FF_INPUT_BUFFER_PADDING_SIZE);
-                    vst->codec->extradata_size = 4;
+                    ff_alloc_extradata(vst->codec, 4);
                 }
 
                 memcpy(vst->codec->extradata, xmv->video.extradata, 4);

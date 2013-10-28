@@ -58,6 +58,8 @@ typedef struct TimeFilter TimeFilter;
  * @param period      expected update interval, in input units
  * @param brandwidth  filtering bandwidth, in Hz
  *
+ * @return a pointer to a TimeFilter struct, or NULL on error
+ *
  * For more details about these parameters and background concepts please see:
  * http://www.kokkinizita.net/papers/usingdll.pdf
  */

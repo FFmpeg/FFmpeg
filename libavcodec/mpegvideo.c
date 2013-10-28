@@ -168,17 +168,16 @@ av_cold int ff_dct_common_init(MpegEncContext *s)
         s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
     s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
-#if ARCH_X86
-    ff_MPV_common_init_x86(s);
-#elif ARCH_ALPHA
-    ff_MPV_common_init_axp(s);
-#elif ARCH_ARM
-    ff_MPV_common_init_arm(s);
-#elif ARCH_BFIN
-    ff_MPV_common_init_bfin(s);
-#elif ARCH_PPC
-    ff_MPV_common_init_ppc(s);
-#endif
+    if (ARCH_ALPHA)
+        ff_MPV_common_init_axp(s);
+    if (ARCH_ARM)
+        ff_MPV_common_init_arm(s);
+    if (ARCH_BFIN)
+        ff_MPV_common_init_bfin(s);
+    if (ARCH_PPC)
+        ff_MPV_common_init_ppc(s);
+    if (ARCH_X86)
+        ff_MPV_common_init_x86(s);
 
     /* load & permutate scantables
      * note: only wmv uses different ones
@@ -1030,7 +1029,9 @@ av_cold int ff_MPV_common_init(MpegEncContext *s)
     s->flags2 = s->avctx->flags2;
 
     /* set chroma shifts */
-    avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &s->chroma_x_shift, &s->chroma_y_shift);
+    avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                  &s->chroma_x_shift,
+                                  &s->chroma_y_shift);
 
     /* convert fourcc to upper case */
     s->codec_tag        = avpriv_toupper4(s->avctx->codec_tag);
@@ -1594,11 +1595,14 @@ int ff_MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         int h_chroma_shift, v_chroma_shift;
         av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
                                          &h_chroma_shift, &v_chroma_shift);
-        if (s->pict_type != AV_PICTURE_TYPE_I)
+        if (s->pict_type == AV_PICTURE_TYPE_B && s->next_picture_ptr && s->next_picture_ptr->f.data[0])
+            av_log(avctx, AV_LOG_DEBUG,
+                   "allocating dummy last picture for B frame\n");
+        else if (s->pict_type != AV_PICTURE_TYPE_I)
             av_log(avctx, AV_LOG_ERROR,
                    "warning: first frame is no keyframe\n");
         else if (s->picture_structure != PICT_FRAME)
-            av_log(avctx, AV_LOG_INFO,
+            av_log(avctx, AV_LOG_DEBUG,
                    "allocate dummy last picture for field based first keyframe\n");
 
         /* Allocate a dummy frame */
@@ -1722,6 +1726,7 @@ void ff_MPV_frame_end(MpegEncContext *s)
         ff_xvmc_field_end(s);
    } else if ((s->er.error_count || s->encoding || !(s->avctx->codec->capabilities&CODEC_CAP_DRAW_HORIZ_BAND)) &&
               !s->avctx->hwaccel &&
+              !(s->avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
               s->unrestricted_mv &&
               s->current_picture.reference &&
               !s->intra_only &&
@@ -2174,7 +2179,7 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
                                      uint8_t *dest, uint8_t *src,
                                      int field_based, int field_select,
                                      int src_x, int src_y,
-                                     int width, int height, int stride,
+                                     int width, int height, ptrdiff_t stride,
                                      int h_edge_pos, int v_edge_pos,
                                      int w, int h, h264_chroma_mc_func *pix_op,
                                      int motion_x, int motion_y)
@@ -2199,7 +2204,8 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
 
     if ((unsigned)src_x > FFMAX( h_edge_pos - (!!sx) - w,                 0) ||
         (unsigned)src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, src, s->linesize, w + 1,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize,
+                                src, s->linesize, w + 1,
                                 (h + 1) << field_based, src_x,
                                 src_y   << field_based,
                                 h_edge_pos,
@@ -2230,8 +2236,8 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
                                                 int h, int mb_y)
 {
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
-    int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, uvlinesize, linesize, sx, sy,
-        uvsx, uvsy;
+    int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, sx, sy, uvsx, uvsy;
+    ptrdiff_t uvlinesize, linesize;
     const int lowres     = s->avctx->lowres;
     const int op_index   = FFMIN(lowres-1+s->chroma_x_shift, 3);
     const int block_s    = 8>>lowres;
@@ -2301,18 +2307,20 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
 
     if ((unsigned) src_x > FFMAX( h_edge_pos - (!!sx) - 2 * block_s,       0) || uvsrc_y<0 ||
         (unsigned) src_y > FFMAX((v_edge_pos >> field_based) - (!!sy) - h, 0)) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr_y,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, linesize >> field_based, ptr_y,
                                 linesize >> field_based, 17, 17 + field_based,
                                 src_x, src_y << field_based, h_edge_pos,
                                 v_edge_pos);
         ptr_y = s->edge_emu_buffer;
         if (!CONFIG_GRAY || !(s->flags & CODEC_FLAG_GRAY)) {
             uint8_t *uvbuf = s->edge_emu_buffer + 18 * s->linesize;
-            s->vdsp.emulated_edge_mc(uvbuf , ptr_cb, uvlinesize >> field_based, 9,
+            s->vdsp.emulated_edge_mc(uvbuf, uvlinesize >> field_based,
+                                    ptr_cb, uvlinesize >> field_based, 9,
                                     9 + field_based,
                                     uvsrc_x, uvsrc_y << field_based,
                                     h_edge_pos >> 1, v_edge_pos >> 1);
-            s->vdsp.emulated_edge_mc(uvbuf + 16, ptr_cr, uvlinesize >> field_based, 9,
+            s->vdsp.emulated_edge_mc(uvbuf + 16, uvlinesize >> field_based,
+                                    ptr_cr, uvlinesize >> field_based, 9,
                                     9 + field_based,
                                     uvsrc_x, uvsrc_y << field_based,
                                     h_edge_pos >> 1, v_edge_pos >> 1);
@@ -2362,7 +2370,8 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres + 1;
     const int v_edge_pos = s->v_edge_pos >> lowres + 1;
-    int emu = 0, src_x, src_y, offset, sx, sy;
+    int emu = 0, src_x, src_y, sx, sy;
+    ptrdiff_t offset;
     uint8_t *ptr;
 
     if (s->quarter_sample) {
@@ -2382,14 +2391,12 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 
     offset = src_y * s->uvlinesize + src_x;
     ptr = ref_picture[1] + offset;
-    if (s->flags & CODEC_FLAG_EMU_EDGE) {
-        if ((unsigned) src_x > FFMAX(h_edge_pos - (!!sx) - block_s, 0) ||
-            (unsigned) src_y > FFMAX(v_edge_pos - (!!sy) - block_s, 0)) {
-            s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize,
-                                    9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
-            ptr = s->edge_emu_buffer;
-            emu = 1;
-        }
+    if ((unsigned) src_x > FFMAX(h_edge_pos - (!!sx) - block_s, 0) ||
+        (unsigned) src_y > FFMAX(v_edge_pos - (!!sy) - block_s, 0)) {
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize, ptr, s->uvlinesize,
+                                9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
+        ptr = s->edge_emu_buffer;
+        emu = 1;
     }
     sx = (sx << 2) >> lowres;
     sy = (sy << 2) >> lowres;
@@ -2397,7 +2404,8 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
 
     ptr = ref_picture[2] + offset;
     if (emu) {
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9,
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->uvlinesize,
+                                ptr, s->uvlinesize, 9, 9,
                                 src_x, src_y, h_edge_pos, v_edge_pos);
         ptr = s->edge_emu_buffer;
     }
@@ -2925,6 +2933,7 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
     }
 
     if (!avctx->hwaccel &&
+        !(avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU) &&
         draw_edges &&
         cur->reference &&
         !(avctx->flags & CODEC_FLAG_EMU_EDGE)) {
@@ -2987,8 +2996,8 @@ void ff_draw_horiz_band(AVCodecContext *avctx, DSPContext *dsp, Picture *cur,
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h)
 {
     int draw_edges = s->unrestricted_mv && !s->intra_only;
-    ff_draw_horiz_band(s->avctx, &s->dsp, &s->current_picture,
-                       &s->last_picture, y, h, s->picture_structure,
+    ff_draw_horiz_band(s->avctx, &s->dsp, s->current_picture_ptr,
+                       s->last_picture_ptr, y, h, s->picture_structure,
                        s->first_field, draw_edges, s->low_delay,
                        s->v_edge_pos, s->h_edge_pos);
 }

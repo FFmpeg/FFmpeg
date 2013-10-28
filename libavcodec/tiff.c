@@ -578,27 +578,20 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         goto end;
     }
 
+    off = bytestream2_tell(&s->gb);
     if (count == 1) {
         switch (type) {
         case TIFF_BYTE:
         case TIFF_SHORT:
-            value = ff_tget(&s->gb, type, s->le);
-            break;
         case TIFF_LONG:
-            off   = ff_tget_long(&s->gb, s->le);
-            value = off;
+            value = ff_tget(&s->gb, type, s->le);
             break;
         case TIFF_STRING:
             if (count <= 4) {
                 break;
             }
         default:
-            off   = bytestream2_tell(&s->gb);
             value = UINT_MAX;
-        }
-    } else {
-        if (type_sizes[type] * count > 4) {
-            off   = bytestream2_tell(&s->gb);
         }
     }
 
@@ -622,9 +615,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         else {
             switch (type) {
             case TIFF_BYTE:
-                s->bpp = (off & 0xFF) + ((off >> 8) & 0xFF) +
-                         ((off >> 16) & 0xFF) + ((off >> 24) & 0xFF);
-                break;
             case TIFF_SHORT:
             case TIFF_LONG:
                 s->bpp = 0;

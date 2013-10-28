@@ -21,8 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/bytestream.h"
 #include "avcodec.h"
+#include "bytestream.h"
 #include "s3tc.h"
 
 static inline void dxt1_decode_pixels(GetByteContext *gb, uint32_t *d,

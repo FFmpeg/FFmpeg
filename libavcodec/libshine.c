@@ -132,6 +132,7 @@ static const int libshine_sample_rates[] = {
 
 AVCodec ff_libshine_encoder = {
     .name                  = "libshine",
+    .long_name             = NULL_IF_CONFIG_SMALL("libshine MP3 (MPEG audio layer 3)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = CODEC_ID_MP3,
     .priv_data_size        = sizeof(SHINEContext),
@@ -145,5 +146,4 @@ AVCodec ff_libshine_encoder = {
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
-    .long_name             = NULL_IF_CONFIG_SMALL("libshine MP3 (MPEG audio layer 3)"),
 };

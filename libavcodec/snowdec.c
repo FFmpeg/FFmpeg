@@ -43,8 +43,8 @@ static av_always_inline void predict_slice_buffered(SnowContext *s, slice_buffer
     int block_h    = plane_index ? block_size>>s->chroma_v_shift : block_size;
     const uint8_t *obmc  = plane_index ? ff_obmc_tab[s->block_max_depth+s->chroma_h_shift] : ff_obmc_tab[s->block_max_depth];
     int obmc_stride= plane_index ? (2*block_size)>>s->chroma_h_shift : 2*block_size;
-    int ref_stride= s->current_picture.linesize[plane_index];
-    uint8_t *dst8= s->current_picture.data[plane_index];
+    int ref_stride= s->current_picture->linesize[plane_index];
+    uint8_t *dst8= s->current_picture->data[plane_index];
     int w= p->width;
     int h= p->height;
 
@@ -163,8 +163,10 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
         if(type){
             pred_mv(s, &mx, &my, 0, left, top, tr);
             l += get_symbol(&s->c, &s->block_state[32], 1);
-            cb+= get_symbol(&s->c, &s->block_state[64], 1);
-            cr+= get_symbol(&s->c, &s->block_state[96], 1);
+            if (s->nb_planes > 2) {
+                cb+= get_symbol(&s->c, &s->block_state[64], 1);
+                cr+= get_symbol(&s->c, &s->block_state[96], 1);
+            }
         }else{
             if(s->ref_frames > 1)
                 ref= get_symbol(&s->c, &s->block_state[128 + 1024 + 32*ref_context], 0);
@@ -243,7 +245,7 @@ static void correlate_slice_buffered(SnowContext *s, slice_buffer * sb, SubBand 
 static void decode_qlogs(SnowContext *s){
     int plane_index, level, orientation;
 
-    for(plane_index=0; plane_index<3; plane_index++){
+    for(plane_index=0; plane_index < s->nb_planes; plane_index++){
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1:0; orientation<4; orientation++){
                 int q;
@@ -286,21 +288,33 @@ static int decode_header(SnowContext *s){
         s->temporal_decomposition_count= get_symbol(&s->c, s->header_state, 0);
         GET_S(s->spatial_decomposition_count, 0 < tmp && tmp <= MAX_DECOMPOSITIONS)
         s->colorspace_type= get_symbol(&s->c, s->header_state, 0);
-        s->chroma_h_shift= get_symbol(&s->c, s->header_state, 0);
-        s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
+        if (s->colorspace_type == 1) {
+            s->avctx->pix_fmt= AV_PIX_FMT_GRAY8;
+            s->nb_planes = 1;
+        } else if(s->colorspace_type == 0) {
+            s->chroma_h_shift= get_symbol(&s->c, s->header_state, 0);
+            s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
 
-        if(s->chroma_h_shift == 1 && s->chroma_v_shift==1){
-            s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
-        }else if(s->chroma_h_shift == 0 && s->chroma_v_shift==0){
-            s->avctx->pix_fmt= AV_PIX_FMT_YUV444P;
-        }else if(s->chroma_h_shift == 2 && s->chroma_v_shift==2){
-            s->avctx->pix_fmt= AV_PIX_FMT_YUV410P;
+            if(s->chroma_h_shift == 1 && s->chroma_v_shift==1){
+                s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
+            }else if(s->chroma_h_shift == 0 && s->chroma_v_shift==0){
+                s->avctx->pix_fmt= AV_PIX_FMT_YUV444P;
+            }else if(s->chroma_h_shift == 2 && s->chroma_v_shift==2){
+                s->avctx->pix_fmt= AV_PIX_FMT_YUV410P;
+            } else {
+                av_log(s, AV_LOG_ERROR, "unsupported color subsample mode %d %d\n", s->chroma_h_shift, s->chroma_v_shift);
+                s->chroma_h_shift = s->chroma_v_shift = 1;
+                s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
+                return AVERROR_INVALIDDATA;
+            }
+            s->nb_planes = 3;
         } else {
-            av_log(s, AV_LOG_ERROR, "unsupported color subsample mode %d %d\n", s->chroma_h_shift, s->chroma_v_shift);
+            av_log(s, AV_LOG_ERROR, "unsupported color space\n");
             s->chroma_h_shift = s->chroma_v_shift = 1;
             s->avctx->pix_fmt= AV_PIX_FMT_YUV420P;
             return AVERROR_INVALIDDATA;
         }
+
 
         s->spatial_scalability= get_rac(&s->c, s->header_state);
 //        s->rate_scalability= get_rac(&s->c, s->header_state);
@@ -312,7 +326,7 @@ static int decode_header(SnowContext *s){
 
     if(!s->keyframe){
         if(get_rac(&s->c, s->header_state)){
-            for(plane_index=0; plane_index<2; plane_index++){
+            for(plane_index=0; plane_index<FFMIN(s->nb_planes, 2); plane_index++){
                 int htaps, i, sum=0;
                 Plane *p= &s->plane[plane_index];
                 p->diag_mc= get_rac(&s->c, s->header_state);
@@ -403,7 +417,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
-    s->current_picture.pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
+    s->current_picture->pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
     if(decode_header(s)<0)
         return -1;
     if ((res=ff_snow_common_init_after_header(avctx)) < 0)
@@ -418,7 +432,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                                     s->spatial_idwt_buffer)) < 0)
         return res;
 
-    for(plane_index=0; plane_index<3; plane_index++){
+    for(plane_index=0; plane_index < s->nb_planes; plane_index++){
         Plane *p= &s->plane[plane_index];
         p->fast_mc= p->diag_mc && p->htaps==6 && p->hcoeff[0]==40
                                               && p->hcoeff[1]==-10
@@ -436,7 +450,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if ((res = decode_blocks(s)) < 0)
         return res;
 
-    for(plane_index=0; plane_index<3; plane_index++){
+    for(plane_index=0; plane_index < s->nb_planes; plane_index++){
         Plane *p= &s->plane[plane_index];
         int w= p->width;
         int h= p->height;
@@ -449,8 +463,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
-                    int v= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x];
-                    s->mconly_picture.data[plane_index][y*s->mconly_picture.linesize[plane_index] + x]= v;
+                    int v= s->current_picture->data[plane_index][y*s->current_picture->linesize[plane_index] + x];
+                    s->mconly_picture->data[plane_index][y*s->mconly_picture->linesize[plane_index] + x]= v;
                 }
             }
         }
@@ -548,9 +562,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     ff_snow_release_buffer(avctx);
 
     if(!(s->avctx->debug&2048))
-        av_frame_ref(picture, &s->current_picture);
+        av_frame_ref(picture, s->current_picture);
     else
-        av_frame_ref(picture, &s->mconly_picture);
+        av_frame_ref(picture, s->mconly_picture);
 
     *got_frame = 1;
 
@@ -573,6 +587,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_snow_decoder = {
     .name           = "snow",
+    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SNOW,
     .priv_data_size = sizeof(SnowContext),
@@ -580,5 +595,4 @@ AVCodec ff_snow_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
-    .long_name      = NULL_IF_CONFIG_SMALL("Snow"),
 };

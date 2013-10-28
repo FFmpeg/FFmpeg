@@ -66,7 +66,7 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int 
     srcvA = vec_perm(src_0, src_1, vec_lvsl(0, src));
 
     if (src_really_odd != 0x0000000F) {
-        // if src & 0xF == 0xF, then (src+1) is properly aligned
+        // if (src & 0xF) == 0xF, then (src+1) is properly aligned
         // on the second vector.
         srcvB = vec_perm(src_0, src_1, vec_lvsl(1, src));
     } else {
@@ -90,7 +90,7 @@ void ff_gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int 
         srcvC = vec_perm(src_0, src_1, vec_lvsl(stride + 0, src));
 
         if (src_really_odd != 0x0000000F) {
-            // if src & 0xF == 0xF, then (src+1) is properly aligned
+            // if (src & 0xF) == 0xF, then (src+1) is properly aligned
             // on the second vector.
             srcvD = vec_perm(src_0, src_1, vec_lvsl(stride + 1, src));
         } else {

@@ -419,15 +419,16 @@ rdt_parse_sdp_line (AVFormatContext *s, int st_index,
 
         for (n = 0; n < s->nb_streams; n++)
             if (s->streams[n]->id == stream->id) {
-                int count = s->streams[n]->index + 1;
+                int count = s->streams[n]->index + 1, err;
                 if (first == -1) first = n;
                 if (rdt->nb_rmst < count) {
-                    RMStream **rmst= av_realloc(rdt->rmst, count*sizeof(*rmst));
-                    if (!rmst)
-                        return AVERROR(ENOMEM);
-                    memset(rmst + rdt->nb_rmst, 0,
-                           (count - rdt->nb_rmst) * sizeof(*rmst));
-                    rdt->rmst    = rmst;
+                    if ((err = av_reallocp(&rdt->rmst,
+                                           count * sizeof(*rdt->rmst))) < 0) {
+                        rdt->nb_rmst = 0;
+                        return err;
+                    }
+                    memset(rdt->rmst + rdt->nb_rmst, 0,
+                           (count - rdt->nb_rmst) * sizeof(*rdt->rmst));
                     rdt->nb_rmst = count;
                 }
                 rdt->rmst[s->streams[n]->index] = ff_rm_alloc_rmstream();

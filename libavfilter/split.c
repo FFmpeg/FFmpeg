@@ -95,7 +95,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption options[] = {
     { "outputs", "set number of outputs", OFFSET(nb_outputs), AV_OPT_TYPE_INT, { .i64 = 2 }, 1, INT_MAX, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 #define split_options options
@@ -106,36 +106,30 @@ AVFILTER_DEFINE_CLASS(asplit);
 
 static const AVFilterPad avfilter_vf_split_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 AVFilter avfilter_vf_split = {
-    .name      = "split",
+    .name        = "split",
     .description = NULL_IF_CONFIG_SMALL("Pass on the input to N video outputs."),
-
-    .priv_size  = sizeof(SplitContext),
-    .priv_class = &split_class,
-
-    .init   = split_init,
-    .uninit = split_uninit,
-
-    .inputs    = avfilter_vf_split_inputs,
-    .outputs   = NULL,
-
-    .flags     = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .priv_size   = sizeof(SplitContext),
+    .priv_class  = &split_class,
+    .init        = split_init,
+    .uninit      = split_uninit,
+    .inputs      = avfilter_vf_split_inputs,
+    .outputs     = NULL,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
 
 static const AVFilterPad avfilter_af_asplit_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .get_audio_buffer = ff_null_get_audio_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -143,15 +137,11 @@ static const AVFilterPad avfilter_af_asplit_inputs[] = {
 AVFilter avfilter_af_asplit = {
     .name        = "asplit",
     .description = NULL_IF_CONFIG_SMALL("Pass on the audio input to N audio outputs."),
-
-    .priv_size  = sizeof(SplitContext),
-    .priv_class = &asplit_class,
-
-    .init   = split_init,
-    .uninit = split_uninit,
-
-    .inputs  = avfilter_af_asplit_inputs,
-    .outputs = NULL,
-
-    .flags   = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
+    .priv_size   = sizeof(SplitContext),
+    .priv_class  = &asplit_class,
+    .init        = split_init,
+    .uninit      = split_uninit,
+    .inputs      = avfilter_af_asplit_inputs,
+    .outputs     = NULL,
+    .flags       = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };

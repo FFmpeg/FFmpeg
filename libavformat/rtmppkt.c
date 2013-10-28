@@ -129,27 +129,51 @@ int ff_amf_read_null(GetByteContext *bc)
     return 0;
 }
 
+int ff_rtmp_check_alloc_array(RTMPPacket **prev_pkt, int *nb_prev_pkt,
+                              int channel)
+{
+    int nb_alloc;
+    RTMPPacket *ptr;
+    if (channel < *nb_prev_pkt)
+        return 0;
+
+    nb_alloc = channel + 16;
+    // This can't use the av_reallocp family of functions, since we
+    // would need to free each element in the array before the array
+    // itself is freed.
+    ptr = av_realloc_array(*prev_pkt, nb_alloc, sizeof(**prev_pkt));
+    if (!ptr)
+        return AVERROR(ENOMEM);
+    memset(ptr + *nb_prev_pkt, 0, (nb_alloc - *nb_prev_pkt) * sizeof(*ptr));
+    *prev_pkt = ptr;
+    *nb_prev_pkt = nb_alloc;
+    return 0;
+}
+
 int ff_rtmp_packet_read(URLContext *h, RTMPPacket *p,
-                        int chunk_size, RTMPPacket *prev_pkt)
+                        int chunk_size, RTMPPacket **prev_pkt, int *nb_prev_pkt)
 {
     uint8_t hdr;
 
     if (ffurl_read(h, &hdr, 1) != 1)
         return AVERROR(EIO);
 
-    return ff_rtmp_packet_read_internal(h, p, chunk_size, prev_pkt, hdr);
+    return ff_rtmp_packet_read_internal(h, p, chunk_size, prev_pkt,
+                                        nb_prev_pkt, hdr);
 }
 
-int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
-                                 RTMPPacket *prev_pkt, uint8_t hdr)
+static int rtmp_packet_read_one_chunk(URLContext *h, RTMPPacket *p,
+                                      int chunk_size, RTMPPacket **prev_pkt_ptr,
+                                      int *nb_prev_pkt, uint8_t hdr)
 {
 
-    uint8_t t, buf[16];
-    int channel_id, timestamp, size, offset = 0;
+    uint8_t buf[16];
+    int channel_id, timestamp, size;
     uint32_t extra = 0;
     enum RTMPPacketType type;
     int written = 0;
-    int ret;
+    int ret, toread;
+    RTMPPacket *prev_pkt;
 
     written++;
     channel_id = hdr & 0x3F;
@@ -161,6 +185,10 @@ int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
         written += channel_id + 1;
         channel_id = AV_RL16(buf) + 64;
     }
+    if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
+                                         channel_id)) < 0)
+        return ret;
+    prev_pkt = *prev_pkt_ptr;
     size  = prev_pkt[channel_id].size;
     type  = prev_pkt[channel_id].type;
     extra = prev_pkt[channel_id].extra;
@@ -198,47 +226,88 @@ int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
     if (hdr != RTMP_PS_TWELVEBYTES)
         timestamp += prev_pkt[channel_id].timestamp;
 
-    if ((ret = ff_rtmp_packet_create(p, channel_id, type, timestamp,
-                                     size)) < 0)
-        return ret;
+    if (!prev_pkt[channel_id].read) {
+        if ((ret = ff_rtmp_packet_create(p, channel_id, type, timestamp,
+                                         size)) < 0)
+            return ret;
+        p->read = written;
+        p->offset = 0;
+        prev_pkt[channel_id].ts_delta   = timestamp -
+                                          prev_pkt[channel_id].timestamp;
+        prev_pkt[channel_id].timestamp  = timestamp;
+    } else {
+        // previous packet in this channel hasn't completed reading
+        RTMPPacket *prev = &prev_pkt[channel_id];
+        p->data          = prev->data;
+        p->size          = prev->size;
+        p->channel_id    = prev->channel_id;
+        p->type          = prev->type;
+        p->ts_delta      = prev->ts_delta;
+        p->extra         = prev->extra;
+        p->offset        = prev->offset;
+        p->read          = prev->read + written;
+        p->timestamp     = prev->timestamp;
+        prev->data       = NULL;
+    }
     p->extra = extra;
     // save history
     prev_pkt[channel_id].channel_id = channel_id;
     prev_pkt[channel_id].type       = type;
     prev_pkt[channel_id].size       = size;
-    prev_pkt[channel_id].ts_delta   = timestamp - prev_pkt[channel_id].timestamp;
-    prev_pkt[channel_id].timestamp  = timestamp;
     prev_pkt[channel_id].extra      = extra;
-    while (size > 0) {
-        int toread = FFMIN(size, chunk_size);
-        if (ffurl_read_complete(h, p->data + offset, toread) != toread) {
-            ff_rtmp_packet_destroy(p);
-            return AVERROR(EIO);
-        }
-        size    -= chunk_size;
-        offset  += chunk_size;
-        written += chunk_size;
-        if (size > 0) {
-            if ((ret = ffurl_read_complete(h, &t, 1)) < 0) { // marker
-                ff_rtmp_packet_destroy(p);
-                return ret;
-            }
-            written++;
-            if (t != (0xC0 + channel_id))
-                return -1;
-        }
+    size = size - p->offset;
+
+    toread = FFMIN(size, chunk_size);
+    if (ffurl_read_complete(h, p->data + p->offset, toread) != toread) {
+        ff_rtmp_packet_destroy(p);
+        return AVERROR(EIO);
     }
-    return written;
+    size      -= toread;
+    p->read   += toread;
+    p->offset += toread;
+
+    if (size > 0) {
+       RTMPPacket *prev = &prev_pkt[channel_id];
+       prev->data = p->data;
+       prev->read = p->read;
+       prev->offset = p->offset;
+       return AVERROR(EAGAIN);
+    }
+
+    prev_pkt[channel_id].read = 0; // read complete; reset if needed
+    return p->read;
+}
+
+int ff_rtmp_packet_read_internal(URLContext *h, RTMPPacket *p, int chunk_size,
+                                 RTMPPacket **prev_pkt, int *nb_prev_pkt,
+                                 uint8_t hdr)
+{
+    while (1) {
+        int ret = rtmp_packet_read_one_chunk(h, p, chunk_size, prev_pkt,
+                                             nb_prev_pkt, hdr);
+        if (ret > 0 || ret != AVERROR(EAGAIN))
+            return ret;
+
+        if (ffurl_read(h, &hdr, 1) != 1)
+            return AVERROR(EIO);
+    }
 }
 
 int ff_rtmp_packet_write(URLContext *h, RTMPPacket *pkt,
-                         int chunk_size, RTMPPacket *prev_pkt)
+                         int chunk_size, RTMPPacket **prev_pkt_ptr,
+                         int *nb_prev_pkt)
 {
     uint8_t pkt_hdr[16], *p = pkt_hdr;
     int mode = RTMP_PS_TWELVEBYTES;
     int off = 0;
     int written = 0;
     int ret;
+    RTMPPacket *prev_pkt;
+
+    if ((ret = ff_rtmp_check_alloc_array(prev_pkt_ptr, nb_prev_pkt,
+                                         pkt->channel_id)) < 0)
+        return ret;
+    prev_pkt = *prev_pkt_ptr;
 
     pkt->ts_delta = pkt->timestamp - prev_pkt[pkt->channel_id].timestamp;
 
@@ -337,28 +406,35 @@ void ff_rtmp_packet_destroy(RTMPPacket *pkt)
 int ff_amf_tag_size(const uint8_t *data, const uint8_t *data_end)
 {
     const uint8_t *base = data;
+    AMFDataType type;
+    unsigned nb   = -1;
+    int parse_key = 1;
 
     if (data >= data_end)
         return -1;
-    switch (*data++) {
+    switch ((type = *data++)) {
     case AMF_DATA_TYPE_NUMBER:      return 9;
     case AMF_DATA_TYPE_BOOL:        return 2;
     case AMF_DATA_TYPE_STRING:      return 3 + AV_RB16(data);
     case AMF_DATA_TYPE_LONG_STRING: return 5 + AV_RB32(data);
     case AMF_DATA_TYPE_NULL:        return 1;
     case AMF_DATA_TYPE_ARRAY:
-        data += 4;
+        parse_key = 0;
+    case AMF_DATA_TYPE_MIXEDARRAY:
+        nb = bytestream_get_be32(&data);
     case AMF_DATA_TYPE_OBJECT:
-        for (;;) {
-            int size = bytestream_get_be16(&data);
+        while (nb-- > 0 || type != AMF_DATA_TYPE_ARRAY) {
             int t;
-            if (!size) {
-                data++;
-                break;
+            if (parse_key) {
+                int size = bytestream_get_be16(&data);
+                if (!size) {
+                    data++;
+                    break;
+                }
+                if (size < 0 || size >= data_end - data)
+                    return -1;
+                data += size;
             }
-            if (size < 0 || size >= data_end - data)
-                return -1;
-            data += size;
             t = ff_amf_tag_size(data, data_end);
             if (t < 0 || t >= data_end - data)
                 return -1;
@@ -441,12 +517,14 @@ static const char* rtmp_packet_type(int type)
 static void amf_tag_contents(void *ctx, const uint8_t *data,
                              const uint8_t *data_end)
 {
-    unsigned int size;
+    unsigned int size, nb = -1;
     char buf[1024];
+    AMFDataType type;
+    int parse_key = 1;
 
     if (data >= data_end)
         return;
-    switch (*data++) {
+    switch ((type = *data++)) {
     case AMF_DATA_TYPE_NUMBER:
         av_log(ctx, AV_LOG_DEBUG, " number %g\n", av_int2double(AV_RB64(data)));
         return;
@@ -455,7 +533,7 @@ static void amf_tag_contents(void *ctx, const uint8_t *data,
         return;
     case AMF_DATA_TYPE_STRING:
     case AMF_DATA_TYPE_LONG_STRING:
-        if (data[-1] == AMF_DATA_TYPE_STRING) {
+        if (type == AMF_DATA_TYPE_STRING) {
             size = bytestream_get_be16(&data);
         } else {
             size = bytestream_get_be32(&data);
@@ -469,22 +547,28 @@ static void amf_tag_contents(void *ctx, const uint8_t *data,
         av_log(ctx, AV_LOG_DEBUG, " NULL\n");
         return;
     case AMF_DATA_TYPE_ARRAY:
-        data += 4;
+        parse_key = 0;
+    case AMF_DATA_TYPE_MIXEDARRAY:
+        nb = bytestream_get_be32(&data);
     case AMF_DATA_TYPE_OBJECT:
         av_log(ctx, AV_LOG_DEBUG, " {\n");
-        for (;;) {
+        while (nb-- > 0 || type != AMF_DATA_TYPE_ARRAY) {
             int t;
-            size = bytestream_get_be16(&data);
-            av_strlcpy(buf, data, FFMIN(sizeof(buf), size + 1));
-            if (!size) {
-                av_log(ctx, AV_LOG_DEBUG, " }\n");
-                data++;
-                break;
+            if (parse_key) {
+                size = bytestream_get_be16(&data);
+                size = FFMIN(size, sizeof(buf) - 1);
+                if (!size) {
+                    av_log(ctx, AV_LOG_DEBUG, " }\n");
+                    data++;
+                    break;
+                }
+                memcpy(buf, data, size);
+                buf[size] = 0;
+                if (size >= data_end - data)
+                    return;
+                data += size;
+                av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
             }
-            if (size >= data_end - data)
-                return;
-            data += size;
-            av_log(ctx, AV_LOG_DEBUG, "  %s: ", buf);
             amf_tag_contents(ctx, data, data_end);
             t = ff_amf_tag_size(data, data_end);
             if (t < 0 || t >= data_end - data)

@@ -22,6 +22,7 @@
  *
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
@@ -71,7 +72,7 @@ static const AVOption compand_options[] = {
     { "gain", "set output gain", OFFSET(gain_dB), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 900, A },
     { "volume", "set initial volume", OFFSET(initial_volume), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -900, 0, A },
     { "delay", "set delay for samples before sending them to volume adjuster", OFFSET(delay), AV_OPT_TYPE_DOUBLE, {.dbl=0}, 0, 20, A },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(compand);
@@ -189,8 +190,8 @@ static int compand_nodelay(AVFilterContext *ctx, AVFrame *frame)
     }
 
     for (chan = 0; chan < channels; chan++) {
-        const double *src = (double *)frame->data[chan];
-        double *dst = (double *)out_frame->data[chan];
+        const double *src = (double *)frame->extended_data[chan];
+        double *dst = (double *)out_frame->extended_data[chan];
         ChanParam *cp = &s->channels[chan];
 
         for (i = 0; i < nb_samples; i++) {
@@ -214,11 +215,13 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
     AVFilterLink *inlink = ctx->inputs[0];
     const int channels = inlink->channels;
     const int nb_samples = frame->nb_samples;
-    int chan, i, dindex, oindex, count;
+    int chan, i, av_uninit(dindex), oindex, av_uninit(count);
     AVFrame *out_frame = NULL;
 
+    av_assert1(channels > 0); /* would corrupt delay_count and delay_index */
+
     for (chan = 0; chan < channels; chan++) {
-        const double *src = (double *)frame->data[chan];
+        const double *src = (double *)frame->extended_data[chan];
         double *dbuf = (double *)s->delayptrs[chan];
         ChanParam *cp = &s->channels[chan];
         double *dst;
@@ -239,7 +242,7 @@ static int compand_delay(AVFilterContext *ctx, AVFrame *frame)
                     s->pts += av_rescale_q(nb_samples - i, (AVRational){1, inlink->sample_rate}, inlink->time_base);
                 }
 
-                dst = (double *)out_frame->data[chan];
+                dst = (double *)out_frame->extended_data[chan];
                 dst[oindex++] = av_clipd(dbuf[dindex] * get_volume(s, cp->volume), -1, 1);
             } else {
                 count++;
@@ -273,7 +276,7 @@ static int compand_drain(AVFilterLink *outlink)
 
     for (chan = 0; chan < channels; chan++) {
         double *dbuf = (double *)s->delayptrs[chan];
-        double *dst = (double *)frame->data[chan];
+        double *dst = (double *)frame->extended_data[chan];
         ChanParam *cp = &s->channels[chan];
 
         dindex = s->delay_index;
@@ -489,7 +492,7 @@ static const AVFilterPad compand_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL },
+    { NULL }
 };
 
 static const AVFilterPad compand_outputs[] = {
@@ -499,7 +502,7 @@ static const AVFilterPad compand_outputs[] = {
         .config_props  = config_output,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_af_compand = {

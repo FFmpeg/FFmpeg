@@ -52,7 +52,7 @@ typedef struct {
 static const AVOption amerge_options[] = {
     { "inputs", "specify the number of inputs", OFFSET(nb_inputs),
       AV_OPT_TYPE_INT, { .i64 = 2 }, 2, SWR_CH_MAX, FLAGS },
-    {0}
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(amerge);

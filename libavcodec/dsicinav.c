@@ -397,6 +397,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_dsicinvideo_decoder = {
     .name           = "dsicinvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("Delphine Software International CIN video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DSICINVIDEO,
     .priv_data_size = sizeof(CinVideoContext),
@@ -404,16 +405,15 @@ AVCodec ff_dsicinvideo_decoder = {
     .close          = cinvideo_decode_end,
     .decode         = cinvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Delphine Software International CIN video"),
 };
 
 AVCodec ff_dsicinaudio_decoder = {
     .name           = "dsicinaudio",
+    .long_name      = NULL_IF_CONFIG_SMALL("Delphine Software International CIN audio"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_DSICINAUDIO,
     .priv_data_size = sizeof(CinAudioContext),
     .init           = cinaudio_decode_init,
     .decode         = cinaudio_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Delphine Software International CIN audio"),
 };

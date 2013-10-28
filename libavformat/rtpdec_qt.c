@@ -172,17 +172,21 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
     switch (packing_scheme) {
     case 3: /* one data packet spread over 1 or multiple RTP packets */
         if (qt->pkt.size > 0 && qt->timestamp == *timestamp) {
-            qt->pkt.data = av_realloc(qt->pkt.data, qt->pkt.size + alen +
-                                      FF_INPUT_BUFFER_PADDING_SIZE);
+            int err;
+            if ((err = av_reallocp(&qt->pkt.data, qt->pkt.size + alen +
+                                   FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+                qt->pkt.size = 0;
+                return err;
+            }
         } else {
             av_freep(&qt->pkt.data);
             av_init_packet(&qt->pkt);
-            qt->pkt.data = av_malloc(alen + FF_INPUT_BUFFER_PADDING_SIZE);
+            qt->pkt.data = av_realloc(NULL, alen + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!qt->pkt.data)
+                return AVERROR(ENOMEM);
             qt->pkt.size = 0;
             qt->timestamp = *timestamp;
         }
-        if (!qt->pkt.data)
-            return AVERROR(ENOMEM);
         memcpy(qt->pkt.data + qt->pkt.size, buf + avio_tell(&pb), alen);
         qt->pkt.size += alen;
         if (has_marker_bit) {
@@ -211,7 +215,7 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
         pkt->stream_index = st->index;
         if (qt->remaining > 0) {
             av_freep(&qt->pkt.data);
-            qt->pkt.data = av_malloc(qt->remaining * qt->bytes_per_frame);
+            qt->pkt.data = av_realloc(NULL, qt->remaining * qt->bytes_per_frame);
             if (!qt->pkt.data) {
                 av_free_packet(pkt);
                 return AVERROR(ENOMEM);

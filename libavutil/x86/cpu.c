@@ -26,6 +26,7 @@
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
+#include "libavutil/cpu_internal.h"
 
 #if HAVE_YASM
 
@@ -133,6 +134,14 @@ int ff_get_cpu_flags_x86(void)
             if ((eax & 0x6) == 0x6)
                 rval |= AV_CPU_FLAG_AVX;
         }
+#if HAVE_AVX2
+    if (max_std_level >= 7) {
+        cpuid(7, eax, ebx, ecx, edx);
+        if (ebx&0x00000020)
+            rval |= AV_CPU_FLAG_AVX2;
+        /* TODO: BMI1/2 */
+    }
+#endif /* HAVE_AVX2 */
 #endif /* HAVE_AVX */
 #endif /* HAVE_SSE */
     }

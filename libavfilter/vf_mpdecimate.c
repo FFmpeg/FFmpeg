@@ -227,11 +227,10 @@ static int request_frame(AVFilterLink *outlink)
 
 static const AVFilterPad mpdecimate_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .config_props     = config_input,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -246,14 +245,13 @@ static const AVFilterPad mpdecimate_outputs[] = {
 };
 
 AVFilter avfilter_vf_mpdecimate = {
-    .name        = "mpdecimate",
-    .description = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
-    .init        = init,
-    .uninit      = uninit,
-
-    .priv_size = sizeof(DecimateContext),
+    .name          = "mpdecimate",
+    .description   = NULL_IF_CONFIG_SMALL("Remove near-duplicate frames."),
+    .init          = init,
+    .uninit        = uninit,
+    .priv_size     = sizeof(DecimateContext),
+    .priv_class    = &mpdecimate_class,
     .query_formats = query_formats,
     .inputs        = mpdecimate_inputs,
     .outputs       = mpdecimate_outputs,
-    .priv_class    = &mpdecimate_class,
 };

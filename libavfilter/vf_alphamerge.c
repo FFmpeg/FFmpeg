@@ -175,7 +175,6 @@ static const AVFilterPad alphamerge_inputs[] = {
         .name             = "main",
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input_main,
-        .get_video_buffer = ff_null_get_video_buffer,
         .filter_frame     = filter_frame,
         .needs_writable   = 1,
     },{

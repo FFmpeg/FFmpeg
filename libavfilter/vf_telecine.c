@@ -103,7 +103,9 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; fmt < AV_PIX_FMT_NB; fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL ||
+              desc->flags & AV_PIX_FMT_FLAG_PAL     ||
+              desc->flags & AV_PIX_FMT_FLAG_BITSTREAM))
             ff_add_format(&pix_fmts, fmt);
     }
 
@@ -233,7 +235,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
             return AVERROR(ENOMEM);
         }
 
-        av_frame_copy_props(frame, inpicref);
         frame->pts = outlink->frame_count * tc->ts_unit;
         ret = ff_filter_frame(outlink, frame);
     }

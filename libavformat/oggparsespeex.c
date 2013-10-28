@@ -77,9 +77,8 @@ static int speex_header(AVFormatContext *s, int idx) {
         if (frames_per_packet)
             spxp->packet_size *= frames_per_packet;
 
-        st->codec->extradata_size = os->psize;
-        st->codec->extradata = av_malloc(st->codec->extradata_size
-                                         + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (ff_alloc_extradata(st->codec, os->psize) < 0)
+            return AVERROR(ENOMEM);
         memcpy(st->codec->extradata, p, st->codec->extradata_size);
 
         avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);

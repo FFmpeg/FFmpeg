@@ -38,7 +38,6 @@
 #include "libmpcodecs/img_format.h"
 #include "libmpcodecs/cpudetect.h"
 #include "libmpcodecs/av_helpers.h"
-#include "libmpcodecs/vf_scale.h"
 #include "libmpcodecs/libvo/fastmemcpy.h"
 
 #include "libswscale/swscale.h"
@@ -123,31 +122,21 @@ static const struct {
     {0, AV_PIX_FMT_NONE}
 };
 
-extern const vf_info_t ff_vf_info_dint;
 extern const vf_info_t ff_vf_info_eq2;
 extern const vf_info_t ff_vf_info_eq;
-extern const vf_info_t ff_vf_info_fil;
 extern const vf_info_t ff_vf_info_fspp;
 extern const vf_info_t ff_vf_info_ilpack;
-extern const vf_info_t ff_vf_info_phase;
 extern const vf_info_t ff_vf_info_pp7;
-extern const vf_info_t ff_vf_info_pullup;
-extern const vf_info_t ff_vf_info_qp;
 extern const vf_info_t ff_vf_info_softpulldown;
 extern const vf_info_t ff_vf_info_uspp;
 
 
 static const vf_info_t* const filters[]={
-    &ff_vf_info_dint,
     &ff_vf_info_eq2,
     &ff_vf_info_eq,
-    &ff_vf_info_fil,
     &ff_vf_info_fspp,
     &ff_vf_info_ilpack,
-    &ff_vf_info_phase,
     &ff_vf_info_pp7,
-    &ff_vf_info_pullup,
-    &ff_vf_info_qp,
     &ff_vf_info_softpulldown,
     &ff_vf_info_uspp,
 
@@ -183,61 +172,6 @@ enum AVPixelFormat ff_mp2ff_pix_fmt(int mp){
     for(i=0; conversion_map[i].fmt && mp != conversion_map[i].fmt; i++)
         ;
     return mp == conversion_map[i].fmt ? conversion_map[i].pix_fmt : AV_PIX_FMT_NONE;
-}
-
-static void ff_sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
-{
-        static int firstTime=1;
-        *flags=0;
-
-#if ARCH_X86
-        if(ff_gCpuCaps.hasMMX)
-                __asm__ volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
-#endif
-        if(firstTime)
-        {
-                firstTime=0;
-                *flags= SWS_PRINT_INFO;
-        }
-        else if( ff_mp_msg_test(MSGT_VFILTER,MSGL_DBG2) ) *flags= SWS_PRINT_INFO;
-
-        switch(SWS_BILINEAR)
-        {
-                case 0: *flags|= SWS_FAST_BILINEAR; break;
-                case 1: *flags|= SWS_BILINEAR; break;
-                case 2: *flags|= SWS_BICUBIC; break;
-                case 3: *flags|= SWS_X; break;
-                case 4: *flags|= SWS_POINT; break;
-                case 5: *flags|= SWS_AREA; break;
-                case 6: *flags|= SWS_BICUBLIN; break;
-                case 7: *flags|= SWS_GAUSS; break;
-                case 8: *flags|= SWS_SINC; break;
-                case 9: *flags|= SWS_LANCZOS; break;
-                case 10:*flags|= SWS_SPLINE; break;
-                default:*flags|= SWS_BILINEAR; break;
-        }
-
-        *srcFilterParam= NULL;
-        *dstFilterParam= NULL;
-}
-
-//exact copy from vf_scale.c
-// will use sws_flags & src_filter (from cmd line)
-struct SwsContext *ff_sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
-{
-        int flags, i;
-        SwsFilter *dstFilterParam, *srcFilterParam;
-        enum AVPixelFormat dfmt, sfmt;
-
-        for(i=0; conversion_map[i].fmt && dstFormat != conversion_map[i].fmt; i++);
-        dfmt= conversion_map[i].pix_fmt;
-        for(i=0; conversion_map[i].fmt && srcFormat != conversion_map[i].fmt; i++);
-        sfmt= conversion_map[i].pix_fmt;
-
-        if (srcFormat == IMGFMT_RGB8 || srcFormat == IMGFMT_BGR8) sfmt = AV_PIX_FMT_PAL8;
-        ff_sws_getFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
-
-        return sws_getContext(srcW, srcH, sfmt, dstW, dstH, dfmt, flags , srcFilterParam, dstFilterParam, NULL);
 }
 
 typedef struct {
@@ -845,11 +779,11 @@ static const AVFilterPad mp_outputs[] = {
 };
 
 AVFilter avfilter_vf_mp = {
-    .name      = "mp",
-    .description = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
-    .init = init,
-    .uninit = uninit,
-    .priv_size = sizeof(MPContext),
+    .name          = "mp",
+    .description   = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
+    .init          = init,
+    .uninit        = uninit,
+    .priv_size     = sizeof(MPContext),
     .query_formats = query_formats,
     .inputs        = mp_inputs,
     .outputs       = mp_outputs,

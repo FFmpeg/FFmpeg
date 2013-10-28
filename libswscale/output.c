@@ -36,19 +36,19 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 
-DECLARE_ALIGNED(8, const uint8_t, dither_2x2_4)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_2x2_4)[][8] = {
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 {  2,   0,   2,   0,   2,   0,   2,   0, },
 {  1,   3,   1,   3,   1,   3,   1,   3, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, dither_2x2_8)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_2x2_8)[][8] = {
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 {  0,   4,   0,   4,   0,   4,   0,   4, },
 {  6,   2,   6,   2,   6,   2,   6,   2, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, dither_4x4_16)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_4x4_16)[][8] = {
 {  8,   4,  11,   7,   8,   4,  11,   7, },
 {  2,  14,   1,  13,   2,  14,   1,  13, },
 { 10,   6,   9,   5,  10,   6,   9,   5, },
@@ -56,7 +56,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_4x4_16)[][8]={
 {  8,   4,  11,   7,   8,   4,  11,   7, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_32)[][8] = {
 { 17,   9,  23,  15,  16,   8,  22,  14, },
 {  5,  29,   3,  27,   4,  28,   2,  26, },
 { 21,  13,  19,  11,  20,  12,  18,  10, },
@@ -68,7 +68,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_32)[][8]={
 { 17,   9,  23,  15,  16,   8,  22,  14, },
 };
 
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_73)[][8] = {
 {  0,  55,  14,  68,   3,  58,  17,  72, },
 { 37,  18,  50,  32,  40,  22,  54,  35, },
 {  9,  64,   5,  59,  13,  67,   8,  63, },
@@ -81,7 +81,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_73)[][8]={
 };
 
 #if 1
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_220)[][8] = {
 {117,  62, 158, 103, 113,  58, 155, 100, },
 { 34, 199,  21, 186,  31, 196,  17, 182, },
 {144,  89, 131,  76, 141,  86, 127,  72, },
@@ -94,7 +94,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
 };
 #elif 1
 // tries to correct a gamma of 1.5
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_220)[][8] = {
 {  0, 143,  18, 200,   2, 156,  25, 215, },
 { 78,  28, 125,  64,  89,  36, 138,  74, },
 { 10, 180,   3, 161,  16, 195,   8, 175, },
@@ -107,7 +107,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
 };
 #elif 1
 // tries to correct a gamma of 2.0
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_220)[][8] = {
 {  0, 124,   8, 193,   0, 140,  12, 213, },
 { 55,  14, 104,  42,  66,  19, 119,  52, },
 {  3, 168,   1, 145,   6, 187,   3, 162, },
@@ -120,7 +120,7 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
 };
 #else
 // tries to correct a gamma of 2.5
-DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[][8]={
+DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_220)[][8] = {
 {  0, 107,   3, 187,   0, 125,   6, 212, },
 { 39,   7,  86,  28,  49,  11, 102,  36, },
 {  1, 158,   0, 131,   3, 180,   1, 151, },
@@ -329,7 +329,7 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
                       const int16_t **alpSrc, uint8_t *dest, int dstW,
                       int y, enum AVPixelFormat target)
 {
-    const uint8_t * const d128=dither_8x8_220[y&7];
+    const uint8_t * const d128 = ff_dither_8x8_220[y&7];
     int i;
     unsigned acc = 0;
     int err = 0;
@@ -382,7 +382,7 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
                       enum AVPixelFormat target)
 {
     const int16_t *buf0  = buf[0],  *buf1  = buf[1];
-    const uint8_t * const d128 = dither_8x8_220[y & 7];
+    const uint8_t * const d128 = ff_dither_8x8_220[y & 7];
     int  yalpha1 = 4096 - yalpha;
     int i;
 
@@ -440,7 +440,7 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
                       const int16_t *abuf0, uint8_t *dest, int dstW,
                       int uvalpha, int y, enum AVPixelFormat target)
 {
-    const uint8_t * const d128 = dither_8x8_220[y & 7];
+    const uint8_t * const d128 = ff_dither_8x8_220[y & 7];
     int i;
 
     if (c->dither == SWS_DITHER_ED) {
@@ -1188,26 +1188,26 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
         int dr1, dg1, db1, dr2, dg2, db2;
 
         if (target == AV_PIX_FMT_RGB565 || target == AV_PIX_FMT_BGR565) {
-            dr1 = dither_2x2_8[ y & 1     ][0];
-            dg1 = dither_2x2_4[ y & 1     ][0];
-            db1 = dither_2x2_8[(y & 1) ^ 1][0];
-            dr2 = dither_2x2_8[ y & 1     ][1];
-            dg2 = dither_2x2_4[ y & 1     ][1];
-            db2 = dither_2x2_8[(y & 1) ^ 1][1];
+            dr1 = ff_dither_2x2_8[ y & 1     ][0];
+            dg1 = ff_dither_2x2_4[ y & 1     ][0];
+            db1 = ff_dither_2x2_8[(y & 1) ^ 1][0];
+            dr2 = ff_dither_2x2_8[ y & 1     ][1];
+            dg2 = ff_dither_2x2_4[ y & 1     ][1];
+            db2 = ff_dither_2x2_8[(y & 1) ^ 1][1];
         } else if (target == AV_PIX_FMT_RGB555 || target == AV_PIX_FMT_BGR555) {
-            dr1 = dither_2x2_8[ y & 1     ][0];
-            dg1 = dither_2x2_8[ y & 1     ][1];
-            db1 = dither_2x2_8[(y & 1) ^ 1][0];
-            dr2 = dither_2x2_8[ y & 1     ][1];
-            dg2 = dither_2x2_8[ y & 1     ][0];
-            db2 = dither_2x2_8[(y & 1) ^ 1][1];
+            dr1 = ff_dither_2x2_8[ y & 1     ][0];
+            dg1 = ff_dither_2x2_8[ y & 1     ][1];
+            db1 = ff_dither_2x2_8[(y & 1) ^ 1][0];
+            dr2 = ff_dither_2x2_8[ y & 1     ][1];
+            dg2 = ff_dither_2x2_8[ y & 1     ][0];
+            db2 = ff_dither_2x2_8[(y & 1) ^ 1][1];
         } else {
-            dr1 = dither_4x4_16[ y & 3     ][0];
-            dg1 = dither_4x4_16[ y & 3     ][1];
-            db1 = dither_4x4_16[(y & 3) ^ 3][0];
-            dr2 = dither_4x4_16[ y & 3     ][1];
-            dg2 = dither_4x4_16[ y & 3     ][0];
-            db2 = dither_4x4_16[(y & 3) ^ 3][1];
+            dr1 = ff_dither_4x4_16[ y & 3     ][0];
+            dg1 = ff_dither_4x4_16[ y & 3     ][1];
+            db1 = ff_dither_4x4_16[(y & 3) ^ 3][0];
+            dr2 = ff_dither_4x4_16[ y & 3     ][1];
+            dg2 = ff_dither_4x4_16[ y & 3     ][0];
+            db2 = ff_dither_4x4_16[(y & 3) ^ 3][1];
         }
 
         dest[i * 2 + 0] = r[Y1 + dr1] + g[Y1 + dg1] + b[Y1 + db1];
@@ -1220,15 +1220,15 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
         int dr1, dg1, db1, dr2, dg2, db2;
 
         if (target == AV_PIX_FMT_RGB8 || target == AV_PIX_FMT_BGR8) {
-            const uint8_t * const d64 = dither_8x8_73[y & 7];
-            const uint8_t * const d32 = dither_8x8_32[y & 7];
+            const uint8_t * const d64 = ff_dither_8x8_73[y & 7];
+            const uint8_t * const d32 = ff_dither_8x8_32[y & 7];
             dr1 = dg1 = d32[(i * 2 + 0) & 7];
             db1 =       d64[(i * 2 + 0) & 7];
             dr2 = dg2 = d32[(i * 2 + 1) & 7];
             db2 =       d64[(i * 2 + 1) & 7];
         } else {
-            const uint8_t * const d64  = dither_8x8_73 [y & 7];
-            const uint8_t * const d128 = dither_8x8_220[y & 7];
+            const uint8_t * const d64  = ff_dither_8x8_73 [y & 7];
+            const uint8_t * const d128 = ff_dither_8x8_220[y & 7];
             dr1 = db1 = d128[(i * 2 + 0) & 7];
             dg1 =        d64[(i * 2 + 0) & 7];
             dr2 = db2 = d128[(i * 2 + 1) & 7];

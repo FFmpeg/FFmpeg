@@ -37,7 +37,8 @@
 
 typedef struct {
     int max_step[4];    ///< max pixel step for each plane, expressed as a number of bytes
-    int hsub, vsub;     ///< chroma subsampling
+    int planewidth[4];  ///< width of each plane
+    int planeheight[4]; ///< height of each plane
 } FlipContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -62,42 +63,42 @@ static int config_props(AVFilterLink *inlink)
 {
     FlipContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(inlink->format);
+    const int hsub = pix_desc->log2_chroma_w;
+    const int vsub = pix_desc->log2_chroma_h;
 
     av_image_fill_max_pixsteps(s->max_step, NULL, pix_desc);
-    s->hsub = pix_desc->log2_chroma_w;
-    s->vsub = pix_desc->log2_chroma_h;
+    s->planewidth[0]  = s->planewidth[3]  = inlink->w;
+    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, hsub);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, vsub);
 
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 {
-    AVFilterContext *ctx  = inlink->dst;
-    FlipContext *s     = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out;
+    FlipContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
     uint8_t *inrow, *outrow;
     int i, j, plane, step;
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
-    }
-    av_frame_copy_props(out, in);
-
-    /* copy palette if required */
-    if (av_pix_fmt_desc_get(inlink->format)->flags & AV_PIX_FMT_FLAG_PAL)
-        memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
-
     for (plane = 0; plane < 4 && in->data[plane] && in->linesize[plane]; plane++) {
-        const int width  = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->w, s->hsub) : inlink->w;
-        const int height = (plane == 1 || plane == 2) ? FF_CEIL_RSHIFT(inlink->h, s->vsub) : inlink->h;
+        const int width  = s->planewidth[plane];
+        const int height = s->planeheight[plane];
+        const int start = (height *  job   ) / nb_jobs;
+        const int end   = (height * (job+1)) / nb_jobs;
+
         step = s->max_step[plane];
 
-        outrow = out->data[plane];
-        inrow  = in ->data[plane] + (width - 1) * step;
-        for (i = 0; i < height; i++) {
+        outrow = out->data[plane] + start * out->linesize[plane];
+        inrow  = in ->data[plane] + start * in->linesize[plane] + (width - 1) * step;
+        for (i = start; i < end; i++) {
             switch (step) {
             case 1:
                 for (j = 0; j < width; j++)
@@ -143,6 +144,30 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
     }
 
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx  = inlink->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
+    AVFrame *out;
+
+    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    if (!out) {
+        av_frame_free(&in);
+        return AVERROR(ENOMEM);
+    }
+    av_frame_copy_props(out, in);
+
+    /* copy palette if required */
+    if (av_pix_fmt_desc_get(inlink->format)->flags & AV_PIX_FMT_FLAG_PAL)
+        memcpy(out->data[1], in->data[1], AVPALETTE_SIZE);
+
+    td.in = in, td.out = out;
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
@@ -166,11 +191,11 @@ static const AVFilterPad avfilter_vf_hflip_outputs[] = {
 };
 
 AVFilter avfilter_vf_hflip = {
-    .name      = "hflip",
-    .description = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
-    .priv_size = sizeof(FlipContext),
+    .name          = "hflip",
+    .description   = NULL_IF_CONFIG_SMALL("Horizontally flip the input video."),
+    .priv_size     = sizeof(FlipContext),
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_hflip_inputs,
-    .outputs   = avfilter_vf_hflip_outputs,
+    .inputs        = avfilter_vf_hflip_inputs,
+    .outputs       = avfilter_vf_hflip_outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

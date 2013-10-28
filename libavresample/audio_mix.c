@@ -1,20 +1,20 @@
 /*
  * Copyright (c) 2012 Justin Ruggles <justin.ruggles@gmail.com>
  *
- * This file is part of Libav.
+ * This file is part of FFmpeg.
  *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -201,23 +201,23 @@ static void mix_1_to_2_fltp_flt_c(float **samples, float **matrix, int len,
 
     while (len > 4) {
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         len -= 4;
     }
     while (len > 0) {
         v = *src++;
-        *dst0++ = v * m1;
-        *dst1++ = v * m0;
+        *dst0++ = v * m0;
+        *dst1++ = v * m1;
         len--;
     }
 }

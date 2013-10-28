@@ -157,7 +157,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     NuvContext *c      = avctx->priv_data;
     AVFrame *picture   = data;
     int orig_size      = buf_size;
-    int keyframe;
+    int keyframe, ret;
     int size_change = 0;
     int result, init_frame = !avctx->frame_number;
     enum {
@@ -277,7 +277,9 @@ retry:
     }
     case NUV_RTJPEG_IN_LZO:
     case NUV_RTJPEG:
-        ff_rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
+        ret = ff_rtjpeg_decode_frame_yuv420(&c->rtj, &c->pic, buf, buf_size);
+        if (ret < 0)
+            return ret;
         break;
     case NUV_BLACK:
         memset(c->pic.data[0], 0, c->width * c->height);
@@ -336,6 +338,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_nuv_decoder = {
     .name           = "nuv",
+    .long_name      = NULL_IF_CONFIG_SMALL("NuppelVideo/RTJPEG"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_NUV,
     .priv_data_size = sizeof(NuvContext),
@@ -343,5 +346,4 @@ AVCodec ff_nuv_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("NuppelVideo/RTJPEG"),
 };

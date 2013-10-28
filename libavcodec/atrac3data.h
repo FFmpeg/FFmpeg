@@ -1,5 +1,5 @@
 /*
- * Atrac 3 compatible decoder data
+ * ATRAC3 compatible decoder data
  * Copyright (c) 2006-2007 Maxim Poliakovski
  * Copyright (c) 2006-2007 Benjamin Larsson
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * Atrac 3 AKA RealAudio 8 compatible decoder data
+ * ATRAC3 AKA RealAudio 8 compatible decoder data
  */
 
 #ifndef AVCODEC_ATRAC3DATA_H

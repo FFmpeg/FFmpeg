@@ -47,7 +47,6 @@ static int dump_extradata(AVBitStreamFilterContext *bsfc, AVCodecContext *avctx,
 }
 
 AVBitStreamFilter ff_dump_extradata_bsf={
-    "dump_extra",
-    0,
-    dump_extradata,
+    .name   = "dump_extra",
+    .filter = dump_extradata,
 };

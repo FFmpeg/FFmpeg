@@ -205,7 +205,7 @@ fail:
 }
 
 AVBitStreamFilter ff_h264_mp4toannexb_bsf = {
-    "h264_mp4toannexb",
-    sizeof(H264BSFContext),
-    h264_mp4toannexb_filter,
+    .name           = "h264_mp4toannexb",
+    .priv_data_size = sizeof(H264BSFContext),
+    .filter         = h264_mp4toannexb_filter,
 };

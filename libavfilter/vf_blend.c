@@ -142,7 +142,7 @@ static const AVOption blend_options[] = {
     { "all_opacity", "set opacity for all color components", OFFSET(all_opacity), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS },
     { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(blend);
@@ -368,6 +368,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
     BlendContext *b = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
+    int ret;
 
     if (toplink->format != bottomlink->format) {
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
@@ -399,6 +400,9 @@ static int config_output(AVFilterLink *outlink)
     b->vsub = pix_desc->log2_chroma_h;
     b->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
+    if ((ret = ff_dualinput_init(ctx, &b->dinput)) < 0)
+        return ret;
+
     return 0;
 }
 
@@ -418,27 +422,21 @@ static int request_frame(AVFilterLink *outlink)
     return ff_dualinput_request_frame(&b->dinput, outlink);
 }
 
-static int filter_frame_top(AVFilterLink *inlink, AVFrame *buf)
+static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     BlendContext *b = inlink->dst->priv;
-    return ff_dualinput_filter_frame_main(&b->dinput, inlink, buf);
-}
-
-static int filter_frame_bottom(AVFilterLink *inlink, AVFrame *buf)
-{
-    BlendContext *b = inlink->dst->priv;
-    return ff_dualinput_filter_frame_second(&b->dinput, inlink, buf);
+    return ff_dualinput_filter_frame(&b->dinput, inlink, buf);
 }
 
 static const AVFilterPad blend_inputs[] = {
     {
-        .name             = "top",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame_top,
+        .name          = "top",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame,
     },{
-        .name             = "bottom",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame_bottom,
+        .name          = "bottom",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame,
     },
     { NULL }
 };

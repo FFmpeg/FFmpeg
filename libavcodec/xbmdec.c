@@ -110,10 +110,10 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_xbm_decoder = {
     .name         = "xbm",
+    .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XBM,
     .init         = xbm_decode_init,
     .decode       = xbm_decode_frame,
     .capabilities = CODEC_CAP_DR1,
-    .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
 };

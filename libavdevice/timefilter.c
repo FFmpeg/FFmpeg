@@ -49,6 +49,10 @@ TimeFilter *ff_timefilter_new(double time_base,
 {
     TimeFilter *self       = av_mallocz(sizeof(TimeFilter));
     double o               = 2 * M_PI * bandwidth * period * time_base;
+
+    if (!self)
+        return NULL;
+
     self->clock_period     = time_base;
     self->feedback2_factor = qexpneg(M_SQRT2 * o);
     self->feedback3_factor = qexpneg(o * o) / period;
@@ -121,6 +125,10 @@ int main(void)
                     for (par1 = bestpar1 * 0.8; par1 <= bestpar1 * 1.21; par1 += bestpar1 * 0.05) {
                         double error   = 0;
                         TimeFilter *tf = ff_timefilter_new(1, par0, par1);
+                        if (!tf) {
+                            printf("Could not alocate memory for timefilter.\n");
+                            exit(1);
+                        }
                         for (i = 0; i < SAMPLES; i++) {
                             double filtered;
                             filtered = ff_timefilter_update(tf, samples[i], i ? (samplet[i] - samplet[i-1]) : 1);

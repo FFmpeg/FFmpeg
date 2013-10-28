@@ -42,7 +42,7 @@ theora_header (AVFormatContext * s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
     struct theora_params *thp = os->private;
-    int cds = st->codec->extradata_size + os->psize + 2;
+    int cds = st->codec->extradata_size + os->psize + 2, err;
     uint8_t *cdp;
 
     if(!(os->buf[os->pstart] & 0x80))
@@ -123,8 +123,11 @@ theora_header (AVFormatContext * s, int idx)
         return -1;
     }
 
-    st->codec->extradata = av_realloc (st->codec->extradata,
-                                       cds + FF_INPUT_BUFFER_PADDING_SIZE);
+    if ((err = av_reallocp(&st->codec->extradata,
+                           cds + FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+        st->codec->extradata_size = 0;
+        return err;
+    }
     cdp = st->codec->extradata + st->codec->extradata_size;
     *cdp++ = os->psize >> 8;
     *cdp++ = os->psize & 0xff;

@@ -136,11 +136,11 @@ static av_cold int zerocodec_decode_init(AVCodecContext *avctx)
 AVCodec ff_zerocodec_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .name           = "zerocodec",
+    .long_name      = NULL_IF_CONFIG_SMALL("ZeroCodec Lossless Video"),
     .id             = AV_CODEC_ID_ZEROCODEC,
     .priv_data_size = sizeof(ZeroCodecContext),
     .init           = zerocodec_decode_init,
     .decode         = zerocodec_decode_frame,
     .close          = zerocodec_decode_close,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("ZeroCodec Lossless Video"),
 };

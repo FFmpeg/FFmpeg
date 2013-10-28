@@ -37,6 +37,7 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -334,6 +335,7 @@ int main(int argc, char **argv)
         ff_rdft_init(r, fft_nbits, do_inverse ? IDFT_C2R : DFT_R2C);
         fft_ref_init(fft_nbits, do_inverse);
         break;
+#    if CONFIG_DCT
     case TRANSFORM_DCT:
         if (do_inverse)
             av_log(NULL, AV_LOG_INFO,"DCT_III");
@@ -341,6 +343,7 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_INFO,"DCT_II");
         ff_dct_init(d, fft_nbits, do_inverse ? DCT_III : DCT_II);
         break;
+#    endif
 #endif
     default:
         av_log(NULL, AV_LOG_ERROR, "Requested transform not supported\n");
@@ -483,9 +486,11 @@ int main(int argc, char **argv)
     case TRANSFORM_RDFT:
         ff_rdft_end(r);
         break;
+#    if CONFIG_DCT
     case TRANSFORM_DCT:
         ff_dct_end(d);
         break;
+#    endif
 #endif
     }
 
@@ -495,5 +500,8 @@ int main(int argc, char **argv)
     av_free(tab_ref);
     av_free(exptab);
 
-    return err;
+    if (err)
+        printf("Error: %d.\n", err);
+
+    return !!err;
 }

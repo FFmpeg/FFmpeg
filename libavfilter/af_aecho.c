@@ -19,10 +19,10 @@
  *
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
-#include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "internal.h"
@@ -52,7 +52,7 @@ static const AVOption aecho_options[] = {
     { "out_gain", "set signal output gain", OFFSET(out_gain), AV_OPT_TYPE_FLOAT,  {.dbl=0.3}, 0, 1, A },
     { "delays",   "set list of signal delays", OFFSET(delays), AV_OPT_TYPE_STRING, {.str="1000"}, 0, 0, A },
     { "decays",   "set list of signal decays", OFFSET(decays), AV_OPT_TYPE_STRING, {.str="0.5"}, 0, 0, A },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aecho);
@@ -190,7 +190,9 @@ static void echo_samples_## name ##p(AudioEchoContext *ctx,                 \
     const double in_gain = ctx->in_gain;                                    \
     const int nb_echoes = ctx->nb_echoes;                                   \
     const int max_samples = ctx->max_samples;                               \
-    int i, j, chan, index;                                                  \
+    int i, j, chan, av_uninit(index);                                       \
+                                                                            \
+    av_assert1(channels > 0); /* would corrupt delay_index */               \
                                                                             \
     for (chan = 0; chan < channels; chan++) {                               \
         const type *s = (type *)src[chan];                                  \
@@ -280,7 +282,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         av_frame_copy_props(out_frame, frame);
     }
 
-    s->echo_samples(s, s->delayptrs, frame->data, out_frame->data,
+    s->echo_samples(s, s->delayptrs, frame->extended_data, out_frame->extended_data,
                     frame->nb_samples, inlink->channels);
 
     if (frame != out_frame)
@@ -312,7 +314,7 @@ static int request_frame(AVFilterLink *outlink)
                                outlink->channels,
                                frame->format);
 
-        s->echo_samples(s, s->delayptrs, frame->data, frame->data,
+        s->echo_samples(s, s->delayptrs, frame->extended_data, frame->extended_data,
                         frame->nb_samples, outlink->channels);
 
         frame->pts = s->next_pts;
@@ -331,7 +333,7 @@ static const AVFilterPad aecho_inputs[] = {
         .type         = AVMEDIA_TYPE_AUDIO,
         .filter_frame = filter_frame,
     },
-    { NULL },
+    { NULL }
 };
 
 static const AVFilterPad aecho_outputs[] = {
@@ -341,7 +343,7 @@ static const AVFilterPad aecho_outputs[] = {
         .config_props  = config_output,
         .type          = AVMEDIA_TYPE_AUDIO,
     },
-    { NULL },
+    { NULL }
 };
 
 AVFilter avfilter_af_aecho = {

@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version <next>
 
+
+version 2.1:
+
 - aecho filter
 - perspective filter ported from libmpcodecs
 - ffprobe -show_programs option
@@ -15,6 +18,36 @@ version <next>
   data read from an input file
 - incomplete Voxware MetaSound decoder
 - read EXIF metadata from JPEG
+- DVB teletext decoder
+- phase filter ported from libmpcodecs
+- w3fdif filter
+- Opus support in Matroska
+- FFV1 version 1.3 is stable and no longer experimental
+- FFV1: YUVA(444,422,420) 9, 10 and 16 bit support
+- changed DTS stream id in lavf mpeg ps muxer from 0x8a to 0x88, to be
+  more consistent with other muxers.
+- adelay filter
+- pullup filter ported from libmpcodecs
+- ffprobe -read_intervals option
+- Lossless and alpha support for WebP decoder
+- Error Resilient AAC syntax (ER AAC LC) decoding
+- Low Delay AAC (ER AAC LD) decoding
+- mux chapters in ASF files
+- SFTP protocol (via libssh)
+- libx264: add ability to encode in YUVJ422P and YUVJ444P
+- Fraps: use BT.709 colorspace by default for yuv, as reference fraps decoder does
+- make decoding alpha optional for prores, ffv1 and vp6 by setting
+  the skip_alpha flag.
+- ladspa wrapper filter
+- native VP9 decoder
+- dpx parser
+- max_error_rate parameter in ffmpeg
+- PulseAudio output device
+- ReplayGain scanner
+- Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
+- Linux framebuffer output device
+- HEVC decoder, raw HEVC demuxer, HEVC demuxing in TS, Matroska and MP4
+- mergeplanes filter
 
 
 version 2.0:
@@ -623,7 +656,7 @@ version 0.6:
 - LPCM support in MPEG-TS (HDMV RID as found on Blu-ray disks)
 - WMA Pro decoder
 - Core Audio Format demuxer
-- Atrac1 decoder
+- ATRAC1 decoder
 - MD STUDIO audio demuxer
 - RF64 support in WAV demuxer
 - MPEG-4 Audio Lossless Coding (ALS) decoder
@@ -751,7 +784,7 @@ version 0.5:
 - Interplay C93 demuxer and video decoder
 - Bethsoft VID demuxer and video decoder
 - CRYO APC demuxer
-- Atrac3 decoder
+- ATRAC3 decoder
 - V.Flash PTX decoder
 - RoQ muxer, RoQ audio encoder
 - Renderware TXD demuxer and decoder

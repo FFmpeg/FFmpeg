@@ -99,6 +99,10 @@ struct MpegTSContext {
     /** raw packet size, including FEC if present            */
     int raw_packet_size;
 
+    int size_stat[3];
+    int size_stat_count;
+#define SIZE_STAT_THRESHOLD 10
+
     int64_t pos47_full;
 
     /** if true, all pids are analyzed to find streams       */
@@ -234,10 +238,10 @@ static void clear_programs(MpegTSContext *ts)
 static void add_pat_entry(MpegTSContext *ts, unsigned int programid)
 {
     struct Program *p;
-    void *tmp = av_realloc(ts->prg, (ts->nb_prg+1)*sizeof(struct Program));
-    if(!tmp)
+    if (av_reallocp_array(&ts->prg, ts->nb_prg + 1, sizeof(*ts->prg)) < 0) {
+        ts->nb_prg = 0;
         return;
-    ts->prg = tmp;
+    }
     p = &ts->prg[ts->nb_prg];
     p->id = programid;
     p->nb_pids = 0;
@@ -595,6 +599,7 @@ static const StreamType ISO_types[] = {
     { 0x11, AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_AAC_LATM }, /* LATM syntax */
 #endif
     { 0x1b, AVMEDIA_TYPE_VIDEO,       AV_CODEC_ID_H264 },
+    { 0x24, AVMEDIA_TYPE_VIDEO,       AV_CODEC_ID_HEVC },
     { 0x42, AVMEDIA_TYPE_VIDEO,       AV_CODEC_ID_CAVS },
     { 0xd1, AVMEDIA_TYPE_VIDEO,      AV_CODEC_ID_DIRAC },
     { 0xea, AVMEDIA_TYPE_VIDEO,        AV_CODEC_ID_VC1 },
@@ -629,6 +634,7 @@ static const StreamType REGD_types[] = {
     { MKTAG('D','T','S','1'), AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_DTS },
     { MKTAG('D','T','S','2'), AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_DTS },
     { MKTAG('D','T','S','3'), AVMEDIA_TYPE_AUDIO,   AV_CODEC_ID_DTS },
+    { MKTAG('H','E','V','C'), AVMEDIA_TYPE_VIDEO,  AV_CODEC_ID_HEVC },
     { MKTAG('K','L','V','A'), AVMEDIA_TYPE_DATA,    AV_CODEC_ID_SMPTE_KLV },
     { MKTAG('V','C','-','1'), AVMEDIA_TYPE_VIDEO,   AV_CODEC_ID_VC1 },
     { 0 },
@@ -1450,9 +1456,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             if (st->codec->extradata_size == 4 && memcmp(st->codec->extradata, *pp, 4))
                 avpriv_request_sample(fc, "DVB sub with multiple IDs");
         } else {
-            st->codec->extradata = av_malloc(4 + FF_INPUT_BUFFER_PADDING_SIZE);
-            if (st->codec->extradata) {
-                st->codec->extradata_size = 4;
+            if (!ff_alloc_extradata(st->codec, 4)) {
                 memcpy(st->codec->extradata, *pp, 4);
             }
         }
@@ -1858,7 +1862,10 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         return 0;
 
     pos = avio_tell(ts->stream->pb);
-    ts->pos47_full = pos;
+    if (pos >= 0) {
+        av_assert0(pos >= TS_PACKET_SIZE);
+        ts->pos47_full = pos - TS_PACKET_SIZE;
+    }
 
     if (tss->type == MPEGTS_SECTION) {
         if (is_start) {
@@ -1901,6 +1908,39 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     return 0;
 }
 
+static void reanalyze(MpegTSContext *ts) {
+    AVIOContext *pb = ts->stream->pb;
+    int64_t pos = avio_tell(pb);
+    if(pos < 0)
+        return;
+    pos -= ts->pos47_full;
+    if (pos == TS_PACKET_SIZE) {
+        ts->size_stat[0] ++;
+    } else if (pos == TS_DVHS_PACKET_SIZE) {
+        ts->size_stat[1] ++;
+    } else if (pos == TS_FEC_PACKET_SIZE) {
+        ts->size_stat[2] ++;
+    }
+
+    ts->size_stat_count ++;
+    if(ts->size_stat_count > SIZE_STAT_THRESHOLD) {
+        int newsize = 0;
+        if (ts->size_stat[0] > SIZE_STAT_THRESHOLD) {
+            newsize = TS_PACKET_SIZE;
+        } else if (ts->size_stat[1] > SIZE_STAT_THRESHOLD) {
+            newsize = TS_DVHS_PACKET_SIZE;
+        } else if (ts->size_stat[2] > SIZE_STAT_THRESHOLD) {
+            newsize = TS_FEC_PACKET_SIZE;
+        }
+        if (newsize && newsize != ts->raw_packet_size) {
+            av_log(ts->stream, AV_LOG_WARNING, "changing packet size to %d\n", newsize);
+            ts->raw_packet_size = newsize;
+        }
+        ts->size_stat_count = 0;
+        memset(ts->size_stat, 0, sizeof(ts->size_stat));
+    }
+}
+
 /* XXX: try to find a better synchro over several packets (use
    get_packet_size() ?) */
 static int mpegts_resync(AVFormatContext *s)
@@ -1914,6 +1954,7 @@ static int mpegts_resync(AVFormatContext *s)
             return -1;
         if (c == 0x47) {
             avio_seek(pb, -1, SEEK_CUR);
+            reanalyze(s->priv_data);
             return 0;
         }
     }
@@ -1935,7 +1976,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size, co
         /* check packet sync byte */
         if ((*data)[0] != 0x47) {
             /* find a new packet start */
-            avio_seek(pb, -TS_PACKET_SIZE, SEEK_CUR);
+            avio_seek(pb, -raw_packet_size, SEEK_CUR);
             if (mpegts_resync(s) < 0)
                 return AVERROR(EAGAIN);
             else
@@ -2285,6 +2326,7 @@ static av_unused int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
         if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return AV_NOPTS_VALUE;
         if (buf[0] != 0x47) {
+            avio_seek(s->pb, -TS_PACKET_SIZE, SEEK_CUR);
             if (mpegts_resync(s) < 0)
                 return AV_NOPTS_VALUE;
             pos = avio_tell(s->pb);
@@ -2322,7 +2364,7 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
         if(pkt.dts != AV_NOPTS_VALUE && pkt.pos >= 0){
             ff_reduce_index(s, pkt.stream_index);
             av_add_index_entry(s->streams[pkt.stream_index], pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME /* FIXME keyframe? */);
-            if(pkt.stream_index == stream_index){
+            if(pkt.stream_index == stream_index && pkt.pos >= *ppos){
                 *ppos= pkt.pos;
                 return pkt.dts;
             }

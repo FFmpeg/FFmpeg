@@ -22,6 +22,7 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/imgutils.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
@@ -65,7 +66,7 @@ typedef struct ThreadData {
             CHECK( 1) CHECK( 2) }} }} \
         }\
  \
-        if (mode < 2) { \
+        if (!(mode&2)) { \
             int b = (prev2[2 * mrefs] + next2[2 * mrefs])>>1; \
             int f = (prev2[2 * prefs] + next2[2 * prefs])>>1; \
             int max = FFMAX3(d - e, d - c, FFMIN(b - c, f - e)); \
@@ -285,6 +286,29 @@ static int return_frame(AVFilterContext *ctx, int is_second)
     return ret;
 }
 
+static int checkstride(YADIFContext *yadif, const AVFrame *a, const AVFrame *b)
+{
+    int i;
+    for (i = 0; i < yadif->csp->nb_components; i++)
+        if (a->linesize[i] != b->linesize[i])
+            return 1;
+    return 0;
+}
+
+static void fixstride(AVFilterLink *link, AVFrame *f)
+{
+    AVFrame *dst = ff_default_get_video_buffer(link, f->width, f->height);
+    if(!dst)
+        return;
+    av_frame_copy_props(dst, f);
+    av_image_copy(dst->data, dst->linesize,
+                  (const uint8_t **)f->data, f->linesize,
+                  dst->format, dst->width, dst->height);
+    av_frame_unref(f);
+    av_frame_move_ref(f, dst);
+    av_frame_free(&dst);
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
@@ -303,6 +327,19 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 
     if (!yadif->cur)
         return 0;
+
+    if (checkstride(yadif, yadif->next, yadif->cur)) {
+        av_log(ctx, AV_LOG_VERBOSE, "Reallocating frame due to differing stride\n");
+        fixstride(link, yadif->next);
+    }
+    if (checkstride(yadif, yadif->next, yadif->cur))
+        fixstride(link, yadif->cur);
+    if (yadif->prev && checkstride(yadif, yadif->next, yadif->prev))
+        fixstride(link, yadif->prev);
+    if (checkstride(yadif, yadif->next, yadif->cur) || (yadif->prev && checkstride(yadif, yadif->next, yadif->prev))) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to reallocate frame\n");
+        return -1;
+    }
 
     if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
         yadif->out  = av_frame_clone(yadif->cur);
@@ -389,27 +426,29 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUVJ422P,
         AV_PIX_FMT_YUVJ444P,
-        AV_NE( AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_GRAY16LE ),
+        AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVJ440P,
-        AV_NE( AV_PIX_FMT_YUV420P9BE,  AV_PIX_FMT_YUV420P9LE ),
-        AV_NE( AV_PIX_FMT_YUV422P9BE,  AV_PIX_FMT_YUV422P9LE ),
-        AV_NE( AV_PIX_FMT_YUV444P9BE,  AV_PIX_FMT_YUV444P9LE ),
-        AV_NE( AV_PIX_FMT_YUV420P10BE, AV_PIX_FMT_YUV420P10LE ),
-        AV_NE( AV_PIX_FMT_YUV422P10BE, AV_PIX_FMT_YUV422P10LE ),
-        AV_NE( AV_PIX_FMT_YUV444P10BE, AV_PIX_FMT_YUV444P10LE ),
-        AV_NE( AV_PIX_FMT_YUV420P12BE, AV_PIX_FMT_YUV420P12LE ),
-        AV_NE( AV_PIX_FMT_YUV422P12BE, AV_PIX_FMT_YUV422P12LE ),
-        AV_NE( AV_PIX_FMT_YUV444P12BE, AV_PIX_FMT_YUV444P12LE ),
-        AV_NE( AV_PIX_FMT_YUV420P14BE, AV_PIX_FMT_YUV420P14LE ),
-        AV_NE( AV_PIX_FMT_YUV422P14BE, AV_PIX_FMT_YUV422P14LE ),
-        AV_NE( AV_PIX_FMT_YUV444P14BE, AV_PIX_FMT_YUV444P14LE ),
-        AV_NE( AV_PIX_FMT_YUV420P16BE, AV_PIX_FMT_YUV420P16LE ),
-        AV_NE( AV_PIX_FMT_YUV422P16BE, AV_PIX_FMT_YUV422P16LE ),
-        AV_NE( AV_PIX_FMT_YUV444P16BE, AV_PIX_FMT_YUV444P16LE ),
+        AV_PIX_FMT_YUV420P9,
+        AV_PIX_FMT_YUV422P9,
+        AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV422P10,
+        AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV422P12,
+        AV_PIX_FMT_YUV444P12,
+        AV_PIX_FMT_YUV420P14,
+        AV_PIX_FMT_YUV422P14,
+        AV_PIX_FMT_YUV444P14,
+        AV_PIX_FMT_YUV420P16,
+        AV_PIX_FMT_YUV422P16,
+        AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
 
@@ -473,16 +512,16 @@ static const AVOption yadif_options[] = {
     CONST("all",        "deinterlace all frames",                       YADIF_DEINT_ALL,         "deint"),
     CONST("interlaced", "only deinterlace frames marked as interlaced", YADIF_DEINT_INTERLACED,  "deint"),
 
-    {NULL},
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(yadif);
 
 static const AVFilterPad avfilter_vf_yadif_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -500,13 +539,11 @@ static const AVFilterPad avfilter_vf_yadif_outputs[] = {
 AVFilter avfilter_vf_yadif = {
     .name          = "yadif",
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
-
     .priv_size     = sizeof(YADIFContext),
     .priv_class    = &yadif_class,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_yadif_inputs,
-    .outputs   = avfilter_vf_yadif_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .inputs        = avfilter_vf_yadif_inputs,
+    .outputs       = avfilter_vf_yadif_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

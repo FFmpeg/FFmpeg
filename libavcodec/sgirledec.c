@@ -82,6 +82,8 @@ static int decode_sgirle8(AVCodecContext *avctx, uint8_t *dst, const uint8_t *sr
         if (v > 0 && v < 0xC0) {
             do {
                 int length = FFMIN(v, width - x);
+                if (length <= 0)
+                    break;
                 memset(dst + y*linesize + x, RGB332_TO_BGR8(*src), length);
                 INC_XY(length);
                 v   -= length;
@@ -91,7 +93,7 @@ static int decode_sgirle8(AVCodecContext *avctx, uint8_t *dst, const uint8_t *sr
             v -= 0xC0;
             do {
                 int length = FFMIN3(v, width - x, src_end - src);
-                if (src_end - src < length)
+                if (src_end - src < length || length <= 0)
                     break;
                 memcpy_rgb332_to_bgr8(dst + y*linesize + x, src, length);
                 INC_XY(length);
@@ -138,6 +140,7 @@ static av_cold int sgirle_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_sgirle_decoder = {
     .name           = "sgirle",
+    .long_name      = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_SGIRLE,
     .priv_data_size = sizeof(SGIRLEContext),
@@ -145,5 +148,4 @@ AVCodec ff_sgirle_decoder = {
     .close          = sgirle_decode_end,
     .decode         = sgirle_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("SGI RLE 8-bit"),
 };

@@ -512,6 +512,10 @@ static int wma_decode_block(WMACodecContext *s)
        coef escape coding */
     total_gain = 1;
     for(;;) {
+        if (get_bits_left(&s->gb) < 7) {
+            av_log(s->avctx, AV_LOG_ERROR, "total_gain overread\n");
+            return AVERROR_INVALIDDATA;
+        }
         a = get_bits(&s->gb, 7);
         total_gain += a;
         if (a != 127)
@@ -944,6 +948,7 @@ static av_cold void flush(AVCodecContext *avctx)
 #if CONFIG_WMAV1_DECODER
 AVCodec ff_wmav1_decoder = {
     .name           = "wmav1",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_WMAV1,
     .priv_data_size = sizeof(WMACodecContext),
@@ -952,7 +957,6 @@ AVCodec ff_wmav1_decoder = {
     .decode         = wma_decode_superframe,
     .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -960,6 +964,7 @@ AVCodec ff_wmav1_decoder = {
 #if CONFIG_WMAV2_DECODER
 AVCodec ff_wmav2_decoder = {
     .name           = "wmav2",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_WMAV2,
     .priv_data_size = sizeof(WMACodecContext),
@@ -968,7 +973,6 @@ AVCodec ff_wmav2_decoder = {
     .decode         = wma_decode_superframe,
     .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

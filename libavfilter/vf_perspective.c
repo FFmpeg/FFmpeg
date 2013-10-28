@@ -102,7 +102,7 @@ static inline double get_coeff(double d)
     return coeff;
 }
 
-static const char *const var_names[] = {   "W",   "H", NULL };
+static const char *const var_names[] = {   "W",   "H",        NULL };
 enum                                   { VAR_W, VAR_H, VAR_VARS_NB };
 
 static int config_input(AVFilterLink *inlink)
@@ -373,18 +373,18 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static const AVFilterPad perspective_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
-        .config_props     = config_input,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+        .config_props = config_input,
     },
     { NULL }
 };
 
 static const AVFilterPad perspective_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };

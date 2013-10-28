@@ -188,6 +188,10 @@ static int start_jack(AVFormatContext *context)
 
     /* Create time filter */
     self->timefilter  = ff_timefilter_new (1.0 / self->sample_rate, self->buffer_size, 1.5);
+    if (!self->timefilter) {
+        jack_client_close(self->client);
+        return AVERROR(ENOMEM);
+    }
 
     /* Create FIFO buffers */
     self->filled_pkts = av_fifo_alloc(FIFO_PACKETS_NUM * sizeof(AVPacket));

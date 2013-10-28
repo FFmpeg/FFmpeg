@@ -44,7 +44,6 @@ static const AVOption field_options[] = {
     {"type", "set field type (top or bottom)", OFFSET(type), AV_OPT_TYPE_INT, {.i64=FIELD_TYPE_TOP}, 0, 1, FLAGS, "field_type" },
     {"top",    "select top field",    0, AV_OPT_TYPE_CONST, {.i64=FIELD_TYPE_TOP},    INT_MIN, INT_MAX, FLAGS, "field_type"},
     {"bottom", "select bottom field", 0, AV_OPT_TYPE_CONST, {.i64=FIELD_TYPE_BOTTOM}, INT_MIN, INT_MAX, FLAGS, "field_type"},
-
     {NULL}
 };
 
@@ -86,29 +85,27 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
 static const AVFilterPad field_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 static const AVFilterPad field_outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props_output,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_props_output,
     },
     { NULL }
 };
 
 AVFilter avfilter_vf_field = {
-    .name          = "field",
-    .description   = NULL_IF_CONFIG_SMALL("Extract a field from the input video."),
-
-    .priv_size     = sizeof(FieldContext),
-    .inputs        = field_inputs,
-    .outputs       = field_outputs,
-    .priv_class    = &field_class,
+    .name        = "field",
+    .description = NULL_IF_CONFIG_SMALL("Extract a field from the input video."),
+    .priv_size   = sizeof(FieldContext),
+    .inputs      = field_inputs,
+    .outputs     = field_outputs,
+    .priv_class  = &field_class,
 };

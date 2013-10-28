@@ -167,8 +167,9 @@ static int read_from_fifo(AVFilterContext *ctx, AVFrame *frame,
     av_audio_fifo_read(s->audio_fifo, (void**)tmp->extended_data, nb_samples);
 
     tmp->pts = s->next_pts;
-    s->next_pts += av_rescale_q(nb_samples, (AVRational){1, link->sample_rate},
-                                link->time_base);
+    if (s->next_pts != AV_NOPTS_VALUE)
+        s->next_pts += av_rescale_q(nb_samples, (AVRational){1, link->sample_rate},
+                                    link->time_base);
 
     av_frame_move_ref(frame, tmp);
     av_frame_free(&tmp);
@@ -252,6 +253,7 @@ static av_cold int common_init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     }
     buf->warning_limit = 100;
+    buf->next_pts = AV_NOPTS_VALUE;
     return 0;
 }
 

@@ -31,7 +31,6 @@
 #include "h264.h"
 #include "golomb.h"
 
-//#undef NDEBUG
 #include <assert.h>
 
 #define COPY_PICTURE(dst, src) \
@@ -583,7 +582,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
                 if (mmco[i].opcode != MMCO_SHORT2LONG ||
                     !h->long_ref[mmco[i].long_arg]    ||
                     h->long_ref[mmco[i].long_arg]->frame_num != frame_num) {
-                    av_log(h->avctx, AV_LOG_ERROR, "mmco: unref short failure\n");
+                    av_log(h->avctx, h->short_ref_count ? AV_LOG_ERROR : AV_LOG_DEBUG, "mmco: unref short failure\n");
                     err = AVERROR_INVALIDDATA;
                 }
                 continue;
@@ -733,7 +732,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
     print_short_term(h);
     print_long_term(h);
 
-    if(err >= 0 && h->long_ref_count==0 && h->short_ref_count<=2 && h->pps.ref_count[0]<=1 + (h->picture_structure != PICT_FRAME) && h->cur_pic_ptr->f.pict_type == AV_PICTURE_TYPE_I){
+    if(err >= 0 && h->long_ref_count==0 && h->short_ref_count<=2 && h->pps.ref_count[0]<=2 + (h->picture_structure != PICT_FRAME) && h->cur_pic_ptr->f.pict_type == AV_PICTURE_TYPE_I){
         h->cur_pic_ptr->sync |= 1;
         if(!h->avctx->has_b_frames)
             h->sync = 2;

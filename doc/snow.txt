@@ -50,8 +50,10 @@ header:
         temporal_decomposition_count    u   header_state
         spatial_decomposition_count     u   header_state
         colorspace_type                 u   header_state
-        chroma_h_shift                  u   header_state
-        chroma_v_shift                  u   header_state
+        if (nb_planes > 2) {
+            chroma_h_shift              u   header_state
+            chroma_v_shift              u   header_state
+        }
         spatial_scalability             b   header_state
         max_ref_frames-1                u   header_state
         qlogs
@@ -59,7 +61,7 @@ header:
     if(!keyframe){
         update_mc                       b   header_state
         if(update_mc){
-            for(plane=0; plane<2; plane++){
+            for(plane=0; plane<nb_plane_types; plane++){
                 diag_mc                 b   header_state
                 htaps/2-1               u   header_state
                 for(i= p->htaps/2; i; i--)
@@ -80,7 +82,7 @@ header:
     block_max_depth                     s   header_state
 
 qlogs:
-    for(plane=0; plane<2; plane++){
+    for(plane=0; plane<nb_plane_types; plane++){
         quant_table[plane][0][0]        s   header_state
         for(level=0; level < spatial_decomposition_count; level++){
             quant_table[plane][level][1]s   header_state
@@ -131,8 +133,10 @@ block(level):
 
 residual:
     residual2(luma)
-    residual2(chroma_cr)
-    residual2(chroma_cb)
+    if (nb_planes > 2) {
+        residual2(chroma_cr)
+        residual2(chroma_cb)
+    }
 
 residual2:
     for(level=0; level<spatial_decomposition_count; level++){
@@ -146,7 +150,7 @@ residual2:
 subband:
     FIXME
 
-
+nb_plane_types = gray ? 1 : 2;
 
 Tag description:
 ----------------
@@ -168,7 +172,11 @@ spatial_decomposition_count
     FIXME
 
 colorspace_type
-    0
+    0   unspecified YcbCr
+    1   Gray
+    2   Gray + Alpha
+    3   GBR
+    4   GBRA
     this MUST NOT change within a bitstream
 
 chroma_h_shift

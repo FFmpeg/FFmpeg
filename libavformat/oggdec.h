@@ -84,6 +84,7 @@ struct ogg_stream {
     int got_start;
     int got_data;   ///< 1 if the stream got some data (non-initial packets), 0 otherwise
     int nb_header; ///< set to the number of parsed headers
+    int end_trimming; ///< set the number of packets to drop from the end
     void *private;
 };
 

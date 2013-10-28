@@ -105,7 +105,7 @@ For example, img1.jpg, img2.jpg, img3.jpg,...
 Then you may run:
 
 @example
-  ffmpeg -f image2 -i img%d.jpg /tmp/a.mpg
+ffmpeg -f image2 -i img%d.jpg /tmp/a.mpg
 @end example
 
 Notice that @samp{%d} is replaced by the image number.
@@ -118,7 +118,7 @@ the sequence. This is useful if your sequence does not start with
 example will start with @file{img100.jpg}:
 
 @example
-  ffmpeg -f image2 -start_number 100 -i img%d.jpg /tmp/a.mpg
+ffmpeg -f image2 -start_number 100 -i img%d.jpg /tmp/a.mpg
 @end example
 
 If you have large number of pictures to rename, you can use the
@@ -128,7 +128,7 @@ that match @code{*jpg} to the @file{/tmp} directory in the sequence of
 @file{img001.jpg}, @file{img002.jpg} and so on.
 
 @example
-  x=1; for i in *jpg; do counter=$(printf %03d $x); ln -s "$i" /tmp/img"$counter".jpg; x=$(($x+1)); done
+x=1; for i in *jpg; do counter=$(printf %03d $x); ln -s "$i" /tmp/img"$counter".jpg; x=$(($x+1)); done
 @end example
 
 If you want to sequence them by oldest modified first, substitute
@@ -137,7 +137,7 @@ If you want to sequence them by oldest modified first, substitute
 Then run:
 
 @example
-  ffmpeg -f image2 -i /tmp/img%03d.jpg /tmp/a.mpg
+ffmpeg -f image2 -i /tmp/img%03d.jpg /tmp/a.mpg
 @end example
 
 The same logic is used for any image format that ffmpeg reads.
@@ -145,7 +145,7 @@ The same logic is used for any image format that ffmpeg reads.
 You can also use @command{cat} to pipe images to ffmpeg:
 
 @example
-  cat *.jpg | ffmpeg -f image2pipe -c:v mjpeg -i - output.mpg
+cat *.jpg | ffmpeg -f image2pipe -c:v mjpeg -i - output.mpg
 @end example
 
 @section How do I encode movie to single pictures?
@@ -153,7 +153,7 @@ You can also use @command{cat} to pipe images to ffmpeg:
 Use:
 
 @example
-  ffmpeg -i movie.mpg movie%d.jpg
+ffmpeg -i movie.mpg movie%d.jpg
 @end example
 
 The @file{movie.mpg} used as input will be converted to
@@ -169,7 +169,7 @@ to force the encoding.
 
 Applying that to the previous example:
 @example
-  ffmpeg -i movie.mpg -f image2 -c:v mjpeg menu%d.jpg
+ffmpeg -i movie.mpg -f image2 -c:v mjpeg menu%d.jpg
 @end example
 
 Beware that there is no "jpeg" codec. Use "mjpeg" instead.
@@ -227,11 +227,11 @@ then you may use any file that DirectShow can read as input.
 
 Just create an "input.avs" text file with this single line ...
 @example
-  DirectShowSource("C:\path to your file\yourfile.asf")
+DirectShowSource("C:\path to your file\yourfile.asf")
 @end example
 ... and then feed that text file to ffmpeg:
 @example
-  ffmpeg -i input.avs
+ffmpeg -i input.avs
 @end example
 
 For ANY other help on AviSynth, please visit the
@@ -475,9 +475,10 @@ read @uref{http://www.tux.org/lkml/#s15, "Programming Religion"}.
 
 @section Why are the ffmpeg programs devoid of debugging symbols?
 
-The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
-information. Those binaries are stripped to create ffmpeg, ffplay, etc. If
-you need the debug information, use the *_g versions.
+The build process creates @command{ffmpeg_g}, @command{ffplay_g}, etc. which
+contain full debug information. Those binaries are stripped to create
+@command{ffmpeg}, @command{ffplay}, etc. If you need the debug information, use
+the *_g versions.
 
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
@@ -497,7 +498,7 @@ An easy way to get the full list of required libraries in dependency order
 is to use @code{pkg-config}.
 
 @example
-  c99 -o program program.c $(pkg-config --cflags --libs libavformat libavcodec)
+c99 -o program program.c $(pkg-config --cflags --libs libavformat libavcodec)
 @end example
 
 See @file{doc/example/Makefile} and @file{doc/example/pc-uninstalled} for
@@ -521,10 +522,6 @@ to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
 You have to create a custom AVIOContext using @code{avio_alloc_context},
 see @file{libavformat/aviobuf.c} in FFmpeg and @file{libmpdemux/demux_lavf.c} in MPlayer or MPlayer2 sources.
 
-@section Where can I find libav* headers for Pascal/Delphi?
-
-see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
-
 @section Where is the documentation about ffv1, msmpeg4, asv1, 4xm?
 
 see @url{http://www.ffmpeg.org/~michael/}
@@ -537,11 +534,12 @@ In this specific case please look at RFC 4629 to see how it should be done.
 
 @section AVStream.r_frame_rate is wrong, it is much larger than the frame rate.
 
-r_frame_rate is NOT the average frame rate, it is the smallest frame rate
+@code{r_frame_rate} is NOT the average frame rate, it is the smallest frame rate
 that can accurately represent all timestamps. So no, it is not
 wrong if it is larger than the average!
-For example, if you have mixed 25 and 30 fps content, then r_frame_rate
-will be 150.
+For example, if you have mixed 25 and 30 fps content, then @code{r_frame_rate}
+will be 150 (it is the least common multiple).
+If you are looking for the average frame rate, see @code{AVStream.avg_frame_rate}.
 
 @section Why is @code{make fate} not running all tests?
 

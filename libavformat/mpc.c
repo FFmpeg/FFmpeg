@@ -95,8 +95,8 @@ static int mpc_read_header(AVFormatContext *s)
     st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
     st->codec->bits_per_coded_sample = 16;
 
-    st->codec->extradata_size = 16;
-    st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
+    if (ff_alloc_extradata(st->codec, 16))
+        return AVERROR(ENOMEM);
     avio_read(s->pb, st->codec->extradata, 16);
     st->codec->sample_rate = mpc_rate[st->codec->extradata[2] & 3];
     avpriv_set_pts_info(st, 32, MPC_FRAMESIZE, st->codec->sample_rate);

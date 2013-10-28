@@ -40,6 +40,7 @@
 #include "thread.h"
 
 #define FPS_TAG MKTAG('F', 'P', 'S', 'x')
+#define VLC_BITS 11
 
 /**
  * local variable storage
@@ -94,7 +95,8 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     for (i = 0; i < 256; i++)
         nodes[i].count = bytestream_get_le32(&src);
     size -= 1024;
-    if ((ret = ff_huff_build_tree(s->avctx, &vlc, 256, nodes, huff_cmp,
+    if ((ret = ff_huff_build_tree(s->avctx, &vlc, 256, VLC_BITS,
+                                  nodes, huff_cmp,
                                   FF_HUFFMAN_FLAG_ZERO_COUNT)) < 0)
         return ret;
     /* we have built Huffman table and are ready to decode plane */
@@ -105,7 +107,7 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
     init_get_bits(&gb, s->tmpbuf, size * 8);
     for (j = 0; j < h; j++) {
         for (i = 0; i < w*step; i += step) {
-            dst[i] = get_vlc2(&gb, vlc.table, FF_HUFFMAN_BITS, 3);
+            dst[i] = get_vlc2(&gb, vlc.table, VLC_BITS, 3);
             /* lines are stored as deltas between previous lines
              * and we need to add 0x80 to the first lines of chroma planes
              */
@@ -142,6 +144,11 @@ static int decode_frame(AVCodecContext *avctx,
     int i, j, ret, is_chroma;
     const int planes = 3;
     uint8_t *out;
+
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too short\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     header      = AV_RL32(buf);
     version     = header & 0xff;
@@ -201,6 +208,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     avctx->pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
     avctx->color_range = version & 1 ? AVCOL_RANGE_UNSPECIFIED : AVCOL_RANGE_JPEG;
+    avctx->colorspace = version & 1 ? AVCOL_SPC_UNSPECIFIED : AVCOL_SPC_BT709;
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
@@ -305,6 +313,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_fraps_decoder = {
     .name           = "fraps",
+    .long_name      = NULL_IF_CONFIG_SMALL("Fraps"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FRAPS,
     .priv_data_size = sizeof(FrapsContext),
@@ -312,5 +321,4 @@ AVCodec ff_fraps_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("Fraps"),
 };

@@ -468,6 +468,7 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
 
 AVCodec ff_wmv2_decoder = {
     .name           = "wmv2",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV2,
     .priv_data_size = sizeof(Wmv2Context),
@@ -475,6 +476,5 @@ AVCodec ff_wmv2_decoder = {
     .close          = wmv2_decode_end,
     .decode         = ff_h263_decode_frame,
     .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
     .pix_fmts       = ff_pixfmt_list_420,
 };

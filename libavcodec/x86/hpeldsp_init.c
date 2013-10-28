@@ -24,6 +24,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/hpeldsp.h"
 #include "dsputil_x86.h"
 
@@ -254,15 +255,15 @@ void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
+    if (INLINE_MMX(cpu_flags))
         hpeldsp_init_mmx(c, flags, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_MMXEXT)
+    if (EXTERNAL_MMXEXT(cpu_flags))
         hpeldsp_init_mmxext(c, flags, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_3DNOW)
+    if (EXTERNAL_AMD3DNOW(cpu_flags))
         hpeldsp_init_3dnow(c, flags, cpu_flags);
 
-    if (cpu_flags & AV_CPU_FLAG_SSE2)
+    if (EXTERNAL_SSE2(cpu_flags))
         hpeldsp_init_sse2(c, flags, cpu_flags);
 }

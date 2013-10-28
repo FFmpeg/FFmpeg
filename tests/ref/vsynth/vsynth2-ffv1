@@ -1,4 +1,4 @@
-9d8486fc8a260204d8ee3212d95915b5 *tests/data/fate/vsynth2-ffv1.avi
-3546258 tests/data/fate/vsynth2-ffv1.avi
+0837dc7e6f625e2f6ac16140562c079d *tests/data/fate/vsynth2-ffv1.avi
+3547788 tests/data/fate/vsynth2-ffv1.avi
 dde5895817ad9d219f79a52d0bdfb001 *tests/data/fate/vsynth2-ffv1.out.rawvideo
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

@@ -96,14 +96,42 @@ year-month-day.
 @anchor{time duration syntax}
 @section Time duration
 
-The accepted syntax is:
+There are two accepted syntaxes for expressing time duration.
+
 @example
-[-][HH:]MM:SS[.m...]
-[-]S+[.m...]
+[-][@var{HH}:]@var{MM}:@var{SS}[.@var{m}...]
 @end example
 
-@var{HH} expresses the number of hours, @var{MM} the number a of minutes
-and @var{SS} the number of seconds.
+@var{HH} expresses the number of hours, @var{MM} the number of minutes
+for a maximum of 2 digits, and @var{SS} the number of seconds for a
+maximum of 2 digits. The @var{m} at the end expresses decimal value for
+@var{SS}.
+
+@emph{or}
+
+@example
+[-]@var{S}+[.@var{m}...]
+@end example
+
+@var{S} expresses the number of seconds, with the optional decimal part
+@var{m}.
+
+In both expressions, the optional @samp{-} indicates negative duration.
+
+@subsection Examples
+
+The following examples are all valid time duration:
+
+@table @samp
+@item 55
+55 seconds
+
+@item 12:03:45
+12 hours, 03 minutes and 45 seconds
+
+@item 23.189
+23.189 seconds
+@end table
 
 @anchor{video size syntax}
 @section Video size
@@ -198,6 +226,18 @@ The following abbreviations are recognized:
 3996x2160
 @item 4kscope
 4096x1716
+@item nhd
+640x360
+@item hqvga
+240x160
+@item wqvga
+400x240
+@item fwqvga
+432x240
+@item hvga
+480x320
+@item qhd
+960x540
 @end table
 
 @anchor{video rate syntax}
@@ -243,18 +283,450 @@ The undefined value can be expressed using the "0:0" string.
 @anchor{color syntax}
 @section Color
 
-It can be the name of a color (case insensitive match) or a
-[0x|#]RRGGBB[AA] sequence, possibly followed by "@@" and a string
+It can be the name of a color as defined below (case insensitive match) or a
+@code{[0x|#]RRGGBB[AA]} sequence, possibly followed by @@ and a string
 representing the alpha component.
 
 The alpha component may be a string composed by "0x" followed by an
 hexadecimal number or a decimal number between 0.0 and 1.0, which
-represents the opacity value (0x00/0.0 means completely transparent,
-0xff/1.0 completely opaque).
-If the alpha component is not specified then 0xff is assumed.
+represents the opacity value (@samp{0x00} or @samp{0.0} means completely
+transparent, @samp{0xff} or @samp{1.0} completely opaque). If the alpha
+component is not specified then @samp{0xff} is assumed.
 
-The string "random" will result in a random color.
+The string @samp{random} will result in a random color.
 
+The following names of colors are recognized:
+@table @samp
+@item AliceBlue
+0xF0F8FF
+@item AntiqueWhite
+0xFAEBD7
+@item Aqua
+0x00FFFF
+@item Aquamarine
+0x7FFFD4
+@item Azure
+0xF0FFFF
+@item Beige
+0xF5F5DC
+@item Bisque
+0xFFE4C4
+@item Black
+0x000000
+@item BlanchedAlmond
+0xFFEBCD
+@item Blue
+0x0000FF
+@item BlueViolet
+0x8A2BE2
+@item Brown
+0xA52A2A
+@item BurlyWood
+0xDEB887
+@item CadetBlue
+0x5F9EA0
+@item Chartreuse
+0x7FFF00
+@item Chocolate
+0xD2691E
+@item Coral
+0xFF7F50
+@item CornflowerBlue
+0x6495ED
+@item Cornsilk
+0xFFF8DC
+@item Crimson
+0xDC143C
+@item Cyan
+0x00FFFF
+@item DarkBlue
+0x00008B
+@item DarkCyan
+0x008B8B
+@item DarkGoldenRod
+0xB8860B
+@item DarkGray
+0xA9A9A9
+@item DarkGreen
+0x006400
+@item DarkKhaki
+0xBDB76B
+@item DarkMagenta
+0x8B008B
+@item DarkOliveGreen
+0x556B2F
+@item Darkorange
+0xFF8C00
+@item DarkOrchid
+0x9932CC
+@item DarkRed
+0x8B0000
+@item DarkSalmon
+0xE9967A
+@item DarkSeaGreen
+0x8FBC8F
+@item DarkSlateBlue
+0x483D8B
+@item DarkSlateGray
+0x2F4F4F
+@item DarkTurquoise
+0x00CED1
+@item DarkViolet
+0x9400D3
+@item DeepPink
+0xFF1493
+@item DeepSkyBlue
+0x00BFFF
+@item DimGray
+0x696969
+@item DodgerBlue
+0x1E90FF
+@item FireBrick
+0xB22222
+@item FloralWhite
+0xFFFAF0
+@item ForestGreen
+0x228B22
+@item Fuchsia
+0xFF00FF
+@item Gainsboro
+0xDCDCDC
+@item GhostWhite
+0xF8F8FF
+@item Gold
+0xFFD700
+@item GoldenRod
+0xDAA520
+@item Gray
+0x808080
+@item Green
+0x008000
+@item GreenYellow
+0xADFF2F
+@item HoneyDew
+0xF0FFF0
+@item HotPink
+0xFF69B4
+@item IndianRed
+0xCD5C5C
+@item Indigo
+0x4B0082
+@item Ivory
+0xFFFFF0
+@item Khaki
+0xF0E68C
+@item Lavender
+0xE6E6FA
+@item LavenderBlush
+0xFFF0F5
+@item LawnGreen
+0x7CFC00
+@item LemonChiffon
+0xFFFACD
+@item LightBlue
+0xADD8E6
+@item LightCoral
+0xF08080
+@item LightCyan
+0xE0FFFF
+@item LightGoldenRodYellow
+0xFAFAD2
+@item LightGreen
+0x90EE90
+@item LightGrey
+0xD3D3D3
+@item LightPink
+0xFFB6C1
+@item LightSalmon
+0xFFA07A
+@item LightSeaGreen
+0x20B2AA
+@item LightSkyBlue
+0x87CEFA
+@item LightSlateGray
+0x778899
+@item LightSteelBlue
+0xB0C4DE
+@item LightYellow
+0xFFFFE0
+@item Lime
+0x00FF00
+@item LimeGreen
+0x32CD32
+@item Linen
+0xFAF0E6
+@item Magenta
+0xFF00FF
+@item Maroon
+0x800000
+@item MediumAquaMarine
+0x66CDAA
+@item MediumBlue
+0x0000CD
+@item MediumOrchid
+0xBA55D3
+@item MediumPurple
+0x9370D8
+@item MediumSeaGreen
+0x3CB371
+@item MediumSlateBlue
+0x7B68EE
+@item MediumSpringGreen
+0x00FA9A
+@item MediumTurquoise
+0x48D1CC
+@item MediumVioletRed
+0xC71585
+@item MidnightBlue
+0x191970
+@item MintCream
+0xF5FFFA
+@item MistyRose
+0xFFE4E1
+@item Moccasin
+0xFFE4B5
+@item NavajoWhite
+0xFFDEAD
+@item Navy
+0x000080
+@item OldLace
+0xFDF5E6
+@item Olive
+0x808000
+@item OliveDrab
+0x6B8E23
+@item Orange
+0xFFA500
+@item OrangeRed
+0xFF4500
+@item Orchid
+0xDA70D6
+@item PaleGoldenRod
+0xEEE8AA
+@item PaleGreen
+0x98FB98
+@item PaleTurquoise
+0xAFEEEE
+@item PaleVioletRed
+0xD87093
+@item PapayaWhip
+0xFFEFD5
+@item PeachPuff
+0xFFDAB9
+@item Peru
+0xCD853F
+@item Pink
+0xFFC0CB
+@item Plum
+0xDDA0DD
+@item PowderBlue
+0xB0E0E6
+@item Purple
+0x800080
+@item Red
+0xFF0000
+@item RosyBrown
+0xBC8F8F
+@item RoyalBlue
+0x4169E1
+@item SaddleBrown
+0x8B4513
+@item Salmon
+0xFA8072
+@item SandyBrown
+0xF4A460
+@item SeaGreen
+0x2E8B57
+@item SeaShell
+0xFFF5EE
+@item Sienna
+0xA0522D
+@item Silver
+0xC0C0C0
+@item SkyBlue
+0x87CEEB
+@item SlateBlue
+0x6A5ACD
+@item SlateGray
+0x708090
+@item Snow
+0xFFFAFA
+@item SpringGreen
+0x00FF7F
+@item SteelBlue
+0x4682B4
+@item Tan
+0xD2B48C
+@item Teal
+0x008080
+@item Thistle
+0xD8BFD8
+@item Tomato
+0xFF6347
+@item Turquoise
+0x40E0D0
+@item Violet
+0xEE82EE
+@item Wheat
+0xF5DEB3
+@item White
+0xFFFFFF
+@item WhiteSmoke
+0xF5F5F5
+@item Yellow
+0xFFFF00
+@item YellowGreen
+0x9ACD32
+@end table
+
+@anchor{channel layout syntax}
+@section Channel Layout
+
+A channel layout specifies the spatial disposition of the channels in
+a multi-channel audio stream. To specify a channel layout, FFmpeg
+makes use of a special syntax.
+
+Individual channels are identified by an id, as given by the table
+below:
+@table @samp
+@item FL
+front left
+@item FR
+front right
+@item FC
+front center
+@item LFE
+low frequency
+@item BL
+back left
+@item BR
+back right
+@item FLC
+front left-of-center
+@item FRC
+front right-of-center
+@item BC
+back center
+@item SL
+side left
+@item SR
+side right
+@item TC
+top center
+@item TFL
+top front left
+@item TFC
+top front center
+@item TFR
+top front right
+@item TBL
+top back left
+@item TBC
+top back center
+@item TBR
+top back right
+@item DL
+downmix left
+@item DR
+downmix right
+@item WL
+wide left
+@item WR
+wide right
+@item SDL
+surround direct left
+@item SDR
+surround direct right
+@item LFE2
+low frequency 2
+@end table
+
+Standard channel layout compositions can be specified by using the
+following identifiers:
+@table @samp
+@item mono
+FC
+@item stereo
+FL+FR
+@item 2.1
+FL+FR+LFE
+@item 3.0
+FL+FR+FC
+@item 3.0(back)
+FL+FR+BC
+@item 4.0
+FL+FR+FC+BC
+@item quad
+FL+FR+BL+BR
+@item quad(side)
+FL+FR+SL+SR
+@item 3.1
+FL+FR+FC+LFE
+@item 5.0
+FL+FR+FC+BL+BR
+@item 5.0(side)
+FL+FR+FC+SL+SR
+@item 4.1
+FL+FR+FC+LFE+BC
+@item 5.1
+FL+FR+FC+LFE+BL+BR
+@item 5.1(side)
+FL+FR+FC+LFE+SL+SR
+@item 6.0
+FL+FR+FC+BC+SL+SR
+@item 6.0(front)
+FL+FR+FLC+FRC+SL+SR
+@item hexagonal
+FL+FR+FC+BL+BR+BC
+@item 6.1
+FL+FR+FC+LFE+BC+SL+SR
+@item 6.1
+FL+FR+FC+LFE+BL+BR+BC
+@item 6.1(front)
+FL+FR+LFE+FLC+FRC+SL+SR
+@item 7.0
+FL+FR+FC+BL+BR+SL+SR
+@item 7.0(front)
+FL+FR+FC+FLC+FRC+SL+SR
+@item 7.1
+FL+FR+FC+LFE+BL+BR+SL+SR
+@item 7.1(wide)
+FL+FR+FC+LFE+BL+BR+FLC+FRC
+@item 7.1(wide-side)
+FL+FR+FC+LFE+FLC+FRC+SL+SR
+@item octagonal
+FL+FR+FC+BL+BR+BC+SL+SR
+@item downmix
+DL+DR
+@end table
+
+A custom channel layout can be specified as a sequence of terms, separated by
+'+' or '|'. Each term can be:
+@itemize
+@item
+the name of a standard channel layout (e.g. @samp{mono},
+@samp{stereo}, @samp{4.0}, @samp{quad}, @samp{5.0}, etc.)
+
+@item
+the name of a single channel (e.g. @samp{FL}, @samp{FR}, @samp{FC}, @samp{LFE}, etc.)
+
+@item
+a number of channels, in decimal, optionally followed by 'c', yielding
+the default channel layout for that number of channels (see the
+function @code{av_get_default_channel_layout})
+
+@item
+a channel layout mask, in hexadecimal starting with "0x" (see the
+@code{AV_CH_*} macros in @file{libavutil/channel_layout.h}.
+@end itemize
+
+Starting from libavutil version 53 the trailing character "c" to
+specify a number of channels will be required, while a channel layout
+mask could also be specified as a decimal number (if and only if not
+followed by "c").
+
+See also the function @code{av_get_channel_layout} defined in
+@file{libavutil/channel_layout.h}.
 @c man end SYNTAX
 
 @chapter Expression Evaluation

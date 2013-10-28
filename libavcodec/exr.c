@@ -32,6 +32,7 @@
 
 #include <zlib.h>
 
+#include "get_bits.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "mathops.h"
@@ -67,6 +68,9 @@ typedef struct EXRThreadData {
 
     uint8_t *tmp;
     int tmp_size;
+
+    uint8_t *bitmap;
+    uint16_t *lut;
 } EXRThreadData;
 
 typedef struct EXRContext {
@@ -277,6 +281,461 @@ static int rle_uncompress(const uint8_t *src, int compressed_size,
     return 0;
 }
 
+#define USHORT_RANGE (1 << 16)
+#define BITMAP_SIZE (1 << 13)
+
+static uint16_t reverse_lut(const uint8_t *bitmap, uint16_t *lut)
+{
+    int i, k = 0;
+
+    for (i = 0; i < USHORT_RANGE; i++) {
+        if ((i == 0) || (bitmap[i >> 3] & (1 << (i & 7))))
+            lut[k++] = i;
+    }
+
+    i = k - 1;
+
+    memset(lut + k, 0, (USHORT_RANGE - k) * 2);
+
+    return i;
+}
+
+static void apply_lut(const uint16_t *lut, uint16_t *dst, int dsize)
+{
+    int i;
+
+    for (i = 0; i < dsize; ++i)
+        dst[i] = lut[dst[i]];
+}
+
+#define HUF_ENCBITS 16  // literal (value) bit length
+#define HUF_DECBITS 14  // decoding bit size (>= 8)
+
+#define HUF_ENCSIZE ((1 << HUF_ENCBITS) + 1)  // encoding table size
+#define HUF_DECSIZE (1 << HUF_DECBITS)     // decoding table size
+#define HUF_DECMASK (HUF_DECSIZE - 1)
+
+typedef struct HufDec {
+    int len;
+    int lit;
+    int *p;
+} HufDec;
+
+static void huf_canonical_code_table(uint64_t *hcode)
+{
+    uint64_t c, n[59] = { 0 };
+    int i;
+
+    for (i = 0; i < HUF_ENCSIZE; ++i)
+        n[hcode[i]] += 1;
+
+    c = 0;
+    for (i = 58; i > 0; --i) {
+        uint64_t nc = ((c + n[i]) >> 1);
+        n[i] = c;
+        c = nc;
+    }
+
+    for (i = 0; i < HUF_ENCSIZE; ++i) {
+        int l = hcode[i];
+
+        if (l > 0)
+            hcode[i] = l | (n[l]++ << 6);
+    }
+}
+
+#define SHORT_ZEROCODE_RUN  59
+#define LONG_ZEROCODE_RUN   63
+#define SHORTEST_LONG_RUN   (2 + LONG_ZEROCODE_RUN - SHORT_ZEROCODE_RUN)
+#define LONGEST_LONG_RUN    (255 + SHORTEST_LONG_RUN)
+
+static int huf_unpack_enc_table(GetByteContext *gb,
+                                int32_t im, int32_t iM, uint64_t *hcode)
+{
+    GetBitContext gbit;
+
+    init_get_bits8(&gbit, gb->buffer, bytestream2_get_bytes_left(gb));
+
+    for (; im <= iM; im++) {
+        uint64_t l = hcode[im] = get_bits(&gbit, 6);
+
+        if (l == LONG_ZEROCODE_RUN) {
+            int zerun = get_bits(&gbit, 8) + SHORTEST_LONG_RUN;
+
+            if (im + zerun > iM + 1)
+                return AVERROR_INVALIDDATA;
+
+            while (zerun--)
+                hcode[im++] = 0;
+
+            im--;
+        } else if (l >= (uint64_t) SHORT_ZEROCODE_RUN) {
+            int zerun = l - SHORT_ZEROCODE_RUN + 2;
+
+            if (im + zerun > iM + 1)
+                return AVERROR_INVALIDDATA;
+
+            while (zerun--)
+                hcode[im++] = 0;
+
+            im--;
+        }
+    }
+
+    bytestream2_skip(gb, (get_bits_count(&gbit) + 7) / 8);
+    huf_canonical_code_table(hcode);
+
+    return 0;
+}
+
+static int huf_build_dec_table(const uint64_t *hcode, int im,
+                               int iM, HufDec *hdecod)
+{
+    for (; im <= iM; im++) {
+        uint64_t c = hcode[im] >> 6;
+        int i, l = hcode[im] & 63;
+
+        if (c >> l)
+            return AVERROR_INVALIDDATA;
+
+        if (l > HUF_DECBITS) {
+            HufDec *pl = hdecod + (c >> (l - HUF_DECBITS));
+            if (pl->len)
+                return AVERROR_INVALIDDATA;
+
+            pl->lit++;
+
+            pl->p = av_realloc_f(pl->p, pl->lit, sizeof(int));
+            if (!pl->p)
+                return AVERROR(ENOMEM);
+
+            pl->p[pl->lit - 1] = im;
+        } else if (l) {
+            HufDec *pl = hdecod + (c << (HUF_DECBITS - l));
+
+            for (i = 1 << (HUF_DECBITS - l); i > 0; i--, pl++) {
+                if (pl->len || pl->p)
+                    return AVERROR_INVALIDDATA;
+                pl->len = l;
+                pl->lit = im;
+            }
+        }
+    }
+
+    return 0;
+}
+
+#define get_char(c, lc, gb) {                   \
+    c = (c << 8) | bytestream2_get_byte(gb);    \
+    lc += 8;                                    \
+}
+
+#define get_code(po, rlc, c, lc, gb, out, oe) { \
+    if (po == rlc) {                            \
+        if (lc < 8)                             \
+            get_char(c, lc, gb);                \
+        lc -= 8;                                \
+                                                \
+        cs = c >> lc;                           \
+                                                \
+        if (out + cs > oe)                      \
+            return AVERROR_INVALIDDATA;         \
+                                                \
+        s = out[-1];                            \
+                                                \
+        while (cs-- > 0)                        \
+            *out++ = s;                         \
+    } else if (out < oe) {                      \
+        *out++ = po;                            \
+    } else {                                    \
+        return AVERROR_INVALIDDATA;             \
+    }                                           \
+}
+
+static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
+                      GetByteContext *gb, int nbits,
+                      int rlc, int no, uint16_t *out)
+{
+    uint64_t c = 0;
+    uint16_t *outb = out;
+    uint16_t *oe = out + no;
+    const uint8_t *ie = gb->buffer + (nbits + 7) / 8; // input byte size
+    uint8_t cs, s;
+    int i, lc = 0;
+
+    while (gb->buffer < ie) {
+        get_char(c, lc, gb);
+
+        while (lc >= HUF_DECBITS) {
+            const HufDec pl = hdecod[(c >> (lc-HUF_DECBITS)) & HUF_DECMASK];
+
+            if (pl.len) {
+                lc -= pl.len;
+                get_code(pl.lit, rlc, c, lc, gb, out, oe);
+            } else {
+                int j;
+
+                if (!pl.p)
+                    return AVERROR_INVALIDDATA;
+
+                for (j = 0; j < pl.lit; j++) {
+                    int l = hcode[pl.p[j]] & 63;
+
+                    while (lc < l && bytestream2_get_bytes_left(gb) > 0)
+                        get_char(c, lc, gb);
+
+                    if (lc >= l) {
+                        if ((hcode[pl.p[j]] >> 6) ==
+                            ((c >> (lc - l)) & ((1LL << l) - 1))) {
+                            lc -= l;
+                            get_code(pl.p[j], rlc, c, lc, gb, out, oe);
+                            break;
+                        }
+                    }
+                }
+
+                if (j == pl.lit)
+                    return AVERROR_INVALIDDATA;
+            }
+        }
+    }
+
+    i = (8 - nbits) & 7;
+    c >>= i;
+    lc -= i;
+
+    while (lc > 0) {
+        const HufDec pl = hdecod[(c << (HUF_DECBITS - lc)) & HUF_DECMASK];
+
+        if (pl.len) {
+            lc -= pl.len;
+            get_code(pl.lit, rlc, c, lc, gb, out, oe);
+        } else {
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if (out - outb != no)
+        return AVERROR_INVALIDDATA;
+    return 0;
+}
+
+static int huf_uncompress(GetByteContext *gb,
+                          uint16_t *dst, int dst_size)
+{
+    int32_t src_size, im, iM;
+    uint32_t nBits;
+    uint64_t *freq;
+    HufDec *hdec;
+    int ret, i;
+
+    src_size = bytestream2_get_le32(gb);
+    im = bytestream2_get_le32(gb);
+    iM = bytestream2_get_le32(gb);
+    bytestream2_skip(gb, 4);
+    nBits = bytestream2_get_le32(gb);
+    if (im < 0 || im >= HUF_ENCSIZE ||
+        iM < 0 || iM >= HUF_ENCSIZE ||
+        src_size < 0)
+        return AVERROR_INVALIDDATA;
+
+    bytestream2_skip(gb, 4);
+
+    freq = av_calloc(HUF_ENCSIZE, sizeof(*freq));
+    hdec = av_calloc(HUF_DECSIZE, sizeof(*hdec));
+    if (!freq || !hdec) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    if ((ret = huf_unpack_enc_table(gb, im, iM, freq)) < 0)
+        goto fail;
+
+    if (nBits > 8 * bytestream2_get_bytes_left(gb)) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
+    if ((ret = huf_build_dec_table(freq, im, iM, hdec)) < 0)
+        goto fail;
+    ret = huf_decode(freq, hdec, gb, nBits, iM, dst_size, dst);
+
+fail:
+    for (i = 0; i < HUF_DECSIZE; i++) {
+        if (hdec)
+            av_freep(&hdec[i].p);
+    }
+
+    av_free(freq);
+    av_free(hdec);
+
+    return ret;
+}
+
+static inline void wdec14(uint16_t l, uint16_t h, uint16_t *a, uint16_t *b)
+{
+    int16_t ls = l;
+    int16_t hs = h;
+    int hi = hs;
+    int ai = ls + (hi & 1) + (hi >> 1);
+    int16_t as = ai;
+    int16_t bs = ai - hi;
+
+    *a = as;
+    *b = bs;
+}
+
+#define NBITS      16
+#define A_OFFSET  (1 << (NBITS  - 1))
+#define MOD_MASK  ((1 << NBITS) - 1)
+
+static inline void wdec16(uint16_t l, uint16_t h, uint16_t *a, uint16_t *b)
+{
+    int m = l;
+    int d = h;
+    int bb = (m - (d >> 1)) & MOD_MASK;
+    int aa = (d + bb - A_OFFSET) & MOD_MASK;
+    *b = bb;
+    *a = aa;
+}
+
+static void wav_decode(uint16_t *in, int nx, int ox,
+                       int ny, int oy, uint16_t mx)
+{
+    int w14 = (mx < (1 << 14));
+    int n = (nx > ny) ? ny: nx;
+    int p = 1;
+    int p2;
+
+    while (p <= n)
+        p <<= 1;
+
+    p >>= 1;
+    p2  = p;
+    p >>= 1;
+
+    while (p >= 1) {
+        uint16_t *py = in;
+        uint16_t *ey = in + oy * (ny - p2);
+        uint16_t i00, i01, i10, i11;
+        int oy1 = oy * p;
+        int oy2 = oy * p2;
+        int ox1 = ox * p;
+        int ox2 = ox * p2;
+
+        for (; py <= ey; py += oy2) {
+            uint16_t *px = py;
+            uint16_t *ex = py + ox * (nx - p2);
+
+            for (; px <= ex; px += ox2) {
+                uint16_t *p01 = px  + ox1;
+                uint16_t *p10 = px  + oy1;
+                uint16_t *p11 = p10 + ox1;
+
+                if (w14) {
+                    wdec14(*px,  *p10, &i00, &i10);
+                    wdec14(*p01, *p11, &i01, &i11);
+                    wdec14(i00, i01, px,  p01);
+                    wdec14(i10, i11, p10, p11);
+                } else {
+                    wdec16(*px,  *p10, &i00, &i10);
+                    wdec16(*p01, *p11, &i01, &i11);
+                    wdec16(i00, i01, px,  p01);
+                    wdec16(i10, i11, p10, p11);
+                }
+            }
+
+            if (nx & p) {
+                uint16_t *p10 = px + oy1;
+
+                if (w14)
+                    wdec14(*px, *p10, &i00, p10);
+                else
+                    wdec16(*px, *p10, &i00, p10);
+
+                *px = i00;
+            }
+        }
+
+        if (ny & p) {
+            uint16_t *px = py;
+            uint16_t *ex = py + ox * (nx - p2);
+
+            for (; px <= ex; px += ox2) {
+                uint16_t *p01 = px + ox1;
+
+                if (w14)
+                    wdec14(*px, *p01, &i00, p01);
+                else
+                    wdec16(*px, *p01, &i00, p01);
+
+                *px = i00;
+            }
+        }
+
+        p2 = p;
+        p >>= 1;
+    }
+}
+
+static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize, int dsize, EXRThreadData *td)
+{
+    GetByteContext gb;
+    uint16_t maxval, min_non_zero, max_non_zero;
+    uint16_t *ptr, *tmp = (uint16_t *)td->tmp;
+    int8_t *out;
+    int ret, i, j;
+
+    if (!td->bitmap)
+        td->bitmap = av_malloc(BITMAP_SIZE);
+    if (!td->lut)
+        td->lut = av_malloc(1 << 17);
+    if (!td->bitmap || !td->lut)
+        return AVERROR(ENOMEM);
+
+    bytestream2_init(&gb, src, ssize);
+    min_non_zero = bytestream2_get_le16(&gb);
+    max_non_zero = bytestream2_get_le16(&gb);
+
+    if (max_non_zero >= BITMAP_SIZE)
+        return AVERROR_INVALIDDATA;
+
+    memset(td->bitmap, 0, FFMIN(min_non_zero, BITMAP_SIZE));
+    if (min_non_zero <= max_non_zero)
+        bytestream2_get_buffer(&gb, td->bitmap + min_non_zero,
+                               max_non_zero - min_non_zero + 1);
+    memset(td->bitmap + max_non_zero, 0, BITMAP_SIZE - max_non_zero);
+
+    maxval = reverse_lut(td->bitmap, td->lut);
+
+    ret = huf_uncompress(&gb, tmp, dsize / sizeof(int16_t));
+    if (ret)
+        return ret;
+
+    ptr = tmp;
+    for (i = 0; i < s->nb_channels; i++) {
+        EXRChannel *channel = &s->channels[i];
+        int size = channel->pixel_type;
+
+        for (j = 0; j < size; j++)
+            wav_decode(ptr + j, s->xdelta, size, s->ysize, s->xdelta * size, maxval);
+        ptr += s->xdelta * s->ysize * size;
+    }
+
+    apply_lut(td->lut, tmp, dsize / sizeof(int16_t));
+
+    out = td->uncompressed_data;
+    for (i = 0; i < s->ysize; i++) {
+        for (j = 0; j < s->nb_channels; j++) {
+            uint16_t *in = tmp + j * s->xdelta * s->ysize + i * s->xdelta;
+            memcpy(out, in, s->xdelta * 2);
+            out += s->xdelta * 2;
+        }
+    }
+
+    return 0;
+}
+
 static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                             int compressed_size, int uncompressed_size,
                             EXRThreadData *td)
@@ -384,6 +843,9 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         case EXR_ZIP1:
         case EXR_ZIP16:
             ret = zip_uncompress(src, data_size, uncompressed_size, td);
+            break;
+        case EXR_PIZ:
+            ret = piz_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_PXR24:
             ret = pxr24_uncompress(s, src, data_size, uncompressed_size, td);
@@ -501,13 +963,13 @@ static int decode_frame(AVCodecContext *avctx,
 
     version = bytestream_get_byte(&buf);
     if (version != 2) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported version %d\n", version);
+        avpriv_report_missing_feature(avctx, "Version %d", version);
         return AVERROR_PATCHWELCOME;
     }
 
     flags = bytestream_get_le24(&buf);
     if (flags & 0x2) {
-        av_log(avctx, AV_LOG_ERROR, "Tile based images are not supported\n");
+        avpriv_report_missing_feature(avctx, "Tile support");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -523,7 +985,7 @@ static int decode_frame(AVCodecContext *avctx,
             channel_list_end = buf + variable_buffer_data_size;
             while (channel_list_end - buf >= 19) {
                 EXRChannel *channel;
-                int current_pixel_type = -1;
+                enum ExrPixelType current_pixel_type;
                 int channel_index = -1;
                 int xsub, ysub;
 
@@ -556,7 +1018,7 @@ static int decode_frame(AVCodecContext *avctx,
                 xsub = bytestream_get_le32(&buf);
                 ysub = bytestream_get_le32(&buf);
                 if (xsub != 1 || ysub != 1) {
-                    av_log(avctx, AV_LOG_ERROR, "Unsupported subsampling %dx%d\n", xsub, ysub);
+                    avpriv_report_missing_feature(avctx, "Subsampling %dx%d", xsub, ysub);
                     return AVERROR_PATCHWELCOME;
                 }
 
@@ -714,8 +1176,11 @@ static int decode_frame(AVCodecContext *avctx,
     case EXR_ZIP16:
         s->scan_lines_per_block = 16;
         break;
+    case EXR_PIZ:
+        s->scan_lines_per_block = 32;
+        break;
     default:
-        av_log(avctx, AV_LOG_ERROR, "Compression type %d is not supported\n", s->compr);
+        avpriv_report_missing_feature(avctx, "Compression %d", s->compr);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -791,8 +1256,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
     for (i = 0; i < s->thread_data_size / sizeof(EXRThreadData); i++) {
         EXRThreadData *td = &s->thread_data[i];
-        av_free(td->uncompressed_data);
-        av_free(td->tmp);
+        av_freep(&td->uncompressed_data);
+        av_freep(&td->tmp);
+        av_freep(&td->bitmap);
+        av_freep(&td->lut);
     }
 
     av_freep(&s->thread_data);
@@ -804,11 +1271,11 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 AVCodec ff_exr_decoder = {
     .name               = "exr",
+    .long_name          = NULL_IF_CONFIG_SMALL("OpenEXR image"),
     .type               = AVMEDIA_TYPE_VIDEO,
     .id                 = AV_CODEC_ID_EXR,
     .priv_data_size     = sizeof(EXRContext),
     .close              = decode_end,
     .decode             = decode_frame,
     .capabilities       = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS | CODEC_CAP_SLICE_THREADS,
-    .long_name          = NULL_IF_CONFIG_SMALL("OpenEXR image"),
 };

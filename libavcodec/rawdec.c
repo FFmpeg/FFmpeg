@@ -349,12 +349,12 @@ static av_cold int raw_close_decoder(AVCodecContext *avctx)
 
 AVCodec ff_rawvideo_decoder = {
     .name           = "rawvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_RAWVIDEO,
     .priv_data_size = sizeof(RawVideoContext),
     .init           = raw_init_decoder,
     .close          = raw_close_decoder,
     .decode         = raw_decode,
-    .long_name      = NULL_IF_CONFIG_SMALL("raw video"),
     .priv_class     = &rawdec_class,
 };

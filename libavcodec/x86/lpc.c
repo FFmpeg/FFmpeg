@@ -19,10 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/x86/asm.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
+#include "libavutil/x86/asm.h"
+#include "libavutil/x86/cpu.h"
 #include "libavcodec/lpc.h"
 
 DECLARE_ASM_CONST(16, double, pd_1)[2] = { 1.0, 1.0 };
@@ -150,7 +151,7 @@ av_cold void ff_lpc_init_x86(LPCContext *c)
 #if HAVE_SSE2_INLINE
     int cpu_flags = av_get_cpu_flags();
 
-    if (cpu_flags & (AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_SSE2SLOW)) {
+    if (HAVE_SSE2_INLINE && cpu_flags & (AV_CPU_FLAG_SSE2 | AV_CPU_FLAG_SSE2SLOW)) {
         c->lpc_apply_welch_window = lpc_apply_welch_window_sse2;
         c->lpc_compute_autocorr   = lpc_compute_autocorr_sse2;
     }

@@ -31,7 +31,6 @@
 #include "libavutil/opt.h"
 
 #include "avfilter.h"
-#include "internal.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -99,7 +98,7 @@ static AVFilterFormats *make_format_list(FormatContext *s, int flag)
 #define OFFSET(x) offsetof(FormatContext, x)
 static const AVOption options[] = {
     { "pix_fmts", "A '|'-separated list of pixel formats", OFFSET(pix_fmts), AV_OPT_TYPE_STRING, .flags = AV_OPT_FLAG_VIDEO_PARAM },
-    { NULL },
+    { NULL }
 };
 
 #if CONFIG_FORMAT_FILTER
@@ -130,18 +129,14 @@ static const AVFilterPad avfilter_vf_format_outputs[] = {
 };
 
 AVFilter avfilter_vf_format = {
-    .name      = "format",
-    .description = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
-
-    .init      = init,
-
+    .name          = "format",
+    .description   = NULL_IF_CONFIG_SMALL("Convert the input video to one of the specified pixel formats."),
+    .init          = init,
     .query_formats = query_formats_format,
-
-    .priv_size = sizeof(FormatContext),
-    .priv_class = &format_class,
-
-    .inputs    = avfilter_vf_format_inputs,
-    .outputs   = avfilter_vf_format_outputs,
+    .priv_size     = sizeof(FormatContext),
+    .priv_class    = &format_class,
+    .inputs        = avfilter_vf_format_inputs,
+    .outputs       = avfilter_vf_format_outputs,
 };
 #endif /* CONFIG_FORMAT_FILTER */
 
@@ -173,17 +168,13 @@ static const AVFilterPad avfilter_vf_noformat_outputs[] = {
 };
 
 AVFilter avfilter_vf_noformat = {
-    .name      = "noformat",
-    .description = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
-
-    .init      = init,
-
+    .name          = "noformat",
+    .description   = NULL_IF_CONFIG_SMALL("Force libavfilter not to use any of the specified pixel formats for the input to the next filter."),
+    .init          = init,
     .query_formats = query_formats_noformat,
-
-    .priv_size = sizeof(FormatContext),
-    .priv_class = &noformat_class,
-
-    .inputs    = avfilter_vf_noformat_inputs,
-    .outputs   = avfilter_vf_noformat_outputs,
+    .priv_size     = sizeof(FormatContext),
+    .priv_class    = &noformat_class,
+    .inputs        = avfilter_vf_noformat_inputs,
+    .outputs       = avfilter_vf_noformat_outputs,
 };
 #endif /* CONFIG_NOFORMAT_FILTER */

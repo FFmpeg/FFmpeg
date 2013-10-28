@@ -655,6 +655,7 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_vmdvideo_decoder = {
     .name           = "vmdvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VMDVIDEO,
     .priv_data_size = sizeof(VmdVideoContext),
@@ -662,16 +663,15 @@ AVCodec ff_vmdvideo_decoder = {
     .close          = vmdvideo_decode_end,
     .decode         = vmdvideo_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD video"),
 };
 
 AVCodec ff_vmdaudio_decoder = {
     .name           = "vmdaudio",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_VMDAUDIO,
     .priv_data_size = sizeof(VmdAudioContext),
     .init           = vmdaudio_decode_init,
     .decode         = vmdaudio_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD audio"),
 };

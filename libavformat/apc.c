@@ -23,6 +23,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "internal.h"
 
 static int apc_probe(AVProbeData *p)
 {
@@ -51,10 +52,7 @@ static int apc_read_header(AVFormatContext *s)
     avio_rl32(pb); /* number of samples */
     st->codec->sample_rate = avio_rl32(pb);
 
-    st->codec->extradata_size = 2 * 4;
-    st->codec->extradata = av_malloc(st->codec->extradata_size +
-                                     FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, 2 * 4))
         return AVERROR(ENOMEM);
 
     /* initial predictor values for adpcm decoder */

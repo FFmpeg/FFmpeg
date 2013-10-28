@@ -69,12 +69,7 @@ static int yop_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     // Extra data that will be passed to the decoder
-    video_stream->codec->extradata_size = 8;
-
-    video_stream->codec->extradata = av_mallocz(video_stream->codec->extradata_size +
-                                                FF_INPUT_BUFFER_PADDING_SIZE);
-
-    if (!video_stream->codec->extradata)
+    if (ff_alloc_extradata(video_stream->codec, 8))
         return AVERROR(ENOMEM);
 
     // Audio
@@ -135,7 +130,14 @@ static int yop_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (yop->video_packet.data) {
         *pkt                   =  yop->video_packet;
-        memset(&yop->video_packet, 0, sizeof(yop->video_packet));
+        yop->video_packet.data =  NULL;
+        yop->video_packet.buf  =  NULL;
+#if FF_API_DESTRUCT_PACKET
+FF_DISABLE_DEPRECATION_WARNINGS
+        yop->video_packet.destruct = NULL;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+        yop->video_packet.size =  0;
         pkt->data[0]           =  yop->odd_frame;
         pkt->flags             |= AV_PKT_FLAG_KEY;
         yop->odd_frame         ^= 1;

@@ -2104,6 +2104,21 @@ static int transcode_init(void)
     char error[1024];
     int want_sdp = 1;
 
+    for (i = 0; i < nb_filtergraphs; i++) {
+        FilterGraph *fg = filtergraphs[i];
+        for (j = 0; j < fg->nb_outputs; j++) {
+            OutputFilter *ofilter = fg->outputs[j];
+            if (!ofilter->ost || ofilter->ost->source_index >= 0)
+                continue;
+            if (fg->nb_inputs != 1)
+                continue;
+            for (k = nb_input_streams-1; k >= 0 ; k--)
+                if (fg->inputs[0]->ist == input_streams[k])
+                    break;
+            ofilter->ost->source_index = k;
+        }
+    }
+
     /* init framerate emulation */
     for (i = 0; i < nb_input_files; i++) {
         InputFile *ifile = input_files[i];
@@ -2145,6 +2160,15 @@ static int transcode_init(void)
             ost->st->disposition          = ist->st->disposition;
             codec->bits_per_raw_sample    = icodec->bits_per_raw_sample;
             codec->chroma_sample_location = icodec->chroma_sample_location;
+        } else {
+            for (j=0; j<oc->nb_streams; j++) {
+                AVStream *st = oc->streams[j];
+                if (st != ost->st && st->codec->codec_type == codec->codec_type)
+                    break;
+            }
+            if (j == oc->nb_streams)
+                if (codec->codec_type == AVMEDIA_TYPE_AUDIO || codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                    ost->st->disposition = AV_DISPOSITION_DEFAULT;
         }
 
         if (ost->stream_copy) {
@@ -2353,6 +2377,13 @@ static int transcode_init(void)
                     ost->filter->filter->inputs[0]->format != AV_PIX_FMT_YUV420P)
                     av_log(NULL, AV_LOG_WARNING,
                            "No pixel format specified, %s for H.264 encoding chosen.\n"
+                           "Use -pix_fmt yuv420p for compatibility with outdated media players.\n",
+                           av_get_pix_fmt_name(ost->filter->filter->inputs[0]->format));
+                if (!strncmp(ost->enc->name, "mpeg2video", 10) &&
+                    codec->pix_fmt == AV_PIX_FMT_NONE &&
+                    ost->filter->filter->inputs[0]->format != AV_PIX_FMT_YUV420P)
+                    av_log(NULL, AV_LOG_WARNING,
+                           "No pixel format specified, %s for MPEG-2 encoding chosen.\n"
                            "Use -pix_fmt yuv420p for compatibility with outdated media players.\n",
                            av_get_pix_fmt_name(ost->filter->filter->inputs[0]->format));
                 codec->pix_fmt = ost->filter->filter->inputs[0]->format;
@@ -2674,7 +2705,7 @@ static int check_keyboard_interaction(int64_t cur_time)
         char buf[4096], target[64], command[256], arg[256] = {0};
         double time;
         int k, n = 0;
-        fprintf(stderr, "\nEnter command: <target> <time> <command>[ <argument>]\n");
+        fprintf(stderr, "\nEnter command: <target>|all <time>|-1 <command>[ <argument>]\n");
         i = 0;
         while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
             if (k > 0)
@@ -2690,7 +2721,10 @@ static int check_keyboard_interaction(int64_t cur_time)
                     if (time < 0) {
                         ret = avfilter_graph_send_command(fg->graph, target, command, arg, buf, sizeof(buf),
                                                           key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
-                        fprintf(stderr, "Command reply for stream %d: ret:%d res:%s\n", i, ret, buf);
+                        fprintf(stderr, "Command reply for stream %d: ret:%d res:\n%s", i, ret, buf);
+                    } else if (key == 'c') {
+                        fprintf(stderr, "Queing commands only on filters supporting the specific command is unsupported\n");
+                        ret = AVERROR_PATCHWELCOME;
                     } else {
                         ret = avfilter_graph_queue_command(fg->graph, target, command, arg, 0, time);
                     }
@@ -2727,7 +2761,8 @@ static int check_keyboard_interaction(int64_t cur_time)
                         "?      show this help\n"
                         "+      increase verbosity\n"
                         "-      decrease verbosity\n"
-                        "c      Send command to filtergraph\n"
+                        "c      Send command to first matching filter supporting it\n"
+                        "C      Send/Que command to all matching filters\n"
                         "D      cycle through available debug modes\n"
                         "h      dump packets/hex press to cycle through the 3 states\n"
                         "q      quit\n"
@@ -3032,7 +3067,7 @@ static int process_input(int file_index)
         if(delta < -1LL*dts_delta_threshold*AV_TIME_BASE ||
             (delta > 1LL*dts_delta_threshold*AV_TIME_BASE &&
                 ist->st->codec->codec_type != AVMEDIA_TYPE_SUBTITLE) ||
-            pkt_dts+1<ist->pts){
+            pkt_dts + AV_TIME_BASE/10 < ist->pts){
             ifile->ts_offset -= delta;
             av_log(NULL, AV_LOG_DEBUG,
                    "timestamp discontinuity %"PRId64", new offset= %"PRId64"\n",
@@ -3409,8 +3444,8 @@ int main(int argc, char **argv)
     }
     av_log(NULL, AV_LOG_DEBUG, "%"PRIu64" frames successfully decoded, %"PRIu64" decoding errors\n",
            decode_error_stat[0], decode_error_stat[1]);
-    if (2*decode_error_stat[0] < decode_error_stat[1])
-        exit_program(254);
+    if ((decode_error_stat[0] + decode_error_stat[1]) * max_error_rate < decode_error_stat[1])
+        exit_program(69);
 
     exit_program(received_nb_signals ? 255 : 0);
     return 0;

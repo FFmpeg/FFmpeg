@@ -724,13 +724,16 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
         uint8_t *uvbuf = s->edge_emu_buffer + 22 * s->linesize;
 
         srcY -= 2 + 2*s->linesize;
-        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, (width<<3)+6, (height<<3)+6,
-                            src_x - 2, src_y - 2, s->h_edge_pos, s->v_edge_pos);
+        s->vdsp.emulated_edge_mc(s->edge_emu_buffer, s->linesize, srcY, s->linesize,
+                                 (width<<3)+6, (height<<3)+6, src_x - 2, src_y - 2,
+                                 s->h_edge_pos, s->v_edge_pos);
         srcY = s->edge_emu_buffer + 2 + 2*s->linesize;
-        s->vdsp.emulated_edge_mc(uvbuf     , srcU, s->uvlinesize, (width<<2)+1, (height<<2)+1,
-                            uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(uvbuf + 16, srcV, s->uvlinesize, (width<<2)+1, (height<<2)+1,
-                            uvsrc_x, uvsrc_y, s->h_edge_pos >> 1, s->v_edge_pos >> 1);
+        s->vdsp.emulated_edge_mc(uvbuf, s->uvlinesize, srcU, s->uvlinesize,
+                                 (width<<2)+1, (height<<2)+1, uvsrc_x, uvsrc_y,
+                                 s->h_edge_pos >> 1, s->v_edge_pos >> 1);
+        s->vdsp.emulated_edge_mc(uvbuf + 16, s->uvlinesize, srcV, s->uvlinesize,
+                                 (width<<2)+1, (height<<2)+1, uvsrc_x, uvsrc_y,
+                                 s->h_edge_pos >> 1, s->v_edge_pos >> 1);
         srcU = uvbuf;
         srcV = uvbuf + 16;
     }
@@ -1500,8 +1503,10 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
         ff_rv40dsp_init(&r->rdsp);
 #endif
 
-    if ((ret = rv34_decoder_alloc(r)) < 0)
+    if ((ret = rv34_decoder_alloc(r)) < 0) {
+        ff_MPV_common_end(&r->s);
         return ret;
+    }
 
     if(!intra_vlcs[0].cbppattern[0].bits)
         rv34_init_tables();
@@ -1522,8 +1527,10 @@ int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx)
         r->tmp_b_block_base = NULL;
         if ((err = ff_MPV_common_init(&r->s)) < 0)
             return err;
-        if ((err = rv34_decoder_alloc(r)) < 0)
+        if ((err = rv34_decoder_alloc(r)) < 0) {
+            ff_MPV_common_end(&r->s);
             return err;
+        }
     }
 
     return 0;

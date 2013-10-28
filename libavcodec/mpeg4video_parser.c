@@ -114,6 +114,7 @@ static av_cold int mpeg4video_parse_init(AVCodecParserContext *s)
     pc->first_picture = 1;
     pc->enc.quant_precision=5;
     pc->enc.slice_context_count = 1;
+    pc->enc.showed_packed_warning = 1;
     return 0;
 }
 

@@ -81,10 +81,10 @@ static int wsvqa_read_header(AVFormatContext *s)
     WsVqaDemuxContext *wsvqa = s->priv_data;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    unsigned char *header;
-    unsigned char scratch[VQA_PREAMBLE_SIZE];
-    unsigned int chunk_tag;
-    unsigned int chunk_size;
+    uint8_t *header;
+    uint8_t scratch[VQA_PREAMBLE_SIZE];
+    uint32_t chunk_tag;
+    uint32_t chunk_size;
     int fps;
 
     /* initialize the video decoder stream */
@@ -101,11 +101,9 @@ static int wsvqa_read_header(AVFormatContext *s)
     avio_seek(pb, 20, SEEK_SET);
 
     /* the VQA header needs to go to the decoder */
-    st->codec->extradata = av_mallocz(VQA_HEADER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codec->extradata)
+    if (ff_alloc_extradata(st->codec, VQA_HEADER_SIZE))
         return AVERROR(ENOMEM);
-    st->codec->extradata_size = VQA_HEADER_SIZE;
-    header = (unsigned char *)st->codec->extradata;
+    header = (uint8_t *)st->codec->extradata;
     if (avio_read(pb, st->codec->extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
         return AVERROR(EIO);
@@ -168,9 +166,9 @@ static int wsvqa_read_packet(AVFormatContext *s,
     WsVqaDemuxContext *wsvqa = s->priv_data;
     AVIOContext *pb = s->pb;
     int ret = -1;
-    unsigned char preamble[VQA_PREAMBLE_SIZE];
-    unsigned int chunk_type;
-    unsigned int chunk_size;
+    uint8_t preamble[VQA_PREAMBLE_SIZE];
+    uint32_t chunk_type;
+    uint32_t chunk_size;
     int skip_byte;
 
     while (avio_read(pb, preamble, VQA_PREAMBLE_SIZE) == VQA_PREAMBLE_SIZE) {
@@ -221,9 +219,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
                         break;
                     case SND2_TAG:
                         st->codec->codec_id = AV_CODEC_ID_ADPCM_IMA_WS;
-                        st->codec->extradata_size = 2;
-                        st->codec->extradata = av_mallocz(2 + FF_INPUT_BUFFER_PADDING_SIZE);
-                        if (!st->codec->extradata)
+                        if (ff_alloc_extradata(st->codec, 2))
                             return AVERROR(ENOMEM);
                         AV_WL16(st->codec->extradata, wsvqa->version);
                         break;

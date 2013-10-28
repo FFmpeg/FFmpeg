@@ -54,8 +54,6 @@
 #include <io.h>
 #endif
 #define mkdir(a, b) _mkdir(a)
-#else
-#include <sys/stat.h>
 #endif
 
 static inline int is_dos_path(const char *path)

@@ -4,7 +4,7 @@ fate-twinvq: CMP = oneoff
 fate-twinvq: REF = $(SAMPLES)/vqf/achterba.pcm
 
 FATE_VQF-$(CONFIG_VQF_DEMUXER) += fate-vqf-demux
-fate-vqf-demux: CMD = md5 -i $(TARGET_SAMPLES)/vqf/achterba.vqf -acodec copy -f framecrc
+fate-vqf-demux: CMD = md5 -i $(TARGET_SAMPLES)/vqf/achterba.vqf -acodec copy -flags bitexact -f framecrc
 
 FATE_VQF += $(FATE_VQF-yes)
 

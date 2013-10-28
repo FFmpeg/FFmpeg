@@ -117,7 +117,12 @@ static int framemd5_write_header(struct AVFormatContext *s)
     int res = av_hash_alloc(&c->hash, c->hash_name);
     if (res < 0)
         return res;
-    return ff_framehash_write_header(s);
+    avio_printf(s->pb, "#format: frame checksums\n");
+    avio_printf(s->pb, "#version: 1\n");
+    avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hash));
+    ff_framehash_write_header(s);
+    avio_printf(s->pb, "#stream#, dts,        pts, duration,     size, hash\n");
+    return 0;
 }
 
 static int framemd5_write_packet(struct AVFormatContext *s, AVPacket *pkt)

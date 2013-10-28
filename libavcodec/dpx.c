@@ -25,6 +25,18 @@
 #include "avcodec.h"
 #include "internal.h"
 
+static unsigned int read16(const uint8_t **ptr, int is_big)
+{
+    unsigned int temp;
+    if (is_big) {
+        temp = AV_RB16(*ptr);
+    } else {
+        temp = AV_RL16(*ptr);
+    }
+    *ptr += 2;
+    return temp;
+}
+
 static unsigned int read32(const uint8_t **ptr, int is_big)
 {
     unsigned int temp;
@@ -66,6 +78,7 @@ static int decode_frame(AVCodecContext *avctx,
     int magic_num, endian;
     int x, y, i, ret;
     int w, h, bits_per_color, descriptor, elements, packing, total_size;
+    int encoding;
 
     unsigned int rgbBuffer = 0;
     int n_datum = 0;
@@ -113,9 +126,19 @@ static int decode_frame(AVCodecContext *avctx,
     avctx->bits_per_raw_sample =
     bits_per_color = buf[0];
     buf++;
-    packing = *((uint16_t*)buf);
+    packing = read16(&buf, endian);
+    encoding = read16(&buf, endian);
 
-    buf += 824;
+    if (packing > 1) {
+        avpriv_report_missing_feature(avctx, "Packing %d", packing);
+        return AVERROR_PATCHWELCOME;
+    }
+    if (encoding) {
+        avpriv_report_missing_feature(avctx, "Encoding %d", encoding);
+        return AVERROR_PATCHWELCOME;
+    }
+
+    buf += 820;
     avctx->sample_aspect_ratio.num = read32(&buf, endian);
     avctx->sample_aspect_ratio.den = read32(&buf, endian);
     if (avctx->sample_aspect_ratio.num > 0 && avctx->sample_aspect_ratio.den > 0)
@@ -126,57 +149,101 @@ static int decode_frame(AVCodecContext *avctx,
         avctx->sample_aspect_ratio = (AVRational){ 0, 1 };
 
     switch (descriptor) {
-        case 51: // RGBA
-            elements = 4;
-            break;
-        case 50: // RGB
-            elements = 3;
-            break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported descriptor %d\n", descriptor);
-            return AVERROR_INVALIDDATA;
+    case 6:  // Y
+        elements = 1;
+        break;
+    case 52: // ABGR
+    case 51: // RGBA
+        elements = 4;
+        break;
+    case 50: // RGB
+        elements = 3;
+        break;
+    default:
+        avpriv_report_missing_feature(avctx, "Descriptor %d", descriptor);
+        return AVERROR_PATCHWELCOME;
     }
 
     switch (bits_per_color) {
-        case 8:
-            if (elements == 4) {
-                avctx->pix_fmt = AV_PIX_FMT_RGBA;
-            } else {
-                avctx->pix_fmt = AV_PIX_FMT_RGB24;
-            }
-            total_size = avctx->width * avctx->height * elements;
-            break;
-        case 10:
-            if (!packing) {
-                av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
-                return -1;
-            }
-            avctx->pix_fmt = AV_PIX_FMT_GBRP10;
-            total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
-            break;
-        case 12:
-            if (!packing) {
-                av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
-                return -1;
-            }
-            if (endian) {
-                avctx->pix_fmt = AV_PIX_FMT_GBRP12BE;
-            } else {
-                avctx->pix_fmt = AV_PIX_FMT_GBRP12LE;
-            }
-            total_size = 2 * avctx->width * avctx->height * elements;
-            break;
-        case 16:
-            if (endian) {
-                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64BE : AV_PIX_FMT_RGB48BE;
-            } else {
-                avctx->pix_fmt = elements == 4 ? AV_PIX_FMT_RGBA64LE : AV_PIX_FMT_RGB48LE;
-            }
-            total_size = 2 * avctx->width * avctx->height * elements;
-            break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported color depth : %d\n", bits_per_color);
-            return AVERROR_INVALIDDATA;
+    case 8:
+        total_size = avctx->width * avctx->height * elements;
+        break;
+    case 10:
+        if (!packing) {
+            av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
+            return -1;
+        }
+        total_size = (avctx->width * elements + 2) / 3 * 4 * avctx->height;
+        break;
+    case 12:
+        if (!packing) {
+            av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
+            return -1;
+        }
+        total_size = 2 * avctx->width * avctx->height * elements;
+        break;
+    case 16:
+        total_size = 2 * avctx->width * avctx->height * elements;
+        break;
+    case 1:
+    case 32:
+    case 64:
+        avpriv_report_missing_feature(avctx, "Depth %d", bits_per_color);
+        return AVERROR_PATCHWELCOME;
+    default:
+        return AVERROR_INVALIDDATA;
+    }
+
+    switch (1000 * descriptor + 10 * bits_per_color + endian) {
+    case 6081:
+    case 6080:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        break;
+    case 50081:
+    case 50080:
+        avctx->pix_fmt = AV_PIX_FMT_RGB24;
+        break;
+    case 52081:
+    case 52080:
+        avctx->pix_fmt = AV_PIX_FMT_ABGR;
+        break;
+    case 51081:
+    case 51080:
+        avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        break;
+    case 50100:
+    case 51100:
+    case 50101:
+    case 51101:
+        avctx->pix_fmt = AV_PIX_FMT_GBRP10;
+        break;
+    case 50120:
+    case 51120:
+    case 50121:
+    case 51121:
+        avctx->pix_fmt = AV_PIX_FMT_GBRP12;
+        break;
+    case 6161:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
+        break;
+    case 6160:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
+        break;
+    case 50161:
+        avctx->pix_fmt = AV_PIX_FMT_RGB48BE;
+        break;
+    case 50160:
+        avctx->pix_fmt = AV_PIX_FMT_RGB48LE;
+        break;
+    case 51161:
+        avctx->pix_fmt = AV_PIX_FMT_RGBA64BE;
+        break;
+    case 51160:
+        avctx->pix_fmt = AV_PIX_FMT_RGBA64LE;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported format\n");
+        return AVERROR_PATCHWELCOME;
     }
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
@@ -221,18 +288,12 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2]};
             for (y = 0; y < avctx->width; y++) {
-                *dst[2] = *((uint16_t*)buf);
-                *dst[2] = (*dst[2] >> 4) | (*dst[2] << 12);
+                *dst[2] = read16(&buf, endian) >> 4;
                 dst[2]++;
-                buf += 2;
-                *dst[0] = *((uint16_t*)buf);
-                *dst[0] = (*dst[0] >> 4) | (*dst[0] << 12);
+                *dst[0] = read16(&buf, endian) >> 4;
                 dst[0]++;
-                buf += 2;
-                *dst[1] = *((uint16_t*)buf);
-                *dst[1] = (*dst[1] >> 4) | (*dst[1] << 12);
+                *dst[1] = read16(&buf, endian) >> 4;
                 dst[1]++;
-                buf += 2;
                 // For 12 bit, ignore alpha
                 if (elements == 4)
                     buf += 2;
@@ -257,9 +318,9 @@ static int decode_frame(AVCodecContext *avctx,
 
 AVCodec ff_dpx_decoder = {
     .name           = "dpx",
+    .long_name      = NULL_IF_CONFIG_SMALL("DPX (Digital Picture Exchange) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DPX,
     .decode         = decode_frame,
-    .long_name      = NULL_IF_CONFIG_SMALL("DPX image"),
     .capabilities   = CODEC_CAP_DR1,
 };

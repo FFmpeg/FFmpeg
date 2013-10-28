@@ -67,12 +67,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static int packet_alloc(AVBufferRef **buf, int size)
 {
+    int ret;
     if ((unsigned)size >= (unsigned)size + FF_INPUT_BUFFER_PADDING_SIZE)
         return AVERROR(EINVAL);
 
-    av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!*buf)
-        return AVERROR(ENOMEM);
+    ret = av_buffer_realloc(buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (ret < 0)
+        return ret;
 
     memset((*buf)->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
@@ -215,7 +216,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 
 failed_alloc:
-    av_destruct_packet(pkt);
+    av_free_packet(pkt);
     return AVERROR(ENOMEM);
 }
 
@@ -225,8 +226,10 @@ int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
         int i;
         DUP_DATA(pkt->side_data, src->side_data,
                 src->side_data_elems * sizeof(*src->side_data), 0, ALLOC_MALLOC);
-        memset(pkt->side_data, 0,
-                src->side_data_elems * sizeof(*src->side_data));
+        if (src != pkt) {
+            memset(pkt->side_data, 0,
+                   src->side_data_elems * sizeof(*src->side_data));
+        }
         for (i = 0; i < src->side_data_elems; i++) {
             DUP_DATA(pkt->side_data[i].data, src->side_data[i].data,
                     src->side_data[i].size, 1, ALLOC_MALLOC);
@@ -237,7 +240,7 @@ int av_copy_packet_side_data(AVPacket *pkt, AVPacket *src)
     return 0;
 
 failed_alloc:
-    av_destruct_packet(pkt);
+    av_free_packet(pkt);
     return AVERROR(ENOMEM);
 }
 
@@ -307,7 +310,7 @@ uint8_t *av_packet_new_side_data(AVPacket *pkt, enum AVPacketSideDataType type,
     if (!pkt->side_data)
         return NULL;
 
-    pkt->side_data[elems].data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    pkt->side_data[elems].data = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!pkt->side_data[elems].data)
         return NULL;
     pkt->side_data[elems].size = size;
@@ -398,7 +401,7 @@ int av_packet_split_side_data(AVPacket *pkt){
         for (i=0; ; i++){
             size= AV_RB32(p);
             av_assert0(size<=INT_MAX && p - pkt->data >= size);
-            pkt->side_data[i].data = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+            pkt->side_data[i].data = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
             pkt->side_data[i].size = size;
             pkt->side_data[i].type = p[4]&127;
             if (!pkt->side_data[i].data)

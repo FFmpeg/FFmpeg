@@ -125,7 +125,7 @@ typedef struct AVPixFmtDescriptor{
 
 #if FF_API_PIX_FMT
 /**
- * @deprecate use the AV_PIX_FMT_FLAG_* flags
+ * @deprecated use the AV_PIX_FMT_FLAG_* flags
  */
 #define PIX_FMT_BE        AV_PIX_FMT_FLAG_BE
 #define PIX_FMT_PAL       AV_PIX_FMT_FLAG_PAL

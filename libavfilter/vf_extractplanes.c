@@ -251,7 +251,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ret;
 }
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     ExtractPlanesContext *e = ctx->priv;
     int planes = (e->requested_planes & 0xf) | (e->requested_planes >> 4);
@@ -311,7 +311,7 @@ AVFilter avfilter_vf_extractplanes = {
 
 #if CONFIG_ALPHAEXTRACT_FILTER
 
-static int init_alphaextract(AVFilterContext *ctx)
+static av_cold int init_alphaextract(AVFilterContext *ctx)
 {
     ExtractPlanesContext *e = ctx->priv;
 

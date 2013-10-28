@@ -30,9 +30,10 @@
 #include <stdint.h>
 
 #define EMULATED_EDGE(depth) \
-void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, ptrdiff_t linesize,\
-                         int block_w, int block_h,\
-                         int src_x, int src_y, int w, int h);
+void ff_emulated_edge_mc_ ## depth(uint8_t *dst, ptrdiff_t dst_stride, \
+                                   const uint8_t *src, ptrdiff_t src_stride, \
+                                   int block_w, int block_h,\
+                                   int src_x, int src_y, int w, int h);
 
 EMULATED_EDGE(8)
 EMULATED_EDGE(16)
@@ -42,10 +43,12 @@ typedef struct VideoDSPContext {
      * Copy a rectangular area of samples to a temporary buffer and replicate
      * the border samples.
      *
-     * @param buf destination buffer
+     * @param dst destination buffer
+     * @param dst_stride number of bytes between 2 vertically adjacent samples
+     *                   in destination buffer
      * @param src source buffer
-     * @param linesize number of bytes between 2 vertically adjacent samples
-     *                 in both the source and destination buffers
+     * @param src_stride number of bytes between 2 vertically adjacent samples
+     *                   in source buffer
      * @param block_w width of block
      * @param block_h height of block
      * @param src_x x coordinate of the top left sample of the block in the
@@ -55,16 +58,17 @@ typedef struct VideoDSPContext {
      * @param w width of the source buffer
      * @param h height of the source buffer
      */
-    void (*emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
-                             ptrdiff_t linesize, int block_w, int block_h,
+    void (*emulated_edge_mc)(uint8_t *dst, ptrdiff_t dst_stride,
+                             const uint8_t *src, ptrdiff_t src_stride,
+                             int block_w, int block_h,
                              int src_x, int src_y, int w, int h);
 
     /**
      * Prefetch memory into cache (if supported by hardware).
      *
-     * @buf pointer to buffer to prefetch memory from
-     * @stride distance between two lines of buf (in bytes)
-     * @h number of lines to prefetch
+     * @param buf    pointer to buffer to prefetch memory from
+     * @param stride distance between two lines of buf (in bytes)
+     * @param h      number of lines to prefetch
      */
     void (*prefetch)(uint8_t *buf, ptrdiff_t stride, int h);
 } VideoDSPContext;

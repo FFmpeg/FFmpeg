@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
+#include "libavutil/avassert.h"
 
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
@@ -45,8 +46,12 @@ static const AVCodecTag codec_au_tags[] = {
     { AV_CODEC_ID_PCM_S32BE,  5 },
     { AV_CODEC_ID_PCM_F32BE,  6 },
     { AV_CODEC_ID_PCM_F64BE,  7 },
+    { AV_CODEC_ID_ADPCM_G726LE, 23 },
     { AV_CODEC_ID_ADPCM_G722,24 },
+    { AV_CODEC_ID_ADPCM_G726LE, 25 },
+    { AV_CODEC_ID_ADPCM_G726LE, 26 },
     { AV_CODEC_ID_PCM_ALAW,  27 },
+    { AV_CODEC_ID_ADPCM_G726LE, MKBETAG('7','2','6','2') },
     { AV_CODEC_ID_NONE,       0 },
 };
 
@@ -101,7 +106,15 @@ static int au_read_header(AVFormatContext *s)
     }
 
     bps = av_get_bits_per_sample(codec);
-    if (!bps) {
+    if (codec == AV_CODEC_ID_ADPCM_G726LE) {
+        if (id == MKBETAG('7','2','6','2')) {
+            bps = 2;
+        } else {
+            const uint8_t bpcss[] = {4, 0, 3, 5};
+            av_assert0(id >= 23 && id < 23 + 4);
+            bps = bpcss[id - 23];
+        }
+    } else if (!bps) {
         avpriv_request_sample(s, "Unknown bits per sample");
         return AVERROR_PATCHWELCOME;
     }
@@ -124,6 +137,7 @@ static int au_read_header(AVFormatContext *s)
     st->codec->codec_id    = codec;
     st->codec->channels    = channels;
     st->codec->sample_rate = rate;
+    st->codec->bits_per_coded_sample = bps;
     st->codec->bit_rate    = channels * rate * bps;
     st->codec->block_align = FFMAX(bps * st->codec->channels / 8, 1);
     if (data_size != AU_UNKNOWN_SIZE)

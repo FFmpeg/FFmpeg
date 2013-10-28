@@ -520,6 +520,38 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
+@section libssh
+
+Secure File Transfer Protocol via libssh
+
+Allow to read from or write to remote resources using SFTP protocol.
+
+Following syntax is required.
+
+@example
+sftp://[user[:password]@@]server[:port]/path/to/remote/resource.mpeg
+@end example
+
+This protocol accepts the following options.
+
+@table @option
+@item timeout
+Set timeout of socket I/O operations used by the underlying low level
+operation. By default it is set to -1, which means that the timeout
+is not specified.
+
+@item truncate
+Truncate existing files on write, if set to 1. A value of 0 prevents
+truncating. Default value is 1.
+
+@end table
+
+Example: Play a file stored on remote server.
+
+@example
+ffplay sftp://user:password@@server_address:22/home/user/resource.mpeg
+@end example
+
 @section librtmp rtmp, rtmpe, rtmps, rtmpt, rtmpte
 
 Real-Time Messaging Protocol and its variants supported through
@@ -562,7 +594,70 @@ ffplay "rtmp://myserver/live/mystream live=1"
 
 @section rtp
 
-Real-Time Protocol.
+Real-time Transport Protocol.
+
+The required syntax for an RTP URL is:
+rtp://@var{hostname}[:@var{port}][?@var{option}=@var{val}...]
+
+@var{port} specifies the RTP port to use.
+
+The following URL options are supported:
+
+@table @option
+
+@item ttl=@var{n}
+Set the TTL (Time-To-Live) value (for multicast only).
+
+@item rtcpport=@var{n}
+Set the remote RTCP port to @var{n}.
+
+@item localrtpport=@var{n}
+Set the local RTP port to @var{n}.
+
+@item localrtcpport=@var{n}'
+Set the local RTCP port to @var{n}.
+
+@item pkt_size=@var{n}
+Set max packet size (in bytes) to @var{n}.
+
+@item connect=0|1
+Do a @code{connect()} on the UDP socket (if set to 1) or not (if set
+to 0).
+
+@item sources=@var{ip}[,@var{ip}]
+List allowed source IP addresses.
+
+@item block=@var{ip}[,@var{ip}]
+List disallowed (blocked) source IP addresses.
+
+@item write_to_source=0|1
+Send packets to the source address of the latest received packet (if
+set to 1) or to a default remote address (if set to 0).
+
+@item localport=@var{n}
+Set the local RTP port to @var{n}.
+
+This is a deprecated option. Instead, @option{localrtpport} should be
+used.
+
+@end table
+
+Important notes:
+
+@enumerate
+
+@item
+If @option{rtcpport} is not set the RTCP port will be set to the RTP
+port value plus 1.
+
+@item
+If @option{localrtpport} (the local RTP port) is not set any available
+port will be used for the local RTP and RTCP ports.
+
+@item
+If @option{localrtcpport} (the local RTCP port) is not set it will be
+set to the the local RTP port value plus 1.
+@end enumerate
 
 @section rtsp
 
@@ -821,29 +916,48 @@ ffplay tcp://@var{hostname}:@var{port}
 
 @section tls
 
-Transport Layer Security/Secure Sockets Layer
+Transport Layer Security (TLS) / Secure Sockets Layer (SSL)
 
 The required syntax for a TLS/SSL url is:
 @example
 tls://@var{hostname}:@var{port}[?@var{options}]
 @end example
 
+The following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+
 @table @option
 
-@item listen
-Act as a server, listening for an incoming connection.
+@item ca_file, cafile=@var{filename}
+A file containing certificate authority (CA) root certificates to treat
+as trusted. If the linked TLS library contains a default this might not
+need to be specified for verification to work, but not all libraries and
+setups have defaults built in.
+The file must be in OpenSSL PEM format.
 
-@item cafile=@var{filename}
-Certificate authority file. The file must be in OpenSSL PEM format.
+@item tls_verify=@var{1|0}
+If enabled, try to verify the peer that we are communicating with.
+Note, if using OpenSSL, this currently only makes sure that the
+peer certificate is signed by one of the root certificates in the CA
+database, but it does not validate that the certificate actually
+matches the host name we are trying to connect to. (With GnuTLS,
+the host name is validated as well.)
 
-@item cert=@var{filename}
-Certificate file. The file must be in OpenSSL PEM format.
+This is disabled by default since it requires a CA database to be
+provided by the caller in many cases.
 
-@item key=@var{filename}
-Private key file.
+@item cert_file, cert=@var{filename}
+A file containing a certificate to use in the handshake with the peer.
+(When operating as server, in listen mode, this is more often required
+by the peer, while client certificates only are mandated in certain
+setups.)
 
-@item verify=@var{0|1}
-Verify the peer's certificate.
+@item key_file, key=@var{filename}
+A file containing the private key for the certificate.
+
+@item listen=@var{1|0}
+If enabled, listen for connections on the provided port, and assume
+the server role in the handshake instead of the client role.
 
 @end table
 

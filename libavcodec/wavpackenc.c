@@ -2482,7 +2482,7 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
                                 uint8_t *out, int out_size)
 {
     int block_size, start, end, data_size, tcount, temp, m = 0;
-    int i, j, ret, got_extra = 0, nb_samples = s->block_samples;
+    int i, j, ret = 0, got_extra = 0, nb_samples = s->block_samples;
     uint32_t crc = 0xffffffffu;
     struct Decorr *dpp;
     PutByteContext pb;
@@ -2531,9 +2531,11 @@ static int wavpack_encode_block(WavPackEncodeContext *s,
 
     if ((s->flags & WV_FLOAT_DATA) || (s->flags & MAG_MASK) >> MAG_LSB >= 24) {
         av_fast_padded_malloc(&s->orig_l, &s->orig_l_size, sizeof(int32_t) * nb_samples);
-        av_fast_padded_malloc(&s->orig_r, &s->orig_r_size, sizeof(int32_t) * nb_samples);
         memcpy(s->orig_l, samples_l, sizeof(int32_t) * nb_samples);
-        memcpy(s->orig_r, samples_r, sizeof(int32_t) * nb_samples);
+        if (!(s->flags & WV_MONO_DATA)) {
+            av_fast_padded_malloc(&s->orig_r, &s->orig_r_size, sizeof(int32_t) * nb_samples);
+            memcpy(s->orig_r, samples_r, sizeof(int32_t) * nb_samples);
+        }
 
         if (s->flags & WV_FLOAT_DATA)
             got_extra = scan_float(s, samples_l, samples_r, nb_samples);

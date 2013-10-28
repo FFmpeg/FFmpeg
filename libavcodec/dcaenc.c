@@ -954,6 +954,7 @@ static const AVCodecDefault defaults[] = {
 
 AVCodec ff_dca_encoder = {
     .name                  = "dca",
+    .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .type                  = AVMEDIA_TYPE_AUDIO,
     .id                    = AV_CODEC_ID_DTS,
     .priv_data_size        = sizeof(DCAContext),
@@ -962,7 +963,6 @@ AVCodec ff_dca_encoder = {
     .capabilities          = CODEC_CAP_EXPERIMENTAL,
     .sample_fmts           = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32,
                                                             AV_SAMPLE_FMT_NONE },
-    .long_name             = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
     .supported_samplerates = sample_rates,
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,

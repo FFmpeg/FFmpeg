@@ -88,6 +88,7 @@ FF_MPV_GENERIC_CLASS(flv)
 
 AVCodec ff_flv_encoder = {
     .name           = "flv",
+    .long_name      = NULL_IF_CONFIG_SMALL("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_FLV1,
     .priv_data_size = sizeof(MpegEncContext),
@@ -95,6 +96,5 @@ AVCodec ff_flv_encoder = {
     .encode2        = ff_MPV_encode_picture,
     .close          = ff_MPV_encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("FLV / Sorenson Spark / Sorenson H.263 (Flash Video)"),
     .priv_class     = &flv_class,
 };

@@ -24,14 +24,14 @@
 #include "put_bits.h"
 #include "pnm.h"
 
-static void samplecpy(void *dst, const void *src, int n, int maxval)
+static void samplecpy(uint8_t *dst, const uint8_t *src, int n, int maxval)
 {
     if (maxval <= 255) {
         memcpy(dst, src, n);
     } else {
         int i;
         for (i=0; i<n/2; i++) {
-            ((uint16_t *)dst)[i] = av_be2ne16(((uint16_t *)src)[i]);
+            ((uint16_t *)dst)[i] = AV_RB16(src+2*i);
         }
     }
 }
@@ -253,59 +253,59 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
 #if CONFIG_PGM_DECODER
 AVCodec ff_pgm_decoder = {
     .name           = "pgm",
+    .long_name      = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PGM,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
 };
 #endif
 
 #if CONFIG_PGMYUV_DECODER
 AVCodec ff_pgmyuv_decoder = {
     .name           = "pgmyuv",
+    .long_name      = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PGMYUV,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
 };
 #endif
 
 #if CONFIG_PPM_DECODER
 AVCodec ff_ppm_decoder = {
     .name           = "ppm",
+    .long_name      = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PPM,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
 };
 #endif
 
 #if CONFIG_PBM_DECODER
 AVCodec ff_pbm_decoder = {
     .name           = "pbm",
+    .long_name      = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PBM,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
 };
 #endif
 
 #if CONFIG_PAM_DECODER
 AVCodec ff_pam_decoder = {
     .name           = "pam",
+    .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PAM,
     .priv_data_size = sizeof(PNMContext),
     .decode         = pnm_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name      = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };
 #endif

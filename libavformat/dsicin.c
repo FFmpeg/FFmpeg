@@ -155,6 +155,8 @@ static int cin_read_frame_header(CinDemuxContext *cin, AVIOContext *pb) {
 
     if (avio_rl32(pb) != 0xAA55AA55)
         return AVERROR_INVALIDDATA;
+    if (hdr->video_frame_size < 0 || hdr->audio_frame_size < 0)
+        return AVERROR_INVALIDDATA;
 
     return 0;
 }

@@ -442,6 +442,7 @@ static const AVClass tta_decoder_class = {
 
 AVCodec ff_tta_decoder = {
     .name           = "tta",
+    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_TTA,
     .priv_data_size = sizeof(TTAContext),
@@ -450,6 +451,5 @@ AVCodec ff_tta_decoder = {
     .decode         = tta_decode_frame,
     .init_thread_copy = ONLY_IF_THREADS_ENABLED(init_thread_copy),
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
-    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
     .priv_class     = &tta_decoder_class,
 };

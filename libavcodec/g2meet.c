@@ -443,8 +443,8 @@ static int g2m_init_buffers(G2MContext *c)
     int aligned_height;
 
     if (!c->framebuf || c->old_width < c->width || c->old_height < c->height) {
-        c->framebuf_stride = FFALIGN(c->width * 3, 16);
-        aligned_height     = FFALIGN(c->height,    16);
+        c->framebuf_stride = FFALIGN(c->width + 15, 16) * 3;
+        aligned_height     = c->height + 15;
         av_free(c->framebuf);
         c->framebuf = av_mallocz(c->framebuf_stride * aligned_height);
         if (!c->framebuf)
@@ -453,7 +453,7 @@ static int g2m_init_buffers(G2MContext *c)
     if (!c->synth_tile || !c->jpeg_tile ||
         c->old_tile_w < c->tile_width ||
         c->old_tile_h < c->tile_height) {
-        c->tile_stride = FFALIGN(c->tile_width * 3, 16);
+        c->tile_stride = FFALIGN(c->tile_width, 16) * 3;
         aligned_height = FFALIGN(c->tile_height,    16);
         av_free(c->synth_tile);
         av_free(c->jpeg_tile);
@@ -490,7 +490,7 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
     cursor_hot_y  = bytestream2_get_byte(gb);
     cursor_fmt    = bytestream2_get_byte(gb);
 
-    cursor_stride = cursor_w * 4;
+    cursor_stride = FFALIGN(cursor_w, c->cursor_fmt==1 ? 32 : 1) * 4;
 
     if (cursor_w < 1 || cursor_w > 256 ||
         cursor_h < 1 || cursor_h > 256) {
@@ -513,11 +513,6 @@ static int g2m_load_cursor(AVCodecContext *avctx, G2MContext *c,
     if (cursor_fmt != 1 && cursor_fmt != 32) {
         avpriv_report_missing_feature(avctx, "Cursor format %d",
                                       cursor_fmt);
-        return AVERROR_PATCHWELCOME;
-    }
-
-    if (cursor_fmt == 1 && cursor_w % 32) {
-        avpriv_report_missing_feature(avctx, "odd monochrome cursor width %d", cursor_w);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -807,10 +802,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
         c->got_header = 1;
 
     if (c->width && c->height && c->framebuf) {
-        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
             return ret;
-        }
 
         pic->key_frame = got_header;
         pic->pict_type = got_header ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;

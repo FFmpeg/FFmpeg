@@ -178,6 +178,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     unsigned int channel_mask;
     int i, log2_max_num_subframes;
 
+    if (!avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "block_align is not set\n");
+        return AVERROR(EINVAL);
+    }
+
     s->avctx = avctx;
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
@@ -1177,9 +1182,13 @@ static int decode_packet(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
 
-        /* sanity check for the buffer length */
-        if (buf_size < avctx->block_align)
+        if (!buf_size)
             return 0;
+        /* sanity check for the buffer length */
+        if (buf_size < avctx->block_align) {
+            av_log(avctx, AV_LOG_ERROR, "buf size %d invalid\n", buf_size);
+            return AVERROR_INVALIDDATA;
+        }
 
         s->next_packet_start = buf_size - avctx->block_align;
         buf_size             = avctx->block_align;
@@ -1297,6 +1306,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 AVCodec ff_wmalossless_decoder = {
     .name           = "wmalossless",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio Lossless"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_WMALOSSLESS,
     .priv_data_size = sizeof(WmallDecodeCtx),
@@ -1305,7 +1315,6 @@ AVCodec ff_wmalossless_decoder = {
     .decode         = decode_packet,
     .flush          = flush,
     .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio Lossless"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },

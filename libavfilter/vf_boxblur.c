@@ -380,8 +380,7 @@ AVFilter avfilter_vf_boxblur = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
-
-    .inputs    = avfilter_vf_boxblur_inputs,
-    .outputs   = avfilter_vf_boxblur_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .inputs        = avfilter_vf_boxblur_inputs,
+    .outputs       = avfilter_vf_boxblur_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

@@ -381,15 +381,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static const AVOption ocv_options[] = {
     { "filter_name",   NULL, OFFSET(name),   AV_OPT_TYPE_STRING, .flags = FLAGS },
     { "filter_params", NULL, OFFSET(params), AV_OPT_TYPE_STRING, .flags = FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(ocv);
 
 static const AVFilterPad avfilter_vf_ocv_inputs[] = {
     {
-        .name       = "default",
-        .type       = AVMEDIA_TYPE_VIDEO,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
     },
     { NULL }
@@ -404,17 +404,13 @@ static const AVFilterPad avfilter_vf_ocv_outputs[] = {
 };
 
 AVFilter avfilter_vf_ocv = {
-    .name        = "ocv",
-    .description = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
-
-    .priv_size = sizeof(OCVContext),
-    .priv_class = &ocv_class,
-
+    .name          = "ocv",
+    .description   = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
+    .priv_size     = sizeof(OCVContext),
+    .priv_class    = &ocv_class,
     .query_formats = query_formats,
-    .init = init,
-    .uninit = uninit,
-
-    .inputs    = avfilter_vf_ocv_inputs,
-
-    .outputs   = avfilter_vf_ocv_outputs,
+    .init          = init,
+    .uninit        = uninit,
+    .inputs        = avfilter_vf_ocv_inputs,
+    .outputs       = avfilter_vf_ocv_outputs,
 };

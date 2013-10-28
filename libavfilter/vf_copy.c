@@ -46,10 +46,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVFilterPad avfilter_vf_copy_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -63,9 +62,8 @@ static const AVFilterPad avfilter_vf_copy_outputs[] = {
 };
 
 AVFilter avfilter_vf_copy = {
-    .name      = "copy",
+    .name        = "copy",
     .description = NULL_IF_CONFIG_SMALL("Copy the input video unchanged to the output."),
-
-    .inputs    = avfilter_vf_copy_inputs,
-    .outputs   = avfilter_vf_copy_outputs,
+    .inputs      = avfilter_vf_copy_inputs,
+    .outputs     = avfilter_vf_copy_outputs,
 };

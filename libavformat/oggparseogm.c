@@ -38,34 +38,35 @@ ogm_header(AVFormatContext *s, int idx)
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st = s->streams[idx];
-    const uint8_t *p = os->buf + os->pstart;
+    GetByteContext p;
     uint64_t time_unit;
     uint64_t spu;
     uint32_t size;
 
-    if(!(*p & 1))
+    bytestream2_init(&p, os->buf + os->pstart, os->psize);
+    if (!(bytestream2_peek_byte(&p) & 1))
         return 0;
 
-    if(*p == 1) {
-        p++;
+    if (bytestream2_peek_byte(&p) == 1) {
+        bytestream2_skip(&p, 1);
 
-        if(*p == 'v'){
+        if (bytestream2_peek_byte(&p) == 'v'){
             int tag;
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            p += 8;
-            tag = bytestream_get_le32(&p);
+            bytestream2_skip(&p, 8);
+            tag = bytestream2_get_le32(&p);
             st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, tag);
             st->codec->codec_tag = tag;
-        } else if (*p == 't') {
+        } else if (bytestream2_peek_byte(&p) == 't') {
             st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
             st->codec->codec_id = AV_CODEC_ID_TEXT;
-            p += 12;
+            bytestream2_skip(&p, 12);
         } else {
-            uint8_t acid[5];
+            uint8_t acid[5] = { 0 };
             int cid;
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-            p += 8;
-            bytestream_get_buffer(&p, acid, 4);
+            bytestream2_skip(&p, 8);
+            bytestream2_get_buffer(&p, acid, 4);
             acid[4] = 0;
             cid = strtol(acid, NULL, 16);
             st->codec->codec_id = ff_codec_get_id(ff_codec_wav_tags, cid);
@@ -74,38 +75,38 @@ ogm_header(AVFormatContext *s, int idx)
                 st->need_parsing = AVSTREAM_PARSE_FULL;
         }
 
-        size        = bytestream_get_le32(&p);
+        size        = bytestream2_get_le32(&p);
         size        = FFMIN(size, os->psize);
-        time_unit   = bytestream_get_le64(&p);
-        spu         = bytestream_get_le64(&p);
-        p += 4;                     /* default_len */
-        p += 8;                     /* buffersize + bits_per_sample */
+        time_unit   = bytestream2_get_le64(&p);
+        spu         = bytestream2_get_le64(&p);
+        bytestream2_skip(&p, 4);    /* default_len */
+        bytestream2_skip(&p, 8);    /* buffersize + bits_per_sample */
 
         if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
-            st->codec->width = bytestream_get_le32(&p);
-            st->codec->height = bytestream_get_le32(&p);
+            st->codec->width = bytestream2_get_le32(&p);
+            st->codec->height = bytestream2_get_le32(&p);
             avpriv_set_pts_info(st, 64, time_unit, spu * 10000000);
         } else {
-            st->codec->channels = bytestream_get_le16(&p);
-            p += 2;                 /* block_align */
-            st->codec->bit_rate = bytestream_get_le32(&p) * 8;
+            st->codec->channels = bytestream2_get_le16(&p);
+            bytestream2_skip(&p, 2); /* block_align */
+            st->codec->bit_rate = bytestream2_get_le32(&p) * 8;
             st->codec->sample_rate = time_unit ? spu * 10000000 / time_unit : 0;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if (size >= 56 && st->codec->codec_id == AV_CODEC_ID_AAC) {
-                p += 4;
+                bytestream2_skip(&p, 4);
                 size -= 4;
             }
             if (size > 52) {
                 av_assert0(FF_INPUT_BUFFER_PADDING_SIZE <= 52);
                 size -= 52;
-                st->codec->extradata_size = size;
-                st->codec->extradata = av_malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
-                bytestream_get_buffer(&p, st->codec->extradata, size);
+                ff_alloc_extradata(st->codec, size);
+                bytestream2_get_buffer(&p, st->codec->extradata, st->codec->extradata_size);
             }
         }
-    } else if (*p == 3) {
-        if (os->psize > 8)
-            ff_vorbis_comment(s, &st->metadata, p+7, os->psize-8);
+    } else if (bytestream2_peek_byte(&p) == 3) {
+        bytestream2_skip(&p, 7);
+        if (bytestream2_get_bytes_left(&p) > 1)
+            ff_vorbis_comment(s, &st->metadata, p.buffer, bytestream2_get_bytes_left(&p) - 1);
     }
 
     return 1;

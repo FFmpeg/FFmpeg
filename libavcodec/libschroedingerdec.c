@@ -374,6 +374,7 @@ static void libschroedinger_flush(AVCodecContext *avctx)
 
 AVCodec ff_libschroedinger_decoder = {
     .name           = "libschroedinger",
+    .long_name      = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_DIRAC,
     .priv_data_size = sizeof(SchroDecoderParams),
@@ -382,5 +383,4 @@ AVCodec ff_libschroedinger_decoder = {
     .decode         = libschroedinger_decode_frame,
     .capabilities   = CODEC_CAP_DELAY,
     .flush          = libschroedinger_flush,
-    .long_name      = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),
 };

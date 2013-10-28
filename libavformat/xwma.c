@@ -199,8 +199,10 @@ static int xwma_read_header(AVFormatContext *s)
         /* Estimate the duration from the total number of output bytes. */
         const uint64_t total_decoded_bytes = dpds_table[dpds_table_size - 1];
 
-        if(!bytes_per_sample) {
-            av_log(s, AV_LOG_ERROR, "bytes_per_sample is 0\n");
+        if (!bytes_per_sample) {
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid bits_per_coded_sample %d for %d channels\n",
+                   st->codec->bits_per_coded_sample, st->codec->channels);
             return AVERROR_INVALIDDATA;
         }
 

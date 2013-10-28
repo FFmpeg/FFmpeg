@@ -1,19 +1,18 @@
 /*
+ * This file is part of FFmpeg.
  *
- * This file is part of Libav.
- *
- * Libav is free software; you can redistribute it and/or
+ * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * Libav is distributed in the hope that it will be useful,
+ * FFmpeg is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with Libav; if not, write to the Free Software
+ * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -298,9 +297,9 @@ static const AVClass resample_class = {
 
 static const AVFilterPad avfilter_af_resample_inputs[] = {
     {
-        .name           = "default",
-        .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = filter_frame,
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_AUDIO,
+        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -320,11 +319,9 @@ AVFilter avfilter_af_resample = {
     .description   = NULL_IF_CONFIG_SMALL("Audio resampling and conversion."),
     .priv_size     = sizeof(ResampleContext),
     .priv_class    = &resample_class,
-
-    .init_dict      = init,
-    .uninit         = uninit,
-    .query_formats  = query_formats,
-
-    .inputs    = avfilter_af_resample_inputs,
-    .outputs   = avfilter_af_resample_outputs,
+    .init_dict     = init,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .inputs        = avfilter_af_resample_inputs,
+    .outputs       = avfilter_af_resample_outputs,
 };

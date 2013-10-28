@@ -779,6 +779,7 @@ static const AVClass class_vp8 = {
 
 AVCodec ff_libvpx_vp8_encoder = {
     .name           = "libvpx",
+    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
     .priv_data_size = sizeof(VP8Context),
@@ -787,7 +788,6 @@ AVCodec ff_libvpx_vp8_encoder = {
     .close          = vp8_free,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .priv_class     = &class_vp8,
     .defaults       = defaults,
 };
@@ -808,6 +808,7 @@ static const AVClass class_vp9 = {
 
 AVCodec ff_libvpx_vp9_encoder = {
     .name           = "libvpx-vp9",
+    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP9,
     .priv_data_size = sizeof(VP8Context),
@@ -816,7 +817,6 @@ AVCodec ff_libvpx_vp9_encoder = {
     .close          = vp8_free,
     .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_AUTO_THREADS | CODEC_CAP_EXPERIMENTAL,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libvpx VP9"),
     .priv_class     = &class_vp9,
     .defaults       = defaults,
 };

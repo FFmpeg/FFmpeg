@@ -516,9 +516,9 @@ static int init_opencl_env(OpenclContext *opencl_ctx, AVOpenCLExternalEnv *ext_o
             /*
              * Use available platform.
              */
-            av_log(opencl_ctx, AV_LOG_VERBOSE, "Platform Name: %s, device id: 0x%x\n",
+            av_log(opencl_ctx, AV_LOG_VERBOSE, "Platform Name: %s, Device Name: %s\n",
                    opencl_ctx->device_list.platform_node[opencl_ctx->platform_idx]->platform_name,
-                   (unsigned int)opencl_ctx->device_id);
+                   device_node->device_name);
             cps[0] = CL_CONTEXT_PLATFORM;
             cps[1] = (cl_context_properties)opencl_ctx->platform_id;
             cps[2] = 0;

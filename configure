@@ -82,6 +82,7 @@ Standard options:
   --prefix=PREFIX          install in PREFIX [$prefix]
   --bindir=DIR             install binaries in DIR [PREFIX/bin]
   --datadir=DIR            install data files in DIR [PREFIX/share/ffmpeg]
+  --docdir=DIR             install documentation in DIR [PREFIX/share/doc/ffmpeg]
   --libdir=DIR             install libs in DIR [PREFIX/lib]
   --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]
   --incdir=DIR             install includes in DIR [PREFIX/include]
@@ -192,6 +193,7 @@ External library support:
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
   --disable-iconv          disable iconv [autodetect]
+  --enable-ladspa          enable LADSPA audio filtering
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libass          enable libass subtitles rendering [no]
   --enable-libbluray       enable BluRay reading using libbluray [no]
@@ -201,7 +203,7 @@ External library support:
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
   --enable-libfaac         enable AAC encoding via libfaac [no]
-  --enable-libfdk-aac      enable AAC encoding via libfdk-aac [no]
+  --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgme          enable Game Music Emu via libgme [no]
@@ -224,6 +226,7 @@ External library support:
   --enable-libshine        enable fixed-point MP3 encoding via libshine [no]
   --enable-libsoxr         enable Include libsoxr resampling [no]
   --enable-libspeex        enable Speex de/encoding via libspeex [no]
+  --enable-libssh          enable SFTP protocol via libssh [no]
   --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libtwolame      enable MP2 encoding via libtwolame [no]
@@ -241,6 +244,7 @@ External library support:
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
   --enable-libzmq          enable message passing via libzmq [no]
+  --enable-libzvbi         enable teletext support via libzvbi [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-opencl          enable OpenCL code
   --enable-openssl         enable openssl [no]
@@ -256,6 +260,7 @@ Advanced options (experts only):
   --target-exec=CMD        command to run executables on target
   --target-path=DIR        path to view of build directory on target
   --target-samples=DIR     path to samples directory on target
+  --tempprefix=PATH        force fixed dir/prefix instead of mktemp for checks
   --toolchain=NAME         set tool defaults according to NAME
   --nm=NM                  use nm tool NM [$nm_default]
   --ar=AR                  use archive tool AR [$ar_default]
@@ -310,6 +315,7 @@ Optimization options (experts only):
   --disable-sse42          disable SSE4.2 optimizations
   --disable-avx            disable AVX optimizations
   --disable-fma4           disable FMA4 optimizations
+  --disable-avx2           disable AVX2 optimizations
   --disable-armv5te        disable armv5te optimizations
   --disable-armv6          disable armv6 optimizations
   --disable-armv6t2        disable armv6t2 optimizations
@@ -419,7 +425,7 @@ sh_quote(){
 }
 
 cleanws(){
-    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//'
+    echo "$@" | sed 's/^ *//;s/  */ /g;s/ *$//;s/\r//g'
 }
 
 filter(){
@@ -993,7 +999,7 @@ check_pkg_config(){
     headers="$2"
     funcs="$3"
     shift 3
-    $pkg_config --exists $pkg 2>/dev/null || return
+    check_cmd $pkg_config --exists --print-errors $pkg || return
     pkg_cflags=$($pkg_config --cflags $pkg)
     pkg_libs=$($pkg_config --libs $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
@@ -1159,6 +1165,7 @@ EXTERNAL_LIBRARY_LIST="
     frei0r
     gnutls
     iconv
+    ladspa
     libaacplus
     libass
     libbluray
@@ -1189,6 +1196,7 @@ EXTERNAL_LIBRARY_LIST="
     libshine
     libsoxr
     libspeex
+    libssh
     libstagefright_h264
     libtheora
     libtwolame
@@ -1204,6 +1212,7 @@ EXTERNAL_LIBRARY_LIST="
     libxavs
     libxvid
     libzmq
+    libzvbi
     openal
     opencl
     openssl
@@ -1336,7 +1345,9 @@ ARCH_EXT_LIST_X86='
     amd3dnow
     amd3dnowext
     avx
+    avx2
     fma4
+    i686
     mmx
     mmxext
     sse
@@ -1461,7 +1472,6 @@ HAVE_LIST="
     glob
     gnu_as
     gsm_h
-    i686
     ibm_asm
     inet_aton
     io_h
@@ -1556,6 +1566,7 @@ CONFIG_EXTRA="
     ac3dsp
     audio_frame_queue
     dsputil
+    exif
     frame_thread_encoder
     gcrypt
     golomb
@@ -1601,6 +1612,7 @@ CMDLINE_SELECT="
 PATHS_LIST='
     bindir
     datadir
+    docdir
     incdir
     libdir
     mandir
@@ -1644,6 +1656,7 @@ CMDLINE_SET="
     target_os
     target_path
     target_samples
+    tempprefix
     toolchain
     valgrind
     yasmexe
@@ -1678,7 +1691,9 @@ ppc4xx_deps="ppc"
 
 vis_deps="sparc"
 
-x86_64_suggest="fast_cmov i686"
+cpunop_deps="i686"
+x86_64_select="i686"
+x86_64_suggest="fast_cmov"
 
 amd3dnow_deps="mmx"
 amd3dnowext_deps="amd3dnow"
@@ -1692,6 +1707,7 @@ sse4_deps="ssse3"
 sse42_deps="sse4"
 avx_deps="sse42"
 fma4_deps="avx"
+avx2_deps="avx"
 
 mmx_external_deps="yasm"
 mmx_inline_deps="inline_asm"
@@ -1740,7 +1756,7 @@ alac_encoder_select="lpc"
 als_decoder_select="dsputil"
 amrnb_decoder_select="lsp"
 amrwb_decoder_select="lsp"
-amv_decoder_select="dsputil hpeldsp"
+amv_decoder_select="dsputil hpeldsp exif"
 amv_encoder_select="aandcttables"
 ape_decoder_select="dsputil"
 asv1_decoder_select="dsputil"
@@ -1749,6 +1765,7 @@ asv2_decoder_select="dsputil"
 asv2_encoder_select="dsputil"
 atrac1_decoder_select="mdct sinewin"
 atrac3_decoder_select="mdct"
+avrn_decoder_select="exif"
 bink_decoder_select="dsputil hpeldsp"
 binkaudio_dct_decoder_select="mdct rdft dct sinewin"
 binkaudio_rdft_decoder_select="mdct rdft sinewin"
@@ -1764,29 +1781,28 @@ dnxhd_decoder_select="dsputil"
 dnxhd_encoder_select="aandcttables dsputil mpegvideoenc"
 dvvideo_decoder_select="dsputil"
 dvvideo_encoder_select="dsputil"
-dxa_decoder_deps="zlib"
+dxa_decoder_select="zlib"
 eac3_decoder_select="ac3_decoder"
 eac3_encoder_select="ac3_encoder"
 eamad_decoder_select="aandcttables dsputil mpegvideo"
 eatgq_decoder_select="aandcttables"
 eatqi_decoder_select="aandcttables error_resilience mpegvideo"
-exr_decoder_deps="zlib"
+exr_decoder_select="zlib"
 ffv1_decoder_select="dsputil golomb rangecoder"
 ffv1_encoder_select="dsputil rangecoder"
 ffvhuff_decoder_select="dsputil"
 ffvhuff_encoder_select="dsputil huffman"
 flac_decoder_select="golomb"
 flac_encoder_select="dsputil golomb lpc"
-flashsv_decoder_deps="zlib"
-flashsv_encoder_deps="zlib"
-flashsv2_encoder_deps="zlib"
-flashsv2_decoder_deps="zlib"
+flashsv_decoder_select="zlib"
+flashsv_encoder_select="zlib"
+flashsv2_encoder_select="zlib"
+flashsv2_decoder_select="zlib"
 flv_decoder_select="h263_decoder"
 flv_encoder_select="h263_encoder"
 fourxm_decoder_select="dsputil"
 fraps_decoder_select="dsputil huffman"
-g2m_decoder_deps="zlib"
-g2m_decoder_select="dsputil"
+g2m_decoder_select="dsputil zlib"
 g729_decoder_select="dsputil"
 h261_decoder_select="error_resilience mpegvideo"
 h261_encoder_select="aandcttables mpegvideoenc"
@@ -1796,13 +1812,14 @@ h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
 h264_decoder_select="golomb h264chroma h264dsp h264pred h264qpel videodsp"
 h264_decoder_suggest="error_resilience"
+hevc_decoder_select="dsputil golomb videodsp"
 huffyuv_decoder_select="dsputil"
 huffyuv_encoder_select="dsputil huffman"
 iac_decoder_select="dsputil fft mdct sinewin"
 imc_decoder_select="dsputil fft mdct sinewin"
 indeo3_decoder_select="hpeldsp"
 interplay_video_decoder_select="hpeldsp"
-jpegls_decoder_select="dsputil golomb hpeldsp"
+jpegls_decoder_select="dsputil golomb hpeldsp exif"
 jpegls_encoder_select="golomb"
 jv_decoder_select="dsputil"
 lagarith_decoder_select="dsputil"
@@ -1811,8 +1828,8 @@ loco_decoder_select="golomb"
 mdec_decoder_select="dsputil error_resilience mpegvideo"
 metasound_decoder_select="lsp mdct sinewin"
 mimic_decoder_select="dsputil hpeldsp"
-mjpeg_decoder_select="dsputil hpeldsp"
-mjpegb_decoder_select="dsputil hpeldsp"
+mjpeg_decoder_select="dsputil hpeldsp exif"
+mjpegb_decoder_select="dsputil hpeldsp exif"
 mjpeg_encoder_select="aandcttables dsputil mpegvideoenc"
 mlp_decoder_select="dsputil mlp_parser"
 motionpixels_decoder_select="dsputil"
@@ -1842,13 +1859,12 @@ msmpeg4v2_encoder_select="h263_encoder"
 msmpeg4v3_decoder_select="h263_decoder"
 msmpeg4v3_encoder_select="h263_encoder"
 mss2_decoder_select="error_resilience vc1_decoder"
-mxpeg_decoder_select="dsputil hpeldsp"
+mxpeg_decoder_select="dsputil hpeldsp exif"
 nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="audio_frame_queue mdct sinewin"
 nuv_decoder_select="dsputil lzo"
-png_decoder_deps="zlib"
-png_encoder_deps="zlib"
-png_encoder_select="dsputil"
+png_decoder_select="zlib"
+png_encoder_select="dsputil zlib"
 prores_decoder_select="dsputil"
 prores_encoder_select="dsputil"
 qcelp_decoder_select="lsp"
@@ -1869,7 +1885,7 @@ snow_encoder_select="aandcttables dsputil dwt h264qpel hpeldsp mpegvideoenc rang
 sonic_decoder_select="golomb"
 sonic_encoder_select="golomb"
 sonic_ls_encoder_select="golomb"
-sp5x_decoder_select="dsputil hpeldsp"
+sp5x_decoder_select="dsputil hpeldsp exif"
 svq1_decoder_select="hpeldsp"
 svq1_encoder_select="aandcttables dsputil hpeldsp mpegvideoenc"
 svq3_decoder_select="golomb h264chroma h264dsp h264pred h264qpel hpeldsp mpegvideo videodsp"
@@ -1878,11 +1894,11 @@ tak_decoder_select="dsputil"
 theora_decoder_select="vp3_decoder"
 tiff_decoder_suggest="zlib"
 tiff_encoder_suggest="zlib"
-thp_decoder_select="dsputil hpeldsp"
+thp_decoder_select="dsputil hpeldsp exif"
 truehd_decoder_select="mlp_parser"
 truemotion2_decoder_select="dsputil"
 truespeech_decoder_select="dsputil"
-tscc_decoder_deps="zlib"
+tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
 utvideo_decoder_select="dsputil"
 utvideo_encoder_select="dsputil huffman"
@@ -1897,6 +1913,7 @@ vp6_decoder_select="h264chroma hpeldsp huffman videodsp vp3dsp"
 vp6a_decoder_select="vp6_decoder"
 vp6f_decoder_select="vp6_decoder"
 vp8_decoder_select="h264pred videodsp"
+vp9_decoder_select="videodsp"
 webp_decoder_select="vp8_decoder"
 wmapro_decoder_select="mdct sinewin"
 wmav1_decoder_select="mdct sinewin"
@@ -1910,11 +1927,11 @@ wmv2_decoder_select="h263_decoder videodsp"
 wmv2_encoder_select="h263_encoder"
 wmv3_decoder_select="vc1_decoder"
 wmv3image_decoder_select="wmv3_decoder"
-zerocodec_decoder_deps="zlib"
-zlib_decoder_deps="zlib"
-zlib_encoder_deps="zlib"
-zmbv_decoder_deps="zlib"
-zmbv_encoder_deps="zlib"
+zerocodec_decoder_select="zlib"
+zlib_decoder_select="zlib"
+zlib_encoder_select="zlib"
+zmbv_decoder_select="zlib"
+zmbv_encoder_select="zlib"
 
 # hardware accelerators
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
@@ -1937,8 +1954,14 @@ h264_vda_decoder_deps="vda"
 h264_vda_decoder_select="h264_decoder"
 h264_vda_hwaccel_deps="vda"
 h264_vda_hwaccel_select="h264_decoder"
+h264_vdpau_decoder_deps="vdpau"
+h264_vdpau_decoder_select="h264_decoder"
 h264_vdpau_hwaccel_deps="vdpau"
 h264_vdpau_hwaccel_select="h264_decoder"
+mpeg_vdpau_decoder_deps="vdpau"
+mpeg_vdpau_decoder_select="mpeg2video_decoder"
+mpeg1_vdpau_decoder_deps="vdpau"
+mpeg1_vdpau_decoder_select="mpeg1video_decoder"
 mpeg1_vdpau_hwaccel_deps="vdpau"
 mpeg1_vdpau_hwaccel_select="mpeg1video_decoder"
 mpeg2_crystalhd_decoder_select="crystalhd"
@@ -1951,6 +1974,8 @@ mpeg2_vdpau_hwaccel_select="mpeg2video_decoder"
 mpeg4_crystalhd_decoder_select="crystalhd"
 mpeg4_vaapi_hwaccel_deps="vaapi"
 mpeg4_vaapi_hwaccel_select="mpeg4_decoder"
+mpeg4_vdpau_decoder_deps="vdpau"
+mpeg4_vdpau_decoder_select="mpeg4_decoder"
 mpeg4_vdpau_hwaccel_deps="vdpau"
 mpeg4_vdpau_hwaccel_select="mpeg4_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
@@ -1959,11 +1984,14 @@ vc1_dxva2_hwaccel_deps="dxva2"
 vc1_dxva2_hwaccel_select="vc1_decoder"
 vc1_vaapi_hwaccel_deps="vaapi"
 vc1_vaapi_hwaccel_select="vc1_decoder"
+vc1_vdpau_decoder_deps="vdpau"
+vc1_vdpau_decoder_select="vc1_decoder"
 vc1_vdpau_hwaccel_deps="vdpau"
 vc1_vdpau_hwaccel_select="vc1_decoder"
 wmv3_crystalhd_decoder_select="crystalhd"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
 wmv3_vaapi_hwaccel_select="vc1_vaapi_hwaccel"
+wmv3_vdpau_decoder_select="vc1_vdpau_decoder"
 wmv3_vdpau_hwaccel_select="vc1_vdpau_hwaccel"
 
 # parsers
@@ -1977,6 +2005,7 @@ libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
 libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
+libfdk_aac_decoder_deps="libfdk_aac"
 libfdk_aac_encoder_deps="libfdk_aac"
 libfdk_aac_encoder_select="audio_frame_queue"
 libgme_demuxer_deps="libgme"
@@ -2026,6 +2055,7 @@ libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 libutvideo_decoder_deps="libutvideo"
 libutvideo_encoder_deps="libutvideo"
+libzvbi_teletext_decoder_deps="libzvbi"
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
@@ -2044,6 +2074,7 @@ dxa_demuxer_select="riffdec"
 eac3_demuxer_select="ac3_parser"
 f4v_muxer_select="mov_muxer"
 flac_demuxer_select="flac_parser"
+hls_muxer_select="mpegts_muxer"
 ipod_muxer_select="mov_muxer"
 ismv_muxer_select="mov_muxer"
 libnut_demuxer_deps="libnut"
@@ -2097,6 +2128,7 @@ dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid"
 dv1394_indev_deps="dv1394"
 dv1394_indev_select="dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
+fbdev_outdev_deps="linux_fb_h"
 iec61883_indev_deps="libiec61883"
 jack_indev_deps="jack_jack_h sem_timedwait"
 lavfi_indev_deps="avfilter"
@@ -2107,6 +2139,7 @@ openal_indev_deps="openal"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 pulse_indev_deps="libpulse"
+pulse_outdev_deps="libpulse"
 sdl_outdev_deps="sdl"
 sndio_indev_deps="sndio_h"
 sndio_outdev_deps="sndio_h"
@@ -2136,6 +2169,7 @@ librtmpe_protocol_deps="librtmp"
 librtmps_protocol_deps="librtmp"
 librtmpt_protocol_deps="librtmp"
 librtmpte_protocol_deps="librtmp"
+libssh_protocol_deps="libssh"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_select="network"
 rtmp_protocol_deps="!librtmp_protocol"
@@ -2163,13 +2197,15 @@ amovie_filter_deps="avcodec avformat"
 aresample_filter_deps="swresample"
 ass_filter_deps="libass"
 asyncts_filter_deps="avresample"
-atempo_filter_deps="avcodec rdft"
+atempo_filter_deps="avcodec"
+atempo_filter_select="rdft"
 azmq_filter_deps="libzmq"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 colormatrix_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
-dctdnoiz_filter_deps="avcodec fft"
+dctdnoiz_filter_deps="avcodec"
+dctdnoiz_filter_select="fft"
 delogo_filter_deps="gpl"
 deshake_filter_deps="avcodec"
 deshake_filter_select="dsputil"
@@ -2183,28 +2219,31 @@ frei0r_src_filter_extralibs='$ldl'
 geq_filter_deps="gpl"
 histeq_filter_deps="gpl"
 hqdn3d_filter_deps="gpl"
-hue_filter_deps="gpl"
 interlace_filter_deps="gpl"
 kerndeint_filter_deps="gpl"
+ladspa_filter_deps="ladspa dlopen"
 mcdeint_filter_deps="avcodec gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec swscale inline_asm"
 mpdecimate_filter_deps="gpl avcodec"
 mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
-noise_filter_deps="gpl"
 perspective_filter_deps="gpl"
 resample_filter_deps="avresample"
 ocv_filter_deps="libopencv"
 owdenoise_filter_deps="gpl"
 pan_filter_deps="swresample"
+phase_filter_deps="gpl"
 pp_filter_deps="gpl postproc"
+pullup_filter_deps="gpl"
 removelogo_filter_deps="avcodec avformat swscale"
 sab_filter_deps="gpl swscale"
 scale_filter_deps="swscale"
 smartblur_filter_deps="gpl swscale"
-showspectrum_filter_deps="avcodec rdft"
-spp_filter_deps="gpl avcodec fft"
+showspectrum_filter_deps="avcodec"
+showspectrum_filter_select="rdft"
+spp_filter_deps="gpl avcodec"
+spp_filter_select="fft"
 stereo3d_filter_deps="gpl"
 subtitles_filter_deps="avformat avcodec libass"
 super2xsai_filter_deps="gpl"
@@ -2227,7 +2266,7 @@ postproc_deps="avutil gpl"
 swscale_deps="avutil"
 
 # programs
-ffmpeg_deps="avcodec avfilter avformat swscale swresample"
+ffmpeg_deps="avcodec avfilter avformat swresample"
 ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
                null_filter
                setpts_filter trim_filter"
@@ -2253,6 +2292,7 @@ logfile="config.log"
 prefix_default="/usr/local"
 bindir_default='${prefix}/bin'
 datadir_default='${prefix}/share/ffmpeg'
+docdir_default='${prefix}/share/doc/ffmpeg'
 incdir_default='${prefix}/include'
 libdir_default='${prefix}/lib'
 mandir_default='${prefix}/share/man'
@@ -2621,7 +2661,11 @@ HOSTEXESUF=$(exesuf $host_os)
 : ${TMPDIR:=$TMP}
 : ${TMPDIR:=/tmp}
 
-if ! check_cmd mktemp -u XXXXXX; then
+if [ -n "$tempprefix" ] ; then
+    mktemp(){
+        echo $tempprefix.${HOSTNAME}.${UID}
+    }
+elif ! check_cmd mktemp -u XXXXXX; then
     # simple replacement for missing mktemp
     # NOT SAFE FOR GENERAL USE
     mktemp(){
@@ -2684,6 +2728,18 @@ ccc_flags(){
    done
 }
 
+cparser_flags(){
+    for flag; do
+        case $flag in
+            -Wno-switch)             echo -Wno-switch-enum ;;
+            -Wno-format-zero-length) ;;
+            -Wdisabled-optimization) ;;
+            -Wno-pointer-sign)       echo -Wno-other ;;
+            *)                       echo $flag ;;
+        esac
+    done
+}
+
 msvc_common_flags(){
     for flag; do
         case $flag in
@@ -2718,7 +2774,7 @@ msvc_flags(){
                                        -wd4146 -wd4057 -wd4204 -wd4706 -wd4305 \
                                        -wd4152 -wd4324 -we4013 -wd4100 -wd4214 \
                                        -wd4554 \
-                                       -wd4996 -wd4273 ;;
+                                       -wd4273 ;;
         esac
     done
 }
@@ -2943,7 +2999,7 @@ probe_cc(){
         _ld_lib='lib%.a'
         _ld_path='-libpath:'
         _flags='-nologo'
-        _cflags='-D_USE_MATH_DEFINES -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
+        _cflags='-D_USE_MATH_DEFINES -D_CRT_SECURE_NO_WARNINGS -Dinline=__inline -FIstdlib.h -Dstrtoll=_strtoi64'
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
@@ -2976,6 +3032,13 @@ probe_cc(){
         if [ $pfx = hostcc ]; then
             append _cflags -Dsnprintf=_snprintf
         fi
+    elif $_cc --version 2>/dev/null | grep -q ^cparser; then
+        _type=cparser
+        _ident=$($_cc --version | head -n1)
+        _depflags='-MMD'
+        _cflags_speed='-O4'
+        _cflags_size='-O2'
+        _flags_filter=cparser_flags
     fi
 
     eval ${pfx}_type=\$_type
@@ -3529,7 +3592,7 @@ case $target_os in
             # Link to the import library instead of the normal static library
             # for shared libs.
             LD_LIB='%.lib'
-            # Cannot build shared and static libs at the same time with MSVC.
+            # Cannot build both shared and static libs with MSVC or icl.
             disable static
         fi
         shlibdir_default="$bindir_default"
@@ -3747,6 +3810,7 @@ die_license_disabled gpl libvidstab
 die_license_disabled gpl libx264
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
+die_license_disabled gpl libzvbi
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libaacplus
@@ -3958,11 +4022,11 @@ EOF
             elf*) enabled debug && append YASMFLAGS $yasm_debug ;;
         esac
 
-        check_yasm "pextrd [eax], xmm0, 1" && enable yasm ||
-            die "yasm not found, use --disable-yasm for a crippled build"
+        check_yasm "movbe ecx, [5]" && enable yasm ||
+            die "yasm/nasm not found or too old. Use --disable-yasm for a crippled build."
         check_yasm "vextractf128 xmm0, ymm0, 0"      || disable avx_external avresample
         check_yasm "vfmaddps ymm0, ymm1, ymm2, ymm3" || disable fma4_external
-        check_yasm "CPU amdnop" && enabled i686 && enable cpunop
+        check_yasm "CPU amdnop" && enable cpunop
     fi
 
     case "$cpu" in
@@ -4163,6 +4227,7 @@ enabled avisynth          && { { check_lib2 "windows.h" LoadLibrary; } ||
 enabled fontconfig        && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
 enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libaacplus        && require "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libass            && require_pkg_config libass ass/ass.h ass_library_init
@@ -4198,6 +4263,7 @@ enabled librtmp           && require_pkg_config librtmp librtmp/rtmp.h RTMP_Sock
 enabled libschroedinger   && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libshine          && require_pkg_config shine shine/layer3.h shine_encode_buffer
 enabled libsoxr           && require libsoxr soxr.h soxr_create -lsoxr
+enabled libssh            && require_pkg_config libssh libssh/sftp.h sftp_init
 enabled libspeex          && require libspeex speex/speex.h speex_decoder_init -lspeex
 enabled libstagefright_h264 && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
     media/stagefright/MediaBufferGroup.h media/stagefright/MediaDebug.h media/stagefright/MediaDefs.h
@@ -4226,6 +4292,7 @@ enabled libx264           && require libx264 x264.h x264_encoder_encode -lx264 &
 enabled libxavs           && require libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzmq            && require_pkg_config libzmq zmq.h zmq_ctx_new
+enabled libzvbi           && require libzvbi libzvbi.h vbi_decoder_new -lzvbi
 enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
                                check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
                                die "ERROR: openal not found"; } &&
@@ -4234,7 +4301,7 @@ enabled openal            && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lO
 enabled opencl            && { check_lib2 OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
                                check_lib2 CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
                                die "ERROR: opencl not found"; } &&
-                             { enabled_any w32threads os2threads &&
+                             { ! enabled_any w32threads os2threads ||
                                die "opencl currently needs --enable-pthreads or --disable-w32threads"; } &&
                              { check_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
                                check_cpp_condition "CL/cl.h" "defined(CL_VERSION_1_2)" ||
@@ -4377,6 +4444,7 @@ enabled xmm_clobber_test &&
                   -Wl,--wrap,avcodec_decode_subtitle2   \
                   -Wl,--wrap,avcodec_encode_audio2      \
                   -Wl,--wrap,avcodec_encode_video       \
+                  -Wl,--wrap,avcodec_encode_video2      \
                   -Wl,--wrap,avcodec_encode_subtitle    \
                   -Wl,--wrap,sws_scale ||
     disable xmm_clobber_test
@@ -4470,6 +4538,9 @@ elif enabled clang; then
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
+elif enabled cparser; then
+    add_cflags -Wno-missing-variable-declarations
+    add_cflags -Wno-empty-statement
 elif enabled armcc; then
     # 2523: use of inline assembler is deprecated
     add_cflags -W${armcc_opt},--diag_suppress=2523
@@ -4486,11 +4557,15 @@ elif enabled_any msvc icl; then
     enabled x86_32 && disable aligned_stack
     enabled_all x86_32 debug && add_cflags -Oy-
     enabled debug && add_ldflags -debug
+    enable pragma_deprecated
     if enabled icl; then
-        # basically -fstrict-aliasing that does not work (correctly) on icl 13.x
-        check_cpp_condition "windows.h" "__ICL < 1300" && add_cflags -Qansi-alias
+        # -Qansi-alias is basically -fstrict-aliasing, but does not work
+        # (correctly) on icl 13.x.
+        check_cpp_condition "windows.h" "__ICL < 1300 || __ICL >= 1400" &&
+            add_cflags -Qansi-alias
         # icl will pass the inline asm tests but inline asm is currently
         # not supported (build will fail)
+        disabled inline_asm || warn "inline asm disabled due to issues with it in ICL"
         disable inline_asm
     fi
 fi
@@ -4507,6 +4582,8 @@ esac
 enable frame_thread_encoder
 enabled_any $THREADS_LIST      && enable threads
 enabled_any $ATOMICS_LIST      && enable atomics_native
+
+enabled threads && ! enabled pthreads && ! enabled atomics_native && die "non pthread threading without atomics not supported, try adding --enable-pthreads or --cpu=i486 or higher if you are on x86"
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
@@ -4616,6 +4693,7 @@ echo "threading support         ${thread_type-no}"
 echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
 echo "opencl enabled            ${opencl-no}"
+echo "libzvbi enabled           ${libzvbi-no}"
 echo "texi2html enabled         ${texi2html-no}"
 echo "perl enabled              ${perl-no}"
 echo "pod2man enabled           ${pod2man-no}"
@@ -4667,6 +4745,7 @@ SHLIBDIR=\$(DESTDIR)$shlibdir
 INCDIR=\$(DESTDIR)$incdir
 BINDIR=\$(DESTDIR)$bindir
 DATADIR=\$(DESTDIR)$datadir
+DOCDIR=\$(DESTDIR)$docdir
 MANDIR=\$(DESTDIR)$mandir
 SRC_PATH=$source_path
 ifndef MAIN_MAKEFILE
@@ -4688,9 +4767,9 @@ AR=$ar
 ARFLAGS=$arflags
 AR_O=$ar_o
 RANLIB=$ranlib
+STRIP=$strip
 CP=cp -p
 LN_S=$ln_s
-STRIP=$strip
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
 CXXFLAGS=$CXXFLAGS
@@ -4886,7 +4965,7 @@ Description: $comment
 Version: $version
 Requires: $requires
 Conflicts:
-Libs: -L\${libdir} -l${shortname} $(enabled shared || echo $libs)
+Libs: -L\${libdir} -Wl,-rpath,\${libdir} -l${shortname} $(enabled shared || echo $libs)
 Cflags: -I\${includedir}
 EOF
 }

@@ -216,18 +216,17 @@ static const AVOption cropdetect_options[] = {
     { "round", "Value by which the width/height should be divisible", OFFSET(round),       AV_OPT_TYPE_INT, { .i64 = 16 }, 0, INT_MAX, FLAGS },
     { "reset", "Recalculate the crop area after this many frames",    OFFSET(reset_count), AV_OPT_TYPE_INT, { .i64 = 0 },  0, INT_MAX, FLAGS },
     { "reset_count", "Recalculate the crop area after this many frames",OFFSET(reset_count),AV_OPT_TYPE_INT,{ .i64 = 0 },  0, INT_MAX, FLAGS },
-    { NULL },
+    { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(cropdetect);
 
 static const AVFilterPad avfilter_vf_cropdetect_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .config_props     = config_input,
-        .get_video_buffer = ff_null_get_video_buffer,
-        .filter_frame     = filter_frame,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -241,14 +240,13 @@ static const AVFilterPad avfilter_vf_cropdetect_outputs[] = {
 };
 
 AVFilter avfilter_vf_cropdetect = {
-    .name        = "cropdetect",
-    .description = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
-
-    .priv_size = sizeof(CropDetectContext),
-    .priv_class = &cropdetect_class,
-    .init      = init,
+    .name          = "cropdetect",
+    .description   = NULL_IF_CONFIG_SMALL("Auto-detect crop size."),
+    .priv_size     = sizeof(CropDetectContext),
+    .priv_class    = &cropdetect_class,
+    .init          = init,
     .query_formats = query_formats,
-    .inputs    = avfilter_vf_cropdetect_inputs,
-    .outputs   = avfilter_vf_cropdetect_outputs,
-    .flags     = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .inputs        = avfilter_vf_cropdetect_inputs,
+    .outputs       = avfilter_vf_cropdetect_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

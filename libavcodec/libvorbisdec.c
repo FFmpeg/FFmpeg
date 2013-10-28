@@ -171,7 +171,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
     }
 
     frame->nb_samples = total_samples;
-    *got_frame_ptr   = 1;
+    *got_frame_ptr   = total_samples > 0;
     return avpkt->size;
 }
 
@@ -188,6 +188,7 @@ static int oggvorbis_decode_close(AVCodecContext *avccontext) {
 
 AVCodec ff_libvorbis_decoder = {
     .name           = "libvorbis",
+    .long_name      = NULL_IF_CONFIG_SMALL("libvorbis"),
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_VORBIS,
     .priv_data_size = sizeof(OggVorbisDecContext),
@@ -195,5 +196,4 @@ AVCodec ff_libvorbis_decoder = {
     .decode         = oggvorbis_decode_frame,
     .close          = oggvorbis_decode_close,
     .capabilities   = CODEC_CAP_DELAY,
-    .long_name      = NULL_IF_CONFIG_SMALL("libvorbis"),
 };

@@ -535,10 +535,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     did_split = av_packet_split_side_data(pkt);
     ret = s->oformat->write_packet(s, pkt);
-    if (s->flush_packets && s->pb && s->pb->error >= 0)
+
+    if (s->flush_packets && s->pb && ret >= 0 && s->flags & AVFMT_FLAG_FLUSH_PACKETS)
         avio_flush(s->pb);
+
     if (did_split)
         av_packet_merge_side_data(pkt);
+
     return ret;
 }
 

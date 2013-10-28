@@ -204,7 +204,8 @@ static const char *read_ts(const char *buf, int *ts_start, int *ts_end,
                        "%*[ ]X1:%u X2:%u Y1:%u Y2:%u",
                        &hs, &ms, &ss, ts_start, &he, &me, &se, ts_end,
                        x1, x2, y1, y2);
-        buf += strcspn(buf, "\n") + 1;
+        buf += strcspn(buf, "\n");
+        buf += !!*buf;
         if (c >= 8) {
             *ts_start = 100*(ss + 60*(ms + 60*hs)) + *ts_start/10;
             *ts_end   = 100*(se + 60*(me + 60*he)) + *ts_end  /10;

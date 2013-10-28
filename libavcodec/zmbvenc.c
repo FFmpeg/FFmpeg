@@ -332,6 +332,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
 AVCodec ff_zmbv_encoder = {
     .name           = "zmbv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_ZMBV,
     .priv_data_size = sizeof(ZmbvEncContext),
@@ -339,5 +340,4 @@ AVCodec ff_zmbv_encoder = {
     .encode2        = encode_frame,
     .close          = encode_end,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("Zip Motion Blocks Video"),
 };

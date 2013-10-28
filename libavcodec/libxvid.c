@@ -710,9 +710,11 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* Pixel aspect ratio setting */
     if (avctx->sample_aspect_ratio.num < 0 || avctx->sample_aspect_ratio.num > 255 ||
         avctx->sample_aspect_ratio.den < 0 || avctx->sample_aspect_ratio.den > 255) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid pixel aspect ratio %i/%i\n",
+        av_log(avctx, AV_LOG_WARNING,
+               "Invalid pixel aspect ratio %i/%i, limit is 255/255 reducing\n",
                avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
-        return -1;
+        av_reduce(&avctx->sample_aspect_ratio.num, &avctx->sample_aspect_ratio.den,
+                   avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den, 255);
     }
     xvid_enc_frame.par = XVID_PAR_EXT;
     xvid_enc_frame.par_width  = avctx->sample_aspect_ratio.num;
@@ -823,6 +825,7 @@ static const AVClass xvid_class = {
 
 AVCodec ff_libxvid_encoder = {
     .name           = "libxvid",
+    .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
     .priv_data_size = sizeof(struct xvid_context),
@@ -830,6 +833,5 @@ AVCodec ff_libxvid_encoder = {
     .encode2        = xvid_encode_frame,
     .close          = xvid_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
-    .long_name      = NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
     .priv_class     = &xvid_class,
 };
