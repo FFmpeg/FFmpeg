@@ -58,7 +58,7 @@ void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
     rtp_first_dynamic_payload_handler = handler;
 }
 
-void av_register_rtp_dynamic_payload_handlers(void)
+void ff_register_rtp_dynamic_payload_handlers(void)
 {
     ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
     ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
