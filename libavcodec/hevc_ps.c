@@ -191,14 +191,22 @@ int ff_hevc_decode_short_term_rps(HEVCContext *s, ShortTermRPS *rps,
     return 0;
 }
 
-static int decode_profile_tier_level(HEVCLocalContext *lc, PTL *ptl, int max_num_sub_layers)
+static int decode_profile_tier_level(HEVCContext *s, PTL *ptl, int max_num_sub_layers)
 {
-    int i, j;
+    HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb = &lc->gb;
+    int i, j;
 
     ptl->general_profile_space = get_bits(gb, 2);
     ptl->general_tier_flag = get_bits1(gb);
     ptl->general_profile_idc = get_bits(gb, 5);
+    if (ptl->general_profile_idc == 1)
+        av_log(s->avctx, AV_LOG_DEBUG, "Main profile bitstream\n");
+    else if (ptl->general_profile_idc == 2)
+        av_log(s->avctx, AV_LOG_DEBUG, "Main10 profile bitstream\n");
+    else
+        av_log(s->avctx, AV_LOG_WARNING, "No profile indication! (%d)\n", ptl->general_profile_idc);
+
     for (i = 0; i < 32; i++)
         ptl->general_profile_compatibility_flag[i] = get_bits1(gb);
     skip_bits1(gb);// general_progressive_source_flag
@@ -357,7 +365,7 @@ int ff_hevc_decode_nal_vps(HEVCContext *s)
         goto err;
     }
 
-    if (decode_profile_tier_level(s->HEVClc, &vps->ptl, vps->vps_max_sub_layers) < 0) {
+    if (decode_profile_tier_level(s, &vps->ptl, vps->vps_max_sub_layers) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error decoding profile tier level.\n");
         goto err;
     }
@@ -630,7 +638,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
     }
 
     skip_bits1(gb); // temporal_id_nesting_flag
-    if (decode_profile_tier_level(s->HEVClc, &sps->ptl, sps->max_sub_layers) < 0) {
+    if (decode_profile_tier_level(s, &sps->ptl, sps->max_sub_layers) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "error decoding profile tier level\n");
         ret = AVERROR_INVALIDDATA;
         goto err;
