@@ -2288,6 +2288,10 @@ case "$toolchain" in
         add_cflags  -fprofile-arcs -ftest-coverage
         add_ldflags -fprofile-arcs -ftest-coverage
     ;;
+    hardened)
+        add_cflags -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fno-strict-overflow -fstack-protector-all
+        add_ldflags -Wl,-z,relro -Wl,-z,now
+    ;;
     ?*)
         die "Unknown toolchain $toolchain"
     ;;
