@@ -31,7 +31,7 @@ PROJECT_NAME           = FFmpeg
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         =
+PROJECT_NUMBER         = 2.1
 
 # With the PROJECT_LOGO tag one can specify a logo or icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
