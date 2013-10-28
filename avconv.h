@@ -305,6 +305,8 @@ typedef struct OutputStream {
     int copy_initial_nonkeyframes;
 
     enum AVPixelFormat pix_fmts[2];
+
+    AVCodecParserContext *parser;
 } OutputStream;
 
 typedef struct OutputFile {

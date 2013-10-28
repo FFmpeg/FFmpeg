@@ -182,6 +182,8 @@ static void avconv_cleanup(int ret)
         output_streams[i]->bitstream_filters = NULL;
         avcodec_free_frame(&output_streams[i]->filtered_frame);
 
+        av_parser_close(output_streams[i]->parser);
+
         av_freep(&output_streams[i]->forced_keyframes);
         av_freep(&output_streams[i]->avfilter);
         av_freep(&output_streams[i]->logfile_prefix);
@@ -1013,7 +1015,10 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
        && ost->st->codec->codec_id != AV_CODEC_ID_MPEG2VIDEO
        && ost->st->codec->codec_id != AV_CODEC_ID_VC1
        ) {
-        if (av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, pkt->data, pkt->size, pkt->flags & AV_PKT_FLAG_KEY)) {
+        if (av_parser_change(ost->parser, ost->st->codec,
+                             &opkt.data, &opkt.size,
+                             pkt->data, pkt->size,
+                             pkt->flags & AV_PKT_FLAG_KEY)) {
             opkt.buf = av_buffer_create(opkt.data, opkt.size, av_buffer_default_free, NULL, 0);
             if (!opkt.buf)
                 exit_program(1);
@@ -1545,6 +1550,8 @@ static int transcode_init(void)
                           codec->time_base.num, codec->time_base.den, INT_MAX);
             } else
                 codec->time_base = ist->st->time_base;
+
+            ost->parser = av_parser_init(codec->codec_id);
 
             switch (codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
