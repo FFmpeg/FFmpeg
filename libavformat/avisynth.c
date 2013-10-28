@@ -26,12 +26,6 @@
 /* Enable function pointer definitions for runtime loading. */
 #define AVSC_NO_DECLSPEC
 
-// Shut up ffmpeg error messages.
-// avisynth_c.h contains inline functions that call these functions.
-#undef malloc
-#undef free
-#undef printf
-
 /* Platform-specific directives for AviSynth vs AvxSynth. */
 #ifdef _WIN32
   #include <windows.h>
