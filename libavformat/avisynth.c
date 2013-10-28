@@ -54,7 +54,7 @@
   #define FreeLibrary dlclose
 #endif
 
-typedef struct {
+typedef struct AviSynthLibrary {
     void *library;
 #define AVSC_DECLARE_FUNC(name) name ## _func name
     AVSC_DECLARE_FUNC(avs_bit_blt);
@@ -74,7 +74,7 @@ typedef struct {
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
 
-struct AviSynthContext {
+typedef struct AviSynthContext {
     AVS_ScriptEnvironment *env;
     AVS_Clip *clip;
     const AVS_VideoInfo *vi;
@@ -91,8 +91,7 @@ struct AviSynthContext {
 
     /* Linked list pointers. */
     struct AviSynthContext *next;
-};
-typedef struct AviSynthContext AviSynthContext;
+} AviSynthContext;
 
 static const int avs_planes_packed[1] = { 0 };
 static const int avs_planes_grey[1]   = { AVS_PLANAR_Y };
