@@ -221,7 +221,7 @@ static const AVFilterPad avfilter_vsink_buffer_inputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsink_buffer = {
+AVFilter ff_vsink_buffer = {
     .name        = "buffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size   = sizeof(BufferSinkContext),
@@ -241,7 +241,7 @@ static const AVFilterPad avfilter_asink_abuffer_inputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_asink_abuffer = {
+AVFilter ff_asink_abuffer = {
     .name        = "abuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
     .priv_size   = sizeof(BufferSinkContext),

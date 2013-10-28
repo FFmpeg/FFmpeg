@@ -271,7 +271,7 @@ static const AVFilterPad avfilter_vsrc_movie_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_movie = {
+AVFilter ff_vsrc_movie = {
     .name          = "movie",
     .description   = NULL_IF_CONFIG_SMALL("Read from a movie source."),
     .priv_size     = sizeof(MovieContext),

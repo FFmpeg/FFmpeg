@@ -148,7 +148,7 @@ static const AVFilterPad avfilter_vf_settb_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_settb = {
+AVFilter ff_vf_settb = {
     .name      = "settb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the output link."),
 

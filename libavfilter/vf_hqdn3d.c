@@ -347,7 +347,7 @@ static const AVFilterPad avfilter_vf_hqdn3d_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_hqdn3d = {
+AVFilter ff_vf_hqdn3d = {
     .name          = "hqdn3d",
     .description   = NULL_IF_CONFIG_SMALL("Apply a High Quality 3D Denoiser."),
 

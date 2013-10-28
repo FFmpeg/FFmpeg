@@ -405,7 +405,7 @@ static const AVFilterPad avfilter_vf_frei0r_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_frei0r = {
+AVFilter ff_vf_frei0r = {
     .name      = "frei0r",
     .description = NULL_IF_CONFIG_SMALL("Apply a frei0r effect."),
 
@@ -505,7 +505,7 @@ static const AVFilterPad avfilter_vsrc_frei0r_src_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_frei0r_src = {
+AVFilter ff_vsrc_frei0r_src = {
     .name        = "frei0r_src",
     .description = NULL_IF_CONFIG_SMALL("Generate a frei0r source."),
 

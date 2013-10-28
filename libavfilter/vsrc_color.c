@@ -185,7 +185,7 @@ static const AVFilterPad avfilter_vsrc_color_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_color = {
+AVFilter ff_vsrc_color = {
     .name        = "color",
     .description = NULL_IF_CONFIG_SMALL("Provide an uniformly colored input, syntax is: [color[:size[:rate]]]"),
 

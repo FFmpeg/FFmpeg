@@ -35,7 +35,7 @@ static const AVFilterPad avfilter_vsink_nullsink_inputs[] = {
     { NULL },
 };
 
-AVFilter avfilter_vsink_nullsink = {
+AVFilter ff_vsink_nullsink = {
     .name        = "nullsink",
     .description = NULL_IF_CONFIG_SMALL("Do absolutely nothing with the input video."),
 

@@ -348,7 +348,7 @@ static const AVFilterPad avfilter_vf_select_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_select = {
+AVFilter ff_vf_select = {
     .name      = "select",
     .description = NULL_IF_CONFIG_SMALL("Select frames to pass in output."),
     .init      = init,

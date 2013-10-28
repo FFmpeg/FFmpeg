@@ -355,7 +355,7 @@ static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_testsrc = {
+AVFilter ff_vsrc_testsrc = {
     .name          = "testsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
     .priv_size     = sizeof(TestSourceContext),
@@ -488,7 +488,7 @@ static const AVFilterPad avfilter_vsrc_rgbtestsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_rgbtestsrc = {
+AVFilter ff_vsrc_rgbtestsrc = {
     .name          = "rgbtestsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate RGB test pattern."),
     .priv_size     = sizeof(TestSourceContext),

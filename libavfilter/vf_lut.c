@@ -358,7 +358,7 @@ static const AVFilterPad outputs[] = {
         .option     = options,                                          \
         .version    = LIBAVUTIL_VERSION_INT,                            \
     };                                                                  \
-    AVFilter avfilter_vf_##name_ = {                                    \
+    AVFilter ff_vf_##name_ = {                                          \
         .name          = #name_,                                        \
         .description   = NULL_IF_CONFIG_SMALL(description_),            \
         .priv_size     = sizeof(LutContext),                            \

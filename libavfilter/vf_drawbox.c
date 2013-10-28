@@ -158,7 +158,7 @@ static const AVFilterPad avfilter_vf_drawbox_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_drawbox = {
+AVFilter ff_vf_drawbox = {
     .name      = "drawbox",
     .description = NULL_IF_CONFIG_SMALL("Draw a colored box on the input video."),
     .priv_size = sizeof(DrawBoxContext),

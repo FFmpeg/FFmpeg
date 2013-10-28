@@ -123,7 +123,7 @@ static const AVFilterPad avfilter_vsrc_nullsrc_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vsrc_nullsrc = {
+AVFilter ff_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, never return images."),
 

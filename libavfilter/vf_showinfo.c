@@ -91,7 +91,7 @@ static const AVFilterPad avfilter_vf_showinfo_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_showinfo = {
+AVFilter ff_vf_showinfo = {
     .name        = "showinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
 

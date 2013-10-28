@@ -447,7 +447,7 @@ static const AVFilterPad avfilter_vf_pad_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_pad = {
+AVFilter ff_vf_pad = {
     .name          = "pad",
     .description   = NULL_IF_CONFIG_SMALL("Pad input image to width:height[:x:y[:color]] (default x and y: 0, default color: black)."),
 

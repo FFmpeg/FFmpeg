@@ -35,7 +35,7 @@ static const AVFilterPad avfilter_asink_anullsink_inputs[] = {
     { NULL },
 };
 
-AVFilter avfilter_asink_anullsink = {
+AVFilter ff_asink_anullsink = {
     .name        = "anullsink",
     .description = NULL_IF_CONFIG_SMALL("Do absolutely nothing with the input audio."),
 
