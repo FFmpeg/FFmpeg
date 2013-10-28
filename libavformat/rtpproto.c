@@ -507,6 +507,21 @@ static int rtp_close(URLContext *h)
     return 0;
 }
 
+static int rtp_update_client_port(URLContext *h) 
+{
+	RTPContext *s = h->priv_data;
+	URLContext *rtp_hd = s->rtp_hd;
+	URLContext *rtcp_hd = s->rtcp_hd;
+	int err0 = -1, err1 = -1;
+	if(rtp_hd && rtp_hd->prot && rtp_hd->prot->update_client_port) {
+		err0 = rtp_hd->prot->update_client_port(rtp_hd);
+	}
+	if(rtcp_hd && rtcp_hd->prot && rtcp_hd->prot->update_client_port) {
+		err1 = rtcp_hd->prot->update_client_port(rtcp_hd);
+	}
+	return err0 + err1;
+}
+
 /**
  * Return the local rtp port used by the RTP connection
  * @param h media file context
@@ -560,4 +575,5 @@ URLProtocol ff_rtp_protocol = {
     .url_get_multi_file_handle = rtp_get_multi_file_handle,
     .priv_data_size            = sizeof(RTPContext),
     .flags                     = URL_PROTOCOL_FLAG_NETWORK,
+	.update_client_port        = rtp_update_client_port,
 };

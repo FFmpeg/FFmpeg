@@ -89,6 +89,7 @@ typedef struct URLProtocol {
     const AVClass *priv_data_class;
     int flags;
     int (*url_check)(URLContext *h, int mask);
+	int (*update_client_port)(URLContext *h);
 } URLProtocol;
 
 /**
@@ -247,6 +248,8 @@ URLProtocol *ffurl_protocol_next(URLProtocol *prev);
 /* udp.c */
 int ff_udp_set_remote_url(URLContext *h, const char *uri);
 int ff_udp_get_local_port(URLContext *h);
+
+int ff_update_client_port(URLContext *h);
 
 /**
  * Assemble a URL string from components. This is the reverse operation

@@ -184,6 +184,13 @@ typedef struct HTTPContext {
     /* RTP/UDP specific */
     URLContext *rtp_handles[MAX_STREAMS];
 
+	/* Indicate which stream has been setup*/
+	/* -1: No stream is setup yet*/
+	/*  0: Stream #0 is setup */
+	/*  1: Stream #1 is setup */
+	/*  2: All streams have already been setup */
+	int setup_stream_index;
+
     /* RTP/TCP specific */
     struct HTTPContext *rtsp_c;
     uint8_t *packet_buffer, *packet_buffer_ptr, *packet_buffer_end;
@@ -298,6 +305,7 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
                                    struct in_addr my_ip);
 
 /* RTP handling */
+static HTTPContext *find_rtp_session(const char *session_id);
 static HTTPContext *rtp_new_connection(struct sockaddr_in *from_addr,
                                        FFStream *stream, const char *session_id,
                                        enum RTSPLowerTransport rtp_protocol);
@@ -842,6 +850,9 @@ static void new_connection(int server_fd, int is_rtsp)
     if (!c->buffer)
         goto fail;
 
+	/* initialize setup_stream_index */
+	c->setup_stream_index = -1;
+
     c->next = first_http_ctx;
     first_http_ctx = c;
     nb_connections++;
@@ -950,6 +961,8 @@ static void close_connection(HTTPContext *c)
 static int handle_connection(HTTPContext *c)
 {
     int len, ret;
+	HTTPContext *rtp_c = NULL;
+	URLContext *h = NULL;
 
     switch(c->state) {
     case HTTPSTATE_WAIT_REQUEST:
@@ -1085,6 +1098,26 @@ static int handle_connection(HTTPContext *c)
             if (c->buffer_ptr >= c->buffer_end) {
                 /* all the buffer was sent : wait for a new request */
                 av_freep(&c->pb_buffer);
+
+				/* If this "REPLY" is the response of "SETUP" method and
+				 * the stream is setup via udp, then to receive udp packets
+				 * from client for punching a hole on their NAT, and replace 
+				 * client ports got from headers of "SETUP" request with the
+				 * real client ports got from client's punching-hole udp 
+				 * message
+				 */
+				rtp_c = find_rtp_session(c->session_id); 
+				if (rtp_c && rtp_c->rtp_protocol == RTSP_LOWER_TRANSPORT_UDP) {
+					if (rtp_c->setup_stream_index == 0 ||
+						rtp_c->setup_stream_index == 1) {
+						h = rtp_c->rtp_handles[rtp_c->setup_stream_index];
+						/* update client's ports */
+						ff_update_client_port(h);
+						if(rtp_c->setup_stream_index == 1)
+							rtp_c->setup_stream_index = 2;
+					}
+				}
+
                 start_wait_request(c, 1);
             }
         }
@@ -3207,6 +3240,9 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
         rtsp_reply_error(c, RTSP_STATUS_TRANSPORT);
         return;
     }
+
+	rtp_c->setup_stream_index = stream_index;
+	memcpy(c->session_id, rtp_c->session_id, sizeof(c->session_id));
 
     /* now everything is OK, so we can send the connection parameters */
     rtsp_reply_header(c, RTSP_STATUS_OK);
