@@ -4430,6 +4430,7 @@ check_cflags -Wmissing-prototypes
 check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 enabled extra_warnings && check_cflags -Winline
+enabled extra_warnings || check_cflags -Wno-maybe-uninitialized
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
