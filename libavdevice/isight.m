@@ -96,11 +96,11 @@ static void unlock_frames(CaptureContext* ctx)
        fromConnection:(QTCaptureConnection *)connection
 {
     lock_frames(_context);
-	if( _context->current_frame != nil )
-	{
-		CVBufferRelease(_context->current_frame);
-	}
-	
+    if( _context->current_frame != nil )
+    {
+        CVBufferRelease(_context->current_frame);
+    }
+    
     _context->current_frame = CVBufferRetain(videoFrame);
     unlock_frames(_context);
     
@@ -257,16 +257,16 @@ static int isight_close(AVFormatContext *s)
     
     av_log(s, AV_LOG_DEBUG, "isight_close\n");
     [ctx->capture_session stopRunning];
-	
-	[ctx->capture_session release];
-	[ctx->video_output    release];
-	[ctx->qt_delegate     release];
-	
-	if( ctx->current_frame )
-		CVBufferRelease(ctx->current_frame);
-	
-	pthread_mutex_destroy(&ctx->frame_lock);
-	
+
+    [ctx->capture_session release];
+    [ctx->video_output    release];
+    [ctx->qt_delegate     release];
+
+    if( ctx->current_frame )
+        CVBufferRelease(ctx->current_frame);
+
+    pthread_mutex_destroy(&ctx->frame_lock);
+
     return 0;
 }
 
