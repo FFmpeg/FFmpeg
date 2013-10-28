@@ -23,7 +23,7 @@
 #include "internal.h"
 #include "libavcodec/internal.h"
 
-// Enable function pointer definitions for runtime loading.
+/* Enable function pointer definitions for runtime loading. */
 #define AVSC_NO_DECLSPEC
 
 // Shut up ffmpeg error messages.
@@ -32,7 +32,7 @@
 #undef free
 #undef printf
 
-// Platform-specific directives for AviSynth vs AvxSynth.
+/* Platform-specific directives for AviSynth vs AvxSynth. */
 #ifdef _WIN32
   #include <windows.h>
   #undef EXTERN_C
@@ -87,7 +87,7 @@ struct AviSynthContext {
     AVS_Clip *clip;
     const AVS_VideoInfo *vi;
 
-    // avisynth_read_packet_video() iterates over this.
+    /* avisynth_read_packet_video() iterates over this. */
     int n_planes;
     const int *planes;
 
@@ -97,7 +97,7 @@ struct AviSynthContext {
 
     int error;
 
-    // Linked list pointers.
+    /* Linked list pointers. */
     struct AviSynthContext *next;
 };
 typedef struct AviSynthContext AviSynthContext;
@@ -106,12 +106,12 @@ static const int avs_planes_packed[1] = {0};
 static const int avs_planes_grey[1] = {AVS_PLANAR_Y};
 static const int avs_planes_yuv[3] = {AVS_PLANAR_Y, AVS_PLANAR_U, AVS_PLANAR_V};
 
-// A conflict between C++ global objects, atexit, and dynamic loading requires
-// us to register our own atexit handler to prevent double freeing.
+/* A conflict between C++ global objects, atexit, and dynamic loading requires
+ * us to register our own atexit handler to prevent double freeing. */
 static AviSynthLibrary *avs_library = NULL;
 static int avs_atexit_called = 0;
 
-// Linked list of AviSynthContexts. An atexit handler destroys this list.
+/* Linked list of AviSynthContexts. An atexit handler destroys this list. */
 static AviSynthContext *avs_ctx_list = NULL;
 
 static av_cold void avisynth_atexit_handler(void);
@@ -157,9 +157,9 @@ init_fail:
     return AVERROR_UNKNOWN;
 }
 
-// Note that avisynth_context_create and avisynth_context_destroy
-// do not allocate or free the actual context! That is taken care of
-// by libavformat.
+/* Note that avisynth_context_create and avisynth_context_destroy
+ * do not allocate or free the actual context! That is taken care of
+ * by libavformat. */
 static av_cold int avisynth_context_create(AVFormatContext *s) {
     AviSynthContext *avs = (AviSynthContext *)s->priv_data;
     int ret;
@@ -225,7 +225,7 @@ static av_cold void avisynth_atexit_handler(void) {
     avs_atexit_called = 1;
 }
 
-// Create AVStream from audio and video data.
+/* Create AVStream from audio and video data. */
 static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st) {
     AviSynthContext *avs = s->priv_data;
     int planar = 0; // 0: packed, 1: YUV, 2: Y8
@@ -369,7 +369,7 @@ static int avisynth_open_file(AVFormatContext *s) {
         return ret;
 
 #ifdef USING_AVISYNTH
-    // Convert UTF-8 to ANSI code page
+    /* Convert UTF-8 to ANSI code page */
     MultiByteToWideChar(CP_UTF8, 0, s->filename, -1, filename_wc, MAX_PATH * 4);
     WideCharToMultiByte(CP_THREAD_ACP, 0, filename_wc, -1, filename_ansi, MAX_PATH * 4, NULL, NULL);
     arg = avs_new_value_string(filename_ansi);
@@ -391,7 +391,7 @@ static int avisynth_open_file(AVFormatContext *s) {
     avs->clip = avs_library->avs_take_clip(val, avs->env);
     avs->vi = avs_library->avs_get_video_info(avs->clip);
 
-    // Release the AVS_Value as it will go out of scope.
+    /* Release the AVS_Value as it will go out of scope. */
     avs_library->avs_release_value(val);
 
     if (ret = avisynth_create_stream(s))
@@ -419,7 +419,7 @@ static void avisynth_next_stream(AVFormatContext *s, AVStream **st, AVPacket *pk
     return;
 }
 
-// Copy AviSynth clip data into an AVPacket.
+/* Copy AviSynth clip data into an AVPacket. */
 static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int discard) {
     AviSynthContext *avs = s->priv_data;
     AVS_VideoFrame *frame;
@@ -431,7 +431,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
     if (avs->curr_frame >= avs->vi->num_frames)
         return AVERROR_EOF;
 
-    // This must happen even if the stream is discarded to prevent desync.
+    /* This must happen even if the stream is discarded to prevent desync. */
     n = avs->curr_frame++;
     if (discard)
         return 0;
@@ -453,7 +453,8 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
         bits = avs_bits_per_pixel(avs->vi);
     }
 
-    // Without cast to int64_t, calculation overflows at about 9k x 9k resolution.
+    /* Without the cast to int64_t, calculation overflows at about 9k x 9k
+     * resolution. */
     pkt->size = (((int64_t)avs->vi->width * (int64_t)avs->vi->height) * bits) / 8;
     if (!pkt->size)
         return AVERROR_UNKNOWN;
@@ -489,7 +490,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt, int dis
         planeheight = avs_get_height_p(frame, plane);
 #endif
 
-        // Flip RGB video.
+        /* Flip RGB video. */
         if (avs_is_rgb24(avs->vi) || avs_is_rgb(avs->vi)) {
             src_p = src_p + (planeheight - 1) * pitch;
             pitch = -pitch;
@@ -527,7 +528,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
         samples = 1000;
     }
 
-    // After seeking, audio may catch up with video.
+    /* After seeking, audio may catch up with video. */
     if (samples <= 0) {
         pkt->size = 0;
         pkt->data = NULL;
@@ -537,7 +538,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt, int dis
     if (avs->curr_sample + samples > avs->vi->num_audio_samples)
         samples = avs->vi->num_audio_samples - avs->curr_sample;
 
-    // This must happen even if the stream is discarded to prevent desync.
+    /* This must happen even if the stream is discarded to prevent desync. */
     n = avs->curr_sample;
     avs->curr_sample += samples;
     if (discard)
@@ -592,7 +593,8 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt) {
 
     pkt->destruct = av_destruct_packet;
 
-    // If either stream reaches EOF, try to read the other one before giving up.
+    /* If either stream reaches EOF, try to read the other one before
+     * giving up. */
     avisynth_next_stream(s, &st, pkt, &discard);
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         ret = avisynth_read_packet_video(s, pkt, discard);
@@ -633,7 +635,7 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index, int64_t time
 
     st = s->streams[stream_index];
     if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        // AviSynth frame counts are signed int.
+        /* AviSynth frame counts are signed int. */
         if ((timestamp >= avs->vi->num_frames) || (timestamp > INT_MAX) || (timestamp < 0))
             return AVERROR_EOF;
         avs->curr_frame = timestamp;
@@ -642,7 +644,7 @@ static int avisynth_read_seek(AVFormatContext *s, int stream_index, int64_t time
     } else {
         if ((timestamp >= avs->vi->num_audio_samples) || (timestamp < 0))
             return AVERROR_EOF;
-        // Force frame granularity for seeking.
+        /* Force frame granularity for seeking. */
         if (avs_has_video(avs->vi)) {
             avs->curr_frame = av_rescale_q(timestamp, fps, samplerate);
             avs->curr_sample = av_rescale_q(avs->curr_frame, samplerate, fps);
