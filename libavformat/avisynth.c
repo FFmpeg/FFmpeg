@@ -155,7 +155,7 @@ init_fail:
  * by libavformat. */
 static av_cold int avisynth_context_create(AVFormatContext *s)
 {
-    AviSynthContext *avs = (AviSynthContext *)s->priv_data;
+    AviSynthContext *avs = s->priv_data;
     int ret;
 
     if (!avs_library)
@@ -361,7 +361,7 @@ static int avisynth_create_stream(AVFormatContext *s)
 
 static int avisynth_open_file(AVFormatContext *s)
 {
-    AviSynthContext *avs = (AviSynthContext *)s->priv_data;
+    AviSynthContext *avs = s->priv_data;
     AVS_Value arg, val;
     int ret;
 #ifdef USING_AVISYNTH
