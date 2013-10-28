@@ -457,6 +457,9 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
 
 static AVFilter *first_filter;
 
+#if !FF_API_NOCONST_GET_NAME
+const
+#endif
 AVFilter *avfilter_get_by_name(const char *name)
 {
     const AVFilter *f = NULL;
