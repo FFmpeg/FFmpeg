@@ -107,7 +107,9 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         s->h263_flv = 1;
         break;
     default:
-        return AVERROR(EINVAL);
+        av_log(avctx, AV_LOG_ERROR, "Unsupported codec %d\n",
+               avctx->codec->id);
+        return AVERROR(ENOSYS);
     }
     s->codec_id    = avctx->codec->id;
     avctx->hwaccel = ff_find_hwaccel(avctx->codec->id, avctx->pix_fmt);
@@ -166,7 +168,8 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size)
 
 static int decode_slice(MpegEncContext *s)
 {
-    const int part_mask = s->partitioned_frame ? (ER_AC_END | ER_AC_ERROR) : 0x7F;
+    const int part_mask = s->partitioned_frame
+                          ? (ER_AC_END | ER_AC_ERROR) : 0x7F;
     const int mb_size   = 16 >> s->avctx->lowres;
     int ret;
 
@@ -403,7 +406,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         } else {
             av_log(s->avctx, AV_LOG_ERROR,
                    "this codec does not support truncated bitstreams\n");
-            return AVERROR(EINVAL);
+            return AVERROR(ENOSYS);
         }
 
         if (ff_combine_frame(&s->parse_context, next, (const uint8_t **)&buf,
@@ -435,7 +438,8 @@ retry:
         return ret;
 
     if (!s->context_initialized)
-        if ((ret = ff_MPV_common_init(s)) < 0) // we need the idct permutaton for reading a custom matrix
+        // we need the idct permutaton for reading a custom matrix
+        if ((ret = ff_MPV_common_init(s)) < 0)
             return ret;
 
     /* We need to set current_picture_ptr before reading the header,
@@ -676,10 +680,12 @@ retry:
         goto frame_end;
     }
 
-    if (avctx->hwaccel)
-        if ((ret = avctx->hwaccel->start_frame(avctx, s->gb.buffer,
-                                               s->gb.buffer_end - s->gb.buffer)) < 0)
+    if (avctx->hwaccel) {
+        ret = avctx->hwaccel->start_frame(avctx, s->gb.buffer,
+                                          s->gb.buffer_end - s->gb.buffer);
+        if (ret < 0 )
             return ret;
+    }
 
     ff_mpeg_er_frame_start(s);
 
@@ -729,9 +735,11 @@ retry:
 frame_end:
     ff_er_frame_end(&s->er);
 
-    if (avctx->hwaccel)
-        if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
+    if (avctx->hwaccel) {
+        ret = avctx->hwaccel->end_frame(avctx);
+        if (ret < 0)
             return ret;
+    }
 
     ff_MPV_frame_end(s);
 
