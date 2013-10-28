@@ -40,6 +40,7 @@ version 10:
 - Opus in Ogg demuxing
 - Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
 - F4V muxer
+- HNM version 4 demuxer and video decoder
 
 
 version 9:

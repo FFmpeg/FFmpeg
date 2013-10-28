@@ -1236,6 +1236,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY |
                      AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_HNM4_VIDEO,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "hnm4video",
+        .long_name = NULL_IF_CONFIG_SMALL("HNM 4 video"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {

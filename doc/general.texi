@@ -194,6 +194,8 @@ library:
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
          playout servers.
+@item HNM @tab   @tab X
+    @tab Only version 4 supported, used in some games from Cryo Interactive
 @item id Quake II CIN video     @tab   @tab X
 @item id RoQ                    @tab X @tab X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
@@ -524,6 +526,7 @@ following image formats are supported:
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
 @item H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10  @tab  E  @tab  X
     @tab encoding supported through external library libx264
+@item HNM version 4          @tab     @tab  X
 @item HuffYUV                @tab  X  @tab  X
 @item HuffYUV FFmpeg variant @tab  X  @tab  X
 @item IBM Ultimotion         @tab     @tab  X
