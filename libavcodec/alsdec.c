@@ -1565,6 +1565,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         if (ctx->cur_frame_length != sconf->frame_length &&
             ctx->crc_org != ctx->crc) {
             av_log(avctx, AV_LOG_ERROR, "CRC error.\n");
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
     }
 

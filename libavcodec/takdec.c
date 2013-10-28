@@ -690,7 +690,8 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         hsize = get_bits_count(gb) / 8;
         if (ff_tak_check_crc(pkt->data, hsize)) {
             av_log(avctx, AV_LOG_ERROR, "CRC error\n");
-            return AVERROR_INVALIDDATA;
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -865,7 +866,8 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         if (ff_tak_check_crc(pkt->data + hsize,
                              get_bits_count(gb) / 8 - hsize)) {
             av_log(avctx, AV_LOG_ERROR, "CRC error\n");
-            return AVERROR_INVALIDDATA;
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
         }
     }
 
