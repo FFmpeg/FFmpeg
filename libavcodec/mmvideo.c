@@ -129,7 +129,8 @@ static int mm_decode_intra(MmContext * s, int half_horiz, int half_vert)
  */
 static int mm_decode_inter(MmContext * s, int half_horiz, int half_vert)
 {
-    int data_off = bytestream2_get_le16(&s->gb), y = 0;
+    int data_off = bytestream2_get_le16(&s->gb);
+    int y = 0;
     GetByteContext data_ptr;
 
     if (bytestream2_get_bytes_left(&s->gb) < data_off)
