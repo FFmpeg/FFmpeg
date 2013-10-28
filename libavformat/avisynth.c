@@ -468,7 +468,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
         return AVERROR_UNKNOWN;
     pkt->data = av_malloc(pkt->size);
     if (!pkt->data)
-        return AVERROR_UNKNOWN;
+        return AVERROR(ENOMEM);
 
     frame = avs_library->avs_get_frame(avs->clip, n);
     error = avs_library->avs_clip_get_error(avs->clip);
@@ -566,7 +566,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
         return AVERROR_UNKNOWN;
     pkt->data = av_malloc(pkt->size);
     if (!pkt->data)
-        return AVERROR_UNKNOWN;
+        return AVERROR(ENOMEM);
 
     avs_library->avs_get_audio(avs->clip, pkt->data, n, samples);
     error = avs_library->avs_clip_get_error(avs->clip);
