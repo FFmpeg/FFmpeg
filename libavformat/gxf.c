@@ -166,7 +166,7 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
         case 26: /* AVCi50 / AVCi100 (AVC Intra) */
         case 29: /* AVCHD */
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_id = CODEC_ID_H264;
+            st->codec->codec_id = AV_CODEC_ID_H264;
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             break;
         // timecode tracks:
