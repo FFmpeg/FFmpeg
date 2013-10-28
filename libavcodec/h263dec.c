@@ -429,7 +429,8 @@ retry:
     }
 
     if (s->bitstream_buffer_size && (s->divx_packed || buf_size < 20)) // divx 5.01+/xvid frame reorder
-        ret = init_get_bits8(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size);
+        ret = init_get_bits8(&s->gb, s->bitstream_buffer,
+                             s->bitstream_buffer_size);
     else
         ret = init_get_bits8(&s->gb, buf, buf_size);
 
@@ -461,7 +462,7 @@ retry:
             GetBitContext gb;
 
             if (init_get_bits8(&gb, s->avctx->extradata, s->avctx->extradata_size) >= 0 )
-                ret = ff_mpeg4_decode_picture_header(s, &gb);
+                ff_mpeg4_decode_picture_header(s, &gb);
         }
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {
