@@ -201,8 +201,8 @@ int avpriv_vorbis_parse_extradata(AVCodecContext *avctx, VorbisParseContext *s)
     return 0;
 }
 
-int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
-                              int buf_size)
+int avpriv_vorbis_parse_frame_flags(VorbisParseContext *s, const uint8_t *buf,
+                                    int buf_size, int *flags)
 {
     int duration = 0;
 
@@ -211,6 +211,22 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
         int previous_blocksize = s->previous_blocksize;
 
         if (buf[0] & 1) {
+            /* If the user doesn't care about special packets, it's a bad one. */
+            if (!flags)
+                goto bad_packet;
+
+            /* Set the flag for which kind of special packet it is. */
+            if (buf[0] == 1)
+                *flags |= VORBIS_FLAG_HEADER;
+            else if (buf[0] == 3)
+                *flags |= VORBIS_FLAG_COMMENT;
+            else
+                goto bad_packet;
+
+            /* Special packets have no duration. */
+            return 0;
+
+bad_packet:
             av_log(s->avctx, AV_LOG_ERROR, "Invalid packet\n");
             return AVERROR_INVALIDDATA;
         }
@@ -232,6 +248,12 @@ int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
     }
 
     return duration;
+}
+
+int avpriv_vorbis_parse_frame(VorbisParseContext *s, const uint8_t *buf,
+                              int buf_size)
+{
+    return avpriv_vorbis_parse_frame_flags(s, buf, buf_size, NULL);
 }
 
 void avpriv_vorbis_parse_reset(VorbisParseContext *s)
