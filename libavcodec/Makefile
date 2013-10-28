@@ -11,7 +11,6 @@ HEADERS = avcodec.h                                                     \
           xvmc.h                                                        \
 
 OBJS = allcodecs.o                                                      \
-       audioconvert.o                                                   \
        avpacket.o                                                       \
        avpicture.o                                                      \
        bitstream.o                                                      \
