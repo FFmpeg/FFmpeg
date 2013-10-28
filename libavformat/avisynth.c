@@ -382,7 +382,7 @@ static int avisynth_open_file(AVFormatContext *s)
         goto fail;
     }
     if (!avs_is_clip(val)) {
-        av_log(s, AV_LOG_ERROR, "%s\n", "AviSynth script did not return a clip");
+        av_log(s, AV_LOG_ERROR, "AviSynth script did not return a clip");
         ret = AVERROR_UNKNOWN;
         goto fail;
     }
