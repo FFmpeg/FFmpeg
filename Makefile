@@ -11,7 +11,7 @@ ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
 BRIEF  = CC HOSTCC HOSTLD AS YASM AR LD
-SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM
+SILENT = DEPCC DEPHOSTCC DEPAS DEPYASM RANLIB RM STRIP
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
