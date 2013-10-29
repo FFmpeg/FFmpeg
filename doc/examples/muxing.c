@@ -336,6 +336,9 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, AVStream *st)
         fprintf(stderr, "Could not allocate video frame\n");
         exit(1);
     }
+    frame->format = c->pix_fmt;
+    frame->width = c->width;
+    frame->height = c->height;
 
     /* Allocate the encoded raw picture. */
     ret = avpicture_alloc(&dst_picture, c->pix_fmt, c->width, c->height);
