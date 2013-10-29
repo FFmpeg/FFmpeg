@@ -246,7 +246,7 @@ static const AVFilterPad avfilter_vf_setpts_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_setpts = {
+AVFilter ff_vf_setpts = {
     .name      = "setpts",
     .description = NULL_IF_CONFIG_SMALL("Set PTS for the output video frame."),
     .init      = init,
@@ -283,7 +283,7 @@ static const AVFilterPad asetpts_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_asetpts = {
+AVFilter ff_af_asetpts = {
     .name        = "asetpts",
     .description = NULL_IF_CONFIG_SMALL("Set PTS for the output audio frame."),
     .init        = init,

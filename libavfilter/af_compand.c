@@ -505,7 +505,7 @@ static const AVFilterPad compand_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_compand = {
+AVFilter ff_af_compand = {
     .name          = "compand",
     .description   = NULL_IF_CONFIG_SMALL("Compress or expand audio dynamic range."),
     .query_formats = query_formats,

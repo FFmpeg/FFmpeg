@@ -346,7 +346,7 @@ static const AVFilterPad outputs[] = {
 };
 
 #define DEFINE_LUT_FILTER(name_, description_)                          \
-    AVFilter avfilter_vf_##name_ = {                                    \
+    AVFilter ff_vf_##name_ = {                                          \
         .name          = #name_,                                        \
         .description   = NULL_IF_CONFIG_SMALL(description_),            \
         .priv_size     = sizeof(LutContext),                            \

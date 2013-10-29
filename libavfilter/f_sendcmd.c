@@ -527,7 +527,7 @@ static const AVFilterPad sendcmd_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_sendcmd = {
+AVFilter ff_vf_sendcmd = {
     .name        = "sendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
     .init        = init,
@@ -562,7 +562,7 @@ static const AVFilterPad asendcmd_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_asendcmd = {
+AVFilter ff_af_asendcmd = {
     .name        = "asendcmd",
     .description = NULL_IF_CONFIG_SMALL("Send commands to filters."),
     .init        = init,

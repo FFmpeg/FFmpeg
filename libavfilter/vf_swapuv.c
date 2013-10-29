@@ -101,7 +101,7 @@ static const AVFilterPad swapuv_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_swapuv = {
+AVFilter ff_vf_swapuv = {
     .name          = "swapuv",
     .description   = NULL_IF_CONFIG_SMALL("Swap U and V components."),
     .query_formats = query_formats,

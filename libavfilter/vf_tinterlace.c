@@ -372,7 +372,7 @@ static const AVFilterPad tinterlace_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_tinterlace = {
+AVFilter ff_vf_tinterlace = {
     .name          = "tinterlace",
     .description   = NULL_IF_CONFIG_SMALL("Perform temporal field interlacing."),
     .priv_size     = sizeof(TInterlaceContext),

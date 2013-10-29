@@ -287,7 +287,7 @@ static const AVFilterPad avfilter_af_volume_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_volume = {
+AVFilter ff_af_volume = {
     .name           = "volume",
     .description    = NULL_IF_CONFIG_SMALL("Change input volume."),
     .query_formats  = query_formats,

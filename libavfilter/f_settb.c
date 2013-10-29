@@ -143,7 +143,7 @@ static const AVFilterPad avfilter_vf_settb_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_settb = {
+AVFilter ff_vf_settb = {
     .name        = "settb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the video output link."),
     .priv_size   = sizeof(SetTBContext),
@@ -176,7 +176,7 @@ static const AVFilterPad avfilter_af_asettb_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_asettb = {
+AVFilter ff_af_asettb = {
     .name        = "asettb",
     .description = NULL_IF_CONFIG_SMALL("Set timebase for the audio output link."),
     .priv_size   = sizeof(SetTBContext),

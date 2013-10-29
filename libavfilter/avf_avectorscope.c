@@ -261,7 +261,7 @@ static const AVFilterPad audiovectorscope_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_avf_avectorscope = {
+AVFilter ff_avf_avectorscope = {
     .name          = "avectorscope",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to vectorscope video output."),
     .uninit        = uninit,

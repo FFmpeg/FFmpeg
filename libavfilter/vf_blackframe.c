@@ -119,7 +119,7 @@ static const AVFilterPad avfilter_vf_blackframe_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_blackframe = {
+AVFilter ff_vf_blackframe = {
     .name          = "blackframe",
     .description   = NULL_IF_CONFIG_SMALL("Detect frames that are (almost) black."),
     .priv_size     = sizeof(BlackFrameContext),

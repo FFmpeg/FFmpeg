@@ -451,7 +451,7 @@ static const AVFilterPad blend_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_blend = {
+AVFilter ff_vf_blend = {
     .name          = "blend",
     .description   = NULL_IF_CONFIG_SMALL("Blend two video frames into each other."),
     .init          = init,

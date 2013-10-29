@@ -778,7 +778,7 @@ static const AVFilterPad mp_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_mp = {
+AVFilter ff_vf_mp = {
     .name          = "mp",
     .description   = NULL_IF_CONFIG_SMALL("Apply a libmpcodecs filter to the input video."),
     .init          = init,

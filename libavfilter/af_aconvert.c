@@ -183,7 +183,7 @@ static const AVFilterPad aconvert_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_aconvert = {
+AVFilter ff_af_aconvert = {
     .name          = "aconvert",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to sample_fmt:channel_layout."),
     .priv_size     = sizeof(AConvertContext),

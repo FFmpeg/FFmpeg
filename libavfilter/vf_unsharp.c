@@ -298,7 +298,7 @@ static const AVFilterPad avfilter_vf_unsharp_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_unsharp = {
+AVFilter ff_vf_unsharp = {
     .name          = "unsharp",
     .description   = NULL_IF_CONFIG_SMALL("Sharpen or blur the input video."),
     .priv_size     = sizeof(UnsharpContext),

@@ -226,7 +226,7 @@ static const AVFilterPad astreamsync_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_astreamsync = {
+AVFilter ff_af_astreamsync = {
     .name          = "astreamsync",
     .description   = NULL_IF_CONFIG_SMALL("Copy two streams of audio data "
                                           "in a configurable order."),

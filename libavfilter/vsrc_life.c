@@ -437,7 +437,7 @@ static const AVFilterPad life_outputs[] = {
     { NULL}
 };
 
-AVFilter avfilter_vsrc_life = {
+AVFilter ff_vsrc_life = {
     .name          = "life",
     .description   = NULL_IF_CONFIG_SMALL("Create life."),
     .priv_size     = sizeof(LifeContext),

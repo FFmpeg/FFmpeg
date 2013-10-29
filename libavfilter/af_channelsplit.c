@@ -136,7 +136,7 @@ static const AVFilterPad avfilter_af_channelsplit_inputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_channelsplit = {
+AVFilter ff_af_channelsplit = {
     .name           = "channelsplit",
     .description    = NULL_IF_CONFIG_SMALL("Split audio into per-channel streams."),
     .priv_size      = sizeof(ChannelSplitContext),

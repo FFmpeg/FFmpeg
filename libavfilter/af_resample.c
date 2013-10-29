@@ -314,7 +314,7 @@ static const AVFilterPad avfilter_af_resample_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_resample = {
+AVFilter ff_af_resample = {
     .name          = "resample",
     .description   = NULL_IF_CONFIG_SMALL("Audio resampling and conversion."),
     .priv_size     = sizeof(ResampleContext),

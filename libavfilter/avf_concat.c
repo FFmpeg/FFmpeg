@@ -412,7 +412,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_free(cat->in);
 }
 
-AVFilter avfilter_avf_concat = {
+AVFilter ff_avf_concat = {
     .name          = "concat",
     .description   = NULL_IF_CONFIG_SMALL("Concatenate audio and video streams."),
     .init          = init,

@@ -227,7 +227,7 @@ static const AVFilterPad trim_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_trim = {
+AVFilter ff_vf_trim = {
     .name        = "trim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
     .init        = init,
@@ -382,7 +382,7 @@ static const AVFilterPad atrim_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_atrim = {
+AVFilter ff_af_atrim = {
     .name        = "atrim",
     .description = NULL_IF_CONFIG_SMALL("Pick one continuous section from the input, drop the rest."),
     .init        = init,

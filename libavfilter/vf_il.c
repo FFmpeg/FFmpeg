@@ -200,7 +200,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_il = {
+AVFilter ff_vf_il = {
     .name          = "il",
     .description   = NULL_IF_CONFIG_SMALL("Deinterleave or interleave fields."),
     .priv_size     = sizeof(IlContext),

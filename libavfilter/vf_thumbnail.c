@@ -226,7 +226,7 @@ static const AVFilterPad thumbnail_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_thumbnail = {
+AVFilter ff_vf_thumbnail = {
     .name          = "thumbnail",
     .description   = NULL_IF_CONFIG_SMALL("Select the most representative frame in a given sequence of consecutive frames."),
     .priv_size     = sizeof(ThumbContext),

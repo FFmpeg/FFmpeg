@@ -116,7 +116,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_ashowinfo = {
+AVFilter ff_af_ashowinfo = {
     .name        = "ashowinfo",
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each audio frame."),
     .priv_size   = sizeof(AShowInfoContext),

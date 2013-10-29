@@ -785,7 +785,7 @@ static const AVFilterPad ebur128_inputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_ebur128 = {
+AVFilter ff_af_ebur128 = {
     .name          = "ebur128",
     .description   = NULL_IF_CONFIG_SMALL("EBU R128 scanner."),
     .priv_size     = sizeof(EBUR128Context),
