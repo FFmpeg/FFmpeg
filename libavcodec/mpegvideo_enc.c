@@ -454,7 +454,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     }
     if (s->max_b_frames < 0) {
         av_log(avctx, AV_LOG_ERROR,
-               "max b frames must be 0 or postive for mpegvideo based encoders\n");
+               "max b frames must be 0 or positive for mpegvideo based encoders\n");
         return -1;
     }
 
