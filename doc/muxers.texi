@@ -386,7 +386,9 @@ ffmpeg -i INPUT -f md5 -
 
 See also the @ref{framemd5} muxer.
 
-@section MOV/MP4/ISMV
+@section mov/mp4/ismv
+
+MOV/MP4/ISMV (Smooth Streaming) muxer.
 
 The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
 file has all the metadata about all packets stored in one location
