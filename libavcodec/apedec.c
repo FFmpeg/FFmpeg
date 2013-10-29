@@ -1456,7 +1456,8 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
             }
             s->ptr += offset;
         } else {
-            init_get_bits(&s->gb, s->ptr, (s->data_end - s->ptr) * 8);
+            if ((ret = init_get_bits8(&s->gb, s->ptr, s->data_end - s->ptr)) < 0)
+                return ret;
             if (s->fileversion > 3800)
                 skip_bits_long(&s->gb, offset * 8);
             else
