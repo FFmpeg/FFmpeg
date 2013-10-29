@@ -775,6 +775,11 @@ typedef struct AVStream {
 
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
 
+#if FF_API_REFERENCE_DTS
+    /* a hack to keep ABI compatibility for ffmpeg and other applications, which accesses parser even
+     * though it should not */
+    int64_t do_not_use;
+#endif
     // Timestamp generation support:
     /**
      * Timestamp corresponding to the last dts sync point.
@@ -783,7 +788,6 @@ typedef struct AVStream {
      * a DTS is received from the underlying container. Otherwise set to
      * AV_NOPTS_VALUE by default.
      */
-    int64_t reference_dts;
     int64_t first_dts;
     int64_t cur_dts;
     int64_t last_IP_pts;
