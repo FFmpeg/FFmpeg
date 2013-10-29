@@ -101,7 +101,7 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
     }
     if (o->type == AV_OPT_TYPE_FLAGS) {
         double d = num*intnum/den;
-        if (d < -1.5 || d > 0xFFFFFFFF+0.5 || (lrint(d*256) & 255)) {
+        if (d < -1.5 || d > 0xFFFFFFFF+0.5 || (llrint(d*256) & 255)) {
             av_log(obj, AV_LOG_ERROR,
                    "Value %f for parameter '%s' is not a valid set of 32bit integer flags\n",
                    num*intnum/den, o->name);
