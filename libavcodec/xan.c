@@ -111,12 +111,11 @@ static int xan_huffman_decode(uint8_t *dest, int dest_len,
     uint8_t val = ival;
     uint8_t *dest_end = dest + dest_len;
     uint8_t *dest_start = dest;
+    int ret;
     GetBitContext gb;
 
-    if (ptr_len < 0)
-        return AVERROR_INVALIDDATA;
-
-    init_get_bits(&gb, ptr, ptr_len * 8);
+    if ((ret = init_get_bits8(&gb, ptr, ptr_len)) < 0)
+        return ret;
 
     while (val != 0x16) {
         unsigned idx = val - 0x17 + get_bits1(&gb) * byte;
