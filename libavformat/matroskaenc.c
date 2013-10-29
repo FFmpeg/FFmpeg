@@ -592,6 +592,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         int bit_depth = av_get_bits_per_sample(codec->codec_id);
         int sample_rate = codec->sample_rate;
         int output_sample_rate = 0;
+        float display_width_scale_factor = 1.0;
         AVDictionaryEntry *tag;
 
         if (codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
@@ -723,6 +724,12 @@ static int mkv_write_tracks(AVFormatContext *s)
                         return AVERROR(EINVAL);
                     } else
                         put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, st_mode);
+                        // handle VIDEODISPLAYWIDTH for stereo pair
+                        if (!strcmp(ff_matroska_video_stereo_mode[st_mode], "left_right") ||
+                            !strcmp(ff_matroska_video_stereo_mode[st_mode], "right_left")) {
+                            display_width_scale_factor = 0.5;
+                        }
+
                 }
 
                 if ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
@@ -730,14 +737,16 @@ static int mkv_write_tracks(AVFormatContext *s)
                     (codec->pix_fmt == AV_PIX_FMT_YUVA420P)) {
                     put_ebml_uint(pb, MATROSKA_ID_VIDEOALPHAMODE, 1);
                 }
-
                 if (st->sample_aspect_ratio.num) {
                     int64_t d_width = av_rescale(codec->width, st->sample_aspect_ratio.num, st->sample_aspect_ratio.den);
                     if (d_width > INT_MAX) {
                         av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
                         return AVERROR(EINVAL);
                     }
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width);
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , (uint64_t) ceil(d_width * display_width_scale_factor));
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height);
+                } else {
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , (uint64_t) ceil(codec->width * display_width_scale_factor));
                     put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height);
                 }
 
