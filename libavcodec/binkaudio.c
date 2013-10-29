@@ -308,7 +308,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR(ENOMEM);
         s->packet_buffer = buf;
         memcpy(s->packet_buffer, avpkt->data, avpkt->size);
-        init_get_bits(gb, s->packet_buffer, avpkt->size * 8);
+        if ((ret = init_get_bits8(gb, s->packet_buffer, avpkt->size)) < 0)
+            return ret;
         consumed = avpkt->size;
 
         /* skip reported size */
