@@ -38,8 +38,8 @@ As this encoder is experimental, unexpected behavior may exist from time to
 time. For a more stable AAC encoder, see @ref{libvo-aacenc}. However, be warned
 that it has a worse quality reported by some users.
 
-@c Comment this out until somebody writes the respective documentation.
-@c See also @ref{libfaac}, @ref{libaacplus}, and @ref{libfdk-aac-enc}.
+@c todo @ref{libfaac}, @ref{libaacplus}
+See also @ref{libfdk-aac-enc,,the libfdk_aac section}.
 
 @subsection Options
 
@@ -493,6 +493,171 @@ Selected by Encoder (default)
 @end table
 
 @end table
+
+@anchor{libfdk-aac-enc}
+@section libfdk_aac
+
+libfdk-aac AAC (Advanced Audio Coding) encoder wrapper.
+
+The libfdk-aac library is based on the Fraunhofer FDK AAC code from
+the Android project.
+
+Requires the presence of the libfdk-aac headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libfdk-aac}. The library is also incompatible with GPL,
+so if you allow the use of GPL, you should configure with
+@code{--enable-gpl --enable-nonfree --enable-libfdk-aac}.
+
+This encoder is considered to be of higher quality with respect to
+both @ref{aacenc,,the native experimental FFmpeg AAC encoder} and
+libfaac.
+
+For more information see the fdk-aac project at
+@url{http://sourceforge.net/p/opencore-amr/fdk-aac/}.
+
+@subsection Options
+
+The following options are mapped on the shared FFmpeg codec options.
+
+@table @option
+@item b
+Set bit rate in bits/s. If the bitrate is not explicitly specified, it
+is automatically set to a suitable value depending on the selected
+profile.
+
+In case VBR mode is enabled the option is ignored.
+
+@item ar
+Set audio sampling rate (in Hz).
+
+@item channels
+Set the number of audio channels.
+
+@item flags +qscale
+Enable fixed quality, VBR (Variable Bit Rate) mode.
+Note that VBR is implicitely enabled when the @option{vbr} value is
+positive.
+
+@item cutoff
+Set cutoff frequency. If not specified (or explicitly set to 0) it
+will use a value automatically computed by the library. Default value
+is 0.
+
+@item profile
+Set audio profile.
+
+The following profiles are recognized:
+@table @samp
+@item aac_low
+Low Complexity AAC (LC)
+
+@item aac_he
+High Efficiency AAC (HE-AAC)
+
+@item aac_he_v2
+High Efficiency AAC version 2 (HE-AACv2)
+
+@item aac_ld
+Low Delay AAC (LD)
+
+@item aac_eld
+Enhanced Low Delay AAC (ELD)
+@end table
+
+If not specified it is set to @samp{aac_low}.
+@end table
+
+The following are private options of the libfdk_aac encoder.
+
+@table @option
+@item afterburner
+Enable afterburner feature if set to 1, disabled if set to 0. This
+improves the quality but also the required processing power.
+
+Default value is 1.
+
+@item eld_sbr
+Enable SBR (Spectral Band Replication) for ELD if set to 1, disabled
+if set to 0.
+
+Default value is 0.
+
+@item signaling
+Set SBR/PS signaling style.
+
+It can assume one of the following values:
+@table @samp
+@item default
+choose signaling implicitly (explicit hierarchical by default,
+implicit if global header is disabled)
+
+@item implicit
+implicit backwards compatible signaling
+
+@item explicit_sbr
+explicit SBR, implicit PS signaling
+
+@item explicit_hierarchical
+explicit hierarchical signaling
+@end table
+
+Default value is @samp{default}.
+
+@item latm
+Output LATM/LOAS encapsulated data if set to 1, disabled if set to 0.
+
+Default value is 0.
+
+@item header_period
+Set StreamMuxConfig and PCE repetition period (in frames) for sending
+in-band configuration buffers within LATM/LOAS transport layer.
+
+Must be a 16-bits non-negative integer.
+
+Default value is 0.
+
+@item vbr
+Set VBR mode, from 1 to 5. 1 is lowest quality (though still pretty
+good) and 5 is highest quality. A value of 0 will disable VBR mode,
+and CBR (Constant Bit Rate) mode is enabled.
+
+Currently only the @samp{aac_low} profile supports VBR mode.
+
+VBR modes 1-5 correspond to roughly the following average bit rate:
+
+@table @samp
+@item 1
+32 kbps/channel
+@item 2
+40 kbps/channel
+@item 3
+48-56 kbps/channel
+@item 4
+64 kbps/channel
+@item 5
+about 80-96 kbps/channel
+@end table
+
+Default value is 0.
+@end table
+
+@section Examples
+
+@itemize
+@item
+Use @command{ffmpeg} to convert an audio file to VBR AAC in an M4A (MP4)
+container:
+@example
+ffmpeg -i input.wav -codec:a libfdk_aac -vbr 3 output.m4a
+@end example
+
+@item
+Use @command{ffmpeg} to convert an audio file to CBR 64k kbps AAC, using the
+High-Efficiency AAC profile:
+@example
+ffmpeg -i input.wav -c:a libfdk_aac -profile:a aac_he -b:a 64k output.m4a
+@end example
+@end itemize
 
 @anchor{libmp3lame}
 @section libmp3lame
