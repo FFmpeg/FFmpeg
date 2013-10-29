@@ -4430,7 +4430,6 @@ check_cflags -Wmissing-prototypes
 check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 enabled extra_warnings && check_cflags -Winline
-enabled extra_warnings || check_cflags -Wno-maybe-uninitialized
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
@@ -4530,6 +4529,7 @@ elif enabled gcc; then
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
     check_cflags -Werror=vla
+    enabled extra_warnings || check_cflags -Wno-maybe-uninitialized
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
