@@ -86,7 +86,6 @@ AC3_EXPONENT_MIN sse2
 ; This function uses 2 different methods to calculate a valid result.
 ; 1) logical 'or' of abs of each element
 ;        This is used for ssse3 because of the pabsw instruction.
-;        It is also used for mmx because of the lack of min/max instructions.
 ; 2) calculate min/max for the array, then or(abs(min),abs(max))
 ;        This is used for mmxext and sse2 because they have pminsw/pmaxsw.
 ;-----------------------------------------------------------------------------
@@ -104,15 +103,9 @@ cglobal ac3_max_msb_abs_int16_%1, 2,2,5, src, len
     pmaxsw      m3, m0
     pmaxsw      m3, m1
 %else ; or_abs
-%ifidn %1, mmx
-    mova        m0, [srcq]
-    mova        m1, [srcq+mmsize]
-    ABS2        m0, m1, m3, m4
-%else ; ssse3
     ; using memory args is faster for ssse3
     pabsw       m0, [srcq]
     pabsw       m1, [srcq+mmsize]
-%endif
     por         m2, m0
     por         m2, m1
 %endif
@@ -137,9 +130,7 @@ cglobal ac3_max_msb_abs_int16_%1, 2,2,5, src, len
 %endmacro
 
 INIT_MMX
-%define ABS2 ABS2_MMX
 %define PSHUFLW pshufw
-AC3_MAX_MSB_ABS_INT16 mmx, or_abs
 %define ABS2 ABS2_MMX2
 AC3_MAX_MSB_ABS_INT16 mmxext, min_max
 INIT_XMM
