@@ -603,7 +603,7 @@ static const AVFilterPad lut3d_outputs[] = {
      { NULL }
 };
 
-AVFilter avfilter_vf_lut3d = {
+AVFilter ff_vf_lut3d = {
     .name          = "lut3d",
     .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a 3D LUT."),
     .priv_size     = sizeof(LUT3DContext),
@@ -781,7 +781,7 @@ static const AVFilterPad haldclut_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_haldclut = {
+AVFilter ff_vf_haldclut = {
     .name          = "haldclut",
     .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a Hald CLUT."),
     .priv_size     = sizeof(LUT3DContext),

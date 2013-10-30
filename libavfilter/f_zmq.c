@@ -226,7 +226,7 @@ static const AVFilterPad zmq_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_zmq = {
+AVFilter ff_vf_zmq = {
     .name        = "zmq",
     .description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
     .init        = init,
@@ -261,7 +261,7 @@ static const AVFilterPad azmq_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_azmq = {
+AVFilter ff_af_azmq = {
     .name        = "azmq",
     .description = NULL_IF_CONFIG_SMALL("Receive commands through ZMQ and broker them to filters."),
     .init        = init,

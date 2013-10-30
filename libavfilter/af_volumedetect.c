@@ -148,7 +148,7 @@ static const AVFilterPad volumedetect_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_volumedetect = {
+AVFilter ff_af_volumedetect = {
     .name          = "volumedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect audio volume."),
     .priv_size     = sizeof(VolDetectContext),

@@ -125,7 +125,7 @@ static const AVFilterPad avfilter_vf_pixdesctest_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_pixdesctest = {
+AVFilter ff_vf_pixdesctest = {
     .name        = "pixdesctest",
     .description = NULL_IF_CONFIG_SMALL("Test pixel format definitions."),
     .priv_size   = sizeof(PixdescTestContext),

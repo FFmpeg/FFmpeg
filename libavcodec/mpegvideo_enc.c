@@ -452,6 +452,11 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "b frames not supported by codec\n");
         return -1;
     }
+    if (s->max_b_frames < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "max b frames must be 0 or positive for mpegvideo based encoders\n");
+        return -1;
+    }
 
     if ((s->codec_id == AV_CODEC_ID_MPEG4 ||
          s->codec_id == AV_CODEC_ID_H263  ||

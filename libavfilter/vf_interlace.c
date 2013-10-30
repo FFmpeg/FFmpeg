@@ -230,7 +230,7 @@ static const AVFilterPad outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_interlace = {
+AVFilter ff_vf_interlace = {
     .name          = "interlace",
     .description   = NULL_IF_CONFIG_SMALL("Convert progressive video into interlaced."),
     .uninit        = uninit,

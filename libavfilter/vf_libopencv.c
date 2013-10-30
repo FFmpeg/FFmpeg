@@ -403,7 +403,7 @@ static const AVFilterPad avfilter_vf_ocv_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_ocv = {
+AVFilter ff_vf_ocv = {
     .name          = "ocv",
     .description   = NULL_IF_CONFIG_SMALL("Apply transform using libopencv."),
     .priv_size     = sizeof(OCVContext),

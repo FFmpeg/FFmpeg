@@ -266,7 +266,7 @@ static const AVFilterPad geq_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_geq = {
+AVFilter ff_vf_geq = {
     .name          = "geq",
     .description   = NULL_IF_CONFIG_SMALL("Apply generic equation to each pixel."),
     .priv_size     = sizeof(GEQContext),

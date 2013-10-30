@@ -144,7 +144,7 @@ static const AVFilterPad apad_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_apad = {
+AVFilter ff_af_apad = {
     .name          = "apad",
     .description   = NULL_IF_CONFIG_SMALL("Pad audio with silence."),
     .init          = init,

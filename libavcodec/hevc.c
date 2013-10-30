@@ -80,20 +80,16 @@ static void pic_arrays_free(HEVCContext *s)
 }
 
 /* allocate arrays that depend on frame dimensions */
-static int pic_arrays_init(HEVCContext *s)
+static int pic_arrays_init(HEVCContext *s, const HEVCSPS *sps)
 {
-    int log2_min_cb_size     = s->sps->log2_min_cb_size;
-    int width                = s->sps->width;
-    int height               = s->sps->height;
-    int pic_size             = width * height;
-    int pic_size_in_ctb      = ((width  >> log2_min_cb_size) + 1) *
-                               ((height >> log2_min_cb_size) + 1);
-    int ctb_count            = s->sps->ctb_width * s->sps->ctb_height;
-    int min_pu_width  = width  >> s->sps->log2_min_pu_size;
-    int pic_height_in_min_pu = height >> s->sps->log2_min_pu_size;
-    int pic_size_in_min_pu   = min_pu_width * pic_height_in_min_pu;
-    int pic_width_in_min_tu  = width  >> s->sps->log2_min_tb_size;
-    int pic_height_in_min_tu = height >> s->sps->log2_min_tb_size;
+    int log2_min_cb_size = sps->log2_min_cb_size;
+    int width            = sps->width;
+    int height           = sps->height;
+    int pic_size         = width * height;
+    int pic_size_in_ctb  = ((width  >> log2_min_cb_size) + 1) *
+                           ((height >> log2_min_cb_size) + 1);
+    int ctb_count        = sps->ctb_width * sps->ctb_height;
+    int min_pu_size      = sps->min_pu_width * sps->min_pu_height;
 
     s->bs_width  = width  >> 3;
     s->bs_height = height >> 3;
@@ -105,13 +101,13 @@ static int pic_arrays_init(HEVCContext *s)
         goto fail;
 
     s->skip_flag    = av_malloc(pic_size_in_ctb);
-    s->tab_ct_depth = av_malloc(s->sps->min_cb_height * s->sps->min_cb_width);
+    s->tab_ct_depth = av_malloc(sps->min_cb_height * sps->min_cb_width);
     if (!s->skip_flag || !s->tab_ct_depth)
         goto fail;
 
-    s->tab_ipm  = av_malloc(pic_size_in_min_pu);
-    s->cbf_luma = av_malloc(pic_width_in_min_tu * pic_height_in_min_tu);
-    s->is_pcm   = av_malloc(pic_size_in_min_pu);
+    s->cbf_luma = av_malloc(sps->min_tb_width * sps->min_tb_height);
+    s->tab_ipm  = av_malloc(min_pu_size);
+    s->is_pcm   = av_malloc(min_pu_size);
     if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
         goto fail;
 
@@ -126,7 +122,7 @@ static int pic_arrays_init(HEVCContext *s)
     if (!s->horizontal_bs || !s->vertical_bs)
         goto fail;
 
-    s->tab_mvf_pool = av_buffer_pool_init(pic_size_in_min_pu * sizeof(MvField),
+    s->tab_mvf_pool = av_buffer_pool_init(min_pu_size * sizeof(MvField),
                                           av_buffer_alloc);
     s->rpl_tab_pool = av_buffer_pool_init(ctb_count * sizeof(RefPicListTab),
                                           av_buffer_allocz);
@@ -280,10 +276,48 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
+static int set_sps(HEVCContext *s, const HEVCSPS *sps)
+{
+    int ret;
+
+    pic_arrays_free(s);
+    ret = pic_arrays_init(s, sps);
+    if (ret < 0)
+        goto fail;
+
+    s->avctx->coded_width         = sps->width;
+    s->avctx->coded_height        = sps->height;
+    s->avctx->width               = sps->output_width;
+    s->avctx->height              = sps->output_height;
+    s->avctx->pix_fmt             = sps->pix_fmt;
+    s->avctx->sample_aspect_ratio = sps->vui.sar;
+    s->avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
+
+    ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
+    ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
+    ff_videodsp_init (&s->vdsp,    sps->bit_depth);
+
+    if (sps->sao_enabled) {
+        av_frame_unref(s->tmp_frame);
+        ret = ff_get_buffer(s->avctx, s->tmp_frame, AV_GET_BUFFER_FLAG_REF);
+        if (ret < 0)
+            goto fail;
+        s->frame = s->tmp_frame;
+    }
+
+    s->sps = sps;
+    s->vps = s->vps_list[s->sps->vps_id];
+    return 0;
+fail:
+    pic_arrays_free(s);
+    s->sps = NULL;
+    return ret;
+}
+
 static int hls_slice_header(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
-    SliceHeader   *sh = &s->sh;
+    SliceHeader *sh   = &s->sh;
     int i, j, ret;
 
     // Coded parameters
@@ -302,48 +336,23 @@ static int hls_slice_header(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
         return AVERROR_INVALIDDATA;
     }
+    if (!sh->first_slice_in_pic_flag &&
+        s->pps != (HEVCPPS*)s->pps_list[sh->pps_id]->data) {
+        av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
+        return AVERROR_INVALIDDATA;
+    }
     s->pps = (HEVCPPS*)s->pps_list[sh->pps_id]->data;
 
     if (s->sps != (HEVCSPS*)s->sps_list[s->pps->sps_id]->data) {
         s->sps = (HEVCSPS*)s->sps_list[s->pps->sps_id]->data;
-        s->vps = s->vps_list[s->sps->vps_id];
 
-        pic_arrays_free(s);
-        ret = pic_arrays_init(s);
-        if (ret < 0) {
-            s->sps = NULL;
-            return AVERROR(ENOMEM);
-        }
+        ff_hevc_clear_refs(s);
+        ret = set_sps(s, s->sps);
+        if (ret < 0)
+            return ret;
 
-        s->width  = s->sps->width;
-        s->height = s->sps->height;
-
-        s->avctx->coded_width  = s->sps->width;
-        s->avctx->coded_height = s->sps->height;
-        s->avctx->width        = s->sps->output_width;
-        s->avctx->height       = s->sps->output_height;
-        s->avctx->pix_fmt      = s->sps->pix_fmt;
-        s->avctx->sample_aspect_ratio = s->sps->vui.sar;
-        s->avctx->has_b_frames = s->sps->temporal_layer[s->sps->max_sub_layers - 1].num_reorder_pics;
-
-        if (s->sps->chroma_format_idc == 0 || s->sps->separate_colour_plane_flag) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "TODO: s->sps->chroma_format_idc == 0 || "
-                   "s->sps->separate_colour_plane_flag\n");
-            return AVERROR_PATCHWELCOME;
-        }
-
-        ff_hevc_pred_init(&s->hpc,     s->sps->bit_depth);
-        ff_hevc_dsp_init (&s->hevcdsp, s->sps->bit_depth);
-        ff_videodsp_init (&s->vdsp,    s->sps->bit_depth);
-
-        if (s->sps->sao_enabled) {
-            av_frame_unref(s->tmp_frame);
-            ret = ff_get_buffer(s->avctx, s->tmp_frame, 0);
-            if (ret < 0)
-                return ret;
-            s->frame = s->tmp_frame;
-        }
+        s->seq_decode = (s->seq_decode + 1) & 0xff;
+        s->max_ra     = INT_MAX;
     }
 
     sh->dependent_slice_segment_flag = 0;
@@ -376,13 +385,17 @@ static int hls_slice_header(HEVCContext *s)
         s->slice_initialized = 0;
 
         for (i = 0; i < s->pps->num_extra_slice_header_bits; i++)
-            skip_bits(gb, 1); // slice_reserved_undetermined_flag[]
+            skip_bits(gb, 1);  // slice_reserved_undetermined_flag[]
 
         sh->slice_type = get_ue_golomb_long(gb);
         if (!(sh->slice_type == I_SLICE || sh->slice_type == P_SLICE ||
               sh->slice_type == B_SLICE)) {
             av_log(s->avctx, AV_LOG_ERROR, "Unknown slice type: %d.\n",
                    sh->slice_type);
+            return AVERROR_INVALIDDATA;
+        }
+        if (IS_IRAP(s) && sh->slice_type != I_SLICE) {
+            av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
 
@@ -2721,6 +2734,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                 return AVERROR(ENOMEM);
         }
     }
+
+    if (s->sps != s0->sps)
+        ret = set_sps(s, s0->sps);
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;

@@ -688,7 +688,7 @@ static const AVFilterPad ladspa_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_ladspa = {
+AVFilter ff_af_ladspa = {
     .name          = "ladspa",
     .description   = NULL_IF_CONFIG_SMALL("Apply LADSPA effect."),
     .priv_size     = sizeof(LADSPAContext),

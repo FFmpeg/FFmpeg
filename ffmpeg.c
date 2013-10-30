@@ -468,6 +468,8 @@ static void ffmpeg_cleanup(int ret)
         output_streams[i]->bitstream_filters = NULL;
         avcodec_free_frame(&output_streams[i]->filtered_frame);
 
+        av_parser_close(output_streams[i]->parser);
+
         av_freep(&output_streams[i]->forced_keyframes);
         av_expr_free(output_streams[i]->forced_keyframes_pexpr);
         av_freep(&output_streams[i]->avfilter);
@@ -1467,7 +1469,10 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
        && ost->st->codec->codec_id != AV_CODEC_ID_MPEG2VIDEO
        && ost->st->codec->codec_id != AV_CODEC_ID_VC1
        ) {
-        if (av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, pkt->data, pkt->size, pkt->flags & AV_PKT_FLAG_KEY)) {
+        if (av_parser_change(ost->parser, ost->st->codec,
+                             &opkt.data, &opkt.size,
+                             pkt->data, pkt->size,
+                             pkt->flags & AV_PKT_FLAG_KEY)) {
             opkt.buf = av_buffer_create(opkt.data, opkt.size, av_buffer_default_free, NULL, 0);
             if (!opkt.buf)
                 exit_program(1);
@@ -1652,7 +1657,6 @@ static int decode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 {
     AVFrame *decoded_frame, *f;
-    void *buffer_to_free = NULL;
     int i, ret = 0, err = 0, resample_changed;
     int64_t best_effort_timestamp;
     AVRational *frame_sample_aspect;
@@ -1753,7 +1757,6 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output)
 
     av_frame_unref(ist->filter_frame);
     av_frame_unref(decoded_frame);
-    av_free(buffer_to_free);
     return err < 0 ? err : ret;
 }
 
@@ -2257,6 +2260,8 @@ static int transcode_init(void)
 
             av_reduce(&codec->time_base.num, &codec->time_base.den,
                         codec->time_base.num, codec->time_base.den, INT_MAX);
+
+            ost->parser = av_parser_init(codec->codec_id);
 
             switch (codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:

@@ -272,7 +272,7 @@ static const AVFilterPad telecine_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_telecine = {
+AVFilter ff_vf_telecine = {
     .name          = "telecine",
     .description   = NULL_IF_CONFIG_SMALL("Apply a telecine pattern."),
     .priv_size     = sizeof(TelecineContext),

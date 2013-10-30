@@ -373,7 +373,7 @@ static const AVFilterPad psnr_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_psnr = {
+AVFilter ff_vf_psnr = {
     .name          = "psnr",
     .description   = NULL_IF_CONFIG_SMALL("Calculate the PSNR between two video streams."),
     .init          = init,

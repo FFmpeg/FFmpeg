@@ -137,7 +137,7 @@ static const AVFilterPad separatefields_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_separatefields = {
+AVFilter ff_vf_separatefields = {
     .name        = "separatefields",
     .description = NULL_IF_CONFIG_SMALL("Split input video frames into fields."),
     .priv_size   = sizeof(SeparateFieldsContext),

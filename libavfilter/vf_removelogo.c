@@ -567,7 +567,7 @@ static const AVFilterPad removelogo_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_removelogo = {
+AVFilter ff_vf_removelogo = {
     .name          = "removelogo",
     .description   = NULL_IF_CONFIG_SMALL("Remove a TV logo based on a mask image."),
     .priv_size     = sizeof(RemovelogoContext),

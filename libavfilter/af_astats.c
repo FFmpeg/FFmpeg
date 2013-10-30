@@ -262,7 +262,7 @@ static const AVFilterPad astats_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_astats = {
+AVFilter ff_af_astats = {
     .name          = "astats",
     .description   = NULL_IF_CONFIG_SMALL("Show time domain statistics about audio frames."),
     .query_formats = query_formats,

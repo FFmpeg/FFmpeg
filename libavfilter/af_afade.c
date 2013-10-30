@@ -287,7 +287,7 @@ static const AVFilterPad avfilter_af_afade_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_afade = {
+AVFilter ff_af_afade = {
     .name          = "afade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input audio."),
     .query_formats = query_formats,

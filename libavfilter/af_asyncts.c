@@ -309,7 +309,7 @@ static const AVFilterPad avfilter_af_asyncts_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_asyncts = {
+AVFilter ff_af_asyncts = {
     .name        = "asyncts",
     .description = NULL_IF_CONFIG_SMALL("Sync audio data to timestamps"),
     .init        = init,

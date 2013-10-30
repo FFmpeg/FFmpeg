@@ -592,6 +592,8 @@ static int mkv_write_tracks(AVFormatContext *s)
         int bit_depth = av_get_bits_per_sample(codec->codec_id);
         int sample_rate = codec->sample_rate;
         int output_sample_rate = 0;
+        int display_width_div = 1;
+        int display_height_div = 1;
         AVDictionaryEntry *tag;
 
         if (codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
@@ -723,6 +725,21 @@ static int mkv_write_tracks(AVFormatContext *s)
                         return AVERROR(EINVAL);
                     } else
                         put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, st_mode);
+
+                    switch (st_mode) {
+                    case 1:
+                    case 8:
+                    case 9:
+                    case 11:
+                        display_width_div = 2;
+                        break;
+                    case 2:
+                    case 3:
+                    case 6:
+                    case 7:
+                        display_height_div = 2;
+                        break;
+                    }
                 }
 
                 if ((tag = av_dict_get(st->metadata, "alpha_mode", NULL, 0)) ||
@@ -737,8 +754,11 @@ static int mkv_write_tracks(AVFormatContext *s)
                         av_log(s, AV_LOG_ERROR, "Overflow in display width\n");
                         return AVERROR(EINVAL);
                     }
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width);
-                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height);
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , d_width / display_width_div);
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height / display_height_div);
+                } else if (display_width_div != 1 || display_height_div != 1) {
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYWIDTH , codec->width / display_width_div);
+                    put_ebml_uint(pb, MATROSKA_ID_VIDEODISPLAYHEIGHT, codec->height / display_height_div);
                 }
 
                 if (codec->codec_id == AV_CODEC_ID_RAWVIDEO) {

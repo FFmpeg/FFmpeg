@@ -371,6 +371,8 @@ typedef struct OutputStream {
     int copy_prior_start;
 
     int keep_pix_fmt;
+
+    AVCodecParserContext *parser;
 } OutputStream;
 
 typedef struct OutputFile {

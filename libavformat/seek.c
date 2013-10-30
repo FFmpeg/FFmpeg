@@ -428,13 +428,11 @@ AVParserState *ff_store_parser_state(AVFormatContext *s)
         ss->parser        = st->parser;
         ss->last_IP_pts   = st->last_IP_pts;
         ss->cur_dts       = st->cur_dts;
-        ss->reference_dts = st->reference_dts;
         ss->probe_packets = st->probe_packets;
 
         st->parser        = NULL;
         st->last_IP_pts   = AV_NOPTS_VALUE;
         st->cur_dts       = AV_NOPTS_VALUE;
-        st->reference_dts = AV_NOPTS_VALUE;
         st->probe_packets = MAX_PROBE_PACKETS;
     }
 
@@ -467,7 +465,6 @@ void ff_restore_parser_state(AVFormatContext *s, AVParserState *state)
         st->parser        = ss->parser;
         st->last_IP_pts   = ss->last_IP_pts;
         st->cur_dts       = ss->cur_dts;
-        st->reference_dts = ss->reference_dts;
         st->probe_packets = ss->probe_packets;
     }
 

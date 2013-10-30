@@ -567,7 +567,7 @@ static const AVFilterPad deshake_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_deshake = {
+AVFilter ff_vf_deshake = {
     .name          = "deshake",
     .description   = NULL_IF_CONFIG_SMALL("Stabilize shaky video."),
     .priv_size     = sizeof(DeshakeContext),

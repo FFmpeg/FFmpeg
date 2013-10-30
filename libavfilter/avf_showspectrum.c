@@ -490,7 +490,7 @@ static const AVFilterPad showspectrum_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_avf_showspectrum = {
+AVFilter ff_avf_showspectrum = {
     .name          = "showspectrum",
     .description   = NULL_IF_CONFIG_SMALL("Convert input audio to a spectrum video output."),
     .uninit        = uninit,

@@ -35,7 +35,7 @@ checkout(){
 update()(
     cd ${src} || return
     case "$repo" in
-        git:*) git pull --quiet ;;
+        git:*) git fetch --force && git reset --hard FETCH_HEAD ;;
     esac
 )
 

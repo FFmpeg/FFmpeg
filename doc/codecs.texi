@@ -172,7 +172,13 @@ Set max video quantizer scale (VBR). Must be included between -1 and
 Set max difference between the quantizer scale (VBR).
 
 @item bf @var{integer} (@emph{encoding,video})
-Set max number of B frames.
+Set max number of B frames between non-B-frames.
+
+Must be an integer between -1 and 16. 0 means that B-frames are
+disabled. If a value of -1 is used, it will choose an automatic value
+depending on the encoder.
+
+Default value is 0.
 
 @item b_qfactor @var{float} (@emph{encoding,video})
 Set qp factor between P and B frames.

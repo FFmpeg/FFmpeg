@@ -520,9 +520,11 @@ int ff_h264_decode_seq_parameter_set(H264Context *h)
     }
 
     sps->vui_parameters_present_flag = get_bits1(&h->gb);
-    if (sps->vui_parameters_present_flag)
-        if (decode_vui_parameters(h, sps) < 0)
+    if (sps->vui_parameters_present_flag) {
+        int ret = decode_vui_parameters(h, sps);
+        if (ret < 0)
             goto fail;
+    }
 
     if (!sps->sar.den)
         sps->sar.den = 1;

@@ -303,7 +303,7 @@ static const AVFilterPad mcdeint_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_mcdeint = {
+AVFilter ff_vf_mcdeint = {
     .name          = "mcdeint",
     .description   = NULL_IF_CONFIG_SMALL("Apply motion compensating deinterlacing."),
     .priv_size     = sizeof(MCDeintContext),

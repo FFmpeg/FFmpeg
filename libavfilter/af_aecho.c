@@ -346,7 +346,7 @@ static const AVFilterPad aecho_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_aecho = {
+AVFilter ff_af_aecho = {
     .name          = "aecho",
     .description   = NULL_IF_CONFIG_SMALL("Add echoing to the audio."),
     .query_formats = query_formats,

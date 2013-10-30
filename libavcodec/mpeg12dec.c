@@ -2185,6 +2185,10 @@ static int decode_chunks(AVCodecContext *avctx,
                 }
             }
             s2->pict_type = 0;
+
+            if (avctx->err_recognition & AV_EF_EXPLODE && s2->er.error_count)
+                return AVERROR_INVALIDDATA;
+
             return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
         }
 

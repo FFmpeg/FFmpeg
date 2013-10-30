@@ -492,7 +492,7 @@ int show_sample_fmts(void *optctx, const char *opt, const char *arg);
  * Print a listing containing all the color names and values recognized
  * by the program.
  */
-void show_colors(void *optctx, const char *opt, const char *arg);
+int show_colors(void *optctx, const char *opt, const char *arg);
 
 /**
  * Return a positive value if a line read from standard input

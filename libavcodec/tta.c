@@ -251,7 +251,8 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     int32_t *p;
 
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
-        if (buf_size < 4 || tta_check_crc(s, buf, buf_size - 4))
+        if (buf_size < 4 ||
+            (tta_check_crc(s, buf, buf_size - 4) && avctx->err_recognition & AV_EF_EXPLODE))
             return AVERROR_INVALIDDATA;
     }
 

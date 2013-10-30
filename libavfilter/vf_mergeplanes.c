@@ -299,7 +299,7 @@ static const AVFilterPad mergeplanes_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_mergeplanes = {
+AVFilter ff_vf_mergeplanes = {
     .name          = "mergeplanes",
     .description   = NULL_IF_CONFIG_SMALL("Merge planes."),
     .priv_size     = sizeof(MergePlanesContext),

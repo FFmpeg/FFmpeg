@@ -201,7 +201,7 @@ static const AVFilterPad colorbalance_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_colorbalance = {
+AVFilter ff_vf_colorbalance = {
     .name          = "colorbalance",
     .description   = NULL_IF_CONFIG_SMALL("Adjust the color balance."),
     .priv_size     = sizeof(ColorBalanceContext),

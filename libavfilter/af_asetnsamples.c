@@ -184,7 +184,7 @@ static const AVFilterPad asetnsamples_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_asetnsamples = {
+AVFilter ff_af_asetnsamples = {
     .name        = "asetnsamples",
     .description = NULL_IF_CONFIG_SMALL("Set the number of samples for each output audio frames."),
     .priv_size   = sizeof(ASNSContext),

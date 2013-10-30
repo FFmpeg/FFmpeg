@@ -101,7 +101,7 @@ static const AVFilterPad field_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_field = {
+AVFilter ff_vf_field = {
     .name        = "field",
     .description = NULL_IF_CONFIG_SMALL("Extract a field from the input video."),
     .priv_size   = sizeof(FieldContext),

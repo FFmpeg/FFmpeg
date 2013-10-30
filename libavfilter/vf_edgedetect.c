@@ -317,7 +317,7 @@ static const AVFilterPad edgedetect_outputs[] = {
      { NULL }
 };
 
-AVFilter avfilter_vf_edgedetect = {
+AVFilter ff_vf_edgedetect = {
     .name          = "edgedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect and draw edge."),
     .priv_size     = sizeof(EdgeDetectContext),

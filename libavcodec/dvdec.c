@@ -237,7 +237,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     flush_put_bits(&vs_pb);
     for (mb_index = 0; mb_index < 5; mb_index++) {
         for (j = 0; j < s->sys->bpm; j++) {
-            if (mb->pos < 64) {
+            if (mb->pos < 64 && get_bits_left(&gb) > 0) {
                 av_dlog(avctx, "start %d:%d\n", mb_index, j);
                 dv_decode_ac(&gb, mb, block);
             }

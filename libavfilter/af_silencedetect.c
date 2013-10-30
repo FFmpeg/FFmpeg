@@ -201,7 +201,7 @@ static const AVFilterPad silencedetect_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_af_silencedetect = {
+AVFilter ff_af_silencedetect = {
     .name          = "silencedetect",
     .description   = NULL_IF_CONFIG_SMALL("Detect silence."),
     .priv_size     = sizeof(SilenceDetectContext),

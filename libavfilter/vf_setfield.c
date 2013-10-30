@@ -84,7 +84,7 @@ static const AVFilterPad setfield_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_setfield = {
+AVFilter ff_vf_setfield = {
     .name        = "setfield",
     .description = NULL_IF_CONFIG_SMALL("Force field for the output video frame."),
     .priv_size   = sizeof(SetFieldContext),

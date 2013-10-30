@@ -210,7 +210,7 @@ static const AVFilterPad sine_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_asrc_sine = {
+AVFilter ff_asrc_sine = {
     .name          = "sine",
     .description   = NULL_IF_CONFIG_SMALL("Generate sine wave audio signal."),
     .query_formats = query_formats,

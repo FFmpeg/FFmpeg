@@ -295,7 +295,7 @@ static const AVFilterPad idet_outputs[] = {
     { NULL }
 };
 
-AVFilter avfilter_vf_idet = {
+AVFilter ff_vf_idet = {
     .name          = "idet",
     .description   = NULL_IF_CONFIG_SMALL("Interlace detect Filter."),
     .priv_size     = sizeof(IDETContext),

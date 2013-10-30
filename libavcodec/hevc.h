@@ -82,6 +82,7 @@
 #define IS_IDR(s) (s->nal_unit_type == NAL_IDR_W_RADL || s->nal_unit_type == NAL_IDR_N_LP)
 #define IS_BLA(s) (s->nal_unit_type == NAL_BLA_W_RADL || s->nal_unit_type == NAL_BLA_W_LP || \
                    s->nal_unit_type == NAL_BLA_N_LP)
+#define IS_IRAP(s) (s->nal_unit_type >= 16 && s->nal_unit_type <= 23)
 
 /**
  * Table 7-3: NAL unit type codes

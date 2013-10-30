@@ -93,10 +93,20 @@ static int read_number(const AVOption *o, void *dst, double *num, int *den, int6
 
 static int write_number(void *obj, const AVOption *o, void *dst, double num, int den, int64_t intnum)
 {
-    if (o->max*den < num*intnum || o->min*den > num*intnum) {
+    if (o->type != AV_OPT_TYPE_FLAGS &&
+        (o->max * den < num * intnum || o->min * den > num * intnum)) {
         av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range [%g - %g]\n",
                num*intnum/den, o->name, o->min, o->max);
         return AVERROR(ERANGE);
+    }
+    if (o->type == AV_OPT_TYPE_FLAGS) {
+        double d = num*intnum/den;
+        if (d < -1.5 || d > 0xFFFFFFFF+0.5 || (llrint(d*256) & 255)) {
+            av_log(obj, AV_LOG_ERROR,
+                   "Value %f for parameter '%s' is not a valid set of 32bit integer flags\n",
+                   num*intnum/den, o->name);
+            return AVERROR(ERANGE);
+        }
     }
 
     switch (o->type) {

@@ -126,7 +126,7 @@ int main(void)
                         double error   = 0;
                         TimeFilter *tf = ff_timefilter_new(1, par0, par1);
                         if (!tf) {
-                            printf("Could not alocate memory for timefilter.\n");
+                            printf("Could not allocate memory for timefilter.\n");
                             exit(1);
                         }
                         for (i = 0; i < SAMPLES; i++) {
