@@ -3,8 +3,6 @@ OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 
 YASM-OBJS-$(CONFIG_DCT)                += x86/dct32_sse.o
 
-YASM-OBJS-FFT-$(HAVE_AMD3DNOW)         += x86/fft_3dn.o
-YASM-OBJS-FFT-$(HAVE_AMD3DNOWEXT)      += x86/fft_3dn2.o
 YASM-OBJS-FFT-$(HAVE_SSE)              += x86/fft_sse.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o                 \
                                           $(YASM-OBJS-FFT-yes)
