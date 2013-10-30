@@ -120,6 +120,7 @@ typedef struct BinkContext {
     int            version;              ///< internal Bink file version
     int            has_alpha;
     int            swap_planes;
+    unsigned       frame_num;
 
     Bundle         bundle[BINKB_NB_SRC]; ///< bundles for decoding all data types
     Tree           col_high[16];         ///< trees for decoding high nibble in "colours" data type
@@ -1206,6 +1207,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
     if (c->version >= 'i')
         skip_bits_long(&gb, 32);
 
+    c->frame_num++;
+
     for (plane = 0; plane < 3; plane++) {
         plane_idx = (!plane || !c->swap_planes) ? plane : (plane ^ 3);
 
@@ -1214,7 +1217,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
                 return ret;
         } else {
             if ((ret = binkb_decode_plane(c, frame, &gb, plane_idx,
-                                          !avctx->frame_number, !!plane)) < 0)
+                                          c->frame_num == 1, !!plane)) < 0)
                 return ret;
         }
         if (get_bits_count(&gb) >= bits_count)
@@ -1332,6 +1335,13 @@ static av_cold int decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+static void flush(AVCodecContext *avctx)
+{
+    BinkContext * const c = avctx->priv_data;
+
+    c->frame_num = 0;
+}
+
 AVCodec ff_bink_decoder = {
     .name           = "binkvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("Bink video"),
@@ -1341,5 +1351,6 @@ AVCodec ff_bink_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
+    .flush          = flush,
     .capabilities   = CODEC_CAP_DR1,
 };
