@@ -139,8 +139,7 @@ static void fill_slice(AVCodecContext *avctx,
     init_get_bits(&gb, &buffer[4], 8 * (size - 4));
 
     slice->wQuantizerScaleCode = get_bits(&gb, 5);
-    while (get_bits1(&gb))
-        skip_bits(&gb, 8);
+    skip_1stop_8data_bits(&gb);
 
     slice->wMBbitOffset        = 4 * 8 + get_bits_count(&gb);
 }
