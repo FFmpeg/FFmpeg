@@ -1125,8 +1125,7 @@ static int svq3_decode_frame(AVCodecContext *avctx, void *data,
     h->mb_x = h->mb_y = h->mb_xy = 0;
 
     if (s->watermark_key) {
-        av_fast_malloc(&s->buf, &s->buf_size,
-                       buf_size+FF_INPUT_BUFFER_PADDING_SIZE);
+        av_fast_padded_malloc(&s->buf, &s->buf_size, buf_size);
         if (!s->buf)
             return AVERROR(ENOMEM);
         memcpy(s->buf, avpkt->data, buf_size);
