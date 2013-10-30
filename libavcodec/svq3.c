@@ -838,8 +838,8 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
     skip_bits1(&h->gb);
     skip_bits(&h->gb, 2);
 
-    while (get_bits1(&h->gb))
-        skip_bits(&h->gb, 8);
+    if (skip_1stop_8data_bits(&h->gb) < 0)
+        return AVERROR_INVALIDDATA;
 
     /* reset intra predictors and invalidate motion vector references */
     if (h->mb_x > 0) {
@@ -970,8 +970,8 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         /* unknown field */
         skip_bits1(&gb);
 
-        while (get_bits1(&gb))
-            skip_bits(&gb, 8);
+        if (skip_1stop_8data_bits(&gb) < 0)
+            return AVERROR_INVALIDDATA;
 
         s->unknown_flag  = get_bits1(&gb);
         avctx->has_b_frames = !h->low_delay;
