@@ -50,6 +50,8 @@ static int theora_header(AVFormatContext *s, int idx)
 
     if (!thp) {
         thp = av_mallocz(sizeof(*thp));
+        if (!thp)
+            return AVERROR(ENOMEM);
         os->private = thp;
     }
 
