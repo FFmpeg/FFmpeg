@@ -115,8 +115,8 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     intra_slice_flag = get_bits1(&gb);
     if (intra_slice_flag) {
         skip_bits(&gb, 8);
-        while (get_bits1(&gb) != 0)
-            skip_bits(&gb, 8);
+        if (skip_1stop_8data_bits(&gb) < 0)
+            return AVERROR_INVALIDDATA;
     }
     macroblock_offset = get_bits_count(&gb);
 
