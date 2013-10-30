@@ -153,7 +153,7 @@ static int isight_read_header(AVFormatContext *s)
     
     BOOL success = [video_device open:nil];
     
-    // Video capture device not found, looking for QTMediaTypeMuxed
+    // Video capture device not found, looking for QTMediaTypeVideo
     if (!success) {
         video_device = [QTCaptureDevice defaultInputDeviceWithMediaType:QTMediaTypeVideo];
         success = [video_device open:nil];
