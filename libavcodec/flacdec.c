@@ -45,6 +45,8 @@
 #include "flacdata.h"
 #include "flacdsp.h"
 #include "thread.h"
+#include "unary.h"
+
 
 typedef struct FLACContext {
     FLACSTREAMINFO
@@ -357,7 +359,6 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     if (get_bits1(&s->gb)) {
         int left = get_bits_left(&s->gb);
-        wasted = 1;
         if ( left < 0 ||
             (left < bps && !show_bits_long(&s->gb, left)) ||
                            !show_bits_long(&s->gb, bps)) {
@@ -366,11 +367,7 @@ static inline int decode_subframe(FLACContext *s, int channel)
                    bps, left);
             return AVERROR_INVALIDDATA;
         }
-        while (!get_bits1(&s->gb)) {
-            wasted++;
-            if (get_bits_left(&s->gb) <= 0)
-                return AVERROR_INVALIDDATA;
-        }
+        wasted = 1 + get_unary(&s->gb, 1, get_bits_left(&s->gb));
         bps -= wasted;
     }
     if (bps > 32) {
