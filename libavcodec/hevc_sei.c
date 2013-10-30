@@ -51,9 +51,9 @@ static void decode_nal_sei_decoded_picture_hash(HEVCContext *s, int payload_size
     }
 }
 
-static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
+static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 {
-    GetBitContext *gb = &lc->gb;
+    GetBitContext *gb = &s->HEVClc->gb;
     int cancel, type, quincunx;
 
     get_ue_golomb(gb);                      // frame_packing_arrangement_id
@@ -77,6 +77,46 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCLocalContext *lc)
     skip_bits1(gb);                         // upsampled_aspect_ratio_flag
 }
 
+static int decode_pic_timing(HEVCContext *s)
+{
+    GetBitContext *gb = &s->HEVClc->gb;
+    HEVCSPS *sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
+
+    if (!sps)
+        return(AVERROR(ENOMEM));
+
+    if (sps->vui.frame_field_info_present_flag) {
+        int pic_struct = get_bits(gb, 4);
+        s->picture_struct = AV_PICTURE_STRUCTURE_UNKNOWN;
+        if (pic_struct == 2) {
+            av_log(s->avctx, AV_LOG_DEBUG, "BOTTOM Field\n");
+            s->picture_struct = AV_PICTURE_STRUCTURE_BOTTOM_FIELD;
+        } else if (pic_struct == 1) {
+            av_log(s->avctx, AV_LOG_DEBUG, "TOP Field\n");
+            s->picture_struct = AV_PICTURE_STRUCTURE_TOP_FIELD;
+        }
+        get_bits(gb, 2);                   // source_scan_type
+        get_bits(gb, 1);                   // duplicate_flag
+    }
+    return 1;
+}
+
+static void active_parameter_sets(HEVCContext *s) {
+    GetBitContext *gb = &s->HEVClc->gb;
+    int num_sps_ids_minus1;
+    int i;
+
+    get_bits(gb, 4); // active_video_parameter_set_id
+    get_bits(gb, 1); // self_contained_cvs_flag
+    get_bits(gb, 1); // num_sps_ids_minus1
+    num_sps_ids_minus1 = get_ue_golomb_long(gb); // num_sps_ids_minus1
+
+    s->active_seq_parameter_set_id = get_ue_golomb_long(gb);
+
+    for (i = 1; i <= num_sps_ids_minus1; i++)
+        get_ue_golomb_long(gb); // active_seq_parameter_set_id[i]
+}
+
 static int decode_nal_sei_message(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
@@ -96,13 +136,25 @@ static int decode_nal_sei_message(HEVCContext *s)
         payload_size += byte;
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
-        if (payload_type == 256 /*&& s->decode_checksum_sei*/)
+        if (payload_type == 256 /*&& s->decode_checksum_sei*/) {
             decode_nal_sei_decoded_picture_hash(s, payload_size);
-        else if (payload_type == 45)
-            decode_nal_sei_frame_packing_arrangement(s->HEVClc);
-        else {
+            return 1;
+        } else if (payload_type == 45) {
+            decode_nal_sei_frame_packing_arrangement(s);
+            return 1;
+        } else if (payload_type == 1){
+            int ret = decode_pic_timing(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
             skip_bits(gb, 8*payload_size);
+            return ret;
+        } else if (payload_type == 129){
+            active_parameter_sets(s);
+            av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
+            return 1;
+        } else {
+            av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
+            skip_bits(gb, 8*payload_size);
+            return 1;
         }
     } else { /* nal_unit_type == NAL_SEI_SUFFIX */
         if (payload_type == 132 /* && s->decode_checksum_sei */)
@@ -111,8 +163,8 @@ static int decode_nal_sei_message(HEVCContext *s)
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
             skip_bits(gb, 8*payload_size);
         }
+        return 1;
     }
-    return 0;
 }
 
 static int more_rbsp_data(GetBitContext *gb)
@@ -122,8 +174,12 @@ static int more_rbsp_data(GetBitContext *gb)
 
 int ff_hevc_decode_nal_sei(HEVCContext *s)
 {
+    int ret;
+
     do {
-        decode_nal_sei_message(s);
+        ret = decode_nal_sei_message(s);
+        if (ret < 0)
+            return(AVERROR(ENOMEM));
     } while (more_rbsp_data(&s->HEVClc->gb));
-    return 0;
+    return 1;
 }

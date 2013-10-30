@@ -165,6 +165,8 @@ static inline int parse_nal_units(AVCodecParserContext *s,
         case NAL_IDR_N_LP:
         case NAL_CRA_NUT:
             sh->first_slice_in_pic_flag = get_bits1(gb);
+            s->picture_structure = h->picture_struct;
+            s->field_order = h->picture_struct;
 
             if (h->nal_unit_type >= 16 && h->nal_unit_type <= 23) {
                 s->key_frame = 1;
