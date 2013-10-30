@@ -208,8 +208,7 @@ static int isight_read_header(AVFormatContext *s)
     // Take stream info from the first frame.
     while( ctx->frames_captured < 1 )
     {
-        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, YES);
-        usleep(100);
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, YES);
     }
     
     lock_frames(ctx);
