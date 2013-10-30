@@ -366,8 +366,11 @@ static inline int decode_subframe(FLACContext *s, int channel)
                    bps, left);
             return AVERROR_INVALIDDATA;
         }
-        while (!get_bits1(&s->gb))
+        while (!get_bits1(&s->gb)) {
             wasted++;
+            if (get_bits_left(&s->gb) <= 0)
+                return AVERROR_INVALIDDATA;
+        }
         bps -= wasted;
     }
     if (bps > 32) {
