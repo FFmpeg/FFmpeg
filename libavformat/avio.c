@@ -94,14 +94,9 @@ const char *avio_enum_protocols(void **opaque, int output)
     return avio_enum_protocols(opaque, output);
 }
 
-int ffurl_register_protocol(URLProtocol *protocol, int size)
+int ffurl_register_protocol(URLProtocol *protocol)
 {
     URLProtocol **p;
-    if (size < sizeof(URLProtocol)) {
-        URLProtocol *temp = av_mallocz(sizeof(URLProtocol));
-        memcpy(temp, protocol, size);
-        protocol = temp;
-    }
     p = &first_protocol;
     while (*p != NULL)
         p = &(*p)->next;

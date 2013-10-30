@@ -45,8 +45,7 @@
     {                                                                   \
         extern URLProtocol ff_##x##_protocol;                           \
         if (CONFIG_##X##_PROTOCOL)                                      \
-            ffurl_register_protocol(&ff_##x##_protocol,                 \
-                                    sizeof(ff_##x##_protocol));         \
+            ffurl_register_protocol(&ff_##x##_protocol);                \
     }
 
 void av_register_all(void)
