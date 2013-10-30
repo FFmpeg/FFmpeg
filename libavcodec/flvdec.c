@@ -104,6 +104,8 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
         skip_bits(&s->gb, 8);
+        if (get_bits_left(&s->gb) <= 0)
+            return AVERROR_INVALIDDATA;
     }
     s->f_code = 1;
 
