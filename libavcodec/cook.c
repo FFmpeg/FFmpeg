@@ -51,6 +51,7 @@
 #include "fft.h"
 #include "internal.h"
 #include "sinewin.h"
+#include "unary.h"
 
 #include "cookdata.h"
 
@@ -331,11 +332,7 @@ static void decode_gain_info(GetBitContext *gb, int *gaininfo)
 {
     int i, n;
 
-    while (get_bits1(gb)) {
-        /* NOTHING */
-    }
-
-    n = get_bits_count(gb) - 1;     // amount of elements*2 to update
+    n = get_unary(gb, 0, get_bits_left(gb));     // amount of elements*2 to update
 
     i = 0;
     while (n--) {
