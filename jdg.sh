@@ -7,8 +7,12 @@ SSL=$SOURCE/../openssl
 
 TOOLCHAIN=/tmp/vplayer
 SYSROOT=$TOOLCHAIN/sysroot/
-$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
-  --system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
+if [ -d $TOOLCHAIN ]; then
+    echo "Toolchain is already built."
+else
+		$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-4.7 \
+			--system=linux-x86_64 --platform=android-14 --install-dir=$TOOLCHAIN
+fi
 
 export PATH=$TOOLCHAIN/bin:$PATH
 export CC="ccache arm-linux-androideabi-gcc"
