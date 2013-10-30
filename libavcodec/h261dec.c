@@ -125,11 +125,8 @@ static int h261_decode_gob_header(H261Context *h)
     }
 
     /* GEI */
-    while (get_bits1(&s->gb) != 0) {
-        skip_bits(&s->gb, 8);
-        if (get_bits_left(&s->gb) <= 0)
-            return AVERROR_INVALIDDATA;
-    }
+    if (skip_1stop_8data_bits(&s->gb) < 0)
+        return AVERROR_INVALIDDATA;
 
     if (s->qscale == 0) {
         av_log(s->avctx, AV_LOG_ERROR, "qscale has forbidden 0 value\n");
@@ -508,11 +505,8 @@ static int h261_decode_picture_header(H261Context *h)
     skip_bits1(&s->gb); /* Reserved */
 
     /* PEI */
-    while (get_bits1(&s->gb) != 0) {
-        skip_bits(&s->gb, 8);
-        if (get_bits_left(&s->gb) <= 0)
-            return AVERROR_INVALIDDATA;
-    }
+    if (skip_1stop_8data_bits(&s->gb) < 0)
+        return AVERROR_INVALIDDATA;
 
     /* H.261 has no I-frames, but if we pass AV_PICTURE_TYPE_I for the first
      * frame, the codec crashes if it does not contain all I-blocks
