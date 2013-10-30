@@ -58,6 +58,8 @@ static int decode_packet(int *got_frame, int cached)
     int ret = 0;
     int decoded = pkt.size;
 
+    *got_frame = 0;
+
     if (pkt.stream_index == video_stream_idx) {
         /* decode video frame */
         ret = avcodec_decode_video2(video_dec_ctx, frame, got_frame, &pkt);
