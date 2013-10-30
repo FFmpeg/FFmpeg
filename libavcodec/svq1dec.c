@@ -593,8 +593,8 @@ static int svq1_decode_frame_header(AVCodecContext *avctx, AVFrame *frame)
         skip_bits1(bitbuf);
         skip_bits(bitbuf, 2);
 
-        while (get_bits1(bitbuf))
-            skip_bits(bitbuf, 8);
+        if (skip_1stop_8data_bits(bitbuf) < 0)
+            return AVERROR_INVALIDDATA;
     }
 
     s->width  = width;
