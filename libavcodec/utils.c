@@ -1954,46 +1954,59 @@ static int64_t guess_correct_pts(AVCodecContext *ctx,
     return pts;
 }
 
-static void apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
+static int apply_param_change(AVCodecContext *avctx, AVPacket *avpkt)
 {
     int size = 0;
     const uint8_t *data;
     uint32_t flags;
 
-    if (!(avctx->codec->capabilities & CODEC_CAP_PARAM_CHANGE))
-        return;
-
     data = av_packet_get_side_data(avpkt, AV_PKT_DATA_PARAM_CHANGE, &size);
-    if (!data || size < 4)
-        return;
+    if (!data)
+        return 0;
+
+    if (!(avctx->codec->capabilities & CODEC_CAP_PARAM_CHANGE)) {
+        av_log(avctx, AV_LOG_ERROR, "This decoder does not support parameter "
+               "changes, but PARAM_CHANGE side data was sent to it.\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (size < 4)
+        goto fail;
+
     flags = bytestream_get_le32(&data);
     size -= 4;
-    if (size < 4) /* Required for any of the changes */
-        return;
+
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
+        if (size < 4)
+            goto fail;
         avctx->channels = bytestream_get_le32(&data);
         size -= 4;
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
         if (size < 8)
-            return;
+            goto fail;
         avctx->channel_layout = bytestream_get_le64(&data);
         size -= 8;
     }
-    if (size < 4)
-        return;
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
+        if (size < 4)
+            goto fail;
         avctx->sample_rate = bytestream_get_le32(&data);
         size -= 4;
     }
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS) {
         if (size < 8)
-            return;
+            goto fail;
         avctx->width  = bytestream_get_le32(&data);
         avctx->height = bytestream_get_le32(&data);
         avcodec_set_dimensions(avctx, avctx->width, avctx->height);
         size -= 8;
     }
+
+    return 0;
+fail:
+    av_log(avctx, AV_LOG_ERROR, "PARAM_CHANGE side data too small.\n");
+    return AVERROR_INVALIDDATA;
 }
 
 static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
@@ -2053,7 +2066,13 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
     if ((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type & FF_THREAD_FRAME)) {
         int did_split = av_packet_split_side_data(&tmp);
-        apply_param_change(avctx, &tmp);
+        ret = apply_param_change(avctx, &tmp);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                goto fail;
+        }
+
         avctx->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
@@ -2077,6 +2096,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
         }
         add_metadata_from_side_data(avctx, picture);
 
+fail:
         emms_c(); //needed to avoid an emms_c() call before every return;
 
         avctx->pkt = NULL;
@@ -2195,7 +2215,12 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
         // copy to ensure we do not change avpkt
         AVPacket tmp = *avpkt;
         int did_split = av_packet_split_side_data(&tmp);
-        apply_param_change(avctx, &tmp);
+        ret = apply_param_change(avctx, &tmp);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error applying parameter changes.\n");
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                goto fail;
+        }
 
         avctx->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
@@ -2275,7 +2300,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->nb_samples -= discard_padding;
             }
         }
-
+fail:
         avctx->pkt = NULL;
         if (did_split) {
             av_packet_free_side_data(&tmp);
