@@ -163,7 +163,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf    = avpkt->data;
     int buf_size          = avpkt->size;
     ThreadFrame frame     = { .f = data };
-    int i, ret;
+    int ret;
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
@@ -173,10 +173,7 @@ static int decode_frame(AVCodecContext *avctx,
     av_fast_padded_malloc(&a->bitstream_buffer, &a->bitstream_buffer_size, buf_size);
     if (!a->bitstream_buffer)
         return AVERROR(ENOMEM);
-    for (i = 0; i < buf_size; i += 2) {
-        a->bitstream_buffer[i]     = buf[i + 1];
-        a->bitstream_buffer[i + 1] = buf[i];
-    }
+    a->dsp.bswap16_buf((uint16_t *)a->bitstream_buffer, (uint16_t *)buf, (buf_size + 1) / 2);
     if ((ret = init_get_bits8(&a->gb, a->bitstream_buffer, buf_size)) < 0)
         return ret;
 
