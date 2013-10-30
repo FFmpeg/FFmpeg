@@ -142,6 +142,8 @@ static inline int ls_get_code_runterm(GetBitContext *gb, JLSState *state, int RI
         ret = ret >> 1;
     }
 
+    if(FFABS(ret) > 0xFFFF)
+        return -0x10000;
     /* update state */
     state->A[Q] += FFABS(ret) - RItype;
     ret *= state->twonear;
