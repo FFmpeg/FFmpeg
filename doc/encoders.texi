@@ -902,11 +902,14 @@ follows.
 
 @section libtheora
 
-Theora format supported through libtheora.
+libtheora Theora encoder wrapper.
 
 Requires the presence of the libtheora headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libtheora}.
+
+For more informations about the libtheora project see
+@url{http://www.theora.org/}.
 
 @subsection Options
 
@@ -915,11 +918,11 @@ which affect the quality and the bitrate of the encoded stream.
 
 @table @option
 @item b
-Set the video bitrate, only works if the @code{qscale} flag in
-@option{flags} is not enabled.
+Set the video bitrate in bit/s for CBR (Constant Bit Rate) mode.  In
+case VBR (Variable Bit Rate) mode is enabled this option is ignored.
 
 @item flags
-Used to enable constant quality mode encoding through the
+Used to enable constant quality mode (VBR) encoding through the
 @option{qscale} flag, and to enable the @code{pass1} and @code{pass2}
 modes.
 
@@ -927,18 +930,40 @@ modes.
 Set the GOP size.
 
 @item global_quality
-Set the global quality in lambda units, only works if the
-@code{qscale} flag in @option{flags} is enabled. The value is clipped
-in the [0 - 10*@code{FF_QP2LAMBDA}] range, and then multiplied for 6.3
-to get a value in the native libtheora range [0-63]. A higher value
-corresponds to a higher quality.
+Set the global quality as an integer in lambda units.
 
-For example, to set maximum constant quality encoding with
-@command{ffmpeg}:
-@example
-ffmpeg -i INPUT -flags:v qscale -global_quality:v "10*QP2LAMBDA" -codec:v libtheora OUTPUT.ogg
-@end example
+Only relevant when VBR mode is enabled with @code{flags +qscale}. The
+value is converted to QP units by dividing it by @code{FF_QP2LAMBDA},
+clipped in the [0 - 10] range, and then multiplied by 6.3 to get a
+value in the native libtheora range [0-63]. A higher value corresponds
+to a higher quality.
+
+@item q
+Enable VBR mode when set to a non-negative value, and set constant
+quality value as a double floating point value in QP units.
+
+The value is clipped in the [0-10] range, and then multiplied by 6.3
+to get a value in the native libtheora range [0-63].
+
+This option is valid only using the @command{ffmpeg} command-line
+tool. For library interface users, use @option{global_quality}.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Set maximum constant quality (VBR) encoding with @command{ffmpeg}:
+@example
+ffmpeg -i INPUT -codec:v libtheora -q:v 10 OUTPUT.ogg
+@end example
+
+@item
+Use @command{ffmpeg} to convert a CBR 1000 kbps Theora video stream:
+@example
+ffmpeg -i INPUT -codec:v libtheora -b:v 1000k OUTPUT.ogg
+@end example
+@end itemize
 
 @section libvpx
 
