@@ -74,6 +74,7 @@
  * N                    SinuSoidal Coding (Transient, Sinusoid, Noise)
  * Y                    Parametric Stereo
  * N                    Direct Stream Transfer
+ * Y                    Enhanced AAC Low Delay (ER AAC ELD)
  *
  * Note: - HE AAC v1 comprises LC AAC with Spectral Band Replication.
  *       - HE AAC v2 comprises LC AAC with Spectral Band Replication and
@@ -2533,7 +2534,7 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
     // Inverse transform, mapped to the conventional IMDCT by
     // Chivukula, R.K.; Reznik, Y.A.; Devarajan, V.,
     // "Efficient algorithms for MPEG-4 AAC-ELD, AAC-LD and AAC-LC filterbanks,"
-    // Audio, Language and Image Processing, 2008. ICALIP 2008. International Conference on
+    // International Conference on Audio, Language and Image Processing, ICALIP 2008.
     // URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4590245&isnumber=4589950
     for (i = 0; i < n2; i+=2) {
         float temp;
