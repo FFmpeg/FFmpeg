@@ -26,15 +26,15 @@
 
 typedef struct ThpDemuxContext {
     int              version;
-    int              first_frame;
-    int              first_framesz;
-    int              last_frame;
+    unsigned         first_frame;
+    unsigned         first_framesz;
+    unsigned         last_frame;
     int              compoff;
-    int              framecnt;
+    unsigned         framecnt;
     AVRational       fps;
-    int              frame;
-    int              next_frame;
-    int              next_framesz;
+    unsigned         frame;
+    int64_t          next_frame;
+    unsigned         next_framesz;
     int              video_stream_index;
     int              audio_stream_index;
     int              compcount;
