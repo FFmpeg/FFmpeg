@@ -36,6 +36,18 @@
 
 #if HAVE_INLINE_ASM
 
+#ifndef UNCHECKED_BITSTREAM_READER
+#define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
+#endif
+
+#if UNCHECKED_BITSTREAM_READER
+#define END_CHECK(end) ""
+#else
+#define END_CHECK(end) \
+        "cmp    "end"       , %%"REG_c"                                 \n\t"\
+        "jge    1f                                                      \n\t"
+#endif
+
 #ifdef BROKEN_RELOCATIONS
 #define TABLES_ARG , "r"(tables)
 
@@ -80,7 +92,9 @@
         "test   "lowword"   , "lowword"                                 \n\t"\
         "jnz    2f                                                      \n\t"\
         "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        END_CHECK(end)\
         "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "1:                                                             \n\t"\
         "movzwl (%%"REG_c") , "tmp"                                     \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
@@ -139,7 +153,9 @@
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   2f                                                      \n\t"\
         "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        END_CHECK(end)\
         "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "1:                                                             \n\t"\
         "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
@@ -214,9 +230,16 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         "movzwl         (%1), %%edx     \n\t"
         "bswap         %%edx            \n\t"
         "shrl            $15, %%edx     \n\t"
+#if UNCHECKED_BITSTREAM_READER
         "add              $2, %1        \n\t"
         "addl          %%edx, %%eax     \n\t"
         "mov              %1, %c4(%2)   \n\t"
+#else
+        "addl          %%edx, %%eax     \n\t"
+        "cmp         %c5(%2), %1        \n\t"
+        "jge              1f            \n\t"
+        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+#endif
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
 
