@@ -158,7 +158,7 @@ static int thp_read_packet(AVFormatContext *s,
         avio_seek(pb, thp->next_frame, SEEK_SET);
 
         /* Locate the next frame and read out its size.  */
-        thp->next_frame += thp->next_framesz;
+        thp->next_frame += FFMAX(thp->next_framesz, 1);
         thp->next_framesz = avio_rb32(pb);
 
                         avio_rb32(pb); /* Previous total size.  */
