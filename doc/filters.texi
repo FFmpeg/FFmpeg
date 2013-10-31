@@ -2412,6 +2412,24 @@ Apply 1x1 checkerboard effect:
 @example
 blend=all_expr='if(eq(mod(X,2),mod(Y,2)),A,B)'
 @end example
+
+@item
+Apply uncover left effect:
+@example
+blend=all_expr='if(gte(N*SW+X,W),A,B)'
+@end example
+
+@item
+Apply uncover down effect:
+@example
+blend=all_expr='if(gte(Y-N*SH,0),A,B)'
+@end example
+
+@item
+Apply uncover up-left effect:
+@example
+blend=all_expr='if(gte(T*SH*40+Y,H)*gte((T*40*SW+X)*W/H,W),A,B)'
+@end example
 @end itemize
 
 @section boxblur
