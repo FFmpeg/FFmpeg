@@ -219,7 +219,7 @@ int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
     char *ap;
     int i;
 
-    if (count >= INT_MAX / sizeof(int8_t) || count <= 0)
+    if (count >= INT_MAX / sizeof(int8_t) || count < 0)
         return AVERROR_INVALIDDATA;
     if (bytestream2_get_bytes_left(gb) < count * sizeof(int8_t))
         return AVERROR_INVALIDDATA;
