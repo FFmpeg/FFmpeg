@@ -2604,7 +2604,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
-    av_freep(&lc->edge_emu_buffer);
+    if (lc)
+        av_freep(&lc->edge_emu_buffer);
     av_freep(&s->md5_ctx);
 
     for(i=0; i < s->nals_allocated; i++) {
