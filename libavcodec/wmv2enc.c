@@ -169,10 +169,12 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                  ff_wmv2_inter_table[w->cbp_table_index][cbp + 64][1],
                  ff_wmv2_inter_table[w->cbp_table_index][cbp + 64][0]);
 
+        s->misc_bits += get_bits_diff(s);
         /* motion vector */
         ff_h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
         ff_msmpeg4_encode_motion(s, motion_x - pred_x,
                               motion_y - pred_y);
+        s->mv_bits += get_bits_diff(s);
     } else {
         /* compute cbp */
         cbp = 0;
@@ -203,11 +205,16 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
             s->h263_aic_dir=0;
             put_bits(&s->pb, ff_table_inter_intra[s->h263_aic_dir][1], ff_table_inter_intra[s->h263_aic_dir][0]);
         }
+        s->misc_bits += get_bits_diff(s);
     }
 
     for (i = 0; i < 6; i++) {
         ff_msmpeg4_encode_block(s, block[i], i);
     }
+    if (s->mb_intra)
+        s->i_tex_bits += get_bits_diff(s);
+    else
+        s->p_tex_bits += get_bits_diff(s);
 }
 
 AVCodec ff_wmv2_encoder = {
