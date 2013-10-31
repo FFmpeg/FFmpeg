@@ -459,11 +459,11 @@ static int hls_slice_header(HEVCContext *s)
         /* 8.3.1 */
         if (s->temporal_id == 0 &&
             s->nal_unit_type != NAL_TRAIL_N &&
-            s->nal_unit_type != NAL_TSA_N &&
-            s->nal_unit_type != NAL_STSA_N &&
-            s->nal_unit_type != NAL_TRAIL_N &&
-            s->nal_unit_type != NAL_RADL_N &&
-            s->nal_unit_type != NAL_RADL_R &&
+            s->nal_unit_type != NAL_TSA_N   &&
+            s->nal_unit_type != NAL_STSA_N  &&
+            s->nal_unit_type != NAL_RADL_N  &&
+            s->nal_unit_type != NAL_RADL_R  &&
+            s->nal_unit_type != NAL_RASL_N  &&
             s->nal_unit_type != NAL_RASL_R)
             s->pocTid0 = s->poc;
 
