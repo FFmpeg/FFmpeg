@@ -26,8 +26,11 @@
 /**
  * @file
  * Audio format conversion routines
+ * This interface is deprecated and will be dropped in a future
+ * version. You should use the libswresample library instead.
  */
 
+#if FF_API_AUDIO_CONVERT
 
 #include "libavutil/cpu.h"
 #include "avcodec.h"
@@ -75,5 +78,7 @@ attribute_deprecated
 int av_audio_convert(AVAudioConvert *ctx,
                            void * const out[6], const int out_stride[6],
                      const void * const  in[6], const int  in_stride[6], int len);
+
+#endif /* FF_API_AUDIO_CONVERT */
 
 #endif /* AVCODEC_AUDIOCONVERT_H */
