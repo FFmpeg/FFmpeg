@@ -199,6 +199,7 @@ Codecs:
   libvorbis.c                           David Conrad
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
   libxavs.c                             Stefan Gehrer
+  libzvbi-teletextdec.c                 Marton Balint
   loco.c                                Kostya Shishkov
   lzo.h, lzo.c                          Reimar Doeffinger
   mdec.c                                Michael Niedermayer
