@@ -41,7 +41,7 @@ void ff_gradfun_blur_line_movdqu_sse2(intptr_t x, uint16_t *buf,
                                       const uint8_t *src1, const uint8_t *src2);
 
 #if HAVE_YASM
-static void gradfun_filter_line(uint8_t *dst, uint8_t *src, uint16_t *dc,
+static void gradfun_filter_line(uint8_t *dst, const uint8_t *src, const uint16_t *dc,
                                 int width, int thresh, const uint16_t *dithers,
                                 int alignment)
 {
