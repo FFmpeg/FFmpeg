@@ -738,11 +738,10 @@ static int process_frame_obj(SANMVideoContext *ctx)
     }
 
     if (ctx->width < left + w || ctx->height < top + h) {
-        if (av_image_check_size(FFMAX(left + w, ctx->width),
-                                FFMAX(top  + h, ctx->height), 0, ctx->avctx) < 0)
-            return AVERROR_INVALIDDATA;
-        avcodec_set_dimensions(ctx->avctx, FFMAX(left + w, ctx->width),
-                                           FFMAX(top  + h, ctx->height));
+        int ret = ff_set_dimensions(ctx->avctx, FFMAX(left + w, ctx->width),
+                                                FFMAX(top  + h, ctx->height));
+        if (ret < 0)
+            return ret;
         init_sizes(ctx, FFMAX(left + w, ctx->width),
                         FFMAX(top  + h, ctx->height));
         if (init_buffers(ctx)) {
