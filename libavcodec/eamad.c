@@ -263,12 +263,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (avctx->width != width || avctx->height != height) {
+        av_frame_unref(&s->last_frame);
         if((width * height)/2048*7 > buf_end-buf)
             return AVERROR_INVALIDDATA;
-        if ((ret = av_image_check_size(width, height, 0, avctx)) < 0)
+        if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
             return ret;
-        avcodec_set_dimensions(avctx, width, height);
-        av_frame_unref(&s->last_frame);
     }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)

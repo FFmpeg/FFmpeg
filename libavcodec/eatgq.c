@@ -219,9 +219,10 @@ static int tgq_decode_frame(AVCodecContext *avctx,
         s->height = bytestream2_get_le16u(&s->gb);
     }
 
-    if (s->avctx->width!=s->width || s->avctx->height!=s->height) {
-        avcodec_set_dimensions(s->avctx, s->width, s->height);
-    }
+    ret = ff_set_dimensions(s->avctx, s->width, s->height);
+    if (ret < 0)
+        return ret;
+
     tgq_calculate_qtable(s, bytestream2_get_byteu(&s->gb));
     bytestream2_skip(&s->gb, 3);
 
