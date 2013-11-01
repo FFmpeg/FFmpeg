@@ -2468,7 +2468,7 @@ static int transcode_init(void)
                         codec->stats_in = logbuffer;
                     }
                     if (codec->flags & CODEC_FLAG_PASS1) {
-                        f = fopen(logfilename, "wb");
+                        f = av_fopen_utf8(logfilename, "wb");
                         if (!f) {
                             av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
                                 logfilename, strerror(errno));
