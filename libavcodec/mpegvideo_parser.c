@@ -66,7 +66,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 pc->width  = (buf[0] << 4) | (buf[1] >> 4);
                 pc->height = ((buf[1] & 0x0f) << 8) | buf[2];
                 if(!avctx->width || !avctx->height || !avctx->coded_width || !avctx->coded_height){
-                    avcodec_set_dimensions(avctx, pc->width, pc->height);
+                    ff_set_dimensions(avctx, pc->width, pc->height);
                     did_set_size=1;
                 }
                 frame_rate_index = buf[3] & 0xf;
@@ -94,7 +94,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         pc->height |=( vert_size_ext << 12);
                         bit_rate = (bit_rate&0x3FFFF) | (bit_rate_ext << 18);
                         if(did_set_size)
-                            avcodec_set_dimensions(avctx, pc->width, pc->height);
+                            ff_set_dimensions(avctx, pc->width, pc->height);
                         avctx->time_base.den = pc->frame_rate.den * (frame_rate_ext_n + 1) * 2;
                         avctx->time_base.num = pc->frame_rate.num * (frame_rate_ext_d + 1);
                         avctx->codec_id = AV_CODEC_ID_MPEG2VIDEO;
