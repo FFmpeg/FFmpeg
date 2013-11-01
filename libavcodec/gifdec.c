@@ -463,9 +463,8 @@ static int gif_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, A
         if ((ret = gif_read_header1(s)) < 0)
             return ret;
 
-        if ((ret = av_image_check_size(s->screen_width, s->screen_height, 0, avctx)) < 0)
+        if ((ret = ff_set_dimensions(avctx, s->screen_width, s->screen_height)) < 0)
             return ret;
-        avcodec_set_dimensions(avctx, s->screen_width, s->screen_height);
 
         av_frame_unref(s->frame);
         if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)

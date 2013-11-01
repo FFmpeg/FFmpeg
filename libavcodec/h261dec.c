@@ -30,6 +30,7 @@
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h261.h"
+#include "internal.h"
 
 #define H261_MBA_VLC_BITS 9
 #define H261_MTYPE_VLC_BITS 6
@@ -609,7 +610,9 @@ retry:
         s->parse_context = pc;
     }
     if (!s->context_initialized) {
-        avcodec_set_dimensions(avctx, s->width, s->height);
+        ret = ff_set_dimensions(avctx, s->width, s->height);
+        if (ret < 0)
+            return ret;
 
         goto retry;
     }

@@ -701,7 +701,7 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 goto header_fail;
             }
             if (c->width != avctx->width || c->height != avctx->height)
-                avcodec_set_dimensions(avctx, c->width, c->height);
+                ff_set_dimensions(avctx, c->width, c->height);
             c->compression = bytestream2_get_be32(&bc);
             if (c->compression != 2 && c->compression != 3) {
                 av_log(avctx, AV_LOG_ERROR,
