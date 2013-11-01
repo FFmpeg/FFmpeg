@@ -91,7 +91,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->bg          = DEFAULT_BG_COLOR;
 
     if (!avctx->width || !avctx->height)
-        avcodec_set_dimensions(avctx, 80<<3, 25<<4);
+        ff_set_dimensions(avctx, 80 << 3, 25 << 4);
 
     return 0;
 }
@@ -247,7 +247,9 @@ static int execute_code(AVCodecContext * avctx, int c)
         s->y = av_clip(s->y, 0, height - s->font_height);
         if (width != avctx->width || height != avctx->height) {
             av_frame_unref(s->frame);
-            avcodec_set_dimensions(avctx, width, height);
+            ret = ff_set_dimensions(avctx, width, height);
+            if (ret < 0)
+                return ret;
             if ((ret = ff_get_buffer(avctx, s->frame,
                                      AV_GET_BUFFER_FLAG_REF)) < 0)
                 return ret;
