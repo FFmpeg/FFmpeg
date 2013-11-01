@@ -49,8 +49,8 @@ version 2.1:
 - Enhanced Low Delay AAC (ER AAC ELD) decoding (no LD SBR support)
 - Linux framebuffer output device
 - HEVC decoder
-- raw HEVC, HEVC in MOV/MP4 demuxing
-- HEVC demuxing in TS, Matroska
+- raw HEVC, HEVC in MOV/MP4, HEVC in Matroska demuxing
+- HEVC demuxing in TS
 - mergeplanes filter
 
 
