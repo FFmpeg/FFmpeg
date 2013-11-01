@@ -2448,7 +2448,12 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_BITSTREAM   4
 #define FF_DEBUG_MB_TYPE     8
 #define FF_DEBUG_QP          16
+#if FF_API_DEBUG_MV
+/**
+ * @deprecated this option does nothing
+ */
 #define FF_DEBUG_MV          32
+#endif
 #define FF_DEBUG_DCT_COEFF   0x00000040
 #define FF_DEBUG_SKIP        0x00000080
 #define FF_DEBUG_STARTCODE   0x00000100
