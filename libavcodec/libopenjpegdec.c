@@ -32,6 +32,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "thread.h"
 
 #if HAVE_OPENJPEG_1_5_OPENJPEG_H
@@ -296,13 +297,9 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     width  = image->x1 - image->x0;
     height = image->y1 - image->y0;
 
-    if ((ret = av_image_check_size(width, height, 0, avctx)) < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "%dx%d dimension invalid.\n", width, height);
+    ret = ff_set_dimensions(avctx, width, height);
+    if (ret < 0)
         goto done;
-    }
-
-    avcodec_set_dimensions(avctx, width, height);
 
     if (avctx->pix_fmt != AV_PIX_FMT_NONE)
         if (!libopenjpeg_matches_pix_fmt(image, avctx->pix_fmt))

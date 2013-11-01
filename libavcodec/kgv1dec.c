@@ -60,12 +60,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     h = (buf[1] + 1) * 8;
     buf += 2;
 
-    if ((res = av_image_check_size(w, h, 0, avctx)) < 0)
-        return res;
-
     if (w != avctx->width || h != avctx->height) {
         av_frame_unref(c->prev);
-        avcodec_set_dimensions(avctx, w, h);
+        if ((res = ff_set_dimensions(avctx, w, h)) < 0)
+            return res;
     }
 
     maxcnt = w * h;
