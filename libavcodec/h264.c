@@ -256,7 +256,7 @@ static void unref_picture(H264Context *h, Picture *pic)
     int off = offsetof(Picture, tf) + sizeof(pic->tf);
     int i;
 
-    if (!pic->f.data[0])
+    if (!pic->f.buf[0])
         return;
 
     ff_thread_release_buffer(h->avctx, &pic->tf);
@@ -278,7 +278,7 @@ static void release_unused_pictures(H264Context *h, int remove_current)
 
     /* release non reference frames */
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (h->DPB[i].f.data[0] && !h->DPB[i].reference &&
+        if (h->DPB[i].f.buf[0] && !h->DPB[i].reference &&
             (remove_current || &h->DPB[i] != h->cur_pic_ptr)) {
             unref_picture(h, &h->DPB[i]);
         }
@@ -454,7 +454,7 @@ fail:
 
 static inline int pic_is_unused(H264Context *h, Picture *pic)
 {
-    if (pic->f.data[0] == NULL)
+    if (!pic->f.buf[0])
         return 1;
     if (pic->needs_realloc && !(pic->reference & DELAYED_PIC_REF))
         return 1;
@@ -1767,7 +1767,7 @@ static int decode_update_thread_context(AVCodecContext *dst,
 
     for (i = 0; i < MAX_PICTURE_COUNT; i++) {
         unref_picture(h, &h->DPB[i]);
-        if (h1->DPB[i].f.data[0] &&
+        if (h1->DPB[i].f.buf[0] &&
             (ret = ref_picture(h, &h->DPB[i], &h1->DPB[i])) < 0)
             return ret;
     }
@@ -3524,7 +3524,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
          * since that can modify s->current_picture_ptr. */
         if (h0->first_field) {
             assert(h0->cur_pic_ptr);
-            assert(h0->cur_pic_ptr->f.data[0]);
+            assert(h0->cur_pic_ptr->f.buf[0]);
             assert(h0->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
@@ -3614,7 +3614,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0)
          * frame, or to allocate a new one. */
         if (h0->first_field) {
             assert(h0->cur_pic_ptr);
-            assert(h0->cur_pic_ptr->f.data[0]);
+            assert(h0->cur_pic_ptr->f.buf[0]);
             assert(h0->cur_pic_ptr->reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
@@ -4894,7 +4894,7 @@ out:
         }
     }
 
-    assert(pict->data[0] || !*got_frame);
+    assert(pict->buf[0] || !*got_frame);
 
     return get_consumed_bytes(buf_index, buf_size);
 }
