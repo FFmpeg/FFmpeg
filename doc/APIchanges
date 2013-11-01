@@ -15,6 +15,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-08-xx - xxxxxxx - lavu 52.17.0 - avframe.h
+  Add AVFrame.flags and AV_FRAME_FLAG_CORRUPT.
+
 2013-10-27 - xxxxxxx - lavc 55.39.100 - avcodec.h
   Add CODEC_CAP_DELAY support to avcodec_decode_subtitle2.
 

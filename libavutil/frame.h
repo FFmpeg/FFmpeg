@@ -386,6 +386,16 @@ typedef struct AVFrame {
     AVFrameSideData **side_data;
     int            nb_side_data;
 
+/**
+ * The frame data may be corrupted, e.g. due to decoding errors.
+ */
+#define AV_FRAME_FLAG_CORRUPT       (1 << 0)
+
+    /**
+     * Frame flags, a combination of AV_FRAME_FLAG_*
+     */
+    int flags;
+
     /**
      * frame timestamp estimated using various heuristics, in stream time base
      * Code outside libavcodec should access this field using:

@@ -641,6 +641,14 @@ typedef struct H264Context {
      * frames.
      */
     int sei_recovery_frame_cnt;
+
+    /**
+     * Are the SEI recovery points looking valid.
+     */
+    int valid_recovery_point;
+
+    FPA sei_fpa;
+
     /**
      * recovery_frame is the frame_num at which the next frame should
      * be fully constructed.
@@ -649,12 +657,18 @@ typedef struct H264Context {
      */
     int recovery_frame;
 
-    /**
-     * Are the SEI recovery points looking valid.
-     */
-    int valid_recovery_point;
+/**
+ * We have seen an IDR, so all the following frames in coded order are correctly
+ * decodable.
+ */
+#define FRAME_RECOVERED_IDR  (1 << 0)
+/**
+ * Sufficient number of frames have been decoded since a SEI recovery point,
+ * so all the following frames in presentation order are correct.
+ */
+#define FRAME_RECOVERED_SEI  (1 << 1)
 
-    FPA sei_fpa;
+    int frame_recovered;    ///< Initial frame has been completely recovered
 
     int luma_weight_flag[2];    ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2];  ///< 7.4.3.2 chroma_weight_lX_flag
@@ -667,8 +681,6 @@ typedef struct H264Context {
     uint8_t *bipred_scratchpad;
 
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
-
-    int sync;                      ///< did we had a keyframe or recovery point
 
     uint8_t parse_history[4];
     int parse_history_count;
