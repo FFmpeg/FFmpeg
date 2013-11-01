@@ -102,7 +102,7 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "pa_simple_flush failed: %s\n", pa_strerror(error));
             return AVERROR(EIO);
         }
-        return 0;
+        return 1;
     }
 
     if (pkt->dts != AV_NOPTS_VALUE)
