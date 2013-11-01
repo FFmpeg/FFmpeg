@@ -13,6 +13,9 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-11-xx - xxxxxxx - lavc 55.26.0 - vdpau.h
+  Add av_vdpau_get_profile().
+
 2013-11-xx - xxxxxxx - lavc 55.25.0 - avcodec.h
   Add ITU-R BT.2020 and other not yet included values to color primaries,
   transfer characteristics and colorspaces.

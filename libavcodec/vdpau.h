@@ -54,6 +54,7 @@
 
 #include "libavutil/attributes.h"
 
+#include "avcodec.h"
 #include "version.h"
 
 #if FF_API_BUFS_VDPAU
@@ -124,6 +125,19 @@ typedef struct AVVDPAUContext {
     VdpBitstreamBuffer *bitstream_buffers;
 #endif
 } AVVDPAUContext;
+
+/**
+ * Get a decoder profile that should be used for initializing a VDPAU decoder.
+ * Should be called from the AVCodecContext.get_format() callback.
+ *
+ * @param avctx the codec context being used for decoding the stream
+ * @param profile a pointer into which the result will be written on success.
+ *                The contents of profile are undefined if this function returns
+ *                an error.
+ *
+ * @return 0 on success (non-negative), a negative AVERROR on failure.
+ */
+int av_vdpau_get_profile(AVCodecContext *avctx, VdpDecoderProfile *profile);
 
 #if FF_API_CAP_VDPAU
 /** @brief The videoSurface is used for rendering. */
