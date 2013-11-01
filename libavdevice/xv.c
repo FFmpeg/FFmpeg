@@ -181,6 +181,7 @@ static int xv_write_trailer(AVFormatContext *s)
     XShmDetach(xv->display, &xv->yuv_shminfo);
     shmdt(xv->yuv_image->data);
     XFree(xv->yuv_image);
+    XFreeGC(xv->display, xv->gc);
     XCloseDisplay(xv->display);
     return 0;
 }
