@@ -340,6 +340,7 @@ library:
 @item raw H.261                 @tab X @tab X
 @item raw H.263                 @tab X @tab X
 @item raw H.264                 @tab X @tab X
+@item raw HEVC                  @tab   @tab X
 @item raw Ingenient MJPEG       @tab   @tab X
 @item raw MJPEG                 @tab X @tab X
 @item raw MLP                   @tab   @tab X

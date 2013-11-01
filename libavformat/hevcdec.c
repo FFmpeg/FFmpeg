@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/hevc.h"
+
 #include "avformat.h"
 #include "rawdec.h"
-
-#include "libavcodec/hevc.h"
 
 static int hevc_probe(AVProbeData *p)
 {
@@ -55,8 +55,6 @@ static int hevc_probe(AVProbeData *p)
             }
         }
     }
-
-    // printf("vps=%d, sps=%d, pps=%d, irap=%d\n", vps, sps, pps, irap);
 
     if (vps && sps && pps && irap)
         return AVPROBE_SCORE_EXTENSION + 1; // 1 more than .mpg
