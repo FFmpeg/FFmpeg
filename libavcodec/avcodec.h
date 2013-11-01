@@ -2462,8 +2462,8 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_MMCO        0x00000800
 #define FF_DEBUG_BUGS        0x00001000
 #if FF_API_DEBUG_MV
-#define FF_DEBUG_VIS_QP      0x00002000
-#define FF_DEBUG_VIS_MB_TYPE 0x00004000
+#define FF_DEBUG_VIS_QP      0x00002000 ///< only access through AVOptions from outside libavcodec
+#define FF_DEBUG_VIS_MB_TYPE 0x00004000 ///< only access through AVOptions from outside libavcodec
 #endif
 #define FF_DEBUG_BUFFERS     0x00008000
 #define FF_DEBUG_THREADS     0x00010000
