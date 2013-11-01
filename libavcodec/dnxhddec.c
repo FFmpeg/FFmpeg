@@ -377,9 +377,9 @@ static int dnxhd_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         first_field = 1;
     }
 
-    if (av_image_check_size(ctx->width, ctx->height, 0, avctx))
-        return -1;
-    avcodec_set_dimensions(avctx, ctx->width, ctx->height);
+    ret = ff_set_dimensions(avctx, ctx->width, ctx->height);
+    if (ret < 0)
+        return ret;
 
     if (first_field) {
         if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)

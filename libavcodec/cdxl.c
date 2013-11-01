@@ -245,10 +245,8 @@ static int cdxl_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_PATCHWELCOME;
     }
 
-    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
+    if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
         return ret;
-    if (w != avctx->width || h != avctx->height)
-        avcodec_set_dimensions(avctx, w, h);
 
     aligned_width = FFALIGN(c->avctx->width, 16);
     c->padded_bits  = aligned_width - c->avctx->width;
