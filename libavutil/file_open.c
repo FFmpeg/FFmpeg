@@ -93,3 +93,37 @@ int avpriv_open(const char *filename, int flags, ...)
 
     return fd;
 }
+
+FILE *av_fopen_utf8(const char *path, const char *mode)
+{
+    int fd;
+    int access;
+    const char *m = mode;
+
+    switch (*m++) {
+    case 'r': access = O_RDONLY; break;
+    case 'w': access = O_CREAT|O_WRONLY|O_TRUNC; break;
+    case 'a': access = O_CREAT|O_WRONLY|O_APPEND; break;
+    default :
+        errno = EINVAL;
+        return NULL;
+    }
+    while (*m) {
+        if (*m == '+') {
+            access &= ~(O_RDONLY | O_WRONLY);
+            access |= O_RDWR;
+        } else if (*m == 'b') {
+#ifdef O_BINARY
+            access |= O_BINARY;
+#endif
+        } else if (*m) {
+            errno = EINVAL;
+            return NULL;
+        }
+        m++;
+    }
+    fd = avpriv_open(path, access, 0666);
+    if (fd == -1)
+        return NULL;
+    return fdopen(fd, mode);
+}

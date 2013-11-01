@@ -313,6 +313,13 @@ unsigned av_int_list_length_for_size(unsigned elsize,
     av_int_list_length_for_size(sizeof(*(list)), list, term)
 
 /**
+ * Open a file using a UTF-8 filename.
+ * The API of this function matches POSIX fopen(), errors are returned through
+ * errno.
+ */
+FILE *av_fopen_utf8(const char *path, const char *mode);
+
+/**
  * @}
  * @}
  */
