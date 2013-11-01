@@ -35,6 +35,7 @@
 #include "get_bits.h"
 #include "avcodec.h"
 #include "bytestream.h"
+#include "internal.h"
 #include "mathops.h"
 #include "thread.h"
 #include "libavutil/imgutils.h"
@@ -1184,9 +1185,6 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_PATCHWELCOME;
     }
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return AVERROR_INVALIDDATA;
-
     // Verify the xmin, xmax, ymin, ymax and xdelta before setting the actual image size
     if (s->xmin > s->xmax ||
         s->ymin > s->ymax ||
@@ -1196,9 +1194,8 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (w != avctx->width || h != avctx->height) {
-        avcodec_set_dimensions(avctx, w, h);
-    }
+    if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
+        return ret;
 
     s->desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     out_line_size = avctx->width * 2 * s->desc->nb_components;
