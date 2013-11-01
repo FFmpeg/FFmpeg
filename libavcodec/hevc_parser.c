@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/common.h"
+
 #include "parser.h"
 #include "hevc.h"
 #include "golomb.h"
@@ -36,7 +37,8 @@ typedef struct HEVCParseContext {
  * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or END_NOT_FOUND
  */
-static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf, int buf_size)
+static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
+                               int buf_size)
 {
     int i;
     ParseContext *pc = &((HEVCParseContext *)s->priv_data)->pc;
@@ -82,9 +84,8 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf, int 
  * @param buf buffer with field/frame data.
  * @param buf_size size of the buffer.
  */
-static inline int parse_nal_units(AVCodecParserContext *s,
-                                  AVCodecContext *avctx,
-                                  const uint8_t *buf, int buf_size)
+static inline int parse_nal_units(AVCodecParserContext *s, AVCodecContext *avctx,
+                      const uint8_t *buf, int buf_size)
 {
     HEVCContext   *h  = &((HEVCParseContext *)s->priv_data)->h;
     GetBitContext *gb = &h->HEVClc->gb;
@@ -269,7 +270,7 @@ static int hevc_parse(AVCodecParserContext *s,
     } else {
         next = hevc_find_frame_end(s, buf, buf_size);
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-            *poutbuf = NULL;
+            *poutbuf      = NULL;
             *poutbuf_size = 0;
             return buf_size;
         }
@@ -299,8 +300,8 @@ static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
                 return i - 3;
             } else { // no parameter set at the beginning of the stream
                 return 0;
-            }
         }
+    }
     }
     return 0;
 }

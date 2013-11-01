@@ -33,94 +33,94 @@
  * number of bin by SyntaxElement.
  */
 static const int8_t num_bins_in_se[] = {
-     1,  // sao_merge_flag
-     1,  // sao_type_idx
-     0,  // sao_eo_class
-     0,  // sao_band_position
-     0,  // sao_offset_abs
-     0,  // sao_offset_sign
-     0,  // end_of_slice_flag
-     3,  // split_coding_unit_flag
-     1,  // cu_transquant_bypass_flag
-     3,  // skip_flag
-     3,  // cu_qp_delta
-     1,  // pred_mode
-     4,  // part_mode
-     0,  // pcm_flag
-     1,  // prev_intra_luma_pred_mode
-     0,  // mpm_idx
-     0,  // rem_intra_luma_pred_mode
-     2,  // intra_chroma_pred_mode
-     1,  // merge_flag
-     1,  // merge_idx
-     5,  // inter_pred_idc
-     2,  // ref_idx_l0
-     2,  // ref_idx_l1
-     2,  // abs_mvd_greater0_flag
-     2,  // abs_mvd_greater1_flag
-     0,  // abs_mvd_minus2
-     0,  // mvd_sign_flag
-     1,  // mvp_lx_flag
-     1,  // no_residual_data_flag
-     3,  // split_transform_flag
-     2,  // cbf_luma
-     4,  // cbf_cb, cbf_cr
-     2,  // transform_skip_flag[][]
-    18,  // last_significant_coeff_x_prefix
-    18,  // last_significant_coeff_y_prefix
-     0,  // last_significant_coeff_x_suffix
-     0,  // last_significant_coeff_y_suffix
-     4,  // significant_coeff_group_flag
-    42,  // significant_coeff_flag
-    24,  // coeff_abs_level_greater1_flag
-     6,  // coeff_abs_level_greater2_flag
-     0,  // coeff_abs_level_remaining
-     0,  // coeff_sign_flag
+     1, // sao_merge_flag
+     1, // sao_type_idx
+     0, // sao_eo_class
+     0, // sao_band_position
+     0, // sao_offset_abs
+     0, // sao_offset_sign
+     0, // end_of_slice_flag
+     3, // split_coding_unit_flag
+     1, // cu_transquant_bypass_flag
+     3, // skip_flag
+     3, // cu_qp_delta
+     1, // pred_mode
+     4, // part_mode
+     0, // pcm_flag
+     1, // prev_intra_luma_pred_mode
+     0, // mpm_idx
+     0, // rem_intra_luma_pred_mode
+     2, // intra_chroma_pred_mode
+     1, // merge_flag
+     1, // merge_idx
+     5, // inter_pred_idc
+     2, // ref_idx_l0
+     2, // ref_idx_l1
+     2, // abs_mvd_greater0_flag
+     2, // abs_mvd_greater1_flag
+     0, // abs_mvd_minus2
+     0, // mvd_sign_flag
+     1, // mvp_lx_flag
+     1, // no_residual_data_flag
+     3, // split_transform_flag
+     2, // cbf_luma
+     4, // cbf_cb, cbf_cr
+     2, // transform_skip_flag[][]
+    18, // last_significant_coeff_x_prefix
+    18, // last_significant_coeff_y_prefix
+     0, // last_significant_coeff_x_suffix
+     0, // last_significant_coeff_y_suffix
+     4, // significant_coeff_group_flag
+    42, // significant_coeff_flag
+    24, // coeff_abs_level_greater1_flag
+     6, // coeff_abs_level_greater2_flag
+     0, // coeff_abs_level_remaining
+     0, // coeff_sign_flag
 };
 
 /**
  * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
  */
 static const int elem_offset[sizeof(num_bins_in_se)] = {
-    0,
-    1,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    5,
-    6,
-    9,
-    12,
-    13,
-    17,
-    17,
-    18,
-    18,
-    18,
-    20,
-    21,
-    22,
-    27,
-    29,
-    31,
-    33,
-    35,
-    35,
-    35,
-    36,
-    37,
-    40,
-    42,
-    46,
-    48,
-    66,
-    84,
-    84,
-    84,
-    88,
+      0,
+      1,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      5,
+      6,
+      9,
+     12,
+     13,
+     17,
+     17,
+     18,
+     18,
+     18,
+     20,
+     21,
+     22,
+     27,
+     29,
+     31,
+     33,
+     35,
+     35,
+     35,
+     36,
+     37,
+     40,
+     42,
+     46,
+     48,
+     66,
+     84,
+     84,
+     84,
+     88,
     130,
     154,
     160,
@@ -132,200 +132,195 @@ static const int elem_offset[sizeof(num_bins_in_se)] = {
  * Indexed by init_type
  */
 static const uint8_t init_values[3][HEVC_CONTEXTS] = {
-    {
-        // sao_merge_flag
-        153,
-        // sao_type_idx
-        200,
-        // split_coding_unit_flag
-        139, 141, 157,
-        // cu_transquant_bypass_flag
-        154,
-        // skip_flag
-        CNU, CNU, CNU,
-        // cu_qp_delta
-        154, 154, 154,
-        // pred_mode
-        CNU,
-        // part_mode
-        184, CNU, CNU, CNU,
-        // prev_intra_luma_pred_mode
-        184,
-        // intra_chroma_pred_mode
-        63, 139,
-        // merge_flag
-        CNU,
-        // merge_idx
-        CNU,
-        // inter_pred_idc
-        CNU, CNU, CNU, CNU, CNU,
-        // ref_idx_l0
-        CNU, CNU,
-        // ref_idx_l1
-        CNU, CNU,
-        // abs_mvd_greater1_flag
-        CNU, CNU,
-        // abs_mvd_greater1_flag
-        CNU, CNU,
-        // mvp_lx_flag
-        CNU,
-        // no_residual_data_flag
-        CNU,
-        // split_transform_flag
-        153, 138, 138,
-        // cbf_luma
-        111, 141,
-        // cbf_cb, cbf_cr
-        94, 138, 182, 154,
-        // transform_skip_flag
-        139, 139,
-        // last_significant_coeff_x_prefix
-        110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
-         79, 108, 123,  63,
-        // last_significant_coeff_y_prefix
-        110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
-         79, 108, 123,  63,
-        // significant_coeff_group_flag
-        91, 171, 134, 141,
-        // significant_coeff_flag
-        111, 111, 125, 110, 110,  94, 124, 108, 124, 107, 125, 141, 179, 153,
-        125, 107, 125, 141, 179, 153, 125, 107, 125, 141, 179, 153, 125, 140,
-        139, 182, 182, 152, 136, 152, 136, 153, 136, 139, 111, 136, 139, 111,
-        // coeff_abs_level_greater1_flag
-        140,  92, 137, 138, 140, 152, 138, 139, 153,  74, 149,  92, 139, 107,
-        122, 152, 140, 179, 166, 182, 140, 227, 122, 197,
-        // coeff_abs_level_greater2_flag
-        138, 153, 136, 167, 152, 152,
-    },
-    {
-        // sao_merge_flag
-        153,
-        // sao_type_idx
-        185,
-        // split_coding_unit_flag
-        107, 139, 126,
-        // cu_transquant_bypass_flag
-        154,
-        // skip_flag
-        197, 185, 201,
-        // cu_qp_delta
-        154, 154, 154,
-        // pred_mode
-        149,
-        // part_mode
-        154, 139, 154, 154,
-        // prev_intra_luma_pred_mode
-        154,
-        // intra_chroma_pred_mode
-        152, 139,
-        // merge_flag
-        110,
-        // merge_idx
-        122,
-        // inter_pred_idc
-        95, 79, 63, 31, 31,
-        // ref_idx_l0
-        153, 153,
-        // ref_idx_l1
-        153, 153,
-        // abs_mvd_greater1_flag
-        140, 198,
-        // abs_mvd_greater1_flag
-        140, 198,
-        // mvp_lx_flag
-        168,
-        // no_residual_data_flag
-        79,
-        // split_transform_flag
-        124, 138, 94,
-        // cbf_luma
-        153, 111,
-        // cbf_cb, cbf_cr
-        149, 107, 167, 154,
-        // transform_skip_flag
-        139, 139,
-        // last_significant_coeff_x_prefix
-        125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
-         94, 108, 123, 108,
-        // last_significant_coeff_y_prefix
-        125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
-         94, 108, 123, 108,
-        // significant_coeff_group_flag
-        121, 140, 61, 154,
-        // significant_coeff_flag
-        155, 154, 139, 153, 139, 123, 123,  63, 153, 166, 183, 140, 136, 153,
-        154, 166, 183, 140, 136, 153, 154, 166, 183, 140, 136, 153, 154, 170,
-        153, 123, 123, 107, 121, 107, 121, 167, 151, 183, 140, 151, 183, 140,
-        // coeff_abs_level_greater1_flag
-        154, 196, 196, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
-        136, 137, 169, 194, 166, 167, 154, 167, 137, 182,
-        // coeff_abs_level_greater2_flag
-        107, 167, 91, 122, 107, 167,
-    },
-    {
-        // sao_merge_flag
-        153,
-        // sao_type_idx
-        160,
-        // split_coding_unit_flag
-        107, 139, 126,
-        // cu_transquant_bypass_flag
-        154,
-        // skip_flag
-        197, 185, 201,
-        // cu_qp_delta
-        154, 154, 154,
-        // pred_mode
-        134,
-        // part_mode
-        154, 139, 154, 154,
-        // prev_intra_luma_pred_mode
-        183,
-        // intra_chroma_pred_mode
-        152, 139,
-        // merge_flag
-        154,
-        // merge_idx
-        137,
-        // inter_pred_idc
-        95, 79, 63, 31, 31,
-        // ref_idx_l0
-        153, 153,
-        // ref_idx_l1
-        153, 153,
-        // abs_mvd_greater1_flag
-        169, 198,
-        // abs_mvd_greater1_flag
-        169, 198,
-        // mvp_lx_flag
-        168,
-        // no_residual_data_flag
-        79,
-        // split_transform_flag
-        224, 167, 122,
-        // cbf_luma
-        153, 111,
-        // cbf_cb, cbf_cr
-        149, 92, 167, 154,
-        // transform_skip_flag
-        139, 139,
-        // last_significant_coeff_x_prefix
-        125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
-         79, 108, 123,  93,
-        // last_significant_coeff_y_prefix
-        125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
-         79, 108, 123,  93,
-        // significant_coeff_group_flag
-        121, 140, 61, 154,
-        // significant_coeff_flag
-        170, 154, 139, 153, 139, 123, 123,  63, 124, 166, 183, 140, 136, 153,
-        154, 166, 183, 140, 136, 153, 154, 166, 183, 140, 136, 153, 154, 170,
-        153, 138, 138, 122, 121, 122, 121, 167, 151, 183, 140, 151, 183, 140,
-        // coeff_abs_level_greater1_flag
-        154, 196, 167, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
-        136, 122, 169, 208, 166, 167, 154, 152, 167, 182,
-        // coeff_abs_level_greater2_flag
-        107, 167, 91, 107, 107, 167,
+    { // sao_merge_flag
+      153,
+      // sao_type_idx
+      200,
+      // split_coding_unit_flag
+      139, 141, 157,
+      // cu_transquant_bypass_flag
+      154,
+      // skip_flag
+      CNU, CNU, CNU,
+      // cu_qp_delta
+      154, 154, 154,
+      // pred_mode
+      CNU,
+      // part_mode
+      184, CNU, CNU, CNU,
+      // prev_intra_luma_pred_mode
+      184,
+      // intra_chroma_pred_mode
+      63, 139,
+      // merge_flag
+      CNU,
+      // merge_idx
+      CNU,
+      // inter_pred_idc
+      CNU, CNU, CNU, CNU, CNU,
+      // ref_idx_l0
+      CNU, CNU,
+      // ref_idx_l1
+      CNU, CNU,
+      // abs_mvd_greater1_flag
+      CNU, CNU,
+      // abs_mvd_greater1_flag
+      CNU, CNU,
+      // mvp_lx_flag
+      CNU,
+      // no_residual_data_flag
+      CNU,
+      // split_transform_flag
+      153, 138, 138,
+      // cbf_luma
+      111, 141,
+      // cbf_cb, cbf_cr
+      94, 138, 182, 154,
+      // transform_skip_flag
+      139, 139,
+      // last_significant_coeff_x_prefix
+      110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
+       79, 108, 123,  63,
+      // last_significant_coeff_y_prefix
+      110, 110, 124, 125, 140, 153, 125, 127, 140, 109, 111, 143, 127, 111,
+       79, 108, 123,  63,
+      // significant_coeff_group_flag
+      91, 171, 134, 141,
+      // significant_coeff_flag
+      111, 111, 125, 110, 110,  94, 124, 108, 124, 107, 125, 141, 179, 153,
+      125, 107, 125, 141, 179, 153, 125, 107, 125, 141, 179, 153, 125, 140,
+      139, 182, 182, 152, 136, 152, 136, 153, 136, 139, 111, 136, 139, 111,
+      // coeff_abs_level_greater1_flag
+      140,  92, 137, 138, 140, 152, 138, 139, 153,  74, 149,  92, 139, 107,
+      122, 152, 140, 179, 166, 182, 140, 227, 122, 197,
+      // coeff_abs_level_greater2_flag
+      138, 153, 136, 167, 152, 152, },
+    { // sao_merge_flag
+      153,
+      // sao_type_idx
+      185,
+      // split_coding_unit_flag
+      107, 139, 126,
+      // cu_transquant_bypass_flag
+      154,
+      // skip_flag
+      197, 185, 201,
+      // cu_qp_delta
+      154, 154, 154,
+      // pred_mode
+      149,
+      // part_mode
+      154, 139, 154, 154,
+      // prev_intra_luma_pred_mode
+      154,
+      // intra_chroma_pred_mode
+      152, 139,
+      // merge_flag
+      110,
+      // merge_idx
+      122,
+      // inter_pred_idc
+      95, 79, 63, 31, 31,
+      // ref_idx_l0
+      153, 153,
+      // ref_idx_l1
+      153, 153,
+      // abs_mvd_greater1_flag
+      140, 198,
+      // abs_mvd_greater1_flag
+      140, 198,
+      // mvp_lx_flag
+      168,
+      // no_residual_data_flag
+      79,
+      // split_transform_flag
+      124, 138, 94,
+      // cbf_luma
+      153, 111,
+      // cbf_cb, cbf_cr
+      149, 107, 167, 154,
+      // transform_skip_flag
+      139, 139,
+      // last_significant_coeff_x_prefix
+      125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
+       94, 108, 123, 108,
+      // last_significant_coeff_y_prefix
+      125, 110,  94, 110,  95,  79, 125, 111, 110,  78, 110, 111, 111,  95,
+       94, 108, 123, 108,
+      // significant_coeff_group_flag
+      121, 140, 61, 154,
+      // significant_coeff_flag
+      155, 154, 139, 153, 139, 123, 123,  63, 153, 166, 183, 140, 136, 153,
+      154, 166, 183, 140, 136, 153, 154, 166, 183, 140, 136, 153, 154, 170,
+      153, 123, 123, 107, 121, 107, 121, 167, 151, 183, 140, 151, 183, 140,
+      // coeff_abs_level_greater1_flag
+      154, 196, 196, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
+      136, 137, 169, 194, 166, 167, 154, 167, 137, 182,
+      // coeff_abs_level_greater2_flag
+      107, 167, 91, 122, 107, 167, },
+    { // sao_merge_flag
+      153,
+      // sao_type_idx
+      160,
+      // split_coding_unit_flag
+      107, 139, 126,
+      // cu_transquant_bypass_flag
+      154,
+      // skip_flag
+      197, 185, 201,
+      // cu_qp_delta
+      154, 154, 154,
+      // pred_mode
+      134,
+      // part_mode
+      154, 139, 154, 154,
+      // prev_intra_luma_pred_mode
+      183,
+      // intra_chroma_pred_mode
+      152, 139,
+      // merge_flag
+      154,
+      // merge_idx
+      137,
+      // inter_pred_idc
+      95, 79, 63, 31, 31,
+      // ref_idx_l0
+      153, 153,
+      // ref_idx_l1
+      153, 153,
+      // abs_mvd_greater1_flag
+      169, 198,
+      // abs_mvd_greater1_flag
+      169, 198,
+      // mvp_lx_flag
+      168,
+      // no_residual_data_flag
+      79,
+      // split_transform_flag
+      224, 167, 122,
+      // cbf_luma
+      153, 111,
+      // cbf_cb, cbf_cr
+      149, 92, 167, 154,
+      // transform_skip_flag
+      139, 139,
+      // last_significant_coeff_x_prefix
+      125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
+       79, 108, 123,  93,
+      // last_significant_coeff_y_prefix
+      125, 110, 124, 110,  95,  94, 125, 111, 111,  79, 125, 126, 111, 111,
+       79, 108, 123,  93,
+      // significant_coeff_group_flag
+      121, 140, 61, 154,
+      // significant_coeff_flag
+      170, 154, 139, 153, 139, 123, 123,  63, 124, 166, 183, 140, 136, 153,
+      154, 166, 183, 140, 136, 153, 154, 166, 183, 140, 136, 153, 154, 170,
+      153, 138, 138, 122, 121, 122, 121, 167, 151, 183, 140, 151, 183, 140,
+      // coeff_abs_level_greater1_flag
+      154, 196, 167, 167, 154, 152, 167, 182, 182, 134, 149, 136, 153, 121,
+      136, 122, 169, 208, 166, 167, 154, 152, 167, 182,
+      // coeff_abs_level_greater2_flag
+      107, 167, 91, 107, 107, 167,
     },
 };
 
@@ -548,7 +543,7 @@ static void cabac_init_state(HEVCContext *s)
         pre ^= pre >> 31;
         if (pre > 124)
             pre = 124 + (pre & 1);
-        s->HEVClc->cabac_state[i] =  pre;
+        s->HEVClc->cabac_state[i] = pre;
     }
 }
 
@@ -561,7 +556,8 @@ void ff_hevc_cabac_init(HEVCContext *s, int ctb_addr_ts)
              (s->pps->tile_id[ctb_addr_ts] != s->pps->tile_id[ctb_addr_ts - 1])))
             cabac_init_state(s);
 
-        if (!s->sh.first_slice_in_pic_flag && s->pps->entropy_coding_sync_enabled_flag) {
+        if (!s->sh.first_slice_in_pic_flag &&
+            s->pps->entropy_coding_sync_enabled_flag) {
             if ((ctb_addr_ts % s->sps->ctb_width) == 0) {
                 if (s->sps->ctb_width == 1)
                     cabac_init_state(s);
@@ -640,7 +636,7 @@ int ff_hevc_sao_offset_sign_decode(HEVCContext *s)
 int ff_hevc_sao_eo_class_decode(HEVCContext *s)
 {
     int ret = (get_cabac_bypass(&s->HEVClc->cc) << 1);
-    ret    |=  get_cabac_bypass(&s->HEVClc->cc);
+    ret    |= get_cabac_bypass(&s->HEVClc->cc);
     return ret;
 }
 
@@ -662,9 +658,9 @@ int ff_hevc_skip_flag_decode(HEVCContext *s, int x0, int y0, int x_cb, int y_cb)
     int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
 
     if (s->HEVClc->ctb_left_flag || x0b)
-        inc = !!SAMPLE_CTB(s->skip_flag, x_cb-1, y_cb);
+        inc = !!SAMPLE_CTB(s->skip_flag, x_cb - 1, y_cb);
     if (s->HEVClc->ctb_up_flag || y0b)
-        inc += !!SAMPLE_CTB(s->skip_flag, x_cb, y_cb-1);
+        inc += !!SAMPLE_CTB(s->skip_flag, x_cb, y_cb - 1);
 
     return GET_CABAC(elem_offset[SKIP_FLAG] + inc);
 }
@@ -707,18 +703,19 @@ int ff_hevc_pred_mode_decode(HEVCContext *s)
 int ff_hevc_split_coding_unit_flag_decode(HEVCContext *s, int ct_depth, int x0, int y0)
 {
     int inc = 0, depth_left = 0, depth_top = 0;
-    int x0b = x0 & ((1 << s->sps->log2_ctb_size) - 1);
-    int y0b = y0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int x0b  = x0 & ((1 << s->sps->log2_ctb_size) - 1);
+    int y0b  = y0 & ((1 << s->sps->log2_ctb_size) - 1);
     int x_cb = x0 >> s->sps->log2_min_cb_size;
     int y_cb = y0 >> s->sps->log2_min_cb_size;
 
     if (s->HEVClc->ctb_left_flag || x0b)
-        depth_left = s->tab_ct_depth[(y_cb)*s->sps->min_cb_width + x_cb-1];
+        depth_left = s->tab_ct_depth[(y_cb) * s->sps->min_cb_width + x_cb - 1];
     if (s->HEVClc->ctb_up_flag || y0b)
-        depth_top = s->tab_ct_depth[(y_cb-1)*s->sps->min_cb_width + x_cb];
+        depth_top = s->tab_ct_depth[(y_cb - 1) * s->sps->min_cb_width + x_cb];
 
     inc += (depth_left > ct_depth);
-    inc += (depth_top > ct_depth);
+    inc += (depth_top  > ct_depth);
+
     return GET_CABAC(elem_offset[SPLIT_CODING_UNIT_FLAG] + inc);
 }
 
@@ -756,7 +753,7 @@ int ff_hevc_part_mode_decode(HEVCContext *s, int log2_cb_size)
         return PART_Nx2N;
     if (get_cabac_bypass(&s->HEVClc->cc)) // 0001
         return PART_nRx2N;
-    return  PART_nLx2N; // 0000
+    return PART_nLx2N;  // 0000
 }
 
 int ff_hevc_pcm_flag_decode(HEVCContext *s)
@@ -794,7 +791,7 @@ int ff_hevc_intra_chroma_pred_mode_decode(HEVCContext *s)
         return 4;
 
     ret  = (get_cabac_bypass(&s->HEVClc->cc) << 1);
-    ret |=  get_cabac_bypass(&s->HEVClc->cc);
+    ret |= get_cabac_bypass(&s->HEVClc->cc);
     return ret;
 }
 
