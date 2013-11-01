@@ -22,6 +22,7 @@
 
 #define UNCHECKED_BITSTREAM_READER 1
 
+#include "internal.h"
 #include "parser.h"
 #include "mpegvideo.h"
 #include "mpeg4video.h"
@@ -91,7 +92,9 @@ static int av_mpeg4_decode_header(AVCodecParserContext *s1,
     init_get_bits(gb, buf, 8 * buf_size);
     ret = ff_mpeg4_decode_picture_header(s, gb);
     if (s->width && (!avctx->width || !avctx->height || !avctx->coded_width || !avctx->coded_height)) {
-        avcodec_set_dimensions(avctx, s->width, s->height);
+        ret = ff_set_dimensions(avctx, s->width, s->height);
+        if (ret < 0)
+            return ret;
     }
     if((s1->flags & PARSER_FLAG_USE_CODEC_TS) && s->avctx->time_base.den>0 && ret>=0){
         av_assert1(s1->pts == AV_NOPTS_VALUE);
