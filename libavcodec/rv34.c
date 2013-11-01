@@ -1693,7 +1693,11 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
                 si.width, si.height);
             s->width  = si.width;
             s->height = si.height;
-            avcodec_set_dimensions(s->avctx, s->width, s->height);
+
+            err = ff_set_dimensions(s->avctx, s->width, s->height);
+            if (err < 0)
+                return err;
+
             if ((err = ff_MPV_common_frame_size_change(s)) < 0)
                 return err;
             if ((err = rv34_decoder_realloc(r)) < 0)

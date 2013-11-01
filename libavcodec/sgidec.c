@@ -202,9 +202,9 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (av_image_check_size(s->width, s->height, 0, avctx))
-        return AVERROR_INVALIDDATA;
-    avcodec_set_dimensions(avctx, s->width, s->height);
+    ret = ff_set_dimensions(avctx, s->width, s->height);
+    if (ret < 0)
+        return ret;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
