@@ -39,6 +39,7 @@ static av_cold int mvc_decode_init(AVCodecContext *avctx)
     MvcContext *s = avctx->priv_data;
     int width  = avctx->width;
     int height = avctx->height;
+    int ret;
 
     if (avctx->codec_id == AV_CODEC_ID_MVC1) {
         width  += 3;
@@ -46,8 +47,8 @@ static av_cold int mvc_decode_init(AVCodecContext *avctx)
     }
     width  &= ~3;
     height &= ~3;
-    if (width != avctx->width || height != avctx->height)
-        avcodec_set_dimensions(avctx, width, height);
+    if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
+        return ret;
 
     avctx->pix_fmt = (avctx->codec_id == AV_CODEC_ID_MVC1) ? AV_PIX_FMT_RGB555 : AV_PIX_FMT_BGRA;
     s->frame = av_frame_alloc();
