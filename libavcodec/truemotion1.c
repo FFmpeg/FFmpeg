@@ -397,15 +397,16 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         new_pix_fmt = AV_PIX_FMT_RGB555; // RGB565 is supported as well
 
     s->w >>= width_shift;
-    if ((ret = av_image_check_size(s->w, s->h, 0, s->avctx)) < 0)
-        return ret;
 
     if (s->w != s->avctx->width || s->h != s->avctx->height ||
         new_pix_fmt != s->avctx->pix_fmt) {
         av_frame_unref(&s->frame);
         s->avctx->sample_aspect_ratio = (AVRational){ 1 << width_shift, 1 };
         s->avctx->pix_fmt = new_pix_fmt;
-        avcodec_set_dimensions(s->avctx, s->w, s->h);
+
+        if ((ret = ff_set_dimensions(s->avctx, s->w, s->h)) < 0)
+            return ret;
+
         av_fast_malloc(&s->vert_pred, &s->vert_pred_size, s->avctx->width * sizeof(unsigned int));
         if (!s->vert_pred)
             return AVERROR(ENOMEM);
