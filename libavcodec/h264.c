@@ -2197,9 +2197,7 @@ static void decode_postinit(H264Context *h, int setup_finished)
             // display order are "recovered".
             h->frame_recovered |= FRAME_RECOVERED_SEI;
         }
-#if 0
         h->next_output_pic->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_SEI);
-#endif
     }
 
     if (setup_finished && !h->avctx->hwaccel)
@@ -5152,12 +5150,8 @@ not_extra:
 
         /* Wait for second field. */
         *got_frame = 0;
-#if 1
-        if (h->next_output_pic && (h->next_output_pic->recovered || h->frame_recovered>1)) {
-#else
         if (h->next_output_pic && (
                                    h->next_output_pic->recovered)) {
-#endif
             if (!h->next_output_pic->recovered)
                 h->next_output_pic->f.flags |= AV_FRAME_FLAG_CORRUPT;
 
