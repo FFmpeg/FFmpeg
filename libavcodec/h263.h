@@ -26,6 +26,10 @@
 #include "mpegvideo.h"
 #include "rl.h"
 
+#if !FF_API_ASPECT_EXTENDED
+#define FF_ASPECT_EXTENDED 15
+#endif
+
 // The defines below define the number of bits that are read at once for
 // reading vlc values. Changing these may improve speed and data cache needs
 // be aware though that decreasing them may need the number of stages that is
