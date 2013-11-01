@@ -272,7 +272,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
     s->last_rtcp_ntp_time = ntp_time;
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, (AVRational){1, 1000000},
                           s1->streams[0]->time_base) + s->base_timestamp;
-    avio_w8(s1->pb, (RTP_VERSION << 6));
+    avio_w8(s1->pb, RTP_VERSION << 6);
     avio_w8(s1->pb, RTCP_SR);
     avio_wb16(s1->pb, 6); /* length in words - 1 */
     avio_wb32(s1->pb, s->ssrc);
@@ -308,7 +308,7 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
     av_dlog(s1, "rtp_send_data size=%d\n", len);
 
     /* build the RTP header */
-    avio_w8(s1->pb, (RTP_VERSION << 6));
+    avio_w8(s1->pb, RTP_VERSION << 6);
     avio_w8(s1->pb, (s->payload_type & 0x7f) | ((m & 0x01) << 7));
     avio_wb16(s1->pb, s->seq);
     avio_wb32(s1->pb, s->timestamp);
