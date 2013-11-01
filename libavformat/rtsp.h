@@ -598,6 +598,11 @@ int ff_rtsp_tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
                             uint8_t *buf, int buf_size);
 
 /**
+ * Send buffered packets over TCP.
+ */
+int ff_rtsp_tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st);
+
+/**
  * Receive one packet from the RTSPStreams set up in the AVFormatContext
  * (which should contain a RTSPState struct as priv_data).
  */
@@ -615,7 +620,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
  * Undo the effect of ff_rtsp_make_setup_request, close the
  * transport_priv and rtp_handle fields.
  */
-void ff_rtsp_undo_setup(AVFormatContext *s);
+void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets);
 
 /**
  * Open RTSP transport context.

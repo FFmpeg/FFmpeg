@@ -641,7 +641,7 @@ int ff_sdp_parse(AVFormatContext *s, const char *content)
 }
 #endif /* CONFIG_RTPDEC */
 
-void ff_rtsp_undo_setup(AVFormatContext *s)
+void ff_rtsp_undo_setup(AVFormatContext *s, int send_packets)
 {
     RTSPState *rt = s->priv_data;
     int i;
@@ -656,6 +656,8 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
                 av_write_trailer(rtpctx);
                 if (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
                     uint8_t *ptr;
+                    if (CONFIG_RTSP_MUXER && rtpctx->pb && send_packets)
+                        ff_rtsp_tcp_write_packet(s, rtsp_st);
                     avio_close_dyn_buf(rtpctx->pb, &ptr);
                     av_free(ptr);
                 } else {
@@ -681,7 +683,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     int i, j;
     RTSPStream *rtsp_st;
 
-    ff_rtsp_undo_setup(s);
+    ff_rtsp_undo_setup(s, 0);
     for (i = 0; i < rt->nb_rtsp_streams; i++) {
         rtsp_st = rt->rtsp_streams[i];
         if (rtsp_st) {
@@ -1547,7 +1549,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     return 0;
 
 fail:
-    ff_rtsp_undo_setup(s);
+    ff_rtsp_undo_setup(s, 0);
     return err;
 }
 

@@ -136,7 +136,7 @@ static int rtsp_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
+int ff_rtsp_tcp_write_packet(AVFormatContext *s, RTSPStream *rtsp_st)
 {
     RTSPState *rt = s->priv_data;
     AVFormatContext *rtpctx = rtsp_st->transport_priv;
@@ -217,13 +217,18 @@ static int rtsp_write_packet(AVFormatContext *s, AVPacket *pkt)
      * packets, so we need to send them out on the TCP connection separately.
      */
     if (!ret && rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP)
-        ret = tcp_write_packet(s, rtsp_st);
+        ret = ff_rtsp_tcp_write_packet(s, rtsp_st);
     return ret;
 }
 
 static int rtsp_write_close(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
+
+    // If we want to send RTCP_BYE packets, these are sent by av_write_trailer.
+    // Thus call this on all streams before doing the teardown. This is
+    // done within ff_rtsp_undo_setup.
+    ff_rtsp_undo_setup(s, 1);
 
     ff_rtsp_send_cmd_async(s, "TEARDOWN", rt->control_uri, NULL);
 
