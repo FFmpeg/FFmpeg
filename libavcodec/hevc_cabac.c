@@ -1137,7 +1137,7 @@ void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
         dc_scale = 16;
 
         if (s->sps->scaling_list_enable_flag) {
-            const ScalingList *sl = s->pps->pps_scaling_list_data_present_flag ?
+            const ScalingList *sl = s->pps->scaling_list_data_present_flag ?
             &s->pps->scaling_list : &s->sps->scaling_list;
             int matrix_id = lc->cu.pred_mode != MODE_INTRA;
 

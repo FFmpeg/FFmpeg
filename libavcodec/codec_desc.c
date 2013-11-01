@@ -226,13 +226,6 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
     },
     {
-        .id        = AV_CODEC_ID_HEVC,
-        .type      = AVMEDIA_TYPE_VIDEO,
-        .name      = "hevc",
-        .long_name = NULL_IF_CONFIG_SMALL("H.265 / HEVC"),
-        .props     = AV_CODEC_PROP_LOSSY | AV_CODEC_PROP_LOSSLESS,
-    },
-    {
         .id        = AV_CODEC_ID_INDEO3,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "indeo3",
@@ -1399,6 +1392,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "hnm4video",
         .long_name = NULL_IF_CONFIG_SMALL("HNM 4 video"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
+    {
+        .id        = AV_CODEC_ID_HEVC,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "hevc",
+        .long_name = NULL_IF_CONFIG_SMALL("H.265 / HEVC (High Efficiency Video Coding)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
 

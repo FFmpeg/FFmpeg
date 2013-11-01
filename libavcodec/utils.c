@@ -2606,6 +2606,7 @@ static enum AVCodecID remap_deprecated_codec_id(enum AVCodecID id)
         case AV_CODEC_ID_ESCAPE130_DEPRECATED : return AV_CODEC_ID_ESCAPE130;
         case AV_CODEC_ID_G2M_DEPRECATED : return AV_CODEC_ID_G2M;
         case AV_CODEC_ID_WEBP_DEPRECATED: return AV_CODEC_ID_WEBP;
+        case AV_CODEC_ID_HEVC_DEPRECATED: return AV_CODEC_ID_HEVC;
         default                         : return id;
     }
 }
