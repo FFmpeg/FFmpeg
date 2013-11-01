@@ -21,6 +21,8 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
+#include "internal.h"
+
 #include "libavutil/attributes.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/opt.h"
@@ -598,9 +600,11 @@ static int dvdsub_parse_extradata(AVCodecContext *avctx)
             parse_palette(ctx, data + 8);
         } else if (strncmp("size:", data, 5) == 0) {
             int w, h;
-            if (sscanf(data + 5, "%dx%d", &w, &h) == 2 &&
-                av_image_check_size(w, h, 0, avctx) >= 0)
-                avcodec_set_dimensions(avctx, w, h);
+            if (sscanf(data + 5, "%dx%d", &w, &h) == 2) {
+               int ret = ff_set_dimensions(avctx, w, h);
+               if (ret < 0)
+                   return ret;
+            }
         }
 
         data += pos;

@@ -111,11 +111,9 @@ static int decode_frame(AVCodecContext *avctx,
     buf = avpkt->data + 0x304;
     w = read32(&buf, endian);
     h = read32(&buf, endian);
-    if ((ret = av_image_check_size(w, h, 0, avctx)) < 0)
-        return ret;
 
-    if (w != avctx->width || h != avctx->height)
-        avcodec_set_dimensions(avctx, w, h);
+    if ((ret = ff_set_dimensions(avctx, w, h)) < 0)
+        return ret;
 
     // Need to end in 0x320 to read the descriptor
     buf += 20;
