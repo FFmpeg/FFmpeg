@@ -61,10 +61,6 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         av_log(avctx, AV_LOG_ERROR, "invalid (compression) type\n");
         return AVERROR_INVALIDDATA;
     }
-    if (av_image_check_size(w, h, 0, avctx)) {
-        av_log(avctx, AV_LOG_ERROR, "invalid image size\n");
-        return AVERROR_INVALIDDATA;
-    }
     if (maptype == RMT_RAW) {
         avpriv_request_sample(avctx, "Unknown colormap type");
         return AVERROR_PATCHWELCOME;
@@ -100,8 +96,10 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    if (w != avctx->width || h != avctx->height)
-        avcodec_set_dimensions(avctx, w, h);
+    ret = ff_set_dimensions(avctx, w, h);
+    if (ret < 0)
+        return ret;
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 

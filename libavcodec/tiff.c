@@ -546,9 +546,9 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         return AVERROR_INVALIDDATA;
     }
     if (s->width != s->avctx->width || s->height != s->avctx->height) {
-        if ((ret = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
+        ret = ff_set_dimensions(s->avctx, s->width, s->height);
+        if (ret < 0)
             return ret;
-        avcodec_set_dimensions(s->avctx, s->width, s->height);
     }
     if ((ret = ff_thread_get_buffer(s->avctx, frame, 0)) < 0)
         return ret;
