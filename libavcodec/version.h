@@ -106,5 +106,8 @@
 #ifndef FF_API_DEBUG_MV
 #define FF_API_DEBUG_MV          (LIBAVCODEC_VERSION_MAJOR < 56)
 #endif
+#ifndef FF_API_AC_VLC
+#define FF_API_AC_VLC            (LIBAVCODEC_VERSION_MAJOR < 56)
+#endif
 
 #endif /* AVCODEC_VERSION_H */

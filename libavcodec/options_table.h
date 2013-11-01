@@ -128,7 +128,9 @@ static const AVOption avcodec_options[] = {
 {"ump4", "(autodetected if FOURCC == UMP4)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_UMP4 }, INT_MIN, INT_MAX, V|D, "bug"},
 {"no_padding", "padding bug (autodetected)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_NO_PADDING }, INT_MIN, INT_MAX, V|D, "bug"},
 {"amv", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_AMV }, INT_MIN, INT_MAX, V|D, "bug"},
+#if FF_API_AC_VLC
 {"ac_vlc", "illegal VLC bug (autodetected per FOURCC)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_AC_VLC }, INT_MIN, INT_MAX, V|D, "bug"},
+#endif
 {"qpel_chroma", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_QPEL_CHROMA }, INT_MIN, INT_MAX, V|D, "bug"},
 {"std_qpel", "old standard qpel (autodetected per FOURCC/version)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_STD_QPEL }, INT_MIN, INT_MAX, V|D, "bug"},
 {"qpel_chroma2", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_BUG_QPEL_CHROMA2 }, INT_MIN, INT_MAX, V|D, "bug"},
