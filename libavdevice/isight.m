@@ -36,17 +36,16 @@ const AVRational kISightTimeBase_q = {
     .den = kISightTimeBase
 };
 
-typedef struct
-{
+typedef struct {
     AVClass*        class;
-    
+
     float           frame_rate;
     int             frames_captured;
     int64_t         first_pts;
     pthread_mutex_t frame_lock;
     pthread_cond_t  frame_wait_cond;
     id              qt_delegate;
-    
+
     QTCaptureSession*                 capture_session;
     QTCaptureDecompressedVideoOutput* video_output;
     CVImageBufferRef                  current_frame;
@@ -65,8 +64,7 @@ static void unlock_frames(CaptureContext* ctx)
 
 
 // FrameReciever class - delegate for QTCaptureSession
-@interface FFMPEG_FrameReceiver : NSObject
-{
+@interface FFMPEG_FrameReceiver : NSObject {
     CaptureContext* _context;
 }
 
@@ -74,17 +72,15 @@ static void unlock_frames(CaptureContext* ctx)
 
 - (void)captureOutput:(QTCaptureOutput *)captureOutput
   didOutputVideoFrame:(CVImageBufferRef)videoFrame
-     withSampleBuffer:(QTSampleBuffer *)sampleBuffer
+     withSampleBuffer:(QTSampleBuffer*)sampleBuffer
        fromConnection:(QTCaptureConnection *)connection;
 
 @end
 
 @implementation FFMPEG_FrameReceiver
 
-- (id)initWithContext:(CaptureContext*)context
-{
-    if( self = [super init] )
-    {
+- (id)initWithContext:(CaptureContext*)context {
+    if ( self = [super init] ) {
         _context = context;
     }
     return self;
@@ -96,17 +92,16 @@ static void unlock_frames(CaptureContext* ctx)
        fromConnection:(QTCaptureConnection *)connection
 {
     lock_frames(_context);
-    if( _context->current_frame != nil )
-    {
+    if ( _context->current_frame != nil ) {
         CVBufferRelease(_context->current_frame);
     }
-    
+
     _context->current_frame = CVBufferRetain(videoFrame);
-    
+
     pthread_cond_signal(&_context->frame_wait_cond);
-    
+
     unlock_frames(_context);
-    
+
     ++_context->frames_captured;
 }
 
@@ -116,172 +111,162 @@ static void unlock_frames(CaptureContext* ctx)
 static void destroy_context( CaptureContext* ctx )
 {
     [ctx->capture_session stopRunning];
-    
+
     [ctx->capture_session release];
     [ctx->video_output    release];
     [ctx->qt_delegate     release];
-    
+
     ctx->capture_session = NULL;
     ctx->video_output    = NULL;
     ctx->qt_delegate     = NULL;
-    
+
     pthread_mutex_destroy(&ctx->frame_lock);
     pthread_cond_destroy(&ctx->frame_wait_cond);
-    
-    if( ctx->current_frame )
+
+    if ( ctx->current_frame )
         CVBufferRelease(ctx->current_frame);
 }
 
 static int isight_read_header(AVFormatContext *s)
 {
     NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
+
     CaptureContext* ctx = (CaptureContext*)s->priv_data;
-    
+
     ctx->current_frame   = NULL;
     ctx->capture_session = NULL;
     ctx->qt_delegate     = NULL;
     ctx->video_output    = NULL;
     ctx->frames_captured = 0;
     ctx->first_pts       = av_gettime();
-    
+
     pthread_mutex_init(&ctx->frame_lock, NULL);
     pthread_cond_init(&ctx->frame_wait_cond, NULL);
 
     // Find capture device
     QTCaptureDevice *video_device = [QTCaptureDevice defaultInputDeviceWithMediaType:QTMediaTypeMuxed];
-    
+
     BOOL success = [video_device open:nil];
-    
+
     // Video capture device not found, looking for QTMediaTypeVideo
     if (!success) {
         video_device = [QTCaptureDevice defaultInputDeviceWithMediaType:QTMediaTypeVideo];
         success = [video_device open:nil];
     }
-    
-    if( !success )
-    {
-        av_log( s, AV_LOG_ERROR, "can't find QT capture device\n" );
+
+    if ( !success ) {
+        av_log( s, AV_LOG_ERROR, "Could not find QT capture device\n" );
         goto fail;
     }
-    
+
     NSString* dev_display_name = [video_device localizedDisplayName];
     av_log( s, AV_LOG_DEBUG, "'%s' opened\n", [dev_display_name UTF8String] );
-    
+
     // Initialize capture session
     ctx->capture_session = [[QTCaptureSession alloc] init];
-    
+
     QTCaptureDeviceInput* capture_dev_input = [[[QTCaptureDeviceInput alloc] initWithDevice:video_device] autorelease];
     success = [ctx->capture_session addInput:capture_dev_input error:nil];
-    if( !success )
-    {
-        av_log( s, AV_LOG_ERROR, "can't add QT capture device to session\n" );
+    if ( !success ) {
+        av_log( s, AV_LOG_ERROR, "Could not add QT capture device to session\n" );
         goto fail;
     }
-    
+
     // Attaching output
     ctx->video_output = [[QTCaptureDecompressedVideoOutput alloc] init];
-    
+
     NSDictionary *captureDictionary = [NSDictionary dictionaryWithObject:
-                                       [NSNumber numberWithUnsignedInt:kCVPixelFormatType_24RGB]
-                                       forKey:(id)kCVPixelBufferPixelFormatTypeKey];
-    
+                                   [NSNumber numberWithUnsignedInt:kCVPixelFormatType_24RGB]
+                                   forKey:(id)kCVPixelBufferPixelFormatTypeKey];
+
     [ctx->video_output setPixelBufferAttributes:captureDictionary];
-    
-     ctx->qt_delegate = [[FFMPEG_FrameReceiver alloc] initWithContext:ctx];
+
+    ctx->qt_delegate = [[FFMPEG_FrameReceiver alloc] initWithContext:ctx];
     [ctx->video_output setDelegate:ctx->qt_delegate];
     [ctx->video_output setAutomaticallyDropsLateVideoFrames:YES];
     [ctx->video_output setMinimumVideoFrameInterval:1.0/ctx->frame_rate];
-    
+
     success = [ctx->capture_session addOutput:ctx->video_output error:nil];
-    
-    if( !success )
-    {
-        av_log( s, AV_LOG_ERROR, "can't add video output to capture session\n" );
+
+    if ( !success ) {
+        av_log( s, AV_LOG_ERROR, "Could not add video output to capture session\n" );
         goto fail;
     }
-    
-    
+
+
     [ctx->capture_session startRunning];
-    
-    
+
+
     // Take stream info from the first frame.
-    while( ctx->frames_captured < 1 )
-    {
+    while ( ctx->frames_captured < 1 ) {
         CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.1, YES);
     }
-    
+
     lock_frames(ctx);
-    
+
     size_t frame_width  = CVPixelBufferGetWidth(ctx->current_frame);
     size_t frame_height = CVPixelBufferGetHeight(ctx->current_frame);
-    
+
     CVBufferRelease(ctx->current_frame);
     ctx->current_frame = nil;
-    
+
     unlock_frames(ctx);
-    
+
     AVStream* stream = avformat_new_stream(s, NULL);
     avpriv_set_pts_info( stream, 64, 1, kISightTimeBase );
-    
+
     stream->codec->codec_id   = AV_CODEC_ID_RAWVIDEO;
     stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codec->width      = (int)frame_width;
     stream->codec->height     = (int)frame_height;
-    stream->codec->pix_fmt    = PIX_FMT_RGB24;
-    
+    stream->codec->pix_fmt    = AV_PIX_FMT_RGB24;
+
     s->start_time = 0;
-    
+
     [pool release];
-    
+
     return 0;
-    
+
 fail:
     [pool release];
-    
+
     destroy_context(ctx);
-    
-    return -1;
+
+    return AVERROR(EIO);
 }
 
 static int isight_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     CaptureContext* ctx = (CaptureContext*)s->priv_data;
-    
-    do
-    {
+
+    do {
         lock_frames(ctx);
-        
-        if( ctx->current_frame != nil )
-        {
+
+        if ( ctx->current_frame != nil ) {
             CVPixelBufferLockBaseAddress(ctx->current_frame, 0);
-            
+
             av_new_packet(pkt, (int)CVPixelBufferGetDataSize(ctx->current_frame));
             pkt->pts = pkt->dts = av_rescale_q(av_gettime() - ctx->first_pts, AV_TIME_BASE_Q, kISightTimeBase_q);
             pkt->stream_index = 0;
             pkt->flags |= AV_PKT_FLAG_KEY;
-            
+
             void* data = CVPixelBufferGetBaseAddress(ctx->current_frame);
             memcpy( pkt->data, data, pkt->size );
-                         
+
             CVPixelBufferUnlockBaseAddress(ctx->current_frame, 0);
             CVBufferRelease(ctx->current_frame);
             ctx->current_frame = nil;
-        }
-        else
-        {
+        } else {
             pkt->data = NULL;
         }
-        
-        if( pkt->data == NULL )
-        {
+
+        if ( pkt->data ) {
             pthread_cond_wait(&ctx->frame_wait_cond, &ctx->frame_lock);
         }
-        
+
         unlock_frames(ctx);
-    }
-    while( pkt->data == NULL );
-    
+    } while ( pkt->data );
+
     return 0;
 }
 
@@ -289,15 +274,19 @@ static int isight_close(AVFormatContext *s)
 {
     CaptureContext* ctx = (CaptureContext*)s->priv_data;
     
-    av_log(s, AV_LOG_DEBUG, "isight_close\n");
+    if (ctx)
+        destroy_context(ctx);
     
-    destroy_context(ctx);
-
     return 0;
 }
 
 static const AVOption options[] = {
-    { "frame_rate", "", offsetof(CaptureContext, frame_rate), AV_OPT_TYPE_FLOAT, { .dbl = 30.0 }, 0.1, 30.0, AV_OPT_FLAG_VIDEO_PARAM, NULL },
+    { "frame_rate", "set frame rate", offsetof(CaptureContext, frame_rate),
+        AV_OPT_TYPE_FLOAT,
+        { .dbl = 30.0 },
+        0.1, 30.0,
+        AV_OPT_FLAG_VIDEO_PARAM,
+        NULL },
     { NULL },
 };
 
