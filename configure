@@ -3791,6 +3791,7 @@ if ! disabled network; then
     check_type netinet/sctp.h "struct sctp_event_subscribe"
     check_func getaddrinfo $network_extralibs
     check_func getservbyport $network_extralibs
+    check_func inet_aton $network_extralibs
     # Prefer arpa/inet.h over winsock2
     if check_header arpa/inet.h ; then
         check_func closesocket
@@ -3825,7 +3826,6 @@ check_func  getopt
 check_func  getrusage
 check_struct "sys/time.h sys/resource.h" "struct rusage" ru_maxrss
 check_func  gettimeofday
-check_func  inet_aton $network_extralibs
 check_func  isatty
 check_func  localtime_r
 check_func  ${malloc_prefix}memalign            && enable memalign
