@@ -24,6 +24,7 @@
 #define AVCODEC_MPEG4VIDEO_H
 
 #include <stdint.h>
+
 #include "get_bits.h"
 #include "mpegvideo.h"
 #include "rl.h"
@@ -34,13 +35,13 @@
 #define BIN_ONLY_SHAPE   2
 #define GRAY_SHAPE       3
 
-#define SIMPLE_VO_TYPE             1
-#define CORE_VO_TYPE               3
-#define MAIN_VO_TYPE               4
-#define NBIT_VO_TYPE               5
-#define ARTS_VO_TYPE               10
-#define ACE_VO_TYPE                12
-#define ADV_SIMPLE_VO_TYPE         17
+#define SIMPLE_VO_TYPE           1
+#define CORE_VO_TYPE             3
+#define MAIN_VO_TYPE             4
+#define NBIT_VO_TYPE             5
+#define ARTS_VO_TYPE            10
+#define ACE_VO_TYPE             12
+#define ADV_SIMPLE_VO_TYPE      17
 
 // aspect_ratio_info
 #define EXTENDED_PAR 15
@@ -88,15 +89,15 @@ extern const uint8_t ff_mpeg4_dc_threshold[8];
 void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],
                         int motion_x, int motion_y);
-void ff_mpeg4_pred_ac(MpegEncContext * s, int16_t *block, int n,
+void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
                       int dir);
-void ff_set_mpeg4_time(MpegEncContext * s);
+void ff_set_mpeg4_time(MpegEncContext *s);
 void ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
-int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
+int ff_mpeg4_decode_picture_header(MpegEncContext *s, GetBitContext *gb);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
-void ff_mpeg4_stuffing(PutBitContext * pbc);
+void ff_mpeg4_stuffing(PutBitContext *pbc);
 void ff_mpeg4_init_partitions(MpegEncContext *s);
 void ff_mpeg4_merge_partitions(MpegEncContext *s);
 void ff_clean_mpeg4_qscales(MpegEncContext *s);
@@ -112,15 +113,13 @@ void ff_mpeg4videodec_static_init(void);
  */
 int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
 
-extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2*MAX_RUN + MAX_LEVEL + 3];
-
+extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2 * MAX_RUN + MAX_LEVEL + 3];
 
 #if 0 //3IV1 is quite rare and it slows things down a tiny bit
 #define IS_3IV1 s->codec_tag == AV_RL32("3IV1")
 #else
 #define IS_3IV1 0
 #endif
-
 
 /**
  * Predict the dc.
@@ -129,75 +128,81 @@ extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2*MAX_RUN + MAX_LEVEL + 3];
  * @param n block index (0-3 are luma, 4-5 are chroma)
  * @param dir_ptr pointer to an integer where the prediction direction will be stored
  */
-static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *dir_ptr, int encoding)
+static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int level,
+                                   int *dir_ptr, int encoding)
 {
     int a, b, c, wrap, pred, scale, ret;
     int16_t *dc_val;
 
     /* find prediction */
-    if (n < 4) {
+    if (n < 4)
         scale = s->y_dc_scale;
-    } else {
+    else
         scale = s->c_dc_scale;
-    }
-    if(IS_3IV1)
-        scale= 8;
+    if (IS_3IV1)
+        scale = 8;
 
-    wrap= s->block_wrap[n];
+    wrap   = s->block_wrap[n];
     dc_val = s->dc_val[0] + s->block_index[n];
 
     /* B C
      * A X
      */
-    a = dc_val[ - 1];
-    b = dc_val[ - 1 - wrap];
-    c = dc_val[ - wrap];
+    a = dc_val[-1];
+    b = dc_val[-1 - wrap];
+    c = dc_val[-wrap];
 
-    /* outside slice handling (we can't do that by memset as we need the dc for error resilience) */
-    if(s->first_slice_line && n!=3){
-        if(n!=2) b=c= 1024;
-        if(n!=1 && s->mb_x == s->resync_mb_x) b=a= 1024;
+    /* outside slice handling (we can't do that by memset as we need the
+     * dc for error resilience) */
+    if (s->first_slice_line && n != 3) {
+        if (n != 2)
+            b = c = 1024;
+        if (n != 1 && s->mb_x == s->resync_mb_x)
+            b = a = 1024;
     }
-    if(s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y+1){
-        if(n==0 || n==4 || n==5)
-            b=1024;
+    if (s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y + 1) {
+        if (n == 0 || n == 4 || n == 5)
+            b = 1024;
     }
 
     if (abs(a - b) < abs(b - c)) {
-        pred = c;
+        pred     = c;
         *dir_ptr = 1; /* top */
     } else {
-        pred = a;
+        pred     = a;
         *dir_ptr = 0; /* left */
     }
     /* we assume pred is positive */
     pred = FASTDIV((pred + (scale >> 1)), scale);
 
-    if(encoding){
+    if (encoding) {
         ret = level - pred;
-    }else{
+    } else {
         level += pred;
-        ret= level;
-        if(s->err_recognition&(AV_EF_BITSTREAM|AV_EF_AGGRESSIVE)){
-            if(level<0){
-                av_log(s->avctx, AV_LOG_ERROR, "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
+        ret    = level;
+        if (s->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) {
+            if (level < 0) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
                 return -1;
             }
-            if(level*scale > 2048 + scale){
-                av_log(s->avctx, AV_LOG_ERROR, "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
+            if (level * scale > 2048 + scale) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
                 return -1;
             }
         }
     }
-    level *=scale;
-    if(level&(~2047)){
-        if(level<0)
-            level=0;
-        else if(!(s->workaround_bugs&FF_BUG_DC_CLIP))
-            level=2047;
+    level *= scale;
+    if (level & (~2047)) {
+        if (level < 0)
+            level = 0;
+        else if (!(s->workaround_bugs & FF_BUG_DC_CLIP))
+            level = 2047;
     }
-    dc_val[0]= level;
+    dc_val[0] = level;
 
     return ret;
 }
+
 #endif /* AVCODEC_MPEG4VIDEO_H */
