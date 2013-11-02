@@ -99,6 +99,7 @@ YASM-OBJS-$(CONFIG_VIDEODSP)           += x86/videodsp.o
 YASM-OBJS-$(CONFIG_VORBIS_DECODER)     += x86/vorbisdsp.o
 YASM-OBJS-$(CONFIG_VP3DSP)             += x86/vp3dsp.o
 YASM-OBJS-$(CONFIG_VP6_DECODER)        += x86/vp6dsp.o
-YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o
+YASM-OBJS-$(CONFIG_VP8_DECODER)        += x86/vp8dsp.o                  \
+                                          x86/vp8dsp_loopfilter.o
 YASM-OBJS-$(CONFIG_VP9_DECODER)        += x86/vp9dsp.o
 YASM-OBJS-$(CONFIG_WEBP_DECODER)       += x86/vp8dsp.o
