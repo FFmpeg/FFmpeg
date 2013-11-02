@@ -32,22 +32,22 @@ version_type="$2"
 function arm_toolchain()
 {
 	export CROSS_PREFIX=arm-linux-androideabi-
-	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=${CROSS_PREFIX}4.7 \
-		--system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
+	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=${CROSS_PREFIX}4.8 \
+		--system=$HOST_SYSTEM --install-dir=$TOOLCHAIN
 }
 
 function x86_toolchain()
 {
 	export CROSS_PREFIX=i686-linux-android-
-	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.7 \
-		--system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
+	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=x86-4.8 \
+		--system=$HOST_SYSTEM --install-dir=$TOOLCHAIN
 }
 
 function mips_toolchain()
 {
 	export CROSS_PREFIX=mipsel-linux-android-
-	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=mipsel-linux-android-4.7 \
-		--system=$HOST_SYSTEM --platform=android-14 --install-dir=$TOOLCHAIN
+	$ANDROID_NDK/build/tools/make-standalone-toolchain.sh --toolchain=${CROSS_PREFIX}4.8 \
+		--system=$HOST_SYSTEM --install-dir=$TOOLCHAIN
 }
 
 
@@ -68,10 +68,11 @@ elif [ "$platform" = "mips" ];then
 else
 	echo "Build Android arm ffmpeg\n"
 	arm_toolchain
-	TARGET="neon neon armv7 vfp armv6"
+	TARGET="neon armv7 vfp armv6"
 fi
 export PATH=$TOOLCHAIN/bin:$PATH
 export CC="$CCACHE ${CROSS_PREFIX}gcc"
+export CXX=${CROSS_PREFIX}g++
 export LD=${CROSS_PREFIX}ld
 export AR=${CROSS_PREFIX}ar
 export STRIP=${CROSS_PREFIX}strip
@@ -81,9 +82,8 @@ CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
 	-finline-limit=300 -ffast-math \
 	-fstrict-aliasing -Werror=strict-aliasing \
 	-fmodulo-sched -fmodulo-sched-allow-regmoves \
-	-fgraphite -fgraphite-identity -floop-block -floop-flatten \
-	-floop-interchange -floop-strip-mine -floop-parallelize-all -ftree-loop-linear \
 	-Wno-psabi -Wa,--noexecstack \
+	-fdiagnostics-color=auto -fdiagnostics-color=always \
 	-DANDROID -DNDEBUG \
 	-I$SSL/include"
 
