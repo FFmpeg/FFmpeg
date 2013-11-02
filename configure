@@ -1156,6 +1156,18 @@ EXTERNAL_LIBRARY_LIST="
     zlib
 "
 
+FEATURE_LIST="
+    gray
+    hardcoded_tables
+    runtime_cpudetect
+    safe_bitstream_reader
+    shared
+    small
+    sram
+    static
+    swscale_alpha
+"
+
 HWACCEL_LIST="
     dxva2
     vaapi
@@ -1173,6 +1185,12 @@ LIBRARY_LIST="
     swscale
 "
 
+LICENSE_LIST="
+    gpl
+    nonfree
+    version3
+"
+
 PROGRAM_LIST="
     avconv
     avplay
@@ -1180,40 +1198,34 @@ PROGRAM_LIST="
     avserver
 "
 
-CONFIG_LIST="
-    $COMPONENT_LIST
-    $EXAMPLE_LIST
-    $EXTERNAL_LIBRARY_LIST
-    $HWACCEL_LIST
-    $LIBRARY_LIST
-    $PROGRAM_LIST
+SUBSYSTEM_LIST="
     dct
     doc
     error_resilience
     fft
-    gpl
-    gray
-    hardcoded_tables
     lsp
     lzo
     mdct
+    network
+    rdft
+"
+
+CONFIG_LIST="
+    $COMPONENT_LIST
+    $EXAMPLE_LIST
+    $EXTERNAL_LIBRARY_LIST
+    $FEATURE_LIST
+    $HWACCEL_LIST
+    $LICENSE_LIST
+    $LIBRARY_LIST
+    $PROGRAM_LIST
+    $SUBSYSTEM_LIST
     memalign_hack
     neon_clobber_test
-    network
-    nonfree
     pic
     pod2man
-    rdft
-    runtime_cpudetect
-    safe_bitstream_reader
-    shared
-    small
-    sram
-    static
-    swscale_alpha
     texi2html
     thumb
-    version3
     xmm_clobber_test
 "
 
