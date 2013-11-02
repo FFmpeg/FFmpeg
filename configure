@@ -857,12 +857,17 @@ int x;
 EOF
 }
 
-check_cflags(){
-    log check_cflags "$@"
+test_cflags(){
+    log test_cflags "$@"
     set -- $($cflags_filter "$@")
-    check_cc "$@" <<EOF && append CFLAGS "$@"
+    check_cc "$@" <<EOF
 int x;
 EOF
+}
+
+check_cflags(){
+    log check_cflags "$@"
+    test_cflags "$@" && add_cflags "$@"
 }
 
 check_cxxflags(){
