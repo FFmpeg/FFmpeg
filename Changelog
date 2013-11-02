@@ -45,6 +45,7 @@ version 10:
 - raw HEVC, HEVC in MOV/MP4, HEVC in Matroska, HEVC in MPEG-TS demuxing
 - remove avplay -vismv option, which has not worked for a long time
 - Live HDS muxer
+- setsar/setdar filters now support variables in ratio expressions
 
 
 version 9:

@@ -26,12 +26,41 @@
 #include <float.h>
 
 #include "libavutil/common.h"
+#include "libavutil/eval.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
+
+static const char *const var_names[] = {
+    "PI",
+    "PHI",
+    "E",
+    "w",
+    "h",
+    "a", "dar",
+    "sar",
+    "hsub",
+    "vsub",
+    NULL
+};
+
+enum var_name {
+    VAR_PI,
+    VAR_PHI,
+    VAR_E,
+    VAR_W,
+    VAR_H,
+    VAR_A, VAR_DAR,
+    VAR_SAR,
+    VAR_HSUB,
+    VAR_VSUB,
+    VARS_NB
+};
 
 typedef struct {
     const AVClass *class;
@@ -40,6 +69,7 @@ typedef struct {
 #if FF_API_OLD_FILTER_OPTS
     float aspect_num, aspect_den;
 #endif
+    char *ratio_expr;
 } AspectContext;
 
 #if FF_API_OLD_FILTER_OPTS
@@ -68,12 +98,54 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
 #define OFFSET(x) offsetof(AspectContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM
 
+static int get_aspect_ratio(AVFilterLink *inlink, AVRational *aspect_ratio)
+{
+    AVFilterContext *ctx = inlink->dst;
+    AspectContext *s = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    double var_values[VARS_NB], res;
+    int ret;
+
+    var_values[VAR_PI]    = M_PI;
+    var_values[VAR_PHI]   = M_PHI;
+    var_values[VAR_E]     = M_E;
+    var_values[VAR_W]     = inlink->w;
+    var_values[VAR_H]     = inlink->h;
+    var_values[VAR_A]     = (double) inlink->w / inlink->h;
+    var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
+        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
+    var_values[VAR_DAR]   = var_values[VAR_A] * var_values[VAR_SAR];
+    var_values[VAR_HSUB]  = 1 << desc->log2_chroma_w;
+    var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
+
+    /* evaluate new aspect ratio*/
+    if ((ret = av_expr_parse_and_eval(&res, s->ratio_expr,
+                                      var_names, var_values,
+                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Error when evaluating the expression '%s'\n", s->ratio_expr);
+        return ret;
+    }
+    *aspect_ratio = av_d2q(res, INT_MAX);
+    return 0;
+}
+
 #if CONFIG_SETDAR_FILTER
 /* for setdar filter, convert from frame aspect ratio to pixel aspect ratio */
 static int setdar_config_props(AVFilterLink *inlink)
 {
     AspectContext *s = inlink->dst->priv;
     AVRational dar;
+    int ret;
+
+#if FF_API_OLD_FILTER_OPTS
+    if (!(s->aspect_num > 0 && s->aspect_den > 0)) {
+#endif
+    if ((ret = get_aspect_ratio(inlink, &s->dar)))
+        return ret;
+#if FF_API_OLD_FILTER_OPTS
+    }
+#endif
 
     if (s->dar.num && s->dar.den) {
         av_reduce(&s->sar.num, &s->sar.den,
@@ -98,7 +170,7 @@ static const AVOption setdar_options[] = {
     { "dar_num", NULL, OFFSET(aspect_num), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, 0, FLT_MAX, FLAGS },
     { "dar_den", NULL, OFFSET(aspect_den), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, 0, FLT_MAX, FLAGS },
 #endif
-    { "dar", "display aspect ratio", OFFSET(dar), AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, INT_MAX, FLAGS },
+    { "dar", "display aspect ratio", OFFSET(ratio_expr), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
     { NULL },
 };
 
@@ -150,6 +222,16 @@ AVFilter ff_vf_setdar = {
 static int setsar_config_props(AVFilterLink *inlink)
 {
     AspectContext *s = inlink->dst->priv;
+    int ret;
+
+#if FF_API_OLD_FILTER_OPTS
+    if (!(s->aspect_num > 0 && s->aspect_den > 0)) {
+#endif
+    if ((ret = get_aspect_ratio(inlink, &s->sar)))
+        return ret;
+#if FF_API_OLD_FILTER_OPTS
+    }
+#endif
 
     inlink->sample_aspect_ratio = s->sar;
 
@@ -161,7 +243,7 @@ static const AVOption setsar_options[] = {
     { "sar_num", NULL, OFFSET(aspect_num), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, 0, FLT_MAX, FLAGS },
     { "sar_den", NULL, OFFSET(aspect_den), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, 0, FLT_MAX, FLAGS },
 #endif
-    { "sar", "sample (pixel) aspect ratio", OFFSET(sar), AV_OPT_TYPE_RATIONAL, { .dbl = 1 }, 0, INT_MAX, FLAGS },
+    { "sar", "sample (pixel) aspect ratio", OFFSET(ratio_expr), AV_OPT_TYPE_STRING, { .str = "1" }, .flags = FLAGS },
     { NULL },
 };
 

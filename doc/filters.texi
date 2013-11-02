@@ -2049,8 +2049,33 @@ This filter accepts the following options:
 @table @option
 
 @item dar
-Output display aspect ratio, as a rational or a decimal number.
+Output display aspect ratio.
 
+@end table
+
+The parameter @var{dar} is an expression containing
+the following constants:
+
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), phi (golden ratio)
+
+@item w, h
+the input width and height
+
+@item a
+same as @var{w} / @var{h}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
 For example to change the display aspect ratio to 16:9, specify:
@@ -2158,8 +2183,33 @@ This filter accepts the following options:
 @table @option
 
 @item sar
-Output sample aspect ratio, as a rational or decimal number.
+Output sample aspect ratio.
 
+@end table
+
+The parameter @var{sar} is an expression containing
+the following constants:
+
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), phi (golden ratio)
+
+@item w, h
+the input width and height
+
+@item a
+same as @var{w} / @var{h}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
 For example to change the sample aspect ratio to 10:11, specify:
