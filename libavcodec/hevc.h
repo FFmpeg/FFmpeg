@@ -33,6 +33,7 @@
 #include "hevcpred.h"
 #include "hevcdsp.h"
 #include "internal.h"
+
 #include "thread.h"
 #include "videodsp.h"
 
@@ -951,7 +952,6 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx);
  * Get the number of candidate references for the current frame.
  */
 int ff_hevc_frame_nb_refs(HEVCContext *s);
-
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 
 /**
@@ -981,6 +981,7 @@ int ff_hevc_cu_qp_delta_sign_flag(HEVCContext *s);
 int ff_hevc_cu_qp_delta_abs(HEVCContext *s);
 void ff_hevc_hls_filter(HEVCContext *s, int x, int y);
 void ff_hevc_hls_filters(HEVCContext *s, int x_ctb, int y_ctb, int ctb_size);
+
 void ff_hevc_hls_residual_coding(HEVCContext *s, int x0, int y0,
                                  int log2_trafo_size, enum ScanType scan_idx,
                                  int c_idx);

@@ -822,12 +822,12 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->nb_st_rps = get_ue_golomb_long(gb);
     if (sps->nb_st_rps > MAX_SHORT_TERM_RPS_COUNT) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Too many short term RPS: %d.\n",
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Too many short term RPS: %d.\n",
                sps->nb_st_rps);
         ret = AVERROR_INVALIDDATA;
-            goto err;
-        }
+        goto err;
+    }
     for (i = 0; i < sps->nb_st_rps; i++) {
         if ((ret = ff_hevc_decode_short_term_rps(s, &sps->st_rps[i],
                                                  sps, 0)) < 0)
@@ -873,9 +873,10 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
                sps->output_width, sps->output_height);
         if (s->avctx->err_recognition & AV_EF_EXPLODE) {
             ret = AVERROR_INVALIDDATA;
-        goto err;
-    }
-        av_log(s->avctx, AV_LOG_WARNING, "Displaying the whole video surface.\n");
+            goto err;
+        }
+        av_log(s->avctx, AV_LOG_WARNING,
+               "Displaying the whole video surface.\n");
         sps->pic_conf_win.left_offset   =
         sps->pic_conf_win.right_offset  =
         sps->pic_conf_win.top_offset    =
@@ -1018,8 +1019,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     if (pps_id >= MAX_PPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps_id);
         ret = AVERROR_INVALIDDATA;
-            goto err;
-        }
+        goto err;
+    }
     pps->sps_id = get_ue_golomb_long(gb);
     if (pps->sps_id >= MAX_SPS_COUNT) {
         av_log(s->avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", pps->sps_id);
@@ -1082,11 +1083,11 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         pps->num_tile_rows    = get_ue_golomb_long(gb) + 1;
         if (pps->num_tile_columns == 0 ||
             pps->num_tile_columns >= sps->width) {
-        av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
-                   pps->num_tile_columns - 1);
-            ret = AVERROR_INVALIDDATA;
-        goto err;
-    }
+            av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
+                    pps->num_tile_columns - 1);
+                ret = AVERROR_INVALIDDATA;
+            goto err;
+        }
         if (pps->num_tile_rows == 0 ||
             pps->num_tile_rows >= sps->height) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_rows_minus1 out of range: %d\n",
@@ -1112,8 +1113,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
             if (sum >= sps->ctb_width) {
                 av_log(s->avctx, AV_LOG_ERROR, "Invalid tile widths.\n");
                 ret = AVERROR_INVALIDDATA;
-            goto err;
-        }
+                goto err;
+            }
             pps->column_width[pps->num_tile_columns - 1] = sps->ctb_width - sum;
 
             sum = 0;
@@ -1168,8 +1169,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "log2_parallel_merge_level_minus2 out of range: %d\n",
                pps->log2_parallel_merge_level - 2);
         ret = AVERROR_INVALIDDATA;
-                goto err;
-            }
+        goto err;
+    }
 
     pps->slice_header_extension_present_flag = get_bits1(gb);
     pps->pps_extension_flag                  = get_bits1(gb);
@@ -1189,9 +1190,9 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
             pps->row_height   = av_malloc_array(pps->num_tile_rows,    sizeof(*pps->row_height));
         }
         if (!pps->column_width || !pps->row_height) {
-        ret = AVERROR(ENOMEM);
-        goto err;
-    }
+            ret = AVERROR(ENOMEM);
+            goto err;
+        }
 
         for (i = 0; i < pps->num_tile_columns; i++) {
             pps->column_width[i] = ((i + 1) * sps->ctb_width) / pps->num_tile_columns -

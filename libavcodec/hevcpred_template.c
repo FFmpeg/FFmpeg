@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/pixdesc.h"
+
 #include "bit_depth_template.c"
 #include "hevcpred.h"
 
@@ -557,4 +558,5 @@ static void FUNC(pred_angular_3)(uint8_t *src, const uint8_t *top,
 {
     FUNC(pred_angular)(src, top, left, stride, c_idx, mode, 1 << 5);
 }
+
 #undef POS

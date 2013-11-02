@@ -21,6 +21,7 @@
  */
 
 #include "hevc.h"
+
 #include "hevcpred.h"
 
 #define BIT_DEPTH 8
