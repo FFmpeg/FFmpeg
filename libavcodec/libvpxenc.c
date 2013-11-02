@@ -89,6 +89,12 @@ typedef struct VP8EncoderContext {
     int error_resilient;
     int crf;
     int max_intra_rate;
+
+    // VP9-only
+    int lossless;
+    int tile_columns;
+    int tile_rows;
+    int frame_parallel;
 } VP8Context;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -111,6 +117,12 @@ static const char *const ctlidstr[] = {
     [VP8E_SET_ARNR_TYPE]         = "VP8E_SET_ARNR_TYPE",
     [VP8E_SET_CQ_LEVEL]          = "VP8E_SET_CQ_LEVEL",
     [VP8E_SET_MAX_INTRA_BITRATE_PCT] = "VP8E_SET_MAX_INTRA_BITRATE_PCT",
+#if CONFIG_LIBVPX_VP9_ENCODER
+    [VP9E_SET_LOSSLESS]                = "VP9E_SET_LOSSLESS",
+    [VP9E_SET_TILE_COLUMNS]            = "VP9E_SET_TILE_COLUMNS",
+    [VP9E_SET_TILE_ROWS]               = "VP9E_SET_TILE_ROWS",
+    [VP9E_SET_FRAME_PARALLEL_DECODING] = "VP9E_SET_FRAME_PARALLEL_DECODING",
+#endif
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -420,6 +432,19 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
     if (ctx->max_intra_rate >= 0)
         codecctl_int(avctx, VP8E_SET_MAX_INTRA_BITRATE_PCT, ctx->max_intra_rate);
+
+#if CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        if (ctx->lossless >= 0)
+            codecctl_int(avctx, VP9E_SET_LOSSLESS, ctx->lossless);
+        if (ctx->tile_columns >= 0)
+            codecctl_int(avctx, VP9E_SET_TILE_COLUMNS, ctx->tile_columns);
+        if (ctx->tile_rows >= 0)
+            codecctl_int(avctx, VP9E_SET_TILE_ROWS, ctx->tile_rows);
+        if (ctx->frame_parallel >= 0)
+            codecctl_int(avctx, VP9E_SET_FRAME_PARALLEL_DECODING, ctx->frame_parallel);
+    }
+#endif
 
     av_log(avctx, AV_LOG_DEBUG, "Using deadline: %d\n", ctx->deadline);
 
@@ -771,6 +796,10 @@ static const AVOption vp8_options[] = {
 #if CONFIG_LIBVPX_VP9_ENCODER
 static const AVOption vp9_options[] = {
     COMMON_OPTIONS
+    { "lossless",        "Lossless mode",                               OFFSET(lossless),        AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
+    { "tile-columns",    "Number of tile columns to use, log2",         OFFSET(tile_columns),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
+    { "tile-rows",       "Number of tile rows to use, log2",            OFFSET(tile_rows),       AV_OPT_TYPE_INT, {.i64 = -1}, -1, 2, VE},
+    { "frame-parallel",  "Enable frame parallel decodability features", OFFSET(frame_parallel),  AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
     LEGACY_OPTIONS
     { NULL }
 };
