@@ -1,5 +1,5 @@
 /*
- * HEVC video Decoder
+ * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
  * Copyright (C) 2013 Anand Meher Kotra
@@ -249,8 +249,7 @@ static int temporal_luma_motion_vector(HEVCContext *s, int x0, int y0,
 {
     MvField *tab_mvf;
     MvField temp_col;
-    int x, y;
-    int x_pu, y_pu;
+    int x, y, x_pu, y_pu;
     int min_pu_width = s->sps->min_pu_width;
     int availableFlagLXCol = 0;
     int colPic;

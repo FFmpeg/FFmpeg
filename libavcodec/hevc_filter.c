@@ -1,5 +1,5 @@
 /*
- * HEVC video Decoder
+ * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
  * Copyright (C) 2013 Seppo Tomperi
@@ -52,9 +52,7 @@ static int chroma_tc(HEVCContext *s, int qp_y, int c_idx, int tc_offset)
     static const int qp_c[] = {
         29, 30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37
     };
-    int qp_i, offset;
-    int qp;
-    int idxt;
+    int qp, qp_i, offset, idxt;
 
     // slice qp offset is not used for deblocking
     if (c_idx == 1)
@@ -91,9 +89,7 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
                                (xQgBase & ctb_size_mask);
     int availableB           = (yBase   & ctb_size_mask) &&
                                (yQgBase & ctb_size_mask);
-    int qPy_pred;
-    int qPy_a;
-    int qPy_b;
+    int qPy_pred, qPy_a ,qPy_b;
 
     // qPy_pred
     if (lc->first_qp_group) {
@@ -343,9 +339,7 @@ static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
     uint8_t *src;
     int x, y;
     int chroma;
-    int c_tc[2];
-    int beta[2];
-    int tc[2];
+    int c_tc[2], beta[2], tc[2];
     uint8_t no_p[2] = { 0 };
     uint8_t no_q[2] = { 0 };
 
@@ -563,8 +557,7 @@ static int boundary_strength(HEVCContext *s, MvField *curr,
             }
         } else { // 1 MV
             Mv A, B;
-            int ref_A;
-            int ref_B;
+            int ref_A, ref_B;
 
             if (curr->pred_flag[0]) {
                 A     = curr->mv[0];
@@ -607,8 +600,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCContext *s, int x0, int y0,
     int min_tu_width     = s->sps->min_tb_width;
     int is_intra = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width +
                            (x0 >> log2_min_pu_size)].is_intra;
-    int i, j;
-    int bs;
+    int i, j, bs;
 
     if (y0 > 0 && (y0 & 7) == 0) {
         int yp_pu = (y0 - 1) >> log2_min_pu_size;

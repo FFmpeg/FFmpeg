@@ -23,9 +23,9 @@
 
 #include "libavutil/pixdesc.h"
 
-#include "hevc.h"
 #include "internal.h"
 #include "thread.h"
+#include "hevc.h"
 
 void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags)
 {
@@ -157,7 +157,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
     do {
         int nb_output = 0;
         int min_poc   = INT_MAX;
-        int i, j, min_idx, ret;
+        int i, min_idx, ret;
 
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
@@ -188,12 +188,12 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
             if (ret < 0)
                 return ret;
 
-            for (j = 0; j < 3; j++) {
-                int hshift = (j > 0) ? desc->log2_chroma_w : 0;
-                int vshift = (j > 0) ? desc->log2_chroma_h : 0;
+            for (i = 0; i < 3; i++) {
+                int hshift = (i > 0) ? desc->log2_chroma_w : 0;
+                int vshift = (i > 0) ? desc->log2_chroma_h : 0;
                 int off = ((frame->window.left_offset >> hshift) << pixel_shift) +
-                          (frame->window.top_offset   >> vshift) * dst->linesize[j];
-                dst->data[j] += off;
+                          (frame->window.top_offset   >> vshift) * dst->linesize[i];
+                dst->data[i] += off;
             }
             av_log(s->avctx, AV_LOG_DEBUG,
                    "Output frame with POC %d.\n", frame->poc);
