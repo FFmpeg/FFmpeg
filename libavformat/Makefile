@@ -392,7 +392,6 @@ SKIPHEADERS-$(CONFIG_FFRTMPCRYPT_PROTOCOL) += rtmpdh.h
 SKIPHEADERS-$(CONFIG_NETWORK)            += network.h rtsp.h
 
 EXAMPLES  = metadata                                                    \
-            output                                                      \
 
 TESTPROGS = seek                                                        \
             srtp                                                        \
@@ -404,6 +403,3 @@ TOOLS     = aviocat                                                     \
             ismindex                                                    \
             pktdumper                                                   \
             probetest                                                   \
-
-$(SUBDIR)output-example$(EXESUF): ELIBS = $(patsubst %,$(LD_LIB),swscale avutil)
-$(SUBDIR)output-example$(EXESUF): $(call PATH_LIBNAME,swscale)

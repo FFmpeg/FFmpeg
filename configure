@@ -1041,6 +1041,10 @@ COMPONENT_LIST="
     protocols
 "
 
+EXAMPLE_LIST="
+    output_example
+"
+
 EXTERNAL_LIBRARY_LIST="
     avisynth
     bzlib
@@ -1102,6 +1106,7 @@ PROGRAM_LIST="
 
 CONFIG_LIST="
     $COMPONENT_LIST
+    $EXAMPLE_LIST
     $EXTERNAL_LIBRARY_LIST
     $HWACCEL_LIST
     $LIBRARY_LIST
@@ -1944,6 +1949,9 @@ ocv_filter_deps="libopencv"
 scale_filter_deps="swscale"
 yadif_filter_deps="gpl"
 
+# examples
+output_example_deps="avcodec avformat avutil swscale"
+
 # libraries
 avcodec_deps="avutil"
 avdevice_deps="avutil avcodec avformat"
@@ -2002,7 +2010,7 @@ target_os_default=$(tolower $(uname -s))
 host_os=$target_os_default
 
 # configurable options
-enable $LIBRARY_LIST $PROGRAM_LIST
+enable $EXAMPLE_LIST $LIBRARY_LIST $PROGRAM_LIST
 
 enable asm
 enable debug
