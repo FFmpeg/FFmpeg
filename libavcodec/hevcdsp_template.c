@@ -845,16 +845,32 @@ static void FUNC(put_hevc_qpel_pixels)(int16_t *dst, ptrdiff_t dststride,
 }
 
 #define QPEL_FILTER_1(src, stride)      \
-    (-src[x - 3 * stride] + 4 *  src[x - 2 * stride] - 10 *  src[x -     stride] + 58 *  src[x]              +         \
-    17 *  src[x +     stride] - 5 *  src[x + 2 * stride] + 1 *  src[x + 3 * stride])
+    (1 * -src[x - 3 * stride] +         \
+     4 *  src[x - 2 * stride] -         \
+    10 *  src[x -     stride] +         \
+    58 *  src[x]              +         \
+    17 *  src[x +     stride] -         \
+     5 *  src[x + 2 * stride] +         \
+     1 *  src[x + 3 * stride])
 
 #define QPEL_FILTER_2(src, stride)      \
-    (-src[x - 3 * stride] + 4  *  src[x - 2 * stride] - 11  *  src[x -     stride] + 40  *  src[x]              +        \
-    40  *  src[x +     stride] - 11  *  src[x + 2 * stride] + 4  *  src[x + 3 * stride] - src[x + 4 * stride])
+    (1  * -src[x - 3 * stride] +        \
+     4  *  src[x - 2 * stride] -        \
+    11  *  src[x -     stride] +        \
+    40  *  src[x]              +        \
+    40  *  src[x +     stride] -        \
+    11  *  src[x + 2 * stride] +        \
+     4  *  src[x + 3 * stride] -        \
+     1  *  src[x + 4 * stride])
 
 #define QPEL_FILTER_3(src, stride)      \
-    (src[x - 2 * stride] - 5  * src[x -     stride] + 17  * src[x] + 58  * src[x + stride]           \
-     - 10  * src[x + 2 * stride] + 4  * src[x + 3 * stride] - src[x + 4 * stride])
+    (1  * src[x - 2 * stride] -         \
+     5  * src[x -     stride] +         \
+    17  * src[x]              +         \
+    58  * src[x + stride]     -         \
+    10  * src[x + 2 * stride] +         \
+     4  * src[x + 3 * stride] -         \
+     1  * src[x + 4 * stride])
 
 
 #define PUT_HEVC_QPEL_H(H)                                                     \
@@ -894,8 +910,10 @@ static void FUNC(put_hevc_qpel_v ## V)(int16_t *dst,  ptrdiff_t dststride,     \
 }
 
 #define PUT_HEVC_QPEL_HV(H, V)                                                 \
-static void FUNC(put_hevc_qpel_h ## H ## v ## V)(int16_t *dst,  ptrdiff_t dststride, \
-                                                 uint8_t *_src, ptrdiff_t _srcstride,\
+static void FUNC(put_hevc_qpel_h ## H ## v ## V)(int16_t *dst,                 \
+                                                 ptrdiff_t dststride,          \
+                                                 uint8_t *_src,                \
+                                                 ptrdiff_t _srcstride,         \
                                                  int width, int height,        \
                                                  int16_t* mcbuffer)            \
 {                                                                              \
@@ -959,7 +977,10 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
 }
 
 #define EPEL_FILTER(src, stride)                \
-    (filter_0 * src[x - stride] + filter_1 * src[x] + filter_2 * src[x + stride] + filter_3 * src[x + 2 * stride])
+    (filter_0 * src[x - stride] +               \
+     filter_1 * src[x]          +               \
+     filter_2 * src[x + stride] +               \
+     filter_3 * src[x + 2 * stride])
 
 static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
                                   uint8_t *_src, ptrdiff_t _srcstride,
@@ -1162,9 +1183,9 @@ static void FUNC(weighted_pred_avg)(uint8_t denom,
 #define P3 pix[-4 * xstride]
 #define P2 pix[-3 * xstride]
 #define P1 pix[-2 * xstride]
-#define P0 pix[-xstride]
+#define P0 pix[-1 * xstride]
 #define Q0 pix[0]
-#define Q1 pix[xstride]
+#define Q1 pix[1 * xstride]
 #define Q2 pix[2 * xstride]
 #define Q3 pix[3 * xstride]
 
@@ -1172,9 +1193,9 @@ static void FUNC(weighted_pred_avg)(uint8_t denom,
 #define TP3 pix[-4 * xstride + 3 * ystride]
 #define TP2 pix[-3 * xstride + 3 * ystride]
 #define TP1 pix[-2 * xstride + 3 * ystride]
-#define TP0 pix[-xstride + 3 * ystride]
+#define TP0 pix[-1 * xstride + 3 * ystride]
 #define TQ0 pix[3 * ystride]
-#define TQ1 pix[xstride + 3 * ystride]
+#define TQ1 pix[1  * xstride + 3 * ystride]
 #define TQ2 pix[2  * xstride + 3 * ystride]
 #define TQ3 pix[3  * xstride + 3 * ystride]
 

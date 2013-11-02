@@ -333,7 +333,10 @@ static int get_pcm(HEVCContext *s, int x, int y)
     return s->is_pcm[y_pu * s->sps->min_pu_width + x_pu];
 }
 
-#define TC_CALC(qp, bs) tctable[av_clip((qp) + DEFAULT_INTRA_TC_OFFSET * ((bs) - 1) + (tc_offset >> 1 << 1), 0, MAX_QP + DEFAULT_INTRA_TC_OFFSET)]
+#define TC_CALC(qp, bs)                                                 \
+    tctable[av_clip((qp) + DEFAULT_INTRA_TC_OFFSET * ((bs) - 1) +       \
+                    (tc_offset >> 1 << 1),                              \
+                    0, MAX_QP + DEFAULT_INTRA_TC_OFFSET)]
 
 static void deblocking_filter_CTB(HEVCContext *s, int x0, int y0)
 {

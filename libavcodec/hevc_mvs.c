@@ -614,10 +614,12 @@ static int mv_mp_mode_mx_lt(HEVCContext *s, int x, int y, int pred_flag_index,
 }
 
 #define MP_MX(v, pred, mx)                                      \
-    mv_mp_mode_mx(s, x ## v ## _pu, y ## v ## _pu, pred, &mx, ref_idx_curr, ref_idx)
+    mv_mp_mode_mx(s, x ## v ## _pu, y ## v ## _pu, pred,        \
+                  &mx, ref_idx_curr, ref_idx)
 
 #define MP_MX_LT(v, pred, mx)                                   \
-    mv_mp_mode_mx_lt(s, x ## v ## _pu, y ## v ## _pu, pred, &mx, ref_idx_curr, ref_idx)
+    mv_mp_mode_mx_lt(s, x ## v ## _pu, y ## v ## _pu, pred,     \
+                     &mx, ref_idx_curr, ref_idx)
 
 void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
                               int nPbH, int log2_cb_size, int part_idx,
