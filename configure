@@ -4425,13 +4425,9 @@ enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
 check_cflags -Wall
-check_cflags -Wno-parentheses
-check_cflags -Wno-switch
-check_cflags -Wno-format-zero-length
 check_cflags -Wdisabled-optimization
 check_cflags -Wpointer-arith
 check_cflags -Wredundant-decls
-check_cflags -Wno-pointer-sign
 check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
 check_cflags -Wundef
@@ -4439,6 +4435,17 @@ check_cflags -Wmissing-prototypes
 check_cflags -Wno-pointer-to-int-cast
 check_cflags -Wstrict-prototypes
 enabled extra_warnings && check_cflags -Winline
+
+check_disable_warning(){
+    warning_flag=-W${1#-Wno-}
+    test_cflags $warning_flag && add_cflags $1
+}
+
+check_disable_warning -Wno-parentheses
+check_disable_warning -Wno-switch
+check_disable_warning -Wno-format-zero-length
+check_disable_warning -Wno-pointer-sign
+enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
@@ -4538,7 +4545,6 @@ elif enabled gcc; then
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
     check_cflags -Werror=vla
-    enabled extra_warnings || check_cflags -Wno-maybe-uninitialized
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
