@@ -2901,6 +2901,8 @@ static void hevc_decode_flush(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(HEVCContext, x)
 #define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)
 static const AVOption options[] = {
+    { "apply_defdispwin", "Apply default display window from VUI", OFFSET(apply_defdispwin),
+        AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(apply_defdispwin),
         AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, PAR },
     { NULL },
