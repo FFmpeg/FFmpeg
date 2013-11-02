@@ -197,6 +197,7 @@ Codecs:
   libtheoraenc.c                        David Conrad
   libutvideo*                           Derek Buitenhuis
   libvorbis.c                           David Conrad
+  libvpx*                               James Zern
   libx264.c                             Mans Rullgard, Jason Garrett-Glaser
   libxavs.c                             Stefan Gehrer
   libzvbi-teletextdec.c                 Marton Balint
