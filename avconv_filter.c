@@ -433,7 +433,8 @@ static int configure_input_video_filter(FilterGraph *fg, InputFilter *ifilter,
           ist->st->sample_aspect_ratio :
           ist->st->codec->sample_aspect_ratio;
     snprintf(args, sizeof(args), "%d:%d:%d:%d:%d:%d:%d", ist->st->codec->width,
-             ist->st->codec->height, ist->st->codec->pix_fmt,
+             ist->st->codec->height,
+             ist->hwaccel_retrieve_data ? ist->hwaccel_retrieved_pix_fmt : ist->st->codec->pix_fmt,
              tb.num, tb.den, sar.num, sar.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
              ist->file_index, ist->st->index);
