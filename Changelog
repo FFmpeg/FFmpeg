@@ -1,6 +1,96 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.9:
+
+- x86: fft: Remove 3DNow! optimizations, they break FATE
+- x86: ac3dsp: Drop mmx variant of ac3_max_msb_abs_int16
+- aac: Check init_get_bits return value
+- aac: return meaningful errors
+- dsicinav: K&R formatting cosmetics
+- mov: Seek back if overreading an individual atom
+- vcr1: add sanity checks
+- pictordec: pass correct context to avpriv_request_sample
+- dsicinav: Clip the source size to the expected maximum
+- alsdec: Clean up error paths
+- ogg: Fix potential infinite discard loop
+- nuv: check rtjpeg_decode_frame_yuv420 return value
+- nuv: Reset the frame on resize
+- nuv: Use av_fast_realloc
+- nuv: return meaningful error codes.
+- nuv: Pad the lzo outbuf
+- nuv: Do not ignore lzo decompression failures
+- oma: correctly mark and decrypt partial packets
+- oma: check geob tag boundary
+- oma: refactor seek function
+- 8bps: Bound-check the input buffer
+- rtmp: Do not misuse memcmp
+- rtmp: rename data_size to size
+- lavc: set the default rc_initial_buffer_occupancy
+- 4xm: Reject not a multiple of 16 dimension
+- 4xm: do not overread the prestream buffer
+- 4xm: validate the buffer size before parsing it
+- indeo: Do not reference mismatched tiles
+- indeo: Sanitize ff_ivi_init_planes fail paths
+- indeo: Bound-check before applying motion compensation
+- indeo: Bound-check before applying transform
+- indeo: reject negative array indexes
+- indeo: Cosmetic formatting
+- indeo: Refactor ff_ivi_init_tiles and ivi_decode_blocks
+- indeo: Refactor ff_ivi_dec_huff_desc
+- lavf: fix the comparison in an overflow check
+- dv: Add a guard to not overread the ppcm array
+- mpegvideo: Avoid 32-bit wrapping of linesize multiplications
+- mjpegb: Detect changing number of planes in interlaced video
+- matroskadec: Check that .lang was allocated and set before reading it
+- ape demuxer: check for EOF in potentially long loops
+- lavf: avoid integer overflow when estimating bitrate
+- pictordec: break out of both decoding loops when y drops below 0
+- ac3: Return proper error codes
+- ac3: Clean up the error paths
+- ac3: Do not clash with normal AVERROR
+- dxa: Make sure the reference frame exists
+- h261: check the mtype index
+- segafilm: Error out on impossible packet size
+- ogg: Always alloc the private context in vorbis_header
+- vc1: check mb_height validity.
+- vc1: check the source buffer in vc1_mc functions
+- bink: Bound check the quantization matrix.
+- xl: Make sure the width is valid
+- alsdec: Fix the clipping range
+- dsicinav: Bound-check the source buffer when needed
+- mov: Do not allow updating the time scale after it has been set
+- ac3dec: Don't consume more data than the actual input packet size
+- indeo: Reject impossible FRAMETYPE_NULL
+- indeo5: return proper error codes
+- indeo4: Validate scantable dimension
+- indeo4: Check the quantization matrix index
+- indeo4: Do not access missing reference MV
+- adpcm: Unbreak ima-dk4
+- ac3dec: validate channel output mode against channel count
+- dca: Respect the current limits in the downmixing capabilities
+- dca: Error out on missing DSYNC
+- pcm: always use codec->id instead of codec_id
+- mlpdec: Do not set invalid context in read_restart_header
+- pcx: Do not overread source buffer in pcx_rle_decode
+- wmavoice: conceal clearly corrupted blocks
+- iff: Do not read over the source buffer
+- qdm2: Conceal broken samples
+- qdm2: refactor joined stereo support
+- adpcm: Write the correct number of samples for ima-dk4
+- imc: Catch a division by zero
+- atrac3: Error on impossible encoding/channel combinations
+- atrac3: set the getbits context the right buffer_end
+- atrac3: fix error handling
+- qdm2: check and reset dithering index per channel
+- westwood_vqa: do not free extradata on error in read_header
+- vqavideo: check the version
+- rmdec: Use the AVIOContext given as parameter in rm_read_metadata()
+- avio: Handle AVERROR_EOF in the same way as the return value 0
+- wtv: Mark attachment with a negative stream id
+- avidec: Let the inner dv demuxer take care of discarding
+- swfdec: do better validation of tag length
+
 
 version 0.8.8:
 
