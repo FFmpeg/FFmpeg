@@ -21,14 +21,11 @@
  */
 
 #include "get_bits.h"
+#include "hevc.h"
+
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
 
-#include "hevc.h"
-
-#define SET(dst, x)   (dst) = (x)
-#define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)
-#define ADD_AND_SCALE(dst, x) (dst) = av_clip_pixel((dst) + av_clip_int16(((x) + add) >> shift))
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int size,
                           GetBitContext *gb, int pcm_bit_depth)
@@ -134,21 +131,29 @@ static void FUNC(transform_skip)(uint8_t *_dst, int16_t *coeffs,
     }
 }
 
-static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs, ptrdiff_t stride)
-{
-#define TR_4x4_LUMA(dst, src, step, assign)                                     \
-    do {                                                                        \
-        int c0 = src[0*step] + src[2*step];                                     \
-        int c1 = src[2*step] + src[3*step];                                     \
-        int c2 = src[0*step] - src[3*step];                                     \
-        int c3 = 74 * src[1*step];                                              \
-                                                                                \
-        assign(dst[2*step], 74 * (src[0*step] - src[2*step] + src[3*step]));    \
-        assign(dst[0*step], 29 * c0 + 55 * c1 + c3);                            \
-        assign(dst[1*step], 55 * c2 - 29 * c1 + c3);                            \
-        assign(dst[3*step], 55 * c0 + 29 * c2 - c3);                            \
+#define SET(dst, x)   (dst) = (x)
+#define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)
+#define ADD_AND_SCALE(dst, x)                                           \
+    (dst) = av_clip_pixel((dst) + av_clip_int16(((x) + add) >> shift))
+
+#define TR_4x4_LUMA(dst, src, step, assign)                             \
+    do {                                                                \
+        int c0 = src[0 * step] + src[2 * step];                         \
+        int c1 = src[2 * step] + src[3 * step];                         \
+        int c2 = src[0 * step] - src[3 * step];                         \
+        int c3 = 74 * src[1 * step];                                    \
+                                                                        \
+        assign(dst[2 * step], 74 * (src[0 * step] -                     \
+                                    src[2 * step] +                     \
+                                    src[3 * step]));                    \
+        assign(dst[0 * step], 29 * c0 + 55 * c1 + c3);                  \
+        assign(dst[1 * step], 55 * c2 - 29 * c1 + c3);                  \
+        assign(dst[3 * step], 55 * c0 + 29 * c2 - c3);                  \
     } while (0)
 
+static void FUNC(transform_4x4_luma_add)(uint8_t *_dst, int16_t *coeffs,
+                                         ptrdiff_t stride)
+{
     int i;
     pixel *dst   = (pixel *)_dst;
     int shift    = 7;
