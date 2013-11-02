@@ -1,6 +1,7 @@
-MANPAGES    = $(PROGS-yes:%=doc/%.1)
-PODPAGES    = $(PROGS-yes:%=doc/%.pod)
-HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
+ALLMANPAGES = $(AVBASENAMES:%=%.1)
+MANPAGES    = $(AVPROGS-yes:%=doc/%.1)
+PODPAGES    = $(AVPROGS-yes:%=doc/%.pod)
+HTMLPAGES   = $(AVPROGS-yes:%=doc/%.html)                               \
               doc/developer.html                                        \
               doc/faq.html                                              \
               doc/fate.html                                             \
