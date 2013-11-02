@@ -21,6 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @brief XTEA 32-bit implementation
+ * @author Samuel Pitoiset
+ * @ingroup lavu_xtea
+ */
+
 #include "avutil.h"
 #include "common.h"
 #include "intreadwrite.h"
