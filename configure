@@ -1251,6 +1251,7 @@ ARCH_EXT_LIST_X86='
     amd3dnowext
     avx
     avx2
+    cpunop
     fma4
     i686
     mmx
@@ -1333,7 +1334,6 @@ HAVE_LIST="
     cdio_paranoia_paranoia_h
     closesocket
     CommandLineToArgvW
-    cpunop
     CryptGenRandom
     dcbzl
     dev_bktr_ioctl_bt848_h
