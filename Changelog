@@ -46,6 +46,7 @@ version 10:
 - remove avplay -vismv option, which has not worked for a long time
 - Live HDS muxer
 - setsar/setdar filters now support variables in ratio expressions
+- dar variable in the scale filter now returns the actual DAR (i.e. a * sar)
 
 
 version 9:
