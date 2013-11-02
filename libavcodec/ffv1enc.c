@@ -1184,6 +1184,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     f->picture_number++;
     pkt->size   = buf_p - pkt->data;
+    pkt->pts    =
+    pkt->dts    = pict->pts;
     pkt->flags |= AV_PKT_FLAG_KEY * p->key_frame;
     *got_packet = 1;
 
