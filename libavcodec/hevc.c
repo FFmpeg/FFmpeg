@@ -412,8 +412,7 @@ static int hls_slice_header(HEVCContext *s)
             sh->colour_plane_id = get_bits(gb, 2);
 
         if (!IS_IDR(s)) {
-            int short_term_ref_pic_set_sps_flag;
-            int poc;
+            int short_term_ref_pic_set_sps_flag, poc;
 
             sh->pic_order_cnt_lsb = get_bits(gb, s->sps->log2_max_poc_lsb);
             poc = ff_hevc_compute_poc(s, sh->pic_order_cnt_lsb);
@@ -1752,10 +1751,8 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
     int ctb_addr_rs       = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
     int ctb_addr_in_slice = ctb_addr_rs - s->sh.slice_addr;
 
-    int tile_left_boundary;
-    int tile_up_boundary;
-    int slice_left_boundary;
-    int slice_up_boundary;
+    int tile_left_boundary, tile_up_boundary;
+    int slice_left_boundary, slice_up_boundary;
 
     s->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
 
@@ -2108,8 +2105,7 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
 {
     HEVCLocalContext *lc = s->HEVClc;
     GetBitContext *gb    = &lc->gb;
-    int ctb_addr_ts;
-    int ret;
+    int ctb_addr_ts, ret;
 
     ret = init_get_bits8(gb, nal, length);
     if (ret < 0)
@@ -2279,7 +2275,7 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
         STARTCODE_TEST;
         i -= 3;
     }
-#endif
+#endif /* HAVE_FAST_64BIT */
 #else
     for (i = 0; i + 1 < length; i += 2) {
         if (src[i])
@@ -2288,7 +2284,7 @@ int ff_hevc_extract_rbsp(HEVCContext *s, const uint8_t *src, int length,
             i--;
         STARTCODE_TEST;
     }
-#endif
+#endif /* HAVE_FAST_UNALIGNED */
 
     if (i >= length - 1) { // no escaped 0
         nal->data = src;
@@ -2792,11 +2788,10 @@ static int hevc_decode_extradata(HEVCContext *s)
         (avctx->extradata[0] || avctx->extradata[1] ||
          avctx->extradata[2] > 1)) {
         /* It seems the extradata is encoded as hvcC format.
-         * Temporarily, we support configurationVersion==0 until 14496-15 3rd finalized.
-         * When finalized, configurationVersion will be 1 and we can recognize hvcC by
-         * checking if avctx->extradata[0]==1 or not. */
-        int i, j, num_arrays;
-        int nal_len_size;
+         * Temporarily, we support configurationVersion==0 until 14496-15 3rd
+         * finalized. When finalized, configurationVersion will be 1 and we
+         * can recognize hvcC by checking if avctx->extradata[0]==1 or not. */
+        int i, j, num_arrays, nal_len_size;
 
         s->is_nalff = 1;
 
@@ -2833,7 +2828,8 @@ static int hevc_decode_extradata(HEVCContext *s)
             }
         }
 
-        /* Now store right nal length size, that will be used to parse all other nals */
+        /* Now store right nal length size, that will be used to parse
+         * all other nals */
         s->nal_length_size = nal_len_size;
     } else {
         s->is_nalff = 0;
