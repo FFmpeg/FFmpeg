@@ -443,7 +443,7 @@ static int hls_slice_header(HEVCContext *s)
                 }
 
                 numbits = av_ceil_log2(s->sps->nb_st_rps);
-                rps_idx = (numbits > 0) ? get_bits(gb, numbits) : 0;
+                rps_idx = numbits > 0 ? get_bits(gb, numbits) : 0;
                 sh->short_term_rps = &s->sps->st_rps[rps_idx];
             }
 
@@ -768,7 +768,7 @@ static void hls_transform_unit(HEVCContext *s, int x0, int y0,
             s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 1);
             s->hpc.intra_pred(s, x0, y0, log2_trafo_size - 1, 2);
         } else if (blk_idx == 3) {
-            trafo_size = trafo_size << (s->sps->hshift[1]);
+            trafo_size = trafo_size << s->sps->hshift[1];
             ff_hevc_set_neighbour_available(s, xBase, yBase,
                                             trafo_size, trafo_size);
             s->hpc.intra_pred(s, xBase, yBase, log2_trafo_size, 1);
@@ -867,10 +867,10 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
 
     lc->tt.cbf_luma = 1;
 
-    lc->tt.inter_split_flag = (s->sps->max_transform_hierarchy_depth_inter == 0 &&
+    lc->tt.inter_split_flag = s->sps->max_transform_hierarchy_depth_inter == 0 &&
                               lc->cu.pred_mode == MODE_INTER &&
                               lc->cu.part_mode != PART_2Nx2N &&
-                              trafo_depth == 0);
+                              trafo_depth == 0;
 
     if (log2_trafo_size <= s->sps->log2_max_trafo_size &&
         log2_trafo_size >  s->sps->log2_min_tb_size    &&
@@ -878,9 +878,9 @@ static void hls_transform_tree(HEVCContext *s, int x0, int y0,
         !(lc->cu.intra_split_flag && trafo_depth == 0)) {
         split_transform_flag = ff_hevc_split_transform_flag_decode(s, log2_trafo_size);
     } else {
-        split_transform_flag = (log2_trafo_size > s->sps->log2_max_trafo_size ||
-                               (lc->cu.intra_split_flag && (trafo_depth == 0)) ||
-                               lc->tt.inter_split_flag);
+        split_transform_flag = log2_trafo_size > s->sps->log2_max_trafo_size ||
+                               (lc->cu.intra_split_flag && trafo_depth == 0) ||
+                               lc->tt.inter_split_flag;
     }
 
     if (log2_trafo_size > 2) {
@@ -1686,8 +1686,8 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
     int ret;
 
     lc->ct.depth = cb_depth;
-    if ((x0 + cb_size <= s->sps->width) &&
-        (y0 + cb_size <= s->sps->height) &&
+    if (x0 + cb_size <= s->sps->width  &&
+        y0 + cb_size <= s->sps->height &&
         log2_cb_size > s->sps->log2_min_cb_size) {
         SAMPLE(s->split_cu_flag, x0, y0) =
             ff_hevc_split_coding_unit_flag_decode(s, cb_depth, x0, y0);
@@ -1777,14 +1777,14 @@ static void hls_decode_neighbour(HEVCContext *s, int x_ctb, int y_ctb,
     lc->end_of_tiles_y = FFMIN(y_ctb + ctb_size, s->sps->height);
 
     if (s->pps->tiles_enabled_flag) {
-        tile_left_boundary  = ((x_ctb > 0) &&
-                               (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]]));
-        slice_left_boundary = ((x_ctb > 0) &&
-                               (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1]));
-        tile_up_boundary  = ((y_ctb > 0) &&
-                             (s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]]));
-        slice_up_boundary = ((y_ctb > 0) &&
-                             (s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width]));
+        tile_left_boundary  = x_ctb > 0 &&
+                              s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]];
+        slice_left_boundary = x_ctb > 0 &&
+                              s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - 1];
+        tile_up_boundary  = y_ctb > 0 &&
+                            s->pps->tile_id[ctb_addr_ts] == s->pps->tile_id[s->pps->ctb_addr_rs_to_ts[ctb_addr_rs - s->sps->ctb_width]];
+        slice_up_boundary = y_ctb > 0 &&
+                            s->tab_slice_address[ctb_addr_rs] == s->tab_slice_address[ctb_addr_rs - s->sps->ctb_width];
     } else {
         tile_left_boundary  =
         tile_up_boundary    = 1;
@@ -1811,8 +1811,8 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *isFilterThread)
     while (more_data && ctb_addr_ts < s->sps->ctb_size) {
         int ctb_addr_rs = s->pps->ctb_addr_ts_to_rs[ctb_addr_ts];
 
-        x_ctb = (ctb_addr_rs % ((s->sps->width + (ctb_size - 1)) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
-        y_ctb = (ctb_addr_rs / ((s->sps->width + (ctb_size - 1)) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        x_ctb = (ctb_addr_rs % ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
+        y_ctb = (ctb_addr_rs / ((s->sps->width + ctb_size - 1) >> s->sps->log2_ctb_size)) << s->sps->log2_ctb_size;
         hls_decode_neighbour(s, x_ctb, y_ctb, ctb_addr_ts);
 
         ff_hevc_cabac_init(s, ctb_addr_ts);

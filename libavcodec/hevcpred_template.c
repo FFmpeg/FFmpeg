@@ -491,9 +491,8 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
                                        fact  * ref[x + idx + 2] + 16) >> 5;
                 }
             } else {
-                for (x = 0; x < size; x++) {
+                for (x = 0; x < size; x++)
                     POS(x, y) = ref[x + idx + 1];
-                }
             }
         }
         if (mode == 26 && c_idx == 0 && size < 32) {
@@ -519,9 +518,8 @@ static av_always_inline void FUNC(pred_angular)(uint8_t *_src,
                                        fact  * ref[y + idx + 2] + 16) >> 5;
                 }
             } else {
-                for (y = 0; y < size; y++) {
+                for (y = 0; y < size; y++)
                     POS(x, y) = ref[y + idx + 1];
-                }
             }
         }
         if (mode == 10 && c_idx == 0 && size < 32) {

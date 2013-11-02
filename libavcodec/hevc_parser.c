@@ -294,13 +294,12 @@ static int hevc_split(AVCodecContext *avctx, const uint8_t *buf, int buf_size)
         state = (state << 8) | buf[i];
         if (((state >> 8) & 0xFFFFFF) == START_CODE) {
             int nut = (state >> 1) & 0x3F;
-            if (nut >= NAL_VPS && nut <= NAL_PPS) {
+            if (nut >= NAL_VPS && nut <= NAL_PPS)
                 has_ps = 1;
-            } else if (has_ps) {
+            else if (has_ps)
                 return i - 3;
-            } else { // no parameter set at the beginning of the stream
+            else // no parameter set at the beginning of the stream
                 return 0;
-            }
         }
     }
     return 0;

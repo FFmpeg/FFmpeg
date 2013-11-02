@@ -491,17 +491,15 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     if (sao_eo_class != SAO_EO_HORIZ) {
         if (borders[1]) {
             int offset_val = sao_offset_val[0];
-            for (x = init_x; x < width; x++) {
+            for (x = init_x; x < width; x++)
                 dst[x] = av_clip_pixel(src[x] + offset_val);
-            }
             init_y = 1;
         }
         if (borders[3]) {
             int offset_val = sao_offset_val[0];
             int y_stride   = stride * (height - 1);
-            for (x = init_x; x < width; x++) {
+            for (x = init_x; x < width; x++)
                 dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
-            }
             height--;
         }
     }
@@ -672,17 +670,15 @@ static void FUNC(sao_edge_filter_2)(uint8_t *_dst, uint8_t *_src,
     if (sao_eo_class != SAO_EO_HORIZ) {
         if (borders[1]) {
             int offset_val = sao_offset_val[0];
-            for (x = init_x; x < width; x++) {
+            for (x = init_x; x < width; x++)
                 dst[x] = av_clip_pixel(src[x] + offset_val);
-            }
             init_y = 1;
         }
         if (borders[3]) {
             int offset_val = sao_offset_val[0];
             int y_stride   = stride * (height - 1);
-            for (x = init_x; x < width; x++) {
+            for (x = init_x; x < width; x++)
                 dst[x + y_stride] = av_clip_pixel(src[x + y_stride] + offset_val);
-            }
             height--;
         }
     }
@@ -936,9 +932,8 @@ static void FUNC(put_hevc_epel_pixels)(int16_t *dst, ptrdiff_t dststride,
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = src[x] << (14 - BIT_DEPTH);
-        }
         src += srcstride;
         dst += dststride;
     }
@@ -961,9 +956,8 @@ static void FUNC(put_hevc_epel_h)(int16_t *dst, ptrdiff_t dststride,
     int8_t filter_2 = filter[2];
     int8_t filter_3 = filter[3];
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
-        }
         src += srcstride;
         dst += dststride;
     }
@@ -984,9 +978,8 @@ static void FUNC(put_hevc_epel_v)(int16_t *dst, ptrdiff_t dststride,
     int8_t filter_3 = filter[3];
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8);
-        }
         src += srcstride;
         dst += dststride;
     }
@@ -1012,9 +1005,8 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
     src -= EPEL_EXTRA_BEFORE * srcstride;
 
     for (y = 0; y < height + EPEL_EXTRA; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             tmp[x] = EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
-        }
         src += srcstride;
         tmp += MAX_PB_SIZE;
     }
@@ -1025,9 +1017,8 @@ static void FUNC(put_hevc_epel_hv)(int16_t *dst, ptrdiff_t dststride,
     filter_2 = filter_v[2];
     filter_3 = filter_v[3];
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6;
-        }
         tmp += MAX_PB_SIZE;
         dst += dststride;
     }
@@ -1048,9 +1039,8 @@ static void FUNC(put_unweighted_pred)(uint8_t *_dst, ptrdiff_t _dststride,
     int offset = 0;
 #endif
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel((src[x] + offset) >> shift);
-        }
         dst += dststride;
         src += srcstride;
     }
@@ -1073,9 +1063,8 @@ static void FUNC(put_weighted_pred_avg)(uint8_t *_dst, ptrdiff_t _dststride,
 #endif
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel((src1[x] + src2[x] + offset) >> shift);
-        }
         dst  += dststride;
         src1 += srcstride;
         src2 += srcstride;
@@ -1137,14 +1126,13 @@ static void FUNC(weighted_pred_avg)(uint8_t denom,
     log2Wd = denom + shift;
     w0     = wl0Flag;
     w1     = wl1Flag;
-    o0 = (ol0Flag) * (1 << (BIT_DEPTH - 8));
-    o1 = (ol1Flag) * (1 << (BIT_DEPTH - 8));
+    o0     = ol0Flag * (1 << (BIT_DEPTH - 8));
+    o1     = ol1Flag * (1 << (BIT_DEPTH - 8));
 
     for (y = 0; y < height; y++) {
-        for (x = 0; x < width; x++) {
+        for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel((src1[x] * w0 + src2[x] * w1 +
                                     ((o0 + o1 + 1) << log2Wd)) >> (log2Wd + 1));
-        }
         dst  += dststride;
         src1 += srcstride;
         src2 += srcstride;

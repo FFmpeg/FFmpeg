@@ -263,7 +263,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
                 for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < MAX_REFS; j++) {
                     rpl_tmp.list[rpl_tmp.nb_refs]       = rps->list[j];
                     rpl_tmp.ref[rpl_tmp.nb_refs]        = rps->ref[j];
-                    rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = (i == 2);
+                    rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = i == 2;
                     rpl_tmp.nb_refs++;
                 }
             }
@@ -312,7 +312,7 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc)
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
-        if (ref->frame->buf[0] && (ref->sequence == s->seq_decode)) {
+        if (ref->frame->buf[0] && ref->sequence == s->seq_decode) {
             if (ref->poc == poc || (ref->poc & LtMask) == poc)
                 return ref;
         }
@@ -450,9 +450,9 @@ int ff_hevc_compute_poc(HEVCContext *s, int poc_lsb)
     int prev_poc_msb = s->pocTid0 - prev_poc_lsb;
     int poc_msb;
 
-    if ((poc_lsb < prev_poc_lsb) && ((prev_poc_lsb - poc_lsb) >= max_poc_lsb / 2))
+    if (poc_lsb < prev_poc_lsb && prev_poc_lsb - poc_lsb >= max_poc_lsb / 2)
         poc_msb = prev_poc_msb + max_poc_lsb;
-    else if ((poc_lsb > prev_poc_lsb) && ((poc_lsb - prev_poc_lsb) > (max_poc_lsb / 2)))
+    else if (poc_lsb > prev_poc_lsb && poc_lsb - prev_poc_lsb > max_poc_lsb / 2)
         poc_msb = prev_poc_msb - max_poc_lsb;
     else
         poc_msb = prev_poc_msb;

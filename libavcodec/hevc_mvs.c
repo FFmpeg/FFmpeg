@@ -70,9 +70,9 @@ static int z_scan_block_avail(HEVCContext *s, int xCurr, int yCurr,
                               yCurr >> s->sps->log2_min_tb_size);
     int N;
 
-    if ((xN < 0) || (yN < 0) ||
-        (xN >= s->sps->width) ||
-        (yN >= s->sps->height))
+    if (xN < 0 || yN < 0 ||
+        xN >= s->sps->width ||
+        yN >= s->sps->height)
         return 0;
 
     N = MIN_TB_ADDR_ZS(xN >> s->sps->log2_min_tb_size,
@@ -516,8 +516,8 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
         mergecandlist[nb_merge_cand].mv[1].x      = 0;
         mergecandlist[nb_merge_cand].mv[1].y      = 0;
         mergecandlist[nb_merge_cand].is_intra     = 0;
-        mergecandlist[nb_merge_cand].ref_idx[0]   = (zero_idx < nb_refs) ? zero_idx : 0;
-        mergecandlist[nb_merge_cand].ref_idx[1]   = (zero_idx < nb_refs) ? zero_idx : 0;
+        mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
+        mergecandlist[nb_merge_cand].ref_idx[1]   = zero_idx < nb_refs ? zero_idx : 0;
 
         nb_merge_cand++;
         zero_idx++;
@@ -691,9 +691,8 @@ void ff_hevc_luma_mv_mvp_mode(HEVCContext *s, int x0, int y0, int nPbW,
     yA1_pu = yA1 >> s->sps->log2_min_pu_size;
 
     is_available_a1 = AVAILABLE(cand_left, A1);
-    if (is_available_a0 || is_available_a1) {
+    if (is_available_a0 || is_available_a1)
         isScaledFlag_L0 = 1;
-    }
 
     if (is_available_a0) {
         availableFlagLXA0 = MP_MX(A0, pred_flag_index_l0, mxA);
