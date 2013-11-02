@@ -55,9 +55,9 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
     GetBitContext *gb = &s->HEVClc->gb;
     int cancel, type, quincunx;
 
-    get_ue_golomb(gb);                      // frame_packing_arrangement_id
-    cancel = get_bits1(gb);                 // frame_packing_cancel_flag
-    if ( cancel == 0 )
+    get_ue_golomb(gb);                  // frame_packing_arrangement_id
+    cancel = get_bits1(gb);             // frame_packing_cancel_flag
+    if (cancel == 0 )
     {
         type = get_bits(gb, 7);             // frame_packing_arrangement_type
         quincunx = get_bits1(gb);           // quincunx_sampling_flag
@@ -68,12 +68,12 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
         // frame0_self_contained_flag frame1_self_contained_flag
         skip_bits(gb, 6);
 
-        if ( quincunx == 0 && type != 5 )
-            skip_bits(gb, 16);              // frame[01]_grid_position_[xy]
-        skip_bits(gb, 8);                   // frame_packing_arrangement_reserved_byte
-        skip_bits1(gb);                     // frame_packing_arrangement_persistance_flag
+        if (quincunx == 0 && type != 5)
+            skip_bits(gb, 16);  // frame[01]_grid_position_[xy]
+        skip_bits(gb, 8);       // frame_packing_arrangement_reserved_byte
+        skip_bits1(gb);         // frame_packing_arrangement_persistance_flag
     }
-    skip_bits1(gb);                         // upsampled_aspect_ratio_flag
+    skip_bits1(gb);             // upsampled_aspect_ratio_flag
 }
 
 static int decode_pic_timing(HEVCContext *s)
@@ -127,12 +127,12 @@ static int decode_nal_sei_message(HEVCContext *s)
     av_log(s->avctx, AV_LOG_DEBUG, "Decoding SEI\n");
 
     while (byte == 0xFF) {
-        byte = get_bits(gb, 8);
+        byte          = get_bits(gb, 8);
         payload_type += byte;
     }
     byte = 0xFF;
     while (byte == 0xFF) {
-        byte = get_bits(gb, 8);
+        byte          = get_bits(gb, 8);
         payload_size += byte;
     }
     if (s->nal_unit_type == NAL_SEI_PREFIX) {
@@ -145,7 +145,7 @@ static int decode_nal_sei_message(HEVCContext *s)
         } else if (payload_type == 1){
             int ret = decode_pic_timing(s);
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped PREFIX SEI %d\n", payload_type);
-            skip_bits(gb, 8*payload_size);
+            skip_bits(gb, 8 * payload_size);
             return ret;
         } else if (payload_type == 129){
             active_parameter_sets(s);
@@ -161,7 +161,7 @@ static int decode_nal_sei_message(HEVCContext *s)
             decode_nal_sei_decoded_picture_hash(s, payload_size);
         else {
             av_log(s->avctx, AV_LOG_DEBUG, "Skipped SUFFIX SEI %d\n", payload_type);
-            skip_bits(gb, 8*payload_size);
+            skip_bits(gb, 8 * payload_size);
         }
         return 1;
     }

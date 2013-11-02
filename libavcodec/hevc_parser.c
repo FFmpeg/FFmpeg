@@ -278,7 +278,7 @@ static int hevc_parse(AVCodecParserContext *s,
 
     parse_nal_units(s, avctx, buf, buf_size);
 
-    *poutbuf = buf;
+    *poutbuf      = buf;
     *poutbuf_size = buf_size;
     return next;
 }

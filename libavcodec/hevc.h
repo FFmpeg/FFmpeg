@@ -33,7 +33,6 @@
 #include "hevcpred.h"
 #include "hevcdsp.h"
 #include "internal.h"
-
 #include "thread.h"
 #include "videodsp.h"
 
@@ -780,6 +779,7 @@ typedef struct HEVCContext {
     AVFrame *sao_frame;
     AVFrame *tmp_frame;
     AVFrame *output_frame;
+
     HEVCVPS *vps;
     const HEVCSPS *sps;
     HEVCPPS *pps;
@@ -952,6 +952,7 @@ int ff_hevc_transform_skip_flag_decode(HEVCContext *s, int c_idx);
  * Get the number of candidate references for the current frame.
  */
 int ff_hevc_frame_nb_refs(HEVCContext *s);
+
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 
 /**

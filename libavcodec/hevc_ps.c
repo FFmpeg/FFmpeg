@@ -822,8 +822,7 @@ int ff_hevc_decode_nal_sps(HEVCContext *s)
 
     sps->nb_st_rps = get_ue_golomb_long(gb);
     if (sps->nb_st_rps > MAX_SHORT_TERM_RPS_COUNT) {
-        av_log(s->avctx, AV_LOG_ERROR,
-               "Too many short term RPS: %d.\n",
+        av_log(s->avctx, AV_LOG_ERROR, "Too many short term RPS: %d.\n",
                sps->nb_st_rps);
         ret = AVERROR_INVALIDDATA;
         goto err;
@@ -1084,8 +1083,8 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
         if (pps->num_tile_columns == 0 ||
             pps->num_tile_columns >= sps->width) {
             av_log(s->avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
-                    pps->num_tile_columns - 1);
-                ret = AVERROR_INVALIDDATA;
+                   pps->num_tile_columns - 1);
+            ret = AVERROR_INVALIDDATA;
             goto err;
         }
         if (pps->num_tile_rows == 0 ||
@@ -1233,9 +1232,9 @@ int ff_hevc_decode_nal_pps(HEVCContext *s)
     pps->min_tb_addr_zs    = av_malloc_array(pic_area_in_min_tbs, sizeof(*pps->min_tb_addr_zs));
     if (!pps->ctb_addr_rs_to_ts || !pps->ctb_addr_ts_to_rs ||
         !pps->tile_id || !pps->min_cb_addr_zs || !pps->min_tb_addr_zs) {
-            ret = AVERROR(ENOMEM);
-            goto err;
-        }
+        ret = AVERROR(ENOMEM);
+        goto err;
+    }
 
     for (ctb_addr_rs = 0; ctb_addr_rs < pic_area_in_ctbs; ctb_addr_rs++) {
         int tb_x   = ctb_addr_rs % sps->ctb_width;

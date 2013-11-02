@@ -29,7 +29,6 @@
 #include "libavutil/internal.h"
 #include "libavutil/md5.h"
 #include "libavutil/opt.h"
-
 #include "libavutil/pixdesc.h"
 
 #include "bytestream.h"
@@ -1705,6 +1704,7 @@ static int hls_coding_quadtree(HEVCContext *s, int x0, int y0,
         const int cb_size_split = cb_size >> 1;
         const int x1 = x0 + cb_size_split;
         const int y1 = y0 + cb_size_split;
+
         int more_data = 0;
 
         more_data = hls_coding_quadtree(s, x0, y0, log2_cb_size - 1, cb_depth + 1);
@@ -2056,7 +2056,7 @@ static void restore_tqb_pixels(HEVCContext *s)
 
 static int hevc_frame_start(HEVCContext *s)
 {
-    HEVCLocalContext *lc     = s->HEVClc;
+    HEVCLocalContext *lc = s->HEVClc;
     int ret;
 
     memset(s->horizontal_bs, 0, 2 * s->bs_width * (s->bs_height + 1));
@@ -2209,7 +2209,6 @@ static int decode_nal_unit(HEVCContext *s, const uint8_t *nal, int length)
             ctb_addr_ts = hls_slice_data_wpp(s, nal, length);
         else
             ctb_addr_ts = hls_slice_data(s);
-
         if (ctb_addr_ts >= (s->sps->ctb_width * s->sps->ctb_height)) {
             s->is_decoded = 1;
             if ((s->pps->transquant_bypass_enable_flag ||
@@ -2380,12 +2379,12 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
                 if (length < 4) {
                     av_log(s->avctx, AV_LOG_ERROR, "No start code is found.\n");
                     ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
+                    goto fail;
+                }
             }
 
-            buf    += 3;
-            length -= 3;
+            buf           += 3;
+            length        -= 3;
         }
 
         if (!s->is_nalff)
