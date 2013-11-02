@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version <next>
 
 - HNM version 4 demuxer and video decoder
+- Live HDS muxer
 
 
 version 2.1:
