@@ -83,7 +83,7 @@ CFLAGS="-std=c99 -O3 -Wall -pipe -fpic -fasm \
 	-fstrict-aliasing -Werror=strict-aliasing \
 	-fmodulo-sched -fmodulo-sched-allow-regmoves \
 	-Wno-psabi -Wa,--noexecstack \
-	-fdiagnostics-color=auto -fdiagnostics-color=always \
+	-fdiagnostics-color=always \
 	-DANDROID -DNDEBUG \
 	-I$SSL/include"
 
