@@ -4845,17 +4845,18 @@ again:
                 if ((err = decode_slice_header(hx, h)))
                     break;
 
-                if (h->sei_recovery_frame_cnt >= 0 && (h->frame_num != h->sei_recovery_frame_cnt || hx->slice_type_nos != AV_PICTURE_TYPE_I))
-                    h->valid_recovery_point = 1;
+                if (h->sei_recovery_frame_cnt >= 0) {
+                    if (h->frame_num != h->sei_recovery_frame_cnt || hx->slice_type_nos != AV_PICTURE_TYPE_I)
+                        h->valid_recovery_point = 1;
 
-                if (   h->sei_recovery_frame_cnt >= 0
-                    && (   h->recovery_frame<0
-                        || ((h->recovery_frame - h->frame_num) & ((1 << h->sps.log2_max_frame_num)-1)) > h->sei_recovery_frame_cnt)) {
-                    h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) &
-                                        ((1 << h->sps.log2_max_frame_num) - 1);
+                    if (   h->recovery_frame < 0
+                        || ((h->recovery_frame - h->frame_num) & ((1 << h->sps.log2_max_frame_num)-1)) > h->sei_recovery_frame_cnt) {
+                        h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) &
+                                            ((1 << h->sps.log2_max_frame_num) - 1);
 
-                    if (!h->valid_recovery_point)
-                        h->recovery_frame = h->frame_num;
+                        if (!h->valid_recovery_point)
+                            h->recovery_frame = h->frame_num;
+                    }
                 }
 
                 h->cur_pic_ptr->f.key_frame |=
