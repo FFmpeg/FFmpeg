@@ -1068,6 +1068,51 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int64_t maxsize =   FF_MIN_BUFFER_SIZE
                       + avctx->width*avctx->height*35LL*4;
 
+    if(!pict) {
+        if (avctx->flags & CODEC_FLAG_PASS1) {
+            int j, k, m;
+            char *p   = avctx->stats_out;
+            char *end = p + STATS_OUT_SIZE;
+
+            memset(f->rc_stat, 0, sizeof(f->rc_stat));
+            for (i = 0; i < f->quant_table_count; i++)
+                memset(f->rc_stat2[i], 0, f->context_count[i] * sizeof(*f->rc_stat2[i]));
+
+            for (j = 0; j < f->slice_count; j++) {
+                FFV1Context *fs = f->slice_context[j];
+                for (i = 0; i < 256; i++) {
+                    f->rc_stat[i][0] += fs->rc_stat[i][0];
+                    f->rc_stat[i][1] += fs->rc_stat[i][1];
+                }
+                for (i = 0; i < f->quant_table_count; i++) {
+                    for (k = 0; k < f->context_count[i]; k++)
+                        for (m = 0; m < 32; m++) {
+                            f->rc_stat2[i][k][m][0] += fs->rc_stat2[i][k][m][0];
+                            f->rc_stat2[i][k][m][1] += fs->rc_stat2[i][k][m][1];
+                        }
+                }
+            }
+
+            for (j = 0; j < 256; j++) {
+                snprintf(p, end - p, "%" PRIu64 " %" PRIu64 " ",
+                        f->rc_stat[j][0], f->rc_stat[j][1]);
+                p += strlen(p);
+            }
+            snprintf(p, end - p, "\n");
+
+            for (i = 0; i < f->quant_table_count; i++) {
+                for (j = 0; j < f->context_count[i]; j++)
+                    for (m = 0; m < 32; m++) {
+                        snprintf(p, end - p, "%" PRIu64 " %" PRIu64 " ",
+                                f->rc_stat2[i][j][m][0], f->rc_stat2[i][j][m][1]);
+                        p += strlen(p);
+                    }
+            }
+            snprintf(p, end - p, "%d\n", f->gob_count);
+        }
+        return 0;
+    }
+
     if (f->version > 3)
         maxsize = FF_MIN_BUFFER_SIZE + avctx->width*avctx->height*3LL*4;
 
@@ -1139,47 +1184,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         buf_p += bytes;
     }
 
-    if ((avctx->flags & CODEC_FLAG_PASS1) && (f->picture_number & 31) == 0) {
-        int j, k, m;
-        char *p   = avctx->stats_out;
-        char *end = p + STATS_OUT_SIZE;
-
-        memset(f->rc_stat, 0, sizeof(f->rc_stat));
-        for (i = 0; i < f->quant_table_count; i++)
-            memset(f->rc_stat2[i], 0, f->context_count[i] * sizeof(*f->rc_stat2[i]));
-
-        for (j = 0; j < f->slice_count; j++) {
-            FFV1Context *fs = f->slice_context[j];
-            for (i = 0; i < 256; i++) {
-                f->rc_stat[i][0] += fs->rc_stat[i][0];
-                f->rc_stat[i][1] += fs->rc_stat[i][1];
-            }
-            for (i = 0; i < f->quant_table_count; i++) {
-                for (k = 0; k < f->context_count[i]; k++)
-                    for (m = 0; m < 32; m++) {
-                        f->rc_stat2[i][k][m][0] += fs->rc_stat2[i][k][m][0];
-                        f->rc_stat2[i][k][m][1] += fs->rc_stat2[i][k][m][1];
-                    }
-            }
-        }
-
-        for (j = 0; j < 256; j++) {
-            snprintf(p, end - p, "%" PRIu64 " %" PRIu64 " ",
-                     f->rc_stat[j][0], f->rc_stat[j][1]);
-            p += strlen(p);
-        }
-        snprintf(p, end - p, "\n");
-
-        for (i = 0; i < f->quant_table_count; i++) {
-            for (j = 0; j < f->context_count[i]; j++)
-                for (m = 0; m < 32; m++) {
-                    snprintf(p, end - p, "%" PRIu64 " %" PRIu64 " ",
-                             f->rc_stat2[i][j][m][0], f->rc_stat2[i][j][m][1]);
-                    p += strlen(p);
-                }
-        }
-        snprintf(p, end - p, "%d\n", f->gob_count);
-    } else if (avctx->flags & CODEC_FLAG_PASS1)
+    if (avctx->flags & CODEC_FLAG_PASS1)
         avctx->stats_out[0] = '\0';
 
     f->picture_number++;
@@ -1220,7 +1225,7 @@ AVCodec ff_ffv1_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = ffv1_close,
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = CODEC_CAP_SLICE_THREADS | CODEC_CAP_DELAY,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,   AV_PIX_FMT_YUVA420P,  AV_PIX_FMT_YUVA422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_YUVA444P,  AV_PIX_FMT_YUV440P,   AV_PIX_FMT_YUV422P,   AV_PIX_FMT_YUV411P,
