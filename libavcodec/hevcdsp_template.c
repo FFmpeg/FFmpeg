@@ -481,8 +481,8 @@ static void FUNC(sao_edge_filter_0)(uint8_t *_dst, uint8_t *_src,
     };
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
-
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
+
     stride /= sizeof(pixel);
 
     if (!borders[2])
@@ -588,8 +588,8 @@ static void FUNC(sao_edge_filter_1)(uint8_t *_dst, uint8_t *_src,
     };
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
-
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
+
     stride /= sizeof(pixel);
 
     init_y = -(4 >> chroma) - 2;
@@ -766,8 +766,8 @@ static void FUNC(sao_edge_filter_3)(uint8_t *_dst, uint8_t *_src,
     };
     static const uint8_t edge_idx[] = { 1, 2, 0, 3, 4 };
 
-
 #define CMP(a, b) ((a) > (b) ? 1 : ((a) == (b) ? 0 : -1))
+
     stride /= sizeof(pixel);
 
     init_y = -(4 >> chroma) - 2;

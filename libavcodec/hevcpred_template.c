@@ -1,5 +1,5 @@
 /*
- * HEVC video Decoder
+ * HEVC video decoder
  *
  * Copyright (C) 2012 - 2013 Guillaume Martres
  *
@@ -292,20 +292,6 @@ static void FUNC(intra_pred)(HEVCContext *s, int x0, int y0, int log2_size, int 
 
     top[-1] = left[-1];
 
-#undef EXTEND_LEFT_CIP
-#undef EXTEND_RIGHT_CIP
-#undef EXTEND_UP_CIP
-#undef EXTEND_DOWN_CIP
-#undef IS_INTRA
-#undef MVF_PU
-#undef MVF
-#undef PU
-#undef EXTEND_LEFT
-#undef EXTEND_RIGHT
-#undef EXTEND_UP
-#undef EXTEND_DOWN
-#undef MIN_TB_ADDR_ZS
-
     // Filtering process
     if (c_idx == 0 && mode != INTRA_DC && size != 4) {
         int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
@@ -557,4 +543,17 @@ static void FUNC(pred_angular_3)(uint8_t *src, const uint8_t *top,
     FUNC(pred_angular)(src, top, left, stride, c_idx, mode, 1 << 5);
 }
 
+#undef EXTEND_LEFT_CIP
+#undef EXTEND_RIGHT_CIP
+#undef EXTEND_UP_CIP
+#undef EXTEND_DOWN_CIP
+#undef IS_INTRA
+#undef MVF_PU
+#undef MVF
+#undef PU
+#undef EXTEND_LEFT
+#undef EXTEND_RIGHT
+#undef EXTEND_UP
+#undef EXTEND_DOWN
+#undef MIN_TB_ADDR_ZS
 #undef POS

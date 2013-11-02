@@ -89,7 +89,7 @@ static int get_qPy_pred(HEVCContext *s, int xC, int yC,
                                (xQgBase & ctb_size_mask);
     int availableB           = (yBase   & ctb_size_mask) &&
                                (yQgBase & ctb_size_mask);
-    int qPy_pred, qPy_a ,qPy_b;
+    int qPy_pred, qPy_a, qPy_b;
 
     // qPy_pred
     if (lc->first_qp_group) {

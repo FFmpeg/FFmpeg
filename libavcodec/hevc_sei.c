@@ -57,7 +57,7 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 
     get_ue_golomb(gb);                  // frame_packing_arrangement_id
     cancel = get_bits1(gb);             // frame_packing_cancel_flag
-    if (cancel == 0 ){
+    if (cancel == 0) {
         type     = get_bits(gb, 7);     // frame_packing_arrangement_type
         quincunx = get_bits1(gb);       // quincunx_sampling_flag
         skip_bits(gb, 6);               // content_interpretation_type
