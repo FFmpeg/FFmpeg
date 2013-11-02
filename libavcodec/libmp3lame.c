@@ -49,6 +49,7 @@ typedef struct LAMEContext {
     int buffer_size;
     int reservoir;
     int joint_stereo;
+    int abr;
     float *samples_flt[2];
     AudioFrameQueue afq;
     AVFloatDSPContext fdsp;
@@ -119,8 +120,13 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         lame_set_VBR(s->gfp, vbr_default);
         lame_set_VBR_quality(s->gfp, avctx->global_quality / (float)FF_QP2LAMBDA);
     } else {
-        if (avctx->bit_rate)                // CBR
-            lame_set_brate(s->gfp, avctx->bit_rate / 1000);
+        if (avctx->bit_rate) {
+            if (s->abr) {                   // ABR
+                lame_set_VBR(s->gfp, vbr_abr);
+                lame_set_VBR_mean_bitrate_kbps(s->gfp, avctx->bit_rate / 1000);
+            } else                          // CBR
+                lame_set_brate(s->gfp, avctx->bit_rate / 1000);
+        }
     }
 
     /* do not get a Xing VBR header frame from LAME */
@@ -265,6 +271,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 static const AVOption options[] = {
     { "reservoir",    "use bit reservoir", OFFSET(reservoir),    AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
     { "joint_stereo", "use joint stereo",  OFFSET(joint_stereo), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AE },
+    { "abr",          "use ABR",           OFFSET(abr),          AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AE },
     { NULL },
 };
 

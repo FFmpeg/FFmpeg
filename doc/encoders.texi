@@ -785,7 +785,7 @@ The following options are supported by the libmp3lame wrapper. The
 
 @table @option
 @item b (@emph{-b})
-Set bitrate expressed in bits/s for CBR. LAME @code{bitrate} is
+Set bitrate expressed in bits/s for CBR or ABR. LAME @code{bitrate} is
 expressed in kilobits/s.
 
 @item q (@emph{-V})
@@ -806,6 +806,11 @@ has this enabled by default, but can be overriden by use
 @item joint_stereo (@emph{-m j})
 Enable the encoder to use (on a frame by frame basis) either L/R
 stereo or mid/side stereo. Default value is 1.
+
+@item abr (@emph{--abr})
+Enable the encoder to use ABR when set to 1. The @command{lame}
+@option{--abr} sets the target bitrate, while this options only
+tells FFmpeg to use ABR still relies on @option{b} to set bitrate.
 
 @end table
 
