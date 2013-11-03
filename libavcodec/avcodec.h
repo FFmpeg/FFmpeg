@@ -3265,40 +3265,6 @@ void avcodec_register(AVCodec *codec);
  */
 void avcodec_register_all(void);
 
-
-#if FF_API_ALLOC_CONTEXT
-/**
- * Allocate an AVCodecContext and set its fields to default values.  The
- * resulting struct can be deallocated by simply calling av_free().
- *
- * @return An AVCodecContext filled with default values or NULL on failure.
- * @see avcodec_get_context_defaults
- *
- * @deprecated use avcodec_alloc_context3()
- */
-attribute_deprecated
-AVCodecContext *avcodec_alloc_context(void);
-
-/** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
- *  we WILL change its arguments and name a few times! */
-attribute_deprecated
-AVCodecContext *avcodec_alloc_context2(enum AVMediaType);
-
-/**
- * Set the fields of the given AVCodecContext to default values.
- *
- * @param s The AVCodecContext of which the fields should be set to default values.
- * @deprecated use avcodec_get_context_defaults3
- */
-attribute_deprecated
-void avcodec_get_context_defaults(AVCodecContext *s);
-
-/** THIS FUNCTION IS NOT YET PART OF THE PUBLIC API!
- *  we WILL change its arguments and name a few times! */
-attribute_deprecated
-void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType);
-#endif
-
 /**
  * Allocate an AVCodecContext and set its fields to default values.  The
  * resulting struct can be deallocated by calling avcodec_close() on it followed
