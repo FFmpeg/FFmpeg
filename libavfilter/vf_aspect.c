@@ -37,9 +37,6 @@
 #include "video.h"
 
 static const char *const var_names[] = {
-    "PI",
-    "PHI",
-    "E",
     "w",
     "h",
     "a", "dar",
@@ -50,9 +47,6 @@ static const char *const var_names[] = {
 };
 
 enum var_name {
-    VAR_PI,
-    VAR_PHI,
-    VAR_E,
     VAR_W,
     VAR_H,
     VAR_A, VAR_DAR,
@@ -124,9 +118,6 @@ static int get_aspect_ratio(AVFilterLink *inlink, AVRational *aspect_ratio)
     double var_values[VARS_NB], res;
     int ret;
 
-    var_values[VAR_PI]    = M_PI;
-    var_values[VAR_PHI]   = M_PHI;
-    var_values[VAR_E]     = M_E;
     var_values[VAR_W]     = inlink->w;
     var_values[VAR_H]     = inlink->h;
     var_values[VAR_A]     = (double) inlink->w / inlink->h;
