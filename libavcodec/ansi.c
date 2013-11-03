@@ -182,7 +182,10 @@ static void draw_char(AVCodecContext *avctx, int c)
 static int execute_code(AVCodecContext * avctx, int c)
 {
     AnsiContext *s = avctx->priv_data;
-    int ret, i, width, height;
+    int ret, i;
+    int width = 0;
+    int height = 0;
+
     switch(c) {
     case 'A': //Cursor Up
         s->y = FFMAX(s->y - (s->nb_args > 0 ? s->args[0]*s->font_height : s->font_height), 0);
