@@ -423,30 +423,30 @@ cglobal avg_pixels8_xy2, 4,5
     mova         m6, [pb_1]
     lea          r4, [r2*2]
     mova         m0, [r1]
-    pavgb        m0, [r1+1]
+    PAVGB        m0, [r1+1]
 .loop:
     mova         m2, [r1+r4]
     mova         m1, [r1+r2]
     psubusb      m2, m6
-    pavgb        m1, [r1+r2+1]
-    pavgb        m2, [r1+r4+1]
+    PAVGB        m1, [r1+r2+1]
+    PAVGB        m2, [r1+r4+1]
     add          r1, r4
-    pavgb        m0, m1
-    pavgb        m1, m2
-    pavgb        m0, [r0]
-    pavgb        m1, [r0+r2]
+    PAVGB        m0, m1
+    PAVGB        m1, m2
+    PAVGB        m0, [r0]
+    PAVGB        m1, [r0+r2]
     mova       [r0], m0
     mova    [r0+r2], m1
     mova         m1, [r1+r2]
     mova         m0, [r1+r4]
-    pavgb        m1, [r1+r2+1]
-    pavgb        m0, [r1+r4+1]
+    PAVGB        m1, [r1+r2+1]
+    PAVGB        m0, [r1+r4+1]
     add          r0, r4
     add          r1, r4
-    pavgb        m2, m1
-    pavgb        m1, m0
-    pavgb        m2, [r0]
-    pavgb        m1, [r0+r2]
+    PAVGB        m2, m1
+    PAVGB        m1, m0
+    PAVGB        m2, [r0]
+    PAVGB        m1, [r0+r2]
     mova       [r0], m2
     mova    [r0+r2], m1
     add          r0, r4
