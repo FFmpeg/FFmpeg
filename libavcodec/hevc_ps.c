@@ -449,6 +449,8 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
         vui->video_format                    = get_bits(gb, 3);
         vui->video_full_range_flag           = get_bits1(gb);
         vui->colour_description_present_flag = get_bits1(gb);
+        if (vui->video_full_range_flag && sps->pix_fmt == AV_PIX_FMT_YUV420P)
+            sps->pix_fmt = AV_PIX_FMT_YUVJ420P;
         if (vui->colour_description_present_flag) {
             vui->colour_primaries        = get_bits(gb, 8);
             vui->transfer_characteristic = get_bits(gb, 8);
