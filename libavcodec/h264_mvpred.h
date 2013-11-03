@@ -663,7 +663,7 @@ static void fill_decode_caches(H264Context *h, int mb_type)
                 ref_cache[4 - 1 * 8] = topright_type ? LIST_NOT_USED
                                                      : PART_NOT_AVAILABLE;
             }
-            if(ref_cache[2 - 1*8] < 0 || ref_cache[4 - 1*8] < 0){
+            if(ref_cache[2 - 1*8] < 0 || ref_cache[4 - 1 * 8] < 0) {
                 if (USES_LIST(topleft_type, list)) {
                     const int b_xy  = h->mb2b_xy[topleft_xy] + 3 + b_stride +
                                       (h->topleft_partition & 2 * b_stride);

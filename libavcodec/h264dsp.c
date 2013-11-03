@@ -26,6 +26,7 @@
  */
 
 #include <stdint.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 

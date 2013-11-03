@@ -33,11 +33,11 @@ struct vda_buffer {
 };
 
 /* Decoder callback that adds the vda frame to the queue in display order. */
-static void vda_decoder_callback (void *vda_hw_ctx,
-                                  CFDictionaryRef user_info,
-                                  OSStatus status,
-                                  uint32_t infoFlags,
-                                  CVImageBufferRef image_buffer)
+static void vda_decoder_callback(void *vda_hw_ctx,
+                                 CFDictionaryRef user_info,
+                                 OSStatus status,
+                                 uint32_t infoFlags,
+                                 CVImageBufferRef image_buffer)
 {
     struct vda_context *vda_ctx = vda_hw_ctx;
 

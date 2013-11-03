@@ -138,8 +138,8 @@ static av_noinline void FUNC(hl_decode_mb)(H264Context *h)
             if (SIMPLE || !CONFIG_GRAY || !(h->flags & CODEC_FLAG_GRAY)) {
                 if (!h->sps.chroma_format_idc) {
                     for (i = 0; i < 8; i++) {
-                        memset(dest_cb + i*uvlinesize, 1 << (bit_depth - 1), 8);
-                        memset(dest_cr + i*uvlinesize, 1 << (bit_depth - 1), 8);
+                        memset(dest_cb + i * uvlinesize, 1 << (bit_depth - 1), 8);
+                        memset(dest_cr + i * uvlinesize, 1 << (bit_depth - 1), 8);
                     }
                 } else {
                     const uint8_t *src_cb = h->intra_pcm_ptr + 256;
