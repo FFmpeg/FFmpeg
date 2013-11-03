@@ -99,21 +99,29 @@ static int decode_pic_timing(HEVCContext *s)
     return 1;
 }
 
-static void active_parameter_sets(HEVCContext *s)
+static int active_parameter_sets(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
     int num_sps_ids_minus1;
     int i;
+    unsigned active_seq_parameter_set_id;
 
     get_bits(gb, 4); // active_video_parameter_set_id
     get_bits(gb, 1); // self_contained_cvs_flag
     get_bits(gb, 1); // num_sps_ids_minus1
     num_sps_ids_minus1 = get_ue_golomb_long(gb); // num_sps_ids_minus1
 
-    s->active_seq_parameter_set_id = get_ue_golomb_long(gb);
+    active_seq_parameter_set_id = get_ue_golomb_long(gb);
+    if (active_seq_parameter_set_id >= MAX_SPS_COUNT) {
+        av_log(s->avctx, AV_LOG_ERROR, "active_parameter_set_id %d invalid\n", active_seq_parameter_set_id);
+        return AVERROR_INVALIDDATA;
+    }
+    s->active_seq_parameter_set_id = active_seq_parameter_set_id;
 
     for (i = 1; i <= num_sps_ids_minus1; i++)
         get_ue_golomb_long(gb); // active_seq_parameter_set_id[i]
+
+    return 0;
 }
 
 static int decode_nal_sei_message(HEVCContext *s)
