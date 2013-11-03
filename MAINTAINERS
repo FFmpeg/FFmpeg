@@ -268,6 +268,7 @@ Codecs:
   vp5                                   Aurelien Jacobs
   vp6                                   Aurelien Jacobs
   vp8                                   David Conrad, Jason Garrett-Glaser, Ronald Bultje
+  vp9                                   Ronald Bultje, Clément Bœsch
   vqavideo.c                            Mike Melanson
   wavpack.c                             Kostya Shishkov
   wmaprodec.c                           Sascha Sommer
