@@ -5,6 +5,7 @@ version <next>
 
 - HNM version 4 demuxer and video decoder
 - Live HDS muxer
+- setsar/setdar filters now support variables in ratio expressions
 
 
 version 2.1:
