@@ -19,11 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/attributes.h"
-#include "libavcodec/avcodec.h"
 #include "pulse_audio_common.h"
+#include "libavutil/attributes.h"
 
-pa_sample_format_t av_cold codec_id_to_pulse_format(int codec_id)
+pa_sample_format_t av_cold ff_codec_id_to_pulse_format(enum AVCodecID codec_id)
 {
     switch (codec_id) {
     case AV_CODEC_ID_PCM_U8:    return PA_SAMPLE_U8;
