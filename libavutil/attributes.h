@@ -76,7 +76,7 @@
 #    define av_cold
 #endif
 
-#if AV_GCC_VERSION_AT_LEAST(4,1)
+#if AV_GCC_VERSION_AT_LEAST(4,1) && !defined(__llvm__)
 #    define av_flatten __attribute__((flatten))
 #else
 #    define av_flatten
