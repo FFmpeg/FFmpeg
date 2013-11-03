@@ -78,10 +78,11 @@ static void decode_nal_sei_frame_packing_arrangement(HEVCContext *s)
 static int decode_pic_timing(HEVCContext *s)
 {
     GetBitContext *gb = &s->HEVClc->gb;
-    HEVCSPS *sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
+    HEVCSPS *sps;
 
-    if (!sps)
+    if (!s->sps_list[s->active_seq_parameter_set_id])
         return(AVERROR(ENOMEM));
+    sps = (HEVCSPS*)s->sps_list[s->active_seq_parameter_set_id]->data;
 
     if (sps->vui.frame_field_info_present_flag) {
         int pic_struct = get_bits(gb, 4);
