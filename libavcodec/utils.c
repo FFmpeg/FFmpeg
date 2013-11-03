@@ -1149,13 +1149,6 @@ static int get_bit_rate(AVCodecContext *ctx)
     return bit_rate;
 }
 
-#if FF_API_AVCODEC_OPEN
-int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
-{
-    return avcodec_open2(avctx, codec, NULL);
-}
-#endif
-
 int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
 {
     int ret = 0;
