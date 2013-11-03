@@ -453,6 +453,14 @@ static void decode_vui(HEVCContext *s, HEVCSPS *sps)
             vui->colour_primaries        = get_bits(gb, 8);
             vui->transfer_characteristic = get_bits(gb, 8);
             vui->matrix_coeffs           = get_bits(gb, 8);
+
+            // Set invalid values to "unspecified"
+            if (vui->colour_primaries >= AVCOL_PRI_NB)
+                vui->colour_primaries = AVCOL_PRI_UNSPECIFIED;
+            if (vui->transfer_characteristic >= AVCOL_TRC_NB)
+                vui->transfer_characteristic = AVCOL_TRC_UNSPECIFIED;
+            if (vui->matrix_coeffs >= AVCOL_SPC_NB)
+                vui->matrix_coeffs = AVCOL_SPC_UNSPECIFIED;
         }
     }
 
