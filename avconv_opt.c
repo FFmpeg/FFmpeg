@@ -54,6 +54,9 @@
 }
 
 const HWAccel hwaccels[] = {
+#if HAVE_VDPAU_X11
+    { "vdpau", vdpau_init, HWACCEL_VDPAU, AV_PIX_FMT_VDPAU },
+#endif
     { 0 },
 };
 

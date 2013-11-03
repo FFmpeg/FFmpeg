@@ -62,7 +62,10 @@ PROGS-$(CONFIG_AVPROBE)  += avprobe
 PROGS-$(CONFIG_AVSERVER) += avserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
+
 OBJS-avconv = avconv_opt.o avconv_filter.o
+OBJS-avconv-$(HAVE_VDPAU_X11) += avconv_vdpau.o
+
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
 TOOLS       = qt-faststart trasher
@@ -126,7 +129,7 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 define DOPROG
-OBJS-$(1) += $(1).o cmdutils.o $(EXEOBJS)
+OBJS-$(1) += $(1).o cmdutils.o $(EXEOBJS) $(OBJS-$(1)-yes)
 $(1)$(EXESUF): $$(OBJS-$(1))
 $$(OBJS-$(1)): CFLAGS  += $(CFLAGS-$(1))
 $(1)$(EXESUF): LDFLAGS += $(LDFLAGS-$(1))

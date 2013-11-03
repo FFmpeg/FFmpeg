@@ -48,6 +48,7 @@ version 10:
 - setsar/setdar filters now support variables in ratio expressions
 - dar variable in the scale filter now returns the actual DAR (i.e. a * sar)
 - VP9 decoder
+- support for decoding through VDPAU in avconv (the -hwaccel option)
 
 
 version 9:

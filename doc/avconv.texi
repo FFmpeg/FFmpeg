@@ -562,6 +562,9 @@ Do not use any hardware acceleration (the default).
 
 @item auto
 Automatically select the hardware acceleration method.
+
+@item vdpau
+Use VDPAU (Video Decode and Presentation API for Unix) hardware acceleration.
 @end table
 
 This option has no effect if the selected hwaccel is not available or not
@@ -579,6 +582,12 @@ Select a device to use for hardware acceleration.
 This option only makes sense when the @option{-hwaccel} option is also
 specified. Its exact meaning depends on the specific hardware acceleration
 method chosen.
+
+@table @option
+@item vdpau
+For VDPAU, this option specifies the X11 display/screen to use. If this option
+is not specified, the value of the @var{DISPLAY} environment variable is used
+@end table
 @end table
 
 @section Audio Options
