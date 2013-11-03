@@ -1171,6 +1171,25 @@ static char *get_ost_filters(OptionsContext *o, AVFormatContext *oc,
                      "null" : "anull");
 }
 
+static void check_streamcopy_filters(OptionsContext *o, AVFormatContext *oc,
+                                     const OutputStream *ost, enum AVMediaType type)
+{
+    char *filter_script = NULL, *filter = NULL;
+    MATCH_PER_STREAM_OPT(filter_scripts, str, filter_script, oc, ost->st);
+    MATCH_PER_STREAM_OPT(filters,        str, filter,        oc, ost->st);
+    if (filter_script || filter) {
+        av_log(NULL, AV_LOG_ERROR,
+               "Filtergraph '%s' or filter_script '%s' was defined for %s output stream "
+               "%d:%d but codec copy was selected.\n"
+               "Filtering and streamcopy cannot be used together.\n",
+               (char *)av_x_if_null(filter, "(none)"),
+               (char *)av_x_if_null(filter_script, "(none)"),
+               av_get_media_type_string(type),
+               ost->file_index, ost->index);
+        exit_program(1);
+    }
+}
+
 static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, int source_index)
 {
     AVStream *st;
@@ -1311,6 +1330,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc, in
         MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i, ost->copy_initial_nonkeyframes, oc ,st);
     }
 
+    if (ost->stream_copy)
+        check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_VIDEO);
+
     return ost;
 }
 
@@ -1363,6 +1385,9 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
             }
         }
     }
+
+    if (ost->stream_copy)
+        check_streamcopy_filters(o, oc, ost, AVMEDIA_TYPE_AUDIO);
 
     return ost;
 }
@@ -1546,6 +1571,23 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
                "which is fed from a complex filtergraph. Filtering and streamcopy "
                "cannot be used together.\n", ost->file_index, ost->index);
         exit_program(1);
+    }
+
+    if (ost->avfilter) {
+        char *filter_script = NULL, *filter = NULL;
+        MATCH_PER_STREAM_OPT(filter_scripts, str, filter_script, oc, ost->st);
+        MATCH_PER_STREAM_OPT(filters, str, filter, oc, ost->st);
+
+        if (filter || filter_script) {
+            av_log(NULL, AV_LOG_ERROR,
+                   "Filter graph '%s' or filter script '%s' was specified through the -filter/-filter_script/-vf/-af option "
+                   "for output stream %d:%d, which is fed from a complex filtergraph.\n"
+                   "-filter/-filter_script and -filter_complex cannot be used together for the same stream.\n",
+                   (char *)av_x_if_null(filter, "(none)"),
+                   (char *)av_x_if_null(filter_script, "(none)"),
+                   ost->file_index, ost->index);
+            exit_program(1);
+        }
     }
 
     if (configure_output_filter(ofilter->graph, ofilter, ofilter->out_tmp) < 0) {
