@@ -98,11 +98,7 @@ SECTION .text
 %endif
     packuswb  %1, %1
 %ifidn %3, avg
-%if cpuflag(3dnow)
-    pavgusb   %1, %2
-%else
-    pavgb     %1, %2
-%endif
+    PAVGB     %1, %2
 %endif
     movh  [dstq], %1
 %endmacro
