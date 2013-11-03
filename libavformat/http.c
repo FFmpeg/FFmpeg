@@ -68,6 +68,7 @@ typedef struct {
     uint8_t *post_data;
     int post_datalen;
     int is_akamai;
+    int is_mediagateway;
     char *mime_type;
     char *cookies;          ///< holds newline (\n) delimited Set-Cookie header field values (without the "Set-Cookie: " field name)
     int icy;
@@ -386,8 +387,12 @@ static int process_line(URLContext *h, char *line, int line_count,
         } else if (!av_strcasecmp (tag, "Connection")) {
             if (!strcmp(p, "close"))
                 s->willclose = 1;
-        } else if (!av_strcasecmp (tag, "Server") && !av_strcasecmp (p, "AkamaiGHost")) {
-            s->is_akamai = 1;
+        } else if (!av_strcasecmp (tag, "Server")) {
+            if (!av_strcasecmp (p, "AkamaiGHost")) {
+                s->is_akamai = 1;
+            } else if (!av_strncasecmp (p, "MediaGateway", 12)) {
+                s->is_mediagateway = 1;
+            }
         } else if (!av_strcasecmp (tag, "Content-Type")) {
             av_free(s->mime_type); s->mime_type = av_strdup(p);
         } else if (!av_strcasecmp (tag, "Set-Cookie")) {
@@ -569,6 +574,9 @@ static int http_read_header(URLContext *h, int *new_location)
             break;
         s->line_count++;
     }
+
+    if (s->seekable == -1 && s->is_mediagateway && s->filesize == 2000000000)
+        h->is_streamed = 1; /* we can in fact _not_ seek */
 
     return err;
 }
