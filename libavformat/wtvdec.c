@@ -506,7 +506,7 @@ static void get_tag(AVFormatContext *s, AVIOContext *pb, const char *key, int ty
         else
             snprintf(buf, buf_size, "%"PRIi64, num);
     } else if (type == 5 && length == 2) {
-        snprintf(buf, buf_size, "%"PRIi16, avio_rl16(pb));
+        snprintf(buf, buf_size, "%u", avio_rl16(pb));
     } else if (type == 6 && length == 16) {
         ff_asf_guid guid;
         avio_read(pb, guid, 16);
