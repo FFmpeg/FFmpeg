@@ -109,7 +109,7 @@ static av_cold int init(AVFilterContext *ctx)
 
     if (eval->chlayout_str) {
         int n;
-        ret = ff_parse_channel_layout(&eval->chlayout, eval->chlayout_str, ctx);
+        ret = ff_parse_channel_layout(&eval->chlayout, NULL, eval->chlayout_str, ctx);
         if (ret < 0)
             goto end;
 

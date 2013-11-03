@@ -116,6 +116,11 @@ static int wav_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t fmt;
 
+    if (s->nb_streams != 1) {
+        av_log(s, AV_LOG_ERROR, "WAVE files have exactly one stream\n");
+        return AVERROR(EINVAL);
+    }
+
     if (wav->rf64 == RF64_ALWAYS) {
         ffio_wfourcc(pb, "RF64");
         avio_wl32(pb, -1); /* RF64 chunk size: use size in ds64 */

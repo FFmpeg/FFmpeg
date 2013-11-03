@@ -207,11 +207,14 @@ int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
  * Parse a channel layout or a corresponding integer representation.
  *
  * @param ret 64bit integer pointer to where the value should be written.
+ * @param nret integer pointer to the number of channels;
+ *             if not NULL, then unknown channel layouts are accepted
  * @param arg string to parse
  * @param log_ctx log context
  * @return >= 0 in case of success, a negative AVERROR code on error
  */
-int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx);
+int ff_parse_channel_layout(int64_t *ret, int *nret, const char *arg,
+                            void *log_ctx);
 
 void ff_update_link_current_pts(AVFilterLink *link, int64_t pts);
 

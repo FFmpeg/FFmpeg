@@ -57,6 +57,7 @@ typedef struct AlsaData {
     void (*reorder_func)(const void *, void *, int);
     void *reorder_buf;
     int reorder_buf_size; ///< in frames
+    int64_t timestamp; ///< current timestamp, without latency applied.
 } AlsaData;
 
 /**
