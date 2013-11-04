@@ -84,14 +84,6 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
-{
-    AVFilterContext   *ctx        = inlink->dst;
-    AVFilterLink      *outlink    = ctx->outputs[0];
-
-    return ff_get_video_buffer(outlink, w, h);
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext   *ctx     = inlink->dst;
@@ -174,7 +166,6 @@ static const AVFilterPad avfilter_vf_fieldorder_inputs[] = {
         .name             = "default",
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input,
-        .get_video_buffer = get_video_buffer,
         .filter_frame     = filter_frame,
         .needs_writable   = 1,
     },
