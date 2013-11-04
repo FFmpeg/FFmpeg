@@ -71,12 +71,12 @@ int main(int argc, char **argv)
     }
 
     /* create a link for each of the input pads */
-    for (i = 0; i < filter_ctx->input_count; i++) {
+    for (i = 0; i < filter_ctx->nb_inputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
         link->type = filter_ctx->filter->inputs[i].type;
         filter_ctx->inputs[i] = link;
     }
-    for (i = 0; i < filter_ctx->output_count; i++) {
+    for (i = 0; i < filter_ctx->nb_outputs; i++) {
         AVFilterLink *link = av_mallocz(sizeof(AVFilterLink));
         link->type = filter_ctx->filter->outputs[i].type;
         filter_ctx->outputs[i] = link;
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
         ff_default_query_formats(filter_ctx);
 
     /* print the supported formats in input */
-    for (i = 0; i < filter_ctx->input_count; i++) {
+    for (i = 0; i < filter_ctx->nb_inputs; i++) {
         AVFilterFormats *fmts = filter_ctx->inputs[i]->out_formats;
         for (j = 0; j < fmts->nb_formats; j++)
             printf("INPUT[%d] %s: %s\n",
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     }
 
     /* print the supported formats in output */
-    for (i = 0; i < filter_ctx->output_count; i++) {
+    for (i = 0; i < filter_ctx->nb_outputs; i++) {
         AVFilterFormats *fmts = filter_ctx->outputs[i]->in_formats;
         for (j = 0; j < fmts->nb_formats; j++)
             printf("OUTPUT[%d] %s: %s\n",
