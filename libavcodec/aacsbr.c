@@ -932,6 +932,7 @@ static void read_sbr_extension(AACContext *ac, SpectralBandReplication *sbr,
         } else {
 #if 1
             *num_bits_left -= ff_ps_read_data(ac->avctx, gb, &sbr->ps, *num_bits_left);
+            ac->avctx->profile = FF_PROFILE_AAC_HE_V2;
 #else
             avpriv_report_missing_feature(ac->avctx, "Parametric Stereo");
             skip_bits_long(gb, *num_bits_left); // bs_fill_bits
