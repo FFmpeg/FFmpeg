@@ -173,7 +173,6 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->codec           = NULL;
     dest->slice_offset    = NULL;
     dest->hwaccel         = NULL;
-    dest->thread_opaque   = NULL;
     dest->internal        = NULL;
 
     /* reallocate values that should be allocated separately */

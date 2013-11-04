@@ -95,6 +95,8 @@ typedef struct AVCodecInternal {
 
     FramePool *pool;
 
+    void *thread_ctx;
+
     /**
      * temporary buffer used for encoders to store their bitstream
      */

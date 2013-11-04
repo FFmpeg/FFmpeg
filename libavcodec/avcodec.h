@@ -2681,13 +2681,13 @@ typedef struct AVCodecContext {
      */
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
 
+#if FF_API_THREAD_OPAQUE
     /**
-     * thread opaque
-     * Can be used by execute() to store some per AVCodecContext stuff.
-     * - encoding: set by execute()
-     * - decoding: set by execute()
+     * @deprecated this field should not be used from outside of lavc
      */
+    attribute_deprecated
     void *thread_opaque;
+#endif
 
     /**
      * noise vs. sse weight for the nsse comparsion function
