@@ -51,6 +51,8 @@ static const char *const var_names[] = {
     "dar",
     "hsub",
     "vsub",
+    "ohsub",
+    "ovsub",
     NULL
 };
 
@@ -64,6 +66,8 @@ enum var_name {
     VAR_DAR,
     VAR_HSUB,
     VAR_VSUB,
+    VAR_OHSUB,
+    VAR_OVSUB,
     VARS_NB
 };
 
@@ -227,6 +231,7 @@ static int config_props(AVFilterLink *outlink)
     enum AVPixelFormat outfmt = outlink->format;
     ScaleContext *scale = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
     int64_t w, h;
     double var_values[VARS_NB], res;
     char *expr;
@@ -242,6 +247,8 @@ static int config_props(AVFilterLink *outlink)
     var_values[VAR_DAR]   = var_values[VAR_A] * var_values[VAR_SAR];
     var_values[VAR_HSUB]  = 1 << desc->log2_chroma_w;
     var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
+    var_values[VAR_OHSUB] = 1 << out_desc->log2_chroma_w;
+    var_values[VAR_OVSUB] = 1 << out_desc->log2_chroma_h;
 
     /* evaluate width and height */
     av_expr_parse_and_eval(&res, (expr = scale->w_expr),

@@ -6820,7 +6820,12 @@ input display aspect ratio. Calculated from @code{(iw / ih) * sar}.
 
 @item hsub
 @item vsub
-horizontal and vertical chroma subsample values. For example for the
+horizontal and vertical input chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+
+@item ohsub
+@item ovsub
+horizontal and vertical output chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
