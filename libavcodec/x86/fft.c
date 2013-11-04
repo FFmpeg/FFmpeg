@@ -39,16 +39,6 @@ av_cold void ff_fft_init_mmx(FFTContext *s)
         s->fft_permute = ff_fft_permute_sse;
         s->fft_calc    = ff_fft_calc_sse;
         s->fft_permutation = FF_FFT_PERM_SWAP_LSBS;
-    } else if (has_vectors & AV_CPU_FLAG_3DNOWEXT && HAVE_AMD3DNOWEXT) {
-        /* 3DNowEx for K7 */
-        s->imdct_calc = ff_imdct_calc_3dn2;
-        s->imdct_half = ff_imdct_half_3dn2;
-        s->fft_calc   = ff_fft_calc_3dn2;
-    } else if (has_vectors & AV_CPU_FLAG_3DNOW && HAVE_AMD3DNOW) {
-        /* 3DNow! for K6-2/3 */
-        s->imdct_calc = ff_imdct_calc_3dn;
-        s->imdct_half = ff_imdct_half_3dn;
-        s->fft_calc   = ff_fft_calc_3dn;
     }
 #endif
 }

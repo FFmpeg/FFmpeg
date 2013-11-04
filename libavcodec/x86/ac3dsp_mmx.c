@@ -27,7 +27,6 @@ extern void ff_ac3_exponent_min_mmx   (uint8_t *exp, int num_reuse_blocks, int n
 extern void ff_ac3_exponent_min_mmxext(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 extern void ff_ac3_exponent_min_sse2  (uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 
-extern int ff_ac3_max_msb_abs_int16_mmx   (const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_mmxext(const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_sse2  (const int16_t *src, int len);
 extern int ff_ac3_max_msb_abs_int16_ssse3 (const int16_t *src, int len);
@@ -55,7 +54,6 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmx;
-        c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmx;
         c->ac3_lshift_int16 = ff_ac3_lshift_int16_mmx;
         c->ac3_rshift_int32 = ff_ac3_rshift_int32_mmx;
     }
