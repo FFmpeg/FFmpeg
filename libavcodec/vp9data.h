@@ -469,7 +469,7 @@ static const int16_t vp9_default_scan_32x32[1024] = {
      923,  954,  985, 1016,  831,  862,  893,  955,  986, 1017,  863,  894,  987, 1018,  895, 1019,  924,  925,  956,  926,  957,  988,  927,  958,  989, 1020,  959,  990, 1021,  991, 1022, 1023,
 };
 
-static const int16_t *vp9_scans[5][4] = {
+static const int16_t * const vp9_scans[5][4] = {
     {
         vp9_default_scan_4x4, vp9_col_scan_4x4,
         vp9_row_scan_4x4, vp9_default_scan_4x4
@@ -1026,7 +1026,7 @@ static const int16_t vp9_default_scan_32x32_nb[1024][2] = {
     {  990,  959 }, { 1021,  990 }, { 1022,  991 }, {    0,    0 },
 };
 
-static const int16_t (*vp9_scans_nb[5][4])[2] = {
+static const int16_t (* const vp9_scans_nb[5][4])[2] = {
     {
         vp9_default_scan_4x4_nb, vp9_col_scan_4x4_nb,
         vp9_row_scan_4x4_nb, vp9_default_scan_4x4_nb
