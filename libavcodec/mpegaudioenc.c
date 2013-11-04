@@ -61,6 +61,11 @@ typedef struct MpegAudioContext {
     unsigned char scale_code[MPA_MAX_CHANNELS][SBLIMIT];
     int sblimit; /* number of used subbands */
     const unsigned char *alloc_table;
+    int16_t filter_bank[512];
+    int scale_factor_table[64];
+    unsigned char scale_diff_table[128];
+    float scale_factor_inv_table[64];
+    unsigned short total_quant_bits[17]; /* total number of bits per allocation group */
 } MpegAudioContext;
 
 static av_cold int MPA_encode_init(AVCodecContext *avctx)
@@ -136,19 +141,19 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
 #if WFRAC_BITS != 16
         v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
 #endif
-        filter_bank[i] = v;
+        s->filter_bank[i] = v;
         if ((i & 63) != 0)
             v = -v;
         if (i != 0)
-            filter_bank[512 - i] = v;
+            s->filter_bank[512 - i] = v;
     }
 
     for(i=0;i<64;i++) {
         v = (int)(pow(2.0, (3 - i) / 3.0) * (1 << 20));
         if (v <= 0)
             v = 1;
-        scale_factor_table[i] = v;
-        scale_factor_inv_table[i] = pow(2.0, -(3 - i) / 3.0) / (float)(1 << 20);
+        s->scale_factor_table[i] = v;
+        s->scale_factor_inv_table[i] = pow(2.0, -(3 - i) / 3.0) / (float)(1 << 20);
     }
     for(i=0;i<128;i++) {
         v = i - 64;
@@ -162,7 +167,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
             v = 3;
         else
             v = 4;
-        scale_diff_table[i] = v;
+        s->scale_diff_table[i] = v;
     }
 
     for(i=0;i<17;i++) {
@@ -171,7 +176,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
             v = -v;
         else
             v = v * 3;
-        total_quant_bits[i] = 12 * v;
+        s->total_quant_bits[i] = 12 * v;
     }
 
     return 0;
@@ -318,7 +323,7 @@ static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
 
         /* filter */
         p = s->samples_buf[ch] + offset;
-        q = filter_bank;
+        q = s->filter_bank;
         /* maxsum = 23169 */
         for(i=0;i<64;i++) {
             sum = p[0*64] * q[0*64];
@@ -352,7 +357,8 @@ static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
     s->samples_offset[ch] = offset;
 }
 
-static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
+static void compute_scale_factors(MpegAudioContext *s,
+                                  unsigned char scale_code[SBLIMIT],
                                   unsigned char scale_factors[SBLIMIT][3],
                                   int sb_samples[3][12][SBLIMIT],
                                   int sblimit)
@@ -379,7 +385,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
                    use at most 2 compares to find the index */
                 index = (21 - n) * 3 - 3;
                 if (index >= 0) {
-                    while (vmax <= scale_factor_table[index+1])
+                    while (vmax <= s->scale_factor_table[index+1])
                         index++;
                 } else {
                     index = 0; /* very unlikely case of overflow */
@@ -389,7 +395,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             }
 
             av_dlog(NULL, "%2d:%d in=%x %x %d\n",
-                    j, i, vmax, scale_factor_table[index], index);
+                    j, i, vmax, s->scale_factor_table[index], index);
             /* store the scale factor */
             assert(index >=0 && index <= 63);
             sf[i] = index;
@@ -397,8 +403,8 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
 
         /* compute the transmission factor : look if the scale factors
            are close enough to each other */
-        d1 = scale_diff_table[sf[0] - sf[1] + 64];
-        d2 = scale_diff_table[sf[1] - sf[2] + 64];
+        d1 = s->scale_diff_table[sf[0] - sf[1] + 64];
+        d2 = s->scale_diff_table[sf[1] - sf[2] + 64];
 
         /* handle the 25 cases */
         switch(d1 * 5 + d2) {
@@ -548,12 +554,12 @@ static void compute_bit_allocation(MpegAudioContext *s,
         if (subband_status[max_ch][max_sb] == SB_NOTALLOCATED) {
             /* nothing was coded for this band: add the necessary bits */
             incr = 2 + nb_scale_factors[s->scale_code[max_ch][max_sb]] * 6;
-            incr += total_quant_bits[alloc[1]];
+            incr += s->total_quant_bits[alloc[1]];
         } else {
             /* increments bit allocation */
             b = bit_alloc[max_ch][max_sb];
-            incr = total_quant_bits[alloc[b + 1]] -
-                total_quant_bits[alloc[b]];
+            incr = s->total_quant_bits[alloc[b + 1]] -
+                s->total_quant_bits[alloc[b]];
         }
 
         if (current_frame_size + incr <= max_frame_size) {
@@ -665,7 +671,7 @@ static void encode_frame(MpegAudioContext *s,
                             float a;
                             sample = s->sb_samples[ch][k][l + m][i];
                             /* divide by scale factor */
-                            a = (float)sample * scale_factor_inv_table[s->scale_factors[ch][i][k]];
+                            a = (float)sample * s->scale_factor_inv_table[s->scale_factors[ch][i][k]];
                             q[m] = (int)((a + 1.0) * steps * 0.5);
                             if (q[m] >= steps)
                                 q[m] = steps - 1;
@@ -711,7 +717,7 @@ static int MPA_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     for(i=0;i<s->nb_channels;i++) {
-        compute_scale_factors(s->scale_code[i], s->scale_factors[i],
+        compute_scale_factors(s, s->scale_code[i], s->scale_factors[i],
                               s->sb_samples[i], s->sblimit);
     }
     for(i=0;i<s->nb_channels;i++) {

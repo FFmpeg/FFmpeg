@@ -79,15 +79,6 @@ static const int bitinv32[32] = {
 };
 
 
-static int16_t filter_bank[512];
-
-static int scale_factor_table[64];
-static float scale_factor_inv_table[64];
-static unsigned char scale_diff_table[128];
-
-/* total number of bits per allocation group */
-static unsigned short total_quant_bits[17];
-
 /* signal to noise ratio of each quantification step (could be
    computed from quant_steps[]). The values are dB multiplied by 10
 */
