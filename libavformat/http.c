@@ -333,7 +333,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             p++;
         s->http_code = strtol(p, &end, 10);
 
-        av_dlog(NULL, "http_code=%d\n", s->http_code);
+        av_log(h, AV_LOG_DEBUG, "http_code=%d\n", s->http_code);
 
         /* error codes are 4xx and 5xx, but regard 401 as a success, so we
          * don't abort until all headers have been parsed. */
@@ -565,7 +565,7 @@ static int http_read_header(URLContext *h, int *new_location)
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
 
-        av_dlog(NULL, "header='%s'\n", line);
+        av_log(h, AV_LOG_DEBUG, "header='%s'\n", line);
 
         err = process_line(h, line, s->line_count, new_location);
         if (err < 0)
@@ -691,6 +691,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
     av_freep(&authstr);
     av_freep(&proxyauthstr);
+
+    av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+
     if ((err = ffurl_write(s->hd, s->buffer, strlen(s->buffer))) < 0)
         return err;
 
