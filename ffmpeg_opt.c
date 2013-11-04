@@ -1172,13 +1172,11 @@ static void check_streamcopy_filters(OptionsContext *o, AVFormatContext *oc,
 {
     if (ost->filters_script || ost->filters) {
         av_log(NULL, AV_LOG_ERROR,
-               "Filtergraph '%s' or filter_script '%s' was defined for %s output stream "
-               "%d:%d but codec copy was selected.\n"
+               "%s '%s' was defined for %s output stream %d:%d but codec copy was selected.\n"
                "Filtering and streamcopy cannot be used together.\n",
-               (char *)av_x_if_null(ost->filters, "(none)"),
-               (char *)av_x_if_null(ost->filters_script, "(none)"),
-               av_get_media_type_string(type),
-               ost->file_index, ost->index);
+               ost->filters ? "Filtergraph" : "Filtergraph script",
+               ost->filters ? ost->filters : ost->filters_script,
+               av_get_media_type_string(type), ost->file_index, ost->index);
         exit_program(1);
     }
 }
@@ -1573,14 +1571,15 @@ static void init_output_filter(OutputFilter *ofilter, OptionsContext *o,
     }
 
     if (ost->avfilter && (ost->filters || ost->filters_script)) {
-            av_log(NULL, AV_LOG_ERROR,
-                   "Filter graph '%s' or filter script '%s' was specified through the -filter/-filter_script/-vf/-af option "
-                   "for output stream %d:%d, which is fed from a complex filtergraph.\n"
-                   "-filter/-filter_script and -filter_complex cannot be used together for the same stream.\n",
-                   (char *)av_x_if_null(ost->filters, "(none)"),
-                   (char *)av_x_if_null(ost->filters_script, "(none)"),
-                   ost->file_index, ost->index);
-            exit_program(1);
+        const char *opt = ost->filters ? "-vf/-af/-filter" : "-filter_script";
+        av_log(NULL, AV_LOG_ERROR,
+               "%s '%s' was specified through the %s option "
+               "for output stream %d:%d, which is fed from a complex filtergraph.\n"
+               "%s and -filter_complex cannot be used together for the same stream.\n",
+               ost->filters ? "Filtergraph" : "Filtergraph script",
+               ost->filters ? ost->filters : ost->filters_script,
+               opt, ost->file_index, ost->index, opt);
+        exit_program(1);
     }
 
     if (configure_output_filter(ofilter->graph, ofilter, ofilter->out_tmp) < 0) {
