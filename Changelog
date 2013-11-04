@@ -3,6 +3,9 @@ releases are sorted from youngest to oldest.
 
 version next:
 
+
+version 0.10.10
+
 - x86: fft: Remove 3DNow! optimizations, they break FATE
 - x86: ac3dsp: Drop mmx variant of ac3_max_msb_abs_int16
 - aac: Check init_get_bits return value
