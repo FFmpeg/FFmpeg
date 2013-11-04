@@ -13,6 +13,10 @@ libavutil:     2012-10-22
 
 API changes, most recent first:
 
+2013-11-xx - xxxxxxx - lavc 55.25.0 - avcodec.h
+  Add ITU-R BT.2020 and other not yet included values to color primaries,
+  transfer characteristics and colorspaces.
+
 2013-08-xx - xxxxxxx - lavu 52.17.0 - avframe.h
   Add AVFrame.flags and AV_FRAME_FLAG_CORRUPT.
 
