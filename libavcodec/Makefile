@@ -801,9 +801,9 @@ OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
 # thread libraries
-OBJS-$(HAVE_PTHREADS)                  += pthread.o
-OBJS-$(HAVE_W32THREADS)                += pthread.o
-OBJS-$(HAVE_OS2THREADS)                += pthread.o
+OBJS-$(HAVE_PTHREADS)                  += pthread.o pthread_slice.o pthread_frame.o
+OBJS-$(HAVE_W32THREADS)                += pthread.o pthread_slice.o pthread_frame.o
+OBJS-$(HAVE_OS2THREADS)                += pthread.o pthread_slice.o pthread_frame.o
 
 OBJS-$(CONFIG_FRAME_THREAD_ENCODER)    += frame_thread_encoder.o
 
