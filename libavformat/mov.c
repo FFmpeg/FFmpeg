@@ -1779,7 +1779,7 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!entries)
     {
         sc->keyframe_absent = 1;
-        if (!st->need_parsing)
+        if (!st->need_parsing && st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         return 0;
     }
