@@ -260,6 +260,26 @@ static av_cold int get_local_pos(SwsContext *s, int chr_subsample, int pos, int 
     return pos >> chr_subsample;
 }
 
+typedef struct {
+    int flag;                   ///< flag associated to the algorithm
+    const char *description;    ///< human-readable description
+    int size_factor;            ///< size factor used when initing the filters
+} ScaleAlgorithm;
+
+static const ScaleAlgorithm scale_algorithms[] = {
+    { SWS_AREA,          "area averaging",                  1 /* downscale only, for upscale it is bilinear */ },
+    { SWS_BICUBIC,       "bicubic",                         4 },
+    { SWS_BICUBLIN,      "luma bicubic / chroma bilinear", -1 },
+    { SWS_BILINEAR,      "bilinear",                        2 },
+    { SWS_FAST_BILINEAR, "fast bilinear",                  -1 },
+    { SWS_GAUSS,         "Gaussian",                        8 /* infinite ;) */ },
+    { SWS_LANCZOS,       "Lanczos",                        -1 /* custom */ },
+    { SWS_POINT,         "nearest neighbor / point",       -1 },
+    { SWS_SINC,          "sinc",                           20 /* infinite ;) */ },
+    { SWS_SPLINE,        "bicubic spline",                 20 /* infinite :)*/ },
+    { SWS_X,             "experimental",                    8 },
+};
+
 static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
                               int *outFilterSize, int xInc, int srcW,
                               int dstW, int filterAlign, int one,
@@ -332,27 +352,17 @@ static av_cold int initFilter(int16_t **outFilter, int32_t **filterPos,
         }
     } else {
         int64_t xDstInSrc;
-        int sizeFactor;
+        int sizeFactor = -1;
 
-        if (flags & SWS_BICUBIC)
-            sizeFactor = 4;
-        else if (flags & SWS_X)
-            sizeFactor = 8;
-        else if (flags & SWS_AREA)
-            sizeFactor = 1;     // downscale only, for upscale it is bilinear
-        else if (flags & SWS_GAUSS)
-            sizeFactor = 8;     // infinite ;)
-        else if (flags & SWS_LANCZOS)
-            sizeFactor = param[0] != SWS_PARAM_DEFAULT ? ceil(2 * param[0]) : 6;
-        else if (flags & SWS_SINC)
-            sizeFactor = 20;    // infinite ;)
-        else if (flags & SWS_SPLINE)
-            sizeFactor = 20;    // infinite ;)
-        else if (flags & SWS_BILINEAR)
-            sizeFactor = 2;
-        else {
-            av_assert0(0);
+        for (i = 0; i < FF_ARRAY_ELEMS(scale_algorithms); i++) {
+            if (flags & scale_algorithms[i].flag) {
+                sizeFactor = scale_algorithms[i].size_factor;
+                break;
+            }
         }
+        if (flags & SWS_LANCZOS)
+            sizeFactor = param[0] != SWS_PARAM_DEFAULT ? ceil(2 * param[0]) : 6;
+        av_assert0(sizeFactor > 0);
 
         if (xInc <= 1 << 16)
             filterSize = 1 + sizeFactor;    // upscale
@@ -1567,33 +1577,17 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     av_assert0(c->chrDstH <= dstH);
 
     if (flags & SWS_PRINT_INFO) {
-        const char *scaler, *cpucaps;
-        if (flags & SWS_FAST_BILINEAR)
-            scaler = "FAST_BILINEAR scaler";
-        else if (flags & SWS_BILINEAR)
-            scaler = "BILINEAR scaler";
-        else if (flags & SWS_BICUBIC)
-            scaler = "BICUBIC scaler";
-        else if (flags & SWS_X)
-            scaler = "Experimental scaler";
-        else if (flags & SWS_POINT)
-            scaler = "Nearest Neighbor / POINT scaler";
-        else if (flags & SWS_AREA)
-            scaler = "Area Averaging scaler";
-        else if (flags & SWS_BICUBLIN)
-            scaler = "luma BICUBIC / chroma BILINEAR scaler";
-        else if (flags & SWS_GAUSS)
-            scaler = "Gaussian scaler";
-        else if (flags & SWS_SINC)
-            scaler = "Sinc scaler";
-        else if (flags & SWS_LANCZOS)
-            scaler = "Lanczos scaler";
-        else if (flags & SWS_SPLINE)
-            scaler = "Bicubic spline scaler";
-        else
-            scaler = "ehh flags invalid?!";
+        const char *scaler = NULL, *cpucaps;
 
-        av_log(c, AV_LOG_INFO, "%s, from %s to %s%s ",
+        for (i = 0; i < FF_ARRAY_ELEMS(scale_algorithms); i++) {
+            if (flags & scale_algorithms[i].flag) {
+                scaler = scale_algorithms[i].description;
+                break;
+            }
+        }
+        if (!scaler)
+            scaler =  "ehh flags invalid?!";
+        av_log(c, AV_LOG_INFO, "%s scaler, from %s to %s%s ",
                scaler,
                av_get_pix_fmt_name(srcFormat),
 #ifdef DITHER1XBPP
