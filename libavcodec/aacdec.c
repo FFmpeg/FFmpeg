@@ -362,7 +362,7 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
     comment_len = get_bits(gb, 8) * 8;
     if (get_bits_left(gb) < comment_len) {
         av_log(avctx, AV_LOG_ERROR, overread_err);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     skip_bits_long(gb, comment_len);
     return 0;
@@ -383,7 +383,7 @@ static av_cold int set_default_channel_config(AVCodecContext *avctx,
     if (channel_config < 1 || channel_config > 7) {
         av_log(avctx, AV_LOG_ERROR, "invalid default channel configuration (%d)\n",
                channel_config);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* default channel configurations:
@@ -501,20 +501,21 @@ static int decode_audio_specific_config(AACContext *ac,
                                         int sync_extension)
 {
     GetBitContext gb;
-    int i;
+    int i, ret;
 
     av_dlog(avctx, "extradata size %d\n", avctx->extradata_size);
     for (i = 0; i < avctx->extradata_size; i++)
          av_dlog(avctx, "%02x ", avctx->extradata[i]);
     av_dlog(avctx, "\n");
 
-    init_get_bits(&gb, data, bit_size);
+    if ((ret = init_get_bits(&gb, data, bit_size)) < 0)
+        return ret;
 
     if ((i = avpriv_mpeg4audio_get_config(m4ac, data, bit_size, sync_extension)) < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
     if (m4ac->sampling_index > 12) {
         av_log(avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", m4ac->sampling_index);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     skip_bits_long(&gb, i);
@@ -523,13 +524,14 @@ static int decode_audio_specific_config(AACContext *ac,
     case AOT_AAC_MAIN:
     case AOT_AAC_LC:
     case AOT_AAC_LTP:
-        if (decode_ga_specific_config(ac, avctx, &gb, m4ac, m4ac->chan_config))
-            return -1;
+        if ((ret = decode_ga_specific_config(ac, avctx, &gb,
+                                             m4ac, m4ac->chan_config)) < 0)
+            return ret;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Audio object type %s%d is not supported.\n",
                m4ac->sbr == 1? "SBR+" : "", m4ac->object_type);
-        return -1;
+        return AVERROR(ENOSYS);
     }
 
     av_dlog(avctx, "AOT %d chan config %d sampling index %d (%d) SBR %d PS %d\n",
@@ -600,16 +602,17 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
+    int ret;
     float output_scale_factor;
 
     ac->avctx = avctx;
     ac->m4ac.sample_rate = avctx->sample_rate;
 
     if (avctx->extradata_size > 0) {
-        if (decode_audio_specific_config(ac, ac->avctx, &ac->m4ac,
+        if ((ret = decode_audio_specific_config(ac, ac->avctx, &ac->m4ac,
                                          avctx->extradata,
-                                         avctx->extradata_size*8, 1) < 0)
-            return -1;
+                                         avctx->extradata_size*8, 1)) < 0)
+            return ret;
     } else {
         int sr, i;
         enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
@@ -702,7 +705,7 @@ static int skip_data_stream_element(AACContext *ac, GetBitContext *gb)
 
     if (get_bits_left(gb) < 8 * count) {
         av_log(ac->avctx, AV_LOG_ERROR, overread_err);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     skip_bits_long(gb, 8 * count);
     return 0;
@@ -716,7 +719,7 @@ static int decode_prediction(AACContext *ac, IndividualChannelStream *ics,
         ics->predictor_reset_group = get_bits(gb, 5);
         if (ics->predictor_reset_group == 0 || ics->predictor_reset_group > 30) {
             av_log(ac->avctx, AV_LOG_ERROR, "Invalid Predictor Reset Group.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
     for (sfb = 0; sfb < FFMIN(ics->max_sfb, ff_aac_pred_sfb_max[ac->m4ac.sampling_index]); sfb++) {
@@ -826,20 +829,20 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
             int sect_band_type = get_bits(gb, 4);
             if (sect_band_type == 12) {
                 av_log(ac->avctx, AV_LOG_ERROR, "invalid band type\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             do {
                 sect_len_incr = get_bits(gb, bits);
                 sect_end += sect_len_incr;
                 if (get_bits_left(gb) < 0) {
                     av_log(ac->avctx, AV_LOG_ERROR, overread_err);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 if (sect_end > ics->max_sfb) {
                     av_log(ac->avctx, AV_LOG_ERROR,
                            "Number of bands (%d) exceeds limit (%d).\n",
                            sect_end, ics->max_sfb);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
             } while (sect_len_incr == (1 << bits) - 1);
             for (; k < sect_end; k++) {
@@ -911,7 +914,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                     if (offset[0] > 255U) {
                         av_log(ac->avctx, AV_LOG_ERROR,
                                "%s (%d) out of range.\n", sf_str[0], offset[0]);
-                        return -1;
+                        return AVERROR_INVALIDDATA;
                     }
                     sf[idx] = -ff_aac_pow2sf_tab[offset[0] - 100 + POW_SF2_ZERO];
                 }
@@ -969,7 +972,7 @@ static int decode_tns(AACContext *ac, TemporalNoiseShaping *tns,
                     av_log(ac->avctx, AV_LOG_ERROR, "TNS filter order %d is greater than maximum %d.\n",
                            tns->order[w][filt], tns_max_order);
                     tns->order[w][filt] = 0;
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 if (tns->order[w][filt]) {
                     tns->direction[w][filt] = get_bits1(gb);
@@ -1252,7 +1255,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
                                     if (b > 8) {
                                         av_log(ac->avctx, AV_LOG_ERROR, "error in spectral data, ESC overflow\n");
-                                        return -1;
+                                        return AVERROR_INVALIDDATA;
                                     }
 
                                     SKIP_BITS(re, gb, b + 1);
@@ -1395,6 +1398,7 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
     IndividualChannelStream *ics = &sce->ics;
     float *out = sce->coeffs;
     int global_gain, pulse_present = 0;
+    int ret;
 
     /* This assignment is to silence a GCC warning about the variable being used
      * uninitialized when in fact it always is.
@@ -1408,25 +1412,27 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
             return AVERROR_INVALIDDATA;
     }
 
-    if (decode_band_types(ac, sce->band_type, sce->band_type_run_end, gb, ics) < 0)
-        return -1;
-    if (decode_scalefactors(ac, sce->sf, gb, global_gain, ics, sce->band_type, sce->band_type_run_end) < 0)
-        return -1;
+    if ((ret = decode_band_types(ac, sce->band_type,
+                                 sce->band_type_run_end, gb, ics)) < 0)
+        return ret;
+    if ((ret = decode_scalefactors(ac, sce->sf, gb, global_gain, ics,
+                                   sce->band_type, sce->band_type_run_end)) < 0)
+        return ret;
 
     pulse_present = 0;
     if (!scale_flag) {
         if ((pulse_present = get_bits1(gb))) {
             if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
                 av_log(ac->avctx, AV_LOG_ERROR, "Pulse tool not allowed in eight short sequence.\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if (decode_pulses(&pulse, gb, ics->swb_offset, ics->num_swb)) {
                 av_log(ac->avctx, AV_LOG_ERROR, "Pulse data corrupt or invalid.\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
         if ((tns->present = get_bits1(gb)) && decode_tns(ac, tns, gb, ics))
-            return -1;
+            return AVERROR_INVALIDDATA;
         if (get_bits1(gb)) {
             av_log_missing_feature(ac->avctx, "SSR", 1);
             return -1;
@@ -1434,7 +1440,7 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
     }
 
     if (decode_spectrum_and_dequant(ac, out, gb, sce->sf, pulse_present, &pulse, ics, sce->band_type) < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (ac->m4ac.object_type == AOT_AAC_MAIN && !common_window)
         apply_prediction(ac, sce);
@@ -1532,7 +1538,7 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
         ms_present = get_bits(gb, 2);
         if (ms_present == 3) {
             av_log(ac->avctx, AV_LOG_ERROR, "ms_present = 3 is reserved.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         } else if (ms_present)
             decode_mid_side_stereo(cpe, gb, ms_present);
     }
@@ -2323,7 +2329,8 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR_INVALIDDATA;
     }
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((err = init_get_bits(&gb, buf, buf_size * 8)) < 0)
+        return err;
 
     if ((err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb)) < 0)
         return err;
@@ -2568,7 +2575,8 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out,
     int                 muxlength, err;
     GetBitContext       gb;
 
-    init_get_bits(&gb, avpkt->data, avpkt->size * 8);
+    if ((err = init_get_bits(&gb, avpkt->data, avpkt->size * 8)) < 0)
+        return err;
 
     // check for LOAS sync word
     if (get_bits(&gb, 11) != LOAS_SYNC_WORD)
