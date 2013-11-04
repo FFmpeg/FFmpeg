@@ -562,7 +562,10 @@ static int decode_i_mb(FourXContext *f){
     return 0;
 }
 
-static const uint8_t *read_huffman_tables(FourXContext *f, const uint8_t * const buf, int buf_size){
+static const uint8_t *read_huffman_tables(FourXContext *f,
+                                          const uint8_t * const buf,
+                                          int buf_size)
+{
     int frequency[512];
     uint8_t flag[512];
     int up[512];
@@ -583,6 +586,9 @@ static const uint8_t *read_huffman_tables(FourXContext *f, const uint8_t * const
 
         if (start <= end && ptr_end - ptr < end - start + 1 + 1)
             return NULL;
+        if (end < start || buf_size < 0)
+            return NULL;
+
         for(i=start; i<=end; i++){
             frequency[i]= *ptr++;
         }
