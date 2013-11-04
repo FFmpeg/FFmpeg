@@ -12,7 +12,7 @@ CFLAGS := $(shell pkg-config --cflags $(FFMPEG_LIBS)) $(CFLAGS)
 LDLIBS := $(shell pkg-config --libs $(FFMPEG_LIBS)) $(LDLIBS)
 
 EXAMPLES=       decoding_encoding                  \
-                demuxing                           \
+                demuxing_decoding                  \
                 filtering_video                    \
                 filtering_audio                    \
                 metadata                           \

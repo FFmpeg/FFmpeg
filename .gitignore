@@ -36,7 +36,7 @@
 /doc/avoptions_codec.texi
 /doc/avoptions_format.texi
 /doc/examples/decoding_encoding
-/doc/examples/demuxing
+/doc/examples/demuxing_decoding
 /doc/examples/filtering_audio
 /doc/examples/filtering_video
 /doc/examples/metadata

@@ -22,11 +22,11 @@
 
 /**
  * @file
- * libavformat demuxing API use example.
+ * Demuxing and decoding example.
  *
  * Show how to use the libavformat and libavcodec API to demux and
  * decode audio and video data.
- * @example doc/examples/demuxing.c
+ * @example doc/examples/demuxing_decoding.c
  */
 
 #include <libavutil/imgutils.h>
