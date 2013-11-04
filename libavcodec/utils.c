@@ -895,6 +895,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
         } else if (avctx->channel_layout) {
             avctx->channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
         }
+
+        if (!avctx->rc_initial_buffer_occupancy)
+            avctx->rc_initial_buffer_occupancy = avctx->rc_buffer_size * 3 / 4;
     }
 
     avctx->pts_correction_num_faulty_pts =
