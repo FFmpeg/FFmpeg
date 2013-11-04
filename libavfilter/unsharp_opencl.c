@@ -159,7 +159,7 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     FFOpenclParam opencl_param = {0};
 
     opencl_param.ctx = ctx;
-    opencl_param.kernel = unsharp->opencl_ctx.kernel_env.kernel;
+    opencl_param.kernel = unsharp->opencl_ctx.kernel;
     ret = ff_opencl_set_parameter(&opencl_param,
                                   FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
                                   FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
@@ -186,14 +186,14 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
                                   NULL);
     if (ret < 0)
         return ret;
-    status = clEnqueueNDRangeKernel(unsharp->opencl_ctx.kernel_env.command_queue,
-                                    unsharp->opencl_ctx.kernel_env.kernel, 1, NULL,
+    status = clEnqueueNDRangeKernel(unsharp->opencl_ctx.command_queue,
+                                    unsharp->opencl_ctx.kernel, 1, NULL,
                                     &global_work_size, NULL, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
-    clFinish(unsharp->opencl_ctx.kernel_env.command_queue);
+    clFinish(unsharp->opencl_ctx.command_queue);
     return av_opencl_buffer_read_image(out->data, unsharp->opencl_ctx.out_plane_size,
                                        unsharp->opencl_ctx.plane_num, unsharp->opencl_ctx.cl_outbuf,
                                        unsharp->opencl_ctx.cl_outbuf_size);
@@ -220,11 +220,21 @@ int ff_opencl_unsharp_init(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
     unsharp->opencl_ctx.plane_num = PLANE_NUM;
-    if (!unsharp->opencl_ctx.kernel_env.kernel) {
-        ret = av_opencl_create_kernel(&unsharp->opencl_ctx.kernel_env, "unsharp");
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel with name 'unsharp'\n");
-            return ret;
+    unsharp->opencl_ctx.command_queue = av_opencl_get_command_queue();
+    if (!unsharp->opencl_ctx.command_queue) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to get OpenCL command queue in filter 'unsharp'\n");
+        return AVERROR(EINVAL);
+    }
+    unsharp->opencl_ctx.program = av_opencl_compile("unsharp", NULL);
+    if (!unsharp->opencl_ctx.program) {
+        av_log(ctx, AV_LOG_ERROR, "OpenCL failed to compile program 'unsharp'\n");
+        return AVERROR(EINVAL);
+    }
+    if (!unsharp->opencl_ctx.kernel) {
+        unsharp->opencl_ctx.kernel = clCreateKernel(unsharp->opencl_ctx.program, "unsharp", &ret);
+        if (ret != CL_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'unsharp'\n");
+            return AVERROR(EINVAL);
         }
     }
     return ret;
@@ -237,7 +247,9 @@ void ff_opencl_unsharp_uninit(AVFilterContext *ctx)
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_outbuf);
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_luma_mask);
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_chroma_mask);
-    av_opencl_release_kernel(&unsharp->opencl_ctx.kernel_env);
+    clReleaseKernel(unsharp->opencl_ctx.kernel);
+    clReleaseProgram(unsharp->opencl_ctx.program);
+    unsharp->opencl_ctx.command_queue = NULL;
     av_opencl_uninit();
 }
 

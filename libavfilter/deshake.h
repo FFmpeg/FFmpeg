@@ -55,6 +55,9 @@ typedef struct {
 #if CONFIG_OPENCL
 
 typedef struct {
+    cl_command_queue command_queue;
+    cl_program program;
+    cl_kernel kernel;
     size_t matrix_size;
     float matrix_y[9];
     float matrix_uv[9];
@@ -67,7 +70,6 @@ typedef struct {
     size_t cl_inbuf_size;
     cl_mem cl_outbuf;
     size_t cl_outbuf_size;
-    AVOpenCLKernelEnv kernel_env;
 } DeshakeOpenclContext;
 
 #endif

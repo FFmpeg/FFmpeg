@@ -45,7 +45,7 @@ int ff_opencl_transform(AVFilterContext *ctx,
     FFOpenclParam opencl_param = {0};
 
     opencl_param.ctx = ctx;
-    opencl_param.kernel = deshake->opencl_ctx.kernel_env.kernel;
+    opencl_param.kernel = deshake->opencl_ctx.kernel;
     ret = av_opencl_buffer_write(deshake->opencl_ctx.cl_matrix_y, (uint8_t *)matrix_y, deshake->opencl_ctx.matrix_size * sizeof(cl_float));
     if (ret < 0)
         return ret;
@@ -75,14 +75,14 @@ int ff_opencl_transform(AVFilterContext *ctx,
                                   NULL);
     if (ret < 0)
         return ret;
-    status = clEnqueueNDRangeKernel(deshake->opencl_ctx.kernel_env.command_queue,
-                                    deshake->opencl_ctx.kernel_env.kernel, 1, NULL,
+    status = clEnqueueNDRangeKernel(deshake->opencl_ctx.command_queue,
+                                    deshake->opencl_ctx.kernel, 1, NULL,
                                     &global_work_size, NULL, 0, NULL, NULL);
     if (status != CL_SUCCESS) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
         return AVERROR_EXTERNAL;
     }
-    clFinish(deshake->opencl_ctx.kernel_env.command_queue);
+    clFinish(deshake->opencl_ctx.command_queue);
     ret = av_opencl_buffer_read_image(out->data, deshake->opencl_ctx.out_plane_size,
                                       deshake->opencl_ctx.plane_num, deshake->opencl_ctx.cl_outbuf,
                                       deshake->opencl_ctx.cl_outbuf_size);
@@ -108,11 +108,21 @@ int ff_opencl_deshake_init(AVFilterContext *ctx)
         deshake->opencl_ctx.matrix_size*sizeof(cl_float), CL_MEM_READ_ONLY, NULL);
     if (ret < 0)
         return ret;
-    if (!deshake->opencl_ctx.kernel_env.kernel) {
-        ret =  av_opencl_create_kernel(&deshake->opencl_ctx.kernel_env, "avfilter_transform");
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel for name 'avfilter_transform'\n");
-            return ret;
+    deshake->opencl_ctx.command_queue = av_opencl_get_command_queue();
+    if (!deshake->opencl_ctx.command_queue) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to get OpenCL command queue in filter 'deshake'\n");
+        return AVERROR(EINVAL);
+    }
+    deshake->opencl_ctx.program = av_opencl_compile("avfilter_transform", NULL);
+    if (!deshake->opencl_ctx.program) {
+        av_log(ctx, AV_LOG_ERROR, "OpenCL failed to compile program 'avfilter_transform'\n");
+        return AVERROR(EINVAL);
+    }
+    if (!deshake->opencl_ctx.kernel) {
+        deshake->opencl_ctx.kernel = clCreateKernel(deshake->opencl_ctx.program, "avfilter_transform", &ret);
+        if (ret != CL_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'avfilter_transform'\n");
+            return AVERROR(EINVAL);
         }
     }
     return ret;
@@ -125,10 +135,11 @@ void ff_opencl_deshake_uninit(AVFilterContext *ctx)
     av_opencl_buffer_release(&deshake->opencl_ctx.cl_outbuf);
     av_opencl_buffer_release(&deshake->opencl_ctx.cl_matrix_y);
     av_opencl_buffer_release(&deshake->opencl_ctx.cl_matrix_uv);
-    av_opencl_release_kernel(&deshake->opencl_ctx.kernel_env);
+    clReleaseKernel(deshake->opencl_ctx.kernel);
+    clReleaseProgram(deshake->opencl_ctx.program);
+    deshake->opencl_ctx.command_queue = NULL;
     av_opencl_uninit();
 }
-
 
 int ff_opencl_deshake_process_inout_buf(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 {
