@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "libavutil/channel_layout.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/audioconvert.h"
