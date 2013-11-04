@@ -189,7 +189,7 @@ static void* attribute_align_arg worker(void *v)
     }
 }
 
-static av_always_inline void avcodec_thread_park_workers(ThreadContext *c, int thread_count)
+static av_always_inline void thread_park_workers(ThreadContext *c, int thread_count)
 {
     while (c->current_job != thread_count + c->job_count)
         pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
@@ -216,7 +216,7 @@ static void thread_free(AVCodecContext *avctx)
     av_freep(&avctx->thread_opaque);
 }
 
-static int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
+static int thread_execute(AVCodecContext *avctx, action_func* func, void *arg, int *ret, int job_count, int job_size)
 {
     ThreadContext *c= avctx->thread_opaque;
     int dummy_ret;
@@ -244,16 +244,16 @@ static int avcodec_thread_execute(AVCodecContext *avctx, action_func* func, void
     c->current_execute++;
     pthread_cond_broadcast(&c->current_job_cond);
 
-    avcodec_thread_park_workers(c, avctx->thread_count);
+    thread_park_workers(c, avctx->thread_count);
 
     return 0;
 }
 
-static int avcodec_thread_execute2(AVCodecContext *avctx, action_func2* func2, void *arg, int *ret, int job_count)
+static int thread_execute2(AVCodecContext *avctx, action_func2* func2, void *arg, int *ret, int job_count)
 {
     ThreadContext *c= avctx->thread_opaque;
     c->func2 = func2;
-    return avcodec_thread_execute(avctx, NULL, arg, ret, job_count, 0);
+    return thread_execute(avctx, NULL, arg, ret, job_count, 0);
 }
 
 static int thread_init_internal(AVCodecContext *avctx)
@@ -306,10 +306,10 @@ static int thread_init_internal(AVCodecContext *avctx)
         }
     }
 
-    avcodec_thread_park_workers(c, thread_count);
+    thread_park_workers(c, thread_count);
 
-    avctx->execute = avcodec_thread_execute;
-    avctx->execute2 = avcodec_thread_execute2;
+    avctx->execute = thread_execute;
+    avctx->execute2 = thread_execute2;
     return 0;
 }
 
