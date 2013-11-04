@@ -403,6 +403,8 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
     unsigned int bitstream_size, bytestream_size, wordstream_size, extra, bytestream_offset, wordstream_offset;
 
     if(f->version>1){
+        if (length < 20)
+            return AVERROR_INVALIDDATA;
         extra=20;
         if (length < extra)
             return -1;
@@ -767,25 +769,29 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p, temp;
     int i, frame_4cc, frame_size;
 
-    if (buf_size < 12)
+    if (buf_size < 20)
         return AVERROR_INVALIDDATA;
-    frame_4cc= AV_RL32(buf);
-    if(buf_size != AV_RL32(buf+4)+8 || buf_size < 20){
-        av_log(f->avctx, AV_LOG_ERROR, "size mismatch %d %d\n", buf_size, AV_RL32(buf+4));
+
+    if (buf_size < AV_RL32(buf + 4) + 8) {
+        av_log(f->avctx, AV_LOG_ERROR,
+               "size mismatch %d %d\n", buf_size, AV_RL32(buf + 4));
     }
+
+    frame_4cc = AV_RL32(buf);
 
     if(frame_4cc == AV_RL32("cfrm")){
         int free_index=-1;
-        const int data_size= buf_size - 20;
-        const int id= AV_RL32(buf+12);
-        const int whole_size= AV_RL32(buf+16);
+        int id, whole_size;
+        const int data_size = buf_size - 20;
         CFrameBuffer *cfrm;
+
+        id         = AV_RL32(buf + 12);
+        whole_size = AV_RL32(buf + 16);
 
         if (data_size < 0 || whole_size < 0){
             av_log(f->avctx, AV_LOG_ERROR, "sizes invalid\n");
             return AVERROR_INVALIDDATA;
         }
-
         for(i=0; i<CFRAME_BUFFER_COUNT; i++){
             if(f->cfrm[i].id && f->cfrm[i].id < avctx->frame_number)
                 av_log(f->avctx, AV_LOG_ERROR, "lost c frame %d\n", f->cfrm[i].id);
