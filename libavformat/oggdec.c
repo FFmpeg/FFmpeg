@@ -375,7 +375,11 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
 
         if (!complete && os->segp == os->nsegs){
             ogg->curidx = -1;
-            os->incomplete = 1;
+            // Do not set incomplete for empty packets.
+            // Together with the code in ogg_read_page
+            // that discards all continuation of empty packets
+            // we would get an infinite loop.
+            os->incomplete = !!os->psize;
         }
     }while (!complete);
 
