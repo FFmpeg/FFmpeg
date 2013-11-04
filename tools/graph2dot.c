@@ -58,7 +58,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
     fprintf(outfile, "node [shape=box]\n");
     fprintf(outfile, "rankdir=LR\n");
 
-    for (i = 0; i < graph->filter_count; i++) {
+    for (i = 0; i < graph->nb_filters; i++) {
         char filter_ctx_label[128];
         const AVFilterContext *filter_ctx = graph->filters[i];
 
@@ -66,7 +66,7 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                  filter_ctx->name,
                  filter_ctx->filter->name);
 
-        for (j = 0; j < filter_ctx->output_count; j++) {
+        for (j = 0; j < filter_ctx->nb_outputs; j++) {
             AVFilterLink *link = filter_ctx->outputs[j];
             if (link) {
                 char dst_filter_ctx_label[128];
