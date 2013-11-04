@@ -2821,14 +2821,13 @@ typedef struct AVCodecContext {
      */
     int error_rate;
 
+#if FF_API_CODEC_PKT
     /**
-     * Current packet as passed into the decoder, to avoid having
-     * to pass the packet into every function. Currently only valid
-     * inside lavc and get/release_buffer callbacks.
-     * - decoding: set by avcodec_decode_*, read by get_buffer() for setting pkt_pts
-     * - encoding: unused
+     * @deprecated this field is not supposed to be accessed from outside lavc
      */
+    attribute_deprecated
     AVPacket *pkt;
+#endif
 
     /**
      * VBV delay coded in the last frame (in periods of a 27 MHz clock).

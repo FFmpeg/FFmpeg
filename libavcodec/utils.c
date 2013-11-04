@@ -729,11 +729,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_init_buffer_info(AVCodecContext *avctx, AVFrame *frame)
 {
-    if (avctx->pkt) {
-        frame->pkt_pts = avctx->pkt->pts;
-        av_frame_set_pkt_pos     (frame, avctx->pkt->pos);
-        av_frame_set_pkt_duration(frame, avctx->pkt->duration);
-        av_frame_set_pkt_size    (frame, avctx->pkt->size);
+    if (avctx->internal->pkt) {
+        frame->pkt_pts = avctx->internal->pkt->pts;
+        av_frame_set_pkt_pos     (frame, avctx->internal->pkt->pos);
+        av_frame_set_pkt_duration(frame, avctx->internal->pkt->duration);
+        av_frame_set_pkt_size    (frame, avctx->internal->pkt->size);
     } else {
         frame->pkt_pts = AV_NOPTS_VALUE;
         av_frame_set_pkt_pos     (frame, -1);
@@ -2026,7 +2026,7 @@ static int add_metadata_from_side_data(AVCodecContext *avctx, AVFrame *frame)
     const uint8_t *side_metadata;
     const uint8_t *end;
 
-    side_metadata = av_packet_get_side_data(avctx->pkt,
+    side_metadata = av_packet_get_side_data(avctx->internal->pkt,
                                             AV_PKT_DATA_STRINGS_METADATA, &size);
     if (!side_metadata)
         goto end;
@@ -2084,7 +2084,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                 goto fail;
         }
 
-        avctx->pkt = &tmp;
+        avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
                                          &tmp);
@@ -2110,7 +2110,7 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 fail:
         emms_c(); //needed to avoid an emms_c() call before every return;
 
-        avctx->pkt = NULL;
+        avctx->internal->pkt = NULL;
         if (did_split) {
             av_packet_free_side_data(&tmp);
             if(ret == tmp.size)
@@ -2233,7 +2233,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 goto fail;
         }
 
-        avctx->pkt = &tmp;
+        avctx->internal->pkt = &tmp;
         if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME)
             ret = ff_thread_decode_frame(avctx, frame, got_frame_ptr, &tmp);
         else {
@@ -2257,7 +2257,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
                 frame->sample_rate = avctx->sample_rate;
         }
 
-        side= av_packet_get_side_data(avctx->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
+        side= av_packet_get_side_data(avctx->internal->pkt, AV_PKT_DATA_SKIP_SAMPLES, &side_size);
         if(side && side_size>=10) {
             avctx->internal->skip_samples = AV_RL32(side);
             av_log(avctx, AV_LOG_DEBUG, "skip %d samples due to side data\n",
@@ -2312,7 +2312,7 @@ int attribute_align_arg avcodec_decode_audio4(AVCodecContext *avctx,
             }
         }
 fail:
-        avctx->pkt = NULL;
+        avctx->internal->pkt = NULL;
         if (did_split) {
             av_packet_free_side_data(&tmp);
             if(ret == tmp.size)
@@ -2454,7 +2454,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
         if (ret < 0) {
             *got_sub_ptr = 0;
         } else {
-            avctx->pkt = &pkt_recoded;
+            avctx->internal->pkt = &pkt_recoded;
 
             if (avctx->pkt_timebase.den && avpkt->pts != AV_NOPTS_VALUE)
                 sub->pts = av_rescale_q(avpkt->pts,
@@ -2491,7 +2491,7 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
                 sub->format = 0;
             else if (avctx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB)
                 sub->format = 1;
-            avctx->pkt = NULL;
+            avctx->internal->pkt = NULL;
         }
 
         if (did_split) {

@@ -98,6 +98,12 @@ typedef struct AVCodecInternal {
     void *thread_ctx;
 
     /**
+     * Current packet as passed into the decoder, to avoid having to pass the
+     * packet into every function.
+     */
+    AVPacket *pkt;
+
+    /**
      * temporary buffer used for encoders to store their bitstream
      */
     uint8_t *byte_buffer;

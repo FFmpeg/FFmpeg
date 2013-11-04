@@ -915,8 +915,8 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
                 H264Context *h = priv->parser->priv_data;
 
                 index = av_parser_parse2(priv->parser, avctx, &pout, &psize,
-                                         in_data, len, avctx->pkt->pts,
-                                         avctx->pkt->dts, 0);
+                                         in_data, len, avctx->internal->pkt->pts,
+                                         avctx->internal->pkt->dts, 0);
                 if (index < 0) {
                     av_log(avctx, AV_LOG_WARNING,
                            "CrystalHD: Failed to parse h.264 packet to "
@@ -950,7 +950,7 @@ static int decode(AVCodecContext *avctx, void *data, int *got_frame, AVPacket *a
              * avoiding mangling so we need to build a mapping to values
              * we know will not be mangled.
              */
-            uint64_t pts = opaque_list_push(priv, avctx->pkt->pts, pic_type);
+            uint64_t pts = opaque_list_push(priv, avctx->internal->pkt->pts, pic_type);
             if (!pts) {
                 if (free_data) {
                     av_freep(&in_data);

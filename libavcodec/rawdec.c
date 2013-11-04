@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "raw.h"
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
@@ -182,9 +183,9 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
     frame->pict_type        = AV_PICTURE_TYPE_I;
     frame->key_frame        = 1;
     frame->reordered_opaque = avctx->reordered_opaque;
-    frame->pkt_pts          = avctx->pkt->pts;
-    av_frame_set_pkt_pos     (frame, avctx->pkt->pos);
-    av_frame_set_pkt_duration(frame, avctx->pkt->duration);
+    frame->pkt_pts          = avctx->internal->pkt->pts;
+    av_frame_set_pkt_pos     (frame, avctx->internal->pkt->pos);
+    av_frame_set_pkt_duration(frame, avctx->internal->pkt->duration);
 
     if (context->tff >= 0) {
         frame->interlaced_frame = 1;
