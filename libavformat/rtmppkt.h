@@ -218,6 +218,13 @@ void ff_amf_write_field_name(uint8_t **dst, const char *str);
  */
 void ff_amf_write_object_end(uint8_t **dst);
 
+/**
+ * Match AMF string with a NULL-terminated string.
+ *
+ * @return 0 if the strings do not match.
+ */
+int ff_amf_match_string(const uint8_t *data, int size, const char *str);
+
 /** @} */ // AMF funcs
 
 #endif /* AVFORMAT_RTMPPKT_H */
