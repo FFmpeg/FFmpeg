@@ -762,10 +762,12 @@ typedef struct RcOverride{
  * Codec should fill in channel configuration and samplerate instead of container
  */
 #define CODEC_CAP_CHANNEL_CONF     0x0400
+#if FF_API_NEG_LINESIZES
 /**
- * Codec is able to deal with negative linesizes
+ * @deprecated no codecs use this capability
  */
 #define CODEC_CAP_NEG_LINESIZES    0x0800
+#endif
 /**
  * Codec supports frame-level multithreading.
  */
