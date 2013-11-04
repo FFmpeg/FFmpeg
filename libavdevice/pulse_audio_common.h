@@ -23,7 +23,8 @@
 #define AVDEVICE_PULSE_AUDIO_COMMON_H
 
 #include <pulse/simple.h>
+#include "libavcodec/avcodec.h"
 
-pa_sample_format_t codec_id_to_pulse_format(int codec_id);
+pa_sample_format_t ff_codec_id_to_pulse_format(enum AVCodecID codec_id);
 
 #endif /* AVDEVICE_PULSE_AUDIO_COMMON_H */

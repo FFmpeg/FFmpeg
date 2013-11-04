@@ -59,7 +59,7 @@ static av_cold int pulse_write_header(AVFormatContext *h)
             stream_name = "Playback";
     }
 
-    ss.format = codec_id_to_pulse_format(st->codec->codec_id);
+    ss.format = ff_codec_id_to_pulse_format(st->codec->codec_id);
     ss.rate = st->codec->sample_rate;
     ss.channels = st->codec->channels;
 
@@ -102,7 +102,7 @@ static int pulse_write_packet(AVFormatContext *h, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "pa_simple_flush failed: %s\n", pa_strerror(error));
             return AVERROR(EIO);
         }
-        return 0;
+        return 1;
     }
 
     if (pkt->dts != AV_NOPTS_VALUE)

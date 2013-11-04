@@ -57,7 +57,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
     int ret;
     enum AVCodecID codec_id =
         s->audio_codec_id == AV_CODEC_ID_NONE ? DEFAULT_CODEC_ID : s->audio_codec_id;
-    const pa_sample_spec ss = { codec_id_to_pulse_format(codec_id),
+    const pa_sample_spec ss = { ff_codec_id_to_pulse_format(codec_id),
                                 pd->sample_rate,
                                 pd->channels };
 
