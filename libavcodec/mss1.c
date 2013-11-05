@@ -139,8 +139,6 @@ static int decode_pal(MSS12Context *ctx, ArithCoder *acoder)
 static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                              AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     MSS1Context *ctx = avctx->priv_data;
     MSS12Context *c = &ctx->ctx;
     GetBitContext gb;
@@ -148,7 +146,9 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int pal_changed = 0;
     int ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, avpkt->data, avpkt->size)) < 0)
+        return ret;
+
     arith_init(&acoder, &gb);
 
     if ((ret = ff_reget_buffer(avctx, &ctx->pic)) < 0)
@@ -182,7 +182,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     *got_frame      = 1;
 
     /* always report that the buffer was completely consumed */
-    return buf_size;
+    return avpkt->size;
 }
 
 static av_cold int mss1_decode_init(AVCodecContext *avctx)
