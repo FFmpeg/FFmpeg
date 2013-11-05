@@ -255,7 +255,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 4)
         return -1;
 
-    init_get_bits(&gb, avpkt->data, buf_size * 8);
+    if ((ret = init_get_bits(&gb, avpkt->data, buf_size)) < 0)
+        return ret;
 
     /* start to parse the bitstream */
     s->block_width  = 16 * (get_bits(&gb, 4) + 1);
