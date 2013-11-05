@@ -4446,7 +4446,6 @@ check_disable_warning -Wno-parentheses
 check_disable_warning -Wno-switch
 check_disable_warning -Wno-format-zero-length
 check_disable_warning -Wno-pointer-sign
-enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
@@ -4546,6 +4545,7 @@ elif enabled gcc; then
     check_cflags -Werror=missing-prototypes
     check_cflags -Werror=return-type
     check_cflags -Werror=vla
+    enabled extra_warnings || check_disable_warning -Wno-maybe-uninitialized
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
