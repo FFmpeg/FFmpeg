@@ -384,7 +384,8 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
         s->current_picture_ptr = &s->picture[i];
     }
 
-    init_get_bits(&s->gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&s->gb, buf, buf_size)) < 0)
+        return ret;
 
     s->loop_filter = avctx->skip_loop_filter < AVDISCARD_ALL;
 
@@ -482,7 +483,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     av_assert0(FF_INPUT_BUFFER_PADDING_SIZE >=
                ARITH2_PADDING + (MIN_CACHE_BITS + 7) / 8);
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+        return ret;
 
     if (keyframe = get_bits1(&gb))
         skip_bits(&gb, 7);
@@ -640,7 +642,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 ff_mss12_slicecontext_reset(&ctx->sc[1]);
         }
         if (is_rle) {
-            init_get_bits(&gb, buf, buf_size * 8);
+            if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
+                return ret;
             if (ret = decode_rle(&gb, c->pal_pic, c->pal_stride,
                                  c->rgb_pic, c->rgb_stride, c->pal, keyframe,
                                  ctx->split_position, 0,
