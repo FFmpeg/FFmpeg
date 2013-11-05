@@ -707,6 +707,7 @@ av_cold int ff_MPV_encode_init(AVCodecContext *avctx)
     if (ARCH_X86)
         ff_MPV_encode_init_x86(s);
 
+    ff_h263dsp_init(&s->h263dsp);
     if (!s->dct_quantize)
         s->dct_quantize = ff_dct_quantize_c;
     if (!s->denoise_dct)
