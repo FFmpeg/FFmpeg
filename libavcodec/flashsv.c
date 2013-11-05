@@ -317,7 +317,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
     /* initialize the image size once */
     if (avctx->width == 0 && avctx->height == 0) {
-        avcodec_set_dimensions(avctx, s->image_width, s->image_height);
+        if ((ret = ff_set_dimensions(avctx, s->image_width, s->image_height)) < 0)
+            return ret;
     }
 
     /* check for changes of image width and image height */
