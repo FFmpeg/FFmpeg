@@ -131,8 +131,8 @@ static int brpix_decode_frame(AVCodecContext *avctx,
     if (av_image_check_size(hdr.width, hdr.height, 0, avctx) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (hdr.width != avctx->width || hdr.height != avctx->height)
-        avcodec_set_dimensions(avctx, hdr.width, hdr.height);
+    if ((ret = ff_set_dimensions(avctx, hdr.width, hdr.height)) < 0)
+        return ret;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
