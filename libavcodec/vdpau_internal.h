@@ -28,10 +28,12 @@
 #include <stdint.h>
 #if CONFIG_VDPAU
 #include <vdpau/vdpau.h>
-#include "vdpau.h"
 #endif
 #include "h264.h"
+
+#include "avcodec.h"
 #include "mpegvideo.h"
+#include "version.h"
 
 /** Extract VdpVideoSurface from a Picture */
 static inline uintptr_t ff_vdpau_get_surface_id(Picture *pic)
@@ -47,6 +49,8 @@ union AVVDPAUPictureInfo {
     VdpPictureInfoVC1          vc1;
     VdpPictureInfoMPEG4Part2 mpeg4;
 };
+#else
+#include "vdpau.h"
 #endif
 
 struct vdpau_picture_context {
