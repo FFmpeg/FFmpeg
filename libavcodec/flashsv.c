@@ -482,7 +482,7 @@ static av_cold int flashsv_decode_end(AVCodecContext *avctx)
     av_frame_unref(&s->frame);
 
     /* free the tmpblock */
-    av_free(s->tmpblock);
+    av_freep(&s->tmpblock);
 
     return 0;
 }
