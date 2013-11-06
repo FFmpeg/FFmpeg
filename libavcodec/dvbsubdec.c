@@ -34,8 +34,6 @@
 #define cm (ff_cropTbl + MAX_NEG_CROP)
 
 #ifdef DEBUG
-#undef fprintf
-#undef perror
 #if 0
 static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
                      uint32_t *rgba_palette)
