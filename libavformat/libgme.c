@@ -174,7 +174,7 @@ static int probe_gme(AVProbeData *p)
     // Reads 4 bytes - returns "" if unknown format.
     if (gme_identify_header(p->buf)[0]) {
         if (p->buf_size < 16384)
-            return AVPROBE_SCORE_MAX / 4 + 1;
+            return AVPROBE_SCORE_MAX / 4 ;
         else
             return AVPROBE_SCORE_MAX / 2;
     }
