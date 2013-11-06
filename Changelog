@@ -1,6 +1,78 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.8.10:
+
+- pthread: Avoid spurious wakeups
+- pthread: Fix deadlock during thread initialization
+- mpegvideo: Initialize chroma_*_shift and codec_tag even if the size is 0
+- vc1dec: Don't decode slices when the latest slice header failed to decode
+- vc1dec: Make sure last_picture is initialized in vc1_decode_skip_blocks
+- r3d: Add more input value validation
+- fraps: Make the input buffer size checks more strict
+- svq3: Avoid a division by zero
+- rmdec: Validate the fps value
+- twinvqdec: Check the ibps parameter separately
+- asfdec: Check the return value of asf_read_stream_properties
+- mxfdec: set audio timebase to 1/samplerate
+- pcx: Check the packet size before assuming it fits a palette
+- rpza: Fix a buffer size check
+- xxan: Disallow odd width
+- xan: Only read within the data that actually was initialized
+- xan: Use bytestream2 to limit reading to within the buffer
+- pcx: Consume the whole packet if giving up due to missing palette
+- pngdec: Stop trying to decode once inflate returns Z_STREAM_END
+- mov: Make sure the read sample count is nonnegative
+- bfi: Add some very basic sanity checks for input packet sizes
+- bfi: Avoid divisions by zero
+- electronicarts: Add more sanity checking for the number of channels
+- riffdec: Add sanity checks for the sample rate
+- mvi: Add sanity checking for the audio frame size
+- xwma: Avoid division by zero
+- avidec: Make sure a packet is large enough before reading its data
+- vqf: Make sure the bitrate is in the valid range
+- vqf: Make sure sample_rate is set to a valid value
+- vc1dec: Undo mpegvideo initialization if unable to allocate tables
+- vc1dec: Fix leaks in ff_vc1_decode_init_alloc_tables on errors
+- wnv1: Make sure the input packet is large enough
+- dca: Validate the lfe parameter
+- rl2: Avoid a division by zero
+- wtv: Add more sanity checks for a length read from the file
+- segafilm: Validate the number of audio channels
+- qpeg: Add checks for running out of rows in qpeg_decode_inter
+- mpegaudiodec: Validate that the number of channels fits at the given offset
+- asv1: Verify the amount of extradata
+- idroqdec: Make sure a video stream has been allocated before returning packets
+- rv10: Validate the dimensions set from the container
+- xmv: Add more sanity checks for parameters read from the bitstream
+- ffv1: Make sure at least one slice context is initialized
+- truemotion2: Use av_freep properly in an error path
+- eacmv: Make sure a reference frame exists before referencing it
+- mpeg4videodec: Check the width/height in mpeg4_decode_sprite_trajectory
+- ivi_common: Make sure color planes have been initialized
+- oggparseogm: Convert to use bytestream2
+- rv34: Check the return value from ff_rv34_decode_init
+- matroskadec: Verify realaudio codec parameters
+- mace: Make sure that the channel count is set to a valid value
+- svq3: Check for any negative return value from ff_h264_check_intra_pred_mode
+- vp3: Check the framerate for validity
+- cavsdec: Make sure a sequence header has been decoded before decoding pictures
+- sierravmd: Do sanity checking of frame sizes
+- omadec: Properly check lengths before incrementing the position
+- mpc8: Make sure the first stream exists before parsing the seek table
+- mpc8: Check the seek table size parsed from the bitstream
+- zmbvdec: Check the buffer size for uncompressed data
+- ape: Don't allow the seektable to be omitted
+- shorten: Break out of loop looking for fmt chunk if none is found
+- shorten: Use a checked bytestream reader for the wave header
+- smacker: Make sure we don't fill in huffman codes out of range
+- smacker: Avoid integer overflow when allocating packets
+- smacker: Don't return packets in unallocated streams
+- dsicin: Add some basic sanity checks for fields read from the file
+- roqvideodec: check dimensions validity
+- qdm2: check array index before use, fix out of array accesses
+- alsdec: check block length
+
 version 0.8.9:
 
 - x86: fft: Remove 3DNow! optimizations, they break FATE
