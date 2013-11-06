@@ -43,10 +43,13 @@ static const uint32_t rsd_unsupported_tags[] = {
 
 static int rsd_probe(AVProbeData *p)
 {
-    if (!memcmp(p->buf, "RSD", 3) &&
-        p->buf[3] - '0' >= 2 && p->buf[3] - '0' <= 6)
-        return AVPROBE_SCORE_EXTENSION;
-    return 0;
+    if (memcmp(p->buf, "RSD", 3) || p->buf[3] - '0' < 2 || p->buf[3] - '0' > 6)
+        return 0;
+    if (AV_RL32(p->buf +  8) > 256 || !AV_RL32(p->buf +  8))
+        return 1;
+    if (AV_RL32(p->buf + 16) > 8*48000 || !AV_RL32(p->buf + 16))
+        return 1;
+    return AVPROBE_SCORE_EXTENSION;
 }
 
 static int rsd_read_header(AVFormatContext *s)
