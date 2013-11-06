@@ -105,6 +105,7 @@ typedef struct HLSContext {
     AVIOInterruptCB *interrupt_callback;
     char *user_agent;                    ///< holds HTTP user agent set as an AVOption to the HTTP protocol context
     char *cookies;                       ///< holds HTTP cookie values set in either the initial response or as an AVOption to the HTTP protocol context
+    char *headers;                       ///< holds HTTP headers set as an AVOption to the HTTP protocol context
 } HLSContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -225,6 +226,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         // broker prior HTTP options that should be consistent across requests
         av_dict_set(&opts, "user-agent", c->user_agent, 0);
         av_dict_set(&opts, "cookies", c->cookies, 0);
+        av_dict_set(&opts, "headers", c->headers, 0);
 
         ret = avio_open2(&in, url, AVIO_FLAG_READ,
                          c->interrupt_callback, &opts);
@@ -347,6 +349,7 @@ static int open_input(HLSContext *c, struct variant *var)
     // broker prior HTTP options that should be consistent across requests
     av_dict_set(&opts, "user-agent", c->user_agent, 0);
     av_dict_set(&opts, "cookies", c->cookies, 0);
+    av_dict_set(&opts, "headers", c->headers, 0);
     av_dict_set(&opts, "seekable", "0", 0);
 
     if (seg->key_type == KEY_NONE) {
@@ -495,6 +498,12 @@ static int hls_read_header(AVFormatContext *s)
         av_opt_get(u->priv_data, "cookies", 0, (uint8_t**)&(c->cookies));
         if (c->cookies && !strlen(c->cookies))
             av_freep(&c->cookies);
+
+        // get the previous headers & set back to null if string size is zero
+        av_freep(&c->headers);
+        av_opt_get(u->priv_data, "headers", 0, (uint8_t**)&(c->headers));
+        if (c->headers && !strlen(c->headers))
+            av_freep(&c->headers);
     }
 
     if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)
