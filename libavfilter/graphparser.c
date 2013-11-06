@@ -130,6 +130,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
         if (args)
             av_log(log_ctx, AV_LOG_ERROR, " with args '%s'", args);
         av_log(log_ctx, AV_LOG_ERROR, "\n");
+        avfilter_free(*filt_ctx);
         return ret;
     }
 
