@@ -55,9 +55,12 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
 
 static int swf_probe(AVProbeData *p)
 {
+    if(p->buf_size < 15)
+        return 0;
+
     /* check file header */
     if ((p->buf[0] == 'F' || p->buf[0] == 'C') && p->buf[1] == 'W' &&
-        p->buf[2] == 'S')
+        p->buf[2] == 'S' && p->buf[3] < 20)
         return AVPROBE_SCORE_MAX;
     else
         return 0;
