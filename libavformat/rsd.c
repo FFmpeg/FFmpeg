@@ -49,7 +49,7 @@ static int rsd_probe(AVProbeData *p)
         return 1;
     if (AV_RL32(p->buf + 16) > 8*48000 || !AV_RL32(p->buf + 16))
         return 1;
-    return AVPROBE_SCORE_EXTENSION;
+    return AVPROBE_SCORE_MAX;
 }
 
 static int rsd_read_header(AVFormatContext *s)
