@@ -170,10 +170,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 {
     AResampleContext *aresample = inlink->dst->priv;
     const int n_in  = insamplesref->nb_samples;
-    int n_out       = n_in * aresample->ratio * 2 + 256;
+    int64_t delay;
+    int n_out       = n_in * aresample->ratio + 32;
     AVFilterLink *const outlink = inlink->dst->outputs[0];
-    AVFrame *outsamplesref = ff_get_audio_buffer(outlink, n_out);
+    AVFrame *outsamplesref;
     int ret;
+
+    delay = swr_get_delay(aresample->swr, outlink->sample_rate);
+    if (delay > 0)
+        n_out += delay;
+
+    outsamplesref = ff_get_audio_buffer(outlink, n_out);
 
     if(!outsamplesref)
         return AVERROR(ENOMEM);
