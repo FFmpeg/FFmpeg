@@ -471,7 +471,7 @@ static void ppm_save(const char *filename, uint8_t *bitmap, int w, int h,
     f = fopen(filename, "w");
     if (!f) {
         perror(filename);
-        exit(1);
+        return;
     }
     fprintf(f, "P6\n"
             "%d %d\n"
