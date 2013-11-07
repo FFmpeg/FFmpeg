@@ -106,7 +106,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
             if (!img->split_planes || i+1 >= desc->nb_components)
                 break;
-            filename[strlen(filename) - 1] = ((int[]){'U','V','A','x'})[i];
+            filename[strlen(filename) - 1] = "UVAx"[i];
         }
     } else {
         pb[0] = s->pb;
