@@ -229,10 +229,8 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
 
     if (s->initialized) {
         frame->nb_samples = avctx->frame_size;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "ff_get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             return ret;
-        }
         buf = frame->extended_data[0];
         buf_size = avctx->channels * frame->nb_samples *
                    av_get_bytes_per_sample(avctx->sample_fmt);
@@ -264,10 +262,8 @@ static int fdk_aac_decode_frame(AVCodecContext *avctx, void *data,
 
     if (tmpptr) {
         frame->nb_samples = avctx->frame_size;
-        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "ff_get_buffer() failed\n");
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
             goto end;
-        }
         memcpy(frame->extended_data[0], tmpptr,
                avctx->channels * avctx->frame_size *
                av_get_bytes_per_sample(avctx->sample_fmt));
