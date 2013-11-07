@@ -59,13 +59,12 @@ static int write_header(AVFormatContext *s)
         img->muxer = "gif";
     } else if (st->codec->codec_id == AV_CODEC_ID_RAWVIDEO) {
         const char *str = strrchr(img->path, '.');
-        /* TODO: reindent */
-    img->split_planes =     str
-                         && !av_strcasecmp(str + 1, "y")
-                         && s->nb_streams == 1
-                         && desc
-                         &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
-                         && desc->nb_components >= 3;
+        img->split_planes =     str
+                             && !av_strcasecmp(str + 1, "y")
+                             && s->nb_streams == 1
+                             && desc
+                             &&(desc->flags & AV_PIX_FMT_FLAG_PLANAR)
+                             && desc->nb_components >= 3;
     }
     return 0;
 }
