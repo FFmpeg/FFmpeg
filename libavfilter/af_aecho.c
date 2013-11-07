@@ -285,10 +285,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     s->echo_samples(s, s->delayptrs, frame->extended_data, out_frame->extended_data,
                     frame->nb_samples, inlink->channels);
 
+    s->next_pts = frame->pts + av_rescale_q(frame->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
+
     if (frame != out_frame)
         av_frame_free(&frame);
 
-    s->next_pts = frame->pts + av_rescale_q(frame->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
     return ff_filter_frame(ctx->outputs[0], out_frame);
 }
 
