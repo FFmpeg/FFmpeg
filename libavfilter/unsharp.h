@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
+ * Copyright (C) 2013 Lenny Wang
  *
  * This file is part of FFmpeg.
  *
@@ -35,7 +36,9 @@
 typedef struct {
     cl_command_queue command_queue;
     cl_program program;
-    cl_kernel kernel;
+    cl_kernel kernel_default;
+    cl_kernel kernel_luma;
+    cl_kernel kernel_chroma;
     cl_mem cl_luma_mask;
     cl_mem cl_chroma_mask;
     int in_plane_size[8];
@@ -45,6 +48,7 @@ typedef struct {
     size_t cl_inbuf_size;
     cl_mem cl_outbuf;
     size_t cl_outbuf_size;
+    int use_fast_kernels;
 } UnsharpOpenclContext;
 
 #endif

@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
+ * Copyright (C) 2013 Lenny Wang
  *
  * This file is part of FFmpeg.
  *
@@ -32,7 +33,156 @@ inline unsigned char clip_uint8(int a)
         return a;
 }
 
-kernel void unsharp(global  unsigned char *src,
+kernel void unsharp_luma(
+                    global unsigned char *src,
+                    global unsigned char *dst,
+                    global int *mask,
+                    int amount,
+                    int scalebits,
+                    int halfscale,
+                    int src_stride,
+                    int dst_stride,
+                    int width,
+                    int height)
+{
+    int2 threadIdx, blockIdx, globalIdx;
+    threadIdx.x = get_local_id(0);
+    threadIdx.y = get_local_id(1);
+    blockIdx.x = get_group_id(0);
+    blockIdx.y = get_group_id(1);
+    globalIdx.x = get_global_id(0);
+    globalIdx.y = get_global_id(1);
+
+    if (!amount) {
+        if (globalIdx.x < width && globalIdx.y < height)
+            dst[globalIdx.x + globalIdx.y*dst_stride] = src[globalIdx.x + globalIdx.y*src_stride];
+        return;
+    }
+
+    local uchar l[32][32];
+    local int lc[LU_RADIUS_X*LU_RADIUS_Y];
+    int indexIx, indexIy, i, j;
+
+    for(i = 0; i <= 1; i++) {
+        indexIy = -8 + (blockIdx.y + i) * 16 + threadIdx.y;
+        indexIy = indexIy < 0 ? 0 : indexIy;
+        indexIy = indexIy >= height ? height - 1: indexIy;
+        for(j = 0; j <= 1; j++) {
+            indexIx = -8 + (blockIdx.x + j) * 16 + threadIdx.x;
+            indexIx = indexIx < 0 ? 0 : indexIx;
+            indexIx = indexIx >= width ? width - 1: indexIx;
+            l[i*16 + threadIdx.y][j*16 + threadIdx.x] = src[indexIy*src_stride + indexIx];
+        }
+    }
+
+    int indexL = threadIdx.y*16 + threadIdx.x;
+    if (indexL < LU_RADIUS_X*LU_RADIUS_Y)
+        lc[indexL] = mask[indexL];
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    int idx, idy, maskIndex;
+    int sum = 0;
+    int steps_x = LU_RADIUS_X/2;
+    int steps_y = LU_RADIUS_Y/2;
+
+    \n#pragma unroll\n
+    for (i = -steps_y; i <= steps_y; i++) {
+        idy = 8 + i + threadIdx.y;
+        \n#pragma unroll\n
+        for (j = -steps_x; j <= steps_x; j++) {
+            idx = 8 + j + threadIdx.x;
+            maskIndex = (i + steps_y)*LU_RADIUS_X + j + steps_x;
+            sum += (int)l[idy][idx] * lc[maskIndex];
+        }
+    }
+    int temp = (int)l[threadIdx.y + 8][threadIdx.x + 8];
+    int res = temp + (((temp - (int)((sum + halfscale) >> scalebits)) * amount) >> 16);
+    if (globalIdx.x < width && globalIdx.y < height)
+        dst[globalIdx.x + globalIdx.y*dst_stride] = clip_uint8(res);
+}
+
+kernel void unsharp_chroma(
+                    global unsigned char *src_y,
+                    global unsigned char *dst_y,
+                    global int *mask,
+                    int amount,
+                    int scalebits,
+                    int halfscale,
+                    int src_stride_lu,
+                    int src_stride_ch,
+                    int dst_stride_lu,
+                    int dst_stride_ch,
+                    int width,
+                    int height,
+                    int cw,
+                    int ch)
+{
+    global unsigned char *dst_u = dst_y + height * dst_stride_lu;
+    global unsigned char *dst_v = dst_u + ch * dst_stride_ch;
+    global unsigned char *src_u = src_y + height * src_stride_lu;
+    global unsigned char *src_v = src_u + ch * src_stride_ch;
+    int2 threadIdx, blockIdx, globalIdx;
+    threadIdx.x = get_local_id(0);
+    threadIdx.y = get_local_id(1);
+    blockIdx.x = get_group_id(0);
+    blockIdx.y = get_group_id(1);
+    globalIdx.x = get_global_id(0);
+    globalIdx.y = get_global_id(1);
+    int padch = get_global_size(1)/2;
+    global unsigned char *src = globalIdx.y>=padch ? src_v : src_u;
+    global unsigned char *dst = globalIdx.y>=padch ? dst_v : dst_u;
+
+    blockIdx.y = globalIdx.y>=padch ? blockIdx.y - get_num_groups(1)/2 : blockIdx.y;
+    globalIdx.y = globalIdx.y>=padch ? globalIdx.y - padch : globalIdx.y;
+
+    if (!amount) {
+        if (globalIdx.x < cw && globalIdx.y < ch)
+            dst[globalIdx.x + globalIdx.y*dst_stride_ch] = src[globalIdx.x + globalIdx.y*src_stride_ch];
+        return;
+    }
+
+    local uchar l[32][32];
+    local int lc[CH_RADIUS_X*CH_RADIUS_Y];
+    int indexIx, indexIy, i, j;
+    for(i = 0; i <= 1; i++) {
+        indexIy = -8 + (blockIdx.y + i) * 16 + threadIdx.y;
+        indexIy = indexIy < 0 ? 0 : indexIy;
+        indexIy = indexIy >= ch ? ch - 1: indexIy;
+        for(j = 0; j <= 1; j++) {
+            indexIx = -8 + (blockIdx.x + j) * 16 + threadIdx.x;
+            indexIx = indexIx < 0 ? 0 : indexIx;
+            indexIx = indexIx >= cw ? cw - 1: indexIx;
+            l[i*16 + threadIdx.y][j*16 + threadIdx.x] = src[indexIy * src_stride_ch + indexIx];
+        }
+    }
+
+    int indexL = threadIdx.y*16 + threadIdx.x;
+    if (indexL < CH_RADIUS_X*CH_RADIUS_Y)
+        lc[indexL] = mask[indexL];
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    int idx, idy, maskIndex;
+    int sum = 0;
+    int steps_x = CH_RADIUS_X/2;
+    int steps_y = CH_RADIUS_Y/2;
+
+    \n#pragma unroll\n
+    for (i = -steps_y; i <= steps_y; i++) {
+        idy = 8 + i + threadIdx.y;
+        \n#pragma unroll\n
+        for (j = -steps_x; j <= steps_x; j++) {
+            idx = 8 + j + threadIdx.x;
+            maskIndex = (i + steps_y)*CH_RADIUS_X + j + steps_x;
+            sum += (int)l[idy][idx] * lc[maskIndex];
+        }
+    }
+    int temp = (int)l[threadIdx.y + 8][threadIdx.x + 8];
+    int res = temp + (((temp - (int)((sum + halfscale) >> scalebits)) * amount) >> 16);
+    if (globalIdx.x < cw && globalIdx.y < ch)
+        dst[globalIdx.x + globalIdx.y*dst_stride_ch] = clip_uint8(res);
+}
+
+kernel void unsharp_default(global  unsigned char *src,
                     global  unsigned char *dst,
                     const global  unsigned int *mask_lu,
                     const global  unsigned int *mask_ch,
@@ -131,7 +281,6 @@ kernel void unsharp(global  unsigned char *src,
         temp_dst[x + y * temp_dst_stride] = temp_src[x + y * temp_src_stride];
     }
 }
-
 );
 
 #endif /* AVFILTER_UNSHARP_OPENCL_KERNEL_H */

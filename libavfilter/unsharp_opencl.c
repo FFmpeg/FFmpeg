@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2013 Wei Gao <weigao@multicorewareinc.com>
+ * Copyright (C) 2013 Lenny Wang
  *
  * This file is part of FFmpeg.
  *
@@ -28,6 +29,7 @@
 #include "libavutil/opencl_internal.h"
 
 #define PLANE_NUM 3
+#define ROUND_TO_16(a) ((((a- 1)/16)+1)*16)
 
 static inline void add_mask_counter(uint32_t *dst, uint32_t *counter1, uint32_t *counter2, int len)
 {
@@ -135,6 +137,13 @@ static int generate_mask(AVFilterContext *ctx)
     step_x[1] = unsharp->chroma.steps_x;
     step_y[0] = unsharp->luma.steps_y;
     step_y[1] = unsharp->chroma.steps_y;
+
+    /* use default kernel if any matrix dim larger than 8 due to limited local mem size */
+    if (step_x[0]>8 || step_x[1]>8 || step_y[0]>8 || step_y[1]>8)
+        unsharp->opencl_ctx.use_fast_kernels = 0;
+    else
+        unsharp->opencl_ctx.use_fast_kernels = 1;
+
     if (!mask_matrix[0] || !mask_matrix[1]) {
         av_log(ctx, AV_LOG_ERROR, "Luma mask and chroma mask should not be NULL\n");
         return AVERROR(EINVAL);
@@ -153,45 +162,107 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
     AVFilterLink *link = ctx->inputs[0];
     UnsharpContext *unsharp = ctx->priv;
     cl_int status;
+    FFOpenclParam kernel1 = {0};
+    FFOpenclParam kernel2 = {0};
+    int width = link->w;
+    int height = link->h;
     int cw = FF_CEIL_RSHIFT(link->w, unsharp->hsub);
     int ch = FF_CEIL_RSHIFT(link->h, unsharp->vsub);
-    const size_t global_work_size = link->w * link->h + 2 * ch * cw;
-    FFOpenclParam opencl_param = {0};
+    size_t globalWorkSize1d = width * height + 2 * ch * cw;
+    size_t globalWorkSize2dLuma[2];
+    size_t globalWorkSize2dChroma[2];
+    size_t localWorkSize2d[2] = {16, 16};
 
-    opencl_param.ctx = ctx;
-    opencl_param.kernel = unsharp->opencl_ctx.kernel;
-    ret = ff_opencl_set_parameter(&opencl_param,
-                                  FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
-                                  FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
-                                  FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask),
-                                  FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask),
-                                  FF_OPENCL_PARAM_INFO(unsharp->luma.amount),
-                                  FF_OPENCL_PARAM_INFO(unsharp->chroma.amount),
-                                  FF_OPENCL_PARAM_INFO(unsharp->luma.steps_x),
-                                  FF_OPENCL_PARAM_INFO(unsharp->luma.steps_y),
-                                  FF_OPENCL_PARAM_INFO(unsharp->chroma.steps_x),
-                                  FF_OPENCL_PARAM_INFO(unsharp->chroma.steps_y),
-                                  FF_OPENCL_PARAM_INFO(unsharp->luma.scalebits),
-                                  FF_OPENCL_PARAM_INFO(unsharp->chroma.scalebits),
-                                  FF_OPENCL_PARAM_INFO(unsharp->luma.halfscale),
-                                  FF_OPENCL_PARAM_INFO(unsharp->chroma.halfscale),
-                                  FF_OPENCL_PARAM_INFO(in->linesize[0]),
-                                  FF_OPENCL_PARAM_INFO(in->linesize[1]),
-                                  FF_OPENCL_PARAM_INFO(out->linesize[0]),
-                                  FF_OPENCL_PARAM_INFO(out->linesize[1]),
-                                  FF_OPENCL_PARAM_INFO(link->h),
-                                  FF_OPENCL_PARAM_INFO(link->w),
-                                  FF_OPENCL_PARAM_INFO(ch),
-                                  FF_OPENCL_PARAM_INFO(cw),
-                                  NULL);
-    if (ret < 0)
-        return ret;
-    status = clEnqueueNDRangeKernel(unsharp->opencl_ctx.command_queue,
-                                    unsharp->opencl_ctx.kernel, 1, NULL,
-                                    &global_work_size, NULL, 0, NULL, NULL);
-    if (status != CL_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
-        return AVERROR_EXTERNAL;
+    if (unsharp->opencl_ctx.use_fast_kernels) {
+        globalWorkSize2dLuma[0] = (size_t)ROUND_TO_16(width);
+        globalWorkSize2dLuma[1] = (size_t)ROUND_TO_16(height);
+        globalWorkSize2dChroma[0] = (size_t)ROUND_TO_16(cw);
+        globalWorkSize2dChroma[1] = (size_t)(2*ROUND_TO_16(ch));
+
+        kernel1.ctx = ctx;
+        kernel1.kernel = unsharp->opencl_ctx.kernel_luma;
+        ret = ff_opencl_set_parameter(&kernel1,
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.amount),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.scalebits),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.halfscale),
+                                      FF_OPENCL_PARAM_INFO(in->linesize[0]),
+                                      FF_OPENCL_PARAM_INFO(out->linesize[0]),
+                                      FF_OPENCL_PARAM_INFO(width),
+                                      FF_OPENCL_PARAM_INFO(height),
+                                      NULL);
+        if (ret < 0)
+            return ret;
+
+        kernel2.ctx = ctx;
+        kernel2.kernel = unsharp->opencl_ctx.kernel_chroma;
+        ret = ff_opencl_set_parameter(&kernel2,
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.amount),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.scalebits),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.halfscale),
+                                      FF_OPENCL_PARAM_INFO(in->linesize[0]),
+                                      FF_OPENCL_PARAM_INFO(in->linesize[1]),
+                                      FF_OPENCL_PARAM_INFO(out->linesize[0]),
+                                      FF_OPENCL_PARAM_INFO(out->linesize[1]),
+                                      FF_OPENCL_PARAM_INFO(link->w),
+                                      FF_OPENCL_PARAM_INFO(link->h),
+                                      FF_OPENCL_PARAM_INFO(cw),
+                                      FF_OPENCL_PARAM_INFO(ch),
+                                      NULL);
+        if (ret < 0)
+            return ret;
+        status = clEnqueueNDRangeKernel(unsharp->opencl_ctx.command_queue,
+                                        unsharp->opencl_ctx.kernel_luma, 2, NULL,
+                                        globalWorkSize2dLuma, localWorkSize2d, 0, NULL, NULL);
+        status |=clEnqueueNDRangeKernel(unsharp->opencl_ctx.command_queue,
+                                        unsharp->opencl_ctx.kernel_chroma, 2, NULL,
+                                        globalWorkSize2dChroma, localWorkSize2d, 0, NULL, NULL);
+        if (status != CL_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
+            return AVERROR_EXTERNAL;
+        }
+    } else {    /* use default kernel */
+        kernel1.ctx = ctx;
+        kernel1.kernel = unsharp->opencl_ctx.kernel_default;
+
+        ret = ff_opencl_set_parameter(&kernel1,
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_inbuf),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_outbuf),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_luma_mask),
+                                      FF_OPENCL_PARAM_INFO(unsharp->opencl_ctx.cl_chroma_mask),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.amount),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.amount),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.steps_x),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.steps_y),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.steps_x),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.steps_y),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.scalebits),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.scalebits),
+                                      FF_OPENCL_PARAM_INFO(unsharp->luma.halfscale),
+                                      FF_OPENCL_PARAM_INFO(unsharp->chroma.halfscale),
+                                      FF_OPENCL_PARAM_INFO(in->linesize[0]),
+                                      FF_OPENCL_PARAM_INFO(in->linesize[1]),
+                                      FF_OPENCL_PARAM_INFO(out->linesize[0]),
+                                      FF_OPENCL_PARAM_INFO(out->linesize[1]),
+                                      FF_OPENCL_PARAM_INFO(link->h),
+                                      FF_OPENCL_PARAM_INFO(link->w),
+                                      FF_OPENCL_PARAM_INFO(ch),
+                                      FF_OPENCL_PARAM_INFO(cw),
+                                      NULL);
+        if (ret < 0)
+            return ret;
+        status = clEnqueueNDRangeKernel(unsharp->opencl_ctx.command_queue,
+                                        unsharp->opencl_ctx.kernel_default, 1, NULL,
+                                        &globalWorkSize1d, NULL, 0, NULL, NULL);
+        if (status != CL_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "OpenCL run kernel error occurred: %s\n", av_opencl_errstr(status));
+            return AVERROR_EXTERNAL;
+        }
     }
     clFinish(unsharp->opencl_ctx.command_queue);
     return av_opencl_buffer_read_image(out->data, unsharp->opencl_ctx.out_plane_size,
@@ -202,6 +273,7 @@ int ff_opencl_apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 int ff_opencl_unsharp_init(AVFilterContext *ctx)
 {
     int ret = 0;
+    char build_opts[96];
     UnsharpContext *unsharp = ctx->priv;
     ret = av_opencl_init(NULL);
     if (ret < 0)
@@ -225,16 +297,36 @@ int ff_opencl_unsharp_init(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "Unable to get OpenCL command queue in filter 'unsharp'\n");
         return AVERROR(EINVAL);
     }
-    unsharp->opencl_ctx.program = av_opencl_compile("unsharp", NULL);
+    snprintf(build_opts, 96, "-D LU_RADIUS_X=%d -D LU_RADIUS_Y=%d -D CH_RADIUS_X=%d -D CH_RADIUS_Y=%d",
+            2*unsharp->luma.steps_x+1, 2*unsharp->luma.steps_y+1, 2*unsharp->chroma.steps_x+1, 2*unsharp->chroma.steps_y+1);
+    unsharp->opencl_ctx.program = av_opencl_compile("unsharp", build_opts);
     if (!unsharp->opencl_ctx.program) {
         av_log(ctx, AV_LOG_ERROR, "OpenCL failed to compile program 'unsharp'\n");
         return AVERROR(EINVAL);
     }
-    if (!unsharp->opencl_ctx.kernel) {
-        unsharp->opencl_ctx.kernel = clCreateKernel(unsharp->opencl_ctx.program, "unsharp", &ret);
-        if (ret != CL_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'unsharp'\n");
-            return AVERROR(EINVAL);
+    if (unsharp->opencl_ctx.use_fast_kernels) {
+        if (!unsharp->opencl_ctx.kernel_luma) {
+            unsharp->opencl_ctx.kernel_luma = clCreateKernel(unsharp->opencl_ctx.program, "unsharp_luma", &ret);
+            if (ret != CL_SUCCESS) {
+                av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'unsharp_luma'\n");
+                return ret;
+            }
+        }
+        if (!unsharp->opencl_ctx.kernel_chroma) {
+            unsharp->opencl_ctx.kernel_chroma = clCreateKernel(unsharp->opencl_ctx.program, "unsharp_chroma", &ret);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'unsharp_chroma'\n");
+                return ret;
+            }
+        }
+    }
+    else {
+        if (!unsharp->opencl_ctx.kernel_default) {
+            unsharp->opencl_ctx.kernel_default = clCreateKernel(unsharp->opencl_ctx.program, "unsharp_default", &ret);
+            if (ret < 0) {
+                av_log(ctx, AV_LOG_ERROR, "OpenCL failed to create kernel 'unsharp_default'\n");
+                return ret;
+            }
         }
     }
     return ret;
@@ -247,7 +339,9 @@ void ff_opencl_unsharp_uninit(AVFilterContext *ctx)
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_outbuf);
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_luma_mask);
     av_opencl_buffer_release(&unsharp->opencl_ctx.cl_chroma_mask);
-    clReleaseKernel(unsharp->opencl_ctx.kernel);
+    clReleaseKernel(unsharp->opencl_ctx.kernel_default);
+    clReleaseKernel(unsharp->opencl_ctx.kernel_luma);
+    clReleaseKernel(unsharp->opencl_ctx.kernel_chroma);
     clReleaseProgram(unsharp->opencl_ctx.program);
     unsharp->opencl_ctx.command_queue = NULL;
     av_opencl_uninit();
