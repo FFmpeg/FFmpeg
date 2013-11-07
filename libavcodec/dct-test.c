@@ -47,8 +47,6 @@
 #include "x86/idct_xvid.h"
 #include "dctref.h"
 
-#undef printf
-
 // BFIN
 void ff_bfin_idct(int16_t *block);
 void ff_bfin_fdct(int16_t *block);
