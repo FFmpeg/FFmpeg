@@ -359,10 +359,8 @@ static int hnm_decode_frame(AVCodecContext *avctx, void *data,
     int ret;
     uint16_t chunk_id;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    }
 
     chunk_id = AV_RL16(avpkt->data + 4);
 
