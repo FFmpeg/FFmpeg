@@ -166,8 +166,8 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
     bytestream_put_le16(&hdr, height);
     bytestream_put_le16(&hdr, h->rects[0]->x);
     bytestream_put_le16(&hdr, h->rects[0]->y);
-    bytestream_put_le16(&hdr, h->rects[0]->x + width);
-    bytestream_put_le16(&hdr, h->rects[0]->y + height);
+    bytestream_put_le16(&hdr, h->rects[0]->x + width -1);
+    bytestream_put_le16(&hdr, h->rects[0]->y + height -1);
 
     rlelenptr = hdr; // Will store length of first field here later.
     hdr+=2;
