@@ -206,6 +206,8 @@ static av_cold int xsub_encoder_init(AVCodecContext *avctx)
     if (!avctx->codec_tag)
         avctx->codec_tag = MKTAG('D','X','S','B');
 
+    avctx->bits_per_coded_sample = 4;
+
     return 0;
 }
 
