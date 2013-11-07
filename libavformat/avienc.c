@@ -632,5 +632,4 @@ AVOutputFormat ff_avi_muxer = {
     .codec_tag         = (const AVCodecTag* const []){
         ff_codec_bmp_tags, ff_codec_wav_tags, 0
     },
-    .flags             = AVFMT_VARIABLE_FPS,
 };
