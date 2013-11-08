@@ -116,7 +116,8 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
     MimicContext *ctx = avctx->priv_data;
     int i;
 
-    av_free(ctx->swap_buf);
+    av_freep(&ctx->swap_buf);
+    ctx->swap_buf_size = 0;
 
     for (i = 0; i < FF_ARRAY_ELEMS(ctx->frames); i++) {
         if (ctx->frames[i].f)
