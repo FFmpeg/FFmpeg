@@ -25,33 +25,30 @@
 
 static int h261_probe(AVProbeData *p)
 {
-    uint32_t code= -1;
     int i;
     int valid_psc=0;
     int invalid_psc=0;
     int next_gn=0;
     int src_fmt=0;
-    GetBitContext gb;
 
-    init_get_bits8(&gb, p->buf, p->buf_size);
+    for(i=0; i<p->buf_size; i++){
+        if ((AV_RB16(&p->buf[i]) - 1) < 0xFFU) {
+            int shift = av_log2_16bit(p->buf[i+1]);
+            uint32_t code = AV_RB64(&p->buf[FFMAX(i-1, 0)]) >> (24+shift);
+            if ((code & 0xffff0000) == 0x10000) {
+                int gn= (code>>12)&0xf;
+                if(!gn)
+                    src_fmt= code&8;
+                if(gn != next_gn) invalid_psc++;
+                else              valid_psc++;
 
-    for(i=0; i<p->buf_size*8; i++){
-        if ((code & 0x01ff0000) || !(code & 0xff00)) {
-            code = (code<<8) + get_bits(&gb, 8);
-            i += 7;
-        } else
-            code = (code<<1) + get_bits1(&gb);
-        if ((code & 0xffff0000) == 0x10000) {
-            int gn= (code>>12)&0xf;
-            if(!gn)
-                src_fmt= code&8;
-            if(gn != next_gn) invalid_psc++;
-            else              valid_psc++;
-
-            if(src_fmt){ // CIF
-                next_gn= (gn+1     )%13;
-            }else{       //QCIF
-                next_gn= (gn+1+!!gn)% 7;
+                if(src_fmt){ // CIF
+                    static const int lut[16]={1,2,3,4,5,6,7,8,9,10,11,12,0,1,2,3};
+                    next_gn = lut[gn];
+                }else{       //QCIF
+                    static const int lut[16]={1,3,4,5,6,0,1,2,3,4,5,6,0,1,2,3,4};
+                    next_gn = lut[gn];
+                }
             }
         }
     }
