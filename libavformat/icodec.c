@@ -45,7 +45,7 @@ typedef struct {
 static int probe(AVProbeData *p)
 {
     if (AV_RL16(p->buf) == 0 && AV_RL16(p->buf + 2) == 1 && AV_RL16(p->buf + 4))
-        return AVPROBE_SCORE_MAX / 3;
+        return AVPROBE_SCORE_MAX / 4;
     return 0;
 }
 
