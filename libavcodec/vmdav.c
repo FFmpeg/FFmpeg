@@ -458,7 +458,8 @@ static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
     VmdVideoContext *s = avctx->priv_data;
 
     av_frame_unref(&s->prev_frame);
-    av_free(s->unpack_buffer);
+    av_freep(&s->unpack_buffer);
+    s->unpack_buffer_size = 0;
 
     return 0;
 }
