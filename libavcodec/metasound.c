@@ -313,7 +313,7 @@ static av_cold int metasound_decode_init(AVCodecContext *avctx)
     default:
         av_log(avctx, AV_LOG_ERROR,
                "This version does not support %d kHz - %d kbit/s/ch mode.\n",
-               isampf, isampf);
+               isampf, ibps);
         return AVERROR(ENOSYS);
     }
 
